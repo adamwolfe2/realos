@@ -108,3 +108,77 @@ and `pnpm build` both pass; 26 routes prerender cleanly.
 - Seed script: compiles cleanly; not run against a live DB yet.
 
 ---
+
+## Sprint 02, Multi-Tenancy & Custom Domain Routing
+
+**Shipped.** Full tenant-resolution stack is live: `lib/tenancy/resolve.ts`
+looks up `DomainBinding` first (custom domains) and falls back to
+`{slug}.{platform-domain}` subdomains; `lib/tenancy/scope.ts` exposes
+`getScope` / `requireScope` / `requireAgency` / `requireClient` /
+`tenantWhere` + `auditPayload`; `lib/tenancy/impersonate.ts` writes
+`publicMetadata.impersonateOrgId` on the agency user's Clerk record and
+mirrors start/end to `AuditEvent`. Middleware (`middleware.ts`) now routes
+by hostname: tenant hostnames rewrite to `/tenant-site/<path>` with
+`x-tenant-org-id/slug/hostname` headers; platform hostnames gate `/admin`,
+`/portal`, `/api/admin/*`, `/api/tenant/*`; webhooks and crons stay
+unauthenticated. `app/(tenant)/layout.tsx` + `tenant-site/[[...path]]/page.tsx`
+render a tenant stub (Sprint 07 fills it in). `app/portal/` gets its auth
+gate and a stats-grid stub dashboard. `app/admin/layout.tsx` swapped the ad
+hoc role check for `getScope()` + `requireAgency`. `lib/build/domain-attach.ts`
+wraps the Vercel Domain API (attach / remove / verify / get status).
+`lib/build/provision-tenant.ts` is the new tenant provisioning entrypoint:
+creates Organization, TenantSiteConfig, optional first Property, Project
+with the 28-task operator checklist, optional DomainBinding, optional
+Vercel domain attach; also links an IntakeSubmission → Organization when
+passed. API endpoints added: `/api/admin/impersonate/start`, `/end`, and a
+`/api/scope` smoke-test probe. `docs/domains-setup.md` documents the
+wildcard DNS + custom-domain onboarding ritual.
+
+**Deferred with TODO comments.**
+- Tenant site rendering (`app/(tenant)/tenant-site/[[...path]]/page.tsx`)
+  is a placeholder; Sprint 07 dispatches on path segments and wires in
+  AppFolio listings.
+- Portal dashboard (`app/portal/page.tsx`) shows raw row counts; Sprint 05
+  rebuilds the full portal (leads pipeline, conversations, creative,
+  billing).
+- Admin dashboard still a stub pending Sprint 04.
+- Middleware deprecation: Next 16.1 prefers `proxy.ts` over
+  `middleware.ts`. Kept `middleware.ts` (the PRD uses this name); left the
+  rename for a later cleanup sprint.
+
+**DECISION comments worth flagging.**
+- Rewrite target is `/tenant-site/...`, not `/_tenant/...`. Next.js's
+  private-folder convention skips any path segment prefixed with `_`, so
+  the PRD's literal `_tenant` would 404. Renderer lives at
+  `app/(tenant)/tenant-site/[[...path]]/page.tsx` and guards against
+  direct hits from the platform hostname by requiring the
+  `x-tenant-org-id` header middleware sets.
+- `getScope` returns both `orgId` (effective, respects impersonation) and
+  `actualOrgId` (real session org). Audit events use both: `userId` stays
+  the agency actor, `orgId` on the audit row is the subject org, so we
+  can prove the chain of custody even through impersonation.
+- `tenantWhere(scope)` is the only public way to scope a Prisma query.
+  Admin cross-tenant reads go through `requireAgency()` and the call sites
+  decide explicitly. Code review should enforce this pattern every sprint.
+- Portal layout redirects agency users (who aren't impersonating) to
+  `/admin` so no one accidentally sees an "empty" portal.
+- Vercel preview URLs (`*.vercel.app`) and localhost count as platform
+  hostnames so preview deploys work without a DomainBinding entry.
+
+**Wholesail adaptations heavier than expected.**
+- None for this sprint; the Wholesail middleware was a clean extension
+  point and the `lib/tenancy/*` tree is net-new.
+
+**Env vars used this sprint (already stubbed in .env.local from Sprint 01).**
+- `VERCEL_API_TOKEN`, `VERCEL_PROJECT_ID`, `VERCEL_TEAM_ID` (optional).
+- `NEXT_PUBLIC_PLATFORM_DOMAIN` (added as new env; read by
+  `resolveTenantByHostname`).
+
+**Verification.**
+- `pnpm type-check`: pass (0 errors).
+- `pnpm build`: pass, 29 routes generated (portal + tenant-site + scope +
+  impersonate endpoints added).
+- Manual smoke still requires a live database to test `/api/scope` and
+  impersonation; flagged as "run after first deploy".
+
+---

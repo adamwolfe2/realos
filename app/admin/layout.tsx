@@ -1,13 +1,11 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/db";
 import { AdminMobileNav } from "./mobile-nav";
 import { AdminSidebar } from "./admin-sidebar";
 import { AdminNotifications } from "@/components/admin-notifications";
 import { BRAND_NAME } from "@/lib/brand";
-import { UserRole } from "@prisma/client";
+import { getScope } from "@/lib/tenancy/scope";
 
 import type { Metadata } from "next";
 
@@ -21,29 +19,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const ALLOWED_ROLES: readonly UserRole[] = [
-  UserRole.AGENCY_OWNER,
-  UserRole.AGENCY_ADMIN,
-  UserRole.AGENCY_OPERATOR,
-];
-
 export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { userId } = await auth();
-  if (!userId) redirect("/sign-in");
-
-  const dbUser = await prisma.user
-    .findUnique({
-      where: { clerkUserId: userId },
-      select: { role: true },
-    })
-    .catch(() => null);
-
-  if (!dbUser || !ALLOWED_ROLES.includes(dbUser.role)) {
-    redirect("/");
+  const scope = await getScope();
+  if (!scope) redirect("/sign-in");
+  if (!scope.isAgency) {
+    redirect("/portal");
   }
 
   // TODO(Sprint 04): nav badges for pending intakes, at-risk tenants,
