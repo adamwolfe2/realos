@@ -505,4 +505,90 @@ Organization. `app/onboarding/page.tsx` renders the wizard.
 
 ---
 
+## Sprint 07, Tenant Marketing Site Renderer
+
+**Shipped.** The `app/(tenant)/` group now renders a full marketing site
+for every tenant, resolved by hostname via middleware and backed by
+`TenantSiteConfig` + live AppFolio listings.
+- `lib/tenancy/tenant-context.ts`, request-memoized tenant loader
+  (`getTenantFromHeaders`) that pulls Organization + TenantSiteConfig +
+  Property + available Listings in one query. Exposes
+  `tenantPrimaryHost()` for sitemap / footer links.
+- `app/(tenant)/layout.tsx`, full tenant shell with
+  `<TenantNav>` + `<TenantFooter>`, CSS vars for brand colors, chatbot +
+  pixel + exit-intent conditional mounts, and a `bringYourOwnSite`
+  fallback that emits only scripts.
+- `app/(tenant)/tenant-site/[[...path]]/page.tsx`, single catch-all
+  renderer that dispatches on path segment to one of:
+  home / floor-plans / amenities / gallery / location / contact / parents
+  / apply / schedule / privacy / terms / fair-housing.
+- `components/tenant-site/` (new): `nav.tsx`, `footer.tsx`, `hero.tsx`,
+  `value-props.tsx`, `listings-grid.tsx`, `room-card.tsx`,
+  `amenities-section.tsx`, `about-section.tsx`, `apply-cta.tsx`,
+  `apply-form.tsx`, `exit-intent-popup.tsx`.
+- `components/chatbot/chatbot-loader.tsx` + `components/pixel/cursive-pixel-loader.tsx`,
+  placeholders that Sprints 08 + 09 swap for real implementations. The
+  pixel loader already reads `CursiveIntegration.pixelScriptUrl` if set
+  so it starts working the moment a pixel is provisioned.
+- `app/api/public/leads/route.ts`, public lead capture used by the apply
+  form, contact form, and exit-intent popup. Validates Zod, rate-limits
+  by IP, confirms tenant + property ownership, matches optional
+  `visitorHash` to a Visitor row, and fires Slack + tenant-alert +
+  applicant auto-reply emails in parallel.
+- `lib/email/lead-emails.ts`, `sendLeadAutoReplyEmail` to the applicant
+  and `notifyTenantOfLeadEmail` to the primary contact.
+
+**Deferred with TODO comments.**
+- Chatbot UI still a stub (Sprint 09 forks from telegraph-commons).
+- Pixel loader is minimal until the Cursive provisioning webhook lands
+  in Sprint 08.
+- Per-tenant `robots.txt` is not dynamically generated yet; the
+  platform-level `app/robots.ts` still wins. Adding a tenant-aware
+  robots handler is a Sprint 12 cleanup.
+- Student-housing-specific SEO landing pages (international students,
+  summer leases) deferred, renderable under the catch-all once copy
+  lands in `TenantSiteConfig.customJson`.
+- Gallery uses whatever photos are on `Property.photoUrls`; lightbox +
+  filter chips are a polish pass after we have real assets from clients.
+
+**DECISION comments worth flagging.**
+- Rewrote the PRD's approach of one file-per-page as a single dispatch
+  in `[[...path]]/page.tsx`. It keeps tenant routing under one roof and
+  every page renders the same layout automatically. Trading a slightly
+  larger switch for one-file-does-it-all was worth it while the set of
+  pages is this small; we can split later.
+- `ChatbotLoader` reads `TenantSiteConfig.enableChatbot` / `enablePixel`
+  even in `bringYourOwnSite` mode so a client who hosts their own site
+  still gets just the scripts.
+- `CursivePixelLoader` is async server component, and only renders the
+  script when `CursiveIntegration.pixelScriptUrl` exists. No flicker,
+  no client state, and no pixel leakage for tenants who haven't
+  provisioned one yet.
+- `/api/public/leads` uses `publicSignupLimiter` (5 per hour per IP)
+  because the tenant marketing form is an anonymous public surface.
+  Authenticated portal-side lead creation uses
+  `/api/tenant/leads` instead.
+- Lead endpoint links Visitor rows by `visitorHash` when the pixel
+  passes one along; this stitches pixel activity to the eventual form
+  submission without needing an identity graph service.
+
+**Wholesail adaptations heavier than expected.**
+- None this sprint; tenant marketing is a new surface.
+
+**Env vars used this sprint.**
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `AGENCY_ADMIN_EMAIL`,
+  `NEXT_PUBLIC_APP_URL` (existing).
+
+**Verification.**
+- `pnpm type-check`: pass (0 errors).
+- `pnpm build`: pass, includes new `/api/public/leads` route and the
+  tenant catch-all (`/tenant-site/[[...path]]`) plus
+  tenant-site components (all server-rendered).
+- Live smoke needs a tenant subdomain pointed at the platform domain
+  plus real DB; flagged as "run after first deploy".
+
+---
+
+---
+
 ---

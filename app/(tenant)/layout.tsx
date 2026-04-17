@@ -1,43 +1,87 @@
-import { headers } from "next/headers";
 import { notFound } from "next/navigation";
-import { prisma } from "@/lib/db";
-import { readTenantHeaders } from "@/lib/tenancy/resolve";
+import type { Metadata } from "next";
+import { getTenantFromHeaders } from "@/lib/tenancy/tenant-context";
+import { TenantNav } from "@/components/tenant-site/nav";
+import { TenantFooter } from "@/components/tenant-site/footer";
+import { ExitIntentPopup } from "@/components/tenant-site/exit-intent-popup";
+import { ChatbotLoader } from "@/components/chatbot/chatbot-loader";
+import { CursivePixelLoader } from "@/components/pixel/cursive-pixel-loader";
 
-// ---------------------------------------------------------------------------
-// Route-group layout for the tenant marketing surface.
-// Requires middleware to have set the tenant headers; direct hits to
-// /tenant-site/... from the platform hostname 404 here.
-//
-// TODO(Sprint 07): pull TenantSiteConfig into context, expose brand tokens
-// (logo, primaryColor, font) as CSS variables, render navbar + footer.
-// ---------------------------------------------------------------------------
+export async function generateMetadata(): Promise<Metadata> {
+  const tenant = await getTenantFromHeaders();
+  if (!tenant) return { title: "Not found" };
+  const config = tenant.tenantSiteConfig;
+  const title = config?.metaTitle ?? config?.siteTitle ?? tenant.name;
+  const description = config?.metaDescription ?? null;
+  return {
+    title,
+    description: description ?? undefined,
+    openGraph: {
+      title,
+      description: description ?? undefined,
+      ...(config?.ogImageUrl ? { images: [config.ogImageUrl] } : {}),
+      siteName: tenant.name,
+    },
+  };
+}
 
 export default async function TenantLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const { orgId } = readTenantHeaders(await headers());
-  if (!orgId) notFound();
+  const tenant = await getTenantFromHeaders();
+  if (!tenant) notFound();
 
-  const org = await prisma.organization.findUnique({
-    where: { id: orgId },
-    include: { tenantSiteConfig: true },
-  });
-  if (!org) notFound();
+  const config = tenant.tenantSiteConfig;
+
+  // Bring-your-own-site mode: client hosts the marketing site elsewhere and
+  // only wants our chatbot + pixel scripts. Skip the full layout.
+  if (tenant.bringYourOwnSite) {
+    return (
+      <>
+        {config?.enableChatbot ? (
+          <ChatbotLoader orgId={tenant.id} config={config} />
+        ) : null}
+        {config?.enablePixel ? (
+          <CursivePixelLoader orgId={tenant.id} />
+        ) : null}
+      </>
+    );
+  }
+
+  const brandStyle = {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    ...({
+      "--tenant-primary": tenant.primaryColor ?? "#111827",
+      "--tenant-secondary": tenant.secondaryColor ?? "#f9fafb",
+    } as React.CSSProperties),
+  };
 
   return (
     <div
-      data-tenant-slug={org.slug}
-      style={{
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-        ...({
-          "--tenant-primary": org.primaryColor ?? "#111827",
-          "--tenant-secondary": org.secondaryColor ?? "#6b7280",
-        } as React.CSSProperties),
-      }}
+      data-tenant-slug={tenant.slug}
+      className="min-h-screen flex flex-col bg-white text-slate-900"
+      style={brandStyle}
     >
-      {children}
+      <TenantNav tenant={tenant} />
+      <main className="flex-1">{children}</main>
+      <TenantFooter tenant={tenant} />
+      {config?.enableChatbot ? (
+        <ChatbotLoader orgId={tenant.id} config={config} />
+      ) : null}
+      {config?.enablePixel ? (
+        <CursivePixelLoader orgId={tenant.id} />
+      ) : null}
+      {config?.enableExitIntent ? (
+        <ExitIntentPopup
+          orgId={tenant.id}
+          headline={config.exitIntentHeadline ?? null}
+          body={config.exitIntentBody ?? null}
+          ctaText={config.exitIntentCtaText ?? null}
+          offerCode={config.exitIntentOfferCode ?? null}
+        />
+      ) : null}
     </div>
   );
 }
