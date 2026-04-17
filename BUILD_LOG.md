@@ -245,3 +245,82 @@ Organization. `app/onboarding/page.tsx` renders the wizard.
   fully exercise; flagged as "run after first deploy".
 
 ---
+
+## Sprint 04, Master Admin CRM + Fulfillment Pipeline
+
+**Shipped.** Master admin has a functional core.
+- `app/admin/page.tsx`, CEO dashboard with 8 stat tiles (active clients,
+  at-risk, MRR, intake 30d, leads 30d, visitors 30d, chats 30d, open
+  creative requests) and a recent-intakes rail.
+- `app/admin/intakes/page.tsx`, queue with open / converted / all filters.
+- `app/admin/intakes/[id]/page.tsx`, submission detail with a client-side
+  `ConvertIntakeForm` that posts to `/api/admin/intakes/[id]/convert`.
+- `app/admin/clients/page.tsx`, filterable client table with a
+  per-tenant lead-count-30d roll-up via a single `lead.groupBy`.
+- `app/admin/clients/[id]/page.tsx`, tenant detail with module toggles,
+  domain list, property list, active project summary, recent leads, and
+  audit log. `ImpersonateButton` posts to
+  `/api/admin/impersonate/start` and navigates to /portal.
+- `app/admin/pipeline/page.tsx`, Kanban across every `TenantStatus`, with
+  CHURNED + PAUSED merged into a "Dormant" column.
+- `components/admin/tenant-pipeline-card.tsx`, card that moves a tenant
+  via `POST /api/admin/clients/[id]/status`.
+- `app/admin/leads/page.tsx`, cross-tenant lead table with
+  days/source/status/client filters and a source totals breakdown.
+- `/api/admin/clients/[id]/status`, writes UPDATE audit rows and auto-sets
+  `launchedAt` when moving to LAUNCHED.
+- `components/admin/stat-card.tsx`, shared metric tile.
+- Admin nav rewritten (`app/admin/nav-config.ts`). Distribution groups
+  gone; new groups: Overview / Growth / Clients / System. Nav badge
+  counts wired to pending intakes, active builds, open creative, and
+  at-risk tenants; cached 60s via `unstable_cache` in the admin layout.
+
+**Deferred with TODO comments.**
+- Creative queue, Ad campaigns, Tenants+domains, Audit log, Support nav
+  targets render 404 until later sprints fill them in (Sprint 08
+  visitors, Sprint 11 creative).
+- Intake "Next action" and quick Review toggle deferred until we see the
+  agency's actual workflow. Convert is the primary action.
+- Pipeline drag-and-drop not implemented; per-card dropdown is the only
+  move affordance. Good enough for a small portfolio; revisit at 50+
+  tenants.
+- `/admin/clients/[id]` is a single scroll instead of tabbed. Fine for
+  the first five tenants; tabs land with Sprint 05 when billing + portal
+  parity arrives.
+
+**DECISION comments worth flagging.**
+- Pipeline status flips use `AuditAction.UPDATE` rather than a custom
+  `PIPELINE_MOVED` action because the schema's `AuditAction` enum is
+  intentionally small. `description` carries the "X → Y" transition.
+- Moving a tenant to LAUNCHED auto-sets `launchedAt` if unset; any move
+  off AT_RISK clears `atRiskReason`.
+- `ConvertIntakeForm` and `ImpersonateButton` are client components
+  because they call mutation routes and navigate on success. Their
+  parent pages stay server components so `requireAgency()` runs at
+  render time.
+- `tenantWhere(scope)` is explicitly NOT used for admin cross-tenant
+  reads. Every admin read calls `requireAgency()` and filters by
+  `orgType = CLIENT` explicitly.
+- Nav-badge counts are cached via `unstable_cache` with a 60s TTL so
+  each admin page load doesn't fan out four count queries.
+
+**Wholesail adaptations heavier than expected.**
+- Wholesail's `components/pipeline-card.tsx` is tightly coupled to the
+  distribution `Project` shape (githubRepo, vercelUrl, currentPhase,
+  enabledFeatures). Rather than adapt, we built a slim
+  `TenantPipelineCard` from scratch and left the Wholesail card
+  untouched. Sprint 05 may delete it if unused.
+
+**Env vars used this sprint.**
+- None beyond Sprint 02 stubs. `/api/admin/impersonate/*` still depends
+  on a real `CLERK_SECRET_KEY`, replace before any live deploy.
+
+**Verification.**
+- `pnpm type-check`: pass (0 errors).
+- `pnpm build`: pass, 37 routes generated (dashboard, intake queue +
+  detail, clients list + detail, pipeline, leads, status API added).
+- End-to-end smoke needs a live DB + real Clerk session to exercise
+  impersonation + status-flip audit rows. Flagged as "run after first
+  deploy".
+
+---
