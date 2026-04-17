@@ -5,6 +5,7 @@ import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { OrgType } from "@prisma/client";
 import { ImpersonateButton } from "./impersonate-button";
+import { ProvisionPixelButton } from "./provision-pixel-button";
 
 export const metadata: Metadata = { title: "Client detail" };
 export const dynamic = "force-dynamic";
@@ -39,6 +40,7 @@ export default async function ClientDetail({
       },
       domains: true,
       tenantSiteConfig: true,
+      cursiveIntegration: true,
       projects: {
         orderBy: { createdAt: "desc" },
         take: 5,
@@ -108,6 +110,12 @@ export default async function ClientDetail({
           ) : null}
         </div>
         <div className="flex items-center gap-2">
+          {org.modulePixel ? (
+            <ProvisionPixelButton
+              orgId={org.id}
+              hasPixel={!!org.cursiveIntegration?.cursivePixelId}
+            />
+          ) : null}
           <ImpersonateButton orgId={org.id} />
         </div>
       </header>
