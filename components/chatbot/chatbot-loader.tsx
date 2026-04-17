@@ -1,23 +1,34 @@
 import type { TenantSiteConfig } from "@prisma/client";
+import { ProactiveWidget } from "./proactive-widget";
 
-// Placeholder. Sprint 09 forks the proactive chatbot from telegraph-commons
-// and wires the API at /api/chatbot. For now we render a tiny floating
-// affordance that tells the operator the module is on but not yet built.
+// Server component. Rendered inside app/(tenant)/layout.tsx once the tenant
+// has `moduleChatbot` and `TenantSiteConfig.enableChatbot` turned on. All
+// personalization comes from TenantSiteConfig.
 export function ChatbotLoader({
   orgId,
   config,
 }: {
   orgId: string;
-  config: TenantSiteConfig;
+  config: TenantSiteConfig | null;
 }) {
-  void orgId;
-  void config;
+  if (!config?.enableChatbot) return null;
+
+  const personaName = config.chatbotPersonaName?.trim() || "Leasing";
+  const greeting =
+    config.chatbotGreeting?.trim() ||
+    "Hey, I'm around if you have any questions about the building, tours, or applying.";
+  const idleTriggerSeconds =
+    typeof config.chatbotIdleTriggerSeconds === "number"
+      ? config.chatbotIdleTriggerSeconds
+      : 5;
+
   return (
-    <div
-      aria-hidden="true"
-      className="fixed bottom-4 right-4 z-40 text-[10px] bg-black/80 text-white px-3 py-1.5 rounded"
-    >
-      Chatbot module, Sprint 09
-    </div>
+    <ProactiveWidget
+      orgId={orgId}
+      personaName={personaName}
+      avatarUrl={config.chatbotAvatarUrl ?? null}
+      greeting={greeting}
+      idleTriggerSeconds={idleTriggerSeconds}
+    />
   );
 }

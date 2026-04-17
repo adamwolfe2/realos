@@ -727,7 +727,9 @@ model ChatbotConversation {
   lead            Lead?                     @relation(fields: [leadId], references: [id], onDelete: SetNull)
 
   status          ChatbotConversationStatus @default(ACTIVE)
-  sessionId       String                                             // Browser session identifier
+  // DECISION: sessionId needs @unique so the chatbot API can upsert on it
+  // in one query. Added in Sprint 09.
+  sessionId       String   @unique                                   // Browser session identifier
   visitorHash     String?                                             // Link back to Visitor if identified
 
   // Messages stored as JSON array of {role, content, timestamp}
