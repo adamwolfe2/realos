@@ -31,22 +31,30 @@ export default async function PropertyDetail({
 
   return (
     <div className="space-y-8">
-      <header>
+      <header className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <Link
+            href="/portal/properties"
+            className="text-xs opacity-60 hover:opacity-100"
+          >
+            ← All properties
+          </Link>
+          <h1 className="font-serif text-3xl font-bold mt-2">{property.name}</h1>
+          {property.addressLine1 ? (
+            <p className="text-sm opacity-70 mt-1">
+              {property.addressLine1}
+              {property.city ? `, ${property.city}` : ""}
+              {property.state ? `, ${property.state}` : ""}
+              {property.postalCode ? ` ${property.postalCode}` : ""}
+            </p>
+          ) : null}
+        </div>
         <Link
-          href="/portal/properties"
-          className="text-xs opacity-60 hover:opacity-100"
+          href={`/portal/properties/${property.id}/appfolio`}
+          className="text-xs px-3 py-2 border rounded"
         >
-          ← All properties
+          AppFolio settings
         </Link>
-        <h1 className="font-serif text-3xl font-bold mt-2">{property.name}</h1>
-        {property.addressLine1 ? (
-          <p className="text-sm opacity-70 mt-1">
-            {property.addressLine1}
-            {property.city ? `, ${property.city}` : ""}
-            {property.state ? `, ${property.state}` : ""}
-            {property.postalCode ? ` ${property.postalCode}` : ""}
-          </p>
-        ) : null}
       </header>
 
       <section className="grid grid-cols-2 md:grid-cols-5 gap-4">

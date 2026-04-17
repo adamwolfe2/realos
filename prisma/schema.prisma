@@ -521,6 +521,11 @@ model Listing {
 
   @@index([propertyId])
   @@index([propertyId, isAvailable])
+  // DECISION: compound unique on (propertyId, backendListingId) added in
+  // Sprint 06 so AppFolio sync can upsert in one query instead of the
+  // PRD's awkward "findFirst then upsert by id" pattern. Nullable FK is fine
+  // because Postgres permits nulls to be distinct under unique constraints.
+  @@unique([propertyId, backendListingId])
 }
 
 // ============================================================================

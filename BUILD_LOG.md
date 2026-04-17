@@ -423,3 +423,86 @@ Organization. `app/onboarding/page.tsx` renders the wizard.
   first deploy".
 
 ---
+
+## Sprint 06, AppFolio Integration & Listings Sync
+
+**Shipped.** Full AppFolio listing pipeline, with two modes.
+- `lib/integrations/appfolio.ts`, ported the HTML-scrape approach from
+  `telegraph-commons/src/lib/appfolio.ts`. `syncListingsForOrg(orgId)`
+  normalizes listings, upserts into `Listing` on the new
+  `(propertyId, backendListingId)` compound unique, and refreshes
+  `Property.priceMin/priceMax/availableCount/lastSyncedAt`.
+- Schema update, added `@@unique([propertyId, backendListingId])` to
+  `Listing` (the PRD called this out) so the sync upserts in one query.
+- `lib/crypto.ts`, AES-256-GCM `encrypt` / `decrypt` / `maybeEncrypt`
+  / `maybeDecrypt` for per-tenant secrets (AppFolio API keys, OAuth
+  refresh tokens).
+- `POST /api/tenant/appfolio/sync`, triggers a sync on demand.
+- `GET /api/cron/appfolio-sync`, Vercel Cron entry that honors each
+  integration's `syncFrequencyMinutes` cutoff.
+- `GET / PATCH /api/tenant/appfolio`, read and update the integration
+  row without leaking the encrypted API key. Promotes every
+  `Property.backendPlatform = NONE` to `APPFOLIO` when the tenant
+  configures the integration.
+- `GET /api/tenant/listings`, public listings feed for the tenant
+  marketing surface. Reads `x-tenant-org-id` from middleware so it
+  doesn't require a session.
+- `app/portal/properties/[id]/appfolio/page.tsx` +
+  `appfolio-form.tsx`, tenant-facing config: subdomain, plan,
+  property-group filter, embed-scrape toggle, encrypted API key,
+  auto-sync toggle, sync-frequency minutes, plus a "Sync now" action.
+- Linked "AppFolio settings" from the property detail page.
+- `cheerio@^1.2.0` added as a dependency.
+
+**Deferred with TODO comments.**
+- REST mode (`fetchRest`) is stubbed with a reasonable payload guess,
+  pending confirmation against Norman's real AppFolio Plus account.
+- Multi-property matching in embed-scrape mode falls back to "first
+  property wins" because the scraped HTML rarely carries a
+  machine-readable property-group token. Good enough for Telegraph
+  Commons (one building) and any single-property tenant; richer
+  matching lands once REST ships.
+- No `scripts/seed-telegraph-commons-appfolio.ts` yet; we can populate
+  that when we have Norman's AppFolio credentials in env.
+
+**DECISION comments worth flagging.**
+- Defaulted every integration to EMBED_SCRAPE mode because it's proven
+  (Telegraph Commons lives on it) and works without credentials.
+  `useEmbedFallback` is on by default; REST requires an explicit key
+  upload.
+- `lib/crypto.ts` throws at decrypt-time instead of startup so tenants
+  with no encrypted secrets yet don't block the app boot.
+- Listing upserts use `propertyId_backendListingId` rather than the
+  awkward PRD pattern of `findFirst` → `upsert by id`. The
+  compound unique made this trivial and removed the double query.
+- The scrape filters by street address when a tenant manages one
+  property (Telegraph Commons uses "2490 Channing") so we don't pick
+  up sibling buildings on the same AppFolio instance.
+- Cron respects each integration's `syncFrequencyMinutes`, so tenants
+  with heavy listing churn can tighten the cadence without affecting
+  others.
+- `syncError` is written back onto every `Property` on failure so the
+  portal UI can surface it on the property detail page without
+  depending on the integration row.
+
+**Wholesail adaptations heavier than expected.**
+- None this sprint. The scrape code ported cleanly from
+  telegraph-commons; everything else is net-new.
+
+**Env vars used this sprint.**
+- `ENCRYPTION_KEY` (32-byte hex), new requirement for storing AppFolio
+  API keys at rest. Documented in `.env.example`; currently stubbed.
+  Generate with `openssl rand -hex 32`.
+- `CRON_SECRET`, for `/api/cron/appfolio-sync` Bearer auth (existing).
+
+**Verification.**
+- `pnpm type-check`: pass (0 errors).
+- `pnpm build`: pass, 56 routes generated (added AppFolio sync + config
+  + listings API + AppFolio settings portal pages).
+- End-to-end sync requires a live AppFolio subdomain to exercise the
+  scrape; flagged as "run against Norman's staging subdomain once
+  DATABASE_URL is set".
+
+---
+
+---
