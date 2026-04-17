@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { UserButton } from "@clerk/nextjs";
 import { redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import { AdminMobileNav } from "./mobile-nav";
 import { AdminSidebar } from "./admin-sidebar";
 import { AdminNotifications } from "@/components/admin-notifications";
 import { BRAND_NAME } from "@/lib/brand";
 import { getScope } from "@/lib/tenancy/scope";
+import { prisma } from "@/lib/db";
+import { CreativeRequestStatus, OrgType, TenantStatus } from "@prisma/client";
 
 import type { Metadata } from "next";
 
@@ -19,6 +22,54 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Cache nav badge counts for 60 seconds to avoid N-query fan-out on every
+// admin page load.
+const getAdminNavBadges = unstable_cache(
+  async () => {
+    const [pendingIntakes, activeBuilds, openCreative, atRiskTenants] =
+      await Promise.all([
+        prisma.intakeSubmission.count({
+          where: { reviewedAt: null, convertedAt: null },
+        }).catch(() => 0),
+        prisma.organization.count({
+          where: {
+            orgType: OrgType.CLIENT,
+            status: {
+              in: [
+                TenantStatus.CONTRACT_SIGNED,
+                TenantStatus.BUILD_IN_PROGRESS,
+                TenantStatus.QA,
+              ],
+            },
+          },
+        }).catch(() => 0),
+        prisma.creativeRequest.count({
+          where: {
+            status: {
+              in: [
+                CreativeRequestStatus.SUBMITTED,
+                CreativeRequestStatus.IN_REVIEW,
+                CreativeRequestStatus.IN_PROGRESS,
+              ],
+            },
+          },
+        }).catch(() => 0),
+        prisma.organization.count({
+          where: { orgType: OrgType.CLIENT, status: TenantStatus.AT_RISK },
+        }).catch(() => 0),
+      ]);
+    return {
+      pendingIntakes,
+      activeBuilds,
+      openCreative,
+      atRiskTenants,
+      unreadMessages: 0,
+    } as Record<string, number>;
+  },
+  ["admin-nav-badges"],
+  { revalidate: 60, tags: ["admin-nav-badges"] }
+);
+
 export default async function AdminLayout({
   children,
 }: {
@@ -30,9 +81,7 @@ export default async function AdminLayout({
     redirect("/portal");
   }
 
-  // TODO(Sprint 04): nav badges for pending intakes, at-risk tenants,
-  // unresolved creative requests, and impersonation banner.
-  const navBadges: Record<string, number> = {};
+  const navBadges = await getAdminNavBadges();
 
   return (
     <div className="flex min-h-screen bg-cream">
