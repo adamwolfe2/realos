@@ -1,0 +1,174 @@
+@import "tailwindcss";
+
+/* Mobile device support */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* Safe area insets for notched iPhones */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Minimum touch targets */
+@media (pointer: coarse) {
+  button, [role="button"], a, input[type="checkbox"], input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+@theme {
+  --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono",
+    Menlo, Consolas, monospace;
+
+  /* ── Core palette (4 colors = 95% of all usage) ──────────────────────── */
+  --color-ink: #0A0A0A;
+  --color-cream: #F9F7F4;
+  --color-sand: #C8C0B4;
+  --color-shell: #E5E1DB;
+
+  /* ── Variants ─────────────────────────────────────────────────────── */
+  --color-ink-dark: #1A1614;
+  --color-cream-hover: #F0EDE8;
+  --color-gold-light: #FEF3C7;
+  --color-gold-wash: #FFFBEB;
+  --color-sky: #4A90D9;
+
+  /* ── Brand / accent ──────────────────────────────────────────────────── */
+  --color-brand: #2A52BE;
+  --color-gold: #B8860B;
+
+  /* ── State colors ────────────────────────────────────────────────────── */
+  --color-error: #dc2626;
+  --color-success: #059669;
+  --color-success-light: #16a34a;
+}
+
+:root {
+  /* Backgrounds */
+  --bg-primary: #F9F7F4;
+  --bg-white: #FFFFFF;
+  --bg-blue: #1B3A6B;
+  --bg-blue-dark: #112649;
+
+  /* Text */
+  --text-headline: #0F1523;
+  --text-body: #3D4556;
+  --text-muted: #8B92A5;
+  --text-on-blue: #FFFFFF;
+
+  /* Accent / Brand Blue */
+  --blue: #2A52BE;
+  --blue-hover: #1B3A6B;
+  --blue-light: #EEF2FB;
+  --blue-border: #C5D0E8;
+
+  /* Neutrals */
+  --border: #E2DDD6;
+  --border-strong: #C8C3BB;
+}
+
+/* ── Selection ──────────────────────────────────────────────────────────── */
+::selection {
+  background: var(--blue);
+  color: white;
+}
+
+/* ── Custom scrollbar ───────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border: 2px solid var(--bg-primary);
+}
+
+/* ── Brand utility classes ─────────────────────────────────────────────── */
+.btn-blue {
+  background-color: var(--blue);
+  color: white;
+  transition: background-color 0.15s ease;
+}
+.btn-blue:hover {
+  background-color: var(--blue-hover);
+}
+
+.link-body {
+  color: var(--text-body);
+  transition: color 0.15s ease;
+}
+.link-body:hover {
+  color: var(--blue);
+}
+
+.btn-outline {
+  border: 1px solid var(--border-strong);
+  color: var(--text-headline);
+  transition: border-color 0.15s ease;
+}
+.btn-outline:hover {
+  border-color: var(--text-headline);
+}
+
+.btn-outline-white {
+  border: 1px solid rgba(255,255,255,0.3);
+  color: rgba(255,255,255,0.8);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.btn-outline-white:hover {
+  border-color: white;
+  color: white;
+}
+
+/* ── Focus styles ──────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+/* ── Blog CTA block (rendered inside prose article body) ───────────── */
+.prose .cta-block {
+  border: 1px solid var(--border-strong);
+  background-color: var(--bg-white);
+  padding: 2rem;
+  margin: 2.5rem 0;
+  border-radius: 0;
+}
+.prose .cta-block h3 {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  font-weight: 400;
+  color: var(--text-headline);
+  margin: 0 0 0.5rem;
+}
+.prose .cta-block p {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  line-height: 1.7;
+  color: var(--text-body);
+  margin: 0 0 1.25rem;
+}
+.prose .cta-block a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: white;
+  background-color: var(--blue);
+  padding: 10px 20px;
+  text-decoration: none;
+  transition: background-color 0.15s ease;
+}
+.prose .cta-block a:hover {
+  background-color: var(--blue-hover);
+}

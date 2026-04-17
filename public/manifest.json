@@ -1,0 +1,19 @@
+{
+  "name": "Wholesail Portal",
+  "short_name": "Wholesail",
+  "description": "Wholesail — B2B wholesale ordering portal for distribution companies",
+  "start_url": "/client-portal/dashboard",
+  "display": "standalone",
+  "background_color": "#F9F7F4",
+  "theme_color": "#2A52BE",
+  "orientation": "portrait-primary",
+  "icons": [
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "categories": ["business", "shopping", "productivity"],
+  "shortcuts": [
+    { "name": "New Order", "url": "/catalog", "description": "Browse catalog and order" },
+    { "name": "Dashboard", "url": "/client-portal/dashboard", "description": "View your account" }
+  ]
+}

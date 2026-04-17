@@ -1,0 +1,4 @@
+name,price,unit,category,sku,description,minimum_order,cold_chain,market_rate,prepay_required,available
+"Fresh Black Winter Truffles",89.99,"per oz","Truffles","TBGC-TRUF-WINTER","Premium Périgord truffles","2 oz minimum","yes","yes","no","yes"
+"Kaluga Hybrid Caviar",125.00,"per 30g","Caviar","TBGC-CAV-KALUGA","Large golden pearls with buttery finish","","yes","no","no","yes"
+"Black Truffle Butter",24.99,"per 8oz","Truffle Butters","TBGC-BUTTER-BLK","French butter infused with black truffles","","yes","no","no","yes"
