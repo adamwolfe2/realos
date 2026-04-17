@@ -581,12 +581,21 @@ model Lead {
   lastActivityAt  DateTime     @default(now())
   convertedAt     DateTime?                                       // When they signed
 
+  // Email cadence state, added Sprint 10
+  unsubscribedFromEmails Boolean  @default(false)
+  unsubscribedAt       DateTime?
+  lastEmailSentAt      DateTime?
+  nextScheduledEmailAt DateTime?
+  emailsSent           Int      @default(0)
+  cadenceStage         String?                                       // day_one_sent, day_three_sent, ...
+
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
 
   @@index([orgId, status])
   @@index([orgId, source])
   @@index([email])
+  @@index([cadenceStage])
   @@index([propertyId])
 }
 
