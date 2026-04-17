@@ -182,3 +182,66 @@ wildcard DNS + custom-domain onboarding ritual.
   impersonation; flagged as "run after first deploy".
 
 ---
+
+## Sprint 03, Intake Wizard (Real Estate)
+
+**Shipped.** Four-step intake wizard at `/onboarding` with draft persistence,
+validation, mobile layout, and Cal.com booking. `components/intake/`:
+`types.ts`, `constants.ts`, `field.tsx`, `option-button.tsx`, `cal-embed.tsx`,
+`index.tsx` wizard shell, plus `step-company.tsx`, `step-portfolio.tsx`,
+`step-services.tsx`, `step-booking.tsx`. `/api/onboarding` POST handler
+(Zod-validated, IP rate-limited via `publicSignupLimiter`): creates
+`IntakeSubmission`, fires Slack alert, sends confirmation to the contact,
+sends internal agency alert. `lib/email/onboarding-emails.ts` rebuilds the
+Resend transactional templates for real estate (`sendIntakeReceivedEmail`,
+`notifyAgencyOfIntake`). `/api/admin/intakes/[id]/convert` calls
+`provisionTenant()` from Sprint 02 to promote a submission into a tenant
+Organization. `app/onboarding/page.tsx` renders the wizard.
+
+**Deferred with TODO comments.**
+- Email templates stay thin for now; Sprint 10 expands the full onboarding
+  drip (consultation-booked, proposal-sent, contract-signed, launched).
+- Admin intake queue (view/review/convert UI) is Sprint 04.
+- Step 3 (module selection) doesn't yet try to enforce module combos
+  (e.g., "SEO requires Website"); pricing + bundling gets finalized on the
+  consultation call per PRD.
+
+**DECISION comments worth flagging.**
+- The wizard submits at step 3 (services) so the booking step can render
+  the Cal.com embed prefilled with the contact's name + email, same pattern
+  as Wholesail. `IntakeSubmission.bookedCallAt` is populated later via the
+  Cal webhook (`/api/intake/[id]/cal-booked`, wired up in Sprint 01).
+- Draft persistence uses a version-prefixed localStorage key
+  (`realos.intake.v1`) so we can bump the schema without stale drafts
+  leaking into a new form shape.
+- `CalFunction` + `Window` are already declared globally in
+  `types/vendor.d.ts`; the intake embed re-uses those rather than
+  redeclaring (redeclaration triggers TS2717 / TS2719).
+- Convert endpoint re-computes module flags from `selectedModules` but
+  always force-enables `website` + `leadCapture` since those are
+  always-on for every real-estate tenant.
+
+**Wholesail adaptations heavier than expected.**
+- The Wholesail wizard used `portalConfig.calNamespace` + `portalConfig.contactEmail`
+  for brand context. Those got rewired to read `NEXT_PUBLIC_CAL_NAMESPACE`,
+  `NEXT_PUBLIC_CAL_LINK`, and `BRAND_EMAIL` directly to keep the intake
+  surface self-contained ahead of the portal-config shim removal.
+- The Wholesail intake schema had distribution-specific fields (SKU count,
+  cold chain, payment terms, industry). Replaced with property type,
+  portfolio size, current backend, current vendor, pain point.
+
+**Env vars used this sprint.**
+- `NEXT_PUBLIC_CAL_LINK`, `NEXT_PUBLIC_CAL_NAMESPACE` (already stubbed).
+- `AGENCY_ADMIN_EMAIL` (already stubbed). Powers the internal intake email.
+- `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (stubbed). Intake confirmation +
+  internal alert are no-ops until real Resend creds are set; the handler
+  logs and continues.
+
+**Verification.**
+- `pnpm type-check`: pass (0 errors).
+- `pnpm build`: pass, 31 routes generated (added `/onboarding`,
+  `/api/onboarding`, `/api/admin/intakes/[id]/convert`).
+- End-to-end submit requires a live DB + Resend + Slack + Cal webhook to
+  fully exercise; flagged as "run after first deploy".
+
+---
