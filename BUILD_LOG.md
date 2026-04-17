@@ -324,3 +324,102 @@ Organization. `app/onboarding/page.tsx` renders the wizard.
   deploy".
 
 ---
+
+## Sprint 05, Client Portal Foundation
+
+**Shipped.** The client portal is wired up end-to-end.
+- `app/portal/layout.tsx` — full shell with `PortalNav` (module-gated),
+  impersonation banner on every sub-route, tenant brand header.
+- `components/portal/portal-nav.tsx` — 10 nav items that only render when
+  the tenant's module flag is on (pixel/chatbot/ads/creative/site-builder).
+- `app/portal/page.tsx` — dashboard with 7 metric tiles, 7-stage leads
+  funnel visual, and recent-leads rail (every query goes through
+  `tenantWhere(scope)`).
+- `app/portal/properties/page.tsx` + `[id]/page.tsx` — property list
+  with listing/lead/tour counts, property detail with full listings
+  table.
+- `app/portal/leads/page.tsx` — filterable 10-column Kanban.
+- `app/portal/leads/[id]/page.tsx` — lead detail with status change form,
+  preferences, tours, applications, conversations, and notes thread.
+- `app/portal/site-builder/page.tsx` + `site-builder-form.tsx` — the
+  full TenantSiteConfig editor (hero, CTA, SEO, section toggles,
+  chatbot config, exit-intent copy, pixel toggle). Saves via PATCH and
+  revalidates the tenant site layout.
+- `app/portal/settings/page.tsx` + `settings-form.tsx` — company info,
+  HQ address, brand tokens, active modules read-out, team roster.
+- `app/portal/billing/page.tsx` + `billing-portal-button.tsx` — MRR and
+  ad-spend roll-ups, opens Stripe Customer Portal session via
+  `/api/tenant/billing`.
+- `app/portal/campaigns/page.tsx` — read-only ad campaign table.
+- Stub pages for `/portal/visitors` (Sprint 08), `/conversations`
+  (Sprint 09), `/creative` (Sprint 11) with explicit sprint markers.
+- Tenant API layer (`/api/tenant/*`):
+  - `leads` (GET list + POST create)
+  - `leads/[id]` (GET + PATCH)
+  - `leads/[id]/status` (POST, writes audit row)
+  - `leads/[id]/notes` (POST, stores on ClientNote with LEAD_INTERACTION
+    type and embedded `[lead:<id>]` tag)
+  - `site-config` (PATCH upsert + revalidate tenant surface)
+  - `settings` (PATCH on Organization, client-safe fields only)
+  - `billing` (POST, returns Stripe Customer Portal URL)
+- `components/portal/lead-kanban.tsx` — card-per-lead with inline status
+  change dropdown; client-side optimistic move, rolls back on failure.
+
+**Deferred with TODO comments.**
+- Client-side invite/team management deferred to Sprint 10 (today Clerk
+  dashboard handles invites).
+- Property edit (photos, amenities, description) deferred; agency seeds
+  those during onboarding. v1 intentionally read-only for clients per PRD.
+- Chatbot avatar/ad-platform asset uploads fall back to URL inputs
+  because `lib/uploads.ts` wasn't audited for multi-tenant Blob usage
+  yet. Sprint 11 hooks Blob into the creative studio and the site
+  builder can adopt the same pattern then.
+- Lead notes intentionally live on `ClientNote` with a
+  `[lead:<id>]` prefix rather than creating a dedicated `LeadNote` model.
+  If we add lead-level threads in v2, migrate then.
+
+**DECISION comments worth flagging.**
+- `requireScope()` (not `requireClient()`) is the gate for every portal
+  page and `/api/tenant/*` route. This is deliberate: agency users
+  *impersonating* a client have `orgType = CLIENT` in their effective
+  scope, so `requireScope` accepts both natural clients and agency
+  impersonators. `requireClient` gets reserved for "true" client-only
+  enforcement (none in Sprint 05).
+- `tenantWhere(scope)` is used on every Prisma query in the portal. No
+  exceptions. Code-review gate for every future tenant-scoped query.
+- Nav items hide-by-module: chatbot entry only appears when
+  `org.moduleChatbot` is true, etc. Keeps the UI honest instead of
+  rendering empty surfaces. Site-builder also hides when
+  `bringYourOwnSite` is true.
+- `site-config` `upsert` uses `TenantSiteConfigUncheckedCreateInput` with
+  `orgId` appended after the data spread. Prisma 7 types require the
+  unchecked variant when passing a scalar FK without a nested
+  `org.connect`.
+- Lead notes include the lead id inside the body (`[lead:<id>]`) so we
+  can filter `ClientNote` without growing the schema for a dedicated
+  note-on-lead relation. Accepted DB tradeoff.
+- Billing portal redirect requires both `Organization.stripeCustomerId`
+  and a configured Stripe client. Both fail closed with explanatory
+  messages the client can act on.
+
+**Wholesail adaptations heavier than expected.**
+- Wholesail's client portal catalog/orders/invoices/carts pages were
+  already deleted in Sprint 01, so there was nothing to "fork" for the
+  real-estate portal. The nav, layout shell, and component conventions
+  were the only artifacts reused; everything else is net-new.
+
+**Env vars used this sprint.**
+- `STRIPE_SECRET_KEY` required for `/api/tenant/billing` to actually
+  return a portal URL. Still a placeholder; replace before live deploy.
+- `NEXT_PUBLIC_APP_URL` for Stripe return URL.
+
+**Verification.**
+- `pnpm type-check`: pass (0 errors).
+- `pnpm build`: pass, 51 routes generated (portal dashboard, properties,
+  leads, site-builder, settings, billing, campaigns + stubs +
+  `/api/tenant/*` suite).
+- Manual smoke requires live DB + Clerk + Stripe to exercise the Kanban
+  moves, settings save, and billing portal flow. Flagged as "run after
+  first deploy".
+
+---

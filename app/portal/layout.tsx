@@ -5,6 +5,7 @@ import { UserButton } from "@clerk/nextjs";
 import { getScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { BRAND_NAME } from "@/lib/brand";
+import { PortalNav } from "@/components/portal/portal-nav";
 
 export const metadata: Metadata = {
   title: { template: `%s | ${BRAND_NAME} Portal`, default: `${BRAND_NAME} Portal` },
@@ -13,15 +14,9 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-// ---------------------------------------------------------------------------
-// Client portal shell.
-// - Requires authentication (middleware redirects unauthenticated visitors
-//   to /sign-in before this layout runs).
-// - Agency impersonators land here via requireAgency() + startImpersonation();
-//   the layout surfaces an "Impersonating {org}" banner so we never forget.
-// - Portal-specific nav + structure is filled in by Sprint 05.
-// ---------------------------------------------------------------------------
-
+// Client portal shell. Middleware gates /portal/* so unauthenticated visitors
+// redirect to /sign-in before this renders. When an agency user impersonates a
+// client, the banner stays visible across every sub-route.
 export default async function PortalLayout({
   children,
 }: {
@@ -30,28 +25,43 @@ export default async function PortalLayout({
   const scope = await getScope();
   if (!scope) redirect("/sign-in");
 
-  // Pull the effective org so we can brand the shell.
-  const org = await prisma.organization.findUnique({
-    where: { id: scope.orgId },
-    select: { id: true, name: true, slug: true, orgType: true, logoUrl: true },
-  });
-
   // Agency users without an impersonation target shouldn't see the portal.
-  // Redirect them to /admin so they don't get confused.
   if (scope.isAgency && !scope.isImpersonating) {
     redirect("/admin");
   }
 
+  const org = await prisma.organization.findUnique({
+    where: { id: scope.orgId },
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      orgType: true,
+      logoUrl: true,
+      moduleWebsite: true,
+      modulePixel: true,
+      moduleChatbot: true,
+      moduleGoogleAds: true,
+      moduleMetaAds: true,
+      moduleCreativeStudio: true,
+      bringYourOwnSite: true,
+    },
+  });
+
+  if (!org || org.orgType !== "CLIENT") {
+    redirect(scope.isAgency ? "/admin" : "/sign-in");
+  }
+
   return (
-    <div className="min-h-screen flex flex-col bg-cream">
+    <div className="min-h-screen flex flex-col bg-background">
       {scope.isImpersonating ? (
         <div
           role="status"
           className="bg-amber-100 border-b border-amber-300 text-amber-900 text-xs md:text-sm px-4 py-2 flex items-center justify-between gap-3"
         >
           <span>
-            Impersonating {org?.name ?? "tenant"}. Changes are attributed to
-            you in the audit log.
+            Impersonating <strong>{org.name}</strong>. Changes are attributed
+            to you in the audit log.
           </span>
           <form action="/api/admin/impersonate/end" method="post">
             <button
@@ -63,20 +73,22 @@ export default async function PortalLayout({
           </form>
         </div>
       ) : null}
-      <header className="border-b border-shell px-4 md:px-6 py-3 flex items-center justify-between">
+
+      <header className="border-b px-4 md:px-6 py-3 flex items-center justify-between bg-background">
         <div className="flex items-center gap-3">
           <Link href="/portal" className="font-serif font-bold text-lg">
             {BRAND_NAME}
           </Link>
-          {org ? (
-            <span className="hidden md:inline text-xs opacity-60">
-              {org.name}
-            </span>
-          ) : null}
+          <span className="hidden md:inline text-xs opacity-60">
+            {org.name}
+          </span>
         </div>
         <UserButton />
       </header>
-      <main id="main-content" className="flex-1 p-4 md:p-6">
+
+      <PortalNav org={org} />
+
+      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-6">
         {children}
       </main>
     </div>
