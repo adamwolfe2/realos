@@ -31,16 +31,19 @@ export default function AuthRedirectPage() {
         }
         return r.json()
       })
-      .then(({ role }) => {
-        if (role === 'ADMIN' || role === 'OPS' || role === 'SALES_REP') {
+      .then(({ role, orgType }: { role: string | null; orgType: string | null }) => {
+        const agencyRoles = ['AGENCY_OWNER', 'AGENCY_ADMIN', 'AGENCY_OPERATOR']
+        const clientRoles = ['CLIENT_OWNER', 'CLIENT_ADMIN', 'CLIENT_VIEWER', 'LEASING_AGENT']
+
+        if (!role) {
+          setError('no-role')
+          return
+        }
+        if (agencyRoles.includes(role) || orgType === 'AGENCY') {
           router.replace('/admin')
-        } else if (role === 'SUPPLIER') {
-          router.replace('/supplier/dashboard')
-        } else if (role) {
-          router.replace('/client-portal/dashboard')
+        } else if (clientRoles.includes(role) || orgType === 'CLIENT') {
+          router.replace('/portal')
         } else {
-          // User exists in Clerk but no DB record yet — go to homepage
-          // instead of client-portal which requires auth and may loop
           setError('no-role')
         }
       })
