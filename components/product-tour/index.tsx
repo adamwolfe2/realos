@@ -951,7 +951,7 @@ function LeadDrawer({ lead, onClose }: { lead: LeadRow; onClose: () => void }) {
                     style={{
                       width: "22px",
                       height: "22px",
-                      backgroundColor: "rgba(201,100,66,0.12)",
+                      backgroundColor: "rgba(47,111,229,0.12)",
                       color: TOKENS.terracotta,
                       marginTop: "1px",
                     }}
@@ -1421,7 +1421,7 @@ function CreativeTypeIcon({ type }: { type: string }) {
       style={{
         width: "32px",
         height: "32px",
-        backgroundColor: "rgba(201,100,66,0.10)",
+        backgroundColor: "rgba(47,111,229,0.10)",
         color: TOKENS.terracotta,
         borderRadius: "8px",
         fontFamily: "var(--font-display)",

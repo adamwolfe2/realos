@@ -109,12 +109,12 @@ export function PlatformNav() {
             style={{
               minHeight: "36px",
               padding: "8px 16px",
-              backgroundColor: "#c96442",
+              backgroundColor: "#2F6FE5",
               color: "#faf9f5",
               fontSize: "14px",
               fontWeight: 500,
               borderRadius: "10px",
-              boxShadow: "0 0 0 1px #c96442 inset",
+              boxShadow: "0 0 0 1px #2F6FE5 inset",
               transition: "background-color 0.2s ease",
             }}
           >

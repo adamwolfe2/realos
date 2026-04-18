@@ -67,7 +67,7 @@ export function HeroDemo() {
               <span
                 className="block"
                 style={{
-                  color: isActive ? "#c96442" : "#87867f",
+                  color: isActive ? "#2F6FE5" : "#87867f",
                   fontFamily: "var(--font-mono)",
                   fontSize: "10px",
                   letterSpacing: "0.14em",
@@ -91,7 +91,7 @@ export function HeroDemo() {
               {isActive && (
                 <span
                   className="absolute left-0 right-0 bottom-[-1px] h-[2px]"
-                  style={{ backgroundColor: "#c96442" }}
+                  style={{ backgroundColor: "#2F6FE5" }}
                 />
               )}
             </button>
@@ -115,7 +115,7 @@ export function HeroDemo() {
       >
         <span
           className="inline-block h-2 w-2 rounded-full"
-          style={{ backgroundColor: "#c96442" }}
+          style={{ backgroundColor: "#2F6FE5" }}
         />
         <span
           className="flex-1"
@@ -137,7 +137,7 @@ export function HeroDemo() {
               className="block h-[3px] rounded-full"
               style={{
                 width: i === activeIdx ? "24px" : "10px",
-                backgroundColor: i === activeIdx ? "#c96442" : "#d1cfc5",
+                backgroundColor: i === activeIdx ? "#2F6FE5" : "#d1cfc5",
                 transition: "all 0.3s ease",
               }}
             />
@@ -240,7 +240,7 @@ function ImportPane() {
               ) : (
                 <span
                   className="inline-flex items-center gap-1"
-                  style={{ color: "#c96442", fontFamily: "var(--font-mono)", fontSize: "10px" }}
+                  style={{ color: "#2F6FE5", fontFamily: "var(--font-mono)", fontSize: "10px" }}
                 >
                   <Spinner /> Syncing
                 </span>
@@ -308,8 +308,8 @@ function BuildPane() {
             <span
               className="flex items-center justify-center w-8 h-8"
               style={{
-                backgroundColor: "rgba(201,100,66,0.10)",
-                color: "#c96442",
+                backgroundColor: "rgba(47,111,229,0.10)",
+                color: "#2F6FE5",
                 borderRadius: "8px",
                 fontFamily: "var(--font-display)",
                 fontSize: "13px",
@@ -402,8 +402,8 @@ function AttachPane() {
             <span
               className="flex items-center justify-center w-8 h-8 rounded-full"
               style={{
-                backgroundColor: v.kind === "Resolved" ? "rgba(201,100,66,0.12)" : "#f0eee6",
-                color: v.kind === "Resolved" ? "#c96442" : "#87867f",
+                backgroundColor: v.kind === "Resolved" ? "rgba(47,111,229,0.12)" : "#f0eee6",
+                color: v.kind === "Resolved" ? "#2F6FE5" : "#87867f",
                 fontFamily: "var(--font-mono)",
                 fontSize: "10px",
                 fontWeight: 500,
@@ -515,7 +515,7 @@ function LaunchPane() {
                 className="h-full rounded-full"
                 style={{
                   width: `${c.pct}%`,
-                  backgroundColor: "#c96442",
+                  backgroundColor: "#2F6FE5",
                 }}
               />
             </div>
@@ -613,7 +613,7 @@ function Toggle({ on }: { on: boolean }) {
     <span
       className="inline-block w-9 h-5 rounded-full relative"
       style={{
-        backgroundColor: on ? "#c96442" : "#d1cfc5",
+        backgroundColor: on ? "#2F6FE5" : "#d1cfc5",
         transition: "background-color 0.2s ease",
       }}
     >

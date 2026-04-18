@@ -26,7 +26,7 @@ export function FeaturePage({
         <div className="max-w-[920px] mx-auto px-4 md:px-8 pt-24 md:pt-28 pb-16 text-center">
           <p
             style={{
-              color: "#c96442",
+              color: "#2F6FE5",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.18em",
@@ -98,7 +98,7 @@ export function FeaturePage({
               >
                 <span
                   style={{
-                    color: "#c96442",
+                    color: "#2F6FE5",
                     fontFamily: "var(--font-mono)",
                     fontSize: "12px",
                     fontWeight: 500,
@@ -144,8 +144,8 @@ export function FeaturePage({
                   aria-hidden="true"
                   className="inline-flex items-center justify-center flex-shrink-0 mt-1 w-4 h-4 rounded-full"
                   style={{
-                    backgroundColor: "rgba(201,100,66,0.14)",
-                    color: "#c96442",
+                    backgroundColor: "rgba(47,111,229,0.14)",
+                    color: "#2F6FE5",
                   }}
                 >
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">

@@ -57,7 +57,7 @@ function Hero() {
           }}
         >
           Marketing infrastructure{" "}
-          <span style={{ color: "#c96442" }}>that fills units.</span>
+          <span style={{ color: "#2F6FE5" }}>that fills units.</span>
         </h1>
         <p
           className="mx-auto mt-6"
@@ -110,7 +110,7 @@ function ProductTourSection() {
     <section id="product-tour" style={{ backgroundColor: "#f5f4ed" }}>
       <div className="max-w-[1280px] mx-auto px-4 md:px-8 pt-4 pb-20 md:pb-28">
         <div className="text-center mb-8 md:mb-10 max-w-[720px] mx-auto">
-          <p className="eyebrow mb-4" style={{ color: "#c96442" }}>
+          <p className="eyebrow mb-4" style={{ color: "#2F6FE5" }}>
             Interactive preview
           </p>
           <h2 className="heading-section" style={{ color: "#141413" }}>
@@ -355,7 +355,7 @@ function Verticals() {
                     width: "36px",
                     height: "36px",
                     borderRadius: "50%",
-                    color: "#c96442",
+                    color: "#2F6FE5",
                     boxShadow: "0 0 0 1px #e8e6dc",
                   }}
                   aria-hidden="true"

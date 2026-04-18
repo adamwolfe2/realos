@@ -32,9 +32,9 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
   --dark-surface:   #30302e;
 
   /* ── Brand ─────────────────────────────────────────────────────────── */
-  --terracotta:       #c96442;
-  --terracotta-hover: #b4583a;
-  --coral:            #d97757;
+  --terracotta:       #2F6FE5;
+  --terracotta-hover: #2558C4;
+  --coral:            #5B8CE6;
 
   /* ── Warm neutrals ─────────────────────────────────────────────────── */
   --charcoal-warm:  #4d4c48;
@@ -78,7 +78,7 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
   --accent:          var(--terracotta);
   --accent-hover:    var(--terracotta-hover);
   --accent-bright:   var(--terracotta);
-  --accent-wash:     rgba(201, 100, 66, 0.10);
+  --accent-wash:     rgba(47, 111, 229, 0.10);
   --accent-glow:     transparent;
 
   --danger: var(--error);
@@ -139,7 +139,7 @@ body {
 }
 .btn-primary:hover {
   background-color: var(--terracotta-hover);
-  box-shadow: 0 0 0 1px var(--terracotta-hover) inset, 0 4px 14px rgba(201,100,66,0.18);
+  box-shadow: 0 0 0 1px var(--terracotta-hover) inset, 0 4px 14px rgba(47,111,229,0.18);
 }
 
 .btn-secondary {

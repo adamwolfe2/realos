@@ -15,7 +15,7 @@ export default function AboutPage() {
           <p
             className="mb-5"
             style={{
-              color: "#c96442",
+              color: "#2F6FE5",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.18em",
@@ -37,7 +37,7 @@ export default function AboutPage() {
           >
             Infrastructure for the
             <br />
-            <span style={{ color: "#c96442" }}>independent operator.</span>
+            <span style={{ color: "#2F6FE5" }}>independent operator.</span>
           </h1>
           <p
             className="mx-auto mt-6 max-w-[620px]"

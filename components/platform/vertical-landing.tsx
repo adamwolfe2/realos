@@ -27,7 +27,7 @@ export function VerticalLanding({
     <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
       <section style={{ borderBottom: "1px solid #f0eee6" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-24 md:pt-28 pb-16 md:pb-20 text-center">
-          <p className="eyebrow mb-6" style={{ color: "#c96442" }}>
+          <p className="eyebrow mb-6" style={{ color: "#2F6FE5" }}>
             {eyebrow}
           </p>
           <h1
@@ -95,7 +95,7 @@ export function VerticalLanding({
               >
                 <span
                   style={{
-                    color: "#c96442",
+                    color: "#2F6FE5",
                     fontFamily: "var(--font-mono)",
                     fontSize: "11px",
                     letterSpacing: "0.14em",
