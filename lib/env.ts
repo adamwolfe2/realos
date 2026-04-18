@@ -59,13 +59,14 @@ export function validateEnv(): Env {
     const missing = result.error.issues
       .map((i) => `  - ${i.path.join(".")}: ${i.message}`)
       .join("\n");
-    console.error(
-      `\n[env] Missing or invalid environment variables:\n${missing}\n`
+    // DECISION: warn-only. The marketing surface must stay up before Neon,
+    // Clerk, Anthropic, and Stripe land on Vercel. Routes that truly need a
+    // missing key will throw at call time with a more specific error that
+    // tells the operator exactly what to configure. A hard throw here took
+    // the whole domain down including static pages like /sitemap.xml.
+    console.warn(
+      `\n[env] Missing or invalid environment variables (marketing site will render, feature routes may fail):\n${missing}\n`
     );
-    // In production, fail hard. In dev, warn but continue.
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("Missing required environment variables. See logs above.");
-    }
   }
 
   // Warn if KV (rate limiting) is missing in production
