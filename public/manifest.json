@@ -1,19 +1,19 @@
 {
-  "name": "Wholesail Portal",
-  "short_name": "Wholesail",
-  "description": "Wholesail — B2B wholesale ordering portal for distribution companies",
-  "start_url": "/client-portal/dashboard",
+  "name": "RealEstaite",
+  "short_name": "RealEstaite",
+  "description": "Managed marketing infrastructure for real estate operators.",
+  "start_url": "/",
   "display": "standalone",
-  "background_color": "#F9F7F4",
-  "theme_color": "#2A52BE",
+  "background_color": "#FFFFFF",
+  "theme_color": "#3E6AE1",
   "orientation": "portrait-primary",
   "icons": [
     { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" },
     { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png" }
   ],
-  "categories": ["business", "shopping", "productivity"],
+  "categories": ["business", "productivity"],
   "shortcuts": [
-    { "name": "New Order", "url": "/catalog", "description": "Browse catalog and order" },
-    { "name": "Dashboard", "url": "/client-portal/dashboard", "description": "View your account" }
+    { "name": "Book a demo", "url": "/onboarding", "description": "Talk to us" },
+    { "name": "Sign in", "url": "/sign-in", "description": "Access your portal" }
   ]
 }

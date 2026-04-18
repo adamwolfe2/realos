@@ -1,35 +1,59 @@
 import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
 import type { Metadata } from "next";
+import { BRAND_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = {
-  title: "Create Account | Partner Portal",
-  description: "Create your wholesale partner account.",
+  title: `Create account | ${BRAND_NAME}`,
+  description: `Create your ${BRAND_NAME} account.`,
 };
 
 export default function SignUpPage() {
   return (
-    <div className="min-h-screen bg-cream flex flex-col">
-      {/* Header */}
-      <header className="border-b border-shell px-6 py-4">
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ backgroundColor: "#FFFFFF" }}
+    >
+      <header
+        className="px-6 py-4"
+        style={{ borderBottom: "1px solid #EEEEEE" }}
+      >
         <Link
           href="/"
-          className="font-serif font-bold text-xl text-ink tracking-tight hover:opacity-70 transition-opacity"
+          className="inline-flex items-center hover:opacity-80 transition-opacity"
+          style={{
+            color: "#171A20",
+            fontFamily: "var(--font-sans)",
+            fontSize: "17px",
+            fontWeight: 500,
+          }}
         >
-          Wholesail
+          {BRAND_NAME}
         </Link>
       </header>
 
-      {/* Main */}
       <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          {/* Heading */}
           <div className="mb-8 text-center">
-            <h1 className="font-serif text-3xl font-normal text-ink mb-2">
-              Create Account
+            <h1
+              className="mb-2"
+              style={{
+                color: "#171A20",
+                fontFamily: "var(--font-sans)",
+                fontSize: "28px",
+                fontWeight: 500,
+              }}
+            >
+              Create account
             </h1>
-            <p className="text-sm text-ink/50">
-              Set up your wholesale partner account to start ordering.
+            <p
+              style={{
+                color: "#5C5E62",
+                fontFamily: "var(--font-sans)",
+                fontSize: "14px",
+              }}
+            >
+              Set up your operator account.
             </p>
           </div>
 
@@ -43,41 +67,44 @@ export default function SignUpPage() {
               },
               elements: {
                 rootBox: "w-full",
-                card: "w-full shadow-none border border-shell bg-white rounded-none p-6",
+                card: "w-full shadow-none border border-[#EEEEEE] bg-white rounded-md p-6",
                 headerTitle: "hidden",
                 headerSubtitle: "hidden",
                 socialButtonsBlockButton:
-                  "border border-shell bg-white hover:bg-cream text-ink text-sm font-normal rounded-none h-10 transition-colors",
-                dividerLine: "bg-shell",
-                dividerText: "text-ink/40 text-xs",
-                formFieldLabel: "text-xs font-medium text-ink/70 mb-1",
+                  "border border-[#EEEEEE] bg-white hover:bg-[#F4F4F4] text-[#171A20] text-sm font-medium rounded-md h-10 transition-colors",
+                dividerLine: "bg-[#EEEEEE]",
+                dividerText: "text-[#8E8E8E] text-xs",
+                formFieldLabel: "text-xs font-medium text-[#393C41] mb-1",
                 formFieldInput:
-                  "border border-shell bg-white focus:border-ink focus:ring-0 rounded-none h-10 text-sm text-ink placeholder:text-ink/30",
+                  "border border-[#EEEEEE] bg-white focus:border-[#3E6AE1] focus:ring-0 rounded-md h-10 text-sm text-[#171A20] placeholder:text-[#8E8E8E]",
                 formButtonPrimary:
-                  "bg-ink hover:bg-ink/80 text-cream rounded-none h-10 text-sm font-medium transition-colors",
-                footerActionLink: "text-ink underline underline-offset-2 hover:opacity-70",
-                identityPreviewEditButton: "text-ink underline underline-offset-2",
-                otpCodeFieldInput: "border border-shell rounded-none text-ink",
+                  "bg-[#3E6AE1] hover:bg-[#3457C8] text-white rounded-md h-10 text-sm font-medium transition-colors",
+                footerActionLink:
+                  "text-[#3E6AE1] hover:text-[#3457C8] underline underline-offset-2",
+                identityPreviewEditButton:
+                  "text-[#3E6AE1] underline underline-offset-2",
+                otpCodeFieldInput: "border border-[#EEEEEE] rounded-md text-[#171A20]",
                 alertText: "text-sm",
-                formFieldErrorText: "text-xs text-red-600",
+                formFieldErrorText: "text-xs text-[#b53333]",
               },
             }}
           />
-
-          {/* Footer */}
-          <p className="mt-6 text-center text-xs text-ink/40">
-            Need wholesale access first?{" "}
-            <Link href="/partner" className="text-ink underline underline-offset-2 hover:opacity-70">
-              Apply here
-            </Link>
-          </p>
         </div>
       </div>
 
-      {/* Bottom strip */}
-      <footer className="border-t border-shell px-6 py-3">
-        <p className="text-[11px] text-ink/30 text-center">
-          Wholesail &mdash; Wholesale Portal
+      <footer
+        className="px-6 py-3"
+        style={{ borderTop: "1px solid #EEEEEE" }}
+      >
+        <p
+          className="text-center"
+          style={{
+            color: "#8E8E8E",
+            fontFamily: "var(--font-sans)",
+            fontSize: "11px",
+          }}
+        >
+          &copy; {new Date().getFullYear()} {BRAND_NAME}
         </p>
       </footer>
     </div>

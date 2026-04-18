@@ -1,24 +1,16 @@
 import Link from "next/link";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { MARKETING } from "@/lib/copy/marketing";
 import { BRAND_NAME } from "@/lib/brand";
 import { HeroDemo } from "@/components/platform/hero-demo";
 
 // ---------------------------------------------------------------------------
-// Tesla-inspired homepage.
+// Claude-inspired homepage.
 //
-// Composition principles per the DESIGN.md:
-//   - Full-viewport sections. One message per screen.
-//   - Photography carries the emotion. UI chrome is almost zero.
-//   - One blue (#3E6AE1). Two type weights (400/500). No shadows.
-//   - 4px radii, 0.33s transitions, no gradients on UI elements.
-//   - Gallery of full-bleed category cards (the Tesla "Sport Sedan" pattern)
-//     repurposed as the vertical showcase.
-//
-// The interactive demo card still exists, but it now lives in its own
-// white-canvas showcase section below the hero, framed like a product
-// showroom piece rather than buried in the hero layout.
+// Editorial pacing, warm parchment canvas, Fraunces serif headlines, Inter
+// sans for body/UI. Terracotta reserved for primary CTAs and brand accents.
+// No stock photos. No named competitors. No named reference customers.
+// The interactive product demo is the hero centerpiece.
 // ---------------------------------------------------------------------------
 
 export const metadata: Metadata = {
@@ -28,11 +20,11 @@ export const metadata: Metadata = {
 
 export default function PlatformHome() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#393C41" }}>
+    <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
       <Hero />
-      <VerticalGallery />
       <Numbers />
-      <PlatformShowcase />
+      <Modules />
+      <Verticals />
       <Proof />
       <FinalCta />
     </div>
@@ -40,349 +32,154 @@ export default function PlatformHome() {
 }
 
 // ---------------------------------------------------------------------------
-// HERO - full-viewport cinematic
+// HERO - editorial layout with the interactive product demo on the right
 // ---------------------------------------------------------------------------
 
 function Hero() {
   return (
     <section
-      className="relative w-full"
+      className="relative overflow-hidden"
       style={{
-        height: "100vh",
-        minHeight: "640px",
-        marginTop: "-56px",
+        backgroundColor: "#f5f4ed",
+        borderBottom: "1px solid #f0eee6",
       }}
     >
-      <Image
-        src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2400&q=85"
-        alt=""
-        fill
-        priority
-        sizes="100vw"
-        style={{ objectFit: "cover", objectPosition: "center" }}
-      />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(23,26,32,0.35) 0%, rgba(23,26,32,0.15) 40%, rgba(23,26,32,0.55) 100%)",
-        }}
-        aria-hidden="true"
-      />
-
-      <div className="relative z-10 h-full flex flex-col">
-        <div className="flex-1 flex items-center">
-          <div className="w-full max-w-[1400px] mx-auto px-4 md:px-8 text-center pt-16">
-            <h1
-              style={{
-                color: "#FFFFFF",
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(36px, 5.2vw, 56px)",
-                fontWeight: 500,
-                lineHeight: 1.14,
-                letterSpacing: "normal",
-              }}
-            >
-              Marketing infrastructure
-              <br />
-              for real estate operators
-            </h1>
-            <p
-              className="mx-auto mt-5 max-w-[560px]"
-              style={{
-                color: "rgba(255,255,255,0.88)",
-                fontFamily: "var(--font-sans)",
-                fontSize: "15px",
-                fontWeight: 400,
-                lineHeight: 1.5,
-              }}
-            >
-              One managed platform. Custom site, live listings, identity pixel,
-              AI chatbot, managed ads. Launched in under 14 days.
-            </p>
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-20 md:pt-28 pb-16 md:pb-24 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+        <div className="lg:col-span-5">
+          <p className="eyebrow mb-6">For real estate operators</p>
+          <h1 className="display-hero" style={{ color: "#141413" }}>
+            Marketing infrastructure{" "}
+            <span style={{ color: "#c96442" }}>that fills units.</span>
+          </h1>
+          <p
+            className="mt-6 max-w-xl"
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: "18px",
+              lineHeight: 1.6,
+              color: "#5e5d59",
+              fontWeight: 400,
+            }}
+          >
+            One managed platform replaces the five tools you&apos;re stitching
+            together today. A custom site on your domain, live listings, an
+            identity pixel, an AI chatbot, and a CRM that actually closes the
+            loop.
+          </p>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <Link href="/onboarding" className="btn-primary">
+              Book a demo
+            </Link>
+            <Link href="/pricing" className="btn-secondary">
+              See pricing
+            </Link>
+          </div>
+          <div
+            className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3"
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: "13px",
+              color: "#87867f",
+            }}
+          >
+            <ProofLine value="14 days" label="From first call to live" />
+            <span
+              className="hidden sm:inline-block w-px h-4"
+              style={{ backgroundColor: "#e8e6dc" }}
+              aria-hidden="true"
+            />
+            <ProofLine value="$1,497" label="From, monthly retainer" />
+            <span
+              className="hidden sm:inline-block w-px h-4"
+              style={{ backgroundColor: "#e8e6dc" }}
+              aria-hidden="true"
+            />
+            <ProofLine value="Zero" label="Setup fees, zero contracts" />
           </div>
         </div>
 
-        <div className="pb-16 md:pb-20">
-          <div className="max-w-[1400px] mx-auto px-4 md:px-8">
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href="/onboarding" className="btn-primary">
-                Book a demo
-              </Link>
-              <Link href="/pricing" className="btn-secondary-dark">
-                See pricing
-              </Link>
-            </div>
-
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-12 gap-y-4">
-              <HeroStat value="<14 days" label="First call to live site" />
-              <HeroStat value="$1,497" label="From, per month, one retainer" />
-              <HeroStat value="0" label="Setup fees" />
-            </div>
-          </div>
-        </div>
-
-        <button
-          type="button"
-          aria-hidden="true"
-          className="absolute left-1/2 -translate-x-1/2 bottom-6 flex items-center justify-center"
-          style={{
-            width: "32px",
-            height: "32px",
-            borderRadius: "50%",
-            background: "rgba(255,255,255,0.15)",
-            color: "#FFFFFF",
-            backdropFilter: "blur(6px)",
-          }}
-          tabIndex={-1}
-        >
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-          </svg>
-        </button>
+        <aside className="lg:col-span-7">
+          <HeroDemo />
+        </aside>
       </div>
     </section>
   );
 }
 
-function HeroStat({ value, label }: { value: string; label: string }) {
+function ProofLine({ value, label }: { value: string; label: string }) {
   return (
-    <div className="text-center">
-      <p
+    <div className="flex items-baseline gap-2">
+      <span
         style={{
-          color: "#FFFFFF",
+          color: "#141413",
           fontFamily: "var(--font-display)",
-          fontSize: "22px",
+          fontSize: "18px",
           fontWeight: 500,
-          lineHeight: 1.1,
         }}
       >
         {value}
-      </p>
-      <p
-        className="mt-1"
-        style={{
-          color: "rgba(255,255,255,0.75)",
-          fontFamily: "var(--font-sans)",
-          fontSize: "12px",
-          fontWeight: 400,
-        }}
-      >
-        {label}
-      </p>
+      </span>
+      <span style={{ color: "#87867f", fontSize: "12px" }}>{label}</span>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// VERTICAL GALLERY - Tesla "Sport Sedan / Midsize SUV" cards
-// ---------------------------------------------------------------------------
-
-const VERTICALS: Array<{
-  href: string;
-  label: string;
-  tag: string;
-  image: string;
-  span: "lg" | "sm";
-}> = [
-  {
-    href: "/student-housing",
-    label: "Student housing",
-    tag: "Live today, our wedge vertical",
-    image:
-      "https://images.unsplash.com/photo-1562774053-701939374585?auto=format&fit=crop&w=2000&q=85",
-    span: "lg",
-  },
-  {
-    href: "/multifamily",
-    label: "Multifamily",
-    tag: "Portfolio rollups, per-property pools",
-    image:
-      "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=2000&q=85",
-    span: "lg",
-  },
-  {
-    href: "/senior-living",
-    label: "Senior living",
-    tag: "Family-first, patient nurture",
-    image:
-      "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=2000&q=85",
-    span: "sm",
-  },
-  {
-    href: "/commercial",
-    label: "Commercial",
-    tag: "Office, industrial, retail. Q3 2026",
-    image:
-      "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?auto=format&fit=crop&w=2000&q=85",
-    span: "sm",
-  },
-];
-
-function VerticalGallery() {
-  return (
-    <section style={{ backgroundColor: "#FFFFFF" }}>
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-20 md:py-28">
-        <div className="text-center mb-10 md:mb-14">
-          <h2 className="heading-section" style={{ color: "#171A20" }}>
-            Same platform, tailored by vertical.
-          </h2>
-          <p
-            className="mt-3 mx-auto max-w-[520px] body-default"
-            style={{ color: "#393C41" }}
-          >
-            Four verticals, same modules. Different onboarding playbook,
-            different ad creative library, different compliance guardrails.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {VERTICALS.map((v) => (
-            <VerticalCard key={v.href} {...v} />
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function VerticalCard({
-  href,
-  label,
-  tag,
-  image,
-}: {
-  href: string;
-  label: string;
-  tag: string;
-  image: string;
-}) {
-  return (
-    <Link
-      href={href}
-      className="group relative block overflow-hidden"
-      style={{
-        borderRadius: "12px",
-        aspectRatio: "16 / 10",
-        backgroundColor: "#171A20",
-      }}
-    >
-      <Image
-        src={image}
-        alt=""
-        fill
-        sizes="(min-width: 768px) 50vw, 100vw"
-        style={{
-          objectFit: "cover",
-          objectPosition: "center",
-          transition: "transform 0.6s cubic-bezier(0.5, 0, 0, 0.75)",
-        }}
-        className="group-hover:scale-[1.03]"
-      />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(23,26,32,0.2) 0%, rgba(23,26,32,0.05) 40%, rgba(23,26,32,0.7) 100%)",
-        }}
-        aria-hidden="true"
-      />
-      <div className="absolute inset-0 p-6 md:p-8 flex flex-col justify-between">
-        <div>
-          <p
-            style={{
-              color: "#FFFFFF",
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(22px, 2.8vw, 30px)",
-              fontWeight: 500,
-              lineHeight: 1.15,
-            }}
-          >
-            {label}
-          </p>
-          <p
-            className="mt-2"
-            style={{
-              color: "rgba(255,255,255,0.8)",
-              fontFamily: "var(--font-sans)",
-              fontSize: "13px",
-              fontWeight: 400,
-            }}
-          >
-            {tag}
-          </p>
-        </div>
-        <div className="flex items-center justify-end gap-4">
-          <span
-            className="inline-flex items-center justify-center rounded-[4px]"
-            style={{
-              minHeight: "32px",
-              padding: "0 14px",
-              background: "rgba(255,255,255,0.9)",
-              color: "#171A20",
-              fontSize: "13px",
-              fontWeight: 500,
-            }}
-          >
-            Learn
-          </span>
-          <span
-            className="inline-flex items-center justify-center rounded-[4px]"
-            style={{
-              minHeight: "32px",
-              padding: "0 14px",
-              background: "rgba(23,26,32,0.6)",
-              color: "#FFFFFF",
-              fontSize: "13px",
-              fontWeight: 500,
-            }}
-          >
-            Book a demo
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// NUMBERS - minimal, centered, single row
+// NUMBERS - four big stats, Claude editorial treatment
 // ---------------------------------------------------------------------------
 
 const METRICS = [
-  { value: "<14d",  label: "First call to live site" },
-  { value: "95%",   label: "Visitors named, not just form-fillers" },
-  { value: "$1,100",label: "Retainer delta vs Conversion Logix" },
-  { value: "48h",   label: "Creative turnaround on every asset" },
+  {
+    value: "One",
+    label: "Platform replaces five-plus vendors: site, chatbot, ads, CRM, creative.",
+  },
+  {
+    value: "95%",
+    label: "Of site visitors named and routed to nurture, not just form-fillers.",
+  },
+  {
+    value: "48h",
+    label: "Turnaround on every managed creative asset: ads, landing blocks, emails.",
+  },
+  {
+    value: "2 wks",
+    label: "From intake call to a custom site live on your domain with full stack.",
+  },
 ];
 
 function Numbers() {
   return (
-    <section style={{ backgroundColor: "#F4F4F4" }}>
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-20 md:py-24">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4">
-          {METRICS.map((m) => (
-            <div key={m.value} className="text-center">
+    <section style={{ backgroundColor: "#faf9f5" }}>
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
+        <p className="eyebrow mb-10 text-center">The numbers we hit</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-4">
+          {METRICS.map((m, i) => (
+            <div
+              key={m.value}
+              className="px-0 lg:px-6 text-center lg:text-left"
+              style={{
+                borderLeft: i > 0 ? "1px solid #f0eee6" : "none",
+              }}
+            >
               <p
                 style={{
-                  color: "#171A20",
+                  color: "#141413",
                   fontFamily: "var(--font-display)",
-                  fontSize: "clamp(40px, 5.2vw, 64px)",
+                  fontSize: "clamp(40px, 5.2vw, 56px)",
                   fontWeight: 500,
-                  lineHeight: 1.04,
-                  letterSpacing: "normal",
+                  lineHeight: 1.05,
+                  letterSpacing: "-0.005em",
                 }}
               >
                 {m.value}
               </p>
               <p
-                className="mt-3 mx-auto max-w-[220px]"
+                className="mt-4 mx-auto lg:mx-0 max-w-[280px]"
                 style={{
-                  color: "#393C41",
+                  color: "#5e5d59",
                   fontFamily: "var(--font-sans)",
-                  fontSize: "13px",
-                  fontWeight: 400,
-                  lineHeight: 1.45,
+                  fontSize: "14px",
+                  lineHeight: 1.55,
                 }}
               >
                 {m.label}
@@ -396,28 +193,59 @@ function Numbers() {
 }
 
 // ---------------------------------------------------------------------------
-// PLATFORM SHOWCASE - centered demo card, white room, gallery framing
+// MODULES - warm card grid, no photos
 // ---------------------------------------------------------------------------
 
-function PlatformShowcase() {
+function Modules() {
   return (
-    <section style={{ backgroundColor: "#FFFFFF" }}>
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-24 md:py-32">
-        <div className="text-center mb-10 md:mb-14">
-          <h2 className="heading-section" style={{ color: "#171A20" }}>
-            The platform, not the pitch deck.
+    <section style={{ backgroundColor: "#f5f4ed" }}>
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32">
+        <div className="max-w-3xl mb-14">
+          <p className="eyebrow mb-4">Inside the platform</p>
+          <h2 className="heading-section" style={{ color: "#141413" }}>
+            Every module the operator stack needs, in one login.
           </h2>
           <p
-            className="mt-3 mx-auto max-w-[540px] body-default"
-            style={{ color: "#393C41" }}
+            className="mt-4"
+            style={{
+              color: "#5e5d59",
+              fontFamily: "var(--font-sans)",
+              fontSize: "17px",
+              lineHeight: 1.6,
+            }}
           >
-            Four steps from intake to launch. Import inventory from AppFolio.
-            Build the site. Attach the identity pixel. Launch managed ads.
+            Nothing to wire up. Nothing to learn. We run it. You review the
+            weekly report.
           </p>
         </div>
 
-        <div className="mx-auto max-w-[1080px]">
-          <HeroDemo />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+          {MARKETING.home.modules.map((m) => (
+            <div
+              key={m.title}
+              className="p-6"
+              style={{
+                backgroundColor: "#faf9f5",
+                borderRadius: "16px",
+                boxShadow: "0 0 0 1px #f0eee6",
+              }}
+            >
+              <h3 className="heading-card" style={{ color: "#141413" }}>
+                {m.title}
+              </h3>
+              <p
+                className="mt-3"
+                style={{
+                  color: "#5e5d59",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "14px",
+                  lineHeight: 1.6,
+                }}
+              >
+                {m.body}
+              </p>
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -425,41 +253,114 @@ function PlatformShowcase() {
 }
 
 // ---------------------------------------------------------------------------
-// PROOF - cinematic dark hero style, single case study
+// VERTICALS - text-only cards, no photos
+// ---------------------------------------------------------------------------
+
+const VERTICALS = [
+  {
+    href: "/student-housing",
+    label: "Student housing",
+    tag: "Pre-lease cycles, parent decision-makers, campus-proximity plays.",
+  },
+  {
+    href: "/multifamily",
+    label: "Multifamily",
+    tag: "Portfolio rollups, per-property retargeting, fair-housing-safe creative.",
+  },
+  {
+    href: "/senior-living",
+    label: "Senior living",
+    tag: "Family-first nurture, patient conversion, compliance-aware forms.",
+  },
+  {
+    href: "/commercial",
+    label: "Commercial",
+    tag: "Office, industrial, retail. Broker-aware, spec-sheet driven. Coming soon.",
+  },
+];
+
+function Verticals() {
+  return (
+    <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32">
+        <div className="max-w-3xl mb-14">
+          <p className="eyebrow mb-4">Same platform, tailored</p>
+          <h2 className="heading-section" style={{ color: "#141413" }}>
+            Built for the way your vertical actually operates.
+          </h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {VERTICALS.map((v) => (
+            <Link
+              key={v.href}
+              href={v.href}
+              className="group block p-7"
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "16px",
+                boxShadow: "0 0 0 1px #f0eee6",
+                transition: "box-shadow 0.2s ease, transform 0.2s ease",
+              }}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <h3 className="heading-sub" style={{ color: "#141413" }}>
+                    {v.label}
+                  </h3>
+                  <p
+                    className="mt-3 max-w-md"
+                    style={{
+                      color: "#5e5d59",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "15px",
+                      lineHeight: 1.6,
+                    }}
+                  >
+                    {v.tag}
+                  </p>
+                </div>
+                <span
+                  className="inline-flex items-center justify-center flex-shrink-0"
+                  style={{
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "50%",
+                    color: "#c96442",
+                    boxShadow: "0 0 0 1px #e8e6dc",
+                  }}
+                  aria-hidden="true"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path
+                      d="M3 7h8m0 0L7.5 3.5M11 7l-3.5 3.5"
+                      stroke="currentColor"
+                      strokeWidth="1.3"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PROOF - dark section, product-positioning (no named customer)
 // ---------------------------------------------------------------------------
 
 function Proof() {
   const { proof } = MARKETING.home;
   return (
-    <section
-      className="relative overflow-hidden"
-      style={{ backgroundColor: "#171A20" }}
-    >
-      <Image
-        src="https://images.unsplash.com/photo-1551038247-3d9af20df552?auto=format&fit=crop&w=2400&q=85"
-        alt=""
-        fill
-        sizes="100vw"
-        style={{
-          objectFit: "cover",
-          objectPosition: "center",
-          opacity: 0.28,
-        }}
-      />
-      <div
-        className="absolute inset-0"
-        style={{
-          background:
-            "linear-gradient(180deg, rgba(23,26,32,0.75) 0%, rgba(23,26,32,0.95) 100%)",
-        }}
-        aria-hidden="true"
-      />
-
-      <div className="relative max-w-[1400px] mx-auto px-4 md:px-8 py-24 md:py-32 text-center">
+    <section style={{ backgroundColor: "#141413" }}>
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32 text-center">
         <p
           className="mb-6"
           style={{
-            color: "rgba(255,255,255,0.7)",
+            color: "#87867f",
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
             letterSpacing: "0.18em",
@@ -467,45 +368,44 @@ function Proof() {
             fontWeight: 500,
           }}
         >
-          Case study
+          The platform
         </p>
         <h2
           className="mx-auto max-w-[860px]"
           style={{
-            color: "#FFFFFF",
+            color: "#faf9f5",
             fontFamily: "var(--font-display)",
             fontSize: "clamp(30px, 4vw, 48px)",
             fontWeight: 500,
-            lineHeight: 1.12,
+            lineHeight: 1.15,
           }}
         >
           {proof.heading}
         </h2>
         <p
-          className="mx-auto mt-5 max-w-[560px]"
+          className="mx-auto mt-5 max-w-[620px]"
           style={{
-            color: "rgba(255,255,255,0.8)",
+            color: "#b0aea5",
             fontFamily: "var(--font-sans)",
-            fontSize: "14px",
-            fontWeight: 400,
-            lineHeight: 1.55,
+            fontSize: "17px",
+            lineHeight: 1.6,
           }}
         >
           {proof.body}
         </p>
 
-        <div className="mt-12 flex flex-wrap items-start justify-center gap-x-16 gap-y-8">
-          <ProofBigStat value={proof.caseStudy.stat} label={proof.caseStudy.window} />
-          <ProofBigStat value="31" label="Tours booked, week 1" />
-          <ProofBigStat value="$0" label="Design fees charged" />
+        <div className="mt-14 flex flex-wrap items-start justify-center gap-x-16 gap-y-8">
+          <BigStat value="One" label="Platform, one login" />
+          <BigStat value="Two" label="Weeks from intake to live" />
+          <BigStat value="Zero" label="Long-term contracts" />
         </div>
 
-        <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <div className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link href="/onboarding" className="btn-primary">
             Book a demo
           </Link>
-          <Link href="/compare/conversion-logix" className="btn-secondary-dark">
-            Read the comparison
+          <Link href="/pricing" className="btn-secondary-dark">
+            See pricing
           </Link>
         </div>
       </div>
@@ -513,12 +413,12 @@ function Proof() {
   );
 }
 
-function ProofBigStat({ value, label }: { value: string; label: string }) {
+function BigStat({ value, label }: { value: string; label: string }) {
   return (
     <div className="text-center">
       <p
         style={{
-          color: "#FFFFFF",
+          color: "#faf9f5",
           fontFamily: "var(--font-display)",
           fontSize: "clamp(40px, 4.8vw, 56px)",
           fontWeight: 500,
@@ -530,10 +430,9 @@ function ProofBigStat({ value, label }: { value: string; label: string }) {
       <p
         className="mt-2 mx-auto max-w-[180px]"
         style={{
-          color: "rgba(255,255,255,0.7)",
+          color: "#87867f",
           fontFamily: "var(--font-sans)",
-          fontSize: "12px",
-          fontWeight: 400,
+          fontSize: "13px",
         }}
       >
         {label}
@@ -543,34 +442,34 @@ function ProofBigStat({ value, label }: { value: string; label: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// FINAL CTA - white canvas, centered headline, two buttons
+// FINAL CTA
 // ---------------------------------------------------------------------------
 
 function FinalCta() {
   const { final } = MARKETING.home;
   return (
-    <section style={{ backgroundColor: "#FFFFFF" }}>
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-24 md:py-32 text-center">
+    <section style={{ backgroundColor: "#f5f4ed" }}>
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32 text-center">
         <h2
-          className="mx-auto max-w-[860px]"
+          className="mx-auto max-w-[780px]"
           style={{
-            color: "#171A20",
+            color: "#141413",
             fontFamily: "var(--font-display)",
-            fontSize: "clamp(30px, 4vw, 48px)",
+            fontSize: "clamp(32px, 4.4vw, 52px)",
             fontWeight: 500,
             lineHeight: 1.1,
+            letterSpacing: "-0.005em",
           }}
         >
           {final.heading}
         </h2>
         <p
-          className="mx-auto mt-5 max-w-[540px]"
+          className="mx-auto mt-5 max-w-[560px]"
           style={{
-            color: "#393C41",
+            color: "#5e5d59",
             fontFamily: "var(--font-sans)",
-            fontSize: "15px",
-            fontWeight: 400,
-            lineHeight: 1.55,
+            fontSize: "17px",
+            lineHeight: 1.6,
           }}
         >
           {final.body}

@@ -2,22 +2,28 @@ import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PostHogProvider } from "@/components/posthog-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { portalConfig } from "@/lib/portal-config";
 import { BRAND_NAME } from "@/lib/brand";
 
-// DECISION: Inter Variable with OpenType features cv01 + ss03 drives the
-// Linear-inspired UI system. JetBrains Mono stands in for Berkeley Mono (a
-// paid font) for labels, tags, and code. Both loaded once at the root and
-// exposed as CSS variables to every component.
+// DECISION: Fraunces is our open-source stand-in for Anthropic Serif
+// (Claude's custom headline face). Inter covers Anthropic Sans (UI + body).
+// JetBrains Mono replaces Anthropic Mono for code and small labels.
 const inter = Inter({
   subsets: ["latin"],
   display: "swap",
   variable: "--font-inter",
   axes: ["opsz"],
+});
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  display: "swap",
+  variable: "--font-fraunces",
+  axes: ["opsz", "SOFT"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -30,7 +36,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#FFFFFF",
+  themeColor: "#f5f4ed",
 };
 
 export const metadata: Metadata = {
@@ -99,12 +105,12 @@ export default function RootLayout({
     <ClerkProvider>
       <html
         lang="en"
-        className={`scroll-smooth ${inter.variable} ${jetbrainsMono.variable}`}
+        className={`scroll-smooth ${inter.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}
       >
         <body
           className="antialiased"
           style={{
-            backgroundColor: "#FFFFFF",
+            backgroundColor: "#f5f4ed",
             color: "#393C41",
             fontFamily: "var(--font-sans)",
           }}

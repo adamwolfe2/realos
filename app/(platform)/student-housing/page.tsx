@@ -53,11 +53,6 @@ export default function StudentHousingPage() {
           body: "AEO-ready landing pages for summer housing, international students, graduate housing, every campus audience.",
         },
       ]}
-      caseStudy={{
-        client: "Telegraph Commons, Berkeley",
-        stat: "12 leases in 30 days",
-        body: "Private dorms, 2 blocks from UC Berkeley. Added the pixel + chatbot stack + AppFolio sync and filled summer-term beds in a month.",
-      }}
     />
   );
 }

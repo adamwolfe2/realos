@@ -26,35 +26,33 @@ export function PlatformNav() {
   const pathname = usePathname();
   const [productOpen, setProductOpen] = useState(false);
   const [verticalOpen, setVerticalOpen] = useState(false);
-  const [compareOpen, setCompareOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  // Claude-inspired nav: always light parchment canvas with a translucent
+  // blur on scroll. No dark mode flip; the homepage canvas is warm all the way
+  // down, so we don't need an overlay state.
   const [scrolled, setScrolled] = useState(false);
 
-  // DECISION: the homepage uses a full-viewport dark cinematic hero, so the
-  // nav starts transparent with white text. On scroll it becomes opaque
-  // white with dark text, matching Tesla's behavior. Every non-home page
-  // starts in the opaque state so content is legible.
-  const isHome = pathname === "/";
-  const overDark = isHome && !scrolled;
-
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 40);
+    const onScroll = () => setScrolled(window.scrollY > 20);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const labelColor = overDark ? "#FFFFFF" : "#171A20";
-  const navBtnClass = overDark ? "btn-nav btn-nav-on-dark" : "btn-nav";
+  const labelColor = "#141413";
+  const navBtnClass = "btn-nav";
 
   return (
     <header
       className="sticky top-0 z-40"
       style={{
-        backgroundColor: overDark ? "transparent" : "rgba(255,255,255,0.9)",
-        backdropFilter: overDark ? "none" : "blur(18px)",
-        WebkitBackdropFilter: overDark ? "none" : "blur(18px)",
-        transition: "background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75)",
+        backgroundColor: scrolled
+          ? "rgba(245,244,237,0.85)"
+          : "rgba(245,244,237,0.98)",
+        backdropFilter: scrolled ? "blur(18px)" : "none",
+        WebkitBackdropFilter: scrolled ? "blur(18px)" : "none",
+        borderBottom: scrolled ? "1px solid #f0eee6" : "1px solid transparent",
+        transition: "background-color 0.2s ease, border-color 0.2s ease",
       }}
     >
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-14 flex items-center justify-between gap-4">
@@ -90,26 +88,10 @@ export function PlatformNav() {
             items={VERTICAL_LINKS}
             labelColor={labelColor}
           />
-          <NavLink
-            href="/pricing"
-            active={isActive(pathname, "/pricing")}
-            overDark={overDark}
-          >
+          <NavLink href="/pricing" active={isActive(pathname, "/pricing")}>
             Pricing
           </NavLink>
-          <Dropdown
-            label="Compare"
-            btnClass={navBtnClass}
-            open={compareOpen}
-            onOpenChange={setCompareOpen}
-            items={[{ href: "/compare/conversion-logix", label: "vs Conversion Logix" }]}
-            labelColor={labelColor}
-          />
-          <NavLink
-            href="/blog"
-            active={isActive(pathname, "/blog")}
-            overDark={overDark}
-          >
+          <NavLink href="/blog" active={isActive(pathname, "/blog")}>
             Blog
           </NavLink>
         </nav>
@@ -123,16 +105,17 @@ export function PlatformNav() {
           </Link>
           <Link
             href="/onboarding"
-            className="inline-flex items-center justify-center rounded-[4px] transition-all"
+            className="inline-flex items-center justify-center"
             style={{
-              minHeight: "32px",
-              padding: "0 16px",
-              backgroundColor: overDark ? "rgba(244,244,244,0.9)" : "var(--electric-blue)",
-              color: overDark ? "#171A20" : "#FFFFFF",
+              minHeight: "36px",
+              padding: "8px 16px",
+              backgroundColor: "#c96442",
+              color: "#faf9f5",
               fontSize: "14px",
               fontWeight: 500,
-              transition:
-                "background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75), color 0.33s cubic-bezier(0.5, 0, 0, 0.75)",
+              borderRadius: "10px",
+              boxShadow: "0 0 0 1px #c96442 inset",
+              transition: "background-color 0.2s ease",
             }}
           >
             Book a demo
@@ -164,28 +147,26 @@ export function PlatformNav() {
 function NavLink({
   href,
   active,
-  overDark,
   children,
 }: {
   href: string;
   active: boolean;
-  overDark: boolean;
   children: React.ReactNode;
 }) {
   return (
     <Link
       href={href}
-      className="inline-flex items-center rounded-[4px]"
+      className="inline-flex items-center"
       style={{
-        minHeight: "32px",
-        padding: "4px 12px",
-        color: overDark ? "#FFFFFF" : "#171A20",
+        minHeight: "36px",
+        padding: "6px 12px",
+        borderRadius: "10px",
+        color: "#141413",
         fontFamily: "var(--font-sans)",
-        fontSize: "14px",
+        fontSize: "15px",
         fontWeight: 500,
-        opacity: active ? 1 : 0.92,
-        transition:
-          "color 0.33s cubic-bezier(0.5, 0, 0, 0.75), background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75), opacity 0.33s",
+        backgroundColor: active ? "#e8e6dc" : "transparent",
+        transition: "background-color 0.2s ease",
       }}
     >
       {children}
@@ -226,11 +207,12 @@ function Dropdown({
       {open ? (
         <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50">
           <ul
-            className="py-2 min-w-[240px]"
+            className="py-2 min-w-[260px]"
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "1px solid #EEEEEE",
-              borderRadius: "4px",
+              backgroundColor: "#faf9f5",
+              boxShadow:
+                "0 0 0 1px #f0eee6, 0 12px 28px rgba(0,0,0,0.06)",
+              borderRadius: "14px",
             }}
           >
             {items.map((item) => (
@@ -268,7 +250,6 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
       title: "Company",
       items: [
         { href: "/pricing", label: "Pricing" },
-        { href: "/compare/conversion-logix", label: "vs Conversion Logix" },
         { href: "/blog", label: "Blog" },
         { href: "/sign-in", label: "Sign in" },
       ],

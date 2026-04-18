@@ -1,9 +1,9 @@
 import Link from "next/link";
-import Image from "next/image";
 
-// Tesla-style vertical landing: full-bleed cinematic hero per vertical,
-// then three centered content blocks (pains, modules, case study) on white
-// and light-ash canvases. No glow, no translucent cards, no gradients on UI.
+// Claude-style vertical landing: parchment canvas, warm cards, serif
+// display headlines, terracotta accent for CTAs and eyebrow highlights.
+// No photos. Editorial section cadence: hero -> pains -> modules -> dark
+// platform moment -> CTA.
 
 export type VerticalLandingProps = {
   eyebrow: string;
@@ -13,11 +13,7 @@ export type VerticalLandingProps = {
   modules: Array<{ title: string; body: string }>;
   caseStudy?: { client: string; stat: string; body: string };
   ctaHref?: string;
-  heroImage?: string;
 };
-
-const DEFAULT_HERO =
-  "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=2400&q=85";
 
 export function VerticalLanding({
   eyebrow,
@@ -25,124 +21,83 @@ export function VerticalLanding({
   subhead,
   pains,
   modules,
-  caseStudy,
   ctaHref = "/onboarding",
-  heroImage = DEFAULT_HERO,
 }: VerticalLandingProps) {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#393C41" }}>
-      {/* HERO */}
-      <section
-        className="relative"
-        style={{ height: "min(72vh, 680px)", minHeight: "520px", marginTop: "-56px" }}
-      >
-        <Image
-          src={heroImage}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          style={{ objectFit: "cover", objectPosition: "center" }}
-        />
-        <div
-          className="absolute inset-0"
-          style={{
-            background:
-              "linear-gradient(180deg, rgba(23,26,32,0.4) 0%, rgba(23,26,32,0.15) 50%, rgba(23,26,32,0.55) 100%)",
-          }}
-          aria-hidden="true"
-        />
-        <div className="relative h-full flex flex-col">
-          <div className="flex-1 flex items-center">
-            <div className="w-full max-w-[1100px] mx-auto px-4 md:px-8 text-center pt-16">
-              <p
-                className="mb-4"
-                style={{
-                  color: "rgba(255,255,255,0.85)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "11px",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  fontWeight: 500,
-                }}
-              >
-                {eyebrow}
-              </p>
-              <h1
-                className="mx-auto max-w-[920px]"
-                style={{
-                  color: "#FFFFFF",
-                  fontFamily: "var(--font-display)",
-                  fontSize: "clamp(32px, 5vw, 52px)",
-                  fontWeight: 500,
-                  lineHeight: 1.12,
-                }}
-              >
-                {headline}
-              </h1>
-              <p
-                className="mx-auto mt-5 max-w-[560px]"
-                style={{
-                  color: "rgba(255,255,255,0.85)",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "15px",
-                  fontWeight: 400,
-                  lineHeight: 1.55,
-                }}
-              >
-                {subhead}
-              </p>
-            </div>
-          </div>
-          <div className="pb-16">
-            <div className="max-w-[1100px] mx-auto px-4 md:px-8 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href={ctaHref} className="btn-primary">
-                Book a demo
-              </Link>
-              <Link href="/pricing" className="btn-secondary-dark">
-                See pricing
-              </Link>
-            </div>
+    <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
+      <section style={{ borderBottom: "1px solid #f0eee6" }}>
+        <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-24 md:pt-28 pb-16 md:pb-20 text-center">
+          <p className="eyebrow mb-6" style={{ color: "#c96442" }}>
+            {eyebrow}
+          </p>
+          <h1
+            className="mx-auto max-w-[880px]"
+            style={{
+              color: "#141413",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(36px, 5vw, 60px)",
+              fontWeight: 500,
+              lineHeight: 1.1,
+              letterSpacing: "-0.005em",
+            }}
+          >
+            {headline}
+          </h1>
+          <p
+            className="mx-auto mt-6 max-w-[620px]"
+            style={{
+              color: "#5e5d59",
+              fontFamily: "var(--font-sans)",
+              fontSize: "18px",
+              lineHeight: 1.6,
+            }}
+          >
+            {subhead}
+          </p>
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href={ctaHref} className="btn-primary">
+              Book a demo
+            </Link>
+            <Link href="/pricing" className="btn-secondary">
+              See pricing
+            </Link>
           </div>
         </div>
       </section>
 
-      {/* PAINS */}
-      <section style={{ backgroundColor: "#F4F4F4" }}>
+      <section style={{ backgroundColor: "#faf9f5" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
-          <div className="text-center mb-12">
-            <p
+          <div className="text-center mb-14">
+            <p className="eyebrow mb-4">Operators tell us</p>
+            <h2
+              className="mx-auto max-w-[720px]"
               style={{
-                color: "#5C5E62",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
+                color: "#141413",
+                fontFamily: "var(--font-display)",
+                fontSize: "clamp(28px, 3.4vw, 40px)",
                 fontWeight: 500,
-                marginBottom: "12px",
+                lineHeight: 1.15,
               }}
             >
-              Operators tell us
-            </p>
-            <h2 className="heading-section mx-auto max-w-[680px]" style={{ color: "#171A20" }}>
               The three things that made them look.
             </h2>
           </div>
-          <ul className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <ul className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {pains.map((p, i) => (
               <li
                 key={p.title}
-                className="p-6"
+                className="p-7"
                 style={{
-                  backgroundColor: "#FFFFFF",
-                  borderRadius: "12px",
+                  backgroundColor: "#ffffff",
+                  borderRadius: "16px",
+                  boxShadow: "0 0 0 1px #f0eee6",
                 }}
               >
                 <span
                   style={{
-                    color: "#8E8E8E",
+                    color: "#c96442",
                     fontFamily: "var(--font-mono)",
-                    fontSize: "10px",
+                    fontSize: "11px",
                     letterSpacing: "0.14em",
                     fontWeight: 500,
                   }}
@@ -150,11 +105,11 @@ export function VerticalLanding({
                   0{i + 1}
                 </span>
                 <h3
-                  className="mt-3"
+                  className="mt-4"
                   style={{
-                    color: "#171A20",
+                    color: "#141413",
                     fontFamily: "var(--font-display)",
-                    fontSize: "18px",
+                    fontSize: "20px",
                     fontWeight: 500,
                     lineHeight: 1.25,
                   }}
@@ -164,11 +119,10 @@ export function VerticalLanding({
                 <p
                   className="mt-3"
                   style={{
-                    color: "#393C41",
+                    color: "#5e5d59",
                     fontFamily: "var(--font-sans)",
-                    fontSize: "13px",
-                    fontWeight: 400,
-                    lineHeight: 1.5,
+                    fontSize: "14px",
+                    lineHeight: 1.6,
                   }}
                 >
                   {p.body}
@@ -179,42 +133,39 @@ export function VerticalLanding({
         </div>
       </section>
 
-      {/* MODULES */}
-      <section style={{ backgroundColor: "#FFFFFF" }}>
+      <section style={{ backgroundColor: "#f5f4ed" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
-          <div className="text-center mb-12">
-            <p
+          <div className="text-center mb-14">
+            <p className="eyebrow mb-4">What you get on day one</p>
+            <h2
+              className="mx-auto max-w-[720px]"
               style={{
-                color: "#5C5E62",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
+                color: "#141413",
+                fontFamily: "var(--font-display)",
+                fontSize: "clamp(28px, 3.4vw, 40px)",
                 fontWeight: 500,
-                marginBottom: "12px",
+                lineHeight: 1.15,
               }}
             >
-              What you get on day one
-            </p>
-            <h2 className="heading-section mx-auto max-w-[680px]" style={{ color: "#171A20" }}>
-              Six modules. One launch. Ship in two weeks.
+              Six modules. One launch. Live in two weeks.
             </h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {modules.map((m) => (
               <div
                 key={m.title}
-                className="p-6"
+                className="p-7"
                 style={{
-                  backgroundColor: "#F4F4F4",
-                  borderRadius: "12px",
+                  backgroundColor: "#faf9f5",
+                  borderRadius: "16px",
+                  boxShadow: "0 0 0 1px #f0eee6",
                 }}
               >
                 <h3
                   style={{
-                    color: "#171A20",
+                    color: "#141413",
                     fontFamily: "var(--font-display)",
-                    fontSize: "18px",
+                    fontSize: "20px",
                     fontWeight: 500,
                     lineHeight: 1.25,
                   }}
@@ -224,11 +175,10 @@ export function VerticalLanding({
                 <p
                   className="mt-3"
                   style={{
-                    color: "#393C41",
+                    color: "#5e5d59",
                     fontFamily: "var(--font-sans)",
-                    fontSize: "13px",
-                    fontWeight: 400,
-                    lineHeight: 1.5,
+                    fontSize: "14px",
+                    lineHeight: 1.6,
                   }}
                 >
                   {m.body}
@@ -239,97 +189,51 @@ export function VerticalLanding({
         </div>
       </section>
 
-      {/* CASE STUDY */}
-      {caseStudy ? (
-        <section style={{ backgroundColor: "#171A20" }}>
-          <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
-            <p
-              style={{
-                color: "rgba(255,255,255,0.7)",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.18em",
-                textTransform: "uppercase",
-                fontWeight: 500,
-                marginBottom: "12px",
-              }}
-            >
-              Case study
-            </p>
-            <h3
-              className="mx-auto max-w-[760px]"
-              style={{
-                color: "#FFFFFF",
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(28px, 3.6vw, 40px)",
-                fontWeight: 500,
-                lineHeight: 1.15,
-              }}
-            >
-              {caseStudy.client}
-            </h3>
-            <p
-              className="mx-auto mt-5 max-w-[620px]"
-              style={{
-                color: "rgba(255,255,255,0.8)",
-                fontFamily: "var(--font-sans)",
-                fontSize: "14px",
-                fontWeight: 400,
-                lineHeight: 1.6,
-              }}
-            >
-              {caseStudy.body}
-            </p>
-            <p
-              className="mt-12 leading-none"
-              style={{
-                color: "#FFFFFF",
-                fontFamily: "var(--font-display)",
-                fontSize: "clamp(56px, 8vw, 88px)",
-                fontWeight: 500,
-              }}
-            >
-              {caseStudy.stat}
-            </p>
-            <p
-              className="mt-3"
-              style={{
-                color: "rgba(255,255,255,0.65)",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.12em",
-                textTransform: "uppercase",
-              }}
-            >
-              Result in 30 days
-            </p>
-          </div>
-        </section>
-      ) : null}
-
-      {/* FINAL CTA */}
-      <section style={{ backgroundColor: "#FFFFFF" }}>
-        <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
-          <h2 className="heading-section mx-auto max-w-[680px]" style={{ color: "#171A20" }}>
-            See the platform in your stack.
-          </h2>
+      <section style={{ backgroundColor: "#141413" }}>
+        <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-24 md:py-28 text-center">
           <p
-            className="mx-auto mt-4 max-w-[520px]"
             style={{
-              color: "#393C41",
-              fontFamily: "var(--font-sans)",
-              fontSize: "15px",
-              lineHeight: 1.55,
+              color: "#87867f",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              marginBottom: "16px",
             }}
           >
-            Thirty minutes. No obligation. We audit your current marketing live
-            on the call.
+            One platform
+          </p>
+          <h2
+            className="mx-auto max-w-[760px]"
+            style={{
+              color: "#faf9f5",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(30px, 3.8vw, 44px)",
+              fontWeight: 500,
+              lineHeight: 1.15,
+            }}
+          >
+            The same modules every operator gets. The playbook is what changes.
+          </h2>
+          <p
+            className="mx-auto mt-5 max-w-[620px]"
+            style={{
+              color: "#b0aea5",
+              fontFamily: "var(--font-sans)",
+              fontSize: "16px",
+              lineHeight: 1.6,
+            }}
+          >
+            Same site engine, same pixel, same chatbot, same ad-managed studio.
+            Different intake playbook, different creative library, different
+            compliance guardrails per vertical.
           </p>
           <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href={ctaHref} className="btn-primary">
               Book a demo
             </Link>
-            <Link href="/pricing" className="btn-secondary">
+            <Link href="/pricing" className="btn-secondary-dark">
               See pricing
             </Link>
           </div>

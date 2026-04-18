@@ -13,7 +13,6 @@ export function PlatformFooter() {
     { label: "Product",           href: "/features/pixel" },
     { label: "Solutions",         href: "/student-housing" },
     { label: "Blog",              href: "/blog" },
-    { label: "Compare",           href: "/compare/conversion-logix" },
     { label: "About",             href: "/about" },
     { label: "Sign in",           href: "/sign-in" },
     { label: "Privacy",           href: "/privacy" },

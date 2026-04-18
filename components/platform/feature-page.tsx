@@ -1,8 +1,7 @@
 import Link from "next/link";
 
-// Tesla-style feature page: white canvas, centered composition, two type
-// weights, 4px radii, Electric Blue CTAs. Numbered "how it works" rows sit
-// on Light Ash with no borders, just spacing as the separator.
+// Claude-style feature page: parchment canvas, Fraunces serif headline,
+// terracotta eyebrow + checkmarks, editorial pacing.
 
 export function FeaturePage({
   eyebrow,
@@ -22,18 +21,18 @@ export function FeaturePage({
   bestFor: string;
 }) {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#393C41" }}>
+    <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
       <header>
-        <div className="max-w-[920px] mx-auto px-4 md:px-8 pt-24 pb-16 text-center">
+        <div className="max-w-[920px] mx-auto px-4 md:px-8 pt-24 md:pt-28 pb-16 text-center">
           <p
-            className="mb-5"
             style={{
-              color: "#3E6AE1",
+              color: "#c96442",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.18em",
               textTransform: "uppercase",
               fontWeight: 500,
+              marginBottom: "20px",
             }}
           >
             {eyebrow}
@@ -41,22 +40,23 @@ export function FeaturePage({
           <h1
             className="mx-auto"
             style={{
-              color: "#171A20",
+              color: "#141413",
               fontFamily: "var(--font-display)",
-              fontSize: "clamp(32px, 4.8vw, 52px)",
+              fontSize: "clamp(36px, 5vw, 60px)",
               fontWeight: 500,
-              lineHeight: 1.1,
+              lineHeight: 1.08,
+              letterSpacing: "-0.005em",
             }}
           >
             {headline}
           </h1>
           <p
-            className="mx-auto mt-5 max-w-[620px]"
+            className="mx-auto mt-6 max-w-[640px]"
             style={{
-              color: "#393C41",
+              color: "#5e5d59",
               fontFamily: "var(--font-sans)",
-              fontSize: "16px",
-              lineHeight: 1.55,
+              fontSize: "18px",
+              lineHeight: 1.6,
             }}
           >
             {subhead}
@@ -64,30 +64,17 @@ export function FeaturePage({
         </div>
       </header>
 
-      <section style={{ backgroundColor: "#F4F4F4" }}>
+      <section style={{ backgroundColor: "#faf9f5" }}>
         <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16 text-center">
+          <p className="eyebrow mb-4">What it is</p>
           <p
+            className="mx-auto max-w-[760px]"
             style={{
-              color: "#5C5E62",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              fontWeight: 500,
-              marginBottom: "12px",
-            }}
-          >
-            What it is
-          </p>
-          <p
-            className="mx-auto max-w-[720px]"
-            style={{
-              color: "#171A20",
+              color: "#141413",
               fontFamily: "var(--font-display)",
-              fontSize: "clamp(20px, 2.4vw, 28px)",
-              fontWeight: 400,
-              lineHeight: 1.4,
-              letterSpacing: "normal",
+              fontSize: "clamp(22px, 2.4vw, 30px)",
+              fontWeight: 500,
+              lineHeight: 1.35,
             }}
           >
             {whatItIs}
@@ -95,51 +82,39 @@ export function FeaturePage({
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#FFFFFF" }}>
-        <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16">
-          <p
-            className="text-center mb-10"
-            style={{
-              color: "#5C5E62",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              fontWeight: 500,
-            }}
-          >
-            How it works
-          </p>
+      <section style={{ backgroundColor: "#f5f4ed" }}>
+        <div className="max-w-[920px] mx-auto px-4 md:px-8 py-20">
+          <p className="eyebrow text-center mb-10">How it works</p>
           <ol className="space-y-3">
             {howItWorks.map((step, i) => (
               <li
                 key={step}
                 className="p-6 flex gap-5"
                 style={{
-                  backgroundColor: "#F4F4F4",
-                  borderRadius: "12px",
+                  backgroundColor: "#faf9f5",
+                  borderRadius: "16px",
+                  boxShadow: "0 0 0 1px #f0eee6",
                 }}
               >
                 <span
                   style={{
-                    color: "#3E6AE1",
+                    color: "#c96442",
                     fontFamily: "var(--font-mono)",
                     fontSize: "12px",
                     fontWeight: 500,
                     letterSpacing: "0.1em",
                     minWidth: "2ch",
-                    paddingTop: "2px",
+                    paddingTop: "3px",
                   }}
                 >
                   0{i + 1}
                 </span>
                 <p
                   style={{
-                    color: "#171A20",
+                    color: "#141413",
                     fontFamily: "var(--font-sans)",
-                    fontSize: "15px",
-                    fontWeight: 400,
-                    lineHeight: 1.55,
+                    fontSize: "16px",
+                    lineHeight: 1.6,
                   }}
                 >
                   {step}
@@ -150,39 +125,27 @@ export function FeaturePage({
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#F4F4F4" }}>
+      <section style={{ backgroundColor: "#faf9f5" }}>
         <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16">
-          <p
-            className="text-center mb-8"
-            style={{
-              color: "#5C5E62",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              fontWeight: 500,
-            }}
-          >
-            What to expect
-          </p>
+          <p className="eyebrow text-center mb-10">What to expect</p>
           <ul className="mx-auto max-w-[680px] space-y-3">
             {results.map((r) => (
               <li
                 key={r}
                 className="flex items-start gap-3"
                 style={{
-                  color: "#171A20",
+                  color: "#141413",
                   fontFamily: "var(--font-sans)",
-                  fontSize: "15px",
-                  lineHeight: 1.55,
+                  fontSize: "16px",
+                  lineHeight: 1.6,
                 }}
               >
                 <span
                   aria-hidden="true"
                   className="inline-flex items-center justify-center flex-shrink-0 mt-1 w-4 h-4 rounded-full"
                   style={{
-                    backgroundColor: "rgba(62,106,225,0.12)",
-                    color: "#3E6AE1",
+                    backgroundColor: "rgba(201,100,66,0.14)",
+                    color: "#c96442",
                   }}
                 >
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -202,35 +165,23 @@ export function FeaturePage({
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#FFFFFF" }}>
-        <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16 text-center">
-          <p
-            style={{
-              color: "#5C5E62",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              fontWeight: 500,
-              marginBottom: "12px",
-            }}
-          >
-            Best for
-          </p>
+      <section style={{ backgroundColor: "#f5f4ed" }}>
+        <div className="max-w-[920px] mx-auto px-4 md:px-8 py-20 text-center">
+          <p className="eyebrow mb-4">Best for</p>
           <p
             className="mx-auto max-w-[720px]"
             style={{
-              color: "#171A20",
+              color: "#141413",
               fontFamily: "var(--font-display)",
-              fontSize: "clamp(20px, 2.4vw, 28px)",
-              fontWeight: 400,
-              lineHeight: 1.4,
+              fontSize: "clamp(22px, 2.4vw, 30px)",
+              fontWeight: 500,
+              lineHeight: 1.35,
             }}
           >
             {bestFor}
           </p>
 
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/onboarding" className="btn-primary">
               Book a demo
             </Link>

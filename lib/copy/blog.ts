@@ -1,6 +1,7 @@
 // ---------------------------------------------------------------------------
-// Blog content store. Hardcoded for v1, swappable for MDX in Sprint v2 when
-// the content team wants prose controls. No mdashes anywhere, by policy.
+// Blog content store. Hardcoded for v1, swappable for MDX later. No em-dashes.
+// Posts are product-focused and vendor-neutral. No named competitors, no
+// named reference customers.
 // ---------------------------------------------------------------------------
 
 export type BlogPost = {
@@ -15,55 +16,50 @@ export type BlogPost = {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
-    slug: "why-we-built-a-conversion-logix-alternative",
-    title: "Why we built a Conversion Logix alternative",
+    slug: "building-a-managed-marketing-platform",
+    title: "Building a managed marketing platform for real estate",
     description:
-      "Real estate operators pay $2,600 a month for vanity metrics. We did the math and decided to build the software they should have been buying all along.",
-    author: "Adam Wolfe",
+      "Why a single-vendor, software-first platform outperforms the stitched-together agency + tools model that most operators are running today.",
+    author: "RealEstaite team",
     publishedAt: "2026-04-14",
     readingMinutes: 6,
-    body: `Every real estate operator we talk to is paying Conversion Logix, REACH, or G5 roughly $2,600 a month. They will describe the relationship the same way: slow turnaround, glossy PDF reports, no visibility into which leads actually leased. The price tag is fixed, the results are not.
+    body: `Most real estate operators are running their marketing across five to eight vendors: an agency for paid spend, a website they can't edit, a chatbot vendor, a listing portal, a designer for ad creative, a CRM, and a few spreadsheets stitching the whole thing together. The monthly cost is high. The visibility is low. The attribution is non-existent.
 
-We kept asking the same question. If the retainer is fixed at $2,600, what would the best possible platform built in 2026 look like at that price? Not a pitch deck. A real platform that fills units.
+We wanted to build the platform those operators should have been buying all along. One login. One dashboard. Every module owned by the same team that built the others, so the handoffs between site, pixel, chatbot, ads, and CRM all work because they were designed to work together.
 
-The answer turns out to be obvious once you say it out loud. Identity graph pixel, not pageview analytics. AI chatbot that speaks like your leasing associate, not a canned FAQ. Live AppFolio listing sync, not manually-edited PDFs. Managed ads with 48-hour creative turnaround, not a templated library someone ordered six months ago. One dashboard that shows lease velocity, not a quarterly slide deck. And a pricing model that earns the retainer every month instead of milking a 12-month contract.
+The result is a single managed platform: a custom site on your domain, live listings synced from your PMS, an identity graph pixel that names the majority of your anonymous visitors, an AI chatbot that captures leads around the clock, managed ads with 48 hour creative turnaround, and a lead pipeline that shows lease velocity instead of vanity metrics.
 
-We ship this for the same money Conversion Logix charges, because operators told us they would pay exactly that if it worked. The rest is execution. This blog is the build log.`,
+Operators get software that pays its own invoice. We earn the retainer every month, or the contract ends. This blog is the build log.`,
   },
   {
     slug: "the-hidden-cost-of-ignoring-95-percent-of-your-traffic",
-    title:
-      "The hidden cost of ignoring 95% of your website traffic",
+    title: "The hidden cost of ignoring 95% of your website traffic",
     description:
       "Your analytics probably tells you about 5% of your real audience. The other 95% is anonymous. We do the math on what that blind spot costs operators.",
-    author: "Adam Wolfe",
+    author: "RealEstaite team",
     publishedAt: "2026-04-08",
     readingMinutes: 4,
-    body: `A typical property marketing site converts somewhere between 1% and 3% of its traffic into a form submission. Identity graph pixels like Cursive resolve somewhere between 40% and 70% of visits to a real person.
+    body: `A typical property marketing site converts somewhere between 1% and 3% of its traffic into a form submission. Identity graph pixels resolve somewhere between 40% and 70% of visits to a real person.
 
 Which is more useful, knowing that 1,200 people visited, or knowing the names and email addresses of 600 of them? Only one of those lists can be followed up on.
 
-Assume conservative numbers. 2,000 monthly visitors, a 50% identification rate, and a 3% email reply rate. That is 30 new qualified conversations a month from people who would have otherwise left without a trace. In student housing, at an average rent of $1,600 and a 12 month lease, signing one of those conversations pays for the platform for a year.
+Assume conservative numbers. 2,000 monthly visitors, a 50% identification rate, and a 3% email reply rate. That is 30 new qualified conversations a month from people who would have otherwise left without a trace. At an average rent and typical lease term, signing one of those conversations pays for the platform for a year.
 
 Most operators do not have this number because they have never had the tool that would produce it. That is the gap we built into.`,
   },
   {
-    slug: "telegraph-commons-filled-12-leases-in-30-days",
-    title: "How Telegraph Commons filled 12 leases in 30 days",
+    slug: "what-a-real-estate-ai-chatbot-should-actually-do",
+    title: "What a real estate AI chatbot should actually do",
     description:
-      "Case study: the Berkeley student housing operator that became our first client. What we changed, what we measured, and what broke along the way.",
-    author: "Adam Wolfe",
+      "The first generation of property chatbots was a glorified FAQ. Here's what the second generation needs to look like to earn a place on the site.",
+    author: "RealEstaite team",
     publishedAt: "2026-03-28",
-    readingMinutes: 7,
-    body: `Telegraph Commons runs a private student dorm two blocks from UC Berkeley. The building is charming, the location is unbeatable, the pricing is transparent. The website was not helping any of that come through.
+    readingMinutes: 5,
+    body: `Most property chatbots in production today are a search box with a smile. You ask about pet policy, the bot pastes three sentences from an FAQ page, the conversation ends, and the visitor leaves without a lead captured. Worst case, it handed the visitor to a human who was off the clock and never got back to them.
 
-Before the build, the site was a Wix page with outdated floor plan graphics, a static contact form, a chatbot from 2022 that answered maybe four questions, and no visibility into anonymous traffic. The ad budget went to a national agency that rarely iterated creative. Lease velocity for summer was behind pace for the first time in three years.
+The platform chatbot is different. It is grounded in your live unit inventory, rent ranges, tour calendar, and amenity list, so it answers accurately without being brittle. It captures a name and email in the first two to three exchanges, naturally, as part of a helpful conversation rather than a form wall. It hands hot leads to your leasing team in the platform's CRM, scored and routed. And it runs 24/7, which is when most prospective residents are actually browsing.
 
-We rebuilt the site on our managed platform in nine days. The pieces that mattered: live AppFolio listing sync so prices never went stale, an AI chatbot trained on the building's knowledge base that captured names and emails, identity pixel that immediately started surfacing prospects who had previously been anonymous, and a nurture cadence that followed up at day 1, day 3, and day 7.
-
-The first 30 days after launch: 847 identified visitors, 93 chatbot conversations, 38 leads in the pipeline, 12 signed leases. The team kept running the same ad budget with different creative we produced in the studio. What changed was that every visitor now had somewhere to land, someone to talk to, and a reason to come back.
-
-What broke: the international student instant approval flow needed two small tweaks. The chatbot occasionally recommended a room type that was temporarily offline while sync caught up. Both got fixed inside the first week. Everything else worked on day one.`,
+Behind the chatbot is the rest of the platform. The same lead that came in through the chatbot shows up next to form fills, pixel-identified visitors, and any PMS applicants in one pipeline. Follow-up runs automatically. The chatbot is not a widget, it is one surface of the same product.`,
   },
 ];
 

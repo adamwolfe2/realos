@@ -3,8 +3,9 @@
 // public .com lives here so pricing tweaks or product rename stay to one
 // file.
 //
-// Brand voice: direct, operator-to-operator. Short sentences. No em dashes.
-// Use commas, colons, or periods.
+// Voice: professional, operator-to-operator, product-first. No named
+// competitors. No named reference customers. Specifics and claims stay
+// platform-generic.
 // ---------------------------------------------------------------------------
 
 export const MARKETING = {
@@ -14,45 +15,44 @@ export const MARKETING = {
   home: {
     hero: {
       eyebrow: "For real estate operators",
-      headline: "Marketing infrastructure that actually fills units.",
+      headline: "Marketing infrastructure that fills units.",
       subhead:
-        "Stop paying $2,600 a month for ads that don't convert. Replace your entire marketing stack with one managed platform. Custom site on your domain, live listings, identity pixel, AI chatbot, and follow-up that actually runs.",
+        "Replace your entire marketing stack with one managed platform. A custom site on your domain, live listings, identity pixel, AI chatbot, and follow-up that actually runs.",
       primaryCta: "Book a demo",
       primaryHref: "/onboarding",
       secondaryCta: "See pricing",
       secondaryHref: "/pricing",
-      microProof:
-        "Built with Berkeley's Telegraph Commons. Expanding to multifamily and senior living now.",
+      microProof: "Built for residential and commercial portfolios.",
     },
     pains: [
       {
-        title: "Your agency reports activity, not outcomes.",
+        title: "Agency reports show activity, not outcomes.",
         body:
-          "Impressions are up. Leases are flat. The quarterly PDF never explains why.",
+          "Impressions go up. Leases stay flat. The quarterly PDF never explains why.",
       },
       {
         title: "Your chatbot is a glorified FAQ.",
         body:
-          "It answers one question, forgets the visitor, captures zero leads at 2 a.m.",
+          "It answers one question, forgets the visitor, and captures zero leads after hours.",
       },
       {
-        title: "95% of your site visitors are ghosts.",
+        title: "Most site visitors never identify themselves.",
         body:
-          "You see traffic. You can't see who. The prospects you wanted went dark.",
+          "You see the traffic. You can't see who. The prospects you wanted go dark.",
       },
     ],
     howItWorks: [
       {
         step: "01",
-        title: "30 minute demo",
+        title: "Thirty minute demo",
         body:
-          "Bring your current marketing invoice. We audit it line by line on the call.",
+          "Bring your current marketing setup. We audit it live on the call.",
       },
       {
         step: "02",
         title: "Fixed scope, fixed fee",
         body:
-          "Proposal within 24 hours. Build fee and monthly retainer with no surprises.",
+          "Proposal within 24 hours. Build fee and monthly retainer, no surprises.",
       },
       {
         step: "03",
@@ -74,14 +74,14 @@ export const MARKETING = {
           "Custom-built on your domain. Fast, SEO-ready, updated by live listing sync.",
       },
       {
-        title: "AppFolio listing sync",
+        title: "PMS listing sync",
         body:
-          "Every unit on your site matches the AppFolio truth within the hour.",
+          "Every unit on your site matches the source of truth within the hour.",
       },
       {
         title: "Identity graph pixel",
         body:
-          "Put names and emails on 40 to 70 percent of your anonymous site visitors.",
+          "Put names and emails on a significant share of your anonymous site traffic.",
       },
       {
         title: "AI chatbot",
@@ -91,12 +91,12 @@ export const MARKETING = {
       {
         title: "Google and Meta ads",
         body:
-          "Geo-fenced campaigns, pixel retargeting, creative swapped weekly. 15% of spend.",
+          "Geo-fenced campaigns, pixel retargeting, creative refreshed weekly.",
       },
       {
         title: "SEO plus AEO",
         body:
-          "Rank in Google. Get named in ChatGPT. Per-campus and per-neighborhood pages.",
+          "Rank in Google. Get named in ChatGPT. Per-location and per-neighborhood pages.",
       },
       {
         title: "Creative studio",
@@ -109,33 +109,20 @@ export const MARKETING = {
           "Forms, exit intent, chat, all flowing into one pipeline with automated nurture.",
       },
       {
-        title: "Student referral tracking",
+        title: "Referral program",
         body:
-          "Native referral program for current residents. Track, pay out, repeat.",
+          "Native referral tracking for current residents or tenants. Track, pay out, repeat.",
       },
     ],
     proof: {
-      heading: "Built with operators, for operators.",
+      heading: "A product, not a retainer.",
       body:
-        "We ship alongside real estate operators every day. Telegraph Commons at UC Berkeley was the pilot. Multifamily and senior living operators are live in build now.",
-      caseStudy: {
-        client: "Telegraph Commons",
-        stat: "12 signed leases",
-        window: "in the 30 days after launch",
-        city: "Berkeley, California",
-      },
-    },
-    comparison: {
-      heading: "A Conversion Logix alternative that pays its own invoice.",
-      body:
-        "Conversion Logix is the default choice for operators who don't know there's an alternative. Same price. We ship software you log into instead of PDFs.",
-      cta: "See the full comparison",
-      href: "/compare/conversion-logix",
+        "Every customer logs into the same platform. Same modules, same dashboards, same weekly report. What changes is the brand, the listings, and the playbook.",
     },
     final: {
       heading: "Book a demo.",
       body:
-        "30 minutes on Zoom. Bring the receipts. We show you what your marketing could look like in two weeks.",
+        "Thirty minutes on a call. We show you exactly what your marketing could look like in two weeks.",
       primaryCta: "Start now",
       primaryHref: "/onboarding",
     },
@@ -154,7 +141,7 @@ export const MARKETING = {
         tagline: "Single property, simple stack.",
         features: [
           "Managed marketing site on your domain",
-          "AppFolio listing sync",
+          "Listing sync from your PMS",
           "Lead capture forms and exit intent",
           "Basic CRM and email sequences",
           "One property",
@@ -189,7 +176,7 @@ export const MARKETING = {
           "Everything in Growth",
           "Google and Meta ads (plus 15% of spend)",
           "Creative studio, unlimited requests",
-          "Student referral program",
+          "Referral program",
           "Dedicated account manager",
           "Unlimited properties",
           "Weekly strategy calls",
@@ -211,29 +198,29 @@ export const MARKETING = {
         price: 597,
         cadence: "/mo",
         body:
-          "Adds per-campus SEO, AEO monitoring, quarterly content drops.",
+          "Adds per-location SEO, AEO monitoring, quarterly content drops.",
       },
     ],
     buildFees: {
       heading: "Build fees",
       body:
-        "$5,000 for a single-property launch on AppFolio. $10,000 to $15,000 for multi-property portfolios or complex integrations. We scope this on the consultation call. No surprises.",
+        "$5,000 for a single-property launch. $10,000 to $15,000 for multi-property portfolios or complex integrations. We scope this on the consultation call. No surprises.",
     },
     faq: [
       {
         q: "What's the contract length?",
         a:
-          "Month to month after your build. Cancel anytime with 30 days notice. We earn the retainer every month by hitting your lease velocity targets.",
+          "Month to month after your build. Cancel anytime with 30 days notice.",
       },
       {
-        q: "Do you take over our existing AppFolio account?",
+        q: "Do you take over our existing property-management system?",
         a:
-          "Never. We integrate with your AppFolio via API (Plus plan) or the embed feed. You stay in full control of leases, applications, and payments.",
+          "Never. We integrate with your PMS via API or embed feed. You stay in full control of leases, applications, and payments.",
       },
       {
         q: "Can we keep our current website?",
         a:
-          "Yes. Bring-your-own-site mode installs just the pixel and chatbot scripts. Most clients eventually migrate to the managed site once they see what's possible.",
+          "Yes. Bring-your-own-site mode installs just the pixel and chatbot. Most operators eventually migrate to the managed site once they see what's possible.",
       },
       {
         q: "What about ad spend?",
@@ -246,36 +233,11 @@ export const MARKETING = {
           "No. Every engagement is a build plus monthly retainer. The platform needs the retainer to keep the pixel, chatbot, and automations alive.",
       },
       {
-        q: "What if I already use another agency?",
+        q: "What if we already use another vendor?",
         a:
-          "Bring them. We've run alongside existing agencies during the first month. Most clients eventually consolidate because our dashboards make comparison obvious.",
+          "Bring them. We've run alongside existing vendors during the first month. Most operators eventually consolidate once our dashboards make the comparison obvious.",
       },
     ],
-  },
-
-  compareCLX: {
-    eyebrow: "Conversion Logix alternative",
-    heading: "Same price. Software instead of PDFs.",
-    subhead:
-      "Conversion Logix is the incumbent for a reason, they got to operators first. We're the alternative you didn't know existed.",
-    rows: [
-      { feature: "Monthly cost", clx: "$2,600 and up", ours: "From $1,497" },
-      { feature: "Chatbot", clx: "Scripted FAQ", ours: "AI with real lead capture" },
-      { feature: "Pixel", clx: "None", ours: "Cursive identity graph" },
-      { feature: "Listings sync", clx: "Manual updates", ours: "AppFolio API, live" },
-      { feature: "Creative turnaround", clx: "Two to three weeks", ours: "48 hours" },
-      {
-        feature: "Reporting",
-        clx: "Quarterly PDF reports",
-        ours: "Live dashboard across all properties",
-      },
-      { feature: "Ad creative", clx: "Template library", ours: "Custom on demand" },
-      { feature: "Student referrals", clx: "Not supported", ours: "Native module" },
-      { feature: "AppFolio integration", clx: "No", ours: "Yes" },
-      { feature: "Contract length", clx: "12 months minimum", ours: "Month to month" },
-    ],
-    footerCopy:
-      "We'll never say anything untrue about Conversion Logix. The comparison above reflects their publicly listed features and our v1 capabilities. If you're on a CLX contract right now, bring the invoice to the demo. Most clients find the switch saves them money in month one.",
   },
 } as const;
 
