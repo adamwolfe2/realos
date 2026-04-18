@@ -1,26 +1,26 @@
-import { MetadataRoute } from 'next'
-import { getSiteUrl } from '@/lib/get-site-url'
+import type { MetadataRoute } from "next";
+import { getSiteUrl } from "@/lib/get-site-url";
 
-const SITE_URL = getSiteUrl()
+const SITE_URL = getSiteUrl();
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
-        userAgent: '*',
-        allow: '/',
+        userAgent: "*",
+        allow: "/",
         disallow: [
-          '/admin/',
-          '/client-portal/',
-          '/api/',
-          '/print/',
-          '/supplier/',
-          '/checkout/',
-          '/sign-in/',
-          '/sign-up/',
+          "/admin/",
+          "/portal/",
+          "/api/",
+          "/sign-in/",
+          "/sign-up/",
+          "/auth/",
+          "/tenant-site/",
+          "/unsub",
         ],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
-  }
+  };
 }
