@@ -2,25 +2,24 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
-// DECISION: Linear-inspired dark sticky header. Near-black panel background
-// (#0f1011), translucent white border underneath, 13px weight-510 links in
-// silver-gray, indigo CTA on the right. No cream, no serif, no mono for the
-// wordmark. Hover reveals a dropdown card with its own translucent chrome.
+// Tesla-inspired: a transparent sticky nav that floats over the hero, turning
+// to frosted white on scroll. Wordmark left, nav links centered, two utility
+// links right. No shadow, no border. Single 14px weight-500 type system.
 
 const PRODUCT_LINKS = [
-  { href: "/features/pixel",   label: "Identity pixel", hint: "Name your anonymous traffic" },
-  { href: "/features/chatbot", label: "AI chatbot",     hint: "Captures leads at 2 a.m." },
-  { href: "/features/seo-aeo", label: "SEO and AEO",    hint: "Google and ChatGPT, both" },
-  { href: "/features/ads",     label: "Managed ads",    hint: "Creative in 48 hours" },
+  { href: "/features/pixel",   label: "Identity pixel" },
+  { href: "/features/chatbot", label: "AI chatbot" },
+  { href: "/features/seo-aeo", label: "SEO and AEO" },
+  { href: "/features/ads",     label: "Managed ads" },
 ];
 
 const VERTICAL_LINKS = [
-  { href: "/student-housing", label: "Student housing", hint: "Sprint pricing, turn-heavy calendar" },
-  { href: "/multifamily",     label: "Multifamily",     hint: "Portfolio rollups + fair housing" },
-  { href: "/senior-living",   label: "Senior living",   hint: "Family-first, patient nurture" },
-  { href: "/commercial",      label: "Commercial",      hint: "Coming Q3" },
+  { href: "/student-housing", label: "Student housing" },
+  { href: "/multifamily",     label: "Multifamily" },
+  { href: "/senior-living",   label: "Senior living" },
+  { href: "/commercial",      label: "Commercial" },
 ];
 
 export function PlatformNav() {
@@ -29,103 +28,128 @@ export function PlatformNav() {
   const [verticalOpen, setVerticalOpen] = useState(false);
   const [compareOpen, setCompareOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // DECISION: the homepage uses a full-viewport dark cinematic hero, so the
+  // nav starts transparent with white text. On scroll it becomes opaque
+  // white with dark text, matching Tesla's behavior. Every non-home page
+  // starts in the opaque state so content is legible.
+  const isHome = pathname === "/";
+  const overDark = isHome && !scrolled;
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    onScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const labelColor = overDark ? "#FFFFFF" : "#171A20";
+  const navBtnClass = overDark ? "btn-nav btn-nav-on-dark" : "btn-nav";
 
   return (
     <header
-      className="sticky top-0 z-40 backdrop-blur-xl"
+      className="sticky top-0 z-40"
       style={{
-        backgroundColor: "rgba(15, 16, 17, 0.82)",
-        borderBottom: "1px solid var(--border-subtle)",
+        backgroundColor: overDark ? "transparent" : "rgba(255,255,255,0.9)",
+        backdropFilter: overDark ? "none" : "blur(18px)",
+        WebkitBackdropFilter: overDark ? "none" : "blur(18px)",
+        transition: "background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75)",
       }}
     >
-      <div className="max-w-6xl mx-auto px-4 md:px-6 h-14 flex items-center justify-between gap-4">
-        <Link href="/" className="flex items-center gap-2">
-          <LogoMark />
-          <span
-            className="text-[15px]"
-            style={{
-              color: "var(--text-headline)",
-              fontWeight: 510,
-              letterSpacing: "-0.012em",
-            }}
-          >
-            RealEstaite
-          </span>
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-14 flex items-center justify-between gap-4">
+        <Link
+          href="/"
+          className="flex items-center"
+          style={{
+            color: labelColor,
+            fontFamily: "var(--font-display)",
+            fontSize: "17px",
+            fontWeight: 500,
+            letterSpacing: "normal",
+            transition: "color 0.33s cubic-bezier(0.5, 0, 0, 0.75)",
+          }}
+        >
+          RealEstaite
         </Link>
 
-        <nav
-          className="hidden md:flex items-center gap-1"
-          aria-label="Primary"
-        >
+        <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
           <Dropdown
             label="Product"
+            btnClass={navBtnClass}
             open={productOpen}
             onOpenChange={setProductOpen}
             items={PRODUCT_LINKS}
+            labelColor={labelColor}
           />
           <Dropdown
             label="Solutions"
+            btnClass={navBtnClass}
             open={verticalOpen}
             onOpenChange={setVerticalOpen}
             items={VERTICAL_LINKS}
+            labelColor={labelColor}
           />
-          <NavLink href="/pricing" active={isActive(pathname, "/pricing")}>
+          <NavLink
+            href="/pricing"
+            active={isActive(pathname, "/pricing")}
+            overDark={overDark}
+          >
             Pricing
           </NavLink>
           <Dropdown
             label="Compare"
+            btnClass={navBtnClass}
             open={compareOpen}
             onOpenChange={setCompareOpen}
-            items={[
-              {
-                href: "/compare/conversion-logix",
-                label: "vs Conversion Logix",
-                hint: "Same price, live dashboard",
-              },
-            ]}
+            items={[{ href: "/compare/conversion-logix", label: "vs Conversion Logix" }]}
+            labelColor={labelColor}
           />
-          <NavLink href="/blog" active={isActive(pathname, "/blog")}>
+          <NavLink
+            href="/blog"
+            active={isActive(pathname, "/blog")}
+            overDark={overDark}
+          >
             Blog
           </NavLink>
         </nav>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <Link
             href="/sign-in"
-            className="hidden md:inline-flex text-[13px] transition-colors px-3 py-1.5 rounded-md"
-            style={{
-              color: "var(--text-body)",
-              fontWeight: 510,
-            }}
+            className={`hidden md:inline-flex ${navBtnClass}`}
           >
             Sign in
           </Link>
           <Link
             href="/onboarding"
-            className="inline-flex items-center gap-2 text-[13px] px-3.5 py-1.5 rounded-md btn-accent"
-            style={{ fontWeight: 510 }}
+            className="inline-flex items-center justify-center rounded-[4px] transition-all"
+            style={{
+              minHeight: "32px",
+              padding: "0 16px",
+              backgroundColor: overDark ? "rgba(244,244,244,0.9)" : "var(--electric-blue)",
+              color: overDark ? "#171A20" : "#FFFFFF",
+              fontSize: "14px",
+              fontWeight: 500,
+              transition:
+                "background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75), color 0.33s cubic-bezier(0.5, 0, 0, 0.75)",
+            }}
           >
             Book a demo
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
-              <path d="M2 5h6m0 0L5.5 2.5M8 5L5.5 7.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-            </svg>
           </Link>
           <button
             type="button"
-            className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-md"
-            style={{
-              border: "1px solid var(--border-standard)",
-              color: "var(--text-body)",
-            }}
+            className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-[4px]"
+            style={{ color: labelColor, transition: "color 0.33s" }}
             onClick={() => setMobileOpen((v) => !v)}
             aria-expanded={mobileOpen}
             aria-label="Toggle navigation"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+            <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
               {mobileOpen ? (
-                <path d="M3 3l10 10M13 3L3 13" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <path d="M4 4l10 10M14 4L4 14" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
               ) : (
-                <path d="M2.5 4.5h11M2.5 8h11M2.5 11.5h11" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+                <path d="M3 6h12M3 12h12" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
               )}
             </svg>
           </button>
@@ -137,48 +161,31 @@ export function PlatformNav() {
   );
 }
 
-function LogoMark() {
-  return (
-    <span
-      className="inline-flex items-center justify-center w-6 h-6 rounded"
-      style={{
-        backgroundColor: "var(--accent)",
-        boxShadow:
-          "0 0 0 1px rgba(255,255,255,0.1) inset, 0 0 20px var(--accent-glow)",
-      }}
-    >
-      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-        <path
-          d="M2 9.5V4l4-2.5 4 2.5v5.5"
-          stroke="white"
-          strokeWidth="1.3"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-        <path d="M2 9.5h8" stroke="white" strokeWidth="1.3" strokeLinecap="round" />
-        <circle cx="6" cy="7" r="1" fill="white" />
-      </svg>
-    </span>
-  );
-}
-
 function NavLink({
   href,
   active,
+  overDark,
   children,
 }: {
   href: string;
   active: boolean;
+  overDark: boolean;
   children: React.ReactNode;
 }) {
   return (
     <Link
       href={href}
-      className="px-3 py-1.5 rounded-md text-[13px] transition-colors"
+      className="inline-flex items-center rounded-[4px]"
       style={{
-        color: active ? "var(--text-headline)" : "var(--text-body)",
-        fontWeight: 510,
-        backgroundColor: active ? "var(--bg-chip)" : "transparent",
+        minHeight: "32px",
+        padding: "4px 12px",
+        color: overDark ? "#FFFFFF" : "#171A20",
+        fontFamily: "var(--font-sans)",
+        fontSize: "14px",
+        fontWeight: 500,
+        opacity: active ? 1 : 0.92,
+        transition:
+          "color 0.33s cubic-bezier(0.5, 0, 0, 0.75), background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75), opacity 0.33s",
       }}
     >
       {children}
@@ -189,13 +196,17 @@ function NavLink({
 function Dropdown({
   label,
   open,
+  btnClass,
   onOpenChange,
   items,
+  labelColor,
 }: {
   label: string;
+  btnClass: string;
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  items: Array<{ href: string; label: string; hint?: string }>;
+  items: Array<{ href: string; label: string }>;
+  labelColor: string;
 }) {
   return (
     <div
@@ -205,52 +216,37 @@ function Dropdown({
     >
       <button
         type="button"
-        className="flex items-center gap-1 px-3 py-1.5 rounded-md text-[13px] transition-colors"
-        style={{
-          color: "var(--text-body)",
-          fontWeight: 510,
-          backgroundColor: open ? "var(--bg-chip)" : "transparent",
-        }}
+        className={btnClass}
+        style={{ color: labelColor }}
         onClick={() => onOpenChange(!open)}
         aria-expanded={open}
       >
         {label}
-        <svg aria-hidden="true" width="10" height="10" viewBox="0 0 10 10" fill="none" style={{ opacity: 0.6 }}>
-          <path d="M2 3.5L5 6.5L8 3.5" stroke="currentColor" strokeWidth="1.2" />
-        </svg>
       </button>
       {open ? (
-        <div className="absolute top-full left-0 pt-2 z-50">
+        <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50">
           <ul
-            className="p-1 w-[320px]"
+            className="py-2 min-w-[240px]"
             style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border-standard)",
-              borderRadius: "12px",
-              boxShadow:
-                "0 8px 24px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04) inset",
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #EEEEEE",
+              borderRadius: "4px",
             }}
           >
             {items.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="block px-3 py-2.5 rounded-md transition-colors hover:bg-[rgba(255,255,255,0.04)]"
+                  className="block px-4 py-2.5"
+                  style={{
+                    color: "#171A20",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "14px",
+                    fontWeight: 500,
+                    transition: "background-color 0.33s",
+                  }}
                 >
-                  <span
-                    className="block text-[13px]"
-                    style={{ color: "var(--text-headline)", fontWeight: 510 }}
-                  >
-                    {item.label}
-                  </span>
-                  {item.hint ? (
-                    <span
-                      className="block text-[12px] mt-0.5"
-                      style={{ color: "var(--text-muted)" }}
-                    >
-                      {item.hint}
-                    </span>
-                  ) : null}
+                  {item.label}
                 </Link>
               </li>
             ))}
@@ -266,14 +262,8 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
     title: string;
     items: Array<{ href: string; label: string }>;
   }> = [
-    {
-      title: "Product",
-      items: PRODUCT_LINKS.map(({ href, label }) => ({ href, label })),
-    },
-    {
-      title: "Solutions",
-      items: VERTICAL_LINKS.map(({ href, label }) => ({ href, label })),
-    },
+    { title: "Product", items: PRODUCT_LINKS },
+    { title: "Solutions", items: VERTICAL_LINKS },
     {
       title: "Company",
       items: [
@@ -288,25 +278,38 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
     <div
       className="md:hidden"
       style={{
-        borderTop: "1px solid var(--border-subtle)",
-        backgroundColor: "var(--bg-panel)",
+        borderTop: "1px solid #EEEEEE",
+        backgroundColor: "#FFFFFF",
       }}
     >
       <div className="max-w-6xl mx-auto px-4 py-4 space-y-5">
         {sections.map((s) => (
           <div key={s.title}>
-            <p className="eyebrow mb-2">{s.title}</p>
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                color: "#5C5E62",
+                fontSize: "11px",
+                textTransform: "uppercase",
+                letterSpacing: "0.18em",
+                marginBottom: "8px",
+              }}
+            >
+              {s.title}
+            </p>
             <ul className="space-y-1">
               {s.items.map((i) => (
                 <li key={i.href}>
                   <Link
                     href={i.href}
-                    className="block px-2 py-2 rounded-md text-[14px]"
-                    style={{
-                      color: "var(--text-headline)",
-                      fontWeight: 510,
-                    }}
                     onClick={onClose}
+                    style={{
+                      display: "block",
+                      padding: "8px 8px",
+                      color: "#171A20",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                    }}
                   >
                     {i.label}
                   </Link>

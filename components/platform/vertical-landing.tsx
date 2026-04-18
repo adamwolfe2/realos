@@ -1,8 +1,9 @@
 import Link from "next/link";
+import Image from "next/image";
 
-// Linear-inspired vertical landing shell. Dark canvas throughout, with the
-// middle "pains" block on a slightly recessed panel for rhythm. All cards
-// are translucent-white on dark (never white-on-white).
+// Tesla-style vertical landing: full-bleed cinematic hero per vertical,
+// then three centered content blocks (pains, modules, case study) on white
+// and light-ash canvases. No glow, no translucent cards, no gradients on UI.
 
 export type VerticalLandingProps = {
   eyebrow: string;
@@ -12,7 +13,11 @@ export type VerticalLandingProps = {
   modules: Array<{ title: string; body: string }>;
   caseStudy?: { client: string; stat: string; body: string };
   ctaHref?: string;
+  heroImage?: string;
 };
+
+const DEFAULT_HERO =
+  "https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=2400&q=85";
 
 export function VerticalLanding({
   eyebrow,
@@ -22,121 +27,148 @@ export function VerticalLanding({
   modules,
   caseStudy,
   ctaHref = "/onboarding",
+  heroImage = DEFAULT_HERO,
 }: VerticalLandingProps) {
   return (
-    <div
-      style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-body)" }}
-    >
+    <div style={{ backgroundColor: "#FFFFFF", color: "#393C41" }}>
+      {/* HERO */}
       <section
-        className="relative overflow-hidden hero-glow"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}
+        className="relative"
+        style={{ height: "min(72vh, 680px)", minHeight: "520px", marginTop: "-56px" }}
       >
-        <div className="absolute inset-0 grid-fade pointer-events-none" aria-hidden="true" />
-        <div className="max-w-6xl mx-auto px-4 md:px-6 pt-24 pb-20 md:pb-24 relative">
-          <p
-            className="font-mono text-[11px] mb-5"
-            style={{
-              color: "var(--accent-bright)",
-              letterSpacing: "0.18em",
-              textTransform: "uppercase",
-              fontWeight: 510,
-            }}
-          >
-            {eyebrow}
-          </p>
-          <h1
-            className="max-w-4xl"
-            style={{
-              color: "var(--text-headline)",
-              fontSize: "clamp(40px, 5.6vw, 64px)",
-              fontWeight: 510,
-              letterSpacing: "-0.028em",
-              lineHeight: 1.03,
-            }}
-          >
-            {headline}
-          </h1>
-          <p
-            className="mt-6 text-[16px] leading-relaxed max-w-3xl"
-            style={{ color: "var(--text-muted)", letterSpacing: "-0.011em" }}
-          >
-            {subhead}
-          </p>
-          <div className="mt-10 flex flex-wrap gap-2.5">
-            <Link
-              href={ctaHref}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md btn-accent text-[14px]"
-              style={{ fontWeight: 510 }}
-            >
-              Book a demo
-            </Link>
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md btn-ghost text-[14px]"
-              style={{ fontWeight: 510 }}
-            >
-              See pricing
-            </Link>
+        <Image
+          src={heroImage}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          style={{ objectFit: "cover", objectPosition: "center" }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(23,26,32,0.4) 0%, rgba(23,26,32,0.15) 50%, rgba(23,26,32,0.55) 100%)",
+          }}
+          aria-hidden="true"
+        />
+        <div className="relative h-full flex flex-col">
+          <div className="flex-1 flex items-center">
+            <div className="w-full max-w-[1100px] mx-auto px-4 md:px-8 text-center pt-16">
+              <p
+                className="mb-4"
+                style={{
+                  color: "rgba(255,255,255,0.85)",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  fontWeight: 500,
+                }}
+              >
+                {eyebrow}
+              </p>
+              <h1
+                className="mx-auto max-w-[920px]"
+                style={{
+                  color: "#FFFFFF",
+                  fontFamily: "var(--font-display)",
+                  fontSize: "clamp(32px, 5vw, 52px)",
+                  fontWeight: 500,
+                  lineHeight: 1.12,
+                }}
+              >
+                {headline}
+              </h1>
+              <p
+                className="mx-auto mt-5 max-w-[560px]"
+                style={{
+                  color: "rgba(255,255,255,0.85)",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "15px",
+                  fontWeight: 400,
+                  lineHeight: 1.55,
+                }}
+              >
+                {subhead}
+              </p>
+            </div>
+          </div>
+          <div className="pb-16">
+            <div className="max-w-[1100px] mx-auto px-4 md:px-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <Link href={ctaHref} className="btn-primary">
+                Book a demo
+              </Link>
+              <Link href="/pricing" className="btn-secondary-dark">
+                See pricing
+              </Link>
+            </div>
           </div>
         </div>
       </section>
 
-      <section
-        style={{
-          backgroundColor: "var(--bg-panel)",
-          borderBottom: "1px solid var(--border-subtle)",
-        }}
-      >
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-20">
-          <p className="eyebrow mb-4">Operators tell us</p>
-          <h2
-            className="max-w-3xl"
-            style={{
-              color: "var(--text-headline)",
-              fontSize: "clamp(28px, 3.6vw, 40px)",
-              fontWeight: 510,
-              letterSpacing: "-0.022em",
-              lineHeight: 1.08,
-            }}
-          >
-            The three things that made them look.
-          </h2>
-          <ul className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* PAINS */}
+      <section style={{ backgroundColor: "#F4F4F4" }}>
+        <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
+          <div className="text-center mb-12">
+            <p
+              style={{
+                color: "#5C5E62",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                fontWeight: 500,
+                marginBottom: "12px",
+              }}
+            >
+              Operators tell us
+            </p>
+            <h2 className="heading-section mx-auto max-w-[680px]" style={{ color: "#171A20" }}>
+              The three things that made them look.
+            </h2>
+          </div>
+          <ul className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {pains.map((p, i) => (
               <li
                 key={p.title}
-                className="p-6 rounded-xl"
+                className="p-6"
                 style={{
-                  border: "1px solid var(--border-standard)",
-                  backgroundColor: "rgba(255,255,255,0.02)",
+                  backgroundColor: "#FFFFFF",
+                  borderRadius: "12px",
                 }}
               >
                 <span
-                  className="font-mono text-[10px]"
                   style={{
-                    color: "var(--text-subtle)",
+                    color: "#8E8E8E",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "10px",
                     letterSpacing: "0.14em",
-                    fontWeight: 510,
+                    fontWeight: 500,
                   }}
                 >
                   0{i + 1}
                 </span>
                 <h3
-                  className="mt-3 leading-snug"
+                  className="mt-3"
                   style={{
-                    color: "var(--text-headline)",
+                    color: "#171A20",
+                    fontFamily: "var(--font-display)",
                     fontSize: "18px",
-                    fontWeight: 510,
-                    letterSpacing: "-0.012em",
+                    fontWeight: 500,
+                    lineHeight: 1.25,
                   }}
                 >
                   {p.title}
                 </h3>
                 <p
-                  className="text-[13px] mt-4 leading-relaxed"
+                  className="mt-3"
                   style={{
-                    color: "var(--text-muted)",
-                    letterSpacing: "-0.011em",
+                    color: "#393C41",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "13px",
+                    fontWeight: 400,
+                    lineHeight: 1.5,
                   }}
                 >
                   {p.body}
@@ -147,46 +179,56 @@ export function VerticalLanding({
         </div>
       </section>
 
-      <section>
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-20">
-          <p className="eyebrow mb-4">What you get on day one</p>
-          <h2
-            className="max-w-3xl"
-            style={{
-              color: "var(--text-headline)",
-              fontSize: "clamp(28px, 3.6vw, 40px)",
-              fontWeight: 510,
-              letterSpacing: "-0.022em",
-              lineHeight: 1.08,
-            }}
-          >
-            Six modules. One launch. Ship in two weeks.
-          </h2>
-          <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-4">
+      {/* MODULES */}
+      <section style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
+          <div className="text-center mb-12">
+            <p
+              style={{
+                color: "#5C5E62",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                fontWeight: 500,
+                marginBottom: "12px",
+              }}
+            >
+              What you get on day one
+            </p>
+            <h2 className="heading-section mx-auto max-w-[680px]" style={{ color: "#171A20" }}>
+              Six modules. One launch. Ship in two weeks.
+            </h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
             {modules.map((m) => (
               <div
                 key={m.title}
-                className="p-6 rounded-xl"
+                className="p-6"
                 style={{
-                  backgroundColor: "rgba(255,255,255,0.02)",
-                  border: "1px solid var(--border-standard)",
+                  backgroundColor: "#F4F4F4",
+                  borderRadius: "12px",
                 }}
               >
                 <h3
                   style={{
-                    color: "var(--text-headline)",
+                    color: "#171A20",
+                    fontFamily: "var(--font-display)",
                     fontSize: "18px",
-                    fontWeight: 590,
-                    letterSpacing: "-0.012em",
+                    fontWeight: 500,
+                    lineHeight: 1.25,
                   }}
                 >
                   {m.title}
                 </h3>
                 <p
-                  className="text-[13px] mt-3 leading-relaxed"
+                  className="mt-3"
                   style={{
-                    color: "var(--text-muted)",
-                    letterSpacing: "-0.011em",
+                    color: "#393C41",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "13px",
+                    fontWeight: 400,
+                    lineHeight: 1.5,
                   }}
                 >
                   {m.body}
@@ -197,139 +239,99 @@ export function VerticalLanding({
         </div>
       </section>
 
+      {/* CASE STUDY */}
       {caseStudy ? (
-        <section
-          className="relative overflow-hidden"
-          style={{
-            backgroundColor: "var(--bg-panel)",
-            borderTop: "1px solid var(--border-subtle)",
-            borderBottom: "1px solid var(--border-subtle)",
-          }}
-        >
-          <div
-            className="absolute inset-0 pointer-events-none"
-            aria-hidden="true"
-            style={{
-              background:
-                "radial-gradient(ellipse at 70% 50%, rgba(94,106,210,0.14) 0%, transparent 55%)",
-            }}
-          />
-          <div className="max-w-6xl mx-auto px-4 md:px-6 py-20 grid grid-cols-1 md:grid-cols-2 gap-10 items-center relative">
-            <div>
-              <p className="eyebrow">Case study</p>
-              <p
-                className="mt-4"
-                style={{
-                  color: "var(--text-headline)",
-                  fontSize: "clamp(28px, 3.6vw, 40px)",
-                  fontWeight: 510,
-                  letterSpacing: "-0.022em",
-                  lineHeight: 1.08,
-                }}
-              >
-                {caseStudy.client}
-              </p>
-              <p
-                className="text-[14px] leading-relaxed mt-5 max-w-lg"
-                style={{
-                  color: "var(--text-muted)",
-                  letterSpacing: "-0.011em",
-                }}
-              >
-                {caseStudy.body}
-              </p>
-            </div>
-            <div
-              className="p-10 text-center rounded-2xl relative overflow-hidden"
+        <section style={{ backgroundColor: "#171A20" }}>
+          <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
+            <p
               style={{
-                border: "1px solid var(--border-standard)",
-                backgroundColor: "rgba(255,255,255,0.02)",
-                boxShadow:
-                  "0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03) inset",
+                color: "rgba(255,255,255,0.7)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                fontWeight: 500,
+                marginBottom: "12px",
               }}
             >
-              <span
-                className="absolute -top-24 -right-24 w-48 h-48 rounded-full pointer-events-none"
-                aria-hidden="true"
-                style={{
-                  background:
-                    "radial-gradient(circle at center, var(--accent-glow) 0%, transparent 70%)",
-                }}
-              />
-              <p className="eyebrow relative">Result in 30 days</p>
-              <p
-                className="mt-4 leading-none relative"
-                style={{
-                  color: "var(--accent-bright)",
-                  fontSize: "clamp(56px, 8vw, 88px)",
-                  fontWeight: 510,
-                  letterSpacing: "-0.03em",
-                }}
-              >
-                {caseStudy.stat}
-              </p>
-            </div>
+              Case study
+            </p>
+            <h3
+              className="mx-auto max-w-[760px]"
+              style={{
+                color: "#FFFFFF",
+                fontFamily: "var(--font-display)",
+                fontSize: "clamp(28px, 3.6vw, 40px)",
+                fontWeight: 500,
+                lineHeight: 1.15,
+              }}
+            >
+              {caseStudy.client}
+            </h3>
+            <p
+              className="mx-auto mt-5 max-w-[620px]"
+              style={{
+                color: "rgba(255,255,255,0.8)",
+                fontFamily: "var(--font-sans)",
+                fontSize: "14px",
+                fontWeight: 400,
+                lineHeight: 1.6,
+              }}
+            >
+              {caseStudy.body}
+            </p>
+            <p
+              className="mt-12 leading-none"
+              style={{
+                color: "#FFFFFF",
+                fontFamily: "var(--font-display)",
+                fontSize: "clamp(56px, 8vw, 88px)",
+                fontWeight: 500,
+              }}
+            >
+              {caseStudy.stat}
+            </p>
+            <p
+              className="mt-3"
+              style={{
+                color: "rgba(255,255,255,0.65)",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+              }}
+            >
+              Result in 30 days
+            </p>
           </div>
         </section>
       ) : null}
 
-      <section>
-        <div className="max-w-6xl mx-auto px-4 md:px-6 py-20">
-          <div
-            className="p-10 md:p-14 text-center relative overflow-hidden rounded-2xl"
+      {/* FINAL CTA */}
+      <section style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
+          <h2 className="heading-section mx-auto max-w-[680px]" style={{ color: "#171A20" }}>
+            See the platform in your stack.
+          </h2>
+          <p
+            className="mx-auto mt-4 max-w-[520px]"
             style={{
-              backgroundColor: "var(--bg-surface)",
-              border: "1px solid var(--border-standard)",
-              boxShadow:
-                "0 20px 48px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03) inset",
+              color: "#393C41",
+              fontFamily: "var(--font-sans)",
+              fontSize: "15px",
+              lineHeight: 1.55,
             }}
           >
-            <span
-              className="absolute -top-40 -left-40 w-80 h-80 rounded-full pointer-events-none"
-              aria-hidden="true"
-              style={{
-                background:
-                  "radial-gradient(circle at center, var(--accent-glow) 0%, transparent 70%)",
-              }}
-            />
-            <h2
-              className="relative"
-              style={{
-                color: "var(--text-headline)",
-                fontSize: "clamp(28px, 3.6vw, 40px)",
-                fontWeight: 510,
-                letterSpacing: "-0.022em",
-                lineHeight: 1.1,
-              }}
-            >
-              See the platform in your stack.
-            </h2>
-            <p
-              className="text-[15px] leading-relaxed mt-4 max-w-xl mx-auto relative"
-              style={{
-                color: "var(--text-muted)",
-                letterSpacing: "-0.011em",
-              }}
-            >
-              Thirty minutes. No obligation. We audit your current marketing
-              live on the call.
-            </p>
-            <div className="mt-8 flex justify-center gap-2.5 relative">
-              <Link
-                href={ctaHref}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md btn-accent text-[14px]"
-                style={{ fontWeight: 510 }}
-              >
-                Book a demo
-              </Link>
-              <Link
-                href="/pricing"
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md btn-ghost text-[14px]"
-                style={{ fontWeight: 510 }}
-              >
-                See pricing
-              </Link>
-            </div>
+            Thirty minutes. No obligation. We audit your current marketing live
+            on the call.
+          </p>
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href={ctaHref} className="btn-primary">
+              Book a demo
+            </Link>
+            <Link href="/pricing" className="btn-secondary">
+              See pricing
+            </Link>
           </div>
         </div>
       </section>

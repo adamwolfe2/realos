@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-// Linear-inspired: dark canvas, Inter display weight-510, translucent
-// numbered cards for "how it works", indigo accent on eyebrow and dot.
+// Tesla-style feature page: white canvas, centered composition, two type
+// weights, 4px radii, Electric Blue CTAs. Numbered "how it works" rows sit
+// on Light Ash with no borders, just spacing as the separator.
 
 export function FeaturePage({
   eyebrow,
@@ -21,158 +22,224 @@ export function FeaturePage({
   bestFor: string;
 }) {
   return (
-    <div
-      style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-body)" }}
-    >
-      <header
-        className="relative overflow-hidden hero-glow"
-        style={{ borderBottom: "1px solid var(--border-subtle)" }}
-      >
-        <div className="absolute inset-0 grid-fade pointer-events-none" aria-hidden="true" />
-        <div className="max-w-4xl mx-auto px-4 md:px-6 pt-24 pb-16 relative">
+    <div style={{ backgroundColor: "#FFFFFF", color: "#393C41" }}>
+      <header>
+        <div className="max-w-[920px] mx-auto px-4 md:px-8 pt-24 pb-16 text-center">
           <p
-            className="font-mono text-[11px] mb-5"
+            className="mb-5"
             style={{
-              color: "var(--accent-bright)",
+              color: "#3E6AE1",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
               letterSpacing: "0.18em",
               textTransform: "uppercase",
-              fontWeight: 510,
+              fontWeight: 500,
             }}
           >
             {eyebrow}
           </p>
           <h1
+            className="mx-auto"
             style={{
-              color: "var(--text-headline)",
-              fontSize: "clamp(36px, 5.2vw, 60px)",
-              fontWeight: 510,
-              letterSpacing: "-0.028em",
-              lineHeight: 1.03,
+              color: "#171A20",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(32px, 4.8vw, 52px)",
+              fontWeight: 500,
+              lineHeight: 1.1,
             }}
           >
             {headline}
           </h1>
           <p
-            className="mt-5 text-[16px] leading-relaxed max-w-2xl"
-            style={{ color: "var(--text-muted)", letterSpacing: "-0.011em" }}
+            className="mx-auto mt-5 max-w-[620px]"
+            style={{
+              color: "#393C41",
+              fontFamily: "var(--font-sans)",
+              fontSize: "16px",
+              lineHeight: 1.55,
+            }}
           >
             {subhead}
           </p>
         </div>
       </header>
 
-      <section>
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-16 space-y-14">
-          <Block label="What it is" body={whatItIs} />
+      <section style={{ backgroundColor: "#F4F4F4" }}>
+        <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16 text-center">
+          <p
+            style={{
+              color: "#5C5E62",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              marginBottom: "12px",
+            }}
+          >
+            What it is
+          </p>
+          <p
+            className="mx-auto max-w-[720px]"
+            style={{
+              color: "#171A20",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(20px, 2.4vw, 28px)",
+              fontWeight: 400,
+              lineHeight: 1.4,
+              letterSpacing: "normal",
+            }}
+          >
+            {whatItIs}
+          </p>
+        </div>
+      </section>
 
-          <div>
-            <p className="eyebrow mb-4">How it works</p>
-            <ol className="space-y-2.5">
-              {howItWorks.map((step, i) => (
-                <li
-                  key={step}
-                  className="p-5 flex gap-4 rounded-xl"
+      <section style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16">
+          <p
+            className="text-center mb-10"
+            style={{
+              color: "#5C5E62",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+            }}
+          >
+            How it works
+          </p>
+          <ol className="space-y-3">
+            {howItWorks.map((step, i) => (
+              <li
+                key={step}
+                className="p-6 flex gap-5"
+                style={{
+                  backgroundColor: "#F4F4F4",
+                  borderRadius: "12px",
+                }}
+              >
+                <span
                   style={{
-                    backgroundColor: "rgba(255,255,255,0.02)",
-                    border: "1px solid var(--border-standard)",
+                    color: "#3E6AE1",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "12px",
+                    fontWeight: 500,
+                    letterSpacing: "0.1em",
+                    minWidth: "2ch",
+                    paddingTop: "2px",
                   }}
                 >
-                  <span
-                    className="font-mono text-[11px] flex-shrink-0"
-                    style={{
-                      color: "var(--accent-bright)",
-                      minWidth: "2ch",
-                      fontWeight: 510,
-                      letterSpacing: "0.08em",
-                      paddingTop: "2px",
-                    }}
-                  >
-                    0{i + 1}
-                  </span>
-                  <p
-                    className="text-[14px] leading-relaxed"
-                    style={{ color: "var(--text-body)", letterSpacing: "-0.011em" }}
-                  >
-                    {step}
-                  </p>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          <div>
-            <p className="eyebrow mb-4">What to expect</p>
-            <ul className="space-y-2">
-              {results.map((r) => (
-                <li
-                  key={r}
-                  className="flex items-start gap-3 text-[14px] leading-relaxed"
-                  style={{ color: "var(--text-body)", letterSpacing: "-0.011em" }}
+                  0{i + 1}
+                </span>
+                <p
+                  style={{
+                    color: "#171A20",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "15px",
+                    fontWeight: 400,
+                    lineHeight: 1.55,
+                  }}
                 >
-                  <span
-                    aria-hidden="true"
-                    className="inline-flex items-center justify-center flex-shrink-0 mt-0.5 w-4 h-4 rounded-full"
-                    style={{
-                      backgroundColor: "rgba(94,106,210,0.18)",
-                      color: "var(--accent-bright)",
-                    }}
-                  >
-                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-                      <path
-                        d="M1.5 5L4 7.5L8.5 2.5"
-                        stroke="currentColor"
-                        strokeWidth="1.6"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      />
-                    </svg>
-                  </span>
-                  <span>{r}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
+                  {step}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
 
-          <Block label="Best for" body={bestFor} />
+      <section style={{ backgroundColor: "#F4F4F4" }}>
+        <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16">
+          <p
+            className="text-center mb-8"
+            style={{
+              color: "#5C5E62",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+            }}
+          >
+            What to expect
+          </p>
+          <ul className="mx-auto max-w-[680px] space-y-3">
+            {results.map((r) => (
+              <li
+                key={r}
+                className="flex items-start gap-3"
+                style={{
+                  color: "#171A20",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "15px",
+                  lineHeight: 1.55,
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  className="inline-flex items-center justify-center flex-shrink-0 mt-1 w-4 h-4 rounded-full"
+                  style={{
+                    backgroundColor: "rgba(62,106,225,0.12)",
+                    color: "#3E6AE1",
+                  }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d="M1.5 5L4 7.5L8.5 2.5"
+                      stroke="currentColor"
+                      strokeWidth="1.6"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+                <span>{r}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </section>
 
-          <div className="flex flex-wrap gap-2.5">
-            <Link
-              href="/onboarding"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md btn-accent text-[14px]"
-              style={{ fontWeight: 510 }}
-            >
+      <section style={{ backgroundColor: "#FFFFFF" }}>
+        <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16 text-center">
+          <p
+            style={{
+              color: "#5C5E62",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              letterSpacing: "0.18em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              marginBottom: "12px",
+            }}
+          >
+            Best for
+          </p>
+          <p
+            className="mx-auto max-w-[720px]"
+            style={{
+              color: "#171A20",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(20px, 2.4vw, 28px)",
+              fontWeight: 400,
+              lineHeight: 1.4,
+            }}
+          >
+            {bestFor}
+          </p>
+
+          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link href="/onboarding" className="btn-primary">
               Book a demo
             </Link>
-            <Link
-              href="/pricing"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-md btn-ghost text-[14px]"
-              style={{ fontWeight: 510 }}
-            >
+            <Link href="/pricing" className="btn-secondary">
               See pricing
             </Link>
           </div>
         </div>
       </section>
-    </div>
-  );
-}
-
-function Block({ label, body }: { label: string; body: string }) {
-  return (
-    <div>
-      <p className="eyebrow mb-4">{label}</p>
-      <p
-        className="leading-relaxed"
-        style={{
-          color: "var(--text-headline)",
-          fontSize: "clamp(20px, 2.2vw, 26px)",
-          fontWeight: 400,
-          letterSpacing: "-0.015em",
-          lineHeight: 1.4,
-        }}
-      >
-        {body}
-      </p>
     </div>
   );
 }

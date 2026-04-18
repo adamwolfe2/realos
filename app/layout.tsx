@@ -30,7 +30,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#08090a",
+  themeColor: "#FFFFFF",
 };
 
 export const metadata: Metadata = {
@@ -104,10 +104,9 @@ export default function RootLayout({
         <body
           className="antialiased"
           style={{
-            backgroundColor: "var(--bg-primary)",
-            color: "var(--text-body)",
+            backgroundColor: "#FFFFFF",
+            color: "#393C41",
             fontFamily: "var(--font-sans)",
-            fontFeatureSettings: '"cv01","ss03"',
           }}
         >
           <script

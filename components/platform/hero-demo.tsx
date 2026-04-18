@@ -3,10 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 // ---------------------------------------------------------------------------
-// HeroDemo (Linear-inspired)
+// HeroDemo (Tesla-compatible white-canvas)
 // Auto-advancing 4-step walkthrough: IMPORT -> BUILD -> ATTACH -> LAUNCH.
-// Dark translucent surfaces, indigo accent, no cream, no serif. Each step
-// renders a distinct mock UI so operators SEE the platform working.
+// White surface with Light Ash stripes, Electric Blue for active tab and
+// highlights. No shadows. 4px radii. 0.33s transitions.
 // ---------------------------------------------------------------------------
 
 type StepKey = "import" | "build" | "attach" | "launch";
@@ -41,18 +41,16 @@ export function HeroDemo() {
     <div
       className="w-full overflow-hidden"
       style={{
-        backgroundColor: "var(--bg-surface)",
-        border: "1px solid var(--border-standard)",
+        backgroundColor: "#FFFFFF",
+        border: "1px solid #EEEEEE",
         borderRadius: "12px",
-        boxShadow:
-          "0 24px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03) inset",
       }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
       <div
         className="grid grid-cols-4"
-        style={{ borderBottom: "1px solid var(--border-standard)" }}
+        style={{ borderBottom: "1px solid #EEEEEE" }}
       >
         {STEPS.map((s, i) => {
           const isActive = s.key === active;
@@ -61,31 +59,34 @@ export function HeroDemo() {
               key={s.key}
               type="button"
               onClick={() => setActive(s.key)}
-              className="relative px-3 py-3 text-left transition-colors"
+              className="relative px-3 py-3 text-left"
               style={{
-                backgroundColor: isActive ? "rgba(94,106,210,0.12)" : "transparent",
-                borderRight:
-                  i < STEPS.length - 1
-                    ? "1px solid var(--border-standard)"
-                    : "none",
+                backgroundColor: isActive ? "#FFFFFF" : "#F4F4F4",
+                borderRight: i < STEPS.length - 1 ? "1px solid #EEEEEE" : "none",
                 cursor: "pointer",
+                transition: "background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75)",
               }}
             >
               <span
-                className="font-mono text-[10px] block"
+                className="block"
                 style={{
-                  color: isActive ? "var(--accent-bright)" : "var(--text-subtle)",
+                  color: isActive ? "#3E6AE1" : "#8E8E8E",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "10px",
                   letterSpacing: "0.12em",
+                  fontWeight: 500,
                 }}
               >
                 {s.num}
               </span>
               <span
-                className="text-[12px] block mt-0.5"
+                className="block mt-0.5"
                 style={{
-                  color: isActive ? "var(--text-headline)" : "var(--text-muted)",
+                  color: isActive ? "#171A20" : "#5C5E62",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "12px",
+                  fontWeight: 500,
                   letterSpacing: "0.04em",
-                  fontWeight: 510,
                 }}
               >
                 {s.title}
@@ -93,7 +94,7 @@ export function HeroDemo() {
               {isActive && (
                 <span
                   className="absolute left-0 right-0 bottom-[-1px] h-[2px]"
-                  style={{ backgroundColor: "var(--accent-bright)" }}
+                  style={{ backgroundColor: "#3E6AE1" }}
                 />
               )}
             </button>
@@ -101,7 +102,7 @@ export function HeroDemo() {
         })}
       </div>
 
-      <div className="p-5 min-h-[380px]">
+      <div className="p-6 md:p-7 min-h-[400px]" style={{ backgroundColor: "#FFFFFF" }}>
         {active === "import" && <ImportPane />}
         {active === "build" && <BuildPane />}
         {active === "attach" && <AttachPane />}
@@ -111,23 +112,23 @@ export function HeroDemo() {
       <div
         className="px-5 py-3 flex items-center gap-4"
         style={{
-          borderTop: "1px solid var(--border-subtle)",
-          backgroundColor: "rgba(0,0,0,0.25)",
+          borderTop: "1px solid #EEEEEE",
+          backgroundColor: "#F4F4F4",
         }}
       >
         <span
           className="inline-block h-2 w-2 rounded-full"
-          style={{
-            backgroundColor: "var(--accent-bright)",
-            boxShadow: "0 0 10px var(--accent-glow)",
-          }}
+          style={{ backgroundColor: "#3E6AE1" }}
         />
         <span
-          className="font-mono text-[10px] flex-1"
+          className="flex-1"
           style={{
-            color: "var(--text-subtle)",
+            color: "#8E8E8E",
+            fontFamily: "var(--font-mono)",
+            fontSize: "10px",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
+            fontWeight: 500,
           }}
         >
           Live demo, auto-advances, click any tab to jump
@@ -136,13 +137,11 @@ export function HeroDemo() {
           {STEPS.map((s, i) => (
             <span
               key={s.key}
-              className="block h-[3px] rounded-full transition-all"
+              className="block h-[3px] rounded-full"
               style={{
                 width: i === activeIdx ? "24px" : "10px",
-                backgroundColor:
-                  i === activeIdx
-                    ? "var(--accent-bright)"
-                    : "var(--border-strong)",
+                backgroundColor: i === activeIdx ? "#3E6AE1" : "#D0D1D2",
+                transition: "all 0.33s cubic-bezier(0.5, 0, 0, 0.75)",
               }}
             />
           ))}
@@ -174,33 +173,37 @@ function ImportPane() {
         left={<span>STEP 01 &middot; IMPORT</span>}
         right={
           <span>
-            <strong style={{ color: "var(--text-headline)", fontWeight: 510 }}>86 / 86</strong>{" "}
-            <span style={{ color: "var(--text-subtle)" }}>UNITS</span>
+            <strong style={{ color: "#171A20", fontWeight: 500 }}>86 / 86</strong>{" "}
+            <span style={{ color: "#8E8E8E" }}>UNITS</span>
           </span>
         }
       />
       <p
-        className="text-[20px] mt-2 mb-4"
+        className="mt-2 mb-4"
         style={{
-          color: "var(--text-headline)",
-          fontWeight: 510,
-          letterSpacing: "-0.012em",
+          color: "#171A20",
+          fontFamily: "var(--font-display)",
+          fontSize: "20px",
+          fontWeight: 500,
         }}
       >
         Pulling live inventory from AppFolio
       </p>
 
       <div
-        className="rounded-md overflow-hidden"
-        style={{ border: "1px solid var(--border-standard)" }}
+        className="overflow-hidden"
+        style={{ border: "1px solid #EEEEEE", borderRadius: "4px" }}
       >
         <div
-          className="grid grid-cols-[56px_1fr_72px_96px_80px] gap-2 px-3 py-2 font-mono text-[10px]"
+          className="grid grid-cols-[56px_1fr_72px_96px_80px] gap-2 px-3 py-2"
           style={{
-            color: "var(--text-subtle)",
-            backgroundColor: "rgba(255,255,255,0.03)",
-            borderBottom: "1px solid var(--border-standard)",
+            backgroundColor: "#F4F4F4",
+            borderBottom: "1px solid #EEEEEE",
+            color: "#8E8E8E",
+            fontFamily: "var(--font-mono)",
+            fontSize: "10px",
             letterSpacing: "0.08em",
+            fontWeight: 500,
           }}
         >
           <span>UNIT</span>
@@ -212,35 +215,42 @@ function ImportPane() {
         {rows.map((r, i) => (
           <div
             key={r.unit}
-            className="grid grid-cols-[56px_1fr_72px_96px_80px] gap-2 px-3 py-2.5 items-center text-[12px]"
+            className="grid grid-cols-[56px_1fr_72px_96px_80px] gap-2 px-3 py-2.5 items-center"
             style={{
-              borderBottom:
-                i < rows.length - 1 ? "1px solid var(--border-subtle)" : "none",
+              borderBottom: i < rows.length - 1 ? "1px solid #EEEEEE" : "none",
+              fontFamily: "var(--font-sans)",
+              fontSize: "13px",
             }}
           >
-            <span style={{ color: "var(--text-headline)", fontWeight: 510 }}>{r.unit}</span>
-            <span style={{ color: "var(--text-body)" }}>{r.bed}</span>
-            <span style={{ color: "var(--text-headline)", fontWeight: 510 }}>{r.rent}</span>
+            <span style={{ color: "#171A20", fontWeight: 500 }}>{r.unit}</span>
+            <span style={{ color: "#393C41" }}>{r.bed}</span>
+            <span style={{ color: "#171A20", fontWeight: 500 }}>{r.rent}</span>
             <span>
               <StatusPill
                 label={r.status}
-                tone={
-                  r.status === "Available" ? "ok" : r.status === "Notice" ? "warn" : "muted"
-                }
+                tone={r.status === "Available" ? "ok" : r.status === "Notice" ? "warn" : "muted"}
               />
             </span>
             <span>
               {r.sync === "synced" ? (
                 <span
-                  className="inline-flex items-center gap-1 text-[10px]"
-                  style={{ color: "var(--success)" }}
+                  className="inline-flex items-center gap-1"
+                  style={{
+                    color: "#10b981",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "10px",
+                  }}
                 >
                   <CheckIcon /> Synced
                 </span>
               ) : (
                 <span
-                  className="inline-flex items-center gap-1 text-[10px]"
-                  style={{ color: "var(--accent-bright)" }}
+                  className="inline-flex items-center gap-1"
+                  style={{
+                    color: "#3E6AE1",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "10px",
+                  }}
                 >
                   <Spinner /> Syncing
                 </span>
@@ -261,12 +271,12 @@ function ImportPane() {
 
 function BuildPane() {
   const blocks = [
-    { icon: "H", name: "Hero",                 meta: "Photo + headline + CTA",     on: true },
-    { icon: "P", name: "Floor plans",          meta: "Auto-sync from AppFolio",    on: true },
-    { icon: "A", name: "Amenities",            meta: "12 items, 6 icons",          on: true },
-    { icon: "M", name: "Map + neighborhood",   meta: "5 categories pinned",        on: true },
-    { icon: "F", name: "FAQ + parents",        meta: "Tenant-specific",            on: true },
-    { icon: "C", name: "Contact + tour",       meta: "Cal.com embed",              on: true },
+    { icon: "H", name: "Hero",               meta: "Photo + headline + CTA",  on: true },
+    { icon: "P", name: "Floor plans",        meta: "Auto-sync from AppFolio", on: true },
+    { icon: "A", name: "Amenities",          meta: "12 items, 6 icons",       on: true },
+    { icon: "M", name: "Map + neighborhood", meta: "5 categories pinned",     on: true },
+    { icon: "F", name: "FAQ + parents",      meta: "Tenant-specific",         on: true },
+    { icon: "C", name: "Contact + tour",     meta: "Cal.com embed",           on: true },
   ];
 
   return (
@@ -275,57 +285,66 @@ function BuildPane() {
         left={<span>STEP 02 &middot; BUILD</span>}
         right={
           <span>
-            <strong style={{ color: "var(--text-headline)", fontWeight: 510 }}>6</strong>{" "}
-            <span style={{ color: "var(--text-subtle)" }}>BLOCKS ACTIVE</span>
+            <strong style={{ color: "#171A20", fontWeight: 500 }}>6</strong>{" "}
+            <span style={{ color: "#8E8E8E" }}>BLOCKS ACTIVE</span>
           </span>
         }
       />
       <p
-        className="text-[20px] mt-2 mb-4"
+        className="mt-2 mb-4"
         style={{
-          color: "var(--text-headline)",
-          fontWeight: 510,
-          letterSpacing: "-0.012em",
+          color: "#171A20",
+          fontFamily: "var(--font-display)",
+          fontSize: "20px",
+          fontWeight: 500,
         }}
       >
         Page blocks on your domain
       </p>
 
       <div
-        className="rounded-md overflow-hidden"
-        style={{ border: "1px solid var(--border-standard)" }}
+        className="overflow-hidden"
+        style={{ border: "1px solid #EEEEEE", borderRadius: "4px" }}
       >
         {blocks.map((b, i) => (
           <div
             key={b.name}
             className="flex items-center gap-3 px-3 py-2.5"
             style={{
-              borderBottom:
-                i < blocks.length - 1 ? "1px solid var(--border-subtle)" : "none",
-              backgroundColor:
-                i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)",
+              borderBottom: i < blocks.length - 1 ? "1px solid #EEEEEE" : "none",
+              backgroundColor: i % 2 === 0 ? "#FFFFFF" : "#FAFAFA",
             }}
           >
             <span
-              className="flex items-center justify-center w-7 h-7 rounded text-[12px]"
+              className="flex items-center justify-center w-7 h-7 rounded"
               style={{
-                border: "1px solid var(--border-standard)",
-                color: "var(--accent-bright)",
-                backgroundColor: "rgba(94,106,210,0.08)",
-                fontWeight: 590,
+                backgroundColor: "rgba(62,106,225,0.08)",
+                color: "#3E6AE1",
+                fontFamily: "var(--font-display)",
+                fontSize: "12px",
+                fontWeight: 500,
               }}
             >
               {b.icon}
             </span>
             <span
-              className="text-[13px] flex-1"
-              style={{ color: "var(--text-headline)", fontWeight: 510 }}
+              className="flex-1"
+              style={{
+                color: "#171A20",
+                fontFamily: "var(--font-sans)",
+                fontSize: "14px",
+                fontWeight: 500,
+              }}
             >
               {b.name}
             </span>
             <span
-              className="font-mono text-[10px] hidden sm:inline"
-              style={{ color: "var(--text-subtle)" }}
+              className="hidden sm:inline"
+              style={{
+                color: "#8E8E8E",
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+              }}
             >
               {b.meta}
             </span>
@@ -345,11 +364,11 @@ function BuildPane() {
 
 function AttachPane() {
   const visitors = [
-    { initials: "MR", name: "Maya R.",    univ: "UC Berkeley",     kind: "Resolved" as const,   time: "2m" },
-    { initials: "?",  name: "Anonymous",  univ: "Bay Area IP",     kind: "Unresolved" as const, time: "4m" },
-    { initials: "DL", name: "Daniel L.",  univ: "UC Berkeley",     kind: "Resolved" as const,   time: "9m" },
-    { initials: "SK", name: "Sophie K.",  univ: "Stanford parent", kind: "Resolved" as const,   time: "12m" },
-    { initials: "?",  name: "Anonymous",  univ: "Oakland IP",      kind: "Unresolved" as const, time: "15m" },
+    { initials: "MR", name: "Maya R.",   univ: "UC Berkeley",     kind: "Resolved" as const,   time: "2m" },
+    { initials: "?",  name: "Anonymous", univ: "Bay Area IP",     kind: "Unresolved" as const, time: "4m" },
+    { initials: "DL", name: "Daniel L.", univ: "UC Berkeley",     kind: "Resolved" as const,   time: "9m" },
+    { initials: "SK", name: "Sophie K.", univ: "Stanford parent", kind: "Resolved" as const,   time: "12m" },
+    { initials: "?",  name: "Anonymous", univ: "Oakland IP",      kind: "Unresolved" as const, time: "15m" },
   ];
 
   return (
@@ -358,73 +377,79 @@ function AttachPane() {
         left={<span>STEP 03 &middot; ATTACH</span>}
         right={
           <span>
-            <strong style={{ color: "var(--text-headline)", fontWeight: 510 }}>95%</strong>{" "}
-            <span style={{ color: "var(--text-subtle)" }}>RESOLVE RATE</span>
+            <strong style={{ color: "#171A20", fontWeight: 500 }}>95%</strong>{" "}
+            <span style={{ color: "#8E8E8E" }}>RESOLVE RATE</span>
           </span>
         }
       />
       <p
-        className="text-[20px] mt-2 mb-4"
+        className="mt-2 mb-4"
         style={{
-          color: "var(--text-headline)",
-          fontWeight: 510,
-          letterSpacing: "-0.012em",
+          color: "#171A20",
+          fontFamily: "var(--font-display)",
+          fontSize: "20px",
+          fontWeight: 500,
         }}
       >
         Naming the 95% who don't fill a form
       </p>
 
       <div
-        className="rounded-md overflow-hidden"
-        style={{ border: "1px solid var(--border-standard)" }}
+        className="overflow-hidden"
+        style={{ border: "1px solid #EEEEEE", borderRadius: "4px" }}
       >
         {visitors.map((v, i) => (
           <div
             key={i}
             className="flex items-center gap-3 px-3 py-2.5"
             style={{
-              borderBottom:
-                i < visitors.length - 1 ? "1px solid var(--border-subtle)" : "none",
+              borderBottom: i < visitors.length - 1 ? "1px solid #EEEEEE" : "none",
               opacity: v.kind === "Unresolved" ? 0.55 : 1,
             }}
           >
             <span
-              className="flex items-center justify-center w-8 h-8 rounded-full font-mono text-[10px]"
+              className="flex items-center justify-center w-8 h-8 rounded-full"
               style={{
                 backgroundColor:
-                  v.kind === "Resolved"
-                    ? "rgba(94,106,210,0.15)"
-                    : "rgba(255,255,255,0.04)",
-                color:
-                  v.kind === "Resolved"
-                    ? "var(--accent-bright)"
-                    : "var(--text-subtle)",
-                border: "1px solid var(--border-standard)",
-                fontWeight: 510,
+                  v.kind === "Resolved" ? "rgba(62,106,225,0.12)" : "#F4F4F4",
+                color: v.kind === "Resolved" ? "#3E6AE1" : "#8E8E8E",
+                border: "1px solid #EEEEEE",
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+                fontWeight: 500,
               }}
             >
               {v.initials}
             </span>
             <div className="flex-1 min-w-0">
               <p
-                className="text-[13px] truncate"
+                className="truncate"
                 style={{
-                  color: "var(--text-headline)",
-                  fontWeight: 510,
+                  color: "#171A20",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "14px",
+                  fontWeight: 500,
                 }}
               >
                 {v.name}
               </p>
               <p
-                className="text-[11px] truncate"
-                style={{ color: "var(--text-subtle)" }}
+                className="truncate"
+                style={{
+                  color: "#8E8E8E",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "12px",
+                }}
               >
                 {v.univ}
               </p>
             </div>
             <span
-              className="font-mono text-[10px]"
-              style={{ color: "var(--text-subtle)" }}
+              style={{
+                color: "#8E8E8E",
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+              }}
             >
               {v.time} ago
             </span>
@@ -443,9 +468,9 @@ function AttachPane() {
 
 function LaunchPane() {
   const channels = [
-    { name: "Meta",   tag: "Instagram + Facebook",      budget: "$1,800", spent: "$742", pct: 41, impressions: "48.2k", status: "Live"    },
-    { name: "Google", tag: "Search + Performance Max",  budget: "$1,400", spent: "$812", pct: 58, impressions: "6.3k",  status: "Live"    },
-    { name: "TikTok", tag: "Spark + In-feed",           budget: "$600",   spent: "$110", pct: 18, impressions: "22.8k", status: "Ramping" },
+    { name: "Meta",   tag: "Instagram + Facebook",     budget: "$1,800", spent: "$742", pct: 41, impressions: "48.2k", status: "Live" },
+    { name: "Google", tag: "Search + Performance Max", budget: "$1,400", spent: "$812", pct: 58, impressions: "6.3k",  status: "Live" },
+    { name: "TikTok", tag: "Spark + In-feed",          budget: "$600",   spent: "$110", pct: 18, impressions: "22.8k", status: "Ramping" },
   ];
 
   return (
@@ -454,17 +479,18 @@ function LaunchPane() {
         left={<span>STEP 04 &middot; LAUNCH</span>}
         right={
           <span>
-            <strong style={{ color: "var(--text-headline)", fontWeight: 510 }}>3</strong>{" "}
-            <span style={{ color: "var(--text-subtle)" }}>CHANNELS LIVE</span>
+            <strong style={{ color: "#171A20", fontWeight: 500 }}>3</strong>{" "}
+            <span style={{ color: "#8E8E8E" }}>CHANNELS LIVE</span>
           </span>
         }
       />
       <p
-        className="text-[20px] mt-2 mb-4"
+        className="mt-2 mb-4"
         style={{
-          color: "var(--text-headline)",
-          fontWeight: 510,
-          letterSpacing: "-0.012em",
+          color: "#171A20",
+          fontFamily: "var(--font-display)",
+          fontSize: "20px",
+          fontWeight: 500,
         }}
       >
         Managed creative, real budgets, weekly reports
@@ -474,55 +500,47 @@ function LaunchPane() {
         {channels.map((c) => (
           <div
             key={c.name}
-            className="px-3 py-3 rounded-md"
+            className="px-3 py-3"
             style={{
-              border: "1px solid var(--border-standard)",
-              backgroundColor: "rgba(255,255,255,0.02)",
+              border: "1px solid #EEEEEE",
+              borderRadius: "4px",
+              backgroundColor: "#FFFFFF",
             }}
           >
             <div className="flex items-center gap-2">
               <span
-                className="text-[13px]"
                 style={{
-                  color: "var(--text-headline)",
-                  fontWeight: 590,
+                  color: "#171A20",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "14px",
+                  fontWeight: 500,
                 }}
               >
                 {c.name}
               </span>
-              <span
-                className="text-[11px]"
-                style={{ color: "var(--text-subtle)" }}
-              >
-                {c.tag}
-              </span>
+              <span style={{ color: "#8E8E8E", fontSize: "12px" }}>{c.tag}</span>
               <span className="flex-1" />
-              <StatusPill
-                label={c.status}
-                tone={c.status === "Live" ? "ok" : "warn"}
-              />
+              <StatusPill label={c.status} tone={c.status === "Live" ? "ok" : "warn"} />
             </div>
             <div
               className="mt-2 h-1 rounded-full overflow-hidden"
-              style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
+              style={{ backgroundColor: "#EEEEEE" }}
             >
               <div
                 className="h-full rounded-full"
-                style={{
-                  width: `${c.pct}%`,
-                  background:
-                    "linear-gradient(90deg, var(--accent) 0%, var(--accent-bright) 100%)",
-                  boxShadow: "0 0 10px var(--accent-glow)",
-                }}
+                style={{ width: `${c.pct}%`, backgroundColor: "#3E6AE1" }}
               />
             </div>
-            <div className="mt-2 flex items-center justify-between font-mono text-[10px]">
-              <span style={{ color: "var(--text-subtle)" }}>
-                {c.spent} / {c.budget}
-              </span>
-              <span style={{ color: "var(--text-subtle)" }}>
-                {c.impressions} impressions this week
-              </span>
+            <div
+              className="mt-2 flex items-center justify-between"
+              style={{
+                color: "#8E8E8E",
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+              }}
+            >
+              <span>{c.spent} / {c.budget}</span>
+              <span>{c.impressions} impressions this week</span>
             </div>
           </div>
         ))}
@@ -537,27 +555,26 @@ function LaunchPane() {
 // Primitives
 // ---------------------------------------------------------------------------
 
-function StepHeader({
-  left,
-  right,
-}: {
-  left: React.ReactNode;
-  right: React.ReactNode;
-}) {
+function StepHeader({ left, right }: { left: React.ReactNode; right: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between">
       <span
-        className="font-mono text-[10px]"
         style={{
-          color: "var(--text-subtle)",
+          color: "#8E8E8E",
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
           letterSpacing: "0.14em",
+          fontWeight: 500,
         }}
       >
         {left}
       </span>
       <span
-        className="font-mono text-[10px]"
-        style={{ letterSpacing: "0.08em" }}
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
+          letterSpacing: "0.08em",
+        }}
       >
         {right}
       </span>
@@ -565,61 +582,43 @@ function StepHeader({
   );
 }
 
-function FooterLine({
-  label,
-  value,
-  meta,
-}: {
-  label: string;
-  value: string;
-  meta: string;
-}) {
+function FooterLine({ label, value, meta }: { label: string; value: string; meta: string }) {
   return (
     <div
-      className="mt-4 flex items-center justify-between font-mono text-[10px]"
+      className="mt-4 flex items-center justify-between"
       style={{
-        color: "var(--text-subtle)",
         paddingTop: "12px",
-        borderTop: "1px dashed var(--border-standard)",
+        borderTop: "1px dashed #EEEEEE",
+        fontFamily: "var(--font-mono)",
+        fontSize: "10px",
         letterSpacing: "0.06em",
+        color: "#8E8E8E",
       }}
     >
       <span>
-        <span style={{ color: "var(--text-subtle)" }}>{label}: </span>
-        <span style={{ color: "var(--text-body)" }}>{value}</span>
+        <span>{label}: </span>
+        <span style={{ color: "#393C41" }}>{value}</span>
       </span>
       <span>{meta}</span>
     </div>
   );
 }
 
-function StatusPill({
-  label,
-  tone,
-}: {
-  label: string;
-  tone: "ok" | "warn" | "muted";
-}) {
-  const color =
-    tone === "ok"
-      ? "var(--success)"
-      : tone === "warn"
-      ? "var(--warning)"
-      : "var(--text-muted)";
-  const bg =
-    tone === "ok"
-      ? "rgba(16,185,129,0.12)"
-      : tone === "warn"
-      ? "rgba(245,158,11,0.12)"
-      : "rgba(255,255,255,0.04)";
+function StatusPill({ label, tone }: { label: string; tone: "ok" | "warn" | "muted" }) {
+  const color = tone === "ok" ? "#10b981" : tone === "warn" ? "#B8860B" : "#8E8E8E";
+  const bg   = tone === "ok" ? "rgba(16,185,129,0.08)" : tone === "warn" ? "rgba(184,134,11,0.08)" : "#F4F4F4";
   return (
     <span
-      className="inline-block font-mono text-[9px] px-2 py-0.5 rounded-full"
+      className="inline-block rounded-full"
       style={{
         color,
         backgroundColor: bg,
         border: `1px solid ${color}33`,
+        fontFamily: "var(--font-mono)",
+        fontSize: "9px",
+        padding: "1px 8px",
         letterSpacing: "0.08em",
+        fontWeight: 500,
       }}
     >
       {label}
@@ -632,16 +631,15 @@ function Toggle({ on }: { on: boolean }) {
     <span
       className="inline-block w-8 h-4 rounded-full relative"
       style={{
-        backgroundColor: on ? "var(--accent)" : "var(--bg-surface-2)",
-        boxShadow: on ? "0 0 10px var(--accent-glow)" : "none",
-        transition: "background-color 0.15s ease, box-shadow 0.15s ease",
+        backgroundColor: on ? "#3E6AE1" : "#D0D1D2",
+        transition: "background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75)",
       }}
     >
       <span
         className="absolute top-0.5 w-3 h-3 rounded-full bg-white"
         style={{
           left: on ? "16px" : "2px",
-          transition: "left 0.15s ease",
+          transition: "left 0.33s cubic-bezier(0.5, 0, 0, 0.75)",
         }}
       />
     </span>

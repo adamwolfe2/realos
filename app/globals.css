@@ -6,14 +6,12 @@ html {
   text-size-adjust: 100%;
 }
 
-/* Safe area insets for notched iPhones */
 body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-/* Minimum touch targets */
 @media (pointer: coarse) {
   button, [role="button"], a, input[type="checkbox"], input[type="radio"] {
     min-height: 44px;
@@ -22,213 +20,249 @@ body {
 }
 
 /* =============================================================================
-   Linear-inspired design system.
-   Dark-mode-first. Near-black canvas. Inter Variable with OpenType features
-   cv01 + ss03 everywhere. Weight 510 is the signature UI weight. Indigo
-   accent is the only chromatic color. See DESIGN.md at project root.
+   Tesla-inspired design system.
+   White canvas. Photography does the talking. One blue for CTAs. Two type
+   weights. No shadows. No gradients on UI. 4px radii. 0.33s transitions.
+   See DESIGN.md at project root.
    ============================================================================= */
 
 @theme {
-  --font-sans: var(--font-inter), "SF Pro Display", -apple-system, system-ui,
-    "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
-    sans-serif;
-  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, "SF Mono",
-    Menlo, Consolas, monospace;
-
-  /* Kept for legacy imports, but both now point to Inter for consistency. */
-  --font-serif: var(--font-sans);
+  --font-display: var(--font-inter), -apple-system, Arial, sans-serif;
+  --font-sans: var(--font-inter), -apple-system, Arial, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  --font-serif: var(--font-inter), -apple-system, Arial, sans-serif;
 }
 
 :root {
-  /* ── Surfaces (dark luminance stack) ────────────────────────────────── */
-  --bg-primary: #08090a;       /* marketing canvas */
-  --bg-deepest: #010102;       /* hero / ultra-dark sections */
-  --bg-panel: #0f1011;         /* panels, sticky headers */
-  --bg-surface: #191a1b;       /* cards, dropdowns, elevated */
-  --bg-surface-2: #28282c;     /* hover, secondary surface */
-  --bg-white: #ffffff;         /* inverse sections (rare) */
+  /* ── Canvas ──────────────────────────────────────────────────────────── */
+  --white: #FFFFFF;
+  --light-ash: #F4F4F4;
+  --carbon: #171A20;
+  --graphite: #393C41;
+  --pewter: #5C5E62;
+  --silver-fog: #8E8E8E;
+  --cloud: #EEEEEE;
+  --pale-silver: #D0D1D2;
 
-  /* Translucent surface opacities (use with rgba white) */
-  --bg-card: rgba(255, 255, 255, 0.02);
-  --bg-card-hover: rgba(255, 255, 255, 0.04);
-  --bg-chip: rgba(255, 255, 255, 0.05);
+  /* ── Accent (the only chromatic color) ──────────────────────────────── */
+  --electric-blue: #3E6AE1;
+  --electric-blue-hover: #3457C8;
 
-  /* ── Text ───────────────────────────────────────────────────────────── */
-  --text-headline: #f7f8f8;    /* near-white, never pure white */
-  --text-body: #d0d6e0;        /* silver-gray body */
-  --text-muted: #8a8f98;       /* tertiary */
-  --text-subtle: #62666d;      /* quaternary */
-  --text-on-accent: #ffffff;
+  /* ── Semantic/legacy token aliases (so older files inherit correctly) ─ */
+  --bg-primary: var(--white);
+  --bg-white: var(--white);
+  --bg-panel: var(--white);
+  --bg-surface: var(--light-ash);
+  --bg-surface-2: var(--light-ash);
+  --bg-deepest: var(--carbon);
+  --bg-blue: var(--carbon);
+  --bg-blue-dark: var(--carbon);
 
-  /* ── Brand accent (only chromatic color) ────────────────────────────── */
-  --accent: #5e6ad2;            /* brand indigo, CTA bg */
-  --accent-hover: #828fff;      /* hover */
-  --accent-bright: #7170ff;     /* interactive / link */
-  --accent-wash: rgba(94, 106, 210, 0.12);
-  --accent-glow: rgba(113, 112, 255, 0.18);
+  --bg-card: var(--white);
+  --bg-card-hover: var(--light-ash);
+  --bg-chip: var(--light-ash);
 
-  /* ── Status ─────────────────────────────────────────────────────────── */
+  --text-headline: var(--carbon);
+  --text-body: var(--graphite);
+  --text-muted: var(--pewter);
+  --text-subtle: var(--silver-fog);
+  --text-on-accent: var(--white);
+
+  --accent: var(--electric-blue);
+  --accent-hover: var(--electric-blue-hover);
+  --accent-bright: var(--electric-blue);
+  --accent-wash: rgba(62, 106, 225, 0.08);
+  --accent-glow: transparent;
+
   --success: #10b981;
-  --success-bright: #27a644;
   --warning: #f59e0b;
   --danger: #ef4444;
 
-  /* ── Borders & dividers ─────────────────────────────────────────────── */
-  --border-subtle: rgba(255, 255, 255, 0.05);
-  --border-standard: rgba(255, 255, 255, 0.08);
-  --border-strong: rgba(255, 255, 255, 0.14);
-  --border-solid: #23252a;
-  --border-solid-2: #34343a;
-  --line-tint: #141516;
-  --line-tertiary: #18191a;
+  --border-subtle: var(--cloud);
+  --border-standard: var(--cloud);
+  --border-strong: var(--pale-silver);
+  --border-solid: var(--pale-silver);
+  --border-solid-2: var(--pewter);
+  --line-tint: var(--cloud);
+  --line-tertiary: var(--cloud);
 
-  /* Legacy aliases kept to avoid breaking imports in older files. */
-  --blue: var(--accent);
-  --blue-hover: var(--accent-hover);
+  /* Legacy aliases, resolved to Tesla tokens. */
+  --blue: var(--electric-blue);
+  --blue-hover: var(--electric-blue-hover);
   --blue-light: var(--accent-wash);
-  --blue-border: var(--border-standard);
-  --bg-blue: var(--bg-panel);
-  --bg-blue-dark: var(--bg-deepest);
-  --border: var(--border-standard);
-  --text-on-blue: var(--text-headline);
+  --blue-border: var(--cloud);
+  --border: var(--cloud);
+  --text-on-blue: var(--white);
 }
 
-/* Global type rules */
+/* Global type rules. Universal Sans -> Inter; no OpenType features. */
 body {
-  font-feature-settings: "cv01", "ss03";
-  background-color: var(--bg-primary);
-  color: var(--text-body);
+  background-color: var(--white);
+  color: var(--graphite);
   -webkit-font-smoothing: antialiased;
+  font-family: var(--font-sans);
 }
 
 *,
 *::before,
 *::after {
-  font-feature-settings: "cv01", "ss03";
+  /* explicit: DO NOT apply cv01/ss03 — Tesla's system is unembellished */
 }
 
-/* ── Selection ──────────────────────────────────────────────────────────── */
 ::selection {
-  background: var(--accent);
+  background: var(--electric-blue);
   color: white;
 }
 
-/* ── Custom scrollbar ───────────────────────────────────────────────────── */
-::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
-}
-::-webkit-scrollbar-track {
-  background: var(--bg-primary);
-}
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: var(--white); }
 ::-webkit-scrollbar-thumb {
-  background: var(--bg-surface-2);
-  border: 2px solid var(--bg-primary);
+  background: var(--pale-silver);
+  border: 2px solid var(--white);
   border-radius: 999px;
 }
-::-webkit-scrollbar-thumb:hover {
-  background: var(--border-solid-2);
+::-webkit-scrollbar-thumb:hover { background: var(--pewter); }
+
+/* ── Buttons ───────────────────────────────────────────────────────────── */
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 200px;
+  padding: 0 24px;
+  background-color: var(--electric-blue);
+  color: #FFFFFF;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 16.8px;
+  border-radius: 4px;
+  border: 3px solid transparent;
+  transition:
+    border-color 0.33s cubic-bezier(0.5, 0, 0, 0.75),
+    background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75),
+    color 0.33s cubic-bezier(0.5, 0, 0, 0.75);
+  cursor: pointer;
+}
+.btn-primary:hover { background-color: var(--electric-blue-hover); }
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 200px;
+  padding: 0 24px;
+  background-color: rgba(244, 244, 244, 0.65);
+  color: var(--carbon);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 16.8px;
+  border-radius: 4px;
+  border: 3px solid transparent;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition:
+    border-color 0.33s cubic-bezier(0.5, 0, 0, 0.75),
+    background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75),
+    color 0.33s cubic-bezier(0.5, 0, 0, 0.75);
+  cursor: pointer;
+}
+.btn-secondary:hover {
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
-/* ── Brand utility classes ─────────────────────────────────────────────── */
-.btn-accent {
-  background-color: var(--accent);
-  color: var(--text-on-accent);
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+.btn-secondary-dark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 200px;
+  padding: 0 24px;
+  background-color: rgba(23, 26, 32, 0.65);
+  color: var(--white);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 16.8px;
+  border-radius: 4px;
+  border: 3px solid transparent;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75);
+  cursor: pointer;
 }
-.btn-accent:hover {
-  background-color: var(--accent-hover);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 0 24px var(--accent-glow);
-}
-
-.btn-ghost {
-  background-color: rgba(255, 255, 255, 0.02);
-  color: var(--text-headline);
-  border: 1px solid var(--border-standard);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-.btn-ghost:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: var(--border-strong);
-}
-
-/* Back-compat with previously used names, duplicated (Tailwind v4 won't
-   @apply custom utilities declared in the same file). */
-.btn-blue {
-  background-color: var(--accent);
-  color: var(--text-on-accent);
-  transition: background-color 0.15s ease, box-shadow 0.15s ease;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
-}
-.btn-blue:hover {
-  background-color: var(--accent-hover);
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 0 24px var(--accent-glow);
-}
-.btn-outline {
-  background-color: rgba(255, 255, 255, 0.02);
-  color: var(--text-headline);
-  border: 1px solid var(--border-standard);
-  transition: background-color 0.15s ease, border-color 0.15s ease;
-}
-.btn-outline:hover {
-  background-color: rgba(255, 255, 255, 0.05);
-  border-color: var(--border-strong);
-}
-.btn-outline-white {
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.9);
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-.btn-outline-white:hover { border-color: white; color: white; }
-
-.link-body {
-  color: var(--text-body);
-  transition: color 0.15s ease;
-}
-.link-body:hover { color: var(--text-headline); }
-
-/* ── Focus styles ──────────────────────────────────────────────────── */
-:focus-visible {
-  outline: 2px solid var(--accent-bright);
-  outline-offset: 2px;
+.btn-secondary-dark:hover {
+  background-color: rgba(23, 26, 32, 0.85);
 }
 
-/* ── Display type helper, tracks the Linear spec ───────────────────────── */
-.display-xl   { font-size: clamp(44px, 6.4vw, 72px); line-height: 1.00; font-weight: 510; letter-spacing: -0.022em; }
-.display-lg   { font-size: clamp(40px, 5.4vw, 64px); line-height: 1.02; font-weight: 510; letter-spacing: -0.022em; }
-.display      { font-size: clamp(32px, 4.2vw, 48px); line-height: 1.04; font-weight: 510; letter-spacing: -0.022em; }
-.heading-1    { font-size: 32px; line-height: 1.13; font-weight: 400; letter-spacing: -0.022em; }
-.heading-2    { font-size: 24px; line-height: 1.33; font-weight: 400; letter-spacing: -0.012em; }
-.heading-3    { font-size: 20px; line-height: 1.33; font-weight: 590; letter-spacing: -0.012em; }
-.body-lg      { font-size: 18px; line-height: 1.60; font-weight: 400; letter-spacing: -0.009em; }
-.body         { font-size: 16px; line-height: 1.50; font-weight: 400; }
-.body-510     { font-size: 16px; line-height: 1.50; font-weight: 510; }
-.small        { font-size: 15px; line-height: 1.60; font-weight: 400; letter-spacing: -0.011em; }
-.caption      { font-size: 13px; line-height: 1.50; font-weight: 510; letter-spacing: -0.01em; }
-.label-mono   { font-family: var(--font-mono); font-size: 11px; line-height: 1.4; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
-.eyebrow      { font-family: var(--font-mono); font-size: 11px; line-height: 1.4; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); }
+.btn-nav {
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 4px 12px;
+  color: var(--carbon);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 4px;
+  border: none;
+  background: transparent;
+  transition:
+    color 0.33s cubic-bezier(0.5, 0, 0, 0.75),
+    background-color 0.33s cubic-bezier(0.5, 0, 0, 0.75);
+  cursor: pointer;
+}
+.btn-nav:hover { background-color: rgba(0, 0, 0, 0.05); }
+.btn-nav-on-dark { color: var(--white); }
+.btn-nav-on-dark:hover { background-color: rgba(255, 255, 255, 0.12); }
 
-/* ── Blog CTA block (rendered inside prose article body) ───────────── */
+/* Back-compat, keep older pages readable. */
+.btn-accent { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--electric-blue); color: #fff; font-family: var(--font-sans); font-size: 14px; font-weight: 500; border-radius: 4px; transition: background-color 0.33s; }
+.btn-accent:hover { background-color: var(--electric-blue-hover); }
+.btn-ghost { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--white); color: var(--carbon); border: 1px solid var(--pale-silver); font-family: var(--font-sans); font-size: 14px; font-weight: 500; border-radius: 4px; transition: background-color 0.33s; }
+.btn-ghost:hover { background-color: var(--light-ash); }
+.btn-blue { composes: btn-accent; }
+.btn-outline { composes: btn-ghost; }
+.btn-outline-white { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border: 1px solid rgba(255,255,255,0.7); color: #fff; background: transparent; font-size: 14px; font-weight: 500; border-radius: 4px; transition: background-color 0.33s; }
+.btn-outline-white:hover { background-color: rgba(255,255,255,0.15); }
+
+.link-body { color: var(--graphite); transition: color 0.33s; }
+.link-body:hover { color: var(--carbon); }
+
+:focus-visible { outline: 2px solid var(--electric-blue); outline-offset: 2px; }
+
+/* ── Type helpers (Tesla spec) ─────────────────────────────────────────── */
+.display-hero  { font-size: clamp(32px, 4vw, 44px); line-height: 1.14; font-weight: 500; letter-spacing: normal; font-family: var(--font-display); }
+.display-large { font-size: clamp(40px, 6vw, 72px); line-height: 1.04; font-weight: 500; letter-spacing: normal; font-family: var(--font-display); }
+.heading-section { font-size: clamp(28px, 3.2vw, 40px); line-height: 1.15; font-weight: 500; font-family: var(--font-display); }
+.promo-text { font-size: 22px; line-height: 1.15; font-weight: 400; }
+.body-default { font-size: 14px; line-height: 1.43; font-weight: 400; color: var(--graphite); }
+.body-ui { font-size: 14px; line-height: 1.2; font-weight: 500; color: var(--carbon); }
+.eyebrow { font-family: var(--font-mono); font-size: 11px; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--pewter); }
+
+/* ── Blog CTA block (rendered inside prose article body) ─────────────── */
 .prose .cta-block {
-  border: 1px solid var(--border-standard);
-  background-color: var(--bg-card);
+  border: 1px solid var(--cloud);
+  background-color: var(--light-ash);
   padding: 2rem;
   margin: 2.5rem 0;
-  border-radius: 8px;
+  border-radius: 4px;
 }
 .prose .cta-block h3 {
-  font-family: var(--font-sans);
-  font-size: 1.25rem;
-  font-weight: 590;
-  color: var(--text-headline);
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--carbon);
   margin: 0 0 0.5rem;
 }
 .prose .cta-block p {
   font-family: var(--font-sans);
-  font-size: 0.9375rem;
-  line-height: 1.6;
-  color: var(--text-body);
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--graphite);
   margin: 0 0 1.25rem;
 }
 .prose .cta-block a {
@@ -236,41 +270,13 @@ body {
   align-items: center;
   gap: 0.5rem;
   font-family: var(--font-sans);
-  font-size: 0.875rem;
-  font-weight: 510;
+  font-size: 14px;
+  font-weight: 500;
   color: white;
-  background-color: var(--accent);
-  padding: 10px 16px;
-  border-radius: 6px;
+  background-color: var(--electric-blue);
+  padding: 10px 20px;
+  border-radius: 4px;
   text-decoration: none;
-  transition: background-color 0.15s ease;
+  transition: background-color 0.33s;
 }
-.prose .cta-block a:hover { background-color: var(--accent-hover); }
-
-/* ── Decorative radial glow for hero backdrops ─────────────────────────── */
-.hero-glow::before {
-  content: "";
-  position: absolute;
-  top: -20%;
-  left: 50%;
-  width: 120%;
-  height: 100%;
-  transform: translateX(-50%);
-  background: radial-gradient(
-    ellipse at center,
-    rgba(94, 106, 210, 0.15) 0%,
-    rgba(94, 106, 210, 0.05) 35%,
-    transparent 70%
-  );
-  pointer-events: none;
-  z-index: 0;
-}
-
-/* ── Grid texture (subtle) ────────────────────────────────────────────── */
-.grid-fade {
-  background-image:
-    linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse at center top, black 0%, transparent 70%);
-}
+.prose .cta-block a:hover { background-color: var(--electric-blue-hover); }
