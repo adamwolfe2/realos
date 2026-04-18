@@ -56,6 +56,12 @@ export async function resolveTenantByHostname(
   const host = normalizeHost(hostname);
   if (!host) return null;
 
+  // DECISION: DB is optional here. If DATABASE_URL isn't set (first Vercel
+  // deploy before Neon is wired, or a preview env without a branch) we fail
+  // soft and return null so the middleware can treat the request as the
+  // platform surface. That keeps marketing pages reachable even without DB.
+  if (!process.env.DATABASE_URL) return null;
+
   // 1. Custom domain (DomainBinding).
   const domain = await prisma.domainBinding
     .findUnique({

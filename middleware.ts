@@ -59,10 +59,20 @@ export default clerkMiddleware(async (auth, req: NextRequest) => {
     // Still gate admin + portal APIs below.
   } else if (
     !isPlatformHostname(hostname) &&
-    !isDevelopmentHostname(hostname)
+    !isDevelopmentHostname(hostname) &&
+    !hostname.endsWith(".vercel.app")
   ) {
     // 3. Non-platform hostname -> render as a tenant marketing site.
-    const tenant = await resolveTenantByHostname(hostname).catch(() => null);
+    // DECISION: wrap the DB lookup so any middleware-side DB outage
+    // (missing DATABASE_URL, Neon cold start) degrades to 404 instead of a
+    // 500 middleware invocation failure, which would break the whole domain.
+    let tenant: Awaited<ReturnType<typeof resolveTenantByHostname>> = null;
+    try {
+      tenant = await resolveTenantByHostname(hostname);
+    } catch (err) {
+      console.error("[middleware] tenant resolve failed:", err);
+      return new NextResponse("Tenant resolution failed", { status: 503 });
+    }
     if (!tenant) {
       return new NextResponse("Tenant site not configured", { status: 404 });
     }
