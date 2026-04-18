@@ -1,17 +1,17 @@
 // ---------------------------------------------------------------------------
-// Brand constants for RealOS. Placeholder values live here so
+// Brand constants for RealEstaite. Placeholder values live here so
 // `{{PRODUCT_NAME}}` can be renamed globally once the product name is final.
 // See NAMING.md at repo root.
 // ---------------------------------------------------------------------------
 
 export const BRAND = {
-  name: "RealOS",
-  shortName: "realos",
+  name: "RealEstaite",
+  shortName: "realestaite",
   tagline: "Managed marketing for real estate operators",
-  email: "hello@realos.dev",
-  supportEmail: "support@realos.dev",
-  url: "https://realos.dev",
-  agencySlug: process.env.AGENCY_ORG_SLUG ?? "realos-agency",
+  email: "hello@realestaite.co",
+  supportEmail: "support@realestaite.co",
+  url: "https://realestaite.co",
+  agencySlug: process.env.AGENCY_ORG_SLUG ?? "realestaite-agency",
 } as const;
 
 export const BRAND_NAME = process.env.BRAND_NAME ?? BRAND.name;

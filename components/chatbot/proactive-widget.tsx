@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ChatInterface } from "./chat-interface";
 
-const SESSION_STORAGE_KEY = "realos.chatbot.session.v1";
-const DISMISSED_STORAGE_KEY = "realos.chatbot.dismissed.v1";
+const SESSION_STORAGE_KEY = "realestaite.chatbot.session.v1";
+const DISMISSED_STORAGE_KEY = "realestaite.chatbot.dismissed.v1";
 
 function ensureSessionId(): string {
   if (typeof window === "undefined") return crypto.randomUUID();

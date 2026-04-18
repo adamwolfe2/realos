@@ -1,21 +1,21 @@
-# RealOS
+# RealEstaite
 
 **Managed marketing SaaS for real estate operators.** Website, live listings,
 AI chatbot, ad pixel, lead capture, ad creative, reporting. Built and managed
 by us. Launched in two weeks.
 
-> `RealOS` is a temporary working name. See `NAMING.md` for how to rename
+> `RealEstaite` is a temporary working name. See `NAMING.md` for how to rename
 > globally once the product name is final.
 
 ## What this is
 
 A single Next.js app that serves four surfaces from one codebase:
 
-1. **Platform marketing site** (`realos.dev`), sells the product to operators.
-2. **Master admin** (`realos.dev/admin`), our agency team's dashboard across
+1. **Platform marketing site** (`realestaite.co`), sells the product to operators.
+2. **Master admin** (`realestaite.co/admin`), our agency team's dashboard across
    every tenant: intake queue, fulfillment pipeline, creative requests,
    cross-tenant analytics, impersonation.
-3. **Client portal** (`realos.dev/portal`), the client's dashboard: leads,
+3. **Client portal** (`realestaite.co/portal`), the client's dashboard: leads,
    visitors, chatbot conversations, ad creative requests, multi-property
    CRM, billing, site builder.
 4. **Tenant marketing sites** (e.g. `telegraphcommons.com`), hostname-routed,
@@ -119,5 +119,5 @@ See `.env.example` for the full list. Key additions over Wholesail's defaults:
 
 ## Naming
 
-`RealOS`, `realos`, `realos.dev` are temporary placeholders. See `NAMING.md`
+`RealEstaite`, `realestaite`, `realestaite.co` are temporary placeholders. See `NAMING.md`
 for the rename recipe.

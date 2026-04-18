@@ -4,8 +4,8 @@ import { useEffect } from "react";
 
 // CalFunction + Window augmentation are declared globally in types/vendor.d.ts.
 
-const CAL_NAMESPACE = process.env.NEXT_PUBLIC_CAL_NAMESPACE ?? "realos";
-const CAL_LINK = process.env.NEXT_PUBLIC_CAL_LINK ?? "adamwolfe/realos";
+const CAL_NAMESPACE = process.env.NEXT_PUBLIC_CAL_NAMESPACE ?? "realestaite";
+const CAL_LINK = process.env.NEXT_PUBLIC_CAL_LINK ?? "adamwolfe/realestaite";
 
 // ---------------------------------------------------------------------------
 // Inline Cal.com embed. Forked from Wholesail; removed the portal-config

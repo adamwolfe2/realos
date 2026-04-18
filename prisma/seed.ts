@@ -16,15 +16,15 @@ if (process.env.NODE_ENV === "production") {
 const prisma = new PrismaClient();
 
 async function main() {
-  const agencySlug = process.env.AGENCY_ORG_SLUG ?? "realos-agency";
-  const agencyEmail = process.env.AGENCY_ADMIN_EMAIL ?? "adam@realos.dev";
+  const agencySlug = process.env.AGENCY_ORG_SLUG ?? "realestaite-agency";
+  const agencyEmail = process.env.AGENCY_ADMIN_EMAIL ?? "adam@realestaite.co";
 
   // 1. Singleton AGENCY org (us)
   const agency = await prisma.organization.upsert({
     where: { slug: agencySlug },
     update: { orgType: OrgType.AGENCY },
     create: {
-      name: "RealOS Agency",
+      name: "RealEstaite Agency",
       slug: agencySlug,
       orgType: OrgType.AGENCY,
       status: TenantStatus.ACTIVE,

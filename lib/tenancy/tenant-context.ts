@@ -43,5 +43,5 @@ export function tenantPrimaryHost(tenant: TenantWithSite): string {
   const platform =
     process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ??
     process.env.NEXT_PUBLIC_APP_URL?.replace(/^https?:\/\//, "").split("/")[0];
-  return `${tenant.slug}.${platform ?? "realos.dev"}`;
+  return `${tenant.slug}.${platform ?? "realestaite.co"}`;
 }

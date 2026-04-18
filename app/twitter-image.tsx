@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
 export const alt =
-  "RealOS, managed marketing for real estate operators.";
+  "RealEstaite, managed marketing for real estate operators.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -44,7 +44,7 @@ export default async function TwitterImage() {
             display: "flex",
           }}
         >
-          REALOS
+          REALESTAITE
         </span>
 
         <div style={{ display: "flex", flexDirection: "column" }}>
@@ -101,7 +101,7 @@ export default async function TwitterImage() {
             display: "flex",
           }}
         >
-          realos.dev
+          realestaite.co
         </div>
       </div>
     ),

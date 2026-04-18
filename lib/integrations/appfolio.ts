@@ -29,7 +29,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; RealOS/1.0; +https://realos.dev)";
+  "Mozilla/5.0 (compatible; RealEstaite/1.0; +https://realestaite.co)";
 
 export type AppFolioSyncMode = "EMBED_SCRAPE" | "REST";
 

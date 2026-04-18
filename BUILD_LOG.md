@@ -9,7 +9,7 @@ expected. Each entry appended at sprint close.
 ## Sprint 01, Fork Setup & Infrastructure Cleanup
 
 **Shipped.** Hard forked `adamwolfe2/wholesail` into this repo, rebranded
-`package.json` to `realos` (0.1.0), rewrote `.env.example` for the real-estate
+`package.json` to `realestaite` (0.1.0), rewrote `.env.example` for the real-estate
 stack (Clerk + Neon + Stripe + Resend + Cursive + AppFolio + Vercel + Anthropic),
 replaced `prisma/schema.prisma` with the PRD's real-estate schema (adds
 `Property`, `Listing`, `Tour`, `Application`, `Visitor`, `ChatbotConversation`,
@@ -20,8 +20,8 @@ the Telegraph Commons `CLIENT` tenant + property. Renamed `app/(marketing)` to
 `app/(platform)`. Stripped every distribution-domain API route, admin UI page,
 distribution page, distribution component, distribution lib file, and the
 `scripts/seed-tbgc-*.ts` test scripts. Stubbed the six kept cron jobs with
-Sprint 10 TODOs. Created `NAMING.md` documenting the `RealOS` / `realos` /
-`realos.dev` placeholder rename. Forked reference clone of Wholesail lives at
+Sprint 10 TODOs. Created `NAMING.md` documenting the `RealEstaite` / `realestaite` /
+`realestaite.co` placeholder rename. Forked reference clone of Wholesail lives at
 `/Users/adamwolfe/TRIG/wholesail` and Telegraph Commons at
 `/Users/adamwolfe/TRIG/telegraph-commons` (already cloned). `pnpm type-check`
 and `pnpm build` both pass; 26 routes prerender cleanly.
@@ -212,7 +212,7 @@ Organization. `app/onboarding/page.tsx` renders the wizard.
   as Wholesail. `IntakeSubmission.bookedCallAt` is populated later via the
   Cal webhook (`/api/intake/[id]/cal-booked`, wired up in Sprint 01).
 - Draft persistence uses a version-prefixed localStorage key
-  (`realos.intake.v1`) so we can bump the schema without stale drafts
+  (`realestaite.intake.v1`) so we can bump the schema without stale drafts
   leaking into a new form shape.
 - `CalFunction` + `Window` are already declared globally in
   `types/vendor.d.ts`; the intake embed re-uses those rather than

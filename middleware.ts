@@ -37,14 +37,14 @@ function clerkIsConfigured(): boolean {
   const pk = process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY ?? "";
   const sk = process.env.CLERK_SECRET_KEY ?? "";
   if (!pk || !sk) return false;
+  if (sk.includes("TODO") || sk.includes("placeholder")) return false;
   // Real Clerk keys look like pk_live_xxx or pk_test_xxx with a valid base64
-  // body that decodes to clerk.<domain>$. Our placeholder decodes to
-  // ".example.com$" which we treat as unconfigured.
+  // body that decodes to clerk.<domain>$. Our placeholder decodes to a value
+  // containing "example.com" which we treat as unconfigured. Use `atob` so
+  // this works in the Edge runtime (no Buffer).
   try {
-    const decoded = Buffer.from(pk.replace(/^pk_(test|live)_/, ""), "base64").toString(
-      "utf8"
-    );
-    return !decoded.includes("example.com");
+    const decoded = atob(pk.replace(/^pk_(test|live)_/, ""));
+    return !decoded.includes("example.com") && !decoded.includes("placeholder");
   } catch {
     return false;
   }

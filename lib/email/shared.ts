@@ -11,11 +11,11 @@ import { getSiteUrl, BRAND_NAME, BRAND_LOCATION, BRAND_COLOR } from "@/lib/brand
 // ---------------------------------------------------------------------------
 
 export const FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL ?? `${BRAND_NAME} <hello@realos.dev>`;
+  process.env.RESEND_FROM_EMAIL ?? `${BRAND_NAME} <hello@realestaite.co>`;
 export const APP_URL = getSiteUrl();
 export const OPS_NAME = process.env.OPS_NAME ?? `${BRAND_NAME} Team`;
 export { BRAND_NAME, BRAND_LOCATION, BRAND_COLOR };
-export const BRAND_EMAIL = process.env.ADMIN_EMAIL ?? "hello@realos.dev";
+export const BRAND_EMAIL = process.env.ADMIN_EMAIL ?? "hello@realestaite.co";
 
 // ---------------------------------------------------------------------------
 // Resend client

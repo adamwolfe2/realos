@@ -30,7 +30,7 @@ export interface NavGroup {
 }
 
 // ---------------------------------------------------------------------------
-// Admin nav config for RealOS. Distribution nav groups (orders, catalog,
+// Admin nav config for RealEstaite. Distribution nav groups (orders, catalog,
 // suppliers, shipments, etc.) removed. Groups reflect the four agency jobs
 // we do every week: intake, pipeline, client care, creative.
 // Nav targets that aren't built yet link to Sprint-specific placeholders.

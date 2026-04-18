@@ -71,7 +71,7 @@ export async function GET(req: NextRequest) {
   const results: Array<{ stage: string; fired: number; errors: number }> = [];
   const appBase = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const platformDomain =
-    process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ?? "realos.dev";
+    process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ?? "realestaite.co";
 
   for (const stage of STAGES) {
     const cutoff = new Date(now - stage.afterHours * 60 * 60 * 1000);
@@ -114,7 +114,7 @@ export async function GET(req: NextRequest) {
       const replyTo =
         lead.org.primaryContactEmail ??
         process.env.RESEND_FROM_EMAIL ??
-        "hello@realos.dev";
+        "hello@realestaite.co";
 
       const result = await sendLeadCadenceEmail(stage.key, {
         to: lead.email,

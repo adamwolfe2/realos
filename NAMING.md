@@ -8,10 +8,10 @@ a name is picked.
 
 | Placeholder token | Temporary value used now |
 |---|---|
-| `{{PRODUCT_NAME}}` | `RealOS` |
-| `{{PRODUCT_NAME_KEBAB}}` | `realos` |
-| `{{PRODUCT_SHORT_NAME}}` | `realos` |
-| `{{PRODUCT_DOMAIN}}` | `realos.dev` |
+| `{{PRODUCT_NAME}}` | `RealEstaite` |
+| `{{PRODUCT_NAME_KEBAB}}` | `realestaite` |
+| `{{PRODUCT_SHORT_NAME}}` | `realestaite` |
+| `{{PRODUCT_DOMAIN}}` | `realestaite.co` |
 
 ## How to finalize the name
 
@@ -27,16 +27,16 @@ LC_ALL=C find . -type f \
   -not -path "./node_modules/*" -not -path "./.next/*" -not -path "./.git/*" \
   -not -path "./prd/*" \
   -exec sed -i '' \
-    -e 's/RealOS/Occupant/g' \
-    -e 's/realos\.dev/occupant.com/g' \
-    -e 's/realos/occupant/g' \
+    -e 's/RealEstaite/Occupant/g' \
+    -e 's/realestaite\.dev/occupant.com/g' \
+    -e 's/realestaite/occupant/g' \
     {} +
 ```
 
 After replacement, verify:
 
-- `grep -r "RealOS" .` returns no hits outside `prd/` and this file
-- `grep -r "realos" .` returns no hits outside `prd/` and this file
+- `grep -r "RealEstaite" .` returns no hits outside `prd/` and this file
+- `grep -r "realestaite" .` returns no hits outside `prd/` and this file
 - `package.json` `name` matches the new kebab form
 - `.env.example` brand constants match the new name + domain
 - `lib/brand.ts` constants match

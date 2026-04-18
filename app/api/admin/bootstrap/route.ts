@@ -4,7 +4,7 @@
  * Protected by BOOTSTRAP_SECRET so it can't be called by anyone else.
  *
  * Usage (run once after first deploy):
- *   curl -X POST https://realos.dev/api/admin/bootstrap \
+ *   curl -X POST https://realestaite.co/api/admin/bootstrap \
  *     -H "Content-Type: application/json" \
  *     -d '{"secret":"<BOOTSTRAP_SECRET>"}'
  */
@@ -52,11 +52,11 @@ export async function POST(req: NextRequest) {
 
   // Ensure the singleton agency org exists.
   const agency = await prisma.organization.upsert({
-    where: { slug: process.env.AGENCY_ORG_SLUG ?? "realos-agency" },
+    where: { slug: process.env.AGENCY_ORG_SLUG ?? "realestaite-agency" },
     update: { orgType: OrgType.AGENCY },
     create: {
-      name: "RealOS Agency",
-      slug: process.env.AGENCY_ORG_SLUG ?? "realos-agency",
+      name: "RealEstaite Agency",
+      slug: process.env.AGENCY_ORG_SLUG ?? "realestaite-agency",
       orgType: OrgType.AGENCY,
     },
   });

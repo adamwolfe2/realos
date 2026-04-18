@@ -117,11 +117,11 @@ export async function POST(req: NextRequest) {
                 org: {
                   connectOrCreate: {
                     where: {
-                      slug: process.env.AGENCY_ORG_SLUG ?? "realos-agency",
+                      slug: process.env.AGENCY_ORG_SLUG ?? "realestaite-agency",
                     },
                     create: {
-                      name: "RealOS Agency",
-                      slug: process.env.AGENCY_ORG_SLUG ?? "realos-agency",
+                      name: "RealEstaite Agency",
+                      slug: process.env.AGENCY_ORG_SLUG ?? "realestaite-agency",
                       orgType: "AGENCY",
                     },
                   },

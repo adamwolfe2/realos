@@ -25,7 +25,7 @@ export function ExitIntentPopup({
     try {
       if (
         typeof window !== "undefined" &&
-        window.sessionStorage.getItem("realos.exitIntentShown")
+        window.sessionStorage.getItem("realestaite.exitIntentShown")
       ) {
         setDismissed(true);
       }
@@ -41,7 +41,7 @@ export function ExitIntentPopup({
         setOpen(true);
         setDismissed(true);
         try {
-          window.sessionStorage.setItem("realos.exitIntentShown", "1");
+          window.sessionStorage.setItem("realestaite.exitIntentShown", "1");
         } catch {
           // ignore
         }

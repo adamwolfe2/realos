@@ -155,7 +155,7 @@ export default async function ClientDetail({
         <Panel label="Domains">
           {org.domains.length === 0 ? (
             <p className="text-xs opacity-60">
-              None attached, fallback subdomain: {org.slug}.realos.dev
+              None attached, fallback subdomain: {org.slug}.realestaite.co
             </p>
           ) : (
             <ul className="space-y-1.5 text-sm">
