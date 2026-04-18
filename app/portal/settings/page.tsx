@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { SettingsForm } from "./settings-form";
@@ -60,6 +61,43 @@ export default async function SettingsPage() {
           brandFont: org.brandFont,
         }}
       />
+
+      <section className="border rounded-md p-5">
+        <div className="flex items-baseline justify-between gap-3 mb-2">
+          <div>
+            <h2 className="font-serif text-lg font-bold">Integrations</h2>
+            <p className="text-xs opacity-60 mt-1">
+              Connect the Cursive visitor pixel and other third-party
+              services.
+            </p>
+          </div>
+          <Link
+            href="/portal/settings/integrations"
+            className="text-xs underline underline-offset-2 opacity-80 shrink-0"
+          >
+            Integrations →
+          </Link>
+        </div>
+      </section>
+
+      <section className="border rounded-md p-5">
+        <div className="flex items-baseline justify-between gap-3 mb-2">
+          <div>
+            <h2 className="font-serif text-lg font-bold">API keys</h2>
+            <p className="text-xs opacity-60 mt-1">
+              Generate scoped API keys so Zapier, Typeform, and bespoke
+              systems can push leads, visitors, tours, and chatbot events
+              into your CRM.
+            </p>
+          </div>
+          <Link
+            href="/portal/settings/api-keys"
+            className="text-xs underline underline-offset-2 opacity-80 shrink-0"
+          >
+            API keys →
+          </Link>
+        </div>
+      </section>
 
       <section className="border rounded-md p-5">
         <h2 className="font-serif text-lg font-bold mb-4">Active modules</h2>

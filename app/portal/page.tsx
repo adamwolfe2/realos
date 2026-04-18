@@ -9,6 +9,7 @@ import {
   VisitorIdentificationStatus,
 } from "@prisma/client";
 import { StatCard } from "@/components/admin/stat-card";
+import { SetupBanner } from "@/components/portal/setup/setup-banner";
 import { formatDistanceToNow } from "date-fns";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -16,8 +17,14 @@ export const dynamic = "force-dynamic";
 
 const DAY = 24 * 60 * 60 * 1000;
 
-export default async function PortalHome() {
+export default async function PortalHome({
+  searchParams,
+}: {
+  searchParams: Promise<{ showSetup?: string }>;
+}) {
   const scope = await requireScope();
+  const { showSetup } = await searchParams;
+  const forceShowSetup = showSetup === "1";
   const since30d = new Date(Date.now() - 30 * DAY);
   const where = tenantWhere<{ orgId?: string }>(scope);
 
@@ -101,6 +108,8 @@ export default async function PortalHome() {
 
   return (
     <div className="space-y-8">
+      <SetupBanner forceShow={forceShowSetup} />
+
       <header>
         <h1 className="font-serif text-3xl font-bold">Dashboard</h1>
         <p className="text-sm opacity-60 mt-1">

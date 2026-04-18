@@ -6,6 +6,7 @@ import { getScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { BRAND_NAME } from "@/lib/brand";
 import { PortalNav } from "@/components/portal/portal-nav";
+import { deriveSetupProgress } from "@/lib/setup/derive-progress";
 
 export const metadata: Metadata = {
   title: { template: `%s | ${BRAND_NAME} Portal`, default: `${BRAND_NAME} Portal` },
@@ -38,6 +39,7 @@ export default async function PortalLayout({
       slug: true,
       orgType: true,
       logoUrl: true,
+      onboardingDismissed: true,
       moduleWebsite: true,
       modulePixel: true,
       moduleChatbot: true,
@@ -51,6 +53,26 @@ export default async function PortalLayout({
   if (!org || org.orgType !== "CLIENT") {
     redirect(scope.isAgency ? "/admin" : "/sign-in");
   }
+
+  // Setup completion drives whether we show the "Setup" nav entry. Once
+  // every step is done (or the operator dismissed onboarding), the tab
+  // vanishes and the nav simplifies.
+  const setupProgress = await deriveSetupProgress(scope.orgId);
+  const setupComplete =
+    setupProgress != null &&
+    setupProgress.completedCount === setupProgress.totalCount;
+
+  const navOrg = {
+    moduleWebsite: org.moduleWebsite,
+    modulePixel: org.modulePixel,
+    moduleChatbot: org.moduleChatbot,
+    moduleGoogleAds: org.moduleGoogleAds,
+    moduleMetaAds: org.moduleMetaAds,
+    moduleCreativeStudio: org.moduleCreativeStudio,
+    bringYourOwnSite: org.bringYourOwnSite,
+    onboardingDismissed: org.onboardingDismissed,
+    setupComplete,
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
@@ -86,11 +108,20 @@ export default async function PortalLayout({
         <UserButton />
       </header>
 
-      <PortalNav org={org} />
+      <PortalNav org={navOrg} />
 
       <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-6">
         {children}
       </main>
+
+      <footer className="border-t px-4 md:px-6 py-3 text-xs opacity-60 flex items-center justify-end">
+        <Link
+          href="/portal/setup"
+          className="underline-offset-2 hover:underline"
+        >
+          Setup hub
+        </Link>
+      </footer>
     </div>
   );
 }

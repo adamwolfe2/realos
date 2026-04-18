@@ -8,11 +8,13 @@ import {
   Users,
   Eye,
   MessageSquare,
+  Bot,
   Megaphone,
   Brush,
   Globe,
   CreditCard,
   Settings,
+  Compass,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -25,6 +27,8 @@ export type PortalNavOrg = {
   moduleMetaAds: boolean;
   moduleCreativeStudio: boolean;
   bringYourOwnSite: boolean;
+  onboardingDismissed: boolean;
+  setupComplete: boolean;
 };
 
 type NavItem = {
@@ -37,6 +41,12 @@ type NavItem = {
 const ALWAYS = () => true;
 
 const NAV: NavItem[] = [
+  {
+    href: "/portal/setup",
+    label: "Setup",
+    icon: Compass,
+    show: (o) => !o.setupComplete && !o.onboardingDismissed,
+  },
   { href: "/portal", label: "Dashboard", icon: LayoutDashboard, show: ALWAYS },
   { href: "/portal/properties", label: "Properties", icon: Building2, show: ALWAYS },
   { href: "/portal/leads", label: "Leads", icon: Users, show: ALWAYS },
@@ -50,6 +60,12 @@ const NAV: NavItem[] = [
     href: "/portal/conversations",
     label: "Conversations",
     icon: MessageSquare,
+    show: (o) => o.moduleChatbot,
+  },
+  {
+    href: "/portal/chatbot",
+    label: "Chatbot",
+    icon: Bot,
     show: (o) => o.moduleChatbot,
   },
   {

@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export function AddNoteForm({ leadId }: { leadId: string }) {
   const router = useRouter();
@@ -36,18 +37,30 @@ export function AddNoteForm({ leadId }: { leadId: string }) {
         onChange={(e) => setBody(e.target.value)}
         rows={3}
         placeholder="Log a call, email, or context about this lead."
-        className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+        className={cn(
+          "w-full resize-none rounded-[10px] bg-[var(--parchment)] px-3 py-2 text-sm",
+          "text-[var(--near-black)] placeholder:text-[var(--stone-gray)]",
+          "ring-1 ring-[var(--border-cream)]",
+          "focus:outline-none focus:ring-[var(--terracotta)]",
+          "transition-colors duration-200"
+        )}
       />
       <div className="flex items-center gap-3">
         <button
           type="submit"
           disabled={pending || !body.trim()}
-          className="bg-foreground text-background px-3 py-2 text-xs font-semibold rounded disabled:opacity-40"
+          className={cn(
+            "rounded-[10px] bg-[var(--terracotta)] px-3 py-1.5 text-xs font-medium",
+            "text-[var(--ivory)]",
+            "transition-colors duration-200",
+            "hover:bg-[var(--terracotta-hover)]",
+            "disabled:opacity-40 disabled:cursor-not-allowed"
+          )}
         >
-          {pending ? "Saving…" : "Add note"}
+          {pending ? "Saving\u2026" : "Add note"}
         </button>
         {error ? (
-          <p className="text-xs text-destructive">{error}</p>
+          <p className="text-xs text-[var(--error)]">{error}</p>
         ) : null}
       </div>
     </form>

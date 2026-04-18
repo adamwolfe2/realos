@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { LeadStatus } from "@prisma/client";
+import { cn } from "@/lib/utils";
 
 const STATUSES: LeadStatus[] = [
   LeadStatus.NEW,
@@ -17,14 +18,26 @@ const STATUSES: LeadStatus[] = [
   LeadStatus.UNQUALIFIED,
 ];
 
+const STATUS_LABEL: Record<LeadStatus, string> = {
+  NEW: "New",
+  CONTACTED: "Contacted",
+  TOUR_SCHEDULED: "Tour scheduled",
+  TOURED: "Toured",
+  APPLICATION_SENT: "Application sent",
+  APPLIED: "Applied",
+  APPROVED: "Approved",
+  SIGNED: "Signed",
+  LOST: "Lost",
+  UNQUALIFIED: "Unqualified",
+};
+
 export function LeadStatusForm({
   leadId,
   initialStatus,
-  score,
 }: {
   leadId: string;
   initialStatus: LeadStatus;
-  score: number;
+  score?: number;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -53,27 +66,28 @@ export function LeadStatusForm({
   }
 
   return (
-    <div className="flex flex-col items-end gap-2 min-w-[12rem]">
-      <div className="flex items-center gap-2">
-        <label className="text-[10px] uppercase tracking-widest opacity-60">
-          Status
-        </label>
-        <select
-          value={status}
-          disabled={pending}
-          onChange={(e) => change(e.target.value as LeadStatus)}
-          className="border rounded px-2 py-1.5 text-xs bg-background"
-        >
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {s}
-            </option>
-          ))}
-        </select>
-      </div>
-      <span className="text-[11px] opacity-60">Lead score: {score}</span>
+    <div className="space-y-2">
+      <select
+        value={status}
+        disabled={pending}
+        onChange={(e) => change(e.target.value as LeadStatus)}
+        className={cn(
+          "w-full rounded-[10px] bg-[var(--parchment)] px-3 py-2 text-sm",
+          "text-[var(--near-black)]",
+          "ring-1 ring-[var(--border-cream)]",
+          "focus:outline-none focus:ring-[var(--terracotta)]",
+          "transition-colors duration-200",
+          pending && "opacity-60"
+        )}
+      >
+        {STATUSES.map((s) => (
+          <option key={s} value={s}>
+            {STATUS_LABEL[s]}
+          </option>
+        ))}
+      </select>
       {error ? (
-        <span className="text-[11px] text-destructive">{error}</span>
+        <p className="text-xs text-[var(--error)]">{error}</p>
       ) : null}
     </div>
   );
