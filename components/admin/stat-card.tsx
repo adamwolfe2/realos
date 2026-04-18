@@ -16,21 +16,29 @@ export function StatCard({
 }) {
   const toneClass =
     tone === "warn"
-      ? "border-amber-300 bg-amber-50"
+      ? "border-primary/30 bg-primary/5"
       : tone === "danger"
-      ? "border-red-300 bg-red-50"
-      : tone === "success"
-      ? "border-emerald-300 bg-emerald-50"
-      : "";
+        ? "border-destructive/30 bg-destructive/5"
+        : tone === "success"
+          ? "border-emerald-200 bg-emerald-50"
+          : "border-border bg-card";
   return (
-    <div className={cn("border rounded-md p-4", toneClass, className)}>
-      <div className="text-[10px] tracking-widest uppercase opacity-60">
+    <div
+      className={cn(
+        "rounded-xl border p-4 transition-shadow duration-150 hover:shadow-sm",
+        toneClass,
+        className,
+      )}
+    >
+      <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
         {label}
       </div>
-      <div className="font-serif text-3xl font-bold mt-2 tabular-nums">
+      <div className="font-serif text-3xl font-bold mt-2 tabular-nums text-foreground">
         {value}
       </div>
-      {hint ? <div className="text-xs opacity-60 mt-1">{hint}</div> : null}
+      {hint ? (
+        <div className="text-xs text-muted-foreground mt-1">{hint}</div>
+      ) : null}
     </div>
   );
 }

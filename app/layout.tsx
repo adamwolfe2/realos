@@ -36,7 +36,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#f5f4ed",
+  themeColor: "#F5F5F5",
 };
 
 export const metadata: Metadata = {
@@ -108,10 +108,8 @@ export default function RootLayout({
         className={`scroll-smooth ${inter.variable} ${fraunces.variable} ${jetbrainsMono.variable}`}
       >
         <body
-          className="antialiased"
+          className="antialiased bg-background text-foreground"
           style={{
-            backgroundColor: "#f5f4ed",
-            color: "#393C41",
             fontFamily: "var(--font-sans)",
           }}
         >

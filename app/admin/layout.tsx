@@ -84,46 +84,35 @@ export default async function AdminLayout({
   const navBadges = await getAdminNavBadges();
 
   return (
-    <div className="flex min-h-screen bg-cream">
+    <div className="min-h-screen bg-background text-foreground">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-ink focus:text-cream focus:text-sm focus:font-medium"
+        className="sr-only focus:not-sr-only focus:fixed focus:z-50 focus:top-2 focus:left-2 focus:px-4 focus:py-2 focus:bg-primary focus:text-primary-foreground focus:text-sm focus:font-medium focus:rounded-md"
       >
         Skip to main content
       </a>
-      <aside className="w-60 border-r border-shell bg-cream hidden md:flex md:flex-col overflow-y-auto">
-        <div className="mb-4 px-6 pt-5">
-          <Link
-            href="/admin"
-            className="font-serif font-bold text-xl text-ink tracking-tight"
-          >
-            {BRAND_NAME}
-          </Link>
-          <p className="font-serif italic text-sm text-sand mt-0.5">Admin</p>
+
+      {/* Mobile top header */}
+      <div className="lg:hidden flex items-center justify-between h-14 px-4 bg-card border-b border-border sticky top-0 z-40">
+        <div className="flex items-center gap-3">
+          <AdminMobileNav navBadges={navBadges} />
+          <span className="text-base font-bold tracking-tight text-foreground">
+            {BRAND_NAME} Admin
+          </span>
         </div>
+        <div className="flex items-center gap-3">
+          <AdminNotifications />
+          <UserButton />
+        </div>
+      </div>
+
+      <div className="flex h-[calc(100dvh-3.5rem)] lg:h-screen overflow-hidden">
         <AdminSidebar navBadges={navBadges} />
-      </aside>
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="border-b border-shell px-4 md:px-6 py-3 flex items-center justify-between bg-cream">
-          <div className="flex items-center gap-3">
-            <AdminMobileNav navBadges={navBadges} />
-            <span className="font-serif font-bold text-base text-ink md:hidden">
-              {BRAND_NAME}
-            </span>
-            <span className="font-serif font-bold text-lg text-ink hidden md:block">
-              {BRAND_NAME} Admin
-            </span>
-          </div>
-          <div className="flex items-center gap-3">
-            <AdminNotifications />
-            <UserButton />
-          </div>
-        </header>
         <main
           id="main-content"
-          className="flex-1 p-3 sm:p-4 md:p-6 animate-fade-in bg-cream"
+          className="flex-1 overflow-y-auto bg-background"
         >
-          {children}
+          <div className="p-4 pb-20 lg:p-6 lg:pb-8 xl:p-8">{children}</div>
         </main>
       </div>
     </div>
