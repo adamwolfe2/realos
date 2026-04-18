@@ -592,3 +592,44 @@ for every tenant, resolved by hostname via middleware and backed by
 ---
 
 ---
+## Final deploy — RealEstaite live
+
+Brand rename RealOS -> RealEstaite swept across all ts/tsx/md/json/
+prisma/yaml files (prd/ left alone). Domain placeholder set to
+`realestaite.co` for future custom-domain attachment. Vercel project
+renamed from `realos` to `realestaite`, SSO protection removed so the
+`.vercel.app` alias serves the marketing site publicly. Default alias
+claimed: `realestaite.vercel.app`.
+
+Two deploy-time bugs found and fixed.
+
+1. **Edge runtime: `Buffer.from` is not defined.** `middleware.ts`
+   used `Buffer.from(key, "base64").toString()` to decode the Clerk
+   publishable key when deciding whether Clerk is configured. Edge
+   runtime has no Node `Buffer`, so middleware crashed with
+   MIDDLEWARE_INVOCATION_FAILED on every request. Replaced with
+   `atob(...)` which is Edge-native.
+
+2. **`validateEnv()` threw in production.** `instrumentation.ts`
+   registered `validateEnv` which hard-threw when required keys
+   (DATABASE_URL, CLERK_SECRET_KEY, ANTHROPIC_API_KEY, etc.) were
+   unset. That crashed the Next.js `register()` hook before any route
+   could handle a request, including static `/sitemap.xml` and
+   `/robots.txt`. Switched to warn-only so the marketing surface
+   renders before Neon/Clerk/Anthropic land on Vercel; feature routes
+   still throw at call time when they actually need a specific key.
+
+Post-deploy smoke (all 200):
+`/`, `/pricing`, `/compare/conversion-logix`, `/student-housing`,
+`/multifamily`, `/senior-living`, `/commercial`, `/residential`,
+`/features/ads`, `/features/chatbot`, `/features/pixel`,
+`/features/seo-aeo`, `/about`, `/demo`, `/blog`, `/tools`, `/privacy`,
+`/terms`, `/sitemap.xml`, `/robots.txt`.
+
+Brand sanity on live home: 19 RealEstaite hits, 0 RealOS hits, 0
+em-dashes. Sitemap uses `realestaite.vercel.app` as canonical.
+
+Live: https://realestaite.vercel.app
+Repo: https://github.com/adamwolfe2/realos
+
+---
