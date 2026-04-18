@@ -168,6 +168,12 @@ enum ChatbotConversationStatus {
   CLOSED
 }
 
+enum ChatbotCaptureMode {
+  PRE_CHAT
+  ON_INTENT
+  OFF
+}
+
 enum CreativeRequestStatus {
   SUBMITTED
   IN_REVIEW
@@ -317,6 +323,11 @@ model Organization {
   cursiveIntegration   CursiveIntegration?
   appfolioIntegration  AppFolioIntegration?
   addresses            Address[]
+  apiKeys              ApiKey[]
+
+  // Onboarding checklist dismissed by the operator. When false, the
+  // first-login walkthrough renders on /portal.
+  onboardingDismissed  Boolean       @default(false)
 
   createdAt            DateTime      @default(now())
   updatedAt            DateTime      @updatedAt
@@ -348,6 +359,29 @@ model User {
 
   @@index([orgId])
   @@index([role])
+}
+
+model ApiKey {
+  id              String       @id @default(cuid())
+  orgId           String
+  org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  name            String                                            // operator-chosen label, e.g. "Zapier production"
+  keyPrefix       String                                            // first ~12 chars of the raw key, for display only (re_live_aB12...)
+  keyHash         String       @unique                              // SHA-256 of the full raw key; the raw key is never stored
+  scopes          String[]                                          // e.g. ["ingest:lead", "ingest:visitor", "ingest:tour", "ingest:chatbot"] or ["*"]
+
+  createdByUserId String?
+  lastUsedAt      DateTime?
+  lastUsedIp      String?
+  usageCount      Int          @default(0)
+  revokedAt       DateTime?
+
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  @@index([orgId])
+  @@index([keyHash])
 }
 
 model DomainBinding {
@@ -402,9 +436,13 @@ model TenantSiteConfig {
   enablePixel     Boolean      @default(false)
 
   // Chatbot config
+  chatbotEnabled      Boolean @default(false)
   chatbotAvatarUrl    String?
   chatbotPersonaName  String?
   chatbotGreeting     String?
+  chatbotTeaserText   String?
+  chatbotBrandColor   String?
+  chatbotCaptureMode  ChatbotCaptureMode @default(ON_INTENT)
   chatbotKnowledgeBase String? @db.Text
   chatbotIdleTriggerSeconds Int @default(5)
 
@@ -565,6 +603,14 @@ model Lead {
   preferredUnitType String?
   notes           String?      @db.Text
 
+  // External system idempotency keys. Populated when the Lead originated
+  // from (or was matched to) an external record — AppFolio, Zapier, a
+  // custom webhook. externalSystem is a string like "appfolio" and
+  // externalId is the record's ID in that system. The compound unique
+  // index at @@unique below makes re-syncs safe.
+  externalSystem  String?
+  externalId      String?
+
   // Related visitor (if came from pixel)
   visitorId       String?
   visitor         Visitor?     @relation(fields: [visitorId], references: [id])
@@ -597,6 +643,7 @@ model Lead {
   @@index([email])
   @@index([cadenceStage])
   @@index([propertyId])
+  @@unique([orgId, externalSystem, externalId])
 }
 
 model Tour {
@@ -613,11 +660,16 @@ model Tour {
   attendeeCount  Int?        @default(1)
   notes          String?     @db.Text
 
+  // External system idempotency (e.g. AppFolio Showing Id).
+  externalSystem String?
+  externalId     String?
+
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
   @@index([leadId])
   @@index([propertyId, status])
+  @@unique([externalSystem, externalId])
 }
 
 model Application {
@@ -951,6 +1003,20 @@ model AuditEvent {
 
   @@index([orgId, createdAt])
   @@index([entityType, entityId])
+}
+
+model WebhookEvent {
+  id               String   @id @default(cuid())
+  source           String                                         // "cursive", "appfolio", "stripe"
+  bodyHash         String?                                        // SHA-256 of raw POST body, hex. Catches byte-identical AL retries.
+  eventFingerprint String?                                        // sha256(pixel_id|profile_id|event_timestamp|event_type). Catches re-serialized duplicates within a batch.
+  eventType        String?
+  orgId            String?
+  receivedAt       DateTime @default(now())
+
+  @@unique([source, bodyHash])
+  @@unique([source, eventFingerprint])
+  @@index([source, receivedAt])
 }
 
 model ClientNote {

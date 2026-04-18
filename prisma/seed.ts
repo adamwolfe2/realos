@@ -8,12 +8,22 @@ import {
   SubscriptionTier,
   BackendPlatform,
 } from "@prisma/client";
+import { PrismaNeonHttp } from "@prisma/adapter-neon";
+import type { HTTPQueryOptions } from "@neondatabase/serverless";
 
 if (process.env.NODE_ENV === "production") {
   throw new Error("Seed script must not run in production. Aborting.");
 }
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) {
+  throw new Error("DATABASE_URL is not set");
+}
+const adapter = new PrismaNeonHttp(
+  connectionString,
+  {} as HTTPQueryOptions<boolean, boolean>,
+);
+const prisma = new PrismaClient({ adapter });
 
 async function main() {
   const agencySlug = process.env.AGENCY_ORG_SLUG ?? "realestaite-agency";
