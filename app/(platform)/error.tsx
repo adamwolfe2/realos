@@ -1,58 +1,89 @@
-'use client'
+"use client";
 
-import { useEffect } from 'react'
+import { useEffect } from "react";
+import { BRAND_EMAIL } from "@/lib/brand";
 
 export default function MarketingError({
   error,
   reset,
 }: {
-  error: Error & { digest?: string }
-  reset: () => void
+  error: Error & { digest?: string };
+  reset: () => void;
 }) {
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') {
-      console.error('[marketing]', error.digest ?? error.message)
+    if (process.env.NODE_ENV === "production") {
+      console.error("[marketing]", error.digest ?? error.message);
     }
-  }, [error])
+  }, [error]);
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-cream text-ink px-4">
-      <p className="font-mono text-[10px] uppercase tracking-widest text-sand mb-4">
+    <div
+      className="flex flex-col items-center justify-center min-h-screen px-4"
+      style={{
+        backgroundColor: "var(--bg-primary)",
+        color: "var(--text-body)",
+      }}
+    >
+      <p
+        className="font-mono text-[11px] uppercase tracking-[0.18em] mb-4"
+        style={{ color: "var(--text-muted)" }}
+      >
         Something went wrong
       </p>
-      <h1 className="font-serif text-3xl sm:text-4xl mb-3 text-center">
+      <h1
+        className="font-serif text-3xl sm:text-4xl mb-3 text-center"
+        style={{ color: "var(--text-headline)" }}
+      >
         We hit an unexpected error.
       </h1>
-      <p className="font-mono text-sm text-ink/60 mb-8 max-w-md text-center leading-relaxed">
-        This page failed to load. Try refreshing — if the issue persists, contact us
-        at{' '}
+      <p
+        className="font-mono text-sm mb-8 max-w-md text-center leading-relaxed"
+        style={{ color: "var(--text-muted)" }}
+      >
+        This page failed to load. Try refreshing. If it persists, email{" "}
         <a
-          href="mailto:orders@wholesailhub.com"
+          href={`mailto:${BRAND_EMAIL}`}
           className="underline underline-offset-2"
         >
-          orders@wholesailhub.com
+          {BRAND_EMAIL}
         </a>
         .
       </p>
       <div className="flex gap-3">
         <button
+          type="button"
           onClick={reset}
-          className="font-mono text-sm border border-shell px-5 py-2.5 bg-cream text-ink hover:border-ink transition-colors"
+          className="font-mono text-xs font-semibold px-5 py-3 rounded"
+          style={{
+            border: "1px solid var(--border-strong)",
+            color: "var(--text-headline)",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+          }}
         >
           Try again
         </button>
         <a
           href="/"
-          className="font-mono text-sm border border-ink bg-ink text-cream px-5 py-2.5 hover:bg-ink/80 transition-colors"
+          className="font-mono text-xs font-semibold px-5 py-3 rounded"
+          style={{
+            backgroundColor: "var(--blue)",
+            color: "white",
+            letterSpacing: "0.08em",
+            textTransform: "uppercase",
+          }}
         >
           Back to home
         </a>
       </div>
-      {error.digest && (
-        <p className="mt-8 text-[10px] text-sand font-mono">
+      {error.digest ? (
+        <p
+          className="mt-8 text-[10px] font-mono"
+          style={{ color: "var(--text-muted)" }}
+        >
           Error ID: {error.digest}
         </p>
-      )}
+      ) : null}
     </div>
-  )
+  );
 }

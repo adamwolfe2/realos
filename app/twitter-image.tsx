@@ -1,7 +1,8 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
-export const alt = "Wholesail — Your wholesale business, fully automated.";
+export const alt =
+  "RealOS, managed marketing for real estate operators.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -22,7 +23,6 @@ export default async function TwitterImage() {
           fontFamily: "Georgia, serif",
         }}
       >
-        {/* Top accent bar */}
         <div
           style={{
             position: "absolute",
@@ -34,49 +34,20 @@ export default async function TwitterImage() {
             display: "flex",
           }}
         />
+        <span
+          style={{
+            fontFamily: "Georgia, serif",
+            fontSize: "28px",
+            fontWeight: 700,
+            letterSpacing: "0.08em",
+            color: "#0A0A0A",
+            display: "flex",
+          }}
+        >
+          REALOS
+        </span>
 
-        {/* Logo + wordmark */}
-        <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
-          <svg
-            viewBox="0 0 32 32"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-            width="48"
-            height="48"
-          >
-            <path
-              d="M16 2L16 28L6 28C6 28 14 16 16 2Z"
-              fill="#2A52BE"
-              opacity="0.9"
-            />
-            <path
-              d="M18 8L18 28L26 28C26 28 20 18 18 8Z"
-              fill="#2A52BE"
-              opacity="0.55"
-            />
-            <path
-              d="M4 29L28 29"
-              stroke="#2A52BE"
-              stroke-width="1.5"
-              stroke-linecap="round"
-            />
-          </svg>
-          <span
-            style={{
-              fontFamily: "Georgia, serif",
-              fontSize: "28px",
-              fontWeight: "700",
-              letterSpacing: "0.08em",
-              color: "#0A0A0A",
-              display: "flex",
-            }}
-          >
-            WHOLESAIL
-          </span>
-        </div>
-
-        {/* Main content */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "0px" }}>
+        <div style={{ display: "flex", flexDirection: "column" }}>
           <div
             style={{
               fontSize: "16px",
@@ -88,12 +59,12 @@ export default async function TwitterImage() {
               display: "flex",
             }}
           >
-            B2B Distribution Portals
+            Managed marketing for real estate operators
           </div>
           <div
             style={{
               fontSize: "76px",
-              fontWeight: "400",
+              fontWeight: 400,
               color: "#0A0A0A",
               fontFamily: "Georgia, serif",
               lineHeight: 1.05,
@@ -102,8 +73,8 @@ export default async function TwitterImage() {
               flexDirection: "column",
             }}
           >
-            <span>Your wholesale business,</span>
-            <span>fully automated.</span>
+            <span>Marketing infrastructure that</span>
+            <span style={{ color: "#2A52BE" }}>actually fills units.</span>
           </div>
           <div
             style={{
@@ -114,7 +85,7 @@ export default async function TwitterImage() {
               display: "flex",
             }}
           >
-            Client portal · Admin panel · SMS ordering · Stripe billing
+            Site · Pixel · Chatbot · SEO · Managed ads
           </div>
         </div>
 
@@ -130,7 +101,7 @@ export default async function TwitterImage() {
             display: "flex",
           }}
         >
-          wholesailhub.com
+          realos.dev
         </div>
       </div>
     ),
