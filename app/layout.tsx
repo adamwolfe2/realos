@@ -2,31 +2,35 @@ import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PostHogProvider } from "@/components/posthog-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { Newsreader, Geist_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/react";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import { portalConfig } from "@/lib/portal-config";
 import { BRAND_NAME } from "@/lib/brand";
 
-const newsreader = Newsreader({
+// DECISION: Inter Variable with OpenType features cv01 + ss03 drives the
+// Linear-inspired UI system. JetBrains Mono stands in for Berkeley Mono (a
+// paid font) for labels, tags, and code. Both loaded once at the root and
+// exposed as CSS variables to every component.
+const inter = Inter({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-newsreader",
+  variable: "--font-inter",
   axes: ["opsz"],
 });
 
-const geistMono = Geist_Mono({
+const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
   display: "swap",
-  variable: "--font-geist-mono",
+  variable: "--font-jetbrains",
 });
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#F9F7F4",
+  themeColor: "#08090a",
 };
 
 export const metadata: Metadata = {
@@ -95,13 +99,15 @@ export default function RootLayout({
     <ClerkProvider>
       <html
         lang="en"
-        className={`scroll-smooth ${newsreader.variable} ${geistMono.variable}`}
+        className={`scroll-smooth ${inter.variable} ${jetbrainsMono.variable}`}
       >
         <body
-          className="antialiased font-serif"
+          className="antialiased"
           style={{
             backgroundColor: "var(--bg-primary)",
             color: "var(--text-body)",
+            fontFamily: "var(--font-sans)",
+            fontFeatureSettings: '"cv01","ss03"',
           }}
         >
           <script

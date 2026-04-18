@@ -21,138 +21,213 @@ body {
   }
 }
 
+/* =============================================================================
+   Linear-inspired design system.
+   Dark-mode-first. Near-black canvas. Inter Variable with OpenType features
+   cv01 + ss03 everywhere. Weight 510 is the signature UI weight. Indigo
+   accent is the only chromatic color. See DESIGN.md at project root.
+   ============================================================================= */
+
 @theme {
-  --font-serif: var(--font-newsreader), Georgia, "Times New Roman", serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono",
+  --font-sans: var(--font-inter), "SF Pro Display", -apple-system, system-ui,
+    "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue",
+    sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, "SF Mono",
     Menlo, Consolas, monospace;
 
-  /* ── Core palette (4 colors = 95% of all usage) ──────────────────────── */
-  --color-ink: #0A0A0A;
-  --color-cream: #F9F7F4;
-  --color-sand: #C8C0B4;
-  --color-shell: #E5E1DB;
-
-  /* ── Variants ─────────────────────────────────────────────────────── */
-  --color-ink-dark: #1A1614;
-  --color-cream-hover: #F0EDE8;
-  --color-gold-light: #FEF3C7;
-  --color-gold-wash: #FFFBEB;
-  --color-sky: #4A90D9;
-
-  /* ── Brand / accent ──────────────────────────────────────────────────── */
-  --color-brand: #2A52BE;
-  --color-gold: #B8860B;
-
-  /* ── State colors ────────────────────────────────────────────────────── */
-  --color-error: #dc2626;
-  --color-success: #059669;
-  --color-success-light: #16a34a;
+  /* Kept for legacy imports, but both now point to Inter for consistency. */
+  --font-serif: var(--font-sans);
 }
 
 :root {
-  /* Backgrounds */
-  --bg-primary: #F9F7F4;
-  --bg-white: #FFFFFF;
-  --bg-blue: #1B3A6B;
-  --bg-blue-dark: #112649;
+  /* ── Surfaces (dark luminance stack) ────────────────────────────────── */
+  --bg-primary: #08090a;       /* marketing canvas */
+  --bg-deepest: #010102;       /* hero / ultra-dark sections */
+  --bg-panel: #0f1011;         /* panels, sticky headers */
+  --bg-surface: #191a1b;       /* cards, dropdowns, elevated */
+  --bg-surface-2: #28282c;     /* hover, secondary surface */
+  --bg-white: #ffffff;         /* inverse sections (rare) */
 
-  /* Text */
-  --text-headline: #0F1523;
-  --text-body: #3D4556;
-  --text-muted: #8B92A5;
-  --text-on-blue: #FFFFFF;
+  /* Translucent surface opacities (use with rgba white) */
+  --bg-card: rgba(255, 255, 255, 0.02);
+  --bg-card-hover: rgba(255, 255, 255, 0.04);
+  --bg-chip: rgba(255, 255, 255, 0.05);
 
-  /* Accent / Brand Blue */
-  --blue: #2A52BE;
-  --blue-hover: #1B3A6B;
-  --blue-light: #EEF2FB;
-  --blue-border: #C5D0E8;
+  /* ── Text ───────────────────────────────────────────────────────────── */
+  --text-headline: #f7f8f8;    /* near-white, never pure white */
+  --text-body: #d0d6e0;        /* silver-gray body */
+  --text-muted: #8a8f98;       /* tertiary */
+  --text-subtle: #62666d;      /* quaternary */
+  --text-on-accent: #ffffff;
 
-  /* Neutrals */
-  --border: #E2DDD6;
-  --border-strong: #C8C3BB;
+  /* ── Brand accent (only chromatic color) ────────────────────────────── */
+  --accent: #5e6ad2;            /* brand indigo, CTA bg */
+  --accent-hover: #828fff;      /* hover */
+  --accent-bright: #7170ff;     /* interactive / link */
+  --accent-wash: rgba(94, 106, 210, 0.12);
+  --accent-glow: rgba(113, 112, 255, 0.18);
+
+  /* ── Status ─────────────────────────────────────────────────────────── */
+  --success: #10b981;
+  --success-bright: #27a644;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+
+  /* ── Borders & dividers ─────────────────────────────────────────────── */
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-standard: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+  --border-solid: #23252a;
+  --border-solid-2: #34343a;
+  --line-tint: #141516;
+  --line-tertiary: #18191a;
+
+  /* Legacy aliases kept to avoid breaking imports in older files. */
+  --blue: var(--accent);
+  --blue-hover: var(--accent-hover);
+  --blue-light: var(--accent-wash);
+  --blue-border: var(--border-standard);
+  --bg-blue: var(--bg-panel);
+  --bg-blue-dark: var(--bg-deepest);
+  --border: var(--border-standard);
+  --text-on-blue: var(--text-headline);
+}
+
+/* Global type rules */
+body {
+  font-feature-settings: "cv01", "ss03";
+  background-color: var(--bg-primary);
+  color: var(--text-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+*,
+*::before,
+*::after {
+  font-feature-settings: "cv01", "ss03";
 }
 
 /* ── Selection ──────────────────────────────────────────────────────────── */
 ::selection {
-  background: var(--blue);
+  background: var(--accent);
   color: white;
 }
 
 /* ── Custom scrollbar ───────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
   background: var(--bg-primary);
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--border-strong);
+  background: var(--bg-surface-2);
   border: 2px solid var(--bg-primary);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-solid-2);
 }
 
 /* ── Brand utility classes ─────────────────────────────────────────────── */
+.btn-accent {
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
+}
+.btn-accent:hover {
+  background-color: var(--accent-hover);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 0 24px var(--accent-glow);
+}
+
+.btn-ghost {
+  background-color: rgba(255, 255, 255, 0.02);
+  color: var(--text-headline);
+  border: 1px solid var(--border-standard);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.btn-ghost:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-strong);
+}
+
+/* Back-compat with previously used names, duplicated (Tailwind v4 won't
+   @apply custom utilities declared in the same file). */
 .btn-blue {
-  background-color: var(--blue);
-  color: white;
-  transition: background-color 0.15s ease;
+  background-color: var(--accent);
+  color: var(--text-on-accent);
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
 }
 .btn-blue:hover {
-  background-color: var(--blue-hover);
+  background-color: var(--accent-hover);
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset, 0 0 24px var(--accent-glow);
 }
+.btn-outline {
+  background-color: rgba(255, 255, 255, 0.02);
+  color: var(--text-headline);
+  border: 1px solid var(--border-standard);
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.btn-outline:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: var(--border-strong);
+}
+.btn-outline-white {
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+  transition: border-color 0.15s ease, color 0.15s ease;
+}
+.btn-outline-white:hover { border-color: white; color: white; }
 
 .link-body {
   color: var(--text-body);
   transition: color 0.15s ease;
 }
-.link-body:hover {
-  color: var(--blue);
-}
-
-.btn-outline {
-  border: 1px solid var(--border-strong);
-  color: var(--text-headline);
-  transition: border-color 0.15s ease;
-}
-.btn-outline:hover {
-  border-color: var(--text-headline);
-}
-
-.btn-outline-white {
-  border: 1px solid rgba(255,255,255,0.3);
-  color: rgba(255,255,255,0.8);
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-.btn-outline-white:hover {
-  border-color: white;
-  color: white;
-}
+.link-body:hover { color: var(--text-headline); }
 
 /* ── Focus styles ──────────────────────────────────────────────────── */
 :focus-visible {
-  outline: 2px solid var(--blue);
+  outline: 2px solid var(--accent-bright);
   outline-offset: 2px;
 }
 
+/* ── Display type helper, tracks the Linear spec ───────────────────────── */
+.display-xl   { font-size: clamp(44px, 6.4vw, 72px); line-height: 1.00; font-weight: 510; letter-spacing: -0.022em; }
+.display-lg   { font-size: clamp(40px, 5.4vw, 64px); line-height: 1.02; font-weight: 510; letter-spacing: -0.022em; }
+.display      { font-size: clamp(32px, 4.2vw, 48px); line-height: 1.04; font-weight: 510; letter-spacing: -0.022em; }
+.heading-1    { font-size: 32px; line-height: 1.13; font-weight: 400; letter-spacing: -0.022em; }
+.heading-2    { font-size: 24px; line-height: 1.33; font-weight: 400; letter-spacing: -0.012em; }
+.heading-3    { font-size: 20px; line-height: 1.33; font-weight: 590; letter-spacing: -0.012em; }
+.body-lg      { font-size: 18px; line-height: 1.60; font-weight: 400; letter-spacing: -0.009em; }
+.body         { font-size: 16px; line-height: 1.50; font-weight: 400; }
+.body-510     { font-size: 16px; line-height: 1.50; font-weight: 510; }
+.small        { font-size: 15px; line-height: 1.60; font-weight: 400; letter-spacing: -0.011em; }
+.caption      { font-size: 13px; line-height: 1.50; font-weight: 510; letter-spacing: -0.01em; }
+.label-mono   { font-family: var(--font-mono); font-size: 11px; line-height: 1.4; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+.eyebrow      { font-family: var(--font-mono); font-size: 11px; line-height: 1.4; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--text-muted); }
+
 /* ── Blog CTA block (rendered inside prose article body) ───────────── */
 .prose .cta-block {
-  border: 1px solid var(--border-strong);
-  background-color: var(--bg-white);
+  border: 1px solid var(--border-standard);
+  background-color: var(--bg-card);
   padding: 2rem;
   margin: 2.5rem 0;
-  border-radius: 0;
+  border-radius: 8px;
 }
 .prose .cta-block h3 {
-  font-family: var(--font-serif);
+  font-family: var(--font-sans);
   font-size: 1.25rem;
-  font-weight: 400;
+  font-weight: 590;
   color: var(--text-headline);
   margin: 0 0 0.5rem;
 }
 .prose .cta-block p {
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  line-height: 1.7;
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.6;
   color: var(--text-body);
   margin: 0 0 1.25rem;
 }
@@ -160,15 +235,42 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  font-family: var(--font-mono);
-  font-size: 0.8125rem;
-  font-weight: 600;
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  font-weight: 510;
   color: white;
-  background-color: var(--blue);
-  padding: 10px 20px;
+  background-color: var(--accent);
+  padding: 10px 16px;
+  border-radius: 6px;
   text-decoration: none;
   transition: background-color 0.15s ease;
 }
-.prose .cta-block a:hover {
-  background-color: var(--blue-hover);
+.prose .cta-block a:hover { background-color: var(--accent-hover); }
+
+/* ── Decorative radial glow for hero backdrops ─────────────────────────── */
+.hero-glow::before {
+  content: "";
+  position: absolute;
+  top: -20%;
+  left: 50%;
+  width: 120%;
+  height: 100%;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse at center,
+    rgba(94, 106, 210, 0.15) 0%,
+    rgba(94, 106, 210, 0.05) 35%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Grid texture (subtle) ────────────────────────────────────────────── */
+.grid-fade {
+  background-image:
+    linear-gradient(to right, rgba(255,255,255,0.035) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse at center top, black 0%, transparent 70%);
 }

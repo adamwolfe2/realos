@@ -3,23 +3,22 @@
 import { useEffect, useMemo, useState } from "react";
 
 // ---------------------------------------------------------------------------
-// HeroDemo
+// HeroDemo (Linear-inspired)
 // Auto-advancing 4-step walkthrough: IMPORT -> BUILD -> ATTACH -> LAUNCH.
-// Each step shows a distinct mock UI so operators can SEE the platform doing
-// the thing, not read a paragraph about it.
-// Click a tab to jump; otherwise advances every 4.2s.
+// Dark translucent surfaces, indigo accent, no cream, no serif. Each step
+// renders a distinct mock UI so operators SEE the platform working.
 // ---------------------------------------------------------------------------
 
 type StepKey = "import" | "build" | "attach" | "launch";
 
 const STEPS: { key: StepKey; num: string; title: string }[] = [
   { key: "import", num: "01", title: "IMPORT" },
-  { key: "build", num: "02", title: "BUILD" },
+  { key: "build",  num: "02", title: "BUILD" },
   { key: "attach", num: "03", title: "ATTACH" },
   { key: "launch", num: "04", title: "LAUNCH" },
 ];
 
-const AUTO_MS = 4200;
+const AUTO_MS = 4500;
 
 export function HeroDemo() {
   const [active, setActive] = useState<StepKey>("import");
@@ -40,18 +39,20 @@ export function HeroDemo() {
 
   return (
     <div
-      className="w-full bg-white"
+      className="w-full overflow-hidden"
       style={{
-        border: "1px solid var(--border-strong)",
+        backgroundColor: "var(--bg-surface)",
+        border: "1px solid var(--border-standard)",
         borderRadius: "12px",
-        overflow: "hidden",
+        boxShadow:
+          "0 24px 48px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.03) inset",
       }}
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
       <div
         className="grid grid-cols-4"
-        style={{ borderBottom: "1px solid var(--border)" }}
+        style={{ borderBottom: "1px solid var(--border-standard)" }}
       >
         {STEPS.map((s, i) => {
           const isActive = s.key === active;
@@ -62,26 +63,29 @@ export function HeroDemo() {
               onClick={() => setActive(s.key)}
               className="relative px-3 py-3 text-left transition-colors"
               style={{
-                backgroundColor: isActive ? "var(--blue-light)" : "transparent",
+                backgroundColor: isActive ? "rgba(94,106,210,0.12)" : "transparent",
                 borderRight:
-                  i < STEPS.length - 1 ? "1px solid var(--border)" : "none",
+                  i < STEPS.length - 1
+                    ? "1px solid var(--border-standard)"
+                    : "none",
                 cursor: "pointer",
               }}
             >
               <span
                 className="font-mono text-[10px] block"
                 style={{
-                  color: isActive ? "var(--blue)" : "var(--text-muted)",
+                  color: isActive ? "var(--accent-bright)" : "var(--text-subtle)",
                   letterSpacing: "0.12em",
                 }}
               >
                 {s.num}
               </span>
               <span
-                className="font-mono text-[11px] font-semibold block mt-0.5"
+                className="text-[12px] block mt-0.5"
                 style={{
-                  color: isActive ? "var(--blue)" : "var(--text-headline)",
-                  letterSpacing: "0.06em",
+                  color: isActive ? "var(--text-headline)" : "var(--text-muted)",
+                  letterSpacing: "0.04em",
+                  fontWeight: 510,
                 }}
               >
                 {s.title}
@@ -89,7 +93,7 @@ export function HeroDemo() {
               {isActive && (
                 <span
                   className="absolute left-0 right-0 bottom-[-1px] h-[2px]"
-                  style={{ backgroundColor: "var(--blue)" }}
+                  style={{ backgroundColor: "var(--accent-bright)" }}
                 />
               )}
             </button>
@@ -97,7 +101,7 @@ export function HeroDemo() {
         })}
       </div>
 
-      <div className="p-5 min-h-[372px]">
+      <div className="p-5 min-h-[380px]">
         {active === "import" && <ImportPane />}
         {active === "build" && <BuildPane />}
         {active === "attach" && <AttachPane />}
@@ -107,18 +111,21 @@ export function HeroDemo() {
       <div
         className="px-5 py-3 flex items-center gap-4"
         style={{
-          borderTop: "1px solid var(--border)",
-          backgroundColor: "var(--bg-primary)",
+          borderTop: "1px solid var(--border-subtle)",
+          backgroundColor: "rgba(0,0,0,0.25)",
         }}
       >
         <span
           className="inline-block h-2 w-2 rounded-full"
-          style={{ backgroundColor: "var(--blue)" }}
+          style={{
+            backgroundColor: "var(--accent-bright)",
+            boxShadow: "0 0 10px var(--accent-glow)",
+          }}
         />
         <span
           className="font-mono text-[10px] flex-1"
           style={{
-            color: "var(--text-muted)",
+            color: "var(--text-subtle)",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
           }}
@@ -133,7 +140,9 @@ export function HeroDemo() {
               style={{
                 width: i === activeIdx ? "24px" : "10px",
                 backgroundColor:
-                  i === activeIdx ? "var(--blue)" : "var(--border-strong)",
+                  i === activeIdx
+                    ? "var(--accent-bright)"
+                    : "var(--border-strong)",
               }}
             />
           ))}
@@ -145,17 +154,16 @@ export function HeroDemo() {
 
 // ---------------------------------------------------------------------------
 // Step 01 - Import from AppFolio
-// Fakes a unit-sync table with a progress-filled row count.
 // ---------------------------------------------------------------------------
 
 function ImportPane() {
   const rows = useMemo(
     () => [
-      { unit: "214", bed: "Studio",  rent: "$1,995", status: "Available",  sync: "synced" as const },
-      { unit: "308", bed: "1 Bed",   rent: "$2,350", status: "Available",  sync: "synced" as const },
-      { unit: "411", bed: "2 Bed",   rent: "$3,100", status: "Notice",     sync: "synced" as const },
-      { unit: "512", bed: "2 Bed",   rent: "$3,200", status: "Occupied",   sync: "synced" as const },
-      { unit: "604", bed: "3 Bed",   rent: "$4,150", status: "Available",  sync: "syncing" as const },
+      { unit: "214", bed: "Studio", rent: "$1,995", status: "Available", sync: "synced" as const },
+      { unit: "308", bed: "1 Bed",  rent: "$2,350", status: "Available", sync: "synced" as const },
+      { unit: "411", bed: "2 Bed",  rent: "$3,100", status: "Notice",    sync: "synced" as const },
+      { unit: "512", bed: "2 Bed",  rent: "$3,200", status: "Occupied",  sync: "synced" as const },
+      { unit: "604", bed: "3 Bed",  rent: "$4,150", status: "Available", sync: "syncing" as const },
     ],
     []
   );
@@ -166,28 +174,32 @@ function ImportPane() {
         left={<span>STEP 01 &middot; IMPORT</span>}
         right={
           <span>
-            <strong style={{ color: "var(--text-headline)" }}>86 / 86</strong>{" "}
-            <span style={{ color: "var(--text-muted)" }}>UNITS</span>
+            <strong style={{ color: "var(--text-headline)", fontWeight: 510 }}>86 / 86</strong>{" "}
+            <span style={{ color: "var(--text-subtle)" }}>UNITS</span>
           </span>
         }
       />
       <p
-        className="font-serif text-[20px] mt-2 mb-4"
-        style={{ color: "var(--text-headline)" }}
+        className="text-[20px] mt-2 mb-4"
+        style={{
+          color: "var(--text-headline)",
+          fontWeight: 510,
+          letterSpacing: "-0.012em",
+        }}
       >
         Pulling live inventory from AppFolio
       </p>
 
       <div
-        className="rounded"
-        style={{ border: "1px solid var(--border)" }}
+        className="rounded-md overflow-hidden"
+        style={{ border: "1px solid var(--border-standard)" }}
       >
         <div
-          className="grid grid-cols-[60px_1fr_70px_90px_80px] gap-2 px-3 py-2 font-mono text-[10px]"
+          className="grid grid-cols-[56px_1fr_72px_96px_80px] gap-2 px-3 py-2 font-mono text-[10px]"
           style={{
-            color: "var(--text-muted)",
-            backgroundColor: "var(--bg-primary)",
-            borderBottom: "1px solid var(--border)",
+            color: "var(--text-subtle)",
+            backgroundColor: "rgba(255,255,255,0.03)",
+            borderBottom: "1px solid var(--border-standard)",
             letterSpacing: "0.08em",
           }}
         >
@@ -197,24 +209,23 @@ function ImportPane() {
           <span>STATUS</span>
           <span>SYNC</span>
         </div>
-        {rows.map((r) => (
+        {rows.map((r, i) => (
           <div
             key={r.unit}
-            className="grid grid-cols-[60px_1fr_70px_90px_80px] gap-2 px-3 py-2.5 items-center font-mono text-[11px]"
-            style={{ borderBottom: "1px solid var(--border)" }}
+            className="grid grid-cols-[56px_1fr_72px_96px_80px] gap-2 px-3 py-2.5 items-center text-[12px]"
+            style={{
+              borderBottom:
+                i < rows.length - 1 ? "1px solid var(--border-subtle)" : "none",
+            }}
           >
-            <span style={{ color: "var(--text-headline)" }}>{r.unit}</span>
+            <span style={{ color: "var(--text-headline)", fontWeight: 510 }}>{r.unit}</span>
             <span style={{ color: "var(--text-body)" }}>{r.bed}</span>
-            <span style={{ color: "var(--text-headline)" }}>{r.rent}</span>
+            <span style={{ color: "var(--text-headline)", fontWeight: 510 }}>{r.rent}</span>
             <span>
               <StatusPill
                 label={r.status}
                 tone={
-                  r.status === "Available"
-                    ? "ok"
-                    : r.status === "Notice"
-                    ? "warn"
-                    : "muted"
+                  r.status === "Available" ? "ok" : r.status === "Notice" ? "warn" : "muted"
                 }
               />
             </span>
@@ -222,14 +233,14 @@ function ImportPane() {
               {r.sync === "synced" ? (
                 <span
                   className="inline-flex items-center gap-1 text-[10px]"
-                  style={{ color: "var(--color-success)" }}
+                  style={{ color: "var(--success)" }}
                 >
                   <CheckIcon /> Synced
                 </span>
               ) : (
                 <span
                   className="inline-flex items-center gap-1 text-[10px]"
-                  style={{ color: "var(--blue)" }}
+                  style={{ color: "var(--accent-bright)" }}
                 >
                   <Spinner /> Syncing
                 </span>
@@ -239,28 +250,23 @@ function ImportPane() {
         ))}
       </div>
 
-      <FooterLine
-        label="Source"
-        value="AppFolio Property Manager"
-        meta="Refresh every 15 min"
-      />
+      <FooterLine label="Source" value="AppFolio Property Manager" meta="Refresh every 15 min" />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
 // Step 02 - Build the site
-// Wireframe-style block editor with draggable-looking rows.
 // ---------------------------------------------------------------------------
 
 function BuildPane() {
   const blocks = [
-    { icon: "H", name: "Hero", meta: "Photo + headline + CTA", on: true },
-    { icon: "P", name: "Floor plans", meta: "Auto-sync from AppFolio", on: true },
-    { icon: "A", name: "Amenities", meta: "12 items, 6 icons", on: true },
-    { icon: "M", name: "Map + neighborhood", meta: "5 categories pinned", on: true },
-    { icon: "F", name: "FAQ + parents", meta: "Tenant-specific", on: true },
-    { icon: "C", name: "Contact + tour", meta: "Cal.com embed", on: true },
+    { icon: "H", name: "Hero",                 meta: "Photo + headline + CTA",     on: true },
+    { icon: "P", name: "Floor plans",          meta: "Auto-sync from AppFolio",    on: true },
+    { icon: "A", name: "Amenities",            meta: "12 items, 6 icons",          on: true },
+    { icon: "M", name: "Map + neighborhood",   meta: "5 categories pinned",        on: true },
+    { icon: "F", name: "FAQ + parents",        meta: "Tenant-specific",            on: true },
+    { icon: "C", name: "Contact + tour",       meta: "Cal.com embed",              on: true },
   ];
 
   return (
@@ -269,21 +275,25 @@ function BuildPane() {
         left={<span>STEP 02 &middot; BUILD</span>}
         right={
           <span>
-            <strong style={{ color: "var(--text-headline)" }}>6</strong>{" "}
-            <span style={{ color: "var(--text-muted)" }}>BLOCKS ACTIVE</span>
+            <strong style={{ color: "var(--text-headline)", fontWeight: 510 }}>6</strong>{" "}
+            <span style={{ color: "var(--text-subtle)" }}>BLOCKS ACTIVE</span>
           </span>
         }
       />
       <p
-        className="font-serif text-[20px] mt-2 mb-4"
-        style={{ color: "var(--text-headline)" }}
+        className="text-[20px] mt-2 mb-4"
+        style={{
+          color: "var(--text-headline)",
+          fontWeight: 510,
+          letterSpacing: "-0.012em",
+        }}
       >
         Page blocks on your domain
       </p>
 
       <div
-        className="rounded"
-        style={{ border: "1px solid var(--border)" }}
+        className="rounded-md overflow-hidden"
+        style={{ border: "1px solid var(--border-standard)" }}
       >
         {blocks.map((b, i) => (
           <div
@@ -291,28 +301,31 @@ function BuildPane() {
             className="flex items-center gap-3 px-3 py-2.5"
             style={{
               borderBottom:
-                i < blocks.length - 1 ? "1px solid var(--border)" : "none",
+                i < blocks.length - 1 ? "1px solid var(--border-subtle)" : "none",
+              backgroundColor:
+                i % 2 === 0 ? "transparent" : "rgba(255,255,255,0.015)",
             }}
           >
             <span
-              className="flex items-center justify-center w-7 h-7 rounded font-serif text-[13px]"
+              className="flex items-center justify-center w-7 h-7 rounded text-[12px]"
               style={{
-                border: "1px solid var(--border-strong)",
-                color: "var(--text-headline)",
-                backgroundColor: "var(--bg-primary)",
+                border: "1px solid var(--border-standard)",
+                color: "var(--accent-bright)",
+                backgroundColor: "rgba(94,106,210,0.08)",
+                fontWeight: 590,
               }}
             >
               {b.icon}
             </span>
             <span
-              className="font-serif text-[14px] flex-1"
-              style={{ color: "var(--text-headline)" }}
+              className="text-[13px] flex-1"
+              style={{ color: "var(--text-headline)", fontWeight: 510 }}
             >
               {b.name}
             </span>
             <span
               className="font-mono text-[10px] hidden sm:inline"
-              style={{ color: "var(--text-muted)" }}
+              style={{ color: "var(--text-subtle)" }}
             >
               {b.meta}
             </span>
@@ -321,23 +334,22 @@ function BuildPane() {
         ))}
       </div>
 
-      <FooterLine label="Domain" value="occupant.telegraphcommons.com" meta="SSL active" />
+      <FooterLine label="Domain" value="telegraphcommons.com" meta="SSL active" />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
 // Step 03 - Attach pixel
-// Visitor reveal: shows anonymous count ticking up, then a resolved lead.
 // ---------------------------------------------------------------------------
 
 function AttachPane() {
   const visitors = [
-    { initials: "MR", name: "Maya R.",        univ: "UC Berkeley",    kind: "Resolved" as const, time: "2 min ago" },
-    { initials: "?",  name: "Anonymous",      univ: "Bay Area IP",    kind: "Unresolved" as const, time: "4 min ago" },
-    { initials: "DL", name: "Daniel L.",      univ: "UC Berkeley",    kind: "Resolved" as const, time: "9 min ago" },
-    { initials: "SK", name: "Sophie K.",      univ: "Stanford parent",kind: "Resolved" as const, time: "12 min ago" },
-    { initials: "?",  name: "Anonymous",      univ: "Oakland IP",     kind: "Unresolved" as const, time: "15 min ago" },
+    { initials: "MR", name: "Maya R.",    univ: "UC Berkeley",     kind: "Resolved" as const,   time: "2m" },
+    { initials: "?",  name: "Anonymous",  univ: "Bay Area IP",     kind: "Unresolved" as const, time: "4m" },
+    { initials: "DL", name: "Daniel L.",  univ: "UC Berkeley",     kind: "Resolved" as const,   time: "9m" },
+    { initials: "SK", name: "Sophie K.",  univ: "Stanford parent", kind: "Resolved" as const,   time: "12m" },
+    { initials: "?",  name: "Anonymous",  univ: "Oakland IP",      kind: "Unresolved" as const, time: "15m" },
   ];
 
   return (
@@ -346,21 +358,25 @@ function AttachPane() {
         left={<span>STEP 03 &middot; ATTACH</span>}
         right={
           <span>
-            <strong style={{ color: "var(--text-headline)" }}>95%</strong>{" "}
-            <span style={{ color: "var(--text-muted)" }}>RESOLVE RATE</span>
+            <strong style={{ color: "var(--text-headline)", fontWeight: 510 }}>95%</strong>{" "}
+            <span style={{ color: "var(--text-subtle)" }}>RESOLVE RATE</span>
           </span>
         }
       />
       <p
-        className="font-serif text-[20px] mt-2 mb-4"
-        style={{ color: "var(--text-headline)" }}
+        className="text-[20px] mt-2 mb-4"
+        style={{
+          color: "var(--text-headline)",
+          fontWeight: 510,
+          letterSpacing: "-0.012em",
+        }}
       >
-        Naming the 95% of visitors who don't fill a form
+        Naming the 95% who don't fill a form
       </p>
 
       <div
-        className="rounded"
-        style={{ border: "1px solid var(--border)" }}
+        className="rounded-md overflow-hidden"
+        style={{ border: "1px solid var(--border-standard)" }}
       >
         {visitors.map((v, i) => (
           <div
@@ -368,7 +384,7 @@ function AttachPane() {
             className="flex items-center gap-3 px-3 py-2.5"
             style={{
               borderBottom:
-                i < visitors.length - 1 ? "1px solid var(--border)" : "none",
+                i < visitors.length - 1 ? "1px solid var(--border-subtle)" : "none",
               opacity: v.kind === "Unresolved" ? 0.55 : 1,
             }}
           >
@@ -376,77 +392,60 @@ function AttachPane() {
               className="flex items-center justify-center w-8 h-8 rounded-full font-mono text-[10px]"
               style={{
                 backgroundColor:
-                  v.kind === "Resolved" ? "var(--blue-light)" : "var(--border)",
+                  v.kind === "Resolved"
+                    ? "rgba(94,106,210,0.15)"
+                    : "rgba(255,255,255,0.04)",
                 color:
-                  v.kind === "Resolved" ? "var(--blue)" : "var(--text-muted)",
+                  v.kind === "Resolved"
+                    ? "var(--accent-bright)"
+                    : "var(--text-subtle)",
+                border: "1px solid var(--border-standard)",
+                fontWeight: 510,
               }}
             >
               {v.initials}
             </span>
             <div className="flex-1 min-w-0">
               <p
-                className="font-serif text-[13px] truncate"
-                style={{ color: "var(--text-headline)" }}
+                className="text-[13px] truncate"
+                style={{
+                  color: "var(--text-headline)",
+                  fontWeight: 510,
+                }}
               >
                 {v.name}
               </p>
               <p
-                className="font-mono text-[10px] truncate"
-                style={{ color: "var(--text-muted)" }}
+                className="text-[11px] truncate"
+                style={{ color: "var(--text-subtle)" }}
               >
                 {v.univ}
               </p>
             </div>
-            <span className="font-mono text-[10px]" style={{ color: "var(--text-muted)" }}>
-              {v.time}
+            <span
+              className="font-mono text-[10px]"
+              style={{ color: "var(--text-subtle)" }}
+            >
+              {v.time} ago
             </span>
           </div>
         ))}
       </div>
 
-      <FooterLine
-        label="Pixel"
-        value="Cursive identity graph"
-        meta="450M U.S. profiles"
-      />
+      <FooterLine label="Pixel" value="Cursive identity graph" meta="450M US profiles" />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
 // Step 04 - Launch ads
-// Channel cards with budget + status + live impressions ticker.
 // ---------------------------------------------------------------------------
 
 function LaunchPane() {
   const channels = [
-    {
-      name: "Meta",
-      tag: "Instagram + Facebook",
-      budget: "$1,800",
-      spent: "$742",
-      pct: 41,
-      impressions: "48.2k",
-      status: "Live",
-    },
-    {
-      name: "Google",
-      tag: "Search + Performance Max",
-      budget: "$1,400",
-      spent: "$812",
-      pct: 58,
-      impressions: "6.3k",
-      status: "Live",
-    },
-    {
-      name: "TikTok",
-      tag: "Spark + In-feed",
-      budget: "$600",
-      spent: "$110",
-      pct: 18,
-      impressions: "22.8k",
-      status: "Ramping",
-    },
+    { name: "Meta",   tag: "Instagram + Facebook",      budget: "$1,800", spent: "$742", pct: 41, impressions: "48.2k", status: "Live"    },
+    { name: "Google", tag: "Search + Performance Max",  budget: "$1,400", spent: "$812", pct: 58, impressions: "6.3k",  status: "Live"    },
+    { name: "TikTok", tag: "Spark + In-feed",           budget: "$600",   spent: "$110", pct: 18, impressions: "22.8k", status: "Ramping" },
   ];
 
   return (
@@ -455,14 +454,18 @@ function LaunchPane() {
         left={<span>STEP 04 &middot; LAUNCH</span>}
         right={
           <span>
-            <strong style={{ color: "var(--text-headline)" }}>3</strong>{" "}
-            <span style={{ color: "var(--text-muted)" }}>CHANNELS LIVE</span>
+            <strong style={{ color: "var(--text-headline)", fontWeight: 510 }}>3</strong>{" "}
+            <span style={{ color: "var(--text-subtle)" }}>CHANNELS LIVE</span>
           </span>
         }
       />
       <p
-        className="font-serif text-[20px] mt-2 mb-4"
-        style={{ color: "var(--text-headline)" }}
+        className="text-[20px] mt-2 mb-4"
+        style={{
+          color: "var(--text-headline)",
+          fontWeight: 510,
+          letterSpacing: "-0.012em",
+        }}
       >
         Managed creative, real budgets, weekly reports
       </p>
@@ -471,42 +474,53 @@ function LaunchPane() {
         {channels.map((c) => (
           <div
             key={c.name}
-            className="px-3 py-3 rounded"
-            style={{ border: "1px solid var(--border)" }}
+            className="px-3 py-3 rounded-md"
+            style={{
+              border: "1px solid var(--border-standard)",
+              backgroundColor: "rgba(255,255,255,0.02)",
+            }}
           >
             <div className="flex items-center gap-2">
               <span
-                className="font-serif text-[14px] font-semibold"
-                style={{ color: "var(--text-headline)" }}
+                className="text-[13px]"
+                style={{
+                  color: "var(--text-headline)",
+                  fontWeight: 590,
+                }}
               >
                 {c.name}
               </span>
               <span
-                className="font-mono text-[10px]"
-                style={{ color: "var(--text-muted)" }}
+                className="text-[11px]"
+                style={{ color: "var(--text-subtle)" }}
               >
                 {c.tag}
               </span>
               <span className="flex-1" />
-              <StatusPill label={c.status} tone={c.status === "Live" ? "ok" : "warn"} />
+              <StatusPill
+                label={c.status}
+                tone={c.status === "Live" ? "ok" : "warn"}
+              />
             </div>
             <div
-              className="mt-2 h-1.5 rounded-full overflow-hidden"
-              style={{ backgroundColor: "var(--bg-primary)" }}
+              className="mt-2 h-1 rounded-full overflow-hidden"
+              style={{ backgroundColor: "rgba(255,255,255,0.06)" }}
             >
               <div
-                className="h-full"
+                className="h-full rounded-full"
                 style={{
                   width: `${c.pct}%`,
-                  backgroundColor: "var(--blue)",
+                  background:
+                    "linear-gradient(90deg, var(--accent) 0%, var(--accent-bright) 100%)",
+                  boxShadow: "0 0 10px var(--accent-glow)",
                 }}
               />
             </div>
             <div className="mt-2 flex items-center justify-between font-mono text-[10px]">
-              <span style={{ color: "var(--text-muted)" }}>
+              <span style={{ color: "var(--text-subtle)" }}>
                 {c.spent} / {c.budget}
               </span>
-              <span style={{ color: "var(--text-muted)" }}>
+              <span style={{ color: "var(--text-subtle)" }}>
                 {c.impressions} impressions this week
               </span>
             </div>
@@ -520,7 +534,7 @@ function LaunchPane() {
 }
 
 // ---------------------------------------------------------------------------
-// Shared primitives
+// Primitives
 // ---------------------------------------------------------------------------
 
 function StepHeader({
@@ -535,13 +549,16 @@ function StepHeader({
       <span
         className="font-mono text-[10px]"
         style={{
-          color: "var(--text-muted)",
-          letterSpacing: "0.12em",
+          color: "var(--text-subtle)",
+          letterSpacing: "0.14em",
         }}
       >
         {left}
       </span>
-      <span className="font-mono text-[10px]" style={{ letterSpacing: "0.08em" }}>
+      <span
+        className="font-mono text-[10px]"
+        style={{ letterSpacing: "0.08em" }}
+      >
         {right}
       </span>
     </div>
@@ -561,15 +578,15 @@ function FooterLine({
     <div
       className="mt-4 flex items-center justify-between font-mono text-[10px]"
       style={{
-        color: "var(--text-muted)",
+        color: "var(--text-subtle)",
         paddingTop: "12px",
-        borderTop: "1px dashed var(--border)",
+        borderTop: "1px dashed var(--border-standard)",
         letterSpacing: "0.06em",
       }}
     >
       <span>
-        <span style={{ color: "var(--text-muted)" }}>{label}: </span>
-        <span style={{ color: "var(--text-headline)" }}>{value}</span>
+        <span style={{ color: "var(--text-subtle)" }}>{label}: </span>
+        <span style={{ color: "var(--text-body)" }}>{value}</span>
       </span>
       <span>{meta}</span>
     </div>
@@ -585,16 +602,16 @@ function StatusPill({
 }) {
   const color =
     tone === "ok"
-      ? "var(--color-success)"
+      ? "var(--success)"
       : tone === "warn"
-      ? "var(--color-gold)"
+      ? "var(--warning)"
       : "var(--text-muted)";
   const bg =
     tone === "ok"
-      ? "#ECFDF5"
+      ? "rgba(16,185,129,0.12)"
       : tone === "warn"
-      ? "var(--color-gold-wash)"
-      : "var(--bg-primary)";
+      ? "rgba(245,158,11,0.12)"
+      : "rgba(255,255,255,0.04)";
   return (
     <span
       className="inline-block font-mono text-[9px] px-2 py-0.5 rounded-full"
@@ -615,8 +632,9 @@ function Toggle({ on }: { on: boolean }) {
     <span
       className="inline-block w-8 h-4 rounded-full relative"
       style={{
-        backgroundColor: on ? "var(--blue)" : "var(--border-strong)",
-        transition: "background-color 0.15s ease",
+        backgroundColor: on ? "var(--accent)" : "var(--bg-surface-2)",
+        boxShadow: on ? "0 0 10px var(--accent-glow)" : "none",
+        transition: "background-color 0.15s ease, box-shadow 0.15s ease",
       }}
     >
       <span
@@ -653,20 +671,8 @@ function Spinner() {
       fill="none"
       style={{ animation: "rei-spin 0.9s linear infinite" }}
     >
-      <circle
-        cx="5"
-        cy="5"
-        r="3.5"
-        stroke="currentColor"
-        strokeOpacity="0.2"
-        strokeWidth="1.5"
-      />
-      <path
-        d="M5 1.5a3.5 3.5 0 0 1 3.5 3.5"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-      />
+      <circle cx="5" cy="5" r="3.5" stroke="currentColor" strokeOpacity="0.2" strokeWidth="1.5" />
+      <path d="M5 1.5a3.5 3.5 0 0 1 3.5 3.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
       <style jsx>{`
         @keyframes rei-spin {
           from { transform: rotate(0); }

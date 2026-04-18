@@ -1,95 +1,150 @@
 import Link from "next/link";
 import { BRAND_NAME } from "@/lib/brand";
-import { MARKETING } from "@/lib/copy/marketing";
+
+// DECISION: Footer shares the page canvas (no contrast step). Separated from
+// content only by a translucent hairline. Linear does this: the footer is
+// just the bottom third of the same dark room.
 
 export function PlatformFooter() {
   const year = new Date().getFullYear();
   return (
     <footer
-      className="mt-24"
       style={{
-        backgroundColor: "var(--bg-blue-dark)",
-        color: "var(--text-on-blue)",
+        borderTop: "1px solid var(--border-subtle)",
+        backgroundColor: "var(--bg-primary)",
       }}
     >
-      <div className="max-w-6xl mx-auto px-4 md:px-6 py-16 grid grid-cols-2 md:grid-cols-4 gap-10 text-sm">
-        <div className="col-span-2">
-          <p
-            className="font-mono text-[11px] uppercase tracking-[0.15em] mb-4"
-            style={{ opacity: 0.6 }}
-          >
-            {BRAND_NAME}
-          </p>
-          <p className="font-serif text-2xl md:text-3xl font-normal leading-tight max-w-sm">
-            {MARKETING.brand.tagline}.
-          </p>
-          <p
-            className="font-mono text-xs mt-4 max-w-sm"
-            style={{ opacity: 0.7 }}
-          >
-            Book a 30 minute demo. We audit your current marketing invoice on
-            the call.
-          </p>
-          <Link
-            href="/onboarding"
-            className="inline-block mt-6 font-mono text-xs font-semibold px-5 py-3 rounded"
-            style={{
-              backgroundColor: "white",
-              color: "var(--bg-blue-dark)",
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-            }}
-          >
-            Book a demo
+      <div className="max-w-6xl mx-auto px-4 md:px-6 pt-16 pb-10 grid grid-cols-2 md:grid-cols-5 gap-8">
+        <div className="col-span-2 md:col-span-2">
+          <Link href="/" className="inline-flex items-center gap-2">
+            <span
+              className="inline-flex items-center justify-center w-6 h-6 rounded"
+              style={{
+                backgroundColor: "var(--accent)",
+                boxShadow:
+                  "0 0 0 1px rgba(255,255,255,0.1) inset, 0 0 24px var(--accent-glow)",
+              }}
+            >
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path
+                  d="M2 9.5V4l4-2.5 4 2.5v5.5"
+                  stroke="white"
+                  strokeWidth="1.3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <path d="M2 9.5h8" stroke="white" strokeWidth="1.3" strokeLinecap="round" />
+                <circle cx="6" cy="7" r="1" fill="white" />
+              </svg>
+            </span>
+            <span
+              className="text-[15px]"
+              style={{ color: "var(--text-headline)", fontWeight: 510 }}
+            >
+              RealEstaite
+            </span>
           </Link>
-        </div>
-        <div>
           <p
-            className="font-mono text-[10px] uppercase tracking-[0.15em] mb-4"
-            style={{ opacity: 0.55 }}
+            className="mt-4 text-[14px] leading-relaxed max-w-sm"
+            style={{ color: "var(--text-muted)" }}
           >
-            Product
+            Managed marketing infrastructure for real estate operators. Custom
+            site, live listings, identity pixel, AI chatbot, managed ads. One
+            retainer. Launched in two weeks.
           </p>
-          <ul className="space-y-2 font-mono text-xs" style={{ opacity: 0.85 }}>
-            <li><Link href="/features/pixel">Identity pixel</Link></li>
-            <li><Link href="/features/chatbot">AI chatbot</Link></li>
-            <li><Link href="/features/seo-aeo">SEO and AEO</Link></li>
-            <li><Link href="/features/ads">Managed ads</Link></li>
-            <li><Link href="/pricing">Pricing</Link></li>
-            <li><Link href="/compare/conversion-logix">Compare</Link></li>
-          </ul>
+          <div className="mt-6 flex items-center gap-2">
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center gap-2 text-[13px] px-3.5 py-2 rounded-md btn-accent"
+              style={{ fontWeight: 510 }}
+            >
+              Book a demo
+            </Link>
+            <Link
+              href="/pricing"
+              className="inline-flex items-center gap-2 text-[13px] px-3.5 py-2 rounded-md btn-ghost"
+              style={{ fontWeight: 510 }}
+            >
+              Pricing
+            </Link>
+          </div>
         </div>
-        <div>
-          <p
-            className="font-mono text-[10px] uppercase tracking-[0.15em] mb-4"
-            style={{ opacity: 0.55 }}
-          >
-            Company
-          </p>
-          <ul className="space-y-2 font-mono text-xs" style={{ opacity: 0.85 }}>
-            <li><Link href="/about">About</Link></li>
-            <li><Link href="/blog">Blog</Link></li>
-            <li><Link href="/tools">Tools</Link></li>
-            <li><Link href="/residential">Residential</Link></li>
-            <li><Link href="/commercial">Commercial</Link></li>
-            <li><Link href="/privacy">Privacy</Link></li>
-            <li><Link href="/terms">Terms</Link></li>
-          </ul>
-        </div>
+
+        <FooterColumn
+          title="Product"
+          items={[
+            { href: "/features/pixel",   label: "Identity pixel" },
+            { href: "/features/chatbot", label: "AI chatbot" },
+            { href: "/features/seo-aeo", label: "SEO and AEO" },
+            { href: "/features/ads",     label: "Managed ads" },
+            { href: "/pricing",          label: "Pricing" },
+            { href: "/compare/conversion-logix", label: "vs Conversion Logix" },
+          ]}
+        />
+
+        <FooterColumn
+          title="Solutions"
+          items={[
+            { href: "/student-housing", label: "Student housing" },
+            { href: "/multifamily",     label: "Multifamily" },
+            { href: "/senior-living",   label: "Senior living" },
+            { href: "/commercial",      label: "Commercial" },
+            { href: "/residential",     label: "Residential" },
+          ]}
+        />
+
+        <FooterColumn
+          title="Company"
+          items={[
+            { href: "/about",   label: "About" },
+            { href: "/blog",    label: "Blog" },
+            { href: "/tools",   label: "Tools" },
+            { href: "/sign-in", label: "Sign in" },
+            { href: "/privacy", label: "Privacy" },
+            { href: "/terms",   label: "Terms" },
+          ]}
+        />
       </div>
+
       <div
-        className="max-w-6xl mx-auto px-4 md:px-6 py-5 flex flex-col md:flex-row gap-2 md:justify-between"
+        className="max-w-6xl mx-auto px-4 md:px-6 py-6 flex flex-col md:flex-row gap-2 md:justify-between text-[12px]"
         style={{
-          borderTop: "1px solid rgba(255,255,255,0.08)",
+          borderTop: "1px solid var(--border-subtle)",
+          color: "var(--text-subtle)",
         }}
       >
-        <span className="font-mono text-[11px]" style={{ opacity: 0.55 }}>
-          © {year} {BRAND_NAME}. All rights reserved.
+        <span>
+          &copy; {year} {BRAND_NAME}. All rights reserved.
         </span>
-        <span className="font-mono text-[11px]" style={{ opacity: 0.55 }}>
-          Built for operators. Not agencies.
-        </span>
+        <span>Built for operators, not agencies.</span>
       </div>
     </footer>
+  );
+}
+
+function FooterColumn({
+  title,
+  items,
+}: {
+  title: string;
+  items: Array<{ href: string; label: string }>;
+}) {
+  return (
+    <div>
+      <p className="eyebrow mb-4">{title}</p>
+      <ul className="space-y-2.5 text-[13px]">
+        {items.map((i) => (
+          <li key={i.href}>
+            <Link
+              href={i.href}
+              className="link-body transition-colors"
+              style={{ color: "var(--text-muted)", fontWeight: 510 }}
+            >
+              {i.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
