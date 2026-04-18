@@ -117,6 +117,43 @@ See `.env.example` for the full list. Key additions over Wholesail's defaults:
 - `ANTHROPIC_API_KEY` (chatbot)
 - `AGENCY_ORG_SLUG`, `AGENCY_ADMIN_EMAIL`
 
+## Ingestion API
+
+Scoped API keys let external systems (Zapier, Typeform, Make, custom forms,
+Calendly, Twilio) push data into a tenant without a dedicated webhook.
+Generate keys at `/portal/settings/api-keys`. Auth via
+`Authorization: Bearer re_live_...`. Keys are rate-limited per-key (60
+requests / minute).
+
+```bash
+# Create or merge a lead
+curl -X POST https://app.realestaite.co/api/ingest/lead \
+  -H "Authorization: Bearer re_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"email":"student@berkeley.edu","firstName":"Alex","source":"FORM"}'
+
+# Upsert a visitor by external id
+curl -X POST https://app.realestaite.co/api/ingest/visitor \
+  -H "Authorization: Bearer re_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"externalId":"abc-123","email":"a@b.com","utmSource":"google"}'
+
+# Schedule a tour for an existing lead
+curl -X POST https://app.realestaite.co/api/ingest/tour \
+  -H "Authorization: Bearer re_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"leadEmail":"a@b.com","propertyId":"prop_...","scheduledAt":"2026-05-01T17:00:00Z"}'
+
+# Append chatbot turns (merges by sessionId)
+curl -X POST https://app.realestaite.co/api/ingest/chatbot \
+  -H "Authorization: Bearer re_live_..." \
+  -H "Content-Type: application/json" \
+  -d '{"sessionId":"sess-1","email":"a@b.com","messages":[{"role":"user","content":"hi"}]}'
+```
+
+Available scopes: `ingest:lead`, `ingest:visitor`, `ingest:tour`,
+`ingest:chatbot`, or `*` for full access.
+
 ## Naming
 
 `RealEstaite`, `realestaite`, `realestaite.co` are temporary placeholders. See `NAMING.md`
