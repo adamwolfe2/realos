@@ -14,6 +14,7 @@ export async function provisionCursiveForOrg(
   integrationId: string;
   pixelId: string;
   scriptUrl: string | null;
+  scriptSnippet: string | null;
 }> {
   const org = await prisma.organization.findUnique({
     where: { id: orgId },
@@ -32,16 +33,20 @@ export async function provisionCursiveForOrg(
       integrationId: org.cursiveIntegration.id,
       pixelId: org.cursiveIntegration.cursivePixelId,
       scriptUrl: org.cursiveIntegration.pixelScriptUrl ?? null,
+      scriptSnippet: null,
     };
   }
 
   const base =
     process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const webhookUrl = `${base}/api/webhooks/cursive`;
+  const websiteUrl = hostname.startsWith("http")
+    ? hostname
+    : `https://${hostname}`;
 
   const provisioned = await provisionCursivePixel({
-    domain: hostname,
-    orgName: org.name,
+    websiteName: org.name,
+    websiteUrl,
     webhookUrl,
   });
 
@@ -50,15 +55,13 @@ export async function provisionCursiveForOrg(
     create: {
       orgId,
       cursivePixelId: provisioned.pixelId,
-      cursiveAccountId: provisioned.accountId,
-      pixelScriptUrl: provisioned.scriptUrl,
+      pixelScriptUrl: provisioned.installUrl,
       installedOnDomain: hostname,
       provisionedAt: new Date(),
     },
     update: {
       cursivePixelId: provisioned.pixelId,
-      cursiveAccountId: provisioned.accountId,
-      pixelScriptUrl: provisioned.scriptUrl,
+      pixelScriptUrl: provisioned.installUrl,
       installedOnDomain: hostname,
       provisionedAt: new Date(),
     },
@@ -76,6 +79,7 @@ export async function provisionCursiveForOrg(
     provisioned: true,
     integrationId: integration.id,
     pixelId: provisioned.pixelId,
-    scriptUrl: provisioned.scriptUrl,
+    scriptUrl: provisioned.installUrl,
+    scriptSnippet: provisioned.scriptSnippet,
   };
 }

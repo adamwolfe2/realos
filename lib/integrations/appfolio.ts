@@ -5,8 +5,11 @@ import { maybeDecrypt } from "@/lib/crypto";
 import {
   AppFolioIntegration,
   BackendPlatform,
+  LeadSource,
+  LeadStatus,
   Prisma,
   Property,
+  TourStatus,
 } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -16,16 +19,14 @@ import {
 //   1. EMBED_SCRAPE (ported from github.com/adamwolfe2/telegraph-commons),
 //      works today against https://{subdomain}.appfolio.com/listings for any
 //      tenant, even without the Plus plan. Parses cheerio-loaded HTML.
-//   2. REST (stubbed behind TODO). AppFolio Plus exposes a REST API but we
-//      don't yet have Norman's credentials to confirm the payload shape,
-//      so the PRD's /api/v1/listings URL structure is kept as a reference
-//      and the code path is flagged.
+//   2. REST — AppFolio Plus/Max exposes a REST API at
+//      https://{subdomain}.appfolio.com/api/v1/reports/{report_name}.json
+//      that returns paginated JSON. Authenticated with HTTP Basic using the
+//      clientId / clientSecret generated from the Developer Portal.
 //
-// DECISION: defaults to EMBED_SCRAPE because it's proven to work. Tenants
-// can opt into REST once we have a verified Plus client.
-//
-// TODO(Sprint 06 follow-up): confirm REST payload shape against Norman's
-// account and flip the default for Plus tenants.
+// The REST functions below are the canonical path for Plus/Max tenants who
+// supply Developer Portal credentials. EMBED_SCRAPE stays as a fallback for
+// Core-plan tenants and is left untouched.
 // ---------------------------------------------------------------------------
 
 const USER_AGENT =
@@ -205,74 +206,495 @@ async function fetchEmbedScrape(
 }
 
 // ---------------------------------------------------------------------------
-// Mode 2, REST (Plus plan). Stubbed; re-enable once we have a verified
-// Plus client to confirm the payload shape.
+// Mode 2, REST (Plus / Max plan).
+//
+// Endpoint pattern:
+//   https://{subdomain}.appfolio.com/api/v1/reports/{report_name}.json
+//     ?paginate_results=true
+//     &from_date=MM/DD/YYYY
+//     &to_date=MM/DD/YYYY
+//
+// Auth: HTTP Basic using the clientId:clientSecret from the AppFolio
+// Developer Portal. No OAuth.
+//
+// Pagination: response contains `{ results, next_page_url }`. Follow
+// next_page_url until it's null. We cap at 50 pages per call as a safety
+// rail — AppFolio doesn't publish rate limits, and runaway pagination
+// against a misconfigured tenant could blow our Vercel timebox.
 // ---------------------------------------------------------------------------
 
+const REPORT_NAMES = [
+  "leads",
+  "showings",
+  "tenants",
+  "listings",
+] as const;
+
+export type AppFolioReportName = (typeof REPORT_NAMES)[number];
+
+type RestFetchOptions = {
+  fromDate?: Date;
+  toDate?: Date;
+  nextPageUrl?: string | null;
+  extraParams?: Record<string, string>;
+};
+
+export type RawRow = Record<string, unknown>;
+
+export type AppFolioRestClient = {
+  subdomain: string;
+  fetchReport(
+    reportName: AppFolioReportName,
+    options?: RestFetchOptions
+  ): Promise<{ results: RawRow[]; nextPageUrl: string | null }>;
+};
+
+function mmddyyyy(date: Date): string {
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  const y = String(date.getUTCFullYear());
+  return `${m}/${d}/${y}`;
+}
+
+function requireSubdomain(integration: Pick<AppFolioIntegration, "instanceSubdomain">): string {
+  if (!integration.instanceSubdomain) {
+    throw new Error("AppFolio instanceSubdomain is required");
+  }
+  return integration.instanceSubdomain;
+}
+
+function resolveRestCreds(integration: AppFolioIntegration): {
+  clientId: string;
+  clientSecret: string;
+} {
+  const clientId = maybeDecrypt(integration.clientIdEncrypted ?? null);
+  // Fall back to apiKeyEncrypted if clientSecret isn't populated — historically
+  // we stored the secret there before the schema split into id/secret columns.
+  const clientSecret =
+    maybeDecrypt(integration.clientSecretEncrypted ?? null) ??
+    maybeDecrypt(integration.apiKeyEncrypted ?? null);
+  if (!clientId || !clientSecret) {
+    throw new Error(
+      "AppFolio REST mode requires clientId and clientSecret from the Developer Portal. Connect via Settings → Integrations."
+    );
+  }
+  return { clientId, clientSecret };
+}
+
+export function appfolioRestClient(
+  integration: AppFolioIntegration
+): AppFolioRestClient {
+  const subdomain = requireSubdomain(integration);
+  const { clientId, clientSecret } = resolveRestCreds(integration);
+  const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+
+  async function fetchReport(
+    reportName: AppFolioReportName,
+    options: RestFetchOptions = {}
+  ) {
+    let url: string;
+    if (options.nextPageUrl) {
+      url = options.nextPageUrl;
+    } else {
+      const params = new URLSearchParams({
+        paginate_results: "true",
+      });
+      if (options.fromDate) {
+        params.set("from_date", mmddyyyy(options.fromDate));
+      }
+      if (options.toDate) {
+        params.set("to_date", mmddyyyy(options.toDate));
+      }
+      if (options.extraParams) {
+        for (const [k, v] of Object.entries(options.extraParams)) {
+          params.set(k, v);
+        }
+      }
+      url = `https://${subdomain}.appfolio.com/api/v1/reports/${reportName}.json?${params.toString()}`;
+    }
+
+    const response = await fetch(url, {
+      method: "GET",
+      cache: "no-store",
+      headers: {
+        Authorization: `Basic ${basic}`,
+        Accept: "application/json",
+        "User-Agent": USER_AGENT,
+      },
+    });
+    if (!response.ok) {
+      const text = await response.text().catch(() => "");
+      throw new Error(
+        `AppFolio ${reportName} returned ${response.status}${
+          text ? `: ${text.slice(0, 200)}` : ""
+        }`
+      );
+    }
+
+    const body = (await response.json()) as {
+      results?: RawRow[];
+      next_page_url?: string | null;
+    };
+    return {
+      results: Array.isArray(body.results) ? body.results : [],
+      nextPageUrl: body.next_page_url ?? null,
+    };
+  }
+
+  return { subdomain, fetchReport };
+}
+
+const MAX_PAGES = 50;
+
+export async function fetchAllPages(
+  client: AppFolioRestClient,
+  reportName: AppFolioReportName,
+  options: { fromDate?: Date; toDate?: Date; extraParams?: Record<string, string> } = {}
+): Promise<RawRow[]> {
+  const out: RawRow[] = [];
+  let nextPageUrl: string | null = null;
+  let pages = 0;
+
+  do {
+    const page = await client.fetchReport(reportName, {
+      fromDate: pages === 0 ? options.fromDate : undefined,
+      toDate: pages === 0 ? options.toDate : undefined,
+      extraParams: pages === 0 ? options.extraParams : undefined,
+      nextPageUrl,
+    });
+    out.push(...page.results);
+    nextPageUrl = page.nextPageUrl;
+    pages += 1;
+    if (pages >= MAX_PAGES) {
+      console.warn(
+        `[appfolio] fetchAllPages(${reportName}) hit MAX_PAGES=${MAX_PAGES}, stopping`
+      );
+      break;
+    }
+  } while (nextPageUrl);
+
+  return out;
+}
+
+export async function testAppFolioConnection(
+  integration: AppFolioIntegration
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  try {
+    const client = appfolioRestClient(integration);
+    // listings report is the smallest sane probe — paginated, always
+    // available for any plan tier that has REST access.
+    await client.fetchReport("listings", {
+      toDate: new Date(),
+      fromDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
+    });
+    return { ok: true };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    return { ok: false, error: message };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Pure mappers from raw AppFolio JSON → shapes our sync layer knows how to
+// upsert. Pure functions, no DB access, so they're easy to unit-test.
+// ---------------------------------------------------------------------------
+
+function asString(v: unknown): string | null {
+  if (v == null) return null;
+  const s = String(v).trim();
+  return s.length ? s : null;
+}
+
+function asNumber(v: unknown): number | null {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number(v.replace(/[^0-9.\-]/g, ""));
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function asInt(v: unknown): number | null {
+  const n = asNumber(v);
+  return n == null ? null : Math.round(n);
+}
+
+function asDate(v: unknown): Date | null {
+  if (v == null || v === "") return null;
+  const s = String(v);
+  const d = new Date(s);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+function asStringArray(v: unknown): string[] {
+  if (Array.isArray(v)) {
+    return v.filter((x) => typeof x === "string") as string[];
+  }
+  if (typeof v === "string" && v.length) {
+    return v.split(",").map((s) => s.trim()).filter(Boolean);
+  }
+  return [];
+}
+
+const LEAD_SOURCE_LOOKUP: Record<string, LeadSource> = {
+  google: LeadSource.GOOGLE_ADS,
+  "google ads": LeadSource.GOOGLE_ADS,
+  googleads: LeadSource.GOOGLE_ADS,
+  facebook: LeadSource.META_ADS,
+  meta: LeadSource.META_ADS,
+  instagram: LeadSource.META_ADS,
+  referral: LeadSource.REFERRAL,
+  "word of mouth": LeadSource.REFERRAL,
+  organic: LeadSource.ORGANIC,
+  direct: LeadSource.DIRECT,
+  email: LeadSource.EMAIL_CAMPAIGN,
+  chatbot: LeadSource.CHATBOT,
+  form: LeadSource.FORM,
+  manual: LeadSource.MANUAL,
+};
+
+export function mapSourceToEnum(raw: unknown): {
+  source: LeadSource;
+  sourceDetail: string | null;
+} {
+  const s = asString(raw);
+  if (!s) return { source: LeadSource.OTHER, sourceDetail: null };
+  const hit = LEAD_SOURCE_LOOKUP[s.toLowerCase()];
+  if (hit) return { source: hit, sourceDetail: s };
+  return { source: LeadSource.OTHER, sourceDetail: s };
+}
+
+const LEAD_STATUS_LOOKUP: Record<string, LeadStatus> = {
+  new: LeadStatus.NEW,
+  contacted: LeadStatus.CONTACTED,
+  contact: LeadStatus.CONTACTED,
+  "tour scheduled": LeadStatus.TOUR_SCHEDULED,
+  scheduled: LeadStatus.TOUR_SCHEDULED,
+  showing: LeadStatus.TOUR_SCHEDULED,
+  toured: LeadStatus.TOURED,
+  "tour complete": LeadStatus.TOURED,
+  "application sent": LeadStatus.APPLICATION_SENT,
+  applying: LeadStatus.APPLICATION_SENT,
+  applied: LeadStatus.APPLIED,
+  "application submitted": LeadStatus.APPLIED,
+  approved: LeadStatus.APPROVED,
+  signed: LeadStatus.SIGNED,
+  "lease signed": LeadStatus.SIGNED,
+  leased: LeadStatus.SIGNED,
+  lost: LeadStatus.LOST,
+  rejected: LeadStatus.LOST,
+  unqualified: LeadStatus.UNQUALIFIED,
+};
+
+export function mapStatusToEnum(raw: unknown): LeadStatus {
+  const s = asString(raw);
+  if (!s) return LeadStatus.NEW;
+  return LEAD_STATUS_LOOKUP[s.toLowerCase()] ?? LeadStatus.NEW;
+}
+
+const SHOWING_STATUS_LOOKUP: Record<string, TourStatus> = {
+  requested: TourStatus.REQUESTED,
+  scheduled: TourStatus.SCHEDULED,
+  confirmed: TourStatus.SCHEDULED,
+  completed: TourStatus.COMPLETED,
+  "no show": TourStatus.NO_SHOW,
+  "no-show": TourStatus.NO_SHOW,
+  cancelled: TourStatus.CANCELLED,
+  canceled: TourStatus.CANCELLED,
+};
+
+export function mapShowingStatus(raw: unknown): TourStatus {
+  const s = asString(raw);
+  if (!s) return TourStatus.SCHEDULED;
+  return SHOWING_STATUS_LOOKUP[s.toLowerCase()] ?? TourStatus.SCHEDULED;
+}
+
+export type MappedLead = {
+  externalId: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  phone: string | null;
+  source: LeadSource;
+  sourceDetail: string | null;
+  status: LeadStatus;
+  desiredMoveIn: Date | null;
+  budgetMaxCents: number | null;
+  preferredUnitType: string | null;
+  notes: string | null;
+  propertyIds: string[];
+  unitIds: string[];
+  createdAt: Date | null;
+  raw: RawRow;
+};
+
+export function mapLeadPayload(raw: RawRow): MappedLead | null {
+  const externalId = asString(raw.Id ?? raw.id);
+  if (!externalId) return null;
+  const { source, sourceDetail } = mapSourceToEnum(raw.Source);
+  const status = mapStatusToEnum(raw.Status);
+
+  const firstName = asString(raw.FirstName);
+  const lastName = asString(raw.LastName);
+  const middle = asString(raw.MiddleInitial);
+
+  const maxRent = asNumber(raw.MaxRent);
+  const bedrooms = asNumber(raw.Bedrooms);
+
+  const propertyIds = asStringArray(raw.PropertyIds);
+  const singleProp = asString(raw.PropertyId);
+  if (singleProp && !propertyIds.includes(singleProp)) {
+    propertyIds.unshift(singleProp);
+  }
+  const unitIds = asStringArray(raw.UnitIds);
+
+  return {
+    externalId,
+    email: asString(raw.Email)?.toLowerCase() ?? null,
+    firstName: firstName ?? null,
+    lastName: lastName ?? null,
+    phone: asString(raw.PhoneNumber),
+    source,
+    sourceDetail,
+    status,
+    desiredMoveIn: asDate(raw.DesiredMovein ?? raw.DesiredMoveIn),
+    budgetMaxCents: maxRent != null ? Math.round(maxRent * 100) : null,
+    preferredUnitType:
+      bedrooms != null ? `${bedrooms}-bed` : asString(raw.UnitType),
+    notes: [
+      middle ? `Middle initial: ${middle}` : null,
+      asString(raw.AdditionalOccupants)
+        ? `Additional occupants: ${raw.AdditionalOccupants}`
+        : null,
+      asString(raw.CreditScore)
+        ? `Credit score: ${raw.CreditScore}`
+        : null,
+      asString(raw.MonthlyIncome)
+        ? `Monthly income: ${raw.MonthlyIncome}`
+        : null,
+      raw.HasCats ? "Has cats" : null,
+      raw.HasDogs ? "Has dogs" : null,
+      raw.HasOtherPet ? "Has other pet" : null,
+    ]
+      .filter(Boolean)
+      .join(" • ") || null,
+    propertyIds,
+    unitIds,
+    createdAt: asDate(raw.CreatedAt),
+    raw,
+  };
+}
+
+export type MappedShowing = {
+  externalId: string;
+  leadExternalId: string | null;
+  unitExternalId: string | null;
+  scheduledAt: Date | null;
+  completedAt: Date | null;
+  status: TourStatus;
+  notes: string | null;
+  assignedUserExternalId: string | null;
+  raw: RawRow;
+};
+
+export function mapShowingPayload(raw: RawRow): MappedShowing | null {
+  const externalId = asString(raw.Id ?? raw.id);
+  if (!externalId) return null;
+  const status = mapShowingStatus(raw.Status);
+  const start = asDate(raw.StartAt ?? raw.ScheduledAt);
+  const end = asDate(raw.EndAt ?? raw.CompletedAt);
+  return {
+    externalId,
+    leadExternalId: asString(raw.LeadId),
+    unitExternalId: asString(raw.UnitId),
+    scheduledAt: start,
+    completedAt: status === TourStatus.COMPLETED ? end ?? start : end,
+    status,
+    notes: asString(raw.Notes),
+    assignedUserExternalId: asString(raw.AssignedUserId),
+    raw,
+  };
+}
+
+export type MappedTenant = {
+  externalId: string;
+  email: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  companyName: string | null;
+  unitExternalId: string | null;
+  propertyExternalId: string | null;
+  raw: RawRow;
+};
+
+export function mapTenantPayload(raw: RawRow): MappedTenant | null {
+  const externalId = asString(raw.Id ?? raw.id);
+  if (!externalId) return null;
+  return {
+    externalId,
+    email: asString(raw.Email)?.toLowerCase() ?? null,
+    firstName: asString(raw.FirstName),
+    lastName: asString(raw.LastName),
+    companyName: asString(raw.CompanyName),
+    unitExternalId: asString(raw.UnitId),
+    propertyExternalId: asString(raw.PropertyId),
+    raw,
+  };
+}
+
+export function mapListingPayload(raw: RawRow): NormalizedListing | null {
+  const externalId = asString(raw.Id ?? raw.id ?? raw.ListingId);
+  if (!externalId) return null;
+  const rent = asNumber(raw.Rent ?? raw.MarketRent ?? raw.rent);
+  const beds = asNumber(raw.Bedrooms ?? raw.bedrooms);
+  const baths = asNumber(raw.Bathrooms ?? raw.bathrooms);
+  const sqft = asInt(raw.SquareFeet ?? raw.square_feet);
+  const available = asDate(raw.AvailableOn ?? raw.AvailableFrom ?? raw.available_from);
+  const photos = asStringArray(raw.Photos ?? raw.PhotoUrls ?? raw.photos);
+  const isAvailable =
+    raw.IsAvailable !== undefined
+      ? Boolean(raw.IsAvailable)
+      : raw.Available !== undefined
+      ? Boolean(raw.Available)
+      : true;
+
+  return {
+    backendListingId: externalId,
+    unitType: asString(raw.UnitType ?? raw.unit_type ?? raw.Type),
+    unitNumber: asString(raw.UnitNumber ?? raw.unit_number),
+    bedrooms: beds,
+    bathrooms: baths,
+    squareFeet: sqft,
+    priceCents: rent != null ? Math.round(rent * 100) : null,
+    isAvailable,
+    availableFrom: available,
+    photoUrls: photos,
+    description: asString(raw.Description ?? raw.description),
+    raw: { source: "rest", ...raw } as Prisma.InputJsonValue,
+  };
+}
+
+// Fetches listings via the REST reports endpoint. Falls back to the
+// NormalizedListing shape used by the existing syncListingsForOrg.
 async function fetchRest(
   integration: AppFolioIntegration
 ): Promise<NormalizedListing[]> {
-  const apiKey = maybeDecrypt(integration.apiKeyEncrypted ?? null);
-  if (!apiKey) {
-    throw new Error(
-      "AppFolio REST mode requires an encrypted apiKey. Store one or switch the integration to EMBED_SCRAPE (embed fallback)."
-    );
-  }
-
-  const params = new URLSearchParams();
-  if (integration.propertyGroupFilter) {
-    params.set("property_group", integration.propertyGroupFilter);
-  }
-  const url = `https://${integration.instanceSubdomain}.appfolio.com/api/v1/listings${
-    params.size ? `?${params.toString()}` : ""
-  }`;
-
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      Accept: "application/json",
-      "User-Agent": USER_AGENT,
-    },
+  const client = appfolioRestClient(integration);
+  const rows = await fetchAllPages(client, "listings", {
+    // Listings report doesn't strictly require a date window, but AppFolio
+    // sometimes 400s without one. Use a wide window.
+    fromDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
+    toDate: new Date(),
+    extraParams: integration.propertyGroupFilter
+      ? { property_group: integration.propertyGroupFilter }
+      : undefined,
   });
-  if (!response.ok) {
-    throw new Error(`AppFolio REST returned ${response.status}`);
+  const normalized: NormalizedListing[] = [];
+  for (const row of rows) {
+    const mapped = mapListingPayload(row);
+    if (mapped) normalized.push(mapped);
   }
-
-  // TODO(Sprint 06 follow-up): the REST payload shape needs confirmation
-  // against Norman's account; this is a reasonable guess until we see real
-  // data. Keep `raw` as the full payload so we can back-fill fields later.
-  const body = (await response.json()) as {
-    listings?: Array<Record<string, unknown>>;
-    data?: Array<Record<string, unknown>>;
-  };
-  const rows = body.listings ?? body.data ?? [];
-
-  return rows.map((row) => ({
-    backendListingId:
-      String(row.id ?? row.listing_id ?? row.uid ?? ""),
-    unitType: (row.unit_type as string) ?? null,
-    unitNumber: (row.unit_number as string) ?? null,
-    bedrooms:
-      typeof row.bedrooms === "number" ? row.bedrooms : parseBedBath(String(row.bed_bath ?? "")).bedrooms,
-    bathrooms:
-      typeof row.bathrooms === "number" ? row.bathrooms : parseBedBath(String(row.bed_bath ?? "")).bathrooms,
-    squareFeet:
-      typeof row.square_feet === "number"
-        ? row.square_feet
-        : parseSqft(String(row.square_feet ?? "")),
-    priceCents:
-      typeof row.rent === "number" ? Math.round(row.rent * 100) : null,
-    isAvailable:
-      row.available === undefined ? true : Boolean(row.available),
-    availableFrom: row.available_from
-      ? new Date(String(row.available_from))
-      : null,
-    photoUrls: Array.isArray(row.photos)
-      ? (row.photos as string[])
-      : [],
-    description: (row.description as string) ?? null,
-    raw: { source: "rest", ...row } as Prisma.InputJsonValue,
-  }));
+  return normalized;
 }
 
 // ---------------------------------------------------------------------------
@@ -323,9 +745,13 @@ export async function syncListingsForOrg(
   });
 
   try {
+    const hasRestCreds = Boolean(
+      integration.clientIdEncrypted &&
+        (integration.clientSecretEncrypted || integration.apiKeyEncrypted)
+    );
     const mode: AppFolioSyncMode = integration.useEmbedFallback
       ? "EMBED_SCRAPE"
-      : integration.apiKeyEncrypted
+      : hasRestCreds
       ? "REST"
       : "EMBED_SCRAPE";
 
