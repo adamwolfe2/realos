@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { MARKETING } from "@/lib/copy/marketing";
 import { BRAND_NAME } from "@/lib/brand";
-import { HeroDemo } from "@/components/platform/hero-demo";
+import { ProductTour } from "@/components/product-tour";
 
 // ---------------------------------------------------------------------------
 // Claude-inspired homepage.
@@ -22,6 +22,7 @@ export default function PlatformHome() {
   return (
     <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
       <Hero />
+      <ProductTourSection />
       <Numbers />
       <Modules />
       <Verticals />
@@ -39,68 +40,97 @@ function Hero() {
   return (
     <section
       className="relative overflow-hidden"
-      style={{
-        backgroundColor: "#f5f4ed",
-        borderBottom: "1px solid #f0eee6",
-      }}
+      style={{ backgroundColor: "#f5f4ed" }}
     >
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-20 md:pt-28 pb-16 md:pb-24 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-        <div className="lg:col-span-5">
-          <p className="eyebrow mb-6">For real estate operators</p>
-          <h1 className="display-hero" style={{ color: "#141413" }}>
-            Marketing infrastructure{" "}
-            <span style={{ color: "#c96442" }}>that fills units.</span>
-          </h1>
+      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-24 md:pt-32 pb-12 md:pb-16 text-center">
+        <p className="eyebrow mb-6">For real estate operators</p>
+        <h1
+          className="mx-auto"
+          style={{
+            color: "#141413",
+            fontFamily: "var(--font-display)",
+            fontSize: "clamp(42px, 5.5vw, 68px)",
+            fontWeight: 500,
+            lineHeight: 1.08,
+            letterSpacing: "-0.005em",
+            maxWidth: "920px",
+          }}
+        >
+          Marketing infrastructure{" "}
+          <span style={{ color: "#c96442" }}>that fills units.</span>
+        </h1>
+        <p
+          className="mx-auto mt-6"
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: "18px",
+            lineHeight: 1.6,
+            color: "#5e5d59",
+            fontWeight: 400,
+            maxWidth: "640px",
+          }}
+        >
+          One managed platform. Custom site on your domain, live listings,
+          identity pixel, AI chatbot, managed ads, and a CRM that closes the
+          loop. Launched in under fourteen days.
+        </p>
+        <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link href="/onboarding" className="btn-primary">
+            Book a demo
+          </Link>
+          <Link href="#product-tour" className="btn-secondary">
+            Explore the platform
+          </Link>
+        </div>
+        <div
+          className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3"
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: "13px",
+            color: "#87867f",
+          }}
+        >
+          <ProofLine value="14 days" label="From first call to live" />
+          <span className="hidden sm:inline-block w-px h-4" style={{ backgroundColor: "#e8e6dc" }} aria-hidden="true" />
+          <ProofLine value="$1,497" label="From, monthly retainer" />
+          <span className="hidden sm:inline-block w-px h-4" style={{ backgroundColor: "#e8e6dc" }} aria-hidden="true" />
+          <ProofLine value="Zero" label="Setup fees, zero contracts" />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PRODUCT TOUR SECTION - the interactive CRM preview
+// ---------------------------------------------------------------------------
+
+function ProductTourSection() {
+  return (
+    <section id="product-tour" style={{ backgroundColor: "#f5f4ed" }}>
+      <div className="max-w-[1280px] mx-auto px-4 md:px-8 pt-4 pb-20 md:pb-28">
+        <div className="text-center mb-8 md:mb-10 max-w-[720px] mx-auto">
+          <p className="eyebrow mb-4" style={{ color: "#c96442" }}>
+            Interactive preview
+          </p>
+          <h2 className="heading-section" style={{ color: "#141413" }}>
+            Click through the actual portal.
+          </h2>
           <p
-            className="mt-6 max-w-xl"
+            className="mt-3 mx-auto"
             style={{
               fontFamily: "var(--font-sans)",
-              fontSize: "18px",
+              fontSize: "16px",
               lineHeight: 1.6,
               color: "#5e5d59",
-              fontWeight: 400,
             }}
           >
-            One managed platform replaces the five tools you&apos;re stitching
-            together today. A custom site on your domain, live listings, an
-            identity pixel, an AI chatbot, and a CRM that actually closes the
-            loop.
+            Every tab in the sidebar below is a real surface in the platform.
+            Open a lead. Read a chatbot conversation. Filter the creative
+            queue. This is what ships on day one.
           </p>
-          <div className="mt-8 flex flex-wrap gap-3">
-            <Link href="/onboarding" className="btn-primary">
-              Book a demo
-            </Link>
-            <Link href="/pricing" className="btn-secondary">
-              See pricing
-            </Link>
-          </div>
-          <div
-            className="mt-10 flex flex-wrap items-center gap-x-8 gap-y-3"
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: "13px",
-              color: "#87867f",
-            }}
-          >
-            <ProofLine value="14 days" label="From first call to live" />
-            <span
-              className="hidden sm:inline-block w-px h-4"
-              style={{ backgroundColor: "#e8e6dc" }}
-              aria-hidden="true"
-            />
-            <ProofLine value="$1,497" label="From, monthly retainer" />
-            <span
-              className="hidden sm:inline-block w-px h-4"
-              style={{ backgroundColor: "#e8e6dc" }}
-              aria-hidden="true"
-            />
-            <ProofLine value="Zero" label="Setup fees, zero contracts" />
-          </div>
         </div>
-
-        <aside className="lg:col-span-7">
-          <HeroDemo />
-        </aside>
+        <ProductTour />
       </div>
     </section>
   );
