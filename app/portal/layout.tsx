@@ -96,15 +96,27 @@ export default async function PortalLayout({
         </div>
       ) : null}
 
-      <header className="border-b px-4 md:px-6 py-3 flex items-center justify-between bg-background">
-        <div className="flex items-center gap-3">
-          <Link href="/portal" className="font-serif font-bold text-lg">
-            {BRAND_NAME}
-          </Link>
-          <span className="hidden md:inline text-xs opacity-60">
+      <header className="border-b border-border px-4 md:px-6 py-3 flex items-center justify-between bg-card">
+        <Link
+          href="/portal"
+          className="flex items-center gap-2.5 min-w-0"
+          aria-label={`${BRAND_NAME} portal home`}
+        >
+          <div className="shrink-0 h-8 w-8 rounded-md bg-primary text-primary-foreground grid place-items-center font-serif font-bold text-sm">
+            {BRAND_NAME.slice(0, 1)}
+          </div>
+          <div className="min-w-0 hidden sm:block">
+            <span className="block font-serif font-bold text-sm text-foreground tracking-tight truncate">
+              {BRAND_NAME}
+            </span>
+            <span className="block text-[10px] font-semibold text-primary uppercase tracking-widest">
+              Portal
+            </span>
+          </div>
+          <span className="hidden md:inline text-xs text-muted-foreground border-l border-border pl-3 ml-1 truncate">
             {org.name}
           </span>
-        </div>
+        </Link>
         <UserButton />
       </header>
 

@@ -59,7 +59,7 @@ export function TenantPipelineCard({ item }: { item: TenantPipelineItem }) {
   }
 
   const mrr =
-    item.mrrCents != null
+    item.mrrCents != null && item.mrrCents > 0
       ? `$${Math.round(item.mrrCents / 100).toLocaleString()}/mo`
       : null;
 
