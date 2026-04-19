@@ -12,14 +12,14 @@ const METRICS = [
     source: "Onboarding median, Q1 2026",
   },
   {
-    value: "95%",
-    label: "Of site visitors named and routed to nurture, not just the 5% who fill a form.",
-    source: "Cursive identity graph, US",
+    value: "Named",
+    label: "Visitors identified by the pixel and routed to nurture, not just the form-fillers.",
+    source: "Cursive identity graph",
   },
   {
-    value: "$1,100",
-    label: "Per-month retainer delta versus Conversion Logix on the same modules.",
-    source: "vs. CL published rate card",
+    value: "One",
+    label: "Platform replacing site, chatbot, ads, CRM, and creative vendors.",
+    source: "One login, one dashboard",
   },
   {
     value: "48h",

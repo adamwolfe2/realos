@@ -22,8 +22,8 @@ export default function ChatbotFeaturePage() {
         "One-click handoff to your leasing team for hot threads.",
       ]}
       results={[
-        "Capture lead rate: typical 12-25% of chats end with a verified email.",
-        "24/7 response; international students apply at 2am without waiting for morning.",
+        "Every captured chat becomes a lead with the full transcript attached.",
+        "24/7 response, international students and night-owl parents don't bounce waiting for morning.",
         "Transcripts sync into the lead record for context when your team follows up.",
         "Module flag on Organization lets you disable the widget instantly during staffing changes or launches.",
       ]}

@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "Commercial real estate marketing, coming Q3",
+  title: "Commercial real estate marketing, in build",
   description:
-    "Commercial-first features are in build, office, retail, industrial, flex space, and medical office. Get on the design-partner list.",
+    "Commercial-first modules are in build, office, retail, industrial, flex space, and medical office. Get on the design-partner list.",
 };
 
 export default function CommercialPage() {
@@ -22,16 +22,15 @@ export default function CommercialPage() {
             className="font-serif text-4xl md:text-5xl lg:text-6xl font-normal leading-[1.05]"
             style={{ color: "var(--text-headline)" }}
           >
-            Commercial launches in Q3.
+            Commercial is in build.
           </h1>
           <p
             className="mt-6 font-mono text-sm md:text-base leading-relaxed max-w-2xl"
             style={{ color: "var(--text-body)" }}
           >
-            The platform is in production for residential operators today.
-            Student housing, multifamily, and senior living are live. Commercial
-            launches next with modules for office, retail, industrial, flex
-            space, and medical office.
+            The platform is live for residential operators today, student
+            housing, multifamily, and senior living. Commercial modules ship
+            next: office, retail, industrial, flex space, and medical office.
           </p>
         </div>
       </header>

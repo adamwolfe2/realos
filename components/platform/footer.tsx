@@ -9,8 +9,8 @@ export function PlatformFooter() {
   const year = new Date().getFullYear();
   const links: Array<{ label: string; href: string }> = [
     { label: "Demo",              href: "/onboarding" },
-    { label: "Pricing",           href: "/pricing" },
     { label: "Product",           href: "/features/pixel" },
+    { label: "See it live",       href: "https://www.telegraphcommons.com" },
     { label: "Solutions",         href: "/student-housing" },
     { label: "Blog",              href: "/blog" },
     { label: "About",             href: "/about" },

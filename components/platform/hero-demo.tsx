@@ -368,8 +368,8 @@ function AttachPane() {
         left={<span>STEP 03 &middot; ATTACH</span>}
         right={
           <span>
-            <strong style={{ color: "#141413", fontWeight: 500 }}>95%</strong>{" "}
-            <span style={{ color: "#87867f" }}>RESOLVE RATE</span>
+            <strong style={{ color: "#141413", fontWeight: 500 }}>MATCHED</strong>{" "}
+            <span style={{ color: "#87867f" }}>TO IDENTITY</span>
           </span>
         }
       />

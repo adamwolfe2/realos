@@ -2175,7 +2175,7 @@ function SettingsView() {
         />
         <SettingsRow
           title="Identity pixel"
-          hint="Firing on all tenant marketing sites. 95% visitor resolution rate."
+          hint="Firing on all tenant marketing sites. Names attached to a meaningful share of visits."
           action={<Pill tone="success">Active</Pill>}
         />
         <SettingsRow
@@ -2198,7 +2198,7 @@ function SettingsView() {
         />
         <SettingsRow
           title="Billing"
-          hint="Growth tier, $2,997 per month. Ad spend passes through at cost."
+          hint="Managed subscription. Ad spend passes through at cost."
           action={
             <button
               type="button"

@@ -22,6 +22,7 @@ export default function PlatformHome() {
   return (
     <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
       <Hero />
+      <LiveExample />
       <ProductTourSection />
       <Numbers />
       <Modules />
@@ -78,8 +79,13 @@ function Hero() {
           <Link href="/onboarding" className="btn-primary">
             Book a demo
           </Link>
-          <Link href="#product-tour" className="btn-secondary">
-            Explore the platform
+          <Link
+            href="https://www.telegraphcommons.com"
+            className="btn-secondary"
+            target="_blank"
+            rel="noopener"
+          >
+            See it live
           </Link>
         </div>
         <div
@@ -92,12 +98,163 @@ function Hero() {
         >
           <ProofLine value="14 days" label="From first call to live" />
           <span className="hidden sm:inline-block w-px h-4" style={{ backgroundColor: "#e8e6dc" }} aria-hidden="true" />
-          <ProofLine value="$1,497" label="From, monthly retainer" />
+          <ProofLine value="One" label="Platform, one login" />
           <span className="hidden sm:inline-block w-px h-4" style={{ backgroundColor: "#e8e6dc" }} aria-hidden="true" />
-          <ProofLine value="Zero" label="Setup fees, zero contracts" />
+          <ProofLine value="Zero" label="Contracts, zero lock-in" />
         </div>
       </div>
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// LIVE EXAMPLE — the Telegraph Commons proof. Two cards, two live surfaces.
+// This is the centerpiece "this is real, not a mockup" moment.
+// ---------------------------------------------------------------------------
+
+function LiveExample() {
+  const { liveExample } = MARKETING.home;
+  return (
+    <section
+      style={{
+        backgroundColor: "#faf9f5",
+        borderTop: "1px solid #f0eee6",
+      }}
+    >
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
+        <div className="max-w-3xl mb-12">
+          <p className="eyebrow mb-4" style={{ color: "#2F6FE5" }}>
+            {liveExample.eyebrow}
+          </p>
+          <h2 className="heading-section" style={{ color: "#141413" }}>
+            {liveExample.headline}
+          </h2>
+          <p
+            className="mt-4 max-w-2xl"
+            style={{
+              color: "#5e5d59",
+              fontFamily: "var(--font-sans)",
+              fontSize: "17px",
+              lineHeight: 1.6,
+            }}
+          >
+            {liveExample.body}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <LiveCard
+            href={liveExample.siteHref}
+            label={liveExample.siteLabel}
+            caption={liveExample.siteCaption}
+            hostname="telegraphcommons.com"
+            external
+          />
+          <LiveCard
+            href={liveExample.portalHref}
+            label={liveExample.portalLabel}
+            caption={liveExample.portalCaption}
+            hostname="operator portal"
+          />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function LiveCard({
+  href,
+  label,
+  caption,
+  hostname,
+  external = false,
+}: {
+  href: string;
+  label: string;
+  caption: string;
+  hostname: string;
+  external?: boolean;
+}) {
+  return (
+    <Link
+      href={href}
+      target={external ? "_blank" : undefined}
+      rel={external ? "noopener" : undefined}
+      className="group block p-7"
+      style={{
+        backgroundColor: "#ffffff",
+        borderRadius: "16px",
+        boxShadow: "0 0 0 1px #f0eee6",
+        transition: "box-shadow 0.2s ease, transform 0.2s ease",
+      }}
+    >
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p
+            className="mb-2 inline-flex items-center gap-2"
+            style={{
+              color: "#87867f",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+            }}
+          >
+            <span
+              aria-hidden="true"
+              style={{
+                display: "inline-block",
+                width: "6px",
+                height: "6px",
+                borderRadius: "50%",
+                backgroundColor: "#3a7d44",
+              }}
+            />
+            {hostname}
+          </p>
+          <h3 className="heading-sub" style={{ color: "#141413" }}>
+            {label}
+          </h3>
+          <p
+            className="mt-3 max-w-md"
+            style={{
+              color: "#5e5d59",
+              fontFamily: "var(--font-sans)",
+              fontSize: "15px",
+              lineHeight: 1.6,
+            }}
+          >
+            {caption}
+          </p>
+        </div>
+        <span
+          className="inline-flex items-center justify-center flex-shrink-0"
+          style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            color: "#2F6FE5",
+            boxShadow: "0 0 0 1px #e8e6dc",
+          }}
+          aria-hidden="true"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <path
+              d={
+                external
+                  ? "M5 9L9 5M9 5H5.5M9 5V8.5"
+                  : "M3 7h8m0 0L7.5 3.5M11 7l-3.5 3.5"
+              }
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </span>
+      </div>
+    </Link>
   );
 }
 
@@ -164,15 +321,15 @@ const METRICS = [
     label: "Platform replaces five-plus vendors: site, chatbot, ads, CRM, creative.",
   },
   {
-    value: "95%",
-    label: "Of site visitors named and routed to nurture, not just form-fillers.",
+    value: "24/7",
+    label: "AI chatbot that answers, qualifies, and captures leads after hours.",
   },
   {
     value: "48h",
     label: "Turnaround on every managed creative asset: ads, landing blocks, emails.",
   },
   {
-    value: "2 wks",
+    value: "14 days",
     label: "From intake call to a custom site live on your domain with full stack.",
   },
 ];
@@ -434,8 +591,13 @@ function Proof() {
           <Link href="/onboarding" className="btn-primary">
             Book a demo
           </Link>
-          <Link href="/pricing" className="btn-secondary-dark">
-            See pricing
+          <Link
+            href="https://www.telegraphcommons.com"
+            className="btn-secondary-dark"
+            target="_blank"
+            rel="noopener"
+          >
+            See it live
           </Link>
         </div>
       </div>
@@ -508,8 +670,13 @@ function FinalCta() {
           <Link href={final.primaryHref} className="btn-primary">
             {final.primaryCta}
           </Link>
-          <Link href="/pricing" className="btn-secondary">
-            See pricing
+          <Link
+            href="https://www.telegraphcommons.com"
+            className="btn-secondary"
+            target="_blank"
+            rel="noopener"
+          >
+            See it live
           </Link>
         </div>
       </div>

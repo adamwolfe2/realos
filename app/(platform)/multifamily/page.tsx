@@ -16,7 +16,7 @@ export default function MultifamilyPage() {
       pains={[
         {
           title: "Agency spend you can't justify",
-          body: "$2,600/mo per property, unclear ROI, no lease attribution. Invoice looks the same whether you leased out or not.",
+          body: "Per-property retainers with unclear ROI, no lease attribution, invoices that look the same whether you leased out or not.",
         },
         {
           title: "Fair-housing compliance headaches",
@@ -50,7 +50,7 @@ export default function MultifamilyPage() {
         },
         {
           title: "Managed paid search + social",
-          body: "Google + Meta at 15% of spend. Creative studio ships new angles in 48 hours.",
+          body: "Google and Meta managed end-to-end, no agency creative markup, studio ships new angles in 48 hours.",
         },
       ]}
     />

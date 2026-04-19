@@ -4,7 +4,7 @@ import { FeaturePage } from "@/components/platform/feature-page";
 export const metadata: Metadata = {
   title: "Managed Google + Meta ads",
   description:
-    "Geo-fenced campaigns, pixel-powered retargeting, creative studio, weekly performance reviews. Google + Meta + LinkedIn + TikTok, all managed at 15% of spend.",
+    "Geo-fenced campaigns, pixel-powered retargeting, creative studio, weekly performance reviews. Google, Meta, LinkedIn, and TikTok, managed end-to-end.",
 };
 
 export default function AdsFeaturePage() {
@@ -22,12 +22,12 @@ export default function AdsFeaturePage() {
         "Weekly review call: spend, CPL, conversion, next test to run.",
       ]}
       results={[
-        "Tight cost per lead (typical $20-$60 depending on vertical and market).",
+        "Cost per lead defended on a weekly call, not buried in a quarterly report.",
         "Attribution through to leased units in the portal dashboard.",
-        "15% of spend, no agency markup on creative, no minimums.",
-        "Pause, shift, or kill any campaign from the portal without waiting on anyone.",
+        "No agency markup on creative, no minimums, pause or kill any campaign from the portal.",
+        "Creative refreshed weekly out of the Creative Studio, no separate production retainer.",
       ]}
-      bestFor="Operators running at least $3K/mo in ad spend who want results, not retainers. Scale tier on our pricing page bundles this with the full platform."
+      bestFor="Operators who want paid performance defended every week, not explained every quarter. Most powerful once the pixel is running, so retargeting audiences exist."
     />
   );
 }

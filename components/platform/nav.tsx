@@ -88,9 +88,6 @@ export function PlatformNav() {
             items={VERTICAL_LINKS}
             labelColor={labelColor}
           />
-          <NavLink href="/pricing" active={isActive(pathname, "/pricing")}>
-            Pricing
-          </NavLink>
           <NavLink href="/blog" active={isActive(pathname, "/blog")}>
             Blog
           </NavLink>
@@ -249,7 +246,6 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
     {
       title: "Company",
       items: [
-        { href: "/pricing", label: "Pricing" },
         { href: "/blog", label: "Blog" },
         { href: "/sign-in", label: "Sign in" },
       ],

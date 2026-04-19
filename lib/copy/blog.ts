@@ -27,23 +27,23 @@ export const BLOG_POSTS: BlogPost[] = [
 
 We wanted to build the platform those operators should have been buying all along. One login. One dashboard. Every module owned by the same team that built the others, so the handoffs between site, pixel, chatbot, ads, and CRM all work because they were designed to work together.
 
-The result is a single managed platform: a custom site on your domain, live listings synced from your PMS, an identity graph pixel that names the majority of your anonymous visitors, an AI chatbot that captures leads around the clock, managed ads with 48 hour creative turnaround, and a lead pipeline that shows lease velocity instead of vanity metrics.
+The result is a single managed platform: a custom site on your domain, live listings synced from your PMS, an identity graph pixel that names a meaningful share of your anonymous visitors, an AI chatbot that captures leads around the clock, managed ads with 48 hour creative turnaround, and a lead pipeline that shows lease velocity instead of vanity metrics.
 
 Operators get software that pays its own invoice. We earn the retainer every month, or the contract ends. This blog is the build log.`,
   },
   {
-    slug: "the-hidden-cost-of-ignoring-95-percent-of-your-traffic",
-    title: "The hidden cost of ignoring 95% of your website traffic",
+    slug: "the-hidden-cost-of-anonymous-website-traffic",
+    title: "The hidden cost of anonymous website traffic",
     description:
-      "Your analytics probably tells you about 5% of your real audience. The other 95% is anonymous. We do the math on what that blind spot costs operators.",
+      "Most of the people looking at your property never fill out a form. Your current analytics treats that traffic as noise. We think of it as the actual pipeline.",
     author: "RealEstaite team",
     publishedAt: "2026-04-08",
     readingMinutes: 4,
-    body: `A typical property marketing site converts somewhere between 1% and 3% of its traffic into a form submission. Identity graph pixels resolve somewhere between 40% and 70% of visits to a real person.
+    body: `The vast majority of visitors to a property marketing site never fill out a form. Standard analytics tells you how many, which pages they looked at, and where they came from, but nothing about who they are. An identity graph pixel changes the question from "how much traffic did we get" to "who visited that we can follow up with."
 
-Which is more useful, knowing that 1,200 people visited, or knowing the names and email addresses of 600 of them? Only one of those lists can be followed up on.
+Which is more useful, knowing that a thousand people visited, or having a shortlist of named prospects from that thousand that your leasing team can actually email? Only one of those can be worked.
 
-Assume conservative numbers. 2,000 monthly visitors, a 50% identification rate, and a 3% email reply rate. That is 30 new qualified conversations a month from people who would have otherwise left without a trace. At an average rent and typical lease term, signing one of those conversations pays for the platform for a year.
+Even modest assumptions make the math stark. A few thousand monthly visitors, a meaningful identification rate, and a reasonable reply rate turn into dozens of qualified conversations a month with prospects who would otherwise have left without a trace. At an average rent and typical lease term, signing one of those conversations pays for the platform for a year.
 
 Most operators do not have this number because they have never had the tool that would produce it. That is the gap we built into.`,
   },
