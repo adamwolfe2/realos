@@ -543,29 +543,49 @@ function Comparison() {
               boxShadow: "0 0 0 1px #f0eee6",
             }}
           >
-            <p
-              className="mb-6 inline-flex items-center gap-2"
-              style={{
-                color: "#87867f",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                fontWeight: 500,
-              }}
-            >
+            <div className="flex items-center gap-3 mb-6">
               <span
-                aria-hidden="true"
+                className="inline-flex items-center justify-center flex-shrink-0"
                 style={{
-                  display: "inline-block",
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  backgroundColor: "#c2c0b6",
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "12px",
+                  backgroundColor: "#f0eee6",
+                  color: "#87867f",
                 }}
-              />
-              {comparison.leftLabel}
-            </p>
+                aria-hidden="true"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2.5" y="5" width="4" height="4" rx="0.7" />
+                  <rect x="7.5" y="5" width="4" height="4" rx="0.7" />
+                  <rect x="12.5" y="5" width="3" height="4" rx="0.7" />
+                  <path d="M2.5 12h13" />
+                </svg>
+              </span>
+              <p
+                className="inline-flex items-center gap-2"
+                style={{
+                  color: "#87867f",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  fontWeight: 500,
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: "inline-block",
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    backgroundColor: "#c2c0b6",
+                  }}
+                />
+                {comparison.leftLabel}
+              </p>
+            </div>
             <ul className="space-y-0">
               {comparison.rows.map((row, i) => (
                 <li
@@ -616,29 +636,49 @@ function Comparison() {
               boxShadow: "0 0 0 1px #f0eee6",
             }}
           >
-            <p
-              className="mb-6 inline-flex items-center gap-2"
-              style={{
-                color: "#2F6FE5",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                fontWeight: 500,
-              }}
-            >
+            <div className="flex items-center gap-3 mb-6">
               <span
-                aria-hidden="true"
+                className="inline-flex items-center justify-center flex-shrink-0"
                 style={{
-                  display: "inline-block",
-                  width: "6px",
-                  height: "6px",
-                  borderRadius: "50%",
-                  backgroundColor: "#2F6FE5",
+                  width: "40px",
+                  height: "40px",
+                  borderRadius: "12px",
+                  backgroundColor: "rgba(47,111,229,0.12)",
+                  color: "#2F6FE5",
                 }}
-              />
-              {comparison.rightLabel}
-            </p>
+                aria-hidden="true"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="2.5" y="3" width="13" height="12" rx="1.5" />
+                  <path d="M2.5 7h13" />
+                  <circle cx="5" cy="5" r="0.6" fill="currentColor" stroke="none" />
+                  <path d="M5 10h3M5 12.5h6" />
+                </svg>
+              </span>
+              <p
+                className="inline-flex items-center gap-2"
+                style={{
+                  color: "#2F6FE5",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  fontWeight: 500,
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{
+                    display: "inline-block",
+                    width: "6px",
+                    height: "6px",
+                    borderRadius: "50%",
+                    backgroundColor: "#2F6FE5",
+                  }}
+                />
+                {comparison.rightLabel}
+              </p>
+            </div>
             <ul className="space-y-0">
               {comparison.rows.map((row, i) => (
                 <li
@@ -693,6 +733,16 @@ function Comparison() {
 // on the platform without a status meeting.
 // ---------------------------------------------------------------------------
 
+const WEEKLY_VISUALS: Array<{
+  icon: Deliverable["icon"];
+  brands: NonNullable<Deliverable["logos"]>[number]["brand"][];
+}> = [
+  { icon: "report", brands: ["resend"] },
+  { icon: "cal",    brands: ["cal", "appfolio"] },
+  { icon: "ads",    brands: ["meta", "google", "tiktok", "figma"] },
+  { icon: "chat",   brands: ["claude"] },
+];
+
 function Weekly() {
   const { weekly } = MARKETING.home;
   return (
@@ -722,55 +772,75 @@ function Weekly() {
         </div>
 
         <ol className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          {weekly.items.map((item) => (
-            <li
-              key={item.title}
-              className="p-6 md:p-7 flex flex-col"
-              style={{
-                backgroundColor: "#ffffff",
-                borderRadius: "16px",
-                boxShadow: "0 0 0 1px #f0eee6",
-              }}
-            >
-              <p
-                className="flex items-center justify-between gap-2"
+          {weekly.items.map((item, i) => {
+            const v = WEEKLY_VISUALS[i] ?? WEEKLY_VISUALS[0];
+            return (
+              <li
+                key={item.title}
+                className="p-6 md:p-7 flex flex-col gap-3"
                 style={{
-                  color: "#87867f",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "11px",
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  fontWeight: 500,
+                  backgroundColor: "#ffffff",
+                  borderRadius: "16px",
+                  boxShadow: "0 0 0 1px #f0eee6",
                 }}
               >
-                <span style={{ color: "#141413" }}>{item.day}</span>
-                <span>{item.time}</span>
-              </p>
-              <h3
-                className="mt-3"
-                style={{
-                  color: "#141413",
-                  fontFamily: "var(--font-display)",
-                  fontSize: "19px",
-                  fontWeight: 500,
-                  lineHeight: 1.3,
-                }}
-              >
-                {item.title}
-              </h3>
-              <p
-                className="mt-3"
-                style={{
-                  color: "#5e5d59",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "14.5px",
-                  lineHeight: 1.6,
-                }}
-              >
-                {item.body}
-              </p>
-            </li>
-          ))}
+                <div className="flex items-center gap-2">
+                  <span
+                    className="inline-flex items-center justify-center flex-shrink-0"
+                    style={{
+                      width: "34px",
+                      height: "34px",
+                      borderRadius: "10px",
+                      backgroundColor: "rgba(47,111,229,0.12)",
+                      color: "#2F6FE5",
+                    }}
+                  >
+                    <DeliverableIcon kind={v.icon} />
+                  </span>
+                  <span className="ml-auto inline-flex items-center gap-1">
+                    {v.brands.map((b, idx) => (
+                      <BrandIcon key={`${item.title}-${b}-${idx}`} brand={b} />
+                    ))}
+                  </span>
+                </div>
+                <p
+                  className="flex items-center justify-between gap-2"
+                  style={{
+                    color: "#87867f",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "11px",
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    fontWeight: 500,
+                  }}
+                >
+                  <span style={{ color: "#141413" }}>{item.day}</span>
+                  <span>{item.time}</span>
+                </p>
+                <h3
+                  style={{
+                    color: "#141413",
+                    fontFamily: "var(--font-display)",
+                    fontSize: "19px",
+                    fontWeight: 500,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {item.title}
+                </h3>
+                <p
+                  style={{
+                    color: "#5e5d59",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "14.5px",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {item.body}
+                </p>
+              </li>
+            );
+          })}
         </ol>
       </div>
     </section>
@@ -818,6 +888,8 @@ function LiveExample() {
             label={liveExample.siteLabel}
             caption={liveExample.siteCaption}
             badge="Live deployment"
+            icon="home"
+            brands={["vercel", "cal"]}
             external
           />
           <LiveCard
@@ -825,6 +897,8 @@ function LiveExample() {
             label={liveExample.portalLabel}
             caption={liveExample.portalCaption}
             badge="Operator portal"
+            icon="report"
+            brands={["slack", "resend", "appfolio"]}
           />
         </div>
       </div>
@@ -837,12 +911,16 @@ function LiveCard({
   label,
   caption,
   badge,
+  icon,
+  brands,
   external = false,
 }: {
   href: string;
   label: string;
   caption: string;
   badge: string;
+  icon: Deliverable["icon"];
+  brands: NonNullable<Deliverable["logos"]>[number]["brand"][];
   external?: boolean;
 }) {
   return (
@@ -858,6 +936,26 @@ function LiveCard({
         transition: "box-shadow 0.2s ease, transform 0.2s ease",
       }}
     >
+      <div className="flex items-center gap-2 mb-5">
+        <span
+          className="inline-flex items-center justify-center flex-shrink-0"
+          style={{
+            width: "34px",
+            height: "34px",
+            borderRadius: "10px",
+            backgroundColor: "rgba(47,111,229,0.12)",
+            color: "#2F6FE5",
+          }}
+        >
+          <DeliverableIcon kind={icon} />
+        </span>
+        <span className="ml-auto inline-flex items-center gap-1">
+          {brands.map((b, idx) => (
+            <BrandIcon key={`${label}-${b}-${idx}`} brand={b} />
+          ))}
+        </span>
+      </div>
+
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p
