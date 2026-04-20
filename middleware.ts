@@ -20,6 +20,7 @@ const isApiTenantRoute = createRouteMatcher(["/api/tenant(.*)"]);
 const isPublicApi = createRouteMatcher([
   "/api/webhooks(.*)",
   "/api/cron(.*)",
+  "/api/chat(.*)",
   "/api/chatbot(.*)",
   "/api/public(.*)",
   "/api/appfolio/webhook(.*)",
