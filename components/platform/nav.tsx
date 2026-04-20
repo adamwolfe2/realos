@@ -55,14 +55,14 @@ export function PlatformNav() {
         transition: "background-color 0.2s ease, border-color 0.2s ease",
       }}
     >
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-14 flex items-center justify-between gap-4">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-20 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center" aria-label="RealEstaite home">
           <img
             src="/logos/realestaite-wordmark.png"
             alt="RealEstaite"
-            height={28}
+            height={56}
             style={{
-              height: "28px",
+              height: "56px",
               width: "auto",
               display: "block",
             }}
