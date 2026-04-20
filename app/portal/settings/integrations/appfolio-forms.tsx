@@ -10,10 +10,12 @@ import {
 } from "@/lib/actions/appfolio-connect";
 import { cn } from "@/lib/utils";
 
-const CONNECT_INITIAL: ConnectAppfolioResult = { ok: true };
+const CONNECT_INITIAL: ConnectAppfolioResult = { ok: true, mode: "embed" };
+
+type Mode = "embed" | "rest";
 
 export function ConnectAppfolioForm() {
-  const [authMode, setAuthMode] = useState<"oauth" | "api_key">("api_key");
+  const [mode, setMode] = useState<Mode>("rest");
   const [state, formAction, pending] = useActionState<
     ConnectAppfolioResult,
     FormData
@@ -21,47 +23,25 @@ export function ConnectAppfolioForm() {
 
   return (
     <form action={formAction} className="space-y-4">
-      <input type="hidden" name="authMode" value={authMode} />
+      <input type="hidden" name="authMode" value={mode} />
 
       <div className="space-y-2">
         <span className="text-xs font-medium text-foreground">
-          Authentication
+          Connection type
         </span>
-        <div className="grid grid-cols-2 gap-2">
-          <button
-            type="button"
-            onClick={() => setAuthMode("api_key")}
-            className={cn(
-              "rounded-md border p-3 text-left transition-colors",
-              authMode === "api_key"
-                ? "border-primary bg-primary/5"
-                : "border-border bg-card hover:bg-muted/50",
-            )}
-          >
-            <div className="text-sm font-semibold text-foreground">
-              API key
-            </div>
-            <div className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-              Paste a single AppFolio API key. Easiest to set up.
-            </div>
-          </button>
-          <button
-            type="button"
-            onClick={() => setAuthMode("oauth")}
-            className={cn(
-              "rounded-md border p-3 text-left transition-colors",
-              authMode === "oauth"
-                ? "border-primary bg-primary/5"
-                : "border-border bg-card hover:bg-muted/50",
-            )}
-          >
-            <div className="text-sm font-semibold text-foreground">
-              OAuth credentials
-            </div>
-            <div className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-              Client ID + secret from the AppFolio Developer Portal.
-            </div>
-          </button>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <ModeCard
+            active={mode === "rest"}
+            onClick={() => setMode("rest")}
+            title="Developer Portal API"
+            body="Plus/Max plans. Reports API Client ID + Client Secret. Full lead + unit sync."
+          />
+          <ModeCard
+            active={mode === "embed"}
+            onClick={() => setMode("embed")}
+            title="Public listings (Core)"
+            body="No credentials required. We scrape the public listings page for available units."
+          />
         </div>
       </div>
 
@@ -77,17 +57,7 @@ export function ConnectAppfolioForm() {
         }
       />
 
-      {authMode === "api_key" ? (
-        <Field
-          label="API key"
-          name="apiKey"
-          type="password"
-          required
-          autoComplete="off"
-          mono
-          hint="Stored encrypted at rest. You can rotate it at any time."
-        />
-      ) : (
+      {mode === "rest" ? (
         <>
           <Field
             label="Client ID"
@@ -95,6 +65,7 @@ export function ConnectAppfolioForm() {
             required
             autoComplete="off"
             mono
+            hint="From AppFolio → Settings → API Settings → Reports API."
           />
           <Field
             label="Client secret"
@@ -105,24 +76,29 @@ export function ConnectAppfolioForm() {
             mono
             hint="Stored encrypted at rest. You can rotate it at any time."
           />
+          <label className="flex flex-col gap-1.5">
+            <span className="text-xs font-medium text-foreground">Plan</span>
+            <select
+              name="plan"
+              defaultValue="plus"
+              className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            >
+              <option value="plus">Plus</option>
+              <option value="max">Max</option>
+            </select>
+            <span className="text-[11px] text-muted-foreground">
+              Reports API requires Plus or Max.
+            </span>
+          </label>
         </>
+      ) : (
+        <Field
+          label="Address filter (optional)"
+          name="addressFilter"
+          placeholder="e.g. 2490 Channing"
+          hint="If your AppFolio account manages multiple properties, paste a snippet of the address to filter to just this property's units."
+        />
       )}
-
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-medium text-foreground">Plan</span>
-        <select
-          name="plan"
-          defaultValue="plus"
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-        >
-          <option value="core">Core</option>
-          <option value="plus">Plus</option>
-          <option value="max">Max</option>
-        </select>
-        <span className="text-[11px] text-muted-foreground">
-          REST API access requires Plus or Max.
-        </span>
-      </label>
 
       <div className="flex items-center gap-3 pt-1">
         <button
@@ -135,8 +111,44 @@ export function ConnectAppfolioForm() {
         {state && !state.ok && state.error ? (
           <span className="text-xs text-rose-700">{state.error}</span>
         ) : null}
+        {state && state.ok && state.mode && state.listingsFound != null ? (
+          <span className="text-xs text-emerald-700">
+            Connected — found {state.listingsFound} listing
+            {state.listingsFound === 1 ? "" : "s"}.
+          </span>
+        ) : null}
       </div>
     </form>
+  );
+}
+
+function ModeCard({
+  active,
+  onClick,
+  title,
+  body,
+}: {
+  active: boolean;
+  onClick: () => void;
+  title: string;
+  body: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "rounded-md border p-3 text-left transition-colors",
+        active
+          ? "border-primary bg-primary/5"
+          : "border-border bg-card hover:bg-muted/50",
+      )}
+    >
+      <div className="text-sm font-semibold text-foreground">{title}</div>
+      <div className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
+        {body}
+      </div>
+    </button>
   );
 }
 

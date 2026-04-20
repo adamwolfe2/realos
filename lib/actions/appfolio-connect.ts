@@ -7,6 +7,7 @@ import { requireScope, auditPayload } from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
 import {
   testAppFolioConnection,
+  probeEmbedScrape,
 } from "@/lib/integrations/appfolio";
 import {
   runAppfolioSync,
@@ -15,13 +16,21 @@ import {
 import { AuditAction, BackendPlatform } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
-// AppFolio REST connect / disconnect / manual-sync server actions.
+// AppFolio connect / disconnect / manual-sync server actions.
 //
-// Trust path: the portal form submits plaintext clientId / clientSecret once,
-// we run a live `testAppFolioConnection` against AppFolio before persisting,
-// and only on success do we encrypt + store. Credentials are never returned
-// to the client after creation — the read path only ever surfaces
-// `hasCreds`, `lastSyncAt`, etc.
+// AppFolio supports two paths for operators:
+//   1. EMBED mode (default for Core-plan tenants): no credentials required,
+//      we scrape the public listings page at
+//      https://{subdomain}.appfolio.com/listings with cheerio. Optional
+//      address filter matches listings to a specific property when the
+//      tenant operates multiple properties under one AppFolio account.
+//   2. REST mode (Plus/Max tenants with a Developer Portal contract):
+//      clientId + clientSecret, authenticated via HTTP Basic against the
+//      reports endpoint.
+//
+// AppFolio does NOT issue a single-string API key separate from the
+// Developer Portal clientId/clientSecret pair. Embed is the only path that
+// works for operators on Core.
 // ---------------------------------------------------------------------------
 
 const PORTAL_PATH = "/portal/settings/integrations";
@@ -39,13 +48,24 @@ function normalizeSubdomain(raw: string): string {
     .replace(/[^a-z0-9-]/g, "");
 }
 
-// The form supports two auth modes: OAuth client credentials (clientId +
-// clientSecret) or a single API key. Under the hood AppFolio's REST API
-// accepts either; the client library already falls back to apiKeyEncrypted
-// when clientSecretEncrypted is null. See lib/integrations/appfolio.ts.
 const connectSchema = z.discriminatedUnion("authMode", [
   z.object({
-    authMode: z.literal("oauth"),
+    authMode: z.literal("embed"),
+    subdomain: z
+      .string()
+      .trim()
+      .min(1, "Subdomain is required")
+      .max(200)
+      .transform(normalizeSubdomain)
+      .refine((v) => subdomainRegex.test(v), {
+        message:
+          "Subdomain must look like 'sgrealestate' (no dots, no https://).",
+      }),
+    addressFilter: z.string().trim().max(500).optional(),
+    plan: z.enum(["core", "plus", "max"]).optional(),
+  }),
+  z.object({
+    authMode: z.literal("rest"),
     subdomain: z
       .string()
       .trim()
@@ -60,25 +80,10 @@ const connectSchema = z.discriminatedUnion("authMode", [
     clientSecret: z.string().trim().min(4, "Client secret is required").max(500),
     plan: z.enum(["core", "plus", "max"]).optional(),
   }),
-  z.object({
-    authMode: z.literal("api_key"),
-    subdomain: z
-      .string()
-      .trim()
-      .min(1, "Subdomain is required")
-      .max(200)
-      .transform(normalizeSubdomain)
-      .refine((v) => subdomainRegex.test(v), {
-        message:
-          "Subdomain must look like 'sgrealestate' (no dots, no https://).",
-      }),
-    apiKey: z.string().trim().min(4, "API key is required").max(500),
-    plan: z.enum(["core", "plus", "max"]).optional(),
-  }),
 ]);
 
 export type ConnectAppfolioResult =
-  | { ok: true }
+  | { ok: true; mode: "embed" | "rest"; listingsFound?: number }
   | { ok: false; error: string };
 
 export type SyncAppfolioResult =
@@ -97,14 +102,14 @@ export async function connectAppfolio(
   }
 
   const authMode =
-    (formData.get("authMode")?.toString() as "oauth" | "api_key") || "oauth";
+    (formData.get("authMode")?.toString() as "embed" | "rest") || "embed";
 
   const parsed = connectSchema.safeParse({
     authMode,
     subdomain: formData.get("subdomain")?.toString() ?? "",
+    addressFilter: formData.get("addressFilter")?.toString() || undefined,
     clientId: formData.get("clientId")?.toString() ?? "",
     clientSecret: formData.get("clientSecret")?.toString() ?? "",
-    apiKey: formData.get("apiKey")?.toString() ?? "",
     plan: formData.get("plan")?.toString() || undefined,
   });
   if (!parsed.success) {
@@ -112,47 +117,62 @@ export async function connectAppfolio(
     return { ok: false, error: first };
   }
 
-  const subdomain = parsed.data.subdomain;
-  const plan = parsed.data.plan;
-  const clientIdEncrypted =
-    parsed.data.authMode === "oauth" ? encrypt(parsed.data.clientId) : null;
-  const clientSecretEncrypted =
-    parsed.data.authMode === "oauth" ? encrypt(parsed.data.clientSecret) : null;
-  const apiKeyEncrypted =
-    parsed.data.authMode === "api_key" ? encrypt(parsed.data.apiKey) : null;
+  const { subdomain, plan } = parsed.data;
 
-  // Ephemeral integration object passed to the live connection test. We do
-  // NOT persist until the test passes.
-  const testIntegration = {
-    id: "test",
-    orgId: scope.orgId,
-    instanceSubdomain: subdomain,
-    plan: plan ?? null,
-    apiKeyEncrypted,
-    clientIdEncrypted,
-    clientSecretEncrypted,
-    oauthTokenEncrypted: null,
-    oauthRefreshEncrypted: null,
-    oauthExpiresAt: null,
-    lastSyncAt: null,
-    syncStatus: null,
-    lastError: null,
-    propertyGroupFilter: null,
-    syncFrequencyMinutes: 60,
-    autoSyncEnabled: true,
-    useEmbedFallback: false,
-    embedScriptConfig: null,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  } as Parameters<typeof testAppFolioConnection>[0];
+  // Probe the right endpoint for the chosen auth mode. No credentials
+  // persist unless the probe succeeds.
+  let listingsFound: number | undefined;
+  if (parsed.data.authMode === "embed") {
+    const probe = await probeEmbedScrape(subdomain);
+    if (!probe.ok) {
+      return {
+        ok: false,
+        error: `Couldn't reach ${subdomain}.appfolio.com/listings — ${probe.error}`,
+      };
+    }
+    listingsFound = probe.count;
+  } else {
+    const testIntegration = {
+      id: "test",
+      orgId: scope.orgId,
+      instanceSubdomain: subdomain,
+      plan: plan ?? null,
+      apiKeyEncrypted: null,
+      clientIdEncrypted: encrypt(parsed.data.clientId),
+      clientSecretEncrypted: encrypt(parsed.data.clientSecret),
+      oauthTokenEncrypted: null,
+      oauthRefreshEncrypted: null,
+      oauthExpiresAt: null,
+      lastSyncAt: null,
+      syncStatus: null,
+      lastError: null,
+      propertyGroupFilter: null,
+      syncFrequencyMinutes: 60,
+      autoSyncEnabled: true,
+      useEmbedFallback: false,
+      embedScriptConfig: null,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    } as Parameters<typeof testAppFolioConnection>[0];
 
-  const probe = await testAppFolioConnection(testIntegration);
-  if (!probe.ok) {
-    return {
-      ok: false,
-      error: `AppFolio rejected the connection: ${probe.error}`,
-    };
+    const probe = await testAppFolioConnection(testIntegration);
+    if (!probe.ok) {
+      return {
+        ok: false,
+        error: `AppFolio rejected the credentials: ${probe.error}. Confirm Plus/Max plan + Developer Portal access.`,
+      };
+    }
   }
+
+  const isEmbed = parsed.data.authMode === "embed";
+  const clientIdEncrypted =
+    parsed.data.authMode === "rest" ? encrypt(parsed.data.clientId) : null;
+  const clientSecretEncrypted =
+    parsed.data.authMode === "rest" ? encrypt(parsed.data.clientSecret) : null;
+  const addressFilter =
+    parsed.data.authMode === "embed"
+      ? (parsed.data.addressFilter ?? null)
+      : null;
 
   const existing = await prisma.appFolioIntegration.findUnique({
     where: { orgId: scope.orgId },
@@ -164,30 +184,31 @@ export async function connectAppfolio(
     create: {
       orgId: scope.orgId,
       instanceSubdomain: subdomain,
-      plan: plan ?? null,
-      apiKeyEncrypted,
+      plan: plan ?? (isEmbed ? "core" : null),
+      apiKeyEncrypted: null,
       clientIdEncrypted,
       clientSecretEncrypted,
+      useEmbedFallback: isEmbed,
+      propertyGroupFilter: addressFilter,
       autoSyncEnabled: true,
       syncFrequencyMinutes: 60,
-      useEmbedFallback: false,
       syncStatus: "idle",
       lastError: null,
     },
     update: {
       instanceSubdomain: subdomain,
-      plan: plan ?? null,
-      apiKeyEncrypted,
+      plan: plan ?? (isEmbed ? "core" : null),
+      apiKeyEncrypted: null,
       clientIdEncrypted,
       clientSecretEncrypted,
+      useEmbedFallback: isEmbed,
+      propertyGroupFilter: addressFilter,
       autoSyncEnabled: true,
-      useEmbedFallback: false,
       syncStatus: "idle",
       lastError: null,
     },
   });
 
-  // Any NONE-platform property on this org defaults to AppFolio now.
   await prisma.property.updateMany({
     where: {
       orgId: scope.orgId,
@@ -202,20 +223,20 @@ export async function connectAppfolio(
       entityType: "AppFolioIntegration",
       entityId: integration.id,
       description: existing
-        ? "AppFolio credentials rotated"
-        : "AppFolio connected",
+        ? `AppFolio reconnected (${isEmbed ? "embed" : "REST"} mode)`
+        : `AppFolio connected (${isEmbed ? "embed" : "REST"} mode)`,
     }),
   });
 
-  // Fire-and-forget initial backfill. We don't await so the portal UI isn't
-  // blocked — the tile will poll the integration status on next render.
+  // Fire-and-forget initial backfill. The tile will reflect status on the
+  // next page render.
   void runAppfolioSync(scope.orgId, { fullBackfill: true }).catch((err) => {
     console.warn("[appfolio-connect] initial sync error", err);
   });
 
   revalidatePath(PORTAL_PATH);
   revalidatePath(PORTAL_HOME);
-  return { ok: true };
+  return { ok: true, mode: isEmbed ? "embed" : "rest", listingsFound };
 }
 
 export async function disconnectAppfolio(): Promise<ConnectAppfolioResult> {
@@ -231,7 +252,7 @@ export async function disconnectAppfolio(): Promise<ConnectAppfolioResult> {
     where: { orgId: scope.orgId },
     select: { id: true },
   });
-  if (!existing) return { ok: true };
+  if (!existing) return { ok: true, mode: "embed" };
 
   await prisma.appFolioIntegration.update({
     where: { orgId: scope.orgId },
@@ -242,6 +263,7 @@ export async function disconnectAppfolio(): Promise<ConnectAppfolioResult> {
       oauthTokenEncrypted: null,
       oauthRefreshEncrypted: null,
       oauthExpiresAt: null,
+      useEmbedFallback: false,
       autoSyncEnabled: false,
       syncStatus: "idle",
       lastError: null,
@@ -259,7 +281,7 @@ export async function disconnectAppfolio(): Promise<ConnectAppfolioResult> {
 
   revalidatePath(PORTAL_PATH);
   revalidatePath(PORTAL_HOME);
-  return { ok: true };
+  return { ok: true, mode: "embed" };
 }
 
 export async function triggerAppfolioSync(): Promise<SyncAppfolioResult> {

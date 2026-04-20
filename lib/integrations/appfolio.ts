@@ -91,6 +91,37 @@ function parseAvailableDate(input: string): Date | null {
   return Number.isNaN(date.getTime()) ? null : date;
 }
 
+// Lightweight probe for connect-time validation: fetches the public listings
+// page and confirms at least one listing card parses. No credentials needed.
+export async function probeEmbedScrape(
+  subdomain: string
+): Promise<{ ok: true; count: number } | { ok: false; error: string }> {
+  try {
+    const url = `https://${subdomain}.appfolio.com/listings`;
+    const response = await fetch(url, {
+      headers: {
+        "User-Agent": USER_AGENT,
+        Accept: "text/html,application/xhtml+xml",
+      },
+    });
+    if (!response.ok) {
+      return {
+        ok: false,
+        error: `AppFolio listings page returned ${response.status}. Check the subdomain.`,
+      };
+    }
+    const html = await response.text();
+    const $ = cheerio.load(html);
+    const count = $(".listing-item.result.js-listing-item").length;
+    return { ok: true, count };
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Network error",
+    };
+  }
+}
+
 async function fetchEmbedScrape(
   integration: AppFolioIntegration,
   addressMatch?: string | null
