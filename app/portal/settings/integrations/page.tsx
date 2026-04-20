@@ -16,19 +16,27 @@ import {
   DisconnectAppfolioForm,
   SyncAppfolioButton,
 } from "./appfolio-forms";
-import { SeoProvider } from "@prisma/client";
+import { AdPlatform, SeoProvider } from "@prisma/client";
 import {
   ConnectSeoForm,
   DisconnectSeoForm,
   SyncSeoButton,
 } from "@/app/portal/seo/seo-connect-forms";
+import {
+  ConnectGoogleAdsForm,
+  GoogleAdsManage,
+} from "./google-ads-forms";
+import {
+  ConnectMetaAdsForm,
+  MetaAdsManage,
+} from "./meta-ads-forms";
 
 export const metadata: Metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
 
 export default async function IntegrationsPage() {
   const scope = await requireScope();
-  const [org, pixel, appfolio, seoIntegrations, statuses] = await Promise.all([
+  const [org, pixel, appfolio, seoIntegrations, adAccounts, statuses] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
       select: { name: true, modulePixel: true, moduleChatbot: true },
@@ -71,6 +79,20 @@ export default async function IntegrationsPage() {
         lastSyncAt: true,
         lastSyncError: true,
         status: true,
+      },
+    }),
+    prisma.adAccount.findMany({
+      where: { orgId: scope.orgId },
+      select: {
+        id: true,
+        platform: true,
+        externalAccountId: true,
+        displayName: true,
+        currency: true,
+        accessStatus: true,
+        credentialsEncrypted: true,
+        lastSyncAt: true,
+        lastSyncError: true,
       },
     }),
     resolveIntegrationStatuses(scope.orgId),
@@ -191,6 +213,65 @@ export default async function IntegrationsPage() {
         />
       ) : (
         <ConnectSeoForm provider="GA4" />
+      );
+    })(),
+    "google-ads": (() => {
+      const connected = adAccounts.filter(
+        (a) =>
+          a.platform === AdPlatform.GOOGLE_ADS && !!a.credentialsEncrypted
+      );
+      return (
+        <div className="space-y-6">
+          {connected.map((a) => (
+            <GoogleAdsManage
+              key={a.id}
+              accountId={a.id}
+              externalAccountId={a.externalAccountId}
+              displayName={a.displayName}
+              currency={a.currency}
+              lastSyncAt={a.lastSyncAt}
+              lastSyncError={a.lastSyncError}
+              accessStatus={a.accessStatus}
+            />
+          ))}
+          <div className={connected.length > 0 ? "pt-5 border-t border-border" : ""}>
+            {connected.length > 0 ? (
+              <h3 className="text-sm font-semibold mb-3">
+                Connect another account
+              </h3>
+            ) : null}
+            <ConnectGoogleAdsForm />
+          </div>
+        </div>
+      );
+    })(),
+    "meta-ads": (() => {
+      const connected = adAccounts.filter(
+        (a) => a.platform === AdPlatform.META && !!a.credentialsEncrypted
+      );
+      return (
+        <div className="space-y-6">
+          {connected.map((a) => (
+            <MetaAdsManage
+              key={a.id}
+              accountId={a.id}
+              externalAccountId={a.externalAccountId}
+              displayName={a.displayName}
+              currency={a.currency}
+              lastSyncAt={a.lastSyncAt}
+              lastSyncError={a.lastSyncError}
+              accessStatus={a.accessStatus}
+            />
+          ))}
+          <div className={connected.length > 0 ? "pt-5 border-t border-border" : ""}>
+            {connected.length > 0 ? (
+              <h3 className="text-sm font-semibold mb-3">
+                Connect another account
+              </h3>
+            ) : null}
+            <ConnectMetaAdsForm />
+          </div>
+        </div>
       );
     })(),
   };

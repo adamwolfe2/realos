@@ -46,6 +46,7 @@ export default async function PortalLayout({
       moduleGoogleAds: true,
       moduleMetaAds: true,
       moduleCreativeStudio: true,
+      moduleSEO: true,
       bringYourOwnSite: true,
     },
   });
@@ -69,6 +70,7 @@ export default async function PortalLayout({
     moduleGoogleAds: org.moduleGoogleAds,
     moduleMetaAds: org.moduleMetaAds,
     moduleCreativeStudio: org.moduleCreativeStudio,
+    moduleSEO: org.moduleSEO,
     bringYourOwnSite: org.bringYourOwnSite,
     onboardingDismissed: org.onboardingDismissed,
     setupComplete,

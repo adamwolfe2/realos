@@ -10,11 +10,13 @@ import {
   MessageSquare,
   Bot,
   Megaphone,
+  BarChart3,
   Brush,
   Globe,
   CreditCard,
   Settings,
   Compass,
+  TrendingUp,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -26,6 +28,7 @@ export type PortalNavOrg = {
   moduleGoogleAds: boolean;
   moduleMetaAds: boolean;
   moduleCreativeStudio: boolean;
+  moduleSEO: boolean;
   bringYourOwnSite: boolean;
   onboardingDismissed: boolean;
   setupComplete: boolean;
@@ -69,6 +72,12 @@ const NAV: NavItem[] = [
     show: (o) => o.moduleChatbot,
   },
   {
+    href: "/portal/ads",
+    label: "Ads",
+    icon: BarChart3,
+    show: (o) => o.moduleGoogleAds || o.moduleMetaAds,
+  },
+  {
     href: "/portal/campaigns",
     label: "Campaigns",
     icon: Megaphone,
@@ -85,6 +94,12 @@ const NAV: NavItem[] = [
     label: "Site builder",
     icon: Globe,
     show: (o) => o.moduleWebsite && !o.bringYourOwnSite,
+  },
+  {
+    href: "/portal/seo",
+    label: "SEO",
+    icon: TrendingUp,
+    show: (o) => o.moduleSEO,
   },
   { href: "/portal/billing", label: "Billing", icon: CreditCard, show: ALWAYS },
   { href: "/portal/settings", label: "Settings", icon: Settings, show: ALWAYS },

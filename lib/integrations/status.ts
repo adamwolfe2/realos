@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { IntegrationRequestStatus } from "@prisma/client";
+import { AdPlatform, IntegrationRequestStatus } from "@prisma/client";
 import { INTEGRATIONS, type IntegrationDefinition } from "./catalog";
 
 // ---------------------------------------------------------------------------
@@ -31,57 +31,96 @@ export type IntegrationStatus = {
 export async function resolveIntegrationStatuses(
   orgId: string
 ): Promise<IntegrationStatus[]> {
-  const [cursive, appfolio, pendingRequests, resolvedRequests] =
-    await Promise.all([
-      prisma.cursiveIntegration
-        .findUnique({
-          where: { orgId },
-          select: { cursivePixelId: true, lastEventAt: true },
-        })
-        .catch(() => null),
-      prisma.appFolioIntegration
-        .findUnique({
-          where: { orgId },
-          select: {
-            instanceSubdomain: true,
-            clientIdEncrypted: true,
-            apiKeyEncrypted: true,
-            lastSyncAt: true,
+  const [
+    cursive,
+    appfolio,
+    seoIntegrations,
+    adAccounts,
+    pendingRequests,
+    resolvedRequests,
+  ] = await Promise.all([
+    prisma.cursiveIntegration
+      .findUnique({
+        where: { orgId },
+        select: { cursivePixelId: true, lastEventAt: true },
+      })
+      .catch(() => null),
+    prisma.appFolioIntegration
+      .findUnique({
+        where: { orgId },
+        select: {
+          instanceSubdomain: true,
+          clientIdEncrypted: true,
+          apiKeyEncrypted: true,
+          lastSyncAt: true,
+        },
+      })
+      .catch(() => null),
+    prisma.seoIntegration
+      .findMany({
+        where: { orgId },
+        select: { provider: true, lastSyncAt: true },
+      })
+      .catch(() => []),
+    prisma.adAccount
+      .findMany({
+        where: { orgId, credentialsEncrypted: { not: null } },
+        select: { platform: true, lastSyncAt: true },
+      })
+      .catch(() => []),
+    prisma.integrationRequest
+      .findMany({
+        where: {
+          orgId,
+          status: {
+            in: [
+              IntegrationRequestStatus.PENDING,
+              IntegrationRequestStatus.IN_PROGRESS,
+            ],
           },
-        })
-        .catch(() => null),
-      prisma.integrationRequest
-        .findMany({
-          where: {
-            orgId,
-            status: {
-              in: [
-                IntegrationRequestStatus.PENDING,
-                IntegrationRequestStatus.IN_PROGRESS,
-              ],
-            },
-          },
-          select: { id: true, integrationSlug: true },
-        })
-        .catch(() => []),
-      prisma.integrationRequest
-        .findMany({
-          where: {
-            orgId,
-            status: IntegrationRequestStatus.RESOLVED,
-          },
-          select: { integrationSlug: true, resolvedAt: true },
-        })
-        .catch(() => []),
-    ]);
+        },
+        select: { id: true, integrationSlug: true },
+      })
+      .catch(() => []),
+    prisma.integrationRequest
+      .findMany({
+        where: {
+          orgId,
+          status: IntegrationRequestStatus.RESOLVED,
+        },
+        select: { integrationSlug: true, resolvedAt: true },
+      })
+      .catch(() => []),
+  ]);
 
   const pendingBySlug = new Map<string, string>();
   for (const r of pendingRequests) pendingBySlug.set(r.integrationSlug, r.id);
   const resolvedSlugs = new Set(resolvedRequests.map((r) => r.integrationSlug));
 
+  const seoBySlug = new Map<
+    string,
+    { lastSyncAt: Date | null }
+  >();
+  for (const s of seoIntegrations) {
+    const slug = s.provider === "GSC" ? "gsc" : "ga4";
+    seoBySlug.set(slug, { lastSyncAt: s.lastSyncAt ?? null });
+  }
+
+  const adsBySlug = new Map<string, { lastSyncAt: Date | null }>();
+  for (const a of adAccounts) {
+    const slug = a.platform === AdPlatform.GOOGLE_ADS ? "google-ads" : a.platform === AdPlatform.META ? "meta-ads" : null;
+    if (!slug) continue;
+    // First account wins for badge purposes; the manage drawer renders all of them.
+    if (!adsBySlug.has(slug)) {
+      adsBySlug.set(slug, { lastSyncAt: a.lastSyncAt ?? null });
+    }
+  }
+
   return INTEGRATIONS.map((i) => resolveOne(i, {
     cursive,
     appfolio,
+    seoBySlug,
+    adsBySlug,
     pendingBySlug,
     resolvedSlugs,
   }));
@@ -97,6 +136,8 @@ function resolveOne(
       apiKeyEncrypted: string | null;
       lastSyncAt: Date | null;
     } | null;
+    seoBySlug: Map<string, { lastSyncAt: Date | null }>;
+    adsBySlug: Map<string, { lastSyncAt: Date | null }>;
     pendingBySlug: Map<string, string>;
     resolvedSlugs: Set<string>;
   }
@@ -121,6 +162,24 @@ function resolveOne(
       slug: def.slug,
       state: connected ? "connected" : "available",
       lastEventAt: ctx.appfolio?.lastSyncAt ?? null,
+    };
+  }
+
+  if (def.slug === "gsc" || def.slug === "ga4") {
+    const seo = ctx.seoBySlug.get(def.slug);
+    return {
+      slug: def.slug,
+      state: seo ? "connected" : "available",
+      lastEventAt: seo?.lastSyncAt ?? null,
+    };
+  }
+
+  if (def.slug === "google-ads" || def.slug === "meta-ads") {
+    const ads = ctx.adsBySlug.get(def.slug);
+    return {
+      slug: def.slug,
+      state: ads ? "connected" : "available",
+      lastEventAt: ads?.lastSyncAt ?? null,
     };
   }
 
