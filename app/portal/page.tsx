@@ -29,20 +29,17 @@ import {
   DEFAULT_FIRST_RUN_ITEMS,
 } from "@/components/portal/dashboard/first-run-checklist";
 import {
-  PLACEHOLDER_LEAD_SOURCES,
-  PLACEHOLDER_FUNNEL,
-  SPARK_LEADS_28D,
-  SPARK_TOURS_28D,
-  SPARK_SPEND_28D,
-  SPARK_ORGANIC_28D,
-  PLACEHOLDER_AD_SPEND_28D_USD,
-  PLACEHOLDER_BLENDED_CPL_USD,
-  PLACEHOLDER_HOT_VISITORS,
-  PLACEHOLDER_ORGANIC_SESSIONS_28D,
-  PLACEHOLDER_ACTIVITY,
-  PLACEHOLDER_INTEGRATIONS,
-  PROPERTY_PLACEHOLDER_BUCKET,
-} from "@/components/portal/dashboard/placeholder-data";
+  getActivityFeed,
+  getAdSpendKpi,
+  getFirstRunProgress,
+  getFunnel,
+  getHotVisitors,
+  getIntegrationHealth,
+  getLeadSourceBreakdown,
+  getLeadStatusCounts,
+  getOrganicSessionsKpi,
+  getPropertyMetrics,
+} from "@/lib/dashboard/queries";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -52,26 +49,9 @@ const DAY = 24 * 60 * 60 * 1000;
 // ---------------------------------------------------------------------------
 // /portal — Operator Dashboard
 //
-// Single-screen consolidation: KPIs, lead source mix, conversion funnel,
-// per-property cards, live activity feed, integration health.
-//
-// REAL data wired today:
-//   - Lead counts (28d + all-time)
-//   - Tours scheduled
-//   - Applications submitted
-//   - Properties (name, address, hero image, lastSync, AppFolio status)
-//   - Workspace identity (logo, primaryColor, name)
-//   - Setup progress banner
-//
-// PLACEHOLDER data (swap when sibling agents land their work):
-//   - Hot visitors right now           -> Cursive pixel agent
-//   - Lead source breakdown / funnel   -> aggregate from Lead.source over 28d
-//   - Ad spend + blended CPL           -> Google + Meta ad agents
-//   - Organic sessions                 -> SEO agent (GSC/GA4)
-//   - Activity feed                    -> event store (cross-agent)
-//   - Integration health chips         -> per-integration status query
-//   - Per-property occupancy + active  -> AppFolio sync + AdCampaign queries
-//     campaign count + leads sparkline
+// Single-screen consolidation of KPIs, lead source mix, conversion funnel,
+// per-property cards, live activity feed, and integration health. Every tile
+// is now backed by real Prisma queries (see /lib/dashboard/queries.ts).
 // ---------------------------------------------------------------------------
 
 export default async function PortalHome({
@@ -92,8 +72,18 @@ export default async function PortalHome({
     leadsNew28d,
     leadsPrev28d,
     toursScheduled,
+    toursPrev28d,
     applicationsSubmitted28d,
     properties,
+    hotVisitors,
+    adSpend,
+    organic,
+    leadSourceSlices,
+    funnelStages,
+    activity,
+    integrationChips,
+    statusCounts,
+    firstRun,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -119,6 +109,16 @@ export default async function PortalHome({
         lead: where,
       },
     }),
+    prisma.tour.count({
+      where: {
+        status: TourStatus.SCHEDULED,
+        lead: where,
+        createdAt: {
+          gte: new Date(Date.now() - 56 * DAY),
+          lt: since28d,
+        },
+      },
+    }),
     prisma.application.count({
       where: {
         status: ApplicationStatus.SUBMITTED,
@@ -141,17 +141,22 @@ export default async function PortalHome({
         totalUnits: true,
       },
     }),
+    getHotVisitors(scope.orgId),
+    getAdSpendKpi(scope.orgId),
+    getOrganicSessionsKpi(scope.orgId),
+    getLeadSourceBreakdown(scope.orgId),
+    getFunnel(scope.orgId),
+    getActivityFeed(scope.orgId, 10),
+    getIntegrationHealth(scope.orgId),
+    getLeadStatusCounts(scope.orgId),
+    getFirstRunProgress(scope.orgId),
   ]);
 
-  const leadsByStatus = await prisma.lead.groupBy({
-    by: ["status"],
-    where,
-    _count: { _all: true },
-  });
-  const statusCounts = new Map<LeadStatus, number>();
-  for (const row of leadsByStatus) {
-    statusCounts.set(row.status, row._count._all);
-  }
+  // 28d leads + active campaigns + sparkline per property.
+  const propertyMetrics = await getPropertyMetrics(
+    scope.orgId,
+    properties.map((p) => p.id),
+  );
 
   // Realistic delta calc: % change vs previous 28d window.
   const leadsDeltaPct =
@@ -159,16 +164,41 @@ export default async function PortalHome({
       ? Math.round(((leadsNew28d - leadsPrev28d) / leadsPrev28d) * 100)
       : null;
 
+  const toursDeltaPct =
+    toursPrev28d > 0
+      ? Math.round(((toursScheduled - toursPrev28d) / toursPrev28d) * 100)
+      : null;
+
+  // Cost per lead. Show "—" when there are no leads in the window so the tile
+  // doesn't render an infinity-shaped number.
+  const costPerLead = leadsNew28d > 0 ? adSpend.spendUsd / leadsNew28d : null;
+  const costPerLeadDisplay =
+    costPerLead != null ? `$${costPerLead.toFixed(2)}` : "\u2014";
+
+  // Build a 28d daily-leads sparkline from the per-property buckets so the
+  // top KPI shows the same shape the per-property cards add up to.
+  const totalLeadsSpark = new Array<number>(28).fill(0);
+  for (const m of propertyMetrics.values()) {
+    for (let i = 0; i < totalLeadsSpark.length && i < m.leadsSpark.length; i++) {
+      totalLeadsSpark[i] += m.leadsSpark[i];
+    }
+  }
+
   const showFirstRun = leadsTotal === 0 && propertiesCount === 0;
 
-  // First-run checklist mirrors the data we already know about. As more
-  // pieces light up (pixel install, SEO sync, etc.), update `done` per item.
+  // First-run checklist mirrors what we know about real onboarding state.
   const firstRunItems = DEFAULT_FIRST_RUN_ITEMS.map((it) => ({
     ...it,
     done:
       it.id === "property"
-        ? propertiesCount > 0
-        : false, // other steps wired by sibling agents
+        ? firstRun.hasProperty
+        : it.id === "pixel"
+          ? firstRun.pixelInstalled
+          : it.id === "seo"
+            ? firstRun.gscConnected
+            : it.id === "site"
+              ? firstRun.marketingSiteCustomized
+              : false,
   }));
 
   return (
@@ -195,7 +225,7 @@ export default async function PortalHome({
               label="Total leads"
               value={leadsNew28d.toLocaleString()}
               hint={`${leadsTotal.toLocaleString()} all-time`}
-              spark={SPARK_LEADS_28D}
+              spark={totalLeadsSpark}
               icon={<Users className="h-3.5 w-3.5" />}
               delta={
                 leadsDeltaPct != null
@@ -213,9 +243,10 @@ export default async function PortalHome({
               href="/portal/leads"
             />
             <KpiTile
-              label="Hot leads now"
-              value={PLACEHOLDER_HOT_VISITORS}
-              hint="Identified visitors on site"
+              label="Hot visitors now"
+              value={hotVisitors.count.toLocaleString()}
+              hint="Active in the last 5 minutes"
+              spark={hotVisitors.sparkline}
               icon={<Flame className="h-3.5 w-3.5" />}
               live
               href="/portal/visitors"
@@ -224,35 +255,73 @@ export default async function PortalHome({
               label="Tour requests"
               value={toursScheduled.toLocaleString()}
               hint={`${applicationsSubmitted28d.toLocaleString()} apps in 28d`}
-              spark={SPARK_TOURS_28D}
               icon={<CalendarCheck className="h-3.5 w-3.5" />}
-              delta={{ value: "+18%", trend: "up" }}
+              delta={
+                toursDeltaPct != null
+                  ? {
+                      value: `${toursDeltaPct >= 0 ? "+" : ""}${toursDeltaPct}%`,
+                      trend:
+                        toursDeltaPct > 0
+                          ? "up"
+                          : toursDeltaPct < 0
+                            ? "down"
+                            : "flat",
+                    }
+                  : undefined
+              }
               href="/portal/leads"
             />
             <KpiTile
               label="Ad spend"
-              value={`$${PLACEHOLDER_AD_SPEND_28D_USD.toLocaleString()}`}
-              hint="Blended Google + Meta"
-              spark={SPARK_SPEND_28D}
+              value={`$${adSpend.spendUsd.toLocaleString()}`}
+              hint="Blended Google + Meta (28d)"
+              spark={adSpend.sparkline}
               icon={<DollarSign className="h-3.5 w-3.5" />}
-              delta={{ value: "+9%", trend: "up" }}
+              delta={
+                adSpend.deltaPct != null
+                  ? {
+                      value: `${adSpend.deltaPct >= 0 ? "+" : ""}${adSpend.deltaPct}%`,
+                      trend:
+                        adSpend.deltaPct > 0
+                          ? "up"
+                          : adSpend.deltaPct < 0
+                            ? "down"
+                            : "flat",
+                    }
+                  : undefined
+              }
               href="/portal/campaigns"
             />
             <KpiTile
               label="Cost per lead"
-              value={`$${PLACEHOLDER_BLENDED_CPL_USD.toFixed(2)}`}
-              hint="Blended across all sources"
+              value={costPerLeadDisplay}
+              hint={
+                costPerLead != null
+                  ? "Blended across all sources"
+                  : "No leads in window"
+              }
               icon={<Coins className="h-3.5 w-3.5" />}
-              delta={{ value: "-7%", trend: "up" }}
               href="/portal/campaigns"
             />
             <KpiTile
               label="Organic sessions"
-              value={PLACEHOLDER_ORGANIC_SESSIONS_28D.toLocaleString()}
+              value={organic.sessions.toLocaleString()}
               hint="From GSC + GA4"
-              spark={SPARK_ORGANIC_28D}
+              spark={organic.sparkline}
               icon={<Search className="h-3.5 w-3.5" />}
-              delta={{ value: "+22%", trend: "up" }}
+              delta={
+                organic.deltaPct != null
+                  ? {
+                      value: `${organic.deltaPct >= 0 ? "+" : ""}${organic.deltaPct}%`,
+                      trend:
+                        organic.deltaPct > 0
+                          ? "up"
+                          : organic.deltaPct < 0
+                            ? "down"
+                            : "flat",
+                    }
+                  : undefined
+              }
               href="/portal/seo"
             />
           </section>
@@ -266,7 +335,7 @@ export default async function PortalHome({
               href="/portal/leads"
               className="lg:col-span-2"
             >
-              <LeadSourceDonut slices={PLACEHOLDER_LEAD_SOURCES} />
+              <LeadSourceDonut slices={leadSourceSlices} />
             </DashboardSection>
 
             <DashboardSection
@@ -277,7 +346,7 @@ export default async function PortalHome({
               className="lg:col-span-3"
             >
               <ConversionFunnel
-                stages={PLACEHOLDER_FUNNEL.map((s) => ({
+                stages={funnelStages.map((s) => ({
                   label: s.label,
                   value: s.value,
                 }))}
@@ -301,14 +370,22 @@ export default async function PortalHome({
                 </p>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {properties.map((p, i) => {
-                    const bucket =
-                      PROPERTY_PLACEHOLDER_BUCKET[
-                        i % PROPERTY_PLACEHOLDER_BUCKET.length
-                      ];
+                  {properties.map((p) => {
+                    const metrics = propertyMetrics.get(p.id) ?? {
+                      leads28d: 0,
+                      leadsSpark: new Array<number>(28).fill(0),
+                      activeCampaigns: 0,
+                    };
                     const address = [p.addressLine1, p.city, p.state]
                       .filter(Boolean)
                       .join(", ");
+                    const occupancyPct = p.totalUnits
+                      ? Math.round(
+                          ((p.totalUnits - (p.availableCount ?? 0)) /
+                            p.totalUnits) *
+                            100,
+                        )
+                      : null;
                     return (
                       <PropertyDashboardCard
                         key={p.id}
@@ -316,18 +393,10 @@ export default async function PortalHome({
                         name={p.name}
                         address={address || null}
                         thumbnailUrl={p.heroImageUrl}
-                        occupancyPct={
-                          p.totalUnits
-                            ? Math.round(
-                                ((p.totalUnits - (p.availableCount ?? 0)) /
-                                  p.totalUnits) *
-                                  100,
-                              )
-                            : bucket.occupancyPct
-                        }
-                        leads28d={bucket.leads28d}
-                        leadsSpark={bucket.leadsSpark}
-                        activeCampaigns={bucket.activeCampaigns}
+                        occupancyPct={occupancyPct}
+                        leads28d={metrics.leads28d}
+                        leadsSpark={metrics.leadsSpark}
+                        activeCampaigns={metrics.activeCampaigns}
                         accent={org?.primaryColor ?? undefined}
                       />
                     );
@@ -344,7 +413,7 @@ export default async function PortalHome({
               hrefLabel="Open leads"
               className="lg:col-span-1"
             >
-              <ActivityFeed items={PLACEHOLDER_ACTIVITY} />
+              <ActivityFeed items={activity} />
             </DashboardSection>
           </section>
 
@@ -356,7 +425,7 @@ export default async function PortalHome({
             href="/portal/settings"
             hrefLabel="Manage"
           >
-            <IntegrationHealth chips={PLACEHOLDER_INTEGRATIONS} />
+            <IntegrationHealth chips={integrationChips} />
           </DashboardSection>
 
           {/* Funnel rollup mini-stat (uses real status counts so operator sees
