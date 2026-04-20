@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { PageHeader } from "@/components/admin/page-header";
 import { BillingPortalButton } from "./billing-portal-button";
 
 export const metadata: Metadata = { title: "Billing" };
@@ -35,13 +36,10 @@ export default async function BillingPage() {
 
   return (
     <div className="space-y-8 max-w-3xl">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
-        <p className="text-sm opacity-60 mt-1">
-          Subscription tier, monthly recurring modules, ad spend, and Stripe
-          portal access.
-        </p>
-      </header>
+      <PageHeader
+        title="Billing"
+        description="Subscription tier, monthly recurring modules, ad spend, and Stripe portal access."
+      />
 
       <section className="grid grid-cols-2 md:grid-cols-3 gap-4">
         <Mini

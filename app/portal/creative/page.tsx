@@ -5,6 +5,9 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { CreativeRequestStatus } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { StatCard } from "@/components/admin/stat-card";
+import { PageHeader } from "@/components/admin/page-header";
+import { StatusBadge } from "@/components/admin/status-badge";
+import { humanCreativeStatus } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Creative studio" };
 export const dynamic = "force-dynamic";
@@ -39,23 +42,20 @@ export default async function CreativePage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Creative studio</h1>
-          <p className="text-sm opacity-60 mt-1">
-            Submit ad, email, story, or flyer creative. The agency team
-            delivers, you review, we iterate.
-          </p>
-        </div>
-        <Link
-          href="/portal/creative/new"
-          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded"
-        >
-          New request
-        </Link>
-      </header>
+      <PageHeader
+        title="Creative studio"
+        description="Submit ad, email, story, or flyer creative. The agency team delivers, you review, we iterate."
+        actions={
+          <Link
+            href="/portal/creative/new"
+            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
+          >
+            New request
+          </Link>
+        }
+      />
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
           label="Open"
           value={open}
@@ -71,31 +71,51 @@ export default async function CreativePage() {
       </section>
 
       {requests.length === 0 ? (
-        <p className="text-sm opacity-60 border rounded-md p-6">
-          No creative requests yet. Start one from the button above, we'll
-          take it from there.
-        </p>
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            No creative requests yet. Start one from the button above, the
+            studio takes it from there.
+          </p>
+        </div>
       ) : (
         <ul className="space-y-2">
           {requests.map((r) => (
             <li key={r.id}>
               <Link
                 href={`/portal/creative/${r.id}`}
-                className="block border rounded-md p-4 hover:bg-muted/40"
+                className="block rounded-lg border border-border bg-card p-4 hover:border-foreground/20 hover:bg-accent/30 transition-colors"
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="min-w-0">
-                    <div className="font-medium truncate">{r.title}</div>
-                    <div className="text-xs opacity-60">
-                      {r.format}
-                      {r.property ? ` · ${r.property.name}` : ""} · {r.status}
-                      {r.revisionCount
-                        ? ` · ${r.revisionCount} revisions`
-                        : ""}
+                    <div className="font-medium text-foreground truncate">
+                      {r.title}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5 flex-wrap">
+                      <span>{r.format.replace(/_/g, " ").toLowerCase()}</span>
+                      {r.property ? (
+                        <>
+                          <span>·</span>
+                          <span>{r.property.name}</span>
+                        </>
+                      ) : null}
+                      {r.revisionCount ? (
+                        <>
+                          <span>·</span>
+                          <span>
+                            {r.revisionCount} revision
+                            {r.revisionCount === 1 ? "" : "s"}
+                          </span>
+                        </>
+                      ) : null}
                     </div>
                   </div>
-                  <div className="text-right text-xs opacity-60 whitespace-nowrap">
-                    {formatDistanceToNow(r.createdAt, { addSuffix: true })}
+                  <div className="flex items-center gap-3 shrink-0">
+                    <StatusBadge tone="info">
+                      {humanCreativeStatus(r.status)}
+                    </StatusBadge>
+                    <div className="text-right text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDistanceToNow(r.createdAt, { addSuffix: true })}
+                    </div>
                   </div>
                 </div>
               </Link>

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { SettingsForm } from "./settings-form";
+import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Settings" };
 export const dynamic = "force-dynamic";
@@ -35,13 +36,10 @@ export default async function SettingsPage() {
 
   return (
     <div className="space-y-8 max-w-3xl">
-      <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
-        <p className="text-sm opacity-60 mt-1">
-          Update company info and brand tokens. Module selection and plan
-          tier are managed by your account manager.
-        </p>
-      </header>
+      <PageHeader
+        title="Settings"
+        description="Update company info and brand tokens. Module selection and plan tier are managed by your account manager."
+      />
 
       <SettingsForm
         initial={{

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { PageHeader } from "@/components/admin/page-header";
 import {
   CreateApiKeyForm,
   RevokeApiKeyButton,
@@ -35,20 +36,18 @@ export default async function ApiKeysPage() {
 
   return (
     <div className="space-y-8 max-w-3xl">
-      <header className="space-y-2">
-        <Link
-          href="/portal/settings"
-          className="text-xs opacity-60 underline underline-offset-2"
-        >
-          ← Settings
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight">API keys</h1>
-        <p className="text-sm opacity-60">
-          Push leads, visitors, tours, and chatbot events into your CRM from
-          any external system (Zapier, Typeform, Make, custom forms). Each key
-          is scoped and auditable.
-        </p>
-      </header>
+      <PageHeader
+        eyebrow={
+          <Link
+            href="/portal/settings"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
+          >
+            <span aria-hidden="true">←</span> Settings
+          </Link>
+        }
+        title="API keys"
+        description="Push leads, visitors, tours, and chatbot events into your CRM from any external system (Zapier, Typeform, Make, custom forms). Each key is scoped and auditable."
+      />
 
       <section className="border rounded-md p-5 space-y-5">
         <div>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Campaigns" };
 export const dynamic = "force-dynamic";
@@ -25,34 +26,35 @@ export default async function CampaignsPage() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Ad campaigns</h1>
-          <p className="text-sm opacity-60 mt-1">
-            Campaigns we're running across Google, Meta, and other ad
-            platforms. Click a row for performance detail (read-only in v1).
-          </p>
-        </div>
-        <Link
-          href="/portal/creative"
-          className="text-xs px-3 py-2 border rounded"
-        >
-          Request new creative
-        </Link>
-      </header>
+      <PageHeader
+        title="Ad campaigns"
+        description="Campaigns running across every connected ad platform. Click a row for performance detail."
+        actions={
+          <Link
+            href="/portal/creative"
+            className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+          >
+            Request creative
+          </Link>
+        }
+      />
 
       {properties.length === 0 ? (
-        <p className="text-sm opacity-60 border rounded-md p-6">
-          Properties haven't been seeded yet, so no campaigns can run. Your
-          account manager seeds those during build.
-        </p>
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Properties haven&apos;t been set up yet, so no campaigns can run.
+            Your account manager seeds those during build.
+          </p>
+        </div>
       ) : campaigns.length === 0 ? (
-        <p className="text-sm opacity-60 border rounded-md p-6">
-          No ad campaigns yet. Once Google/Meta are connected and creative is
-          approved, campaigns launch here.
-        </p>
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            No ad campaigns yet. Once your ad accounts are connected and
+            creative is approved, campaigns launch here.
+          </p>
+        </div>
       ) : (
-        <div className="border rounded-md overflow-x-auto">
+        <div className="rounded-lg border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead className="text-[10px] tracking-widest uppercase opacity-60">
               <tr>
