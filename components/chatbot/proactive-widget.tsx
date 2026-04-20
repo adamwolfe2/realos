@@ -5,6 +5,15 @@ import { ChatInterface } from "./chat-interface";
 
 const SESSION_STORAGE_KEY = "realestaite.chatbot.session.v1";
 const DISMISSED_STORAGE_KEY = "realestaite.chatbot.dismissed.v1";
+const ENGAGEMENT_POLL_MS = 3_000;
+const ENGAGEMENT_LAST_KEY = "realestaite.chatbot.engagement.lastSeen.v1";
+
+type EngagementMessage = {
+  id: string;
+  message: string;
+  openWidget: boolean;
+  createdAt: string;
+};
 
 function ensureSessionId(): string {
   if (typeof window === "undefined") return crypto.randomUUID();
@@ -36,7 +45,11 @@ export function ProactiveWidget({
   const [bubbleShown, setBubbleShown] = useState(false);
   const [bubbleDismissed, setBubbleDismissed] = useState(false);
   const [sessionId, setSessionId] = useState<string>("pending");
+  const [pendingEngagements, setPendingEngagements] = useState<
+    EngagementMessage[]
+  >([]);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastSeenRef = useRef<string | null>(null);
 
   useEffect(() => {
     setSessionId(ensureSessionId());
@@ -58,6 +71,90 @@ export function ProactiveWidget({
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [bubbleShown, bubbleDismissed, open, idleTriggerSeconds]);
+
+  // Engagement poll. Hits /api/public/chatbot/inbox every ENGAGEMENT_POLL_MS
+  // and surfaces any operator-pushed messages as assistant turns inside the
+  // widget. Server-side endpoint atomically marks rows DELIVERED on read so
+  // the same message isn't double-rendered.
+  useEffect(() => {
+    if (sessionId === "pending") return;
+    try {
+      lastSeenRef.current =
+        window.localStorage.getItem(ENGAGEMENT_LAST_KEY) ?? null;
+    } catch {
+      // ignore
+    }
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    async function tick() {
+      try {
+        const url = new URL(
+          "/api/public/chatbot/inbox",
+          window.location.origin
+        );
+        url.searchParams.set("sessionId", sessionId);
+        if (lastSeenRef.current) {
+          url.searchParams.set("since", lastSeenRef.current);
+        }
+        const res = await fetch(url.toString(), {
+          method: "GET",
+          credentials: "omit",
+          cache: "no-store",
+        });
+        if (!cancelled && res.ok) {
+          const body = (await res.json()) as {
+            engagements?: EngagementMessage[];
+            serverTime?: string;
+          };
+          const engagements = body.engagements ?? [];
+          if (engagements.length > 0) {
+            const shouldOpen = engagements.some((e) => e.openWidget);
+            setPendingEngagements((prev) => [...prev, ...engagements]);
+            if (shouldOpen) {
+              setOpen(true);
+              setBubbleShown(false);
+            } else {
+              setBubbleShown(true);
+            }
+            // Track the latest delivery so subsequent polls skip handled rows.
+            const latest = engagements[engagements.length - 1].createdAt;
+            lastSeenRef.current = latest;
+            try {
+              window.localStorage.setItem(ENGAGEMENT_LAST_KEY, latest);
+            } catch {
+              // ignore
+            }
+            // GA4 hook (loaded by the marketing site).
+            const dataLayer = (window as unknown as {
+              dataLayer?: Array<Record<string, unknown>>;
+            }).dataLayer;
+            if (Array.isArray(dataLayer)) {
+              dataLayer.push({
+                event: "chatbot_engagement_delivered",
+                count: engagements.length,
+              });
+            }
+          }
+          if (body.serverTime && !lastSeenRef.current) {
+            lastSeenRef.current = body.serverTime;
+          }
+        }
+      } catch {
+        // network blip — keep polling.
+      } finally {
+        if (!cancelled) {
+          timer = setTimeout(tick, ENGAGEMENT_POLL_MS);
+        }
+      }
+    }
+
+    timer = setTimeout(tick, ENGAGEMENT_POLL_MS);
+    return () => {
+      cancelled = true;
+      if (timer) clearTimeout(timer);
+    };
+  }, [sessionId]);
 
   function dismissBubble() {
     setBubbleShown(false);
@@ -140,6 +237,12 @@ export function ProactiveWidget({
           avatarUrl={avatarUrl}
           greeting={greeting}
           onClose={() => setOpen(false)}
+          injectedMessages={pendingEngagements}
+          onInjectedConsumed={(ids) => {
+            setPendingEngagements((prev) =>
+              prev.filter((m) => !ids.includes(m.id))
+            );
+          }}
         />
       ) : null}
     </>

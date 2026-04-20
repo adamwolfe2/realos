@@ -13,6 +13,7 @@ import {
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
+import { EngageComposer } from "./engage-composer";
 
 export const metadata: Metadata = { title: "Visitor feed" };
 export const revalidate = 15;
@@ -216,6 +217,61 @@ export default async function VisitorsPage({
     );
   })();
 
+  // Live chats — any chatbot conversation with activity in the last 5 minutes.
+  // We engage at the conversation level because that's where the sessionId
+  // lives. The widget polls /api/public/chatbot/inbox keyed by sessionId.
+  const LIVE_WINDOW_MS = 5 * 60 * 1000;
+  const liveChats = await prisma.chatbotConversation
+    .findMany({
+      where: {
+        ...tenant,
+        lastMessageAt: { gte: new Date(Date.now() - LIVE_WINDOW_MS) },
+      },
+      orderBy: { lastMessageAt: "desc" },
+      take: 8,
+      select: {
+        id: true,
+        sessionId: true,
+        capturedName: true,
+        capturedEmail: true,
+        pageUrl: true,
+        messageCount: true,
+        lastMessageAt: true,
+      },
+    })
+    .catch(() => [] as never[]);
+
+  // Most-recent chatbot conversation per visitor lookup. Lets each visitor row
+  // surface an Engage button if that visitor (matched by visitorHash) has had
+  // a chat in the live window.
+  const visitorIds = visitors.map((v) => v.id).filter(Boolean);
+  const visitorChatMap = new Map<
+    string,
+    { sessionId: string; lastMessageAt: Date }
+  >();
+  if (visitorIds.length > 0) {
+    const recentChats = await prisma.chatbotConversation
+      .findMany({
+        where: {
+          ...tenant,
+          visitorHash: { in: visitorIds },
+          lastMessageAt: { gte: new Date(Date.now() - LIVE_WINDOW_MS) },
+        },
+        orderBy: { lastMessageAt: "desc" },
+        select: { visitorHash: true, sessionId: true, lastMessageAt: true },
+      })
+      .catch(() => [] as never[]);
+    for (const c of recentChats) {
+      if (!c.visitorHash) continue;
+      if (!visitorChatMap.has(c.visitorHash)) {
+        visitorChatMap.set(c.visitorHash, {
+          sessionId: c.sessionId,
+          lastMessageAt: c.lastMessageAt,
+        });
+      }
+    }
+  }
+
   const selection = { window: windowKey, status: statusKey, sort: sortKey, page };
 
   return (
@@ -291,6 +347,11 @@ export default async function VisitorsPage({
         />
       </section>
 
+      {/* Live chats — operator can engage active chatbot conversations */}
+      {liveChats.length > 0 ? (
+        <LiveChatsPanel chats={liveChats} />
+      ) : null}
+
       {/* Empty / Feed */}
       {!hasPixel ? (
         <EmptyNoPixel />
@@ -303,7 +364,7 @@ export default async function VisitorsPage({
         </div>
       ) : (
         <>
-          <VisitorFeed visitors={visitors} />
+          <VisitorFeed visitors={visitors} chatMap={visitorChatMap} />
           <Pager
             page={page}
             totalInView={totalInView}
@@ -313,6 +374,101 @@ export default async function VisitorsPage({
       )}
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// LiveChatsPanel — surfaces ChatbotConversations active in the last 5 minutes
+// so an operator can push a contextual message into the visitor's widget.
+// ---------------------------------------------------------------------------
+
+function LiveChatsPanel({
+  chats,
+}: {
+  chats: Array<{
+    id: string;
+    sessionId: string;
+    capturedName: string | null;
+    capturedEmail: string | null;
+    pageUrl: string | null;
+    messageCount: number;
+    lastMessageAt: Date;
+  }>;
+}) {
+  return (
+    <section className="rounded-lg border border-border bg-card p-4 space-y-3">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div>
+          <h2 className="text-sm font-semibold tracking-tight">
+            Live chats right now
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Active in the last 5 minutes. Send a contextual message and it will
+            appear in the visitor&apos;s chatbot within a few seconds.
+          </p>
+        </div>
+        <Link
+          href="/portal/conversations"
+          className="text-xs text-muted-foreground hover:text-foreground"
+        >
+          All conversations
+        </Link>
+      </div>
+      <ul className="divide-y divide-border">
+        {chats.map((chat) => {
+          const placeholder = chat.pageUrl
+            ? `Hi! I noticed you were checking out ${pathFromUrl(chat.pageUrl)}. Anything I can help with?`
+            : undefined;
+          return (
+            <li
+              key={chat.id}
+              className="py-3 flex flex-col md:flex-row md:items-start md:justify-between gap-3"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <Link
+                    href={`/portal/conversations/${chat.id}`}
+                    className="font-medium text-primary hover:underline underline-offset-2"
+                  >
+                    {chat.capturedName ??
+                      chat.capturedEmail ??
+                      "Anonymous visitor"}
+                  </Link>
+                  <span className="text-[11px] text-muted-foreground">
+                    {chat.messageCount} msgs ·{" "}
+                    {formatDistanceToNow(chat.lastMessageAt, {
+                      addSuffix: true,
+                    })}
+                  </span>
+                </div>
+                {chat.pageUrl ? (
+                  <div className="text-[11px] text-muted-foreground truncate max-w-md mt-0.5">
+                    {chat.pageUrl}
+                  </div>
+                ) : null}
+              </div>
+              <div className="md:max-w-md w-full md:w-auto">
+                <EngageComposer
+                  visitorId={chat.id}
+                  sessionId={chat.sessionId}
+                  defaultPlaceholder={placeholder}
+                />
+              </div>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
+}
+
+function pathFromUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    return u.pathname.length > 1 ? u.pathname : u.hostname;
+  } catch {
+    return url;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -358,18 +514,35 @@ function TabGroup({
 
 function VisitorFeed({
   visitors,
+  chatMap,
 }: {
   visitors: Array<
     Awaited<ReturnType<typeof prisma.visitor.findMany>>[number]
   >;
+  chatMap?: Map<string, { sessionId: string; lastMessageAt: Date }>;
 }) {
   return (
     <ul className="border rounded-md divide-y">
-      {visitors.map((visitor) => (
-        <li key={visitor.id}>
-          <VisitorRow visitor={visitor} />
-        </li>
-      ))}
+      {visitors.map((visitor) => {
+        const liveChat = chatMap?.get(visitor.id) ?? null;
+        return (
+          <li key={visitor.id}>
+            <VisitorRow visitor={visitor} />
+            {liveChat ? (
+              <div className="px-4 pb-3 -mt-1 flex items-center gap-3">
+                <span className="text-[11px] text-emerald-600 flex items-center gap-1">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Live chat
+                </span>
+                <EngageComposer
+                  visitorId={visitor.id}
+                  sessionId={liveChat.sessionId}
+                />
+              </div>
+            ) : null}
+          </li>
+        );
+      })}
     </ul>
   );
 }

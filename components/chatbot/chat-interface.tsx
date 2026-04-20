@@ -4,6 +4,13 @@ import { useState, useRef, useEffect } from "react";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
+export type InjectedEngagement = {
+  id: string;
+  message: string;
+  openWidget?: boolean;
+  createdAt?: string;
+};
+
 export function ChatInterface({
   orgId,
   sessionId,
@@ -11,6 +18,8 @@ export function ChatInterface({
   avatarUrl,
   greeting,
   onClose,
+  injectedMessages,
+  onInjectedConsumed,
 }: {
   orgId: string;
   sessionId: string;
@@ -18,6 +27,8 @@ export function ChatInterface({
   avatarUrl?: string | null;
   greeting: string;
   onClose: () => void;
+  injectedMessages?: InjectedEngagement[];
+  onInjectedConsumed?: (ids: string[]) => void;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([
     { role: "assistant", content: greeting },
@@ -30,6 +41,26 @@ export function ChatInterface({
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, streaming]);
+
+  // Drain operator-pushed engagements into the visible transcript. We dedupe
+  // by id, append them as assistant turns, then notify the parent so the
+  // pending queue can be cleared.
+  const consumedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!injectedMessages || injectedMessages.length === 0) return;
+    const fresh = injectedMessages.filter(
+      (m) => !consumedRef.current.has(m.id)
+    );
+    if (fresh.length === 0) return;
+    fresh.forEach((m) => consumedRef.current.add(m.id));
+    setMessages((prev) => [
+      ...prev,
+      ...fresh.map(
+        (m) => ({ role: "assistant" as const, content: m.message })
+      ),
+    ]);
+    onInjectedConsumed?.(fresh.map((m) => m.id));
+  }, [injectedMessages, onInjectedConsumed]);
 
   async function send() {
     const text = input.trim();
