@@ -39,29 +39,43 @@ function normalizeSubdomain(raw: string): string {
     .replace(/[^a-z0-9-]/g, "");
 }
 
-const connectSchema = z.object({
-  subdomain: z
-    .string()
-    .trim()
-    .min(1, "Subdomain is required")
-    .max(200)
-    .transform(normalizeSubdomain)
-    .refine((v) => subdomainRegex.test(v), {
-      message:
-        "Subdomain must look like 'sgrealestate' (no dots, no https://).",
-    }),
-  clientId: z
-    .string()
-    .trim()
-    .min(4, "Client ID is required")
-    .max(500),
-  clientSecret: z
-    .string()
-    .trim()
-    .min(4, "Client secret is required")
-    .max(500),
-  plan: z.enum(["core", "plus", "max"]).optional(),
-});
+// The form supports two auth modes: OAuth client credentials (clientId +
+// clientSecret) or a single API key. Under the hood AppFolio's REST API
+// accepts either; the client library already falls back to apiKeyEncrypted
+// when clientSecretEncrypted is null. See lib/integrations/appfolio.ts.
+const connectSchema = z.discriminatedUnion("authMode", [
+  z.object({
+    authMode: z.literal("oauth"),
+    subdomain: z
+      .string()
+      .trim()
+      .min(1, "Subdomain is required")
+      .max(200)
+      .transform(normalizeSubdomain)
+      .refine((v) => subdomainRegex.test(v), {
+        message:
+          "Subdomain must look like 'sgrealestate' (no dots, no https://).",
+      }),
+    clientId: z.string().trim().min(4, "Client ID is required").max(500),
+    clientSecret: z.string().trim().min(4, "Client secret is required").max(500),
+    plan: z.enum(["core", "plus", "max"]).optional(),
+  }),
+  z.object({
+    authMode: z.literal("api_key"),
+    subdomain: z
+      .string()
+      .trim()
+      .min(1, "Subdomain is required")
+      .max(200)
+      .transform(normalizeSubdomain)
+      .refine((v) => subdomainRegex.test(v), {
+        message:
+          "Subdomain must look like 'sgrealestate' (no dots, no https://).",
+      }),
+    apiKey: z.string().trim().min(4, "API key is required").max(500),
+    plan: z.enum(["core", "plus", "max"]).optional(),
+  }),
+]);
 
 export type ConnectAppfolioResult =
   | { ok: true }
@@ -82,20 +96,30 @@ export async function connectAppfolio(
     return { ok: false, error: message };
   }
 
+  const authMode =
+    (formData.get("authMode")?.toString() as "oauth" | "api_key") || "oauth";
+
   const parsed = connectSchema.safeParse({
+    authMode,
     subdomain: formData.get("subdomain")?.toString() ?? "",
     clientId: formData.get("clientId")?.toString() ?? "",
     clientSecret: formData.get("clientSecret")?.toString() ?? "",
+    apiKey: formData.get("apiKey")?.toString() ?? "",
     plan: formData.get("plan")?.toString() || undefined,
   });
   if (!parsed.success) {
     const first = parsed.error.issues[0]?.message ?? "Invalid input";
     return { ok: false, error: first };
   }
-  const { subdomain, clientId, clientSecret, plan } = parsed.data;
 
-  const clientIdEncrypted = encrypt(clientId);
-  const clientSecretEncrypted = encrypt(clientSecret);
+  const subdomain = parsed.data.subdomain;
+  const plan = parsed.data.plan;
+  const clientIdEncrypted =
+    parsed.data.authMode === "oauth" ? encrypt(parsed.data.clientId) : null;
+  const clientSecretEncrypted =
+    parsed.data.authMode === "oauth" ? encrypt(parsed.data.clientSecret) : null;
+  const apiKeyEncrypted =
+    parsed.data.authMode === "api_key" ? encrypt(parsed.data.apiKey) : null;
 
   // Ephemeral integration object passed to the live connection test. We do
   // NOT persist until the test passes.
@@ -104,7 +128,7 @@ export async function connectAppfolio(
     orgId: scope.orgId,
     instanceSubdomain: subdomain,
     plan: plan ?? null,
-    apiKeyEncrypted: null,
+    apiKeyEncrypted,
     clientIdEncrypted,
     clientSecretEncrypted,
     oauthTokenEncrypted: null,
@@ -141,6 +165,7 @@ export async function connectAppfolio(
       orgId: scope.orgId,
       instanceSubdomain: subdomain,
       plan: plan ?? null,
+      apiKeyEncrypted,
       clientIdEncrypted,
       clientSecretEncrypted,
       autoSyncEnabled: true,
@@ -152,6 +177,7 @@ export async function connectAppfolio(
     update: {
       instanceSubdomain: subdomain,
       plan: plan ?? null,
+      apiKeyEncrypted,
       clientIdEncrypted,
       clientSecretEncrypted,
       autoSyncEnabled: true,
