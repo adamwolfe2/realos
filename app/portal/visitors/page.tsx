@@ -11,6 +11,8 @@ import {
   extractIdentity,
 } from "@/lib/visitors/enrichment";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/admin/page-header";
+import { StatCard } from "@/components/admin/stat-card";
 
 export const metadata: Metadata = { title: "Visitor feed" };
 export const revalidate = 15;
@@ -215,32 +217,29 @@ export default async function VisitorsPage({
 
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Visitor feed</h1>
-          <p className="text-sm opacity-60 mt-1">
-            Real people visiting your site, resolved by the Cursive pixel.
-            Updates every 15 seconds.
-          </p>
-        </div>
-        {hasPixel ? (
-          <p className="text-xs opacity-70">
-            Pixel on{" "}
-            <span className="font-semibold">
-              {integration?.installedOnDomain ?? "unknown host"}
-            </span>
-            {integration?.lastEventAt
-              ? ` \u00b7 last event ${formatDistanceToNow(
-                  integration.lastEventAt,
-                  { addSuffix: true }
-                )}`
-              : " \u00b7 no events yet"}
-          </p>
-        ) : null}
-      </header>
+      <PageHeader
+        title="Visitor feed"
+        description="Real people visiting your site, identified by the pixel. Updates every 15 seconds."
+        actions={
+          hasPixel ? (
+            <p className="text-xs text-muted-foreground">
+              Pixel on{" "}
+              <span className="font-medium text-foreground">
+                {integration?.installedOnDomain ?? "unknown host"}
+              </span>
+              {integration?.lastEventAt
+                ? ` · last event ${formatDistanceToNow(
+                    integration.lastEventAt,
+                    { addSuffix: true }
+                  )}`
+                : " · no events yet"}
+            </p>
+          ) : null
+        }
+      />
 
       {/* Filter controls */}
-      <div className="flex flex-col gap-3 border-b pb-4">
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
         <TabGroup
           legend="Window"
           items={WINDOWS.map((w) => ({
@@ -271,23 +270,22 @@ export default async function VisitorsPage({
       </div>
 
       {/* Summary strip */}
-      <section className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-        <div>
-          <span className="text-xl font-semibold tracking-tight tabular-nums">
-            {summary.identified}
-          </span>
-          <span className="opacity-70 ml-2">
-            identified visitors in last {windowDef.label === "All" ? "all time" : windowDef.label}
-          </span>
-        </div>
-        <div className="opacity-70">
-          <span className="tabular-nums font-semibold">{summary.withEmail}</span>{" "}
-          with email
-        </div>
-        <div className="opacity-70">
-          <span className="tabular-nums font-semibold">{summary.withLead}</span>{" "}
-          matched to a lead
-        </div>
+      <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard
+          label="Identified visitors"
+          value={summary.identified}
+          hint={windowDef.label === "All" ? "All time" : `Last ${windowDef.label}`}
+        />
+        <StatCard
+          label="With email"
+          value={summary.withEmail}
+          hint="Captured or resolved"
+        />
+        <StatCard
+          label="Matched to a lead"
+          value={summary.withLead}
+          hint="In your pipeline"
+        />
       </section>
 
       {/* Empty / Feed */}
@@ -459,7 +457,7 @@ function VisitorRow({
         <div className="text-right">
           <div
             className={cn(
-              "font-serif text-xl font-bold tabular-nums flex items-center gap-1 justify-end",
+              "text-lg font-semibold tracking-tight tabular-nums flex items-center gap-1 justify-end",
               intentTone
             )}
           >

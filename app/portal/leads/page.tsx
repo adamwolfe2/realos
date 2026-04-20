@@ -7,6 +7,8 @@ import {
   LeadKanban,
   type LeadKanbanItem,
 } from "@/components/portal/lead-kanban";
+import { PageHeader } from "@/components/admin/page-header";
+import { humanLeadSource } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Leads" };
 export const dynamic = "force-dynamic";
@@ -64,72 +66,59 @@ export default async function LeadsKanbanPage({
 
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
-          <p className="text-sm opacity-60 mt-1">
-            Move cards between columns to update status. Click a card for
-            full lead detail, conversation history, tours, and applications.
-          </p>
-        </div>
-        <div className="text-xs opacity-60">
-          {leads.length} leads shown
-        </div>
-      </header>
+      <PageHeader
+        title="Leads"
+        description="Move cards between columns to update status. Click a card for full lead detail, conversation history, tours, and applications."
+        actions={
+          <div className="text-xs text-muted-foreground">
+            {leads.length} {leads.length === 1 ? "lead" : "leads"} shown
+          </div>
+        }
+      />
 
       <form
         action="/portal/leads"
-        className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs"
+        className="rounded-lg border border-border bg-card p-4"
       >
-        <label className="flex flex-col gap-1">
-          <span className="opacity-60">Source</span>
-          <select
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+          <SelectField
+            label="Source"
             name="source"
             defaultValue={sp.source ?? ""}
-            className="border rounded px-2 py-1.5 bg-background"
-          >
-            <option value="">All</option>
-            {SOURCES.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="opacity-60">Property</span>
-          <select
+            options={[
+              { value: "", label: "All sources" },
+              ...SOURCES.map((s) => ({ value: s, label: humanLeadSource(s) })),
+            ]}
+          />
+          <SelectField
+            label="Property"
             name="property"
             defaultValue={sp.property ?? ""}
-            className="border rounded px-2 py-1.5 bg-background"
-          >
-            <option value="">All</option>
-            {properties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 col-span-2">
-          <span className="opacity-60">Search</span>
-          <input
-            name="q"
-            defaultValue={sp.q ?? ""}
-            placeholder="Name, email, phone"
-            className="border rounded px-2 py-1.5 bg-background"
+            options={[
+              { value: "", label: "All properties" },
+              ...properties.map((p) => ({ value: p.id, label: p.name })),
+            ]}
           />
-        </label>
-        <div className="col-span-full flex gap-2 mt-1">
+          <label className="flex flex-col gap-1.5 md:col-span-2">
+            <span className="text-xs font-medium text-foreground">Search</span>
+            <input
+              name="q"
+              defaultValue={sp.q ?? ""}
+              placeholder="Name, email, phone"
+              className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+            />
+          </label>
+        </div>
+        <div className="flex gap-2 mt-4">
           <button
             type="submit"
-            className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs rounded"
+            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
           >
-            Apply
+            Apply filters
           </button>
           <Link
             href="/portal/leads"
-            className="text-xs opacity-60 px-3 py-1.5 border rounded"
+            className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
           >
             Reset
           </Link>
@@ -138,5 +127,34 @@ export default async function LeadsKanbanPage({
 
       <LeadKanban items={items} />
     </div>
+  );
+}
+
+function SelectField({
+  label,
+  name,
+  defaultValue,
+  options,
+}: {
+  label: string;
+  name: string;
+  defaultValue: string;
+  options: Array<{ value: string; label: string }>;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-medium text-foreground">{label}</span>
+      <select
+        name={name}
+        defaultValue={defaultValue}
+        className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

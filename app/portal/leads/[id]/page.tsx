@@ -208,11 +208,11 @@ export default async function LeadDetailPage({
             </div>
           )}
           <div className="min-w-0 flex-1">
-            <h1 className="font-serif text-3xl font-medium text-[var(--near-black)] leading-tight">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground leading-tight">
               {displayName}
             </h1>
             {subtitle ? (
-              <p className="mt-1 text-sm text-[var(--stone-gray)]">
+              <p className="mt-1 text-sm text-muted-foreground">
                 {subtitle}
               </p>
             ) : null}
@@ -260,7 +260,7 @@ export default async function LeadDetailPage({
             </p>
           </Tile>
           <Tile label="Intent">
-            <p className="text-xl font-serif font-medium text-[var(--near-black)] tabular-nums">
+            <p className="text-xl font-semibold tabular-nums text-foreground">
               {lead.score}
               <span className="text-sm text-[var(--stone-gray)] font-sans">
                 {" "}
@@ -277,7 +277,7 @@ export default async function LeadDetailPage({
             </div>
           </Tile>
           <Tile label="Cost to acquire">
-            <p className="text-xl font-serif font-medium text-[var(--near-black)] tabular-nums">
+            <p className="text-xl font-semibold tabular-nums text-foreground">
               &mdash;
             </p>
             <p className="mt-1 text-[11px] text-[var(--stone-gray)]">
@@ -292,7 +292,7 @@ export default async function LeadDetailPage({
         {/* Timeline (2 cols on desktop) */}
         <div className="lg:col-span-2 space-y-4">
           <div className="flex items-baseline justify-between">
-            <h2 className="font-serif text-xl font-medium text-[var(--near-black)]">
+            <h2 className="text-xl font-semibold tracking-tight text-foreground">
               Activity
             </h2>
             <p className="text-xs text-[var(--stone-gray)]">

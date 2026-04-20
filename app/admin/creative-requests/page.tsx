@@ -4,6 +4,10 @@ import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { CreativeRequestStatus } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
+import { PageHeader } from "@/components/admin/page-header";
+import { StatusBadge } from "@/components/admin/status-badge";
+import { humanCreativeStatus } from "@/lib/format";
+import type { BadgeTone } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Creative queue" };
 export const dynamic = "force-dynamic";
@@ -17,6 +21,24 @@ const COLUMNS: Array<{ label: string; statuses: CreativeRequestStatus[] }> = [
   { label: "Approved", statuses: [CreativeRequestStatus.APPROVED] },
   { label: "Rejected", statuses: [CreativeRequestStatus.REJECTED] },
 ];
+
+function creativeStatusTone(s: CreativeRequestStatus): BadgeTone {
+  switch (s) {
+    case CreativeRequestStatus.APPROVED:
+    case CreativeRequestStatus.DELIVERED:
+      return "success";
+    case CreativeRequestStatus.IN_PROGRESS:
+    case CreativeRequestStatus.IN_REVIEW:
+      return "info";
+    case CreativeRequestStatus.REVISION_REQUESTED:
+      return "warning";
+    case CreativeRequestStatus.REJECTED:
+      return "danger";
+    case CreativeRequestStatus.SUBMITTED:
+    default:
+      return "neutral";
+  }
+}
 
 export default async function CreativeQueue() {
   await requireAgency();
@@ -36,16 +58,15 @@ export default async function CreativeQueue() {
 
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Creative queue</h1>
-          <p className="text-sm opacity-60 mt-1">
-            Every tenant's open creative requests. Click a card for the full
-            brief, references, and conversation thread.
-          </p>
-        </div>
-        <div className="text-xs opacity-60">{rows.length} total</div>
-      </header>
+      <PageHeader
+        title="Creative queue"
+        description="Every tenant's open creative requests. Click a card for the full brief, references, and conversation thread."
+        actions={
+          <div className="text-xs text-muted-foreground">
+            {rows.length} total
+          </div>
+        }
+      />
 
       <div
         className="grid gap-3 overflow-x-auto pb-4"
@@ -54,19 +75,19 @@ export default async function CreativeQueue() {
         }}
       >
         {columns.map((col) => (
-          <section key={col.label} className="min-w-0 space-y-3">
-            <header className="flex items-center justify-between">
-              <h3 className="text-[10px] tracking-widest uppercase opacity-60">
+          <section key={col.label} className="min-w-0 flex flex-col gap-2">
+            <header className="flex items-center justify-between gap-2 px-0.5">
+              <h3 className="text-[11px] font-semibold tracking-wide text-foreground">
                 {col.label}
               </h3>
-              <span className="text-[10px] bg-muted rounded px-1.5 py-0.5">
+              <span className="text-[11px] tabular-nums text-muted-foreground">
                 {col.items.length}
               </span>
             </header>
-            <div className="border-t" />
-            <div className="space-y-2">
+            <div className="h-px bg-border" />
+            <div className="flex flex-col gap-2 min-h-[48px]">
               {col.items.length === 0 ? (
-                <p className="border border-dashed rounded-md p-3 text-[11px] opacity-40 text-center">
+                <p className="rounded-md border border-dashed border-border p-3 text-[11px] text-muted-foreground/60 text-center">
                   Empty
                 </p>
               ) : (
@@ -74,23 +95,26 @@ export default async function CreativeQueue() {
                   <Link
                     key={r.id}
                     href={`/admin/creative-requests/${r.id}`}
-                    className="block border rounded-md p-3 hover:bg-muted/40"
+                    className="block rounded-lg border border-border bg-card p-3 hover:bg-muted/40 transition-colors"
                   >
-                    <div className="font-medium text-sm truncate">
+                    <div className="font-medium text-sm text-foreground truncate">
                       {r.title}
                     </div>
-                    <div className="text-[11px] opacity-60 truncate">
+                    <div className="text-[11px] text-muted-foreground truncate mt-0.5">
                       {r.org.name}
                       {r.property ? ` · ${r.property.name}` : ""}
                     </div>
-                    <div className="text-[11px] opacity-60 mt-1">
+                    <div className="text-[11px] text-muted-foreground mt-1">
                       {r.format}
-                      {r.revisionCount
-                        ? ` · ${r.revisionCount} revs`
-                        : ""}
+                      {r.revisionCount ? ` · ${r.revisionCount} revs` : ""}
                     </div>
-                    <div className="text-[11px] opacity-60 mt-1">
-                      {formatDistanceToNow(r.createdAt, { addSuffix: true })}
+                    <div className="flex items-center justify-between gap-2 mt-2">
+                      <StatusBadge tone={creativeStatusTone(r.status)}>
+                        {humanCreativeStatus(r.status)}
+                      </StatusBadge>
+                      <span className="text-[11px] text-muted-foreground">
+                        {formatDistanceToNow(r.createdAt, { addSuffix: true })}
+                      </span>
                     </div>
                   </Link>
                 ))

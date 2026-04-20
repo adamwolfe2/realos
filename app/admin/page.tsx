@@ -18,6 +18,7 @@ import {
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { OrgType, TenantStatus } from "@prisma/client";
+import { PageHeader, SectionCard } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Agency overview" };
 export const dynamic = "force-dynamic";
@@ -91,36 +92,33 @@ export default async function AdminHome() {
 
   return (
     <div className="space-y-6 max-w-7xl">
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground tracking-tight">
-            Welcome back
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {totalPipeline === 0
-              ? "No tenants yet — capture your first intake to start the pipeline."
-              : `${totalPipeline} tenant${totalPipeline === 1 ? "" : "s"} in the pipeline across all stages.`}
-          </p>
-        </div>
-        <Link
-          href="/admin/pipeline"
-          className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
-        >
-          Open pipeline
-          <ArrowRight className="h-3 w-3" />
-        </Link>
-      </header>
+      <PageHeader
+        title="Welcome back"
+        description={
+          totalPipeline === 0
+            ? "No tenants yet — capture your first intake to start the pipeline."
+            : `${totalPipeline} tenant${totalPipeline === 1 ? "" : "s"} in the pipeline across all stages.`
+        }
+        actions={
+          <Link
+            href="/admin/pipeline"
+            className="inline-flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
+            Open pipeline
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        }
+      />
 
       {/* Action Inbox */}
-      <section className="rounded-2xl border border-border bg-card p-5">
-        <div className="mb-4">
-          <h2 className="text-sm font-semibold text-foreground">Action Inbox</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {intakeNewToday + openCreative + atRiskClients + staleIntakes === 0
-              ? "Nothing on the board — you're caught up."
-              : "What needs your attention right now."}
-          </p>
-        </div>
+      <SectionCard
+        label="Action inbox"
+        description={
+          intakeNewToday + openCreative + atRiskClients + staleIntakes === 0
+            ? "Nothing on the board — you're caught up."
+            : "What needs your attention right now."
+        }
+      >
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <ActionCard
             href="/admin/intakes"
@@ -141,7 +139,7 @@ export default async function AdminHome() {
             icon={<Brush className="h-4 w-4" />}
             title="Open creative"
             count={openCreative}
-            hint="Requests in SUBMITTED / IN_REVIEW / IN_PROGRESS"
+            hint="Requests in Submitted / In review / In progress"
           />
           <ActionCard
             href="/admin/clients?status=AT_RISK"
@@ -152,26 +150,21 @@ export default async function AdminHome() {
             tone={atRiskClients > 0 ? "warn" : undefined}
           />
         </div>
-      </section>
+      </SectionCard>
 
       {/* Pipeline funnel */}
-      <section className="rounded-2xl border border-border bg-card p-5">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-sm font-semibold text-foreground">
-              Tenant funnel
-            </h2>
-            <p className="text-xs text-muted-foreground mt-0.5">
-              Live state of every tenant by stage.
-            </p>
-          </div>
+      <SectionCard
+        label="Tenant funnel"
+        description="Live state of every tenant by stage."
+        action={
           <Link
             href="/admin/pipeline"
             className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
           >
             Open pipeline <ArrowRight className="h-3 w-3" />
           </Link>
-        </div>
+        }
+      >
         <div className="space-y-2">
           <FunnelRow
             icon={<Sparkles className="h-4 w-4" />}
@@ -209,75 +202,75 @@ export default async function AdminHome() {
             tone="success"
           />
         </div>
-      </section>
+      </SectionCard>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
         {/* Recent intakes (2/3) */}
-        <section className="rounded-2xl border border-border bg-card p-5 lg:col-span-2">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-foreground">
-              Recent intakes
-            </h2>
-            <Link
-              href="/admin/intakes"
-              className="text-xs text-primary hover:underline"
-            >
-              View all →
-            </Link>
-          </div>
-          {recentSubmissions.length === 0 ? (
-            <div className="text-center py-8 text-sm text-muted-foreground">
-              <p>No intake submissions yet.</p>
-              <p className="text-xs mt-1">
-                Share your intake form to start filling the pipeline.
-              </p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-border">
-              {recentSubmissions.map((s) => {
-                const isHot = !s.reviewedAt && !s.convertedAt;
-                const initial = (s.companyName ?? "?").slice(0, 1).toUpperCase();
-                return (
-                  <li key={s.id}>
-                    <Link
-                      href={`/admin/intakes/${s.id}`}
-                      className="flex items-center gap-3 py-3 -mx-2 px-2 rounded-lg hover:bg-muted/40 transition-colors"
-                    >
-                      <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground flex-shrink-0">
-                        {initial}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-foreground font-medium truncate">
-                          {s.companyName}
-                        </p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {s.propertyType}
-                          {s.currentBackendPlatform
-                            ? ` · ${s.currentBackendPlatform}`
-                            : ""}
-                        </p>
-                      </div>
-                      {isHot && (
-                        <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border flex-shrink-0 text-primary bg-primary/10 border-primary/30">
-                          New
+        <div className="lg:col-span-2">
+          <SectionCard
+            label="Recent intakes"
+            action={
+              <Link
+                href="/admin/intakes"
+                className="text-xs text-primary hover:underline"
+              >
+                View all →
+              </Link>
+            }
+          >
+            {recentSubmissions.length === 0 ? (
+              <div className="text-center py-8 text-sm text-muted-foreground">
+                <p>No intake submissions yet.</p>
+                <p className="text-xs mt-1">
+                  Share your intake form to start filling the pipeline.
+                </p>
+              </div>
+            ) : (
+              <ul className="divide-y divide-border">
+                {recentSubmissions.map((s) => {
+                  const isHot = !s.reviewedAt && !s.convertedAt;
+                  const initial = (s.companyName ?? "?")
+                    .slice(0, 1)
+                    .toUpperCase();
+                  return (
+                    <li key={s.id}>
+                      <Link
+                        href={`/admin/intakes/${s.id}`}
+                        className="flex items-center gap-3 py-3 -mx-2 px-2 rounded-lg hover:bg-muted/40 transition-colors"
+                      >
+                        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-xs font-semibold text-muted-foreground flex-shrink-0">
+                          {initial}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm text-foreground font-medium truncate">
+                            {s.companyName}
+                          </p>
+                          <p className="text-xs text-muted-foreground truncate">
+                            {s.propertyType}
+                            {s.currentBackendPlatform
+                              ? ` · ${s.currentBackendPlatform}`
+                              : ""}
+                          </p>
+                        </div>
+                        {isHot && (
+                          <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded border flex-shrink-0 text-primary bg-primary/10 border-primary/30">
+                            New
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-foreground font-mono flex-shrink-0 w-16 text-right">
+                          {timeAgo(s.submittedAt)}
                         </span>
-                      )}
-                      <span className="text-xs text-muted-foreground font-mono flex-shrink-0 w-16 text-right">
-                        {timeAgo(s.submittedAt)}
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </section>
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </SectionCard>
+        </div>
 
         {/* Jump to (1/3) */}
-        <section className="rounded-2xl border border-border bg-card p-5">
-          <h2 className="text-sm font-semibold text-foreground mb-4">
-            Jump to
-          </h2>
+        <SectionCard label="Jump to">
           <div className="space-y-2">
             <QuickLink
               href="/admin/pipeline"
@@ -315,7 +308,7 @@ export default async function AdminHome() {
               label="Support chat"
             />
           </div>
-        </section>
+        </SectionCard>
       </div>
     </div>
   );

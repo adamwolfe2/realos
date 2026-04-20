@@ -4,18 +4,21 @@ import Link from "next/link";
 import { requireScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { ConvertIntakeButton } from "./convert-button";
+import { PageHeader, SectionCard } from "@/components/admin/page-header";
+import { StatusBadge } from "@/components/admin/status-badge";
+import {
+  humanPropertyType,
+  humanResidentialSubtype,
+  humanCommercialSubtype,
+  humanTenantStatus,
+  tenantStatusTone,
+} from "@/lib/format";
+import type { BadgeTone } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Intake detail" };
 export const dynamic = "force-dynamic";
 
 type IntakeStatus = "submitted" | "in_review" | "converted" | "rejected";
-
-const STATUS_STYLES: Record<IntakeStatus, string> = {
-  submitted: "bg-sky-100 text-sky-900 border-sky-200",
-  in_review: "bg-amber-100 text-amber-900 border-amber-200",
-  converted: "bg-emerald-100 text-emerald-900 border-emerald-200",
-  rejected: "bg-rose-100 text-rose-900 border-rose-200",
-};
 
 function isIntakeStatus(v: string): v is IntakeStatus {
   return (
@@ -24,6 +27,32 @@ function isIntakeStatus(v: string): v is IntakeStatus {
     v === "converted" ||
     v === "rejected"
   );
+}
+
+function humanIntakeStatus(s: IntakeStatus): string {
+  switch (s) {
+    case "submitted":
+      return "Submitted";
+    case "in_review":
+      return "In review";
+    case "converted":
+      return "Converted";
+    case "rejected":
+      return "Rejected";
+  }
+}
+
+function intakeStatusTone(s: IntakeStatus): BadgeTone {
+  switch (s) {
+    case "converted":
+      return "success";
+    case "in_review":
+      return "warning";
+    case "rejected":
+      return "danger";
+    case "submitted":
+      return "info";
+  }
 }
 
 export default async function IntakeDetail({
@@ -66,97 +95,105 @@ export default async function IntakeDetail({
       ? `$${Math.round(intake.currentMonthlySpendCents / 100).toLocaleString()}/mo`
       : "—";
 
+  const portfolioTypeLabel = [
+    humanPropertyType(intake.propertyType),
+    intake.residentialSubtype
+      ? humanResidentialSubtype(intake.residentialSubtype)
+      : intake.commercialSubtype
+        ? humanCommercialSubtype(intake.commercialSubtype)
+        : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <div className="max-w-4xl space-y-8">
-      <header className="flex items-start justify-between gap-6 flex-wrap">
-        <div className="min-w-0">
+    <div className="max-w-4xl space-y-6">
+      <PageHeader
+        eyebrow={
           <Link
             href="/admin/intakes"
-            className="text-xs opacity-60 hover:opacity-100"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
           >
-            ← Intake queue
+            <span aria-hidden="true">←</span> Intake queue
           </Link>
-          <div className="flex items-center gap-3 mt-2 flex-wrap">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {intake.companyName}
-            </h1>
-            <span
-              className={`text-[11px] tracking-wider uppercase border rounded px-2 py-0.5 ${STATUS_STYLES[status]}`}
-            >
-              {status.replace("_", " ")}
+        }
+        title={intake.companyName}
+        description={
+          <span className="flex items-center gap-2 flex-wrap">
+            <StatusBadge tone={intakeStatusTone(status)}>
+              {humanIntakeStatus(status)}
+            </StatusBadge>
+            <span className="text-muted-foreground/60">·</span>
+            <span>
+              {intake.primaryContactName}, {intake.primaryContactEmail}
+              {intake.primaryContactPhone
+                ? ` · ${intake.primaryContactPhone}`
+                : ""}
             </span>
-          </div>
-          <p className="text-sm opacity-70 mt-1">
-            {intake.primaryContactName}, {intake.primaryContactEmail}
-            {intake.primaryContactPhone
-              ? ` · ${intake.primaryContactPhone}`
-              : ""}
-          </p>
-          <p className="text-xs opacity-60 mt-1">
-            Submitted {new Date(intake.submittedAt).toLocaleString()}
-            {intake.reviewedAt
-              ? ` · Reviewed ${new Date(intake.reviewedAt).toLocaleString()}`
-              : ""}
-            {intake.convertedAt
-              ? ` · Converted ${new Date(intake.convertedAt).toLocaleString()}`
-              : ""}
-          </p>
-        </div>
-      </header>
+          </span>
+        }
+      />
+
+      <p className="text-xs text-muted-foreground -mt-2">
+        Submitted {new Date(intake.submittedAt).toLocaleString()}
+        {intake.reviewedAt
+          ? ` · Reviewed ${new Date(intake.reviewedAt).toLocaleString()}`
+          : ""}
+        {intake.convertedAt
+          ? ` · Converted ${new Date(intake.convertedAt).toLocaleString()}`
+          : ""}
+      </p>
 
       {status === "converted" && intake.org ? (
-        <section className="border rounded-md p-5 bg-emerald-50/60">
-          <p className="text-[10px] tracking-widest uppercase opacity-60 mb-2">
-            Converted client
-          </p>
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <div>
-              <p className="font-semibold">{intake.org.name}</p>
-              <p className="text-xs opacity-70">
-                {intake.org.slug} · {intake.org.status}
-                {intake.org.clerkOrgId
-                  ? ` · Clerk org ${intake.org.clerkOrgId}`
-                  : " · Clerk org not yet provisioned"}
-              </p>
-            </div>
+        <SectionCard
+          label="Converted client"
+          action={
             <Link
               href={`/admin/clients/${intake.org.id}`}
-              className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-2 rounded"
+              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary-dark transition-colors"
             >
               Open client →
             </Link>
+          }
+        >
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-semibold text-foreground">
+              {intake.org.name}
+            </span>
+            <span className="text-xs text-muted-foreground">
+              {intake.org.slug}
+            </span>
+            <StatusBadge tone={tenantStatusTone(intake.org.status)}>
+              {humanTenantStatus(intake.org.status)}
+            </StatusBadge>
+            <span className="text-xs text-muted-foreground">
+              {intake.org.clerkOrgId
+                ? `Clerk org ${intake.org.clerkOrgId}`
+                : "Clerk org not yet provisioned"}
+            </span>
           </div>
-        </section>
+        </SectionCard>
       ) : null}
 
       {status === "rejected" ? (
-        <section className="border rounded-md p-5 bg-rose-50/50">
-          <p className="text-[10px] tracking-widest uppercase opacity-60 mb-1">
-            Rejected
-          </p>
-          <p className="text-sm">
+        <SectionCard label="Rejected">
+          <p className="text-sm text-muted-foreground">
             This intake was marked rejected and won't be provisioned.
           </p>
-        </section>
+        </SectionCard>
       ) : null}
 
       {canAct ? (
-        <section className="border rounded-md p-5">
-          <p className="text-[10px] tracking-widest uppercase opacity-60 mb-3">
-            Actions
-          </p>
+        <SectionCard
+          label="Actions"
+          description={`Convert provisions an Organization (CLIENT), creates a Clerk organization, and emails an admin invite to ${intake.primaryContactEmail}.`}
+        >
           <ConvertIntakeButton intakeId={intake.id} />
-          <p className="text-xs opacity-60 mt-3">
-            Convert provisions an Organization (CLIENT), creates a Clerk
-            organization, and emails an admin invite to{" "}
-            {intake.primaryContactEmail}.
-          </p>
-        </section>
+        </SectionCard>
       ) : null}
 
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="border rounded-md p-5">
-          <h2 className="text-sm font-semibold mb-3">Company</h2>
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
+        <SectionCard label="Company">
           <dl className="space-y-1 text-sm">
             <Row k="Company name" v={intake.companyName} />
             <Row k="Short name" v={intake.shortName ?? "—"} />
@@ -164,67 +201,50 @@ export default async function IntakeDetail({
             <Row k="HQ city" v={intake.hqCity ?? "—"} />
             <Row k="HQ state" v={intake.hqState ?? "—"} />
           </dl>
-        </div>
+        </SectionCard>
 
-        <div className="border rounded-md p-5">
-          <h2 className="text-sm font-semibold mb-3">Contact</h2>
+        <SectionCard label="Contact">
           <dl className="space-y-1 text-sm">
             <Row k="Name" v={intake.primaryContactName} />
             <Row k="Email" v={intake.primaryContactEmail} />
             <Row k="Phone" v={intake.primaryContactPhone ?? "—"} />
             <Row k="Role" v={intake.primaryContactRole ?? "—"} />
           </dl>
-        </div>
+        </SectionCard>
 
-        <div className="border rounded-md p-5">
-          <h2 className="text-sm font-semibold mb-3">Portfolio</h2>
+        <SectionCard label="Portfolio">
           <dl className="space-y-1 text-sm">
-            <Row k="Property type" v={intake.propertyType} />
-            <Row
-              k="Residential subtype"
-              v={intake.residentialSubtype ?? "—"}
-            />
-            <Row
-              k="Commercial subtype"
-              v={intake.commercialSubtype ?? "—"}
-            />
+            <Row k="Property type" v={portfolioTypeLabel || "—"} />
             <Row
               k="Properties"
               v={intake.numberOfProperties?.toString() ?? "—"}
             />
-            <Row
-              k="Backend"
-              v={intake.currentBackendPlatform ?? "—"}
-            />
+            <Row k="Backend" v={intake.currentBackendPlatform ?? "—"} />
             <Row k="Backend plan" v={intake.backendPlanTier ?? "—"} />
             <Row k="Current vendor" v={intake.currentVendor ?? "—"} />
             <Row k="Monthly spend" v={monthlySpend} />
             <Row k="Pain point" v={intake.biggestPainPoint ?? "—"} />
           </dl>
-        </div>
+        </SectionCard>
 
-        <div className="border rounded-md p-5">
-          <h2 className="text-sm font-semibold mb-3">
-            Selected modules
-          </h2>
+        <SectionCard label="Selected modules">
           {selected.length === 0 ? (
-            <p className="text-xs opacity-60">None selected</p>
+            <p className="text-xs text-muted-foreground">None selected</p>
           ) : (
             <ul className="flex flex-wrap gap-1.5">
               {selected.map((m) => (
                 <li
                   key={m}
-                  className="text-[11px] px-2 py-1 border rounded bg-muted/40"
+                  className="text-[11px] px-2 py-1 rounded-md border border-border bg-muted/40 text-foreground"
                 >
                   {m}
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </SectionCard>
 
-        <div className="border rounded-md p-5">
-          <h2 className="text-sm font-semibold mb-3">Timeline</h2>
+        <SectionCard label="Timeline">
           <dl className="space-y-1 text-sm">
             <Row k="Go-live target" v={intake.goLiveTarget ?? "—"} />
             <Row
@@ -237,12 +257,9 @@ export default async function IntakeDetail({
             />
             <Row k="Cal booking id" v={intake.calBookingId ?? "—"} />
           </dl>
-        </div>
+        </SectionCard>
 
-        <div className="border rounded-md p-5">
-          <h2 className="text-sm font-semibold mb-3">
-            Submission metadata
-          </h2>
+        <SectionCard label="Submission metadata">
           <dl className="space-y-1 text-sm">
             <Row
               k="Submitted at"
@@ -254,11 +271,11 @@ export default async function IntakeDetail({
             <Row k="UTM medium" v={intake.utmMedium ?? "—"} />
             <Row k="UTM campaign" v={intake.utmCampaign ?? "—"} />
           </dl>
-        </div>
+        </SectionCard>
       </section>
 
-      <details className="border rounded-md p-4">
-        <summary className="text-xs tracking-widest uppercase opacity-60 cursor-pointer">
+      <details className="rounded-lg border border-border bg-card p-4">
+        <summary className="text-xs tracking-widest uppercase text-muted-foreground cursor-pointer">
           Raw payload
         </summary>
         <pre className="mt-3 text-[11px] bg-muted/40 rounded p-3 overflow-x-auto">
@@ -272,8 +289,8 @@ export default async function IntakeDetail({
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-xs opacity-60">{k}</dt>
-      <dd className="text-right truncate max-w-[60%]">{v}</dd>
+      <dt className="text-xs text-muted-foreground">{k}</dt>
+      <dd className="text-right truncate max-w-[60%] text-foreground">{v}</dd>
     </div>
   );
 }

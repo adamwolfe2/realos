@@ -23,6 +23,8 @@ export default function PlatformHome() {
     <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
       <Hero />
       <WhatYouGet />
+      <Comparison />
+      <Weekly />
       <LiveExample />
       <ProductTourSection />
       <Numbers />
@@ -316,6 +318,283 @@ function Timeline() {
         ))}
       </ol>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// COMPARISON — side-by-side contrast: the vendor-stack status quo vs. a single
+// managed product. Left column is muted (current pain), right column is the
+// highlighted side with a subtle blue accent on check icons. No pricing rows.
+// ---------------------------------------------------------------------------
+
+function Comparison() {
+  const { comparison } = MARKETING.home;
+  return (
+    <section
+      style={{
+        backgroundColor: "#f5f4ed",
+        borderTop: "1px solid #f0eee6",
+      }}
+    >
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
+        <div className="max-w-3xl mb-12">
+          <p className="eyebrow mb-4">{comparison.eyebrow}</p>
+          <h2 className="heading-section" style={{ color: "#141413" }}>
+            {comparison.headline}
+          </h2>
+          <p
+            className="mt-4 max-w-2xl"
+            style={{
+              color: "#5e5d59",
+              fontFamily: "var(--font-sans)",
+              fontSize: "17px",
+              lineHeight: 1.6,
+            }}
+          >
+            {comparison.body}
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div
+            className="p-7 md:p-8"
+            style={{
+              backgroundColor: "#faf9f5",
+              borderRadius: "16px",
+              boxShadow: "0 0 0 1px #f0eee6",
+            }}
+          >
+            <p
+              className="mb-6 inline-flex items-center gap-2"
+              style={{
+                color: "#87867f",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                fontWeight: 500,
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  display: "inline-block",
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  backgroundColor: "#c2c0b6",
+                }}
+              />
+              {comparison.leftLabel}
+            </p>
+            <ul className="space-y-0">
+              {comparison.rows.map((row, i) => (
+                <li
+                  key={row.old}
+                  className="flex items-start gap-3"
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "15px",
+                    color: "#5e5d59",
+                    lineHeight: 1.55,
+                    paddingTop: "14px",
+                    paddingBottom: "14px",
+                    borderTop: i > 0 ? "1px solid #f0eee6" : "none",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex items-center justify-center flex-shrink-0"
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      backgroundColor: "#f0eee6",
+                      color: "#87867f",
+                      marginTop: "2px",
+                    }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                      <path
+                        d="M2 2l6 6M8 2l-6 6"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                  <span>{row.old}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div
+            className="p-7 md:p-8"
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              boxShadow: "0 0 0 1px #f0eee6",
+            }}
+          >
+            <p
+              className="mb-6 inline-flex items-center gap-2"
+              style={{
+                color: "#2F6FE5",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                fontWeight: 500,
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  display: "inline-block",
+                  width: "6px",
+                  height: "6px",
+                  borderRadius: "50%",
+                  backgroundColor: "#2F6FE5",
+                }}
+              />
+              {comparison.rightLabel}
+            </p>
+            <ul className="space-y-0">
+              {comparison.rows.map((row, i) => (
+                <li
+                  key={row.new}
+                  className="flex items-start gap-3"
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "15px",
+                    color: "#141413",
+                    lineHeight: 1.55,
+                    paddingTop: "14px",
+                    paddingBottom: "14px",
+                    borderTop: i > 0 ? "1px solid #f0eee6" : "none",
+                  }}
+                >
+                  <span
+                    aria-hidden="true"
+                    className="inline-flex items-center justify-center flex-shrink-0"
+                    style={{
+                      width: "20px",
+                      height: "20px",
+                      borderRadius: "50%",
+                      backgroundColor: "rgba(47,111,229,0.10)",
+                      color: "#2F6FE5",
+                      marginTop: "2px",
+                    }}
+                  >
+                    <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                      <path
+                        d="M2 5.5L4.5 8L9 3"
+                        stroke="currentColor"
+                        strokeWidth="1.6"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    </svg>
+                  </span>
+                  <span>{row.new}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WEEKLY — a week-in-the-life scene. Four cards map to Monday / Tuesday /
+// Thursday / Ongoing moments so the buyer can picture the rhythm of operating
+// on the platform without a status meeting.
+// ---------------------------------------------------------------------------
+
+function Weekly() {
+  const { weekly } = MARKETING.home;
+  return (
+    <section
+      style={{
+        backgroundColor: "#faf9f5",
+        borderTop: "1px solid #f0eee6",
+      }}
+    >
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
+        <div className="max-w-3xl mb-12">
+          <p className="eyebrow mb-4">{weekly.eyebrow}</p>
+          <h2 className="heading-section" style={{ color: "#141413" }}>
+            {weekly.headline}
+          </h2>
+          <p
+            className="mt-4 max-w-2xl"
+            style={{
+              color: "#5e5d59",
+              fontFamily: "var(--font-sans)",
+              fontSize: "17px",
+              lineHeight: 1.6,
+            }}
+          >
+            {weekly.body}
+          </p>
+        </div>
+
+        <ol className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+          {weekly.items.map((item) => (
+            <li
+              key={item.title}
+              className="p-6 md:p-7 flex flex-col"
+              style={{
+                backgroundColor: "#ffffff",
+                borderRadius: "16px",
+                boxShadow: "0 0 0 1px #f0eee6",
+              }}
+            >
+              <p
+                className="flex items-center justify-between gap-2"
+                style={{
+                  color: "#87867f",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  letterSpacing: "0.14em",
+                  textTransform: "uppercase",
+                  fontWeight: 500,
+                }}
+              >
+                <span style={{ color: "#141413" }}>{item.day}</span>
+                <span>{item.time}</span>
+              </p>
+              <h3
+                className="mt-3"
+                style={{
+                  color: "#141413",
+                  fontFamily: "var(--font-display)",
+                  fontSize: "19px",
+                  fontWeight: 500,
+                  lineHeight: 1.3,
+                }}
+              >
+                {item.title}
+              </h3>
+              <p
+                className="mt-3"
+                style={{
+                  color: "#5e5d59",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "14.5px",
+                  lineHeight: 1.6,
+                }}
+              >
+                {item.body}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
   );
 }
 

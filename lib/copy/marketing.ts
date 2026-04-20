@@ -45,6 +45,72 @@ export const MARKETING = {
         { day: "Day 14", title: "Live on your domain", body: "DNS flipped, pixel firing, chatbot answering, ads running." },
       ],
     },
+    comparison: {
+      eyebrow: "The shift",
+      headline: "The current marketing stack vs. one that ships.",
+      body:
+        "Most operators are paying for five tools that don't talk to each other, plus a retainer for the people stitching them together. Here's what changes when the stack is a product.",
+      leftLabel: "The current stack",
+      rightLabel: "With RealEstaite",
+      rows: [
+        {
+          old: "Six vendors, six invoices, and a dashboard you stitch together yourself.",
+          new: "One platform, one login, one weekly report that ties spend to leases.",
+        },
+        {
+          old: "Agency decks show activity: impressions, clicks, reach.",
+          new: "Your report shows outcomes: leads, tours booked, leases signed.",
+        },
+        {
+          old: "Creative turnaround measured in weeks and revision rounds.",
+          new: "Creative ships in 48 hours. No retainer, no change-order form.",
+        },
+        {
+          old: "Most of your site traffic stays anonymous forever.",
+          new: "Names and emails on a meaningful share of the visitors who land.",
+        },
+        {
+          old: "The chatbot is a glorified FAQ, or there isn't one at all.",
+          new: "An AI chatbot trained on your properties, capturing leads at 2am.",
+        },
+      ],
+    },
+    weekly: {
+      eyebrow: "Your week with us",
+      headline: "What operating on the platform actually feels like.",
+      body:
+        "No war rooms, no status meetings, no quarterly reviews. A few touchpoints that fit inside the rest of your job.",
+      items: [
+        {
+          day: "Monday",
+          time: "7:00 AM",
+          title: "Weekly performance report lands in your inbox.",
+          body:
+            "Leases attributed to sources, spend summary, anomalies flagged, recommended tests for the week. One page, readable over coffee.",
+        },
+        {
+          day: "Tuesday",
+          time: "Rolling",
+          title: "Tour requests auto-create in the portal from every channel.",
+          body:
+            "Site form, chatbot, pixel-identified visitors, inbound calls, scheduling links, all land in one pipeline with source attribution attached.",
+        },
+        {
+          day: "Thursday",
+          time: "By EOD",
+          title: "Creative refresh ships.",
+          body:
+            "The studio delivers new ad concepts, email subject variants, and landing-block copy within 48 hours of request. No retainer to unlock it.",
+        },
+        {
+          day: "Ongoing",
+          time: "Overnight",
+          title: "The AI chatbot works the nightshift.",
+          body:
+            "Prospects and families asking questions at 2am get a useful conversation, not a contact form. Hot leads get handed to your team with the thread attached.",
+        },
+      ],
+    },
     liveExample: {
       eyebrow: "In production",
       headline: "See the platform running in production.",

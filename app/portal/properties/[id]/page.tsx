@@ -128,7 +128,7 @@ export default async function PropertyDetail({
       </section>
 
       <section>
-        <h2 className="font-serif text-xl font-bold mb-3">Listings</h2>
+        <h2 className="text-xl font-semibold tracking-tight mb-3">Listings</h2>
         {property.listings.length === 0 ? (
           <p className="text-sm opacity-60 border rounded-md p-6">
             No listings synced yet. Sprint 06 wires in the AppFolio sync.
@@ -220,7 +220,7 @@ function MiniStat({ label, value }: { label: string; value: number }) {
       <div className="text-[10px] tracking-widest uppercase opacity-60">
         {label}
       </div>
-      <div className="font-serif text-xl font-bold mt-1 tabular-nums">
+      <div className="text-xl font-semibold tracking-tight mt-1 tabular-nums">
         {value}
       </div>
     </div>

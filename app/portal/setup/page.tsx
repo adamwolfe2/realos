@@ -79,10 +79,10 @@ export default async function SetupHubPage() {
       {/* ── Hero ────────────────────────────────────────────────────────── */}
       <section className="space-y-5">
         <div className="space-y-2">
-          <h1 className="font-serif text-4xl font-medium tracking-tight text-[var(--near-black)]">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
             Welcome, {org.name}.
           </h1>
-          <p className="font-sans text-sm text-[var(--stone-gray)]">
+          <p className="text-sm text-muted-foreground">
             {phaseSubtitle}
           </p>
         </div>
@@ -187,7 +187,7 @@ function PhaseChip({
 function FoundationCompleteBanner() {
   return (
     <div className="mb-6 rounded-[12px] border border-[var(--terracotta)]/20 bg-[var(--terracotta)]/5 p-5">
-      <h3 className="font-serif text-xl font-medium text-[var(--near-black)]">
+      <h3 className="text-xl font-semibold tracking-tight text-foreground">
         Foundation complete.
       </h3>
       <p className="mt-1 font-sans text-sm text-[var(--olive-gray)] leading-[1.6]">

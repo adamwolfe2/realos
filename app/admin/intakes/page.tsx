@@ -3,9 +3,47 @@ import Link from "next/link";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { formatDistanceToNow } from "date-fns";
+import { PageHeader } from "@/components/admin/page-header";
+import { StatusBadge } from "@/components/admin/status-badge";
+import type { BadgeTone } from "@/lib/format";
+import { humanPropertyType } from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Intake queue" };
 export const dynamic = "force-dynamic";
+
+// IntakeSubmission.status is a raw string in the schema ("submitted",
+// "in_review", "converted", "rejected") — not a Prisma enum — so we keep a
+// small local mapping instead of a human*Status helper in lib/format.
+function humanIntakeStatus(s: string): string {
+  switch (s) {
+    case "submitted":
+      return "Submitted";
+    case "in_review":
+      return "In review";
+    case "converted":
+      return "Converted";
+    case "rejected":
+      return "Rejected";
+    default:
+      return s.charAt(0).toUpperCase() + s.slice(1).replaceAll("_", " ");
+  }
+}
+
+function intakeStatusTone(s: string): BadgeTone {
+  switch (s) {
+    case "converted":
+      return "success";
+    case "in_review":
+      return "warning";
+    case "rejected":
+      return "danger";
+    case "submitted":
+      return "info";
+    default:
+      return "neutral";
+  }
+}
 
 export default async function IntakeList({
   searchParams,
@@ -20,8 +58,8 @@ export default async function IntakeList({
     filter === "converted"
       ? { convertedAt: { not: null } }
       : filter === "all"
-      ? {}
-      : { convertedAt: null };
+        ? {}
+        : { convertedAt: null };
 
   const submissions = await prisma.intakeSubmission.findMany({
     where,
@@ -34,43 +72,43 @@ export default async function IntakeList({
 
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Intake queue</h1>
-          <p className="text-sm opacity-60 mt-1">
-            New intakes land here. Convert accepted submissions into a
-            provisioned tenant.
-          </p>
-        </div>
-        <nav className="flex gap-1 text-xs">
-          <FilterLink filter={filter} value="open" label="Open" />
-          <FilterLink filter={filter} value="converted" label="Converted" />
-          <FilterLink filter={filter} value="all" label="All" />
-        </nav>
-      </header>
+      <PageHeader
+        title="Intake queue"
+        description="New intakes land here. Convert accepted submissions into a provisioned tenant."
+        actions={
+          <nav className="flex flex-wrap gap-1.5" aria-label="Filter intakes">
+            <FilterLink filter={filter} value="open" label="Open" />
+            <FilterLink filter={filter} value="converted" label="Converted" />
+            <FilterLink filter={filter} value="all" label="All" />
+          </nav>
+        }
+      />
 
       {submissions.length === 0 ? (
-        <p className="text-sm opacity-60 border rounded-md p-4">
-          No submissions match this filter.
-        </p>
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            No submissions match this filter.
+          </p>
+        </div>
       ) : (
         <ul className="space-y-2">
           {submissions.map((s) => {
-            const selected =
-              Array.isArray(s.selectedModules) ? s.selectedModules.length : 0;
+            const selected = Array.isArray(s.selectedModules)
+              ? s.selectedModules.length
+              : 0;
             return (
               <li key={s.id}>
                 <Link
                   href={`/admin/intakes/${s.id}`}
-                  className="block border rounded-md p-4 hover:bg-muted/40"
+                  className="block rounded-lg border border-border bg-card p-4 hover:bg-muted/40 transition-colors"
                 >
                   <div className="flex items-baseline justify-between gap-3">
                     <div className="min-w-0">
-                      <div className="font-semibold truncate">
+                      <div className="font-semibold text-foreground truncate">
                         {s.companyName}
                       </div>
-                      <div className="text-xs opacity-60">
-                        {s.propertyType}
+                      <div className="text-xs text-muted-foreground">
+                        {humanPropertyType(s.propertyType)}
                         {s.numberOfProperties
                           ? `, ${s.numberOfProperties} properties`
                           : ""}
@@ -82,27 +120,29 @@ export default async function IntakeList({
                           ? ` · Pain: "${s.biggestPainPoint}"`
                           : ""}
                       </div>
-                      <div className="text-xs opacity-60 mt-1">
+                      <div className="text-xs text-muted-foreground mt-1">
                         {s.primaryContactName}, {s.primaryContactEmail}
                         {selected ? ` · ${selected} modules` : ""}
                       </div>
                     </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-xs">
+                    <div className="flex flex-col items-end gap-1 shrink-0">
+                      <span className="text-xs text-muted-foreground whitespace-nowrap">
                         {formatDistanceToNow(s.submittedAt, {
                           addSuffix: true,
                         })}
-                      </div>
-                      <div className="text-[11px] opacity-70">{s.status}</div>
+                      </span>
+                      <StatusBadge tone={intakeStatusTone(s.status)}>
+                        {humanIntakeStatus(s.status)}
+                      </StatusBadge>
                       {s.bookedCallAt ? (
-                        <div className="text-[11px] text-emerald-700">
+                        <span className="text-[11px] text-emerald-700">
                           Call booked
-                        </div>
+                        </span>
                       ) : null}
                       {s.org ? (
-                        <div className="text-[11px] text-emerald-700">
-                          Converted, {s.org.slug}
-                        </div>
+                        <span className="text-[11px] text-emerald-700">
+                          Converted · {s.org.slug}
+                        </span>
                       ) : null}
                     </div>
                   </div>
@@ -128,10 +168,15 @@ function FilterLink({
   const active = filter === value;
   return (
     <Link
-      href={value === "open" ? "/admin/intakes" : `/admin/intakes?filter=${value}`}
-      className={`px-3 py-1.5 border rounded ${
-        active ? "bg-primary text-primary-foreground hover:bg-primary-dark transition-colors" : ""
-      }`}
+      href={
+        value === "open" ? "/admin/intakes" : `/admin/intakes?filter=${value}`
+      }
+      className={cn(
+        "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
+        active
+          ? "bg-primary text-primary-foreground border-primary"
+          : "bg-card text-foreground border-border hover:bg-muted/50",
+      )}
     >
       {label}
     </Link>
