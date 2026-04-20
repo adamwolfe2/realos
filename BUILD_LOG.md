@@ -819,3 +819,171 @@ button — clicks have no effect yet); per-tenant chart accent (the donut still
 uses the global palette rather than tenant `primaryColor`); export-to-PDF of
 the dashboard view.
 
+
+---
+
+## Sprint 13, Google Ads + Meta Ads (read-only, paste-credentials)
+
+**Shipped.** Wired Google Ads + Meta (Facebook/Instagram) Ads as read-only
+integrations under a paste-in-credentials model — OAuth deferred until we have
+a production callback domain. Per the user's explicit direction, this gets us
+the data flowing now and we layer OAuth later without a schema rewrite.
+
+**Schema additions (`prisma/schema.prisma`).** Extended existing `AdAccount` /
+`AdCampaign` (which were stub models) and added a new `AdMetricDaily` table
+that the dashboard reads from.
+
+- `AdAccount` gains `displayName`, `currency`, `credentialsEncrypted` (single
+  AES-256-GCM blob; per-platform schema documented in the integration libs),
+  `autoSyncEnabled`, `lastSyncError`. Existing `tokenEncrypted` /
+  `refreshTokenEncrypted` columns kept so the OAuth migration is additive.
+- `AdCampaign` gains `objective`, `dailyBudgetCents`, `startDate`, `endDate`,
+  and a compound unique on `(adAccountId, externalCampaignId)` so the sync can
+  upsert idempotently.
+- `AdMetricDaily` is new. One row per `(campaignId, date)` with impressions,
+  clicks, spend (cents), conversions, conversion value, derived CTR, CPC, and
+  cost-per-conversion. Unique on `(campaignId, date)` for upsert idempotency,
+  plus indexes on `(orgId, date)` and `(adAccountId, date)` for the dashboard
+  range queries.
+
+`pnpm prisma generate` ran clean. **No migration applied to prod** per the
+brief — Adam will run `prisma db push` (or generate a migration) when ready.
+
+**Integration libs.**
+
+- `lib/integrations/google-ads.ts` — pure-fetch against Google Ads REST v17.
+  Auth path: developer token + OAuth refresh token → exchanged for a
+  short-lived access token at sync time (cached in-process for ~55 min).
+  Pulls `customer`, `campaign`, and daily metrics via `searchStream`. Costs
+  are reported in micros and converted to cents on ingest. We deliberately
+  did NOT pull in `google-ads-api` npm — the gRPC SDK is heavy, the REST
+  surface we need is small, and edge/cold-start parity stays cleaner.
+- `lib/integrations/meta-ads.ts` — pure-fetch against Graph API v22. Auth:
+  Business Manager System User access token (pasted by the operator). Pulls
+  `act_<id>?fields=...` for the probe, `/campaigns` for the campaign list,
+  and `/insights?level=campaign&time_increment=1` for the daily metrics.
+  `actions` array gets summed across `lead`, `complete_registration`,
+  `purchase`, `onsite_conversion.lead_grouped` for the conversions count.
+- `lib/integrations/ads-sync.ts` — cross-platform worker. Per AdAccount:
+  pulls campaigns, upserts; pulls daily metrics for yesterday (or last 30d
+  on backfill); upserts AdMetricDaily; refreshes AdCampaign denorm totals.
+  Audit row written on completion. Errors update `accessStatus = "error"`
+  and `lastSyncError` so the UI can surface them.
+- Credentials stored encrypted-at-rest via the existing `lib/crypto.ts`
+  AES-256-GCM helper (same pattern as AppFolio). Single `credentialsEncrypted`
+  column holds a stringified JSON blob — schema is per-platform, parsed by
+  the integration lib.
+
+**Server actions.**
+
+- `lib/actions/google-ads-connect.ts`, `lib/actions/meta-ads-connect.ts` —
+  zod-validated `connect{Google,Meta}Ads`, `disconnect{Google,Meta}Ads`,
+  `trigger{Google,Meta}AdsSync`. Connect flow tests credentials before
+  persisting; on success, fires a fire-and-forget 30-day backfill, flips
+  `Organization.module{Google,Meta}Ads = true`, writes an audit event.
+
+**Cron.** New `app/api/cron/ads-sync/route.ts` (Bearer CRON_SECRET, same
+pattern as `appfolio-sync`). Iterates every AdAccount with credentials and
+`autoSyncEnabled = true`, pulls yesterday's metrics, upserts. Idempotent.
+Scheduled daily at 07:00 UTC in `vercel.json` (after the SEO sync at 06:00).
+
+**Portal UI.**
+
+- `app/portal/ads/page.tsx` + `app/portal/ads/ads-dashboard.tsx`. Stat cards
+  for 28d spend, clicks, conversions, CPC, cost-per-conversion (each with a
+  delta vs the prior 28d window). Segment toggle for All / Google Ads /
+  Meta Ads. Recharts area chart for daily spend + conversions. Sortable
+  campaign table (name, platform, status, spend, clicks, conv., CPL, CTR).
+  Connected-accounts panel at the bottom with last-sync timestamps and any
+  sync errors. Empty state with two prominent CTAs that point to
+  `/portal/settings/integrations`.
+- `app/portal/settings/integrations/google-ads-forms.tsx`,
+  `meta-ads-forms.tsx`. Connect drawers, Manage panels, Sync now / Disconnect.
+  Both wired into the integrations page `manageSlots` map. Tiles in the
+  marketplace flip from "Available" to "Connected" automatically once an
+  AdAccount with credentials exists (status resolved in
+  `lib/integrations/status.ts`).
+- Catalog updated: `google-ads` and `meta-ads` flipped from `auth: "request"`
+  → `auth: "self_serve"` so the marketplace renders the connect form
+  in-drawer instead of the agency-managed request UX.
+- `components/portal/portal-nav.tsx` adds an **Ads** tab (BarChart3 icon)
+  alongside the existing Campaigns tab. Both are gated behind
+  `moduleGoogleAds || moduleMetaAds`, which the connect action turns on.
+
+**Credentials Adam needs to test live.**
+
+- **Google Ads.** Apply for a developer token in Google Ads UI →
+  Tools → API Center (basic access is fine for read-only; takes 24-48h on
+  first application). Then in Google Cloud Console, create OAuth credentials
+  (Web application is fine even for our offline use), and visit
+  `https://developers.google.com/oauthplayground` with the scope
+  `https://www.googleapis.com/auth/adwords` to generate a refresh token
+  against your client_id/secret. Paste developer token + login customer ID
+  (the MCC, no dashes) + client customer ID (the ad account, no dashes) +
+  oauth client_id + secret + refresh_token into the connect drawer at
+  `/portal/settings/integrations`. We exchange the refresh token for
+  short-lived access tokens automatically.
+- **Meta Ads.** Open Business Manager → Settings → Users → System Users.
+  Generate a System User access token with at least `ads_read` (and
+  optionally `ads_management` if you want to enable writes later). Grant
+  the system user "Manage campaigns" access to the target ad account in
+  the same panel. Paste the token + the ad account ID (numeric, with or
+  without `act_` prefix) into the connect drawer.
+
+**What I did not verify against the live APIs.** I coded both integrations
+blind against their published REST surfaces — I did not run a live sync
+against either Google Ads or Meta Ads, because we don't have credentials
+provisioned yet. Both libs are written to the documented v17 / v22 schemas
+respectively and follow the patterns the official SDKs use. First live
+connect attempt may surface schema drift in metric or campaign fields; the
+integration probes (`testGoogleAdsConnection`, `testMetaAdsConnection`) will
+fail loudly with the API's exact error message, which is the right surface
+for catching drift.
+
+**Punted explicitly (out of scope for V1).**
+
+- **OAuth flow.** Both platforms support proper OAuth handshakes; we'll add
+  them once we have a stable production callback URL. The `tokenEncrypted` /
+  `refreshTokenEncrypted` / `tokenExpiresAt` columns on `AdAccount` are
+  reserved for the OAuth migration so we don't need a second schema change.
+- **Campaign create/edit.** Read-only by design. The dashboard renders
+  spend and conversions; operators still use Google Ads UI / Meta Ads
+  Manager to launch and edit campaigns.
+- **Audience management.** No Custom Audiences, lookalikes, or Customer
+  Match sync — that's a separate workstream once the pixel-side identity
+  graph is wired up by the visitor agent.
+- **Automated bidding / optimization.** Not touched. We only read.
+- **TikTok / LinkedIn / Reddit.** Schema supports them via the `AdPlatform`
+  enum, but no integration libs yet. Adding one means writing a new
+  `lib/integrations/<platform>.ts` and adding a branch in `ads-sync.ts`.
+
+**Files created.**
+- `lib/integrations/google-ads.ts`
+- `lib/integrations/meta-ads.ts`
+- `lib/integrations/ads-sync.ts`
+- `lib/actions/google-ads-connect.ts`
+- `lib/actions/meta-ads-connect.ts`
+- `app/api/cron/ads-sync/route.ts`
+- `app/portal/ads/page.tsx`
+- `app/portal/ads/ads-dashboard.tsx`
+- `app/portal/settings/integrations/google-ads-forms.tsx`
+- `app/portal/settings/integrations/meta-ads-forms.tsx`
+
+**Files modified.**
+- `prisma/schema.prisma` (AdAccount, AdCampaign, AdMetricDaily)
+- `vercel.json` (added daily ads-sync cron)
+- `lib/integrations/catalog.ts` (google-ads, meta-ads → self_serve)
+- `lib/integrations/status.ts` (resolve google-ads, meta-ads tile state)
+- `app/portal/settings/integrations/page.tsx` (new manage slots)
+- `components/portal/portal-nav.tsx` (added /portal/ads nav item)
+
+**Constraints honored.** Did not touch `/app/portal/visitors/`,
+`/app/portal/seo/`, `/app/api/webhooks/cursive`, `/app/api/public/visitors/`,
+`/app/api/public/pixel/`, `/lib/integrations/{gsc,ga4,cursive}.ts`,
+`/app/api/cron/seo-sync/`, or `/docs/spike-live-visitor-chatbot.md`.
+
+`pnpm type-check` passes; `pnpm build` passes (75 routes, `/portal/ads`
+included). New cron route passes the structural test in
+`__tests__/api-route-structure.test.ts`. Pre-existing test failures in the
+suite are unrelated to this change (stale schema references like `WebhookLog`,
+`processed/sent/skipped` enums, etc.).
