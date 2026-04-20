@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { VerticalLanding } from "@/components/platform/vertical-landing";
+import { NurtureTimeline } from "@/components/platform/artifacts/nurture-timeline";
 
 export const metadata: Metadata = {
   title: "Senior living marketing that respects the family",
@@ -11,8 +12,11 @@ export default function SeniorLivingPage() {
   return (
     <VerticalLanding
       eyebrow="Senior living"
-      headline="Respect the family. Respect the decision. Show results."
+      headline="Respect the family."
+      headlineAccent="Show results."
       subhead="Senior living prospects research for months, often on behalf of a parent. Your marketing stack needs to be patient, compliant, and always ready to hand a warm lead to a real person."
+      caption="90+ day journeys · compliance-reviewed creative · human handoff on sensitive threads"
+      artifact={<NurtureTimeline />}
       pains={[
         {
           title: "Long, sensitive buying journeys",

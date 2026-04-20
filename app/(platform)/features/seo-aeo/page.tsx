@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { SplitHero, SplitSection } from "@/components/platform/split-hero";
 import { Reveal } from "@/components/platform/reveal";
 import { SeoAnswer } from "@/components/platform/artifacts/seo-answer";
+import {
+  ChatGPTMark, PerplexityMark, ClaudeMark, GeminiMark, GoogleMark,
+} from "@/components/platform/artifacts/brand-logos";
 
 export const metadata: Metadata = {
   title: "Search and AI discovery for real estate operators",
@@ -27,17 +31,17 @@ export default function SEOAEOFeaturePage() {
       />
 
       <SplitSection
-        eyebrow="What it is"
-        headline="Real SEO and answer-engine optimization in one stack."
-        body="Every page gets the structured data, local copy, and technical hygiene that Google ranks. Every page also gets optimized for how LLMs quote the web — so when ChatGPT answers 'student housing near Cal,' your pages are the citation."
+        eyebrow="What this does for you"
+        headline="Be the answer across every place people search."
+        body="Every page we ship for you is written to be the answer when a prospect asks Google, ChatGPT, Perplexity, Claude, or Gemini about your market. One playbook — better Google rankings and better AI citations."
         bullets={[
-          "Schema.org on every page: LocalBusiness, ApartmentComplex, FAQPage, Article.",
-          "Dynamic sitemap rebuilt on every deploy, per-tenant, at your custom domain.",
-          "Per-location, per-neighborhood, per-unit-type landing pages with local copy.",
-          "Core Web Vitals, mobile, canonical, OG images — all handled.",
+          "Per-neighborhood, per-unit-type pages for the questions your prospects actually ask.",
+          "Your brand, your address, your amenities tagged so AI engines can quote them.",
+          "Fast pages, mobile-ready, built to pass Google's ranking checks without you worrying about it.",
+          "A monthly audit that tells you exactly where you're showing up — and where we're closing the gap.",
         ]}
         side="right"
-        artifact={<SchemaCard />}
+        artifact={<CitedByAI />}
       />
 
       <SplitSection
@@ -68,69 +72,104 @@ export default function SEOAEOFeaturePage() {
   );
 }
 
-function SchemaCard() {
-  const lines = [
-    { k: "@type",          v: "\"ApartmentComplex\"" },
-    { k: "name",           v: "\"Telegraph Commons\"" },
-    { k: "address",        v: "\"2490 Channing Way, Berkeley\"" },
-    { k: "amenityFeature", v: "[\"Wifi\", \"Furnished\", \"Laundry\"…]" },
-    { k: "numberOfRooms",  v: "612" },
-    { k: "priceRange",     v: "\"$$\"" },
-    { k: "aggregateRating",v: "{ \"ratingValue\": 4.6 }" },
+function CitedByAI() {
+  const engines: Array<{ name: string; mark: ReactNode; line: string }> = [
+    { name: "ChatGPT",     mark: <ChatGPTMark size={22} />,     line: "\"Telegraph Commons — 3-minute walk to UC Berkeley, fully furnished, wifi included.\"" },
+    { name: "Perplexity",  mark: <PerplexityMark size={22} />,  line: "\"Telegraph Commons is the top-rated student housing on Channing Way.\"" },
+    { name: "Claude",      mark: <ClaudeMark size={22} />,      line: "\"For UC Berkeley students, Telegraph Commons offers furnished rooms with all utilities included.\"" },
+    { name: "Gemini",      mark: <GeminiMark size={22} />,      line: "\"Telegraph Commons — a highly-rated option near Sproul Plaza.\"" },
+    { name: "Google",      mark: <GoogleMark size={22} />,      line: "\"Best student housing near UC Berkeley\" — ranked #1 for the query." },
   ];
   return (
     <div
       className="w-full"
       style={{
-        backgroundColor: "#141413",
+        backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 0 0 1px #30302e, 0 20px 60px rgba(20,20,19,0.18)",
+        boxShadow: "0 0 0 1px #f0eee6, 0 20px 60px rgba(20,20,19,0.06)",
         overflow: "hidden",
       }}
     >
       <div
-        className="px-5 py-3 flex items-center gap-2"
-        style={{ borderBottom: "1px solid #30302e" }}
+        className="px-5 py-4 flex items-center justify-between gap-3"
+        style={{ borderBottom: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
       >
-        <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#ff5f57" }} />
-        <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#febc2e" }} />
-        <span style={{ width: "10px", height: "10px", borderRadius: "50%", backgroundColor: "#28c840" }} />
         <span
-          className="ml-2"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "10px",
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            color: "#87867f",
+            fontWeight: 600,
+          }}
+        >
+          Where your brand gets quoted
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "10px",
+            color: "#2F6FE5",
+            fontWeight: 600,
+          }}
+        >
+          5 of 5 engines · this month
+        </span>
+      </div>
+      <ul>
+        {engines.map((e, i) => (
+          <li
+            key={e.name}
+            className="flex items-start gap-3 px-5 py-3.5"
+            style={{ borderBottom: i < engines.length - 1 ? "1px solid #f0eee6" : "none" }}
+          >
+            <span className="flex-shrink-0 mt-0.5">{e.mark}</span>
+            <div className="flex-1 min-w-0">
+              <p
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "13px",
+                  color: "#141413",
+                  fontWeight: 600,
+                  lineHeight: 1.3,
+                }}
+              >
+                {e.name}
+              </p>
+              <p
+                className="mt-1"
+                style={{
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "13px",
+                  color: "#5e5d59",
+                  lineHeight: 1.5,
+                  fontStyle: "italic",
+                }}
+              >
+                {e.line}
+              </p>
+            </div>
+          </li>
+        ))}
+      </ul>
+      <div
+        className="px-5 py-3"
+        style={{ borderTop: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
+      >
+        <span
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
             letterSpacing: "0.1em",
-            color: "#b0aea5",
             textTransform: "uppercase",
+            color: "#87867f",
+            fontWeight: 500,
           }}
         >
-          schema.org · apartment-complex.json
+          Ask any of them about your market — you'll be the answer
         </span>
       </div>
-      <pre
-        className="p-5 overflow-x-auto"
-        style={{
-          fontFamily: "var(--font-mono)",
-          fontSize: "12.5px",
-          color: "#faf9f5",
-          lineHeight: 1.7,
-          margin: 0,
-        }}
-      >
-{`{
-  "@context": "https://schema.org",`}
-        {lines.map((l) => (
-          <div key={l.k}>
-            <span style={{ color: "#87867f" }}>  "</span>
-            <span style={{ color: "#5B8CE6" }}>{l.k}</span>
-            <span style={{ color: "#87867f" }}>": </span>
-            <span style={{ color: "#faf9f5" }}>{l.v}</span>
-            <span style={{ color: "#87867f" }}>,</span>
-          </div>
-        ))}
-{`}`}
-      </pre>
     </div>
   );
 }

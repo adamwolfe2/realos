@@ -17,46 +17,46 @@ export default function PixelFeaturePage() {
         eyebrow="Visitor identification"
         headline="Know who's actually"
         headlineAccent="on your site."
-        subhead="Standard analytics tell you impressions. Our pixel tells you which prospect visited, which unit they looked at, and how to reach them — all before they fill out a form."
+        subhead="Most analytics tell you impressions. We tell you which prospect just visited, which unit they looked at, and how to reach them — all before they fill out a form."
         ctas={[
           { label: "Book a demo", href: "/onboarding" },
           { label: "See it live", href: "/#live", variant: "secondary" },
         ]}
-        caption="Installed in under an hour · consented identity graph · per-tenant per-domain"
+        caption="Live on your site · consented identity graph · fully compliant"
         artifact={<VisitorStream />}
       />
 
       <SplitSection
-        eyebrow="What it is"
-        headline="A pixel that puts names on the visits that matter."
-        body="A lightweight script on your marketing site matches anonymous visitors against a consented identity graph. When a visit resolves to a person, we attach the name, email, sometimes the phone, plus a full-contact enrichment payload — before they've filled anything out."
+        eyebrow="What you see"
+        headline="Real names on the visits that matter."
+        body="Every time a prospect loads a floor plan, we tell you who they are. Not a vague 'someone from California' — a name, an email, often a phone and a LinkedIn. Your leasing team gets to follow up before the prospect has even filled anything out."
         bullets={[
-          "Per-tenant install on your custom domain — no shared scripts, no brand collisions.",
-          "Matches only against consented identity sources — opt-in, compliant, auditable.",
-          "Every visit is stored as a row: pageviews, time on page, referrer, UTM, session chain.",
-          "High-intent identified visitors route to your CRM automatically, with enrichment attached.",
+          "Live feed of identified visitors — who, where, and what they looked at.",
+          "Every identified visitor enriched with role, organization, and contact info.",
+          "High-intent visitors flagged and emailed to your team within minutes.",
+          "All of it captured with consent — audit-friendly, compliant, yours to keep.",
         ]}
         side="right"
-        artifact={<PixelMatchMatrix />}
+        artifact={<VisitorProfile />}
       />
 
       <SplitSection
-        eyebrow="How it works"
-        headline="Anonymous to named, in four moves."
-        body="We handle the install, the matching, the enrichment, and the routing. You review the identified list Monday morning and a steady drip of new leads throughout the week."
+        eyebrow="How it works for you"
+        headline="Anonymous to named, without you lifting a finger."
+        body="We install it, we run it, we feed the results into your team's workflow. You review the Monday report and the steady drip of named leads throughout the week."
         side="left"
         background="#f5f4ed"
         artifact={<PixelPipeline />}
       />
 
       <SplitSection
-        eyebrow="What to expect"
-        headline="A steady stream of named visitors, not session counts."
+        eyebrow="What you get"
+        headline="A steady stream of named visitors — not session counts."
         bullets={[
-          "Weekly visitor report Monday morning — who visited, who's high intent, who converted.",
-          "Named leads appear in your CRM with enrichment, UTM, and page-journey attached.",
-          "One-click CSV of hashed emails for Meta, Google, and TikTok custom audiences.",
-          "Clear attribution from ad campaigns, search pages, and organic traffic to real people.",
+          "Monday report: who visited, who's high intent, who converted last week.",
+          "Named leads feed your team's inbox and your leasing software automatically.",
+          "Your Meta, Google, and TikTok audiences rebuilt weekly from the people who actually showed up.",
+          "Clear attribution from ad to tour to lease — no more guessing what's working.",
         ]}
         side="right"
         background="#faf9f5"
@@ -68,16 +68,15 @@ export default function PixelFeaturePage() {
   );
 }
 
-function PixelMatchMatrix() {
-  const rows = [
-    { label: "Page journey",      value: "/floor-plans/2-bed → /pricing → /tour",    match: true  },
-    { label: "Device",            value: "iPhone 15 · Safari · Berkeley, CA",        match: true  },
-    { label: "Session duration",  value: "4m 38s across 3 visits",                    match: true  },
-    { label: "Identity match",    value: "marisol.reyes@berkeley.edu",                match: true  },
-    { label: "Enrichment",        value: "UC Berkeley · sophomore · 19",              match: true  },
-    { label: "LinkedIn",          value: "linkedin.com/in/marisolreyes",              match: true  },
-    { label: "Intent score",      value: "0.87  · high",                              match: true  },
-    { label: "Routed to",         value: "CRM · ads audience · owner report",         match: true  },
+function VisitorProfile() {
+  const facts = [
+    { label: "Name",          value: "Marisol Reyes" },
+    { label: "Email",         value: "marisol.reyes@berkeley.edu" },
+    { label: "Who she is",    value: "UC Berkeley · sophomore" },
+    { label: "Where she's from", value: "Sacramento, CA" },
+    { label: "What she looked at", value: "2-bed floor plan · pricing · tours" },
+    { label: "Time on site",  value: "4m 38s across 3 visits" },
+    { label: "Intent",        value: "High — viewed tours twice" },
   ];
   return (
     <div
@@ -90,83 +89,111 @@ function PixelMatchMatrix() {
       }}
     >
       <div
-        className="px-5 py-3 flex items-center gap-2"
+        className="px-5 py-4 flex items-center gap-3"
         style={{ borderBottom: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
+      >
+        <span
+          className="inline-flex items-center justify-center"
+          style={{
+            width: "40px",
+            height: "40px",
+            borderRadius: "50%",
+            backgroundColor: "#2F6FE5",
+            color: "#ffffff",
+            fontFamily: "var(--font-mono)",
+            fontSize: "13px",
+            fontWeight: 700,
+          }}
+        >
+          MR
+        </span>
+        <div className="flex-1 min-w-0">
+          <p
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: "14px",
+              color: "#141413",
+              fontWeight: 600,
+              lineHeight: 1.2,
+            }}
+          >
+            Marisol Reyes · identified visitor
+          </p>
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "10px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "#87867f",
+              marginTop: "3px",
+              fontWeight: 500,
+            }}
+          >
+            Here's what we know before she filled anything out
+          </p>
+        </div>
+      </div>
+      <ul>
+        {facts.map((f, i) => (
+          <li
+            key={f.label}
+            className="grid grid-cols-[150px_1fr] gap-3 items-center px-5 py-3"
+            style={{ borderBottom: i < facts.length - 1 ? "1px solid #f0eee6" : "none" }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#87867f",
+                fontWeight: 500,
+              }}
+            >
+              {f.label}
+            </span>
+            <span
+              className="truncate"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "13.5px",
+                color: "#141413",
+                fontWeight: 500,
+              }}
+            >
+              {f.value}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div
+        className="px-5 py-3 flex items-center justify-between gap-3"
+        style={{ borderTop: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
       >
         <span
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            letterSpacing: "0.14em",
+            letterSpacing: "0.1em",
             textTransform: "uppercase",
             color: "#87867f",
-            fontWeight: 600,
+            fontWeight: 500,
           }}
         >
-          resolved_visit · anon_8f2e…a91
+          Sent to your team · added to your ad audiences
         </span>
       </div>
-      <ul className="px-2 py-2">
-        {rows.map((r, i) => (
-          <li
-            key={r.label}
-            className="grid grid-cols-[1fr_auto] items-center gap-3 px-3 py-2.5 rounded-lg"
-            style={{
-              backgroundColor: i % 2 === 0 ? "#faf9f5" : "transparent",
-            }}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              <span
-                className="inline-flex items-center justify-center flex-shrink-0"
-                style={{
-                  width: "16px",
-                  height: "16px",
-                  borderRadius: "50%",
-                  backgroundColor: "rgba(47,111,229,0.12)",
-                  color: "#2F6FE5",
-                }}
-              >
-                <svg width="9" height="9" viewBox="0 0 10 10" fill="none">
-                  <path d="M1.5 5L4 7.5L8.5 2.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-                </svg>
-              </span>
-              <span
-                className="truncate"
-                style={{
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "13px",
-                  color: "#141413",
-                  fontWeight: 500,
-                }}
-              >
-                {r.label}
-              </span>
-            </div>
-            <span
-              className="truncate"
-              style={{
-                fontFamily: "var(--font-mono)",
-                fontSize: "11.5px",
-                color: "#4d4c48",
-                maxWidth: "240px",
-                textAlign: "right",
-              }}
-            >
-              {r.value}
-            </span>
-          </li>
-        ))}
-      </ul>
     </div>
   );
 }
 
 function PixelPipeline() {
   const stages = [
-    { num: "01", title: "Visit",    body: "Pixel fires on pageview. Every visit is logged with pageviews, referrer, UTM, device, and session chain." },
-    { num: "02", title: "Match",    body: "The session is hashed and matched against a consented identity graph. High-confidence matches only." },
-    { num: "03", title: "Enrich",   body: "Matched people get a full-contact enrichment payload attached — role, org, socials, phone if available." },
-    { num: "04", title: "Route",    body: "High-intent identified visitors land in CRM, ad-audience CSV, and your Monday report. Automatic." },
+    { num: "01", title: "A prospect visits your site",   body: "Every pageview is captured — which units they looked at, how long they stayed, how they got there." },
+    { num: "02", title: "We match the visit to a person", body: "Consented identity graph returns a real name and email for a meaningful share of your visits." },
+    { num: "03", title: "We add everything we know",      body: "Role, organization, phone, LinkedIn — attached to the visitor so your team can reach out confidently." },
+    { num: "04", title: "It lands where your team works", body: "Your leasing inbox, your CRM, your ad audiences, and your Monday owner report. You don't lift a finger." },
   ];
   return (
     <div
@@ -192,7 +219,7 @@ function PixelPipeline() {
             fontWeight: 600,
           }}
         >
-          pipeline.identify
+          How a single visit becomes a named lead
         </span>
       </div>
       <ol className="p-5 space-y-3">

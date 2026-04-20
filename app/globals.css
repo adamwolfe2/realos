@@ -178,7 +178,7 @@ body {
   background-color: var(--terracotta);
   color: var(--ivory);
   font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 12px; border: none;
+  border-radius: 6px; border: none;
   box-shadow: 0 0 0 1px var(--terracotta) inset;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
@@ -194,7 +194,7 @@ body {
   background-color: var(--warm-sand);
   color: var(--charcoal-warm);
   font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 12px; border: none;
+  border-radius: 6px; border: none;
   box-shadow: 0 0 0 1px var(--ring-warm);
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
@@ -209,7 +209,7 @@ body {
   min-height: 44px; padding: 10px 20px;
   background-color: var(--white); color: var(--near-black);
   font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 12px; border: none;
+  border-radius: 6px; border: none;
   box-shadow: 0 0 0 1px var(--border-cream);
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -220,7 +220,7 @@ body {
   min-height: 44px; padding: 10px 20px;
   background-color: var(--dark-surface); color: var(--ivory);
   font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 12px; border: none;
+  border-radius: 6px; border: none;
   box-shadow: 0 0 0 1px var(--dark-surface);
   transition: background-color 0.2s ease;
 }
@@ -231,7 +231,7 @@ body {
   min-height: 36px; padding: 6px 12px;
   color: var(--near-black);
   font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 10px; border: none; background: transparent;
+  border-radius: 6px; border: none; background: transparent;
   transition: background-color 0.2s ease, color 0.2s ease;
   cursor: pointer;
 }
@@ -240,9 +240,9 @@ body {
 .btn-nav-on-dark:hover { background-color: rgba(255,255,255,0.10); }
 
 /* Back-compat names */
-.btn-accent { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--terracotta); color: var(--ivory); font-family: var(--font-sans); font-size: 15px; font-weight: 500; border-radius: 12px; transition: background-color 0.2s; }
+.btn-accent { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--terracotta); color: var(--ivory); font-family: var(--font-sans); font-size: 15px; font-weight: 500; border-radius: 6px; transition: background-color 0.2s; }
 .btn-accent:hover { background-color: var(--terracotta-hover); }
-.btn-ghost { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--warm-sand); color: var(--charcoal-warm); font-family: var(--font-sans); font-size: 15px; font-weight: 500; border-radius: 12px; box-shadow: 0 0 0 1px var(--ring-warm); }
+.btn-ghost { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--warm-sand); color: var(--charcoal-warm); font-family: var(--font-sans); font-size: 15px; font-weight: 500; border-radius: 6px; box-shadow: 0 0 0 1px var(--ring-warm); }
 .btn-ghost:hover { background-color: var(--border-cream); }
 .btn-blue { composes: btn-accent; }
 .btn-outline { composes: btn-ghost; }

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { VerticalLanding } from "@/components/platform/vertical-landing";
+import { PortfolioOccupancy } from "@/components/platform/artifacts/portfolio-occupancy";
 
 export const metadata: Metadata = {
   title: "Multifamily marketing, measured by signed leases",
@@ -11,8 +12,11 @@ export default function MultifamilyPage() {
   return (
     <VerticalLanding
       eyebrow="Multifamily"
-      headline="Portfolio-grade marketing without portfolio-grade agency fees."
+      headline="Portfolio-grade marketing,"
+      headlineAccent="without portfolio-grade agency fees."
       subhead="You manage buildings across different cities and demographics. Your marketing stack should speak to each one and roll up into one dashboard."
+      caption="Per-property dashboards · fair-housing-reviewed creative · one login"
+      artifact={<PortfolioOccupancy label="Your whole portfolio, one view" />}
       pains={[
         {
           title: "Agency spend you can't justify",

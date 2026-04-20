@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import { ChatGPTMark, PerplexityMark, ClaudeMark, GeminiMark, GoogleMark } from "./brand-logos";
 
 const ACCENT = "#2F6FE5";
 const INK = "#141413";
@@ -79,35 +80,44 @@ export function SeoAnswer() {
       }}
     >
       <div
-        className="px-5 md:px-6 py-3 flex items-center gap-2"
+        className="px-5 md:px-6 py-3 flex items-center justify-between gap-2"
         style={{ borderBottom: `1px solid ${BORDER}`, backgroundColor: PARCHMENT }}
       >
-        <span
-          className="inline-flex items-center justify-center"
-          style={{
-            width: "22px",
-            height: "22px",
-            borderRadius: "50%",
-            backgroundColor: "#ffffff",
-            boxShadow: `0 0 0 1px ${BORDER}`,
-          }}
-        >
-          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
-            <path d="M4 0L4.9 3.1L8 4L4.9 4.9L4 8L3.1 4.9L0 4L3.1 3.1L4 0Z" fill={ACCENT} />
-          </svg>
-        </span>
-        <span
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "10px",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            color: MUTED,
-            fontWeight: 600,
-          }}
-        >
-          answer-engine.result
-        </span>
+        <div className="flex items-center gap-2">
+          <span
+            className="inline-flex items-center justify-center"
+            style={{
+              width: "22px",
+              height: "22px",
+              borderRadius: "50%",
+              backgroundColor: "#ffffff",
+              boxShadow: `0 0 0 1px ${BORDER}`,
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+              <path d="M4 0L4.9 3.1L8 4L4.9 4.9L4 8L3.1 4.9L0 4L3.1 3.1L4 0Z" fill={ACCENT} />
+            </svg>
+          </span>
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "10px",
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              color: MUTED,
+              fontWeight: 600,
+            }}
+          >
+            How you show up on AI
+          </span>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <ChatGPTMark size={14} />
+          <PerplexityMark size={14} />
+          <ClaudeMark size={14} />
+          <GeminiMark size={14} />
+          <GoogleMark size={14} />
+        </div>
       </div>
 
       <div
@@ -288,7 +298,7 @@ export function SeoAnswer() {
             fontWeight: 500,
           }}
         >
-          Your pages are the answer · across ChatGPT, Perplexity, Google AI
+          Your pages are the answer when prospects ask the AI
         </span>
       </div>
 

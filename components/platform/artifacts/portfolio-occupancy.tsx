@@ -14,6 +14,7 @@ export type PortfolioProperty = {
 type Props = {
   label?: string;
   properties?: PortfolioProperty[];
+  footerLabel?: string;
 };
 
 const DEFAULT_PROPERTIES: PortfolioProperty[] = [
@@ -32,8 +33,9 @@ const SUCCESS = "#3a7d44";
 const ERROR = "#b53333";
 
 export function PortfolioOccupancy({
-  label = "portfolio.overview",
+  label = "Your whole portfolio, one view",
   properties = DEFAULT_PROPERTIES,
+  footerLabel,
 }: Props) {
   const [revealed, setRevealed] = useState(0);
 
@@ -83,7 +85,7 @@ export function PortfolioOccupancy({
               fontWeight: 600,
             }}
           >
-            Live · {label}
+            {label}
           </span>
         </div>
         <div className="text-right">
@@ -227,7 +229,7 @@ export function PortfolioOccupancy({
             fontWeight: 500,
           }}
         >
-          {properties.length} properties · one login
+          {footerLabel ?? `${properties.length} properties · one login · one weekly report`}
         </span>
         <span
           style={{
@@ -237,7 +239,7 @@ export function PortfolioOccupancy({
             fontWeight: 600,
           }}
         >
-          ↗ open portfolio
+          ↗ See every property
         </span>
       </div>
 

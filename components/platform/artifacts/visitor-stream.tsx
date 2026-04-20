@@ -100,7 +100,7 @@ export function VisitorStream() {
               fontWeight: 600,
             }}
           >
-            Live · visitors.stream
+            Live · on your site right now
           </span>
         </div>
         <div className="text-right">
@@ -247,7 +247,7 @@ export function VisitorStream() {
             fontWeight: 500,
           }}
         >
-          Routed to CRM · ads audience · Monday report
+          Every named visitor goes to your team and your ad audiences
         </span>
         <span
           style={{
@@ -257,7 +257,7 @@ export function VisitorStream() {
             fontWeight: 600,
           }}
         >
-          ↗ open in CRM
+          ↗ See all visitors
         </span>
       </div>
 

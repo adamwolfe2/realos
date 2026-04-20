@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { VerticalLanding } from "@/components/platform/vertical-landing";
+import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
 
 export const metadata: Metadata = {
   title: "Student housing marketing that actually fills beds",
@@ -11,8 +12,11 @@ export default function StudentHousingPage() {
   return (
     <VerticalLanding
       eyebrow="Student housing"
-      headline="Fill beds the way the big national brands do, at independent-operator cost."
+      headline="Fill beds the way the national brands do,"
+      headlineAccent="at independent-operator cost."
       subhead="Student housing is a sprint. Applications open in the fall, half your stock leases by December, and your agency is still drafting a creative brief. We replace the whole stack with software your leasing team actually uses."
+      caption="Live on campus domains · 2am international applicants · Monday owner report"
+      artifact={<ChatDemo />}
       pains={[
         {
           title: "Sprint leasing cycles",

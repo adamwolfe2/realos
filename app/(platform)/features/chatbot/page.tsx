@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { SplitHero, SplitSection } from "@/components/platform/split-hero";
 import { Reveal } from "@/components/platform/reveal";
 import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
+import {
+  CalcomMark, ResendMark, SlackMark,
+} from "@/components/platform/artifacts/brand-logos";
 
 export const metadata: Metadata = {
   title: "AI chatbot with real lead capture, 24/7",
@@ -69,14 +73,14 @@ export default function ChatbotFeaturePage() {
 }
 
 function ChatConfig() {
-  const rows = [
-    { k: "Persona",           v: "\"Ask Telegraph\"" },
-    { k: "Trigger",           v: "5s idle · scroll-depth 60%" },
-    { k: "Grounding",         v: "Live PMS listings + KB" },
-    { k: "Pricing policy",    v: "Confirm or escalate" },
-    { k: "Tour scheduling",   v: "Inline, via Cal.com" },
-    { k: "Lead capture",      v: "Name · email · phone" },
-    { k: "Escalation",        v: "Slack #leasing-hot" },
+  const rows: Array<{ k: string; v: string; logos?: ReactNode[] }> = [
+    { k: "How it greets",       v: "\"Hey! Ask me anything about Telegraph Commons.\"" },
+    { k: "When it opens",        v: "After 5 seconds, or when they scroll down" },
+    { k: "What it knows",       v: "Your live unit list, amenities, and pricing rules" },
+    { k: "When pricing is asked", v: "Quotes what you've approved — never guesses" },
+    { k: "Tours",                v: "Booked inline",                          logos: [<CalcomMark key="cal" size={16} />] },
+    { k: "Leads",                v: "Captured and sent to your team",         logos: [<ResendMark key="r" size={16} />] },
+    { k: "Hot threads",          v: "Ping your leasing team in real time",    logos: [<SlackMark key="s" size={16} />] },
   ];
   return (
     <div
@@ -102,23 +106,24 @@ function ChatConfig() {
             fontWeight: 600,
           }}
         >
-          chatbot.config · telegraph-commons
+          Trained for your property
         </span>
       </div>
       <ul className="px-2 py-2">
         {rows.map((r, i) => (
           <li
             key={r.k}
-            className="grid grid-cols-[140px_1fr] gap-3 items-center px-3 py-2.5 rounded-lg"
+            className="grid grid-cols-[160px_1fr_auto] gap-3 items-center px-3 py-2.5 rounded-lg"
             style={{ backgroundColor: i % 2 === 0 ? "#faf9f5" : "transparent" }}
           >
             <span
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: "11.5px",
+                fontSize: "11px",
                 color: "#87867f",
-                letterSpacing: "0.04em",
-                fontWeight: 500,
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                fontWeight: 600,
               }}
             >
               {r.k}
@@ -134,6 +139,11 @@ function ChatConfig() {
             >
               {r.v}
             </span>
+            {r.logos ? (
+              <span className="inline-flex items-center gap-1 flex-shrink-0">{r.logos}</span>
+            ) : (
+              <span />
+            )}
           </li>
         ))}
       </ul>
@@ -172,7 +182,7 @@ function ChatPipeline() {
             fontWeight: 600,
           }}
         >
-          conversation.pipeline
+          Every conversation, start to lead
         </span>
       </div>
       <ol className="p-5 space-y-3">

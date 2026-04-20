@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { BRAND_NAME, getSiteUrl } from "@/lib/brand";
+import { Reveal } from "@/components/platform/reveal";
 
 // ---------------------------------------------------------------------------
 // Manifesto — a founder's note, written to be emailed as a single link to
@@ -57,64 +58,183 @@ function Hero() {
   return (
     <section
       className="relative overflow-hidden"
-      style={{ backgroundColor: "#f5f4ed" }}
+      style={{ backgroundColor: "#f5f4ed", borderBottom: "1px solid #f0eee6" }}
     >
-      <div className="max-w-[820px] mx-auto px-4 md:px-8 pt-24 md:pt-32 pb-10 md:pb-14">
-        <p
-          className="mb-6"
-          style={{
-            color: "#87867f",
-            fontFamily: "var(--font-mono)",
-            fontSize: "11px",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            fontWeight: 500,
-          }}
-        >
-          A note from the founder
-        </p>
-        <h1
-          style={{
-            color: "#141413",
-            fontFamily: "var(--font-display)",
-            fontSize: "clamp(40px, 5vw, 60px)",
-            fontWeight: 500,
-            lineHeight: 1.08,
-            letterSpacing: "-0.005em",
-          }}
-        >
-          Why we built {BRAND_NAME}.
-        </h1>
-        <p
-          className="mt-6"
-          style={{
-            color: "#141413",
-            fontFamily: "var(--font-display)",
-            fontSize: "clamp(20px, 2.2vw, 26px)",
-            lineHeight: 1.4,
-            fontWeight: 400,
-            letterSpacing: "-0.003em",
-          }}
-        >
-          Real estate is the last large vertical still buying marketing as a
-          retainer. We think it should be a{" "}
-          <span style={{ color: "#2F6FE5" }}>product</span>.
-        </p>
-        <p
-          className="mt-6"
-          style={{
-            color: "#87867f",
-            fontFamily: "var(--font-mono)",
-            fontSize: "12px",
-            letterSpacing: "0.08em",
-            textTransform: "uppercase",
-            fontWeight: 500,
-          }}
-        >
-          Adam Wolfe, founder
-        </p>
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-24 md:pt-28 pb-14 md:pb-16">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+          <div className="lg:col-span-7">
+            <Reveal>
+              <p
+                className="mb-6"
+                style={{
+                  color: "#87867f",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  letterSpacing: "0.18em",
+                  textTransform: "uppercase",
+                  fontWeight: 500,
+                }}
+              >
+                A note from the founder
+              </p>
+            </Reveal>
+            <Reveal delay={60}>
+              <h1
+                style={{
+                  color: "#141413",
+                  fontFamily: "var(--font-display)",
+                  fontSize: "clamp(40px, 5vw, 62px)",
+                  fontWeight: 500,
+                  lineHeight: 1.06,
+                  letterSpacing: "-0.005em",
+                }}
+              >
+                Why we built {BRAND_NAME}.
+              </h1>
+            </Reveal>
+            <Reveal delay={140}>
+              <p
+                className="mt-6"
+                style={{
+                  color: "#141413",
+                  fontFamily: "var(--font-display)",
+                  fontSize: "clamp(20px, 2.2vw, 26px)",
+                  lineHeight: 1.4,
+                  fontWeight: 400,
+                  letterSpacing: "-0.003em",
+                }}
+              >
+                Real estate is the last large vertical still buying marketing as a retainer.
+                We think it should be a <span style={{ color: "#2F6FE5" }}>product</span>.
+              </p>
+            </Reveal>
+          </div>
+
+          <div className="lg:col-span-5">
+            <Reveal delay={180} y={24}>
+              <FounderCard />
+            </Reveal>
+          </div>
+        </div>
       </div>
     </section>
+  );
+}
+
+function FounderCard() {
+  const facts = [
+    { k: "Written",    v: "April 2026" },
+    { k: "Read time",  v: "6 minutes" },
+    { k: "Stage",      v: "Live on a production domain" },
+    { k: "Partners",   v: "Ten operator slots" },
+    { k: "Price",      v: "One retainer, no long contracts" },
+  ];
+  return (
+    <div
+      className="w-full"
+      style={{
+        backgroundColor: "#ffffff",
+        borderRadius: "16px",
+        boxShadow: "0 0 0 1px #f0eee6, 0 20px 60px rgba(20,20,19,0.06)",
+        overflow: "hidden",
+      }}
+    >
+      <div
+        className="px-5 md:px-6 py-4 flex items-center gap-3"
+        style={{ borderBottom: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
+      >
+        <span
+          className="inline-flex items-center justify-center"
+          style={{
+            width: "36px",
+            height: "36px",
+            borderRadius: "50%",
+            backgroundColor: "#2F6FE5",
+            color: "#ffffff",
+            fontFamily: "var(--font-mono)",
+            fontSize: "13px",
+            fontWeight: 700,
+          }}
+        >
+          AW
+        </span>
+        <div>
+          <p
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: "13.5px",
+              color: "#141413",
+              fontWeight: 600,
+              lineHeight: 1.2,
+            }}
+          >
+            Adam Wolfe
+          </p>
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "10px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              color: "#87867f",
+              marginTop: "2px",
+              fontWeight: 500,
+            }}
+          >
+            Founder · {BRAND_NAME}
+          </p>
+        </div>
+      </div>
+      <ul>
+        {facts.map((f, i) => (
+          <li
+            key={f.k}
+            className="grid grid-cols-[110px_1fr] gap-3 px-5 md:px-6 py-3"
+            style={{ borderBottom: i < facts.length - 1 ? "1px solid #f0eee6" : "none" }}
+          >
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.08em",
+                textTransform: "uppercase",
+                color: "#87867f",
+                fontWeight: 500,
+              }}
+            >
+              {f.k}
+            </span>
+            <span
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "13.5px",
+                color: "#141413",
+                fontWeight: 500,
+              }}
+            >
+              {f.v}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <div
+        className="px-5 md:px-6 py-3"
+        style={{ borderTop: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "10px",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: "#87867f",
+            fontWeight: 500,
+          }}
+        >
+          Written to be emailed as a single link
+        </span>
+      </div>
+    </div>
   );
 }
 
