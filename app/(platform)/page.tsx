@@ -55,13 +55,17 @@ function Hero() {
     <SplitHero
       eyebrow="For multifamily and student-housing operators"
       headline={
-        <>
-          The <span style={{ color: "#2F6FE5" }}>#1</span> Real Estate{" "}
-          <RotatingWord
-            words={["Marketing", "Leasing", "Leads", "Conversion", "Ads", "Growth", "Discovery", "Occupancy"]}
-          />{" "}
-          Ecosystem.
-        </>
+        <span style={{ display: "block" }}>
+          <span style={{ display: "block" }}>
+            The <span style={{ color: "#2F6FE5" }}>#1</span> Real Estate
+          </span>
+          <span style={{ display: "block", whiteSpace: "nowrap" }}>
+            <RotatingWord
+              words={["Marketing", "Leasing", "Leads", "Conversion", "Ads", "Growth", "Discovery", "Occupancy"]}
+            />{" "}
+            Ecosystem.
+          </span>
+        </span>
       }
       subhead={
         <>
