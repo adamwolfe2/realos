@@ -247,6 +247,8 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
       title: "Company",
       items: [
         { href: "/blog", label: "Blog" },
+        { href: "/about", label: "About" },
+        { href: "/manifesto", label: "Manifesto" },
         { href: "/sign-in", label: "Sign in" },
       ],
     },
