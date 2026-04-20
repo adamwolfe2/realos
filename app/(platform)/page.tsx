@@ -38,9 +38,8 @@ export default function PlatformHome() {
       <Numbers />
       <Modules />
       <Verticals />
-      <Proof />
       <Faq />
-      <FinalCta />
+      <Proof />
     </div>
   );
 }
