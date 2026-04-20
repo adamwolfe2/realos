@@ -33,8 +33,8 @@ datasource db {
 // ============================================================================
 
 enum OrgType {
-  AGENCY              // Singleton: us
-  CLIENT              // Each real estate company
+  AGENCY // Singleton: us
+  CLIENT // Each real estate company
 }
 
 enum PropertyType {
@@ -77,13 +77,13 @@ enum BackendPlatform {
 }
 
 enum UserRole {
-  AGENCY_OWNER        // Adam
-  AGENCY_ADMIN        // Agency team member
-  AGENCY_OPERATOR     // Limited agency role
-  CLIENT_OWNER        // Primary client contact
-  CLIENT_ADMIN        // Client team member with full portal access
-  CLIENT_VIEWER       // Read-only client access
-  LEASING_AGENT       // Specific role on client team
+  AGENCY_OWNER // Adam
+  AGENCY_ADMIN // Agency team member
+  AGENCY_OPERATOR // Limited agency role
+  CLIENT_OWNER // Primary client contact
+  CLIENT_ADMIN // Client team member with full portal access
+  CLIENT_VIEWER // Read-only client access
+  LEASING_AGENT // Specific role on client team
 }
 
 enum TenantStatus {
@@ -244,65 +244,65 @@ enum AuditAction {
 // ============================================================================
 
 model Organization {
-  id                   String        @id @default(cuid())
-  name                 String
-  shortName            String?
-  slug                 String        @unique                    // {slug}.platformdomain.com
-  orgType              OrgType       @default(CLIENT)
-  clerkOrgId           String?       @unique
-  stripeCustomerId     String?       @unique
+  id               String  @id @default(cuid())
+  name             String
+  shortName        String?
+  slug             String  @unique // {slug}.platformdomain.com
+  orgType          OrgType @default(CLIENT)
+  clerkOrgId       String? @unique
+  stripeCustomerId String? @unique
 
   // Property classification
-  propertyType         PropertyType  @default(RESIDENTIAL)
-  residentialSubtype   ResidentialSubtype?
-  commercialSubtype    CommercialSubtype?
+  propertyType       PropertyType        @default(RESIDENTIAL)
+  residentialSubtype ResidentialSubtype?
+  commercialSubtype  CommercialSubtype?
 
   // Tenant status
-  status               TenantStatus  @default(INTAKE_RECEIVED)
-  launchedAt           DateTime?
-  atRiskReason         String?
+  status       TenantStatus @default(INTAKE_RECEIVED)
+  launchedAt   DateTime?
+  atRiskReason String?
 
   // Branding (for tenant marketing site + portal)
-  logoUrl              String?
-  primaryColor         String?       @default("#000000")
-  secondaryColor       String?
-  brandFont            String?
+  logoUrl        String?
+  primaryColor   String? @default("#000000")
+  secondaryColor String?
+  brandFont      String?
 
   // Contact
-  primaryContactName   String?
-  primaryContactEmail  String?
-  primaryContactPhone  String?
-  primaryContactRole   String?
+  primaryContactName  String?
+  primaryContactEmail String?
+  primaryContactPhone String?
+  primaryContactRole  String?
 
   // Location (company HQ, not properties)
-  hqAddressLine1       String?
-  hqCity               String?
-  hqState              String?
-  hqPostalCode         String?
+  hqAddressLine1 String?
+  hqCity         String?
+  hqState        String?
+  hqPostalCode   String?
 
   // Subscription
-  subscriptionTier     SubscriptionTier?
-  subscriptionStatus   SubscriptionStatus?
+  subscriptionTier      SubscriptionTier?
+  subscriptionStatus    SubscriptionStatus?
   subscriptionStartedAt DateTime?
-  mrrCents             Int?          @default(0)
-  buildFeePaidCents    Int?          @default(0)
-  adSpendMarkupPct     Float?        @default(0.15)             // 15% default
+  mrrCents              Int?                @default(0)
+  buildFeePaidCents     Int?                @default(0)
+  adSpendMarkupPct      Float?              @default(0.15) // 15% default
 
   // Selected modules (a la carte flags)
-  moduleWebsite        Boolean       @default(true)
-  modulePixel          Boolean       @default(false)
-  moduleChatbot        Boolean       @default(false)
-  moduleGoogleAds      Boolean       @default(false)
-  moduleMetaAds        Boolean       @default(false)
-  moduleSEO            Boolean       @default(false)
-  moduleEmail          Boolean       @default(false)
-  moduleOutboundEmail  Boolean       @default(false)
-  moduleReferrals      Boolean       @default(false)
-  moduleCreativeStudio Boolean       @default(false)
-  moduleLeadCapture    Boolean       @default(true)
+  moduleWebsite        Boolean @default(true)
+  modulePixel          Boolean @default(false)
+  moduleChatbot        Boolean @default(false)
+  moduleGoogleAds      Boolean @default(false)
+  moduleMetaAds        Boolean @default(false)
+  moduleSEO            Boolean @default(false)
+  moduleEmail          Boolean @default(false)
+  moduleOutboundEmail  Boolean @default(false)
+  moduleReferrals      Boolean @default(false)
+  moduleCreativeStudio Boolean @default(false)
+  moduleLeadCapture    Boolean @default(true)
 
   // Site hosting mode
-  bringYourOwnSite     Boolean       @default(false)
+  bringYourOwnSite Boolean @default(false)
 
   // Relationships
   users                User[]
@@ -322,16 +322,22 @@ model Organization {
   clientNotes          ClientNote[]
   cursiveIntegration   CursiveIntegration?
   appfolioIntegration  AppFolioIntegration?
+  seoIntegrations      SeoIntegration[]
+  seoSnapshots         SeoSnapshot[]
+  seoQueries           SeoQuery[]
+  seoLandingPages      SeoLandingPage[]
   addresses            Address[]
   apiKeys              ApiKey[]
   integrationRequests  IntegrationRequest[]
+  visitorSessions      VisitorSession[]
+  visitorEvents        VisitorEvent[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
-  onboardingDismissed  Boolean       @default(false)
+  onboardingDismissed Boolean @default(false)
 
-  createdAt            DateTime      @default(now())
-  updatedAt            DateTime      @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orgType, status])
   @@index([slug])
@@ -339,73 +345,73 @@ model Organization {
 }
 
 model User {
-  id              String       @id @default(cuid())
-  clerkUserId     String       @unique
-  email           String       @unique
-  firstName       String?
-  lastName        String?
-  phone           String?
-  avatarUrl       String?
+  id          String  @id @default(cuid())
+  clerkUserId String  @unique
+  email       String  @unique
+  firstName   String?
+  lastName    String?
+  phone       String?
+  avatarUrl   String?
 
-  role            UserRole     @default(CLIENT_VIEWER)
-  orgId           String
-  org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  role  UserRole     @default(CLIENT_VIEWER)
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  lastLoginAt     DateTime?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  lastLoginAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
-  auditEvents     AuditEvent[]
-  tasksAssigned   ProjectTask[] @relation("TaskAssignee")
+  auditEvents   AuditEvent[]
+  tasksAssigned ProjectTask[] @relation("TaskAssignee")
 
   @@index([orgId])
   @@index([role])
 }
 
 model ApiKey {
-  id              String       @id @default(cuid())
-  orgId           String
-  org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  name            String                                            // operator-chosen label, e.g. "Zapier production"
-  keyPrefix       String                                            // first ~12 chars of the raw key, for display only (re_live_aB12...)
-  keyHash         String       @unique                              // SHA-256 of the full raw key; the raw key is never stored
-  scopes          String[]                                          // e.g. ["ingest:lead", "ingest:visitor", "ingest:tour", "ingest:chatbot"] or ["*"]
+  name      String // operator-chosen label, e.g. "Zapier production"
+  keyPrefix String // first ~12 chars of the raw key, for display only (re_live_aB12...)
+  keyHash   String   @unique // SHA-256 of the full raw key; the raw key is never stored
+  scopes    String[] // e.g. ["ingest:lead", "ingest:visitor", "ingest:tour", "ingest:chatbot"] or ["*"]
 
   createdByUserId String?
   lastUsedAt      DateTime?
   lastUsedIp      String?
-  usageCount      Int          @default(0)
+  usageCount      Int       @default(0)
   revokedAt       DateTime?
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orgId])
   @@index([keyHash])
 }
 
 model DomainBinding {
-  id               String       @id @default(cuid())
-  orgId            String
-  org              Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  hostname         String       @unique        // telegraphcommons.com
-  isPrimary        Boolean      @default(false)
-  vercelDomainId   String?
-  sslStatus        String?                     // pending, active, failed
-  dnsConfigured    Boolean      @default(false)
+  hostname       String  @unique // telegraphcommons.com
+  isPrimary      Boolean @default(false)
+  vercelDomainId String?
+  sslStatus      String? // pending, active, failed
+  dnsConfigured  Boolean @default(false)
 
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orgId])
 }
 
 model TenantSiteConfig {
-  id              String       @id @default(cuid())
-  orgId           String       @unique
-  org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String       @unique
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   // Site content
   siteTitle       String?
@@ -413,13 +419,13 @@ model TenantSiteConfig {
   heroHeadline    String?
   heroSubheadline String?
   heroImageUrl    String?
-  aboutCopy       String?      @db.Text
+  aboutCopy       String? @db.Text
 
   // CTA config
-  primaryCtaText  String?      @default("Apply Now")
-  primaryCtaUrl   String?
-  phoneNumber     String?
-  contactEmail    String?
+  primaryCtaText String? @default("Apply Now")
+  primaryCtaUrl  String?
+  phoneNumber    String?
+  contactEmail   String?
 
   // SEO
   metaTitle       String?
@@ -427,25 +433,25 @@ model TenantSiteConfig {
   ogImageUrl      String?
 
   // Feature toggles (site-level)
-  showListings    Boolean      @default(true)
-  showFloorPlans  Boolean      @default(true)
-  showAmenities   Boolean      @default(true)
-  showReviews     Boolean      @default(false)
-  showBlog        Boolean      @default(false)
-  enableExitIntent Boolean     @default(true)
-  enableChatbot   Boolean      @default(false)
-  enablePixel     Boolean      @default(false)
+  showListings     Boolean @default(true)
+  showFloorPlans   Boolean @default(true)
+  showAmenities    Boolean @default(true)
+  showReviews      Boolean @default(false)
+  showBlog         Boolean @default(false)
+  enableExitIntent Boolean @default(true)
+  enableChatbot    Boolean @default(false)
+  enablePixel      Boolean @default(false)
 
   // Chatbot config
-  chatbotEnabled      Boolean @default(false)
-  chatbotAvatarUrl    String?
-  chatbotPersonaName  String?
-  chatbotGreeting     String?
-  chatbotTeaserText   String?
-  chatbotBrandColor   String?
-  chatbotCaptureMode  ChatbotCaptureMode @default(ON_INTENT)
-  chatbotKnowledgeBase String? @db.Text
-  chatbotIdleTriggerSeconds Int @default(5)
+  chatbotEnabled            Boolean            @default(false)
+  chatbotAvatarUrl          String?
+  chatbotPersonaName        String?
+  chatbotGreeting           String?
+  chatbotTeaserText         String?
+  chatbotBrandColor         String?
+  chatbotCaptureMode        ChatbotCaptureMode @default(ON_INTENT)
+  chatbotKnowledgeBase      String?            @db.Text
+  chatbotIdleTriggerSeconds Int                @default(5)
 
   // Exit intent config
   exitIntentHeadline  String?
@@ -454,10 +460,10 @@ model TenantSiteConfig {
   exitIntentOfferCode String?
 
   // Raw JSON for extensibility
-  customJson      Json?
+  customJson Json?
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ============================================================================
@@ -465,62 +471,62 @@ model TenantSiteConfig {
 // ============================================================================
 
 model Property {
-  id                String          @id @default(cuid())
-  orgId             String
-  org               Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  name              String                                       // "Telegraph Commons"
-  slug              String                                       // URL slug within tenant site
-  propertyType      PropertyType    @default(RESIDENTIAL)
+  name               String // "Telegraph Commons"
+  slug               String // URL slug within tenant site
+  propertyType       PropertyType        @default(RESIDENTIAL)
   residentialSubtype ResidentialSubtype?
-  commercialSubtype CommercialSubtype?
+  commercialSubtype  CommercialSubtype?
 
   // Address
-  addressLine1      String?
-  addressLine2      String?
-  city              String?
-  state             String?
-  postalCode        String?
-  country           String?         @default("US")
-  latitude          Float?
-  longitude         Float?
+  addressLine1 String?
+  addressLine2 String?
+  city         String?
+  state        String?
+  postalCode   String?
+  country      String? @default("US")
+  latitude     Float?
+  longitude    Float?
 
   // AppFolio / backend linkage
-  backendPlatform   BackendPlatform @default(NONE)
-  backendPropertyId String?                                      // External ID in AppFolio etc.
-  backendPropertyGroup String?                                   // For AppFolio: propertyGroup name
-  lastSyncedAt      DateTime?
-  syncError         String?
+  backendPlatform      BackendPlatform @default(NONE)
+  backendPropertyId    String? // External ID in AppFolio etc.
+  backendPropertyGroup String? // For AppFolio: propertyGroup name
+  lastSyncedAt         DateTime?
+  syncError            String?
 
   // Marketing
-  heroImageUrl      String?
-  photoUrls         Json?                                        // Array of URLs
-  virtualTourUrl    String?
-  amenities         Json?                                        // Array of strings
-  yearBuilt         Int?
-  totalUnits        Int?
-  description       String?         @db.Text
+  heroImageUrl   String?
+  photoUrls      Json? // Array of URLs
+  virtualTourUrl String?
+  amenities      Json? // Array of strings
+  yearBuilt      Int?
+  totalUnits     Int?
+  description    String? @db.Text
 
   // SEO
-  metaTitle         String?
-  metaDescription   String?
+  metaTitle       String?
+  metaDescription String?
 
   // Pricing summary (denormalized for speed)
-  priceMin          Int?                                         // Cents
-  priceMax          Int?
-  availableCount    Int?            @default(0)
+  priceMin       Int? // Cents
+  priceMax       Int?
+  availableCount Int? @default(0)
 
-  listings          Listing[]
-  leads             Lead[]
-  tours             Tour[]
-  applications      Application[]
+  listings             Listing[]
+  leads                Lead[]
+  tours                Tour[]
+  applications         Application[]
   chatbotConversations ChatbotConversation[]
-  visitors          Visitor[]
-  creativeRequests  CreativeRequest[]
-  adCampaigns       AdCampaign[]
+  visitors             Visitor[]
+  creativeRequests     CreativeRequest[]
+  adCampaigns          AdCampaign[]
 
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([orgId, slug])
   @@index([orgId])
@@ -528,43 +534,43 @@ model Property {
 }
 
 model Listing {
-  id              String     @id @default(cuid())
-  propertyId      String
-  property        Property   @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   // Backend sync
-  backendListingId String?                                       // External ID from AppFolio
-  lastSyncedAt    DateTime?
+  backendListingId String? // External ID from AppFolio
+  lastSyncedAt     DateTime?
 
   // Listing details
-  unitType        String?                                        // "Triple Shared", "XL Deluxe Single"
+  unitType        String? // "Triple Shared", "XL Deluxe Single"
   unitNumber      String?
   bedrooms        Float?
   bathrooms       Float?
   squareFeet      Int?
   priceCents      Int?
-  amenityFeeCents Int?                                           // Norman's $85/mo amenity fee
+  amenityFeeCents Int? // Norman's $85/mo amenity fee
   leaseTermMonths Int?
 
-  isAvailable     Boolean    @default(true)
-  availableFrom   DateTime?
-  availableTo     DateTime?
+  isAvailable   Boolean   @default(true)
+  availableFrom DateTime?
+  availableTo   DateTime?
 
-  photoUrls       Json?
-  description     String?    @db.Text
+  photoUrls   Json?
+  description String? @db.Text
 
-  raw             Json?                                           // Raw payload from backend
+  raw Json? // Raw payload from backend
 
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@index([propertyId])
-  @@index([propertyId, isAvailable])
   // DECISION: compound unique on (propertyId, backendListingId) added in
   // Sprint 06 so AppFolio sync can upsert in one query instead of the
   // PRD's awkward "findFirst then upsert by id" pattern. Nullable FK is fine
   // because Postgres permits nulls to be distinct under unique constraints.
   @@unique([propertyId, backendListingId])
+  @@index([propertyId])
+  @@index([propertyId, isAvailable])
 }
 
 // ============================================================================
@@ -572,126 +578,126 @@ model Listing {
 // ============================================================================
 
 model Lead {
-  id              String       @id @default(cuid())
-  orgId           String
-  org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  propertyId      String?
-  property        Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
   // Contact
-  firstName       String?
-  lastName        String?
-  email           String?
-  phone           String?
+  firstName String?
+  lastName  String?
+  email     String?
+  phone     String?
 
   // Classification
-  source          LeadSource
-  sourceDetail    String?                                        // Campaign name, referrer URL, etc.
-  status          LeadStatus   @default(NEW)
+  source       LeadSource
+  sourceDetail String? // Campaign name, referrer URL, etc.
+  status       LeadStatus @default(NEW)
 
   // Scoring
-  score           Int          @default(0)
-  intent          String?                                         // hot, warm, cold
+  score  Int     @default(0)
+  intent String? // hot, warm, cold
 
   // Enrichment (from pixel or manual)
-  enrichedData    Json?
+  enrichedData Json?
 
   // Preferences (for student housing: move-in date, budget, room type)
-  desiredMoveIn   DateTime?
-  budgetMinCents  Int?
-  budgetMaxCents  Int?
+  desiredMoveIn     DateTime?
+  budgetMinCents    Int?
+  budgetMaxCents    Int?
   preferredUnitType String?
-  notes           String?      @db.Text
+  notes             String?   @db.Text
 
   // External system idempotency keys. Populated when the Lead originated
   // from (or was matched to) an external record — AppFolio, Zapier, a
   // custom webhook. externalSystem is a string like "appfolio" and
   // externalId is the record's ID in that system. The compound unique
   // index at @@unique below makes re-syncs safe.
-  externalSystem  String?
-  externalId      String?
+  externalSystem String?
+  externalId     String?
 
   // Related visitor (if came from pixel)
-  visitorId       String?
-  visitor         Visitor?     @relation(fields: [visitorId], references: [id])
+  visitorId String?
+  visitor   Visitor? @relation(fields: [visitorId], references: [id])
 
   // Conversation history
-  conversations   ChatbotConversation[]
-  tours           Tour[]
-  applications    Application[]
+  conversations ChatbotConversation[]
+  tours         Tour[]
+  applications  Application[]
 
   // Ownership
   assignedToUserId String?
 
-  firstSeenAt     DateTime     @default(now())
-  lastActivityAt  DateTime     @default(now())
-  convertedAt     DateTime?                                       // When they signed
+  firstSeenAt    DateTime  @default(now())
+  lastActivityAt DateTime  @default(now())
+  convertedAt    DateTime? // When they signed
 
   // Email cadence state, added Sprint 10
-  unsubscribedFromEmails Boolean  @default(false)
-  unsubscribedAt       DateTime?
-  lastEmailSentAt      DateTime?
-  nextScheduledEmailAt DateTime?
-  emailsSent           Int      @default(0)
-  cadenceStage         String?                                       // day_one_sent, day_three_sent, ...
+  unsubscribedFromEmails Boolean   @default(false)
+  unsubscribedAt         DateTime?
+  lastEmailSentAt        DateTime?
+  nextScheduledEmailAt   DateTime?
+  emailsSent             Int       @default(0)
+  cadenceStage           String? // day_one_sent, day_three_sent, ...
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  @@unique([orgId, externalSystem, externalId])
   @@index([orgId, status])
   @@index([orgId, source])
   @@index([email])
   @@index([cadenceStage])
   @@index([propertyId])
-  @@unique([orgId, externalSystem, externalId])
 }
 
 model Tour {
-  id             String      @id @default(cuid())
-  leadId         String
-  lead           Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  propertyId     String
-  property       Property    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
-  status         TourStatus  @default(REQUESTED)
-  tourType       String?                                          // in_person, virtual, self_guided
-  scheduledAt    DateTime?
-  completedAt    DateTime?
-  attendeeCount  Int?        @default(1)
-  notes          String?     @db.Text
+  status        TourStatus @default(REQUESTED)
+  tourType      String? // in_person, virtual, self_guided
+  scheduledAt   DateTime?
+  completedAt   DateTime?
+  attendeeCount Int?       @default(1)
+  notes         String?    @db.Text
 
   // External system idempotency (e.g. AppFolio Showing Id).
   externalSystem String?
   externalId     String?
 
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  @@unique([externalSystem, externalId])
   @@index([leadId])
   @@index([propertyId, status])
-  @@unique([externalSystem, externalId])
 }
 
 model Application {
-  id             String            @id @default(cuid())
-  leadId         String
-  lead           Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  propertyId     String
-  property       Property          @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  id         String   @id @default(cuid())
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
-  status         ApplicationStatus @default(STARTED)
-  appliedAt      DateTime?
-  decidedAt      DateTime?
+  status    ApplicationStatus @default(STARTED)
+  appliedAt DateTime?
+  decidedAt DateTime?
 
   // Denorm of applicant data at time of application
-  applicantData  Json?
+  applicantData Json?
 
   // External linkage (e.g., AppFolio application ID)
-  backendAppId   String?
+  backendAppId String?
 
-  createdAt      DateTime          @default(now())
-  updatedAt      DateTime          @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([leadId])
   @@index([propertyId, status])
@@ -702,51 +708,55 @@ model Application {
 // ============================================================================
 
 model Visitor {
-  id                String                      @id @default(cuid())
-  orgId             String
-  org               Organization                @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  propertyId        String?
-  property          Property?                   @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
   // Cursive identifier
-  cursiveVisitorId  String?                     @unique
-  hashedEmail       String?                                       // SHA-256 for ad platform sync
-  visitorHash       String?                                       // Unique ID for deduplication
+  cursiveVisitorId String? @unique
+  hashedEmail      String? // SHA-256 for ad platform sync
+  visitorHash      String? // Unique ID for deduplication
 
   // Identified data
-  status            VisitorIdentificationStatus @default(ANONYMOUS)
-  firstName         String?
-  lastName          String?
-  email             String?
-  phone             String?
-  enrichedData      Json?                                          // Full Cursive enrichment payload
+  status       VisitorIdentificationStatus @default(ANONYMOUS)
+  firstName    String?
+  lastName     String?
+  email        String?
+  phone        String?
+  enrichedData Json? // Full Cursive enrichment payload
 
   // Session data
-  firstSeenAt       DateTime                    @default(now())
-  lastSeenAt        DateTime                    @default(now())
-  sessionCount      Int                         @default(1)
-  pagesViewed       Json?                                          // Array of URLs + timestamps
-  totalTimeSeconds  Int                         @default(0)
-  referrer          String?
-  utmSource         String?
-  utmMedium         String?
-  utmCampaign       String?
+  firstSeenAt      DateTime @default(now())
+  lastSeenAt       DateTime @default(now())
+  sessionCount     Int      @default(1)
+  pagesViewed      Json? // Array of URLs + timestamps
+  totalTimeSeconds Int      @default(0)
+  referrer         String?
+  utmSource        String?
+  utmMedium        String?
+  utmCampaign      String?
 
   // Intent score (computed)
-  intentScore       Int                         @default(0)
+  intentScore Int @default(0)
 
   // Lead conversion
-  leads             Lead[]
-  convertedAt       DateTime?
-  outreachSent      Boolean                     @default(false)
-  outreachSentAt    DateTime?
+  leads          Lead[]
+  convertedAt    DateTime?
+  outreachSent   Boolean   @default(false)
+  outreachSentAt DateTime?
+
+  // First-party pixel sessions and events
+  sessions VisitorSession[]
+  events   VisitorEvent[]
 
   // Ad platform sync state
-  syncedToGoogleAds Boolean                     @default(false)
-  syncedToMetaAds   Boolean                     @default(false)
+  syncedToGoogleAds Boolean @default(false)
+  syncedToMetaAds   Boolean @default(false)
 
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orgId, status])
   @@index([orgId, lastSeenAt])
@@ -755,24 +765,116 @@ model Visitor {
 }
 
 model CursiveIntegration {
-  id                String       @id @default(cuid())
-  orgId             String       @unique
-  org               Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String       @unique
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  cursivePixelId    String?                                        // The Cursive pixel ID provisioned for this tenant
-  cursiveAccountId  String?                                        // Cursive account this pixel belongs to
-  pixelScriptUrl    String?                                        // CDN URL for the pixel script
-  installedOnDomain String?                                        // Which hostname the pixel is installed on
+  cursivePixelId    String? // The Cursive pixel ID provisioned for this tenant
+  cursiveAccountId  String? // Cursive account this pixel belongs to
+  pixelScriptUrl    String? // CDN URL for the pixel script
+  installedOnDomain String? // Which hostname the pixel is installed on
   provisionedAt     DateTime?
   lastEventAt       DateTime?
-  totalEventsCount  Int          @default(0)
+  totalEventsCount  Int       @default(0)
+
+  // First-party pixel — public, embeddable site key that the JS snippet uses
+  // to identify the tenant. Safe to publish (rate-limited, scoped to write
+  // anonymous pageview/session events only). Distinct from `ApiKey` which is
+  // server-side and may write any record.
+  publicSiteKey     String?   @unique // e.g. "pk_site_<base62>"
+  publicKeyPrefix   String? // first ~12 chars for display
+  publicKeyIssuedAt DateTime?
 
   // Weekly digest delivery preferences
-  weeklyDigestEnabled Boolean    @default(true)
-  weeklyDigestEmails  Json?                                        // Array of emails
+  weeklyDigestEnabled Boolean @default(true)
+  weeklyDigestEmails  Json? // Array of emails
 
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================================================
+// FIRST-PARTY PIXEL — sessions + events from our own JS snippet
+// ============================================================================
+// `Visitor` is the long-lived person record (potentially identified). Each
+// browser cookie maps to one or more `VisitorSession`s, and each pageview /
+// scroll / time-on-page tick is a `VisitorEvent`. Keeping this in two tables
+// stays close to the Segment / PostHog model and keeps Visitor lean.
+
+model VisitorSession {
+  id        String       @id @default(cuid())
+  orgId     String
+  org       Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  visitorId String?
+  visitor   Visitor?     @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+
+  // Cookie / device identifiers (set by our pixel)
+  anonymousId  String // cookie value, lives in browser
+  sessionToken String  @unique // server-issued per session
+  deviceHash   String? // sha256(ua + ip) — helps cross-browser dedupe
+
+  // Acquisition
+  firstUrl      String?
+  firstReferrer String?
+  utmSource     String?
+  utmMedium     String?
+  utmCampaign   String?
+  utmTerm       String?
+  utmContent    String?
+
+  // Device
+  userAgent String?
+  ipAddress String?
+  country   String?
+  language  String?
+
+  // Engagement aggregate (denormalised so the feed page reads in one query)
+  pageviewCount    Int @default(0)
+  totalTimeSeconds Int @default(0)
+  maxScrollDepth   Int @default(0) // 0–100 percentage
+
+  startedAt   DateTime  @default(now())
+  lastEventAt DateTime  @default(now())
+  endedAt     DateTime?
+
+  events VisitorEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, startedAt])
+  @@index([orgId, anonymousId])
+  @@index([visitorId])
+}
+
+model VisitorEvent {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  sessionId String
+  session   VisitorSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  visitorId String?
+  visitor   Visitor?       @relation(fields: [visitorId], references: [id], onDelete: SetNull)
+
+  type     String // "pageview" | "identify" | "scroll" | "timing" | "click" | "form_submit" | "unload"
+  url      String?
+  path     String?
+  title    String?
+  referrer String?
+
+  // Optional payloads (JSON to stay flexible without exploding the schema)
+  properties        Json?
+  scrollDepth       Int? // 0–100
+  timeOnPageSeconds Int?
+
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  @@index([orgId, occurredAt])
+  @@index([sessionId])
+  @@index([visitorId])
+  @@index([type])
 }
 
 // ============================================================================
@@ -780,41 +882,41 @@ model CursiveIntegration {
 // ============================================================================
 
 model ChatbotConversation {
-  id              String                    @id @default(cuid())
-  orgId           String
-  org             Organization              @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  propertyId      String?
-  property        Property?                 @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  leadId          String?
-  lead            Lead?                     @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  leadId     String?
+  lead       Lead?        @relation(fields: [leadId], references: [id], onDelete: SetNull)
 
-  status          ChatbotConversationStatus @default(ACTIVE)
+  status      ChatbotConversationStatus @default(ACTIVE)
   // DECISION: sessionId needs @unique so the chatbot API can upsert on it
   // in one query. Added in Sprint 09.
-  sessionId       String   @unique                                   // Browser session identifier
-  visitorHash     String?                                             // Link back to Visitor if identified
+  sessionId   String                    @unique // Browser session identifier
+  visitorHash String? // Link back to Visitor if identified
 
   // Messages stored as JSON array of {role, content, timestamp}
-  messages        Json
+  messages Json
 
   // Captured data
-  capturedName    String?
-  capturedEmail   String?
-  capturedPhone   String?
+  capturedName  String?
+  capturedEmail String?
+  capturedPhone String?
 
   // Engagement
-  messageCount    Int                       @default(0)
-  lastMessageAt   DateTime                  @default(now())
-  handedOffAt     DateTime?
-  handoffReason   String?
+  messageCount  Int       @default(0)
+  lastMessageAt DateTime  @default(now())
+  handedOffAt   DateTime?
+  handoffReason String?
 
   // Metadata
-  userAgent       String?
-  ipAddress       String?
-  pageUrl         String?
+  userAgent String?
+  ipAddress String?
+  pageUrl   String?
 
-  createdAt       DateTime                  @default(now())
-  updatedAt       DateTime                  @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orgId, status])
   @@index([orgId, lastMessageAt])
@@ -826,40 +928,40 @@ model ChatbotConversation {
 // ============================================================================
 
 model CreativeRequest {
-  id              String                @id @default(cuid())
-  orgId           String
-  org             Organization          @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  propertyId      String?
-  property        Property?             @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
   requestedByUserId String?
-  title           String
-  description     String                @db.Text
-  format          CreativeFormat
-  targetDate      DateTime?
-  priority        String?               @default("normal")
+  title             String
+  description       String         @db.Text
+  format            CreativeFormat
+  targetDate        DateTime?
+  priority          String?        @default("normal")
 
   // Inputs from client
-  referenceImageUrls Json?                                         // Array of uploaded inspiration images
-  brandAssetsUrls    Json?                                         // Logos, brand photos they want used
-  copyIdeas          String?            @db.Text
+  referenceImageUrls Json? // Array of uploaded inspiration images
+  brandAssetsUrls    Json? // Logos, brand photos they want used
+  copyIdeas          String? @db.Text
   targetAudience     String?
 
   // Fulfillment
-  status          CreativeRequestStatus @default(SUBMITTED)
-  assignedToUserId String?                                          // Agency team member
+  status           CreativeRequestStatus @default(SUBMITTED)
+  assignedToUserId String? // Agency team member
 
   // Conversation (back-and-forth between client and agency)
-  messages        Json?                                              // Array of {role, from, content, timestamp, attachmentUrls}
+  messages Json? // Array of {role, from, content, timestamp, attachmentUrls}
 
   // Deliverables
-  deliverableUrls Json?                                              // Array of final asset URLs
+  deliverableUrls Json? // Array of final asset URLs
   deliveredAt     DateTime?
   approvedAt      DateTime?
-  revisionCount   Int                   @default(0)
+  revisionCount   Int       @default(0)
 
-  createdAt       DateTime              @default(now())
-  updatedAt       DateTime              @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orgId, status])
   @@index([status, targetDate])
@@ -870,61 +972,115 @@ model CreativeRequest {
 // ============================================================================
 
 model AdAccount {
-  id               String       @id @default(cuid())
-  orgId            String
-  org              Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  platform         AdPlatform
-  externalAccountId String                                           // Google Ads customer ID, Meta ad account ID
-  accessStatus     String?                                           // active, expired, revoked
-  tokenEncrypted   String?      @db.Text
-  refreshTokenEncrypted String? @db.Text
-  tokenExpiresAt   DateTime?
+  platform          AdPlatform
+  externalAccountId String // Google Ads customer ID (10-digit, no dashes); Meta ad account ID (numeric, no act_ prefix)
+  displayName       String? // Operator-chosen label, e.g. "Telegraph Commons - Search"
+  currency          String?    @default("USD") // ISO 4217. Reported by both APIs.
 
-  pixelSyncEnabled Boolean      @default(false)
+  accessStatus String? @default("active") // active, expired, revoked, error
+
+  // Encrypted credential bag (stringified JSON). Schema differs per platform:
+  //   Google Ads: { developerToken, loginCustomerId?, refreshToken, oauthClientId, oauthClientSecret }
+  //   Meta Ads:   { systemUserAccessToken }
+  // The integration lib decrypts and parses on use. Keeping it as a single
+  // blob lets us avoid a second migration when we add OAuth-issued tokens.
+  credentialsEncrypted String? @db.Text
+
+  // Legacy/OAuth fields kept so we can migrate to OAuth later without a
+  // schema change. Not used by the V1 paste-in-credentials flow.
+  tokenEncrypted        String?   @db.Text
+  refreshTokenEncrypted String?   @db.Text
+  tokenExpiresAt        DateTime?
+
+  pixelSyncEnabled Boolean   @default(false)
+  autoSyncEnabled  Boolean   @default(true)
   lastSyncAt       DateTime?
+  lastSyncError    String?   @db.Text
 
-  adCampaigns      AdCampaign[]
+  adCampaigns  AdCampaign[]
+  metricsDaily AdMetricDaily[]
 
-  createdAt        DateTime     @default(now())
-  updatedAt        DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([orgId, platform, externalAccountId])
   @@index([orgId, platform])
 }
 
 model AdCampaign {
-  id              String       @id @default(cuid())
-  orgId           String
-  org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  propertyId      String?
-  property        Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
-  adAccountId     String
-  adAccount       AdAccount    @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  id          String       @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId  String?
+  property    Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  adAccountId String
+  adAccount   AdAccount    @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
 
   externalCampaignId String?
-  name            String
-  platform        AdPlatform
-  status          String?                                            // active, paused, ended
+  name               String
+  platform           AdPlatform
+  status             String? // ENABLED/PAUSED/REMOVED (Google), ACTIVE/PAUSED/DELETED (Meta)
+  objective          String? // Meta: OUTCOME_LEADS / OUTCOME_TRAFFIC / ...; Google: SEARCH/PMAX/DISPLAY/...
 
   // Budget
+  dailyBudgetCents   Int?
   monthlyBudgetCents Int?
   spendToDateCents   Int?      @default(0)
+  startDate          DateTime?
+  endDate            DateTime?
 
-  // Performance (denormalized, refreshed via cron)
-  impressions     Int?         @default(0)
-  clicks          Int?         @default(0)
-  conversions     Int?         @default(0)
-  lastStatsAt     DateTime?
+  // Performance (denormalized, refreshed via cron from AdMetricDaily)
+  impressions Int?      @default(0)
+  clicks      Int?      @default(0)
+  conversions Int?      @default(0)
+  lastStatsAt DateTime?
 
-  startedAt       DateTime?
-  endedAt         DateTime?
+  startedAt DateTime?
+  endedAt   DateTime?
 
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  metricsDaily AdMetricDaily[]
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([adAccountId, externalCampaignId])
   @@index([orgId, status])
   @@index([adAccountId])
+}
+
+// Per-campaign per-day metrics. One row per (campaignId, date) so the cron
+// can upsert idempotently. The dashboard reads this for time-series + 28-day
+// aggregates; AdCampaign holds the rolling totals as a denorm.
+model AdMetricDaily {
+  id          String     @id @default(cuid())
+  orgId       String
+  adAccountId String
+  adAccount   AdAccount  @relation(fields: [adAccountId], references: [id], onDelete: Cascade)
+  campaignId  String
+  campaign    AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  date                   DateTime @db.Date // UTC midnight of the metric day
+  impressions            Int      @default(0)
+  clicks                 Int      @default(0)
+  spendCents             Int      @default(0)
+  conversions            Float    @default(0) // Meta returns fractional conversions
+  conversionValueCents   Int      @default(0)
+  ctr                    Float    @default(0) // clicks / impressions, 0..1
+  cpcCents               Int      @default(0) // spend / clicks
+  costPerConversionCents Int      @default(0) // spend / conversions
+
+  raw Json? // Raw payload from the platform for debugging
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([campaignId, date])
+  @@index([orgId, date])
+  @@index([adAccountId, date])
 }
 
 // ============================================================================
@@ -932,35 +1088,35 @@ model AdCampaign {
 // ============================================================================
 
 model AppFolioIntegration {
-  id                   String       @id @default(cuid())
-  orgId                String       @unique
-  org                  Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String       @unique
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  instanceSubdomain    String                                            // e.g., sgrealestate (from sgrealestate.appfolio.com)
-  plan                 String?                                           // "plus", "max", "core"
-  apiKeyEncrypted      String?      @db.Text
-  clientIdEncrypted    String?      @db.Text
-  clientSecretEncrypted String?     @db.Text
-  oauthTokenEncrypted  String?      @db.Text
-  oauthRefreshEncrypted String?     @db.Text
-  oauthExpiresAt       DateTime?
+  instanceSubdomain     String // e.g., sgrealestate (from sgrealestate.appfolio.com)
+  plan                  String? // "plus", "max", "core"
+  apiKeyEncrypted       String?   @db.Text
+  clientIdEncrypted     String?   @db.Text
+  clientSecretEncrypted String?   @db.Text
+  oauthTokenEncrypted   String?   @db.Text
+  oauthRefreshEncrypted String?   @db.Text
+  oauthExpiresAt        DateTime?
 
   // Sync state
-  lastSyncAt           DateTime?
-  syncStatus           String?                                           // idle, syncing, error
-  lastError            String?
+  lastSyncAt DateTime?
+  syncStatus String? // idle, syncing, error
+  lastError  String?
 
   // Configuration
-  propertyGroupFilter  String?                                           // Only sync specific property groups
-  syncFrequencyMinutes Int          @default(60)
-  autoSyncEnabled      Boolean      @default(true)
+  propertyGroupFilter  String? // Only sync specific property groups
+  syncFrequencyMinutes Int     @default(60)
+  autoSyncEnabled      Boolean @default(true)
 
   // Fallback mode
-  useEmbedFallback     Boolean      @default(false)
-  embedScriptConfig    Json?
+  useEmbedFallback  Boolean @default(false)
+  embedScriptConfig Json?
 
-  createdAt            DateTime     @default(now())
-  updatedAt            DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 // ============================================================================
@@ -968,39 +1124,39 @@ model AppFolioIntegration {
 // ============================================================================
 
 model Address {
-  id           String       @id @default(cuid())
-  orgId        String
-  org          Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  label        String?
-  line1        String
-  line2        String?
-  city         String
-  state        String
-  postalCode   String
-  country      String       @default("US")
-  isDefault    Boolean      @default(false)
-  createdAt    DateTime     @default(now())
-  updatedAt    DateTime     @updatedAt
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  label      String?
+  line1      String
+  line2      String?
+  city       String
+  state      String
+  postalCode String
+  country    String       @default("US")
+  isDefault  Boolean      @default(false)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
 
   @@index([orgId])
 }
 
 model AuditEvent {
-  id         String       @id @default(cuid())
-  orgId      String
-  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  userId     String?
-  user       User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id     String       @id @default(cuid())
+  orgId  String
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId String?
+  user   User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
 
-  action     AuditAction
-  entityType String                                               // "Lead", "Property", etc.
-  entityId   String?
+  action      AuditAction
+  entityType  String // "Lead", "Property", etc.
+  entityId    String?
   description String?
-  diff       Json?
-  ipAddress  String?
-  userAgent  String?
+  diff        Json?
+  ipAddress   String?
+  userAgent   String?
 
-  createdAt  DateTime     @default(now())
+  createdAt DateTime @default(now())
 
   @@index([orgId, createdAt])
   @@index([entityType, entityId])
@@ -1008,9 +1164,9 @@ model AuditEvent {
 
 model WebhookEvent {
   id               String   @id @default(cuid())
-  source           String                                         // "cursive", "appfolio", "stripe"
-  bodyHash         String?                                        // SHA-256 of raw POST body, hex. Catches byte-identical AL retries.
-  eventFingerprint String?                                        // sha256(pixel_id|profile_id|event_timestamp|event_type). Catches re-serialized duplicates within a batch.
+  source           String // "cursive", "appfolio", "stripe"
+  bodyHash         String? // SHA-256 of raw POST body, hex. Catches byte-identical AL retries.
+  eventFingerprint String? // sha256(pixel_id|profile_id|event_timestamp|event_type). Catches re-serialized duplicates within a batch.
   eventType        String?
   orgId            String?
   receivedAt       DateTime @default(now())
@@ -1025,18 +1181,18 @@ model WebhookEvent {
 // "Request activation" on a tile whose auth flow isn't built yet. Surfaces
 // in the admin queue so we know what to prioritize building.
 model IntegrationRequest {
-  id              String                    @id @default(cuid())
-  orgId           String
-  org             Organization              @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  integrationSlug String                    // matches lib/integrations/catalog.ts slug
-  status          IntegrationRequestStatus  @default(PENDING)
-  message         String?                   @db.Text
+  integrationSlug  String // matches lib/integrations/catalog.ts slug
+  status           IntegrationRequestStatus @default(PENDING)
+  message          String?                  @db.Text
   requestedByEmail String?
 
-  createdAt       DateTime                  @default(now())
-  updatedAt       DateTime                  @updatedAt
-  resolvedAt      DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
 
   @@index([orgId, status])
   @@index([integrationSlug, status])
@@ -1049,164 +1205,275 @@ enum IntegrationRequestStatus {
   REJECTED
 }
 
+// ============================================================================
+// SEO MODULE
+// ----------------------------------------------------------------------------
+// Pulls organic search performance data from two providers per tenant:
+//   - GSC  → Google Search Console (queries, impressions, clicks, position)
+//   - GA4  → Google Analytics Data API (organic sessions, users, engagement,
+//            top landing pages)
+//
+// Both authenticate via a service account JSON pasted by the operator. The
+// service account email must be granted access to the GSC site / GA4 property
+// before connecting. JSON is encrypted at rest using lib/crypto.ts.
+//
+// Snapshots are written daily by /api/cron/seo-sync. Schema is normalized so
+// trends across weeks/months can be queried cheaply with date range filters.
+// ============================================================================
+
+enum SeoProvider {
+  GSC
+  GA4
+}
+
+enum SeoSyncStatus {
+  IDLE
+  SYNCING
+  ERROR
+}
+
+model SeoIntegration {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  provider                    SeoProvider
+  // GSC: full site URL, e.g. "sc-domain:telegraphcommons.com" or
+  //      "https://www.telegraphcommons.com/". GA4: property id, e.g. "123456789".
+  propertyIdentifier          String
+  serviceAccountEmail         String? // surfaced in UI so operators know which email to grant access to
+  serviceAccountJsonEncrypted String      @db.Text // encrypted full JSON payload
+
+  status        SeoSyncStatus @default(IDLE)
+  lastSyncAt    DateTime?
+  lastSyncError String?       @db.Text
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, provider])
+  @@index([orgId])
+}
+
+// Daily aggregate per tenant. Re-run-safe via the unique (orgId, date) index.
+model SeoSnapshot {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  date             DateTime // start of the calendar day in UTC
+  organicSessions  Int      @default(0)
+  organicUsers     Int      @default(0)
+  totalImpressions Int      @default(0)
+  totalClicks      Int      @default(0)
+  avgCtr           Float    @default(0) // 0 to 1
+  avgPosition      Float    @default(0) // GSC search position, lower is better
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, date])
+  @@index([orgId, date])
+}
+
+// One row per (tenant, date, query). Drives the "top queries" table.
+model SeoQuery {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  date        DateTime
+  query       String   @db.Text
+  impressions Int      @default(0)
+  clicks      Int      @default(0)
+  ctr         Float    @default(0)
+  position    Float    @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([orgId, date, query])
+  @@index([orgId, date])
+  @@index([orgId, clicks])
+}
+
+// One row per (tenant, date, url). Drives the "top landing pages" table.
+model SeoLandingPage {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  date              DateTime
+  url               String   @db.Text
+  sessions          Int      @default(0)
+  users             Int      @default(0)
+  bounceRate        Float    @default(0)
+  avgEngagementTime Float    @default(0) // seconds
+
+  createdAt DateTime @default(now())
+
+  @@unique([orgId, date, url])
+  @@index([orgId, date])
+  @@index([orgId, sessions])
+}
+
 model ClientNote {
-  id         String       @id @default(cuid())
-  orgId      String
-  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   authorUserId String?
-  noteType   NoteType     @default(GENERAL)
-  body       String       @db.Text
-  pinned     Boolean      @default(false)
+  noteType     NoteType @default(GENERAL)
+  body         String   @db.Text
+  pinned       Boolean  @default(false)
 
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orgId, createdAt])
 }
 
 model IntakeSubmission {
-  id            String       @id @default(cuid())
-  orgId         String?      @unique                              // Null until org created
-  org           Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  id    String        @id @default(cuid())
+  orgId String?       @unique // Null until org created
+  org   Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
 
   // Step 1: Company
-  companyName   String
-  shortName     String?
-  websiteUrl    String?
-  propertyType  PropertyType
-  residentialSubtype ResidentialSubtype?
-  commercialSubtype CommercialSubtype?
-  primaryContactName String
+  companyName         String
+  shortName           String?
+  websiteUrl          String?
+  propertyType        PropertyType
+  residentialSubtype  ResidentialSubtype?
+  commercialSubtype   CommercialSubtype?
+  primaryContactName  String
   primaryContactEmail String
   primaryContactPhone String?
-  primaryContactRole String?
-  hqCity        String?
-  hqState       String?
+  primaryContactRole  String?
+  hqCity              String?
+  hqState             String?
 
   // Step 2: Portfolio
-  numberOfProperties Int?
-  currentBackendPlatform BackendPlatform @default(NONE)
-  backendPlanTier String?
-  currentVendor String?
+  numberOfProperties       Int?
+  currentBackendPlatform   BackendPlatform @default(NONE)
+  backendPlanTier          String?
+  currentVendor            String?
   currentMonthlySpendCents Int?
-  biggestPainPoint String?
+  biggestPainPoint         String?
 
   // Step 3: Service selection (module toggles)
-  selectedModules Json                                             // Array of module keys
+  selectedModules Json // Array of module keys
 
   // Step 4: Timeline + consultation
-  goLiveTarget  String?                                             // asap, 1_month, 3_month, exploring
-  bookedCallAt  DateTime?
-  calBookingId  String?
+  goLiveTarget String? // asap, 1_month, 3_month, exploring
+  bookedCallAt DateTime?
+  calBookingId String?
 
   // Submission metadata
-  status        String       @default("submitted")                   // submitted, in_review, converted, rejected
-  submittedAt   DateTime     @default(now())
-  reviewedAt    DateTime?
-  convertedAt   DateTime?
+  status      String    @default("submitted") // submitted, in_review, converted, rejected
+  submittedAt DateTime  @default(now())
+  reviewedAt  DateTime?
+  convertedAt DateTime?
 
-  ipAddress     String?
-  userAgent     String?
-  referrer      String?
-  utmSource     String?
-  utmMedium     String?
-  utmCampaign   String?
+  ipAddress   String?
+  userAgent   String?
+  referrer    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
 
-  raw           Json?                                                // Full form payload for audit
+  raw Json? // Full form payload for audit
 }
 
 model Project {
-  id            String         @id @default(cuid())
-  orgId         String
-  org           Organization   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  name          String                                                // e.g., "Telegraph Commons Build"
-  description   String?
-  status        String         @default("active")                     // active, on_hold, completed, cancelled
+  name        String // e.g., "Telegraph Commons Build"
+  description String?
+  status      String  @default("active") // active, on_hold, completed, cancelled
 
-  startedAt     DateTime?
+  startedAt          DateTime?
   targetCompletionAt DateTime?
-  completedAt   DateTime?
+  completedAt        DateTime?
 
-  tasks         ProjectTask[]
-  costs         ProjectCost[]
-  notes         ProjectNote[]
+  tasks ProjectTask[]
+  costs ProjectCost[]
+  notes ProjectNote[]
 
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orgId, status])
 }
 
 model ProjectTask {
-  id           String      @id @default(cuid())
-  projectId    String
-  project      Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  title        String
-  description  String?
-  status       TaskStatus  @default(TODO)
+  title            String
+  description      String?
+  status           TaskStatus @default(TODO)
   assignedToUserId String?
-  assignedTo   User?       @relation("TaskAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  assignedTo       User?      @relation("TaskAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
 
-  phase        String?                                               // "Build", "QA", "Launch", etc.
-  sortOrder    Int         @default(0)
-  dueAt        DateTime?
-  completedAt  DateTime?
+  phase       String? // "Build", "QA", "Launch", etc.
+  sortOrder   Int       @default(0)
+  dueAt       DateTime?
+  completedAt DateTime?
 
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([projectId, status])
 }
 
 model ProjectCost {
-  id         String   @id @default(cuid())
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
-  label      String
+  label       String
   amountCents Int
-  category   String?                                               // infrastructure, api_cost, ad_spend, etc.
-  incurredAt DateTime @default(now())
+  category    String? // infrastructure, api_cost, ad_spend, etc.
+  incurredAt  DateTime @default(now())
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([projectId])
 }
 
 model ProjectNote {
-  id         String   @id @default(cuid())
-  projectId  String
-  project    Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String  @id @default(cuid())
+  projectId String
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   authorUserId String?
-  body       String   @db.Text
+  body         String  @db.Text
 
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([projectId])
 }
 
 model EmailSubscriber {
-  id        String       @id @default(cuid())
-  orgId     String?                                                // Null = platform-level subscriber
-  org       Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  id    String        @id @default(cuid())
+  orgId String? // Null = platform-level subscriber
+  org   Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
 
   email     String
   firstName String?
-  source    String?                                                 // lead_magnet, footer, blog, etc.
+  source    String? // lead_magnet, footer, blog, etc.
   tags      Json?
 
-  confirmed Boolean      @default(false)
-  confirmedAt DateTime?
-  unsubscribed Boolean   @default(false)
+  confirmed      Boolean   @default(false)
+  confirmedAt    DateTime?
+  unsubscribed   Boolean   @default(false)
   unsubscribedAt DateTime?
 
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@unique([orgId, email])
   @@index([orgId])

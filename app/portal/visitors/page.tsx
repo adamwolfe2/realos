@@ -83,7 +83,7 @@ function buildQuery(
   const merged = { ...base, ...overrides };
   const params = new URLSearchParams();
   if (merged.window !== "7d") params.set("window", merged.window);
-  if (merged.status !== "identified") params.set("status", merged.status);
+  if (merged.status !== "all") params.set("status", merged.status);
   if (merged.sort !== "recent") params.set("sort", merged.sort);
   if (merged.page > 1) params.set("page", String(merged.page));
   const qs = params.toString();
@@ -106,7 +106,7 @@ export default async function VisitorsPage({
     params,
     "status",
     ["all", "identified", "hot", "with_lead"],
-    "identified"
+    "all"
   );
   const sortKey = readParam<SortKey>(
     params,
@@ -174,6 +174,7 @@ export default async function VisitorsPage({
         installedOnDomain: true,
         lastEventAt: true,
         totalEventsCount: true,
+        publicSiteKey: true,
       },
     }),
     (async () => {
@@ -204,7 +205,9 @@ export default async function VisitorsPage({
     })(),
   ]);
 
-  const hasPixel = Boolean(integration?.cursivePixelId);
+  const hasPixel = Boolean(
+    integration?.cursivePixelId || integration?.publicSiteKey
+  );
   const noVisitorsAtAll = await (async () => {
     if (totalInView > 0) return false;
     return (

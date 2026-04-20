@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RealEstaite pixel — local smoke test</title>
+    <style>
+      :root {
+        --bg: #faf7f0;
+        --ink: #111;
+        --muted: #555;
+        --accent: #f5c518;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: var(--bg);
+        color: var(--ink);
+        font: 15px/1.5 -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif;
+      }
+      main { max-width: 760px; margin: 40px auto; padding: 0 24px 200px; }
+      h1 { font-weight: 700; letter-spacing: -0.02em; margin: 0 0 8px; }
+      h2 { margin: 32px 0 8px; font-size: 16px; }
+      p { color: var(--muted); }
+      code, pre {
+        font-family: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 12px;
+        background: #fff;
+        border: 1px solid #e5e0d3;
+        border-radius: 6px;
+        padding: 2px 6px;
+      }
+      pre { padding: 12px; overflow: auto; }
+      input, button {
+        font: inherit;
+        padding: 8px 12px;
+        border-radius: 6px;
+        border: 1px solid #d8d0bf;
+        background: #fff;
+      }
+      input { width: 360px; max-width: 100%; }
+      button {
+        background: var(--ink);
+        color: #fff;
+        cursor: pointer;
+        border-color: var(--ink);
+      }
+      button:hover { background: #000; }
+      .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+      .log {
+        background: #fff;
+        border: 1px solid #e5e0d3;
+        border-radius: 6px;
+        padding: 12px;
+        max-height: 280px;
+        overflow: auto;
+        font-family: ui-monospace, monospace;
+        font-size: 12px;
+        white-space: pre-wrap;
+      }
+      .filler { height: 220vh; background: linear-gradient(180deg, #faf7f0, #efe9d8); margin-top: 32px; border-radius: 8px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>RealEstaite pixel smoke test</h1>
+      <p>
+        Loads the first-party pixel against a local or deployed
+        <code>pk_site_*</code> key. Open the browser dev tools (Network tab) to
+        watch <code>/api/public/visitors/track</code> requests fire.
+      </p>
+
+      <h2>1. Configure</h2>
+      <div class="row">
+        <input id="apiBase" placeholder="API base (e.g. http://localhost:3000)" value="http://localhost:3000" />
+        <input id="publicKey" placeholder="pk_site_..." />
+        <button id="loadBtn">Load pixel</button>
+      </div>
+
+      <h2>2. Manual triggers</h2>
+      <div class="row">
+        <button id="pageBtn">track('pageview')</button>
+        <button id="identifyBtn">identify(test@example.com)</button>
+        <button id="customBtn">track('click', {label:'cta'})</button>
+        <button id="flushBtn">flush()</button>
+      </div>
+
+      <h2>3. Activity log</h2>
+      <div id="log" class="log">Pixel not loaded yet.</div>
+
+      <p style="margin-top: 32px">
+        Scroll down to trigger 25 / 50 / 75 / 100 % depth events.
+      </p>
+      <div class="filler"></div>
+      <p>Bottom of page. The unload event fires when you close this tab.</p>
+    </main>
+
+    <script>
+      var log = document.getElementById("log");
+      function logLine(msg) {
+        var ts = new Date().toLocaleTimeString();
+        log.textContent = "[" + ts + "] " + msg + "\n" + log.textContent;
+      }
+
+      // Queue API in case operator clicks before script loads.
+      window.rePixel = window.rePixel || { q: [] };
+      ["track", "identify", "flush"].forEach(function (m) {
+        if (!window.rePixel[m]) {
+          window.rePixel[m] = function () {
+            window.rePixel.q.push([m].concat([].slice.call(arguments)));
+          };
+        }
+      });
+
+      // Wrap fetch to log pixel pings.
+      var origFetch = window.fetch;
+      window.fetch = function () {
+        var url = arguments[0];
+        var prom = origFetch.apply(this, arguments);
+        if (typeof url === "string" && url.indexOf("/api/public/visitors/track") >= 0) {
+          prom
+            .then(function (r) { return r.clone().json().catch(function () { return null; }); })
+            .then(function (j) {
+              if (j) {
+                logLine(
+                  "POST track -> ok=" + j.ok +
+                  " session=" + (j.sessionToken || "?") +
+                  " processed=" + j.processed
+                );
+              } else {
+                logLine("POST track -> non-json response");
+              }
+            })
+            .catch(function (e) { logLine("POST track failed: " + e.message); });
+        }
+        return prom;
+      };
+
+      function loadPixel() {
+        var base = document.getElementById("apiBase").value.replace(/\/$/, "");
+        var key = document.getElementById("publicKey").value.trim();
+        if (!key) { logLine("Enter a pk_site_* key first."); return; }
+        var src = base + "/api/public/pixel/" + key + ".js";
+        logLine("Loading " + src);
+        var s = document.createElement("script");
+        s.async = true;
+        s.src = src;
+        s.onload = function () { logLine("Pixel loaded."); };
+        s.onerror = function () { logLine("Pixel script failed to load."); };
+        document.head.appendChild(s);
+      }
+
+      document.getElementById("loadBtn").addEventListener("click", loadPixel);
+      document.getElementById("pageBtn").addEventListener("click", function () {
+        window.rePixel.track("pageview");
+      });
+      document.getElementById("identifyBtn").addEventListener("click", function () {
+        window.rePixel.identify({
+          email: "test@example.com",
+          firstName: "Test",
+          lastName: "Visitor",
+        });
+      });
+      document.getElementById("customBtn").addEventListener("click", function () {
+        window.rePixel.track("click", { properties: { label: "cta" } });
+      });
+      document.getElementById("flushBtn").addEventListener("click", function () {
+        window.rePixel.flush();
+      });
+
+      // Convenience: prefill key + base from URL params (?base=...&key=...).
+      try {
+        var qs = new URLSearchParams(window.location.search);
+        if (qs.get("base")) document.getElementById("apiBase").value = qs.get("base");
+        if (qs.get("key")) {
+          document.getElementById("publicKey").value = qs.get("key");
+          loadPixel();
+        }
+      } catch (_e) {}
+    </script>
+  </body>
+</html>

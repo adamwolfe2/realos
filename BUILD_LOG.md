@@ -633,3 +633,189 @@ Live: https://realestaite.vercel.app
 Repo: https://github.com/adamwolfe2/realos
 
 ---
+
+## First-party visitor pixel (2026-04-20)
+
+**Shipped.** End-to-end first-party tracking pixel that any tenant can drop on
+any website to start streaming sessions into `/portal/visitors`. Lives
+alongside the existing AudienceLab/Cursive integration so the two systems can
+run together (AL handles enrichment + lead-grade scoring; the first-party
+pixel covers raw pageviews, scroll depth, time on page, UTM, referrer, and
+manual `identify()` calls).
+
+**New schema (`prisma/migrations_pending/2026-04-20-pixel-sessions-events.sql`).**
+
+- `CursiveIntegration` gains `publicSiteKey` (`@unique`), `publicKeyPrefix`,
+  `publicKeyIssuedAt`. The site key is `pk_site_<base62 32>` and is *public*
+  (safe to embed in HTML); it only authorises anonymous pageview ingestion.
+- `VisitorSession` (one row per browser session). Tracks anonymousId cookie,
+  server-issued `sessionToken`, UTM, UA, IP, language, country plus
+  denormalised aggregates (`pageviewCount`, `totalTimeSeconds`,
+  `maxScrollDepth`).
+- `VisitorEvent` (one row per pageview / identify / scroll / timing /
+  unload / click / form_submit). Indexed by `(orgId, occurredAt)` so the
+  feed page reads cheaply.
+
+Adam runs `psql "$DATABASE_URL" -f prisma/migrations_pending/2026-04-20-pixel-sessions-events.sql`
+against Neon before the new code can serve traffic. `pnpm prisma generate`
+already ran locally so the client picks up the new models.
+
+**New endpoints (all under `/api/public/*` so they bypass Clerk).**
+
+- `GET /api/public/pixel/[publicKey].js` — serves the JS bundle. Resolves the
+  public key to a tenant, embeds the ingest URL, returns a ~5 KB IIFE that
+  installs `window.rePixel` with `track`, `identify`, and `flush`. Auto-fires
+  pageview on DOM ready, scroll depth at 25/50/75/100 %, 15-second timing
+  ticks up to 5 minutes, and a final `unload` via `navigator.sendBeacon`.
+  Cached `s-maxage=300` for resolvable keys, `s-maxage=30` for unknown.
+- `POST /api/public/visitors/track` — accepts a single event or a batch
+  (max 50). CORS open. Public-key auth via JSON body, `X-Pixel-Key` header,
+  or `?k=` query. Per-IP-per-key rate limit through `publicApiLimiter` (60
+  req/min). Upserts `VisitorSession`, writes `VisitorEvent`s, mirrors the
+  latest page into `Visitor.pagesViewed` so the existing feed renderer keeps
+  working without a rewrite. Returns the (possibly fresh) `sessionToken` so
+  the snippet can persist it to a cookie.
+
+**Snippet UI.** `/portal/settings/integrations` "Visitor identification"
+drawer now shows a `PixelSnippetPanel` whether or not AudienceLab has been
+provisioned. The panel:
+
+- Shows the install snippet (one-line `<script async src=…>`).
+- Shows a curl smoke-test command pre-filled with the tenant's public key.
+- Has a "Send test pageview" button that POSTs from the operator's browser
+  straight at the ingest endpoint and reports the resulting session token.
+- Lets the operator rotate the public site key (with a confirm guard).
+
+**Visitor feed wiring.** `/portal/visitors` already reads from `Visitor`,
+which our pixel ingest updates (`lastSeenAt`, `sessionCount`, `pagesViewed`,
+`utm*`, `referrer`). Two small tweaks shipped so first-party data is visible
+out of the box:
+
+- `EmptyNoPixel` is suppressed when a public site key exists (not just an
+  AL pixel).
+- The default status filter is now `all` instead of `identified`, so
+  anonymous sessions from the first-party pixel show up immediately.
+
+**Test harness.** `scripts/test-pixel.html` is a static page Adam can open
+locally (`open scripts/test-pixel.html`) or deploy. Prefill via
+`?base=<api>&key=pk_site_…` to auto-load. It logs every track POST.
+
+**Curl smoke tests.**
+
+```bash
+# 1. Create a session (replace KEY + BASE)
+curl -X POST "$BASE/api/public/visitors/track" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "publicKey": "'"$KEY"'",
+    "anonymousId": "anon_test",
+    "context": {"url":"https://example.com/","referrer":""},
+    "events": [{"type":"pageview","url":"https://example.com/","path":"/","title":"Smoke"}]
+  }'
+
+# 2. Reuse the returned sessionToken for an identify event
+curl -X POST "$BASE/api/public/visitors/track" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "publicKey": "'"$KEY"'",
+    "anonymousId": "anon_test",
+    "sessionToken": "vst_…",
+    "events": [{"type":"identify","email":"adam@example.com","firstName":"Adam"}]
+  }'
+
+# 3. Pull the JS bundle
+curl -i "$BASE/api/public/pixel/$KEY.js" | head -40
+```
+
+**Tenant marketing-site install.** For Telegraph Commons (the tenant marketing
+codebase at `/Users/adamwolfe/TRIG`), drop into the `<head>` of the root
+layout once Adam has a `pk_site_*` provisioned:
+
+```html
+<script async src="https://realestaite.vercel.app/api/public/pixel/pk_site_xxxxx.js"></script>
+```
+
+**Punted (not in scope for this build).**
+
+- Admin cross-tenant view of pixel events. Each tenant only sees its own.
+- IP -> country geolocation. The schema column exists; populating it needs
+  a Vercel geo header read on the ingest path. Cheap follow-up.
+- "Top pages" / "Top referrers" rollups in the visitor feed. The events
+  table supports it (indexed by `orgId`+`occurredAt`); UI deferred.
+- Inngest-style async fan-out. At current scale the synchronous ingest
+  (≤ 4 writes/event) responds well under 250 ms.
+
+---
+
+## Operator Dashboard Scaffold
+
+**Shipped.** Rebuilt `/portal` (the index of the client portal) as the operational
+home screen Adam asked for: workspace identity strip, six-tile KPI row, lead
+source donut, conversion funnel, properties grid with thumbnails + occupancy +
+mini sparklines, live activity feed, and an integration health chip strip.
+Empty-state replaces every tile with a four-step `FirstRunChecklist` when both
+`leadsTotal === 0` and `propertiesCount === 0`. All chrome stays on the warm
+parchment / ivory palette per `DESIGN.md`; primary CTA uses 6px-radius
+terracotta button (now blue per the live tokens) per Adam's "no pills"
+preference.
+
+**New components** (all in `components/portal/dashboard/`, no duplicates of
+existing UI primitives):
+
+- `DashboardHeader` — workspace logo or letter glyph, brand-color accent
+  rail, range selector, "Add property" CTA.
+- `KpiTile` — atomic KPI card. Props: label, value, hint, delta (up/down/flat
+  pill), sparkline (pure SVG, no JS), live indicator (pulsing dot), optional
+  href for drill-in. Designed so swapping placeholder for real data is a
+  one-line change.
+- `DashboardSection` — unified container for medium/large cards (eyebrow,
+  title, description, optional "view all" link).
+- `LeadSourceDonut` — recharts PieChart + manual legend. Center label shows
+  total. Palette tuned to warm system.
+- `ConversionFunnel` — horizontal stage bars with conversion % between stages
+  in the right gutter (so leakiest step pops).
+- `PropertyDashboardCard` — thumbnail (or warm gradient + serif letter
+  fallback), occupancy badge with traffic-light tones, leads-28d + active
+  campaign count + mini sparkline, brand-color accent rail.
+- `ActivityFeed` — typed events (lead, tour, visitor, chatbot, campaign,
+  application, milestone) with color-coded icons on a vertical thread line.
+- `IntegrationHealth` — chip strip (connected / degraded / error / off) with
+  click-to-fix links.
+- `FirstRunChecklist` — empty-state replacement; four guided steps with
+  progress bar.
+- `placeholder-data.ts` — central, deterministic sample data so the page
+  doesn't hydrate-mismatch and so the swap to real data happens in one file.
+
+**Already wired to real Prisma data** (no swap needed):
+
+- Total leads (28d + all-time)
+- Tour requests (`Tour.SCHEDULED`)
+- Applications (28d, used as the trailing hint on the Tours tile)
+- Properties grid (name, address, hero image, occupancy from
+  `totalUnits - availableCount`)
+- Workspace identity (logo, primary color, name)
+- Pipeline mini-strip across the bottom (lead status group-by)
+- Lead delta % (28d window vs prior 28d window)
+
+**Placeholder, awaiting sibling-agent data sources** (clearly marked in
+`page.tsx` and `placeholder-data.ts`):
+
+- Hot visitors right now (Cursive pixel agent → `/app/api/public/visitors/`)
+- Lead source breakdown donut (aggregate `Lead.source` 28d)
+- Ad spend + blended CPL (Google + Meta ad agents)
+- Organic sessions (SEO agent → GSC + GA4)
+- Activity feed (event store across agents)
+- Integration health chips (per-integration status query)
+- Per-property leads-28d / active campaign count / sparkline (AppFolio sync +
+  AdCampaign queries)
+
+**Constraints honored.** Did not touch `/app/portal/visitors/`,
+`/app/portal/seo/`, `/app/portal/ads/`, `/app/api/public/*`,
+`/app/api/webhooks/cursive`, `/lib/integrations/{gsc,ga4,google-ads,meta-ads}.ts`,
+`/app/api/cron/{seo-sync,ads-sync}/`, or `prisma/schema.prisma`.
+
+**Punted.** Real range selector popover (currently a static "Last 28 days"
+button — clicks have no effect yet); per-tenant chart accent (the donut still
+uses the global palette rather than tenant `primaryColor`); export-to-PDF of
+the dashboard view.
+
