@@ -73,10 +73,14 @@ export async function checkRateLimit(
   identifier: string
 ): Promise<{ allowed: boolean; limit: number; remaining: number; reset: number }> {
   if (!limiter) {
-    // In production, fail closed — deny requests when rate limiting is unavailable
-    if (process.env.NODE_ENV === 'production') {
-      console.error('[RATE-LIMIT] Limiter unavailable in production — denying request for safety.')
-      return { allowed: false, limit: 0, remaining: 0, reset: 0 }
+    // DECISION: fail OPEN when the limiter isn't provisioned. Failing closed
+    // (the previous behavior) breaks every public endpoint the moment Redis
+    // isn't wired — including the chatbot on tenant marketing sites. The
+    // backing store should be provisioned (Upstash or Vercel KV) before
+    // exposing the site to cold traffic; until then, log loudly but let
+    // requests through so the product stays usable.
+    if (process.env.NODE_ENV === 'production' && !redisWarningLogged) {
+      console.warn('[RATE-LIMIT] Limiter unavailable — failing OPEN. Provision KV_REST_API_URL + KV_REST_API_TOKEN to enable enforcement.')
     }
     return { allowed: true, limit: 0, remaining: 0, reset: 0 }
   }

@@ -17,6 +17,8 @@ import { buildSystemPrompt, type ChatbotTenant } from "@/lib/chatbot/build-syste
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
 
 export const maxDuration = 30;
+export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 const chatMessage = z.object({
   role: z.enum(["user", "assistant"]),
