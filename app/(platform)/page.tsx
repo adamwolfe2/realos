@@ -48,9 +48,9 @@ function Hero() {
   return (
     <SplitHero
       eyebrow="For multifamily and student-housing operators"
-      headline="Eight vendors out."
-      headlineAccent="One platform in."
-      subhead="Your marketing site, ads, AI chatbot, CRM, and the Monday owner report — live on your domain in fourteen days. One login. One bill. Month-to-month."
+      headline="Leases up."
+      headlineAccent="Vendors out."
+      subhead="Your marketing site, ads, AI chatbot, and CRM — live on your domain in fourteen days. One login, one bill, month-to-month. Your job: run the building. Ours: fill the units."
       ctas={[
         { label: "Book a demo", href: "/onboarding" },
         { label: "See it live", href: "/#live", variant: "secondary" },
