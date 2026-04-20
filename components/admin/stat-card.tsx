@@ -33,7 +33,7 @@ export function StatCard({
       <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
         {label}
       </div>
-      <div className="font-serif text-3xl font-bold mt-2 tabular-nums text-foreground">
+      <div className="text-2xl font-semibold tracking-tight mt-2 tabular-nums text-foreground">
         {value}
       </div>
       {hint ? (

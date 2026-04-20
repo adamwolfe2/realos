@@ -42,7 +42,7 @@ export default async function ApiKeysPage() {
         >
           ← Settings
         </Link>
-        <h1 className="font-serif text-3xl font-bold">API keys</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">API keys</h1>
         <p className="text-sm opacity-60">
           Push leads, visitors, tours, and chatbot events into your CRM from
           any external system (Zapier, Typeform, Make, custom forms). Each key
@@ -52,7 +52,7 @@ export default async function ApiKeysPage() {
 
       <section className="border rounded-md p-5 space-y-5">
         <div>
-          <h2 className="font-serif text-lg font-bold">Create a key</h2>
+          <h2 className="text-sm font-semibold">Create a key</h2>
           <p className="text-xs opacity-60 mt-1">
             Generated keys are shown exactly once. Store them in your
             integration vault (e.g. Zapier secrets) immediately.
@@ -63,7 +63,7 @@ export default async function ApiKeysPage() {
 
       <section className="border rounded-md p-5 space-y-4">
         <div className="flex items-baseline justify-between gap-3">
-          <h2 className="font-serif text-lg font-bold">Active keys</h2>
+          <h2 className="text-sm font-semibold">Active keys</h2>
           <span className="text-[11px] opacity-60">
             {active.length} active
           </span>
@@ -95,7 +95,7 @@ export default async function ApiKeysPage() {
       {revoked.length > 0 ? (
         <section className="border rounded-md p-5 space-y-4">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="font-serif text-lg font-bold opacity-70">
+            <h2 className="text-sm font-semibold opacity-70">
               Revoked keys
             </h2>
             <span className="text-[11px] opacity-60">
@@ -122,7 +122,7 @@ export default async function ApiKeysPage() {
       ) : null}
 
       <section className="border rounded-md p-5 space-y-2">
-        <h2 className="font-serif text-lg font-bold">How to use</h2>
+        <h2 className="text-sm font-semibold">How to use</h2>
         <p className="text-xs opacity-70">
           Send a <code className="font-mono">POST</code> request to one of the
           ingest endpoints with your key in the{" "}
@@ -187,7 +187,7 @@ function ApiKeyRow({
     >
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="font-serif text-sm font-bold">{name}</span>
+          <span className="text-sm font-semibold">{name}</span>
           <code className="font-mono text-[11px] bg-muted px-1.5 py-0.5 rounded">
             {prefix}…
           </code>

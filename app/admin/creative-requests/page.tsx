@@ -38,7 +38,7 @@ export default async function CreativeQueue() {
     <div className="space-y-6">
       <header className="flex items-end justify-between">
         <div>
-          <h1 className="font-serif text-3xl font-bold">Creative queue</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Creative queue</h1>
           <p className="text-sm opacity-60 mt-1">
             Every tenant's open creative requests. Click a card for the full
             brief, references, and conversation thread.

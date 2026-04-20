@@ -97,7 +97,7 @@ export function ChatbotConfigForm({
       />
 
       <section className="border rounded-md p-5 space-y-4">
-        <h2 className="font-serif text-lg font-bold">Persona</h2>
+        <h2 className="text-sm font-semibold">Persona</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <Field
             label="Persona name"
@@ -137,7 +137,7 @@ export function ChatbotConfigForm({
       </section>
 
       <section className="border rounded-md p-5 space-y-4">
-        <h2 className="font-serif text-lg font-bold">Appearance</h2>
+        <h2 className="text-sm font-semibold">Appearance</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <label className="flex flex-col gap-1 text-sm">
             <span className="text-xs tracking-widest uppercase opacity-70">
@@ -195,7 +195,7 @@ export function ChatbotConfigForm({
       </section>
 
       <section className="border rounded-md p-5 space-y-3">
-        <h2 className="font-serif text-lg font-bold">Lead capture</h2>
+        <h2 className="text-sm font-semibold">Lead capture</h2>
         <p className="text-xs opacity-60">
           Choose when the bot asks for a visitor&apos;s name and email.
         </p>
@@ -206,7 +206,7 @@ export function ChatbotConfigForm({
               <label
                 key={opt.value}
                 className={`flex items-start gap-3 border rounded-md px-3 py-2.5 text-sm cursor-pointer transition-colors ${
-                  active ? "border-foreground" : "hover:bg-muted/40"
+                  active ? "border-primary" : "hover:bg-muted/40"
                 }`}
               >
                 <input
@@ -228,7 +228,7 @@ export function ChatbotConfigForm({
       </section>
 
       <section className="border rounded-md p-5 space-y-3">
-        <h2 className="font-serif text-lg font-bold">Knowledge base</h2>
+        <h2 className="text-sm font-semibold">Knowledge base</h2>
         <p className="text-xs opacity-60">
           Plain-text facts, amenities, and policies injected into the
           system prompt. Write like you&apos;re briefing a new front-desk
@@ -271,7 +271,7 @@ export function ChatbotConfigForm({
         <button
           type="submit"
           disabled={pending || kbOver}
-          className="bg-foreground text-background px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
+          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
         >
           {pending ? "Saving…" : "Save chatbot config"}
         </button>
@@ -302,7 +302,7 @@ function Preview({
 }) {
   return (
     <section className="border rounded-md p-5 space-y-3">
-      <h2 className="font-serif text-lg font-bold">Preview</h2>
+      <h2 className="text-sm font-semibold">Preview</h2>
       <p className="text-xs opacity-60">
         Quick sanity-check of the persona + brand color. The full widget
         renders live once the master toggle is on.

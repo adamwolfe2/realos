@@ -234,7 +234,7 @@ export function SiteBuilderForm({
         <button
           type="submit"
           disabled={pending}
-          className="bg-foreground text-background px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
+          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
         >
           {pending ? "Saving…" : "Save + publish"}
         </button>
@@ -258,7 +258,7 @@ function Section({
 }) {
   return (
     <section className="border rounded-md p-5">
-      <h2 className="font-serif text-lg font-bold mb-4">{title}</h2>
+      <h2 className="text-sm font-semibold mb-4">{title}</h2>
       <div className="space-y-3">{children}</div>
     </section>
   );

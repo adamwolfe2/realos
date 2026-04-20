@@ -42,7 +42,7 @@ export default async function AppFolioSettingsPage({
         >
           ← {property.name}
         </Link>
-        <h1 className="font-serif text-3xl font-bold mt-2">
+        <h1 className="text-2xl font-semibold tracking-tight mt-2">
           AppFolio integration
         </h1>
         <p className="text-sm opacity-60 mt-1">

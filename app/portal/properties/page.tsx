@@ -21,7 +21,7 @@ export default async function PropertiesList() {
     <div className="space-y-6">
       <header className="flex items-end justify-between">
         <div>
-          <h1 className="font-serif text-3xl font-bold">Properties</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Properties</h1>
           <p className="text-sm opacity-60 mt-1">
             Listings, leads, and tours for every property in your portfolio.
           </p>

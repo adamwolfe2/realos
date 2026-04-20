@@ -27,7 +27,7 @@ export default async function SiteBuilderPage() {
   if (!org?.moduleWebsite || org.bringYourOwnSite) {
     return (
       <div className="max-w-2xl">
-        <h1 className="font-serif text-3xl font-bold mb-4">Site builder</h1>
+        <h1 className="text-2xl font-semibold tracking-tight mb-4">Site builder</h1>
         <p className="text-sm opacity-70">
           This workspace is on a plan without the managed website module,
           or you selected bring-your-own-site during onboarding. Ping your
@@ -40,7 +40,7 @@ export default async function SiteBuilderPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <header>
-        <h1 className="font-serif text-3xl font-bold">Site builder</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Site builder</h1>
         <p className="text-sm opacity-60 mt-1">
           Edit your live marketing site. Saving publishes immediately and
           revalidates every tenant site route.

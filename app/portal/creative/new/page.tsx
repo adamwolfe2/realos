@@ -23,7 +23,7 @@ export default async function NewCreativeRequestPage() {
         >
           ← Creative studio
         </Link>
-        <h1 className="font-serif text-3xl font-bold mt-2">
+        <h1 className="text-2xl font-semibold tracking-tight mt-2">
           New creative request
         </h1>
         <p className="text-sm opacity-60 mt-1">

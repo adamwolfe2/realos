@@ -68,7 +68,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
 
   return (
     <form onSubmit={submit} className="space-y-5 border rounded-md p-5">
-      <h2 className="font-serif text-lg font-bold">Company info</h2>
+      <h2 className="text-sm font-semibold">Company info</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <TF label="Company name" value={state.name} onChange={(v) => update("name", v)} />
         <TF label="Short name" value={state.shortName} onChange={(v) => update("shortName", v)} />
@@ -78,7 +78,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         <TF label="Contact role" value={state.primaryContactRole} onChange={(v) => update("primaryContactRole", v)} />
       </div>
 
-      <h2 className="font-serif text-lg font-bold pt-4 border-t">HQ address</h2>
+      <h2 className="text-sm font-semibold pt-4 border-t">HQ address</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <TF label="Address line 1" value={state.hqAddressLine1} onChange={(v) => update("hqAddressLine1", v)} />
         <TF label="City" value={state.hqCity} onChange={(v) => update("hqCity", v)} />
@@ -86,7 +86,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         <TF label="Postal code" value={state.hqPostalCode} onChange={(v) => update("hqPostalCode", v)} />
       </div>
 
-      <h2 className="font-serif text-lg font-bold pt-4 border-t">Brand</h2>
+      <h2 className="text-sm font-semibold pt-4 border-t">Brand</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <TF label="Logo URL" value={state.logoUrl} onChange={(v) => update("logoUrl", v)} type="url" />
         <TF label="Brand font" value={state.brandFont} onChange={(v) => update("brandFont", v)} placeholder="Inter, serif" />
@@ -98,7 +98,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         <button
           type="submit"
           disabled={pending}
-          className="bg-foreground text-background px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
+          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
         >
           {pending ? "Saving…" : "Save settings"}
         </button>

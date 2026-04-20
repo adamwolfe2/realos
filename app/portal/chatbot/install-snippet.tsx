@@ -17,7 +17,7 @@ export function InstallSnippet({ snippet }: { snippet: string }) {
 
   return (
     <section className="border rounded-md p-5 space-y-3">
-      <h2 className="font-serif text-lg font-bold">Install snippet</h2>
+      <h2 className="text-sm font-semibold">Install snippet</h2>
       <p className="text-xs opacity-70">
         Paste this before the closing <code>&lt;/head&gt;</code> tag on your
         site. Works on Wix, WordPress, Webflow, custom sites — anywhere you
@@ -30,7 +30,7 @@ export function InstallSnippet({ snippet }: { snippet: string }) {
         <button
           type="button"
           onClick={copy}
-          className="absolute top-2 right-2 bg-foreground text-background text-[11px] font-semibold px-2.5 py-1 rounded"
+          className="absolute top-2 right-2 bg-primary text-primary-foreground hover:bg-primary-dark transition-colors text-[11px] font-semibold px-2.5 py-1 rounded"
         >
           {copied ? "Copied" : "Copy"}
         </button>

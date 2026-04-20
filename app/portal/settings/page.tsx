@@ -36,7 +36,7 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-8 max-w-3xl">
       <header>
-        <h1 className="font-serif text-3xl font-bold">Settings</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>
         <p className="text-sm opacity-60 mt-1">
           Update company info and brand tokens. Module selection and plan
           tier are managed by your account manager.
@@ -65,7 +65,7 @@ export default async function SettingsPage() {
       <section className="border rounded-md p-5">
         <div className="flex items-baseline justify-between gap-3 mb-2">
           <div>
-            <h2 className="font-serif text-lg font-bold">Integrations</h2>
+            <h2 className="text-sm font-semibold">Integrations</h2>
             <p className="text-xs opacity-60 mt-1">
               Connect the Cursive visitor pixel and other third-party
               services.
@@ -83,7 +83,7 @@ export default async function SettingsPage() {
       <section className="border rounded-md p-5">
         <div className="flex items-baseline justify-between gap-3 mb-2">
           <div>
-            <h2 className="font-serif text-lg font-bold">API keys</h2>
+            <h2 className="text-sm font-semibold">API keys</h2>
             <p className="text-xs opacity-60 mt-1">
               Generate scoped API keys so Zapier, Typeform, and bespoke
               systems can push leads, visitors, tours, and chatbot events
@@ -100,7 +100,7 @@ export default async function SettingsPage() {
       </section>
 
       <section className="border rounded-md p-5">
-        <h2 className="font-serif text-lg font-bold mb-4">Active modules</h2>
+        <h2 className="text-sm font-semibold mb-4">Active modules</h2>
         <ul className="grid grid-cols-2 md:grid-cols-3 gap-y-1.5 gap-x-4">
           {modules.map(([k, v]) => (
             <li
@@ -123,7 +123,7 @@ export default async function SettingsPage() {
       </section>
 
       <section className="border rounded-md p-5">
-        <h2 className="font-serif text-lg font-bold mb-4">Team</h2>
+        <h2 className="text-sm font-semibold mb-4">Team</h2>
         {users.length === 0 ? (
           <p className="text-sm opacity-60">
             No users yet. Invite teammates from the Clerk dashboard.

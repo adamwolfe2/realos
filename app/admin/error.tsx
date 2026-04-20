@@ -20,7 +20,7 @@ export default function AdminError({
   return (
     <div className="flex flex-col items-center justify-center py-24 text-center">
       <AlertTriangle className="h-10 w-10 text-muted-foreground mb-4" />
-      <h2 className="font-serif text-2xl font-bold mb-2">Something went wrong</h2>
+      <h2 className="text-xl font-semibold tracking-tight mb-2">Something went wrong</h2>
       <p className="text-sm text-muted-foreground mb-6 max-w-sm">
         An unexpected error occurred. Try refreshing — if the issue persists, check the server logs.
       </p>

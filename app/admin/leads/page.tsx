@@ -4,6 +4,13 @@ import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { LeadSource, LeadStatus, Prisma } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
+import { PageHeader } from "@/components/admin/page-header";
+import { StatusBadge } from "@/components/admin/status-badge";
+import {
+  humanLeadSource,
+  humanLeadStatus,
+  leadStatusTone,
+} from "@/lib/format";
 
 export const metadata: Metadata = { title: "Leads, cross-tenant" };
 export const dynamic = "force-dynamic";
@@ -66,98 +73,78 @@ export default async function CrossTenantLeads({
   for (const c of counts) {
     totalsBySource.set(c.source, c._count._all);
   }
-  const total = Array.from(totalsBySource.values()).reduce(
-    (a, b) => a + b,
-    0
-  );
+  const total = Array.from(totalsBySource.values()).reduce((a, b) => a + b, 0);
 
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="font-serif text-3xl font-bold">Leads</h1>
-          <p className="text-sm opacity-60 mt-1">
-            Every lead across every tenant in the last {days} days.
-          </p>
-        </div>
-        <div className="text-xs opacity-60">
-          {total} leads, {leads.length} shown
-        </div>
-      </header>
+      <PageHeader
+        title="Leads"
+        description={`Every lead across every tenant in the last ${days} days.`}
+        actions={
+          <div className="text-xs text-muted-foreground">
+            {total} total · {leads.length} shown
+          </div>
+        }
+      />
 
       <form
         action="/admin/leads"
-        className="grid grid-cols-2 md:grid-cols-4 gap-3 text-xs"
+        className="rounded-lg border border-border bg-card p-4"
       >
-        <label className="flex flex-col gap-1">
-          <span className="opacity-60">Days</span>
-          <select
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <SelectField
+            label="Days"
             name="days"
             defaultValue={String(days)}
-            className="border rounded px-2 py-1.5 bg-background"
-          >
-            {[7, 30, 90, 180, 365].map((d) => (
-              <option key={d} value={d}>
-                {d}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="opacity-60">Source</span>
-          <select
+            options={[7, 30, 90, 180, 365].map((d) => ({
+              value: String(d),
+              label: `Last ${d} days`,
+            }))}
+          />
+          <SelectField
+            label="Source"
             name="source"
             defaultValue={sp.source ?? ""}
-            className="border rounded px-2 py-1.5 bg-background"
-          >
-            <option value="">All</option>
-            {SOURCE_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="opacity-60">Status</span>
-          <select
+            options={[
+              { value: "", label: "All sources" },
+              ...SOURCE_OPTIONS.map((s) => ({
+                value: s,
+                label: humanLeadSource(s),
+              })),
+            ]}
+          />
+          <SelectField
+            label="Status"
             name="status"
             defaultValue={sp.status ?? ""}
-            className="border rounded px-2 py-1.5 bg-background"
-          >
-            <option value="">All</option>
-            {STATUS_OPTIONS.map((s) => (
-              <option key={s} value={s}>
-                {s}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="flex flex-col gap-1">
-          <span className="opacity-60">Client</span>
-          <select
+            options={[
+              { value: "", label: "All statuses" },
+              ...STATUS_OPTIONS.map((s) => ({
+                value: s,
+                label: humanLeadStatus(s),
+              })),
+            ]}
+          />
+          <SelectField
+            label="Client"
             name="org"
             defaultValue={sp.org ?? ""}
-            className="border rounded px-2 py-1.5 bg-background"
-          >
-            <option value="">All</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-        </label>
-        <div className="col-span-full flex gap-2 mt-1">
+            options={[
+              { value: "", label: "All clients" },
+              ...clients.map((c) => ({ value: c.id, label: c.name })),
+            ]}
+          />
+        </div>
+        <div className="flex gap-2 mt-4">
           <button
             type="submit"
-            className="bg-foreground text-background px-3 py-1.5 text-xs rounded"
+            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
           >
-            Apply
+            Apply filters
           </button>
           <Link
             href="/admin/leads"
-            className="text-xs opacity-60 px-3 py-1.5 border rounded"
+            className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
           >
             Reset
           </Link>
@@ -165,61 +152,121 @@ export default async function CrossTenantLeads({
       </form>
 
       {leads.length === 0 ? (
-        <p className="text-sm opacity-60 border rounded-md p-4">
-          No leads match this filter.
-        </p>
+        <div className="rounded-lg border border-border bg-card p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            No leads match this filter.
+          </p>
+        </div>
       ) : (
-        <div className="border rounded-md overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-[10px] tracking-widest uppercase opacity-60">
-              <tr>
-                <th className="text-left px-4 py-2">Lead</th>
-                <th className="text-left px-4 py-2">Client</th>
-                <th className="text-left px-4 py-2">Property</th>
-                <th className="text-left px-4 py-2">Source</th>
-                <th className="text-left px-4 py-2">Status</th>
-                <th className="text-right px-4 py-2">Score</th>
-                <th className="text-right px-4 py-2">Created</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {leads.map((l) => (
-                <tr key={l.id} className="hover:bg-muted/40">
-                  <td className="px-4 py-2">
-                    <div className="font-medium">
-                      {l.firstName
-                        ? `${l.firstName}${l.lastName ? " " + l.lastName : ""}`
-                        : l.email ?? "Anonymous"}
-                    </div>
-                    {l.email ? (
-                      <div className="text-[11px] opacity-60">{l.email}</div>
-                    ) : null}
-                  </td>
-                  <td className="px-4 py-2 text-xs">
-                    <Link
-                      href={`/admin/clients/${l.orgId}`}
-                      className="underline underline-offset-2"
-                    >
-                      {l.org.name}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-2 text-xs opacity-80">
-                    {l.property?.name ?? "—"}
-                  </td>
-                  <td className="px-4 py-2 text-xs">{l.source}</td>
-                  <td className="px-4 py-2 text-xs">{l.status}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    {l.score}
-                  </td>
-                  <td className="px-4 py-2 text-right text-xs opacity-60 whitespace-nowrap">
-                    {formatDistanceToNow(l.createdAt, { addSuffix: true })}
-                  </td>
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <Th>Lead</Th>
+                  <Th>Client</Th>
+                  <Th>Property</Th>
+                  <Th>Source</Th>
+                  <Th>Status</Th>
+                  <Th className="text-right">Score</Th>
+                  <Th className="text-right">Created</Th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {leads.map((l) => (
+                  <tr
+                    key={l.id}
+                    className="hover:bg-muted/30 transition-colors"
+                  >
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-foreground">
+                        {l.firstName
+                          ? `${l.firstName}${l.lastName ? " " + l.lastName : ""}`
+                          : (l.email ?? "Anonymous")}
+                      </div>
+                      {l.email ? (
+                        <div className="text-[11px] text-muted-foreground">
+                          {l.email}
+                        </div>
+                      ) : null}
+                    </td>
+                    <td className="px-4 py-3 text-xs">
+                      <Link
+                        href={`/admin/clients/${l.orgId}`}
+                        className="text-primary hover:underline underline-offset-2 font-medium"
+                      >
+                        {l.org.name}
+                      </Link>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {l.property?.name ?? "—"}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground">
+                      {humanLeadSource(l.source)}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatusBadge tone={leadStatusTone(l.status)}>
+                        {humanLeadStatus(l.status)}
+                      </StatusBadge>
+                    </td>
+                    <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
+                      {l.score}
+                    </td>
+                    <td className="px-4 py-3 text-right text-xs text-muted-foreground whitespace-nowrap">
+                      {formatDistanceToNow(l.createdAt, { addSuffix: true })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
+  );
+}
+
+function Th({
+  children,
+  className,
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <th
+      className={`text-left px-4 py-2.5 text-[11px] font-medium text-muted-foreground ${className ?? ""}`}
+    >
+      {children}
+    </th>
+  );
+}
+
+function SelectField({
+  label,
+  name,
+  defaultValue,
+  options,
+}: {
+  label: string;
+  name: string;
+  defaultValue: string;
+  options: Array<{ value: string; label: string }>;
+}) {
+  return (
+    <label className="flex flex-col gap-1.5">
+      <span className="text-xs font-medium text-foreground">{label}</span>
+      <select
+        name={name}
+        defaultValue={defaultValue}
+        className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+      >
+        {options.map((o) => (
+          <option key={o.value} value={o.value}>
+            {o.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }

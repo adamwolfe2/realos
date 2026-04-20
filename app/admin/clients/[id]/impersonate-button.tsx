@@ -37,7 +37,7 @@ export function ImpersonateButton({ orgId }: { orgId: string }) {
         type="button"
         onClick={onClick}
         disabled={pending}
-        className="bg-foreground text-background px-4 py-2 text-xs font-semibold tracking-wide rounded disabled:opacity-40"
+        className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold tracking-wide rounded disabled:opacity-40"
       >
         {pending ? "Switching…" : "Impersonate"}
       </button>

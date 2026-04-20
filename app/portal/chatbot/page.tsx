@@ -72,7 +72,7 @@ export default async function ChatbotPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <header>
-        <h1 className="font-serif text-3xl font-bold">Chatbot</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Chatbot</h1>
         <p className="text-sm opacity-60 mt-1">
           Configure the AI leasing assistant that embeds on your marketing
           site. Changes go live the next time a visitor loads your page.

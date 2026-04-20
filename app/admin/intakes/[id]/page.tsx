@@ -77,7 +77,7 @@ export default async function IntakeDetail({
             ← Intake queue
           </Link>
           <div className="flex items-center gap-3 mt-2 flex-wrap">
-            <h1 className="font-serif text-3xl font-bold">
+            <h1 className="text-2xl font-semibold tracking-tight">
               {intake.companyName}
             </h1>
             <span
@@ -121,7 +121,7 @@ export default async function IntakeDetail({
             </div>
             <Link
               href={`/admin/clients/${intake.org.id}`}
-              className="text-xs font-semibold bg-foreground text-background px-3 py-2 rounded"
+              className="text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-2 rounded"
             >
               Open client →
             </Link>
@@ -156,7 +156,7 @@ export default async function IntakeDetail({
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="border rounded-md p-5">
-          <h2 className="font-serif text-lg font-semibold mb-3">Company</h2>
+          <h2 className="text-sm font-semibold mb-3">Company</h2>
           <dl className="space-y-1 text-sm">
             <Row k="Company name" v={intake.companyName} />
             <Row k="Short name" v={intake.shortName ?? "—"} />
@@ -167,7 +167,7 @@ export default async function IntakeDetail({
         </div>
 
         <div className="border rounded-md p-5">
-          <h2 className="font-serif text-lg font-semibold mb-3">Contact</h2>
+          <h2 className="text-sm font-semibold mb-3">Contact</h2>
           <dl className="space-y-1 text-sm">
             <Row k="Name" v={intake.primaryContactName} />
             <Row k="Email" v={intake.primaryContactEmail} />
@@ -177,7 +177,7 @@ export default async function IntakeDetail({
         </div>
 
         <div className="border rounded-md p-5">
-          <h2 className="font-serif text-lg font-semibold mb-3">Portfolio</h2>
+          <h2 className="text-sm font-semibold mb-3">Portfolio</h2>
           <dl className="space-y-1 text-sm">
             <Row k="Property type" v={intake.propertyType} />
             <Row
@@ -204,7 +204,7 @@ export default async function IntakeDetail({
         </div>
 
         <div className="border rounded-md p-5">
-          <h2 className="font-serif text-lg font-semibold mb-3">
+          <h2 className="text-sm font-semibold mb-3">
             Selected modules
           </h2>
           {selected.length === 0 ? (
@@ -224,7 +224,7 @@ export default async function IntakeDetail({
         </div>
 
         <div className="border rounded-md p-5">
-          <h2 className="font-serif text-lg font-semibold mb-3">Timeline</h2>
+          <h2 className="text-sm font-semibold mb-3">Timeline</h2>
           <dl className="space-y-1 text-sm">
             <Row k="Go-live target" v={intake.goLiveTarget ?? "—"} />
             <Row
@@ -240,7 +240,7 @@ export default async function IntakeDetail({
         </div>
 
         <div className="border rounded-md p-5">
-          <h2 className="font-serif text-lg font-semibold mb-3">
+          <h2 className="text-sm font-semibold mb-3">
             Submission metadata
           </h2>
           <dl className="space-y-1 text-sm">

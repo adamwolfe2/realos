@@ -66,7 +66,7 @@ export default async function LeadsKanbanPage({
     <div className="space-y-6">
       <header className="flex items-end justify-between">
         <div>
-          <h1 className="font-serif text-3xl font-bold">Leads</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Leads</h1>
           <p className="text-sm opacity-60 mt-1">
             Move cards between columns to update status. Click a card for
             full lead detail, conversation history, tours, and applications.
@@ -123,7 +123,7 @@ export default async function LeadsKanbanPage({
         <div className="col-span-full flex gap-2 mt-1">
           <button
             type="submit"
-            className="bg-foreground text-background px-3 py-1.5 text-xs rounded"
+            className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs rounded"
           >
             Apply
           </button>

@@ -41,7 +41,7 @@ export default async function CreativePage() {
     <div className="space-y-6">
       <header className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-serif text-3xl font-bold">Creative studio</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Creative studio</h1>
           <p className="text-sm opacity-60 mt-1">
             Submit ad, email, story, or flyer creative. The agency team
             delivers, you review, we iterate.
@@ -49,7 +49,7 @@ export default async function CreativePage() {
         </div>
         <Link
           href="/portal/creative/new"
-          className="bg-foreground text-background px-4 py-2 text-xs font-semibold rounded"
+          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded"
         >
           New request
         </Link>

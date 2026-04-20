@@ -83,7 +83,7 @@ export function ConvertIntakeButton({ intakeId }: Props) {
           type="button"
           onClick={onConvert}
           disabled={pending}
-          className="bg-foreground text-background px-4 py-2 text-xs font-semibold tracking-wide rounded disabled:opacity-40"
+          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold tracking-wide rounded disabled:opacity-40"
         >
           {converting ? "Converting…" : "Convert to client"}
         </button>

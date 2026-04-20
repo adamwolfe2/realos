@@ -42,7 +42,7 @@ export function CreateApiKeyForm() {
         <button
           type="button"
           onClick={() => setOpen(true)}
-          className="bg-foreground text-background px-4 py-2 text-xs font-semibold rounded"
+          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded"
         >
           Create new key
         </button>
@@ -100,7 +100,7 @@ export function CreateApiKeyForm() {
             <button
               type="submit"
               disabled={pending}
-              className="bg-foreground text-background px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
+              className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
             >
               {pending ? "Generating…" : "Generate key"}
             </button>
@@ -149,7 +149,7 @@ function NewKeyBanner({
     <div className="border-2 border-amber-500/60 bg-amber-500/10 rounded-md p-4 space-y-3">
       <div className="flex items-baseline justify-between gap-3">
         <div>
-          <p className="font-serif text-sm font-bold">
+          <p className="text-sm font-semibold">
             Copy this key now — it won't be shown again.
           </p>
           <p className="text-[11px] opacity-70 mt-1">
@@ -172,7 +172,7 @@ function NewKeyBanner({
         <button
           type="button"
           onClick={copy}
-          className="bg-foreground text-background px-3 py-2 text-xs font-semibold rounded"
+          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-2 text-xs font-semibold rounded"
         >
           {copied ? "Copied" : "Copy"}
         </button>

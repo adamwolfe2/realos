@@ -93,7 +93,7 @@ export default async function AdminHome() {
     <div className="space-y-6 max-w-7xl">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="font-serif text-3xl font-bold text-foreground tracking-tight">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground tracking-tight">
             Welcome back
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
@@ -364,7 +364,7 @@ function ActionCard({
       </div>
       <div
         className={
-          "text-3xl font-serif font-bold tabular-nums " +
+          "text-3xl font-semibold tracking-tight tabular-nums " +
           (isEmpty ? "text-muted-foreground/60" : "text-foreground")
         }
       >
@@ -407,7 +407,7 @@ function FunnelRow({
       </div>
       <span
         className={
-          "font-serif font-bold text-lg tabular-nums shrink-0 " +
+          "text-lg font-semibold tabular-nums shrink-0 " +
           (tone === "success" && count > 0
             ? "text-emerald-700"
             : count > 0

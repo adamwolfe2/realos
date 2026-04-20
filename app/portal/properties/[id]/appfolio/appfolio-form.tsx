@@ -208,7 +208,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
         <button
           type="submit"
           disabled={pending}
-          className="bg-foreground text-background px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
+          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
         >
           {pending ? "Saving…" : "Save"}
         </button>

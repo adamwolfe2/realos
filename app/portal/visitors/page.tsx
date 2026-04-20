@@ -217,7 +217,7 @@ export default async function VisitorsPage({
     <div className="space-y-6">
       <header className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-serif text-3xl font-bold">Visitor feed</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Visitor feed</h1>
           <p className="text-sm opacity-60 mt-1">
             Real people visiting your site, resolved by the Cursive pixel.
             Updates every 15 seconds.
@@ -273,7 +273,7 @@ export default async function VisitorsPage({
       {/* Summary strip */}
       <section className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
         <div>
-          <span className="font-serif text-2xl font-bold tabular-nums">
+          <span className="text-xl font-semibold tracking-tight tabular-nums">
             {summary.identified}
           </span>
           <span className="opacity-70 ml-2">
@@ -339,7 +339,7 @@ function TabGroup({
             className={cn(
               "text-xs px-3 py-1.5 rounded-md border transition-colors",
               item.active
-                ? "bg-foreground text-background border-foreground"
+                ? "bg-primary text-primary-foreground hover:bg-primary-dark transition-colors border-primary"
                 : "bg-transparent border-border hover:bg-muted"
             )}
           >
@@ -566,7 +566,7 @@ function Pager({
 function EmptyNoPixel() {
   return (
     <div className="border rounded-md p-8 text-center space-y-3">
-      <div className="font-serif text-lg font-bold">
+      <div className="text-sm font-semibold">
         Install the Cursive pixel to see named website visitors here.
       </div>
       <p className="text-sm opacity-70 max-w-md mx-auto">
@@ -586,7 +586,7 @@ function EmptyNoPixel() {
 function EmptyNoVisitors() {
   return (
     <div className="border rounded-md p-8 text-center space-y-2">
-      <div className="font-serif text-lg font-bold">No visitors yet.</div>
+      <div className="text-sm font-semibold">No visitors yet.</div>
       <p className="text-sm opacity-70 max-w-md mx-auto">
         Once someone visits your site, they&apos;ll appear here in real time.
       </p>

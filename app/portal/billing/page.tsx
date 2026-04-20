@@ -36,7 +36,7 @@ export default async function BillingPage() {
   return (
     <div className="space-y-8 max-w-3xl">
       <header>
-        <h1 className="font-serif text-3xl font-bold">Billing</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">Billing</h1>
         <p className="text-sm opacity-60 mt-1">
           Subscription tier, monthly recurring modules, ad spend, and Stripe
           portal access.
@@ -91,7 +91,7 @@ export default async function BillingPage() {
       </section>
 
       <section className="border rounded-md p-5 space-y-3">
-        <h2 className="font-serif text-lg font-bold">Stripe Customer Portal</h2>
+        <h2 className="text-sm font-semibold">Stripe Customer Portal</h2>
         <p className="text-sm opacity-70">
           Update payment method, download invoices, and view upcoming charges.
           Opens a Stripe-hosted session and returns to this page when you're done.
@@ -108,7 +108,7 @@ function Mini({ label, value }: { label: string; value: string }) {
       <div className="text-[10px] tracking-widest uppercase opacity-60">
         {label}
       </div>
-      <div className="font-serif text-lg font-bold mt-2 truncate">{value}</div>
+      <div className="text-sm font-semibold mt-2 truncate">{value}</div>
     </div>
   );
 }

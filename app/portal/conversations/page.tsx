@@ -52,7 +52,7 @@ export default async function ConversationsList({
     <div className="space-y-6">
       <header className="flex items-end justify-between flex-wrap gap-3">
         <div>
-          <h1 className="font-serif text-3xl font-bold">Chatbot conversations</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Chatbot conversations</h1>
           <p className="text-sm opacity-60 mt-1">
             Every chat your site has run. Click a row to open the transcript,
             hand off to your team, or jump to the captured lead.
@@ -153,7 +153,7 @@ function StatusLink({
           : "/portal/conversations"
       }
       className={`px-2 py-1 border rounded ${
-        active ? "bg-foreground text-background" : ""
+        active ? "bg-primary text-primary-foreground hover:bg-primary-dark transition-colors" : ""
       }`}
     >
       {label}

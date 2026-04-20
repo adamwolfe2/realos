@@ -36,7 +36,7 @@ export default async function IntakeList({
     <div className="space-y-6">
       <header className="flex items-end justify-between">
         <div>
-          <h1 className="font-serif text-3xl font-bold">Intake queue</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Intake queue</h1>
           <p className="text-sm opacity-60 mt-1">
             New intakes land here. Convert accepted submissions into a
             provisioned tenant.
@@ -130,7 +130,7 @@ function FilterLink({
     <Link
       href={value === "open" ? "/admin/intakes" : `/admin/intakes?filter=${value}`}
       className={`px-3 py-1.5 border rounded ${
-        active ? "bg-foreground text-background" : ""
+        active ? "bg-primary text-primary-foreground hover:bg-primary-dark transition-colors" : ""
       }`}
     >
       {label}
