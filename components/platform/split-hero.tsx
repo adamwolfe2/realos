@@ -17,9 +17,9 @@ export function SplitHero({
   caption,
 }: {
   eyebrow: string;
-  headline: string;
-  headlineAccent?: string;
-  subhead: string;
+  headline: React.ReactNode;
+  headlineAccent?: React.ReactNode;
+  subhead: React.ReactNode;
   ctas: CTA[];
   trust?: TrustItem[];
   artifact: React.ReactNode;
@@ -34,19 +34,29 @@ export function SplitHero({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
           <div className="lg:col-span-6">
             <Reveal>
-              <p
-                className="mb-5"
-                style={{
-                  color: "#87867f",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "11px",
-                  letterSpacing: "0.18em",
-                  textTransform: "uppercase",
-                  fontWeight: 500,
-                }}
-              >
-                {eyebrow}
-              </p>
+              <div className="flex items-center gap-3 mb-5">
+                <span
+                  aria-hidden
+                  style={{
+                    display: "inline-block",
+                    width: "28px",
+                    height: "1px",
+                    backgroundColor: "#2F6FE5",
+                  }}
+                />
+                <p
+                  style={{
+                    color: "#2F6FE5",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "11px",
+                    letterSpacing: "0.22em",
+                    textTransform: "uppercase",
+                    fontWeight: 600,
+                  }}
+                >
+                  {eyebrow}
+                </p>
+              </div>
             </Reveal>
 
             <Reveal delay={60}>
@@ -54,10 +64,10 @@ export function SplitHero({
                 style={{
                   color: "#141413",
                   fontFamily: "var(--font-display)",
-                  fontSize: "clamp(38px, 5.2vw, 62px)",
+                  fontSize: "clamp(42px, 5.6vw, 70px)",
                   fontWeight: 500,
-                  lineHeight: 1.06,
-                  letterSpacing: "-0.005em",
+                  lineHeight: 1.04,
+                  letterSpacing: "-0.012em",
                 }}
               >
                 {headline}
@@ -72,14 +82,14 @@ export function SplitHero({
 
             <Reveal delay={140}>
               <p
-                className="mt-6"
+                className="mt-7"
                 style={{
                   fontFamily: "var(--font-sans)",
-                  fontSize: "18px",
-                  lineHeight: 1.6,
+                  fontSize: "19px",
+                  lineHeight: 1.65,
                   color: "#5e5d59",
                   fontWeight: 400,
-                  maxWidth: "560px",
+                  maxWidth: "580px",
                 }}
               >
                 {subhead}

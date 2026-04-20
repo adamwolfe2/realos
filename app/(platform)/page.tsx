@@ -5,6 +5,7 @@ import { BRAND_NAME } from "@/lib/brand";
 import { ProductTour } from "@/components/product-tour";
 import { SplitHero } from "@/components/platform/split-hero";
 import { ConfigTabs } from "@/components/platform/artifacts/config-tabs";
+import { RotatingWord } from "@/components/platform/rotating-word";
 
 // ---------------------------------------------------------------------------
 // Claude-inspired homepage.
@@ -48,9 +49,24 @@ function Hero() {
   return (
     <SplitHero
       eyebrow="For multifamily and student-housing operators"
-      headline="Leases up."
-      headlineAccent="Vendors out."
-      subhead="Your marketing site, ads, AI chatbot, and CRM — live on your domain in fourteen days. One login, one bill, month-to-month. Your job: run the building. Ours: fill the units."
+      headline={
+        <>
+          The <span style={{ fontStyle: "italic", fontWeight: 400 }}>No.&nbsp;1</span> Real Estate{" "}
+          <RotatingWord
+            words={["Marketing", "Leasing", "Leads", "Conversion", "Ads", "Growth", "Discovery", "Occupancy"]}
+          />{" "}
+          Ecosystem.
+        </>
+      }
+      subhead={
+        <>
+          We'll build your <strong style={{ color: "#141413", fontWeight: 600 }}>Premium Website</strong>,{" "}
+          <strong style={{ color: "#141413", fontWeight: 600 }}>AI Chatbot</strong>, and{" "}
+          <strong style={{ color: "#141413", fontWeight: 600 }}>Visitor Tracking Pixel</strong> — plus complete visibility into how you rank{" "}
+          <span style={{ color: "#2F6FE5", fontWeight: 600 }}>#1</span> across Google and AI answer engines.
+          Live on your domain in 14 days.
+        </>
+      }
       ctas={[
         { label: "Book a demo", href: "/onboarding" },
         { label: "See it live", href: "/#live", variant: "secondary" },
