@@ -117,18 +117,18 @@ export default function CommercialPage() {
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#141413" }}>
+      <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
           <Reveal>
             <p
               className="mb-6"
               style={{
-                color: "#87867f",
+                color: "#2F6FE5",
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                letterSpacing: "0.18em",
+                letterSpacing: "0.22em",
                 textTransform: "uppercase",
-                fontWeight: 500,
+                fontWeight: 600,
               }}
             >
               Five design-partner spots
@@ -138,11 +138,12 @@ export default function CommercialPage() {
             <h2
               className="mx-auto max-w-[780px]"
               style={{
-                color: "#faf9f5",
+                color: "#141413",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(24px, 3.2vw, 38px)",
                 fontWeight: 500,
-                lineHeight: 1.25,
+                lineHeight: 1.2,
+                letterSpacing: "-0.008em",
               }}
             >
               Partners shape the spec, lock in below-GA pricing, and ship first. Then the platform opens.
@@ -153,7 +154,7 @@ export default function CommercialPage() {
               <Link href="/onboarding" className="btn-primary">
                 Apply as a partner
               </Link>
-              <Link href="/residential" className="btn-secondary-dark">
+              <Link href="/residential" className="btn-secondary">
                 See it on residential
               </Link>
             </div>

@@ -26,7 +26,14 @@ export function PlatformFooter() {
         borderTop: "1px solid #EEEEEE",
       }}
     >
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-8 flex flex-col md:flex-row items-center justify-between gap-4">
+      <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
+        <Link href="/" className="flex items-center" aria-label="RealEstaite home">
+          <img
+            src="/logos/realestaite-wordmark.png"
+            alt="RealEstaite"
+            style={{ height: "26px", width: "auto", display: "block", opacity: 0.85 }}
+          />
+        </Link>
         <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
           {links.map((l) => (
             <Link

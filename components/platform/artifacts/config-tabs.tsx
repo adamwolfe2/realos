@@ -4,6 +4,7 @@ import React, { useEffect, useState } from "react";
 import {
   MetaMark, GoogleMark, TikTokMark, SlackMark, CalcomMark,
   ResendMark, GA4Mark, AppFolioMark, ChatGPTMark, PerplexityMark, ClaudeMark,
+  GeminiMark, LinkedInMark, VercelMark, FigmaMark,
 } from "./brand-logos";
 
 const ACCENT = "#2F6FE5";
@@ -11,12 +12,17 @@ const INK = "#141413";
 const MUTED = "#87867f";
 const BORDER = "#f0eee6";
 const PARCHMENT = "#faf9f5";
+const SUCCESS = "#1f7a3a";
+const ERROR = "#b53333";
+
+type Delta = "up" | "down-good" | "down-bad" | "neutral";
 
 type Row = {
   label: string;
   value: string;
-  icon: "check" | "home" | "brand" | "chat" | "ads" | "pixel" | "report" | "handshake" | "cal" | "mail" | "search" | "book" | "shield" | "phone";
+  icon: "check" | "home" | "brand" | "chat" | "ads" | "pixel" | "report" | "handshake" | "cal" | "mail" | "search" | "shield" | "phone";
   logos?: React.ReactNode[];
+  delta?: Delta;
 };
 
 type Step = {
@@ -39,16 +45,16 @@ const STEPS: Step[] = [
     headingSub: "One 30-minute call. We learn your properties, your brand, and your goals.",
     countLabel: "Items captured",
     rows: [
-      { label: "Your brand",           value: "Colors, voice, logos locked in",              icon: "brand" },
-      { label: "Your properties",      value: "4 buildings · 612 units",                      icon: "home" },
-      { label: "Your markets",         value: "Berkeley · Austin · NYU",                      icon: "home" },
-      { label: "Your leasing system",  value: "We'll plug into it",                            icon: "handshake", logos: [<AppFolioMark key="af" size={16} />] },
-      { label: "Your channels",        value: "Where your leads should come from",             icon: "ads",       logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g" size={16} />, <TikTokMark key="t" size={16} />] },
-      { label: "Your team",            value: "Who gets the hot-lead ping",                    icon: "phone",     logos: [<SlackMark key="s" size={16} />] },
-      { label: "Your playbook",        value: "Lead → tour → applied → signed",                icon: "check" },
-      { label: "Your contract",        value: "Month-to-month · no lock-in",                   icon: "shield" },
+      { label: "Your brand",           value: "Colors, voice, logos locked in",   icon: "brand",     logos: [<FigmaMark key="fig" size={16} />] },
+      { label: "Your properties",      value: "4 buildings, 612 units",            icon: "home",      logos: [<AppFolioMark key="af" size={16} />] },
+      { label: "Your markets",         value: "Berkeley, Austin, NYU",             icon: "home" },
+      { label: "Your leasing system",  value: "We plug into it directly",          icon: "handshake", logos: [<AppFolioMark key="af2" size={16} />] },
+      { label: "Your channels",        value: "Where your leads should come from", icon: "ads",       logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g" size={16} />, <TikTokMark key="t" size={16} />] },
+      { label: "Your team",            value: "Who gets the hot-lead ping",        icon: "phone",     logos: [<SlackMark key="s" size={16} />, <ResendMark key="r" size={16} />] },
+      { label: "Your playbook",        value: "Lead, tour, applied, signed",       icon: "check" },
+      { label: "Your contract",        value: "Month-to-month, no lock-in",        icon: "shield" },
     ],
-    footer: "Onboarding done — we have everything we need to build your marketing engine.",
+    footer: "Onboarding done. We have everything we need to build your marketing engine.",
   },
   {
     key: "build",
@@ -58,15 +64,16 @@ const STEPS: Step[] = [
     headingSub: "Your full marketing engine, shipped in fourteen days. You approve, we launch.",
     countLabel: "Surfaces shipped",
     rows: [
-      { label: "Marketing site",    value: "Live on your domain, 12 pages",            icon: "home" },
-      { label: "Visitor ID",        value: "Names + emails on your traffic",           icon: "pixel" },
-      { label: "AI chatbot",        value: "Trained on your units and voice",          icon: "chat" },
-      { label: "Ad campaigns",      value: "Launched and pacing",                       icon: "ads",    logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g" size={16} />] },
-      { label: "Creative library",  value: "24 static + 6 video variants",              icon: "brand" },
-      { label: "Tour booking",      value: "Embedded on every page",                    icon: "cal",    logos: [<CalcomMark key="c" size={16} />] },
-      { label: "Lead routing",      value: "To your team in real time",                 icon: "mail",   logos: [<ResendMark key="r" size={16} />, <SlackMark key="s" size={16} />] },
+      { label: "Marketing site",    value: "Live on your domain, 12 pages",  icon: "home",   logos: [<VercelMark key="v" size={16} />, <FigmaMark key="fig" size={16} />] },
+      { label: "Visitor tracking",  value: "Names plus emails on your traffic", icon: "pixel", logos: [<GA4Mark key="ga" size={16} />, <LinkedInMark key="li" size={16} />] },
+      { label: "AI chatbot",        value: "Trained on your units and voice", icon: "chat",   logos: [<ClaudeMark key="cl" size={16} />] },
+      { label: "Ad campaigns",      value: "Launched and pacing",             icon: "ads",    logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g" size={16} />, <TikTokMark key="t" size={16} />] },
+      { label: "Creative library",  value: "24 static plus 6 video variants", icon: "brand",  logos: [<FigmaMark key="fig2" size={16} />] },
+      { label: "AI discovery",      value: "Pages written to be cited",        icon: "search", logos: [<ChatGPTMark key="c" size={16} />, <PerplexityMark key="p" size={16} />, <ClaudeMark key="cl2" size={16} />, <GeminiMark key="gem" size={16} />] },
+      { label: "Tour booking",      value: "Embedded on every page",          icon: "cal",    logos: [<CalcomMark key="c" size={16} />] },
+      { label: "Lead routing",      value: "To your team in real time",       icon: "mail",   logos: [<ResendMark key="r" size={16} />, <SlackMark key="s" size={16} />] },
     ],
-    footer: "Build complete — every surface live, one login, one bill.",
+    footer: "Build complete. Every surface live, one login, one bill.",
   },
   {
     key: "launch",
@@ -76,15 +83,16 @@ const STEPS: Step[] = [
     headingSub: "You see the first tours booked the same week we launch.",
     countLabel: "Go-live checks",
     rows: [
-      { label: "Your domain",          value: "Live with SSL and tracking",                icon: "shield", logos: [<GA4Mark key="ga" size={16} />] },
-      { label: "AI discovery",         value: "Your pages are being indexed",              icon: "search", logos: [<ChatGPTMark key="c" size={16} />, <PerplexityMark key="p" size={16} />, <ClaudeMark key="cl" size={16} />] },
-      { label: "Chatbot QA",           value: "27 prompts passed · ready for students",    icon: "chat" },
-      { label: "Ads spending",         value: "Meta + Google live · first leads in",       icon: "ads",    logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g" size={16} />] },
-      { label: "Tours bookable",       value: "From every page, every channel",            icon: "cal",    logos: [<CalcomMark key="c" size={16} />] },
-      { label: "Leads routing",        value: "Hitting your team within 60 seconds",       icon: "phone",  logos: [<SlackMark key="s" size={16} />] },
-      { label: "Owner invited",        value: "Weekly report access granted",              icon: "report" },
+      { label: "Your domain",      value: "Live with SSL and tracking",            icon: "shield", logos: [<VercelMark key="v" size={16} />, <GA4Mark key="ga" size={16} />] },
+      { label: "AI discovery",     value: "Your pages are being indexed",          icon: "search", logos: [<ChatGPTMark key="c" size={16} />, <PerplexityMark key="p" size={16} />, <ClaudeMark key="cl" size={16} />, <GeminiMark key="gem" size={16} />, <GoogleMark key="g" size={16} />] },
+      { label: "Chatbot QA",       value: "27 prompts passed, ready for students", icon: "chat",   logos: [<ClaudeMark key="cl2" size={16} />] },
+      { label: "Ads spending",     value: "Meta and Google live, first leads in",  icon: "ads",    logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g2" size={16} />, <TikTokMark key="t" size={16} />] },
+      { label: "Tours bookable",   value: "From every page, every channel",        icon: "cal",    logos: [<CalcomMark key="c" size={16} />] },
+      { label: "Visitor tracking", value: "Naming traffic from day one",           icon: "pixel",  logos: [<GA4Mark key="ga2" size={16} />, <LinkedInMark key="li" size={16} />] },
+      { label: "Leads routing",    value: "Hitting your team within 60 seconds",   icon: "phone",  logos: [<SlackMark key="s" size={16} />, <ResendMark key="r" size={16} />] },
+      { label: "Owner invited",    value: "Weekly report access granted",          icon: "report", logos: [<ResendMark key="r2" size={16} />] },
     ],
-    footer: "Launched in 14 days — your domain is live, first leads are flowing.",
+    footer: "Launched in 14 days. Your domain is live, first leads are flowing.",
   },
   {
     key: "report",
@@ -94,13 +102,14 @@ const STEPS: Step[] = [
     headingSub: "One PDF. Every KPI that matters. Delivered to your inbox and your team's.",
     countLabel: "This week's snapshot",
     rows: [
-      { label: "New leads",          value: "168  ↑ 12% vs last week",       icon: "check" },
-      { label: "Tours booked",       value: "31  ↑ 4% vs last week",          icon: "cal" },
-      { label: "Applications",       value: "11  ↑ 9% vs last week",          icon: "mail" },
-      { label: "Leases signed",      value: "4  ↑ 1 vs last week",            icon: "home" },
-      { label: "Cost per tour",      value: "$122  ↓ 8% vs last month",       icon: "report" },
-      { label: "Cost per lease",     value: "$948  ↓ 11% vs last month",      icon: "report" },
-      { label: "Delivered to",       value: "Owner + GM · Monday 7am",        icon: "mail",   logos: [<ResendMark key="r" size={16} />] },
+      { label: "New leads",         value: "168, up 12% vs last week",    icon: "check",  delta: "up",        logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g" size={16} />, <TikTokMark key="t" size={16} />] },
+      { label: "Tours booked",      value: "31, up 4% vs last week",      icon: "cal",    delta: "up",        logos: [<CalcomMark key="c" size={16} />] },
+      { label: "Applications",      value: "11, up 9% vs last week",      icon: "mail",   delta: "up",        logos: [<AppFolioMark key="af" size={16} />] },
+      { label: "Leases signed",     value: "4, up 1 vs last week",        icon: "home",   delta: "up",        logos: [<AppFolioMark key="af2" size={16} />] },
+      { label: "Cost per tour",     value: "$122, down 8% vs last month", icon: "report", delta: "down-good" },
+      { label: "Cost per lease",    value: "$948, down 11% vs last month",icon: "report", delta: "down-good" },
+      { label: "Visitors named",    value: "312 identified this week",    icon: "pixel",  logos: [<LinkedInMark key="li" size={16} />, <GA4Mark key="ga" size={16} />] },
+      { label: "Delivered to",      value: "Owner plus GM, Monday 7am",   icon: "mail",   logos: [<ResendMark key="r" size={16} />, <SlackMark key="s" size={16} />] },
     ],
     footer: "One weekly report. Every number that matters. Zero dashboards to open.",
   },
@@ -248,7 +257,7 @@ export function ConfigTabs() {
           </div>
         </div>
 
-        <ul className="mt-4 px-3 md:px-4 pb-4">
+        <ul className="mt-4 px-3 md:px-4 pb-4" style={{ minHeight: "408px" }}>
           {step.rows.map((row, i) => (
             <li
               key={row.label}
@@ -276,8 +285,9 @@ export function ConfigTabs() {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "13px",
-                  color: "#5e5d59",
-                  maxWidth: "55%",
+                  color: deltaColor(row.delta) ?? "#5e5d59",
+                  fontWeight: row.delta ? 600 : 400,
+                  maxWidth: "52%",
                   textAlign: "right",
                 }}
               >
@@ -336,7 +346,7 @@ export function ConfigTabs() {
             fontWeight: 500,
           }}
         >
-          {paused ? "Paused · move your mouse away to resume" : "Live walkthrough · click any step to jump"}
+          {paused ? "Paused. Move your mouse away to resume" : "Live walkthrough. Click any step to jump"}
         </span>
       </div>
 
@@ -352,6 +362,13 @@ export function ConfigTabs() {
       `}</style>
     </div>
   );
+}
+
+function deltaColor(d?: Delta) {
+  if (d === "up") return SUCCESS;
+  if (d === "down-good") return SUCCESS;
+  if (d === "down-bad") return ERROR;
+  return null;
 }
 
 function FeatureIcon({ kind }: { kind: Row["icon"] }) {
@@ -383,7 +400,6 @@ function IconGlyph({ kind }: { kind: Row["icon"] }) {
     case "cal":       return <svg {...p}><rect x="2" y="3" width="10" height="9" rx="1.5"/><path d="M2 6h10M5 2v2M9 2v2"/></svg>;
     case "mail":      return <svg {...p}><path d="M2 4h10v6H2V4Zm0 0l5 4 5-4"/></svg>;
     case "search":    return <svg {...p}><circle cx="6" cy="6" r="3.5"/><path d="M9 9l3 3"/></svg>;
-    case "book":      return <svg {...p}><path d="M3 2h8v10H3V2Zm0 2h8M6 2v10"/></svg>;
     case "shield":    return <svg {...p}><path d="M7 2L3 4v3c0 3 2 5 4 5s4-2 4-5V4L7 2Z"/></svg>;
     case "phone":     return <svg {...p}><path d="M3 3C3 3 4 5 6 7C8 9 11 10 11 10L12 8L9 7L8 8C8 8 7 7 6 6C5 5 6 4 6 4L5 2L3 3Z" fill="currentColor" stroke="none"/></svg>;
   }

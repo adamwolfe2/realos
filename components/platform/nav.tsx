@@ -56,19 +56,17 @@ export function PlatformNav() {
       }}
     >
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-14 flex items-center justify-between gap-4">
-        <Link
-          href="/"
-          className="flex items-center"
-          style={{
-            color: labelColor,
-            fontFamily: "var(--font-display)",
-            fontSize: "17px",
-            fontWeight: 500,
-            letterSpacing: "normal",
-            transition: "color 0.33s cubic-bezier(0.5, 0, 0, 0.75)",
-          }}
-        >
-          RealEstaite
+        <Link href="/" className="flex items-center" aria-label="RealEstaite home">
+          <img
+            src="/logos/realestaite-wordmark.png"
+            alt="RealEstaite"
+            height={28}
+            style={{
+              height: "28px",
+              width: "auto",
+              display: "block",
+            }}
+          />
         </Link>
 
         <nav className="hidden md:flex items-center gap-1" aria-label="Primary">

@@ -220,17 +220,17 @@ export function VerticalLanding({
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#141413" }}>
+      <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
         <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-24 md:py-28 text-center">
           <Reveal>
             <p
               style={{
-                color: "#87867f",
+                color: "#2F6FE5",
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                letterSpacing: "0.18em",
+                letterSpacing: "0.22em",
                 textTransform: "uppercase",
-                fontWeight: 500,
+                fontWeight: 600,
                 marginBottom: "16px",
               }}
             >
@@ -241,11 +241,12 @@ export function VerticalLanding({
             <h2
               className="mx-auto max-w-[760px]"
               style={{
-                color: "#faf9f5",
+                color: "#141413",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(30px, 3.8vw, 44px)",
                 fontWeight: 500,
-                lineHeight: 1.15,
+                lineHeight: 1.12,
+                letterSpacing: "-0.008em",
               }}
             >
               The same modules every operator gets. The playbook is what changes.
@@ -255,13 +256,13 @@ export function VerticalLanding({
             <p
               className="mx-auto mt-5 max-w-[620px]"
               style={{
-                color: "#b0aea5",
+                color: "#5e5d59",
                 fontFamily: "var(--font-sans)",
                 fontSize: "16px",
                 lineHeight: 1.6,
               }}
             >
-              Same site engine, same pixel, same chatbot, same ad-managed studio.
+              Same site engine, same pixel, same chatbot, same ad studio.
               Different intake playbook, different creative library, different
               compliance guardrails per vertical.
             </p>
@@ -271,7 +272,7 @@ export function VerticalLanding({
               <Link href={ctaHref} className="btn-primary">
                 Book a demo
               </Link>
-              <Link href="/#live" className="btn-secondary-dark">
+              <Link href="/#live" className="btn-secondary">
                 See it live
               </Link>
             </div>

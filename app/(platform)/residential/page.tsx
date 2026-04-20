@@ -153,18 +153,18 @@ export default function ResidentialHub() {
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#141413" }}>
+      <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
           <Reveal>
             <p
               className="mb-6"
               style={{
-                color: "#87867f",
+                color: "#2F6FE5",
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                letterSpacing: "0.18em",
+                letterSpacing: "0.22em",
                 textTransform: "uppercase",
-                fontWeight: 500,
+                fontWeight: 600,
               }}
             >
               One codebase
@@ -174,14 +174,15 @@ export default function ResidentialHub() {
             <h2
               className="mx-auto max-w-[760px]"
               style={{
-                color: "#faf9f5",
+                color: "#141413",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(26px, 3.6vw, 40px)",
                 fontWeight: 500,
                 lineHeight: 1.2,
+                letterSpacing: "-0.008em",
               }}
             >
-              Same site, same pixel, same chatbot, same ads studio. The playbook changes per vertical — the software doesn't fork.
+              Same site, same pixel, same chatbot, same ads studio. The playbook changes per vertical. The software doesn't fork.
             </h2>
           </Reveal>
           <Reveal delay={140}>
@@ -189,7 +190,7 @@ export default function ResidentialHub() {
               <Link href="/onboarding" className="btn-primary">
                 Book a demo
               </Link>
-              <Link href="/commercial" className="btn-secondary-dark">
+              <Link href="/commercial" className="btn-secondary">
                 Commercial roadmap
               </Link>
             </div>

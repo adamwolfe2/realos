@@ -137,6 +137,37 @@ export function GA4Mark({ size = 18 }: IconProps) {
   );
 }
 
+export function LinkedInMark({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-label="LinkedIn">
+      <rect x="2" y="2" width="20" height="20" rx="3" fill="#0A66C2"/>
+      <rect x="5.5" y="9" width="2.8" height="9" fill="#ffffff"/>
+      <circle cx="6.9" cy="6.6" r="1.6" fill="#ffffff"/>
+      <path d="M11.5 9h2.6v1.3c.6-1 1.7-1.5 2.9-1.5 2.1 0 3 1.2 3 3.3V18h-2.8v-4.8c0-1.2-.5-1.9-1.5-1.9-1.1 0-1.6.8-1.6 2V18h-2.6V9Z" fill="#ffffff"/>
+    </svg>
+  );
+}
+
+export function VercelMark({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-label="Vercel">
+      <path d="M12 3L22 20H2L12 3Z" fill="#000000"/>
+    </svg>
+  );
+}
+
+export function FigmaMark({ size = 18 }: IconProps) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-label="Figma">
+      <circle cx="9"  cy="5"  r="3" fill="#F24E1E"/>
+      <circle cx="15" cy="5"  r="3" fill="#FF7262"/>
+      <circle cx="9"  cy="11" r="3" fill="#A259FF"/>
+      <circle cx="15" cy="11" r="3" fill="#1ABCFE"/>
+      <circle cx="9"  cy="17" r="3" fill="#0ACF83"/>
+    </svg>
+  );
+}
+
 export function BrandPill({
   name,
   color,

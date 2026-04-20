@@ -6,6 +6,11 @@ import { ProductTour } from "@/components/product-tour";
 import { SplitHero } from "@/components/platform/split-hero";
 import { ConfigTabs } from "@/components/platform/artifacts/config-tabs";
 import { RotatingWord } from "@/components/platform/rotating-word";
+import {
+  MetaMark, GoogleMark, TikTokMark, SlackMark, CalcomMark, ResendMark,
+  GA4Mark, AppFolioMark, ChatGPTMark, PerplexityMark, ClaudeMark,
+  GeminiMark, LinkedInMark, VercelMark, FigmaMark,
+} from "@/components/platform/artifacts/brand-logos";
 
 // ---------------------------------------------------------------------------
 // Claude-inspired homepage.
@@ -51,7 +56,7 @@ function Hero() {
       eyebrow="For multifamily and student-housing operators"
       headline={
         <>
-          The <span style={{ fontStyle: "italic", fontWeight: 400 }}>No.&nbsp;1</span> Real Estate{" "}
+          The <span style={{ color: "#2F6FE5" }}>#1</span> Real Estate{" "}
           <RotatingWord
             words={["Marketing", "Leasing", "Leads", "Conversion", "Ads", "Growth", "Discovery", "Occupancy"]}
           />{" "}
@@ -60,11 +65,10 @@ function Hero() {
       }
       subhead={
         <>
-          We'll build your <strong style={{ color: "#141413", fontWeight: 600 }}>Premium Website</strong>,{" "}
-          <strong style={{ color: "#141413", fontWeight: 600 }}>AI Chatbot</strong>, and{" "}
-          <strong style={{ color: "#141413", fontWeight: 600 }}>Visitor Tracking Pixel</strong> — plus complete visibility into how you rank{" "}
-          <span style={{ color: "#2F6FE5", fontWeight: 600 }}>#1</span> across Google and AI answer engines.
-          Live on your domain in 14 days.
+          <strong style={{ color: "#141413", fontWeight: 600 }}>Premium Website</strong>,{" "}
+          <strong style={{ color: "#141413", fontWeight: 600 }}>AI Chatbot</strong>,{" "}
+          <strong style={{ color: "#141413", fontWeight: 600 }}>Visitor Tracking Pixel</strong>, and{" "}
+          <span style={{ color: "#2F6FE5", fontWeight: 600 }}>#1</span> search visibility. Live in 14 days.
         </>
       }
       ctas={[
@@ -82,12 +86,82 @@ function Hero() {
 }
 
 // ---------------------------------------------------------------------------
-// WHAT YOU GET — deliverables checklist + 3-step timeline. Sets expectations
-// before any interactive preview; answers "what am I actually buying?"
+// WHAT YOU GET — bento grid of deliverables with brand logos + icons, followed
+// by an expanded 6-step growth timeline that extends through day 90 so buyers
+// see what happens AFTER launch, not just on launch day.
 // ---------------------------------------------------------------------------
 
+type Deliverable = {
+  key: string;
+  title: string;
+  body: string;
+  icon: "home" | "chat" | "pixel" | "ads" | "search" | "mail" | "report" | "cal";
+  logos?: { brand: "meta" | "google" | "tiktok" | "slack" | "resend" | "cal" | "ga" | "appfolio" | "chatgpt" | "perplexity" | "claude" | "gemini" | "linkedin" | "vercel" | "figma" }[];
+  big?: boolean;
+};
+
+const DELIVERABLES: Deliverable[] = [
+  {
+    key:   "site",
+    title: "Premium marketing site",
+    body:  "Built on your domain, written in your voice, designed to convert prospects into tours.",
+    icon:  "home",
+    logos: [{ brand: "vercel" }, { brand: "figma" }],
+    big:   true,
+  },
+  {
+    key:   "ads",
+    title: "Managed ad campaigns",
+    body:  "Meta, Google, and TikTok — running, pacing, and shipping new creative every 48 hours.",
+    icon:  "ads",
+    logos: [{ brand: "meta" }, { brand: "google" }, { brand: "tiktok" }],
+  },
+  {
+    key:   "chatbot",
+    title: "AI chatbot, 24/7",
+    body:  "Trained on your units, pricing rules, and application process. Captures leads at 2am so your team doesn't have to.",
+    icon:  "chat",
+    logos: [{ brand: "claude" }],
+  },
+  {
+    key:   "pixel",
+    title: "Visitor tracking pixel",
+    body:  "Real names and emails on your anonymous traffic. Identified prospects feed your CRM and ad audiences.",
+    icon:  "pixel",
+    logos: [{ brand: "ga" }, { brand: "linkedin" }],
+  },
+  {
+    key:   "seo",
+    title: "AI-search discovery",
+    body:  "Your pages written to be quoted by ChatGPT, Perplexity, Claude, Gemini, and ranked #1 on Google.",
+    icon:  "search",
+    logos: [{ brand: "chatgpt" }, { brand: "perplexity" }, { brand: "claude" }, { brand: "gemini" }, { brand: "google" }],
+  },
+  {
+    key:   "tours",
+    title: "Tour booking, inline",
+    body:  "Prospects book tours from any page, any channel. Connected to your leasing team's calendar.",
+    icon:  "cal",
+    logos: [{ brand: "cal" }],
+  },
+  {
+    key:   "crm",
+    title: "CRM and lead routing",
+    body:  "Every lead lands in one place. Hot threads ping your leasing team in Slack in under 60 seconds.",
+    icon:  "mail",
+    logos: [{ brand: "resend" }, { brand: "slack" }, { brand: "appfolio" }],
+  },
+  {
+    key:   "report",
+    title: "Monday owner report",
+    body:  "One PDF every Monday. Leads, tours, applications, leases, cost per tour, cost per lease. Delivered to owner and GM.",
+    icon:  "report",
+    logos: [{ brand: "resend" }],
+    big:   true,
+  },
+];
+
 function WhatYouGet() {
-  const { whatYouGet } = MARKETING.home;
   return (
     <section
       style={{
@@ -95,144 +169,329 @@ function WhatYouGet() {
         borderTop: "1px solid #f0eee6",
       }}
     >
-      <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-24">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-20 md:py-28">
         <div className="max-w-3xl mb-12">
-          <p className="eyebrow mb-4">{whatYouGet.eyebrow}</p>
-          <h2 className="heading-section" style={{ color: "#141413" }}>
-            {whatYouGet.headline}
+          <p
+            className="mb-4"
+            style={{
+              color: "#2F6FE5",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              fontWeight: 600,
+            }}
+          >
+            What's in your ecosystem
+          </p>
+          <h2
+            style={{
+              color: "#141413",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(32px, 4.2vw, 52px)",
+              fontWeight: 500,
+              lineHeight: 1.08,
+              letterSpacing: "-0.012em",
+            }}
+          >
+            Eight surfaces, one platform,
+            <br />
+            <span style={{ color: "#2F6FE5" }}>live in fourteen days.</span>
           </h2>
           <p
-            className="mt-4 max-w-2xl"
+            className="mt-5 max-w-2xl"
             style={{
               color: "#5e5d59",
               fontFamily: "var(--font-sans)",
-              fontSize: "17px",
+              fontSize: "18px",
               lineHeight: 1.6,
             }}
           >
-            {whatYouGet.body}
+            Every surface your marketing team would build. Shipped, integrated, and managed for you.
+            You approve. We operate.
           </p>
         </div>
 
-        <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mb-16">
-          {whatYouGet.items.map((item) => (
-            <li
-              key={item}
-              className="flex items-start gap-3"
-              style={{
-                fontFamily: "var(--font-sans)",
-                fontSize: "15px",
-                color: "#141413",
-                lineHeight: 1.55,
-                paddingTop: "6px",
-                paddingBottom: "6px",
-                borderBottom: "1px solid #f0eee6",
-              }}
-            >
-              <span
-                aria-hidden="true"
-                className="inline-flex items-center justify-center flex-shrink-0"
-                style={{
-                  width: "20px",
-                  height: "20px",
-                  borderRadius: "50%",
-                  backgroundColor: "rgba(47,111,229,0.10)",
-                  color: "#2F6FE5",
-                  marginTop: "2px",
-                }}
-              >
-                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
-                  <path
-                    d="M2 5.5L4.5 8L9 3"
-                    stroke="currentColor"
-                    strokeWidth="1.6"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </span>
-              <span>{item}</span>
-            </li>
+        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-20">
+          {DELIVERABLES.map((d) => (
+            <DeliverableCard key={d.key} d={d} />
           ))}
-        </ul>
+        </div>
 
-        <Timeline />
+        <GrowthTimeline />
       </div>
     </section>
   );
 }
 
-function Timeline() {
-  const { timeline } = MARKETING.home.whatYouGet;
+function DeliverableCard({ d }: { d: Deliverable }) {
+  return (
+    <div
+      className={`p-6 h-full flex flex-col gap-3 ${d.big ? "md:col-span-2" : ""}`}
+      style={{
+        backgroundColor: "#ffffff",
+        borderRadius: "16px",
+        boxShadow: "0 0 0 1px #f0eee6",
+        transition: "transform 260ms ease, box-shadow 260ms ease",
+      }}
+    >
+      <div className="flex items-center gap-2">
+        <span
+          className="inline-flex items-center justify-center flex-shrink-0"
+          style={{
+            width: "34px",
+            height: "34px",
+            borderRadius: "10px",
+            backgroundColor: "rgba(47,111,229,0.12)",
+            color: "#2F6FE5",
+          }}
+        >
+          <DeliverableIcon kind={d.icon} />
+        </span>
+        {d.logos && d.logos.length > 0 ? (
+          <span className="ml-auto inline-flex items-center gap-1">
+            {d.logos.map((l, i) => (
+              <BrandIcon key={`${d.key}-${l.brand}-${i}`} brand={l.brand} />
+            ))}
+          </span>
+        ) : null}
+      </div>
+      <h3
+        style={{
+          color: "#141413",
+          fontFamily: "var(--font-display)",
+          fontSize: "20px",
+          fontWeight: 500,
+          lineHeight: 1.2,
+        }}
+      >
+        {d.title}
+      </h3>
+      <p
+        style={{
+          color: "#5e5d59",
+          fontFamily: "var(--font-sans)",
+          fontSize: "14px",
+          lineHeight: 1.55,
+        }}
+      >
+        {d.body}
+      </p>
+    </div>
+  );
+}
+
+function DeliverableIcon({ kind }: { kind: Deliverable["icon"] }) {
+  const p = { width: 16, height: 16, viewBox: "0 0 14 14", fill: "none", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+  switch (kind) {
+    case "home":   return <svg {...p}><path d="M2 7L7 3L12 7V12H8V9H6V12H2V7Z" /></svg>;
+    case "chat":   return <svg {...p}><path d="M2 3H12V9H5L2 11V3Z" /></svg>;
+    case "pixel":  return <svg {...p}><circle cx="7" cy="7" r="4"/><circle cx="7" cy="7" r="1.2" fill="currentColor" stroke="none"/></svg>;
+    case "ads":    return <svg {...p}><path d="M2 5H5L9 2V12L5 9H2V5Z" /></svg>;
+    case "search": return <svg {...p}><circle cx="6" cy="6" r="3.5"/><path d="M9 9l3 3"/></svg>;
+    case "mail":   return <svg {...p}><path d="M2 4h10v6H2V4Zm0 0l5 4 5-4"/></svg>;
+    case "report": return <svg {...p}><path d="M3 11V3h8v8H3Zm2-4h4M5 9h4M5 5h3"/></svg>;
+    case "cal":    return <svg {...p}><rect x="2" y="3" width="10" height="9" rx="1.5"/><path d="M2 6h10M5 2v2M9 2v2"/></svg>;
+  }
+}
+
+function BrandIcon({ brand }: { brand: NonNullable<Deliverable["logos"]>[number]["brand"] }) {
+  switch (brand) {
+    case "meta":       return <MetaMark size={16} />;
+    case "google":     return <GoogleMark size={16} />;
+    case "tiktok":     return <TikTokMark size={16} />;
+    case "slack":      return <SlackMark size={16} />;
+    case "resend":     return <ResendMark size={16} />;
+    case "cal":        return <CalcomMark size={16} />;
+    case "ga":         return <GA4Mark size={16} />;
+    case "appfolio":   return <AppFolioMark size={16} />;
+    case "chatgpt":    return <ChatGPTMark size={16} />;
+    case "perplexity": return <PerplexityMark size={16} />;
+    case "claude":     return <ClaudeMark size={16} />;
+    case "gemini":     return <GeminiMark size={16} />;
+    case "linkedin":   return <LinkedInMark size={16} />;
+    case "vercel":     return <VercelMark size={16} />;
+    case "figma":      return <FigmaMark size={16} />;
+  }
+}
+
+type TimelineStep = {
+  when: string;
+  title: string;
+  body: string;
+  metric?: string;
+  metricTone?: "neutral" | "up";
+};
+
+const TIMELINE: TimelineStep[] = [
+  {
+    when:  "Day 1",
+    title: "Intake call",
+    body:  "Thirty minutes. We audit your current marketing stack and lock the build plan.",
+  },
+  {
+    when:  "Day 7",
+    title: "Site preview",
+    body:  "Your custom site on a staging link. You comment, we iterate, you approve.",
+  },
+  {
+    when:  "Day 14",
+    title: "Live on your domain",
+    body:  "DNS flipped. Pixel firing. Chatbot answering. Ads running.",
+    metric: "Launch",
+    metricTone: "neutral",
+  },
+  {
+    when:  "Day 30",
+    title: "First leases attributed",
+    body:  "AI chatbot capturing leads 24/7. Visitor pixel identifying traffic. First tour bookings flow in.",
+    metric: "+40 leads",
+    metricTone: "up",
+  },
+  {
+    when:  "Day 60",
+    title: "Cost curves drop",
+    body:  "Ads optimized. Creative shipping weekly. AI answer engines starting to cite your pages.",
+    metric: "−8% cost per tour",
+    metricTone: "up",
+  },
+  {
+    when:  "Day 90",
+    title: "Compounding",
+    body:  "Portfolio-wide visibility. Identified visitors flowing to CRM. Monday report shows real growth.",
+    metric: "+12% leads MoM",
+    metricTone: "up",
+  },
+];
+
+function GrowthTimeline() {
   return (
     <div>
-      <p
-        className="eyebrow mb-6"
-        style={{ color: "#87867f" }}
-      >
-        Timeline
-      </p>
-      <ol className="grid grid-cols-1 md:grid-cols-3 gap-3">
-        {timeline.map((step, i) => (
-          <li
-            key={step.day}
-            className="relative p-6 md:p-7"
+      <div className="flex items-end justify-between gap-4 mb-8 flex-wrap">
+        <div>
+          <p
             style={{
-              backgroundColor: "#ffffff",
-              borderRadius: "16px",
-              boxShadow: "0 0 0 1px #f0eee6",
+              color: "#2F6FE5",
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              letterSpacing: "0.22em",
+              textTransform: "uppercase",
+              fontWeight: 600,
             }}
           >
-            <p
+            Your first 90 days
+          </p>
+          <h3
+            className="mt-2"
+            style={{
+              color: "#141413",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(26px, 3.2vw, 38px)",
+              fontWeight: 500,
+              lineHeight: 1.15,
+              letterSpacing: "-0.005em",
+            }}
+          >
+            Launch on day fourteen. Compound from day one.
+          </h3>
+        </div>
+      </div>
+
+      <ol className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 relative">
+        <div
+          aria-hidden
+          className="hidden lg:block absolute"
+          style={{
+            top: "18px",
+            left: "8%",
+            right: "8%",
+            height: "2px",
+            background: "linear-gradient(to right, #f0eee6 0%, #2F6FE5 30%, #2F6FE5 60%, #f0eee6 100%)",
+            opacity: 0.5,
+          }}
+        />
+        {TIMELINE.map((step, i) => {
+          const isLaunch = step.when === "Day 14";
+          return (
+            <li
+              key={step.when}
+              className="relative p-5"
               style={{
-                color: "#87867f",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.14em",
-                textTransform: "uppercase",
-                fontWeight: 500,
+                backgroundColor: "#ffffff",
+                borderRadius: "14px",
+                boxShadow: `0 0 0 1px ${isLaunch ? "rgba(47,111,229,0.35)" : "#f0eee6"}`,
               }}
             >
-              {step.day}
-            </p>
-            <h3
-              className="mt-2"
-              style={{
-                color: "#141413",
-                fontFamily: "var(--font-display)",
-                fontSize: "22px",
-                fontWeight: 500,
-                lineHeight: 1.25,
-              }}
-            >
-              {step.title}
-            </h3>
-            <p
-              className="mt-2"
-              style={{
-                color: "#5e5d59",
-                fontFamily: "var(--font-sans)",
-                fontSize: "14.5px",
-                lineHeight: 1.55,
-              }}
-            >
-              {step.body}
-            </p>
-            {i < timeline.length - 1 ? (
-              <span
-                aria-hidden="true"
-                className="hidden md:block absolute top-1/2 -right-2"
+              <div className="flex items-center gap-2">
+                <span
+                  className="inline-block"
+                  style={{
+                    width: "10px",
+                    height: "10px",
+                    borderRadius: "50%",
+                    backgroundColor: i < 2 ? "#b0aea5" : "#2F6FE5",
+                    boxShadow: "0 0 0 4px #ffffff",
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                />
+                <p
+                  style={{
+                    color: "#2F6FE5",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "10px",
+                    letterSpacing: "0.18em",
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                  }}
+                >
+                  {step.when}
+                </p>
+              </div>
+              <h4
+                className="mt-3"
                 style={{
-                  transform: "translateY(-50%)",
-                  color: "#c2c0b6",
-                  fontSize: "14px",
+                  color: "#141413",
+                  fontFamily: "var(--font-display)",
+                  fontSize: "18px",
+                  fontWeight: 500,
+                  lineHeight: 1.2,
                 }}
               >
-                →
-              </span>
-            ) : null}
-          </li>
-        ))}
+                {step.title}
+              </h4>
+              <p
+                className="mt-2"
+                style={{
+                  color: "#5e5d59",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "13px",
+                  lineHeight: 1.5,
+                }}
+              >
+                {step.body}
+              </p>
+              {step.metric ? (
+                <p
+                  className="mt-3"
+                  style={{
+                    color: step.metricTone === "up" ? "#1f7a3a" : "#2F6FE5",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "11px",
+                    letterSpacing: "0.06em",
+                    fontWeight: 700,
+                    padding: "4px 8px",
+                    backgroundColor: step.metricTone === "up" ? "rgba(31,122,58,0.10)" : "rgba(47,111,229,0.10)",
+                    borderRadius: "6px",
+                    display: "inline-block",
+                  }}
+                >
+                  {step.metric}
+                </p>
+              ) : null}
+            </li>
+          );
+        })}
       </ol>
     </div>
   );
@@ -930,17 +1189,17 @@ function Verticals() {
 function Proof() {
   const { proof } = MARKETING.home;
   return (
-    <section style={{ backgroundColor: "#141413" }}>
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32 text-center">
+    <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-28 text-center">
         <p
           className="mb-6"
           style={{
-            color: "#87867f",
+            color: "#2F6FE5",
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
-            letterSpacing: "0.18em",
+            letterSpacing: "0.22em",
             textTransform: "uppercase",
-            fontWeight: 500,
+            fontWeight: 600,
           }}
         >
           The platform
@@ -948,11 +1207,12 @@ function Proof() {
         <h2
           className="mx-auto max-w-[860px]"
           style={{
-            color: "#faf9f5",
+            color: "#141413",
             fontFamily: "var(--font-display)",
             fontSize: "clamp(30px, 4vw, 48px)",
             fontWeight: 500,
-            lineHeight: 1.15,
+            lineHeight: 1.12,
+            letterSpacing: "-0.008em",
           }}
         >
           {proof.heading}
@@ -960,7 +1220,7 @@ function Proof() {
         <p
           className="mx-auto mt-5 max-w-[620px]"
           style={{
-            color: "#b0aea5",
+            color: "#5e5d59",
             fontFamily: "var(--font-sans)",
             fontSize: "17px",
             lineHeight: 1.6,
@@ -979,7 +1239,7 @@ function Proof() {
           <Link href="/onboarding" className="btn-primary">
             Book a demo
           </Link>
-          <Link href="/#live" className="btn-secondary-dark">
+          <Link href="/#live" className="btn-secondary">
             See it live
           </Link>
         </div>
@@ -993,11 +1253,12 @@ function BigStat({ value, label }: { value: string; label: string }) {
     <div className="text-center">
       <p
         style={{
-          color: "#faf9f5",
+          color: "#141413",
           fontFamily: "var(--font-display)",
           fontSize: "clamp(40px, 4.8vw, 56px)",
           fontWeight: 500,
           lineHeight: 1.05,
+          letterSpacing: "-0.008em",
         }}
       >
         {value}

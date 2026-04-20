@@ -48,18 +48,18 @@ export default function AboutPage() {
         artifact={<OperatorWeek />}
       />
 
-      <section style={{ backgroundColor: "#141413" }}>
+      <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
           <Reveal>
             <p
               className="mb-6"
               style={{
-                color: "#87867f",
+                color: "#2F6FE5",
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                letterSpacing: "0.18em",
+                letterSpacing: "0.22em",
                 textTransform: "uppercase",
-                fontWeight: 500,
+                fontWeight: 600,
               }}
             >
               Our belief
@@ -69,11 +69,12 @@ export default function AboutPage() {
             <p
               className="mx-auto max-w-[780px]"
               style={{
-                color: "#faf9f5",
+                color: "#141413",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(24px, 3.2vw, 38px)",
                 fontWeight: 500,
-                lineHeight: 1.3,
+                lineHeight: 1.25,
+                letterSpacing: "-0.008em",
               }}
             >
               Operators should spend their time on partnerships, pricing, and community.
@@ -85,7 +86,7 @@ export default function AboutPage() {
               <Link href="/onboarding" className="btn-primary">
                 Book a demo
               </Link>
-              <Link href="/manifesto" className="btn-secondary-dark">
+              <Link href="/manifesto" className="btn-secondary">
                 Read the manifesto
               </Link>
             </div>

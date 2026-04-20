@@ -77,17 +77,17 @@ export default function PricingPage() {
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#141413" }}>
+      <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-28 text-center">
           <p
             className="mb-6"
             style={{
-              color: "#87867f",
+              color: "#2F6FE5",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
-              letterSpacing: "0.18em",
+              letterSpacing: "0.22em",
               textTransform: "uppercase",
-              fontWeight: 500,
+              fontWeight: 600,
             }}
           >
             The call
@@ -95,11 +95,12 @@ export default function PricingPage() {
           <h2
             className="mx-auto max-w-[780px]"
             style={{
-              color: "#faf9f5",
+              color: "#141413",
               fontFamily: "var(--font-display)",
               fontSize: "clamp(28px, 4vw, 44px)",
               fontWeight: 500,
-              lineHeight: 1.15,
+              lineHeight: 1.12,
+              letterSpacing: "-0.008em",
             }}
           >
             Bring your current marketing invoice. We audit it live.
@@ -107,14 +108,13 @@ export default function PricingPage() {
           <p
             className="mx-auto mt-5 max-w-[560px]"
             style={{
-              color: "#b0aea5",
+              color: "#5e5d59",
               fontFamily: "var(--font-sans)",
               fontSize: "17px",
               lineHeight: 1.6,
             }}
           >
-            Twenty minutes. Proposal within 24 hours with a fixed build fee and
-            flat monthly retainer.
+            Twenty minutes. Proposal within 24 hours with a fixed build fee and flat monthly retainer.
           </p>
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link href="/onboarding" className="btn-primary">
