@@ -15,6 +15,7 @@ import {
   type CreativeStatus,
 } from "./data";
 import { TOKENS, Icons, Pill, ScoreBadge, Tile, SectionHeader } from "./shared";
+import { LiveTicker } from "@/components/platform/live-ticker";
 
 // ---------------------------------------------------------------------------
 // ProductTour
@@ -62,7 +63,7 @@ export function ProductTour() {
 
   return (
     <div
-      className="w-full overflow-hidden"
+      className="w-full overflow-hidden relative"
       style={{
         backgroundColor: TOKENS.ivory,
         borderRadius: "24px",
@@ -80,6 +81,7 @@ export function ProductTour() {
           <Contents view={view} />
         </div>
       </div>
+      <LiveTicker variant="absolute" />
     </div>
   );
 }

@@ -28,13 +28,17 @@ const INK = "#141413";
 const MUTED = "#87867f";
 const BORDER = "#f0eee6";
 
-export function LiveTicker() {
+export function LiveTicker({
+  variant = "fixed",
+}: {
+  variant?: "fixed" | "absolute";
+}) {
   const [idx, setIdx] = useState(0);
   const [dismissed, setDismissed] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const t = setTimeout(() => setMounted(true), 1200);
+    const t = setTimeout(() => setMounted(true), 900);
     return () => clearTimeout(t);
   }, []);
 
@@ -48,15 +52,16 @@ export function LiveTicker() {
 
   if (dismissed) return null;
   const event = EVENTS[idx];
+  const positionClass = variant === "absolute" ? "absolute z-30" : "fixed z-40";
 
   return (
     <div
       aria-live="polite"
-      className="fixed z-40 pointer-events-none"
+      className={`${positionClass} pointer-events-none`}
       style={{
-        bottom: "20px",
-        left: "20px",
-        maxWidth: "calc(100vw - 40px)",
+        bottom: variant === "absolute" ? "16px" : "20px",
+        left:   variant === "absolute" ? "16px" : "20px",
+        maxWidth: "calc(100% - 32px)",
         opacity: mounted ? 1 : 0,
         transform: mounted ? "translateY(0)" : "translateY(12px)",
         transition: "opacity 520ms ease, transform 520ms ease",

@@ -30,8 +30,8 @@ export function SplitHero({
       className="relative overflow-hidden"
       style={{ backgroundColor: "#f5f4ed" }}
     >
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 pt-20 md:pt-24 pb-16 md:pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+      <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-20 md:pt-24 pb-16 md:pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           <div className="lg:col-span-6">
             <Reveal>
               <div className="flex items-center gap-3 mb-5">
@@ -64,9 +64,9 @@ export function SplitHero({
                 style={{
                   color: "#141413",
                   fontFamily: "var(--font-display)",
-                  fontSize: "clamp(38px, 4.8vw, 60px)",
+                  fontSize: "clamp(34px, 4vw, 52px)",
                   fontWeight: 500,
-                  lineHeight: 1.06,
+                  lineHeight: 1.08,
                   letterSpacing: "-0.012em",
                 }}
               >
