@@ -8,9 +8,9 @@ import { ProductTour } from "@/components/product-tour";
 // Claude-inspired homepage.
 //
 // Editorial pacing, warm parchment canvas, Fraunces serif headlines, Inter
-// sans for body/UI. Terracotta reserved for primary CTAs and brand accents.
+// sans for body/UI. Blue accent reserved for the primary CTA and a single
+// hero emphasis span. Metadata and labels run on warm grays, not blue.
 // No stock photos. No named competitors. No named reference customers.
-// The interactive product demo is the hero centerpiece.
 // ---------------------------------------------------------------------------
 
 export const metadata: Metadata = {
@@ -22,29 +22,44 @@ export default function PlatformHome() {
   return (
     <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
       <Hero />
+      <WhatYouGet />
       <LiveExample />
       <ProductTourSection />
       <Numbers />
       <Modules />
       <Verticals />
       <Proof />
+      <Faq />
       <FinalCta />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// HERO - editorial layout with the interactive product demo on the right
+// HERO — buyer, transformation, mechanism, proof-of-speed
 // ---------------------------------------------------------------------------
 
 function Hero() {
+  const { hero } = MARKETING.home;
   return (
     <section
       className="relative overflow-hidden"
       style={{ backgroundColor: "#f5f4ed" }}
     >
-      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-24 md:pt-32 pb-12 md:pb-16 text-center">
-        <p className="eyebrow mb-6">For real estate operators</p>
+      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-24 md:pt-32 pb-14 md:pb-20 text-center">
+        <p
+          className="mb-6"
+          style={{
+            color: "#87867f",
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+          }}
+        >
+          {hero.eyebrow}
+        </p>
         <h1
           className="mx-auto"
           style={{
@@ -57,23 +72,21 @@ function Hero() {
             maxWidth: "920px",
           }}
         >
-          Marketing infrastructure{" "}
-          <span style={{ color: "#2F6FE5" }}>that fills units.</span>
+          Fill your units{" "}
+          <span style={{ color: "#2F6FE5" }}>without running five vendors.</span>
         </h1>
         <p
           className="mx-auto mt-6"
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: "18px",
+            fontSize: "19px",
             lineHeight: 1.6,
             color: "#5e5d59",
             fontWeight: 400,
-            maxWidth: "640px",
+            maxWidth: "680px",
           }}
         >
-          One managed platform. Custom site on your domain, live listings,
-          identity pixel, AI chatbot, managed ads, and a CRM that closes the
-          loop. Launched in under fourteen days.
+          {hero.subhead}
         </p>
         <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link href="/onboarding" className="btn-primary">
@@ -83,22 +96,226 @@ function Hero() {
             See it live
           </Link>
         </div>
-        <div
-          className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3"
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "13px",
-            color: "#87867f",
-          }}
-        >
-          <ProofLine value="14 days" label="From first call to live" />
-          <span className="hidden sm:inline-block w-px h-4" style={{ backgroundColor: "#e8e6dc" }} aria-hidden="true" />
-          <ProofLine value="One" label="Platform, one login" />
-          <span className="hidden sm:inline-block w-px h-4" style={{ backgroundColor: "#e8e6dc" }} aria-hidden="true" />
-          <ProofLine value="Zero" label="Contracts, zero lock-in" />
-        </div>
+
+        <TrustBar />
       </div>
     </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TRUST BAR — three proof points. Larger numbers, tighter labels, top border
+// sets it apart from the hero CTA block.
+// ---------------------------------------------------------------------------
+
+function TrustBar() {
+  const items: Array<{ value: string; label: string }> = [
+    { value: "14 days", label: "From first call to live" },
+    { value: "One",     label: "Platform, one login" },
+    { value: "Zero",    label: "Long-term contracts" },
+  ];
+  return (
+    <div
+      className="mt-14 pt-8 max-w-[780px] mx-auto"
+      style={{ borderTop: "1px solid #e8e6dc" }}
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-6 gap-x-4">
+        {items.map((it, i) => (
+          <div
+            key={it.value}
+            className="text-center sm:px-4"
+            style={{
+              borderLeft:
+                i > 0 ? "1px solid #e8e6dc" : "none",
+            }}
+          >
+            <p
+              style={{
+                color: "#141413",
+                fontFamily: "var(--font-display)",
+                fontSize: "32px",
+                fontWeight: 500,
+                lineHeight: 1.05,
+                letterSpacing: "-0.005em",
+              }}
+            >
+              {it.value}
+            </p>
+            <p
+              className="mt-1.5"
+              style={{
+                color: "#87867f",
+                fontFamily: "var(--font-sans)",
+                fontSize: "12px",
+                lineHeight: 1.4,
+                textTransform: "uppercase",
+                letterSpacing: "0.1em",
+                fontWeight: 500,
+              }}
+            >
+              {it.label}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WHAT YOU GET — deliverables checklist + 3-step timeline. Sets expectations
+// before any interactive preview; answers "what am I actually buying?"
+// ---------------------------------------------------------------------------
+
+function WhatYouGet() {
+  const { whatYouGet } = MARKETING.home;
+  return (
+    <section
+      style={{
+        backgroundColor: "#faf9f5",
+        borderTop: "1px solid #f0eee6",
+      }}
+    >
+      <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-24">
+        <div className="max-w-3xl mb-12">
+          <p className="eyebrow mb-4">{whatYouGet.eyebrow}</p>
+          <h2 className="heading-section" style={{ color: "#141413" }}>
+            {whatYouGet.headline}
+          </h2>
+          <p
+            className="mt-4 max-w-2xl"
+            style={{
+              color: "#5e5d59",
+              fontFamily: "var(--font-sans)",
+              fontSize: "17px",
+              lineHeight: 1.6,
+            }}
+          >
+            {whatYouGet.body}
+          </p>
+        </div>
+
+        <ul className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-3 mb-16">
+          {whatYouGet.items.map((item) => (
+            <li
+              key={item}
+              className="flex items-start gap-3"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "15px",
+                color: "#141413",
+                lineHeight: 1.55,
+                paddingTop: "6px",
+                paddingBottom: "6px",
+                borderBottom: "1px solid #f0eee6",
+              }}
+            >
+              <span
+                aria-hidden="true"
+                className="inline-flex items-center justify-center flex-shrink-0"
+                style={{
+                  width: "20px",
+                  height: "20px",
+                  borderRadius: "50%",
+                  backgroundColor: "rgba(47,111,229,0.10)",
+                  color: "#2F6FE5",
+                  marginTop: "2px",
+                }}
+              >
+                <svg width="11" height="11" viewBox="0 0 11 11" fill="none">
+                  <path
+                    d="M2 5.5L4.5 8L9 3"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </span>
+              <span>{item}</span>
+            </li>
+          ))}
+        </ul>
+
+        <Timeline />
+      </div>
+    </section>
+  );
+}
+
+function Timeline() {
+  const { timeline } = MARKETING.home.whatYouGet;
+  return (
+    <div>
+      <p
+        className="eyebrow mb-6"
+        style={{ color: "#87867f" }}
+      >
+        Timeline
+      </p>
+      <ol className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {timeline.map((step, i) => (
+          <li
+            key={step.day}
+            className="relative p-6 md:p-7"
+            style={{
+              backgroundColor: "#ffffff",
+              borderRadius: "16px",
+              boxShadow: "0 0 0 1px #f0eee6",
+            }}
+          >
+            <p
+              style={{
+                color: "#87867f",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11px",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                fontWeight: 500,
+              }}
+            >
+              {step.day}
+            </p>
+            <h3
+              className="mt-2"
+              style={{
+                color: "#141413",
+                fontFamily: "var(--font-display)",
+                fontSize: "22px",
+                fontWeight: 500,
+                lineHeight: 1.25,
+              }}
+            >
+              {step.title}
+            </h3>
+            <p
+              className="mt-2"
+              style={{
+                color: "#5e5d59",
+                fontFamily: "var(--font-sans)",
+                fontSize: "14.5px",
+                lineHeight: 1.55,
+              }}
+            >
+              {step.body}
+            </p>
+            {i < timeline.length - 1 ? (
+              <span
+                aria-hidden="true"
+                className="hidden md:block absolute top-1/2 -right-2"
+                style={{
+                  transform: "translateY(-50%)",
+                  color: "#c2c0b6",
+                  fontSize: "14px",
+                }}
+              >
+                →
+              </span>
+            ) : null}
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 
@@ -114,15 +331,13 @@ function LiveExample() {
     <section
       id="live"
       style={{
-        backgroundColor: "#faf9f5",
+        backgroundColor: "#f5f4ed",
         borderTop: "1px solid #f0eee6",
       }}
     >
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
         <div className="max-w-3xl mb-12">
-          <p className="eyebrow mb-4" style={{ color: "#2F6FE5" }}>
-            {liveExample.eyebrow}
-          </p>
+          <p className="eyebrow mb-4">{liveExample.eyebrow}</p>
           <h2 className="heading-section" style={{ color: "#141413" }}>
             {liveExample.headline}
           </h2>
@@ -231,7 +446,7 @@ function LiveCard({
             width: "36px",
             height: "36px",
             borderRadius: "50%",
-            color: "#2F6FE5",
+            color: "#5e5d59",
             boxShadow: "0 0 0 1px #e8e6dc",
           }}
           aria-hidden="true"
@@ -261,12 +476,10 @@ function LiveCard({
 
 function ProductTourSection() {
   return (
-    <section id="product-tour" style={{ backgroundColor: "#f5f4ed" }}>
-      <div className="max-w-[1280px] mx-auto px-4 md:px-8 pt-4 pb-20 md:pb-28">
+    <section id="product-tour" style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
+      <div className="max-w-[1280px] mx-auto px-4 md:px-8 pt-20 pb-20 md:pb-28 md:pt-24">
         <div className="text-center mb-8 md:mb-10 max-w-[720px] mx-auto">
-          <p className="eyebrow mb-4" style={{ color: "#2F6FE5" }}>
-            Interactive preview
-          </p>
+          <p className="eyebrow mb-4">Interactive preview</p>
           <h2 className="heading-section" style={{ color: "#141413" }}>
             Click through the actual portal.
           </h2>
@@ -287,24 +500,6 @@ function ProductTourSection() {
         <ProductTour />
       </div>
     </section>
-  );
-}
-
-function ProofLine({ value, label }: { value: string; label: string }) {
-  return (
-    <div className="flex items-baseline gap-2">
-      <span
-        style={{
-          color: "#141413",
-          fontFamily: "var(--font-display)",
-          fontSize: "18px",
-          fontWeight: 500,
-        }}
-      >
-        {value}
-      </span>
-      <span style={{ color: "#87867f", fontSize: "12px" }}>{label}</span>
-    </div>
   );
 }
 
@@ -333,7 +528,7 @@ const METRICS = [
 
 function Numbers() {
   return (
-    <section style={{ backgroundColor: "#faf9f5" }}>
+    <section style={{ backgroundColor: "#f5f4ed" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
         <p className="eyebrow mb-10 text-center">The numbers we hit</p>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-4">
@@ -342,7 +537,7 @@ function Numbers() {
               key={m.value}
               className="px-0 lg:px-6 text-center lg:text-left"
               style={{
-                borderLeft: i > 0 ? "1px solid #f0eee6" : "none",
+                borderLeft: i > 0 ? "1px solid #e8e6dc" : "none",
               }}
             >
               <p
@@ -382,7 +577,7 @@ function Numbers() {
 
 function Modules() {
   return (
-    <section style={{ backgroundColor: "#f5f4ed" }}>
+    <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32">
         <div className="max-w-3xl mb-14">
           <p className="eyebrow mb-4">Inside the platform</p>
@@ -409,7 +604,7 @@ function Modules() {
               key={m.title}
               className="p-6"
               style={{
-                backgroundColor: "#faf9f5",
+                backgroundColor: "#ffffff",
                 borderRadius: "16px",
                 boxShadow: "0 0 0 1px #f0eee6",
               }}
@@ -465,7 +660,7 @@ const VERTICALS = [
 
 function Verticals() {
   return (
-    <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
+    <section style={{ backgroundColor: "#f5f4ed", borderTop: "1px solid #f0eee6" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32">
         <div className="max-w-3xl mb-14">
           <p className="eyebrow mb-4">Same platform, tailored</p>
@@ -509,7 +704,7 @@ function Verticals() {
                     width: "36px",
                     height: "36px",
                     borderRadius: "50%",
-                    color: "#2F6FE5",
+                    color: "#5e5d59",
                     boxShadow: "0 0 0 1px #e8e6dc",
                   }}
                   aria-hidden="true"
@@ -626,13 +821,106 @@ function BigStat({ value, label }: { value: string; label: string }) {
 }
 
 // ---------------------------------------------------------------------------
+// FAQ — answers the questions that stall every first-call deal
+// ---------------------------------------------------------------------------
+
+function Faq() {
+  const { faq } = MARKETING.home;
+  return (
+    <section style={{ backgroundColor: "#f5f4ed" }}>
+      <div className="max-w-[920px] mx-auto px-4 md:px-8 py-24 md:py-32">
+        <div className="text-center mb-12 md:mb-14">
+          <p className="eyebrow mb-4">{faq.eyebrow}</p>
+          <h2
+            className="mx-auto max-w-[640px]"
+            style={{
+              color: "#141413",
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(28px, 3.4vw, 42px)",
+              fontWeight: 500,
+              lineHeight: 1.15,
+              letterSpacing: "-0.005em",
+            }}
+          >
+            {faq.headline}
+          </h2>
+        </div>
+
+        <ul
+          style={{
+            backgroundColor: "#ffffff",
+            borderRadius: "16px",
+            boxShadow: "0 0 0 1px #f0eee6",
+            overflow: "hidden",
+          }}
+        >
+          {faq.items.map((item, i) => (
+            <li
+              key={item.q}
+              style={{
+                borderTop: i > 0 ? "1px solid #f0eee6" : "none",
+              }}
+            >
+              <details className="group">
+                <summary
+                  className="flex items-center justify-between gap-4 px-6 py-5 cursor-pointer list-none"
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: "17px",
+                    fontWeight: 500,
+                    color: "#141413",
+                    lineHeight: 1.35,
+                  }}
+                >
+                  <span>{item.q}</span>
+                  <span
+                    aria-hidden="true"
+                    className="flex-shrink-0 inline-flex items-center justify-center transition-transform group-open:rotate-45"
+                    style={{
+                      width: "24px",
+                      height: "24px",
+                      color: "#87867f",
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                      <path
+                        d="M7 2v10M2 7h10"
+                        stroke="currentColor"
+                        strokeWidth="1.4"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                  </span>
+                </summary>
+                <div
+                  className="px-6 pb-5 -mt-1"
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "15px",
+                    lineHeight: 1.65,
+                    color: "#5e5d59",
+                    maxWidth: "680px",
+                  }}
+                >
+                  {item.a}
+                </div>
+              </details>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // FINAL CTA
 // ---------------------------------------------------------------------------
 
 function FinalCta() {
   const { final } = MARKETING.home;
   return (
-    <section style={{ backgroundColor: "#f5f4ed" }}>
+    <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32 text-center">
         <h2
           className="mx-auto max-w-[780px]"

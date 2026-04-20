@@ -26,7 +26,7 @@ export function FeaturePage({
         <div className="max-w-[920px] mx-auto px-4 md:px-8 pt-24 md:pt-28 pb-16 text-center">
           <p
             style={{
-              color: "#2F6FE5",
+              color: "#87867f",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.18em",
@@ -98,7 +98,7 @@ export function FeaturePage({
               >
                 <span
                   style={{
-                    color: "#2F6FE5",
+                    color: "#87867f",
                     fontFamily: "var(--font-mono)",
                     fontSize: "12px",
                     fontWeight: 500,

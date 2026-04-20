@@ -14,21 +14,42 @@ export const MARKETING = {
   },
   home: {
     hero: {
-      eyebrow: "For real estate operators",
-      headline: "Marketing infrastructure that fills units.",
+      eyebrow: "For multifamily and student housing operators",
+      headline: "Fill your units without running five vendors.",
+      highlight: "without running five vendors.",
       subhead:
-        "Replace your entire marketing stack with one managed platform. A custom site on your domain, live listings, identity pixel, AI chatbot, and follow-up that actually runs.",
+        "We build your marketing site, ads, chatbot, and CRM into one managed platform, live on your domain in fourteen days. You review a weekly report. We do the rest.",
       primaryCta: "Book a demo",
       primaryHref: "/onboarding",
       secondaryCta: "See it live",
-      secondaryHref: "https://www.telegraphcommons.com",
+      secondaryHref: "/#live",
       microProof: "Built for residential and commercial portfolios.",
+    },
+    whatYouGet: {
+      eyebrow: "What you get",
+      headline: "One platform. Seven deliverables. Live in fourteen days.",
+      body:
+        "Nothing to wire up. Nothing to log into twice. We own the build, the campaigns, and the reporting.",
+      items: [
+        "A custom marketing site on your domain",
+        "PMS listing sync, updated hourly",
+        "AI chatbot trained on your properties",
+        "Google and Meta ads, managed weekly",
+        "Names and emails on your anonymous site traffic, with a CRM that nurtures them",
+        "Weekly performance report",
+        "48-hour creative turnaround on every request",
+      ],
+      timeline: [
+        { day: "Day 1",  title: "Intake call",   body: "Thirty minutes. We audit your current marketing stack live." },
+        { day: "Day 7",  title: "Site preview",  body: "Your custom site on a staging URL. You comment, we iterate." },
+        { day: "Day 14", title: "Live on your domain", body: "DNS flipped, pixel firing, chatbot answering, ads running." },
+      ],
     },
     liveExample: {
       eyebrow: "In production",
       headline: "See the platform running in production.",
       body:
-        "Custom resident-facing site on the client's domain, live PMS listings, AI chatbot grounded in their property facts, identity pixel running, leads flowing into the operator portal. Click through both surfaces exactly as a prospective resident or a portfolio operator would.",
+        "A resident-facing site on the client's own domain, live listings synced hourly, AI chatbot grounded in property facts, visitor identification firing, leads flowing into the operator portal. Click through both surfaces exactly as a prospective resident or a portfolio operator would.",
       siteLabel: "The resident-facing site",
       siteHref: "https://www.telegraphcommons.com",
       siteCaption:
@@ -85,7 +106,7 @@ export const MARKETING = {
       {
         title: "Managed marketing site",
         body:
-          "Custom-built on your domain. Fast, SEO-ready, updated by live listing sync.",
+          "Custom-built on your domain. Fast, search-friendly, updated by live listing sync.",
       },
       {
         title: "PMS listing sync",
@@ -93,24 +114,24 @@ export const MARKETING = {
           "Every unit on your site matches the source of truth within the hour.",
       },
       {
-        title: "Identity graph pixel",
+        title: "Visitor identification",
         body:
-          "Put names and emails on a significant share of your anonymous site traffic.",
+          "Names and emails on a significant share of your anonymous site traffic.",
       },
       {
         title: "AI chatbot",
         body:
-          "Fires in five seconds, captures leads around the clock, hands hot ones to your team.",
+          "Answers in five seconds, captures leads around the clock, hands hot ones to your team.",
       },
       {
         title: "Google and Meta ads",
         body:
-          "Geo-fenced campaigns, pixel retargeting, creative refreshed weekly.",
+          "Geo-fenced campaigns, retargeting, creative refreshed weekly.",
       },
       {
-        title: "SEO plus AEO",
+        title: "Search and AI discovery",
         body:
-          "Rank in Google. Get named in ChatGPT. Per-location and per-neighborhood pages.",
+          "Rank in Google. Get recommended by ChatGPT and Perplexity. Per-location pages.",
       },
       {
         title: "Creative studio",
@@ -132,6 +153,44 @@ export const MARKETING = {
       heading: "A product, not a retainer.",
       body:
         "Every customer logs into the same platform. Same modules, same dashboards, same weekly report. What changes is the brand, the listings, and the playbook.",
+    },
+    faq: {
+      eyebrow: "Common questions",
+      headline: "What operators ask before they sign.",
+      items: [
+        {
+          q: "What property management systems do you support?",
+          a: "Every major PMS. We sync units, pricing, and availability through standard APIs, and run a nightly backfill for edge cases. If your PMS is unusual, say so on the intake call and we'll confirm on the spot.",
+        },
+        {
+          q: "Who owns the site if we part ways?",
+          a: "You do. The domain stays yours throughout. On exit, we hand over a static export of the site plus your full lead history. No hostage data, no transition fee.",
+        },
+        {
+          q: "Are you fair-housing compliant?",
+          a: "Every creative we ship, ads, landing copy, email, goes through a vertical-specific compliance check before it runs. Student housing, multifamily, and senior living each have their own rules, and we keep audit trails for each.",
+        },
+        {
+          q: "Do we own our data?",
+          a: "Yes. Leads, conversations, visitor records, and site analytics are yours. Export to CSV from the portal at any time.",
+        },
+        {
+          q: "What's the timeline from intake to live?",
+          a: "Fourteen days. Day 1 is your intake call. Day 7 is a site preview on a staging URL. Day 14 we flip DNS, the pixel starts firing, the chatbot goes live, and ads begin running. No phase-two surprises.",
+        },
+        {
+          q: "Can you work alongside our existing vendors?",
+          a: "Yes, during transition. Most operators run us in parallel for the first month, then consolidate once the dashboards make the comparison obvious.",
+        },
+        {
+          q: "Do you require a long contract?",
+          a: "No. After launch, engagement is month-to-month. If we're not moving lease velocity, you cancel. The platform stays on your domain through the following cycle.",
+        },
+        {
+          q: "What if we already have a site we like?",
+          a: "Bring-your-own-site mode installs the chatbot and visitor identification into your existing site without rebuilding it. You keep the design, we add the intelligence layer.",
+        },
+      ],
     },
     final: {
       heading: "Twenty minutes on a call. Two weeks to live.",

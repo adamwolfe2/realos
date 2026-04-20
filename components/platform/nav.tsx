@@ -9,9 +9,9 @@ import { useEffect, useState } from "react";
 // links right. No shadow, no border. Single 14px weight-500 type system.
 
 const PRODUCT_LINKS = [
-  { href: "/features/pixel",   label: "Identity pixel" },
+  { href: "/features/pixel",   label: "Visitor identification" },
   { href: "/features/chatbot", label: "AI chatbot" },
-  { href: "/features/seo-aeo", label: "SEO and AEO" },
+  { href: "/features/seo-aeo", label: "Search + AI discovery" },
   { href: "/features/ads",     label: "Managed ads" },
 ];
 
