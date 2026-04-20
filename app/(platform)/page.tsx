@@ -47,10 +47,10 @@ export default function PlatformHome() {
 function Hero() {
   return (
     <SplitHero
-      eyebrow="For multifamily and student housing operators"
-      headline="Fill your units"
-      headlineAccent="without running five vendors."
-      subhead="We build your marketing site, ads, chatbot, and CRM into one managed platform, live on your domain in fourteen days. You review a weekly report. We do the rest."
+      eyebrow="For multifamily and student-housing operators"
+      headline="Eight vendors out."
+      headlineAccent="One platform in."
+      subhead="Your marketing site, ads, AI chatbot, CRM, and the Monday owner report — live on your domain in fourteen days. One login. One bill. Month-to-month."
       ctas={[
         { label: "Book a demo", href: "/onboarding" },
         { label: "See it live", href: "/#live", variant: "secondary" },
