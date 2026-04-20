@@ -1659,7 +1659,7 @@ function CampaignsView() {
             >
               <LegendSwatch color={TOKENS.terracotta} label="Meta" />
               <LegendSwatch color={TOKENS.coral} label="Google" />
-              <LegendSwatch color="#e9b094" label="TikTok" />
+              <LegendSwatch color={TOKENS.warmSilver} label="TikTok" />
             </div>
           </div>
         </Tile>
@@ -1803,18 +1803,80 @@ function LegendSwatch({ color, label }: { color: string; label: string }) {
 }
 
 function WeeklyBarChart() {
-  const max = 80;
+  const totals = WEEK_BARS.map((d) => d.meta + d.google + d.tiktok);
+  const max = Math.ceil(Math.max(...totals) / 10) * 10;
+  const ticks = [0, 0.25, 0.5, 0.75, 1];
+  const tikTokColor = TOKENS.warmSilver;
+
   return (
-    <div className="flex items-end gap-2.5 h-[160px]">
-      {WEEK_BARS.map((d) => (
-        <div key={d.d} className="flex-1 flex flex-col items-stretch">
-          <div className="flex-1 flex flex-col-reverse rounded-md overflow-hidden">
-            <div style={{ height: `${(d.meta / max) * 100}%`,   backgroundColor: TOKENS.terracotta }} />
-            <div style={{ height: `${(d.google / max) * 100}%`, backgroundColor: TOKENS.coral }} />
-            <div style={{ height: `${(d.tiktok / max) * 100}%`, backgroundColor: "#e9b094" }} />
-          </div>
+    <div>
+      <div className="relative flex gap-3 h-[200px] pl-9 pr-1">
+        <div
+          className="absolute left-0 top-0 h-full flex flex-col justify-between"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "10px",
+            color: TOKENS.stone,
+            width: "28px",
+          }}
+        >
+          {[...ticks].reverse().map((t) => (
+            <span key={t} className="text-right leading-none" style={{ transform: "translateY(-4px)" }}>
+              {Math.round(max * t)}
+            </span>
+          ))}
+        </div>
+
+        <div
+          className="absolute inset-0 flex flex-col justify-between pointer-events-none"
+          style={{ left: "36px", right: "4px" }}
+        >
+          {ticks.map((t) => (
+            <div
+              key={t}
+              style={{
+                height: "1px",
+                borderTop: `1px dashed ${TOKENS.borderCream}`,
+                opacity: t === 0 ? 0 : 1,
+              }}
+            />
+          ))}
+        </div>
+
+        {WEEK_BARS.map((d) => {
+          const total = d.meta + d.google + d.tiktok;
+          const totalPct = (total / max) * 100;
+          const metaPct = (d.meta / total) * 100;
+          const googlePct = (d.google / total) * 100;
+          const tiktokPct = (d.tiktok / total) * 100;
+          return (
+            <div
+              key={d.d}
+              className="flex-1 flex flex-col justify-end items-center relative z-10"
+              title={`${d.d}: ${total} leads — Meta ${d.meta}, Google ${d.google}, TikTok ${d.tiktok}`}
+            >
+              <div
+                className="w-full max-w-[34px] flex flex-col rounded-md overflow-hidden"
+                style={{
+                  height: `${totalPct}%`,
+                  boxShadow: `0 1px 2px rgba(20,20,19,0.06)`,
+                  transition: "height 400ms ease",
+                }}
+              >
+                <div style={{ height: `${metaPct}%`,   backgroundColor: TOKENS.terracotta }} />
+                <div style={{ height: `${googlePct}%`, backgroundColor: TOKENS.coral }} />
+                <div style={{ height: `${tiktokPct}%`, backgroundColor: tikTokColor }} />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div className="flex gap-3 pl-9 pr-1 mt-2">
+        {WEEK_BARS.map((d) => (
           <p
-            className="mt-2 text-center"
+            key={d.d}
+            className="flex-1 text-center"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
@@ -1823,8 +1885,8 @@ function WeeklyBarChart() {
           >
             {d.d}
           </p>
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 }
@@ -2069,7 +2131,7 @@ function ReportsView() {
           >
             <LegendSwatch color={TOKENS.terracotta} label="Meta" />
             <LegendSwatch color={TOKENS.coral} label="Google" />
-            <LegendSwatch color="#e9b094" label="TikTok" />
+            <LegendSwatch color={TOKENS.warmSilver} label="TikTok" />
           </div>
         </div>
       </Tile>

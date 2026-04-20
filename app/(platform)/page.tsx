@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { MARKETING } from "@/lib/copy/marketing";
 import { BRAND_NAME } from "@/lib/brand";
 import { ProductTour } from "@/components/product-tour";
+import { SplitHero } from "@/components/platform/split-hero";
+import { ConfigTabs } from "@/components/platform/artifacts/config-tabs";
 
 // ---------------------------------------------------------------------------
 // Claude-inspired homepage.
@@ -38,129 +40,28 @@ export default function PlatformHome() {
 }
 
 // ---------------------------------------------------------------------------
-// HERO — buyer, transformation, mechanism, proof-of-speed
+// HERO — split layout. Left: message. Right: auto-advancing config artifact
+// that walks through Intake → Build → Launch → Weekly.
 // ---------------------------------------------------------------------------
 
 function Hero() {
-  const { hero } = MARKETING.home;
   return (
-    <section
-      className="relative overflow-hidden"
-      style={{ backgroundColor: "#f5f4ed" }}
-    >
-      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-24 md:pt-32 pb-14 md:pb-20 text-center">
-        <p
-          className="mb-6"
-          style={{
-            color: "#87867f",
-            fontFamily: "var(--font-mono)",
-            fontSize: "11px",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            fontWeight: 500,
-          }}
-        >
-          {hero.eyebrow}
-        </p>
-        <h1
-          className="mx-auto"
-          style={{
-            color: "#141413",
-            fontFamily: "var(--font-display)",
-            fontSize: "clamp(42px, 5.5vw, 68px)",
-            fontWeight: 500,
-            lineHeight: 1.08,
-            letterSpacing: "-0.005em",
-            maxWidth: "920px",
-          }}
-        >
-          Fill your units{" "}
-          <span style={{ color: "#2F6FE5" }}>without running five vendors.</span>
-        </h1>
-        <p
-          className="mx-auto mt-6"
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "19px",
-            lineHeight: 1.6,
-            color: "#5e5d59",
-            fontWeight: 400,
-            maxWidth: "680px",
-          }}
-        >
-          {hero.subhead}
-        </p>
-        <div className="mt-9 flex flex-col sm:flex-row items-center justify-center gap-3">
-          <Link href="/onboarding" className="btn-primary">
-            Book a demo
-          </Link>
-          <Link href="/#live" className="btn-secondary">
-            See it live
-          </Link>
-        </div>
-
-        <TrustBar />
-      </div>
-    </section>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// TRUST BAR — three proof points. Larger numbers, tighter labels, top border
-// sets it apart from the hero CTA block.
-// ---------------------------------------------------------------------------
-
-function TrustBar() {
-  const items: Array<{ value: string; label: string }> = [
-    { value: "14 days", label: "From first call to live" },
-    { value: "One",     label: "Platform, one login" },
-    { value: "Zero",    label: "Long-term contracts" },
-  ];
-  return (
-    <div
-      className="mt-14 pt-8 max-w-[780px] mx-auto"
-      style={{ borderTop: "1px solid #e8e6dc" }}
-    >
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-6 gap-x-4">
-        {items.map((it, i) => (
-          <div
-            key={it.value}
-            className="text-center sm:px-4"
-            style={{
-              borderLeft:
-                i > 0 ? "1px solid #e8e6dc" : "none",
-            }}
-          >
-            <p
-              style={{
-                color: "#141413",
-                fontFamily: "var(--font-display)",
-                fontSize: "32px",
-                fontWeight: 500,
-                lineHeight: 1.05,
-                letterSpacing: "-0.005em",
-              }}
-            >
-              {it.value}
-            </p>
-            <p
-              className="mt-1.5"
-              style={{
-                color: "#87867f",
-                fontFamily: "var(--font-sans)",
-                fontSize: "12px",
-                lineHeight: 1.4,
-                textTransform: "uppercase",
-                letterSpacing: "0.1em",
-                fontWeight: 500,
-              }}
-            >
-              {it.label}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
+    <SplitHero
+      eyebrow="For multifamily and student housing operators"
+      headline="Fill your units"
+      headlineAccent="without running five vendors."
+      subhead="We build your marketing site, ads, chatbot, and CRM into one managed platform, live on your domain in fourteen days. You review a weekly report. We do the rest."
+      ctas={[
+        { label: "Book a demo", href: "/onboarding" },
+        { label: "See it live", href: "/#live", variant: "secondary" },
+      ]}
+      trust={[
+        { value: "14 days", label: "First call to live" },
+        { value: "One",     label: "Platform, one login" },
+        { value: "Zero",    label: "Long-term contracts" },
+      ]}
+      artifact={<ConfigTabs />}
+    />
   );
 }
 
