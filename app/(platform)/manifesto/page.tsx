@@ -29,7 +29,7 @@ export const metadata: Metadata = {
     siteName: BRAND_NAME,
     images: [
       {
-        url: "/og-image.png",
+        url: "/logos/social-background.png",
         width: 1200,
         height: 630,
         alt: `Why we built ${BRAND_NAME}`,
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `Why we built ${BRAND_NAME}`,
     description: DESCRIPTION,
-    images: ["/og-image.png"],
+    images: ["/logos/social-background.png"],
   },
 };
 

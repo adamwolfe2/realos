@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     siteName: BRAND_NAME,
     images: [
       {
-        url: "/og-image.png",
+        url: "/logos/social-background.png",
         width: 1200,
         height: 630,
         alt: `${BRAND_NAME}, managed marketing for real estate operators`,
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     title: `${BRAND_NAME}, managed marketing for real estate operators`,
     description:
       "Custom marketing stack for real estate operators. Managed by us.",
-    images: ["/og-image.png"],
+    images: ["/logos/social-background.png"],
   },
 };
 
