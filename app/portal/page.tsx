@@ -9,8 +9,15 @@ import {
   VisitorIdentificationStatus,
 } from "@prisma/client";
 import { StatCard } from "@/components/admin/stat-card";
+import { StatusBadge } from "@/components/admin/status-badge";
+import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { SetupBanner } from "@/components/portal/setup/setup-banner";
 import { formatDistanceToNow } from "date-fns";
+import {
+  humanLeadSource,
+  humanLeadStatus,
+  leadStatusTone,
+} from "@/lib/format";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -107,18 +114,15 @@ export default async function PortalHome({
   const maxFunnel = Math.max(1, ...funnel.map((f) => f.value));
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <SetupBanner forceShow={forceShowSetup} />
 
-      <header>
-        <h1 className="font-serif text-3xl font-bold">Dashboard</h1>
-        <p className="text-sm opacity-60 mt-1">
-          Last 30 days unless noted. Click into Properties, Leads, and
-          Conversations for full detail.
-        </p>
-      </header>
+      <PageHeader
+        title="Dashboard"
+        description="Last 30 days unless noted. Click into Properties, Leads, and Conversations for full detail."
+      />
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <section className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3">
         <StatCard
           label="Leads (30d)"
           value={leadsNew30d}
@@ -129,81 +133,92 @@ export default async function PortalHome({
         <StatCard
           label="Available units"
           value={listingsAvailable}
-          hint={`${propertiesCount} properties`}
+          hint={`${propertiesCount} propert${propertiesCount === 1 ? "y" : "ies"}`}
         />
-        <StatCard label="Identified visitors (30d)" value={visitorsIdentified30d} />
-        <StatCard label="Chatbot chats (30d)" value={chatbotConvos30d} />
+        <StatCard
+          label="Identified visitors"
+          value={visitorsIdentified30d}
+          hint="Last 30 days"
+        />
+        <StatCard
+          label="Chatbot chats"
+          value={chatbotConvos30d}
+          hint="Last 30 days"
+        />
         <StatCard label="Open creative" value={openCreative} />
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="border rounded-md p-5">
-          <h2 className="font-serif text-lg font-bold mb-4">Leads funnel</h2>
-          <ul className="space-y-2">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <SectionCard label="Leads funnel">
+          <ul className="space-y-2.5">
             {funnel.map((row) => (
               <li key={row.status} className="flex items-center gap-3">
-                <span className="text-xs opacity-70 w-28 shrink-0">
+                <span className="text-xs text-muted-foreground w-28 shrink-0">
                   {row.label}
                 </span>
-                <span className="flex-1 h-3 bg-muted rounded overflow-hidden">
+                <span className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
                   <span
-                    className="block h-full bg-foreground"
+                    className="block h-full bg-primary/90 rounded-full transition-all"
                     style={{
                       width: `${Math.max(4, Math.round((row.value / maxFunnel) * 100))}%`,
                     }}
                   />
                 </span>
-                <span className="text-xs tabular-nums w-10 text-right opacity-80">
+                <span className="text-xs tabular-nums w-10 text-right font-medium text-foreground">
                   {row.value}
                 </span>
               </li>
             ))}
           </ul>
-        </div>
+        </SectionCard>
 
-        <div className="border rounded-md p-5">
-          <div className="flex items-baseline justify-between mb-4">
-            <h2 className="font-serif text-lg font-bold">Recent leads</h2>
+        <SectionCard
+          label="Recent leads"
+          action={
             <Link
               href="/portal/leads"
-              className="text-xs underline opacity-70"
+              className="text-xs font-medium text-primary hover:underline underline-offset-2"
             >
-              View all
+              View all →
             </Link>
-          </div>
+          }
+        >
           {recentLeads.length === 0 ? (
-            <p className="text-sm opacity-60">
-              No leads yet. Once the chatbot and pixel are live, they'll land
-              here.
+            <p className="text-sm text-muted-foreground">
+              No leads yet. Once the chatbot and pixel are live, new leads
+              land here automatically.
             </p>
           ) : (
-            <ul className="divide-y text-sm">
+            <ul className="divide-y divide-border">
               {recentLeads.map((l) => (
-                <li key={l.id} className="py-2">
+                <li key={l.id}>
                   <Link
                     href={`/portal/leads/${l.id}`}
-                    className="flex items-baseline justify-between gap-3 hover:opacity-80"
+                    className="flex items-center justify-between gap-3 py-2.5 transition-colors hover:bg-accent/40 rounded-md px-1 -mx-1"
                   >
-                    <div className="min-w-0">
-                      <div className="font-medium truncate">
+                    <div className="min-w-0 flex-1">
+                      <div className="font-medium text-sm text-foreground truncate">
                         {l.firstName
                           ? `${l.firstName}${l.lastName ? " " + l.lastName : ""}`
-                          : l.email ?? "Anonymous"}
+                          : (l.email ?? "Anonymous")}
                       </div>
-                      <div className="text-[11px] opacity-60">
-                        {l.source} · {l.status}
+                      <div className="text-[11px] text-muted-foreground truncate">
+                        {humanLeadSource(l.source)}
                         {l.property ? ` · ${l.property.name}` : ""}
                       </div>
                     </div>
-                    <div className="text-[11px] opacity-60 whitespace-nowrap">
+                    <StatusBadge tone={leadStatusTone(l.status)}>
+                      {humanLeadStatus(l.status)}
+                    </StatusBadge>
+                    <span className="text-[11px] text-muted-foreground whitespace-nowrap shrink-0">
                       {formatDistanceToNow(l.createdAt, { addSuffix: true })}
-                    </div>
+                    </span>
                   </Link>
                 </li>
               ))}
             </ul>
           )}
-        </div>
+        </SectionCard>
       </section>
     </div>
   );

@@ -6,24 +6,23 @@ import {
   TenantPipelineCard,
   type TenantPipelineItem,
 } from "@/components/admin/tenant-pipeline-card";
+import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Pipeline" };
 export const dynamic = "force-dynamic";
 
-// Column order reflects the fulfillment lifecycle. The two terminal states,
-// CHURNED and PAUSED, are rendered as a single "Dormant" column so the
-// active pipeline stays readable.
+// Column design is deliberate: one column per "live" lifecycle phase, a single
+// "Dormant" bucket for churned + paused, and tight column widths so the whole
+// board is legible without a horizontal scrollbar on typical screens.
 const COLUMNS: Array<{ label: string; statuses: TenantStatus[] }> = [
-  { label: "Intake", statuses: [TenantStatus.INTAKE_RECEIVED] },
+  { label: "Intake",      statuses: [TenantStatus.INTAKE_RECEIVED] },
   { label: "Call booked", statuses: [TenantStatus.CONSULTATION_BOOKED] },
-  { label: "Proposal", statuses: [TenantStatus.PROPOSAL_SENT] },
-  { label: "Signed", statuses: [TenantStatus.CONTRACT_SIGNED] },
-  { label: "Building", statuses: [TenantStatus.BUILD_IN_PROGRESS] },
-  { label: "QA", statuses: [TenantStatus.QA] },
-  { label: "Launched", statuses: [TenantStatus.LAUNCHED] },
-  { label: "Active", statuses: [TenantStatus.ACTIVE] },
-  { label: "At risk", statuses: [TenantStatus.AT_RISK] },
-  { label: "Dormant", statuses: [TenantStatus.CHURNED, TenantStatus.PAUSED] },
+  { label: "Proposal",    statuses: [TenantStatus.PROPOSAL_SENT] },
+  { label: "Signed",      statuses: [TenantStatus.CONTRACT_SIGNED] },
+  { label: "Building",    statuses: [TenantStatus.BUILD_IN_PROGRESS, TenantStatus.QA] },
+  { label: "Live",        statuses: [TenantStatus.LAUNCHED, TenantStatus.ACTIVE] },
+  { label: "At risk",     statuses: [TenantStatus.AT_RISK] },
+  { label: "Dormant",     statuses: [TenantStatus.CHURNED, TenantStatus.PAUSED] },
 ];
 
 export default async function PipelinePage() {
@@ -36,58 +35,60 @@ export default async function PipelinePage() {
 
   const columns = COLUMNS.map((col) => ({
     ...col,
-    items: orgs
-      .filter((o) => col.statuses.includes(o.status))
-      .map(toItem),
+    items: orgs.filter((o) => col.statuses.includes(o.status)).map(toItem),
   }));
+
+  const activeCount = orgs.filter((o) => o.status === TenantStatus.ACTIVE).length;
 
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="font-serif text-3xl font-bold">Pipeline</h1>
-          <p className="text-sm opacity-60 mt-1">
-            Every tenant, by status. Change a card's status to move it
-            between columns. Status flips write an audit row.
-          </p>
-        </div>
-        <div className="text-xs opacity-60">
-          {orgs.length} tenants · {orgs.filter((o) => o.status === TenantStatus.ACTIVE).length} active
-        </div>
-      </header>
+      <PageHeader
+        title="Pipeline"
+        description="Every tenant by lifecycle stage. Change a card's status to move it between columns. Status flips write an audit row."
+        actions={
+          <div className="text-xs text-muted-foreground">
+            {orgs.length} total · {activeCount} active
+          </div>
+        }
+      />
 
-      <div
-        className="grid gap-3 overflow-x-auto pb-4"
-        style={{
-          gridTemplateColumns: `repeat(${COLUMNS.length}, minmax(200px, 1fr))`,
-        }}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3">
         {columns.map((col) => (
-          <section key={col.label} className="min-w-0 space-y-3">
-            <header className="flex items-center justify-between">
-              <h3 className="text-[10px] tracking-widest uppercase opacity-60">
-                {col.label}
-              </h3>
-              <span className="text-[10px] bg-muted rounded px-1.5 py-0.5">
-                {col.items.length}
-              </span>
-            </header>
-            <div className="border-t" />
-            <div className="space-y-2">
-              {col.items.length === 0 ? (
-                <p className="border border-dashed rounded-md p-3 text-[11px] opacity-40 text-center">
-                  Empty
-                </p>
-              ) : (
-                col.items.map((item) => (
-                  <TenantPipelineCard key={item.id} item={item} />
-                ))
-              )}
-            </div>
-          </section>
+          <PipelineColumn key={col.label} col={col} />
         ))}
       </div>
     </div>
+  );
+}
+
+function PipelineColumn({
+  col,
+}: {
+  col: {
+    label: string;
+    statuses: TenantStatus[];
+    items: TenantPipelineItem[];
+  };
+}) {
+  return (
+    <section className="min-w-0 flex flex-col gap-2">
+      <header className="flex items-center justify-between gap-2 px-0.5">
+        <h3 className="text-[11px] font-semibold tracking-wide text-foreground">
+          {col.label}
+        </h3>
+        <span className="text-[11px] tabular-nums text-muted-foreground">
+          {col.items.length}
+        </span>
+      </header>
+      <div className="h-px bg-border" />
+      <div className="flex flex-col gap-2 min-h-[48px]">
+        {col.items.length === 0 ? null : (
+          col.items.map((item) => (
+            <TenantPipelineCard key={item.id} item={item} />
+          ))
+        )}
+      </div>
+    </section>
   );
 }
 

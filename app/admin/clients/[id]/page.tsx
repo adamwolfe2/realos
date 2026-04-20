@@ -6,6 +6,22 @@ import { prisma } from "@/lib/db";
 import { OrgType } from "@prisma/client";
 import { ImpersonateButton } from "./impersonate-button";
 import { ProvisionPixelButton } from "./provision-pixel-button";
+import { StatCard } from "@/components/admin/stat-card";
+import { StatusBadge, ToggleIndicator } from "@/components/admin/status-badge";
+import { PageHeader, SectionCard } from "@/components/admin/page-header";
+import {
+  humanTenantStatus,
+  tenantStatusTone,
+  humanLeadStatus,
+  leadStatusTone,
+  humanLeadSource,
+  humanPropertyType,
+  humanResidentialSubtype,
+  humanCommercialSubtype,
+  humanSubscriptionTier,
+  humanAuditAction,
+} from "@/lib/format";
+import { formatDistanceToNow } from "date-fns";
 
 export const metadata: Metadata = { title: "Client detail" };
 export const dynamic = "force-dynamic";
@@ -56,16 +72,16 @@ export default async function ClientDetail({
 
   const moduleRows: Array<[string, boolean]> = [
     ["Website", org.moduleWebsite],
-    ["Lead Capture", org.moduleLeadCapture],
-    ["Pixel", org.modulePixel],
-    ["Chatbot", org.moduleChatbot],
+    ["Lead capture", org.moduleLeadCapture],
+    ["Visitor pixel", org.modulePixel],
+    ["AI chatbot", org.moduleChatbot],
     ["Google Ads", org.moduleGoogleAds],
     ["Meta Ads", org.moduleMetaAds],
     ["SEO", org.moduleSEO],
-    ["Email", org.moduleEmail],
-    ["Outbound Email", org.moduleOutboundEmail],
+    ["Email nurture", org.moduleEmail],
+    ["Outbound email", org.moduleOutboundEmail],
     ["Referrals", org.moduleReferrals],
-    ["Creative Studio", org.moduleCreativeStudio],
+    ["Creative studio", org.moduleCreativeStudio],
   ];
 
   const recentLeads = await prisma.lead.findMany({
@@ -78,217 +94,251 @@ export default async function ClientDetail({
   const recentAudits = await prisma.auditEvent.findMany({
     where: { orgId: org.id },
     orderBy: { createdAt: "desc" },
-    take: 20,
+    take: 10,
   });
 
+  const propertyTypeLabel = [
+    humanPropertyType(org.propertyType),
+    org.residentialSubtype
+      ? humanResidentialSubtype(org.residentialSubtype)
+      : org.commercialSubtype
+        ? humanCommercialSubtype(org.commercialSubtype)
+        : null,
+  ]
+    .filter(Boolean)
+    .join(" · ");
+
   return (
-    <div className="space-y-8">
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
+    <div className="space-y-6">
+      <PageHeader
+        eyebrow={
           <Link
             href="/admin/clients"
-            className="text-xs opacity-60 hover:opacity-100"
+            className="inline-flex items-center gap-1 hover:text-foreground transition-colors"
           >
-            ← All clients
+            <span aria-hidden="true">←</span> All clients
           </Link>
-          <h1 className="font-serif text-3xl font-bold mt-2">{org.name}</h1>
-          <p className="text-sm opacity-70 mt-1">
-            {org.propertyType}
-            {org.residentialSubtype
-              ? `, ${org.residentialSubtype}`
-              : org.commercialSubtype
-              ? `, ${org.commercialSubtype}`
-              : ""}{" "}
-            · {org.slug} · {org.status}
-          </p>
-          {org.primaryContactName ? (
-            <p className="text-xs opacity-60 mt-1">
-              {org.primaryContactName}
-              {org.primaryContactEmail ? `, ${org.primaryContactEmail}` : ""}
-              {org.primaryContactPhone ? ` · ${org.primaryContactPhone}` : ""}
-            </p>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2">
-          {org.modulePixel ? (
-            <ProvisionPixelButton
-              orgId={org.id}
-              hasPixel={!!org.cursiveIntegration?.cursivePixelId}
-            />
-          ) : null}
-          <ImpersonateButton orgId={org.id} />
-        </div>
-      </header>
+        }
+        title={org.name}
+        description={
+          <span className="flex items-center gap-2 flex-wrap">
+            <span>{propertyTypeLabel}</span>
+            <span className="text-muted-foreground/60">·</span>
+            <StatusBadge tone={tenantStatusTone(org.status)}>
+              {humanTenantStatus(org.status)}
+            </StatusBadge>
+            {org.subscriptionTier ? (
+              <>
+                <span className="text-muted-foreground/60">·</span>
+                <span className="text-xs">
+                  {humanSubscriptionTier(org.subscriptionTier)} tier
+                </span>
+              </>
+            ) : null}
+          </span>
+        }
+        actions={
+          <>
+            {org.modulePixel ? (
+              <ProvisionPixelButton
+                orgId={org.id}
+                hasPixel={!!org.cursiveIntegration?.cursivePixelId}
+              />
+            ) : null}
+            <ImpersonateButton orgId={org.id} />
+          </>
+        }
+      />
 
-      <section className="grid grid-cols-2 md:grid-cols-6 gap-4">
-        <MiniStat label="Properties" value={org._count.properties} />
-        <MiniStat label="Leads" value={org._count.leads} />
-        <MiniStat label="Visitors" value={org._count.visitors} />
-        <MiniStat label="Chats" value={org._count.chatbotConversations} />
-        <MiniStat label="Ad campaigns" value={org._count.adCampaigns} />
-        <MiniStat label="Domains" value={org._count.domains} />
+      {org.primaryContactName ? (
+        <p className="text-xs text-muted-foreground -mt-2">
+          {org.primaryContactName}
+          {org.primaryContactEmail ? ` · ${org.primaryContactEmail}` : ""}
+          {org.primaryContactPhone ? ` · ${org.primaryContactPhone}` : ""}
+        </p>
+      ) : null}
+
+      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <StatCard label="Properties" value={org._count.properties} />
+        <StatCard label="Leads" value={org._count.leads} />
+        <StatCard label="Visitors" value={org._count.visitors} />
+        <StatCard label="Chats" value={org._count.chatbotConversations} />
+        <StatCard label="Ad campaigns" value={org._count.adCampaigns} />
+        <StatCard label="Domains" value={org._count.domains} />
       </section>
 
-      <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Panel label="Modules">
-          <ul className="grid grid-cols-2 gap-y-1.5 text-sm">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <SectionCard label="Modules">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6">
             {moduleRows.map(([k, v]) => (
               <li
                 key={k}
-                className="flex items-center justify-between gap-3 text-xs"
+                className="flex items-center justify-between gap-3 py-1 text-sm"
               >
-                <span>{k}</span>
-                <span
-                  className={`px-1.5 py-0.5 rounded text-[10px] ${
-                    v
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-muted text-muted-foreground"
-                  }`}
-                >
-                  {v ? "On" : "Off"}
-                </span>
+                <span className="text-foreground">{k}</span>
+                <ToggleIndicator on={v} />
               </li>
             ))}
           </ul>
-        </Panel>
+        </SectionCard>
 
-        <Panel label="Domains">
+        <SectionCard label="Domains">
           {org.domains.length === 0 ? (
-            <p className="text-xs opacity-60">
-              None attached, fallback subdomain: {org.slug}.realestaite.co
+            <p className="text-xs text-muted-foreground">
+              No custom domain attached. Fallback:{" "}
+              <code className="text-foreground">
+                {org.slug}.realestaite.co
+              </code>
             </p>
           ) : (
-            <ul className="space-y-1.5 text-sm">
+            <ul className="space-y-2">
               {org.domains.map((d) => (
                 <li
                   key={d.id}
-                  className="flex items-center justify-between gap-3"
+                  className="flex items-center justify-between gap-3 py-1"
                 >
-                  <span>{d.hostname}</span>
-                  <span className="text-[10px] opacity-60">
-                    {d.isPrimary ? "Primary, " : ""}
-                    {d.sslStatus ?? "pending"}
+                  <span className="text-sm font-medium text-foreground truncate">
+                    {d.hostname}
+                  </span>
+                  <span className="flex items-center gap-2 shrink-0">
+                    {d.isPrimary ? (
+                      <StatusBadge tone="info" dot={false}>
+                        Primary
+                      </StatusBadge>
+                    ) : null}
+                    <StatusBadge
+                      tone={d.sslStatus === "active" ? "success" : "neutral"}
+                    >
+                      {d.sslStatus ?? "Pending"}
+                    </StatusBadge>
                   </span>
                 </li>
               ))}
             </ul>
           )}
-        </Panel>
+        </SectionCard>
 
-        <Panel label="Properties">
+        <SectionCard label="Properties">
           {org.properties.length === 0 ? (
-            <p className="text-xs opacity-60">No properties seeded yet.</p>
+            <p className="text-xs text-muted-foreground">
+              No properties set up yet.
+            </p>
           ) : (
-            <ul className="divide-y text-sm">
+            <ul className="divide-y divide-border">
               {org.properties.map((p) => (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between py-2"
+                  className="flex items-center justify-between gap-3 py-2.5 text-sm"
                 >
-                  <span>
-                    {p.name}
-                    <span className="text-[11px] opacity-60 ml-1">
+                  <div className="min-w-0">
+                    <div className="font-medium text-foreground truncate">
+                      {p.name}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground truncate">
                       /{p.slug}
-                    </span>
-                  </span>
-                  <span className="text-[11px] opacity-70">
-                    {p._count.listings} listings
+                    </div>
+                  </div>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {p._count.listings} listing
+                    {p._count.listings === 1 ? "" : "s"}
                   </span>
                 </li>
               ))}
             </ul>
           )}
-        </Panel>
+        </SectionCard>
 
-        <Panel label="Active project">
+        <SectionCard label="Active project">
           {org.projects.length === 0 ? (
-            <p className="text-xs opacity-60">No project yet.</p>
+            <p className="text-xs text-muted-foreground">No active project.</p>
           ) : (
-            <ul className="space-y-2 text-sm">
+            <ul className="space-y-2">
               {org.projects.map((p) => (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between gap-3"
+                  className="flex items-center justify-between gap-3 py-1 text-sm"
                 >
-                  <span>{p.name}</span>
-                  <span className="text-[11px] opacity-60">
-                    {p._count.tasks} tasks · {p.status}
+                  <span className="text-foreground truncate">{p.name}</span>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {p._count.tasks} task
+                    {p._count.tasks === 1 ? "" : "s"}
                   </span>
                 </li>
               ))}
             </ul>
           )}
-        </Panel>
+        </SectionCard>
 
-        <Panel label="Recent leads">
+        <SectionCard label="Recent leads">
           {recentLeads.length === 0 ? (
-            <p className="text-xs opacity-60">No leads yet.</p>
+            <p className="text-xs text-muted-foreground">
+              No leads captured yet.
+            </p>
           ) : (
-            <ul className="divide-y text-sm">
+            <ul className="divide-y divide-border">
               {recentLeads.map((l) => (
-                <li key={l.id} className="py-2 flex items-baseline gap-3">
-                  <span className="font-medium truncate min-w-0 flex-1">
-                    {l.firstName || l.email || "Anonymous"}
-                  </span>
-                  <span className="text-[11px] opacity-60 whitespace-nowrap">
-                    {l.source} · {l.status}
-                  </span>
+                <li
+                  key={l.id}
+                  className="flex items-center justify-between gap-3 py-2.5 text-sm"
+                >
+                  <div className="min-w-0">
+                    <div className="font-medium text-foreground truncate">
+                      {l.firstName
+                        ? `${l.firstName}${l.lastName ? " " + l.lastName : ""}`
+                        : (l.email ?? "Anonymous")}
+                    </div>
+                    <div className="text-[11px] text-muted-foreground">
+                      {humanLeadSource(l.source)}
+                    </div>
+                  </div>
+                  <StatusBadge tone={leadStatusTone(l.status)}>
+                    {humanLeadStatus(l.status)}
+                  </StatusBadge>
                 </li>
               ))}
             </ul>
           )}
-        </Panel>
+        </SectionCard>
 
-        <Panel label="Audit log">
+        <SectionCard label="Recent activity">
           {recentAudits.length === 0 ? (
-            <p className="text-xs opacity-60">No events yet.</p>
+            <p className="text-xs text-muted-foreground">No activity yet.</p>
           ) : (
-            <ul className="divide-y text-sm">
+            <ul className="space-y-3">
               {recentAudits.map((a) => (
-                <li key={a.id} className="py-2 flex items-baseline gap-3">
-                  <span className="text-[11px] opacity-60 whitespace-nowrap">
-                    {new Date(a.createdAt).toLocaleString()}
-                  </span>
-                  <span className="flex-1 text-xs truncate">
-                    {a.action}, {a.entityType}
-                    {a.description ? `, ${a.description}` : ""}
+                <li
+                  key={a.id}
+                  className="text-sm flex items-start gap-3 min-w-0"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="mt-1.5 inline-block h-1.5 w-1.5 rounded-full bg-muted-foreground/40 shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="text-foreground">
+                      {humanAuditAction(a.action)}
+                      {a.entityType ? (
+                        <span className="text-muted-foreground">
+                          {" · "}
+                          {a.entityType}
+                        </span>
+                      ) : null}
+                    </div>
+                    {a.description ? (
+                      <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                        {a.description}
+                      </div>
+                    ) : null}
+                  </div>
+                  <span className="text-[11px] text-muted-foreground shrink-0">
+                    {formatDistanceToNow(a.createdAt, { addSuffix: true })}
                   </span>
                 </li>
               ))}
             </ul>
           )}
-        </Panel>
+        </SectionCard>
       </section>
-    </div>
-  );
-}
-
-function Panel({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="border rounded-md p-4">
-      <p className="text-[10px] tracking-widest uppercase opacity-60 mb-3">
-        {label}
-      </p>
-      {children}
-    </div>
-  );
-}
-
-function MiniStat({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="border rounded-md p-3">
-      <div className="text-[10px] tracking-widest uppercase opacity-60">
-        {label}
-      </div>
-      <div className="font-serif text-xl font-bold mt-1 tabular-nums">
-        {value}
-      </div>
     </div>
   );
 }

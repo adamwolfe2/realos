@@ -324,6 +324,7 @@ model Organization {
   appfolioIntegration  AppFolioIntegration?
   addresses            Address[]
   apiKeys              ApiKey[]
+  integrationRequests  IntegrationRequest[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -1017,6 +1018,35 @@ model WebhookEvent {
   @@unique([source, bodyHash])
   @@unique([source, eventFingerprint])
   @@index([source, receivedAt])
+}
+
+// Per-tenant request to activate an integration that isn't self-serve yet.
+// The portal marketplace drawer writes one of these when the operator clicks
+// "Request activation" on a tile whose auth flow isn't built yet. Surfaces
+// in the admin queue so we know what to prioritize building.
+model IntegrationRequest {
+  id              String                    @id @default(cuid())
+  orgId           String
+  org             Organization              @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  integrationSlug String                    // matches lib/integrations/catalog.ts slug
+  status          IntegrationRequestStatus  @default(PENDING)
+  message         String?                   @db.Text
+  requestedByEmail String?
+
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+  resolvedAt      DateTime?
+
+  @@index([orgId, status])
+  @@index([integrationSlug, status])
+}
+
+enum IntegrationRequestStatus {
+  PENDING
+  IN_PROGRESS
+  RESOLVED
+  REJECTED
 }
 
 model ClientNote {

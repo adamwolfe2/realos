@@ -4,6 +4,16 @@ import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { OrgType, TenantStatus, PropertyType, Prisma } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
+import { PageHeader } from "@/components/admin/page-header";
+import { StatusBadge } from "@/components/admin/status-badge";
+import {
+  humanTenantStatus,
+  tenantStatusTone,
+  humanPropertyType,
+  humanResidentialSubtype,
+  humanCommercialSubtype,
+} from "@/lib/format";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Clients" };
 export const dynamic = "force-dynamic";
@@ -35,90 +45,123 @@ export default async function ClientsList({
 
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const leadCountsByOrg = new Map<string, number>();
-  const leadGroups = await prisma.lead.groupBy({
-    by: ["orgId"],
-    where: { createdAt: { gte: since }, orgId: { in: clients.map((c) => c.id) } },
-    _count: { _all: true },
-  });
-  for (const g of leadGroups) {
-    leadCountsByOrg.set(g.orgId, g._count._all);
+  if (clients.length > 0) {
+    const leadGroups = await prisma.lead.groupBy({
+      by: ["orgId"],
+      where: { createdAt: { gte: since }, orgId: { in: clients.map((c) => c.id) } },
+      _count: { _all: true },
+    });
+    for (const g of leadGroups) {
+      leadCountsByOrg.set(g.orgId, g._count._all);
+    }
   }
 
   return (
     <div className="space-y-6">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="font-serif text-3xl font-bold">Clients</h1>
-          <p className="text-sm opacity-60 mt-1">
-            Every CLIENT organization. Click in for full detail and impersonate.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        title="Clients"
+        description="Every client organization. Click in for full detail and impersonation."
+      />
 
-      <nav className="flex flex-wrap gap-1 text-xs">
+      <nav className="flex flex-wrap gap-1.5" aria-label="Filter by status">
         <StatusLink current={status} value="" label="All" />
         {Object.values(TenantStatus).map((s) => (
-          <StatusLink key={s} current={status} value={s} label={s} />
+          <StatusLink
+            key={s}
+            current={status}
+            value={s}
+            label={humanTenantStatus(s)}
+          />
         ))}
       </nav>
 
       {clients.length === 0 ? (
-        <p className="text-sm opacity-60 border rounded-md p-4">
-          No clients match this filter yet.
-        </p>
+        <div className="border border-border bg-card rounded-lg p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            No clients match this filter.
+          </p>
+        </div>
       ) : (
-        <div className="border rounded-md overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-[10px] tracking-widest uppercase opacity-60">
-              <tr>
-                <th className="text-left px-4 py-2">Client</th>
-                <th className="text-left px-4 py-2">Type</th>
-                <th className="text-left px-4 py-2">Status</th>
-                <th className="text-right px-4 py-2">Properties</th>
-                <th className="text-right px-4 py-2">Leads 30d</th>
-                <th className="text-right px-4 py-2">MRR</th>
-                <th className="text-right px-4 py-2">Updated</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y">
-              {clients.map((c) => (
-                <tr key={c.id} className="hover:bg-muted/40">
-                  <td className="px-4 py-2">
-                    <Link
-                      href={`/admin/clients/${c.id}`}
-                      className="font-medium underline underline-offset-2"
-                    >
-                      {c.name}
-                    </Link>
-                    <div className="text-[11px] opacity-60">{c.slug}</div>
-                  </td>
-                  <td className="px-4 py-2 text-xs opacity-80">
-                    {c.propertyType}
-                    {c.residentialSubtype
-                      ? `, ${c.residentialSubtype}`
-                      : c.commercialSubtype
-                      ? `, ${c.commercialSubtype}`
-                      : ""}
-                  </td>
-                  <td className="px-4 py-2 text-xs">{c.status}</td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    {c._count.properties}
-                  </td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    {leadCountsByOrg.get(c.id) ?? 0}
-                  </td>
-                  <td className="px-4 py-2 text-right tabular-nums">
-                    {c.mrrCents != null
-                      ? `$${Math.round(c.mrrCents / 100).toLocaleString()}`
-                      : "—"}
-                  </td>
-                  <td className="px-4 py-2 text-right text-xs opacity-60 whitespace-nowrap">
-                    {formatDistanceToNow(c.updatedAt, { addSuffix: true })}
-                  </td>
+        <div className="border border-border bg-card rounded-lg overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-border bg-muted/30">
+                  <th className="text-left px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+                    Client
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+                    Type
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+                    Status
+                  </th>
+                  <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+                    Properties
+                  </th>
+                  <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+                    Leads&nbsp;30d
+                  </th>
+                  <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+                    MRR
+                  </th>
+                  <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+                    Updated
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {clients.map((c) => {
+                  const subtype = c.residentialSubtype
+                    ? humanResidentialSubtype(c.residentialSubtype)
+                    : c.commercialSubtype
+                      ? humanCommercialSubtype(c.commercialSubtype)
+                      : null;
+                  return (
+                    <tr
+                      key={c.id}
+                      className="hover:bg-muted/30 transition-colors"
+                    >
+                      <td className="px-4 py-3">
+                        <Link
+                          href={`/admin/clients/${c.id}`}
+                          className="font-medium text-foreground hover:text-primary transition-colors"
+                        >
+                          {c.name}
+                        </Link>
+                        <div className="text-[11px] text-muted-foreground">
+                          {c.slug}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                        {humanPropertyType(c.propertyType)}
+                        {subtype ? ` · ${subtype}` : ""}
+                      </td>
+                      <td className="px-4 py-3">
+                        <StatusBadge tone={tenantStatusTone(c.status)}>
+                          {humanTenantStatus(c.status)}
+                        </StatusBadge>
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
+                        {c._count.properties}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
+                        {leadCountsByOrg.get(c.id) ?? 0}
+                      </td>
+                      <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
+                        {c.mrrCents != null && c.mrrCents > 0
+                          ? `$${Math.round(c.mrrCents / 100).toLocaleString()}`
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-3 text-right text-xs text-muted-foreground whitespace-nowrap">
+                        {formatDistanceToNow(c.updatedAt, { addSuffix: true })}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
@@ -138,9 +181,12 @@ function StatusLink({
   return (
     <Link
       href={value ? `/admin/clients?status=${value}` : "/admin/clients"}
-      className={`px-2 py-1 border rounded ${
-        active ? "bg-foreground text-background" : ""
-      }`}
+      className={cn(
+        "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
+        active
+          ? "bg-primary text-primary-foreground border-primary"
+          : "bg-card text-foreground border-border hover:bg-muted/50"
+      )}
     >
       {label}
     </Link>

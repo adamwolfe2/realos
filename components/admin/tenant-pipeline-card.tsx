@@ -4,6 +4,11 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { TenantStatus } from "@prisma/client";
+import {
+  humanTenantStatus,
+  humanPropertyType,
+  humanSubscriptionTier,
+} from "@/lib/format";
 
 const STATUS_ORDER: TenantStatus[] = [
   TenantStatus.INTAKE_RECEIVED,
@@ -63,48 +68,51 @@ export function TenantPipelineCard({ item }: { item: TenantPipelineItem }) {
       ? `$${Math.round(item.mrrCents / 100).toLocaleString()}/mo`
       : null;
 
+  const updated = new Date(item.updatedAt).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+
   return (
-    <article className="border rounded-md p-3 bg-background space-y-2">
+    <article className="rounded-lg border border-border bg-card p-3 space-y-1.5 hover:border-foreground/20 transition-colors">
       <Link
         href={`/admin/clients/${item.id}`}
-        className="font-medium text-sm hover:underline underline-offset-2 block truncate"
+        className="font-medium text-sm text-foreground hover:text-primary transition-colors block truncate"
       >
         {item.name}
       </Link>
-      <div className="text-[11px] opacity-60">
-        {item.propertyType}
+      <div className="text-[11px] text-muted-foreground">
+        {humanPropertyType(item.propertyType)}
+        {item.subscriptionTier
+          ? ` · ${humanSubscriptionTier(item.subscriptionTier)}`
+          : ""}
         {mrr ? ` · ${mrr}` : ""}
-        {item.subscriptionTier ? ` · ${item.subscriptionTier}` : ""}
       </div>
-      <div className="text-[11px] opacity-60">
-        {item.modulesActive} modules · updated{" "}
-        {new Date(item.updatedAt).toLocaleDateString()}
+      <div className="text-[11px] text-muted-foreground">
+        {item.modulesActive} module{item.modulesActive === 1 ? "" : "s"} · {updated}
       </div>
       {item.atRiskReason ? (
-        <p className="text-[11px] text-amber-700 border-l-2 border-amber-400 pl-2">
+        <p className="text-[11px] text-amber-800 bg-amber-50 rounded px-2 py-1 mt-1">
           {item.atRiskReason}
         </p>
       ) : null}
-      <div className="flex items-center gap-2 pt-1">
-        <label className="text-[10px] opacity-60 uppercase tracking-widest">
-          Move
-        </label>
+      <div className="flex items-center gap-2 pt-1.5">
         <select
           aria-label="Move to status"
           disabled={pending}
           value={status}
           onChange={(e) => move(e.target.value as TenantStatus)}
-          className="text-[11px] border rounded px-1.5 py-1 bg-background"
+          className="w-full text-[11px] border border-border rounded-md px-2 py-1 bg-background text-foreground hover:border-foreground/30 focus:outline-none focus:ring-2 focus:ring-primary/30 transition-colors"
         >
           {STATUS_ORDER.map((s) => (
             <option key={s} value={s}>
-              {s}
+              {humanTenantStatus(s)}
             </option>
           ))}
         </select>
       </div>
       {error ? (
-        <p className="text-[11px] text-destructive">{error}</p>
+        <p className="text-[11px] text-rose-700">{error}</p>
       ) : null}
     </article>
   );
