@@ -13,7 +13,7 @@ export default function ChatbotFeaturePage() {
       eyebrow="AI chatbot"
       headline="The assistant that actually fills units."
       subhead="Most leasing chatbots are glorified FAQs. Ours is trained on your live listings, pricing rules, and application process. It speaks like a leasing associate, captures leads, and hands the conversation to your team when the lead is warm."
-      whatItIs="A branded AI chatbot that appears on your site with a 5-second idle trigger. Every tenant gets a per-property system prompt composed from the live AppFolio listing data, your knowledge base, and your contact channels."
+      whatItIs="A branded AI chatbot that appears on your site with a 5-second idle trigger. Every tenant gets a per-property system prompt composed from the live PMS listing data, your knowledge base, and your contact channels."
       howItWorks={[
         "Widget loads with your persona name, avatar, and brand color.",
         "At 5 seconds idle, it introduces itself with a branded greeting.",

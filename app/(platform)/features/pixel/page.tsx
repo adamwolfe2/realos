@@ -4,7 +4,7 @@ import { FeaturePage } from "@/components/platform/feature-page";
 export const metadata: Metadata = {
   title: "Identity graph pixel, website visitor identification",
   description:
-    "Put names and emails on a meaningful share of your anonymous site traffic. Identity-graph pixel by Cursive, installed and managed by us.",
+    "Put names and emails on a meaningful share of your anonymous site traffic. Identity-graph pixel, installed and managed by us.",
 };
 
 export default function PixelFeaturePage() {
@@ -13,7 +13,7 @@ export default function PixelFeaturePage() {
       eyebrow="Identity graph pixel"
       headline="Know who's actually on your site."
       subhead="Standard analytics tell you impressions. Our pixel tells you which prospect visited, which unit they looked at, and how to reach them, all before they fill out a form."
-      whatItIs="A third-party identity-graph pixel (Cursive) installed on your marketing site. It matches anonymous site visitors against a consented identity graph to surface names, emails, and sometimes phone numbers on the visits that matter."
+      whatItIs="An identity-graph pixel installed on your marketing site. It matches anonymous site visitors against a consented identity graph to surface names, emails, and sometimes phone numbers on the visits that matter."
       howItWorks={[
         "We provision a pixel per tenant, installed on your custom domain in under an hour.",
         "Every visit, pageviews, time on page, referrer, UTM, feeds our Visitor table.",

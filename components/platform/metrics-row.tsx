@@ -14,7 +14,7 @@ const METRICS = [
   {
     value: "Named",
     label: "Visitors identified by the pixel and routed to nurture, not just the form-fillers.",
-    source: "Cursive identity graph",
+    source: "Identity graph pixel",
   },
   {
     value: "One",

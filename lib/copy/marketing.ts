@@ -25,16 +25,18 @@ export const MARKETING = {
       microProof: "Built for residential and commercial portfolios.",
     },
     liveExample: {
-      eyebrow: "Live today",
-      headline: "Telegraph Commons. Shipped in fourteen days.",
+      eyebrow: "In production",
+      headline: "See the platform running in production.",
       body:
-        "Custom site on their domain, live AppFolio listings, AI chatbot trained on the property, identity pixel running, leads flowing into the portal. Click through it exactly as a prospective student would.",
+        "Custom resident-facing site on the client's domain, live PMS listings, AI chatbot grounded in their property facts, identity pixel running, leads flowing into the operator portal. Click through both surfaces exactly as a prospective resident or a portfolio operator would.",
       siteLabel: "The resident-facing site",
       siteHref: "https://www.telegraphcommons.com",
-      siteCaption: "2490 Channing Way, Berkeley · UC Berkeley student housing",
+      siteCaption:
+        "A production student-housing deployment rendered on the client's domain, under fourteen days from intake.",
       portalLabel: "The operator portal",
       portalHref: "#product-tour",
-      portalCaption: "Same dashboard we'd build you, populated with live tenant data.",
+      portalCaption:
+        "The same operator dashboard we'd build you, populated with live tenant data.",
     },
     pains: [
       {

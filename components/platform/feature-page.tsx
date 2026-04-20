@@ -185,12 +185,7 @@ export function FeaturePage({
             <Link href="/onboarding" className="btn-primary">
               Book a demo
             </Link>
-            <Link
-              href="https://www.telegraphcommons.com"
-              className="btn-secondary"
-              target="_blank"
-              rel="noopener"
-            >
+            <Link href="/#live" className="btn-secondary">
               See it live
             </Link>
           </div>

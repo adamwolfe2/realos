@@ -58,12 +58,7 @@ export function VerticalLanding({
             <Link href={ctaHref} className="btn-primary">
               Book a demo
             </Link>
-            <Link
-              href="https://www.telegraphcommons.com"
-              className="btn-secondary"
-              target="_blank"
-              rel="noopener"
-            >
+            <Link href="/#live" className="btn-secondary">
               See it live
             </Link>
           </div>
@@ -238,12 +233,7 @@ export function VerticalLanding({
             <Link href={ctaHref} className="btn-primary">
               Book a demo
             </Link>
-            <Link
-              href="https://www.telegraphcommons.com"
-              className="btn-secondary-dark"
-              target="_blank"
-              rel="noopener"
-            >
+            <Link href="/#live" className="btn-secondary-dark">
               See it live
             </Link>
           </div>

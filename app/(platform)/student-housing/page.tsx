@@ -4,7 +4,7 @@ import { VerticalLanding } from "@/components/platform/vertical-landing";
 export const metadata: Metadata = {
   title: "Student housing marketing that actually fills beds",
   description:
-    "Managed marketing platform for student housing operators: custom site, AppFolio-synced listings, AI chatbot, identity pixel, Google + Meta ads, international-student instant-approval funnels.",
+    "Managed marketing platform for student housing operators: custom site, PMS-synced listings, AI chatbot, identity pixel, Google + Meta ads, international-student instant-approval funnels.",
 };
 
 export default function StudentHousingPage() {
@@ -15,12 +15,12 @@ export default function StudentHousingPage() {
       subhead="Student housing is a sprint. Applications open in the fall, half your stock leases by December, and your agency is still drafting a creative brief. We replace the whole stack with software your leasing team actually uses."
       pains={[
         {
-          title: "Sprint pricing cycles",
-          body: "Every unit prices differently across the year. Static brochures can't keep up. Live AppFolio sync can.",
+          title: "Sprint leasing cycles",
+          body: "Every unit prices differently across the year. Static brochures can't keep up. A live PMS sync can.",
         },
         {
           title: "International applicants",
-          body: "Your current stack probably flags international applicants for manual review. We ship instant-approval flows that fit AppFolio's rules.",
+          body: "Your current stack probably flags international applicants for manual review. We ship instant-approval flows that fit your PMS's rules.",
         },
         {
           title: "Turn-heavy calendars",
@@ -29,8 +29,8 @@ export default function StudentHousingPage() {
       ]}
       modules={[
         {
-          title: "Live AppFolio-synced floor plans",
-          body: "Every unit on your site matches the truth within the hour. No more outdated brochure PDFs.",
+          title: "Live PMS-synced floor plans",
+          body: "Every unit on your site matches the source of truth within the hour. No more outdated brochure PDFs.",
         },
         {
           title: "AI chatbot with instant-approval path",

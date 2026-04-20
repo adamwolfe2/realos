@@ -79,12 +79,7 @@ function Hero() {
           <Link href="/onboarding" className="btn-primary">
             Book a demo
           </Link>
-          <Link
-            href="https://www.telegraphcommons.com"
-            className="btn-secondary"
-            target="_blank"
-            rel="noopener"
-          >
+          <Link href="/#live" className="btn-secondary">
             See it live
           </Link>
         </div>
@@ -108,14 +103,16 @@ function Hero() {
 }
 
 // ---------------------------------------------------------------------------
-// LIVE EXAMPLE — the Telegraph Commons proof. Two cards, two live surfaces.
-// This is the centerpiece "this is real, not a mockup" moment.
+// LIVE EXAMPLE — abstract production proof. Two cards, two live surfaces.
+// No customer names, no hostnames, no PMS brands. Let prospects click in and
+// see the deployment; keep the marketing surface enterprise-generic.
 // ---------------------------------------------------------------------------
 
 function LiveExample() {
   const { liveExample } = MARKETING.home;
   return (
     <section
+      id="live"
       style={{
         backgroundColor: "#faf9f5",
         borderTop: "1px solid #f0eee6",
@@ -147,14 +144,14 @@ function LiveExample() {
             href={liveExample.siteHref}
             label={liveExample.siteLabel}
             caption={liveExample.siteCaption}
-            hostname="telegraphcommons.com"
+            badge="Live deployment"
             external
           />
           <LiveCard
             href={liveExample.portalHref}
             label={liveExample.portalLabel}
             caption={liveExample.portalCaption}
-            hostname="operator portal"
+            badge="Operator portal"
           />
         </div>
       </div>
@@ -166,13 +163,13 @@ function LiveCard({
   href,
   label,
   caption,
-  hostname,
+  badge,
   external = false,
 }: {
   href: string;
   label: string;
   caption: string;
-  hostname: string;
+  badge: string;
   external?: boolean;
 }) {
   return (
@@ -211,7 +208,7 @@ function LiveCard({
                 backgroundColor: "#3a7d44",
               }}
             />
-            {hostname}
+            {badge}
           </p>
           <h3 className="heading-sub" style={{ color: "#141413" }}>
             {label}
@@ -591,12 +588,7 @@ function Proof() {
           <Link href="/onboarding" className="btn-primary">
             Book a demo
           </Link>
-          <Link
-            href="https://www.telegraphcommons.com"
-            className="btn-secondary-dark"
-            target="_blank"
-            rel="noopener"
-          >
+          <Link href="/#live" className="btn-secondary-dark">
             See it live
           </Link>
         </div>
@@ -670,12 +662,7 @@ function FinalCta() {
           <Link href={final.primaryHref} className="btn-primary">
             {final.primaryCta}
           </Link>
-          <Link
-            href="https://www.telegraphcommons.com"
-            className="btn-secondary"
-            target="_blank"
-            rel="noopener"
-          >
+          <Link href="/#live" className="btn-secondary">
             See it live
           </Link>
         </div>
