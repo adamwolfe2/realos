@@ -211,7 +211,7 @@ export default async function ClientDetail({
         >
           <CursivePanel
             orgId={org.id}
-            webhookUrl={`${(await headers()).get("x-forwarded-proto") ?? "https"}://${(await headers()).get("host") ?? "realos-nine.vercel.app"}/api/webhooks/cursive`}
+            webhookUrl={`${(await headers()).get("x-forwarded-proto") ?? "https"}://${(await headers()).get("host") ?? "leasestack.co"}/api/webhooks/cursive`}
             initial={{
               cursivePixelId: org.cursiveIntegration?.cursivePixelId ?? null,
               cursiveSegmentId: org.cursiveIntegration?.cursiveSegmentId ?? null,

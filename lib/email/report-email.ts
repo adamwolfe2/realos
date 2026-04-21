@@ -1,5 +1,5 @@
 import "server-only";
-import { buildBaseHtml } from "./shared";
+import { buildBaseHtml, BRAND_NAME } from "./shared";
 import { getSiteUrl } from "@/lib/brand";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 
@@ -28,12 +28,12 @@ export interface ReportEmailInput {
 }
 
 const ACCENT = "#2563EB";
-const PARCHMENT = "#f5f4ed";
-const IVORY = "#faf9f5";
-const BORDER = "#f0eee6";
-const NEAR_BLACK = "#141413";
-const OLIVE = "#5e5d59";
-const STONE = "#87867f";
+const PARCHMENT = "#f3f4f6";
+const IVORY = "#ffffff";
+const BORDER = "#e5e7eb";
+const NEAR_BLACK = "#111111";
+const OLIVE = "#6b7280";
+const STONE = "#9ca3af";
 
 const KIND_LABELS = {
   weekly: "Weekly report",
@@ -55,7 +55,7 @@ export function buildReportEmail(input: ReportEmailInput): {
     : `${orgName} ${kindLabel.toLowerCase()} — ${period}`;
 
   const greeting = recipientName ? `Hi ${recipientName},` : `Hi,`;
-  const senderLine = senderName ? `${senderName}` : "The RealOS team";
+  const senderLine = senderName ? `${senderName}` : `The ${BRAND_NAME} team`;
 
   const kpiRow = renderKpiRow(snapshot);
   const funnelBlock = renderFunnel(snapshot);
@@ -106,9 +106,9 @@ export function buildReportEmail(input: ReportEmailInput): {
     theme: {
       outerBg: PARCHMENT,
       innerBg: IVORY,
-      headerBg: NEAR_BLACK,
-      headerText: IVORY,
-      footerBg: PARCHMENT,
+      headerBg: ACCENT,
+      headerText: "#ffffff",
+      footerBg: "#f9fafb",
       footerText: NEAR_BLACK,
       footerSubText: STONE,
       headlineColor: NEAR_BLACK,
@@ -326,7 +326,7 @@ function buildPlainText(input: ReportEmailInput, period: string, kindLabel: stri
   lines.push("");
   lines.push(`Full report: ${shareUrl}`);
   lines.push("");
-  lines.push(senderName ?? "The RealOS team");
+  lines.push(senderName ?? `The ${BRAND_NAME} team`);
   return lines.join("\n");
 }
 
