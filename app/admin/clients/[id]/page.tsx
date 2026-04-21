@@ -7,7 +7,9 @@ import { OrgType } from "@prisma/client";
 import { ImpersonateButton } from "./impersonate-button";
 import { ProvisionPixelButton } from "./provision-pixel-button";
 import { ModuleToggle } from "./module-toggle";
+import { CursivePanel } from "./cursive-panel";
 import type { ToggleableModule } from "@/lib/actions/admin-modules";
+import { headers } from "next/headers";
 import { StatCard } from "@/components/admin/stat-card";
 import { StatusBadge, ToggleIndicator } from "@/components/admin/status-badge";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
@@ -221,6 +223,31 @@ export default async function ClientDetail({
               ))}
             </ul>
           )}
+        </SectionCard>
+
+        <SectionCard
+          label="Cursive (visitor identification)"
+          description="Bind the V4 pixel and segment IDs from Cursive. The webhook URL below is what they need in their pixel settings."
+          className="lg:col-span-2"
+        >
+          <CursivePanel
+            orgId={org.id}
+            webhookUrl={`${(await headers()).get("x-forwarded-proto") ?? "https"}://${(await headers()).get("host") ?? "realos-nine.vercel.app"}/api/webhooks/cursive`}
+            initial={{
+              cursivePixelId: org.cursiveIntegration?.cursivePixelId ?? null,
+              cursiveSegmentId: org.cursiveIntegration?.cursiveSegmentId ?? null,
+              installedOnDomain: org.cursiveIntegration?.installedOnDomain ?? null,
+              publicSiteKey: org.cursiveIntegration?.publicSiteKey ?? null,
+              publicKeyPrefix: org.cursiveIntegration?.publicKeyPrefix ?? null,
+              lastEventAt: org.cursiveIntegration?.lastEventAt
+                ? org.cursiveIntegration.lastEventAt.toISOString()
+                : null,
+              lastSegmentSyncAt: org.cursiveIntegration?.lastSegmentSyncAt
+                ? org.cursiveIntegration.lastSegmentSyncAt.toISOString()
+                : null,
+              totalEventsCount: org.cursiveIntegration?.totalEventsCount ?? 0,
+            }}
+          />
         </SectionCard>
 
         <SectionCard label="Properties">

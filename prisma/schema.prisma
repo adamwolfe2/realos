@@ -796,6 +796,10 @@ model CursiveIntegration {
   publicKeyPrefix   String? // first ~12 chars for display
   publicKeyIssuedAt DateTime?
 
+  // AudienceLab segment binding for the admin "Sync from segment" pull
+  cursiveSegmentId   String?
+  lastSegmentSyncAt  DateTime?
+
   // Weekly digest delivery preferences
   weeklyDigestEnabled Boolean @default(true)
   weeklyDigestEmails  Json? // Array of emails
