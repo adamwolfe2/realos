@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { formatDistanceToNow } from "date-fns";
 import { PageHeader } from "@/components/admin/page-header";
+import { PropertyFormDialog } from "@/components/properties/property-form-dialog";
 
 export const metadata: Metadata = { title: "Properties" };
 export const dynamic = "force-dynamic";
@@ -23,14 +24,16 @@ export default async function PropertiesList() {
       <PageHeader
         title="Properties"
         description="Listings, leads, and tours for every property in your portfolio."
+        actions={<PropertyFormDialog />}
       />
 
       {properties.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-center">
+        <div className="rounded-lg border border-border bg-card p-8 text-center space-y-3">
           <p className="text-sm text-muted-foreground">
-            No properties set up yet. Your agency contact seeds these during
-            the build.
+            No properties set up yet. Add one manually below or wait for
+            AppFolio sync to populate.
           </p>
+          <PropertyFormDialog />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
