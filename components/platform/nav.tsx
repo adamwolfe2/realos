@@ -282,7 +282,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
                     onClick={onClose}
                     style={{
                       display: "block",
-                      padding: "8px 8px",
+                      padding: "12px 8px",
                       color: "#171A20",
                       fontSize: "16px",
                       fontWeight: 500,

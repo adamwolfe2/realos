@@ -1087,14 +1087,12 @@ function Numbers() {
     <section style={{ backgroundColor: "#f5f4ed" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
         <p className="eyebrow mb-10 text-center">The numbers we hit</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6 lg:gap-4">
           {METRICS.map((m, i) => (
             <div
               key={m.value}
-              className="px-0 lg:px-6 text-center lg:text-left"
-              style={{
-                borderLeft: i > 0 ? "1px solid #e8e6dc" : "none",
-              }}
+              className={`px-0 lg:px-6 text-left ${i > 0 ? "lg:border-l" : ""}`}
+              style={i > 0 ? { borderColor: "#e8e6dc" } : undefined}
             >
               <p
                 style={{
@@ -1109,7 +1107,7 @@ function Numbers() {
                 {m.value}
               </p>
               <p
-                className="mt-4 mx-auto lg:mx-0 max-w-[280px]"
+                className="mt-4 max-w-[280px]"
                 style={{
                   color: "#5e5d59",
                   fontFamily: "var(--font-sans)",

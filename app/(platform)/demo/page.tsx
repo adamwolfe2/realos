@@ -12,7 +12,7 @@ export default function DemoPage() {
   return (
     <div style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-body)" }}>
       <header style={{ borderBottom: "1px solid var(--border)" }}>
-        <div className="max-w-4xl mx-auto px-4 md:px-6 pt-24 pb-14">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 pt-24 pb-14">
           <p
             className="font-mono text-[11px] uppercase tracking-[0.18em] mb-5"
             style={{ color: "var(--text-muted)" }}
@@ -37,7 +37,7 @@ export default function DemoPage() {
       </header>
 
       <section>
-        <div className="max-w-4xl mx-auto px-4 md:px-6 py-16">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 py-16">
           <div
             className="aspect-video bg-white flex items-center justify-center"
             style={{
@@ -54,7 +54,7 @@ export default function DemoPage() {
             </p>
           </div>
           <div
-            className="mt-8 p-10 text-center"
+            className="mt-8 p-6 md:p-10 text-center"
             style={{
               backgroundColor: "var(--bg-blue-dark)",
               borderRadius: "14px",

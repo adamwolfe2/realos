@@ -34,7 +34,7 @@ export default async function BlogPostPage({
 
   return (
     <div style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-body)" }}>
-      <div className="max-w-2xl mx-auto px-4 md:px-6 pt-16 pb-20">
+      <div className="max-w-2xl mx-auto px-4 md:px-8 pt-16 pb-20">
         <Link
           href="/blog"
           className="font-mono text-[10px] uppercase tracking-[0.18em]"

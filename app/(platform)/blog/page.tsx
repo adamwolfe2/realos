@@ -12,7 +12,7 @@ export default function BlogIndex() {
   return (
     <div style={{ backgroundColor: "var(--bg-primary)", color: "var(--text-body)" }}>
       <header style={{ borderBottom: "1px solid var(--border)" }}>
-        <div className="max-w-4xl mx-auto px-4 md:px-6 pt-24 pb-14">
+        <div className="max-w-4xl mx-auto px-4 md:px-8 pt-24 pb-14">
           <p
             className="font-mono text-[11px] uppercase tracking-[0.18em] mb-5"
             style={{ color: "var(--text-muted)" }}
@@ -36,7 +36,7 @@ export default function BlogIndex() {
       </header>
 
       <section>
-        <div className="max-w-3xl mx-auto px-4 md:px-6 py-16 space-y-8">
+        <div className="max-w-3xl mx-auto px-4 md:px-8 py-16 space-y-8">
           {BLOG_POSTS.map((post) => (
             <article
               key={post.slug}

@@ -113,16 +113,14 @@ export function SplitHero({
             {trust && trust.length > 0 ? (
               <Reveal delay={300}>
                 <div
-                  className="mt-10 pt-6 grid grid-cols-3 gap-4"
+                  className="mt-10 pt-6 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4"
                   style={{ borderTop: "1px solid #e8e6dc", maxWidth: "560px" }}
                 >
                   {trust.map((t, i) => (
                     <div
                       key={t.value}
-                      style={{
-                        borderLeft: i > 0 ? "1px solid #e8e6dc" : "none",
-                        paddingLeft: i > 0 ? "16px" : 0,
-                      }}
+                      className={i > 0 ? "sm:pl-4 sm:border-l" : ""}
+                      style={i > 0 ? { borderColor: "#e8e6dc" } : undefined}
                     >
                       <p
                         style={{
