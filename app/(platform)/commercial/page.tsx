@@ -23,7 +23,7 @@ export default function CommercialPage() {
         eyebrow="Commercial real estate"
         headline="Commercial is"
         headlineAccent="in build."
-        subhead="The platform is live for residential operators today — student housing, multifamily, and senior living. Commercial modules ship next: office, retail, industrial, flex space, and medical office. Five design-partner spots open."
+        subhead="The platform is live for residential operators today: student housing, multifamily, and senior living. Commercial modules ship next: office, retail, industrial, flex space, and medical office. Five design-partner spots open."
         ctas={[
           { label: "Apply as a design partner", href: "/onboarding" },
           { label: "See the residential platform", href: "/residential", variant: "secondary" },

@@ -31,9 +31,9 @@ export default function AboutPage() {
         body="Most operators we met were running five to eight vendors: an agency for paid spend, a site no one could edit, a chatbot that answered one question, a CRM no team used, a freelance designer, and a listing portal pulling its own fee. None of it spoke to anything else."
         bullets={[
           "National REITs solved this years ago with in-house teams and internal software.",
-          "Independent operators couldn't hire that team — so they absorbed the coordination tax.",
+          "Independent operators couldn't hire that team, so they absorbed the coordination tax.",
           "We built the off-the-shelf version of the REIT playbook, priced for the independent.",
-          "One login, one weekly report, one bill — across every surface in the stack.",
+          "One login, one weekly report, one bill, across every surface in the stack.",
         ]}
         side="right"
         artifact={<VendorCollapse />}

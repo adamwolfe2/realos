@@ -17,7 +17,7 @@ export default function PixelFeaturePage() {
         eyebrow="Visitor identification"
         headline="Know who's actually"
         headlineAccent="on your site."
-        subhead="Most analytics tell you impressions. We tell you which prospect just visited, which unit they looked at, and how to reach them — all before they fill out a form."
+        subhead="Most analytics tell you impressions. We tell you which prospect just visited, which unit they looked at, and how to reach them, all before they fill out a form."
         ctas={[
           { label: "Book a demo", href: "/onboarding" },
           { label: "See it live", href: "/#live", variant: "secondary" },
@@ -29,12 +29,12 @@ export default function PixelFeaturePage() {
       <SplitSection
         eyebrow="What you see"
         headline="Real names on the visits that matter."
-        body="Every time a prospect loads a floor plan, we tell you who they are. Not a vague 'someone from California' — a name, an email, often a phone and a LinkedIn. Your leasing team gets to follow up before the prospect has even filled anything out."
+        body="Every time a prospect loads a floor plan, we tell you who they are. Not a vague 'someone from California', but a name, an email, often a phone and a LinkedIn. Your leasing team gets to follow up before the prospect has even filled anything out."
         bullets={[
-          "Live feed of identified visitors — who, where, and what they looked at.",
+          "Live feed of identified visitors. Who, where, and what they looked at.",
           "Every identified visitor enriched with role, organization, and contact info.",
           "High-intent visitors flagged and emailed to your team within minutes.",
-          "All of it captured with consent — audit-friendly, compliant, yours to keep.",
+          "All of it captured with consent. Audit-friendly, compliant, yours to keep.",
         ]}
         side="right"
         artifact={<VisitorProfile />}
@@ -51,12 +51,12 @@ export default function PixelFeaturePage() {
 
       <SplitSection
         eyebrow="What you get"
-        headline="A steady stream of named visitors — not session counts."
+        headline="A steady stream of named visitors, not session counts."
         bullets={[
           "Monday report: who visited, who's high intent, who converted last week.",
           "Named leads feed your team's inbox and your leasing software automatically.",
           "Your Meta, Google, and TikTok audiences rebuilt weekly from the people who actually showed up.",
-          "Clear attribution from ad to tour to lease — no more guessing what's working.",
+          "Clear attribution from ad to tour to lease. No more guessing what's working.",
         ]}
         side="right"
         background="#faf9f5"
@@ -76,7 +76,7 @@ function VisitorProfile() {
     { label: "Where she's from", value: "Sacramento, CA" },
     { label: "What she looked at", value: "2-bed floor plan · pricing · tours" },
     { label: "Time on site",  value: "4m 38s across 3 visits" },
-    { label: "Intent",        value: "High — viewed tours twice" },
+    { label: "Intent",        value: "High. Viewed tours twice" },
   ];
   return (
     <div
@@ -190,9 +190,9 @@ function VisitorProfile() {
 
 function PixelPipeline() {
   const stages = [
-    { num: "01", title: "A prospect visits your site",   body: "Every pageview is captured — which units they looked at, how long they stayed, how they got there." },
+    { num: "01", title: "A prospect visits your site",   body: "Every pageview is captured: which units they looked at, how long they stayed, how they got there." },
     { num: "02", title: "We match the visit to a person", body: "Consented identity graph returns a real name and email for a meaningful share of your visits." },
-    { num: "03", title: "We add everything we know",      body: "Role, organization, phone, LinkedIn — attached to the visitor so your team can reach out confidently." },
+    { num: "03", title: "We add everything we know",      body: "Role, organization, phone, LinkedIn, attached to the visitor so your team can reach out confidently." },
     { num: "04", title: "It lands where your team works", body: "Your leasing inbox, your CRM, your ad audiences, and your Monday owner report. You don't lift a finger." },
   ];
   return (

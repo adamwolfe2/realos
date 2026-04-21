@@ -44,7 +44,7 @@ export default function ResidentialHub() {
         eyebrow="Residential real estate"
         headline="One platform."
         headlineAccent="Every residential vertical."
-        subhead="The modules are the same. The copy, the funnels, the KPIs, and the compliance guardrails shift per audience. Pick your vertical to see the specifics — or keep scrolling for the rollup."
+        subhead="The modules are the same. The copy, the funnels, the KPIs, and the compliance guardrails shift per audience. Pick your vertical to see the specifics, or keep scrolling for the rollup."
         ctas={[
           { label: "Book a demo", href: "/onboarding" },
           { label: "See it live", href: "/#live", variant: "secondary" },

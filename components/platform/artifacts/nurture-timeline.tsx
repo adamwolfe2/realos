@@ -14,7 +14,7 @@ const TOUCHES: Touch[] = [
   { when: "Day 1",       kind: "email", title: "Welcome + resource guide", detail: "Personalized guide: levels of care, pricing transparency, tour options." },
   { when: "Day 7",       kind: "email", title: "Family decision packet",  detail: "Conversation starters for talking with parents about the move." },
   { when: "Day 30",      kind: "call",  title: "Liaison check-in",         detail: "Warm human call from community liaison, respects the 90-day window." },
-  { when: "Day 60",      kind: "ad",    title: "Retargeting — virtual tour", detail: "Calm creative on Meta. No pressure language. Compliance-reviewed." },
+  { when: "Day 60",      kind: "ad",    title: "Retargeting, virtual tour", detail: "Calm creative on Meta. No pressure language. Compliance-reviewed." },
   { when: "Day 90",      kind: "tour",  title: "Respite stay booked",      detail: "Family booked a weekend trial stay. Transcript + all touches attached." },
   { when: "Day 112",     kind: "call",  title: "Lease signed",             detail: "Resident moved in. Referral card sent to the family that helped." },
 ];

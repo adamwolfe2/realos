@@ -1855,7 +1855,7 @@ function WeeklyBarChart() {
             <div
               key={d.d}
               className="flex-1 flex flex-col justify-end items-center relative z-10"
-              title={`${d.d}: ${total} leads — Meta ${d.meta}, Google ${d.google}, TikTok ${d.tiktok}`}
+              title={`${d.d}: ${total} leads. Meta ${d.meta}, Google ${d.google}, TikTok ${d.tiktok}`}
             >
               <div
                 className="w-full max-w-[34px] flex flex-col rounded-md overflow-hidden"

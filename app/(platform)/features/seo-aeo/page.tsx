@@ -33,12 +33,12 @@ export default function SEOAEOFeaturePage() {
       <SplitSection
         eyebrow="What this does for you"
         headline="Be the answer across every place people search."
-        body="Every page we ship for you is written to be the answer when a prospect asks Google, ChatGPT, Perplexity, Claude, or Gemini about your market. One playbook — better Google rankings and better AI citations."
+        body="Every page we ship for you is written to be the answer when a prospect asks Google, ChatGPT, Perplexity, Claude, or Gemini about your market. One playbook. Better Google rankings and better AI citations."
         bullets={[
           "Per-neighborhood, per-unit-type pages for the questions your prospects actually ask.",
           "Your brand, your address, your amenities tagged so AI engines can quote them.",
           "Fast pages, mobile-ready, built to pass Google's ranking checks without you worrying about it.",
-          "A monthly audit that tells you exactly where you're showing up — and where we're closing the gap.",
+          "A monthly audit that tells you exactly where you're showing up, and where we're closing the gap.",
         ]}
         side="right"
         artifact={<CitedByAI />}
@@ -60,7 +60,7 @@ export default function SEOAEOFeaturePage() {
           "Climb to page one for the long-tail queries your leasing team already answers daily.",
           "Be the named citation when prospects ask ChatGPT or Perplexity about your market.",
           "Organic traffic and conversion, attributed end-to-end in your weekly report.",
-          "A month-over-month audit trail of LLM citations — we track the gap, then close it.",
+          "A month-over-month audit trail of LLM citations. We track the gap, then close it.",
         ]}
         side="right"
         background="#faf9f5"
@@ -74,11 +74,11 @@ export default function SEOAEOFeaturePage() {
 
 function CitedByAI() {
   const engines: Array<{ name: string; mark: ReactNode; line: string }> = [
-    { name: "ChatGPT",     mark: <ChatGPTMark size={22} />,     line: "\"Telegraph Commons — 3-minute walk to UC Berkeley, fully furnished, wifi included.\"" },
+    { name: "ChatGPT",     mark: <ChatGPTMark size={22} />,     line: "\"Telegraph Commons. 3-minute walk to UC Berkeley, fully furnished, wifi included.\"" },
     { name: "Perplexity",  mark: <PerplexityMark size={22} />,  line: "\"Telegraph Commons is the top-rated student housing on Channing Way.\"" },
     { name: "Claude",      mark: <ClaudeMark size={22} />,      line: "\"For UC Berkeley students, Telegraph Commons offers furnished rooms with all utilities included.\"" },
-    { name: "Gemini",      mark: <GeminiMark size={22} />,      line: "\"Telegraph Commons — a highly-rated option near Sproul Plaza.\"" },
-    { name: "Google",      mark: <GoogleMark size={22} />,      line: "\"Best student housing near UC Berkeley\" — ranked #1 for the query." },
+    { name: "Gemini",      mark: <GeminiMark size={22} />,      line: "\"Telegraph Commons. A highly-rated option near Sproul Plaza.\"" },
+    { name: "Google",      mark: <GoogleMark size={22} />,      line: "\"Best student housing near UC Berkeley\". Ranked #1 for the query." },
   ];
   return (
     <div
@@ -167,7 +167,7 @@ function CitedByAI() {
             fontWeight: 500,
           }}
         >
-          Ask any of them about your market — you'll be the answer
+          Ask any of them about your market. You'll be the answer
         </span>
       </div>
     </div>
@@ -424,7 +424,7 @@ function FinalBand() {
             }}
           >
             Operators with multiple properties or markets who rely on organic traffic.
-            Pairs with the managed ads module — organic volume plus paid conversions.
+            Pairs with the managed ads module. Organic volume plus paid conversions.
           </p>
         </Reveal>
         <Reveal delay={140}>

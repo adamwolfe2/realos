@@ -33,10 +33,10 @@ export default function ChatbotFeaturePage() {
       <SplitSection
         eyebrow="What it is"
         headline="A branded leasing assistant, not a bot."
-        body="A chatbot widget that loads with your persona name, avatar, and brand color. At 5 seconds idle it opens with a branded greeting. Replies are Claude-powered and grounded in your live listing data — pricing, amenities, availability — so it never fabricates."
+        body="A chatbot widget that loads with your persona name, avatar, and brand color. At 5 seconds idle it opens with a branded greeting. Replies are Claude-powered and grounded in your live listing data (pricing, amenities, availability) so it never fabricates."
         bullets={[
           "Per-property system prompt composed from live listing + knowledge base.",
-          "Pricing rules, tour scheduling, lease terms — answered accurately or escalated.",
+          "Pricing rules, tour scheduling, lease terms. Answered accurately or escalated.",
           "Auto-captures name, email, phone. Creates a lead in CRM with the full transcript.",
           "One-click handoff to your leasing team for hot threads.",
         ]}
@@ -57,9 +57,9 @@ export default function ChatbotFeaturePage() {
         eyebrow="What to expect"
         headline="Every chat is a lead with context attached."
         bullets={[
-          "24/7 response — international students and night-owl parents don't bounce waiting for morning.",
+          "24/7 response so international students and night-owl parents don't bounce waiting for morning.",
           "Transcripts sync to the lead record, your team picks up mid-thread, not cold.",
-          "Module flag on the Organization — disable the widget instantly during staffing changes.",
+          "Module flag on the Organization. Disable the widget instantly during staffing changes.",
           "Weekly summary of chat volume, capture rate, and top intents in the Monday report.",
         ]}
         side="right"
@@ -77,7 +77,7 @@ function ChatConfig() {
     { k: "How it greets",       v: "\"Hey! Ask me anything about Telegraph Commons.\"" },
     { k: "When it opens",        v: "After 5 seconds, or when they scroll down" },
     { k: "What it knows",       v: "Your live unit list, amenities, and pricing rules" },
-    { k: "When pricing is asked", v: "Quotes what you've approved — never guesses" },
+    { k: "When pricing is asked", v: "Quotes what you've approved. Never guesses" },
     { k: "Tours",                v: "Booked inline",                          logos: [<CalcomMark key="cal" size={16} />] },
     { k: "Leads",                v: "Captured and sent to your team",         logos: [<ResendMark key="r" size={16} />] },
     { k: "Hot threads",          v: "Ping your leasing team in real time",    logos: [<SlackMark key="s" size={16} />] },
@@ -155,7 +155,7 @@ function ChatPipeline() {
   const stages = [
     { num: "01", title: "Widget load",    body: "Persona, avatar, and brand color render on your domain. 5s idle triggers a branded greeting." },
     { num: "02", title: "Grounded reply", body: "Claude-powered reply, grounded in live listings and your knowledge base. Pricing is confirmed, never guessed." },
-    { num: "03", title: "Progressive capture", body: "As intent rises, the bot asks for name, email, and phone — naturally, never robotically." },
+    { num: "03", title: "Progressive capture", body: "As intent rises, the bot asks for name, email, and phone. Naturally, never robotically." },
     { num: "04", title: "CRM + handoff",  body: "A lead is created with the full transcript. Hot threads ping your leasing Slack channel for a human handoff." },
   ];
   return (
