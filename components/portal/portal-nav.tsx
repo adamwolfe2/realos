@@ -110,7 +110,10 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
   const items = NAV.filter((item) => item.show(org));
 
   return (
-    <nav aria-label="Portal" className="flex flex-wrap gap-1 border-b bg-background px-4 md:px-6">
+    <nav
+      aria-label="Portal"
+      className="flex flex-nowrap md:flex-wrap gap-1 border-b bg-background px-4 md:px-6 overflow-x-auto md:overflow-visible scrollbar-hide"
+    >
       {items.map((item) => {
         const active =
           pathname === item.href ||
@@ -120,7 +123,7 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
             key={item.href}
             href={item.href}
             className={cn(
-              "inline-flex items-center gap-2 px-3 py-2 text-xs md:text-sm border-b-2 -mb-px",
+              "inline-flex shrink-0 items-center gap-2 px-3 py-2.5 md:py-2 text-[13px] md:text-sm border-b-2 -mb-px whitespace-nowrap",
               active
                 ? "border-foreground text-foreground"
                 : "border-transparent text-muted-foreground hover:text-foreground"

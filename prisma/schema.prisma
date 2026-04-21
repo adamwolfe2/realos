@@ -1211,9 +1211,19 @@ model WebhookEvent {
   orgId            String?
   receivedAt       DateTime @default(now())
 
+  // Retry queue tracking — webhook-retry cron picks up status=failed events
+  // whose nextRetryAt is in the past.
+  status          String    @default("received") // received | processed | failed | abandoned
+  attempts        Int       @default(0)
+  lastAttemptAt   DateTime?
+  processingError String?   @db.Text
+  rawBody         String?   @db.Text // Stored only when processing fails so retries can replay
+  nextRetryAt     DateTime?
+
   @@unique([source, bodyHash])
   @@unique([source, eventFingerprint])
   @@index([source, receivedAt])
+  @@index([status, nextRetryAt])
 }
 
 // Per-tenant request to activate an integration that isn't self-serve yet.

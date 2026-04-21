@@ -40,38 +40,50 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
   }
 
   return (
-    <div
-      className="grid gap-3 overflow-x-auto pb-4"
-      style={{
-        gridTemplateColumns: `repeat(${COLUMNS.length}, minmax(220px, 1fr))`,
-      }}
-    >
-      {COLUMNS.map((col) => {
-        const list = byStatus.get(col.status) ?? [];
-        return (
-          <section key={col.status} className="min-w-0 space-y-3">
-            <header className="flex items-center justify-between">
-              <h3 className="text-[10px] tracking-widest uppercase opacity-60">
-                {col.label}
-              </h3>
-              <span className="text-[10px] bg-muted rounded px-1.5 py-0.5">
-                {list.length}
-              </span>
-            </header>
-            <div className="border-t" />
-            <div className="space-y-2">
-              {list.length === 0 ? (
-                <p className="border border-dashed rounded-md p-3 text-[11px] opacity-40 text-center">
-                  Empty
-                </p>
-              ) : (
-                list.map((item) => <LeadCard key={item.id} item={item} />)
-              )}
-            </div>
-          </section>
-        );
-      })}
-    </div>
+    <>
+      <p className="md:hidden mb-2 text-[11px] opacity-60">
+        Swipe columns →
+      </p>
+      <div
+        className="grid gap-3 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 kanban-grid"
+        style={{ gridAutoFlow: "column" }}
+      >
+        <style>{`
+          .kanban-grid { grid-template-columns: repeat(${COLUMNS.length}, 85vw); }
+          @media (min-width: 768px) {
+            .kanban-grid { grid-template-columns: repeat(${COLUMNS.length}, minmax(220px, 1fr)); }
+          }
+        `}</style>
+        {COLUMNS.map((col) => {
+          const list = byStatus.get(col.status) ?? [];
+          return (
+            <section
+              key={col.status}
+              className="min-w-0 space-y-3 snap-start md:snap-align-none"
+            >
+              <header className="flex items-center justify-between">
+                <h3 className="text-[11px] md:text-[10px] tracking-widest uppercase opacity-60">
+                  {col.label}
+                </h3>
+                <span className="text-[11px] md:text-[10px] bg-muted rounded px-1.5 py-0.5">
+                  {list.length}
+                </span>
+              </header>
+              <div className="border-t" />
+              <div className="space-y-2">
+                {list.length === 0 ? (
+                  <p className="border border-dashed rounded-md p-3 text-[11px] opacity-40 text-center">
+                    Empty
+                  </p>
+                ) : (
+                  list.map((item) => <LeadCard key={item.id} item={item} />)
+                )}
+              </div>
+            </section>
+          );
+        })}
+      </div>
+    </>
   );
 }
 
@@ -132,7 +144,7 @@ function LeadCard({ item }: { item: LeadKanbanItem }) {
           disabled={pending}
           value={status}
           onChange={(e) => move(e.target.value as LeadStatus)}
-          className="text-[11px] border rounded px-1.5 py-1 bg-background"
+          className="text-[12px] border rounded px-2 py-1.5 bg-background min-h-[36px] flex-1"
         >
           {COLUMNS.map((c) => (
             <option key={c.status} value={c.status}>

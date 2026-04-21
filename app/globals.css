@@ -171,6 +171,10 @@ body {
 ::-webkit-scrollbar-thumb { background: var(--ring-warm); border: 2px solid var(--parchment); border-radius: 999px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--stone-gray); }
 
+/* Hide scrollbar for scroll-snap nav on mobile */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
 /* ── Buttons ───────────────────────────────────────────────────────────── */
 .btn-primary {
   display: inline-flex; align-items: center; justify-content: center;

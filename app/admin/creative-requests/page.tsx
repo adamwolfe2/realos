@@ -68,14 +68,24 @@ export default async function CreativeQueue() {
         }
       />
 
+      <p className="md:hidden text-[11px] text-muted-foreground">
+        Swipe columns →
+      </p>
       <div
-        className="grid gap-3 overflow-x-auto pb-4"
-        style={{
-          gridTemplateColumns: `repeat(${COLUMNS.length}, minmax(220px, 1fr))`,
-        }}
+        className="grid gap-3 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 creative-kanban"
+        style={{ gridAutoFlow: "column" }}
       >
+        <style>{`
+          .creative-kanban { grid-template-columns: repeat(${COLUMNS.length}, 85vw); }
+          @media (min-width: 768px) {
+            .creative-kanban { grid-template-columns: repeat(${COLUMNS.length}, minmax(220px, 1fr)); }
+          }
+        `}</style>
         {columns.map((col) => (
-          <section key={col.label} className="min-w-0 flex flex-col gap-2">
+          <section
+            key={col.label}
+            className="min-w-0 flex flex-col gap-2 snap-start md:snap-align-none"
+          >
             <header className="flex items-center justify-between gap-2 px-0.5">
               <h3 className="text-[11px] font-semibold tracking-wide text-foreground">
                 {col.label}

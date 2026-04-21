@@ -78,9 +78,17 @@ export async function POST(req: NextRequest) {
   }
 
   const bodyHash = sha256(rawBody);
+  let envelope;
   try {
-    await prisma.webhookEvent.create({
-      data: { source: "cursive", bodyHash, eventType: null },
+    envelope = await prisma.webhookEvent.create({
+      data: {
+        source: "cursive",
+        bodyHash,
+        eventType: null,
+        status: "received",
+        attempts: 1,
+        lastAttemptAt: new Date(),
+      },
     });
   } catch (err) {
     if (isUniqueConstraintError(err)) {
@@ -95,8 +103,30 @@ export async function POST(req: NextRequest) {
     skipped?: string;
   }> = [];
 
-  for (const ev of events) {
-    results.push(await processEvent(ev));
+  try {
+    for (const ev of events) {
+      results.push(await processEvent(ev));
+    }
+    await prisma.webhookEvent.update({
+      where: { id: envelope.id },
+      data: { status: "processed" },
+    });
+  } catch (err) {
+    // Mark for retry by webhook-retry cron. Store rawBody so retry can replay.
+    await prisma.webhookEvent.update({
+      where: { id: envelope.id },
+      data: {
+        status: "failed",
+        processingError:
+          err instanceof Error ? err.message.slice(0, 2000) : String(err),
+        rawBody,
+        nextRetryAt: new Date(Date.now() + 60_000), // 1 min initial backoff
+      },
+    });
+    return NextResponse.json(
+      { ok: false, error: "Processing failed, queued for retry." },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({

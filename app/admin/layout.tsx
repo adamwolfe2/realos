@@ -93,7 +93,7 @@ export default async function AdminLayout({
       </a>
 
       {/* Mobile top header */}
-      <div className="lg:hidden flex items-center justify-between h-14 px-4 bg-card border-b border-border sticky top-0 z-40">
+      <div className="md:hidden flex items-center justify-between h-14 px-4 bg-card border-b border-border sticky top-0 z-40">
         <div className="flex items-center gap-3">
           <AdminMobileNav navBadges={navBadges} />
           <span className="text-base font-bold tracking-tight text-foreground">
@@ -106,13 +106,13 @@ export default async function AdminLayout({
         </div>
       </div>
 
-      <div className="flex h-[calc(100dvh-3.5rem)] lg:h-screen overflow-hidden">
+      <div className="flex h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden">
         <AdminSidebar navBadges={navBadges} />
         <main
           id="main-content"
           className="flex-1 overflow-y-auto bg-background"
         >
-          <div className="p-4 pb-20 lg:p-6 lg:pb-8 xl:p-8">{children}</div>
+          <div className="p-4 pb-20 md:p-5 md:pb-8 lg:p-6 xl:p-8">{children}</div>
         </main>
       </div>
     </div>
