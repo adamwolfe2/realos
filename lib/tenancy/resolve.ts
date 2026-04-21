@@ -22,6 +22,12 @@ export type TenantContext = {
 // ---------------------------------------------------------------------------
 
 function getPlatformDomain(): string {
+  // PLATFORM_DOMAIN (no NEXT_PUBLIC_ prefix) is evaluated at runtime in the
+  // edge middleware, not inlined at build time. Prefer it so domain changes
+  // take effect on next request without a forced recompile.
+  const runtime = process.env.PLATFORM_DOMAIN;
+  if (runtime) return normalizeHost(runtime);
+
   const explicit = process.env.NEXT_PUBLIC_PLATFORM_DOMAIN;
   if (explicit) return normalizeHost(explicit);
 
