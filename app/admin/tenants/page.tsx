@@ -48,7 +48,8 @@ export default async function TenantsPage() {
       </div>
 
       <div className="rounded-lg border border-border bg-card overflow-hidden">
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[720px]">
           <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
             <tr>
               <th className="px-4 py-3 text-left font-medium">Tenant</th>
@@ -112,6 +113,7 @@ export default async function TenantsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );
