@@ -2,8 +2,9 @@
 
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
-import { generateReportSnapshot, type ReportKind } from "@/lib/reports/generate";
+import { generateReportSnapshot, type ReportKind, type ReportSnapshot } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
+import { sendReportEmail } from "@/lib/email/send-report";
 import { revalidatePath } from "next/cache";
 
 // ---------------------------------------------------------------------------
@@ -75,4 +76,92 @@ export async function archiveReport(id: string): Promise<void> {
     data: { status: "archived" },
   });
   revalidatePath("/portal/reports");
+}
+
+// ---------------------------------------------------------------------------
+// Email delivery. Operator-initiated only (no cron auto-send). Uses Resend
+// when configured; otherwise returns the rendered preview so the operator
+// can still copy the HTML into their own client before the sending domain
+// lands.
+// ---------------------------------------------------------------------------
+
+export async function sendReportToRecipients(
+  id: string,
+  input: {
+    to: string[];
+    recipientName?: string | null;
+    replyTo?: string | null;
+  },
+): Promise<{
+  ok: boolean;
+  messageId?: string;
+  error?: string;
+  skipped?: "no_resend_key";
+  previewSubject?: string;
+}> {
+  const scope = await requireScope();
+
+  const recipients = (input.to ?? [])
+    .map((r) => r.trim())
+    .filter((r) => r.includes("@"));
+  if (recipients.length === 0) {
+    throw new Error("At least one valid recipient email is required");
+  }
+
+  const report = await prisma.clientReport.findFirst({
+    where: { id, orgId: scope.orgId },
+    select: {
+      id: true,
+      kind: true,
+      snapshot: true,
+      shareToken: true,
+      headline: true,
+      notes: true,
+      status: true,
+      org: {
+        select: { id: true, name: true, logoUrl: true },
+      },
+    },
+  });
+  if (!report) throw new Error("Report not found");
+
+  const sender = await prisma.user.findUnique({
+    where: { id: scope.userId },
+    select: { firstName: true, lastName: true, email: true },
+  });
+
+  const senderName =
+    [sender?.firstName, sender?.lastName].filter(Boolean).join(" ").trim() || undefined;
+
+  const result = await sendReportEmail({
+    to: recipients,
+    orgName: report.org.name,
+    orgLogoUrl: report.org.logoUrl,
+    snapshot: report.snapshot as unknown as ReportSnapshot,
+    shareToken: report.shareToken,
+    headline: report.headline,
+    notes: report.notes,
+    recipientName: input.recipientName ?? null,
+    senderName,
+    replyTo: input.replyTo ?? sender?.email ?? null,
+  });
+
+  if (result.ok) {
+    // First successful send flips draft to shared so the public link works.
+    if (report.status === "draft") {
+      await prisma.clientReport.update({
+        where: { id },
+        data: { status: "shared", sharedAt: new Date() },
+      });
+    }
+    revalidatePath(`/portal/reports/${id}`);
+  }
+
+  return {
+    ok: result.ok,
+    messageId: result.messageId,
+    error: result.error,
+    skipped: result.skipped,
+    previewSubject: result.previewSubject,
+  };
 }

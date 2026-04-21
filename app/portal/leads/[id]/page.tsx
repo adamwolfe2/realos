@@ -24,6 +24,7 @@ import { Timeline } from "@/components/portal/leads/timeline";
 import { buildTimeline } from "@/components/portal/leads/timeline-events";
 import { EnrichmentCard, SidebarCard } from "@/components/portal/leads/enrichment-card";
 import { CopyButton } from "@/components/portal/leads/copy-button";
+import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 
 export const metadata: Metadata = { title: "Lead detail" };
 export const dynamic = "force-dynamic";
@@ -75,6 +76,37 @@ export default async function LeadDetailPage({
     orderBy: { createdAt: "desc" },
     take: 30,
   });
+
+  // Insights flagged for this specific lead (pipeline_stall, hot_visitor, etc.)
+  // Also include org-wide insights with no entity binding that are still open,
+  // but only if they could be the reason we're on this page (capped to 3).
+  const leadInsights = await prisma.insight.findMany({
+    where: {
+      orgId: scope.orgId,
+      entityType: "lead",
+      entityId: lead.id,
+      status: { in: ["open", "acknowledged"] },
+    },
+    orderBy: [{ severity: "desc" }, { createdAt: "desc" }],
+    select: {
+      id: true,
+      kind: true,
+      category: true,
+      severity: true,
+      status: true,
+      title: true,
+      body: true,
+      suggestedAction: true,
+      href: true,
+      context: true,
+      createdAt: true,
+      property: { select: { id: true, name: true } },
+    },
+  });
+  const leadInsightCards: InsightCardData[] = leadInsights.map((i) => ({
+    ...i,
+    context: (i.context as Record<string, unknown>) ?? null,
+  }));
 
   const displayName =
     [lead.firstName, lead.lastName].filter(Boolean).join(" ") ||
@@ -312,6 +344,16 @@ export default async function LeadDetailPage({
 
         {/* Sidebar */}
         <aside className="space-y-4">
+          {leadInsightCards.length > 0 ? (
+            <SidebarCard label="Signals">
+              <div className="space-y-2">
+                {leadInsightCards.map((insight) => (
+                  <InsightCard key={insight.id} insight={insight} dense />
+                ))}
+              </div>
+            </SidebarCard>
+          ) : null}
+
           <EnrichmentCard visitor={lead.visitor} />
 
           <SidebarCard label="Preferences">

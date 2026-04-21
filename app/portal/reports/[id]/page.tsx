@@ -6,6 +6,7 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { getSiteUrl } from "@/lib/brand";
 import { ReportView } from "@/components/portal/reports/report-view";
 import { ReportEditorControls } from "@/components/portal/reports/report-editor-controls";
+import { SendEmailPanel } from "@/components/portal/reports/send-email-panel";
 import { PrintButton } from "@/components/portal/reports/print-button";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 
@@ -35,7 +36,12 @@ export default async function ReportDetailPage({
       lastViewedAt: true,
       generatedAt: true,
       org: {
-        select: { name: true, logoUrl: true },
+        select: {
+          name: true,
+          logoUrl: true,
+          primaryContactEmail: true,
+          primaryContactName: true,
+        },
       },
     },
   });
@@ -101,6 +107,15 @@ export default async function ReportDetailPage({
         status={status}
         shareUrl={shareUrl}
       />
+
+      {status !== "archived" ? (
+        <SendEmailPanel
+          reportId={report.id}
+          defaultRecipient={report.org?.primaryContactEmail ?? null}
+          defaultRecipientName={report.org?.primaryContactName ?? null}
+          canSend={(report.headline?.length ?? 0) > 0 || (report.notes?.length ?? 0) > 0}
+        />
+      ) : null}
 
       {status === "shared" && report.viewCount > 0 ? (
         <div

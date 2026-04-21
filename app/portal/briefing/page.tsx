@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, Building2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
@@ -19,13 +21,34 @@ import { getRecentInsightsForBriefing } from "@/lib/insights/queries";
 export const metadata: Metadata = { title: "Briefing" };
 export const dynamic = "force-dynamic";
 
-export default async function BriefingPage() {
+export default async function BriefingPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ property?: string }>;
+}) {
   const scope = await requireScope();
+  const params = await searchParams;
 
   const user = await prisma.user.findUnique({
     where: { id: scope.userId },
     select: { lastBriefingViewedAt: true, firstName: true },
   });
+
+  const properties = await prisma.property.findMany({
+    where: { orgId: scope.orgId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
+
+  // Validate the requested property belongs to the tenant. Falls back silently
+  // if the param points somewhere else.
+  const activePropertyId =
+    params.property && properties.some((p) => p.id === params.property)
+      ? params.property
+      : null;
+  const activeProperty = activePropertyId
+    ? properties.find((p) => p.id === activePropertyId) ?? null
+    : null;
 
   const [
     org,
@@ -40,8 +63,8 @@ export default async function BriefingPage() {
       select: { name: true },
     }),
     getSinceLastViewed(scope.orgId, user?.lastBriefingViewedAt ?? null),
-    getCallPriorityLeads(scope.orgId, 10),
-    getTranscriptsWorthReading(scope.orgId, 6),
+    getCallPriorityLeads(scope.orgId, { limit: 10, propertyId: activePropertyId }),
+    getTranscriptsWorthReading(scope.orgId, { limit: 6, propertyId: activePropertyId }),
     getBriefingMetrics(scope.orgId),
     getRecentInsightsForBriefing(scope.orgId, user?.lastBriefingViewedAt ?? null, 8),
   ]);
@@ -67,18 +90,32 @@ export default async function BriefingPage() {
 
   return (
     <div className="space-y-5">
-      <header>
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
-          <Gauge className="h-3 w-3" />
-          {org?.name ?? "Workspace"}
+      <header className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+            <Gauge className="h-3 w-3" />
+            {org?.name ?? "Workspace"}
+            {activeProperty ? (
+              <>
+                <span className="h-0.5 w-0.5 rounded-full bg-[var(--stone-gray)]" />
+                <span className="text-[var(--terracotta)]">{activeProperty.name}</span>
+              </>
+            ) : null}
+          </div>
+          <h1 className="mt-1 text-[28px] leading-tight font-semibold tracking-tight text-[var(--near-black)]">
+            {greeting}
+          </h1>
+          <p className="text-sm text-[var(--olive-gray)] mt-1 max-w-2xl">
+            Everything that moved since you last looked. Triage the call sheet,
+            read the transcripts, and act on the insights before your next client touch.
+          </p>
         </div>
-        <h1 className="mt-1 text-[28px] leading-tight font-semibold tracking-tight text-[var(--near-black)]">
-          {greeting}
-        </h1>
-        <p className="text-sm text-[var(--olive-gray)] mt-1 max-w-2xl">
-          Everything that moved since you last looked. Triage the call sheet,
-          read the transcripts, and act on the insights before your next client touch.
-        </p>
+        {properties.length > 1 ? (
+          <PropertyFilter
+            properties={properties}
+            activeId={activePropertyId}
+          />
+        ) : null}
       </header>
 
       <SinceBanner lastViewedAt={user?.lastBriefingViewedAt ?? null} delta={delta} />
@@ -176,6 +213,51 @@ export default async function BriefingPage() {
           </ol>
         </DashboardSection>
       </section>
+    </div>
+  );
+}
+
+function PropertyFilter({
+  properties,
+  activeId,
+}: {
+  properties: { id: string; name: string }[];
+  activeId: string | null;
+}) {
+  return (
+    <div className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-cream)] bg-[var(--ivory)] p-1">
+      <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)] px-2">
+        <Building2 className="h-3 w-3" />
+        Focus
+      </span>
+      <Link
+        href="/portal/briefing"
+        className={cn(
+          "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+          !activeId
+            ? "bg-[var(--near-black)] text-[var(--ivory)]"
+            : "text-[var(--olive-gray)] hover:bg-[var(--warm-sand)] hover:text-[var(--near-black)]",
+        )}
+      >
+        All
+      </Link>
+      {properties.map((p) => {
+        const active = activeId === p.id;
+        return (
+          <Link
+            key={p.id}
+            href={`/portal/briefing?property=${p.id}`}
+            className={cn(
+              "rounded-md px-2 py-1 text-[11px] font-medium transition-colors truncate max-w-[14rem]",
+              active
+                ? "bg-[var(--near-black)] text-[var(--ivory)]"
+                : "text-[var(--olive-gray)] hover:bg-[var(--warm-sand)] hover:text-[var(--near-black)]",
+            )}
+          >
+            {p.name}
+          </Link>
+        );
+      })}
     </div>
   );
 }

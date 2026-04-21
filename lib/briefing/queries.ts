@@ -40,8 +40,10 @@ export type CallPriorityLead = {
  */
 export async function getCallPriorityLeads(
   orgId: string,
-  limit = 10,
+  opts: { limit?: number; propertyId?: string | null } = {},
 ): Promise<CallPriorityLead[]> {
+  const limit = opts.limit ?? 10;
+  const propertyFilter = opts.propertyId ? { propertyId: opts.propertyId } : {};
   const now = new Date();
   const since24h = new Date(now.getTime() - DAY);
   const since48h = new Date(now.getTime() - 2 * DAY);
@@ -51,6 +53,7 @@ export async function getCallPriorityLeads(
     prisma.lead.findMany({
       where: {
         orgId,
+        ...propertyFilter,
         status: { in: [LeadStatus.NEW, LeadStatus.CONTACTED] },
         lastActivityAt: { gte: since24h },
         score: { gte: 50 },
@@ -62,6 +65,7 @@ export async function getCallPriorityLeads(
     prisma.lead.findMany({
       where: {
         orgId,
+        ...propertyFilter,
         status: { in: [LeadStatus.NEW, LeadStatus.CONTACTED] },
         lastActivityAt: { lt: since5d },
       },
@@ -72,6 +76,7 @@ export async function getCallPriorityLeads(
     prisma.lead.findMany({
       where: {
         orgId,
+        ...propertyFilter,
         createdAt: { gte: since48h },
         score: { gte: 60 },
         status: LeadStatus.NEW,
@@ -126,13 +131,19 @@ export async function getCallPriorityLeads(
     .slice(0, limit);
 }
 
-export async function getTranscriptsWorthReading(orgId: string, limit = 8) {
+export async function getTranscriptsWorthReading(
+  orgId: string,
+  opts: { limit?: number; propertyId?: string | null } = {},
+) {
+  const limit = opts.limit ?? 8;
+  const propertyFilter = opts.propertyId ? { propertyId: opts.propertyId } : {};
   const since48h = new Date(Date.now() - 2 * DAY);
 
   const [flagged, recentWithLead, recent] = await Promise.all([
     prisma.chatbotConversation.findMany({
       where: {
         orgId,
+        ...propertyFilter,
         flags: { some: { flag: { in: ["needs_prompt_tuning", "lead_high_intent", "handoff_missed"] } } },
       },
       orderBy: { lastMessageAt: "desc" },
@@ -142,6 +153,7 @@ export async function getTranscriptsWorthReading(orgId: string, limit = 8) {
     prisma.chatbotConversation.findMany({
       where: {
         orgId,
+        ...propertyFilter,
         lastMessageAt: { gte: since48h },
         capturedEmail: { not: null },
       },
@@ -150,7 +162,12 @@ export async function getTranscriptsWorthReading(orgId: string, limit = 8) {
       select: conversationSelect,
     }),
     prisma.chatbotConversation.findMany({
-      where: { orgId, lastMessageAt: { gte: since48h }, messageCount: { gte: 4 } },
+      where: {
+        orgId,
+        ...propertyFilter,
+        lastMessageAt: { gte: since48h },
+        messageCount: { gte: 4 },
+      },
       orderBy: { messageCount: "desc" },
       take: limit,
       select: conversationSelect,
