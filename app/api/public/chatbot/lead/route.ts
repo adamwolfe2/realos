@@ -14,6 +14,7 @@ import {
   getIp,
 } from "@/lib/rate-limit";
 import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
+import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
 
 // POST /api/public/chatbot/lead
 //
@@ -186,10 +187,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Fire-and-forget notification. Never block the response.
+    // Fire-and-forget notifications. Never block the response.
     void notifyLeadCaptured({ orgId, leadId }).catch((err) => {
       console.warn("[public/chatbot/lead] notify error:", err);
     });
+
+    void notifyChatbotLeadCaptured({
+      id: sessionId,
+      orgId,
+      capturedName: last ? `${first} ${last}` : first,
+      capturedEmail: email,
+      leadId,
+    }).catch(() => {});
 
     return NextResponse.json(
       { sessionId, leadId },

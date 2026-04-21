@@ -17,6 +17,7 @@ import {
   Settings,
   Compass,
   TrendingUp,
+  Bell,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -101,6 +102,7 @@ const NAV: NavItem[] = [
     icon: TrendingUp,
     show: (o) => o.moduleSEO,
   },
+  { href: "/portal/notifications", label: "Notifications", icon: Bell, show: ALWAYS },
   { href: "/portal/billing", label: "Billing", icon: CreditCard, show: ALWAYS },
   { href: "/portal/settings", label: "Settings", icon: Settings, show: ALWAYS },
 ];

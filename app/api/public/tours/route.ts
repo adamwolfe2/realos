@@ -12,6 +12,7 @@ import {
   TourStatus,
   Prisma,
 } from "@prisma/client";
+import { notifyTourScheduled } from "@/lib/notifications/create";
 
 const schema = z.object({
   orgId: z.string().min(1),
@@ -109,6 +110,16 @@ export async function POST(req: NextRequest) {
       notes: data.notes ?? null,
     },
   });
+
+  const leadName = [data.firstName, data.lastName].filter(Boolean).join(" ") || data.email;
+  void notifyTourScheduled({
+    id: tour.id,
+    leadId: lead.id,
+    orgId: data.orgId,
+    scheduledAt: tour.scheduledAt,
+    tourType: tour.tourType,
+    leadName,
+  }).catch(() => {});
 
   return NextResponse.json(
     { ok: true, leadId: lead.id, tourId: tour.id },

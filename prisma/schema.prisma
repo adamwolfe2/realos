@@ -339,6 +339,7 @@ model Organization {
   visitorSessions      VisitorSession[]
   visitorEvents        VisitorEvent[]
   chatbotEngagements   ChatbotEngagement[]
+  notifications        Notification[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -370,7 +371,8 @@ model User {
   updatedAt   DateTime  @updatedAt
 
   auditEvents   AuditEvent[]
-  tasksAssigned ProjectTask[] @relation("TaskAssignee")
+  tasksAssigned ProjectTask[]  @relation("TaskAssignee")
+  notifications Notification[]
 
   @@index([orgId])
   @@index([role])
@@ -1555,4 +1557,43 @@ model CronRun {
   @@index([jobName, startedAt])
   @@index([startedAt])
   @@index([status])
+}
+
+// ============================================================================
+// NOTIFICATIONS
+// ----------------------------------------------------------------------------
+// In-app notification inbox for operators. Rows are created by server helpers
+// when interesting events occur (new lead, tour scheduled, chatbot lead, etc.).
+// The portal header bell polls /api/portal/notifications/unread-count every
+// 30 s and the /portal/notifications page lists all rows for the org.
+// ============================================================================
+
+model Notification {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Optional: target a specific user. Null = org-wide (visible to all members).
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Event classification
+  kind String // lead_created | tour_scheduled | chatbot_lead | integration_error | sync_complete
+
+  // Display
+  title      String
+  body       String? @db.Text
+
+  // Optional link back to the source entity
+  entityType String?
+  entityId   String?
+  href       String? // /portal/leads/<id> etc.
+
+  // Read state
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([orgId, readAt])
+  @@index([orgId, createdAt(sort: Desc)])
+  @@index([orgId, kind])
 }

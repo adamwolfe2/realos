@@ -7,6 +7,7 @@ import { prisma } from "@/lib/db";
 import { BRAND_NAME } from "@/lib/brand";
 import { PortalNav } from "@/components/portal/portal-nav";
 import { deriveSetupProgress } from "@/lib/setup/derive-progress";
+import { NotificationBell } from "@/components/portal/notification-bell";
 
 export const metadata: Metadata = {
   title: { template: `%s | ${BRAND_NAME} Portal`, default: `${BRAND_NAME} Portal` },
@@ -119,7 +120,10 @@ export default async function PortalLayout({
             {org.name}
           </span>
         </Link>
-        <UserButton />
+        <div className="flex items-center gap-2">
+          <NotificationBell />
+          <UserButton />
+        </div>
       </header>
 
       <PortalNav org={navOrg} />

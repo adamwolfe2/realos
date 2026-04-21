@@ -16,6 +16,7 @@ import {
   notifyTenantOfLeadEmail,
 } from "@/lib/email/lead-emails";
 import { notifyNewIntake as notifyNewLeadSlack } from "@/lib/integrations/slack";
+import { notifyLeadCreated } from "@/lib/notifications/create";
 
 const schema = z.object({
   orgId: z.string().min(1),
@@ -129,6 +130,8 @@ export async function POST(req: NextRequest) {
   // Fire-and-forget side effects.
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
   const moduleCount = 1;
+
+  void notifyLeadCreated(lead).catch(() => {});
 
   void Promise.allSettled([
     notifyNewLeadSlack({
