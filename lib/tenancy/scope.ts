@@ -1,5 +1,5 @@
 import "server-only";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { OrgType, UserRole, Prisma } from "@prisma/client";
 
@@ -48,11 +48,24 @@ export async function getScope(): Promise<ScopedContext | null> {
   const actualOrgType = user.org.orgType;
   const isAgency = actualOrgType === OrgType.AGENCY;
 
-  // Impersonation is expressed as `publicMetadata.impersonateOrgId`. Clerk
-  // surfaces publicMetadata on sessionClaims.publicMetadata by default.
-  const publicMetadata =
+  // Impersonation is expressed as `publicMetadata.impersonateOrgId`. The
+  // default Clerk JWT does NOT include publicMetadata in sessionClaims, so we
+  // try sessionClaims first (cheap), then fall back to a server-side fetch
+  // via clerkClient (one extra request, always fresh). The fallback is what
+  // makes impersonation actually work without a custom JWT template.
+  let publicMetadata =
     (sessionClaims?.publicMetadata as Record<string, unknown> | undefined) ??
     {};
+  if (isAgency && !publicMetadata.impersonateOrgId) {
+    try {
+      const client = await clerkClient();
+      const fresh = await client.users.getUser(clerkUserId);
+      publicMetadata = fresh.publicMetadata ?? {};
+    } catch {
+      // Network failure shouldn't block scope resolution; fall through with
+      // whatever we had from sessionClaims.
+    }
+  }
   const impersonateOrgId =
     isAgency && typeof publicMetadata.impersonateOrgId === "string"
       ? (publicMetadata.impersonateOrgId as string)

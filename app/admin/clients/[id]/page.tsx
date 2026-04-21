@@ -6,6 +6,8 @@ import { prisma } from "@/lib/db";
 import { OrgType } from "@prisma/client";
 import { ImpersonateButton } from "./impersonate-button";
 import { ProvisionPixelButton } from "./provision-pixel-button";
+import { ModuleToggle } from "./module-toggle";
+import type { ToggleableModule } from "@/lib/actions/admin-modules";
 import { StatCard } from "@/components/admin/stat-card";
 import { StatusBadge, ToggleIndicator } from "@/components/admin/status-badge";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
@@ -70,18 +72,18 @@ export default async function ClientDetail({
   });
   if (!org || org.orgType !== OrgType.CLIENT) notFound();
 
-  const moduleRows: Array<[string, boolean]> = [
-    ["Website", org.moduleWebsite],
-    ["Lead capture", org.moduleLeadCapture],
-    ["Visitor pixel", org.modulePixel],
-    ["AI chatbot", org.moduleChatbot],
-    ["Google Ads", org.moduleGoogleAds],
-    ["Meta Ads", org.moduleMetaAds],
-    ["SEO", org.moduleSEO],
-    ["Email nurture", org.moduleEmail],
-    ["Outbound email", org.moduleOutboundEmail],
-    ["Referrals", org.moduleReferrals],
-    ["Creative studio", org.moduleCreativeStudio],
+  const moduleRows: Array<[ToggleableModule, string, boolean]> = [
+    ["moduleWebsite", "Website", org.moduleWebsite],
+    ["moduleLeadCapture", "Lead capture", org.moduleLeadCapture],
+    ["modulePixel", "Visitor pixel", org.modulePixel],
+    ["moduleChatbot", "AI chatbot", org.moduleChatbot],
+    ["moduleGoogleAds", "Google Ads", org.moduleGoogleAds],
+    ["moduleMetaAds", "Meta Ads", org.moduleMetaAds],
+    ["moduleSEO", "SEO", org.moduleSEO],
+    ["moduleEmail", "Email nurture", org.moduleEmail],
+    ["moduleOutboundEmail", "Outbound email", org.moduleOutboundEmail],
+    ["moduleReferrals", "Referrals", org.moduleReferrals],
+    ["moduleCreativeStudio", "Creative studio", org.moduleCreativeStudio],
   ];
 
   const recentLeads = await prisma.lead.findMany({
@@ -168,16 +170,19 @@ export default async function ClientDetail({
       </section>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        <SectionCard label="Modules">
+        <SectionCard
+          label="Modules"
+          description="Toggles save instantly and are mirrored to the audit log."
+        >
           <ul className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-6">
-            {moduleRows.map(([k, v]) => (
-              <li
-                key={k}
-                className="flex items-center justify-between gap-3 py-1 text-sm"
-              >
-                <span className="text-foreground">{k}</span>
-                <ToggleIndicator on={v} />
-              </li>
+            {moduleRows.map(([key, label, enabled]) => (
+              <ModuleToggle
+                key={key}
+                orgId={org.id}
+                module={key}
+                label={label}
+                initialEnabled={enabled}
+              />
             ))}
           </ul>
         </SectionCard>
