@@ -20,7 +20,7 @@ export const trafficDropDetector: Detector = {
     const since7d = new Date(now - 7 * DAY);
     const since14d = new Date(now - 14 * DAY);
 
-    const [current, previous] = await Promise.all([
+    const [current, previous, daily] = await Promise.all([
       prisma.seoSnapshot.aggregate({
         where: { orgId, date: { gte: since7d } },
         _sum: { organicSessions: true, totalClicks: true },
@@ -28,6 +28,11 @@ export const trafficDropDetector: Detector = {
       prisma.seoSnapshot.aggregate({
         where: { orgId, date: { gte: since14d, lt: since7d } },
         _sum: { organicSessions: true, totalClicks: true },
+      }),
+      prisma.seoSnapshot.findMany({
+        where: { orgId, date: { gte: since14d } },
+        orderBy: { date: "asc" },
+        select: { date: true, organicSessions: true },
       }),
     ]);
 
@@ -59,6 +64,7 @@ export const trafficDropDetector: Detector = {
           previousSessions: prevSessions,
           deltaPct: Math.round(deltaPct * 10) / 10,
           periodDays: 7,
+          sparkline: daily.map((d) => d.organicSessions),
         },
       },
     ];

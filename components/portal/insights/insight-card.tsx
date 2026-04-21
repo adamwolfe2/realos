@@ -94,6 +94,15 @@ export function InsightCard({
         </p>
       ) : null}
 
+      {hasSparkline(insight.context) ? (
+        <div className="mt-3">
+          <InsightSparkline
+            data={(insight.context as { sparkline: number[] }).sparkline}
+            severity={insight.severity}
+          />
+        </div>
+      ) : null}
+
       {insight.suggestedAction && !dense ? (
         <p className="mt-2 rounded-lg border border-[var(--border-cream)] bg-[var(--parchment)] px-3 py-2 text-[12px] leading-relaxed text-[var(--olive-gray)]">
           <span className="font-semibold text-[var(--near-black)]">Suggested. </span>
@@ -166,6 +175,66 @@ function ActionBtn({
       <Icon className="h-3 w-3" />
       <span className="hidden sm:inline">{label}</span>
     </button>
+  );
+}
+
+function hasSparkline(context: Record<string, unknown> | null | undefined): boolean {
+  if (!context) return false;
+  const s = context.sparkline;
+  return Array.isArray(s) && s.length > 1 && s.every((n) => typeof n === "number");
+}
+
+function InsightSparkline({
+  data,
+  severity,
+}: {
+  data: number[];
+  severity: string;
+}) {
+  const stroke =
+    severity === "critical" ? "#b91c1c" : severity === "warning" ? "#b45309" : "var(--terracotta)";
+  const fill =
+    severity === "critical"
+      ? "rgba(185, 28, 28, 0.08)"
+      : severity === "warning"
+        ? "rgba(180, 83, 9, 0.08)"
+        : "rgba(37, 99, 235, 0.08)";
+
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const w = 200;
+  const h = 36;
+  const stepX = w / (data.length - 1);
+  const points = data
+    .map((v, i) => {
+      const x = i * stepX;
+      const y = h - ((v - min) / range) * (h - 4) - 2;
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(" ");
+
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      className="w-full h-9 overflow-visible"
+      aria-hidden="true"
+    >
+      <path
+        d={`M0,${h} L${points.split(" ").join(" L")} L${w},${h} Z`}
+        fill={fill}
+      />
+      <polyline
+        points={points}
+        fill="none"
+        stroke={stroke}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
   );
 }
 

@@ -99,3 +99,60 @@ export async function notifyIntegrationError(
     },
   });
 }
+
+/**
+ * Fire a notification when a critical insight is detected. Dedupe-safe via
+ * entityId + kind so the detector can re-run without stacking notifications.
+ */
+export async function notifyCriticalInsight(insight: {
+  id: string;
+  orgId: string;
+  title: string;
+  body: string;
+  href?: string | null;
+}): Promise<void> {
+  const existing = await prisma.notification.findFirst({
+    where: {
+      orgId: insight.orgId,
+      kind: "critical_insight",
+      entityId: insight.id,
+    },
+    select: { id: true },
+  });
+  if (existing) return;
+
+  await prisma.notification.create({
+    data: {
+      orgId: insight.orgId,
+      kind: "critical_insight",
+      title: insight.title,
+      body: insight.body.slice(0, 300),
+      entityType: "Insight",
+      entityId: insight.id,
+      href: insight.href ?? "/portal/insights",
+    },
+  });
+}
+
+/**
+ * Fire a notification when a draft weekly report is generated on Monday and
+ * is waiting for operator review. Keeps the white-glove loop intact.
+ */
+export async function notifyReportDraftReady(
+  orgId: string,
+  reportId: string,
+  kind: "weekly" | "monthly",
+): Promise<void> {
+  const label = kind === "weekly" ? "Weekly" : "Monthly";
+  await prisma.notification.create({
+    data: {
+      orgId,
+      kind: "report_draft_ready",
+      title: `${label} report draft is ready to review`,
+      body: `Add your headline and personal note, then send or share the link with your client.`,
+      entityType: "ClientReport",
+      entityId: reportId,
+      href: `/portal/reports/${reportId}`,
+    },
+  });
+}

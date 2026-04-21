@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { notifyCriticalInsight } from "@/lib/notifications/create";
 import type { DetectedInsight } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -24,7 +25,7 @@ export async function upsertInsights(
     });
 
     if (!existing) {
-      await prisma.insight.create({
+      const created = await prisma.insight.create({
         data: {
           orgId,
           propertyId: d.propertyId ?? null,
@@ -40,8 +41,23 @@ export async function upsertInsights(
           context: (d.context as object) ?? undefined,
           dedupeKey: d.dedupeKey,
         },
+        select: { id: true },
       });
       inserted += 1;
+
+      // Fire a notification for new critical insights so the bell lights up.
+      // Dedupe handled inside notifyCriticalInsight via entityId match.
+      if (d.severity === "critical") {
+        notifyCriticalInsight({
+          id: created.id,
+          orgId,
+          title: d.title,
+          body: d.body,
+          href: d.href ?? null,
+        }).catch(() => {
+          // fire-and-forget: we don't want notification failures to break detection
+        });
+      }
     } else if (existing.status === "open" || existing.status === "acknowledged") {
       await prisma.insight.update({
         where: { id: existing.id },
