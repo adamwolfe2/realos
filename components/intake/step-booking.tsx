@@ -12,6 +12,18 @@ import type {
   Step4Data,
 } from "./types";
 
+// ---------------------------------------------------------------------------
+// Step 4 validation: ToS must be accepted before submission.
+// ---------------------------------------------------------------------------
+
+export function validateStep4(data: Step4Data): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (!data.tosAccepted) {
+    errors.tosAccepted = "You must agree to the terms to continue";
+  }
+  return errors;
+}
+
 export function StepBooking({
   step1,
   step2,
@@ -19,6 +31,7 @@ export function StepBooking({
   step4,
   onChange,
   submitted,
+  attempted,
 }: {
   step1: Step1Data;
   step2: Step2Data;
@@ -26,10 +39,12 @@ export function StepBooking({
   step4: Step4Data;
   onChange: (patch: Partial<Step4Data>) => void;
   submitted: boolean;
+  attempted: boolean;
 }) {
   const selectedLabels = MODULE_CATALOG.filter((m) => step3.modules[m.key]).map(
     (m) => m.label
   );
+  const errors = attempted ? validateStep4(step4) : {};
 
   return (
     <div className="space-y-8">
@@ -37,7 +52,7 @@ export function StepBooking({
         <p className="text-xs tracking-widest uppercase opacity-60 mb-4">
           Your account at a glance
         </p>
-        <dl className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+        <dl className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
           <Item label="Company" value={step1.companyName || "—"} />
           <Item label="Property type" value={step1.propertyType || "—"} />
           <Item
@@ -81,7 +96,7 @@ export function StepBooking({
         <p className="text-xs tracking-widest uppercase opacity-60 mb-2">
           When do you want to go live?
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {GO_LIVE_TARGETS.map((t) => (
             <OptionButton
               key={t.key}
@@ -104,7 +119,7 @@ export function StepBooking({
             "Walk through your portfolio and current marketing stack.",
             "Identify the highest-leverage modules for your property type.",
             "Confirm domain, brand assets, and launch timeline.",
-            "Share a proposal with retainer + setup pricing within 24 hours.",
+            "Share a proposal with retainer and setup pricing within 24 hours.",
           ].map((item, i) => (
             <div key={i} className="flex items-start gap-3">
               <CheckCircle2
@@ -115,6 +130,43 @@ export function StepBooking({
             </div>
           ))}
         </div>
+      </div>
+
+      {/* ToS checkbox */}
+      <div>
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={step4.tosAccepted}
+            onChange={(e) => onChange({ tosAccepted: e.target.checked })}
+            className="mt-0.5 h-4 w-4 shrink-0 rounded border border-input accent-foreground"
+            aria-invalid={!!errors.tosAccepted}
+          />
+          <span className="text-xs leading-relaxed opacity-80">
+            I agree to the{" "}
+            <a
+              href="/terms"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2"
+            >
+              Terms of Service
+            </a>{" "}
+            and{" "}
+            <a
+              href="/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-2"
+            >
+              Privacy Policy
+            </a>
+            .
+          </span>
+        </label>
+        {errors.tosAccepted ? (
+          <p className="text-[11px] text-destructive mt-1.5 ml-7">{errors.tosAccepted}</p>
+        ) : null}
       </div>
 
       <div>

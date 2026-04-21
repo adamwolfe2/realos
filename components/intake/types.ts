@@ -72,6 +72,7 @@ export type Step3Data = {
 
 export type Step4Data = {
   goLiveTarget: GoLiveTarget | "";
+  tosAccepted: boolean;
   bookedCallAt?: string;
   calBookingId?: string;
 };

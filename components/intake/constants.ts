@@ -203,6 +203,7 @@ export const STEP3_DEFAULT: Step3Data = {
 
 export const STEP4_DEFAULT: Step4Data = {
   goLiveTarget: "",
+  tosAccepted: false,
 };
 
 export const INTAKE_DEFAULT: IntakeFormState = {

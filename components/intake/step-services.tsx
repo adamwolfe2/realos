@@ -4,12 +4,27 @@ import { Switch } from "@/components/ui/switch";
 import { MODULE_CATALOG } from "./constants";
 import type { IntakeModules, Step3Data } from "./types";
 
+// ---------------------------------------------------------------------------
+// Step 3 validation: at least one module must be selected.
+// ---------------------------------------------------------------------------
+
+export function validateStep3(data: Step3Data): Record<string, string> {
+  const errors: Record<string, string> = {};
+  const hasAny = Object.values(data.modules).some(Boolean);
+  if (!hasAny) {
+    errors.modules = "Select at least one service to continue";
+  }
+  return errors;
+}
+
 export function StepServices({
   data,
   onChange,
+  attempted,
 }: {
   data: Step3Data;
   onChange: (patch: Partial<Step3Data>) => void;
+  attempted: boolean;
 }) {
   const toggle = (key: keyof IntakeModules) =>
     onChange({
@@ -17,6 +32,7 @@ export function StepServices({
     });
 
   const selectedCount = Object.values(data.modules).filter(Boolean).length;
+  const errors = attempted ? validateStep3(data) : {};
 
   return (
     <div className="space-y-4">
@@ -26,6 +42,10 @@ export function StepServices({
         </p>
         <p className="text-xs opacity-70">Pricing finalized on the call.</p>
       </div>
+
+      {errors.modules ? (
+        <p className="text-[11px] text-destructive">{errors.modules}</p>
+      ) : null}
 
       <div className="space-y-3">
         {MODULE_CATALOG.map((m) => {

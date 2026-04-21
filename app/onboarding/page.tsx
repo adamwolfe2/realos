@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 
 export default function OnboardingPage() {
   return (
-    <main className="max-w-3xl mx-auto px-4 py-12">
+    <main className="max-w-3xl mx-auto px-4 py-12 pb-28 sm:pb-12">
       <header className="mb-8">
         <p className="text-xs tracking-widest uppercase opacity-60 mb-3">
           Intake

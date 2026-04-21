@@ -5,13 +5,29 @@ import { OptionButton } from "./option-button";
 import { BACKEND_PLATFORMS, PAIN_POINTS } from "./constants";
 import type { BackendPlatformKey, Step2Data } from "./types";
 
+// ---------------------------------------------------------------------------
+// Step 2 validation: pain point must be selected.
+// ---------------------------------------------------------------------------
+
+export function validateStep2(data: Step2Data): Record<string, string> {
+  const errors: Record<string, string> = {};
+  if (!data.biggestPainPoint) {
+    errors.biggestPainPoint = "Select your biggest pain point to continue";
+  }
+  return errors;
+}
+
 export function StepPortfolio({
   data,
   onChange,
+  attempted,
 }: {
   data: Step2Data;
   onChange: (patch: Partial<Step2Data>) => void;
+  attempted: boolean;
 }) {
+  const errors = attempted ? validateStep2(data) : {};
+
   return (
     <div className="space-y-6">
       <IntakeField
@@ -29,7 +45,7 @@ export function StepPortfolio({
         <p className="text-xs tracking-widest uppercase opacity-70 mb-2">
           Current backend platform
         </p>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
           {BACKEND_PLATFORMS.map((b) => (
             <OptionButton
               key={b.key}
@@ -56,7 +72,7 @@ export function StepPortfolio({
         />
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <IntakeField
           label="Current marketing vendor"
           value={data.currentVendor}
@@ -78,8 +94,9 @@ export function StepPortfolio({
       <div>
         <p className="text-xs tracking-widest uppercase opacity-70 mb-2">
           Biggest pain point right now
+          <span aria-hidden="true" className="ml-0.5">*</span>
         </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {PAIN_POINTS.map((p) => (
             <OptionButton
               key={p}
@@ -91,6 +108,9 @@ export function StepPortfolio({
             </OptionButton>
           ))}
         </div>
+        {errors.biggestPainPoint ? (
+          <p className="text-[11px] text-destructive mt-1.5">{errors.biggestPainPoint}</p>
+        ) : null}
       </div>
     </div>
   );
