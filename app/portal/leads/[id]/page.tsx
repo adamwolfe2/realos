@@ -25,6 +25,7 @@ import { buildTimeline } from "@/components/portal/leads/timeline-events";
 import { EnrichmentCard, SidebarCard } from "@/components/portal/leads/enrichment-card";
 import { CopyButton } from "@/components/portal/leads/copy-button";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
+import { MarkLostButton } from "./mark-lost-button";
 
 export const metadata: Metadata = { title: "Lead detail" };
 export const dynamic = "force-dynamic";
@@ -410,17 +411,7 @@ export default async function LeadDetailPage({
                 label="Call"
                 icon={<Phone className="h-3.5 w-3.5" />}
               />
-              <button
-                type="button"
-                title="Coming soon"
-                className={cn(
-                  "w-full text-left rounded-[10px] px-3 py-2 text-xs font-medium",
-                  "text-[var(--error)] bg-[var(--parchment)] ring-1 ring-[var(--border-cream)]",
-                  "opacity-60 cursor-not-allowed"
-                )}
-              >
-                Mark as lost
-              </button>
+              <MarkLostButton leadId={lead.id} />
             </div>
           </SidebarCard>
         </aside>
