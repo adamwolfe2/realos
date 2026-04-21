@@ -71,9 +71,21 @@ async function main() {
   const leads = await prisma.lead.deleteMany({
     where: scope,
   });
+  const visitorEvents = await prisma.visitorEvent.deleteMany({
+    where: scope,
+  });
+  const visitorSessions = await prisma.visitorSession.deleteMany({
+    where: scope,
+  });
   const visitors = await prisma.visitor.deleteMany({
     where: scope,
   });
+  const seoQueries = await prisma.seoQuery.deleteMany({ where: scope });
+  const seoPages = await prisma.seoLandingPage.deleteMany({ where: scope });
+  const seoSnapshots = await prisma.seoSnapshot.deleteMany({ where: scope });
+  const adMetrics = await prisma.adMetricDaily.deleteMany({ where: scope });
+  const adCampaigns = await prisma.adCampaign.deleteMany({ where: scope });
+  const adAccounts = await prisma.adAccount.deleteMany({ where: scope });
   const requests = await prisma.integrationRequest.deleteMany({
     where: scope,
   });
@@ -91,12 +103,20 @@ async function main() {
     `\nPurged demo data for ${org.name} (${orgSlug}):\n` +
       `  Leads:                 ${leads.count}\n` +
       `  Visitors:              ${visitors.count}\n` +
+      `  Visitor sessions:      ${visitorSessions.count}\n` +
+      `  Visitor events:        ${visitorEvents.count}\n` +
       `  Chatbot conversations: ${convos.count}\n` +
       `  Applications:          ${apps.count}\n` +
       `  Tours:                 ${tours.count}\n` +
       `  Creative requests:     ${creative.count}\n` +
       `  Listings:              ${listings.count}\n` +
       `  Client notes:          ${notes.count}\n` +
+      `  SEO snapshots:         ${seoSnapshots.count}\n` +
+      `  SEO queries:           ${seoQueries.count}\n` +
+      `  SEO landing pages:     ${seoPages.count}\n` +
+      `  Ad accounts:           ${adAccounts.count}\n` +
+      `  Ad campaigns:          ${adCampaigns.count}\n` +
+      `  Ad metrics (daily):    ${adMetrics.count}\n` +
       `  Integration requests:  ${requests.count}\n` +
       `  Audit events:          ${audits.count}\n\n` +
       `Kept: org, users, domains, tenant site config, properties.\n` +
