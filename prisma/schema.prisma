@@ -340,6 +340,9 @@ model Organization {
   visitorEvents        VisitorEvent[]
   chatbotEngagements   ChatbotEngagement[]
   notifications        Notification[]
+  insights             Insight[]
+  clientReports        ClientReport[]
+  conversationFlags    ConversationFlag[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -373,6 +376,10 @@ model User {
   auditEvents   AuditEvent[]
   tasksAssigned ProjectTask[]  @relation("TaskAssignee")
   notifications Notification[]
+
+  // Command Center: last time this operator opened the briefing view. Used to
+  // compute "what's new since you last looked" deltas on /portal/briefing.
+  lastBriefingViewedAt DateTime?
 
   @@index([orgId])
   @@index([role])
@@ -534,6 +541,7 @@ model Property {
   visitors             Visitor[]
   creativeRequests     CreativeRequest[]
   adCampaigns          AdCampaign[]
+  insights             Insight[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -934,6 +942,8 @@ model ChatbotConversation {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  flags ConversationFlag[]
 
   @@index([orgId, status])
   @@index([orgId, lastMessageAt])
@@ -1596,4 +1606,130 @@ model Notification {
   @@index([orgId, readAt])
   @@index([orgId, createdAt(sort: Desc)])
   @@index([orgId, kind])
+}
+
+// ============================================================================
+// INSIGHTS
+// ----------------------------------------------------------------------------
+// Proactively detected anomalies and opportunities. A background cron
+// (insight-detector) runs scheduled checks per org and upserts Insight rows
+// via dedupeKey so the same anomaly doesn't fire repeatedly. Operators view
+// them on /portal/insights and in the Command Center briefing.
+// ============================================================================
+
+model Insight {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  // Classification
+  kind     String // traffic_drop | traffic_spike | pipeline_stall | chatbot_pattern | cpl_spike | keyword_drop | conv_rate_drop | hot_visitor
+  severity String @default("info") // info | warning | critical
+  category String // traffic | leads | ads | seo | chatbot | occupancy
+
+  title           String
+  body            String  @db.Text
+  suggestedAction String? @db.Text
+
+  // Optional link back to the source entity
+  entityType String? // lead | property | campaign | conversation | visitor
+  entityId   String?
+  href       String? // /portal/... deep link
+
+  // Metric context for rendering (JSON):
+  // { before, after, deltaPct, periodStart, periodEnd, sampleSize, ... }
+  context Json?
+
+  // Operator workflow
+  status         String    @default("open") // open | acknowledged | dismissed | acted
+  acknowledgedAt DateTime?
+  acknowledgedBy String? // userId
+  dismissedAt    DateTime?
+  snoozeUntil    DateTime?
+
+  // Dedupe so the same anomaly doesn't fire repeatedly. Detectors compose
+  // stable keys like "traffic_drop:propertyId:week:2026-16".
+  dedupeKey String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, dedupeKey])
+  @@index([orgId, status, severity])
+  @@index([orgId, createdAt(sort: Desc)])
+  @@index([orgId, category, status])
+  @@index([propertyId])
+}
+
+// ============================================================================
+// CLIENT REPORTS
+// ----------------------------------------------------------------------------
+// Operator-generated weekly and monthly client reports. snapshot is frozen at
+// generation time so viewing the report later shows the exact numbers the
+// operator sent. shareToken powers /r/[token] public viewer. Operator writes
+// a personal note (headline + notes) before sharing.
+// ============================================================================
+
+model ClientReport {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  kind        String // weekly | monthly | custom
+  periodStart DateTime
+  periodEnd   DateTime
+
+  // Frozen data snapshot used for rendering the report.
+  // Shape: { kpis, funnel, leadSources, topProperties, insights, trafficTrend, ... }
+  snapshot Json
+
+  // Operator additions shown at top of report
+  headline String?
+  notes    String? @db.Text
+
+  // Sharing
+  shareToken   String    @unique // short URL token for /r/[token]
+  sharedAt     DateTime?
+  lastViewedAt DateTime?
+  viewCount    Int       @default(0)
+
+  status String @default("draft") // draft | shared | archived
+
+  generatedAt DateTime @default(now())
+  generatedBy String? // userId (no FK — rows outlive user deletes)
+  updatedAt   DateTime @updatedAt
+
+  @@index([orgId, kind, periodStart(sort: Desc)])
+  @@index([orgId, status, generatedAt(sort: Desc)])
+  @@index([shareToken])
+}
+
+// ============================================================================
+// CONVERSATION FLAGS
+// ----------------------------------------------------------------------------
+// Operator annotations on chatbot conversations. Used in the transcript review
+// tool to mark quality, flag for prompt tuning, rate lead quality, add notes.
+// Multiple flags per conversation are allowed (e.g. "good quality" + "needs
+// followup" + "high-intent lead").
+// ============================================================================
+
+model ConversationFlag {
+  id             String              @id @default(cuid())
+  conversationId String
+  conversation   ChatbotConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  orgId          String
+  org            Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Flag type
+  flag String // quality_good | quality_bad | needs_prompt_tuning | lead_high_intent | lead_low_intent | followup_needed | handoff_missed
+  note String? @db.Text
+
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+
+  @@index([orgId, flag])
+  @@index([conversationId])
+  @@index([orgId, createdAt(sort: Desc)])
 }
