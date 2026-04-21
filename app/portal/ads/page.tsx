@@ -4,8 +4,10 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
 import { ExportButton } from "@/components/ui/export-button";
-import { AdPlatform } from "@prisma/client";
+import { AdPlatform, LeadSource, LeadStatus } from "@prisma/client";
 import { AdsDashboard } from "./ads-dashboard";
+import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
+import { MarketingRoiTable, type RoiRow } from "./marketing-roi-table";
 
 export const metadata: Metadata = { title: "Ads" };
 export const dynamic = "force-dynamic";
@@ -27,7 +29,9 @@ export default async function AdsPage() {
   const priorStart = new Date(now.getTime() - 2 * windowDays * dayMs);
   const priorEnd = currentStart;
 
-  const [accounts, campaigns, currentMetrics, priorMetrics] = await Promise.all([
+  const since28d = currentStart;
+
+  const [accounts, campaigns, currentMetrics, priorMetrics, leadsBySource, appsByLeadSource, signedBySource] = await Promise.all([
     prisma.adAccount.findMany({
       where: tenantWhere(scope),
       orderBy: [{ platform: "asc" }, { createdAt: "asc" }],
@@ -86,7 +90,68 @@ export default async function AdsPage() {
         conversions: true,
       },
     }),
+    prisma.lead.groupBy({
+      by: ["source"],
+      where: { orgId: scope.orgId, createdAt: { gte: since28d } },
+      _count: { _all: true },
+    }),
+    prisma.application.findMany({
+      where: { lead: { orgId: scope.orgId, createdAt: { gte: since28d } } },
+      select: { lead: { select: { source: true } } },
+    }),
+    prisma.lead.groupBy({
+      by: ["source"],
+      where: { orgId: scope.orgId, status: LeadStatus.SIGNED, createdAt: { gte: since28d } },
+      _count: { _all: true },
+    }),
   ]);
+
+  // Build spend-per-LeadSource from the 28-day daily metrics + account platform.
+  const accountPlatformMap = new Map(accounts.map((a) => [a.id, a.platform]));
+  const spendBySource: Partial<Record<LeadSource, number>> = {};
+  for (const m of currentMetrics) {
+    const platform = accountPlatformMap.get(m.adAccountId);
+    if (platform === AdPlatform.GOOGLE_ADS) {
+      spendBySource[LeadSource.GOOGLE_ADS] =
+        (spendBySource[LeadSource.GOOGLE_ADS] ?? 0) + m.spendCents;
+    } else if (platform === AdPlatform.META) {
+      spendBySource[LeadSource.META_ADS] =
+        (spendBySource[LeadSource.META_ADS] ?? 0) + m.spendCents;
+    }
+  }
+
+  // Count applications per source.
+  const appCountBySource: Partial<Record<LeadSource, number>> = {};
+  for (const app of appsByLeadSource) {
+    const src = app.lead.source;
+    appCountBySource[src] = (appCountBySource[src] ?? 0) + 1;
+  }
+
+  const signedCountBySource = new Map(
+    signedBySource.map((r) => [r.source, r._count._all]),
+  );
+
+  const channelLabel: Record<string, string> = {
+    [LeadSource.GOOGLE_ADS]: "Google Ads",
+    [LeadSource.META_ADS]: "Meta Ads",
+    [LeadSource.ORGANIC]: "Organic search",
+    [LeadSource.CHATBOT]: "Chatbot",
+    [LeadSource.FORM]: "Website form",
+    [LeadSource.REFERRAL]: "Referral",
+    [LeadSource.PIXEL_OUTREACH]: "Pixel outreach",
+    [LeadSource.DIRECT]: "Direct",
+  };
+
+  const roiRows: RoiRow[] = leadsBySource
+    .filter((r) => r._count._all > 0)
+    .map((r) => ({
+      channel: channelLabel[r.source] ?? r.source,
+      spendCents: spendBySource[r.source] ?? 0,
+      leads: r._count._all,
+      applications: appCountBySource[r.source] ?? 0,
+      signed: signedCountBySource.get(r.source) ?? 0,
+    }))
+    .sort((a, b) => b.leads - a.leads);
 
   return (
     <div className="space-y-6">
@@ -150,6 +215,14 @@ export default async function AdsPage() {
           }))}
         />
       )}
+
+      <DashboardSection
+        eyebrow="28-day attribution"
+        title="Marketing ROI by channel"
+        description="Spend, leads, applications, and signed leases per source. The funnel breakdown that tells you what's working."
+      >
+        <MarketingRoiTable rows={roiRows} />
+      </DashboardSection>
     </div>
   );
 }

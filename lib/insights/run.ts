@@ -6,6 +6,7 @@ import { cplSpikeDetector } from "./detectors/cpl-spike";
 import { hotVisitorDetector } from "./detectors/hot-visitor";
 import { chatbotPatternDetector } from "./detectors/chatbot-pattern";
 import { convRateDropDetector } from "./detectors/conv-rate-drop";
+import { leasingVelocityDropDetector } from "./detectors/leasing-velocity-drop";
 import { upsertInsights, autoResolveStale } from "./upsert";
 import type { Detector, DetectorResult } from "./types";
 
@@ -16,6 +17,7 @@ const DETECTORS: Detector[] = [
   hotVisitorDetector,
   chatbotPatternDetector,
   convRateDropDetector,
+  leasingVelocityDropDetector,
 ];
 
 // Detectors that produce one-insight-per-entity (pipeline_stall) need their
@@ -24,6 +26,7 @@ const DETECTORS: Detector[] = [
 const AUTORESOLVE_KINDS: Record<string, string[]> = {
   "pipeline-stall": ["pipeline_stall"],
   "hot-visitor": ["hot_visitor"],
+  "leasing-velocity-drop": ["leasing_velocity_drop"],
 };
 
 export interface InsightsRunSummary {

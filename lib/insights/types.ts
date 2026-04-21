@@ -30,7 +30,8 @@ export type InsightKind =
   | "conv_rate_drop"
   | "hot_visitor"
   | "tour_noshow_spike"
-  | "chatbot_silence";
+  | "chatbot_silence"
+  | "leasing_velocity_drop";
 
 export type InsightEntityType =
   | "lead"
