@@ -1,17 +1,17 @@
 // ---------------------------------------------------------------------------
-// Brand constants for RealEstaite. Placeholder values live here so
+// Brand constants for LeaseStack. Placeholder values live here so
 // `{{PRODUCT_NAME}}` can be renamed globally once the product name is final.
 // See NAMING.md at repo root.
 // ---------------------------------------------------------------------------
 
 export const BRAND = {
-  name: "RealEstaite",
-  shortName: "realestaite",
+  name: "LeaseStack",
+  shortName: "leasestack",
   tagline: "Managed marketing for real estate operators",
-  email: "hello@realestaite.co",
-  supportEmail: "support@realestaite.co",
-  url: "https://realestaite.co",
-  agencySlug: process.env.AGENCY_ORG_SLUG ?? "realestaite-agency",
+  email: "hello@leasestack.co",
+  supportEmail: "support@leasestack.co",
+  url: "https://leasestack.co",
+  agencySlug: process.env.AGENCY_ORG_SLUG ?? "leasestack-agency",
 } as const;
 
 export const BRAND_NAME = process.env.BRAND_NAME ?? BRAND.name;

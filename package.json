@@ -1,8 +1,8 @@
 {
-  "name": "realestaite",
+  "name": "leasestack",
   "version": "0.1.0",
   "private": true,
-  "description": "RealEstaite, managed marketing SaaS for real estate operators",
+  "description": "LeaseStack, managed marketing SaaS for real estate operators",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "prisma generate && next build",

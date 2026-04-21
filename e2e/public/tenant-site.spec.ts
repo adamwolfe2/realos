@@ -4,7 +4,7 @@ import { SECURE_CONTEXT_POLYFILL } from "../helpers/secure-context-polyfill";
 
 // @critical
 // Tenant marketing site rendering. The Playwright config sets
-// --host-resolver-rules so {slug}.realestaite.co resolves to 127.0.0.1,
+// --host-resolver-rules so {slug}.leasestack.co resolves to 127.0.0.1,
 // letting the request reach the local dev server while still presenting
 // the real tenant hostname to the middleware.
 //

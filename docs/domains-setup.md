@@ -8,9 +8,9 @@ making that work.
 ## One-time setup (platform domain)
 
 1. Set `NEXT_PUBLIC_APP_URL` and `NEXT_PUBLIC_PLATFORM_DOMAIN` in the Vercel
-   project env. For production this is `https://realestaite.co` and `realestaite.co`.
+   project env. For production this is `https://leasestack.co` and `leasestack.co`.
 2. Attach the apex and `www.` in Vercel project settings → Domains.
-3. Attach the wildcard `*.realestaite.co` so every tenant slug falls back to a
+3. Attach the wildcard `*.leasestack.co` so every tenant slug falls back to a
    working subdomain during the DNS transition window.
    - DNS record on the apex: `CNAME` (or `ALIAS`) `@` → `cname.vercel-dns.com`.
    - Wildcard: `CNAME` `*` → `cname.vercel-dns.com`.
@@ -31,7 +31,7 @@ making that work.
 
 ## Fallback path, subdomain while DNS propagates
 
-Every Organization has a unique `slug`. `{slug}.realestaite.co` works
+Every Organization has a unique `slug`. `{slug}.leasestack.co` works
 immediately because the wildcard is attached. Use this for staging previews
 and the first-click-to-live moment before the client flips DNS.
 

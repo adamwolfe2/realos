@@ -15,7 +15,7 @@ test.describe("Onboarding intake wizard @critical", () => {
     await page.goto("/onboarding");
     await page.evaluate(() => {
       try {
-        window.localStorage.removeItem("realestaite.intake.v1");
+        window.localStorage.removeItem("leasestack.intake.v1");
       } catch {
         // Some browsers (or about:blank pages) deny localStorage; ignore.
       }

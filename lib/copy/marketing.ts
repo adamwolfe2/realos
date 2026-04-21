@@ -51,7 +51,7 @@ export const MARKETING = {
       body:
         "Most operators are paying for five tools that don't talk to each other, plus a retainer for the people stitching them together. Here's what changes when the stack is a product.",
       leftLabel: "The current stack",
-      rightLabel: "With RealEstaite",
+      rightLabel: "With LeaseStack",
       rows: [
         {
           old: "Six vendors, six invoices, and a dashboard you stitch together yourself.",

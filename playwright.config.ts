@@ -33,7 +33,7 @@ export default defineConfig({
   // E2E_ALL_BROWSERS=1, or pass `--project=firefox` directly.
   //
   // We pass --host-resolver-rules so that requests to the seeded tenant
-  // hostname (telegraph-commons.realestaite.co) resolve to the local dev
+  // hostname (telegraph-commons.leasestack.co) resolve to the local dev
   // server. Chromium refuses to honor a manually-set Host header for
   // security reasons, so DNS-style remapping is the only clean way to
   // exercise the tenant middleware end-to-end without running the prod
@@ -46,7 +46,7 @@ export default defineConfig({
             ...devices["Desktop Chrome"],
             launchOptions: {
               args: [
-                "--host-resolver-rules=MAP *.realestaite.co 127.0.0.1, MAP realestaite.co 127.0.0.1",
+                "--host-resolver-rules=MAP *.leasestack.co 127.0.0.1, MAP leasestack.co 127.0.0.1",
               ],
             },
           },
@@ -61,7 +61,7 @@ export default defineConfig({
             ...devices["Desktop Chrome"],
             launchOptions: {
               args: [
-                "--host-resolver-rules=MAP *.realestaite.co 127.0.0.1, MAP realestaite.co 127.0.0.1",
+                "--host-resolver-rules=MAP *.leasestack.co 127.0.0.1, MAP leasestack.co 127.0.0.1",
               ],
             },
           },

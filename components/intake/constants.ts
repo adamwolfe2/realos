@@ -8,7 +8,7 @@ import type {
   IntakeSubmitPayload,
 } from "./types";
 
-export const DRAFT_KEY = "realestaite.intake.v1";
+export const DRAFT_KEY = "leasestack.intake.v1";
 
 export const STEPS = ["Company", "Portfolio", "Services", "Consultation"];
 

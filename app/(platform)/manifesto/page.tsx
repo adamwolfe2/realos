@@ -13,7 +13,7 @@ import { Reveal } from "@/components/platform/reveal";
 // ---------------------------------------------------------------------------
 
 const DESCRIPTION =
-  "Real estate is the last large vertical still buying marketing as a retainer. We think it should be a product. A note from the founder on why we built RealEstaite and who we want to build it with.";
+  "Real estate is the last large vertical still buying marketing as a retainer. We think it should be a product. A note from the founder on why we built LeaseStack and who we want to build it with.";
 
 export const metadata: Metadata = {
   title: `Why we built ${BRAND_NAME}`,

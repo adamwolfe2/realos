@@ -6,7 +6,7 @@ import type { UserRole } from "@prisma/client";
 // GET /api/auth/role
 //
 // Called by /auth/redirect after Clerk sign-in. Resolves the signed-in Clerk
-// user to a RealEstaite User row and returns the role + org type so the
+// user to a LeaseStack User row and returns the role + org type so the
 // client can route them to /admin vs /portal.
 //
 // Linking strategy: on first sign-in, the Clerk userId won't match any row

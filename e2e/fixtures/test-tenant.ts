@@ -14,7 +14,7 @@ export const TEST_TENANT = {
   slug: "telegraph-commons",
   // Subdomain on the configured platform domain. Middleware resolves
   // {slug}.{NEXT_PUBLIC_PLATFORM_DOMAIN} -> the matching Organization.
-  hostname: "telegraph-commons.realestaite.co",
+  hostname: "telegraph-commons.leasestack.co",
 } as const;
 
 // Lazily resolved at test setup time so we don't ship a hardcoded id that

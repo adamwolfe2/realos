@@ -26,15 +26,15 @@ const adapter = new PrismaNeonHttp(
 const prisma = new PrismaClient({ adapter });
 
 async function main() {
-  const agencySlug = process.env.AGENCY_ORG_SLUG ?? "realestaite-agency";
-  const agencyEmail = process.env.AGENCY_ADMIN_EMAIL ?? "adam@realestaite.co";
+  const agencySlug = process.env.AGENCY_ORG_SLUG ?? "leasestack-agency";
+  const agencyEmail = process.env.AGENCY_ADMIN_EMAIL ?? "adam@leasestack.co";
 
   // 1. Singleton AGENCY org (us)
   const agency = await prisma.organization.upsert({
     where: { slug: agencySlug },
     update: { orgType: OrgType.AGENCY },
     create: {
-      name: "RealEstaite Agency",
+      name: "LeaseStack Agency",
       slug: agencySlug,
       orgType: OrgType.AGENCY,
       status: TenantStatus.ACTIVE,

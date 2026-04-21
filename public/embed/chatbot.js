@@ -1,18 +1,18 @@
 (function () {
   "use strict";
 
-  // RealEstaite chatbot embed.
+  // LeaseStack chatbot embed.
   //
   // Usage:
-  //   <script src="https://app.realestaite.co/embed/chatbot.js"
+  //   <script src="https://app.leasestack.co/embed/chatbot.js"
   //           data-slug="telegraph-commons" defer></script>
   //
   // Zero deps. Shadow DOM for style isolation. Works on any host platform
   // (Wix, WordPress, Vercel, static HTML). No cookies, no localStorage.
 
   if (typeof window === "undefined") return;
-  if (window.__realestaiteChatbotLoaded) return;
-  window.__realestaiteChatbotLoaded = true;
+  if (window.__leasestackChatbotLoaded) return;
+  window.__leasestackChatbotLoaded = true;
 
   var script = document.currentScript ||
     (function () {
@@ -27,7 +27,7 @@
 
   var slug = script.getAttribute("data-slug");
   if (!slug) {
-    console.warn("[realestaite chatbot] missing data-slug");
+    console.warn("[leasestack chatbot] missing data-slug");
     return;
   }
 
@@ -66,12 +66,12 @@
       mount();
     })
     .catch(function (err) {
-      console.warn("[realestaite chatbot] config fetch failed:", err);
+      console.warn("[leasestack chatbot] config fetch failed:", err);
     });
 
   function mount() {
     var host = document.createElement("div");
-    host.id = "realestaite-chatbot-host";
+    host.id = "leasestack-chatbot-host";
     host.style.all = "initial";
     document.body.appendChild(host);
     shadow = host.attachShadow({ mode: "closed" });
@@ -185,7 +185,7 @@
         }, 50);
       })
       .catch(function (err) {
-        console.warn("[realestaite chatbot] lead capture failed:", err);
+        console.warn("[leasestack chatbot] lead capture failed:", err);
         if (errEl) {
           errEl.textContent =
             "Couldn't start chat — please try again.";
@@ -284,7 +284,7 @@
         state.history.push({ role: "assistant", content: acc });
       })
       .catch(function (err) {
-        console.warn("[realestaite chatbot] send failed:", err);
+        console.warn("[leasestack chatbot] send failed:", err);
         assistantEl.classList.remove("rec-streaming");
         assistantEl.textContent =
           "Sorry, something went wrong. Please try again or reach us directly.";

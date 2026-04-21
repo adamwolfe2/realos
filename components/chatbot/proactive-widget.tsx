@@ -3,10 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { ChatInterface } from "./chat-interface";
 
-const SESSION_STORAGE_KEY = "realestaite.chatbot.session.v1";
-const DISMISSED_STORAGE_KEY = "realestaite.chatbot.dismissed.v1";
+const SESSION_STORAGE_KEY = "leasestack.chatbot.session.v1";
+const DISMISSED_STORAGE_KEY = "leasestack.chatbot.dismissed.v1";
 const ENGAGEMENT_POLL_MS = 3_000;
-const ENGAGEMENT_LAST_KEY = "realestaite.chatbot.engagement.lastSeen.v1";
+const ENGAGEMENT_LAST_KEY = "leasestack.chatbot.engagement.lastSeen.v1";
 
 type EngagementMessage = {
   id: string;

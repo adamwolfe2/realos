@@ -52,7 +52,7 @@ function buildPixelScript(publicKey: string, ingestUrl: string): string {
   // Inline minified JS. Keep it dependency-free, IE11-friendly (no arrow
   // functions in critical paths) so it runs on the broadest set of marketing
   // sites without breaking. Total size target: < 4 KB gzipped.
-  return `/* RealEstaite Pixel — first-party visitor tracking */
+  return `/* LeaseStack Pixel — first-party visitor tracking */
 (function (w, d) {
   if (w.__rePixel && w.__rePixel.loaded) { return; }
   var KEY = ${JSON.stringify(publicKey)};
@@ -262,7 +262,7 @@ function buildPixelScript(publicKey: string, ingestUrl: string): string {
 }
 
 function notFoundScript(): string {
-  return "/* RealEstaite Pixel: unknown public key — pixel disabled */\n";
+  return "/* LeaseStack Pixel: unknown public key — pixel disabled */\n";
 }
 
 export async function GET(

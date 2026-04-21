@@ -19,7 +19,7 @@ export type DefaultTask = {
 const CAL_URL =
   process.env.NEXT_PUBLIC_CAL_LINK
     ? `https://cal.com/${process.env.NEXT_PUBLIC_CAL_LINK}`
-    : "https://cal.com/adamwolfe/realestaite";
+    : "https://cal.com/adamwolfe/leasestack";
 
 export function getDefaultProjectTasks(): DefaultTask[] {
   return [
@@ -62,7 +62,7 @@ export function getDefaultProjectTasks(): DefaultTask[] {
     {
       label: "Generate tenant slug + fallback subdomain",
       description:
-        "Confirm the slug is unique. Fallback preview URL: {slug}.realestaite.co.",
+        "Confirm the slug is unique. Fallback preview URL: {slug}.leasestack.co.",
       phase: 1,
     },
     {

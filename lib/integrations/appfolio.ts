@@ -30,7 +30,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const USER_AGENT =
-  "Mozilla/5.0 (compatible; RealEstaite/1.0; +https://realestaite.co)";
+  "Mozilla/5.0 (compatible; LeaseStack/1.0; +https://leasestack.co)";
 
 export type AppFolioSyncMode = "EMBED_SCRAPE" | "REST";
 

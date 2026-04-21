@@ -9,7 +9,7 @@ import "server-only";
 //
 // Required env vars (when enabling):
 //   OAUTH_ENABLED                 = "true"
-//   OAUTH_CALLBACK_BASE_URL       = "https://app.realestaite.co"  (no trailing slash)
+//   OAUTH_CALLBACK_BASE_URL       = "https://app.leasestack.co"  (no trailing slash)
 //   OAUTH_STATE_SECRET            = 32+ random bytes hex (HMAC for state cookie)
 //   GOOGLE_OAUTH_CLIENT_ID        = "...apps.googleusercontent.com"
 //   GOOGLE_OAUTH_CLIENT_SECRET    = "GOCSPX-..."
@@ -18,11 +18,11 @@ import "server-only";
 //
 // Redirect URLs to register with each provider:
 //   Google Cloud Console → OAuth client → Authorized redirect URIs:
-//     https://app.realestaite.co/api/oauth/google-ads/callback
-//     https://app.realestaite.co/api/oauth/gsc/callback
-//     https://app.realestaite.co/api/oauth/ga4/callback
+//     https://app.leasestack.co/api/oauth/google-ads/callback
+//     https://app.leasestack.co/api/oauth/gsc/callback
+//     https://app.leasestack.co/api/oauth/ga4/callback
 //   Meta App Dashboard → Facebook Login → Valid OAuth Redirect URIs:
-//     https://app.realestaite.co/api/oauth/meta-ads/callback
+//     https://app.leasestack.co/api/oauth/meta-ads/callback
 // ---------------------------------------------------------------------------
 
 export type OAuthProvider = "google-ads" | "meta-ads" | "gsc" | "ga4";

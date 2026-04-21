@@ -182,7 +182,7 @@ export function DomainsPanel({
       {domains.length === 0 ? (
         <p className="text-xs text-muted-foreground">
           No custom domain attached. Fallback:{" "}
-          <code className="text-foreground">{fallbackSlug}.realestaite.co</code>
+          <code className="text-foreground">{fallbackSlug}.leasestack.co</code>
         </p>
       ) : (
         <ul className="space-y-2">

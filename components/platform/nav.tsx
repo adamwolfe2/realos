@@ -56,10 +56,10 @@ export function PlatformNav() {
       }}
     >
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-20 flex items-center justify-between gap-4">
-        <Link href="/" className="flex items-center" aria-label="RealEstaite home">
+        <Link href="/" className="flex items-center" aria-label="LeaseStack home">
           <img
-            src="/logos/realestaite-wordmark.png"
-            alt="RealEstaite"
+            src="/logos/leasestack-wordmark.png"
+            alt="LeaseStack"
             height={56}
             style={{
               height: "56px",

@@ -1,21 +1,21 @@
-# RealEstaite
+# LeaseStack
 
 **Managed marketing SaaS for real estate operators.** Website, live listings,
 AI chatbot, ad pixel, lead capture, ad creative, reporting. Built and managed
 by us. Launched in two weeks.
 
-> `RealEstaite` is a temporary working name. See `NAMING.md` for how to rename
+> `LeaseStack` is a temporary working name. See `NAMING.md` for how to rename
 > globally once the product name is final.
 
 ## What this is
 
 A single Next.js app that serves four surfaces from one codebase:
 
-1. **Platform marketing site** (`realestaite.co`), sells the product to operators.
-2. **Master admin** (`realestaite.co/admin`), our agency team's dashboard across
+1. **Platform marketing site** (`leasestack.co`), sells the product to operators.
+2. **Master admin** (`leasestack.co/admin`), our agency team's dashboard across
    every tenant: intake queue, fulfillment pipeline, creative requests,
    cross-tenant analytics, impersonation.
-3. **Client portal** (`realestaite.co/portal`), the client's dashboard: leads,
+3. **Client portal** (`leasestack.co/portal`), the client's dashboard: leads,
    visitors, chatbot conversations, ad creative requests, multi-property
    CRM, billing, site builder.
 4. **Tenant marketing sites** (e.g. `telegraphcommons.com`), hostname-routed,
@@ -127,25 +127,25 @@ requests / minute).
 
 ```bash
 # Create or merge a lead
-curl -X POST https://app.realestaite.co/api/ingest/lead \
+curl -X POST https://app.leasestack.co/api/ingest/lead \
   -H "Authorization: Bearer re_live_..." \
   -H "Content-Type: application/json" \
   -d '{"email":"student@berkeley.edu","firstName":"Alex","source":"FORM"}'
 
 # Upsert a visitor by external id
-curl -X POST https://app.realestaite.co/api/ingest/visitor \
+curl -X POST https://app.leasestack.co/api/ingest/visitor \
   -H "Authorization: Bearer re_live_..." \
   -H "Content-Type: application/json" \
   -d '{"externalId":"abc-123","email":"a@b.com","utmSource":"google"}'
 
 # Schedule a tour for an existing lead
-curl -X POST https://app.realestaite.co/api/ingest/tour \
+curl -X POST https://app.leasestack.co/api/ingest/tour \
   -H "Authorization: Bearer re_live_..." \
   -H "Content-Type: application/json" \
   -d '{"leadEmail":"a@b.com","propertyId":"prop_...","scheduledAt":"2026-05-01T17:00:00Z"}'
 
 # Append chatbot turns (merges by sessionId)
-curl -X POST https://app.realestaite.co/api/ingest/chatbot \
+curl -X POST https://app.leasestack.co/api/ingest/chatbot \
   -H "Authorization: Bearer re_live_..." \
   -H "Content-Type: application/json" \
   -d '{"sessionId":"sess-1","email":"a@b.com","messages":[{"role":"user","content":"hi"}]}'
@@ -156,5 +156,5 @@ Available scopes: `ingest:lead`, `ingest:visitor`, `ingest:tour`,
 
 ## Naming
 
-`RealEstaite`, `realestaite`, `realestaite.co` are temporary placeholders. See `NAMING.md`
+`LeaseStack`, `leasestack`, `leasestack.co` are temporary placeholders. See `NAMING.md`
 for the rename recipe.

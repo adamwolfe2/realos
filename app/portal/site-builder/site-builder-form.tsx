@@ -210,7 +210,7 @@ export function SiteBuilderForm({
 
   const previewUrl = primaryDomain
     ? `https://${primaryDomain}`
-    : `https://${orgSlug}.realestaite.co`;
+    : `https://${orgSlug}.leasestack.co`;
 
   return (
     <form onSubmit={submit} className="space-y-6 pb-24">

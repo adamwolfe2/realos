@@ -1,7 +1,7 @@
 # Production runbook
 
-Operator and on-call reference for RealEstaite. The agency-side app at
-`https://realos-nine.vercel.app` (production alias of the `realestaite`
+Operator and on-call reference for LeaseStack. The agency-side app at
+`https://realos-nine.vercel.app` (production alias of the `leasestack`
 Vercel project under team `am-collective`).
 
 ## Health and quick-look links
@@ -177,9 +177,9 @@ Before merging anything that touches:
 For now: it's just Adam. When the platform grows:
 
 1. PagerDuty / Opsgenie integration with Sentry alerts on `unhandledException`
-2. Slack channel `#realestaite-incidents` with webhook for `/admin/system`
+2. Slack channel `#leasestack-incidents` with webhook for `/admin/system`
    degraded-status changes
-3. Status page at `status.realestaite.co` powered by `/api/health`
+3. Status page at `status.leasestack.co` powered by `/api/health`
 
 ## Rate limits
 

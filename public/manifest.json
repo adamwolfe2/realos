@@ -1,6 +1,6 @@
 {
-  "name": "RealEstaite",
-  "short_name": "RealEstaite",
+  "name": "LeaseStack",
+  "short_name": "LeaseStack",
   "description": "Managed marketing infrastructure for real estate operators.",
   "start_url": "/",
   "display": "standalone",

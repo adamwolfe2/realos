@@ -3,7 +3,7 @@
 // Why this exists: the chatbot widget (`components/chatbot/*`) calls
 // `crypto.randomUUID()` unconditionally on mount. That API is only
 // available in [secure contexts](https://w3c.github.io/webappsec-secure-contexts/).
-// Our tenant tests resolve `*.realestaite.co` to 127.0.0.1 via Chromium's
+// Our tenant tests resolve `*.leasestack.co` to 127.0.0.1 via Chromium's
 // --host-resolver-rules so we can exercise the real tenant middleware,
 // but the resulting origin is non-secure and the bare call throws.
 //

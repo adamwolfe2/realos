@@ -9,7 +9,7 @@ expected. Each entry appended at sprint close.
 ## Sprint 01, Fork Setup & Infrastructure Cleanup
 
 **Shipped.** Hard forked `adamwolfe2/wholesail` into this repo, rebranded
-`package.json` to `realestaite` (0.1.0), rewrote `.env.example` for the real-estate
+`package.json` to `leasestack` (0.1.0), rewrote `.env.example` for the real-estate
 stack (Clerk + Neon + Stripe + Resend + Cursive + AppFolio + Vercel + Anthropic),
 replaced `prisma/schema.prisma` with the PRD's real-estate schema (adds
 `Property`, `Listing`, `Tour`, `Application`, `Visitor`, `ChatbotConversation`,
@@ -20,8 +20,8 @@ the Telegraph Commons `CLIENT` tenant + property. Renamed `app/(marketing)` to
 `app/(platform)`. Stripped every distribution-domain API route, admin UI page,
 distribution page, distribution component, distribution lib file, and the
 `scripts/seed-tbgc-*.ts` test scripts. Stubbed the six kept cron jobs with
-Sprint 10 TODOs. Created `NAMING.md` documenting the `RealEstaite` / `realestaite` /
-`realestaite.co` placeholder rename. Forked reference clone of Wholesail lives at
+Sprint 10 TODOs. Created `NAMING.md` documenting the `LeaseStack` / `leasestack` /
+`leasestack.co` placeholder rename. Forked reference clone of Wholesail lives at
 `/Users/adamwolfe/TRIG/wholesail` and Telegraph Commons at
 `/Users/adamwolfe/TRIG/telegraph-commons` (already cloned). `pnpm type-check`
 and `pnpm build` both pass; 26 routes prerender cleanly.
@@ -212,7 +212,7 @@ Organization. `app/onboarding/page.tsx` renders the wizard.
   as Wholesail. `IntakeSubmission.bookedCallAt` is populated later via the
   Cal webhook (`/api/intake/[id]/cal-booked`, wired up in Sprint 01).
 - Draft persistence uses a version-prefixed localStorage key
-  (`realestaite.intake.v1`) so we can bump the schema without stale drafts
+  (`leasestack.intake.v1`) so we can bump the schema without stale drafts
   leaking into a new form shape.
 - `CalFunction` + `Window` are already declared globally in
   `types/vendor.d.ts`; the intake embed re-uses those rather than
@@ -592,14 +592,14 @@ for every tenant, resolved by hostname via middleware and backed by
 ---
 
 ---
-## Final deploy — RealEstaite live
+## Final deploy — LeaseStack live
 
-Brand rename RealOS -> RealEstaite swept across all ts/tsx/md/json/
+Brand rename RealOS -> LeaseStack swept across all ts/tsx/md/json/
 prisma/yaml files (prd/ left alone). Domain placeholder set to
-`realestaite.co` for future custom-domain attachment. Vercel project
-renamed from `realos` to `realestaite`, SSO protection removed so the
+`leasestack.co` for future custom-domain attachment. Vercel project
+renamed from `realos` to `leasestack`, SSO protection removed so the
 `.vercel.app` alias serves the marketing site publicly. Default alias
-claimed: `realestaite.vercel.app`.
+claimed: `leasestack.vercel.app`.
 
 Two deploy-time bugs found and fixed.
 
@@ -626,10 +626,10 @@ Post-deploy smoke (all 200):
 `/features/seo-aeo`, `/about`, `/demo`, `/blog`, `/tools`, `/privacy`,
 `/terms`, `/sitemap.xml`, `/robots.txt`.
 
-Brand sanity on live home: 19 RealEstaite hits, 0 RealOS hits, 0
-em-dashes. Sitemap uses `realestaite.vercel.app` as canonical.
+Brand sanity on live home: 19 LeaseStack hits, 0 RealOS hits, 0
+em-dashes. Sitemap uses `leasestack.vercel.app` as canonical.
 
-Live: https://realestaite.vercel.app
+Live: https://leasestack.vercel.app
 Repo: https://github.com/adamwolfe2/realos
 
 ---
@@ -732,7 +732,7 @@ codebase at `/Users/adamwolfe/TRIG`), drop into the `<head>` of the root
 layout once Adam has a `pk_site_*` provisioned:
 
 ```html
-<script async src="https://realestaite.vercel.app/api/public/pixel/pk_site_xxxxx.js"></script>
+<script async src="https://leasestack.vercel.app/api/public/pixel/pk_site_xxxxx.js"></script>
 ```
 
 **Punted (not in scope for this build).**
@@ -1003,13 +1003,13 @@ inside an `useEffect` (`ensureSessionId`). `crypto.randomUUID()` is only
 available in [secure contexts](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID),
 which means `localhost`, `127.0.0.1`, and any HTTPS origin. Tenant sites
 served over plain HTTP on a custom hostname (e.g. previews / staging on
-`*.realestaite.co` not behind Vercel TLS) trip an uncaught
+`*.leasestack.co` not behind Vercel TLS) trip an uncaught
 `TypeError: crypto.randomUUID is not a function` that bubbles up into the
 root error boundary and replaces the entire tenant site with the
 "Something went wrong" page. Reproducer:
 
   1. `pnpm dev`
-  2. `curl -H "Host: telegraph-commons.realestaite.co" http://127.0.0.1:3000/`
+  2. `curl -H "Host: telegraph-commons.leasestack.co" http://127.0.0.1:3000/`
      SSR works (returns 200 with the real markup).
   3. Open the same URL in a browser via host-resolver-rules. The page
      hydrates, ChatbotLoader mounts, the effect fires, and the entire

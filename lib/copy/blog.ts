@@ -20,7 +20,7 @@ export const BLOG_POSTS: BlogPost[] = [
     title: "Building a managed marketing platform for real estate",
     description:
       "Why a single-vendor, software-first platform outperforms the stitched-together agency + tools model that most operators are running today.",
-    author: "RealEstaite team",
+    author: "LeaseStack team",
     publishedAt: "2026-04-14",
     readingMinutes: 6,
     body: `Most real estate operators are running their marketing across five to eight vendors: an agency for paid spend, a website they can't edit, a chatbot vendor, a listing portal, a designer for ad creative, a CRM, and a few spreadsheets stitching the whole thing together. The monthly cost is high. The visibility is low. The attribution is non-existent.
@@ -36,7 +36,7 @@ Operators get software that pays its own invoice. We earn the retainer every mon
     title: "The hidden cost of anonymous website traffic",
     description:
       "Most of the people looking at your property never fill out a form. Your current analytics treats that traffic as noise. We think of it as the actual pipeline.",
-    author: "RealEstaite team",
+    author: "LeaseStack team",
     publishedAt: "2026-04-08",
     readingMinutes: 4,
     body: `The vast majority of visitors to a property marketing site never fill out a form. Standard analytics tells you how many, which pages they looked at, and where they came from, but nothing about who they are. An identity graph pixel changes the question from "how much traffic did we get" to "who visited that we can follow up with."
@@ -52,7 +52,7 @@ Most operators do not have this number because they have never had the tool that
     title: "What a real estate AI chatbot should actually do",
     description:
       "The first generation of property chatbots was a glorified FAQ. Here's what the second generation needs to look like to earn a place on the site.",
-    author: "RealEstaite team",
+    author: "LeaseStack team",
     publishedAt: "2026-03-28",
     readingMinutes: 5,
     body: `Most property chatbots in production today are a search box with a smile. You ask about pet policy, the bot pastes three sentences from an FAQ page, the conversation ends, and the visitor leaves without a lead captured. Worst case, it handed the visitor to a human who was off the clock and never got back to them.

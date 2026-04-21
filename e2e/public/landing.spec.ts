@@ -22,7 +22,7 @@ test.describe("Public marketing landing @critical", () => {
 
     const resp = await page.goto("/");
     expect(resp?.status(), "homepage HTTP status").toBeLessThan(400);
-    await expect(page).toHaveTitle(/RealEstaite/);
+    await expect(page).toHaveTitle(/LeaseStack/);
 
     // H1 hero copy.
     const h1 = page.locator("h1").first();

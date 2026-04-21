@@ -16,16 +16,16 @@ export const portalConfig = {
   brandName: BRAND_NAME,
   brandNameServer: BRAND_NAME,
   brandLocation: process.env.BRAND_LOCATION ?? "",
-  adminEmail: process.env.ADMIN_EMAIL ?? "hello@realestaite.co",
+  adminEmail: process.env.ADMIN_EMAIL ?? "hello@leasestack.co",
   opsName: process.env.OPS_NAME ?? `${BRAND_NAME} Team`,
   fromEmail:
-    process.env.RESEND_FROM_EMAIL ?? `${BRAND_NAME} <hello@realestaite.co>`,
+    process.env.RESEND_FROM_EMAIL ?? `${BRAND_NAME} <hello@leasestack.co>`,
   appUrl: getSiteUrl(),
   primaryColor: process.env.BRAND_PRIMARY_COLOR ?? "#0A0A0A",
-  calLink: process.env.NEXT_PUBLIC_CAL_LINK ?? "adamwolfe/realestaite",
-  calNamespace: process.env.NEXT_PUBLIC_CAL_NAMESPACE ?? "realestaite",
+  calLink: process.env.NEXT_PUBLIC_CAL_LINK ?? "adamwolfe/leasestack",
+  calNamespace: process.env.NEXT_PUBLIC_CAL_NAMESPACE ?? "leasestack",
   contactEmail:
-    process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@realestaite.co",
+    process.env.NEXT_PUBLIC_CONTACT_EMAIL ?? "hello@leasestack.co",
   defaultTaxRate: Number(process.env.DEFAULT_TAX_RATE ?? 0),
 } as const;
 
