@@ -8,6 +8,7 @@ import { ImpersonateButton } from "./impersonate-button";
 import { ProvisionPixelButton } from "./provision-pixel-button";
 import { ModuleToggle } from "./module-toggle";
 import { CursivePanel } from "./cursive-panel";
+import { DomainsPanel } from "./domains-panel";
 import type { ToggleableModule } from "@/lib/actions/admin-modules";
 import { headers } from "next/headers";
 import { StatCard } from "@/components/admin/stat-card";
@@ -190,39 +191,17 @@ export default async function ClientDetail({
         </SectionCard>
 
         <SectionCard label="Domains">
-          {org.domains.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No custom domain attached. Fallback:{" "}
-              <code className="text-foreground">
-                {org.slug}.realestaite.co
-              </code>
-            </p>
-          ) : (
-            <ul className="space-y-2">
-              {org.domains.map((d) => (
-                <li
-                  key={d.id}
-                  className="flex items-center justify-between gap-3 py-1"
-                >
-                  <span className="text-sm font-medium text-foreground truncate">
-                    {d.hostname}
-                  </span>
-                  <span className="flex items-center gap-2 shrink-0">
-                    {d.isPrimary ? (
-                      <StatusBadge tone="info" dot={false}>
-                        Primary
-                      </StatusBadge>
-                    ) : null}
-                    <StatusBadge
-                      tone={d.sslStatus === "active" ? "success" : "neutral"}
-                    >
-                      {d.sslStatus ?? "Pending"}
-                    </StatusBadge>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+          <DomainsPanel
+            orgId={org.id}
+            fallbackSlug={org.slug}
+            initial={org.domains.map((d) => ({
+              id: d.id,
+              hostname: d.hostname,
+              isPrimary: d.isPrimary,
+              sslStatus: d.sslStatus,
+              dnsConfigured: d.dnsConfigured,
+            }))}
+          />
         </SectionCard>
 
         <SectionCard
