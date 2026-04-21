@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState, useTransition, type CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { LeadStatus } from "@prisma/client";
 
@@ -45,15 +45,14 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
         Swipe columns →
       </p>
       <div
-        className="grid gap-3 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 kanban-grid"
-        style={{ gridAutoFlow: "column" }}
+        className="grid gap-3 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 kanban-mobile-swipe"
+        style={
+          {
+            gridAutoFlow: "column",
+            "--kanban-col-count": COLUMNS.length,
+          } as CSSProperties
+        }
       >
-        <style>{`
-          .kanban-grid { grid-template-columns: repeat(${COLUMNS.length}, 85vw); }
-          @media (min-width: 768px) {
-            .kanban-grid { grid-template-columns: repeat(${COLUMNS.length}, minmax(220px, 1fr)); }
-          }
-        `}</style>
         {COLUMNS.map((col) => {
           const list = byStatus.get(col.status) ?? [];
           return (

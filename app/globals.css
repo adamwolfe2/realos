@@ -175,6 +175,12 @@ body {
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* Kanban column widths: 85vw on mobile (swipe one at a time), responsive grid on md+ */
+.kanban-mobile-swipe { grid-template-columns: repeat(var(--kanban-col-count, 10), 85vw); }
+@media (min-width: 768px) {
+  .kanban-mobile-swipe { grid-template-columns: repeat(var(--kanban-col-count, 10), minmax(220px, 1fr)); }
+}
+
 /* ── Buttons ───────────────────────────────────────────────────────────── */
 .btn-primary {
   display: inline-flex; align-items: center; justify-content: center;

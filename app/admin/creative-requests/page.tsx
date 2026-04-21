@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
@@ -72,15 +73,14 @@ export default async function CreativeQueue() {
         Swipe columns →
       </p>
       <div
-        className="grid gap-3 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 creative-kanban"
-        style={{ gridAutoFlow: "column" }}
+        className="grid gap-3 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 kanban-mobile-swipe"
+        style={
+          {
+            gridAutoFlow: "column",
+            "--kanban-col-count": COLUMNS.length,
+          } as CSSProperties
+        }
       >
-        <style>{`
-          .creative-kanban { grid-template-columns: repeat(${COLUMNS.length}, 85vw); }
-          @media (min-width: 768px) {
-            .creative-kanban { grid-template-columns: repeat(${COLUMNS.length}, minmax(220px, 1fr)); }
-          }
-        `}</style>
         {columns.map((col) => (
           <section
             key={col.label}
