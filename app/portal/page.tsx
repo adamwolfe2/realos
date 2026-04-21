@@ -40,6 +40,10 @@ import {
   getOrganicSessionsKpi,
   getPropertyMetrics,
 } from "@/lib/dashboard/queries";
+import { getOpenInsights, getInsightCounts } from "@/lib/insights/queries";
+import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
+import { Sparkles } from "lucide-react";
+import Link from "next/link";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -84,6 +88,8 @@ export default async function PortalHome({
     integrationChips,
     statusCounts,
     firstRun,
+    openInsights,
+    insightCounts,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -150,6 +156,8 @@ export default async function PortalHome({
     getIntegrationHealth(scope.orgId),
     getLeadStatusCounts(scope.orgId),
     getFirstRunProgress(scope.orgId),
+    getOpenInsights(scope.orgId, { limit: 3 }),
+    getInsightCounts(scope.orgId),
   ]);
 
   // 28d leads + active campaigns + sparkline per property.
@@ -216,6 +224,45 @@ export default async function PortalHome({
         <FirstRunChecklist items={firstRunItems} />
       ) : (
         <>
+          {/* Insights strip — opens the day with what changed, if anything */}
+          {insightCounts.total > 0 ? (
+            <section className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-4">
+              <div className="flex items-center justify-between gap-3 mb-3">
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+                    <Sparkles className="h-3 w-3 text-[var(--terracotta)]" />
+                    Signal
+                  </span>
+                  <h2 className="text-sm font-semibold tracking-tight text-[var(--near-black)]">
+                    {insightCounts.critical > 0
+                      ? `${insightCounts.critical} critical, ${insightCounts.warning} warning`
+                      : insightCounts.warning > 0
+                        ? `${insightCounts.warning} warning, ${insightCounts.info} info`
+                        : `${insightCounts.info} info signals open`}
+                  </h2>
+                </div>
+                <Link
+                  href="/portal/insights"
+                  className="text-xs font-medium text-[var(--near-black)] hover:text-[var(--terracotta)]"
+                >
+                  See all
+                </Link>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+                {(openInsights as InsightCardData[]).map((insight) => (
+                  <InsightCard
+                    key={insight.id}
+                    insight={{
+                      ...insight,
+                      context: (insight.context as Record<string, unknown>) ?? null,
+                    }}
+                    dense
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+
           {/* KPI strip — six tiles across at desktop, wraps on smaller screens */}
           <section
             aria-label="Key metrics"

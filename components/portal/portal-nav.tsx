@@ -18,6 +18,9 @@ import {
   Compass,
   TrendingUp,
   Bell,
+  Gauge,
+  Sparkles,
+  FileText,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -52,6 +55,9 @@ const NAV: NavItem[] = [
     show: (o) => !o.setupComplete && !o.onboardingDismissed,
   },
   { href: "/portal", label: "Dashboard", icon: LayoutDashboard, show: ALWAYS },
+  { href: "/portal/briefing", label: "Briefing", icon: Gauge, show: ALWAYS },
+  { href: "/portal/insights", label: "Insights", icon: Sparkles, show: ALWAYS },
+  { href: "/portal/reports", label: "Reports", icon: FileText, show: ALWAYS },
   { href: "/portal/properties", label: "Properties", icon: Building2, show: ALWAYS },
   { href: "/portal/leads", label: "Leads", icon: Users, show: ALWAYS },
   {
