@@ -181,6 +181,31 @@ For now: it's just Adam. When the platform grows:
    degraded-status changes
 3. Status page at `status.realestaite.co` powered by `/api/health`
 
+## Rate limits
+
+All limits use Upstash Redis sliding-window via `/lib/rate-limit.ts`. When Redis is not configured (env vars absent) all limiters soft-fail open and log a warning — no requests are blocked. Every rejection returns HTTP 429 with `{ error, retryAfterSec }` and a `Retry-After` header.
+
+| Route | Limiter | Limit | Window | Key |
+|-------|---------|-------|--------|-----|
+| `POST /api/public/leads` | `publicSignupLimiter` | 5 | 1 h | IP |
+| `POST /api/public/tours` | `publicSignupLimiter` | 5 | 1 h | IP |
+| `POST /api/public/chatbot/chat` | `publicApiLimiter` | 60 | 1 m | IP |
+| `GET  /api/public/chatbot/inbox` | `publicApiLimiter` | 60 | 1 m | `inbox:<IP>` |
+| `POST /api/public/chatbot/lead` | `publicApiLimiter` | 60 | 1 m | IP |
+| `GET  /api/public/chatbot/config` | `chatbotConfigLimiter` | 30 | 1 m | `cfg:<IP>` |
+| `POST /api/public/visitors/track` | `publicApiLimiter` | 60 | 1 m | `pixel:<key>:<IP>` |
+| `GET  /api/public/pixel/[key]` | `pixelAssetLimiter` | 120 | 1 m | `pixel-asset:<IP>` |
+| `POST /api/onboarding` | `publicSignupLimiter` | 5 | 1 h | IP |
+| `POST /api/subscribe` | `publicSignupLimiter` | 5 | 1 h | IP |
+| `POST /api/webhooks/cursive` | `webhookLimiter` | 1000 | 1 m | `wh-cursive:<IP>` |
+| `POST /api/webhooks/clerk` | `webhookLimiter` | 1000 | 1 m | `wh-clerk:<IP>` |
+| `POST /api/webhooks/stripe` | `webhookLimiter` | 1000 | 1 m | `wh-stripe:<IP>` |
+| `POST /api/webhooks/resend` | `webhookLimiter` | 1000 | 1 m | `wh-resend:<IP>` |
+
+Webhook routes are intentionally generous (1000/min) because primary protection comes from signature verification. The limit exists only to blunt port-scan probes or misconfigured retry storms.
+
+To adjust a limit, update `/lib/rate-limit.ts` and redeploy. No schema changes required.
+
 ## Known gaps
 
 - No Stripe/billing flow (intentionally deferred until production domain)

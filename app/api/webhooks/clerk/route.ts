@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { Webhook } from "svix";
 import { prisma } from "@/lib/db";
 import { UserRole } from "@prisma/client";
+import { webhookLimiter, checkRateLimit, getIp, rateLimited } from "@/lib/rate-limit";
 
 const VALID_ROLES = [
   UserRole.AGENCY_OWNER,
@@ -31,6 +32,12 @@ interface WebhookEvent {
 }
 
 export async function POST(req: NextRequest) {
+  const ip = getIp(req);
+  const { allowed } = await checkRateLimit(webhookLimiter, `wh-clerk:${ip}`);
+  if (!allowed) {
+    return rateLimited("Rate limit exceeded", 60);
+  }
+
   const WEBHOOK_SECRET = process.env.CLERK_WEBHOOK_SECRET;
 
   if (!WEBHOOK_SECRET) {

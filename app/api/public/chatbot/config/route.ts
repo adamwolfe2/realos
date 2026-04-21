@@ -1,5 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import {
+  chatbotConfigLimiter,
+  checkRateLimit,
+  getIp,
+  rateLimited,
+} from "@/lib/rate-limit";
 
 // GET /api/public/chatbot/config?slug=<org-slug>
 //
@@ -24,6 +30,12 @@ export function OPTIONS() {
 }
 
 export async function GET(req: NextRequest) {
+  const ip = getIp(req);
+  const { allowed } = await checkRateLimit(chatbotConfigLimiter, `cfg:${ip}`);
+  if (!allowed) {
+    return rateLimited("Rate limit exceeded", 60, { ...CORS_HEADERS });
+  }
+
   const slug = req.nextUrl.searchParams.get("slug");
   if (!slug) {
     return NextResponse.json(

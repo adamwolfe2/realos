@@ -67,6 +67,16 @@ export const enrichLimiter = createLimiter(redis, 5, '1 m')
 // 30 admin read requests per userId per minute
 export const adminReadLimiter = createLimiter(redis, 30, '1 m')
 
+// 120 pixel/JS asset requests per IP per minute (high-volume CDN-cached asset)
+export const pixelAssetLimiter = createLimiter(redis, 120, '1 m')
+
+// 30 chatbot config lookups per IP per minute (widget init on page load)
+export const chatbotConfigLimiter = createLimiter(redis, 30, '1 m')
+
+// 1000 webhook calls per IP per minute — primary protection is sig verification;
+// this catches misconfigured senders or port-scan probes.
+export const webhookLimiter = createLimiter(redis, 1000, '1 m')
+
 /** Returns true if the request should be allowed; false if rate-limited. Skips gracefully if limiter is null (env vars not set). */
 export async function checkRateLimit(
   limiter: Ratelimit | null,
@@ -91,6 +101,29 @@ export async function checkRateLimit(
     remaining: result.remaining,
     reset: result.reset,
   }
+}
+
+/**
+ * Build a standardised HTTP 429 response.
+ * Every rate-limit rejection in the codebase should call this so callers get
+ * a consistent shape: `{ error, retryAfterSec }` + `Retry-After` header.
+ */
+export function rateLimited(
+  msg = 'Rate limit exceeded',
+  retryAfterSec = 60,
+  extraHeaders: Record<string, string> = {}
+): Response {
+  return new Response(
+    JSON.stringify({ error: msg, retryAfterSec }),
+    {
+      status: 429,
+      headers: {
+        'Content-Type': 'application/json',
+        'Retry-After': String(retryAfterSec),
+        ...extraHeaders,
+      },
+    }
+  )
 }
 
 /** Extract the best available IP address from a request. */

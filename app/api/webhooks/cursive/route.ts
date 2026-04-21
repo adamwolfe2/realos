@@ -7,6 +7,7 @@ import {
   Prisma,
   VisitorIdentificationStatus,
 } from "@prisma/client";
+import { webhookLimiter, checkRateLimit, getIp, rateLimited } from "@/lib/rate-limit";
 
 // POST /api/webhooks/cursive
 //
@@ -44,6 +45,12 @@ type ValidationStatus =
   | null;
 
 export async function POST(req: NextRequest) {
+  const ip = getIp(req);
+  const { allowed } = await checkRateLimit(webhookLimiter, `wh-cursive:${ip}`);
+  if (!allowed) {
+    return rateLimited("Rate limit exceeded", 60);
+  }
+
   const rawBody = await req.text();
   if (Buffer.byteLength(rawBody, "utf8") > MAX_BODY_BYTES) {
     return NextResponse.json({ error: "Body too large" }, { status: 413 });

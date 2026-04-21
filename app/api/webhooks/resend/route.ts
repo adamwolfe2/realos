@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
 import { AuditAction, Prisma } from "@prisma/client";
+import { webhookLimiter, checkRateLimit, getIp, rateLimited } from "@/lib/rate-limit";
 
 // POST /api/webhooks/resend
 // Ingests Resend webhook events (email.sent, email.delivered, email.opened,
@@ -10,6 +11,12 @@ import { AuditAction, Prisma } from "@prisma/client";
 //
 // Verify signature with Svix-style headers when a secret is configured.
 export async function POST(req: NextRequest) {
+  const ip = getIp(req);
+  const { allowed } = await checkRateLimit(webhookLimiter, `wh-resend:${ip}`);
+  if (!allowed) {
+    return rateLimited("Rate limit exceeded", 60);
+  }
+
   const rawBody = await req.text();
   if (!verifySignature(rawBody, req.headers)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });

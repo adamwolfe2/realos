@@ -1,6 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { isPublicSiteKeyShape } from "@/lib/api-keys/public-site-key";
 import { resolveOrgByPublicKey } from "@/lib/visitors/pixel-ingest";
+import {
+  pixelAssetLimiter,
+  checkRateLimit,
+  getIp,
+  rateLimited,
+} from "@/lib/rate-limit";
 
 // ---------------------------------------------------------------------------
 // GET /api/public/pixel/[publicKey].js (or /api/public/pixel/[publicKey])
@@ -263,6 +269,12 @@ export async function GET(
   req: NextRequest,
   ctx: { params: Promise<{ publicKey: string }> }
 ) {
+  const ip = getIp(req);
+  const { allowed } = await checkRateLimit(pixelAssetLimiter, `pixel-asset:${ip}`);
+  if (!allowed) {
+    return rateLimited("Rate limit exceeded", 60, { ...CORS_HEADERS });
+  }
+
   const { publicKey: rawKey } = await ctx.params;
   const publicKey = (rawKey ?? "").replace(/\.js$/i, "").trim();
 

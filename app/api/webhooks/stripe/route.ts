@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { captureWithContext } from "@/lib/sentry";
 import { isStripeConfigured, parseWebhookEvent } from "@/lib/stripe/config";
 import { WebhookSignatureError } from "@/lib/stripe/errors";
+import { webhookLimiter, checkRateLimit, getIp, rateLimited } from "@/lib/rate-limit";
 
 // DECISION: Sprint 05 rebuilds the Stripe webhook handler against the
 // real-estate billing model (subscription retainer + one-time build fee +
@@ -14,6 +15,12 @@ import { WebhookSignatureError } from "@/lib/stripe/errors";
 // TODO(Sprint 05): handle subscription.created/updated/deleted and
 // invoice.paid/payment_failed for retainer billing.
 export async function POST(req: NextRequest) {
+  const ip = getIp(req);
+  const { allowed } = await checkRateLimit(webhookLimiter, `wh-stripe:${ip}`);
+  if (!allowed) {
+    return rateLimited("Rate limit exceeded", 60);
+  }
+
   if (!isStripeConfigured()) {
     return NextResponse.json({ received: true });
   }
