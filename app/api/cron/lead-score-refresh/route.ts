@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { LeadSource } from "@prisma/client";
+import { recordCronRun } from "@/lib/health/cron-run";
 
 // GET /api/cron/lead-score-refresh
 // Daily. Recomputes Lead.score + intent label from a simple linear
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  return recordCronRun("lead-score-refresh", async () => {
   const now = Date.now();
   const DAY = 24 * 60 * 60 * 1000;
 
@@ -77,5 +79,9 @@ export async function GET(req: NextRequest) {
     updated++;
   }
 
-  return NextResponse.json({ scanned: leads.length, updated });
+    return {
+      result: NextResponse.json({ scanned: leads.length, updated }),
+      recordsProcessed: updated,
+    };
+  });
 }

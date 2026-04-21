@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { VisitorIdentificationStatus } from "@prisma/client";
 import { sendVisitorOutreachEmail } from "@/lib/email/visitor-emails";
+import { recordCronRun } from "@/lib/health/cron-run";
 
 // GET /api/cron/visitor-outreach
 // Runs hourly, fires outreach email to high-intent identified visitors
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  return recordCronRun("visitor-outreach", async () => {
   const sinceWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
   const candidates = await prisma.visitor.findMany({
@@ -72,9 +74,13 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  return NextResponse.json({
-    sent,
-    scanned: candidates.length,
-    errors: errors.length ? errors : undefined,
+    return {
+      result: NextResponse.json({
+        sent,
+        scanned: candidates.length,
+        errors: errors.length ? errors : undefined,
+      }),
+      recordsProcessed: sent,
+    };
   });
 }

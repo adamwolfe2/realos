@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { VisitorIdentificationStatus } from "@prisma/client";
 import { sendVisitorWeeklyDigest } from "@/lib/email/visitor-emails";
+import { recordCronRun } from "@/lib/health/cron-run";
 
 // GET /api/cron/pixel-weekly-digest
 // Runs Mondays. For every tenant with weekly digest enabled, sends the
@@ -18,6 +19,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  return recordCronRun("pixel-weekly-digest", async () => {
   const integrations = await prisma.cursiveIntegration.findMany({
     where: { weeklyDigestEnabled: true },
     include: {
@@ -93,7 +95,12 @@ export async function GET(req: NextRequest) {
     results.push({ orgId: integration.orgId, sent, errors });
   }
 
-  return NextResponse.json({ tenants: results.length, results });
+    const totalSent = results.reduce((sum, r) => sum + r.sent, 0);
+    return {
+      result: NextResponse.json({ tenants: results.length, results }),
+      recordsProcessed: totalSent,
+    };
+  });
 }
 
 function buildRecipientList(

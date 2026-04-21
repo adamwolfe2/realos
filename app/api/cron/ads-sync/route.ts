@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { runAdsSyncForAccount } from "@/lib/integrations/ads-sync";
+import { recordCronRun } from "@/lib/health/cron-run";
 
 // GET /api/cron/ads-sync
 //
@@ -21,55 +22,60 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const accounts = await prisma.adAccount.findMany({
-    where: {
-      autoSyncEnabled: true,
-      credentialsEncrypted: { not: null },
-    },
-    select: { id: true, orgId: true, platform: true },
-  });
+  return recordCronRun("ads-sync", async () => {
+    const accounts = await prisma.adAccount.findMany({
+      where: {
+        autoSyncEnabled: true,
+        credentialsEncrypted: { not: null },
+      },
+      select: { id: true, orgId: true, platform: true },
+    });
 
-  const results: Array<{
-    adAccountId: string;
-    orgId: string;
-    platform: string;
-    ok: boolean;
-    campaigns?: number;
-    metrics?: number;
-    error?: string;
-  }> = [];
+    const results: Array<{
+      adAccountId: string;
+      orgId: string;
+      platform: string;
+      ok: boolean;
+      campaigns?: number;
+      metrics?: number;
+      error?: string;
+    }> = [];
 
-  for (const account of accounts) {
-    try {
-      const r = await runAdsSyncForAccount(account.id, { fullBackfill: false });
-      results.push({
-        adAccountId: account.id,
-        orgId: account.orgId,
-        platform: account.platform,
-        ok: r.ok,
-        campaigns: r.stats.campaignsUpserted,
-        metrics: r.stats.metricRowsUpserted,
-        error: r.error,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      console.warn(
-        `[cron/ads-sync] account=${account.id} platform=${account.platform} failed: ${message}`
-      );
-      results.push({
-        adAccountId: account.id,
-        orgId: account.orgId,
-        platform: account.platform,
-        ok: false,
-        error: message,
-      });
+    for (const account of accounts) {
+      try {
+        const r = await runAdsSyncForAccount(account.id, { fullBackfill: false });
+        results.push({
+          adAccountId: account.id,
+          orgId: account.orgId,
+          platform: account.platform,
+          ok: r.ok,
+          campaigns: r.stats.campaignsUpserted,
+          metrics: r.stats.metricRowsUpserted,
+          error: r.error,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        console.warn(
+          `[cron/ads-sync] account=${account.id} platform=${account.platform} failed: ${message}`
+        );
+        results.push({
+          adAccountId: account.id,
+          orgId: account.orgId,
+          platform: account.platform,
+          ok: false,
+          error: message,
+        });
+      }
     }
-  }
 
-  return NextResponse.json({
-    ok: true,
-    processed: results.length,
-    accounts: accounts.length,
-    results,
+    return {
+      result: NextResponse.json({
+        ok: true,
+        processed: results.length,
+        accounts: accounts.length,
+        results,
+      }),
+      recordsProcessed: results.filter((r) => r.ok).length,
+    };
   });
 }

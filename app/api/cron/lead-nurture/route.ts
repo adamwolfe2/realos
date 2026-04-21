@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { LeadStatus, Prisma } from "@prisma/client";
 import { sendLeadCadenceEmail } from "@/lib/email/lead-sequences";
+import { recordCronRun } from "@/lib/health/cron-run";
 
 // GET /api/cron/lead-nurture
 // Hourly cadence. For each lifecycle stage, finds leads older than the
@@ -67,6 +68,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  return recordCronRun("lead-nurture", async () => {
   const now = Date.now();
   const results: Array<{ stage: string; fired: number; errors: number }> = [];
   const appBase = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -147,6 +149,11 @@ export async function GET(req: NextRequest) {
     results.push({ stage: stage.key, fired, errors });
   }
 
-  // appBase kept to make it obvious in logs the cron wired the platform URL.
-  return NextResponse.json({ platform: appBase, results });
+    // appBase kept to make it obvious in logs the cron wired the platform URL.
+    const totalFired = results.reduce((sum, r) => sum + r.fired, 0);
+    return {
+      result: NextResponse.json({ platform: appBase, results }),
+      recordsProcessed: totalFired,
+    };
+  });
 }

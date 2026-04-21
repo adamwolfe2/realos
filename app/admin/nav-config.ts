@@ -9,6 +9,7 @@ import {
   MessageSquare,
   Activity,
   History,
+  HeartPulse,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -76,6 +77,7 @@ export const adminNavGroups: NavGroup[] = [
     label: "System",
     items: [
       { href: "/admin/tenants", label: "Tenants + domains", icon: Building2 },
+      { href: "/admin/system", label: "System health", icon: HeartPulse },
       { href: "/admin/audit-log", label: "Audit log", icon: History },
       { href: "/admin/chat", label: "Support", icon: MessageSquare },
     ],

@@ -1518,3 +1518,31 @@ model EmailSubscriber {
   @@unique([orgId, email])
   @@index([orgId])
 }
+
+// ============================================================================
+// SYSTEM HEALTH
+// ----------------------------------------------------------------------------
+// One row per cron handler invocation. Written by lib/health/cron-run.ts at
+// start (status=running) and updated on finish (ok/error/timeout). The
+// /admin/system dashboard reads the most recent row per jobName so an
+// operator can see at a glance which crons fired in the last 24 hours and
+// which are silently dead. Migration lives in
+// prisma/migrations_pending/2026-04-20-cron-runs.sql (Adam applies).
+// ============================================================================
+
+model CronRun {
+  id               String    @id @default(cuid())
+  jobName          String
+  startedAt        DateTime  @default(now())
+  finishedAt       DateTime?
+  status           String    @default("running") // running | ok | error | timeout
+  error            String?   @db.Text
+  durationMs       Int?
+  recordsProcessed Int?
+
+  createdAt DateTime @default(now())
+
+  @@index([jobName, startedAt])
+  @@index([startedAt])
+  @@index([status])
+}

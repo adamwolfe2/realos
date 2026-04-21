@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { runSeoSync } from "@/lib/integrations/seo-sync";
+import { recordCronRun } from "@/lib/health/cron-run";
 
 // GET /api/cron/seo-sync
 //
@@ -24,37 +25,42 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Find every distinct orgId with at least one SEO integration.
-  const orgs = await prisma.seoIntegration.findMany({
-    distinct: ["orgId"],
-    select: { orgId: true },
-  });
+  return recordCronRun("seo-sync", async () => {
+    // Find every distinct orgId with at least one SEO integration.
+    const orgs = await prisma.seoIntegration.findMany({
+      distinct: ["orgId"],
+      select: { orgId: true },
+    });
 
-  const results: Array<{
-    orgId: string;
-    ok: boolean;
-    stats?: unknown;
-    error?: string;
-  }> = [];
+    const results: Array<{
+      orgId: string;
+      ok: boolean;
+      stats?: unknown;
+      error?: string;
+    }> = [];
 
-  for (const { orgId } of orgs) {
-    try {
-      const r = await runSeoSync(orgId);
-      results.push({
-        orgId,
-        ok: r.ok,
-        stats: r.stats,
-        error: r.error,
-      });
-    } catch (err) {
-      const message = err instanceof Error ? err.message : "Unknown error";
-      results.push({ orgId, ok: false, error: message });
+    for (const { orgId } of orgs) {
+      try {
+        const r = await runSeoSync(orgId);
+        results.push({
+          orgId,
+          ok: r.ok,
+          stats: r.stats,
+          error: r.error,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        results.push({ orgId, ok: false, error: message });
+      }
     }
-  }
 
-  return NextResponse.json({
-    ok: true,
-    processed: results.length,
-    results,
+    return {
+      result: NextResponse.json({
+        ok: true,
+        processed: results.length,
+        results,
+      }),
+      recordsProcessed: results.filter((r) => r.ok).length,
+    };
   });
 }
