@@ -4,206 +4,294 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { ChatbotConversationStatus, Prisma } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
-import { StatCard } from "@/components/admin/stat-card";
-import { StatusBadge } from "@/components/admin/status-badge";
 import { PageHeader } from "@/components/admin/page-header";
-import { humanChatbotStatus, humanLeadStatus } from "@/lib/format";
+import { humanChatbotStatus } from "@/lib/format";
+import {
+  FlagPill,
+  FLAG_TYPES,
+  isFlagType,
+  type FlagType,
+} from "@/components/portal/conversations/flag-pill";
+import {
+  TranscriptSearch,
+  type SortOption,
+} from "./transcript-search";
 
 export const metadata: Metadata = { title: "Chatbot conversations" };
 export const dynamic = "force-dynamic";
 
+type SerializedMessage = {
+  role: "user" | "assistant";
+  content: string;
+  ts?: string;
+};
+
+type SortValue = SortOption["value"];
+
+function isSort(v: string | undefined): v is SortValue {
+  return v === "newest" || v === "longest" || v === "most_flagged";
+}
+
+// ---------------------------------------------------------------------------
+// Server component. Reads URL params, builds the Prisma where clause, and
+// returns the filtered list plus per-chip counts. Heavy-lifting query stays
+// here so the TranscriptSearch client only handles inputs / URL state.
+// ---------------------------------------------------------------------------
+
 export default async function ConversationsList({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    flag?: string;
+    sort?: string;
+    status?: string;
+  }>;
 }) {
   const scope = await requireScope();
-  const { status } = await searchParams;
+  const sp = await searchParams;
 
-  const where: Prisma.ChatbotConversationWhereInput = { ...tenantWhere(scope) };
-  if (status && status in ChatbotConversationStatus) {
-    where.status = status as ChatbotConversationStatus;
+  const qRaw = (sp.q ?? "").trim();
+  const flagParam = (sp.flag ?? "").trim();
+  const sort: SortValue = isSort(sp.sort) ? sp.sort : "newest";
+  const statusParam = sp.status && sp.status in ChatbotConversationStatus
+    ? (sp.status as ChatbotConversationStatus)
+    : undefined;
+
+  // If the operator typed a query, find matching conversation IDs via raw
+  // SQL over the JSON messages column. ILIKE keeps the search case-insensitive
+  // and `::text` coerces the jsonb to a searchable string. Capped to 500 rows
+  // so a broad query can't punish the page.
+  let messageMatchIds: Set<string> | null = null;
+  if (qRaw.length >= 2) {
+    const like = `%${qRaw.replace(/[%_]/g, "\\$&")}%`;
+    const rows = await prisma.$queryRaw<{ id: string }[]>`
+      SELECT id FROM "ChatbotConversation"
+      WHERE "orgId" = ${scope.orgId}
+        AND "messages"::text ILIKE ${like}
+      ORDER BY "lastMessageAt" DESC
+      LIMIT 500
+    `;
+    messageMatchIds = new Set(rows.map((r) => r.id));
   }
 
-  const [conversations, counts] = await Promise.all([
-    prisma.chatbotConversation.findMany({
-      where,
-      orderBy: { lastMessageAt: "desc" },
-      take: 200,
-      include: { lead: { select: { id: true, status: true } } },
+  // Chip counts: one query that groups by flag type. "All" is the total
+  // conversation count; flag-specific chips count conversations that have at
+  // least one matching flag row. "Missed handoffs" currently maps to the
+  // `handoff_missed` flag since that's the operator's explicit annotation.
+  const [totalConversations, flagCounts, qualityBadCount] = await Promise.all([
+    prisma.chatbotConversation.count({ where: { ...tenantWhere(scope) } }),
+    prisma.conversationFlag.groupBy({
+      by: ["flag"],
+      where: { orgId: scope.orgId },
+      _count: { conversationId: true },
     }),
-    prisma.chatbotConversation.groupBy({
-      by: ["status"],
-      where: tenantWhere(scope),
-      _count: { _all: true },
+    // quality_bad is listed separately so the chip reads as "Flagged bad
+    // quality" even though it's the same flag type column internally.
+    prisma.conversationFlag.count({
+      where: { orgId: scope.orgId, flag: "quality_bad" },
     }),
   ]);
 
-  const countsByStatus = new Map<ChatbotConversationStatus, number>();
-  for (const row of counts) countsByStatus.set(row.status, row._count._all);
-  const totalAll = Array.from(countsByStatus.values()).reduce(
-    (a, b) => a + b,
-    0
-  );
-  const leadCaptured =
-    countsByStatus.get(ChatbotConversationStatus.LEAD_CAPTURED) ?? 0;
-  const active = countsByStatus.get(ChatbotConversationStatus.ACTIVE) ?? 0;
-  const handedOff =
-    countsByStatus.get(ChatbotConversationStatus.HANDED_OFF) ?? 0;
+  const flagCountMap = new Map<string, number>();
+  for (const row of flagCounts) {
+    flagCountMap.set(row.flag, row._count.conversationId);
+  }
+
+  const filterChips = [
+    { key: "", label: "All", count: totalConversations },
+    {
+      key: "needs_prompt_tuning",
+      label: "Needs prompt tuning",
+      count: flagCountMap.get("needs_prompt_tuning") ?? 0,
+    },
+    {
+      key: "lead_high_intent",
+      label: "High intent leads",
+      count: flagCountMap.get("lead_high_intent") ?? 0,
+    },
+    {
+      key: "handoff_missed",
+      label: "Missed handoffs",
+      count: flagCountMap.get("handoff_missed") ?? 0,
+    },
+    {
+      key: "quality_bad",
+      label: "Flagged bad quality",
+      count: qualityBadCount,
+    },
+  ];
+
+  // Build the main list query. The filter chip lines up one-to-one with a
+  // flag type; we use a `some` relation filter so rows with the flag are
+  // included and nothing else is. Message search is applied by filtering to
+  // the IDs we pulled in the raw query above.
+  const activeFlag: FlagType | null =
+    flagParam && isFlagType(flagParam) ? flagParam : null;
+
+  const where: Prisma.ChatbotConversationWhereInput = {
+    ...tenantWhere(scope),
+  };
+  if (statusParam) where.status = statusParam;
+  if (activeFlag) where.flags = { some: { flag: activeFlag } };
+  if (messageMatchIds) {
+    if (messageMatchIds.size === 0) {
+      // No matches — short-circuit with an ID that won't exist.
+      where.id = "__no_match__";
+    } else {
+      where.id = { in: Array.from(messageMatchIds) };
+    }
+  }
+
+  let orderBy: Prisma.ChatbotConversationOrderByWithRelationInput;
+  if (sort === "longest") {
+    orderBy = { messageCount: "desc" };
+  } else if (sort === "most_flagged") {
+    orderBy = { flags: { _count: "desc" } };
+  } else {
+    orderBy = { lastMessageAt: "desc" };
+  }
+
+  const conversations = await prisma.chatbotConversation.findMany({
+    where,
+    orderBy,
+    take: 200,
+    include: {
+      lead: { select: { id: true, status: true } },
+      flags: { select: { flag: true }, orderBy: { createdAt: "desc" } },
+      _count: { select: { flags: true } },
+    },
+  });
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Chatbot conversations"
-        description="Every chat your site has run. Click a row to open the transcript, hand off to your team, or jump to the captured lead."
+        description="Read every transcript, flag patterns to tune the system prompt, and find the leads worth chasing. Filters are URL-driven so you can bookmark or share a view."
       />
 
-      <nav className="flex flex-wrap gap-1.5" aria-label="Filter by status">
-        <StatusLink current={status} value="" label="All" />
-        {Object.values(ChatbotConversationStatus).map((s) => (
-          <StatusLink
-            key={s}
-            current={status}
-            value={s}
-            label={humanChatbotStatus(s)}
-          />
-        ))}
-      </nav>
+      <TranscriptSearch
+        filters={filterChips}
+        initialQuery={qRaw}
+        initialFilter={flagParam}
+        initialSort={sort}
+      />
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard label="Total" value={totalAll} />
-        <StatCard
-          label="Lead captured"
-          value={leadCaptured}
-          tone={leadCaptured > 0 ? "success" : undefined}
-        />
-        <StatCard label="Active" value={active} />
-        <StatCard label="Handed off" value={handedOff} />
-      </section>
+      <p className="text-xs text-[var(--stone-gray)]">
+        Showing {conversations.length} of {totalConversations} conversations
+        {qRaw ? (
+          <>
+            {" "}matching <span className="font-semibold text-[var(--near-black)]">{qRaw}</span>
+          </>
+        ) : null}
+        .
+      </p>
 
       {conversations.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            No conversations match this filter yet.
+        <div className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-10 text-center">
+          <p className="text-sm text-[var(--olive-gray)]">
+            No conversations match this view yet.
           </p>
+          {qRaw || activeFlag ? (
+            <p className="text-xs text-[var(--stone-gray)] mt-1">
+              Try clearing your search or filter.
+            </p>
+          ) : null}
         </div>
       ) : (
-        <div className="rounded-lg border border-border bg-card overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <Th>Visitor</Th>
-                  <Th>Email</Th>
-                  <Th>Status</Th>
-                  <Th>Page</Th>
-                  <Th className="text-right">Msgs</Th>
-                  <Th className="text-right">Last msg</Th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {conversations.map((c) => (
-                  <tr
-                    key={c.id}
-                    className="hover:bg-muted/30 transition-colors"
-                  >
-                    <td className="px-4 py-3">
-                      <Link
-                        href={`/portal/conversations/${c.id}`}
-                        className="font-medium text-primary hover:underline underline-offset-2"
-                      >
-                        {c.capturedName ?? "Anonymous"}
-                      </Link>
-                      {c.lead ? (
-                        <div className="text-[11px] text-muted-foreground">
-                          Lead: {humanLeadStatus(c.lead.status)}
+        <ul className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] divide-y divide-[var(--border-cream)] overflow-hidden">
+          {conversations.map((c) => {
+            const firstMessage = firstUserMessage(c.messages);
+            const uniqueFlags = dedupeFlags(c.flags.map((f) => f.flag));
+            return (
+              <li key={c.id}>
+                <Link
+                  href={`/portal/conversations/${c.id}`}
+                  className="group block px-4 py-3 hover:bg-[var(--warm-sand)]/60 transition-colors"
+                >
+                  <div className="flex items-start justify-between gap-3 flex-wrap">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-[var(--near-black)] truncate">
+                          {c.capturedName ?? "Anonymous visitor"}
+                        </span>
+                        {c.capturedEmail ? (
+                          <span className="text-xs text-[var(--olive-gray)] truncate">
+                            {c.capturedEmail}
+                          </span>
+                        ) : null}
+                        <span className="text-[10px] uppercase tracking-widest text-[var(--stone-gray)]">
+                          {humanChatbotStatus(c.status)}
+                        </span>
+                      </div>
+                      {firstMessage ? (
+                        <p className="text-xs text-[var(--olive-gray)] mt-1 line-clamp-1">
+                          {truncate(firstMessage, 80)}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-[var(--stone-gray)] mt-1 italic">
+                          No user messages yet.
+                        </p>
+                      )}
+                      {uniqueFlags.length > 0 ? (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {uniqueFlags.slice(0, 4).map((f) => (
+                            <FlagPill key={f} flag={f} />
+                          ))}
+                          {uniqueFlags.length > 4 ? (
+                            <span className="text-[10px] text-[var(--stone-gray)] font-semibold uppercase tracking-widest self-center">
+                              +{uniqueFlags.length - 4}
+                            </span>
+                          ) : null}
                         </div>
                       ) : null}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {c.capturedEmail ?? "—"}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusBadge tone={chatbotStatusTone(c.status)}>
-                        {humanChatbotStatus(c.status)}
-                      </StatusBadge>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground truncate max-w-[24ch]">
-                      {c.pageUrl ?? "—"}
-                    </td>
-                    <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
-                      {c.messageCount}
-                    </td>
-                    <td className="px-4 py-3 text-right text-xs text-muted-foreground whitespace-nowrap">
-                      {formatDistanceToNow(c.lastMessageAt, { addSuffix: true })}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <div className="text-sm font-semibold tabular-nums text-[var(--near-black)]">
+                        {c.messageCount}
+                        <span className="text-[10px] text-[var(--stone-gray)] ml-1 font-normal">
+                          msgs
+                        </span>
+                      </div>
+                      <div className="text-[11px] text-[var(--stone-gray)] whitespace-nowrap mt-0.5">
+                        {formatDistanceToNow(c.lastMessageAt, {
+                          addSuffix: true,
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
 }
 
-function chatbotStatusTone(s: ChatbotConversationStatus) {
-  switch (s) {
-    case ChatbotConversationStatus.LEAD_CAPTURED:
-      return "success" as const;
-    case ChatbotConversationStatus.ACTIVE:
-      return "info" as const;
-    case ChatbotConversationStatus.HANDED_OFF:
-      return "warning" as const;
-    case ChatbotConversationStatus.ABANDONED:
-      return "muted" as const;
-    case ChatbotConversationStatus.CLOSED:
-    default:
-      return "neutral" as const;
+// Returns the first user message's content or null. Messages JSON is untyped,
+// so we guard every lookup.
+function firstUserMessage(raw: Prisma.JsonValue): string | null {
+  if (!Array.isArray(raw)) return null;
+  for (const m of raw as SerializedMessage[]) {
+    if (m && typeof m === "object" && m.role === "user" && typeof m.content === "string") {
+      return m.content.trim();
+    }
   }
+  return null;
 }
 
-function Th({
-  children,
-  className,
-}: {
-  children: React.ReactNode;
-  className?: string;
-}) {
-  return (
-    <th
-      className={`text-left px-4 py-2.5 text-[11px] font-medium text-muted-foreground ${className ?? ""}`}
-    >
-      {children}
-    </th>
-  );
+function truncate(s: string, max: number): string {
+  if (s.length <= max) return s;
+  return s.slice(0, max - 1).trimEnd() + "\u2026";
 }
 
-function StatusLink({
-  current,
-  value,
-  label,
-}: {
-  current: string | undefined;
-  value: string;
-  label: string;
-}) {
-  const active = (current ?? "") === value;
-  return (
-    <Link
-      href={
-        value
-          ? `/portal/conversations?status=${value}`
-          : "/portal/conversations"
-      }
-      className={`px-2.5 py-1 rounded-md text-xs font-medium border transition-colors ${
-        active
-          ? "bg-primary text-primary-foreground border-primary"
-          : "bg-card text-foreground border-border hover:bg-muted/50"
-      }`}
-    >
-      {label}
-    </Link>
-  );
+function dedupeFlags(flags: string[]): FlagType[] {
+  const seen = new Set<FlagType>();
+  for (const f of flags) {
+    if (isFlagType(f)) seen.add(f);
+  }
+  // Preserve canonical order so pill lineups look stable.
+  return FLAG_TYPES.filter((f) => seen.has(f));
 }

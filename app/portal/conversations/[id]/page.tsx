@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { format, formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { HandoffButton } from "./handoff-button";
+import { ConversationSidebar } from "./conversation-sidebar";
+import { humanChatbotStatus } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Conversation" };
 export const dynamic = "force-dynamic";
@@ -13,6 +16,14 @@ type SerializedMessage = {
   content: string;
   ts?: string;
 };
+
+// ---------------------------------------------------------------------------
+// Conversation detail
+//
+// Two-column layout: transcript on the left, review sidebar on the right.
+// The sidebar holds the flag toggles, a notes field, and visitor/lead cross
+// links so the operator can jump to related records without losing place.
+// ---------------------------------------------------------------------------
 
 export default async function ConversationDetail({
   params,
@@ -24,88 +35,219 @@ export default async function ConversationDetail({
 
   const convo = await prisma.chatbotConversation.findFirst({
     where: { id, ...tenantWhere(scope) },
-    include: { lead: true, property: { select: { id: true, name: true } } },
+    include: {
+      lead: true,
+      property: { select: { id: true, name: true } },
+      flags: {
+        orderBy: { createdAt: "desc" },
+        select: { id: true, flag: true, note: true, createdAt: true },
+      },
+    },
   });
   if (!convo) notFound();
+
+  // Resolve linked visitor (by visitorHash) so the sidebar can link to the
+  // visitor profile. Scoped by org to prevent cross-tenant leakage.
+  const linkedVisitor = convo.visitorHash
+    ? await prisma.visitor.findFirst({
+        where: { orgId: scope.orgId, visitorHash: convo.visitorHash },
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          status: true,
+        },
+      })
+    : null;
 
   const messages = (Array.isArray(convo.messages)
     ? (convo.messages as unknown as SerializedMessage[])
     : []) as SerializedMessage[];
 
+  const initialFlags = convo.flags.map((f) => ({
+    id: f.id,
+    flag: f.flag,
+    note: f.note,
+    createdAt: f.createdAt.toISOString(),
+  }));
+
+  const handoffDisabled =
+    convo.status === "HANDED_OFF" || convo.status === "CLOSED";
+
   return (
-    <div className="space-y-8 max-w-3xl">
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
+    <div className="space-y-6">
+      {/* Top bar */}
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div className="min-w-0">
           <Link
             href="/portal/conversations"
-            className="text-xs opacity-60 hover:opacity-100"
+            className="text-xs text-[var(--stone-gray)] hover:text-[var(--near-black)] transition-colors"
           >
-            ← Conversations
+            {"\u2190"} All conversations
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight mt-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-[var(--near-black)] mt-2">
             {convo.capturedName ?? "Anonymous visitor"}
           </h1>
-          <p className="text-sm opacity-70 mt-1">
+          <p className="text-sm text-[var(--olive-gray)] mt-1">
             {convo.capturedEmail ?? "No email captured"}
-            {convo.capturedPhone ? ` · ${convo.capturedPhone}` : ""}
-          </p>
-          <p className="text-xs opacity-60 mt-1">
-            {convo.messageCount} messages · {convo.status}
-            {convo.pageUrl ? ` · ${convo.pageUrl}` : ""}
+            {convo.capturedPhone ? ` \u00b7 ${convo.capturedPhone}` : ""}
           </p>
         </div>
         <HandoffButton
           conversationId={convo.id}
-          disabled={
-            convo.status === "HANDED_OFF" || convo.status === "CLOSED"
+          disabled={handoffDisabled}
+        />
+      </div>
+
+      {/* Metadata chips row */}
+      <div className="flex flex-wrap items-center gap-1.5">
+        <MetaChip
+          label="Status"
+          value={humanChatbotStatus(convo.status)}
+        />
+        <MetaChip
+          label="First seen"
+          value={format(convo.createdAt, "MMM d, yyyy p")}
+        />
+        <MetaChip
+          label="Last message"
+          value={formatDistanceToNow(convo.lastMessageAt, { addSuffix: true })}
+        />
+        <MetaChip label="Messages" value={String(convo.messageCount)} />
+        {convo.handedOffAt ? (
+          <MetaChip
+            label="Handoff"
+            value={formatDistanceToNow(convo.handedOffAt, { addSuffix: true })}
+            tone="warn"
+          />
+        ) : (
+          <MetaChip label="Handoff" value="None" tone="muted" />
+        )}
+        {convo.pageUrl ? (
+          <MetaChip label="Page" value={compactUrl(convo.pageUrl)} />
+        ) : null}
+        {convo.property ? (
+          <MetaChip label="Property" value={convo.property.name} />
+        ) : null}
+      </div>
+
+      {/* Two-column layout: transcript + sidebar. On mobile sidebar stacks
+          below the transcript. */}
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
+        <section className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-5">
+          <div className="flex items-baseline justify-between mb-4">
+            <h2 className="text-sm font-semibold text-[var(--near-black)]">
+              Transcript
+            </h2>
+            <span className="text-[10px] uppercase tracking-widest text-[var(--stone-gray)]">
+              {messages.length} message{messages.length === 1 ? "" : "s"}
+            </span>
+          </div>
+          {messages.length === 0 ? (
+            <p className="text-sm text-[var(--stone-gray)]">
+              No messages on record.
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {messages.map((m, i) => (
+                <MessageBubble key={i} message={m} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <ConversationSidebar
+          conversationId={convo.id}
+          initialFlags={initialFlags}
+          lead={
+            convo.lead
+              ? {
+                  id: convo.lead.id,
+                  status: convo.lead.status,
+                }
+              : null
+          }
+          visitor={
+            linkedVisitor
+              ? {
+                  id: linkedVisitor.id,
+                  displayName:
+                    [linkedVisitor.firstName, linkedVisitor.lastName]
+                      .filter(Boolean)
+                      .join(" ") || linkedVisitor.email || "View profile",
+                  status: linkedVisitor.status,
+                }
+              : null
           }
         />
-      </header>
-
-      {convo.lead ? (
-        <div className="border rounded-md p-4 bg-emerald-50 border-emerald-200 text-sm flex items-baseline justify-between gap-3">
-          <span>
-            Lead captured, status{" "}
-            <span className="font-semibold">{convo.lead.status}</span>
-          </span>
-          <Link
-            href={`/portal/leads/${convo.lead.id}`}
-            className="text-xs underline"
-          >
-            Open lead →
-          </Link>
-        </div>
-      ) : null}
-
-      <section className="space-y-3">
-        {messages.length === 0 ? (
-          <p className="text-sm opacity-60">No messages on record.</p>
-        ) : (
-          messages.map((m, i) => (
-            <div
-              key={i}
-              className={`flex ${
-                m.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              <div
-                className={`max-w-[80%] text-sm px-4 py-2 rounded-2xl whitespace-pre-wrap ${
-                  m.role === "user"
-                    ? "bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
-                    : "bg-muted"
-                }`}
-              >
-                {m.content}
-                {m.ts ? (
-                  <div className="text-[10px] opacity-60 mt-1">
-                    {new Date(m.ts).toLocaleString()}
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          ))
-        )}
-      </section>
+      </div>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Local UI helpers
+// ---------------------------------------------------------------------------
+
+function MessageBubble({ message }: { message: SerializedMessage }) {
+  const isUser = message.role === "user";
+  return (
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+      <div
+        className={`max-w-[85%] text-sm px-4 py-2.5 rounded-[10px] whitespace-pre-wrap ${
+          isUser
+            ? "bg-[var(--near-black)] text-[var(--ivory)]"
+            : "bg-[var(--warm-sand)] text-[var(--near-black)]"
+        }`}
+      >
+        <div className="text-[10px] uppercase tracking-widest opacity-70 mb-1">
+          {isUser ? "Visitor" : "Assistant"}
+        </div>
+        {message.content}
+        {message.ts ? (
+          <div className="text-[10px] opacity-60 mt-1 tabular-nums">
+            {format(new Date(message.ts), "MMM d, p")}
+          </div>
+        ) : null}
+      </div>
+    </div>
+  );
+}
+
+function MetaChip({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "warn" | "muted";
+}) {
+  const toneClass =
+    tone === "warn"
+      ? "bg-amber-50 text-amber-900 ring-amber-200"
+      : tone === "muted"
+        ? "bg-[var(--warm-sand)] text-[var(--olive-gray)] ring-[var(--border-cream)]"
+        : "bg-[var(--ivory)] text-[var(--near-black)] ring-[var(--border-cream)]";
+  return (
+    <span
+      className={`inline-flex items-center gap-1 rounded-[6px] px-2 py-1 text-[11px] ring-1 ring-inset ${toneClass}`}
+    >
+      <span className="text-[10px] uppercase tracking-widest text-[var(--stone-gray)]">
+        {label}
+      </span>
+      <span className="font-semibold">{value}</span>
+    </span>
+  );
+}
+
+function compactUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const path = u.pathname === "/" ? "" : u.pathname;
+    return `${u.hostname}${path}`.slice(0, 40);
+  } catch {
+    return url.slice(0, 40);
+  }
 }
