@@ -987,3 +987,73 @@ included). New cron route passes the structural test in
 `__tests__/api-route-structure.test.ts`. Pre-existing test failures in the
 suite are unrelated to this change (stale schema references like `WebhookLog`,
 `processed/sent/skipped` enums, etc.).
+
+---
+
+## Sprint NN, E2E Test Suite (Playwright) — Bugs Found
+
+While building out the Playwright E2E suite, two genuine product bugs surfaced
+that block the tenant marketing site under any non-secure-context hostname. I
+did NOT fix these (per the agent's scope rules — chatbot/pixel components are
+owned by other agents). Documenting here so the right owner picks them up.
+
+**Bug 1: Chatbot widget crashes on insecure-context hostnames.**
+The `ProactiveWidget` (under `components/chatbot/`) calls `crypto.randomUUID()`
+inside an `useEffect` (`ensureSessionId`). `crypto.randomUUID()` is only
+available in [secure contexts](https://developer.mozilla.org/en-US/docs/Web/API/Crypto/randomUUID),
+which means `localhost`, `127.0.0.1`, and any HTTPS origin. Tenant sites
+served over plain HTTP on a custom hostname (e.g. previews / staging on
+`*.realestaite.co` not behind Vercel TLS) trip an uncaught
+`TypeError: crypto.randomUUID is not a function` that bubbles up into the
+root error boundary and replaces the entire tenant site with the
+"Something went wrong" page. Reproducer:
+
+  1. `pnpm dev`
+  2. `curl -H "Host: telegraph-commons.realestaite.co" http://127.0.0.1:3000/`
+     SSR works (returns 200 with the real markup).
+  3. Open the same URL in a browser via host-resolver-rules. The page
+     hydrates, ChatbotLoader mounts, the effect fires, and the entire
+     tenant site swaps to /error.
+
+Fix: in `components/chatbot/proactive-widget.tsx` (or wherever
+`ensureSessionId` lives), guard the call:
+
+```ts
+const uuid =
+  typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+    ? crypto.randomUUID()
+    : `sid_${Math.random().toString(36).slice(2)}_${Date.now().toString(36)}`;
+```
+
+The Playwright suite works around this by polyfilling `crypto.randomUUID`
+in an init script (`e2e/helpers/secure-context-polyfill.ts`) so the bug
+doesn't mask other failures, but production should not depend on the
+polyfill — tenant sites without TLS will crash for real users.
+
+**Owners.** `components/chatbot/*` and `lib/chatbot/*` (chatbot agent).
+
+**Severity.** HIGH for any non-Vercel preview surface, LOW for production
+once HTTPS is on every tenant domain. Worth fixing before the next demo
+hits a customer's pre-prod environment.
+
+**Bug 2: `/apply` and related routes are globally redirected to `/` by
+leftover Wholesail config.**
+`next.config.mjs` registers a `redirects()` block that 307s `/apply`,
+`/apply/:slug*`, `/journal`, `/provenance`, `/social`, `/guide`,
+`/seasonal`, `/drops`, `/drops/:slug*`, and `/partner` to `/`. The comment
+above the block calls out that this was carried over from the TBGC
+distribution-portal template — but the real-estate tenant-site router at
+`app/(tenant)/tenant-site/[[...path]]/page.tsx` has a real `apply` case
+that renders the lead-application form. Because the redirect runs before
+the middleware rewrite, every tenant site's `/apply` URL silently bounces
+to home. Operators relying on `primaryCtaUrl: "/apply"` (the default) get
+a no-op CTA.
+
+Fix: drop `/apply` and `/apply/:slug*` from the redirects array. The
+other entries (journal/provenance/etc.) can stay until someone owns a
+broader spring cleanup.
+
+**Owners.** Platform / next.config.
+
+**Severity.** HIGH — silently breaks the primary CTA on every tenant
+site that defaults to `/apply`. Trivial fix.
