@@ -1,10 +1,8 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <!-- Dark background with rounded corners -->
   <rect width="64" height="64" rx="12" fill="#0A0A0A"/>
-  <!-- Main sail (tall, left of mast) -->
-  <path d="M31 9L31 51L11 51Z" fill="#FFFFFF" opacity="0.95"/>
-  <!-- Fore sail (shorter, right of mast) -->
-  <path d="M33 19L33 51L53 51Z" fill="#FFFFFF" opacity="0.55"/>
-  <!-- Hull -->
-  <path d="M8 54Q32 60 56 54" stroke="#C8C0B4" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <!-- L -->
+  <rect x="13" y="14" width="5" height="28" rx="1" fill="white"/>
+  <rect x="13" y="37" width="16" height="5" rx="1" fill="white"/>
+  <!-- S -->
+  <path d="M36 14h13a1 1 0 0 1 1 1v5a1 1 0 0 1-1 1H38a1 1 0 0 0-1 1v3a1 1 0 0 0 1 1h11a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H36a1 1 0 0 1-1-1v-5a1 1 0 0 1 1-1h11a1 1 0 0 0 1-1v-3a1 1 0 0 0-1-1H36a1 1 0 0 1-1-1v-8a1 1 0 0 1 1-1z" fill="white"/>
 </svg>

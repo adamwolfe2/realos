@@ -49,9 +49,11 @@ export const metadata: Metadata = {
       { url: "/favicon.svg", type: "image/svg+xml" },
       { url: "/icon-32x32.png", sizes: "32x32", type: "image/png" },
       { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
     ],
     apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
     shortcut: "/favicon.svg",
+    other: [{ rel: "mask-icon", url: "/favicon.svg", color: "#0A0A0A" }],
   },
   openGraph: {
     title: `${BRAND_NAME}, managed marketing for real estate operators`,
