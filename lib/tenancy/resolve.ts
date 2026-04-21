@@ -42,10 +42,12 @@ function getPlatformDomain(): string {
 
 function normalizeHost(input: string): string {
   return input
+    .trim()
     .replace(/^https?:\/\//, "")
     .split("/")[0]
     .split(":")[0]
-    .toLowerCase();
+    .toLowerCase()
+    .trim();
 }
 
 // ---------------------------------------------------------------------------
