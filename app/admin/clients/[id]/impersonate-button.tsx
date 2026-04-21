@@ -1,10 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
 
 export function ImpersonateButton({ orgId }: { orgId: string }) {
-  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
 
@@ -21,8 +19,11 @@ export function ImpersonateButton({ orgId }: { orgId: string }) {
           const body = await res.json().catch(() => ({}));
           throw new Error(body.error ?? `Failed (${res.status})`);
         }
-        router.push("/portal");
-        router.refresh();
+        // Hard navigation forces Clerk to refresh the session JWT so the
+        // newly-set publicMetadata.impersonateOrgId claim is in scope. With
+        // a soft router.push the existing JWT lacks the claim and getScope()
+        // bounces the agency user back to /admin.
+        window.location.href = "/portal";
       } catch (err) {
         setError(
           err instanceof Error ? err.message : "Impersonation failed"
