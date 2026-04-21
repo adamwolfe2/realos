@@ -54,10 +54,10 @@ const nextConfig = {
     ],
   },
   async redirects() {
-    // These TBGC template pages were carried over from the distribution portal
-    // template and have luxury food distributor content that doesn't belong on
-    // wholesailhub.com (a B2B software platform). Redirect to homepage.
-    const tbgcPages = [
+    // Legacy template pages from the original fork. Redirect to homepage so
+    // residual external links land somewhere coherent. /apply is reserved for
+    // tenant marketing sites and is intentionally NOT redirected.
+    const legacyPages = [
       "/journal",
       "/journal/:slug*",
       "/provenance",
@@ -68,10 +68,8 @@ const nextConfig = {
       "/drops",
       "/drops/:slug*",
       "/partner",
-      "/apply",
-      "/apply/:slug*",
     ];
-    return tbgcPages.map((source) => ({
+    return legacyPages.map((source) => ({
       source,
       destination: "/",
       permanent: false,

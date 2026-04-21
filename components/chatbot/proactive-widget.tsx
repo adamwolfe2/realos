@@ -15,16 +15,30 @@ type EngagementMessage = {
   createdAt: string;
 };
 
+// Fallback UUID generator for insecure contexts (plain HTTP, non-localhost
+// preview environments) where window.crypto.randomUUID is undefined. Without
+// this guard the entire tenant layout crashes on first widget mount.
+function safeUUID(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === "x" ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
 function ensureSessionId(): string {
-  if (typeof window === "undefined") return crypto.randomUUID();
+  if (typeof window === "undefined") return safeUUID();
   try {
     const existing = window.sessionStorage.getItem(SESSION_STORAGE_KEY);
     if (existing) return existing;
-    const fresh = crypto.randomUUID();
+    const fresh = safeUUID();
     window.sessionStorage.setItem(SESSION_STORAGE_KEY, fresh);
     return fresh;
   } catch {
-    return crypto.randomUUID();
+    return safeUUID();
   }
 }
 
