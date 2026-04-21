@@ -6,9 +6,11 @@
  */
 
 import Stripe from "stripe";
-import { STRIPE_API_VERSION } from "./constants";
 import { StripeNotConfiguredError } from "./errors";
 import { BRAND_NAME } from "@/lib/brand";
+
+/** Pinned Stripe API version. Bumped intentionally on SDK upgrade. */
+const STRIPE_API_VERSION = "2026-02-25.clover" as const satisfies Stripe.LatestApiVersion;
 
 let _stripe: Stripe | null = null;
 
