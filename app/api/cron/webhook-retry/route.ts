@@ -12,6 +12,7 @@ import { recordCronRun } from "@/lib/health/cron-run";
 
 const MAX_ATTEMPTS = 5;
 const BACKOFF_SECS = [60, 5 * 60, 30 * 60, 2 * 60 * 60, 12 * 60 * 60];
+const ALLOWED_SOURCES = new Set(["clerk", "cursive", "resend", "stripe"]);
 
 export async function GET(req: Request) {
   return recordCronRun("webhook-retry", async () => {
@@ -47,6 +48,12 @@ export async function GET(req: Request) {
           },
         });
         abandoned++;
+        continue;
+      }
+      if (!ALLOWED_SOURCES.has(event.source)) {
+        console.warn(
+          `[webhook-retry] skipping event ${event.id}: source "${event.source}" not in allowlist`,
+        );
         continue;
       }
       const url = new URL(req.url);
