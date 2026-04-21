@@ -9,12 +9,13 @@ export const dynamic = "force-dynamic";
 export default async function SiteBuilderPage() {
   const scope = await requireScope();
 
-  const [org, existingConfig] = await Promise.all([
+  const [org, existingConfig, primaryBinding] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
       select: {
         id: true,
         name: true,
+        slug: true,
         moduleWebsite: true,
         moduleChatbot: true,
         modulePixel: true,
@@ -22,6 +23,10 @@ export default async function SiteBuilderPage() {
       },
     }),
     prisma.tenantSiteConfig.findUnique({ where: { orgId: scope.orgId } }),
+    prisma.domainBinding.findFirst({
+      where: { orgId: scope.orgId, isPrimary: true },
+      select: { hostname: true },
+    }),
   ]);
 
   if (!org?.moduleWebsite || org.bringYourOwnSite) {
@@ -48,6 +53,8 @@ export default async function SiteBuilderPage() {
       </header>
       <SiteBuilderForm
         orgName={org.name}
+        orgSlug={org.slug}
+        primaryDomain={primaryBinding?.hostname ?? null}
         moduleChatbot={org.moduleChatbot}
         modulePixel={org.modulePixel}
         initial={existingConfig}
