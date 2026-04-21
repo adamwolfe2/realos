@@ -107,7 +107,7 @@ export default async function IntegrationsPage() {
   const pixelEligible = org.modulePixel || org.moduleChatbot;
 
   const appBaseUrl = (
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://realestaite.vercel.app"
+    process.env.NEXT_PUBLIC_APP_URL ?? "https://realos-nine.vercel.app"
   ).replace(/\/$/, "");
 
   const appfolioConnected =
