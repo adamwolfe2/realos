@@ -742,3 +742,86 @@ function safeShortPath(url: string): string | null {
 // Used by the activity titles' string concat above to satisfy TS lint about
 // unused exports. Re-exporting here keeps the public surface explicit.
 export type { ActivityItem, ActivityKind };
+
+// ---------------------------------------------------------------------------
+// Leasing velocity trend (12-week rolling)
+//
+// Returns week-by-week counts of leads, tours, and applications for the last
+// 12 weeks (oldest -> newest). Used by the LeasingVelocityChart on /portal.
+// ---------------------------------------------------------------------------
+
+export type WeeklyVelocityPoint = {
+  weekLabel: string;
+  weekStart: Date;
+  leads: number;
+  tours: number;
+  applications: number;
+};
+
+export async function getLeasingVelocityTrend(
+  orgId: string,
+  weeks = 12,
+): Promise<WeeklyVelocityPoint[]> {
+  const now = Date.now();
+  const WEEK_MS = 7 * DAY_MS;
+  const since = new Date(now - weeks * WEEK_MS);
+
+  const [leads, tours, applications] = await Promise.all([
+    prisma.lead.findMany({
+      where: { orgId, createdAt: { gte: since } },
+      select: { createdAt: true },
+    }),
+    prisma.tour.findMany({
+      where: {
+        lead: { orgId },
+        createdAt: { gte: since },
+        status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
+      },
+      select: { createdAt: true },
+    }),
+    prisma.application.findMany({
+      where: {
+        lead: { orgId },
+        createdAt: { gte: since },
+      },
+      select: { createdAt: true },
+    }),
+  ]);
+
+  const leadsPerWeek = new Array<number>(weeks).fill(0);
+  const toursPerWeek = new Array<number>(weeks).fill(0);
+  const appsPerWeek = new Array<number>(weeks).fill(0);
+
+  function weekIdx(date: Date): number {
+    const ageMs = now - date.getTime();
+    if (ageMs < 0) return weeks - 1;
+    const weeksAgo = Math.floor(ageMs / WEEK_MS);
+    return weeks - 1 - weeksAgo;
+  }
+
+  for (const r of leads) {
+    const i = weekIdx(r.createdAt);
+    if (i >= 0 && i < weeks) leadsPerWeek[i] += 1;
+  }
+  for (const r of tours) {
+    const i = weekIdx(r.createdAt);
+    if (i >= 0 && i < weeks) toursPerWeek[i] += 1;
+  }
+  for (const r of applications) {
+    const i = weekIdx(r.createdAt);
+    if (i >= 0 && i < weeks) appsPerWeek[i] += 1;
+  }
+
+  return leadsPerWeek.map((leadCount, i) => {
+    const weeksAgo = weeks - 1 - i;
+    const weekStart = new Date(now - (weeksAgo + 1) * WEEK_MS);
+    const label = weeksAgo === 0 ? "This wk" : `${weeksAgo}w ago`;
+    return {
+      weekLabel: label,
+      weekStart,
+      leads: leadCount,
+      tours: toursPerWeek[i],
+      applications: appsPerWeek[i],
+    };
+  });
+}

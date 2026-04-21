@@ -219,37 +219,52 @@ export async function getBriefingMetrics(orgId: string) {
   const since7d = new Date(now - 7 * DAY);
   const since14d = new Date(now - 14 * DAY);
 
-  const [curLeads, prevLeads, curTours, prevTours, adSpend, prevSpend, organic, prevOrganic, chats, prevChats] =
-    await Promise.all([
-      prisma.lead.count({ where: { orgId, createdAt: { gte: since7d } } }),
-      prisma.lead.count({ where: { orgId, createdAt: { gte: since14d, lt: since7d } } }),
-      prisma.tour.count({ where: { lead: { orgId }, createdAt: { gte: since7d } } }),
-      prisma.tour.count({ where: { lead: { orgId }, createdAt: { gte: since14d, lt: since7d } } }),
-      prisma.adMetricDaily.aggregate({
-        where: { orgId, date: { gte: since7d } },
-        _sum: { spendCents: true },
-      }),
-      prisma.adMetricDaily.aggregate({
-        where: { orgId, date: { gte: since14d, lt: since7d } },
-        _sum: { spendCents: true },
-      }),
-      prisma.seoSnapshot.aggregate({
-        where: { orgId, date: { gte: since7d } },
-        _sum: { organicSessions: true },
-      }),
-      prisma.seoSnapshot.aggregate({
-        where: { orgId, date: { gte: since14d, lt: since7d } },
-        _sum: { organicSessions: true },
-      }),
-      prisma.chatbotConversation.count({ where: { orgId, createdAt: { gte: since7d } } }),
-      prisma.chatbotConversation.count({
-        where: { orgId, createdAt: { gte: since14d, lt: since7d } },
-      }),
-    ]);
+  const [
+    curLeads,
+    prevLeads,
+    curTours,
+    prevTours,
+    adSpend,
+    prevSpend,
+    organic,
+    prevOrganic,
+    chats,
+    prevChats,
+    curApps,
+    prevApps,
+  ] = await Promise.all([
+    prisma.lead.count({ where: { orgId, createdAt: { gte: since7d } } }),
+    prisma.lead.count({ where: { orgId, createdAt: { gte: since14d, lt: since7d } } }),
+    prisma.tour.count({ where: { lead: { orgId }, createdAt: { gte: since7d } } }),
+    prisma.tour.count({ where: { lead: { orgId }, createdAt: { gte: since14d, lt: since7d } } }),
+    prisma.adMetricDaily.aggregate({
+      where: { orgId, date: { gte: since7d } },
+      _sum: { spendCents: true },
+    }),
+    prisma.adMetricDaily.aggregate({
+      where: { orgId, date: { gte: since14d, lt: since7d } },
+      _sum: { spendCents: true },
+    }),
+    prisma.seoSnapshot.aggregate({
+      where: { orgId, date: { gte: since7d } },
+      _sum: { organicSessions: true },
+    }),
+    prisma.seoSnapshot.aggregate({
+      where: { orgId, date: { gte: since14d, lt: since7d } },
+      _sum: { organicSessions: true },
+    }),
+    prisma.chatbotConversation.count({ where: { orgId, createdAt: { gte: since7d } } }),
+    prisma.chatbotConversation.count({
+      where: { orgId, createdAt: { gte: since14d, lt: since7d } },
+    }),
+    prisma.application.count({ where: { lead: { orgId }, createdAt: { gte: since7d } } }),
+    prisma.application.count({ where: { lead: { orgId }, createdAt: { gte: since14d, lt: since7d } } }),
+  ]);
 
   return {
     leads: { current: curLeads, previous: prevLeads, deltaPct: pct(curLeads, prevLeads) },
     tours: { current: curTours, previous: prevTours, deltaPct: pct(curTours, prevTours) },
+    applications: { current: curApps, previous: prevApps, deltaPct: pct(curApps, prevApps) },
     adSpendUsd: {
       current: Math.round((adSpend._sum.spendCents ?? 0) / 100),
       previous: Math.round((prevSpend._sum.spendCents ?? 0) / 100),

@@ -36,10 +36,12 @@ import {
   getHotVisitors,
   getIntegrationHealth,
   getLeadSourceBreakdown,
+  getLeasingVelocityTrend,
   getLeadStatusCounts,
   getOrganicSessionsKpi,
   getPropertyMetrics,
 } from "@/lib/dashboard/queries";
+import { LeasingVelocityChart } from "@/components/portal/dashboard/leasing-velocity-chart";
 import { getOpenInsights, getInsightCounts } from "@/lib/insights/queries";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 import { Sparkles } from "lucide-react";
@@ -90,6 +92,7 @@ export default async function PortalHome({
     firstRun,
     openInsights,
     insightCounts,
+    velocityData,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -158,6 +161,7 @@ export default async function PortalHome({
     getFirstRunProgress(scope.orgId),
     getOpenInsights(scope.orgId, { limit: 3 }),
     getInsightCounts(scope.orgId),
+    getLeasingVelocityTrend(scope.orgId),
   ]);
 
   // 28d leads + active campaigns + sparkline per property.
@@ -400,6 +404,16 @@ export default async function PortalHome({
               />
             </DashboardSection>
           </section>
+
+          {/* Leasing velocity trend */}
+          <DashboardSection
+            eyebrow="Week over week"
+            title="Leasing velocity"
+            description="Leads, tours, and applications for the last 12 weeks. The shape tells you if momentum is building or stalling."
+            href="/portal/leads"
+          >
+            <LeasingVelocityChart data={velocityData} />
+          </DashboardSection>
 
           {/* Properties + activity feed */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">

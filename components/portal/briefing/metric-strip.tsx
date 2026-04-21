@@ -14,6 +14,7 @@ export function MetricStrip({
   metrics: {
     leads: { current: number; deltaPct: number | null };
     tours: { current: number; deltaPct: number | null };
+    applications: { current: number; deltaPct: number | null };
     adSpendUsd: { current: number; deltaPct: number | null };
     organicSessions: { current: number; deltaPct: number | null };
     chatbotConversations: { current: number; deltaPct: number | null };
@@ -30,6 +31,12 @@ export function MetricStrip({
       label: "Tours",
       value: metrics.tours.current.toLocaleString(),
       deltaPct: metrics.tours.deltaPct,
+      good: "up",
+    },
+    {
+      label: "Applications",
+      value: metrics.applications.current.toLocaleString(),
+      deltaPct: metrics.applications.deltaPct,
       good: "up",
     },
     {
