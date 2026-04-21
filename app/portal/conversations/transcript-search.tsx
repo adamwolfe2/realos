@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Search, X } from "lucide-react";
@@ -34,7 +35,7 @@ const SORT_OPTIONS: SortOption[] = [
   { value: "most_flagged", label: "Most flagged" },
 ];
 
-export function TranscriptSearch({
+function TranscriptSearchInner({
   filters,
   initialQuery,
   initialFilter,
@@ -169,5 +170,15 @@ export function TranscriptSearch({
         })}
       </nav>
     </div>
+  );
+}
+
+export function TranscriptSearch(
+  props: React.ComponentProps<typeof TranscriptSearchInner>,
+) {
+  return (
+    <Suspense fallback={<div className="h-24 animate-pulse rounded-md bg-muted" />}>
+      <TranscriptSearchInner {...props} />
+    </Suspense>
   );
 }

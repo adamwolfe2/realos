@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { Suspense } from "react";
 import {
   LayoutDashboard,
   TrendingUp,
@@ -49,7 +50,7 @@ const OCCUPANCY_TAB: TabDef = {
   icon: Building2,
 };
 
-export function PropertyTabs({
+function PropertyTabsInner({
   initialTab,
   showOccupancy,
   panels,
@@ -141,5 +142,15 @@ export function PropertyTabs({
         })}
       </div>
     </div>
+  );
+}
+
+export function PropertyTabs(
+  props: React.ComponentProps<typeof PropertyTabsInner>,
+) {
+  return (
+    <Suspense fallback={<div className="h-10 animate-pulse rounded-md bg-muted" />}>
+      <PropertyTabsInner {...props} />
+    </Suspense>
   );
 }
