@@ -47,7 +47,7 @@ const SECTIONS = [
   },
   {
     title: "Contact",
-    body: [`${BRAND_NAME}, San Diego, California.`, "hello@leasestack.co"],
+    body: [`${BRAND_NAME}, San Diego, California.`, process.env.RESEND_FROM_EMAIL ?? "hello@leasestack.co"],
   },
 ];
 

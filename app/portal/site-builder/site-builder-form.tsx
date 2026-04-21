@@ -210,7 +210,7 @@ export function SiteBuilderForm({
 
   const previewUrl = primaryDomain
     ? `https://${primaryDomain}`
-    : `https://${orgSlug}.leasestack.co`;
+    : `https://${orgSlug}.${process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ?? "leasestack.co"}`;
 
   return (
     <form onSubmit={submit} className="space-y-6 pb-24">

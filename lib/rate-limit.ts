@@ -8,7 +8,7 @@ function createRedis(): Redis | null {
   const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN
   if (!url || !token) {
     if (!redisWarningLogged) {
-      console.warn('[RATE-LIMIT] Redis not configured — rate limiting disabled. Set KV_REST_API_URL and KV_REST_API_TOKEN to enable.')
+      console.error('RATE_LIMIT_DISABLED: KV_REST_API_URL not configured — rate limiting disabled. Set KV_REST_API_URL and KV_REST_API_TOKEN to enable.')
       redisWarningLogged = true
     }
     return null
@@ -83,15 +83,9 @@ export async function checkRateLimit(
   identifier: string
 ): Promise<{ allowed: boolean; limit: number; remaining: number; reset: number }> {
   if (!limiter) {
-    // DECISION: fail OPEN when the limiter isn't provisioned. Failing closed
-    // (the previous behavior) breaks every public endpoint the moment Redis
-    // isn't wired — including the chatbot on tenant marketing sites. The
-    // backing store should be provisioned (Upstash or Vercel KV) before
-    // exposing the site to cold traffic; until then, log loudly but let
-    // requests through so the product stays usable.
-    if (process.env.NODE_ENV === 'production' && !redisWarningLogged) {
-      console.warn('[RATE-LIMIT] Limiter unavailable — failing OPEN. Provision KV_REST_API_URL + KV_REST_API_TOKEN to enable enforcement.')
-    }
+    // Fail OPEN: rate limiting is disabled when Redis is not provisioned.
+    // A one-time console.error fires at module load (see createRedis) so
+    // Vercel logs surface the misconfiguration without blocking every request.
     return { allowed: true, limit: 0, remaining: 0, reset: 0 }
   }
   const result = await limiter.limit(identifier)
