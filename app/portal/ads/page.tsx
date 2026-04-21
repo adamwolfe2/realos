@@ -3,6 +3,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
+import { ExportButton } from "@/components/ui/export-button";
 import { AdPlatform } from "@prisma/client";
 import { AdsDashboard } from "./ads-dashboard";
 
@@ -93,12 +94,15 @@ export default async function AdsPage() {
         title="Paid ads"
         description="Spend, clicks, and conversions from every connected ad platform. Refreshes daily."
         actions={
-          <Link
-            href="/portal/settings/integrations"
-            className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
-          >
-            Connect an ad account
-          </Link>
+          <div className="flex items-center gap-2">
+            <ExportButton href="/api/tenant/ad-metrics/export?days=90" />
+            <Link
+              href="/portal/settings/integrations"
+              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+            >
+              Connect an ad account
+            </Link>
+          </div>
         }
       />
 

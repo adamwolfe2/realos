@@ -12,6 +12,7 @@ import {
 } from "@/lib/visitors/enrichment";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
+import { ExportButton } from "@/components/ui/export-button";
 import { StatCard } from "@/components/admin/stat-card";
 import { EngageComposer } from "./engage-composer";
 
@@ -280,20 +281,23 @@ export default async function VisitorsPage({
         title="Visitor feed"
         description="Real people visiting your site, identified by the pixel. Updates every 15 seconds."
         actions={
-          hasPixel ? (
-            <p className="text-xs text-muted-foreground">
-              Pixel on{" "}
-              <span className="font-medium text-foreground">
-                {integration?.installedOnDomain ?? "unknown host"}
-              </span>
-              {integration?.lastEventAt
-                ? ` · last event ${formatDistanceToNow(
-                    integration.lastEventAt,
-                    { addSuffix: true }
-                  )}`
-                : " · no events yet"}
-            </p>
-          ) : null
+          <div className="flex items-center gap-3">
+            {hasPixel ? (
+              <p className="text-xs text-muted-foreground">
+                Pixel on{" "}
+                <span className="font-medium text-foreground">
+                  {integration?.installedOnDomain ?? "unknown host"}
+                </span>
+                {integration?.lastEventAt
+                  ? ` · last event ${formatDistanceToNow(
+                      integration.lastEventAt,
+                      { addSuffix: true }
+                    )}`
+                  : " · no events yet"}
+              </p>
+            ) : null}
+            <ExportButton href="/api/tenant/visitors/export" />
+          </div>
         }
       />
 

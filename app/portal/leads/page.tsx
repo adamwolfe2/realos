@@ -8,6 +8,7 @@ import {
   type LeadKanbanItem,
 } from "@/components/portal/lead-kanban";
 import { PageHeader } from "@/components/admin/page-header";
+import { ExportButton } from "@/components/ui/export-button";
 import { humanLeadSource } from "@/lib/format";
 
 export const metadata: Metadata = { title: "Leads" };
@@ -70,8 +71,11 @@ export default async function LeadsKanbanPage({
         title="Leads"
         description="Move cards between columns to update status. Click a card for full lead detail, conversation history, tours, and applications."
         actions={
-          <div className="text-xs text-muted-foreground">
-            {leads.length} {leads.length === 1 ? "lead" : "leads"} shown
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-muted-foreground">
+              {leads.length} {leads.length === 1 ? "lead" : "leads"} shown
+            </span>
+            <ExportButton href="/api/tenant/leads/export" />
           </div>
         }
       />
