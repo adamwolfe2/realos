@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect } from 'react'
+import * as Sentry from '@sentry/nextjs'
 import { Button } from '@/components/ui/button'
 import { AlertTriangle } from 'lucide-react'
 
@@ -12,9 +13,10 @@ export default function AdminError({
   reset: () => void
 }) {
   useEffect(() => {
-    if (process.env.NODE_ENV === 'production') {
-      console.error('[admin]', error.digest ?? error.message)
-    }
+    Sentry.captureException(error, {
+      tags: { surface: 'admin' },
+      extra: { digest: error.digest },
+    })
   }, [error])
 
   return (

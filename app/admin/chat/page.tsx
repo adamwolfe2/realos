@@ -222,6 +222,7 @@ export default async function SupportPage() {
             ))}
           </tbody>
         </table>
+        </div>
       </section>
     </div>
   );

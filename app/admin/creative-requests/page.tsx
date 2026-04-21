@@ -84,7 +84,7 @@ export default async function CreativeQueue() {
         {columns.map((col) => (
           <section
             key={col.label}
-            className="min-w-0 flex flex-col gap-2 snap-start md:snap-align-none"
+            className="min-w-0 flex flex-col gap-2 snap-start"
           >
             <header className="flex items-center justify-between gap-2 px-0.5">
               <h3 className="text-[11px] font-semibold tracking-wide text-foreground">

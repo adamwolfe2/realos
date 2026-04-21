@@ -319,7 +319,8 @@ function CronTable({
 
   return (
     <div className="rounded-lg border border-border bg-card overflow-hidden">
-      <table className="w-full text-sm">
+      <div className="overflow-x-auto">
+      <table className="w-full text-sm min-w-[720px]">
         <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
           <tr>
             <th className="px-4 py-3 text-left font-medium">Job</th>
@@ -382,6 +383,7 @@ function CronTable({
           })}
         </tbody>
       </table>
+      </div>
       <div className="px-4 py-2 text-[11px] text-muted-foreground bg-muted/20 border-t border-border">
         A job marked &quot;degraded&quot; ran successfully but more than 24 hours
         ago. &quot;No data&quot; means the CronRun table has never seen this job.

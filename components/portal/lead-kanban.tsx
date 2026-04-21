@@ -59,7 +59,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           return (
             <section
               key={col.status}
-              className="min-w-0 space-y-3 snap-start md:snap-align-none"
+              className="min-w-0 space-y-3 snap-start"
             >
               <header className="flex items-center justify-between">
                 <h3 className="text-[11px] md:text-[10px] tracking-widest uppercase opacity-60">
