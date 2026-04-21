@@ -30,6 +30,7 @@ import {
   ConnectMetaAdsForm,
   MetaAdsManage,
 } from "./meta-ads-forms";
+import { OAuthConnectButton } from "./oauth-button";
 
 export const metadata: Metadata = { title: "Integrations" };
 export const dynamic = "force-dynamic";
@@ -240,7 +241,13 @@ export default async function IntegrationsPage() {
                 Connect another account
               </h3>
             ) : null}
-            <ConnectGoogleAdsForm />
+            <div className="space-y-3">
+              <OAuthConnectButton provider="google-ads" />
+              <p className="text-[11px] text-muted-foreground text-center">
+                or paste credentials manually
+              </p>
+              <ConnectGoogleAdsForm />
+            </div>
           </div>
         </div>
       );
@@ -269,7 +276,13 @@ export default async function IntegrationsPage() {
                 Connect another account
               </h3>
             ) : null}
-            <ConnectMetaAdsForm />
+            <div className="space-y-3">
+              <OAuthConnectButton provider="meta-ads" />
+              <p className="text-[11px] text-muted-foreground text-center">
+                or paste credentials manually
+              </p>
+              <ConnectMetaAdsForm />
+            </div>
           </div>
         </div>
       );
