@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import {
+  ApplicationStatus,
   LeadSource,
   TourStatus,
   type Prisma,
@@ -702,12 +703,26 @@ export async function getPropertyChatbot(
 // Occupancy tab (only meaningful when property.totalUnits > 0)
 // ---------------------------------------------------------------------------
 
+export type BedTypeRow = {
+  bedrooms: number | null;
+  label: string;
+  total: number;
+  available: number;
+  leased: number;
+  occupancyPct: number;
+  activeApplications: number;
+  priceMinCents: number | null;
+  priceMaxCents: number | null;
+};
+
 export type PropertyOccupancyData = {
   totalUnits: number;
   availableUnits: number;
   occupancyPct: number;
+  activeApplications: number;
   priceMinCents: number | null;
   priceMaxCents: number | null;
+  byBedType: BedTypeRow[];
   listings: Array<{
     id: string;
     unitNumber: string | null;
@@ -750,20 +765,98 @@ export async function getPropertyOccupancy(
   const totalUnits = property.totalUnits ?? property.listings.length;
   if (totalUnits <= 0) return null;
 
+  const activeAppsCount = await prisma.application.count({
+    where: {
+      propertyId,
+      lead: { orgId },
+      status: { in: [ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_REVIEW] },
+    },
+  });
+
   const availableUnits = property.listings.filter((l) => l.isAvailable).length;
   const occupancyPct =
     totalUnits > 0
       ? Math.max(0, Math.round(((totalUnits - availableUnits) / totalUnits) * 100))
       : 0;
 
+  const byBedType = buildByBedType(property.listings, activeAppsCount);
+
   return {
     totalUnits,
     availableUnits,
     occupancyPct,
+    activeApplications: activeAppsCount,
     priceMinCents: property.priceMin ?? null,
     priceMaxCents: property.priceMax ?? null,
+    byBedType,
     listings: property.listings,
   };
+}
+
+function bedTypeLabel(bedrooms: number | null): string {
+  if (bedrooms == null || bedrooms === 0) return "Studio";
+  if (bedrooms === 1) return "1 Bed";
+  if (bedrooms === 2) return "2 Bed";
+  if (bedrooms === 3) return "3 Bed";
+  return "4+ Bed";
+}
+
+function buildByBedType(
+  listings: Array<{
+    bedrooms: number | null;
+    priceCents: number | null;
+    isAvailable: boolean;
+  }>,
+  totalActiveApps: number,
+): BedTypeRow[] {
+  const grouped = new Map<
+    number | null,
+    { total: number; available: number; prices: number[] }
+  >();
+
+  for (const listing of listings) {
+    const key = listing.bedrooms ?? null;
+    const existing = grouped.get(key) ?? { total: 0, available: 0, prices: [] };
+    const updated = {
+      total: existing.total + 1,
+      available: existing.available + (listing.isAvailable ? 1 : 0),
+      prices:
+        listing.priceCents != null
+          ? [...existing.prices, listing.priceCents]
+          : existing.prices,
+    };
+    grouped.set(key, updated);
+  }
+
+  const totalListings = listings.length;
+
+  const rows: BedTypeRow[] = Array.from(grouped.entries()).map(([bedrooms, g]) => {
+    const leased = g.total - g.available;
+    const occupancyPct = g.total > 0 ? Math.round((leased / g.total) * 100) : 0;
+    const weight = totalListings > 0 ? g.total / totalListings : 0;
+    const activeApplications = Math.round(totalActiveApps * weight);
+    const priceMinCents = g.prices.length > 0 ? Math.min(...g.prices) : null;
+    const priceMaxCents = g.prices.length > 0 ? Math.max(...g.prices) : null;
+    return {
+      bedrooms,
+      label: bedTypeLabel(bedrooms),
+      total: g.total,
+      available: g.available,
+      leased,
+      occupancyPct,
+      activeApplications,
+      priceMinCents,
+      priceMaxCents,
+    };
+  });
+
+  rows.sort((a, b) => {
+    const aKey = a.bedrooms ?? -1;
+    const bKey = b.bedrooms ?? -1;
+    return aKey - bKey;
+  });
+
+  return rows;
 }
 
 // ---------------------------------------------------------------------------

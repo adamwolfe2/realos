@@ -30,7 +30,7 @@ export async function OccupancyTab({
 
   const priceRange =
     data.priceMinCents || data.priceMaxCents
-      ? `${centsToUsdShort(data.priceMinCents)}${"\u2013"}${centsToUsdShort(data.priceMaxCents)}`
+      ? `${centsToUsdShort(data.priceMinCents)}${"–"}${centsToUsdShort(data.priceMaxCents)}`
       : "—";
 
   return (
@@ -43,8 +43,48 @@ export async function OccupancyTab({
         />
         <KpiTile label="Available" value={data.availableUnits} />
         <KpiTile label="Total units" value={data.totalUnits} />
-        <KpiTile label="Price range" value={priceRange} hint="Across listings" />
+        <KpiTile
+          label="Active applications"
+          value={data.activeApplications}
+          hint="Submitted or under review"
+        />
       </section>
+
+      {data.byBedType.length > 0 ? (
+        <DashboardSection title="Lease-up by bedroom" eyebrow="Bed type">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            {data.byBedType.map((b) => (
+              <div
+                key={b.label}
+                className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-4 space-y-3"
+              >
+                <div className="text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+                  {b.label}
+                </div>
+                <div className="text-[26px] leading-none font-semibold tabular-nums text-[var(--near-black)]">
+                  {b.occupancyPct}%
+                </div>
+                <div className="text-[11px] text-[var(--stone-gray)] space-y-0.5">
+                  <div>{b.leased} leased · {b.available} available</div>
+                  {b.activeApplications > 0 ? (
+                    <div className="text-[var(--terracotta)] font-medium">
+                      {b.activeApplications} active {b.activeApplications === 1 ? "application" : "applications"}
+                    </div>
+                  ) : null}
+                  {b.priceMinCents || b.priceMaxCents ? (
+                    <div>
+                      {centsToUsdShort(b.priceMinCents)}
+                      {b.priceMinCents !== b.priceMaxCents
+                        ? `–${centsToUsdShort(b.priceMaxCents)}`
+                        : ""}
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+            ))}
+          </div>
+        </DashboardSection>
+      ) : null}
 
       <DashboardSection title="Listings" eyebrow="Per unit">
         {data.listings.length === 0 ? (
