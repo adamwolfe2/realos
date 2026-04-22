@@ -94,7 +94,7 @@ export default async function LeadsKanbanPage({
     <div className="space-y-6">
       <PageHeader
         title="Leads"
-        description="Move cards between columns to update status. Click a card for full lead detail, conversation history, tours, and applications."
+        description="Click any lead to see full detail, conversation history, tours, and applications."
         actions={
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground">

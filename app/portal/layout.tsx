@@ -75,9 +75,9 @@ export default async function PortalLayout({
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="flex flex-col h-screen bg-background text-foreground">
       {/* Mobile top bar */}
-      <div className="md:hidden flex items-center justify-between h-14 px-4 bg-card border-b border-border sticky top-0 z-40">
+      <div className="md:hidden shrink-0 flex items-center justify-between h-14 px-4 bg-card border-b border-border z-40">
         <Link href="/portal" aria-label={`${BRAND_NAME} portal home`}>
           <Image
             src="/logos/leasestack-wordmark.png"
@@ -94,11 +94,11 @@ export default async function PortalLayout({
         </div>
       </div>
 
-      {/* Impersonation banner — full width, outside the flex so it stacks above */}
+      {/* Impersonation banner */}
       {scope.isImpersonating ? (
         <div
           role="status"
-          className="bg-amber-100 border-b border-amber-300 text-amber-900 text-xs px-4 py-2 flex items-center justify-between gap-3"
+          className="shrink-0 bg-amber-100 border-b border-amber-300 text-amber-900 text-xs px-4 py-2 flex items-center justify-between gap-3"
         >
           <span>
             Impersonating <strong>{org.name}</strong>. Changes are attributed to
@@ -115,9 +115,9 @@ export default async function PortalLayout({
         </div>
       ) : null}
 
-      <div className="flex h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden">
+      {/* Main flex row — takes remaining height */}
+      <div className="flex flex-1 min-h-0">
         <PortalNav org={navOrg} />
-
         <main
           id="main-content"
           className="flex-1 overflow-y-auto bg-background"

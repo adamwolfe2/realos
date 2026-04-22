@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition, type CSSProperties } from "react";
-import { useRouter } from "next/navigation";
 import { LeadStatus } from "@prisma/client";
+import { cn } from "@/lib/utils";
+import { humanLeadSource } from "@/lib/format";
 
 export type LeadKanbanItem = {
   id: string;
@@ -18,143 +18,173 @@ export type LeadKanbanItem = {
   createdAt: string;
 };
 
-const COLUMNS: Array<{ status: LeadStatus; label: string }> = [
-  { status: LeadStatus.NEW, label: "New" },
-  { status: LeadStatus.CONTACTED, label: "Contacted" },
-  { status: LeadStatus.TOUR_SCHEDULED, label: "Tour scheduled" },
-  { status: LeadStatus.TOURED, label: "Toured" },
-  { status: LeadStatus.APPLICATION_SENT, label: "App sent" },
-  { status: LeadStatus.APPLIED, label: "Applied" },
-  { status: LeadStatus.APPROVED, label: "Approved" },
-  { status: LeadStatus.SIGNED, label: "Signed" },
-  { status: LeadStatus.LOST, label: "Lost" },
-  { status: LeadStatus.UNQUALIFIED, label: "Unqualified" },
-];
+const STATUS_META: Record<
+  LeadStatus,
+  { label: string; className: string }
+> = {
+  NEW: {
+    label: "New",
+    className: "bg-blue-50 text-blue-700 border-blue-200",
+  },
+  CONTACTED: {
+    label: "Contacted",
+    className: "bg-purple-50 text-purple-700 border-purple-200",
+  },
+  TOUR_SCHEDULED: {
+    label: "Tour scheduled",
+    className: "bg-amber-50 text-amber-700 border-amber-200",
+  },
+  TOURED: {
+    label: "Toured",
+    className: "bg-teal-50 text-teal-700 border-teal-200",
+  },
+  APPLICATION_SENT: {
+    label: "App sent",
+    className: "bg-orange-50 text-orange-700 border-orange-200",
+  },
+  APPLIED: {
+    label: "Applied",
+    className: "bg-indigo-50 text-indigo-700 border-indigo-200",
+  },
+  APPROVED: {
+    label: "Approved",
+    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  },
+  SIGNED: {
+    label: "Signed",
+    className: "bg-green-50 text-green-700 border-green-200",
+  },
+  LOST: {
+    label: "Lost",
+    className: "bg-red-50 text-red-600 border-red-200",
+  },
+  UNQUALIFIED: {
+    label: "Unqualified",
+    className: "bg-gray-50 text-gray-500 border-gray-200",
+  },
+};
 
-export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
-  const byStatus = new Map<LeadStatus, LeadKanbanItem[]>();
-  for (const row of items) {
-    const list = byStatus.get(row.status) ?? [];
-    list.push(row);
-    byStatus.set(row.status, list);
-  }
-
-  return (
-    <>
-      <p className="md:hidden mb-2 text-[11px] opacity-60">
-        Swipe columns →
-      </p>
-      <div
-        className="grid gap-3 overflow-x-auto pb-4 snap-x snap-mandatory md:snap-none scroll-smooth -mx-4 px-4 md:mx-0 md:px-0 kanban-mobile-swipe"
-        style={
-          {
-            gridAutoFlow: "column",
-            "--kanban-col-count": COLUMNS.length,
-          } as CSSProperties
-        }
-      >
-        {COLUMNS.map((col) => {
-          const list = byStatus.get(col.status) ?? [];
-          return (
-            <section
-              key={col.status}
-              className="min-w-0 space-y-3 snap-start"
-            >
-              <header className="flex items-center justify-between">
-                <h3 className="text-[11px] md:text-[10px] tracking-widest uppercase opacity-60">
-                  {col.label}
-                </h3>
-                <span className="text-[11px] md:text-[10px] bg-muted rounded px-1.5 py-0.5">
-                  {list.length}
-                </span>
-              </header>
-              <div className="border-t" />
-              <div className="space-y-2">
-                {list.length === 0 ? (
-                  <p className="border border-dashed rounded-md p-3 text-[11px] opacity-40 text-center">
-                    Empty
-                  </p>
-                ) : (
-                  list.map((item) => <LeadCard key={item.id} item={item} />)
-                )}
-              </div>
-            </section>
-          );
-        })}
-      </div>
-    </>
-  );
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diff / 60_000);
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  return new Date(iso).toLocaleDateString();
 }
 
-function LeadCard({ item }: { item: LeadKanbanItem }) {
-  const router = useRouter();
-  const [pending, startTransition] = useTransition();
-  const [status, setStatus] = useState(item.status);
-  const [error, setError] = useState<string | null>(null);
-
-  const name =
-    [item.firstName, item.lastName].filter(Boolean).join(" ") ||
-    item.email ||
-    "Anonymous";
-
-  function move(next: LeadStatus) {
-    if (next === status) return;
-    const prev = status;
-    setStatus(next);
-    setError(null);
-    startTransition(async () => {
-      const res = await fetch(`/api/tenant/leads/${item.id}/status`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: next }),
-      });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setError(body.error ?? "Failed to update status");
-        setStatus(prev);
-      } else {
-        router.refresh();
-      }
-    });
+export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
+  if (items.length === 0) {
+    return (
+      <div className="rounded-lg border border-dashed border-border bg-card p-12 text-center">
+        <p className="text-sm font-medium text-foreground">No leads yet</p>
+        <p className="text-xs text-muted-foreground mt-1">
+          Leads appear here when visitors submit forms, chat, or get captured by the pixel.
+        </p>
+      </div>
+    );
   }
 
   return (
-    <article className="border rounded-md p-3 bg-background space-y-2">
-      <Link
-        href={`/portal/leads/${item.id}`}
-        className="font-medium text-sm hover:underline underline-offset-2 block truncate"
-      >
-        {name}
-      </Link>
-      <div className="text-[11px] opacity-60 truncate">
-        {item.email ?? "—"}
-        {item.propertyName ? ` · ${item.propertyName}` : ""}
-      </div>
-      <div className="text-[11px] opacity-60">
-        {item.source}
-        {item.score ? ` · score ${item.score}` : ""}
-      </div>
-      <div className="flex items-center gap-2 pt-1">
-        <label className="text-[10px] opacity-60 uppercase tracking-widest">
-          Move
-        </label>
-        <select
-          aria-label="Change lead status"
-          disabled={pending}
-          value={status}
-          onChange={(e) => move(e.target.value as LeadStatus)}
-          className="text-[12px] border rounded px-2 py-1.5 bg-background min-h-[36px] flex-1"
-        >
-          {COLUMNS.map((c) => (
-            <option key={c.status} value={c.status}>
-              {c.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      {error ? (
-        <p className="text-[11px] text-destructive">{error}</p>
-      ) : null}
-    </article>
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b border-border bg-muted/40">
+            <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Name
+            </th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">
+              Property
+            </th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden md:table-cell">
+              Source
+            </th>
+            <th className="text-left px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Status
+            </th>
+            <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden lg:table-cell">
+              Score
+            </th>
+            <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">
+              Added
+            </th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {items.map((item) => {
+            const name =
+              [item.firstName, item.lastName].filter(Boolean).join(" ") ||
+              item.email ||
+              "Anonymous";
+            const meta = STATUS_META[item.status];
+            return (
+              <tr
+                key={item.id}
+                className="hover:bg-muted/30 transition-colors"
+              >
+                <td className="px-4 py-3">
+                  <Link
+                    href={`/portal/leads/${item.id}`}
+                    className="font-medium text-foreground hover:text-primary transition-colors"
+                  >
+                    {name}
+                  </Link>
+                  {item.email && (
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[200px]">
+                      {item.email}
+                    </p>
+                  )}
+                </td>
+                <td className="px-4 py-3 hidden sm:table-cell">
+                  <span className="text-sm text-foreground">
+                    {item.propertyName ?? <span className="text-muted-foreground">—</span>}
+                  </span>
+                </td>
+                <td className="px-4 py-3 hidden md:table-cell">
+                  <span className="text-sm text-muted-foreground">
+                    {humanLeadSource(item.source)}
+                  </span>
+                </td>
+                <td className="px-4 py-3">
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
+                      meta.className
+                    )}
+                  >
+                    {meta.label}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-right hidden lg:table-cell">
+                  {item.score > 0 ? (
+                    <span
+                      className={cn(
+                        "text-xs font-medium tabular-nums",
+                        item.score >= 70
+                          ? "text-emerald-600"
+                          : item.score >= 40
+                          ? "text-amber-600"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {item.score}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">—</span>
+                  )}
+                </td>
+                <td className="px-4 py-3 text-right hidden sm:table-cell">
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {relativeTime(item.createdAt)}
+                  </span>
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
   );
 }
