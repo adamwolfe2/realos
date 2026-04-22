@@ -15,6 +15,7 @@ export type KpiTileProps = {
   loading?: boolean;
   href?: string;
   live?: boolean;
+  locked?: { reason: string; href: string };
 };
 
 export function KpiTile(props: KpiTileProps) {
@@ -32,7 +33,7 @@ export function KpiTile(props: KpiTileProps) {
   return inner;
 }
 
-function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live }: KpiTileProps) {
+function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live, locked }: KpiTileProps) {
   return (
     <div
       className={cn(
@@ -51,7 +52,7 @@ function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live }:
             {label}
           </div>
         </div>
-        {live ? (
+        {live && !locked ? (
           <span className="relative inline-flex h-2 w-2 shrink-0" aria-label="Live">
             <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
             <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -59,27 +60,43 @@ function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live }:
         ) : null}
       </div>
 
-      <div className="mt-2 flex items-baseline justify-between gap-2">
-        <div
-          className={cn(
-            "text-2xl leading-none font-semibold tracking-tight tabular-nums text-foreground",
-            loading && "text-transparent bg-muted rounded animate-pulse",
-          )}
-        >
-          {loading ? "0000" : value}
+      {locked ? (
+        <div className="mt-2 flex items-baseline gap-2">
+          <span className="text-2xl leading-none font-semibold tracking-tight text-muted-foreground/50">
+            —
+          </span>
+          <Link
+            href={locked.href}
+            className="text-[11px] font-medium text-primary hover:underline"
+          >
+            Connect →
+          </Link>
         </div>
-        {delta && !loading ? <DeltaPill {...delta} /> : null}
-      </div>
+      ) : (
+        <>
+          <div className="mt-2 flex items-baseline justify-between gap-2">
+            <div
+              className={cn(
+                "text-2xl leading-none font-semibold tracking-tight tabular-nums text-foreground",
+                loading && "text-transparent bg-muted rounded animate-pulse",
+              )}
+            >
+              {loading ? "0000" : value}
+            </div>
+            {delta && !loading ? <DeltaPill {...delta} /> : null}
+          </div>
 
-      {hint ? (
-        <div className="mt-1 text-[11px] text-muted-foreground">{hint}</div>
-      ) : null}
+          {hint ? (
+            <div className="mt-1 text-[11px] text-muted-foreground">{hint}</div>
+          ) : null}
 
-      {spark && spark.length > 1 && !loading ? (
-        <div className="mt-3 -mx-1">
-          <Sparkline data={spark} />
-        </div>
-      ) : null}
+          {spark && spark.length > 1 && !loading ? (
+            <div className="mt-3 -mx-1">
+              <Sparkline data={spark} />
+            </div>
+          ) : null}
+        </>
+      )}
     </div>
   );
 }

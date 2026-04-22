@@ -20,47 +20,47 @@ const DOT: Record<IntegrationStatus, string> = {
   off: "bg-muted-foreground/30",
 };
 
-const STATUS_LABEL: Record<IntegrationStatus, string> = {
-  connected: "Connected",
-  degraded: "Degraded",
-  error: "Action needed",
-  off: "Not connected",
-};
+const CONNECT_HREF = "/portal/settings/integrations";
 
 export function IntegrationHealth({ chips }: { chips: IntegrationChip[] }) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       {chips.map((c) => {
-        const inner = (
-          <div
-            className={cn(
-              "inline-flex items-center gap-2 rounded-md border border-border bg-card px-2.5 py-1.5 text-xs",
-              "transition-colors hover:border-primary/30 hover:bg-muted/30",
-            )}
-            title={`${c.label} · ${STATUS_LABEL[c.status]}`}
-          >
-            <span
-              className={cn("h-1.5 w-1.5 rounded-full shrink-0", DOT[c.status])}
-              aria-hidden="true"
-            />
-            <span className="font-medium text-foreground">{c.label}</span>
-            {c.glyph ? (
-              <span className="font-mono text-[10px] text-muted-foreground uppercase">
-                {c.glyph}
-              </span>
-            ) : null}
-          </div>
+        const dot = (
+          <span
+            className={cn("h-1.5 w-1.5 rounded-full shrink-0", DOT[c.status])}
+            aria-hidden="true"
+          />
         );
-        return c.href ? (
-          <Link
+
+        if (c.status === "connected" || c.status === "degraded") {
+          return (
+            <span
+              key={c.key}
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground"
+            >
+              {dot}
+              {c.label}
+            </span>
+          );
+        }
+
+        const actionLabel = c.status === "error" ? "Fix →" : "Connect →";
+
+        return (
+          <span
             key={c.key}
-            href={c.href}
-            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 rounded-md"
+            className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-muted-foreground"
           >
-            {inner}
-          </Link>
-        ) : (
-          <span key={c.key}>{inner}</span>
+            {dot}
+            {c.label}
+            <Link
+              href={c.href ?? CONNECT_HREF}
+              className="font-semibold text-primary hover:underline"
+            >
+              {actionLabel}
+            </Link>
+          </span>
         );
       })}
     </div>

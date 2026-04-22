@@ -213,6 +213,14 @@ export default async function PortalHome({
               : false,
   }));
 
+  const cursiveOff = integrationChips.find((c) => c.key === "cursive")?.status === "off";
+  const adsOff =
+    integrationChips.find((c) => c.key === "google-ads")?.status === "off" &&
+    integrationChips.find((c) => c.key === "meta-ads")?.status === "off";
+  const organicOff =
+    integrationChips.find((c) => c.key === "gsc")?.status === "off" &&
+    integrationChips.find((c) => c.key === "ga4")?.status === "off";
+
   return (
     <div className="space-y-5">
       <SetupBanner forceShow={forceShowSetup} />
@@ -221,6 +229,11 @@ export default async function PortalHome({
         <FirstRunChecklist items={firstRunItems} />
       ) : (
         <>
+          {/* Data sources bar */}
+          {integrationChips.length > 0 ? (
+            <IntegrationHealth chips={integrationChips} />
+          ) : null}
+
           {/* Insights strip — opens the day with what changed, if anything */}
           {insightCounts.total > 0 ? (
             <section className="rounded-xl border border-border bg-card p-4">
@@ -294,6 +307,7 @@ export default async function PortalHome({
               icon={<Flame className="h-3.5 w-3.5" />}
               live
               href="/portal/visitors"
+              locked={cursiveOff ? { reason: "Requires pixel", href: "/portal/settings/integrations" } : undefined}
             />
             <KpiTile
               label="Tour requests"
@@ -335,6 +349,7 @@ export default async function PortalHome({
                   : undefined
               }
               href="/portal/campaigns"
+              locked={adsOff ? { reason: "Requires Google Ads or Meta", href: "/portal/settings/integrations" } : undefined}
             />
             <KpiTile
               label="Cost per lead"
@@ -346,6 +361,7 @@ export default async function PortalHome({
               }
               icon={<Coins className="h-3.5 w-3.5" />}
               href="/portal/campaigns"
+              locked={adsOff ? { reason: "Requires Google Ads or Meta", href: "/portal/settings/integrations" } : undefined}
             />
             <KpiTile
               label="Organic sessions"
@@ -367,6 +383,7 @@ export default async function PortalHome({
                   : undefined
               }
               href="/portal/seo"
+              locked={organicOff ? { reason: "Requires GSC or GA4", href: "/portal/settings/integrations" } : undefined}
             />
           </section>
 
@@ -470,17 +487,6 @@ export default async function PortalHome({
               <ActivityFeed items={activity} />
             </DashboardSection>
           </section>
-
-          {/* Integration health row */}
-          <DashboardSection
-            eyebrow="Connections"
-            title="Integration health"
-            description="Click any chip to fix or reconnect"
-            href="/portal/settings"
-            hrefLabel="Manage"
-          >
-            <IntegrationHealth chips={integrationChips} />
-          </DashboardSection>
 
           {/* Funnel rollup mini-stat (uses real status counts so operator sees
               live pipeline shape even before the funnel above is wired). */}
