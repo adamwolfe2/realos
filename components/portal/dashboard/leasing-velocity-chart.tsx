@@ -26,9 +26,9 @@ export function LeasingVelocityChart({
   );
 
   const W = 100;
-  const H = 60;
+  const H = 68;
   const paddingLeft = 0;
-  const paddingBottom = 12;
+  const paddingBottom = 16;
   const chartH = H - paddingBottom;
   const n = data.length;
 
@@ -50,7 +50,8 @@ export function LeasingVelocityChart({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
-        className="w-full h-32 overflow-hidden"
+        className="w-full h-36"
+        style={{ overflow: "visible" }}
         aria-label="Leasing velocity — leads, tours, applications by week"
       >
         {[0.25, 0.5, 0.75, 1].map((frac) => {

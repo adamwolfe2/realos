@@ -79,7 +79,7 @@ export function SetupStepCard({ step }: Props) {
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h3 className="font-serif text-lg font-medium text-foreground leading-tight">
+              <h3 className="text-lg font-medium text-foreground leading-tight">
                 {step.title}
               </h3>
               <StatusBadge status={step.status} lockedLabel={step.lockedLabel} />

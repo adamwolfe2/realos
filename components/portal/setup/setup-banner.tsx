@@ -40,7 +40,7 @@ export async function SetupBanner({
       <div className="flex flex-wrap items-center gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-3">
-            <span className="font-serif text-lg font-medium text-foreground">
+            <span className="text-lg font-medium text-foreground">
               Setup
             </span>
             <span className="text-xs text-muted-foreground tabular-nums">
