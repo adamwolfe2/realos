@@ -26,9 +26,9 @@ export function LeasingVelocityChart({
   );
 
   const W = 100;
-  const H = 68;
+  const H = 56;
   const paddingLeft = 0;
-  const paddingBottom = 16;
+  const paddingBottom = 0;
   const chartH = H - paddingBottom;
   const n = data.length;
 
@@ -50,7 +50,7 @@ export function LeasingVelocityChart({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
-        className="w-full h-36"
+        className="w-full h-28"
         style={{ overflow: "visible" }}
         aria-label="Leasing velocity — leads, tours, applications by week"
       >
@@ -99,22 +99,23 @@ export function LeasingVelocityChart({
           )),
         )}
 
+      </svg>
+      {/* x-axis labels rendered as HTML to avoid SVG clipping */}
+      <div className="relative h-4" aria-hidden="true">
         {data.map((d, i) => {
           if (i % 2 !== 0 && i !== n - 1) return null;
+          const pct = (i / Math.max(1, n - 1)) * 100;
           return (
-            <text
+            <span
               key={i}
-              x={toX(i)}
-              y={H - 1}
-              textAnchor="middle"
-              fontSize="4"
-              fill="#9CA3AF"
+              className="absolute -translate-x-1/2 text-[9px] text-muted-foreground tabular-nums"
+              style={{ left: `${pct}%` }}
             >
               {d.weekLabel}
-            </text>
+            </span>
           );
         })}
-      </svg>
+      </div>
 
       <div className="flex items-center gap-4">
         {SERIES.map(({ key, label, color }) => (

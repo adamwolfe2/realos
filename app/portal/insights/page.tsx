@@ -158,9 +158,9 @@ function StatBlock({
   tone: "critical" | "warning" | "info" | "muted";
 }) {
   const map = {
-    critical: "text-rose-700",
-    warning: "text-amber-700",
-    info: "text-sky-700",
+    critical: "text-foreground",
+    warning: "text-foreground",
+    info: "text-foreground",
     muted: "text-muted-foreground",
   };
   return (

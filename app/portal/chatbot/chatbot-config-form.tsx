@@ -283,7 +283,7 @@ export function ChatbotConfigForm({
         </div>{/* end left column */}
 
         {/* Right column — sticky preview */}
-        <div className="w-72 shrink-0 hidden lg:block">
+        <div className="w-96 shrink-0 hidden lg:block">
           <div className="sticky top-6 rounded-lg border border-border bg-card p-5 space-y-4">
             <div>
               <h2 className="text-sm font-semibold text-foreground">Preview</h2>

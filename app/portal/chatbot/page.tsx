@@ -71,7 +71,7 @@ export default async function ChatbotPage() {
   const snippet = `<script src="${appUrl}/embed/chatbot.js" data-slug="${org.slug}" defer></script>`;
 
   return (
-    <div className="max-w-3xl space-y-6">
+    <div className="space-y-6">
       <PageHeader
         title="Chatbot"
         description="Configure the AI leasing assistant that embeds on your marketing site. Changes go live the next time a visitor loads your page."

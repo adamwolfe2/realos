@@ -30,46 +30,37 @@ export function PropertyDashboardCard({
     <Link
       href={`/portal/properties/${id}`}
       className={cn(
-        "group relative block rounded-lg border border-border bg-card overflow-hidden",
+        "group relative block rounded-md border border-border bg-card overflow-hidden",
         "transition-all duration-150 hover:border-primary/30 hover:shadow-sm",
       )}
     >
-      <div className="flex">
+      <div className="flex items-center">
         <Thumbnail src={thumbnailUrl} fallbackLetter={name.slice(0, 1)} accent={accent} />
-        <div className="flex-1 min-w-0 p-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <h3 className="font-semibold text-sm text-foreground tracking-tight truncate">
+        <div className="flex-1 min-w-0 px-3 py-2.5">
+          <div className="flex items-center justify-between gap-2">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-semibold text-xs text-foreground tracking-tight truncate">
                 {name}
               </h3>
               {address ? (
-                <p className="mt-0.5 text-[11px] text-muted-foreground flex items-center gap-1 truncate">
-                  <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
+                <p className="mt-0.5 text-[10px] text-muted-foreground flex items-center gap-0.5 truncate">
+                  <MapPin className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
                   <span className="truncate">{address}</span>
                 </p>
               ) : null}
             </div>
-            {occupancyPct != null ? (
-              <OccupancyBadge pct={occupancyPct} />
-            ) : null}
-          </div>
-
-          <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-3">
-            <div>
-              <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-                Leads (28d)
-              </div>
-              <div className="mt-0.5 flex items-baseline gap-2">
-                <span className="text-lg font-semibold tabular-nums text-foreground">
+            <div className="flex items-center gap-2 shrink-0">
+              {occupancyPct != null ? <OccupancyBadge pct={occupancyPct} /> : null}
+              <div className="text-right">
+                <div className="text-[9px] tracking-widest uppercase font-semibold text-muted-foreground leading-none">
+                  Leads
+                </div>
+                <div className="text-sm font-semibold tabular-nums text-foreground leading-tight">
                   {leads28d}
-                </span>
-                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
-                  <Megaphone className="h-3 w-3" aria-hidden="true" />
-                  {activeCampaigns} {activeCampaigns === 1 ? "campaign" : "campaigns"}
-                </span>
+                </div>
               </div>
+              <MiniSpark data={leadsSpark} />
             </div>
-            <MiniSpark data={leadsSpark} />
           </div>
         </div>
       </div>
@@ -92,22 +83,22 @@ function Thumbnail({
       <img
         src={src}
         alt=""
-        className="h-full w-24 shrink-0 object-cover"
+        className="h-full w-14 shrink-0 object-cover"
         loading="lazy"
       />
     );
   }
   return (
     <div
-      className="relative h-auto w-24 shrink-0 grid place-items-center bg-muted"
+      className="relative h-full w-14 shrink-0 grid place-items-center bg-muted self-stretch"
       aria-hidden="true"
     >
-      <Building2 className="h-6 w-6 text-muted-foreground" />
-      <span className="absolute top-2 left-2 text-sm font-semibold text-foreground">
+      <Building2 className="h-4 w-4 text-muted-foreground" />
+      <span className="absolute top-1.5 left-1.5 text-[10px] font-semibold text-foreground">
         {fallbackLetter}
       </span>
       <span
-        className="absolute inset-y-0 right-0 w-1"
+        className="absolute inset-y-0 right-0 w-0.5"
         style={{ backgroundColor: accent ?? "hsl(var(--primary))" }}
       />
     </div>
@@ -135,13 +126,13 @@ function OccupancyBadge({ pct }: { pct: number }) {
 
 function MiniSpark({ data }: { data: number[] }) {
   if (data.length < 2) {
-    return <div className="h-7 w-20" aria-hidden="true" />;
+    return <div className="h-5 w-14" aria-hidden="true" />;
   }
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-  const w = 80;
-  const h = 28;
+  const w = 56;
+  const h = 20;
   const stepX = w / (data.length - 1);
   const points = data
     .map(
@@ -152,7 +143,7 @@ function MiniSpark({ data }: { data: number[] }) {
   return (
     <svg
       viewBox={`0 0 ${w} ${h}`}
-      className="h-7 w-20"
+      className="h-5 w-14"
       preserveAspectRatio="none"
       aria-hidden="true"
     >

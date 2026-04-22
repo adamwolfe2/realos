@@ -43,7 +43,7 @@ const ICON: Record<ActivityKind, React.ComponentType<{ className?: string }>> = 
 const TONE: Record<ActivityKind, string> = {
   lead: "bg-emerald-50 text-emerald-700",
   tour: "bg-blue-50 text-blue-700",
-  visitor: "bg-amber-50 text-amber-800",
+  visitor: "bg-blue-50 text-blue-700",
   chatbot: "bg-violet-50 text-violet-700",
   campaign: "bg-rose-50 text-rose-700",
   application: "bg-indigo-50 text-indigo-700",
