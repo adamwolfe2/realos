@@ -52,6 +52,7 @@ export async function resolveIntegrationStatuses(
           instanceSubdomain: true,
           clientIdEncrypted: true,
           apiKeyEncrypted: true,
+          useEmbedFallback: true,
           lastSyncAt: true,
         },
       })
@@ -134,6 +135,7 @@ function resolveOne(
       instanceSubdomain: string | null;
       clientIdEncrypted: string | null;
       apiKeyEncrypted: string | null;
+      useEmbedFallback: boolean;
       lastSyncAt: Date | null;
     } | null;
     seoBySlug: Map<string, { lastSyncAt: Date | null }>;
@@ -157,7 +159,7 @@ function resolveOne(
   if (def.slug === "appfolio") {
     const connected =
       !!ctx.appfolio?.instanceSubdomain &&
-      (!!ctx.appfolio?.clientIdEncrypted || !!ctx.appfolio?.apiKeyEncrypted);
+      (!!ctx.appfolio?.clientIdEncrypted || !!ctx.appfolio?.apiKeyEncrypted || !!ctx.appfolio?.useEmbedFallback);
     return {
       slug: def.slug,
       state: connected ? "connected" : "available",

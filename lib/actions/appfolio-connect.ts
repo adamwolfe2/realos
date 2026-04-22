@@ -119,6 +119,7 @@ export async function connectAppfolio(
 
   const { subdomain, plan } = parsed.data;
 
+  try {
   // Probe the right endpoint for the chosen auth mode. No credentials
   // persist unless the probe succeeds.
   let listingsFound: number | undefined;
@@ -237,6 +238,11 @@ export async function connectAppfolio(
   revalidatePath(PORTAL_PATH);
   revalidatePath(PORTAL_HOME);
   return { ok: true, mode: isEmbed ? "embed" : "rest", listingsFound };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unexpected error";
+    console.error("[appfolio-connect] save error", err);
+    return { ok: false, error: message };
+  }
 }
 
 export async function disconnectAppfolio(): Promise<ConnectAppfolioResult> {

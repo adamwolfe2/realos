@@ -64,6 +64,7 @@ export default async function IntegrationsPage() {
         clientIdEncrypted: true,
         clientSecretEncrypted: true,
         apiKeyEncrypted: true,
+        useEmbedFallback: true,
         lastSyncAt: true,
         syncStatus: true,
         lastError: true,
@@ -114,7 +115,7 @@ export default async function IntegrationsPage() {
   const appfolioConnected =
     !!appfolio &&
     !!appfolio.instanceSubdomain &&
-    (!!appfolio.clientIdEncrypted || !!appfolio.apiKeyEncrypted);
+    (!!appfolio.clientIdEncrypted || !!appfolio.apiKeyEncrypted || !!appfolio.useEmbedFallback);
 
   const manageSlots: Record<string, React.ReactNode> = {
     "visitor-identification": pixelProvisioned ? (
