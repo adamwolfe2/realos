@@ -11,7 +11,7 @@ export function Hero() {
           <span style={{ display: "block" }}>
             The <span style={{ color: "#2F6FE5" }}>#1</span> Real Estate
           </span>
-          <span style={{ display: "block", whiteSpace: "nowrap" }}>
+          <span style={{ display: "block" }}>
             Ecosystem for{" "}
             <RotatingWord
               words={["Marketing", "Leasing", "Leads", "Conversion", "Ads", "Growth", "Discovery", "Occupancy"]}

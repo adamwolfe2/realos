@@ -92,29 +92,31 @@ export function PlatformNav() {
         </nav>
 
         <div className="flex items-center gap-1">
-          <Link
-            href="/sign-in"
-            className={`hidden md:inline-flex ${navBtnClass}`}
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/onboarding"
-            className="inline-flex items-center justify-center"
-            style={{
-              minHeight: "36px",
-              padding: "8px 16px",
-              backgroundColor: "#2F6FE5",
-              color: "#faf9f5",
-              fontSize: "14px",
-              fontWeight: 500,
-              borderRadius: "10px",
-              boxShadow: "0 0 0 1px #2F6FE5 inset",
-              transition: "background-color 0.2s ease",
-            }}
-          >
-            Book a demo
-          </Link>
+          <div className="hidden md:flex items-center gap-1">
+            <Link
+              href="/sign-in"
+              className={navBtnClass}
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center justify-center"
+              style={{
+                minHeight: "36px",
+                padding: "8px 16px",
+                backgroundColor: "#2F6FE5",
+                color: "#faf9f5",
+                fontSize: "14px",
+                fontWeight: 500,
+                borderRadius: "10px",
+                boxShadow: "0 0 0 1px #2F6FE5 inset",
+                transition: "background-color 0.2s ease",
+              }}
+            >
+              Book a demo
+            </Link>
+          </div>
           <button
             type="button"
             className="md:hidden inline-flex items-center justify-center w-9 h-9 rounded-[4px]"
@@ -295,6 +297,15 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
             </ul>
           </div>
         ))}
+        <div className="pt-4 pb-2 flex flex-col gap-3" style={{ borderTop: "1px solid #EEEEEE" }}>
+          <Link
+            href="/onboarding"
+            onClick={onClose}
+            className="btn-primary w-full justify-center"
+          >
+            Book a demo
+          </Link>
+        </div>
       </div>
     </div>
   );

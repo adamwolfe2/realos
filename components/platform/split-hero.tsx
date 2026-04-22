@@ -64,7 +64,7 @@ export function SplitHero({
                 style={{
                   color: "#141413",
                   fontFamily: "var(--font-display)",
-                  fontSize: "clamp(34px, 4vw, 52px)",
+                  fontSize: "clamp(28px, 7vw, 52px)",
                   fontWeight: 500,
                   lineHeight: 1.08,
                   letterSpacing: "-0.012em",
@@ -97,12 +97,12 @@ export function SplitHero({
             </Reveal>
 
             <Reveal delay={220}>
-              <div className="mt-8 flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-3">
                 {ctas.map((c) => (
                   <Link
                     key={c.label}
                     href={c.href}
-                    className={c.variant === "secondary" ? "btn-secondary" : "btn-primary"}
+                    className={`${c.variant === "secondary" ? "btn-secondary" : "btn-primary"} w-full sm:w-auto justify-center`}
                   >
                     {c.label}
                   </Link>
@@ -113,13 +113,13 @@ export function SplitHero({
             {trust && trust.length > 0 ? (
               <Reveal delay={300}>
                 <div
-                  className="mt-10 pt-6 grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-4"
+                  className="mt-10 pt-6 grid grid-cols-3 gap-4"
                   style={{ borderTop: "1px solid #e8e6dc", maxWidth: "560px" }}
                 >
                   {trust.map((t, i) => (
                     <div
                       key={t.value}
-                      className={i > 0 ? "sm:pl-4 sm:border-l" : ""}
+                      className={i > 0 ? "pl-4 border-l" : ""}
                       style={i > 0 ? { borderColor: "#e8e6dc" } : undefined}
                     >
                       <p
