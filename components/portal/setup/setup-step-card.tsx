@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -75,7 +76,7 @@ export function SetupStepCard({ step }: Props) {
         ].join(" ")}
       >
         <div className="flex items-start gap-4">
-          <IconTile Icon={Icon} status={step.status} />
+          <IconTile Icon={Icon} status={step.status} imageSrc={step.id === "cursive" ? "/logos/cursive-logo.png" : undefined} />
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -135,9 +136,11 @@ function StatusDot({ status }: { status: ResolvedSetupStep["status"] }) {
 function IconTile({
   Icon,
   status,
+  imageSrc,
 }: {
   Icon: LucideIcon;
   status: ResolvedSetupStep["status"];
+  imageSrc?: string;
 }) {
   const tone =
     status === "done"
@@ -147,6 +150,17 @@ function IconTile({
       : status === "locked"
       ? "bg-muted text-muted-foreground"
       : "bg-muted text-foreground";
+
+  if (imageSrc) {
+    return (
+      <span
+        className="shrink-0 w-8 h-8 rounded-[10px] flex items-center justify-center bg-white border border-border overflow-hidden p-1"
+        aria-hidden="true"
+      >
+        <Image src={imageSrc} alt="" width={48} height={20} className="w-full h-auto object-contain" unoptimized />
+      </span>
+    );
+  }
 
   return (
     <span
