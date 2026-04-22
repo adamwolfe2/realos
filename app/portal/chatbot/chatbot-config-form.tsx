@@ -91,7 +91,10 @@ export function ChatbotConfigForm({
   const kbNear = kbLength > KB_MAX * 0.9 && !kbOver;
 
   return (
-    <form onSubmit={submit} className="space-y-4">
+    <form onSubmit={submit}>
+      <div className="flex gap-6 items-start">
+        {/* Left column — all config sections */}
+        <div className="flex-1 min-w-0 space-y-4">
       <input
         type="hidden"
         name="chatbotEnabled"
@@ -257,50 +260,76 @@ export function ChatbotConfigForm({
         </div>
       </section>
 
-      {/* Preview */}
-      <section className="rounded-lg border border-border bg-card p-5 space-y-3">
-        <h2 className="text-sm font-semibold text-foreground">Preview</h2>
-        <p className="text-xs text-muted-foreground">
-          Quick sanity-check of the persona + brand color. The full widget renders live once the
-          master toggle is on.
-        </p>
-        <div className="flex items-start gap-3 max-w-md">
-          <div
-            aria-hidden
-            className="h-10 w-10 rounded-full flex-shrink-0"
-            style={{ backgroundColor: effectiveBrandColor }}
-          />
-          <div className="flex-1 rounded-lg rounded-tl-none border border-border bg-muted/30 px-4 py-3 text-sm">
-            <div className={`${LABEL_CLASS} mb-1`}>
-              {state.chatbotPersonaName || "Leasing"}
+        <div className="flex items-center gap-3 sticky bottom-0 bg-background py-3 border-t border-border">
+          <button
+            type="submit"
+            disabled={pending || kbOver}
+            className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-4 py-2 text-sm font-medium rounded-md disabled:opacity-40"
+          >
+            {pending ? "Saving…" : "Save chatbot config"}
+          </button>
+          {saved ? (
+            <span className="text-xs text-emerald-700">Saved</span>
+          ) : null}
+          {error ? (
+            <span className="text-xs text-destructive">{error}</span>
+          ) : null}
+          {!moduleActive ? (
+            <span className="text-xs text-muted-foreground">
+              Module off — saves stage content without publishing.
+            </span>
+          ) : null}
+        </div>
+        </div>{/* end left column */}
+
+        {/* Right column — sticky preview */}
+        <div className="w-72 shrink-0 hidden lg:block">
+          <div className="sticky top-6 rounded-lg border border-border bg-card p-5 space-y-4">
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Preview</h2>
+              <p className="text-xs text-muted-foreground mt-1">
+                Updates as you type. The full widget renders live once the master toggle is on.
+              </p>
             </div>
-            <p className="whitespace-pre-wrap text-foreground">
-              {state.chatbotGreeting || "Hi! What can I help you with today?"}
-            </p>
+            <div className="flex flex-col gap-3">
+              <div className="flex items-end gap-2">
+                <div
+                  aria-hidden
+                  className="h-8 w-8 rounded-full flex-shrink-0"
+                  style={{ backgroundColor: effectiveBrandColor }}
+                />
+                <div className="flex-1 rounded-xl rounded-bl-none border border-border bg-muted/30 px-3 py-2.5 text-sm">
+                  <div className={`${LABEL_CLASS} mb-1`}>
+                    {state.chatbotPersonaName || "Leasing"}
+                  </div>
+                  <p className="whitespace-pre-wrap text-foreground text-xs leading-relaxed">
+                    {state.chatbotGreeting || "Hi! What can I help you with today?"}
+                  </p>
+                </div>
+              </div>
+              {state.chatbotTeaserText && (
+                <div className="flex items-center justify-end gap-2">
+                  <div
+                    className="rounded-full px-3 py-1.5 text-xs font-medium text-white shadow-sm"
+                    style={{ backgroundColor: effectiveBrandColor }}
+                  >
+                    {state.chatbotTeaserText}
+                  </div>
+                  <div
+                    className="h-8 w-8 rounded-full flex-shrink-0 flex items-center justify-center text-white shadow-sm"
+                    style={{ backgroundColor: effectiveBrandColor }}
+                    aria-hidden
+                  >
+                    <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M2 5a2 2 0 012-2h7a2 2 0 012 2v4a2 2 0 01-2 2H9l-3 3v-3H4a2 2 0 01-2-2V5z" />
+                    </svg>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </section>
-
-      <div className="flex items-center gap-3 sticky bottom-0 bg-background py-3 border-t border-border">
-        <button
-          type="submit"
-          disabled={pending || kbOver}
-          className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-4 py-2 text-sm font-medium rounded-md disabled:opacity-40"
-        >
-          {pending ? "Saving…" : "Save chatbot config"}
-        </button>
-        {saved ? (
-          <span className="text-xs text-emerald-700">Saved</span>
-        ) : null}
-        {error ? (
-          <span className="text-xs text-destructive">{error}</span>
-        ) : null}
-        {!moduleActive ? (
-          <span className="text-xs text-muted-foreground">
-            Module off — saves stage content without publishing.
-          </span>
-        ) : null}
-      </div>
+      </div>{/* end flex row */}
     </form>
   );
 }

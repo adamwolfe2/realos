@@ -63,7 +63,7 @@ export function SinceBanner({
       <button
         onClick={() => startTransition(() => { void markBriefingViewed(); })}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-md bg-foreground text-background px-3 py-1.5 text-[12px] font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-[12px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         <Check className="h-3 w-3" />
         {pending ? "Saving..." : "Mark briefing reviewed"}

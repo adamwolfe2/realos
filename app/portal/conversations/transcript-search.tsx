@@ -149,7 +149,7 @@ function TranscriptSearchInner({
                 "text-[11px] font-semibold whitespace-nowrap transition-colors",
                 "ring-1 ring-inset",
                 active
-                  ? "bg-foreground text-background ring-foreground"
+                  ? "bg-primary text-primary-foreground ring-foreground"
                   : "bg-card text-foreground ring-border hover:bg-muted",
               )}
             >

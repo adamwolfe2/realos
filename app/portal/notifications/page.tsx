@@ -127,7 +127,7 @@ export default function NotificationsPage() {
             className={cn(
               "px-3 py-1.5 text-xs font-medium rounded-md border transition-colors",
               filter === f.value
-                ? "bg-foreground text-background border-foreground"
+                ? "bg-primary text-primary-foreground border-foreground"
                 : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-foreground/40"
             )}
           >

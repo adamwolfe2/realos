@@ -505,7 +505,7 @@ export function SiteBuilderForm({
             <button
               type="submit"
               disabled={pending || !isDirty || hasValidationErrors}
-              className="text-xs px-3 py-1.5 bg-foreground text-background rounded-md hover:bg-foreground/90 disabled:opacity-40"
+              className="text-xs px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 disabled:opacity-40"
             >
               {pending ? "Saving..." : hasValidationErrors ? "Fix errors first" : "Save changes"}
             </button>

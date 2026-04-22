@@ -50,7 +50,7 @@ export function LeasingVelocityChart({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
-        className="w-full h-32 overflow-visible"
+        className="w-full h-32 overflow-hidden"
         aria-label="Leasing velocity — leads, tours, applications by week"
       >
         {[0.25, 0.5, 0.75, 1].map((frac) => {

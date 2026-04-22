@@ -206,7 +206,7 @@ function FilterGroup({
             className={cn(
               "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
               active
-                ? "bg-foreground text-background"
+                ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >

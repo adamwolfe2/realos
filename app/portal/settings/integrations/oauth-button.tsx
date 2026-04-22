@@ -44,7 +44,7 @@ export function OAuthConnectButton({ provider }: { provider: OAuthProvider }) {
   return (
     <a
       href={`/api/oauth/${provider}/start`}
-      className="rounded-md border border-foreground bg-foreground text-background px-3 py-2.5 flex items-center justify-between gap-3 hover:bg-foreground/90"
+      className="rounded-md border border-primary bg-primary text-primary-foreground px-3 py-2.5 flex items-center justify-between gap-3 hover:bg-primary/90"
     >
       <div className="min-w-0">
         <div className="text-sm font-medium">Connect via {label} OAuth</div>

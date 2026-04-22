@@ -197,7 +197,7 @@ function MessageBubble({ message }: { message: SerializedMessage }) {
       <div
         className={`max-w-[85%] text-sm px-4 py-2.5 rounded-[10px] whitespace-pre-wrap ${
           isUser
-            ? "bg-foreground text-background"
+            ? "bg-primary text-primary-foreground"
             : "bg-muted text-foreground"
         }`}
       >

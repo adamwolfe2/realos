@@ -140,7 +140,7 @@ export function ConversationSidebar({
             type="button"
             onClick={saveNote}
             disabled={savingNote || noteDraft.trim().length === 0}
-            className="inline-flex items-center justify-center rounded-[6px] px-3 py-1.5 text-xs font-semibold bg-foreground text-background hover:bg-foreground/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center rounded-[6px] px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground hover:bg-primary/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {savingNote ? "Saving..." : "Save note"}
           </button>
@@ -229,7 +229,7 @@ export function ConversationSidebar({
               href="/portal/chatbot"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-foreground text-background hover:bg-foreground/80 transition-colors"
+              className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-primary text-primary-foreground hover:bg-primary/80 transition-colors"
             >
               <span className="text-[11px] uppercase tracking-widest">
                 Tune chatbot prompt

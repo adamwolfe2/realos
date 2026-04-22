@@ -71,16 +71,16 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
           <div className="flex items-start gap-2.5 py-2">
             <span
               className={cn(
-                "relative -ml-3 z-10 grid place-items-center h-6 w-6 rounded-full border border-border bg-card shrink-0",
+                "relative -ml-3 z-10 grid place-items-center h-5 w-5 rounded-full border border-border bg-card shrink-0",
               )}
             >
               <span
                 className={cn(
-                  "grid place-items-center h-5 w-5 rounded-full",
+                  "grid place-items-center h-4 w-4 rounded-full",
                   TONE[item.kind],
                 )}
               >
-                <Icon className="h-3 w-3" />
+                <Icon className="h-2.5 w-2.5" />
               </span>
             </span>
             <div className="min-w-0 flex-1">

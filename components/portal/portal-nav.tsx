@@ -199,20 +199,26 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
             <Image
               src="/icon-32x32.png"
               alt={BRAND_NAME}
-              width={24}
-              height={24}
-              className="w-6 h-6 shrink-0"
+              width={28}
+              height={28}
+              className="w-7 h-7 shrink-0"
               priority
             />
           ) : (
-            <Image
-              src="/logos/leasestack-wordmark.png"
-              alt={BRAND_NAME}
-              width={140}
-              height={28}
-              className="h-7 w-auto"
-              priority
-            />
+            <div className="flex items-center gap-2 min-w-0">
+              <Image
+                src="/icon-32x32.png"
+                alt=""
+                width={28}
+                height={28}
+                className="w-7 h-7 shrink-0"
+                priority
+                aria-hidden="true"
+              />
+              <span className="text-[15px] font-bold tracking-tight text-foreground">
+                {BRAND_NAME}
+              </span>
+            </div>
           )}
         </Link>
       </div>

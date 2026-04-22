@@ -217,13 +217,6 @@ export default async function PortalHome({
     <div className="space-y-5">
       <SetupBanner forceShow={forceShowSetup} />
 
-      <DashboardHeader
-        workspaceName={org?.name ?? "Workspace"}
-        workspaceLogoUrl={org?.logoUrl}
-        primaryColor={org?.primaryColor}
-        rangeLabel="Last 28 days"
-      />
-
       {showFirstRun ? (
         <FirstRunChecklist items={firstRunItems} />
       ) : (

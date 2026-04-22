@@ -84,9 +84,7 @@ export default async function BriefingPage({
     context: (i.context as Record<string, unknown>) ?? null,
   }));
 
-  const greeting = user?.firstName
-    ? `Good morning, ${user.firstName}.`
-    : "Good morning.";
+  const greeting = "Daily briefing";
 
   return (
     <div className="space-y-5">
@@ -235,7 +233,7 @@ function PropertyFilter({
         className={cn(
           "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
           !activeId
-            ? "bg-foreground text-background"
+            ? "bg-primary text-primary-foreground"
             : "text-muted-foreground hover:bg-muted hover:text-foreground",
         )}
       >
@@ -250,7 +248,7 @@ function PropertyFilter({
             className={cn(
               "rounded-md px-2 py-1 text-[11px] font-medium transition-colors truncate max-w-[14rem]",
               active
-                ? "bg-foreground text-background"
+                ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >

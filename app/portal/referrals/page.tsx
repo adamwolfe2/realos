@@ -48,7 +48,7 @@ export default async function ReferralsPage() {
           </p>
           <a
             href="mailto:hello@leasestack.co?subject=Activate%20Referrals%20module"
-            className="mt-5 inline-flex items-center rounded-md bg-foreground text-background px-4 py-2 text-sm font-medium hover:bg-foreground/90 transition-colors"
+            className="mt-5 inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
           >
             Contact account manager
           </a>
