@@ -7,6 +7,8 @@ import {
   LeadStatus,
   TourStatus,
 } from "@prisma/client";
+import { generateText } from "ai";
+import { anthropic } from "@ai-sdk/anthropic";
 
 // ---------------------------------------------------------------------------
 // Report snapshot generator.
@@ -90,6 +92,18 @@ export type ReportPropertyRow = {
   occupancyPct: number | null;
 };
 
+export type AiActionItem = {
+  priority: "high" | "medium" | "low";
+  title: string;
+  observation: string;
+  action: string;
+};
+
+export type AiAnalysis = {
+  summary: string;
+  actions: AiActionItem[];
+};
+
 export type ReportSnapshot = {
   kind: ReportKind;
   periodStart: string;
@@ -105,6 +119,7 @@ export type ReportSnapshot = {
   chatbotStats: ReportChatbotStats;
   properties: ReportPropertyRow[];
   trafficTrend: number[];
+  aiAnalysis?: AiAnalysis;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -190,6 +205,63 @@ function bucketDaily(rows: Array<{ date: Date; value: number }>, days: number, p
     if (idx >= 0 && idx < days) buckets[idx] += row.value;
   }
   return buckets;
+}
+
+// ---------------------------------------------------------------------------
+// AI analysis
+// ---------------------------------------------------------------------------
+
+async function generateAiAnalysis(
+  snapshot: Omit<ReportSnapshot, "aiAnalysis">,
+): Promise<AiAnalysis | null> {
+  if (!process.env.ANTHROPIC_API_KEY) return null;
+  try {
+    const prompt = `You are analyzing property leasing marketing performance data. Provide 4-5 specific, actionable insights.
+
+PERIOD: ${snapshot.kind} (${snapshot.periodStart} to ${snapshot.periodEnd})
+
+KEY METRICS:
+- Leads: ${snapshot.kpis.leads} (${snapshot.kpiDeltas.leadsPct != null ? snapshot.kpiDeltas.leadsPct + "% vs prior" : "no prior data"})
+- Tours: ${snapshot.kpis.tours} (${snapshot.kpiDeltas.toursPct != null ? snapshot.kpiDeltas.toursPct + "% vs prior" : "no prior data"})
+- Applications: ${snapshot.kpis.applications}
+- Ad spend: $${snapshot.kpis.adSpendUsd} (${snapshot.kpiDeltas.adSpendUsdPct != null ? snapshot.kpiDeltas.adSpendUsdPct + "% vs prior" : "no prior data"})
+- Cost per lead: ${snapshot.kpis.costPerLead != null ? "$" + snapshot.kpis.costPerLead : "n/a"}
+- Organic sessions: ${snapshot.kpis.organicSessions} (${snapshot.kpiDeltas.organicSessionsPct != null ? snapshot.kpiDeltas.organicSessionsPct + "% vs prior" : "no prior data"})
+
+FUNNEL:
+${snapshot.funnel.map((s) => `- ${s.stage}: ${s.count}`).join("\n")}
+
+LEAD SOURCES:
+${snapshot.leadSources.map((s) => `- ${s.source}: ${s.count} (${s.pct}%)`).join("\n") || "- No leads this period"}
+
+AD PERFORMANCE:
+${snapshot.adPerformance.map((r) => `- ${r.platform}: $${r.spendUsd} spend, ${r.leads} leads, CPL ${r.cpl != null ? "$" + r.cpl : "n/a"}, conv rate ${r.conversionRate != null ? r.conversionRate + "%" : "n/a"}`).join("\n") || "- No ad data"}
+
+TOP SEARCH QUERIES:
+${snapshot.topQueries.slice(0, 5).map((q) => `- "${q.query}": ${q.clicks} clicks, pos ${q.position}`).join("\n") || "- No query data"}
+
+Respond with ONLY valid JSON (no markdown, no explanation):
+{
+  "summary": "One sentence: what matters most this ${snapshot.kind}.",
+  "actions": [
+    {
+      "priority": "high",
+      "title": "Short action title (max 8 words)",
+      "observation": "What the data shows (1 sentence)",
+      "action": "What to do (1 sentence, specific)"
+    }
+  ]
+}`;
+
+    const { text } = await generateText({
+      model: anthropic("claude-haiku-4-5-20251001"),
+      messages: [{ role: "user", content: prompt }],
+      maxOutputTokens: 800,
+    });
+    return JSON.parse(text) as AiAnalysis;
+  } catch {
+    return null;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -566,7 +638,7 @@ export async function generateReportSnapshot(
         )
       : trafficTrend;
 
-  return {
+  const baseSnapshot: Omit<ReportSnapshot, "aiAnalysis"> = {
     kind,
     periodStart: periodStart.toISOString(),
     periodEnd: periodEnd.toISOString(),
@@ -581,5 +653,12 @@ export async function generateReportSnapshot(
     chatbotStats,
     properties,
     trafficTrend: trafficFallback,
+  };
+
+  const aiAnalysis = await generateAiAnalysis(baseSnapshot);
+
+  return {
+    ...baseSnapshot,
+    ...(aiAnalysis ? { aiAnalysis } : {}),
   };
 }
