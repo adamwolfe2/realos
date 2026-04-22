@@ -21,6 +21,7 @@ import {
   Gauge,
   Sparkles,
   FileText,
+  Share2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,6 +34,7 @@ export type PortalNavOrg = {
   moduleMetaAds: boolean;
   moduleCreativeStudio: boolean;
   moduleSEO: boolean;
+  moduleReferrals: boolean;
   bringYourOwnSite: boolean;
   onboardingDismissed: boolean;
   setupComplete: boolean;
@@ -107,6 +109,12 @@ const NAV: NavItem[] = [
     label: "SEO",
     icon: TrendingUp,
     show: (o) => o.moduleSEO,
+  },
+  {
+    href: "/portal/referrals",
+    label: "Referrals",
+    icon: Share2,
+    show: (o) => o.moduleReferrals,
   },
   { href: "/portal/notifications", label: "Notifications", icon: Bell, show: ALWAYS },
   { href: "/portal/billing", label: "Billing", icon: CreditCard, show: ALWAYS },

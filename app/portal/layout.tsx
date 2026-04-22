@@ -48,6 +48,7 @@ export default async function PortalLayout({
       moduleMetaAds: true,
       moduleCreativeStudio: true,
       moduleSEO: true,
+      moduleReferrals: true,
       bringYourOwnSite: true,
     },
   });
@@ -72,6 +73,7 @@ export default async function PortalLayout({
     moduleMetaAds: org.moduleMetaAds,
     moduleCreativeStudio: org.moduleCreativeStudio,
     moduleSEO: org.moduleSEO,
+    moduleReferrals: org.moduleReferrals,
     bringYourOwnSite: org.bringYourOwnSite,
     onboardingDismissed: org.onboardingDismissed,
     setupComplete,
