@@ -83,6 +83,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#00A28F",
     initials: "Yb",
     auth: "request",
+    comingSoon: true,
   },
   {
     slug: "yardi-voyager",
@@ -95,6 +96,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#006547",
     initials: "Yv",
     auth: "request",
+    comingSoon: true,
   },
   {
     slug: "buildium",
@@ -107,6 +109,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#007AC1",
     initials: "Bu",
     auth: "request",
+    comingSoon: true,
   },
   {
     slug: "entrata",
@@ -119,6 +122,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#21223B",
     initials: "En",
     auth: "request",
+    comingSoon: true,
   },
   {
     slug: "realpage",
@@ -131,6 +135,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#0063A6",
     initials: "Rp",
     auth: "request",
+    comingSoon: true,
   },
 
   // --------------------------- Analytics / pixel -------------------------
@@ -207,6 +212,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#000000",
     initials: "Tt",
     auth: "request",
+    comingSoon: true,
   },
   {
     slug: "linkedin-ads",
@@ -219,6 +225,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#0A66C2",
     initials: "Li",
     auth: "request",
+    comingSoon: true,
   },
 
   // --------------------------- Communication -----------------------------
@@ -233,6 +240,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#4A154B",
     initials: "Sl",
     auth: "request",
+    comingSoon: true,
   },
   {
     slug: "twilio-sms",
@@ -245,6 +253,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#F22F46",
     initials: "Tw",
     auth: "request",
+    comingSoon: true,
   },
 
   // ----------------------------- Scheduling ------------------------------
@@ -259,6 +268,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#006BFF",
     initials: "Ca",
     auth: "request",
+    comingSoon: true,
   },
   {
     slug: "cal-com",
@@ -271,6 +281,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#111111",
     initials: "Cl",
     auth: "request",
+    comingSoon: true,
   },
 
   // ----------------------------- Automation ------------------------------
@@ -285,6 +296,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#FF4A00",
     initials: "Za",
     auth: "api_key",
+    comingSoon: true,
   },
   {
     slug: "make",
@@ -297,6 +309,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#6D00CC",
     initials: "Mk",
     auth: "api_key",
+    comingSoon: true,
   },
   {
     slug: "custom-webhook",
@@ -309,6 +322,7 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
     brandColor: "#4B5563",
     initials: "Cw",
     auth: "api_key",
+    comingSoon: true,
   },
 ];
 

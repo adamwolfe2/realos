@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
@@ -7,6 +6,8 @@ import { prisma } from "@/lib/db";
 import { BRAND_NAME } from "@/lib/brand";
 import { PortalNav } from "@/components/portal/portal-nav";
 import { deriveSetupProgress } from "@/lib/setup/derive-progress";
+import Image from "next/image";
+import Link from "next/link";
 import { NotificationBell } from "@/components/portal/notification-bell";
 
 export const metadata: Metadata = {
@@ -16,9 +17,6 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-// Client portal shell. Middleware gates /portal/* so unauthenticated visitors
-// redirect to /sign-in before this renders. When an agency user impersonates a
-// client, the banner stays visible across every sub-route.
 export default async function PortalLayout({
   children,
 }: {
@@ -27,7 +25,6 @@ export default async function PortalLayout({
   const scope = await getScope();
   if (!scope) redirect("/sign-in");
 
-  // Agency users without an impersonation target shouldn't see the portal.
   if (scope.isAgency && !scope.isImpersonating) {
     redirect("/admin");
   }
@@ -57,15 +54,13 @@ export default async function PortalLayout({
     redirect(scope.isAgency ? "/admin" : "/sign-in");
   }
 
-  // Setup completion drives whether we show the "Setup" nav entry. Once
-  // every step is done (or the operator dismissed onboarding), the tab
-  // vanishes and the nav simplifies.
   const setupProgress = await deriveSetupProgress(scope.orgId);
   const setupComplete =
     setupProgress != null &&
     setupProgress.completedCount === setupProgress.totalCount;
 
   const navOrg = {
+    name: org.name,
     moduleWebsite: org.moduleWebsite,
     modulePixel: org.modulePixel,
     moduleChatbot: org.moduleChatbot,
@@ -80,15 +75,34 @@ export default async function PortalLayout({
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Mobile top bar */}
+      <div className="md:hidden flex items-center justify-between h-14 px-4 bg-card border-b border-border sticky top-0 z-40">
+        <Link href="/portal" aria-label={`${BRAND_NAME} portal home`}>
+          <Image
+            src="/logos/leasestack-wordmark.png"
+            alt={BRAND_NAME}
+            width={110}
+            height={20}
+            className="h-5 w-auto"
+            priority
+          />
+        </Link>
+        <div className="flex items-center gap-3">
+          <NotificationBell />
+          <UserButton />
+        </div>
+      </div>
+
+      {/* Impersonation banner — full width, outside the flex so it stacks above */}
       {scope.isImpersonating ? (
         <div
           role="status"
-          className="bg-amber-100 border-b border-amber-300 text-amber-900 text-xs md:text-sm px-4 py-2 flex items-center justify-between gap-3"
+          className="bg-amber-100 border-b border-amber-300 text-amber-900 text-xs px-4 py-2 flex items-center justify-between gap-3"
         >
           <span>
-            Impersonating <strong>{org.name}</strong>. Changes are attributed
-            to you in the audit log.
+            Impersonating <strong>{org.name}</strong>. Changes are attributed to
+            you in the audit log.
           </span>
           <form action="/api/admin/impersonate/end" method="post">
             <button
@@ -101,47 +115,16 @@ export default async function PortalLayout({
         </div>
       ) : null}
 
-      <header className="border-b border-border px-4 md:px-6 py-3 flex items-center justify-between bg-card">
-        <Link
-          href="/portal"
-          className="flex items-center gap-2.5 min-w-0"
-          aria-label={`${BRAND_NAME} portal home`}
+      <div className="flex h-[calc(100dvh-3.5rem)] md:h-screen overflow-hidden">
+        <PortalNav org={navOrg} />
+
+        <main
+          id="main-content"
+          className="flex-1 overflow-y-auto bg-background"
         >
-          <div className="shrink-0 h-8 w-8 rounded-md bg-primary text-primary-foreground grid place-items-center font-serif font-bold text-sm">
-            {BRAND_NAME.slice(0, 1)}
-          </div>
-          <div className="min-w-0 hidden sm:block">
-            <span className="block font-serif font-bold text-sm text-foreground tracking-tight truncate">
-              {BRAND_NAME}
-            </span>
-            <span className="block text-[10px] font-semibold text-primary uppercase tracking-widest">
-              Portal
-            </span>
-          </div>
-          <span className="hidden md:inline text-xs text-muted-foreground border-l border-border pl-3 ml-1 truncate">
-            {org.name}
-          </span>
-        </Link>
-        <div className="flex items-center gap-2">
-          <NotificationBell />
-          <UserButton />
-        </div>
-      </header>
-
-      <PortalNav org={navOrg} />
-
-      <main id="main-content" className="flex-1 max-w-7xl w-full mx-auto px-4 md:px-6 py-6">
-        {children}
-      </main>
-
-      <footer className="border-t px-4 md:px-6 py-3 text-xs opacity-60 flex items-center justify-end">
-        <Link
-          href="/portal/setup"
-          className="underline-offset-2 hover:underline"
-        >
-          Setup hub
-        </Link>
-      </footer>
+          <div className="p-4 pb-20 md:p-6 md:pb-10">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }

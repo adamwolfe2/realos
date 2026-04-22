@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
@@ -50,18 +51,29 @@ export function AdminSidebar({
       <div className="flex h-16 items-center justify-between px-4 border-b border-border">
         <Link
           href="/admin"
-          className="flex items-center gap-2.5 min-w-0"
+          className="flex items-center min-w-0"
           aria-label={`${BRAND_NAME} admin home`}
         >
-          <div className="shrink-0 h-8 w-8 rounded-md bg-primary text-primary-foreground grid place-items-center font-serif font-bold text-sm">
-            {BRAND_NAME.slice(0, 1)}
-          </div>
-          {!collapsed && (
+          {collapsed ? (
+            <Image
+              src="/icon-32x32.png"
+              alt={BRAND_NAME}
+              width={24}
+              height={24}
+              className="w-6 h-6 shrink-0"
+              priority
+            />
+          ) : (
             <div className="min-w-0">
-              <span className="block font-serif font-bold text-sm text-foreground tracking-tight truncate">
-                {BRAND_NAME}
-              </span>
-              <span className="block text-[10px] font-semibold text-primary uppercase tracking-widest">
+              <Image
+                src="/logos/leasestack-wordmark.png"
+                alt={BRAND_NAME}
+                width={120}
+                height={22}
+                className="h-[22px] w-auto"
+                priority
+              />
+              <span className="block text-[10px] font-semibold text-primary uppercase tracking-widest mt-0.5">
                 Admin
               </span>
             </div>

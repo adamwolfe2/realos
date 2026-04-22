@@ -45,23 +45,25 @@ export function IntegrationMarketplace({
     return m;
   }, [statuses]);
 
+  const LIVE = React.useMemo(() => INTEGRATIONS.filter((i) => !i.comingSoon), []);
+
   const filtered = React.useMemo(() => {
-    if (filter === "all") return INTEGRATIONS;
+    if (filter === "all") return LIVE;
     if (filter === "installed") {
-      return INTEGRATIONS.filter((i) => {
+      return LIVE.filter((i) => {
         const s = byStatus.get(i.slug);
         return s === "connected" || s === "managed";
       });
     }
-    return INTEGRATIONS.filter((i) => i.category === filter);
-  }, [filter, byStatus]);
+    return LIVE.filter((i) => i.category === filter);
+  }, [filter, byStatus, LIVE]);
 
-  const installedCount = INTEGRATIONS.filter((i) => {
+  const installedCount = LIVE.filter((i) => {
     const s = byStatus.get(i.slug);
     return s === "connected" || s === "managed";
   }).length;
 
-  const openDef = openSlug ? INTEGRATIONS.find((i) => i.slug === openSlug) : null;
+  const openDef = openSlug ? LIVE.find((i) => i.slug === openSlug) : null;
   const openState = openDef ? byStatus.get(openDef.slug) ?? "available" : null;
 
   return (
@@ -74,7 +76,7 @@ export function IntegrationMarketplace({
           active={filter === "all"}
           onClick={() => setFilter("all")}
           label="All"
-          count={INTEGRATIONS.length}
+          count={LIVE.length}
         />
         <FilterChip
           active={filter === "installed"}
@@ -82,7 +84,9 @@ export function IntegrationMarketplace({
           label="Installed"
           count={installedCount}
         />
-        {(Object.keys(CATEGORY_LABEL) as IntegrationCategory[]).map((cat) => (
+        {(Object.keys(CATEGORY_LABEL) as IntegrationCategory[]).filter((cat) =>
+          LIVE.some((i) => i.category === cat)
+        ).map((cat) => (
           <FilterChip
             key={cat}
             active={filter === cat}
