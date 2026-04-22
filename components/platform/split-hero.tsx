@@ -32,9 +32,9 @@ export function SplitHero({
     >
       <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-20 md:pt-24 pb-16 md:pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
-          <div className="lg:col-span-6">
+          <div className="lg:col-span-6 text-center lg:text-left">
             <Reveal>
-              <div className="flex items-center gap-3 mb-5">
+              <div className="flex items-center justify-center lg:justify-start gap-3 mb-5">
                 <span
                   aria-hidden
                   style={{
@@ -97,12 +97,13 @@ export function SplitHero({
             </Reveal>
 
             <Reveal delay={220}>
-              <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-3">
+              <div className="mt-8 flex flex-col items-stretch sm:flex-row sm:items-center gap-3">
                 {ctas.map((c) => (
                   <Link
                     key={c.label}
                     href={c.href}
-                    className={`${c.variant === "secondary" ? "btn-secondary" : "btn-primary"} w-full sm:w-auto justify-center`}
+                    className={`${c.variant === "secondary" ? "btn-secondary" : "btn-primary"} sm:w-auto`}
+                    style={{ display: "flex", justifyContent: "center" }}
                   >
                     {c.label}
                   </Link>

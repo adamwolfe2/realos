@@ -31,7 +31,7 @@ export function PlatformFooter() {
           <img
             src="/logos/leasestack-wordmark.png"
             alt="LeaseStack"
-            style={{ height: "26px", width: "auto", display: "block", opacity: 0.85 }}
+            style={{ height: "44px", width: "auto", display: "block", opacity: 0.85 }}
           />
         </Link>
         <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2">

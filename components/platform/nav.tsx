@@ -237,77 +237,108 @@ function Dropdown({
 }
 
 function MobileMenu({ onClose }: { onClose: () => void }) {
-  const sections: Array<{
-    title: string;
-    items: Array<{ href: string; label: string }>;
-  }> = [
-    { title: "Product", items: PRODUCT_LINKS },
-    { title: "Solutions", items: VERTICAL_LINKS },
-    {
-      title: "Company",
-      items: [
-        { href: "/blog", label: "Blog" },
-        { href: "/about", label: "About" },
-        { href: "/manifesto", label: "Manifesto" },
-        { href: "/sign-in", label: "Sign in" },
-      ],
-    },
+  const allLinks = [
+    ...PRODUCT_LINKS,
+    ...VERTICAL_LINKS,
+    { href: "/blog", label: "Blog" },
+    { href: "/about", label: "About" },
+    { href: "/sign-in", label: "Sign in" },
   ];
+
   return (
-    <div
-      className="md:hidden"
-      style={{
-        borderTop: "1px solid #EEEEEE",
-        backgroundColor: "#FFFFFF",
-      }}
-    >
-      <div className="max-w-6xl mx-auto px-4 py-4 space-y-5">
-        {sections.map((s) => (
-          <div key={s.title}>
-            <p
+    <>
+      <div
+        className="fixed inset-0 z-50 md:hidden flex flex-col"
+        style={{ backgroundColor: "#faf9f5" }}
+      >
+        <style jsx>{`
+          @keyframes menuSlideIn {
+            0%   { opacity: 0; transform: scale(0.94) translateY(-12px); }
+            60%  { opacity: 1; transform: scale(1.02) translateY(2px); }
+            80%  { transform: scale(0.99) translateY(-1px); }
+            100% { transform: scale(1) translateY(0); }
+          }
+          .menu-panel {
+            animation: menuSlideIn 420ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          }
+          @keyframes linkPop {
+            0%   { opacity: 0; transform: translateX(-10px); }
+            100% { opacity: 1; transform: translateX(0); }
+          }
+          .menu-link {
+            animation: linkPop 300ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+          }
+        `}</style>
+
+        <div className="menu-panel flex flex-col h-full px-5 pt-5 pb-8">
+          <div className="flex items-center justify-between mb-6">
+            <Link href="/" onClick={onClose} aria-label="LeaseStack home">
+              <img
+                src="/logos/leasestack-wordmark.png"
+                alt="LeaseStack"
+                style={{ height: "44px", width: "auto", display: "block" }}
+              />
+            </Link>
+            <button
+              type="button"
+              onClick={onClose}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full"
+              style={{ backgroundColor: "#f0eee6", color: "#141413" }}
+              aria-label="Close menu"
+            >
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                <path d="M4 4l8 8M12 4L4 12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+              </svg>
+            </button>
+          </div>
+
+          <nav className="flex-1 flex flex-col justify-center gap-1">
+            {allLinks.map((item, i) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={onClose}
+                className="menu-link"
+                style={{
+                  display: "block",
+                  padding: "11px 12px",
+                  borderRadius: "12px",
+                  color: "#141413",
+                  fontSize: "18px",
+                  fontWeight: 500,
+                  fontFamily: "var(--font-sans)",
+                  animationDelay: `${i * 35}ms`,
+                  transition: "background-color 0.15s ease",
+                }}
+              >
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+
+          <div className="mt-6">
+            <Link
+              href="/onboarding"
+              onClick={onClose}
               style={{
-                fontFamily: "var(--font-mono)",
-                color: "#5C5E62",
-                fontSize: "11px",
-                textTransform: "uppercase",
-                letterSpacing: "0.18em",
-                marginBottom: "8px",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "52px",
+                borderRadius: "12px",
+                backgroundColor: "#2F6FE5",
+                color: "#faf9f5",
+                fontSize: "16px",
+                fontWeight: 600,
+                fontFamily: "var(--font-sans)",
               }}
             >
-              {s.title}
-            </p>
-            <ul className="space-y-1">
-              {s.items.map((i) => (
-                <li key={i.href}>
-                  <Link
-                    href={i.href}
-                    onClick={onClose}
-                    style={{
-                      display: "block",
-                      padding: "12px 8px",
-                      color: "#171A20",
-                      fontSize: "16px",
-                      fontWeight: 500,
-                    }}
-                  >
-                    {i.label}
-                  </Link>
-                </li>
-              ))}
-            </ul>
+              Book a demo
+            </Link>
           </div>
-        ))}
-        <div className="pt-4 pb-2 flex flex-col gap-3" style={{ borderTop: "1px solid #EEEEEE" }}>
-          <Link
-            href="/onboarding"
-            onClick={onClose}
-            className="btn-primary w-full justify-center"
-          >
-            Book a demo
-          </Link>
         </div>
       </div>
-    </div>
+    </>
   );
 }
 
