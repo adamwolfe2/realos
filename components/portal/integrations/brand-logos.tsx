@@ -3,6 +3,7 @@ import Image from "next/image";
 import {
   siGoogleads,
   siGoogleanalytics,
+  siGooglesearchconsole,
   siMeta,
   siTiktok,
   siCalendly,
@@ -101,6 +102,23 @@ function TwilioMark() {
   );
 }
 
+// AppFolio mark — geometric "A" roofline shape matching their brand icon.
+function AppFolioMark() {
+  return (
+    <svg
+      role="img"
+      aria-label="AppFolio"
+      viewBox="0 0 24 24"
+      xmlns="http://www.w3.org/2000/svg"
+      className="h-full w-full"
+      fill="currentColor"
+    >
+      {/* Pentagon house/A-frame shape: roof peak + walls + door cutout */}
+      <path d="M12 2.5L3 10v11.5h5.5v-6h7v6H21V10L12 2.5zm0 2.3l7 6.1v9.6h-3v-6H8v6H5V10.9l7-6.1z" />
+    </svg>
+  );
+}
+
 // -- Our own and niche-vendor marks ----------------------------------------
 
 function CursiveMark() {
@@ -193,6 +211,13 @@ export const BRAND_LOGOS: Record<string, BrandLogoEntry> = {
     brandColor: `#${siGoogleanalytics.hex}`,
     filledTile: false,
   },
+  gsc: {
+    render: () => (
+      <SimpleIconSvg icon={siGooglesearchconsole} title="Google Search Console" />
+    ),
+    brandColor: `#${siGooglesearchconsole.hex}`,
+    filledTile: false,
+  },
   "meta-ads": {
     render: () => <SimpleIconSvg icon={siMeta} title="Meta" />,
     brandColor: `#${siMeta.hex}`,
@@ -253,9 +278,9 @@ export const BRAND_LOGOS: Record<string, BrandLogoEntry> = {
     filledTile: false,
   },
 
-  // PMS / niche vendors — white letter mark on brand-color tile.
+  // PMS / niche vendors — white mark on brand-color tile.
   appfolio: {
-    render: () => <LetterMark letters="Af" />,
+    render: () => <AppFolioMark />,
     brandColor: "#0059A9",
     filledTile: true,
   },

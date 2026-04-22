@@ -427,12 +427,11 @@ export async function testAppFolioConnection(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const client = appfolioRestClient(integration);
-    // listings report is the smallest sane probe — paginated, always
-    // available for any plan tier that has REST access.
-    await client.fetchReport("listings", {
-      toDate: new Date(),
-      fromDate: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    });
+    // The listings report does not accept from_date/to_date filtering —
+    // it returns all active listings. Probe without date params to avoid
+    // a 400 from malformed parameters. A successful response (even empty
+    // results) confirms credentials and subdomain are valid.
+    await client.fetchReport("listings", {});
     return { ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
