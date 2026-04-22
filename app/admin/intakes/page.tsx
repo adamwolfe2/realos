@@ -19,6 +19,8 @@ function humanIntakeStatus(s: string): string {
   switch (s) {
     case "submitted":
       return "Submitted";
+    case "consultation_booked":
+      return "Call booked";
     case "in_review":
       return "In review";
     case "converted":
@@ -34,6 +36,7 @@ function intakeStatusTone(s: string): BadgeTone {
   switch (s) {
     case "converted":
       return "success";
+    case "consultation_booked":
     case "in_review":
       return "warning";
     case "rejected":

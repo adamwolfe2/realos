@@ -145,11 +145,36 @@ export async function convertIntakeToClient(
       orgId: intake.orgId,
     };
   }
-  if (intake.status !== "submitted" && intake.status !== "in_review") {
+  if (
+    intake.status !== "submitted" &&
+    intake.status !== "consultation_booked" &&
+    intake.status !== "in_review"
+  ) {
     return {
       ok: false,
       error: `Intake status "${intake.status}" can't be converted`,
     };
+  }
+
+  // Duplicate-org guard: block if a CLIENT org already exists for this email
+  // or if an existing IntakeSubmission is already linked to an org with the
+  // same primary contact email. This catches cases where the same company
+  // submitted two intakes with slightly different names.
+  if (intake.primaryContactEmail) {
+    const existingOrg = await prisma.organization.findFirst({
+      where: {
+        orgType: OrgType.CLIENT,
+        primaryContactEmail: intake.primaryContactEmail,
+      },
+      select: { id: true, name: true, slug: true },
+    });
+    if (existingOrg) {
+      return {
+        ok: false,
+        error: `A client org already exists for ${intake.primaryContactEmail} (${existingOrg.name} · ${existingOrg.slug}). Open that client instead of creating a duplicate.`,
+        orgId: existingOrg.id,
+      };
+    }
   }
 
   const slug = await pickUniqueSlug(

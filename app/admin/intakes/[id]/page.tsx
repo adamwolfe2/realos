@@ -18,11 +18,17 @@ import type { BadgeTone } from "@/lib/format";
 export const metadata: Metadata = { title: "Intake detail" };
 export const dynamic = "force-dynamic";
 
-type IntakeStatus = "submitted" | "in_review" | "converted" | "rejected";
+type IntakeStatus =
+  | "submitted"
+  | "consultation_booked"
+  | "in_review"
+  | "converted"
+  | "rejected";
 
 function isIntakeStatus(v: string): v is IntakeStatus {
   return (
     v === "submitted" ||
+    v === "consultation_booked" ||
     v === "in_review" ||
     v === "converted" ||
     v === "rejected"
@@ -33,6 +39,8 @@ function humanIntakeStatus(s: IntakeStatus): string {
   switch (s) {
     case "submitted":
       return "Submitted";
+    case "consultation_booked":
+      return "Call booked";
     case "in_review":
       return "In review";
     case "converted":
@@ -46,6 +54,7 @@ function intakeStatusTone(s: IntakeStatus): BadgeTone {
   switch (s) {
     case "converted":
       return "success";
+    case "consultation_booked":
     case "in_review":
       return "warning";
     case "rejected":
@@ -89,7 +98,10 @@ export default async function IntakeDetail({
     ? intake.status
     : "submitted";
 
-  const canAct = status === "submitted" || status === "in_review";
+  const canAct =
+    status === "submitted" ||
+    status === "consultation_booked" ||
+    status === "in_review";
   const monthlySpend =
     intake.currentMonthlySpendCents != null
       ? `$${Math.round(intake.currentMonthlySpendCents / 100).toLocaleString()}/mo`
