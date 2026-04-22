@@ -141,9 +141,9 @@ export const INTEGRATIONS: IntegrationDefinition[] = [
   // --------------------------- Analytics / pixel -------------------------
   {
     slug: "visitor-identification",
-    name: "Visitor identification",
+    name: "Cursive pixel",
     category: "analytics",
-    tagline: "Names and emails on your anonymous site traffic.",
+    tagline: "Turn anonymous site visitors into named leads automatically.",
     description:
       "A lightweight script we provision per-tenant, installed on your custom domain. It matches anonymous visitors against a consented identity graph and drops named leads into your CRM — along with the pages they viewed and how they found you.",
     landsIn: ["Visitors", "Leads", "Retargeting audiences"],

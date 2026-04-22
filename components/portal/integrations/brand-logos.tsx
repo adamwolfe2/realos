@@ -1,4 +1,5 @@
 import * as React from "react";
+import Image from "next/image";
 import {
   siGoogleads,
   siGoogleanalytics,
@@ -102,25 +103,16 @@ function TwilioMark() {
 
 // -- Our own and niche-vendor marks ----------------------------------------
 
-function VisitorIdMark() {
+function CursiveMark() {
   return (
-    <svg
-      role="img"
-      aria-label="Visitor identification"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-full w-full"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="12" cy="12" r="9.5" />
-      <circle cx="12" cy="12" r="5.5" />
-      <circle cx="12" cy="12" r="1.8" fill="currentColor" stroke="none" />
-      <path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2" />
-    </svg>
+    <Image
+      src="/logos/cursive-logo.png"
+      alt="Cursive"
+      width={80}
+      height={33}
+      className="w-full h-full object-contain"
+      unoptimized
+    />
   );
 }
 
@@ -251,8 +243,8 @@ export const BRAND_LOGOS: Record<string, BrandLogoEntry> = {
 
   // Our own modules.
   "visitor-identification": {
-    render: () => <VisitorIdMark />,
-    brandColor: "#2F6FE5",
+    render: () => <CursiveMark />,
+    brandColor: "#111111",
     filledTile: false,
   },
   "custom-webhook": {
