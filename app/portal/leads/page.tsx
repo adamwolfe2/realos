@@ -15,14 +15,22 @@ export const metadata: Metadata = { title: "Leads" };
 export const dynamic = "force-dynamic";
 
 const SOURCES = Object.values(LeadSource);
+const PAGE_SIZE = 50;
+
+function parsePage(value: string | undefined): number {
+  const parsed = value ? Number.parseInt(value, 10) : 1;
+  if (!Number.isFinite(parsed) || parsed < 1) return 1;
+  return parsed;
+}
 
 export default async function LeadsKanbanPage({
   searchParams,
 }: {
-  searchParams: Promise<{ source?: string; property?: string; q?: string }>;
+  searchParams: Promise<{ source?: string; property?: string; q?: string; page?: string }>;
 }) {
   const scope = await requireScope();
   const sp = await searchParams;
+  const page = parsePage(sp.page);
 
   const where: Prisma.LeadWhereInput = { ...tenantWhere(scope) };
   if (sp.source && (SOURCES as string[]).includes(sp.source)) {
@@ -38,13 +46,15 @@ export default async function LeadsKanbanPage({
     ];
   }
 
-  const [leads, properties] = await Promise.all([
+  const [leads, totalCount, properties] = await Promise.all([
     prisma.lead.findMany({
       where,
       orderBy: { lastActivityAt: "desc" },
-      take: 500,
+      skip: (page - 1) * PAGE_SIZE,
+      take: PAGE_SIZE,
       include: { property: { select: { id: true, name: true } } },
     }),
+    prisma.lead.count({ where }),
     prisma.property.findMany({
       where: tenantWhere(scope),
       select: { id: true, name: true },
@@ -65,6 +75,21 @@ export default async function LeadsKanbanPage({
     createdAt: l.createdAt.toISOString(),
   }));
 
+  const rangeStart = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const rangeEnd = Math.min(page * PAGE_SIZE, totalCount);
+  const totalPages = Math.ceil(totalCount / PAGE_SIZE);
+
+  // Build a query string that preserves active filters and sets the page
+  function pageHref(p: number): string {
+    const params = new URLSearchParams();
+    if (sp.source) params.set("source", sp.source);
+    if (sp.property) params.set("property", sp.property);
+    if (sp.q) params.set("q", sp.q);
+    if (p > 1) params.set("page", String(p));
+    const qs = params.toString();
+    return `/portal/leads${qs ? `?${qs}` : ""}`;
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -73,7 +98,9 @@ export default async function LeadsKanbanPage({
         actions={
           <div className="flex items-center gap-3">
             <span className="text-xs text-muted-foreground">
-              {leads.length} {leads.length === 1 ? "lead" : "leads"} shown
+              {totalCount === 0
+                ? "No leads"
+                : `Showing ${rangeStart}–${rangeEnd} of ${totalCount} ${totalCount === 1 ? "lead" : "leads"}`}
             </span>
             <ExportButton href="/api/tenant/leads/export" />
           </div>
@@ -128,6 +155,40 @@ export default async function LeadsKanbanPage({
           </Link>
         </div>
       </form>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>
+            Page {page} of {totalPages}
+          </span>
+          <div className="flex items-center gap-2">
+            {page > 1 ? (
+              <Link
+                href={pageHref(page - 1)}
+                className="px-3 py-1.5 border border-border rounded-md hover:bg-muted transition-colors"
+              >
+                Previous
+              </Link>
+            ) : (
+              <span className="px-3 py-1.5 border border-border rounded-md opacity-40 cursor-not-allowed">
+                Previous
+              </span>
+            )}
+            {page < totalPages ? (
+              <Link
+                href={pageHref(page + 1)}
+                className="px-3 py-1.5 border border-border rounded-md hover:bg-muted transition-colors"
+              >
+                Next
+              </Link>
+            ) : (
+              <span className="px-3 py-1.5 border border-border rounded-md opacity-40 cursor-not-allowed">
+                Next
+              </span>
+            )}
+          </div>
+        </div>
+      )}
 
       <LeadKanban items={items} />
     </div>

@@ -21,10 +21,10 @@ export const dynamic = "force-dynamic";
 export default async function ClientsList({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; type?: string }>;
+  searchParams: Promise<{ status?: string; type?: string; q?: string }>;
 }) {
   await requireAgency();
-  const { status, type } = await searchParams;
+  const { status, type, q } = await searchParams;
 
   const where: Prisma.OrganizationWhereInput = { orgType: OrgType.CLIENT };
   if (status && status in TenantStatus) {
@@ -32,6 +32,9 @@ export default async function ClientsList({
   }
   if (type && type in PropertyType) {
     where.propertyType = type as PropertyType;
+  }
+  if (q) {
+    where.name = { contains: q, mode: "insensitive" };
   }
 
   const clients = await prisma.organization.findMany({
@@ -63,14 +66,39 @@ export default async function ClientsList({
         description="Every client organization. Click in for full detail and impersonation."
       />
 
+      <form action="/admin/clients" className="flex flex-wrap items-center gap-3">
+        {status ? <input type="hidden" name="status" value={status} /> : null}
+        <input
+          name="q"
+          defaultValue={q ?? ""}
+          placeholder="Search by name"
+          className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-56"
+        />
+        <button
+          type="submit"
+          className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium hover:bg-primary-dark transition-colors"
+        >
+          Search
+        </button>
+        {q ? (
+          <Link
+            href={status ? `/admin/clients?status=${status}` : "/admin/clients"}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            Clear
+          </Link>
+        ) : null}
+      </form>
+
       <nav className="flex flex-wrap gap-1.5" aria-label="Filter by status">
-        <StatusLink current={status} value="" label="All" />
+        <StatusLink current={status} value="" label="All" q={q} />
         {Object.values(TenantStatus).map((s) => (
           <StatusLink
             key={s}
             current={status}
             value={s}
             label={humanTenantStatus(s)}
+            q={q}
           />
         ))}
       </nav>
@@ -172,15 +200,22 @@ function StatusLink({
   current,
   value,
   label,
+  q,
 }: {
   current: string | undefined;
   value: string;
   label: string;
+  q?: string;
 }) {
   const active = (current ?? "") === value;
+  const params = new URLSearchParams();
+  if (value) params.set("status", value);
+  if (q) params.set("q", q);
+  const qs = params.toString();
+  const href = `/admin/clients${qs ? `?${qs}` : ""}`;
   return (
     <Link
-      href={value ? `/admin/clients?status=${value}` : "/admin/clients"}
+      href={href}
       className={cn(
         "px-2.5 py-1 rounded-md text-xs font-medium border transition-colors",
         active
