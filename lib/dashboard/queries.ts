@@ -2,7 +2,6 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import {
   AdPlatform,
-  ApplicationStatus,
   LeadSource,
   LeadStatus,
   SeoProvider,
