@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { getInsightCounts, getOpenInsights } from "@/lib/insights/queries";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
+import { RunDetectorsButton } from "@/components/portal/insights/run-detectors-button";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Insights" };
@@ -88,11 +89,12 @@ export default async function InsightsPage({
             what you have seen, snooze the noise, and open the ones worth a call.
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-3">
           <StatBlock label="Critical" value={counts.critical} tone="critical" />
           <StatBlock label="Warning" value={counts.warning} tone="warning" />
           <StatBlock label="Info" value={counts.info} tone="info" />
           <StatBlock label="Resolved" value={resolvedCount} tone="muted" />
+          <RunDetectorsButton />
         </div>
       </header>
 

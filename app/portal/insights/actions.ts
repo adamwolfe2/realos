@@ -84,6 +84,25 @@ export async function markActed(id: string) {
   }
 }
 
+export async function runDetectorsNow() {
+  try {
+    const scope = await requireScope();
+    const { runInsightDetectors } = await import("@/lib/insights/run");
+    const summary = await runInsightDetectors(scope.orgId);
+    revalidatePath("/portal/insights");
+    revalidatePath("/portal/briefing");
+    revalidatePath("/portal");
+    return {
+      success: true as const,
+      inserted: summary.totalInserted,
+      updated: summary.totalUpdated,
+      resolved: summary.totalResolved,
+    };
+  } catch (err) {
+    return { error: (err as Error).message };
+  }
+}
+
 export async function markBriefingViewed() {
   try {
     const scope = await requireScope();
