@@ -72,7 +72,8 @@ export function ProductTour() {
       }}
     >
       <Topbar />
-      <div className="flex min-h-[720px]" style={{ backgroundColor: TOKENS.ivory }}>
+      <MobileTabBar active={view} onSelect={setView} />
+      <div className="flex min-h-[560px] md:min-h-[720px]" style={{ backgroundColor: TOKENS.ivory }}>
         <Sidebar active={view} onSelect={setView} />
         <div
           className="flex-1 min-w-0"
@@ -197,6 +198,87 @@ function Topbar() {
           NG
         </span>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Mobile tab bar - icon-only horizontal scroll strip, hidden on md+
+// ---------------------------------------------------------------------------
+
+function MobileTabBar({
+  active,
+  onSelect,
+}: {
+  active: ViewKey;
+  onSelect: (v: ViewKey) => void;
+}) {
+  return (
+    <div
+      className="md:hidden flex items-center gap-1 px-2 py-2 overflow-x-auto"
+      style={{
+        backgroundColor: TOKENS.ivory,
+        borderBottom: `1px solid ${TOKENS.borderCream}`,
+        scrollbarWidth: "none",
+      }}
+    >
+      {VIEWS.map((v) => {
+        const isActive = v.key === active;
+        const Icon = Icons[v.icon];
+        return (
+          <button
+            key={v.key}
+            type="button"
+            onClick={() => onSelect(v.key)}
+            title={v.label}
+            className="relative flex-shrink-0 inline-flex flex-col items-center justify-center gap-1"
+            style={{
+              width: "52px",
+              height: "48px",
+              borderRadius: "10px",
+              backgroundColor: isActive ? TOKENS.sand : "transparent",
+              color: isActive ? TOKENS.nearBlack : TOKENS.charcoal,
+              cursor: "pointer",
+              transition: "background-color 0.2s ease",
+            }}
+          >
+            <Icon size={18} color={isActive ? TOKENS.terracotta : TOKENS.olive} />
+            <span
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "9px",
+                fontWeight: isActive ? 600 : 400,
+                color: isActive ? TOKENS.nearBlack : TOKENS.stone,
+                lineHeight: 1,
+              }}
+            >
+              {v.label.split(" ")[0]}
+            </span>
+            {typeof v.count === "number" ? (
+              <span
+                style={{
+                  position: "absolute",
+                  top: "6px",
+                  right: "8px",
+                  width: "14px",
+                  height: "14px",
+                  borderRadius: "50%",
+                  backgroundColor: TOKENS.terracotta,
+                  color: TOKENS.ivory,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "8px",
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {v.count > 9 ? "9+" : v.count}
+              </span>
+            ) : null}
+          </button>
+        );
+      })}
     </div>
   );
 }
