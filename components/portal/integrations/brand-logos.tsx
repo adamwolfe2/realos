@@ -244,7 +244,7 @@ export const BRAND_LOGOS: Record<string, BrandLogoEntry> = {
   // Our own modules.
   "visitor-identification": {
     render: () => <CursiveMark />,
-    brandColor: "#111111",
+    brandColor: "#2F6FE5",
     filledTile: false,
   },
   "custom-webhook": {
