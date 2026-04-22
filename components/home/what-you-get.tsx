@@ -87,11 +87,11 @@ export function WhatYouGet() {
           <h2
             style={{
               color: "#141413",
-              fontFamily: "var(--font-display)",
+              fontFamily: "var(--font-sans)",
               fontSize: "clamp(32px, 4.2vw, 52px)",
-              fontWeight: 500,
+              fontWeight: 700,
               lineHeight: 1.08,
-              letterSpacing: "-0.012em",
+              letterSpacing: "-0.02em",
             }}
           >
             Eight surfaces, one platform,
@@ -120,8 +120,8 @@ export function WhatYouGet() {
           {DELIVERABLES.map((d) => (
             <div
               key={d.key}
-              className={`flex-shrink-0 md:flex-shrink md:col-span-1 ${d.big ? "md:col-span-2" : ""}`}
-              style={{ scrollSnapAlign: "start", width: "82vw", maxWidth: "320px" }}
+              className={`flex-shrink-0 w-[82vw] max-w-[320px] md:w-auto md:max-w-none md:col-span-1 ${d.big ? "md:col-span-2" : ""}`}
+              style={{ scrollSnapAlign: "start" }}
             >
               <DeliverableCard d={d} />
             </div>

@@ -29,7 +29,16 @@ export function Verticals() {
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32">
         <div className="max-w-3xl mb-14">
           <p className="eyebrow mb-4">Same platform, tailored</p>
-          <h2 className="heading-section" style={{ color: "#141413" }}>
+          <h2
+            style={{
+              color: "#141413",
+              fontFamily: "var(--font-sans)",
+              fontSize: "clamp(28px, 3.2vw, 42px)",
+              fontWeight: 700,
+              lineHeight: 1.12,
+              letterSpacing: "-0.02em",
+            }}
+          >
             Built for the way your vertical actually operates.
           </h2>
         </div>
@@ -54,7 +63,16 @@ export function Verticals() {
             >
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <h3 className="heading-sub" style={{ color: "#141413" }}>
+                  <h3
+                    style={{
+                      color: "#141413",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "22px",
+                      fontWeight: 600,
+                      lineHeight: 1.25,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
                     {v.label}
                   </h3>
                   <p
