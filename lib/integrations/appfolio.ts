@@ -344,7 +344,7 @@ export function appfolioRestClient(
       url = `https://${subdomain}.appfolio.com/api/v1/reports/${reportName}.json?${params.toString()}`;
     }
 
-    const response = await fetch(url, {
+    let response = await fetch(url, {
       method: "GET",
       cache: "no-store",
       headers: {
@@ -353,6 +353,21 @@ export function appfolioRestClient(
         "User-Agent": USER_AGENT,
       },
     });
+
+    // Single retry on 429 — wait 2 s then try once more.
+    if (response.status === 429) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      response = await fetch(url, {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          Authorization: `Basic ${basic}`,
+          Accept: "application/json",
+          "User-Agent": USER_AGENT,
+        },
+      });
+    }
+
     if (!response.ok) {
       const text = await response.text().catch(() => "");
       throw new Error(

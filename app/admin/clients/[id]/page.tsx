@@ -62,6 +62,14 @@ export default async function ClientDetail({
       domains: true,
       tenantSiteConfig: true,
       cursiveIntegration: true,
+      appfolioIntegration: {
+        select: {
+          instanceSubdomain: true,
+          syncStatus: true,
+          lastSyncAt: true,
+          lastError: true,
+        },
+      },
       projects: {
         orderBy: { createdAt: "desc" },
         take: 5,
@@ -258,6 +266,46 @@ export default async function ClientDetail({
             </ul>
           )}
         </SectionCard>
+
+        {org.appfolioIntegration ? (
+          <SectionCard label="AppFolio sync">
+            <dl className="space-y-2 text-sm">
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-xs font-medium text-muted-foreground">
+                  Subdomain
+                </dt>
+                <dd className="font-mono text-[12px] text-foreground">
+                  {org.appfolioIntegration.instanceSubdomain}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-xs font-medium text-muted-foreground">
+                  Status
+                </dt>
+                <dd className="text-foreground">
+                  {org.appfolioIntegration.syncStatus ?? "idle"}
+                </dd>
+              </div>
+              <div className="flex items-center justify-between gap-3">
+                <dt className="text-xs font-medium text-muted-foreground">
+                  Last sync
+                </dt>
+                <dd className="text-foreground">
+                  {org.appfolioIntegration.lastSyncAt
+                    ? formatDistanceToNow(org.appfolioIntegration.lastSyncAt, {
+                        addSuffix: true,
+                      })
+                    : "Never"}
+                </dd>
+              </div>
+            </dl>
+            {org.appfolioIntegration.lastError ? (
+              <p className="mt-3 text-[11px] text-rose-700 rounded-md border border-rose-200 bg-rose-50 p-2 break-words">
+                {org.appfolioIntegration.lastError}
+              </p>
+            ) : null}
+          </SectionCard>
+        ) : null}
 
         <SectionCard label="Active project">
           {org.projects.length === 0 ? (

@@ -65,9 +65,22 @@ export async function GET(req: NextRequest) {
             stats: r.stats,
             error: r.error,
           });
+          // runAppfolioSync handles its own DB persistence, but if it returned
+          // ok=false without throwing we still want lastError surfaced.
+          if (!r.ok && r.error) {
+            await prisma.appFolioIntegration.update({
+              where: { orgId: integration.orgId },
+              data: { syncStatus: "error", lastError: r.error },
+            }).catch(() => undefined);
+          }
         } catch (err) {
           const message = err instanceof Error ? err.message : "Unknown error";
           results.push({ orgId: integration.orgId, ok: false, error: message });
+          // Persist the unexpected throw so the portal user sees it.
+          await prisma.appFolioIntegration.update({
+            where: { orgId: integration.orgId },
+            data: { syncStatus: "error", lastError: message },
+          }).catch(() => undefined);
         }
       } else {
         // Embed-fallback path for Core-plan tenants.
@@ -79,9 +92,21 @@ export async function GET(req: NextRequest) {
             stats: { listingsUpserted: r.synced },
             error: r.error ?? undefined,
           });
+          // syncListingsForOrg updates DB on success/error, but guard against
+          // any gap by persisting lastSyncAt on success.
+          if (r.error == null) {
+            await prisma.appFolioIntegration.update({
+              where: { orgId: integration.orgId },
+              data: { syncStatus: "idle", lastSyncAt: new Date(), lastError: null },
+            }).catch(() => undefined);
+          }
         } catch (err) {
           const message = err instanceof Error ? err.message : "Unknown error";
           results.push({ orgId: integration.orgId, ok: false, error: message });
+          await prisma.appFolioIntegration.update({
+            where: { orgId: integration.orgId },
+            data: { syncStatus: "error", lastError: message },
+          }).catch(() => undefined);
         }
       }
     }
