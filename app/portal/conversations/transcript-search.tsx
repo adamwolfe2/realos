@@ -83,7 +83,7 @@ function TranscriptSearchInner({
       <div className="flex flex-col md:flex-row md:items-center gap-2">
         <div className="relative flex-1 min-w-0">
           <Search
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--stone-gray)]"
+            className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground"
             aria-hidden="true"
           />
           <input
@@ -92,9 +92,9 @@ function TranscriptSearchInner({
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search transcripts for any word or phrase..."
             className={cn(
-              "w-full rounded-[6px] border border-[var(--border-cream)] bg-[var(--ivory)]",
-              "pl-8 pr-8 py-2 text-sm text-[var(--near-black)] placeholder:text-[var(--stone-gray)]",
-              "focus:outline-none focus:ring-2 focus:ring-[var(--focus-blue)]",
+              "w-full rounded-[6px] border border-border bg-card",
+              "pl-8 pr-8 py-2 text-sm text-foreground placeholder:text-muted-foreground",
+              "focus:outline-none focus:ring-2 focus:ring-primary/40",
             )}
           />
           {q ? (
@@ -102,7 +102,7 @@ function TranscriptSearchInner({
               type="button"
               onClick={clearQuery}
               aria-label="Clear search"
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-[var(--stone-gray)] hover:text-[var(--near-black)]"
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded text-muted-foreground hover:text-foreground"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -110,16 +110,16 @@ function TranscriptSearchInner({
         </div>
 
         <div className="flex items-center gap-2">
-          <label className="text-[10px] uppercase tracking-widest text-[var(--stone-gray)]">
+          <label className="text-[10px] uppercase tracking-widest text-muted-foreground">
             Sort
           </label>
           <select
             value={initialSort}
             onChange={(e) => pushParams({ sort: e.target.value })}
             className={cn(
-              "rounded-[6px] border border-[var(--border-cream)] bg-[var(--ivory)]",
-              "px-2 py-1.5 text-xs text-[var(--near-black)]",
-              "focus:outline-none focus:ring-2 focus:ring-[var(--focus-blue)]",
+              "rounded-[6px] border border-border bg-card",
+              "px-2 py-1.5 text-xs text-foreground",
+              "focus:outline-none focus:ring-2 focus:ring-primary/40",
             )}
           >
             {SORT_OPTIONS.map((o) => (
@@ -149,8 +149,8 @@ function TranscriptSearchInner({
                 "text-[11px] font-semibold whitespace-nowrap transition-colors",
                 "ring-1 ring-inset",
                 active
-                  ? "bg-[var(--near-black)] text-[var(--ivory)] ring-[var(--near-black)]"
-                  : "bg-[var(--ivory)] text-[var(--near-black)] ring-[var(--border-cream)] hover:bg-[var(--warm-sand)]",
+                  ? "bg-foreground text-background ring-foreground"
+                  : "bg-card text-foreground ring-border hover:bg-muted",
               )}
             >
               <span>{f.label}</span>
@@ -159,8 +159,8 @@ function TranscriptSearchInner({
                   "inline-flex items-center justify-center min-w-[18px] rounded px-1 py-0.5",
                   "text-[10px] tabular-nums font-medium",
                   active
-                    ? "bg-[var(--ivory)]/15 text-[var(--ivory)]"
-                    : "bg-[var(--warm-sand)] text-[var(--olive-gray)]",
+                    ? "bg-card/15 text-background"
+                    : "bg-muted text-muted-foreground",
                 )}
               >
                 {f.count}

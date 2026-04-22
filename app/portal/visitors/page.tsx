@@ -362,7 +362,7 @@ export default async function VisitorsPage({
       ) : noVisitorsAtAll ? (
         <EmptyNoVisitors />
       ) : visitors.length === 0 ? (
-        <div className="border rounded-md p-8 text-sm opacity-70 text-center">
+        <div className="rounded-lg border border-border bg-card p-8 text-sm opacity-70 text-center">
           No visitors match these filters. Try widening the time window or the
           status filter.
         </div>
@@ -526,7 +526,7 @@ function VisitorFeed({
   chatMap?: Map<string, { sessionId: string; lastMessageAt: Date }>;
 }) {
   return (
-    <ul className="border rounded-md divide-y">
+    <ul className="rounded-lg border border-border bg-card divide-y">
       {visitors.map((visitor) => {
         const liveChat = chatMap?.get(visitor.id) ?? null;
         return (
@@ -743,7 +743,7 @@ function Pager({
 
 function EmptyNoPixel() {
   return (
-    <div className="border rounded-md p-8 text-center space-y-3">
+    <div className="rounded-lg border border-border bg-card p-8 text-center space-y-3">
       <div className="text-sm font-semibold">
         Install the Cursive pixel to see named website visitors here.
       </div>
@@ -763,7 +763,7 @@ function EmptyNoPixel() {
 
 function EmptyNoVisitors() {
   return (
-    <div className="border rounded-md p-8 text-center space-y-2">
+    <div className="rounded-lg border border-border bg-card p-8 text-center space-y-2">
       <div className="text-sm font-semibold">No visitors yet.</div>
       <p className="text-sm opacity-70 max-w-md mx-auto">
         Once someone visits your site, they&apos;ll appear here in real time.

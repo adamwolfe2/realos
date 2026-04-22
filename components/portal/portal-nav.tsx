@@ -208,9 +208,9 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
             <Image
               src="/logos/leasestack-wordmark.png"
               alt={BRAND_NAME}
-              width={120}
-              height={22}
-              className="h-[22px] w-auto"
+              width={140}
+              height={28}
+              className="h-7 w-auto"
               priority
             />
           )}

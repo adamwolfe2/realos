@@ -1,15 +1,7 @@
 import * as React from "react";
 import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-// ---------------------------------------------------------------------------
-// KpiTile
-//
-// The atomic dashboard tile. Designed for the top KPI strip on /portal.
-// Renders: tiny eyebrow icon, label, big tabular number, trailing delta
-// (up/down/flat), and an optional inline sparkline. Built to slot real
-// data later without any markup churn — every dynamic field is a clean prop.
-// ---------------------------------------------------------------------------
+import Link from "next/link";
 
 export type Trend = "up" | "down" | "flat";
 
@@ -20,15 +12,10 @@ export type KpiTileProps = {
   delta?: { value: string; trend: Trend };
   spark?: number[];
   icon?: React.ReactNode;
-  // When data isn't wired yet, render a soft placeholder shimmer instead.
   loading?: boolean;
-  // When clicking the tile should drill into a sub-page.
   href?: string;
-  // Live mode: pulses a small dot to indicate realtime data.
   live?: boolean;
 };
-
-import Link from "next/link";
 
 export function KpiTile(props: KpiTileProps) {
   const inner = <KpiTileInner {...props} />;
@@ -36,7 +23,7 @@ export function KpiTile(props: KpiTileProps) {
     return (
       <Link
         href={props.href}
-        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--parchment)] rounded-xl"
+        className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 rounded-lg"
       >
         {inner}
       </Link>
@@ -45,31 +32,22 @@ export function KpiTile(props: KpiTileProps) {
   return inner;
 }
 
-function KpiTileInner({
-  label,
-  value,
-  hint,
-  delta,
-  spark,
-  icon,
-  loading,
-  live,
-}: KpiTileProps) {
+function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live }: KpiTileProps) {
   return (
     <div
       className={cn(
-        "group relative h-full rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-4 transition-shadow duration-150",
-        "hover:shadow-[0_4px_24px_rgba(0,0,0,0.05)]",
+        "relative h-full rounded-lg border border-border bg-card p-4 transition-shadow duration-150",
+        "hover:shadow-sm",
       )}
     >
       <div className="flex items-center justify-between gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
           {icon ? (
-            <span className="text-[var(--stone-gray)] shrink-0" aria-hidden="true">
+            <span className="text-muted-foreground shrink-0" aria-hidden="true">
               {icon}
             </span>
           ) : null}
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)] truncate">
+          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground truncate">
             {label}
           </div>
         </div>
@@ -84,8 +62,8 @@ function KpiTileInner({
       <div className="mt-2 flex items-baseline justify-between gap-2">
         <div
           className={cn(
-            "text-[26px] leading-none font-semibold tracking-tight tabular-nums text-[var(--near-black)]",
-            loading && "text-transparent bg-[var(--warm-sand)] rounded animate-pulse",
+            "text-2xl leading-none font-semibold tracking-tight tabular-nums text-foreground",
+            loading && "text-transparent bg-muted rounded animate-pulse",
           )}
         >
           {loading ? "0000" : value}
@@ -94,7 +72,7 @@ function KpiTileInner({
       </div>
 
       {hint ? (
-        <div className="mt-1 text-[11px] text-[var(--stone-gray)]">{hint}</div>
+        <div className="mt-1 text-[11px] text-muted-foreground">{hint}</div>
       ) : null}
 
       {spark && spark.length > 1 && !loading ? (
@@ -112,7 +90,7 @@ function DeltaPill({ value, trend }: { value: string; trend: Trend }) {
       ? "text-emerald-700 bg-emerald-50"
       : trend === "down"
         ? "text-rose-700 bg-rose-50"
-        : "text-[var(--olive-gray)] bg-[var(--warm-sand)]";
+        : "text-muted-foreground bg-muted";
   const Icon = trend === "up" ? ArrowUpRight : trend === "down" ? ArrowDownRight : Minus;
   return (
     <span
@@ -127,9 +105,6 @@ function DeltaPill({ value, trend }: { value: string; trend: Trend }) {
   );
 }
 
-// Inline sparkline — pure SVG, no client JS, no dependency. Accepts any
-// numeric series; auto-scales to the tile height (~28px). Designed to read
-// at a glance, not to be precise.
 function Sparkline({ data, height = 28 }: { data: number[]; height?: number }) {
   if (data.length < 2) return null;
   const min = Math.min(...data);
@@ -146,11 +121,7 @@ function Sparkline({ data, height = 28 }: { data: number[]; height?: number }) {
     })
     .join(" ");
 
-  // Build a closed area path by extending the line down to the baseline.
-  const areaPath = `M0,${h} L${points
-    .split(" ")
-    .map((p) => p)
-    .join(" L")} L${w},${h} Z`;
+  const areaPath = `M0,${h} L${points.split(" ").join(" L")} L${w},${h} Z`;
 
   return (
     <svg
@@ -159,11 +130,11 @@ function Sparkline({ data, height = 28 }: { data: number[]; height?: number }) {
       className="w-full h-7 overflow-visible"
       aria-hidden="true"
     >
-      <path d={areaPath} fill="var(--terracotta)" opacity="0.10" />
+      <path d={areaPath} fill="#2563EB" opacity="0.08" />
       <polyline
         points={points}
         fill="none"
-        stroke="var(--terracotta)"
+        stroke="#2563EB"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

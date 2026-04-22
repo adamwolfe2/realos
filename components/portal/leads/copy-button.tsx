@@ -40,10 +40,10 @@ export function CopyButton({
       disabled={disabled}
       className={cn(
         "inline-flex h-9 w-9 items-center justify-center rounded-[10px]",
-        "bg-[var(--ivory)] ring-1 ring-[var(--border-cream)]",
-        "text-[var(--charcoal-warm)]",
+        "bg-card ring-1 ring-border",
+        "text-foreground",
         "transition-colors duration-200",
-        "hover:bg-[var(--warm-sand)] hover:text-[var(--near-black)]",
+        "hover:bg-muted hover:text-foreground",
         "disabled:opacity-40 disabled:cursor-not-allowed",
         className
       )}

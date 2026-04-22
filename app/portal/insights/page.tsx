@@ -75,14 +75,14 @@ export default async function InsightsPage({
     <div className="space-y-5">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
             <Sparkles className="h-3 w-3" />
             Signal
           </div>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--near-black)]">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
             Insights
           </h1>
-          <p className="text-sm text-[var(--olive-gray)] mt-1 max-w-xl">
+          <p className="text-sm text-muted-foreground mt-1 max-w-xl">
             What your platform flagged this week. Each insight is something we
             detected in your data that a human would otherwise miss. Acknowledge
             what you have seen, snooze the noise, and open the ones worth a call.
@@ -125,12 +125,12 @@ export default async function InsightsPage({
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--border-cream)] bg-[var(--ivory)] py-16 text-center">
-          <Sparkles className="mx-auto h-6 w-6 text-[var(--stone-gray)]" />
-          <h2 className="mt-3 text-base font-semibold text-[var(--near-black)]">
+        <div className="rounded-xl border border-dashed border-border bg-card py-16 text-center">
+          <Sparkles className="mx-auto h-6 w-6 text-muted-foreground" />
+          <h2 className="mt-3 text-base font-semibold text-foreground">
             No insights match those filters
           </h2>
-          <p className="mt-1 text-sm text-[var(--olive-gray)] max-w-md mx-auto">
+          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
             Try widening the filters. Detectors run every 30 minutes and will
             surface anomalies as they appear.
           </p>
@@ -159,11 +159,11 @@ function StatBlock({
     critical: "text-rose-700",
     warning: "text-amber-700",
     info: "text-sky-700",
-    muted: "text-[var(--stone-gray)]",
+    muted: "text-muted-foreground",
   };
   return (
-    <div className="min-w-16 rounded-lg border border-[var(--border-cream)] bg-[var(--ivory)] px-3 py-2">
-      <div className="text-[9px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+    <div className="min-w-16 rounded-lg border border-border bg-card px-3 py-2">
+      <div className="text-[9px] uppercase tracking-widest font-semibold text-muted-foreground">
         {label}
       </div>
       <div className={cn("mt-0.5 text-xl font-semibold tabular-nums", map[tone])}>
@@ -187,8 +187,8 @@ function FilterGroup({
   current: Record<string, string | undefined>;
 }) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-cream)] bg-[var(--ivory)] p-1">
-      <span className="text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)] px-2">
+    <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+      <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground px-2">
         {label}
       </span>
       {options.map((opt) => {
@@ -206,8 +206,8 @@ function FilterGroup({
             className={cn(
               "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
               active
-                ? "bg-[var(--near-black)] text-[var(--ivory)]"
-                : "text-[var(--olive-gray)] hover:bg-[var(--warm-sand)] hover:text-[var(--near-black)]",
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             {opt.label}

@@ -41,7 +41,7 @@ export async function LeadsTab({
           description="Visitors scoped by URL match on property slug"
         >
           {data.funnel.every((s) => s.value === 0) ? (
-            <p className="text-xs text-[var(--stone-gray)]">
+            <p className="text-xs text-muted-foreground">
               No activity in the last 28 days yet.
             </p>
           ) : (
@@ -65,11 +65,11 @@ export async function LeadsTab({
         hrefLabel="All leads"
       >
         {data.recent.length === 0 ? (
-          <p className="text-xs text-[var(--stone-gray)]">
+          <p className="text-xs text-muted-foreground">
             No leads have been recorded for this property yet.
           </p>
         ) : (
-          <ul className="divide-y divide-[var(--border-cream)]">
+          <ul className="divide-y divide-border">
             {data.recent.map((lead) => {
               const name =
                 [lead.firstName, lead.lastName].filter(Boolean).join(" ").trim() ||
@@ -82,15 +82,15 @@ export async function LeadsTab({
                     className="flex items-baseline justify-between gap-3"
                   >
                     <div className="min-w-0">
-                      <div className="text-sm font-medium text-[var(--near-black)] truncate">
+                      <div className="text-sm font-medium text-foreground truncate">
                         {name}
                       </div>
-                      <div className="text-[11px] text-[var(--stone-gray)] mt-0.5">
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
                         {lead.source}
                         {lead.email ? ` \u00b7 ${lead.email}` : ""}
                       </div>
                     </div>
-                    <div className="text-[11px] text-[var(--stone-gray)] whitespace-nowrap">
+                    <div className="text-[11px] text-muted-foreground whitespace-nowrap">
                       {formatDistanceToNow(lead.createdAt, { addSuffix: true })}
                     </div>
                   </Link>

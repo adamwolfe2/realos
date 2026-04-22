@@ -3,15 +3,6 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ---------------------------------------------------------------------------
-// DashboardSection
-//
-// A unified container for the medium / large dashboard cards (lead source
-// donut, conversion funnel, properties grid, activity feed). Same warm
-// border + ivory surface as KpiTile but with a header row that includes
-// title, optional eyebrow / description, and an optional "view all" link.
-// ---------------------------------------------------------------------------
-
 export function DashboardSection({
   title,
   eyebrow,
@@ -36,22 +27,22 @@ export function DashboardSection({
   return (
     <section
       className={cn(
-        "rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] flex flex-col",
+        "rounded-lg border border-border bg-card flex flex-col",
         className,
       )}
     >
       <header className="flex items-start justify-between gap-3 px-5 pt-5">
         <div className="min-w-0">
           {eyebrow ? (
-            <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)] mb-1">
+            <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-1">
               {eyebrow}
             </div>
           ) : null}
-          <h2 className="text-base font-semibold tracking-tight text-[var(--near-black)]">
+          <h2 className="text-base font-semibold tracking-tight text-foreground">
             {title}
           </h2>
           {description ? (
-            <p className="mt-0.5 text-xs text-[var(--olive-gray)]">{description}</p>
+            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
           ) : null}
         </div>
         <div className="shrink-0 flex items-center gap-2">
@@ -59,7 +50,7 @@ export function DashboardSection({
           {href ? (
             <Link
               href={href}
-              className="inline-flex items-center gap-1 text-xs font-medium text-[var(--near-black)] hover:text-[var(--terracotta)] transition-colors"
+              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
             >
               {hrefLabel}
               <ArrowRight className="h-3 w-3" aria-hidden="true" />

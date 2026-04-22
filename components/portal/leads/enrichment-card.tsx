@@ -24,7 +24,7 @@ export function EnrichmentCard({ visitor }: { visitor: Visitor | null }) {
   if (!visitor) {
     return (
       <SidebarCard label="Enrichment">
-        <p className="text-xs leading-relaxed text-[var(--stone-gray)]">
+        <p className="text-xs leading-relaxed text-muted-foreground">
           Install the Cursive pixel to enrich this lead with company and role
           information.
         </p>
@@ -43,7 +43,7 @@ export function EnrichmentCard({ visitor }: { visitor: Visitor | null }) {
   if (!hasAny) {
     return (
       <SidebarCard label="Enrichment">
-        <p className="text-xs leading-relaxed text-[var(--stone-gray)]">
+        <p className="text-xs leading-relaxed text-muted-foreground">
           This visitor is resolved but has no company enrichment yet. Enrichment
           arrives within a few hours of the first pixel hit.
         </p>
@@ -57,7 +57,7 @@ export function EnrichmentCard({ visitor }: { visitor: Visitor | null }) {
         {identity.companyName ? (
           <div className="flex items-center gap-2">
             {identity.logoUrl ? (
-              <div className="h-7 w-7 shrink-0 rounded-[8px] bg-[var(--white)] ring-1 ring-[var(--border-cream)] overflow-hidden flex items-center justify-center">
+              <div className="h-7 w-7 shrink-0 rounded-[8px] bg-card ring-1 ring-border overflow-hidden flex items-center justify-center">
                 <Image
                   src={identity.logoUrl}
                   alt={identity.companyName}
@@ -69,11 +69,11 @@ export function EnrichmentCard({ visitor }: { visitor: Visitor | null }) {
               </div>
             ) : null}
             <div className="min-w-0">
-              <p className="text-sm font-medium text-[var(--near-black)] truncate">
+              <p className="text-sm font-medium text-foreground truncate">
                 {identity.companyName}
               </p>
               {identity.jobTitle ? (
-                <p className="text-xs text-[var(--charcoal-warm)] truncate flex items-center gap-1">
+                <p className="text-xs text-foreground truncate flex items-center gap-1">
                   <Briefcase className="h-3 w-3" />
                   {identity.jobTitle}
                 </p>
@@ -81,14 +81,14 @@ export function EnrichmentCard({ visitor }: { visitor: Visitor | null }) {
             </div>
           </div>
         ) : identity.jobTitle ? (
-          <p className="text-xs text-[var(--charcoal-warm)] flex items-center gap-1">
+          <p className="text-xs text-foreground flex items-center gap-1">
             <Briefcase className="h-3 w-3" />
             {identity.jobTitle}
           </p>
         ) : null}
 
         {identity.location ? (
-          <p className="text-xs text-[var(--charcoal-warm)] flex items-center gap-1">
+          <p className="text-xs text-foreground flex items-center gap-1">
             <MapPin className="h-3 w-3" />
             {identity.location}
           </p>
@@ -99,14 +99,14 @@ export function EnrichmentCard({ visitor }: { visitor: Visitor | null }) {
             href={linkedIn}
             target="_blank"
             rel="noreferrer"
-            className="inline-flex items-center gap-1 text-xs font-medium text-[var(--terracotta)] hover:text-[var(--terracotta-hover)] transition-colors duration-200"
+            className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:text-[hsl(var(--primary)/0.9)] transition-colors duration-200"
           >
             LinkedIn profile
             <ExternalLink className="h-3 w-3" />
           </a>
         ) : null}
 
-        <p className="pt-2 border-t border-[var(--border-cream)] text-[11px] text-[var(--stone-gray)]">
+        <p className="pt-2 border-t border-border text-[11px] text-muted-foreground">
           Enriched via Cursive pixel
         </p>
       </div>
@@ -122,8 +122,8 @@ export function SidebarCard({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[12px] border border-[var(--border-cream)] bg-[var(--ivory)] p-4">
-      <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--stone-gray)] mb-3">
+    <div className="rounded-[12px] border border-border bg-card p-4">
+      <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted-foreground mb-3">
         {label}
       </p>
       {children}

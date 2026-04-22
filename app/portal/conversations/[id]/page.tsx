@@ -82,14 +82,14 @@ export default async function ConversationDetail({
         <div className="min-w-0">
           <Link
             href="/portal/conversations"
-            className="text-xs text-[var(--stone-gray)] hover:text-[var(--near-black)] transition-colors"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
           >
             {"\u2190"} All conversations
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight text-[var(--near-black)] mt-2">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground mt-2">
             {convo.capturedName ?? "Anonymous visitor"}
           </h1>
-          <p className="text-sm text-[var(--olive-gray)] mt-1">
+          <p className="text-sm text-muted-foreground mt-1">
             {convo.capturedEmail ?? "No email captured"}
             {convo.capturedPhone ? ` \u00b7 ${convo.capturedPhone}` : ""}
           </p>
@@ -135,17 +135,17 @@ export default async function ConversationDetail({
       {/* Two-column layout: transcript + sidebar. On mobile sidebar stacks
           below the transcript. */}
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px] gap-6">
-        <section className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-5">
+        <section className="rounded-xl border border-border bg-card p-5">
           <div className="flex items-baseline justify-between mb-4">
-            <h2 className="text-sm font-semibold text-[var(--near-black)]">
+            <h2 className="text-sm font-semibold text-foreground">
               Transcript
             </h2>
-            <span className="text-[10px] uppercase tracking-widest text-[var(--stone-gray)]">
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
               {messages.length} message{messages.length === 1 ? "" : "s"}
             </span>
           </div>
           {messages.length === 0 ? (
-            <p className="text-sm text-[var(--stone-gray)]">
+            <p className="text-sm text-muted-foreground">
               No messages on record.
             </p>
           ) : (
@@ -197,8 +197,8 @@ function MessageBubble({ message }: { message: SerializedMessage }) {
       <div
         className={`max-w-[85%] text-sm px-4 py-2.5 rounded-[10px] whitespace-pre-wrap ${
           isUser
-            ? "bg-[var(--near-black)] text-[var(--ivory)]"
-            : "bg-[var(--warm-sand)] text-[var(--near-black)]"
+            ? "bg-foreground text-background"
+            : "bg-muted text-foreground"
         }`}
       >
         <div className="text-[10px] uppercase tracking-widest opacity-70 mb-1">
@@ -228,13 +228,13 @@ function MetaChip({
     tone === "warn"
       ? "bg-amber-50 text-amber-900 ring-amber-200"
       : tone === "muted"
-        ? "bg-[var(--warm-sand)] text-[var(--olive-gray)] ring-[var(--border-cream)]"
-        : "bg-[var(--ivory)] text-[var(--near-black)] ring-[var(--border-cream)]";
+        ? "bg-muted text-muted-foreground ring-border"
+        : "bg-card text-foreground ring-border";
   return (
     <span
       className={`inline-flex items-center gap-1 rounded-[6px] px-2 py-1 text-[11px] ring-1 ring-inset ${toneClass}`}
     >
-      <span className="text-[10px] uppercase tracking-widest text-[var(--stone-gray)]">
+      <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
         {label}
       </span>
       <span className="font-semibold">{value}</span>

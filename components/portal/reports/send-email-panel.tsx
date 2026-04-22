@@ -66,17 +66,17 @@ export function SendEmailPanel({
   return (
     <section
       data-no-print
-      className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-5 space-y-4"
+      className="rounded-xl border border-border bg-card p-5 space-y-4"
     >
       <div>
-        <div className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+        <div className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           <Mail className="h-3 w-3" />
           Deliver
         </div>
-        <h2 className="mt-1 text-base font-semibold text-[var(--near-black)]">
+        <h2 className="mt-1 text-base font-semibold text-foreground">
           Send to client
         </h2>
-        <p className="text-xs text-[var(--olive-gray)] mt-0.5">
+        <p className="text-xs text-muted-foreground mt-0.5">
           Sends the report straight to your client's inbox with your headline
           and personal note already baked in. The email links back to the
           shareable read-only view.
@@ -84,14 +84,14 @@ export function SendEmailPanel({
       </div>
 
       {!canSend ? (
-        <div className="rounded-md bg-[var(--warm-sand)] border border-[var(--border-cream)] px-3 py-2 text-xs text-[var(--olive-gray)]">
+        <div className="rounded-md bg-muted border border-border px-3 py-2 text-xs text-muted-foreground">
           Save your headline + note first, then come back to send.
         </div>
       ) : null}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <label className="flex flex-col gap-1.5">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Recipients
           </span>
           <input
@@ -99,14 +99,14 @@ export function SendEmailPanel({
             value={recipients}
             onChange={(e) => setRecipients(e.target.value)}
             placeholder="norman@spectrumpartners.com, leasing@..."
-            className="rounded-md border border-[var(--border-cream)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--terracotta)]/30"
+            className="rounded-md border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
-          <span className="text-[10px] text-[var(--stone-gray)]">
+          <span className="text-[10px] text-muted-foreground">
             Comma, semicolon or space separated.
           </span>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Greeting name
           </span>
           <input
@@ -114,7 +114,7 @@ export function SendEmailPanel({
             value={recipientName}
             onChange={(e) => setRecipientName(e.target.value)}
             placeholder="Norman"
-            className="rounded-md border border-[var(--border-cream)] bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--terracotta)]/30"
+            className="rounded-md border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </label>
       </div>
@@ -125,7 +125,7 @@ export function SendEmailPanel({
           type="button"
           onClick={handleSend}
           disabled={pending || !canSend}
-          className="inline-flex items-center gap-1.5 rounded-md bg-[var(--near-black)] px-3 py-2 text-sm font-semibold text-white hover:bg-black disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-md bg-foreground text-background px-3 py-2 text-sm font-semibold text-white hover:bg-foreground/90 disabled:opacity-60"
         >
           <Send className="h-3.5 w-3.5" />
           {pending ? "Sending..." : "Send report"}
@@ -138,7 +138,7 @@ export function SendEmailPanel({
 function Feedback({ feedback }: { feedback: Feedback }) {
   if (feedback.kind === "idle") return null;
   if (feedback.kind === "sending") {
-    return <span className="text-xs text-[var(--stone-gray)]">Sending...</span>;
+    return <span className="text-xs text-muted-foreground">Sending...</span>;
   }
   if (feedback.kind === "ok") {
     return (

@@ -9,31 +9,19 @@ import {
   Tooltip,
 } from "recharts";
 
-// ---------------------------------------------------------------------------
-// LeadSourceDonut
-//
-// Donut + legend pair for the "Where leads come from" tile. Pure presentation
-// component — accepts a clean `slices` array. Colors come from a fixed
-// palette tuned to the Claude-warm system (terracotta + warm neutrals + a
-// few muted brand-ish tones).
-//
-// Real wiring (when ad/seo agents land):
-//   slices = await aggregateLeadsBySource({ orgId, sinceDays: 28 })
-// ---------------------------------------------------------------------------
-
 export type LeadSourceSlice = {
-  source: string;          // "Google Ads", "Meta Ads", "Organic", "Direct", "Chatbot", "Referral"
+  source: string;
   count: number;
-  color?: string;          // optional override
+  color?: string;
 };
 
 const PALETTE = [
-  "#c96442", // terracotta (brand)
-  "#3d3d3a", // dark warm
-  "#5e5d59", // olive gray
-  "#87867f", // stone gray
-  "#b0aea5", // warm silver
-  "#e8e6dc", // warm sand
+  "#2563EB", // primary blue
+  "#10b981", // emerald
+  "#f59e0b", // amber
+  "#8b5cf6", // violet
+  "#ef4444", // rose
+  "#06b6d4", // cyan
 ];
 
 export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
@@ -46,7 +34,7 @@ export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
 
   if (total === 0) {
     return (
-      <div className="text-xs text-[var(--stone-gray)]">
+      <div className="text-xs text-muted-foreground">
         No lead source data yet. Once your channels report in, this fills out.
       </div>
     );
@@ -61,12 +49,11 @@ export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
               cursor={false}
               contentStyle={{
                 fontSize: 12,
-                background: "var(--white)",
-                border: "1px solid var(--border-cream)",
+                background: "white",
+                border: "1px solid hsl(var(--border))",
                 borderRadius: 8,
                 boxShadow: "0 4px 24px rgba(0,0,0,0.05)",
               }}
-              labelStyle={{ color: "var(--olive-gray)" }}
               formatter={(v: number, n: string) => [v, n]}
             />
             <Pie
@@ -75,7 +62,7 @@ export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
               nameKey="name"
               innerRadius={50}
               outerRadius={75}
-              stroke="var(--ivory)"
+              stroke="white"
               strokeWidth={2}
               paddingAngle={1.5}
             >
@@ -86,10 +73,10 @@ export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
           </PieChart>
         </ResponsiveContainer>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Total
           </span>
-          <span className="mt-0.5 text-2xl font-semibold tabular-nums text-[var(--near-black)]">
+          <span className="mt-0.5 text-2xl font-semibold tabular-nums text-foreground">
             {total}
           </span>
         </div>
@@ -108,9 +95,9 @@ export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
                 className="h-2.5 w-2.5 rounded-sm"
                 style={{ backgroundColor: d.color }}
               />
-              <span className="text-[var(--charcoal-warm)] truncate">{d.name}</span>
-              <span className="tabular-nums text-[var(--olive-gray)]">{d.value}</span>
-              <span className="text-right tabular-nums text-[var(--stone-gray)]">
+              <span className="text-foreground truncate">{d.name}</span>
+              <span className="tabular-nums text-muted-foreground">{d.value}</span>
+              <span className="text-right tabular-nums text-muted-foreground">
                 {pct}%
               </span>
             </li>

@@ -95,15 +95,15 @@ export function ConversationSidebar({
   return (
     <aside className="space-y-4 lg:sticky lg:top-4 lg:self-start">
       {/* Flag toggles */}
-      <section className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-4">
+      <section className="rounded-xl border border-border bg-card p-4">
         <header className="mb-3">
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Review
           </div>
-          <h2 className="text-sm font-semibold text-[var(--near-black)]">
+          <h2 className="text-sm font-semibold text-foreground">
             Flags
           </h2>
-          <p className="text-[11px] text-[var(--olive-gray)] mt-0.5">
+          <p className="text-[11px] text-muted-foreground mt-0.5">
             Click to toggle. Patterns surface on the list view.
           </p>
         </header>
@@ -115,15 +115,15 @@ export function ConversationSidebar({
       </section>
 
       {/* Notes */}
-      <section className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-4">
+      <section className="rounded-xl border border-border bg-card p-4">
         <header className="mb-2">
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Notes
           </div>
-          <h2 className="text-sm font-semibold text-[var(--near-black)]">
+          <h2 className="text-sm font-semibold text-foreground">
             Reviewer note
           </h2>
-          <p className="text-[11px] text-[var(--olive-gray)] mt-0.5">
+          <p className="text-[11px] text-muted-foreground mt-0.5">
             Attaches to the most recent flag, or logs standalone.
           </p>
         </header>
@@ -132,7 +132,7 @@ export function ConversationSidebar({
           onChange={(e) => setNoteDraft(e.target.value)}
           rows={4}
           placeholder="What pattern did you see? What should the prompt address?"
-          className="w-full rounded-[6px] border border-[var(--border-cream)] bg-[var(--ivory)] px-2.5 py-2 text-sm text-[var(--near-black)] placeholder:text-[var(--stone-gray)] focus:outline-none focus:ring-2 focus:ring-[var(--focus-blue)]"
+          className="w-full rounded-[6px] border border-border bg-card px-2.5 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/40"
           maxLength={2000}
         />
         <div className="mt-2 flex items-center justify-between gap-2">
@@ -140,7 +140,7 @@ export function ConversationSidebar({
             type="button"
             onClick={saveNote}
             disabled={savingNote || noteDraft.trim().length === 0}
-            className="inline-flex items-center justify-center rounded-[6px] px-3 py-1.5 text-xs font-semibold bg-[var(--near-black)] text-[var(--ivory)] hover:bg-[var(--olive-gray)] transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+            className="inline-flex items-center justify-center rounded-[6px] px-3 py-1.5 text-xs font-semibold bg-foreground text-background hover:bg-foreground/80 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {savingNote ? "Saving..." : "Save note"}
           </button>
@@ -153,8 +153,8 @@ export function ConversationSidebar({
         </div>
         {/* Prior notes */}
         {flags.some((f) => f.note && f.note.trim().length > 0) ? (
-          <div className="mt-3 pt-3 border-t border-[var(--border-cream)] space-y-2">
-            <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <div className="mt-3 pt-3 border-t border-border space-y-2">
+            <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
               History
             </div>
             {flags
@@ -163,12 +163,12 @@ export function ConversationSidebar({
               .map((f) => (
                 <div
                   key={f.id}
-                  className="text-[11px] text-[var(--olive-gray)]"
+                  className="text-[11px] text-muted-foreground"
                 >
-                  <span className="uppercase tracking-widest text-[var(--stone-gray)] text-[10px]">
+                  <span className="uppercase tracking-widest text-muted-foreground text-[10px]">
                     {f.flag.replaceAll("_", " ")}
                   </span>
-                  <p className="mt-0.5 text-[var(--near-black)] whitespace-pre-wrap">
+                  <p className="mt-0.5 text-foreground whitespace-pre-wrap">
                     {f.note}
                   </p>
                 </div>
@@ -178,12 +178,12 @@ export function ConversationSidebar({
       </section>
 
       {/* Context */}
-      <section className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-4">
+      <section className="rounded-xl border border-border bg-card p-4">
         <header className="mb-3">
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Context
           </div>
-          <h2 className="text-sm font-semibold text-[var(--near-black)]">
+          <h2 className="text-sm font-semibold text-foreground">
             Linked records
           </h2>
         </header>
@@ -192,36 +192,36 @@ export function ConversationSidebar({
             <li>
               <Link
                 href={`/portal/leads/${lead.id}`}
-                className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-[var(--warm-sand)] hover:bg-[var(--border-cream)] transition-colors"
+                className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-muted hover:bg-muted/60 transition-colors"
               >
-                <span className="text-[var(--olive-gray)]">Lead</span>
-                <span className="font-semibold text-[var(--near-black)]">
+                <span className="text-muted-foreground">Lead</span>
+                <span className="font-semibold text-foreground">
                   {humanLeadStatus(lead.status)}
                 </span>
               </Link>
             </li>
           ) : (
-            <li className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-[var(--warm-sand)]/50">
-              <span className="text-[var(--olive-gray)]">Lead</span>
-              <span className="text-[var(--stone-gray)]">Not captured</span>
+            <li className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-muted/50">
+              <span className="text-muted-foreground">Lead</span>
+              <span className="text-muted-foreground">Not captured</span>
             </li>
           )}
           {visitor ? (
             <li>
               <Link
                 href={`/portal/visitors/${visitor.id}`}
-                className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-[var(--warm-sand)] hover:bg-[var(--border-cream)] transition-colors"
+                className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-muted hover:bg-muted/60 transition-colors"
               >
-                <span className="text-[var(--olive-gray)]">Visitor</span>
-                <span className="font-semibold text-[var(--near-black)] truncate max-w-[160px]">
+                <span className="text-muted-foreground">Visitor</span>
+                <span className="font-semibold text-foreground truncate max-w-[160px]">
                   {humanVisitorStatus(visitor.status)}
                 </span>
               </Link>
             </li>
           ) : (
-            <li className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-[var(--warm-sand)]/50">
-              <span className="text-[var(--olive-gray)]">Visitor</span>
-              <span className="text-[var(--stone-gray)]">No match</span>
+            <li className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-muted/50">
+              <span className="text-muted-foreground">Visitor</span>
+              <span className="text-muted-foreground">No match</span>
             </li>
           )}
           <li>
@@ -229,7 +229,7 @@ export function ConversationSidebar({
               href="/portal/chatbot"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-[var(--near-black)] text-[var(--ivory)] hover:bg-[var(--olive-gray)] transition-colors"
+              className="flex items-center justify-between gap-2 rounded-[6px] px-2 py-1.5 bg-foreground text-background hover:bg-foreground/80 transition-colors"
             >
               <span className="text-[11px] uppercase tracking-widest">
                 Tune chatbot prompt

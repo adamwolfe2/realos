@@ -60,7 +60,7 @@ export function MetricStrip({
   ];
 
   return (
-    <div className="divide-y divide-[var(--border-cream)]">
+    <div className="divide-y divide-border">
       {rows.map((r) => (
         <MetricRow key={r.label} metric={r} />
       ))}
@@ -81,11 +81,11 @@ function MetricRow({ metric }: { metric: Metric }) {
 
   return (
     <div className="flex items-baseline justify-between gap-3 py-2 first:pt-0 last:pb-0">
-      <div className="text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+      <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
         {metric.label}
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold tabular-nums text-[var(--near-black)]">
+        <span className="text-sm font-semibold tabular-nums text-foreground">
           {metric.value}
         </span>
         <span
@@ -105,8 +105,8 @@ function MetricRow({ metric }: { metric: Metric }) {
 }
 
 function toneFor(delta: number | null, good: "up" | "down") {
-  if (delta === null) return "text-[var(--stone-gray)] bg-[var(--warm-sand)]";
-  if (delta === 0) return "text-[var(--stone-gray)] bg-[var(--warm-sand)]";
+  if (delta === null) return "text-muted-foreground bg-muted";
+  if (delta === 0) return "text-muted-foreground bg-muted";
   const isGood = good === "up" ? delta > 0 : delta < 0;
   return isGood
     ? "text-emerald-700 bg-emerald-50"

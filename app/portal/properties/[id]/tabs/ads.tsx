@@ -23,11 +23,11 @@ export async function AdsTab({
           <KpiTile label="Campaigns" value={0} />
           <KpiTile label="CPL" value="—" />
         </section>
-        <div className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-6">
-          <p className="text-sm font-semibold text-[var(--near-black)]">
+        <div className="rounded-xl border border-border bg-card p-6">
+          <p className="text-sm font-semibold text-foreground">
             No campaigns linked to this property
           </p>
-          <p className="mt-1 text-xs text-[var(--stone-gray)]">
+          <p className="mt-1 text-xs text-muted-foreground">
             Attach a campaign to this property from the Campaigns module to see
             spend, CPL, and attribution here.
           </p>
@@ -68,7 +68,7 @@ export async function AdsTab({
       >
         <div className="overflow-x-auto -mx-5 px-5">
           <table className="w-full text-sm">
-            <thead className="text-[10px] tracking-widest uppercase text-[var(--stone-gray)]">
+            <thead className="text-[10px] tracking-widest uppercase text-muted-foreground">
               <tr>
                 <th className="text-left font-semibold pb-2">Campaign</th>
                 <th className="text-left font-semibold pb-2">Platform</th>
@@ -79,13 +79,13 @@ export async function AdsTab({
                 <th className="text-right font-semibold pb-2">Conv.</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[var(--border-cream)]">
+            <tbody className="divide-y divide-border">
               {data.campaigns.map((c) => (
                 <tr key={c.id}>
-                  <td className="py-2.5 text-xs text-[var(--near-black)] max-w-[260px] truncate">
+                  <td className="py-2.5 text-xs text-foreground max-w-[260px] truncate">
                     {c.name}
                   </td>
-                  <td className="py-2.5 text-xs text-[var(--olive-gray)]">
+                  <td className="py-2.5 text-xs text-muted-foreground">
                     {c.platform}
                   </td>
                   <td className="py-2.5">
@@ -97,10 +97,10 @@ export async function AdsTab({
                   <td className="py-2.5 text-right tabular-nums text-xs">
                     {c.leads28d}
                   </td>
-                  <td className="py-2.5 text-right tabular-nums text-xs text-[var(--olive-gray)]">
+                  <td className="py-2.5 text-right tabular-nums text-xs text-muted-foreground">
                     {c.cplCents == null ? "—" : centsToUsdShort(c.cplCents)}
                   </td>
-                  <td className="py-2.5 text-right tabular-nums text-xs text-[var(--olive-gray)]">
+                  <td className="py-2.5 text-right tabular-nums text-xs text-muted-foreground">
                     {c.conversionPct == null ? "—" : `${c.conversionPct}%`}
                   </td>
                 </tr>
@@ -121,7 +121,7 @@ function StatusChip({ status }: { status: string | null }) {
       className={
         isActive
           ? "inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-50 text-emerald-700"
-          : "inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-[var(--warm-sand)] text-[var(--olive-gray)]"
+          : "inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-muted text-muted-foreground"
       }
     >
       {s || "UNKNOWN"}

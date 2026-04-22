@@ -34,27 +34,27 @@ export async function SetupBanner({
   return (
     <Link
       href="/portal/setup"
-      className="group block rounded-[12px] border border-[var(--border-cream)] bg-[var(--ivory)] p-5 transition-colors duration-200 hover:border-[var(--terracotta)]/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--parchment)]"
+      className="group block rounded-[12px] border border-border bg-card p-5 transition-colors duration-200 hover:border-primary/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       aria-label={`Continue setup — ${completedCount} of ${totalCount} steps complete`}
     >
       <div className="flex flex-wrap items-center gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-3">
-            <span className="font-serif text-lg font-medium text-[var(--near-black)]">
+            <span className="font-serif text-lg font-medium text-foreground">
               Setup
             </span>
-            <span className="text-xs text-[var(--stone-gray)] tabular-nums">
+            <span className="text-xs text-muted-foreground tabular-nums">
               {completedCount} of {totalCount} complete
             </span>
           </div>
-          <div className="mt-3 h-1.5 w-full rounded-full bg-[var(--warm-sand)] overflow-hidden">
+          <div className="mt-3 h-1.5 w-full rounded-full bg-muted overflow-hidden">
             <div
-              className="h-1.5 rounded-full bg-[var(--terracotta)] transition-all duration-700"
+              className="h-1.5 rounded-full bg-primary transition-all duration-700"
               style={{ width: `${percent}%` }}
             />
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--terracotta)] px-4 py-2 text-sm font-medium text-white transition-colors duration-200 group-hover:bg-[var(--terracotta-hover)]">
+        <span className="inline-flex items-center gap-1.5 rounded-[10px] bg-primary px-4 py-2 text-sm font-medium text-white transition-colors duration-200 group-hover:bg-[hsl(var(--primary)/0.9)]">
           Continue setup
           <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
         </span>

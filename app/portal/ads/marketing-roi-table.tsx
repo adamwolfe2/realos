@@ -30,7 +30,7 @@ function pct(num: number, denom: number): string {
 export function MarketingRoiTable({ rows }: { rows: RoiRow[] }) {
   if (rows.length === 0) {
     return (
-      <p className="text-xs text-[var(--stone-gray)]">
+      <p className="text-xs text-muted-foreground">
         No lead data yet. Attribution will appear once leads start coming in.
       </p>
     );
@@ -39,7 +39,7 @@ export function MarketingRoiTable({ rows }: { rows: RoiRow[] }) {
   return (
     <div className="overflow-x-auto -mx-5 px-5">
       <table className="w-full text-sm">
-        <thead className="text-[10px] tracking-widest uppercase text-[var(--stone-gray)]">
+        <thead className="text-[10px] tracking-widest uppercase text-muted-foreground">
           <tr>
             <th className="text-left font-semibold pb-2 pr-4">Channel</th>
             <th className="text-right font-semibold pb-2 px-3">Spend</th>
@@ -50,30 +50,30 @@ export function MarketingRoiTable({ rows }: { rows: RoiRow[] }) {
             <th className="text-right font-semibold pb-2 pl-3">App rate</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-[var(--border-cream)]">
+        <tbody className="divide-y divide-border">
           {rows.map((r) => (
-            <tr key={r.channel} className="hover:bg-[var(--warm-sand)]/40 transition-colors">
-              <td className="py-2.5 pr-4 text-xs font-medium text-[var(--near-black)]">
+            <tr key={r.channel} className="hover:bg-muted/40 transition-colors">
+              <td className="py-2.5 pr-4 text-xs font-medium text-foreground">
                 {r.channel}
               </td>
-              <td className="py-2.5 px-3 text-right tabular-nums text-xs text-[var(--olive-gray)]">
+              <td className="py-2.5 px-3 text-right tabular-nums text-xs text-muted-foreground">
                 {fmt$(r.spendCents)}
               </td>
-              <td className="py-2.5 px-3 text-right tabular-nums text-xs font-semibold text-[var(--near-black)]">
+              <td className="py-2.5 px-3 text-right tabular-nums text-xs font-semibold text-foreground">
                 {r.leads.toLocaleString()}
               </td>
-              <td className="py-2.5 px-3 text-right tabular-nums text-xs text-[var(--near-black)]">
+              <td className="py-2.5 px-3 text-right tabular-nums text-xs text-foreground">
                 {r.applications.toLocaleString()}
               </td>
-              <td className="py-2.5 px-3 text-right tabular-nums text-xs text-[var(--near-black)]">
+              <td className="py-2.5 px-3 text-right tabular-nums text-xs text-foreground">
                 {r.signed > 0 ? (
                   <span className="text-emerald-700 font-semibold">{r.signed}</span>
                 ) : "—"}
               </td>
-              <td className="py-2.5 px-3 text-right tabular-nums text-xs text-[var(--olive-gray)]">
+              <td className="py-2.5 px-3 text-right tabular-nums text-xs text-muted-foreground">
                 {fmtCpl(r.spendCents, r.leads)}
               </td>
-              <td className="py-2.5 pl-3 text-right tabular-nums text-xs text-[var(--olive-gray)]">
+              <td className="py-2.5 pl-3 text-right tabular-nums text-xs text-muted-foreground">
                 {pct(r.applications, r.leads)}
               </td>
             </tr>

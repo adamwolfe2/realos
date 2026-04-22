@@ -16,7 +16,7 @@ export function InstallSnippet({ snippet }: { snippet: string }) {
   }
 
   return (
-    <section className="border rounded-md p-5 space-y-3">
+    <section className="rounded-lg border border-border bg-card p-5 space-y-3">
       <h2 className="text-sm font-semibold">Install snippet</h2>
       <p className="text-xs opacity-70">
         Paste this before the closing <code>&lt;/head&gt;</code> tag on your

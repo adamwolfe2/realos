@@ -38,10 +38,10 @@ export function AddNoteForm({ leadId }: { leadId: string }) {
         rows={3}
         placeholder="Log a call, email, or context about this lead."
         className={cn(
-          "w-full resize-none rounded-[10px] bg-[var(--parchment)] px-3 py-2 text-sm",
-          "text-[var(--near-black)] placeholder:text-[var(--stone-gray)]",
-          "ring-1 ring-[var(--border-cream)]",
-          "focus:outline-none focus:ring-[var(--terracotta)]",
+          "w-full resize-none rounded-[10px] bg-card px-3 py-2 text-sm",
+          "text-foreground placeholder:text-muted-foreground",
+          "ring-1 ring-border",
+          "focus:outline-none focus:ring-primary",
           "transition-colors duration-200"
         )}
       />
@@ -50,10 +50,10 @@ export function AddNoteForm({ leadId }: { leadId: string }) {
           type="submit"
           disabled={pending || !body.trim()}
           className={cn(
-            "rounded-[10px] bg-[var(--terracotta)] px-3 py-1.5 text-xs font-medium",
-            "text-[var(--ivory)]",
+            "rounded-[10px] bg-primary px-3 py-1.5 text-xs font-medium",
+            "text-background",
             "transition-colors duration-200",
-            "hover:bg-[var(--terracotta-hover)]",
+            "hover:bg-[hsl(var(--primary)/0.9)]",
             "disabled:opacity-40 disabled:cursor-not-allowed"
           )}
         >

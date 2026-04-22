@@ -47,11 +47,11 @@ export async function ChatbotTab({
       </section>
 
       {emptyEverything ? (
-        <div className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-6">
-          <p className="text-sm font-semibold text-[var(--near-black)]">
+        <div className="rounded-xl border border-border bg-card p-6">
+          <p className="text-sm font-semibold text-foreground">
             No chatbot activity yet
           </p>
-          <p className="mt-1 text-xs text-[var(--stone-gray)]">
+          <p className="mt-1 text-xs text-muted-foreground">
             Once visitors start chatting about this property, conversations and
             top topics will surface here.
           </p>
@@ -64,7 +64,7 @@ export async function ChatbotTab({
             description="Top terms after stopword filtering"
           >
             {data.topTopics.length === 0 ? (
-              <p className="text-xs text-[var(--stone-gray)]">
+              <p className="text-xs text-muted-foreground">
                 No user messages yet.
               </p>
             ) : (
@@ -77,19 +77,19 @@ export async function ChatbotTab({
                       key={t.term}
                       className="grid grid-cols-[20px_1fr_40px] items-center gap-2 text-xs"
                     >
-                      <span className="text-[10px] text-[var(--stone-gray)] tabular-nums">
+                      <span className="text-[10px] text-muted-foreground tabular-nums">
                         {i + 1}
                       </span>
-                      <span className="relative h-5 rounded-md bg-[var(--warm-sand)]/60 overflow-hidden">
+                      <span className="relative h-5 rounded-md bg-muted/60 overflow-hidden">
                         <span
-                          className="absolute left-0 top-0 h-full bg-[var(--terracotta)]/80"
+                          className="absolute left-0 top-0 h-full bg-primary/80"
                           style={{ width: `${width}%` }}
                         />
-                        <span className="relative px-2 leading-5 text-[var(--near-black)]">
+                        <span className="relative px-2 leading-5 text-foreground">
                           {t.term}
                         </span>
                       </span>
-                      <span className="text-right tabular-nums text-[var(--olive-gray)]">
+                      <span className="text-right tabular-nums text-muted-foreground">
                         {t.count}
                       </span>
                     </li>
@@ -106,11 +106,11 @@ export async function ChatbotTab({
             hrefLabel="All conversations"
           >
             {data.recent.length === 0 ? (
-              <p className="text-xs text-[var(--stone-gray)]">
+              <p className="text-xs text-muted-foreground">
                 No conversations yet.
               </p>
             ) : (
-              <ul className="divide-y divide-[var(--border-cream)]">
+              <ul className="divide-y divide-border">
                 {data.recent.map((c) => {
                   const name =
                     c.capturedName ||
@@ -123,15 +123,15 @@ export async function ChatbotTab({
                         className="flex items-baseline justify-between gap-3"
                       >
                         <div className="min-w-0">
-                          <div className="text-sm font-medium text-[var(--near-black)] truncate">
+                          <div className="text-sm font-medium text-foreground truncate">
                             {name}
                           </div>
-                          <div className="text-[11px] text-[var(--stone-gray)] mt-0.5">
+                          <div className="text-[11px] text-muted-foreground mt-0.5">
                             {c.messageCount} messages{" "}
                             {c.status ? `\u00b7 ${c.status}` : ""}
                           </div>
                         </div>
-                        <div className="text-[11px] text-[var(--stone-gray)] whitespace-nowrap">
+                        <div className="text-[11px] text-muted-foreground whitespace-nowrap">
                           {formatDistanceToNow(c.lastMessageAt, {
                             addSuffix: true,
                           })}

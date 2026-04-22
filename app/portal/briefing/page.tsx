@@ -92,20 +92,20 @@ export default async function BriefingPage({
     <div className="space-y-5">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
             <Gauge className="h-3 w-3" />
             {org?.name ?? "Workspace"}
             {activeProperty ? (
               <>
-                <span className="h-0.5 w-0.5 rounded-full bg-[var(--stone-gray)]" />
-                <span className="text-[var(--terracotta)]">{activeProperty.name}</span>
+                <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground" />
+                <span className="text-primary">{activeProperty.name}</span>
               </>
             ) : null}
           </div>
-          <h1 className="mt-1 text-[28px] leading-tight font-semibold tracking-tight text-[var(--near-black)]">
+          <h1 className="mt-1 text-[28px] leading-tight font-semibold tracking-tight text-foreground">
             {greeting}
           </h1>
-          <p className="text-sm text-[var(--olive-gray)] mt-1 max-w-2xl">
+          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
             Everything that moved since you last looked. Triage the call sheet,
             read the transcripts, and act on the insights before your next client touch.
           </p>
@@ -145,7 +145,7 @@ export default async function BriefingPage({
             eyebrow="Open signals"
             title={
               <span className="inline-flex items-center gap-2">
-                <Sparkles className="h-3.5 w-3.5 text-[var(--terracotta)]" />
+                <Sparkles className="h-3.5 w-3.5 text-primary" />
                 Insights
               </span>
             }
@@ -155,7 +155,7 @@ export default async function BriefingPage({
             contentClassName="space-y-2 pt-3"
           >
             {insightCards.length === 0 ? (
-              <p className="text-xs text-[var(--stone-gray)]">
+              <p className="text-xs text-muted-foreground">
                 Detectors are quiet this session. Nothing anomalous.
               </p>
             ) : (
@@ -172,7 +172,7 @@ export default async function BriefingPage({
           eyebrow="Worth reading"
           title={
             <span className="inline-flex items-center gap-2">
-              <MessageSquare className="h-3.5 w-3.5 text-[var(--terracotta)]" />
+              <MessageSquare className="h-3.5 w-3.5 text-primary" />
               Chatbot transcripts
             </span>
           }
@@ -189,7 +189,7 @@ export default async function BriefingPage({
           title="Action list"
           description="The practical checklist for this session."
         >
-          <ol className="space-y-2 text-sm text-[var(--charcoal-warm)]">
+          <ol className="space-y-2 text-sm text-foreground">
             <ChecklistItem
               icon={Phone}
               label={`Call the top ${Math.min(3, callLeads.length)} lead${callLeads.length === 1 ? "" : "s"} above.`}
@@ -225,8 +225,8 @@ function PropertyFilter({
   activeId: string | null;
 }) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-lg border border-[var(--border-cream)] bg-[var(--ivory)] p-1">
-      <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)] px-2">
+    <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+      <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground px-2">
         <Building2 className="h-3 w-3" />
         Focus
       </span>
@@ -235,8 +235,8 @@ function PropertyFilter({
         className={cn(
           "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
           !activeId
-            ? "bg-[var(--near-black)] text-[var(--ivory)]"
-            : "text-[var(--olive-gray)] hover:bg-[var(--warm-sand)] hover:text-[var(--near-black)]",
+            ? "bg-foreground text-background"
+            : "text-muted-foreground hover:bg-muted hover:text-foreground",
         )}
       >
         All
@@ -250,8 +250,8 @@ function PropertyFilter({
             className={cn(
               "rounded-md px-2 py-1 text-[11px] font-medium transition-colors truncate max-w-[14rem]",
               active
-                ? "bg-[var(--near-black)] text-[var(--ivory)]"
-                : "text-[var(--olive-gray)] hover:bg-[var(--warm-sand)] hover:text-[var(--near-black)]",
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground",
             )}
           >
             {p.name}
@@ -276,13 +276,13 @@ function ChecklistItem({
       <span
         className={`mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-md ${
           enabled
-            ? "bg-[var(--terracotta)]/10 text-[var(--terracotta)]"
-            : "bg-[var(--warm-sand)] text-[var(--stone-gray)]"
+            ? "bg-primary/10 text-primary"
+            : "bg-muted text-muted-foreground"
         }`}
       >
         <Icon className="h-3 w-3" />
       </span>
-      <span className={enabled ? "" : "text-[var(--stone-gray)]"}>{label}</span>
+      <span className={enabled ? "" : "text-muted-foreground"}>{label}</span>
     </li>
   );
 }

@@ -36,7 +36,7 @@ export function ChatTranscript({ rawMessages }: { rawMessages: unknown }) {
 
   if (messages.length === 0) {
     return (
-      <p className="text-xs text-[var(--stone-gray)] italic">
+      <p className="text-xs text-muted-foreground italic">
         No messages recorded.
       </p>
     );
@@ -47,15 +47,15 @@ export function ChatTranscript({ rawMessages }: { rawMessages: unknown }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="text-xs font-medium text-[var(--terracotta)] hover:text-[var(--terracotta-hover)] transition-colors duration-200"
+        className="text-xs font-medium text-primary hover:text-[hsl(var(--primary)/0.9)] transition-colors duration-200"
       >
         {open ? "Hide conversation" : "View conversation"}
       </button>
       {open ? (
         <div
           className={cn(
-            "mt-3 max-h-[340px] overflow-auto rounded-[10px] bg-[var(--parchment)]",
-            "ring-1 ring-[var(--border-cream)] p-3 space-y-2"
+            "mt-3 max-h-[340px] overflow-auto rounded-[10px] bg-card",
+            "ring-1 ring-border p-3 space-y-2"
           )}
         >
           {messages.map((m, i) => {
@@ -72,8 +72,8 @@ export function ChatTranscript({ rawMessages }: { rawMessages: unknown }) {
                   className={cn(
                     "max-w-[80%] rounded-[10px] px-3 py-2 text-xs leading-snug whitespace-pre-wrap",
                     isUser
-                      ? "bg-[var(--terracotta)] text-[var(--ivory)]"
-                      : "bg-[var(--ivory)] text-[var(--near-black)] ring-1 ring-[var(--border-cream)]"
+                      ? "bg-primary text-background"
+                      : "bg-card text-foreground ring-1 ring-border"
                   )}
                 >
                   {m.content}

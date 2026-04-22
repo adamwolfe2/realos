@@ -12,7 +12,7 @@ export function PrintButton() {
     <button
       type="button"
       onClick={() => window.print()}
-      className="inline-flex items-center rounded-md border border-[var(--border-cream)] bg-[var(--ivory)] px-3 py-2 text-sm font-medium hover:bg-[var(--warm-sand)]"
+      className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted"
     >
       Print or save as PDF
     </button>

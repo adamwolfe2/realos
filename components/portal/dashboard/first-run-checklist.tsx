@@ -11,14 +11,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ---------------------------------------------------------------------------
-// FirstRunChecklist
-//
-// Empty-state replacement for the dashboard tiles when a workspace has zero
-// activity yet. Walks the operator through the four moves that unlock the
-// real dashboard. Each row links to the page where the action happens.
-// ---------------------------------------------------------------------------
-
 export type ChecklistItem = {
   id: string;
   title: string;
@@ -63,33 +55,33 @@ export function FirstRunChecklist({ items }: { items: ChecklistItem[] }) {
   const completed = items.filter((i) => i.done).length;
   const pct = Math.round((completed / items.length) * 100);
   return (
-    <section className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-6">
+    <section className="rounded-lg border border-border bg-card p-6">
       <div className="flex items-baseline justify-between gap-4">
         <div>
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Get started
           </div>
-          <h2 className="mt-1 font-serif text-2xl font-medium text-[var(--near-black)] tracking-tight">
+          <h2 className="mt-1 text-xl font-semibold text-foreground tracking-tight">
             A few quick wins to light up your dashboard
           </h2>
-          <p className="mt-1 text-sm text-[var(--olive-gray)] max-w-xl">
+          <p className="mt-1 text-sm text-muted-foreground max-w-xl">
             Each step takes a minute or two. Once any of these are live, the
             dashboard tiles populate automatically.
           </p>
         </div>
         <div className="text-right shrink-0">
-          <div className="text-2xl font-semibold tabular-nums text-[var(--near-black)]">
+          <div className="text-2xl font-semibold tabular-nums text-foreground">
             {completed}/{items.length}
           </div>
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Complete
           </div>
         </div>
       </div>
 
-      <div className="mt-4 h-1.5 w-full rounded-full bg-[var(--warm-sand)] overflow-hidden">
+      <div className="mt-4 h-1.5 w-full rounded-full bg-muted overflow-hidden">
         <div
-          className="h-full rounded-full bg-[var(--terracotta)] transition-all duration-700"
+          className="h-full rounded-full bg-primary transition-all duration-700"
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -102,8 +94,8 @@ export function FirstRunChecklist({ items }: { items: ChecklistItem[] }) {
               <Link
                 href={it.href}
                 className={cn(
-                  "group flex items-center gap-3 rounded-lg border border-[var(--border-cream)] bg-[var(--white)] px-4 py-3 transition-colors",
-                  "hover:border-[var(--terracotta)]/30",
+                  "group flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors",
+                  "hover:border-primary/30 hover:bg-muted/30",
                 )}
               >
                 <span
@@ -111,7 +103,7 @@ export function FirstRunChecklist({ items }: { items: ChecklistItem[] }) {
                     "shrink-0 grid place-items-center h-8 w-8 rounded-md",
                     it.done
                       ? "bg-emerald-50 text-emerald-700"
-                      : "bg-[var(--warm-sand)] text-[var(--charcoal-warm)]",
+                      : "bg-muted text-muted-foreground",
                   )}
                 >
                   {it.done ? (
@@ -125,21 +117,21 @@ export function FirstRunChecklist({ items }: { items: ChecklistItem[] }) {
                     className={cn(
                       "text-sm font-medium",
                       it.done
-                        ? "text-[var(--stone-gray)] line-through"
-                        : "text-[var(--near-black)]",
+                        ? "text-muted-foreground line-through"
+                        : "text-foreground",
                     )}
                   >
                     {it.title}
                   </div>
-                  <p className="text-xs text-[var(--olive-gray)] mt-0.5">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {it.description}
                   </p>
                 </div>
                 {it.done ? (
-                  <Circle className="h-4 w-4 text-[var(--ring-warm)]" aria-hidden="true" />
+                  <Circle className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
                 ) : (
                   <ArrowRight
-                    className="h-4 w-4 text-[var(--stone-gray)] group-hover:text-[var(--terracotta)] transition-colors"
+                    className="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors"
                     aria-hidden="true"
                   />
                 )}

@@ -35,7 +35,7 @@ export function MasterToggle({
   const live = optimistic && moduleActive;
 
   return (
-    <section className="border rounded-md p-5 flex items-center justify-between gap-4">
+    <section className="rounded-lg border border-border bg-card p-5 flex items-center justify-between gap-4">
       <div>
         <h2 className="text-sm font-semibold">Widget status</h2>
         <p className="text-xs opacity-60 mt-1">

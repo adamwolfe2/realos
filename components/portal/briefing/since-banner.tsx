@@ -33,23 +33,23 @@ export function SinceBanner({
   ].filter((i) => i.value > 0);
 
   return (
-    <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] px-5 py-4">
+    <div className="flex flex-wrap items-center justify-between gap-4 rounded-xl border border-border bg-card px-5 py-4">
       <div className="min-w-0">
-        <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+        <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
           <Gauge className="h-3 w-3" />
           Command Center
         </div>
-        <p className="mt-1 text-[15px] tracking-tight text-[var(--near-black)] font-medium">
+        <p className="mt-1 text-[15px] tracking-tight text-foreground font-medium">
           {sinceLabel}
           {items.length === 0 ? (
-            <span className="ml-1 text-[var(--olive-gray)]">
+            <span className="ml-1 text-muted-foreground">
               nothing material has changed yet.
             </span>
           ) : (
-            <span className="ml-1 text-[var(--olive-gray)]">
+            <span className="ml-1 text-muted-foreground">
               {items.map((i, idx) => (
                 <span key={i.label}>
-                  <span className="tabular-nums font-semibold text-[var(--near-black)]">
+                  <span className="tabular-nums font-semibold text-foreground">
                     {i.value}
                   </span>{" "}
                   {i.label}
@@ -63,7 +63,7 @@ export function SinceBanner({
       <button
         onClick={() => startTransition(() => { void markBriefingViewed(); })}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-md bg-[var(--near-black)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ivory)] transition-opacity hover:opacity-90 disabled:opacity-60"
+        className="inline-flex items-center gap-1.5 rounded-md bg-foreground text-background px-3 py-1.5 text-[12px] font-semibold text-background transition-opacity hover:opacity-90 disabled:opacity-60"
       >
         <Check className="h-3 w-3" />
         {pending ? "Saving..." : "Mark briefing reviewed"}

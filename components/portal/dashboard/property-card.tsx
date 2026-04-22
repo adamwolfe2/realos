@@ -3,18 +3,6 @@ import Link from "next/link";
 import { Building2, MapPin, Megaphone } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// ---------------------------------------------------------------------------
-// PropertyDashboardCard
-//
-// One row in the "Properties" grid on the dashboard. Reads at-a-glance:
-//   - thumbnail (or fallback gradient with first-letter glyph)
-//   - name + address
-//   - occupancy %
-//   - leads in last 28d (with mini sparkline)
-//   - active ad campaigns count
-// Clicks through to the property detail page.
-// ---------------------------------------------------------------------------
-
 export type PropertyDashboardCardProps = {
   id: string;
   name: string;
@@ -24,7 +12,6 @@ export type PropertyDashboardCardProps = {
   leads28d: number;
   leadsSpark: number[];
   activeCampaigns: number;
-  // Subtle accent (e.g. the tenant brand color) used on the side rail.
   accent?: string;
 };
 
@@ -43,8 +30,8 @@ export function PropertyDashboardCard({
     <Link
       href={`/portal/properties/${id}`}
       className={cn(
-        "group relative block rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] overflow-hidden",
-        "transition-all duration-150 hover:border-[var(--terracotta)]/30 hover:shadow-[0_4px_24px_rgba(0,0,0,0.05)]",
+        "group relative block rounded-lg border border-border bg-card overflow-hidden",
+        "transition-all duration-150 hover:border-primary/30 hover:shadow-sm",
       )}
     >
       <div className="flex">
@@ -52,11 +39,11 @@ export function PropertyDashboardCard({
         <div className="flex-1 min-w-0 p-4">
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0">
-              <h3 className="font-semibold text-sm text-[var(--near-black)] tracking-tight truncate">
+              <h3 className="font-semibold text-sm text-foreground tracking-tight truncate">
                 {name}
               </h3>
               {address ? (
-                <p className="mt-0.5 text-[11px] text-[var(--stone-gray)] flex items-center gap-1 truncate">
+                <p className="mt-0.5 text-[11px] text-muted-foreground flex items-center gap-1 truncate">
                   <MapPin className="h-3 w-3 shrink-0" aria-hidden="true" />
                   <span className="truncate">{address}</span>
                 </p>
@@ -69,14 +56,14 @@ export function PropertyDashboardCard({
 
           <div className="mt-3 grid grid-cols-[1fr_auto] items-end gap-3">
             <div>
-              <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+              <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
                 Leads (28d)
               </div>
               <div className="mt-0.5 flex items-baseline gap-2">
-                <span className="text-lg font-semibold tabular-nums text-[var(--near-black)]">
+                <span className="text-lg font-semibold tabular-nums text-foreground">
                   {leads28d}
                 </span>
-                <span className="inline-flex items-center gap-1 text-[10px] text-[var(--olive-gray)]">
+                <span className="inline-flex items-center gap-1 text-[10px] text-muted-foreground">
                   <Megaphone className="h-3 w-3" aria-hidden="true" />
                   {activeCampaigns} {activeCampaigns === 1 ? "campaign" : "campaigns"}
                 </span>
@@ -110,23 +97,18 @@ function Thumbnail({
       />
     );
   }
-  // Fallback: warm gradient + serif letter glyph + brand accent rail.
   return (
     <div
-      className="relative h-auto w-24 shrink-0 grid place-items-center"
-      style={{
-        background:
-          "linear-gradient(135deg, var(--warm-sand) 0%, var(--border-cream) 100%)",
-      }}
+      className="relative h-auto w-24 shrink-0 grid place-items-center bg-muted"
       aria-hidden="true"
     >
-      <Building2 className="h-6 w-6 text-[var(--stone-gray)]" />
-      <span className="absolute top-2 left-2 font-serif text-base font-semibold text-[var(--near-black)]">
+      <Building2 className="h-6 w-6 text-muted-foreground" />
+      <span className="absolute top-2 left-2 text-sm font-semibold text-foreground">
         {fallbackLetter}
       </span>
       <span
         className="absolute inset-y-0 right-0 w-1"
-        style={{ backgroundColor: accent ?? "var(--terracotta)" }}
+        style={{ backgroundColor: accent ?? "hsl(var(--primary))" }}
       />
     </div>
   );
@@ -177,7 +159,7 @@ function MiniSpark({ data }: { data: number[] }) {
       <polyline
         points={points}
         fill="none"
-        stroke="var(--terracotta)"
+        stroke="#2563EB"
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"

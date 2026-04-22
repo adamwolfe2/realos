@@ -41,6 +41,10 @@ const CAPTURE_OPTIONS: Array<{
   },
 ];
 
+const INPUT_CLASS =
+  "rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-full";
+const LABEL_CLASS = "text-[10px] tracking-widest uppercase font-semibold text-muted-foreground";
+
 export function ChatbotConfigForm({
   initial,
   orgPrimaryColor,
@@ -87,18 +91,17 @@ export function ChatbotConfigForm({
   const kbNear = kbLength > KB_MAX * 0.9 && !kbOver;
 
   return (
-    <form onSubmit={submit} className="space-y-6">
-      {/* Mirror the live master-toggle value so the save action doesn't flip
-          it off when the form submits. */}
+    <form onSubmit={submit} className="space-y-4">
       <input
         type="hidden"
         name="chatbotEnabled"
         value={String(initial.chatbotEnabled)}
       />
 
-      <section className="border rounded-md p-5 space-y-4">
-        <h2 className="text-sm font-semibold">Persona</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      {/* Persona */}
+      <section className="rounded-lg border border-border bg-card p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-foreground">Persona</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Field
             label="Persona name"
             name="chatbotPersonaName"
@@ -136,42 +139,37 @@ export function ChatbotConfigForm({
         />
       </section>
 
-      <section className="border rounded-md p-5 space-y-4">
-        <h2 className="text-sm font-semibold">Appearance</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs tracking-widest uppercase opacity-70">
-              Brand color
-            </span>
+      {/* Appearance */}
+      <section className="rounded-lg border border-border bg-card p-5 space-y-4">
+        <h2 className="text-sm font-semibold text-foreground">Appearance</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <label className="flex flex-col gap-1.5">
+            <span className={LABEL_CLASS}>Brand color</span>
             <div className="flex items-center gap-2">
               <input
                 type="color"
                 value={effectiveBrandColor}
                 onChange={(e) => update("chatbotBrandColor", e.target.value)}
-                className="h-9 w-12 border rounded cursor-pointer bg-background"
+                className="h-9 w-12 rounded-md border border-border cursor-pointer bg-background"
                 aria-label="Brand color picker"
               />
               <input
                 type="text"
                 name="chatbotBrandColor"
                 value={state.chatbotBrandColor}
-                onChange={(e) =>
-                  update("chatbotBrandColor", e.target.value)
-                }
+                onChange={(e) => update("chatbotBrandColor", e.target.value)}
                 placeholder={orgPrimaryColor ?? "#111111"}
-                className="flex-1 border rounded px-3 py-2 text-sm bg-background font-mono"
+                className={`${INPUT_CLASS} font-mono`}
               />
             </div>
-            <span className="text-[11px] opacity-60">
+            <span className="text-[11px] text-muted-foreground">
               Leave blank to inherit your brand primary color
               {orgPrimaryColor ? ` (${orgPrimaryColor}).` : "."}
             </span>
           </label>
 
-          <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs tracking-widest uppercase opacity-70">
-              Idle trigger (seconds)
-            </span>
+          <label className="flex flex-col gap-1.5">
+            <span className={LABEL_CLASS}>Idle trigger (seconds)</span>
             <input
               type="number"
               name="chatbotIdleTriggerSeconds"
@@ -179,24 +177,21 @@ export function ChatbotConfigForm({
               max={600}
               value={state.chatbotIdleTriggerSeconds}
               onChange={(e) =>
-                update(
-                  "chatbotIdleTriggerSeconds",
-                  parseInt(e.target.value, 10) || 0
-                )
+                update("chatbotIdleTriggerSeconds", parseInt(e.target.value, 10) || 0)
               }
-              className="border rounded px-3 py-2 text-sm bg-background"
+              className={INPUT_CLASS}
             />
-            <span className="text-[11px] opacity-60">
-              Seconds before the proactive teaser bubble pops up. 0 disables
-              the teaser.
+            <span className="text-[11px] text-muted-foreground">
+              Seconds before the proactive teaser bubble pops up. 0 disables the teaser.
             </span>
           </label>
         </div>
       </section>
 
-      <section className="border rounded-md p-5 space-y-3">
-        <h2 className="text-sm font-semibold">Lead capture</h2>
-        <p className="text-xs opacity-60">
+      {/* Lead capture */}
+      <section className="rounded-lg border border-border bg-card p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-foreground">Lead capture</h2>
+        <p className="text-xs text-muted-foreground">
           Choose when the bot asks for a visitor&apos;s name and email.
         </p>
         <div className="space-y-2">
@@ -205,8 +200,10 @@ export function ChatbotConfigForm({
             return (
               <label
                 key={opt.value}
-                className={`flex items-start gap-3 border rounded-md px-3 py-2.5 text-sm cursor-pointer transition-colors ${
-                  active ? "border-primary" : "hover:bg-muted/40"
+                className={`flex items-start gap-3 rounded-md border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
+                  active
+                    ? "border-primary bg-primary/5"
+                    : "border-border hover:bg-muted/40"
                 }`}
               >
                 <input
@@ -218,8 +215,8 @@ export function ChatbotConfigForm({
                   className="mt-1"
                 />
                 <span className="flex flex-col gap-0.5">
-                  <span className="font-medium">{opt.label}</span>
-                  <span className="text-[11px] opacity-70">{opt.hint}</span>
+                  <span className="font-medium text-foreground">{opt.label}</span>
+                  <span className="text-[11px] text-muted-foreground">{opt.hint}</span>
                 </span>
               </label>
             );
@@ -227,20 +224,22 @@ export function ChatbotConfigForm({
         </div>
       </section>
 
-      <section className="border rounded-md p-5 space-y-3">
-        <h2 className="text-sm font-semibold">Knowledge base</h2>
-        <p className="text-xs opacity-60">
-          Plain-text facts, amenities, and policies injected into the
-          system prompt. Write like you&apos;re briefing a new front-desk
-          hire.
+      {/* Knowledge base */}
+      <section className="rounded-lg border border-border bg-card p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-foreground">Knowledge base</h2>
+        <p className="text-xs text-muted-foreground">
+          Plain-text facts, amenities, and policies injected into the system prompt. Write like
+          you&apos;re briefing a new front-desk hire.
         </p>
         <textarea
           name="chatbotKnowledgeBase"
           rows={12}
           value={state.chatbotKnowledgeBase}
           onChange={(e) => update("chatbotKnowledgeBase", e.target.value)}
-          className="w-full border rounded px-3 py-2 text-xs font-mono bg-background"
-          placeholder={"Rent includes utilities and WiFi.\nPet policy: cats OK, dogs under 40 lbs with $500 deposit.\nTours: Monday-Saturday 10am-6pm."}
+          className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs font-mono focus:outline-none focus:ring-2 focus:ring-primary/30"
+          placeholder={
+            "Rent includes utilities and WiFi.\nPet policy: cats OK, dogs under 40 lbs with $500 deposit.\nTours: Monday-Saturday 10am-6pm."
+          }
         />
         <div className="flex items-center justify-between">
           <span
@@ -249,7 +248,7 @@ export function ChatbotConfigForm({
                 ? "text-destructive"
                 : kbNear
                   ? "text-amber-700"
-                  : "opacity-60"
+                  : "text-muted-foreground"
             }`}
           >
             {kbLength.toLocaleString()} / {KB_MAX.toLocaleString()} characters
@@ -258,20 +257,35 @@ export function ChatbotConfigForm({
         </div>
       </section>
 
-      <Preview
-        personaName={state.chatbotPersonaName || "Leasing"}
-        greeting={
-          state.chatbotGreeting ||
-          "Hi! What can I help you with today?"
-        }
-        brandColor={effectiveBrandColor}
-      />
+      {/* Preview */}
+      <section className="rounded-lg border border-border bg-card p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-foreground">Preview</h2>
+        <p className="text-xs text-muted-foreground">
+          Quick sanity-check of the persona + brand color. The full widget renders live once the
+          master toggle is on.
+        </p>
+        <div className="flex items-start gap-3 max-w-md">
+          <div
+            aria-hidden
+            className="h-10 w-10 rounded-full flex-shrink-0"
+            style={{ backgroundColor: effectiveBrandColor }}
+          />
+          <div className="flex-1 rounded-lg rounded-tl-none border border-border bg-muted/30 px-4 py-3 text-sm">
+            <div className={`${LABEL_CLASS} mb-1`}>
+              {state.chatbotPersonaName || "Leasing"}
+            </div>
+            <p className="whitespace-pre-wrap text-foreground">
+              {state.chatbotGreeting || "Hi! What can I help you with today?"}
+            </p>
+          </div>
+        </div>
+      </section>
 
-      <div className="flex items-center gap-3 sticky bottom-0 bg-background py-3 border-t">
+      <div className="flex items-center gap-3 sticky bottom-0 bg-background py-3 border-t border-border">
         <button
           type="submit"
           disabled={pending || kbOver}
-          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-4 py-2 text-sm font-medium rounded-md disabled:opacity-40"
         >
           {pending ? "Saving…" : "Save chatbot config"}
         </button>
@@ -282,45 +296,12 @@ export function ChatbotConfigForm({
           <span className="text-xs text-destructive">{error}</span>
         ) : null}
         {!moduleActive ? (
-          <span className="text-xs opacity-60">
+          <span className="text-xs text-muted-foreground">
             Module off — saves stage content without publishing.
           </span>
         ) : null}
       </div>
     </form>
-  );
-}
-
-function Preview({
-  personaName,
-  greeting,
-  brandColor,
-}: {
-  personaName: string;
-  greeting: string;
-  brandColor: string;
-}) {
-  return (
-    <section className="border rounded-md p-5 space-y-3">
-      <h2 className="text-sm font-semibold">Preview</h2>
-      <p className="text-xs opacity-60">
-        Quick sanity-check of the persona + brand color. The full widget
-        renders live once the master toggle is on.
-      </p>
-      <div className="flex items-start gap-3 max-w-md">
-        <div
-          aria-hidden
-          className="h-10 w-10 rounded-full flex-shrink-0"
-          style={{ backgroundColor: brandColor }}
-        />
-        <div className="flex-1 border rounded-lg rounded-tl-none px-4 py-3 text-sm bg-muted/30">
-          <div className="text-[11px] uppercase tracking-widest opacity-60 mb-1">
-            {personaName}
-          </div>
-          <p className="whitespace-pre-wrap">{greeting}</p>
-        </div>
-      </div>
-    </section>
   );
 }
 
@@ -344,10 +325,8 @@ function Field({
   hint?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="text-xs tracking-widest uppercase opacity-70">
-        {label}
-      </span>
+    <label className="flex flex-col gap-1.5">
+      <span className={LABEL_CLASS}>{label}</span>
       <input
         type={type}
         name={name}
@@ -355,10 +334,10 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         maxLength={maxLength}
-        className="border rounded px-3 py-2 text-sm bg-background"
+        className={INPUT_CLASS}
       />
       {hint ? (
-        <span className="text-[11px] opacity-60">{hint}</span>
+        <span className="text-[11px] text-muted-foreground">{hint}</span>
       ) : null}
     </label>
   );
@@ -382,20 +361,18 @@ function TextArea({
   hint?: string;
 }) {
   return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="text-xs tracking-widest uppercase opacity-70">
-        {label}
-      </span>
+    <label className="flex flex-col gap-1.5">
+      <span className={LABEL_CLASS}>{label}</span>
       <textarea
         name={name}
         rows={rows}
         maxLength={maxLength}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="border rounded px-3 py-2 text-sm bg-background"
+        className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
       />
       {hint ? (
-        <span className="text-[11px] opacity-60">{hint}</span>
+        <span className="text-[11px] text-muted-foreground">{hint}</span>
       ) : null}
     </label>
   );

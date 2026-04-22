@@ -12,15 +12,6 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 
-// ---------------------------------------------------------------------------
-// ActivityFeed
-//
-// Right-rail rolling feed of "things that just happened" across the
-// workspace. Each item is a typed event with a small color-coded icon, a
-// one-line summary, and a timestamp. When real event sources land, the
-// feed maps each event row to one of these item shapes.
-// ---------------------------------------------------------------------------
-
 export type ActivityKind =
   | "lead"
   | "tour"
@@ -56,13 +47,13 @@ const TONE: Record<ActivityKind, string> = {
   chatbot: "bg-violet-50 text-violet-700",
   campaign: "bg-rose-50 text-rose-700",
   application: "bg-indigo-50 text-indigo-700",
-  milestone: "bg-[var(--warm-sand)] text-[var(--charcoal-warm)]",
+  milestone: "bg-muted text-foreground",
 };
 
 export function ActivityFeed({ items }: { items: ActivityItem[] }) {
   if (items.length === 0) {
     return (
-      <p className="text-xs text-[var(--stone-gray)]">
+      <p className="text-xs text-muted-foreground">
         Quiet so far. New leads, tours, and visitor activity will stream in here.
       </p>
     );
@@ -70,10 +61,9 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
 
   return (
     <ol className="relative pl-3 -my-1.5">
-      {/* Vertical thread line */}
       <span
         aria-hidden="true"
-        className="absolute left-[5px] top-2 bottom-2 w-px bg-[var(--border-cream)]"
+        className="absolute left-[5px] top-2 bottom-2 w-px bg-border"
       />
       {items.map((item) => {
         const Icon = ICON[item.kind];
@@ -81,7 +71,7 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
           <div className="flex items-start gap-2.5 py-2">
             <span
               className={cn(
-                "relative -ml-3 z-10 grid place-items-center h-6 w-6 rounded-full border border-[var(--border-cream)] bg-[var(--ivory)] shrink-0",
+                "relative -ml-3 z-10 grid place-items-center h-6 w-6 rounded-full border border-border bg-card shrink-0",
               )}
             >
               <span
@@ -94,10 +84,10 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
               </span>
             </span>
             <div className="min-w-0 flex-1">
-              <div className="text-xs leading-snug text-[var(--near-black)]">
+              <div className="text-xs leading-snug text-foreground">
                 {item.title}
               </div>
-              <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-[var(--stone-gray)]">
+              <div className="mt-0.5 flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 <span>{formatDistanceToNow(item.at, { addSuffix: true })}</span>
                 {item.meta ? (
                   <>
@@ -114,7 +104,7 @@ export function ActivityFeed({ items }: { items: ActivityItem[] }) {
             {item.href ? (
               <Link
                 href={item.href}
-                className="block rounded-md -mx-1 px-1 hover:bg-[var(--warm-sand)]/40 transition-colors"
+                className="block rounded-md -mx-1 px-1 hover:bg-muted/40 transition-colors"
               >
                 {Inner}
               </Link>

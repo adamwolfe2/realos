@@ -101,7 +101,7 @@ function PropertyTabsInner({
     <div className="space-y-6">
       <nav
         aria-label="Property sections"
-        className="flex flex-nowrap gap-1 border-b border-[var(--border-cream)] overflow-x-auto scrollbar-hide"
+        className="flex flex-nowrap gap-1 border-b border-border overflow-x-auto scrollbar-hide"
       >
         {tabs.map((tab) => {
           const Icon = tab.icon;
@@ -114,8 +114,8 @@ function PropertyTabsInner({
               className={cn(
                 "inline-flex shrink-0 items-center gap-2 px-3 py-2.5 text-[13px] border-b-2 -mb-px whitespace-nowrap transition-colors",
                 isActive
-                  ? "border-[var(--near-black)] text-[var(--near-black)]"
-                  : "border-transparent text-[var(--stone-gray)] hover:text-[var(--near-black)]",
+                  ? "border-foreground text-foreground"
+                  : "border-transparent text-muted-foreground hover:text-foreground",
               )}
               aria-current={isActive ? "page" : undefined}
             >

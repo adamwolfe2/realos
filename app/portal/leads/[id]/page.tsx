@@ -163,13 +163,13 @@ export default async function LeadDetailPage({
         <nav className="flex items-center gap-2 text-sm">
           <Link
             href="/portal/leads"
-            className="inline-flex items-center gap-1 text-[var(--stone-gray)] hover:text-[var(--near-black)] transition-colors duration-200"
+            className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground transition-colors duration-200"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
             Leads
           </Link>
-          <span className="text-[var(--stone-gray)]">/</span>
-          <span className="text-[var(--near-black)] font-medium truncate max-w-[18rem]">
+          <span className="text-muted-foreground">/</span>
+          <span className="text-foreground font-medium truncate max-w-[18rem]">
             {displayName}
           </span>
         </nav>
@@ -182,10 +182,10 @@ export default async function LeadDetailPage({
               title="Send email"
               className={cn(
                 "inline-flex h-9 w-9 items-center justify-center rounded-[10px]",
-                "bg-[var(--ivory)] ring-1 ring-[var(--border-cream)]",
-                "text-[var(--charcoal-warm)]",
+                "bg-card ring-1 ring-border",
+                "text-foreground",
                 "transition-colors duration-200",
-                "hover:bg-[var(--warm-sand)] hover:text-[var(--near-black)]"
+                "hover:bg-muted hover:text-foreground"
               )}
             >
               <Send className="h-4 w-4" />
@@ -197,10 +197,10 @@ export default async function LeadDetailPage({
             title="More actions"
             className={cn(
               "inline-flex h-9 w-9 items-center justify-center rounded-[10px]",
-              "bg-[var(--ivory)] ring-1 ring-[var(--border-cream)]",
-              "text-[var(--charcoal-warm)]",
+              "bg-card ring-1 ring-border",
+              "text-foreground",
               "transition-colors duration-200",
-              "hover:bg-[var(--warm-sand)] hover:text-[var(--near-black)]"
+              "hover:bg-muted hover:text-foreground"
             )}
           >
             <MoreHorizontal className="h-4 w-4" />
@@ -211,7 +211,7 @@ export default async function LeadDetailPage({
       {/* B. Hero identity card */}
       <section
         className={cn(
-          "rounded-[12px] border border-[var(--border-cream)] bg-[var(--ivory)]",
+          "rounded-[12px] border border-border bg-card",
           "p-6 md:p-7",
           "grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,auto)] gap-6"
         )}
@@ -219,7 +219,7 @@ export default async function LeadDetailPage({
         {/* Identity block */}
         <div className="flex items-start gap-5 min-w-0">
           {logoUrl ? (
-            <div className="h-14 w-14 shrink-0 rounded-[12px] bg-[var(--white)] ring-1 ring-[var(--border-cream)] overflow-hidden flex items-center justify-center">
+            <div className="h-14 w-14 shrink-0 rounded-[12px] bg-card ring-1 ring-border overflow-hidden flex items-center justify-center">
               <Image
                 src={logoUrl}
                 alt={visitorIdentity?.companyName ?? displayName}
@@ -284,25 +284,25 @@ export default async function LeadDetailPage({
           <Tile label="Status">
             <div className="flex items-center gap-2">
               <StatusDot status={lead.status} />
-              <span className="text-sm font-medium text-[var(--near-black)]">
+              <span className="text-sm font-medium text-foreground">
                 {humanizeStatus(lead.status)}
               </span>
             </div>
-            <p className="mt-1 text-[11px] text-[var(--stone-gray)]">
+            <p className="mt-1 text-[11px] text-muted-foreground">
               Updated {timeInStatus}
             </p>
           </Tile>
           <Tile label="Intent">
             <p className="text-xl font-semibold tabular-nums text-foreground">
               {lead.score}
-              <span className="text-sm text-[var(--stone-gray)] font-sans">
+              <span className="text-sm text-muted-foreground font-sans">
                 {" "}
                 / 100
               </span>
             </p>
-            <div className="mt-2 h-1.5 w-full rounded-full bg-[var(--warm-sand)] overflow-hidden">
+            <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
               <div
-                className="h-full rounded-full bg-[var(--terracotta)] transition-all"
+                className="h-full rounded-full bg-primary transition-all"
                 style={{
                   width: `${Math.max(0, Math.min(100, lead.score))}%`,
                 }}
@@ -313,7 +313,7 @@ export default async function LeadDetailPage({
             <p className="text-xl font-semibold tabular-nums text-foreground">
               &mdash;
             </p>
-            <p className="mt-1 text-[11px] text-[var(--stone-gray)]">
+            <p className="mt-1 text-[11px] text-muted-foreground">
               Link an ad account to attribute
             </p>
           </Tile>
@@ -328,15 +328,15 @@ export default async function LeadDetailPage({
             <h2 className="text-xl font-semibold tracking-tight text-foreground">
               Activity
             </h2>
-            <p className="text-xs text-[var(--stone-gray)]">
+            <p className="text-xs text-muted-foreground">
               {timeline.length} {timeline.length === 1 ? "event" : "events"}
             </p>
           </div>
-          <div className="rounded-[12px] border border-[var(--border-cream)] bg-[var(--ivory)] p-4">
+          <div className="rounded-[12px] border border-border bg-card p-4">
             <Timeline events={timeline} />
           </div>
           {timeline.length === 1 ? (
-            <p className="text-xs text-[var(--stone-gray)] px-2">
+            <p className="text-xs text-muted-foreground px-2">
               This lead is new. Future touchpoints &mdash; pixel visits, chats,
               tours, signed leases &mdash; will appear here as they happen.
             </p>
@@ -377,7 +377,7 @@ export default async function LeadDetailPage({
           <SidebarCard label="Notes">
             <AddNoteForm leadId={lead.id} />
             {notes.length === 0 ? (
-              <p className="mt-3 text-xs text-[var(--stone-gray)]">
+              <p className="mt-3 text-xs text-muted-foreground">
                 No notes yet.
               </p>
             ) : (
@@ -385,12 +385,12 @@ export default async function LeadDetailPage({
                 {notes.map((n) => (
                   <li
                     key={n.id}
-                    className="rounded-[10px] bg-[var(--parchment)] ring-1 ring-[var(--border-cream)] p-3"
+                    className="rounded-[10px] bg-card ring-1 ring-border p-3"
                   >
-                    <p className="text-xs text-[var(--near-black)] whitespace-pre-wrap leading-relaxed">
+                    <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">
                       {n.body}
                     </p>
-                    <p className="mt-2 text-[10px] text-[var(--stone-gray)]">
+                    <p className="mt-2 text-[10px] text-muted-foreground">
                       {format(n.createdAt, "MMM d, h:mm a")}
                     </p>
                   </li>
@@ -418,7 +418,7 @@ export default async function LeadDetailPage({
       </section>
 
       {/* E. Footer strip */}
-      <footer className="text-[11px] text-[var(--stone-gray)] pt-2 border-t border-[var(--border-cream)]">
+      <footer className="text-[11px] text-muted-foreground pt-2 border-t border-border">
         <span className="font-mono">ID {lead.id}</span>
         {" \u00b7 "}
         Created {createdLabel}
@@ -452,12 +452,12 @@ function Chip({
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs",
-        "bg-[var(--parchment)] text-[var(--charcoal-warm)]",
-        "ring-1 ring-[var(--border-cream)]"
+        "bg-card text-foreground",
+        "ring-1 ring-border"
       )}
     >
       {icon ? (
-        <span className="text-[var(--stone-gray)]">{icon}</span>
+        <span className="text-muted-foreground">{icon}</span>
       ) : null}
       <span className="truncate max-w-[14rem]">{children}</span>
     </span>
@@ -472,8 +472,8 @@ function Tile({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-[10px] border border-[var(--border-cream)] bg-[var(--parchment)] p-4">
-      <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-[var(--stone-gray)] mb-2">
+    <div className="rounded-[10px] border border-border bg-card p-4">
+      <p className="font-mono text-[10px] tracking-[0.18em] uppercase text-muted-foreground mb-2">
         {label}
       </p>
       {children}
@@ -492,9 +492,9 @@ function StatusDot({ status }: { status: string }) {
       case "UNQUALIFIED":
         return "bg-[var(--error)]";
       case "NEW":
-        return "bg-[var(--terracotta)]";
+        return "bg-primary";
       default:
-        return "bg-[var(--stone-gray)]";
+        return "bg-muted-foreground";
     }
   })();
   return <span className={cn("h-2 w-2 rounded-full shrink-0", tone)} />;
@@ -522,7 +522,7 @@ function PreferenceList({
     desiredMoveIn || budgetMinCents || budgetMaxCents || preferredUnitType;
   if (!hasAny) {
     return (
-      <p className="text-xs text-[var(--stone-gray)]">
+      <p className="text-xs text-muted-foreground">
         No preferences captured yet.
       </p>
     );
@@ -545,10 +545,10 @@ function PreferenceList({
 function PrefRow({ k, v }: { k: string; v: string | null }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-[var(--stone-gray)]">{k}</dt>
-      <dd className="text-right text-[var(--near-black)] truncate">
+      <dt className="text-muted-foreground">{k}</dt>
+      <dd className="text-right text-foreground truncate">
         {v && v !== "\u2014" ? v : (
-          <span className="text-[var(--stone-gray)]">&mdash;</span>
+          <span className="text-muted-foreground">&mdash;</span>
         )}
       </dd>
     </div>
@@ -580,7 +580,7 @@ function ActionLink({
 }) {
   const base = cn(
     "flex items-center gap-2 rounded-[10px] px-3 py-2 text-xs font-medium",
-    "bg-[var(--parchment)] ring-1 ring-[var(--border-cream)]",
+    "bg-card ring-1 ring-border",
     "transition-colors duration-200"
   );
   if (!href) {
@@ -588,7 +588,7 @@ function ActionLink({
       <div
         className={cn(
           base,
-          "text-[var(--stone-gray)] opacity-60 cursor-not-allowed"
+          "text-muted-foreground opacity-60 cursor-not-allowed"
         )}
       >
         {icon}
@@ -601,7 +601,7 @@ function ActionLink({
       href={href}
       className={cn(
         base,
-        "text-[var(--near-black)] hover:bg-[var(--warm-sand)]"
+        "text-foreground hover:bg-muted"
       )}
     >
       {icon}

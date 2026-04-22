@@ -72,10 +72,10 @@ export function LeadStatusForm({
         disabled={pending}
         onChange={(e) => change(e.target.value as LeadStatus)}
         className={cn(
-          "w-full rounded-[10px] bg-[var(--parchment)] px-3 py-2 text-sm",
-          "text-[var(--near-black)]",
-          "ring-1 ring-[var(--border-cream)]",
-          "focus:outline-none focus:ring-[var(--terracotta)]",
+          "w-full rounded-[10px] bg-card px-3 py-2 text-sm",
+          "text-foreground",
+          "ring-1 ring-border",
+          "focus:outline-none focus:ring-primary",
           "transition-colors duration-200",
           pending && "opacity-60"
         )}

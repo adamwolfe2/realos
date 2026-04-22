@@ -26,7 +26,7 @@ export function SeverityPill({ severity, size = "md" }: Props) {
   }[severity] ?? {
     label: severity,
     icon: Info,
-    cls: "bg-[var(--warm-sand)] text-[var(--olive-gray)] ring-[var(--border-cream)]",
+    cls: "bg-muted text-muted-foreground ring-border",
   };
 
   const Icon = config.icon;
@@ -49,7 +49,7 @@ export function SeverityPill({ severity, size = "md" }: Props) {
 
 export function CategoryBadge({ category }: { category: string }) {
   return (
-    <span className="inline-flex items-center rounded-md bg-[var(--warm-sand)] px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-[var(--olive-gray)]">
+    <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
       {category}
     </span>
   );

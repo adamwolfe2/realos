@@ -27,13 +27,13 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
   }
 
   return (
-    <div className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-5 space-y-4">
+    <div className="rounded-xl border border-border bg-card p-5 space-y-4">
       {/* Property name */}
       <div>
-        <div className="text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+        <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
           Property
         </div>
-        <h3 className="mt-0.5 text-base font-semibold text-[var(--near-black)]">
+        <h3 className="mt-0.5 text-base font-semibold text-foreground">
           {stat.propertyName}
         </h3>
       </div>
@@ -59,17 +59,17 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
 
       {/* Referral link */}
       <div className="space-y-1.5">
-        <div className="text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+        <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
           Resident referral link
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0 rounded-md border border-[var(--border-cream)] bg-white px-3 py-2 text-sm text-[var(--olive-gray)] font-mono truncate select-all">
+          <div className="flex-1 min-w-0 rounded-md border border-border bg-white px-3 py-2 text-sm text-muted-foreground font-mono truncate select-all">
             {referralUrl}
           </div>
           <button
             type="button"
             onClick={handleCopy}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-md border border-[var(--border-cream)] bg-white px-3 py-2 text-sm font-medium text-[var(--near-black)] hover:bg-[var(--warm-sand)] transition-colors"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-md border border-border bg-white px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             aria-label="Copy referral link"
           >
             {copied ? (
@@ -85,7 +85,7 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
             )}
           </button>
         </div>
-        <p className="text-[11px] text-[var(--stone-gray)]">
+        <p className="text-[11px] text-muted-foreground">
           Share this link with current residents. When a prospect submits the
           contact form using this link, the lead is tagged as a referral.
         </p>
@@ -93,13 +93,13 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
 
       {/* Email template suggestion */}
       <details className="group">
-        <summary className="cursor-pointer text-[11px] font-medium text-[var(--olive-gray)] hover:text-[var(--near-black)] transition-colors list-none flex items-center gap-1.5">
-          <span className="text-[var(--stone-gray)] group-open:rotate-90 transition-transform inline-block">
+        <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground hover:text-foreground transition-colors list-none flex items-center gap-1.5">
+          <span className="text-muted-foreground group-open:rotate-90 transition-transform inline-block">
             ▶
           </span>
           Show email template for residents
         </summary>
-        <div className="mt-2 rounded-md border border-[var(--border-cream)] bg-white p-3 text-xs text-[var(--olive-gray)] whitespace-pre-wrap font-mono leading-relaxed">
+        <div className="mt-2 rounded-md border border-border bg-white p-3 text-xs text-muted-foreground whitespace-pre-wrap font-mono leading-relaxed">
           {`Subject: Know someone looking for a place?
 
 Hey [Name],
@@ -127,14 +127,14 @@ function StatTile({
   value: number;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--border-cream)] bg-white px-3 py-2.5">
-      <div className="flex items-center gap-1.5 text-[var(--stone-gray)]">
+    <div className="rounded-lg border border-border bg-white px-3 py-2.5">
+      <div className="flex items-center gap-1.5 text-muted-foreground">
         {icon}
         <span className="text-[9px] uppercase tracking-widest font-semibold">
           {label}
         </span>
       </div>
-      <div className="mt-1 text-xl font-semibold tabular-nums text-[var(--near-black)]">
+      <div className="mt-1 text-xl font-semibold tabular-nums text-foreground">
         {value}
       </div>
     </div>

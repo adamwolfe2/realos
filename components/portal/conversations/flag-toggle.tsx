@@ -131,10 +131,10 @@ export function FlagToggle({
                 "group w-full inline-flex items-center justify-between gap-2 rounded-[6px] px-2.5 py-1.5",
                 "text-[10px] font-semibold uppercase tracking-[0.08em] transition-colors",
                 "ring-1 ring-inset",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-blue)]",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                 active
                   ? cn(tone.bg, tone.text, tone.ring)
-                  : "bg-[var(--ivory)] text-[var(--olive-gray)] ring-[var(--border-cream)] hover:bg-[var(--warm-sand)]",
+                  : "bg-card text-muted-foreground ring-border hover:bg-muted",
                 isPending && "opacity-60 cursor-wait",
               )}
             >
@@ -143,7 +143,7 @@ export function FlagToggle({
                   aria-hidden="true"
                   className={cn(
                     "inline-block h-1.5 w-1.5 rounded-full",
-                    active ? tone.dot : "bg-[var(--border-cream)]",
+                    active ? tone.dot : "bg-border",
                   )}
                 />
                 {FLAG_LABEL[flag]}

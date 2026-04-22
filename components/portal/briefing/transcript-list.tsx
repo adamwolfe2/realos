@@ -19,8 +19,8 @@ export function TranscriptList({ conversations }: { conversations: Conversation[
   if (conversations.length === 0) {
     return (
       <div className="text-center py-10">
-        <MessageSquare className="mx-auto h-6 w-6 text-[var(--stone-gray)]" />
-        <p className="mt-2 text-sm text-[var(--olive-gray)]">
+        <MessageSquare className="mx-auto h-6 w-6 text-muted-foreground" />
+        <p className="mt-2 text-sm text-muted-foreground">
           No chatbot transcripts to review this session.
         </p>
       </div>
@@ -28,7 +28,7 @@ export function TranscriptList({ conversations }: { conversations: Conversation[
   }
 
   return (
-    <ul className="divide-y divide-[var(--border-cream)]">
+    <ul className="divide-y divide-border">
       {conversations.map((c) => (
         <TranscriptRow key={c.id} conversation={c} />
       ))}
@@ -47,14 +47,14 @@ function TranscriptRow({ conversation }: { conversation: Conversation }) {
 
   return (
     <li className="group flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-      <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--warm-sand)]">
-        <User2 className="h-3 w-3 text-[var(--olive-gray)]" />
+      <span className="mt-1 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted">
+        <User2 className="h-3 w-3 text-muted-foreground" />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <Link
             href={`/portal/conversations/${conversation.id}`}
-            className="text-sm font-semibold tracking-tight text-[var(--near-black)] hover:text-[var(--terracotta)] transition-colors"
+            className="text-sm font-semibold tracking-tight text-foreground hover:text-primary transition-colors"
           >
             {name}
           </Link>
@@ -75,28 +75,28 @@ function TranscriptRow({ conversation }: { conversation: Conversation }) {
             </span>
           ) : null}
         </div>
-        <div className="mt-0.5 flex items-center gap-2 flex-wrap text-[11px] text-[var(--stone-gray)]">
+        <div className="mt-0.5 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
           <span className="tabular-nums">{conversation.messageCount} messages</span>
           {conversation.property ? (
             <>
-              <span className="h-0.5 w-0.5 rounded-full bg-[var(--stone-gray)]" />
+              <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground" />
               <span>{conversation.property.name}</span>
             </>
           ) : null}
-          <span className="h-0.5 w-0.5 rounded-full bg-[var(--stone-gray)]" />
+          <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground" />
           <time dateTime={conversation.lastMessageAt.toISOString()}>
             {relativeTime(conversation.lastMessageAt)}
           </time>
         </div>
         {preview ? (
-          <p className="mt-1 text-[12px] leading-relaxed text-[var(--olive-gray)] line-clamp-2">
+          <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground line-clamp-2">
             "{preview}"
           </p>
         ) : null}
         <div className="mt-1.5 flex items-center">
           <Link
             href={`/portal/conversations/${conversation.id}`}
-            className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-[var(--stone-gray)] opacity-0 group-hover:opacity-100 transition-opacity"
+            className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
           >
             Read transcript
             <ArrowRight className="h-3 w-3" />

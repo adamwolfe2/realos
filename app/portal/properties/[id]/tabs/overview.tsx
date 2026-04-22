@@ -170,11 +170,11 @@ export async function OverviewTab({
             <Row k="Price range" v={priceRange} />
           </dl>
           {property.description ? (
-            <div className="pt-3 mt-3 border-t border-[var(--border-cream)]">
-              <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)] mb-1">
+            <div className="pt-3 mt-3 border-t border-border">
+              <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-1">
                 Description
               </div>
-              <p className="text-xs text-[var(--olive-gray)] whitespace-pre-wrap">
+              <p className="text-xs text-muted-foreground whitespace-pre-wrap">
                 {property.description}
               </p>
             </div>
@@ -188,8 +188,8 @@ export async function OverviewTab({
 function Row({ k, v }: { k: string; v: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-xs text-[var(--stone-gray)]">{k}</dt>
-      <dd className="text-right truncate text-[var(--near-black)]">{v}</dd>
+      <dt className="text-xs text-muted-foreground">{k}</dt>
+      <dd className="text-right truncate text-foreground">{v}</dd>
     </div>
   );
 }

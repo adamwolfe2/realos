@@ -76,12 +76,12 @@ export default async function ReportDetailPage({
 
       {/* Breadcrumbs + print */}
       <div data-no-print className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="text-xs text-[var(--olive-gray)]">
-          <Link href="/portal/reports" className="hover:text-[var(--near-black)] underline underline-offset-2">
+        <div className="text-xs text-muted-foreground">
+          <Link href="/portal/reports" className="hover:text-foreground underline underline-offset-2">
             Reports
           </Link>
           <span className="px-1.5">/</span>
-          <span className="text-[var(--near-black)]">
+          <span className="text-foreground">
             {report.kind} &middot; {formatDate(report.generatedAt)}
           </span>
         </div>
@@ -91,7 +91,7 @@ export default async function ReportDetailPage({
               href={shareUrl}
               target="_blank"
               rel="noopener"
-              className="inline-flex items-center rounded-md border border-[var(--border-cream)] bg-[var(--ivory)] px-3 py-2 text-sm font-medium hover:bg-[var(--warm-sand)]"
+              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted"
             >
               Open public view
             </Link>

@@ -37,13 +37,13 @@ export function InsightCard({
   return (
     <article
       className={cn(
-        "group relative rounded-xl border bg-[var(--ivory)] transition-shadow duration-150",
+        "group relative rounded-xl border bg-card transition-shadow duration-150",
         "hover:shadow-[0_4px_24px_rgba(0,0,0,0.04)]",
         insight.severity === "critical"
           ? "border-rose-200/70"
           : insight.severity === "warning"
             ? "border-amber-200/70"
-            : "border-[var(--border-cream)]",
+            : "border-border",
         dense ? "p-3" : "p-4",
         pending && "opacity-60",
       )}
@@ -53,8 +53,8 @@ export function InsightCard({
           <SeverityPill severity={insight.severity} size={dense ? "sm" : "md"} />
           <CategoryBadge category={insight.category} />
           {insight.property ? (
-            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[var(--stone-gray)]">
-              <span className="h-1 w-1 rounded-full bg-[var(--stone-gray)]" />
+            <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+              <span className="h-1 w-1 rounded-full bg-muted-foreground" />
               {insight.property.name}
             </span>
           ) : null}
@@ -64,14 +64,14 @@ export function InsightCard({
             </span>
           ) : null}
           {acked ? (
-            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-widest text-[var(--stone-gray)] font-semibold">
+            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">
               <CircleDashed className="h-2.5 w-2.5" />
               Acknowledged
             </span>
           ) : null}
         </div>
         <time
-          className="shrink-0 text-[10px] tabular-nums text-[var(--stone-gray)]"
+          className="shrink-0 text-[10px] tabular-nums text-muted-foreground"
           dateTime={insight.createdAt.toISOString()}
           title={insight.createdAt.toLocaleString()}
         >
@@ -81,7 +81,7 @@ export function InsightCard({
 
       <h3
         className={cn(
-          "mt-2 font-semibold tracking-tight text-[var(--near-black)]",
+          "mt-2 font-semibold tracking-tight text-foreground",
           dense ? "text-sm" : "text-[15px] leading-snug",
         )}
       >
@@ -89,7 +89,7 @@ export function InsightCard({
       </h3>
 
       {!dense || insight.body.length < 180 ? (
-        <p className="mt-1 text-[13px] leading-relaxed text-[var(--charcoal-warm)]">
+        <p className="mt-1 text-[13px] leading-relaxed text-foreground">
           {insight.body}
         </p>
       ) : null}
@@ -104,8 +104,8 @@ export function InsightCard({
       ) : null}
 
       {insight.suggestedAction && !dense ? (
-        <p className="mt-2 rounded-lg border border-[var(--border-cream)] bg-[var(--parchment)] px-3 py-2 text-[12px] leading-relaxed text-[var(--olive-gray)]">
-          <span className="font-semibold text-[var(--near-black)]">Suggested. </span>
+        <p className="mt-2 rounded-lg border border-border bg-card px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
+          <span className="font-semibold text-foreground">Suggested. </span>
           {insight.suggestedAction}
         </p>
       ) : null}
@@ -139,7 +139,7 @@ export function InsightCard({
         {insight.href ? (
           <Link
             href={insight.href}
-            className="inline-flex items-center gap-1 text-[12px] font-medium text-[var(--near-black)] hover:text-[var(--terracotta)] transition-colors"
+            className="inline-flex items-center gap-1 text-[12px] font-medium text-foreground hover:text-primary transition-colors"
           >
             Open
             <ArrowRight className="h-3 w-3" />
@@ -167,8 +167,8 @@ function ActionBtn({
       className={cn(
         "inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-[11px] font-medium transition-colors",
         accent
-          ? "text-[var(--terracotta)] hover:bg-[var(--accent-wash)]"
-          : "text-[var(--stone-gray)] hover:bg-[var(--warm-sand)] hover:text-[var(--near-black)]",
+          ? "text-primary hover:bg-[var(--accent-wash)]"
+          : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
       title={label}
     >
@@ -192,7 +192,7 @@ function InsightSparkline({
   severity: string;
 }) {
   const stroke =
-    severity === "critical" ? "#b91c1c" : severity === "warning" ? "#b45309" : "var(--terracotta)";
+    severity === "critical" ? "#b91c1c" : severity === "warning" ? "#b45309" : "#2563EB";
   const fill =
     severity === "critical"
       ? "rgba(185, 28, 28, 0.08)"

@@ -21,8 +21,8 @@ import type { TimelineEvent } from "./timeline-events";
 export function Timeline({ events }: { events: TimelineEvent[] }) {
   if (events.length === 0) {
     return (
-      <div className="rounded-[12px] border border-[var(--border-cream)] bg-[var(--ivory)] p-8 text-center">
-        <p className="text-sm text-[var(--charcoal-warm)]">
+      <div className="rounded-[12px] border border-border bg-card p-8 text-center">
+        <p className="text-sm text-foreground">
           No activity yet. Install the Cursive pixel and enable the chatbot to
           see every touchpoint here.
         </p>
@@ -82,11 +82,11 @@ function EventIcon({ event }: { event: TimelineEvent }) {
       className={cn(
         "relative z-10 h-9 w-9 shrink-0 rounded-[10px]",
         "flex items-center justify-center",
-        "bg-[var(--ivory)] ring-1",
-        tone === "accent" && "ring-[var(--terracotta)] text-[var(--terracotta)]",
+        "bg-card ring-1",
+        tone === "accent" && "ring-primary text-primary",
         tone === "success" && "ring-[var(--success)] text-[var(--success)]",
         tone === "default" &&
-          "ring-[var(--border-cream)] text-[var(--charcoal-warm)]"
+          "ring-border text-foreground"
       )}
     >
       <Icon className="h-4 w-4" />
@@ -108,7 +108,7 @@ function exactTime(ts: Date): string {
 
 function EventBody({ event }: { event: TimelineEvent }) {
   return (
-    <div className="rounded-[10px] px-3 py-2 transition-colors duration-200 hover:bg-[var(--ivory)]">
+    <div className="rounded-[10px] px-3 py-2 transition-colors duration-200 hover:bg-card">
       {renderBody(event)}
     </div>
   );
@@ -120,12 +120,12 @@ function renderBody(event: TimelineEvent): React.ReactNode {
       const detail = event.sourceDetail ? ` · ${event.sourceDetail}` : "";
       return (
         <>
-          <p className="text-sm text-[var(--near-black)]">
+          <p className="text-sm text-foreground">
             <span className="font-medium">Lead created</span> via{" "}
-            <span className="text-[var(--charcoal-warm)]">{event.source}</span>
+            <span className="text-foreground">{event.source}</span>
             {detail}
           </p>
-          <p className="mt-0.5 text-xs text-[var(--stone-gray)]">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {timeLabel(event.ts)} · {exactTime(event.ts)}
           </p>
         </>
@@ -139,11 +139,11 @@ function renderBody(event: TimelineEvent): React.ReactNode {
         : "direct";
       return (
         <>
-          <p className="text-sm text-[var(--near-black)]">
+          <p className="text-sm text-foreground">
             <span className="font-medium">First pixel resolution</span>{" "}
-            <span className="text-[var(--charcoal-warm)]">— {via}</span>
+            <span className="text-foreground">— {via}</span>
           </p>
-          <p className="mt-0.5 text-xs text-[var(--stone-gray)]">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {timeLabel(event.ts)}
           </p>
         </>
@@ -152,13 +152,13 @@ function renderBody(event: TimelineEvent): React.ReactNode {
     case "pixel_page_view":
       return (
         <>
-          <p className="text-sm text-[var(--near-black)]">
+          <p className="text-sm text-foreground">
             Visited{" "}
-            <span className="font-mono text-xs bg-[var(--warm-sand)] px-1.5 py-0.5 rounded-[6px] text-[var(--near-black)]">
+            <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded-[6px] text-foreground">
               {event.path}
             </span>
           </p>
-          <p className="mt-0.5 text-xs text-[var(--stone-gray)]">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {timeLabel(event.ts)}
           </p>
         </>
@@ -180,16 +180,16 @@ function renderBody(event: TimelineEvent): React.ReactNode {
       );
       return (
         <>
-          <p className="text-sm text-[var(--near-black)]">
+          <p className="text-sm text-foreground">
             Browsed{" "}
             <span className="font-medium">{event.pages.length} pages</span> in
             one session
           </p>
-          <p className="mt-0.5 text-xs text-[var(--stone-gray)] truncate">
+          <p className="mt-0.5 text-xs text-muted-foreground truncate">
             {preview}
             {rest}
           </p>
-          <p className="mt-1 text-xs text-[var(--stone-gray)]">
+          <p className="mt-1 text-xs text-muted-foreground">
             {timeLabel(event.ts)} · {durationMin} min session
           </p>
         </>
@@ -206,12 +206,12 @@ function renderBody(event: TimelineEvent): React.ReactNode {
       const persona = c.capturedName ? `with ${c.capturedName}` : "conversation";
       return (
         <>
-          <p className="text-sm text-[var(--near-black)]">
+          <p className="text-sm text-foreground">
             <span className="font-medium">Chatbot {persona}</span>
             {" — "}
             {c.messageCount} messages, {minutes} min
           </p>
-          <p className="mt-0.5 text-xs text-[var(--stone-gray)]">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {timeLabel(event.ts)}
             {c.capturedEmail ? ` · captured ${c.capturedEmail}` : ""}
           </p>
@@ -225,19 +225,19 @@ function renderBody(event: TimelineEvent): React.ReactNode {
       const type = t.tourType ?? "in person";
       return (
         <>
-          <p className="text-sm text-[var(--near-black)]">
+          <p className="text-sm text-foreground">
             <span className="font-medium">Tour {t.status.toLowerCase()}</span>
             {" — "}
-            <span className="text-[var(--charcoal-warm)]">
+            <span className="text-foreground">
               {type} · {when}
             </span>
           </p>
           {t.notes ? (
-            <p className="mt-1 text-xs text-[var(--charcoal-warm)] line-clamp-3">
+            <p className="mt-1 text-xs text-foreground line-clamp-3">
               {t.notes}
             </p>
           ) : null}
-          <p className="mt-0.5 text-xs text-[var(--stone-gray)]">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {timeLabel(event.ts)}
           </p>
         </>
@@ -250,10 +250,10 @@ function renderBody(event: TimelineEvent): React.ReactNode {
         : `${a.status.toLowerCase()}`;
       return (
         <>
-          <p className="text-sm text-[var(--near-black)]">
+          <p className="text-sm text-foreground">
             <span className="font-medium">Application {verb}</span>
           </p>
-          <p className="mt-0.5 text-xs text-[var(--stone-gray)]">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {timeLabel(event.ts)}
             {a.appliedAt
               ? ` · submitted ${format(a.appliedAt, "MMM d")}`
@@ -268,11 +268,11 @@ function renderBody(event: TimelineEvent): React.ReactNode {
     case "status_signed":
       return (
         <>
-          <p className="text-sm text-[var(--near-black)]">
+          <p className="text-sm text-foreground">
             <span className="font-medium">Lease signed</span>{" "}
             <span className="text-[var(--success)]">— converted</span>
           </p>
-          <p className="mt-0.5 text-xs text-[var(--stone-gray)]">
+          <p className="mt-0.5 text-xs text-muted-foreground">
             {timeLabel(event.ts)}
           </p>
         </>

@@ -62,15 +62,15 @@ export default async function PropertyDetail({
         <div>
           <Link
             href="/portal/properties"
-            className="text-xs text-[var(--stone-gray)] hover:text-[var(--near-black)]"
+            className="text-xs text-muted-foreground hover:text-foreground"
           >
             All properties
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight mt-2 text-[var(--near-black)]">
+          <h1 className="text-2xl font-semibold tracking-tight mt-2 text-foreground">
             {property.name}
           </h1>
           {property.addressLine1 ? (
-            <p className="text-sm text-[var(--olive-gray)] mt-1">
+            <p className="text-sm text-muted-foreground mt-1">
               {property.addressLine1}
               {property.city ? `, ${property.city}` : ""}
               {property.state ? `, ${property.state}` : ""}
@@ -80,7 +80,7 @@ export default async function PropertyDetail({
         </div>
         <Link
           href={`/portal/properties/${property.id}/appfolio`}
-          className="text-xs px-3 py-2 border border-[var(--border-cream)] rounded-md bg-[var(--ivory)] text-[var(--near-black)] hover:border-[var(--stone-gray)]"
+          className="text-xs px-3 py-2 border border-border rounded-md bg-card text-foreground hover:border-muted-foreground"
           style={{ borderRadius: 7 }}
         >
           AppFolio settings

@@ -48,13 +48,13 @@ export default async function ReportsListPage({
       {/* Page header */}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Client reports
           </div>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--near-black)]">
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
             Weekly and monthly reviews
           </h1>
-          <p className="mt-1 text-sm text-[var(--olive-gray)] max-w-xl">
+          <p className="mt-1 text-sm text-muted-foreground max-w-xl">
             Generate a frozen snapshot of the numbers, add a personal note,
             then share a clean link with your client. Nothing auto-sends. You
             review every report before it leaves the building.
@@ -64,7 +64,7 @@ export default async function ReportsListPage({
           <form action={generateWeekly}>
             <button
               type="submit"
-              className="inline-flex items-center rounded-md bg-[var(--near-black)] text-white px-3.5 py-2 text-sm font-medium hover:bg-black transition-colors"
+              className="inline-flex items-center rounded-md bg-foreground text-background px-3.5 py-2 text-sm font-medium hover:bg-foreground/90 transition-colors"
             >
               Generate weekly report
             </button>
@@ -72,7 +72,7 @@ export default async function ReportsListPage({
           <form action={generateMonthly}>
             <button
               type="submit"
-              className="inline-flex items-center rounded-md border border-[var(--border-cream)] bg-[var(--ivory)] text-[var(--near-black)] px-3.5 py-2 text-sm font-medium hover:bg-[var(--warm-sand)] transition-colors"
+              className="inline-flex items-center rounded-md border border-border bg-card text-foreground px-3.5 py-2 text-sm font-medium hover:bg-muted transition-colors"
             >
               Generate monthly report
             </button>
@@ -83,16 +83,16 @@ export default async function ReportsListPage({
       {/* Filters */}
       <form
         action="/portal/reports"
-        className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-4 flex flex-wrap items-end gap-3"
+        className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-end gap-3"
       >
         <label className="flex flex-col gap-1.5">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Kind
           </span>
           <select
             name="kind"
             defaultValue={sp.kind ?? ""}
-            className="rounded-md border border-[var(--border-cream)] bg-white px-3 py-2 text-sm"
+            className="rounded-md border border-border bg-white px-3 py-2 text-sm"
           >
             <option value="">All</option>
             <option value="weekly">Weekly</option>
@@ -101,13 +101,13 @@ export default async function ReportsListPage({
           </select>
         </label>
         <label className="flex flex-col gap-1.5">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Status
           </span>
           <select
             name="status"
             defaultValue={sp.status ?? ""}
-            className="rounded-md border border-[var(--border-cream)] bg-white px-3 py-2 text-sm"
+            className="rounded-md border border-border bg-white px-3 py-2 text-sm"
           >
             <option value="">All</option>
             <option value="draft">Draft</option>
@@ -117,13 +117,13 @@ export default async function ReportsListPage({
         </label>
         <button
           type="submit"
-          className="inline-flex items-center rounded-md border border-[var(--border-cream)] bg-white px-3 py-2 text-sm font-medium hover:bg-[var(--warm-sand)]"
+          className="inline-flex items-center rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-muted"
         >
           Apply filters
         </button>
         <Link
           href="/portal/reports"
-          className="inline-flex items-center text-xs text-[var(--olive-gray)] hover:text-[var(--near-black)] underline underline-offset-2"
+          className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
         >
           Reset
         </Link>
@@ -131,46 +131,46 @@ export default async function ReportsListPage({
 
       {/* List */}
       {reports.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--border-cream)] bg-[var(--ivory)] p-10 text-center">
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+        <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center">
+          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             No reports yet
           </div>
-          <h2 className="mt-1 text-lg font-semibold text-[var(--near-black)]">
+          <h2 className="mt-1 text-lg font-semibold text-foreground">
             Start with a weekly snapshot
           </h2>
-          <p className="mt-1 text-sm text-[var(--olive-gray)] max-w-md mx-auto">
+          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
             Generate your first report to capture this week&apos;s leads, tours,
             ad spend, and organic traffic as a frozen snapshot. Add a personal
             note, then copy a shareable link for your client.
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] overflow-hidden">
-          <div className="divide-y divide-[var(--border-cream)]">
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <div className="divide-y divide-border">
             {reports.map((r) => (
               <Link
                 key={r.id}
                 href={`/portal/reports/${r.id}`}
-                className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-[var(--warm-sand)] transition-colors"
+                className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-muted transition-colors"
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                    <span className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+                    <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
                       {kindLabel(r.kind)}
                     </span>
                     <StatusPill status={r.status} />
                   </div>
-                  <div className="text-sm font-semibold text-[var(--near-black)] truncate">
+                  <div className="text-sm font-semibold text-foreground truncate">
                     {r.headline ||
                       `${formatDate(r.periodStart)} to ${formatDate(r.periodEnd)}`}
                   </div>
-                  <div className="text-xs text-[var(--stone-gray)] mt-0.5">
+                  <div className="text-xs text-muted-foreground mt-0.5">
                     Generated {formatDate(r.generatedAt)}
                     {r.sharedAt ? ` \u00b7 Shared ${formatDate(r.sharedAt)}` : ""}
                     {r.viewCount > 0 ? ` \u00b7 ${r.viewCount} views` : ""}
                   </div>
                 </div>
-                <span className="text-xs text-[var(--olive-gray)]">Open</span>
+                <span className="text-xs text-muted-foreground">Open</span>
               </Link>
             ))}
           </div>
@@ -207,7 +207,7 @@ function StatusPill({ status }: { status: string }) {
     status === "shared"
       ? "bg-emerald-100 text-emerald-800"
       : status === "archived"
-        ? "bg-[var(--warm-sand)] text-[var(--olive-gray)]"
+        ? "bg-muted text-muted-foreground"
         : "bg-sky-100 text-sky-800";
   return (
     <span className={"text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded " + tone}>

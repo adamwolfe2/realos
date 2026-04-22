@@ -49,7 +49,7 @@ export default async function ApiKeysPage() {
         description="Push leads, visitors, tours, and chatbot events into your CRM from any external system (Zapier, Typeform, Make, custom forms). Each key is scoped and auditable."
       />
 
-      <section className="border rounded-md p-5 space-y-5">
+      <section className="rounded-lg border border-border bg-card p-5 space-y-5">
         <div>
           <h2 className="text-sm font-semibold">Create a key</h2>
           <p className="text-xs opacity-60 mt-1">
@@ -60,7 +60,7 @@ export default async function ApiKeysPage() {
         <CreateApiKeyForm />
       </section>
 
-      <section className="border rounded-md p-5 space-y-4">
+      <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-sm font-semibold">Active keys</h2>
           <span className="text-[11px] opacity-60">
@@ -92,7 +92,7 @@ export default async function ApiKeysPage() {
       </section>
 
       {revoked.length > 0 ? (
-        <section className="border rounded-md p-5 space-y-4">
+        <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <div className="flex items-baseline justify-between gap-3">
             <h2 className="text-sm font-semibold opacity-70">
               Revoked keys
@@ -120,7 +120,7 @@ export default async function ApiKeysPage() {
         </section>
       ) : null}
 
-      <section className="border rounded-md p-5 space-y-2">
+      <section className="rounded-lg border border-border bg-card p-5 space-y-2">
         <h2 className="text-sm font-semibold">How to use</h2>
         <p className="text-xs opacity-70">
           Send a <code className="font-mono">POST</code> request to one of the

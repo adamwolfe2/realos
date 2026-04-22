@@ -23,8 +23,8 @@ export default async function ReferralsPage() {
 
   if (!org) {
     return (
-      <div className="rounded-xl border border-dashed border-[var(--border-cream)] bg-[var(--ivory)] p-12 text-center">
-        <h2 className="text-base font-semibold text-[var(--near-black)]">
+      <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
+        <h2 className="text-base font-semibold text-foreground">
           Organization not found
         </h2>
       </div>
@@ -35,12 +35,12 @@ export default async function ReferralsPage() {
     return (
       <div className="space-y-5">
         <PageTitle />
-        <div className="rounded-xl border border-dashed border-[var(--border-cream)] bg-[var(--ivory)] py-16 text-center px-6">
-          <Share2 className="mx-auto h-7 w-7 text-[var(--stone-gray)]" />
-          <h2 className="mt-3 text-lg font-semibold text-[var(--near-black)]">
+        <div className="rounded-xl border border-dashed border-border bg-card py-16 text-center px-6">
+          <Share2 className="mx-auto h-7 w-7 text-muted-foreground" />
+          <h2 className="mt-3 text-lg font-semibold text-foreground">
             Referrals module not active
           </h2>
-          <p className="mt-1 text-sm text-[var(--olive-gray)] max-w-md mx-auto">
+          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
             The resident referral program lets current residents share a unique
             link that tags incoming leads as referrals, so you can track which
             residents drive new leases. Contact your account manager to activate
@@ -48,7 +48,7 @@ export default async function ReferralsPage() {
           </p>
           <a
             href="mailto:hello@leasestack.co?subject=Activate%20Referrals%20module"
-            className="mt-5 inline-flex items-center rounded-md bg-[var(--near-black)] text-white px-4 py-2 text-sm font-medium hover:bg-black transition-colors"
+            className="mt-5 inline-flex items-center rounded-md bg-foreground text-background px-4 py-2 text-sm font-medium hover:bg-foreground/90 transition-colors"
           >
             Contact account manager
           </a>
@@ -159,7 +159,7 @@ export default async function ReferralsPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <PageTitle />
-          <p className="text-sm text-[var(--olive-gray)] mt-1 max-w-xl">
+          <p className="text-sm text-muted-foreground mt-1 max-w-xl">
             Per-property referral links for current residents to share with
             their network. Every lead that arrives via a referral link is tagged
             automatically so you can track which residents drive new leases.
@@ -177,12 +177,12 @@ export default async function ReferralsPage() {
 
       {/* Per-property cards */}
       {stats.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-[var(--border-cream)] bg-[var(--ivory)] py-16 text-center">
-          <Share2 className="mx-auto h-6 w-6 text-[var(--stone-gray)]" />
-          <h2 className="mt-3 text-base font-semibold text-[var(--near-black)]">
+        <div className="rounded-xl border border-dashed border-border bg-card py-16 text-center">
+          <Share2 className="mx-auto h-6 w-6 text-muted-foreground" />
+          <h2 className="mt-3 text-base font-semibold text-foreground">
             No properties set up yet
           </h2>
-          <p className="mt-1 text-sm text-[var(--olive-gray)] max-w-md mx-auto">
+          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
             Add a property under the Properties tab first. Each property gets
             its own referral link once it is set up.
           </p>
@@ -196,11 +196,11 @@ export default async function ReferralsPage() {
       )}
 
       {/* How it works */}
-      <div className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-5 space-y-3">
-        <div className="text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+      <div className="rounded-xl border border-border bg-card p-5 space-y-3">
+        <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
           How it works
         </div>
-        <ol className="space-y-2 text-sm text-[var(--olive-gray)] list-decimal list-inside">
+        <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
           <li>
             Copy the referral link for a property and share it with current
             residents via text, email, or a flyer posted in common areas.
@@ -208,7 +208,7 @@ export default async function ReferralsPage() {
           <li>
             When a prospect arrives through that link and submits the contact
             form, the lead is created with source set to{" "}
-            <span className="font-mono text-[11px] bg-[var(--warm-sand)] px-1 py-0.5 rounded">
+            <span className="font-mono text-[11px] bg-muted px-1 py-0.5 rounded">
               REFERRAL
             </span>
             .
@@ -226,11 +226,11 @@ export default async function ReferralsPage() {
 function PageTitle() {
   return (
     <div>
-      <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+      <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
         <Share2 className="h-3 w-3" />
         Resident program
       </div>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-[var(--near-black)]">
+      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
         Referrals
       </h1>
     </div>
@@ -251,17 +251,17 @@ function Chip({
       className={
         "min-w-16 rounded-lg border px-3 py-2 " +
         (accent
-          ? "border-[var(--terracotta)] bg-[var(--terracotta)]/5"
-          : "border-[var(--border-cream)] bg-[var(--ivory)]")
+          ? "border-primary bg-primary/5"
+          : "border-border bg-card")
       }
     >
-      <div className="text-[9px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+      <div className="text-[9px] uppercase tracking-widest font-semibold text-muted-foreground">
         {label}
       </div>
       <div
         className={
           "mt-0.5 text-xl font-semibold tabular-nums " +
-          (accent ? "text-[var(--terracotta)]" : "text-[var(--near-black)]")
+          (accent ? "text-primary" : "text-foreground")
         }
       >
         {value}

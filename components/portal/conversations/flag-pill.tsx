@@ -59,16 +59,16 @@ export const FLAG_TONE: Record<
     // Terracotta is the brand accent; use it for the high-intent signal so it
     // visually pops against the parchment page background. Opacity utilities
     // on the brand var give us a soft tint without authoring a new token.
-    bg: "bg-[var(--terracotta)]/10",
-    text: "text-[var(--terracotta)]",
-    dot: "bg-[var(--terracotta)]",
-    ring: "ring-[var(--terracotta)]/25",
+    bg: "bg-primary/10",
+    text: "text-primary",
+    dot: "bg-primary",
+    ring: "ring-primary/25",
   },
   lead_low_intent: {
-    bg: "bg-[var(--warm-sand)]",
-    text: "text-[var(--olive-gray)]",
-    dot: "bg-[var(--stone-gray)]",
-    ring: "ring-[var(--border-cream)]",
+    bg: "bg-muted",
+    text: "text-muted-foreground",
+    dot: "bg-muted-foreground",
+    ring: "ring-border",
   },
   followup_needed: {
     bg: "bg-blue-50",

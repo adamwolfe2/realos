@@ -89,7 +89,7 @@ export default async function SetupHubPage() {
 
         <div className="space-y-3">
           <div
-            className="h-1.5 w-full rounded-full bg-[var(--warm-sand)] overflow-hidden"
+            className="h-1.5 w-full rounded-full bg-muted overflow-hidden"
             role="progressbar"
             aria-valuenow={percent}
             aria-valuemin={0}
@@ -97,7 +97,7 @@ export default async function SetupHubPage() {
             aria-label="Overall setup progress"
           >
             <div
-              className="h-1.5 rounded-full bg-[var(--terracotta)] transition-all duration-700"
+              className="h-1.5 rounded-full bg-primary transition-all duration-700"
               style={{ width: `${percent}%` }}
             />
           </div>
@@ -131,7 +131,7 @@ export default async function SetupHubPage() {
           <section key={p} aria-labelledby={`phase-${p}`}>
             <h2
               id={`phase-${p}`}
-              className="font-sans text-xs uppercase tracking-[0.12px] text-[var(--stone-gray)] mb-4"
+              className="font-sans text-xs uppercase tracking-[0.12px] text-muted-foreground mb-4"
             >
               {PHASE_LABELS[p]}
             </h2>
@@ -169,14 +169,14 @@ function PhaseChip({
       className={[
         "inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium",
         active
-          ? "border-[var(--terracotta)]/30 bg-[var(--terracotta)]/5 text-[var(--terracotta)]"
-          : "border-[var(--border-cream)] bg-[var(--ivory)] text-[var(--charcoal-warm)]",
+          ? "border-primary/30 bg-primary/5 text-primary"
+          : "border-border bg-card text-foreground",
       ].join(" ")}
     >
       <span className="tabular-nums">
         {done}/{total}
       </span>
-      <span className="text-[var(--stone-gray)]">·</span>
+      <span className="text-muted-foreground">·</span>
       <span>{label}</span>
     </span>
   );
@@ -186,11 +186,11 @@ function PhaseChip({
 
 function FoundationCompleteBanner() {
   return (
-    <div className="mb-6 rounded-[12px] border border-[var(--terracotta)]/20 bg-[var(--terracotta)]/5 p-5">
+    <div className="mb-6 rounded-[12px] border border-primary/20 bg-primary/5 p-5">
       <h3 className="text-xl font-semibold tracking-tight text-foreground">
         Foundation complete.
       </h3>
-      <p className="mt-1 font-sans text-sm text-[var(--olive-gray)] leading-[1.6]">
+      <p className="mt-1 font-sans text-sm text-muted-foreground leading-[1.6]">
         Your lead pipeline is live. Let&apos;s connect your ad accounts next.
       </p>
     </div>

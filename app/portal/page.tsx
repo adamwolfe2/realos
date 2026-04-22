@@ -230,14 +230,14 @@ export default async function PortalHome({
         <>
           {/* Insights strip — opens the day with what changed, if anything */}
           {insightCounts.total > 0 ? (
-            <section className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-4">
+            <section className="rounded-xl border border-border bg-card p-4">
               <div className="flex items-center justify-between gap-3 mb-3">
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
-                    <Sparkles className="h-3 w-3 text-[var(--terracotta)]" />
+                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                    <Sparkles className="h-3 w-3 text-primary" />
                     Signal
                   </span>
-                  <h2 className="text-sm font-semibold tracking-tight text-[var(--near-black)]">
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground">
                     {insightCounts.critical > 0
                       ? `${insightCounts.critical} critical, ${insightCounts.warning} warning`
                       : insightCounts.warning > 0
@@ -247,7 +247,7 @@ export default async function PortalHome({
                 </div>
                 <Link
                   href="/portal/insights"
-                  className="text-xs font-medium text-[var(--near-black)] hover:text-[var(--terracotta)]"
+                  className="text-xs font-medium text-foreground hover:text-primary"
                 >
                   See all
                 </Link>
@@ -425,7 +425,7 @@ export default async function PortalHome({
               className="lg:col-span-2"
             >
               {properties.length === 0 ? (
-                <p className="text-xs text-[var(--stone-gray)]">
+                <p className="text-xs text-muted-foreground">
                   No properties yet. Add one to start tracking leads, ads, and
                   occupancy here.
                 </p>
@@ -503,12 +503,12 @@ export default async function PortalHome({
             ].map((s) => (
               <div
                 key={s.label}
-                className="rounded-lg border border-[var(--border-cream)] bg-[var(--ivory)] px-3 py-2.5"
+                className="rounded-lg border border-border bg-card px-3 py-2.5"
               >
-                <div className="text-[10px] tracking-widest uppercase font-semibold text-[var(--stone-gray)]">
+                <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
                   {s.label}
                 </div>
-                <div className="mt-0.5 text-base font-semibold tabular-nums text-[var(--near-black)]">
+                <div className="mt-0.5 text-base font-semibold tabular-nums text-foreground">
                   {s.count.toLocaleString()}
                 </div>
               </div>

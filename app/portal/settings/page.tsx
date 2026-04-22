@@ -60,7 +60,7 @@ export default async function SettingsPage() {
         }}
       />
 
-      <section className="border rounded-md p-5">
+      <section className="rounded-lg border border-border bg-card p-5">
         <div className="flex items-baseline justify-between gap-3 mb-2">
           <div>
             <h2 className="text-sm font-semibold">Integrations</h2>
@@ -78,7 +78,7 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      <section className="border rounded-md p-5">
+      <section className="rounded-lg border border-border bg-card p-5">
         <div className="flex items-baseline justify-between gap-3 mb-2">
           <div>
             <h2 className="text-sm font-semibold">API keys</h2>
@@ -97,7 +97,7 @@ export default async function SettingsPage() {
         </div>
       </section>
 
-      <section className="border rounded-md p-5">
+      <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="text-sm font-semibold mb-4">Active modules</h2>
         <ul className="grid grid-cols-2 md:grid-cols-3 gap-y-1.5 gap-x-4">
           {modules.map(([k, v]) => (
@@ -120,7 +120,7 @@ export default async function SettingsPage() {
         </ul>
       </section>
 
-      <section className="border rounded-md p-5">
+      <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="text-sm font-semibold mb-4">Team</h2>
         {users.length === 0 ? (
           <p className="text-sm opacity-60">

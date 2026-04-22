@@ -9,7 +9,7 @@ export function CallSheet({ leads }: { leads: CallPriorityLead[] }) {
   if (leads.length === 0) {
     return (
       <div className="text-center py-10">
-        <p className="text-sm text-[var(--olive-gray)]">
+        <p className="text-sm text-muted-foreground">
           No priority leads right now. Every known lead is either being handled or past its window.
         </p>
       </div>
@@ -17,7 +17,7 @@ export function CallSheet({ leads }: { leads: CallPriorityLead[] }) {
   }
 
   return (
-    <ol className="divide-y divide-[var(--border-cream)]">
+    <ol className="divide-y divide-border">
       {leads.map((lead, i) => (
         <CallSheetRow key={lead.id} lead={lead} index={i + 1} />
       ))}
@@ -45,14 +45,14 @@ function CallSheetRow({ lead, index }: { lead: CallPriorityLead; index: number }
 
   return (
     <li className="group flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--warm-sand)] text-[11px] font-semibold tabular-nums text-[var(--olive-gray)]">
+      <span className="mt-0.5 inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-muted text-[11px] font-semibold tabular-nums text-muted-foreground">
         {index}
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2 flex-wrap">
           <Link
             href={`/portal/leads/${lead.id}`}
-            className="text-sm font-semibold tracking-tight text-[var(--near-black)] hover:text-[var(--terracotta)] transition-colors"
+            className="text-sm font-semibold tracking-tight text-foreground hover:text-primary transition-colors"
           >
             {name}
           </Link>
@@ -65,19 +65,19 @@ function CallSheetRow({ lead, index }: { lead: CallPriorityLead; index: number }
             <Icon className="h-2.5 w-2.5" />
             {reason.label}
           </span>
-          <span className="inline-flex items-center gap-1 text-[10px] tabular-nums font-semibold text-[var(--stone-gray)]">
+          <span className="inline-flex items-center gap-1 text-[10px] tabular-nums font-semibold text-muted-foreground">
             Score {lead.score}
           </span>
         </div>
-        <div className="mt-0.5 flex items-center gap-2 flex-wrap text-[11px] text-[var(--stone-gray)]">
+        <div className="mt-0.5 flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
           <span className="font-medium">{lead.source.replace(/_/g, " ").toLowerCase()}</span>
           {lead.propertyName ? (
             <>
-              <span className="h-0.5 w-0.5 rounded-full bg-[var(--stone-gray)]" />
+              <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground" />
               <span>{lead.propertyName}</span>
             </>
           ) : null}
-          <span className="h-0.5 w-0.5 rounded-full bg-[var(--stone-gray)]" />
+          <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground" />
           <span>
             {lead.reason === "stalled"
               ? `${daysSinceActivity}d silent`
@@ -90,7 +90,7 @@ function CallSheetRow({ lead, index }: { lead: CallPriorityLead; index: number }
           {lead.phone ? (
             <a
               href={`tel:${lead.phone}`}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--near-black)] hover:text-[var(--terracotta)]"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-foreground hover:text-primary"
             >
               <Phone className="h-3 w-3" />
               {lead.phone}
@@ -99,7 +99,7 @@ function CallSheetRow({ lead, index }: { lead: CallPriorityLead; index: number }
           {lead.email ? (
             <a
               href={`mailto:${lead.email}`}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--olive-gray)] hover:text-[var(--terracotta)]"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary"
             >
               <Mail className="h-3 w-3" />
               {lead.email}
@@ -107,7 +107,7 @@ function CallSheetRow({ lead, index }: { lead: CallPriorityLead; index: number }
           ) : null}
           <Link
             href={`/portal/leads/${lead.id}`}
-            className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-[var(--stone-gray)] opacity-0 group-hover:opacity-100 transition-opacity"
+            className="ml-auto inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity"
           >
             Open
             <ArrowRight className="h-3 w-3" />

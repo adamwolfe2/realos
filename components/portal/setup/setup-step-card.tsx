@@ -69,8 +69,8 @@ export function SetupStepCard({ step }: Props) {
         className={[
           "flex-1 rounded-[12px] border p-5 transition-colors duration-200",
           isLocked
-            ? "border-[var(--border-cream)] bg-[var(--ivory)] opacity-60 cursor-not-allowed"
-            : "border-[var(--border-cream)] bg-[var(--ivory)] hover:border-[var(--terracotta)]/40",
+            ? "border-border bg-card opacity-60 cursor-not-allowed"
+            : "border-border bg-card hover:border-primary/40",
           isDone ? "opacity-100" : "",
         ].join(" ")}
       >
@@ -79,18 +79,18 @@ export function SetupStepCard({ step }: Props) {
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-              <h3 className="font-serif text-lg font-medium text-[var(--near-black)] leading-tight">
+              <h3 className="font-serif text-lg font-medium text-foreground leading-tight">
                 {step.title}
               </h3>
               <StatusBadge status={step.status} lockedLabel={step.lockedLabel} />
-              <span className="ml-auto shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-[var(--warm-sand)] text-[var(--charcoal-warm)]">
+              <span className="ml-auto shrink-0 rounded-full px-2.5 py-0.5 text-[11px] font-medium bg-muted text-foreground">
                 {step.estimateMinutes === 0
                   ? "Instant"
                   : `${step.estimateMinutes} min`}
               </span>
             </div>
 
-            <p className="mt-1.5 font-sans text-sm text-[var(--olive-gray)] leading-[1.6]">
+            <p className="mt-1.5 font-sans text-sm text-muted-foreground leading-[1.6]">
               {step.description}
             </p>
 
@@ -107,26 +107,26 @@ export function SetupStepCard({ step }: Props) {
 function StatusDot({ status }: { status: ResolvedSetupStep["status"] }) {
   if (status === "done") {
     return (
-      <span className="relative z-10 w-5 h-5 rounded-full bg-[var(--terracotta)] flex items-center justify-center shadow-[0_0_0_3px_var(--parchment)]">
+      <span className="relative z-10 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-[0_0_0_3px_hsl(var(--background))]">
         <Check className="w-3 h-3 text-white" aria-hidden="true" />
       </span>
     );
   }
   if (status === "current") {
     return (
-      <span className="relative z-10 w-5 h-5 rounded-full ring-2 ring-[var(--terracotta)] ring-offset-2 ring-offset-[var(--parchment)] bg-[var(--ivory)] animate-pulse" />
+      <span className="relative z-10 w-5 h-5 rounded-full ring-2 ring-primary ring-offset-2 ring-offset-background bg-card animate-pulse" />
     );
   }
   if (status === "locked") {
     return (
-      <span className="relative z-10 w-5 h-5 rounded-full bg-[var(--warm-sand)] flex items-center justify-center shadow-[0_0_0_3px_var(--parchment)]">
-        <Lock className="w-2.5 h-2.5 text-[var(--stone-gray)]" aria-hidden="true" />
+      <span className="relative z-10 w-5 h-5 rounded-full bg-muted flex items-center justify-center shadow-[0_0_0_3px_hsl(var(--background))]">
+        <Lock className="w-2.5 h-2.5 text-muted-foreground" aria-hidden="true" />
       </span>
     );
   }
   // pending
   return (
-    <span className="relative z-10 w-5 h-5 rounded-full border-2 border-[var(--border-warm)] bg-[var(--ivory)] shadow-[0_0_0_3px_var(--parchment)]" />
+    <span className="relative z-10 w-5 h-5 rounded-full border-2 border-border bg-card shadow-[0_0_0_3px_hsl(var(--background))]" />
   );
 }
 
@@ -141,12 +141,12 @@ function IconTile({
 }) {
   const tone =
     status === "done"
-      ? "bg-[var(--terracotta)]/10 text-[var(--terracotta)]"
+      ? "bg-primary/10 text-primary"
       : status === "current"
-      ? "bg-[var(--terracotta)]/15 text-[var(--terracotta)]"
+      ? "bg-primary/15 text-primary"
       : status === "locked"
-      ? "bg-[var(--warm-sand)] text-[var(--stone-gray)]"
-      : "bg-[var(--warm-sand)] text-[var(--charcoal-warm)]";
+      ? "bg-muted text-muted-foreground"
+      : "bg-muted text-foreground";
 
   return (
     <span
@@ -171,7 +171,7 @@ function StatusBadge({
 
   if (status === "done") {
     return (
-      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-[var(--terracotta)]/10 text-[var(--terracotta)]">
+      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-primary/10 text-primary">
         Done
       </span>
     );
@@ -179,7 +179,7 @@ function StatusBadge({
 
   if (status === "current") {
     return (
-      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-[var(--terracotta)]/15 text-[var(--terracotta)]">
+      <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-primary/15 text-primary">
         Up next
       </span>
     );
@@ -187,7 +187,7 @@ function StatusBadge({
 
   // locked
   return (
-    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-[var(--warm-sand)] text-[var(--stone-gray)]">
+    <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium bg-muted text-muted-foreground">
       {lockedLabel ?? "Coming soon"}
     </span>
   );
@@ -203,7 +203,7 @@ function StepAction({ step }: { step: ResolvedSetupStep }) {
     const tier = step.lockedLabel?.replace(" required", "") ?? "a higher plan";
     return (
       <div className="mt-4">
-        <span className="inline-flex items-center gap-1.5 font-sans text-sm text-[var(--stone-gray)]">
+        <span className="inline-flex items-center gap-1.5 font-sans text-sm text-muted-foreground">
           Upgrade to {tier} to unlock
           <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
         </span>
@@ -215,7 +215,7 @@ function StepAction({ step }: { step: ResolvedSetupStep }) {
     <div className="mt-4">
       <Link
         href={step.actionHref}
-        className="inline-flex items-center gap-1.5 rounded-[10px] bg-[var(--terracotta)] px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-[var(--terracotta-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--focus-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--parchment)]"
+        className="inline-flex items-center gap-1.5 rounded-[10px] bg-primary px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-[hsl(var(--primary)/0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         {step.actionLabel}
         <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />

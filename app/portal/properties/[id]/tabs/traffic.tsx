@@ -65,12 +65,12 @@ export async function TrafficTab({
             description="Queries mentioning this property"
           >
             {traffic.topQueries.length === 0 ? (
-              <p className="text-xs text-[var(--stone-gray)]">
+              <p className="text-xs text-muted-foreground">
                 No matching queries yet.
               </p>
             ) : (
               <table className="w-full text-sm">
-                <thead className="text-[10px] tracking-widest uppercase text-[var(--stone-gray)]">
+                <thead className="text-[10px] tracking-widest uppercase text-muted-foreground">
                   <tr>
                     <th className="text-left font-semibold pb-2">Query</th>
                     <th className="text-right font-semibold pb-2">Clicks</th>
@@ -78,19 +78,19 @@ export async function TrafficTab({
                     <th className="text-right font-semibold pb-2">Pos</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--border-cream)]">
+                <tbody className="divide-y divide-border">
                   {traffic.topQueries.map((q) => (
                     <tr key={q.query}>
-                      <td className="py-2 text-xs truncate max-w-[240px] text-[var(--near-black)]">
+                      <td className="py-2 text-xs truncate max-w-[240px] text-foreground">
                         {q.query}
                       </td>
                       <td className="py-2 text-right tabular-nums text-xs">
                         {q.clicks.toLocaleString()}
                       </td>
-                      <td className="py-2 text-right tabular-nums text-xs text-[var(--olive-gray)]">
+                      <td className="py-2 text-right tabular-nums text-xs text-muted-foreground">
                         {q.impressions.toLocaleString()}
                       </td>
-                      <td className="py-2 text-right tabular-nums text-xs text-[var(--olive-gray)]">
+                      <td className="py-2 text-right tabular-nums text-xs text-muted-foreground">
                         {q.position.toFixed(1)}
                       </td>
                     </tr>
@@ -106,7 +106,7 @@ export async function TrafficTab({
             description="URLs containing the property slug"
           >
             {traffic.topLandingPages.length === 0 ? (
-              <p className="text-xs text-[var(--stone-gray)]">
+              <p className="text-xs text-muted-foreground">
                 No matching landing pages yet.
               </p>
             ) : (
@@ -116,10 +116,10 @@ export async function TrafficTab({
                     key={p.url}
                     className="flex items-baseline justify-between gap-3 text-xs"
                   >
-                    <span className="truncate text-[var(--near-black)]">
+                    <span className="truncate text-foreground">
                       {shortenUrl(p.url)}
                     </span>
-                    <span className="shrink-0 tabular-nums text-[var(--olive-gray)]">
+                    <span className="shrink-0 tabular-nums text-muted-foreground">
                       {p.sessions.toLocaleString()}
                     </span>
                   </li>
@@ -145,9 +145,9 @@ function shortenUrl(u: string): string {
 
 function EmptyTab({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-6">
-      <p className="text-sm font-semibold text-[var(--near-black)]">{title}</p>
-      <p className="mt-1 text-xs text-[var(--stone-gray)]">{body}</p>
+    <div className="rounded-xl border border-border bg-card p-6">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{body}</p>
     </div>
   );
 }

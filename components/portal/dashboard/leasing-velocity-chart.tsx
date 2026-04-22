@@ -2,9 +2,9 @@ import * as React from "react";
 import type { WeeklyVelocityPoint } from "@/lib/dashboard/queries";
 
 const SERIES = [
-  { key: "leads" as const, label: "Leads", color: "var(--terracotta, #c0533a)" },
-  { key: "tours" as const, label: "Tours", color: "#3b82f6" },
-  { key: "applications" as const, label: "Applications", color: "#10b981" },
+  { key: "leads" as const, label: "Leads", color: "#2563EB" },
+  { key: "tours" as const, label: "Tours", color: "#10b981" },
+  { key: "applications" as const, label: "Applications", color: "#8b5cf6" },
 ];
 
 export function LeasingVelocityChart({
@@ -14,7 +14,7 @@ export function LeasingVelocityChart({
 }) {
   if (data.length === 0) {
     return (
-      <p className="text-xs text-[var(--stone-gray)]">
+      <p className="text-xs text-muted-foreground">
         No leasing data yet. Leads, tours, and applications will appear here once activity starts.
       </p>
     );
@@ -62,7 +62,7 @@ export function LeasingVelocityChart({
               y1={y}
               x2={W}
               y2={y}
-              stroke="var(--border-cream, #e8e4dc)"
+              stroke="#E3E3E3"
               strokeWidth="0.5"
             />
           );
@@ -107,7 +107,7 @@ export function LeasingVelocityChart({
               y={H - 1}
               textAnchor="middle"
               fontSize="4"
-              fill="var(--stone-gray, #7a7670)"
+              fill="#9CA3AF"
             >
               {d.weekLabel}
             </text>
@@ -122,7 +122,7 @@ export function LeasingVelocityChart({
               className="inline-block h-2 w-4 rounded-full"
               style={{ backgroundColor: color }}
             />
-            <span className="text-[10px] uppercase tracking-widest font-semibold text-[var(--stone-gray)]">
+            <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
               {label}
             </span>
           </div>

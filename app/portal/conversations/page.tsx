@@ -177,29 +177,29 @@ export default async function ConversationsList({
         initialSort={sort}
       />
 
-      <p className="text-xs text-[var(--stone-gray)]">
+      <p className="text-xs text-muted-foreground">
         Showing {conversations.length} of {totalConversations} conversations
         {qRaw ? (
           <>
-            {" "}matching <span className="font-semibold text-[var(--near-black)]">{qRaw}</span>
+            {" "}matching <span className="font-semibold text-foreground">{qRaw}</span>
           </>
         ) : null}
         .
       </p>
 
       {conversations.length === 0 ? (
-        <div className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] p-10 text-center">
-          <p className="text-sm text-[var(--olive-gray)]">
+        <div className="rounded-xl border border-border bg-card p-10 text-center">
+          <p className="text-sm text-muted-foreground">
             No conversations match this view yet.
           </p>
           {qRaw || activeFlag ? (
-            <p className="text-xs text-[var(--stone-gray)] mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Try clearing your search or filter.
             </p>
           ) : null}
         </div>
       ) : (
-        <ul className="rounded-xl border border-[var(--border-cream)] bg-[var(--ivory)] divide-y divide-[var(--border-cream)] overflow-hidden">
+        <ul className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
           {conversations.map((c) => {
             const firstMessage = firstUserMessage(c.messages);
             const uniqueFlags = dedupeFlags(c.flags.map((f) => f.flag));
@@ -207,29 +207,29 @@ export default async function ConversationsList({
               <li key={c.id}>
                 <Link
                   href={`/portal/conversations/${c.id}`}
-                  className="group block px-4 py-3 hover:bg-[var(--warm-sand)]/60 transition-colors"
+                  className="group block px-4 py-3 hover:bg-muted/60 transition-colors"
                 >
                   <div className="flex items-start justify-between gap-3 flex-wrap">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-[var(--near-black)] truncate">
+                        <span className="text-sm font-semibold text-foreground truncate">
                           {c.capturedName ?? "Anonymous visitor"}
                         </span>
                         {c.capturedEmail ? (
-                          <span className="text-xs text-[var(--olive-gray)] truncate">
+                          <span className="text-xs text-muted-foreground truncate">
                             {c.capturedEmail}
                           </span>
                         ) : null}
-                        <span className="text-[10px] uppercase tracking-widest text-[var(--stone-gray)]">
+                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
                           {humanChatbotStatus(c.status)}
                         </span>
                       </div>
                       {firstMessage ? (
-                        <p className="text-xs text-[var(--olive-gray)] mt-1 line-clamp-1">
+                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
                           {truncate(firstMessage, 80)}
                         </p>
                       ) : (
-                        <p className="text-xs text-[var(--stone-gray)] mt-1 italic">
+                        <p className="text-xs text-muted-foreground mt-1 italic">
                           No user messages yet.
                         </p>
                       )}
@@ -239,7 +239,7 @@ export default async function ConversationsList({
                             <FlagPill key={f} flag={f} />
                           ))}
                           {uniqueFlags.length > 4 ? (
-                            <span className="text-[10px] text-[var(--stone-gray)] font-semibold uppercase tracking-widest self-center">
+                            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest self-center">
                               +{uniqueFlags.length - 4}
                             </span>
                           ) : null}
@@ -247,13 +247,13 @@ export default async function ConversationsList({
                       ) : null}
                     </div>
                     <div className="text-right shrink-0">
-                      <div className="text-sm font-semibold tabular-nums text-[var(--near-black)]">
+                      <div className="text-sm font-semibold tabular-nums text-foreground">
                         {c.messageCount}
-                        <span className="text-[10px] text-[var(--stone-gray)] ml-1 font-normal">
+                        <span className="text-[10px] text-muted-foreground ml-1 font-normal">
                           msgs
                         </span>
                       </div>
-                      <div className="text-[11px] text-[var(--stone-gray)] whitespace-nowrap mt-0.5">
+                      <div className="text-[11px] text-muted-foreground whitespace-nowrap mt-0.5">
                         {formatDistanceToNow(c.lastMessageAt, {
                           addSuffix: true,
                         })}

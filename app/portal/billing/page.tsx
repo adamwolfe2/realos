@@ -88,7 +88,7 @@ export default async function BillingPage() {
         />
       </section>
 
-      <section className="border rounded-md p-5 space-y-3">
+      <section className="rounded-lg border border-border bg-card p-5 space-y-3">
         <h2 className="text-sm font-semibold">Stripe Customer Portal</h2>
         <p className="text-sm opacity-70">
           Update payment method, download invoices, and view upcoming charges.
@@ -102,7 +102,7 @@ export default async function BillingPage() {
 
 function Mini({ label, value }: { label: string; value: string }) {
   return (
-    <div className="border rounded-md p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="text-[10px] tracking-widest uppercase opacity-60">
         {label}
       </div>
