@@ -13,6 +13,8 @@ async function safeSend(opts: {
   from?: string;
   subject: string;
   html: string;
+  text?: string;
+  replyTo?: string;
 }): Promise<SendResult> {
   const resend = getResend();
   if (!resend) return { ok: false, error: "Resend not configured" };
@@ -22,6 +24,8 @@ async function safeSend(opts: {
       to: opts.to,
       subject: opts.subject,
       html: opts.html,
+      ...(opts.text ? { text: opts.text } : {}),
+      ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
     });
     return { ok: true, id: r.data?.id };
   } catch (err) {
@@ -44,6 +48,9 @@ export async function sendLeadAutoReplyEmail(input: {
   const greeting = input.firstName?.trim()
     ? `Hi ${escape(input.firstName.trim())},`
     : "Hi,";
+  const greetingText = input.firstName?.trim()
+    ? `Hi ${input.firstName.trim()},`
+    : "Hi,";
   const bodyHtml = `
     <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">${greeting}</p>
     <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
@@ -65,11 +72,25 @@ export async function sendLeadAutoReplyEmail(input: {
     headline: `Thanks for applying to ${input.orgName}`,
     bodyHtml,
   });
+
+  const text = [
+    greetingText,
+    "",
+    `Thanks for reaching out to ${input.orgName}. Our leasing team will follow up within one business day with next steps, a list of available units, and tour times.`,
+    ...(input.phone ? ["", `Can't wait? Call us at ${input.phone}.`] : []),
+    "",
+    "In the meantime, feel free to keep browsing floor plans and amenities on our site.",
+    "",
+    input.orgName,
+  ].join("\n");
+
   return safeSend({
     to: input.to,
     from: input.fromEmail ?? FROM_EMAIL,
     subject: `${input.orgName}, we got your application`,
     html,
+    text,
+    replyTo: input.fromEmail ?? FROM_EMAIL,
   });
 }
 
@@ -115,10 +136,26 @@ export async function notifyTenantOfLeadEmail(input: {
     ctaText: "Open in portal",
     ctaUrl: `${input.appUrl}/portal/leads/${input.leadId}`,
   });
+
+  const text = [
+    `New lead for ${input.orgName}.`,
+    "",
+    `Name: ${name}`,
+    `Email: ${input.email ?? "—"}`,
+    `Phone: ${input.phone ?? "—"}`,
+    `Source: ${input.source}${input.sourceDetail ? `, ${input.sourceDetail}` : ""}`,
+    `Preferred unit: ${input.preferredUnitType ?? "—"}`,
+    `Notes: ${input.notes ?? "—"}`,
+    "",
+    `${input.appUrl}/portal/leads/${input.leadId}`,
+  ].join("\n");
+
   return safeSend({
     to: input.to,
     subject: `New lead, ${input.orgName} (${name})`,
     html,
+    text,
+    replyTo: input.email ?? undefined,
   });
 }
 

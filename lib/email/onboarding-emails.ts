@@ -4,6 +4,7 @@ import {
   getResend,
   isValidEmail,
   FROM_EMAIL,
+  BRAND_EMAIL,
   APP_URL,
   BRAND_NAME,
 } from "./shared";
@@ -21,6 +22,8 @@ async function safeSend(opts: {
   to: string;
   subject: string;
   html: string;
+  text?: string;
+  replyTo?: string;
 }): Promise<SendResult> {
   const resend = getResend();
   if (!resend) {
@@ -32,6 +35,8 @@ async function safeSend(opts: {
       to: opts.to,
       subject: opts.subject,
       html: opts.html,
+      ...(opts.text ? { text: opts.text } : {}),
+      ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
     });
     return { ok: true, id: r.data?.id };
   } catch (err) {
@@ -83,10 +88,27 @@ export async function sendIntakeReceivedEmail(input: {
     ctaUrl: APP_URL,
   });
 
+  const text = [
+    `Hi ${input.name},`,
+    "",
+    `Thanks for the intake on behalf of ${input.companyName}. Our team reviews every submission personally before your call.`,
+    "",
+    input.bookedCallAt
+      ? `Your consultation is booked for ${input.bookedCallAt}. You'll receive a calendar invite shortly.`
+      : "We'll follow up within one business day with a time to speak.",
+    "",
+    "Keep an eye on your inbox for a proposal with retainer pricing, timeline, and next steps within 24 hours of our call.",
+    "",
+    `${BRAND_NAME}`,
+    APP_URL,
+  ].join("\n");
+
   return safeSend({
     to: input.to,
     subject: `${BRAND_NAME}, your intake is in`,
     html,
+    text,
+    replyTo: BRAND_EMAIL,
   });
 }
 
@@ -135,10 +157,95 @@ export async function notifyAgencyOfIntake(input: {
     ctaUrl: `${APP_URL}/admin/intakes/${input.intakeId}`,
   });
 
+  const text = [
+    "New intake just landed.",
+    "",
+    `Company: ${input.companyName}`,
+    `Contact: ${input.primaryContactName} (${input.primaryContactEmail})`,
+    `Property type: ${input.propertyType}`,
+    `Modules selected: ${input.moduleCount}`,
+    `Pain point: ${input.biggestPainPoint ?? "—"}`,
+    `Current vendor: ${input.currentVendor ?? "—"}`,
+    `Current spend: ${spendDisplay}`,
+    "",
+    `${APP_URL}/admin/intakes/${input.intakeId}`,
+  ].join("\n");
+
   return safeSend({
     to: input.to,
     subject: `New intake, ${input.companyName}`,
     html,
+    text,
+    replyTo: input.primaryContactEmail,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// sendClientPortalReadyEmail — sent to the primary contact when an intake is
+// converted to a client org and their Clerk invitation is dispatched.
+// ---------------------------------------------------------------------------
+
+export async function sendClientPortalReadyEmail(input: {
+  to: string;
+  contactName: string;
+  orgName: string;
+  orgSlug: string;
+}): Promise<SendResult> {
+  if (!isValidEmail(input.to)) {
+    return { ok: false, error: "Invalid recipient" };
+  }
+
+  const platformDomain =
+    process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ?? "leasestack.co";
+  const portalUrl = `https://${input.orgSlug}.${platformDomain}/portal`;
+
+  const firstName = input.contactName.split(" ")[0] ?? input.contactName;
+
+  const bodyHtml = `
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">Hi ${escape(firstName)},</p>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
+      Your ${escape(BRAND_NAME)} portal for <strong>${escape(input.orgName)}</strong> is ready.
+      You should have received a separate invitation email to set up your login.
+    </p>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
+      Once you're in, you'll be able to track leads, review visitor intelligence,
+      and monitor your marketing performance all in one place.
+    </p>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
+      Reply to this email any time you have questions. We're here to make sure
+      your onboarding goes smoothly.
+    </p>
+  `;
+
+  const html = buildBaseHtml({
+    headline: `Your ${BRAND_NAME} portal is ready`,
+    bodyHtml,
+    ctaText: "Open your portal",
+    ctaUrl: portalUrl,
+  });
+
+  const text = [
+    `Hi ${firstName},`,
+    "",
+    `Your ${BRAND_NAME} portal for ${input.orgName} is ready.`,
+    "You should have received a separate invitation email to set up your login.",
+    "",
+    "Once you're in, you'll be able to track leads, review visitor intelligence, and monitor your marketing performance all in one place.",
+    "",
+    "Reply to this email any time you have questions.",
+    "",
+    `Open your portal: ${portalUrl}`,
+    "",
+    `${BRAND_NAME}`,
+    APP_URL,
+  ].join("\n");
+
+  return safeSend({
+    to: input.to,
+    subject: `Your ${BRAND_NAME} portal is ready`,
+    html,
+    text,
+    replyTo: BRAND_EMAIL,
   });
 }
 

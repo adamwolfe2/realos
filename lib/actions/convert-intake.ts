@@ -19,6 +19,7 @@ import {
   auditPayload,
   type ScopedContext,
 } from "@/lib/tenancy/scope";
+import { sendClientPortalReadyEmail } from "@/lib/email/onboarding-emails";
 
 // ---------------------------------------------------------------------------
 // Admin action: convert an IntakeSubmission into a fully provisioned CLIENT
@@ -322,6 +323,24 @@ export async function convertIntakeToClient(
       "convertIntakeToClient: Clerk invitation failed (continuing)",
       err
     );
+  }
+
+  // Step 4: send the portal-ready welcome email. Best-effort — a failure here
+  // must not roll back the conversion or block the success response.
+  if (intake.primaryContactEmail && intake.primaryContactName) {
+    try {
+      await sendClientPortalReadyEmail({
+        to: intake.primaryContactEmail,
+        contactName: intake.primaryContactName,
+        orgName: org.name,
+        orgSlug: org.slug,
+      });
+    } catch (err) {
+      console.warn(
+        "convertIntakeToClient: portal-ready email failed (continuing)",
+        err
+      );
+    }
   }
 
   revalidatePath("/admin/intakes");

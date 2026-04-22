@@ -13,6 +13,8 @@ async function safeSend(opts: {
   from?: string;
   subject: string;
   html: string;
+  text?: string;
+  replyTo?: string;
 }): Promise<SendResult> {
   const resend = getResend();
   if (!resend) return { ok: false, error: "Resend not configured" };
@@ -22,6 +24,8 @@ async function safeSend(opts: {
       to: opts.to,
       subject: opts.subject,
       html: opts.html,
+      ...(opts.text ? { text: opts.text } : {}),
+      ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
     });
     return { ok: true, id: r.data?.id };
   } catch (err) {
@@ -60,10 +64,26 @@ export async function sendVisitorOutreachEmail(input: {
     ctaUrl: input.applyUrl ?? "#",
     includeUnsubscribe: true,
   });
+
+  const greetingText = input.firstName?.trim()
+    ? `Hi ${input.firstName.trim()},`
+    : "Hi,";
+  const text = [
+    greetingText,
+    "",
+    `Saw you browsing ${input.orgName}. If you'd like, grab a tour time and we'll show you the available units in person (or do it virtually).`,
+    "",
+    "Any questions before you decide? Just reply to this email, a real person reads every response.",
+    ...(input.applyUrl ? ["", `Book a tour: ${input.applyUrl}`] : []),
+    "",
+    input.orgName,
+  ].join("\n");
+
   return safeSend({
     to: input.to,
     subject: `Following up from ${input.orgName}`,
     html,
+    text,
   });
 }
 
@@ -100,10 +120,23 @@ export async function sendVisitorWeeklyDigest(input: {
     ctaText: "Open portal",
     ctaUrl: input.portalUrl,
   });
+
+  const text = [
+    `Quick roll-up of your pixel-captured traffic for ${input.rangeLabel}.`,
+    "",
+    `Total visitors: ${input.totalVisitors.toLocaleString()}`,
+    `Identified: ${input.identified.toLocaleString()}`,
+    `High intent (score 60+): ${input.highIntent.toLocaleString()}`,
+    `Converted to a lead: ${input.convertedToLead.toLocaleString()}`,
+    "",
+    `Full list + outreach queue: ${input.portalUrl}`,
+  ].join("\n");
+
   return safeSend({
     to: input.to,
     subject: `${input.orgName}, weekly pixel report`,
     html,
+    text,
   });
 }
 
