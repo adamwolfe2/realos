@@ -42,8 +42,10 @@ export function Verticals() {
               key={v.href}
               href={v.href}
               className="group flex-shrink-0 md:flex-shrink block p-6 md:p-7"
-              style={{ scrollSnapAlign: "start", width: "82vw", maxWidth: "360px" }}
               style={{
+                scrollSnapAlign: "start",
+                width: "82vw",
+                maxWidth: "360px",
                 backgroundColor: "#ffffff",
                 borderRadius: "16px",
                 boxShadow: "0 0 0 1px #f0eee6",
