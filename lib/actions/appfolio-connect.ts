@@ -180,35 +180,29 @@ export async function connectAppfolio(
     select: { id: true },
   });
 
-  const integration = await prisma.appFolioIntegration.upsert({
-    where: { orgId: scope.orgId },
-    create: {
-      orgId: scope.orgId,
-      instanceSubdomain: subdomain,
-      plan: plan ?? (isEmbed ? "core" : null),
-      apiKeyEncrypted: null,
-      clientIdEncrypted,
-      clientSecretEncrypted,
-      useEmbedFallback: isEmbed,
-      propertyGroupFilter: addressFilter,
-      autoSyncEnabled: true,
-      syncFrequencyMinutes: 60,
-      syncStatus: "idle",
-      lastError: null,
-    },
-    update: {
-      instanceSubdomain: subdomain,
-      plan: plan ?? (isEmbed ? "core" : null),
-      apiKeyEncrypted: null,
-      clientIdEncrypted,
-      clientSecretEncrypted,
-      useEmbedFallback: isEmbed,
-      propertyGroupFilter: addressFilter,
-      autoSyncEnabled: true,
-      syncStatus: "idle",
-      lastError: null,
-    },
-  });
+  // Use create/update instead of upsert — the Neon HTTP adapter does not
+  // support the implicit transaction that Prisma generates for upsert.
+  const integrationData = {
+    instanceSubdomain: subdomain,
+    plan: plan ?? (isEmbed ? "core" : null),
+    apiKeyEncrypted: null as string | null,
+    clientIdEncrypted,
+    clientSecretEncrypted,
+    useEmbedFallback: isEmbed,
+    propertyGroupFilter: addressFilter,
+    autoSyncEnabled: true,
+    syncStatus: "idle",
+    lastError: null as string | null,
+  };
+
+  const integration = existing
+    ? await prisma.appFolioIntegration.update({
+        where: { orgId: scope.orgId },
+        data: integrationData,
+      })
+    : await prisma.appFolioIntegration.create({
+        data: { orgId: scope.orgId, syncFrequencyMinutes: 60, ...integrationData },
+      });
 
   await prisma.property.updateMany({
     where: {

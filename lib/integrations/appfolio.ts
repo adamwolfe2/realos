@@ -427,11 +427,12 @@ export async function testAppFolioConnection(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const client = appfolioRestClient(integration);
-    // The listings report does not accept from_date/to_date filtering —
-    // it returns all active listings. Probe without date params to avoid
-    // a 400 from malformed parameters. A successful response (even empty
-    // results) confirms credentials and subdomain are valid.
-    await client.fetchReport("listings", {});
+    // Use the leads report as the auth probe — it reliably accepts a narrow
+    // date window and returns quickly (empty results is fine). The listings
+    // report requires different parameter formats and is unreliable as a probe.
+    const today = new Date();
+    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+    await client.fetchReport("leads", { fromDate: yesterday, toDate: today });
     return { ok: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
