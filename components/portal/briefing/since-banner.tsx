@@ -61,7 +61,7 @@ export function SinceBanner({
         </p>
       </div>
       <button
-        onClick={() => startTransition(() => markBriefingViewed())}
+        onClick={() => startTransition(() => { void markBriefingViewed(); })}
         disabled={pending}
         className="inline-flex items-center gap-1.5 rounded-md bg-[var(--near-black)] px-3 py-1.5 text-[12px] font-semibold text-[var(--ivory)] transition-opacity hover:opacity-90 disabled:opacity-60"
       >

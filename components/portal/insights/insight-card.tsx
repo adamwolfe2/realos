@@ -115,23 +115,23 @@ export function InsightCard({
           {!acked ? (
             <ActionBtn
               label="Acknowledge"
-              onClick={() => startTransition(() => acknowledgeInsight(insight.id))}
+              onClick={() => startTransition(() => { void acknowledgeInsight(insight.id); })}
               icon={Check}
             />
           ) : null}
           <ActionBtn
             label="Snooze 24h"
-            onClick={() => startTransition(() => snoozeInsight(insight.id, 24))}
+            onClick={() => startTransition(() => { void snoozeInsight(insight.id, 24); })}
             icon={Clock3}
           />
           <ActionBtn
             label="Dismiss"
-            onClick={() => startTransition(() => dismissInsight(insight.id))}
+            onClick={() => startTransition(() => { void dismissInsight(insight.id); })}
             icon={X}
           />
           <ActionBtn
             label="Mark resolved"
-            onClick={() => startTransition(() => markActed(insight.id))}
+            onClick={() => startTransition(() => { void markActed(insight.id); })}
             icon={Check}
             accent
           />
