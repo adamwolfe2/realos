@@ -7,6 +7,7 @@ import {
   ChatbotConversationStatus,
   LeadSource,
   Prisma,
+  TenantStatus,
 } from "@prisma/client";
 import {
   buildSystemPrompt,
@@ -101,6 +102,15 @@ export async function POST(req: NextRequest) {
   if (!org.tenantSiteConfig?.chatbotEnabled) {
     return NextResponse.json(
       { error: "Chatbot disabled" },
+      { status: 403, headers: CORS_HEADERS }
+    );
+  }
+  if (
+    org.status === TenantStatus.CHURNED ||
+    org.status === TenantStatus.PAUSED
+  ) {
+    return NextResponse.json(
+      { error: "Chatbot unavailable" },
       { status: 403, headers: CORS_HEADERS }
     );
   }
