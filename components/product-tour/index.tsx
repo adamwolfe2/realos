@@ -395,7 +395,7 @@ function Sidebar({
 
 function Contents({ view }: { view: ViewKey }) {
   return (
-    <div className="p-5 md:p-8">
+    <div className="p-3 md:p-8 text-[13px] md:text-base">
       {view === "dashboard" && <Dashboard />}
       {view === "leads" && <LeadsView />}
       {view === "conversations" && <ConversationsView />}
@@ -443,7 +443,7 @@ function Dashboard() {
             className="mt-1.5"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "28px",
+              fontSize: "clamp(18px, 4vw, 28px)",
               fontWeight: 500,
               color: TOKENS.nearBlack,
               lineHeight: 1.1,
@@ -455,7 +455,7 @@ function Dashboard() {
         <PeriodSwitcher value={period} onChange={setPeriod} />
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3">
         {kpis.map((k) => (
           <div
             key={k.label}
@@ -480,7 +480,7 @@ function Dashboard() {
               <span
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: "28px",
+                  fontSize: "clamp(18px, 4vw, 28px)",
                   fontWeight: 500,
                   color: TOKENS.nearBlack,
                   lineHeight: 1.1,
@@ -742,7 +742,7 @@ function LeadsView() {
             className="mt-1.5"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "28px",
+              fontSize: "clamp(18px, 4vw, 28px)",
               fontWeight: 500,
               color: TOKENS.nearBlack,
               lineHeight: 1.1,
@@ -782,11 +782,11 @@ function LeadsView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="flex md:grid md:grid-cols-5 gap-3 overflow-x-auto pb-2 md:overflow-visible md:pb-0" style={{ scrollSnapType: "x mandatory" }}>
         {STAGES.map((stage) => {
           const leads = filtered.filter((l) => l.stage === stage.key);
           return (
-            <div key={stage.key} className="flex flex-col" style={{ minHeight: "440px" }}>
+            <div key={stage.key} className="flex flex-col flex-shrink-0 md:flex-shrink" style={{ minHeight: "320px", minWidth: "160px", scrollSnapAlign: "start" }}>
               <div className="flex items-center justify-between mb-2.5 px-1">
                 <span
                   style={{
@@ -1160,7 +1160,7 @@ function ConversationsView() {
             className="mt-1.5"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "28px",
+              fontSize: "clamp(18px, 4vw, 28px)",
               fontWeight: 500,
               color: TOKENS.nearBlack,
               lineHeight: 1.1,
@@ -1366,7 +1366,7 @@ function CreativeView() {
             className="mt-1.5"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "28px",
+              fontSize: "clamp(18px, 4vw, 28px)",
               fontWeight: 500,
               color: TOKENS.nearBlack,
               lineHeight: 1.1,
@@ -1707,7 +1707,7 @@ function CampaignsView() {
             className="mt-1.5"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "28px",
+              fontSize: "clamp(18px, 4vw, 28px)",
               fontWeight: 500,
               color: TOKENS.nearBlack,
               lineHeight: 1.1,
@@ -2000,7 +2000,7 @@ function PropertiesView() {
             className="mt-1.5"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "28px",
+              fontSize: "clamp(18px, 4vw, 28px)",
               fontWeight: 500,
               color: TOKENS.nearBlack,
               lineHeight: 1.1,
@@ -2177,7 +2177,7 @@ function ReportsView() {
             className="mt-1.5"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "28px",
+              fontSize: "clamp(18px, 4vw, 28px)",
               fontWeight: 500,
               color: TOKENS.nearBlack,
               lineHeight: 1.1,
@@ -2293,7 +2293,7 @@ function SettingsView() {
           className="mt-1.5"
           style={{
             fontFamily: "var(--font-display)",
-            fontSize: "28px",
+            fontSize: "clamp(18px, 4vw, 28px)",
             fontWeight: 500,
             color: TOKENS.nearBlack,
             lineHeight: 1.1,
