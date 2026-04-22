@@ -32,9 +32,9 @@ export function Hero() {
         { label: "See it live", href: "/#live", variant: "secondary" },
       ]}
       trust={[
-        { value: "14 days", label: "First call to live" },
-        { value: "One",     label: "Platform, one login" },
-        { value: "Zero",    label: "Long-term contracts" },
+        { value: "14 days", label: "Call to live" },
+        { value: "One",     label: "One login" },
+        { value: "Zero",    label: "No contracts" },
       ]}
       artifact={<ConfigTabs />}
     />

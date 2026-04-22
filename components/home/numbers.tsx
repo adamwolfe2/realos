@@ -22,12 +22,15 @@ export function Numbers() {
     <section style={{ backgroundColor: "#f5f4ed" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
         <p className="eyebrow mb-10 text-center">The numbers we hit</p>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6 lg:gap-4">
+        <div
+          className="md:grid md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6 lg:gap-4 flex overflow-x-auto md:overflow-visible pb-3 md:pb-0"
+          style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
+        >
           {METRICS.map((m, i) => (
             <div
               key={m.value}
-              className={`px-0 lg:px-6 text-left ${i > 0 ? "lg:border-l" : ""}`}
-              style={i > 0 ? { borderColor: "#e8e6dc" } : undefined}
+              className={`flex-shrink-0 md:flex-shrink px-0 lg:px-6 text-left ${i > 0 ? "lg:border-l" : ""}`}
+              style={{ scrollSnapAlign: "start", width: "72vw", maxWidth: "260px", ...(i > 0 ? { borderColor: "#e8e6dc" } : undefined) }}
             >
               <p
                 style={{

@@ -47,15 +47,15 @@ type ViewKey =
   | "reports"
   | "settings";
 
-const VIEWS: Array<{ key: ViewKey; label: string; icon: keyof typeof Icons; count?: number }> = [
-  { key: "dashboard",     label: "Dashboard",     icon: "dashboard" },
-  { key: "leads",         label: "Leads",         icon: "leads",       count: 42 },
-  { key: "conversations", label: "Conversations", icon: "chat",        count: 6  },
-  { key: "creative",      label: "Creative",      icon: "creative",    count: 7  },
-  { key: "campaigns",     label: "Campaigns",     icon: "campaigns" },
-  { key: "properties",    label: "Properties",    icon: "properties",  count: 4  },
-  { key: "reports",       label: "Reports",       icon: "reports" },
-  { key: "settings",      label: "Settings",      icon: "settings" },
+const VIEWS: Array<{ key: ViewKey; label: string; short: string; icon: keyof typeof Icons; count?: number }> = [
+  { key: "dashboard",     label: "Dashboard",     short: "Dash",   icon: "dashboard" },
+  { key: "leads",         label: "Leads",         short: "Leads",  icon: "leads",       count: 42 },
+  { key: "conversations", label: "Conversations", short: "Chat",   icon: "chat",        count: 6  },
+  { key: "creative",      label: "Creative",      short: "Studio", icon: "creative",    count: 7  },
+  { key: "campaigns",     label: "Campaigns",     short: "Ads",    icon: "campaigns" },
+  { key: "properties",    label: "Properties",    short: "Props",  icon: "properties",  count: 4  },
+  { key: "reports",       label: "Reports",       short: "Report", icon: "reports" },
+  { key: "settings",      label: "Settings",      short: "Config", icon: "settings" },
 ];
 
 export function ProductTour() {
@@ -215,11 +215,10 @@ function MobileTabBar({
 }) {
   return (
     <div
-      className="md:hidden flex items-center gap-1 px-2 py-2 overflow-x-auto"
+      className="md:hidden flex items-center px-1 py-1"
       style={{
         backgroundColor: TOKENS.ivory,
         borderBottom: `1px solid ${TOKENS.borderCream}`,
-        scrollbarWidth: "none",
       }}
     >
       {VIEWS.map((v) => {
@@ -231,42 +230,41 @@ function MobileTabBar({
             type="button"
             onClick={() => onSelect(v.key)}
             title={v.label}
-            className="relative flex-shrink-0 inline-flex flex-col items-center justify-center gap-1"
+            className="relative flex-1 inline-flex flex-col items-center justify-center gap-0.5"
             style={{
-              width: "52px",
-              height: "48px",
-              borderRadius: "10px",
+              height: "44px",
+              borderRadius: "8px",
               backgroundColor: isActive ? TOKENS.sand : "transparent",
               color: isActive ? TOKENS.nearBlack : TOKENS.charcoal,
               cursor: "pointer",
               transition: "background-color 0.2s ease",
             }}
           >
-            <Icon size={18} color={isActive ? TOKENS.terracotta : TOKENS.olive} />
+            <Icon size={15} color={isActive ? TOKENS.terracotta : TOKENS.olive} />
             <span
               style={{
                 fontFamily: "var(--font-sans)",
-                fontSize: "9px",
+                fontSize: "8px",
                 fontWeight: isActive ? 600 : 400,
                 color: isActive ? TOKENS.nearBlack : TOKENS.stone,
                 lineHeight: 1,
               }}
             >
-              {v.label.split(" ")[0]}
+              {v.short}
             </span>
             {typeof v.count === "number" ? (
               <span
                 style={{
                   position: "absolute",
-                  top: "6px",
-                  right: "8px",
-                  width: "14px",
-                  height: "14px",
+                  top: "4px",
+                  right: "2px",
+                  width: "13px",
+                  height: "13px",
                   borderRadius: "50%",
                   backgroundColor: TOKENS.terracotta,
                   color: TOKENS.ivory,
                   fontFamily: "var(--font-mono)",
-                  fontSize: "8px",
+                  fontSize: "7px",
                   fontWeight: 600,
                   display: "flex",
                   alignItems: "center",
@@ -2140,7 +2138,7 @@ function PropertyStat({ label, value }: { label: string; value: string }) {
         className="mt-1"
         style={{
           fontFamily: "var(--font-display)",
-          fontSize: "18px",
+          fontSize: "clamp(14px, 3vw, 18px)",
           fontWeight: 500,
           color: TOKENS.nearBlack,
           lineHeight: 1.2,
@@ -2254,7 +2252,7 @@ function ReportsView() {
               className="mt-1"
               style={{
                 fontFamily: "var(--font-display)",
-                fontSize: "24px",
+                fontSize: "clamp(16px, 3.5vw, 24px)",
                 fontWeight: 500,
                 color: TOKENS.nearBlack,
                 lineHeight: 1.1,

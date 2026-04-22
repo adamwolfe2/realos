@@ -33,12 +33,16 @@ export function Verticals() {
             Built for the way your vertical actually operates.
           </h2>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div
+          className="md:grid md:grid-cols-2 gap-3 flex overflow-x-auto md:overflow-visible pb-3 md:pb-0"
+          style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
+        >
           {VERTICALS.map((v) => (
             <Link
               key={v.href}
               href={v.href}
-              className="group block p-7"
+              className="group flex-shrink-0 md:flex-shrink block p-6 md:p-7"
+              style={{ scrollSnapAlign: "start", width: "82vw", maxWidth: "360px" }}
               style={{
                 backgroundColor: "#ffffff",
                 borderRadius: "16px",

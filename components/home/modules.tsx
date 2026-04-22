@@ -23,12 +23,19 @@ export function Modules() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {/* Mobile: horizontal snap carousel. Desktop: grid */}
+        <div
+          className="md:grid md:grid-cols-2 lg:grid-cols-3 gap-3 flex overflow-x-auto md:overflow-visible pb-3 md:pb-0"
+          style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
+        >
           {MARKETING.home.modules.map((m) => (
             <div
               key={m.title}
-              className="p-6"
+              className="flex-shrink-0 md:flex-shrink p-6"
               style={{
+                scrollSnapAlign: "start",
+                width: "82vw",
+                maxWidth: "320px",
                 backgroundColor: "#ffffff",
                 borderRadius: "16px",
                 boxShadow: "0 0 0 1px #f0eee6",

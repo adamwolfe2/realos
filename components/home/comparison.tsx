@@ -28,10 +28,16 @@ export function Comparison() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div
+          className="md:grid md:grid-cols-2 gap-3 flex overflow-x-auto md:overflow-visible pb-3 md:pb-0"
+          style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
+        >
           <div
-            className="p-7 md:p-8"
+            className="flex-shrink-0 md:flex-shrink p-7 md:p-8"
             style={{
+              scrollSnapAlign: "start",
+              width: "88vw",
+              maxWidth: "480px",
               backgroundColor: "#faf9f5",
               borderRadius: "16px",
               boxShadow: "0 0 0 1px #f0eee6",
@@ -123,8 +129,11 @@ export function Comparison() {
           </div>
 
           <div
-            className="p-7 md:p-8"
+            className="flex-shrink-0 md:flex-shrink p-7 md:p-8"
             style={{
+              scrollSnapAlign: "start",
+              width: "88vw",
+              maxWidth: "480px",
               backgroundColor: "#ffffff",
               borderRadius: "16px",
               boxShadow: "0 0 0 1px #f0eee6",

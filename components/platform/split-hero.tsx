@@ -37,8 +37,8 @@ export function SplitHero({
               <div className="flex items-center justify-center lg:justify-start gap-3 mb-5">
                 <span
                   aria-hidden
+                  className="hidden sm:inline-block"
                   style={{
-                    display: "inline-block",
                     width: "28px",
                     height: "1px",
                     backgroundColor: "#2F6FE5",
@@ -49,7 +49,7 @@ export function SplitHero({
                     color: "#2F6FE5",
                     fontFamily: "var(--font-mono)",
                     fontSize: "11px",
-                    letterSpacing: "0.22em",
+                    letterSpacing: "0.12em",
                     textTransform: "uppercase",
                     fontWeight: 600,
                   }}
@@ -64,7 +64,7 @@ export function SplitHero({
                 style={{
                   color: "#141413",
                   fontFamily: "var(--font-display)",
-                  fontSize: "clamp(28px, 7vw, 52px)",
+                  fontSize: "clamp(32px, 7vw, 52px)",
                   fontWeight: 500,
                   lineHeight: 1.08,
                   letterSpacing: "-0.012em",
@@ -82,10 +82,10 @@ export function SplitHero({
 
             <Reveal delay={140}>
               <p
-                className="mt-7"
+                className="mt-5 md:mt-7"
                 style={{
                   fontFamily: "var(--font-sans)",
-                  fontSize: "19px",
+                  fontSize: "clamp(15px, 4vw, 19px)",
                   lineHeight: 1.65,
                   color: "#5e5d59",
                   fontWeight: 400,
@@ -127,7 +127,7 @@ export function SplitHero({
                         style={{
                           color: "#141413",
                           fontFamily: "var(--font-display)",
-                          fontSize: "22px",
+                          fontSize: "clamp(17px, 4vw, 22px)",
                           fontWeight: 500,
                           lineHeight: 1.05,
                           letterSpacing: "-0.005em",
@@ -139,10 +139,10 @@ export function SplitHero({
                         style={{
                           color: "#87867f",
                           fontFamily: "var(--font-mono)",
-                          fontSize: "10px",
-                          lineHeight: 1.4,
+                          fontSize: "clamp(8px, 2vw, 10px)",
+                          lineHeight: 1.35,
                           textTransform: "uppercase",
-                          letterSpacing: "0.1em",
+                          letterSpacing: "0.06em",
                           fontWeight: 500,
                           marginTop: "4px",
                         }}

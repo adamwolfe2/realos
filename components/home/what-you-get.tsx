@@ -112,9 +112,19 @@ export function WhatYouGet() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-3 mb-20">
+        {/* Mobile: horizontal snap carousel. Desktop: grid */}
+        <div
+          className="md:grid md:grid-cols-3 lg:grid-cols-4 gap-3 mb-20 flex overflow-x-auto md:overflow-visible pb-3 md:pb-0"
+          style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
+        >
           {DELIVERABLES.map((d) => (
-            <DeliverableCard key={d.key} d={d} />
+            <div
+              key={d.key}
+              className={`flex-shrink-0 md:flex-shrink md:col-span-1 ${d.big ? "md:col-span-2" : ""}`}
+              style={{ scrollSnapAlign: "start", width: "82vw", maxWidth: "320px" }}
+            >
+              <DeliverableCard d={d} />
+            </div>
           ))}
         </div>
 
@@ -127,7 +137,7 @@ export function WhatYouGet() {
 function DeliverableCard({ d }: { d: Deliverable }) {
   return (
     <div
-      className={`p-6 h-full flex flex-col gap-3 ${d.big ? "md:col-span-2" : ""}`}
+      className="p-6 h-full flex flex-col gap-3"
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
