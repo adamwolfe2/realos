@@ -34,10 +34,6 @@ const connectSchema = z.object({
     .trim()
     .min(1, "Property identifier is required")
     .max(500),
-  serviceAccountJson: z
-    .string()
-    .trim()
-    .min(20, "Paste the full service account JSON file."),
 });
 
 export type ConnectSeoResult =
@@ -65,7 +61,6 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
   const parsed = connectSchema.safeParse({
     provider: formData.get("provider")?.toString() ?? "",
     propertyIdentifier: formData.get("propertyIdentifier")?.toString() ?? "",
-    serviceAccountJson: formData.get("serviceAccountJson")?.toString() ?? "",
   });
   if (!parsed.success) {
     return {
@@ -74,7 +69,16 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
     };
   }
 
-  const { provider, propertyIdentifier, serviceAccountJson } = parsed.data;
+  const serviceAccountJson = process.env.GOOGLE_SERVICE_ACCOUNT_JSON ?? "";
+  if (!serviceAccountJson) {
+    return {
+      ok: false,
+      error:
+        "Google service account not configured. Contact your administrator.",
+    };
+  }
+
+  const { provider, propertyIdentifier } = parsed.data;
 
   let parsedSa;
   try {
