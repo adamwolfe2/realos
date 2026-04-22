@@ -32,13 +32,6 @@ const PORTAL_ADS = "/portal/ads";
 
 const connectSchema = z.object({
   displayName: z.string().trim().min(1).max(120).optional(),
-  developerToken: z.string().trim().min(8, "Developer token is required").max(256),
-  loginCustomerId: z
-    .string()
-    .trim()
-    .max(32)
-    .optional()
-    .transform((v) => (v ? normalizeCustomerId(v) : "")),
   clientCustomerId: z
     .string()
     .trim()
@@ -72,8 +65,6 @@ export async function connectGoogleAds(
 
   const parsed = connectSchema.safeParse({
     displayName: formData.get("displayName")?.toString() || undefined,
-    developerToken: formData.get("developerToken")?.toString() ?? "",
-    loginCustomerId: formData.get("loginCustomerId")?.toString() ?? "",
     clientCustomerId: formData.get("clientCustomerId")?.toString() ?? "",
     oauthClientId: formData.get("oauthClientId")?.toString() ?? "",
     oauthClientSecret: formData.get("oauthClientSecret")?.toString() ?? "",
@@ -84,8 +75,8 @@ export async function connectGoogleAds(
   }
 
   const creds: GoogleAdsCredentials = {
-    developerToken: parsed.data.developerToken,
-    loginCustomerId: parsed.data.loginCustomerId || null,
+    developerToken: process.env.GOOGLE_ADS_DEVELOPER_TOKEN ?? "",
+    loginCustomerId: process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID ?? null,
     refreshToken: parsed.data.refreshToken,
     oauthClientId: parsed.data.oauthClientId,
     oauthClientSecret: parsed.data.oauthClientSecret,

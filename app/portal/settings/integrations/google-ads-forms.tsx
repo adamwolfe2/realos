@@ -34,24 +34,6 @@ export function ConnectGoogleAdsForm() {
       />
 
       <Field
-        label="Developer token"
-        name="developerToken"
-        required
-        type="password"
-        autoComplete="off"
-        mono
-        hint="From Google Ads UI → Tools → API Center. Issued to your manager account."
-      />
-
-      <Field
-        label="Login customer ID (manager)"
-        name="loginCustomerId"
-        placeholder="123-456-7890"
-        mono
-        hint="The MCC account that has access to the client account. Optional if you authenticate directly."
-      />
-
-      <Field
         label="Client customer ID"
         name="clientCustomerId"
         required

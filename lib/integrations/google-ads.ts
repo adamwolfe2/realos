@@ -78,14 +78,18 @@ export function parseGoogleAdsCredentials(
     throw new Error("Google Ads credentials are corrupted. Reconnect to fix.");
   }
   const c = parsed as Partial<GoogleAdsCredentials>;
-  if (!c.developerToken || !c.refreshToken || !c.oauthClientId || !c.oauthClientSecret) {
+  // developerToken and loginCustomerId fall back to agency-level env vars so
+  // the connect form only needs per-client fields (refreshToken + customerId).
+  const developerToken = c.developerToken ?? process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  const loginCustomerId = c.loginCustomerId ?? process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID ?? null;
+  if (!developerToken || !c.refreshToken || !c.oauthClientId || !c.oauthClientSecret) {
     throw new Error(
       "Google Ads credentials are missing required fields. Reconnect via Settings → Integrations."
     );
   }
   return {
-    developerToken: c.developerToken,
-    loginCustomerId: c.loginCustomerId ?? null,
+    developerToken,
+    loginCustomerId,
     refreshToken: c.refreshToken,
     oauthClientId: c.oauthClientId,
     oauthClientSecret: c.oauthClientSecret,
