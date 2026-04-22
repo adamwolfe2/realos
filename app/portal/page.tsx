@@ -15,8 +15,8 @@ import {
   TourStatus,
 } from "@prisma/client";
 import { SetupBanner } from "@/components/portal/setup/setup-banner";
+import { SetupWizardGate } from "@/components/portal/onboarding/setup-wizard-gate";
 
-import { DashboardHeader } from "@/components/portal/dashboard/dashboard-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { LeadSourceDonut } from "@/components/portal/dashboard/lead-source-donut";
@@ -24,10 +24,6 @@ import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funne
 import { PropertyDashboardCard } from "@/components/portal/dashboard/property-card";
 import { ActivityFeed } from "@/components/portal/dashboard/activity-feed";
 import { IntegrationHealth } from "@/components/portal/dashboard/integration-health";
-import {
-  FirstRunChecklist,
-  DEFAULT_FIRST_RUN_ITEMS,
-} from "@/components/portal/dashboard/first-run-checklist";
 import {
   getActivityFeed,
   getAdSpendKpi,
@@ -198,20 +194,43 @@ export default async function PortalHome({
 
   const showFirstRun = leadsTotal === 0 && propertiesCount === 0;
 
-  // First-run checklist mirrors what we know about real onboarding state.
-  const firstRunItems = DEFAULT_FIRST_RUN_ITEMS.map((it) => ({
-    ...it,
-    done:
-      it.id === "property"
-        ? firstRun.hasProperty
-        : it.id === "pixel"
-          ? firstRun.pixelInstalled
-          : it.id === "seo"
-            ? firstRun.gscConnected
-            : it.id === "site"
-              ? firstRun.marketingSiteCustomized
-              : false,
-  }));
+  const wizardSteps = [
+    {
+      id: "property",
+      title: "Add your first property",
+      description:
+        "Properties are the foundation — everything else maps to them.",
+      actionLabel: "Add property",
+      actionHref: "/portal/properties/new",
+      done: firstRun.hasProperty,
+    },
+    {
+      id: "pixel",
+      title: "Install the tracking pixel",
+      description:
+        "See live visitors, traffic sources, and engagement in real time.",
+      actionLabel: "Set up pixel",
+      actionHref: "/portal/settings/integrations",
+      done: firstRun.pixelInstalled,
+    },
+    {
+      id: "seo",
+      title: "Connect Google Analytics",
+      description:
+        "Pull organic sessions and top landing pages into your dashboard.",
+      actionLabel: "Connect GA4",
+      actionHref: "/portal/settings/integrations",
+      done: firstRun.gscConnected,
+    },
+    {
+      id: "site",
+      title: "Customize your marketing site",
+      description: "Set your headline, hero image, and primary CTA link.",
+      actionLabel: "Customize site",
+      actionHref: "/portal/site",
+      done: firstRun.marketingSiteCustomized,
+    },
+  ];
 
   const cursiveOff = integrationChips.find((c) => c.key === "cursive")?.status === "off";
   const adsOff =
@@ -223,61 +242,60 @@ export default async function PortalHome({
 
   return (
     <div className="space-y-5">
+      {/* Setup wizard overlay — floats above dashboard, dismissed via localStorage */}
+      <SetupWizardGate shouldShow={showFirstRun} steps={wizardSteps} />
+
       <SetupBanner forceShow={forceShowSetup} />
 
-      {showFirstRun ? (
-        <FirstRunChecklist items={firstRunItems} />
-      ) : (
-        <>
-          {/* Data sources bar */}
-          {integrationChips.length > 0 ? (
-            <IntegrationHealth chips={integrationChips} />
-          ) : null}
+      {/* Data sources bar */}
+      {integrationChips.length > 0 ? (
+        <IntegrationHealth chips={integrationChips} />
+      ) : null}
 
-          {/* Insights strip — opens the day with what changed, if anything */}
-          {insightCounts.total > 0 ? (
-            <section className="rounded-xl border border-border bg-card p-4">
-              <div className="flex items-center justify-between gap-3 mb-3">
-                <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-                    <Sparkles className="h-3 w-3 text-primary" />
-                    Signal
-                  </span>
-                  <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                    {insightCounts.critical > 0
-                      ? `${insightCounts.critical} critical, ${insightCounts.warning} warning`
-                      : insightCounts.warning > 0
-                        ? `${insightCounts.warning} warning, ${insightCounts.info} info`
-                        : `${insightCounts.info} info signals open`}
-                  </h2>
-                </div>
-                <Link
-                  href="/portal/insights"
-                  className="text-xs font-medium text-foreground hover:text-primary"
-                >
-                  See all
-                </Link>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                {(openInsights as InsightCardData[]).map((insight) => (
-                  <InsightCard
-                    key={insight.id}
-                    insight={{
-                      ...insight,
-                      context: (insight.context as Record<string, unknown>) ?? null,
-                    }}
-                    dense
-                  />
-                ))}
-              </div>
-            </section>
-          ) : null}
+      {/* Insights strip — opens the day with what changed, if anything */}
+      {insightCounts.total > 0 ? (
+        <section className="rounded-xl border border-border bg-card p-4">
+          <div className="flex items-center justify-between gap-3 mb-3">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                <Sparkles className="h-3 w-3 text-primary" />
+                Signal
+              </span>
+              <h2 className="text-sm font-semibold tracking-tight text-foreground">
+                {insightCounts.critical > 0
+                  ? `${insightCounts.critical} critical, ${insightCounts.warning} warning`
+                  : insightCounts.warning > 0
+                    ? `${insightCounts.warning} warning, ${insightCounts.info} info`
+                    : `${insightCounts.info} info signals open`}
+              </h2>
+            </div>
+            <Link
+              href="/portal/insights"
+              className="text-xs font-medium text-foreground hover:text-primary"
+            >
+              See all
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            {(openInsights as InsightCardData[]).map((insight) => (
+              <InsightCard
+                key={insight.id}
+                insight={{
+                  ...insight,
+                  context: (insight.context as Record<string, unknown>) ?? null,
+                }}
+                dense
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
-          {/* KPI strip — six tiles across at desktop, wraps on smaller screens */}
-          <section
-            aria-label="Key metrics"
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3"
-          >
+      {/* KPI strip — six tiles across at desktop, wraps on smaller screens */}
+      <section
+        aria-label="Key metrics"
+        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3"
+      >
             <KpiTile
               label="Total leads"
               value={leadsNew28d.toLocaleString()}
@@ -512,9 +530,7 @@ export default async function PortalHome({
                 </div>
               </div>
             ))}
-          </section>
-        </>
-      )}
+      </section>
     </div>
   );
 }
