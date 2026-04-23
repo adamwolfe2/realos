@@ -125,7 +125,7 @@ export function SendEmailPanel({
           type="button"
           onClick={handleSend}
           disabled={pending || !canSend}
-          className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-60"
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-2 text-sm font-semibold hover:bg-primary/90 disabled:opacity-60 transition-colors"
         >
           <Send className="h-3.5 w-3.5" />
           {pending ? "Sending..." : "Send report"}

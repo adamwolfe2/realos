@@ -54,7 +54,7 @@ export async function SetupBanner({
             />
           </div>
         </div>
-        <span className="inline-flex items-center gap-1.5 rounded-[10px] bg-primary px-4 py-2 text-sm font-medium text-white transition-colors duration-200 group-hover:bg-[hsl(var(--primary)/0.9)]">
+        <span className="inline-flex items-center gap-1.5 rounded-[10px] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors duration-200 group-hover:bg-primary/90">
           Continue setup
           <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
         </span>

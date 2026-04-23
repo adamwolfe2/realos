@@ -109,7 +109,7 @@ function StatusDot({ status }: { status: ResolvedSetupStep["status"] }) {
   if (status === "done") {
     return (
       <span className="relative z-10 w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-[0_0_0_3px_hsl(var(--background))]">
-        <Check className="w-3 h-3 text-white" aria-hidden="true" />
+        <Check className="w-3 h-3 text-primary-foreground" aria-hidden="true" />
       </span>
     );
   }
@@ -229,7 +229,7 @@ function StepAction({ step }: { step: ResolvedSetupStep }) {
     <div className="mt-4">
       <Link
         href={step.actionHref}
-        className="inline-flex items-center gap-1.5 rounded-[10px] bg-primary px-4 py-2 text-sm font-medium text-white transition-colors duration-200 hover:bg-[hsl(var(--primary)/0.9)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        className="inline-flex items-center gap-1.5 rounded-[10px] bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors duration-200 hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2 focus-visible:ring-offset-background"
       >
         {step.actionLabel}
         <ArrowRight className="w-3.5 h-3.5" aria-hidden="true" />
