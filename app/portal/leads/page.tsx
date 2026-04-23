@@ -165,24 +165,24 @@ export default async function LeadsKanbanPage({
             {page > 1 ? (
               <Link
                 href={pageHref(page - 1)}
-                className="px-3 py-1.5 border border-border rounded-md hover:bg-muted transition-colors"
+                className="px-3 py-2 border border-border rounded-md hover:bg-muted transition-colors"
               >
                 Previous
               </Link>
             ) : (
-              <span className="px-3 py-1.5 border border-border rounded-md opacity-40 cursor-not-allowed">
+              <span className="px-3 py-2 border border-border rounded-md opacity-40 cursor-not-allowed select-none" aria-disabled="true">
                 Previous
               </span>
             )}
             {page < totalPages ? (
               <Link
                 href={pageHref(page + 1)}
-                className="px-3 py-1.5 border border-border rounded-md hover:bg-muted transition-colors"
+                className="px-3 py-2 border border-border rounded-md hover:bg-muted transition-colors"
               >
                 Next
               </Link>
             ) : (
-              <span className="px-3 py-1.5 border border-border rounded-md opacity-40 cursor-not-allowed">
+              <span className="px-3 py-2 border border-border rounded-md opacity-40 cursor-not-allowed select-none" aria-disabled="true">
                 Next
               </span>
             )}

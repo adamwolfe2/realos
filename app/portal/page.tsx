@@ -257,7 +257,7 @@ export default async function PortalHome({
         <section className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center justify-between gap-3 mb-3">
             <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+              <span className="inline-flex items-center gap-1.5 text-xs uppercase tracking-widest font-semibold text-muted-foreground">
                 <Sparkles className="h-3 w-3 text-primary" />
                 Signal
               </span>
@@ -276,7 +276,7 @@ export default async function PortalHome({
               See all
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {(openInsights as InsightCardData[]).map((insight) => (
               <InsightCard
                 key={insight.id}
@@ -406,7 +406,7 @@ export default async function PortalHome({
           </section>
 
           {/* Performance row */}
-          <section className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <DashboardSection
               eyebrow="Where leads come from"
               title="Lead source breakdown"
@@ -508,7 +508,7 @@ export default async function PortalHome({
 
           {/* Funnel rollup mini-stat (uses real status counts so operator sees
               live pipeline shape even before the funnel above is wired). */}
-          <section className="grid grid-cols-2 md:grid-cols-7 gap-2">
+          <section className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
             {[
               { label: "New", count: statusCounts.get(LeadStatus.NEW) ?? 0 },
               { label: "Contacted", count: statusCounts.get(LeadStatus.CONTACTED) ?? 0 },
@@ -522,7 +522,7 @@ export default async function PortalHome({
                 key={s.label}
                 className="rounded-lg border border-border bg-card px-3 py-2.5"
               >
-                <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                <div className="text-xs tracking-widest uppercase font-semibold text-muted-foreground">
                   {s.label}
                 </div>
                 <div className="mt-0.5 text-base font-semibold tabular-nums text-foreground">

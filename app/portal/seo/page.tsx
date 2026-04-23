@@ -303,8 +303,8 @@ export default async function SeoPage() {
                 </p>
               ) : (
                 <div className="overflow-x-auto -mx-2">
-                  <table className="w-full text-xs">
-                    <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <table className="w-full text-xs" aria-label="Top organic queries">
+                    <thead className="text-xs uppercase tracking-wider text-muted-foreground">
                       <tr>
                         <th className="text-left font-medium px-2 py-2">Query</th>
                         <th className="text-right font-medium px-2 py-2">Clicks</th>
@@ -349,8 +349,8 @@ export default async function SeoPage() {
                 </p>
               ) : (
                 <div className="overflow-x-auto -mx-2">
-                  <table className="w-full text-xs">
-                    <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                  <table className="w-full text-xs" aria-label="Top landing pages">
+                    <thead className="text-xs uppercase tracking-wider text-muted-foreground">
                       <tr>
                         <th className="text-left font-medium px-2 py-2">Page</th>
                         <th className="text-right font-medium px-2 py-2">Sessions</th>

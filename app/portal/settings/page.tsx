@@ -107,9 +107,9 @@ export default async function SettingsPage() {
             >
               <span>{k}</span>
               <span
-                className={`px-1.5 py-0.5 rounded text-[10px] ${
+                className={`px-1.5 py-0.5 rounded text-xs ${
                   v
-                    ? "bg-emerald-100 text-emerald-800"
+                    ? "bg-emerald-50 text-emerald-700"
                     : "bg-muted text-muted-foreground"
                 }`}
               >
@@ -123,7 +123,7 @@ export default async function SettingsPage() {
       <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="text-sm font-semibold mb-4">Team</h2>
         {users.length === 0 ? (
-          <p className="text-sm opacity-60">
+          <p className="text-sm text-muted-foreground">
             No users yet. Invite teammates from the Clerk dashboard.
           </p>
         ) : (
@@ -133,14 +133,14 @@ export default async function SettingsPage() {
                 <span>
                   {[u.firstName, u.lastName].filter(Boolean).join(" ") ||
                     u.email}
-                  <span className="text-[11px] opacity-60 ml-2">{u.email}</span>
+                  <span className="text-[11px] text-muted-foreground ml-2">{u.email}</span>
                 </span>
-                <span className="text-[11px] opacity-70">{u.role}</span>
+                <span className="text-[11px] text-muted-foreground">{u.role}</span>
               </li>
             ))}
           </ul>
         )}
-        <p className="text-xs opacity-60 mt-3">
+        <p className="text-xs text-muted-foreground mt-3">
           Inviting + role changes happen in the Clerk dashboard. Sprint 10
           adds in-portal invite + role management.
         </p>

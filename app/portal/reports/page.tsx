@@ -205,12 +205,12 @@ async function generateMonthly(): Promise<void> {
 function StatusPill({ status }: { status: string }) {
   const tone =
     status === "shared"
-      ? "bg-emerald-100 text-emerald-800"
+      ? "bg-emerald-50 text-emerald-700"
       : status === "archived"
         ? "bg-muted text-muted-foreground"
-        : "bg-sky-100 text-sky-800";
+        : "bg-sky-50 text-sky-700";
   return (
-    <span className={"text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded " + tone}>
+    <span className={"text-xs uppercase tracking-wide px-1.5 py-0.5 rounded " + tone}>
       {status}
     </span>
   );

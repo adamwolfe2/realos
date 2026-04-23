@@ -160,13 +160,13 @@ export default function NotificationsPage() {
                 )}
               >
                 {!item.readAt && (
-                  <span className="mt-1.5 shrink-0 h-2 w-2 rounded-full bg-primary" />
+                  <span className="mt-1.5 shrink-0 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
                 )}
                 <div className={cn("min-w-0 flex-1", item.readAt && "pl-5")}>
                   <div className="flex items-center gap-2 flex-wrap mb-1">
                     <span
                       className={cn(
-                        "text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded",
+                        "text-xs uppercase tracking-wide px-1.5 py-0.5 rounded",
                         KIND_COLOR[item.kind] ?? "bg-muted text-muted-foreground"
                       )}
                     >

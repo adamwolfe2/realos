@@ -534,7 +534,7 @@ function VisitorFeed({
             <VisitorRow visitor={visitor} />
             {liveChat ? (
               <div className="px-4 pb-3 -mt-1 flex items-center gap-3">
-                <span className="text-[11px] text-emerald-600 flex items-center gap-1">
+                <span className="text-[11px] text-emerald-700 flex items-center gap-1">
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Live chat
                 </span>
@@ -563,10 +563,10 @@ function VisitorRow({
 
   const intentTone =
     visitor.intentScore >= 80
-      ? "text-red-600"
+      ? "text-rose-600"
       : visitor.intentScore >= 60
-      ? "text-orange-500"
-      : "opacity-70";
+      ? "text-amber-600"
+      : "text-muted-foreground";
 
   const statusBadge = (() => {
     switch (visitor.status) {
@@ -728,7 +728,7 @@ function Pager({
       {hasMore ? (
         <Link
           href={`/portal/visitors${buildQuery(selection, { page: page + 1 })}`}
-          className="px-3 py-1.5 border rounded-md hover:bg-muted"
+          className="px-4 py-2 border border-border rounded-md hover:bg-muted transition-colors"
         >
           Load more
         </Link>

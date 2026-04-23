@@ -207,7 +207,7 @@ export default async function ReferralsPage() {
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {stats.map((s) => (
             <ReferralLinkCard key={s.propertyId} stat={s} />
           ))}
@@ -216,7 +216,7 @@ export default async function ReferralsPage() {
 
       {/* How it works */}
       <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-        <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+        <div className="text-xs uppercase tracking-widest font-semibold text-muted-foreground">
           How it works
         </div>
         <ol className="space-y-2 text-sm text-muted-foreground list-decimal list-inside">
