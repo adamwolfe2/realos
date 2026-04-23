@@ -516,9 +516,10 @@ model Property {
   syncError            String?
 
   // Marketing
-  heroImageUrl   String?
-  photoUrls      Json? // Array of URLs
-  virtualTourUrl String?
+  heroImageUrl    String?
+  photoUrls       Json? // Array of URLs
+  virtualTourUrl  String?
+  googleReviewUrl String?   // Google Maps review link for this property
   amenities      Json? // Array of strings
   yearBuilt      Int?
   totalUnits     Int?
@@ -659,6 +660,7 @@ model Lead {
   nextScheduledEmailAt   DateTime?
   emailsSent             Int       @default(0)
   cadenceStage           String? // day_one_sent, day_three_sent, ...
+  reviewRequestSentAt    DateTime? // When the review request email was sent
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
