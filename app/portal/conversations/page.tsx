@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
@@ -170,12 +171,14 @@ export default async function ConversationsList({
         description="Read every transcript, flag patterns to tune the system prompt, and find the leads worth chasing. Filters are URL-driven so you can bookmark or share a view."
       />
 
-      <TranscriptSearch
-        filters={filterChips}
-        initialQuery={qRaw}
-        initialFilter={flagParam}
-        initialSort={sort}
-      />
+      <Suspense>
+        <TranscriptSearch
+          filters={filterChips}
+          initialQuery={qRaw}
+          initialFilter={flagParam}
+          initialSort={sort}
+        />
+      </Suspense>
 
       <p className="text-xs text-muted-foreground">
         Showing {conversations.length} of {totalConversations} conversations

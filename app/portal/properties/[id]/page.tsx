@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
@@ -87,6 +88,7 @@ export default async function PropertyDetail({
         </Link>
       </header>
 
+      <Suspense>
       <PropertyTabs
         initialTab={tab ?? "overview"}
         showOccupancy={showOccupancyTab}
@@ -149,6 +151,7 @@ export default async function PropertyDetail({
           ) : null,
         }}
       />
+      </Suspense>
     </div>
   );
 }
