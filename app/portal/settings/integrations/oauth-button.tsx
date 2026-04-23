@@ -44,11 +44,11 @@ export function OAuthConnectButton({ provider }: { provider: OAuthProvider }) {
   return (
     <a
       href={`/api/oauth/${provider}/start`}
-      className="rounded-md border border-primary bg-primary text-primary-foreground px-3 py-2.5 flex items-center justify-between gap-3 hover:bg-primary/90"
+      className="rounded-md border border-primary bg-primary text-primary-foreground px-3 py-2.5 flex items-center justify-between gap-3 hover:bg-primary/90 transition-colors"
     >
       <div className="min-w-0">
         <div className="text-sm font-medium">Connect via {label} OAuth</div>
-        <p className="text-[11px] opacity-80 mt-0.5">
+        <p className="text-[11px] text-primary-foreground/80 mt-0.5">
           Recommended. Tokens are stored encrypted and refreshed automatically.
         </p>
       </div>
