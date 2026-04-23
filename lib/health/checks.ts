@@ -115,7 +115,6 @@ const OPTIONAL_ENVS = [
   "RESEND_API_KEY",
   "STRIPE_SECRET_KEY",
   "VERCEL_API_TOKEN",
-  "WS_VERCEL_TOKEN",
 ] as const;
 
 export function checkEnv(): CheckResult {

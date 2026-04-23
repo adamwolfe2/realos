@@ -30,8 +30,8 @@ const envSchema = z.object({
   // AI — required for AI-powered routes (quote generation, assistant, etc.)
   ANTHROPIC_API_KEY: z.string().min(1, "ANTHROPIC_API_KEY is required for AI features"),
 
-  // Infrastructure provisioning — controls GitHub/Vercel project creation
-  WS_VERCEL_TOKEN: z.string().min(1, "WS_VERCEL_TOKEN is required for infrastructure provisioning"),
+  // Infrastructure provisioning — domain attachment via Vercel API
+  VERCEL_API_TOKEN: z.string().optional(),
 
   // Admin bootstrap — grants super-admin access
   BOOTSTRAP_SECRET: z.string().min(1, "BOOTSTRAP_SECRET is required for admin bootstrap"),

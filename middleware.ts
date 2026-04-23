@@ -24,6 +24,9 @@ const isPublicApi = createRouteMatcher([
   "/api/chatbot(.*)",
   "/api/public(.*)",
   "/api/appfolio/webhook(.*)",
+  "/api/health(.*)",
+  "/api/ingest(.*)",
+  "/api/subscribe(.*)",
 ]);
 
 const TENANT_RENDER_PREFIX = "/tenant-site";
