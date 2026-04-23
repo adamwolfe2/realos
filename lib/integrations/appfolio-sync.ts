@@ -132,9 +132,9 @@ export async function runAppfolioSync(
 
   let topLevelError: string | null = null;
 
-  // 1. LEADS
+  // 1. LEADS — AppFolio v2 report: prospect_source_tracking
   try {
-    const rows = await fetchAllPages(client, "leads", { fromDate, toDate });
+    const rows = await fetchAllPages(client, "prospect_source_tracking", { fromDate, toDate });
     for (const row of rows) {
       const mapped = mapLeadPayload(row);
       if (!mapped) continue;
@@ -185,7 +185,7 @@ export async function runAppfolioSync(
         ? new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
         : fromDate,
       toDate,
-      extraParams: integration.propertyGroupFilter
+      extraFilters: integration.propertyGroupFilter
         ? { property_group: integration.propertyGroupFilter }
         : undefined,
     });

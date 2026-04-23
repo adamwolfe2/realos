@@ -239,23 +239,20 @@ async function fetchEmbedScrape(
 // ---------------------------------------------------------------------------
 // Mode 2, REST (Plus / Max plan).
 //
-// Endpoint pattern:
-//   https://{subdomain}.appfolio.com/api/v1/reports/{report_name}.json
-//     ?paginate_results=true
-//     &from_date=MM/DD/YYYY
-//     &to_date=MM/DD/YYYY
+// AppFolio Reports API v2:
+//   POST https://{subdomain}.appfolio.com/api/v2/reports/{report_name}.json
+//   Auth: HTTP Basic (clientId:clientSecret from Developer Portal)
+//   Body: JSON — date_filters use YYYY-MM-DD format, not MM/DD/YYYY
+//   Pagination: response { results, next_page_url } — follow until null
 //
-// Auth: HTTP Basic using the clientId:clientSecret from the AppFolio
-// Developer Portal. No OAuth.
-//
-// Pagination: response contains `{ results, next_page_url }`. Follow
-// next_page_url until it's null. We cap at 50 pages per call as a safety
-// rail — AppFolio doesn't publish rate limits, and runaway pagination
-// against a misconfigured tenant could blow our Vercel timebox.
+// Connection probe uses chart_of_accounts (no required params) to validate
+// credentials without needing a valid date range or specific report access.
 // ---------------------------------------------------------------------------
 
+// Report names used in our sync. AppFolio v2 report names may differ from
+// v1 — these are the names we pass and the server will 400/404 if wrong.
 const REPORT_NAMES = [
-  "leads",
+  "prospect_source_tracking",
   "showings",
   "tenants",
   "listings",
@@ -267,7 +264,7 @@ type RestFetchOptions = {
   fromDate?: Date;
   toDate?: Date;
   nextPageUrl?: string | null;
-  extraParams?: Record<string, string>;
+  extraFilters?: Record<string, unknown>;
 };
 
 export type RawRow = Record<string, unknown>;
@@ -275,16 +272,16 @@ export type RawRow = Record<string, unknown>;
 export type AppFolioRestClient = {
   subdomain: string;
   fetchReport(
-    reportName: AppFolioReportName,
+    reportName: string,
     options?: RestFetchOptions
   ): Promise<{ results: RawRow[]; nextPageUrl: string | null }>;
 };
 
-function mmddyyyy(date: Date): string {
+function isoDate(date: Date): string {
+  const y = String(date.getUTCFullYear());
   const m = String(date.getUTCMonth() + 1).padStart(2, "0");
   const d = String(date.getUTCDate()).padStart(2, "0");
-  const y = String(date.getUTCFullYear());
-  return `${m}/${d}/${y}`;
+  return `${y}-${m}-${d}`;
 }
 
 function requireSubdomain(integration: Pick<AppFolioIntegration, "instanceSubdomain">): string {
@@ -312,6 +309,31 @@ function resolveRestCreds(integration: AppFolioIntegration): {
   return { clientId, clientSecret };
 }
 
+async function doAppFolioPost(
+  url: string,
+  basic: string,
+  body: Record<string, unknown>
+): Promise<Response> {
+  const opts: RequestInit = {
+    method: "POST",
+    cache: "no-store",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+      "User-Agent": USER_AGENT,
+    },
+    body: JSON.stringify(body),
+  };
+  let response = await fetch(url, opts);
+  // Single retry on 429
+  if (response.status === 429) {
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+    response = await fetch(url, opts);
+  }
+  return response;
+}
+
 export function appfolioRestClient(
   integration: AppFolioIntegration
 ): AppFolioRestClient {
@@ -320,44 +342,12 @@ export function appfolioRestClient(
   const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
 
   async function fetchReport(
-    reportName: AppFolioReportName,
+    reportName: string,
     options: RestFetchOptions = {}
   ) {
-    let url: string;
+    // Pagination URLs are returned by AppFolio and used verbatim (GET).
     if (options.nextPageUrl) {
-      url = options.nextPageUrl;
-    } else {
-      const params = new URLSearchParams({
-        paginate_results: "true",
-      });
-      if (options.fromDate) {
-        params.set("from_date", mmddyyyy(options.fromDate));
-      }
-      if (options.toDate) {
-        params.set("to_date", mmddyyyy(options.toDate));
-      }
-      if (options.extraParams) {
-        for (const [k, v] of Object.entries(options.extraParams)) {
-          params.set(k, v);
-        }
-      }
-      url = `https://${subdomain}.appfolio.com/api/v1/reports/${reportName}.json?${params.toString()}`;
-    }
-
-    let response = await fetch(url, {
-      method: "GET",
-      cache: "no-store",
-      headers: {
-        Authorization: `Basic ${basic}`,
-        Accept: "application/json",
-        "User-Agent": USER_AGENT,
-      },
-    });
-
-    // Single retry on 429 — wait 2 s then try once more.
-    if (response.status === 429) {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      response = await fetch(url, {
+      const response = await fetch(options.nextPageUrl, {
         method: "GET",
         cache: "no-store",
         headers: {
@@ -366,14 +356,44 @@ export function appfolioRestClient(
           "User-Agent": USER_AGENT,
         },
       });
+      if (!response.ok) {
+        const text = await response.text().catch(() => "");
+        throw new Error(
+          `AppFolio ${reportName} page returned ${response.status}${text ? `: ${text.slice(0, 200)}` : ""}`
+        );
+      }
+      const body = (await response.json()) as {
+        results?: RawRow[];
+        next_page_url?: string | null;
+      };
+      return {
+        results: Array.isArray(body.results) ? body.results : [],
+        nextPageUrl: body.next_page_url ?? null,
+      };
     }
+
+    const url = `https://${subdomain}.appfolio.com/api/v2/reports/${reportName}.json`;
+    const requestBody: Record<string, unknown> = {
+      paginate_results: true,
+    };
+
+    if (options.fromDate || options.toDate) {
+      requestBody.date_filters = {
+        ...(options.fromDate ? { from_date: isoDate(options.fromDate) } : {}),
+        ...(options.toDate ? { to_date: isoDate(options.toDate) } : {}),
+      };
+    }
+
+    if (options.extraFilters) {
+      Object.assign(requestBody, options.extraFilters);
+    }
+
+    const response = await doAppFolioPost(url, basic, requestBody);
 
     if (!response.ok) {
       const text = await response.text().catch(() => "");
       throw new Error(
-        `AppFolio ${reportName} returned ${response.status}${
-          text ? `: ${text.slice(0, 200)}` : ""
-        }`
+        `AppFolio ${reportName} returned ${response.status}${text ? `: ${text.slice(0, 200)}` : ""}`
       );
     }
 
@@ -394,8 +414,8 @@ const MAX_PAGES = 50;
 
 export async function fetchAllPages(
   client: AppFolioRestClient,
-  reportName: AppFolioReportName,
-  options: { fromDate?: Date; toDate?: Date; extraParams?: Record<string, string> } = {}
+  reportName: string,
+  options: { fromDate?: Date; toDate?: Date; extraFilters?: Record<string, unknown> } = {}
 ): Promise<RawRow[]> {
   const out: RawRow[] = [];
   let nextPageUrl: string | null = null;
@@ -405,7 +425,7 @@ export async function fetchAllPages(
     const page = await client.fetchReport(reportName, {
       fromDate: pages === 0 ? options.fromDate : undefined,
       toDate: pages === 0 ? options.toDate : undefined,
-      extraParams: pages === 0 ? options.extraParams : undefined,
+      extraFilters: pages === 0 ? options.extraFilters : undefined,
       nextPageUrl,
     });
     out.push(...page.results);
@@ -442,43 +462,32 @@ export async function testAppFolioConnection(
   }
 
   const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-  const authHeaders = {
-    Authorization: `Basic ${basic}`,
-    Accept: "application/json",
-    "User-Agent": USER_AGENT,
-  };
 
-  // Probe sequence: try each report/param variant in order.
-  // A 401/403 → definitive auth failure. A 200 → success.
-  // A 400/404/422 → bad params or unsupported report, try next variant.
-  const probes: Array<{ url: string; label: string }> = [
+  // Probe sequence (v2 POST, YYYY-MM-DD dates):
+  //   1. chart_of_accounts — no required params, instant 200 if auth is valid
+  //   2. prospect_source_tracking with a 30-day window — confirms lead access
+  // A 401/403 anywhere = definitive auth failure.
+  // A 200 anywhere = success.
+  const probes: Array<{ reportName: string; body: Record<string, unknown> }> = [
+    { reportName: "chart_of_accounts", body: { paginate_results: true } },
     {
-      url: `https://${subdomain}.appfolio.com/api/v1/reports/listings.json?paginate_results=true`,
-      label: "listings",
-    },
-    {
-      url: `https://${subdomain}.appfolio.com/api/v1/reports/leads.json?paginate_results=true`,
-      label: "leads (no dates)",
-    },
-    {
-      url: (() => {
-        const today = new Date();
-        const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-        return `https://${subdomain}.appfolio.com/api/v1/reports/leads.json?paginate_results=true&from_date=${mmddyyyy(yesterday)}&to_date=${mmddyyyy(today)}`;
-      })(),
-      label: "leads (with dates)",
+      reportName: "prospect_source_tracking",
+      body: {
+        paginate_results: true,
+        date_filters: {
+          from_date: isoDate(new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)),
+          to_date: isoDate(new Date()),
+        },
+      },
     },
   ];
 
   let lastError = "Connection test failed";
   for (const probe of probes) {
+    const url = `https://${subdomain}.appfolio.com/api/v2/reports/${probe.reportName}.json`;
     let response: Response;
     try {
-      response = await fetch(probe.url, {
-        method: "GET",
-        cache: "no-store",
-        headers: authHeaders,
-      });
+      response = await doAppFolioPost(url, basic, probe.body);
     } catch (err) {
       lastError = err instanceof Error ? err.message : "Network error";
       continue;
@@ -494,8 +503,7 @@ export async function testAppFolioConnection(
       };
     }
 
-    // 400/404/422 — bad params or report not available, try next probe
-    lastError = `AppFolio ${probe.label} returned ${response.status}`;
+    lastError = `AppFolio ${probe.reportName} returned ${response.status}`;
   }
 
   return { ok: false, error: lastError };
@@ -792,7 +800,7 @@ async function fetchRest(
     // sometimes 400s without one. Use a wide window.
     fromDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
     toDate: new Date(),
-    extraParams: integration.propertyGroupFilter
+    extraFilters: integration.propertyGroupFilter
       ? { property_group: integration.propertyGroupFilter }
       : undefined,
   });
