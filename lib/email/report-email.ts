@@ -61,6 +61,7 @@ export function buildReportEmail(input: ReportEmailInput): {
   const funnelBlock = renderFunnel(snapshot);
   const insightsBlock = renderInsights(snapshot);
   const adBlock = renderAds(snapshot);
+  const attributionBlock = renderAttribution(snapshot);
   const seoBlock = renderSeo(snapshot);
 
   const bodyHtml = `
@@ -85,6 +86,7 @@ export function buildReportEmail(input: ReportEmailInput): {
     ${funnelBlock}
     ${insightsBlock}
     ${adBlock}
+    ${attributionBlock}
     ${seoBlock}
 
     <p style="margin:28px 0 8px;color:${OLIVE};font-size:13px;line-height:1.6;">
@@ -269,6 +271,36 @@ function renderAds(s: ReportSnapshot): string {
   `;
 }
 
+function renderAttribution(s: ReportSnapshot): string {
+  if (!s.attributionBySource || s.attributionBySource.length === 0) return "";
+  const hasSigned = s.attributionBySource.some(r => r.signed > 0);
+  const rows = s.attributionBySource
+    .map(
+      (r) => `
+        <tr>
+          <td style="padding:8px 12px;border-bottom:1px solid ${BORDER};color:${NEAR_BLACK};font-size:12px;">${escapeHtml(r.source)}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid ${BORDER};color:${NEAR_BLACK};font-size:12px;text-align:right;font-feature-settings:'tnum';">${r.leads}</td>
+          <td style="padding:8px 12px;border-bottom:1px solid ${BORDER};color:${NEAR_BLACK};font-size:12px;text-align:right;font-feature-settings:'tnum';">${r.signed}</td>
+        </tr>
+      `,
+    )
+    .join("");
+  return `
+    <h2 style="margin:28px 0 10px;color:${NEAR_BLACK};font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">Where leases came from</h2>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${BORDER};">
+      <thead>
+        <tr style="background-color:${PARCHMENT};">
+          <th style="padding:8px 12px;text-align:left;color:${STONE};font-size:10px;letter-spacing:0.1em;text-transform:uppercase;">Source</th>
+          <th style="padding:8px 12px;text-align:right;color:${STONE};font-size:10px;letter-spacing:0.1em;text-transform:uppercase;">Leads</th>
+          <th style="padding:8px 12px;text-align:right;color:${STONE};font-size:10px;letter-spacing:0.1em;text-transform:uppercase;">Signed</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    ${!hasSigned ? `<p style="margin:6px 0 0;color:${STONE};font-size:11px;">No signed leases recorded this period.</p>` : ""}
+  `;
+}
+
 function renderSeo(s: ReportSnapshot): string {
   if (!s.topQueries || s.topQueries.length === 0) return "";
   const rows = s.topQueries
@@ -323,6 +355,13 @@ function buildPlainText(input: ReportEmailInput, period: string, kindLabel: stri
     lines.push(`  Cost per lead: $${snapshot.kpis.costPerLead.toFixed(2)}`);
   }
   lines.push(`  Organic sessions: ${snapshot.kpis.organicSessions.toLocaleString()}`);
+  if (snapshot.attributionBySource && snapshot.attributionBySource.length > 0) {
+    lines.push("");
+    lines.push("Where leases came from");
+    for (const r of snapshot.attributionBySource) {
+      lines.push(`  ${r.source}: ${r.leads} leads, ${r.signed} signed`);
+    }
+  }
   lines.push("");
   lines.push(`Full report: ${shareUrl}`);
   lines.push("");

@@ -1,5 +1,5 @@
 import * as React from "react";
-import type { AiAnalysis, ReportSnapshot } from "@/lib/reports/generate";
+import type { AiAnalysis, ReportAiVisibility, ReportSnapshot } from "@/lib/reports/generate";
 
 // ---------------------------------------------------------------------------
 // ReportView
@@ -171,6 +171,22 @@ export function ReportView({
         </Section>
       ) : null}
 
+      {/* Attribution by source */}
+      {snapshot.attributionBySource && snapshot.attributionBySource.length > 0 ? (
+        <Section title="Where leases came from" eyebrow="Full pipeline by source">
+          <Table
+            columns={["Source", "Leads", "Tours", "Applications", "Signed"]}
+            rows={snapshot.attributionBySource.map(r => [
+              r.source,
+              r.leads.toLocaleString(),
+              r.tours.toLocaleString(),
+              r.applications.toLocaleString(),
+              r.signed.toLocaleString(),
+            ])}
+          />
+        </Section>
+      ) : null}
+
       {/* Top pages + queries — side by side */}
       {(snapshot.topPages.length > 0 || snapshot.topQueries.length > 0) ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -210,6 +226,11 @@ export function ReportView({
             <MiniStat label="Avg. messages" value={snapshot.chatbotStats.avgMessageCount.toFixed(1)} />
           </div>
         </Section>
+      ) : null}
+
+      {/* AI visibility */}
+      {snapshot.aiVisibility && snapshot.aiVisibility.brandedClicks > 0 ? (
+        <AiVisibilitySection aiVisibility={snapshot.aiVisibility} />
       ) : null}
 
       {/* Insights */}
@@ -324,6 +345,41 @@ function AiActionCard({ item }: { item: AiAnalysis["actions"][number] }) {
       <p className="text-xs text-muted-foreground leading-relaxed mb-1">{item.observation}</p>
       <p className="text-xs text-primary leading-relaxed font-medium">{item.action}</p>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AI Visibility section
+// ---------------------------------------------------------------------------
+
+function AiVisibilitySection({ aiVisibility }: { aiVisibility: ReportAiVisibility }) {
+  return (
+    <Section title="AI search visibility" eyebrow="Branded search performance">
+      <div className="space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          <MiniStat label="Branded clicks" value={aiVisibility.brandedClicks.toLocaleString()} />
+          <MiniStat label="Branded impr." value={aiVisibility.brandedImpressions.toLocaleString()} />
+          <MiniStat label="Branded share" value={`${aiVisibility.brandedShare}%`} />
+        </div>
+        {aiVisibility.topBrandedTerms.length > 0 ? (
+          <div>
+            <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
+              Top branded terms
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {aiVisibility.topBrandedTerms.map(term => (
+                <span key={term} className="text-xs bg-muted px-2 py-0.5 rounded-full text-foreground">
+                  {term}
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Branded search clicks reflect how often people search for your property by name. Growing this metric also improves visibility in AI-powered recommendations like ChatGPT.
+        </p>
+      </div>
+    </Section>
   );
 }
 

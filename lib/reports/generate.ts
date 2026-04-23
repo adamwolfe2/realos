@@ -104,6 +104,21 @@ export type AiAnalysis = {
   actions: AiActionItem[];
 };
 
+export type ReportAttributionRow = {
+  source: string;
+  leads: number;
+  tours: number;
+  applications: number;
+  signed: number;
+};
+
+export type ReportAiVisibility = {
+  brandedClicks: number;
+  brandedImpressions: number;
+  brandedShare: number; // pct of total clicks that are branded (0-100)
+  topBrandedTerms: string[];
+};
+
 export type ReportSnapshot = {
   kind: ReportKind;
   periodStart: string;
@@ -119,6 +134,8 @@ export type ReportSnapshot = {
   chatbotStats: ReportChatbotStats;
   properties: ReportPropertyRow[];
   trafficTrend: number[];
+  attributionBySource: ReportAttributionRow[];
+  aiVisibility: ReportAiVisibility | null;
   aiAnalysis?: AiAnalysis;
 };
 
@@ -205,6 +222,21 @@ function bucketDaily(rows: Array<{ date: Date; value: number }>, days: number, p
     if (idx >= 0 && idx < days) buckets[idx] += row.value;
   }
   return buckets;
+}
+
+// ---------------------------------------------------------------------------
+// AI visibility helpers
+// ---------------------------------------------------------------------------
+
+const GENERIC_HOUSING_TERMS = new Set([
+  'apartments', 'housing', 'rooms', 'bedroom', 'studio', 'rent', 'rental',
+  'available', 'near', 'affordable', 'student', 'dorms', 'university', 'college',
+]);
+
+function isBrandedQuery(query: string): boolean {
+  const words = query.toLowerCase().split(/\s+/);
+  const genericCount = words.filter(w => GENERIC_HOUSING_TERMS.has(w)).length;
+  return genericCount < words.length / 2 && words.length <= 4;
 }
 
 // ---------------------------------------------------------------------------
@@ -638,6 +670,64 @@ export async function generateReportSnapshot(
         )
       : trafficTrend;
 
+  // Attribution by source — load leads with id/source/status, then join tours and apps
+  const allLeadsInPeriod = await prisma.lead.findMany({
+    where: { orgId, createdAt: { gte: periodStart, lt: periodEnd } },
+    select: { id: true, source: true, status: true },
+  });
+
+  const leadIds = allLeadsInPeriod.map(l => l.id);
+
+  const [toursForLeads, appsForLeads] = await Promise.all([
+    leadIds.length > 0
+      ? prisma.tour.findMany({
+          where: { leadId: { in: leadIds } },
+          select: { leadId: true },
+        })
+      : Promise.resolve([]),
+    leadIds.length > 0
+      ? prisma.application.findMany({
+          where: { leadId: { in: leadIds } },
+          select: { leadId: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  const toursByLeadId = new Set(toursForLeads.map(t => t.leadId));
+  const appsByLeadId = new Set(appsForLeads.map(a => a.leadId));
+
+  const sourceMap = new Map<string, ReportAttributionRow>();
+  for (const lead of allLeadsInPeriod) {
+    const label = LEAD_SOURCE_LABELS[lead.source] ?? lead.source;
+    const row = sourceMap.get(label) ?? { source: label, leads: 0, tours: 0, applications: 0, signed: 0 };
+    row.leads++;
+    if (toursByLeadId.has(lead.id)) row.tours++;
+    if (appsByLeadId.has(lead.id)) row.applications++;
+    if (lead.status === LeadStatus.SIGNED) row.signed++;
+    sourceMap.set(label, row);
+  }
+  const attributionBySource: ReportAttributionRow[] = Array.from(sourceMap.values())
+    .filter(r => r.leads > 0)
+    .sort((a, b) => b.signed - a.signed || b.leads - a.leads);
+
+  // AI visibility — classify branded vs. generic search queries
+  const totalClicks = topQueriesRows.reduce((s, q) => s + (q._sum.clicks ?? 0), 0);
+  const brandedQueryRows = topQueriesRows.filter(q => isBrandedQuery(q.query));
+  const brandedClicks = brandedQueryRows.reduce((s, q) => s + (q._sum.clicks ?? 0), 0);
+  const brandedImpressions = brandedQueryRows.reduce((s, q) => s + (q._sum.impressions ?? 0), 0);
+
+  const aiVisibility: ReportAiVisibility | null = totalClicks > 0
+    ? {
+        brandedClicks,
+        brandedImpressions,
+        brandedShare: Math.round((brandedClicks / totalClicks) * 100),
+        topBrandedTerms: brandedQueryRows
+          .sort((a, b) => (b._sum.clicks ?? 0) - (a._sum.clicks ?? 0))
+          .slice(0, 5)
+          .map(q => q.query),
+      }
+    : null;
+
   const baseSnapshot: Omit<ReportSnapshot, "aiAnalysis"> = {
     kind,
     periodStart: periodStart.toISOString(),
@@ -653,6 +743,8 @@ export async function generateReportSnapshot(
     chatbotStats,
     properties,
     trafficTrend: trafficFallback,
+    attributionBySource,
+    aiVisibility,
   };
 
   const aiAnalysis = await generateAiAnalysis(baseSnapshot);
