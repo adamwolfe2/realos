@@ -283,6 +283,40 @@ export async function getBriefingMetrics(orgId: string) {
   };
 }
 
+const TERMINAL_LEAD_STATUSES = [
+  LeadStatus.SIGNED,
+  LeadStatus.LOST,
+  LeadStatus.UNQUALIFIED,
+];
+
+export async function getAgingLeadsSummary(orgId: string): Promise<{
+  fresh: number;
+  aging: number;
+  stale: number;
+}> {
+  const activeLeads = await prisma.lead.findMany({
+    where: {
+      orgId,
+      status: { notIn: TERMINAL_LEAD_STATUSES },
+    },
+    select: { createdAt: true },
+  });
+
+  const now = Date.now();
+  let fresh = 0;
+  let aging = 0;
+  let stale = 0;
+
+  for (const { createdAt } of activeLeads) {
+    const days = Math.floor((now - createdAt.getTime()) / 86_400_000);
+    if (days < 7) fresh += 1;
+    else if (days < 15) aging += 1;
+    else stale += 1;
+  }
+
+  return { fresh, aging, stale };
+}
+
 function pct(current: number, previous: number): number | null {
   if (previous === 0) return current > 0 ? 100 : null;
   return Math.round(((current - previous) / previous) * 100);

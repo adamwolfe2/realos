@@ -64,6 +64,25 @@ const STATUS_META: Record<
   },
 };
 
+const TERMINAL_STATUSES = new Set<LeadStatus>([
+  LeadStatus.SIGNED,
+  LeadStatus.LOST,
+  LeadStatus.UNQUALIFIED,
+]);
+
+function ageTier(iso: string): "fresh" | "aging" | "stale" {
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days < 7) return "fresh";
+  if (days < 15) return "aging";
+  return "stale";
+}
+
+const AGE_DOT_CLASS: Record<ReturnType<typeof ageTier>, string> = {
+  fresh: "bg-emerald-400",
+  aging: "bg-amber-400",
+  stale: "bg-rose-500",
+};
+
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const minutes = Math.floor(diff / 60_000);
@@ -108,7 +127,14 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
               Score
             </th>
             <th className="text-right px-4 py-3 text-xs font-semibold text-muted-foreground uppercase tracking-wider hidden sm:table-cell">
-              Added
+              <span className="inline-flex items-center justify-end gap-2">
+                Added
+                <span className="inline-flex items-center gap-1 font-normal normal-case tracking-normal text-[10px] text-muted-foreground">
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" title="0-6 days" />
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" title="7-14 days" />
+                  <span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-500" title="15+ days" />
+                </span>
+              </span>
             </th>
           </tr>
         </thead>
@@ -176,8 +202,18 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                   )}
                 </td>
                 <td className="px-4 py-3 text-right hidden sm:table-cell">
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {relativeTime(item.createdAt)}
+                  <span className="inline-flex items-center justify-end gap-1.5">
+                    {!TERMINAL_STATUSES.has(item.status) && (
+                      <span
+                        className={cn(
+                          "inline-block h-1.5 w-1.5 shrink-0 rounded-full",
+                          AGE_DOT_CLASS[ageTier(item.createdAt)],
+                        )}
+                      />
+                    )}
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {relativeTime(item.createdAt)}
+                    </span>
                   </span>
                 </td>
               </tr>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, Building2 } from "lucide-react";
+import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, Building2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
@@ -13,6 +13,7 @@ import { MetricStrip } from "@/components/portal/briefing/metric-strip";
 import {
   getBriefingMetrics,
   getCallPriorityLeads,
+  getAgingLeadsSummary,
   getSinceLastViewed,
   getTranscriptsWorthReading,
 } from "@/lib/briefing/queries";
@@ -57,6 +58,7 @@ export default async function BriefingPage({
     transcripts,
     metrics,
     insights,
+    aging,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -67,6 +69,7 @@ export default async function BriefingPage({
     getTranscriptsWorthReading(scope.orgId, { limit: 6, propertyId: activePropertyId }),
     getBriefingMetrics(scope.orgId),
     getRecentInsightsForBriefing(scope.orgId, user?.lastBriefingViewedAt ?? null, 8),
+    getAgingLeadsSummary(scope.orgId),
   ]);
 
   const insightCards: InsightCardData[] = insights.map((i) => ({
@@ -117,6 +120,10 @@ export default async function BriefingPage({
       </header>
 
       <SinceBanner lastViewedAt={user?.lastBriefingViewedAt ?? null} delta={delta} />
+
+      {aging.stale > 0 && (
+        <AgingAlertBanner fresh={aging.fresh} aging={aging.aging} stale={aging.stale} />
+      )}
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <DashboardSection
@@ -282,5 +289,37 @@ function ChecklistItem({
       </span>
       <span className={enabled ? "" : "text-muted-foreground"}>{label}</span>
     </li>
+  );
+}
+
+function AgingAlertBanner({
+  fresh,
+  aging,
+  stale,
+}: {
+  fresh: number;
+  aging: number;
+  stale: number;
+}) {
+  return (
+    <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-3">
+      <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-medium text-amber-900">
+          {stale} lead{stale === 1 ? "" : "s"} {stale === 1 ? "is" : "are"} 15+ days old — conversion drops sharply after 14 days. Contact today.
+        </p>
+        {aging > 0 && (
+          <p className="text-xs text-amber-700 mt-0.5">
+            {aging} more {aging === 1 ? "lead" : "leads"} aging (7-14 days).
+          </p>
+        )}
+      </div>
+      <Link
+        href="/portal/leads"
+        className="shrink-0 text-xs font-medium text-amber-700 hover:text-amber-900 underline underline-offset-2 transition-colors"
+      >
+        View all leads
+      </Link>
+    </div>
   );
 }
