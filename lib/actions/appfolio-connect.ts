@@ -59,7 +59,6 @@ const connectSchema = z.discriminatedUnion("authMode", [
           "Subdomain must look like 'sgrealestate' (no dots, no https://).",
       }),
     addressFilter: z.string().trim().max(500).optional(),
-    plan: z.enum(["core", "plus", "max"]).optional(),
   }),
   z.object({
     authMode: z.literal("rest"),
@@ -75,7 +74,6 @@ const connectSchema = z.discriminatedUnion("authMode", [
       }),
     clientId: z.string().trim().min(4, "Client ID is required").max(500),
     clientSecret: z.string().trim().min(4, "Client secret is required").max(500),
-    plan: z.enum(["core", "plus", "max"]).optional(),
   }),
 ]);
 
@@ -107,14 +105,13 @@ export async function connectAppfolio(
     addressFilter: formData.get("addressFilter")?.toString() || undefined,
     clientId: formData.get("clientId")?.toString() ?? "",
     clientSecret: formData.get("clientSecret")?.toString() ?? "",
-    plan: formData.get("plan")?.toString() || undefined,
   });
   if (!parsed.success) {
     const first = parsed.error.issues[0]?.message ?? "Invalid input";
     return { ok: false, error: first };
   }
 
-  const { subdomain, plan } = parsed.data;
+  const { subdomain } = parsed.data;
 
   try {
   // Validate credentials before persisting. For embed mode, probe the
@@ -152,7 +149,6 @@ export async function connectAppfolio(
   // support the implicit transaction that Prisma generates for upsert.
   const integrationData = {
     instanceSubdomain: subdomain,
-    plan: plan ?? (isEmbed ? "core" : null),
     apiKeyEncrypted: null as string | null,
     clientIdEncrypted,
     clientSecretEncrypted,

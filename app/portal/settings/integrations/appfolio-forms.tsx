@@ -145,20 +145,6 @@ export function ConnectAppfolioForm() {
             onChange={(v) => { setClientSecret(v); resetTest(); }}
             hint="Stored encrypted at rest. You can rotate it at any time."
           />
-          <label className="flex flex-col gap-1.5">
-            <span className="text-xs font-medium text-foreground">Plan</span>
-            <select
-              name="plan"
-              defaultValue="plus"
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            >
-              <option value="plus">Plus</option>
-              <option value="max">Max</option>
-            </select>
-            <span className="text-[11px] text-muted-foreground">
-              Reports API requires Plus or Max.
-            </span>
-          </label>
         </>
       ) : (
         <Field

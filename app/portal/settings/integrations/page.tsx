@@ -60,16 +60,11 @@ export default async function IntegrationsPage() {
       where: { orgId: scope.orgId },
       select: {
         instanceSubdomain: true,
-        plan: true,
         clientIdEncrypted: true,
-        clientSecretEncrypted: true,
-        apiKeyEncrypted: true,
         useEmbedFallback: true,
         lastSyncAt: true,
         syncStatus: true,
         lastError: true,
-        autoSyncEnabled: true,
-        syncFrequencyMinutes: true,
       },
     }),
     prisma.seoIntegration.findMany({
@@ -115,7 +110,7 @@ export default async function IntegrationsPage() {
   const appfolioConnected =
     !!appfolio &&
     !!appfolio.instanceSubdomain &&
-    (!!appfolio.clientIdEncrypted || !!appfolio.apiKeyEncrypted || !!appfolio.useEmbedFallback);
+    (!!appfolio.clientIdEncrypted || !!appfolio.useEmbedFallback);
 
   const manageSlots: Record<string, React.ReactNode> = {
     "visitor-identification": pixelProvisioned ? (
@@ -179,7 +174,7 @@ export default async function IntegrationsPage() {
     appfolio: appfolioConnected ? (
       <AppfolioManage
         subdomain={appfolio!.instanceSubdomain ?? "—"}
-        plan={appfolio!.plan ?? null}
+        mode={appfolio!.clientIdEncrypted ? "REST API (Plus/Max)" : "Embed scrape (Core)"}
         lastSyncAt={appfolio!.lastSyncAt ?? null}
         syncStatus={appfolio!.syncStatus ?? null}
         lastError={appfolio!.lastError ?? null}
@@ -413,13 +408,13 @@ function PixelManage({
 
 function AppfolioManage({
   subdomain,
-  plan,
+  mode,
   lastSyncAt,
   syncStatus,
   lastError,
 }: {
   subdomain: string;
-  plan: string | null;
+  mode: string;
   lastSyncAt: Date | null;
   syncStatus: string | null;
   lastError: string | null;
@@ -428,10 +423,7 @@ function AppfolioManage({
     <div className="space-y-5">
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <DetailRow label="Subdomain" value={subdomain} mono />
-        <DetailRow
-          label="Plan"
-          value={plan ? plan.charAt(0).toUpperCase() + plan.slice(1) : "—"}
-        />
+        <DetailRow label="Mode" value={mode} />
         <DetailRow
           label="Last sync"
           value={
