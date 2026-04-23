@@ -92,7 +92,7 @@ export default async function ReportsListPage({
           <select
             name="kind"
             defaultValue={sp.kind ?? ""}
-            className="rounded-md border border-border bg-white px-3 py-2 text-sm"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm"
           >
             <option value="">All</option>
             <option value="weekly">Weekly</option>
@@ -107,7 +107,7 @@ export default async function ReportsListPage({
           <select
             name="status"
             defaultValue={sp.status ?? ""}
-            className="rounded-md border border-border bg-white px-3 py-2 text-sm"
+            className="rounded-md border border-border bg-background px-3 py-2 text-sm"
           >
             <option value="">All</option>
             <option value="draft">Draft</option>
@@ -117,7 +117,7 @@ export default async function ReportsListPage({
         </label>
         <button
           type="submit"
-          className="inline-flex items-center rounded-md border border-border bg-white px-3 py-2 text-sm font-medium hover:bg-muted"
+          className="inline-flex items-center rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
         >
           Apply filters
         </button>

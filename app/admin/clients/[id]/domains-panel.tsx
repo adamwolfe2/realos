@@ -259,7 +259,7 @@ export function DomainsPanel({
             Auto re-verifying every 30 seconds for the next 5 minutes. You can
             also click Verify any time.
           </p>
-          <div className="rounded border border-amber-200 bg-white overflow-hidden">
+          <div className="rounded border border-amber-200 bg-card overflow-hidden">
             <table className="w-full text-xs">
               <thead className="bg-amber-50 text-[10px] uppercase tracking-wide">
                 <tr>

@@ -64,13 +64,13 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
           Resident referral link
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex-1 min-w-0 rounded-md border border-border bg-white px-3 py-2 text-sm text-muted-foreground font-mono truncate select-all">
+          <div className="flex-1 min-w-0 rounded-md border border-border bg-background px-3 py-2 text-sm text-muted-foreground font-mono truncate select-all">
             {referralUrl}
           </div>
           <button
             type="button"
             onClick={handleCopy}
-            className="shrink-0 inline-flex items-center gap-1.5 rounded-md border border-border bg-white px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            className="shrink-0 inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-2 text-sm font-medium text-foreground hover:bg-muted transition-colors"
             aria-label="Copy referral link"
           >
             {copied ? (
@@ -114,7 +114,7 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
               <a
                 href={stat.qrDataUrl}
                 download={`${stat.propertySlug}-referral-qr.png`}
-                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
               >
                 Download QR
               </a>
@@ -131,7 +131,7 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
           </span>
           Show email template for residents
         </summary>
-        <div className="mt-2 rounded-md border border-border bg-white p-3 text-xs text-muted-foreground whitespace-pre-wrap font-mono leading-relaxed">
+        <div className="mt-2 rounded-md border border-border bg-background p-3 text-xs text-muted-foreground whitespace-pre-wrap font-mono leading-relaxed">
           {`Subject: Know someone looking for a place?
 
 Hey [Name],
@@ -159,7 +159,7 @@ function StatTile({
   value: number;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-white px-3 py-2.5">
+    <div className="rounded-lg border border-border bg-background px-3 py-2.5">
       <div className="flex items-center gap-1.5 text-muted-foreground">
         {icon}
         <span className="text-[9px] uppercase tracking-widest font-semibold">
