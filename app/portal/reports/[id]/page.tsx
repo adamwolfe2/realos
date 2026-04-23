@@ -90,7 +90,7 @@ export default async function ReportDetailPage({
             <Link
               href={shareUrl}
               target="_blank"
-              rel="noopener"
+              rel="noopener noreferrer"
               className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted"
             >
               Open public view

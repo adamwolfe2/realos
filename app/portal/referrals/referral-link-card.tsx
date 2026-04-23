@@ -17,14 +17,20 @@ export type ReferralPropertyStat = {
 
 export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const referralUrl = `https://${stat.orgSlug}.leasestack.co/contact?ref=${stat.propertySlug}`;
 
-  function handleCopy() {
-    navigator.clipboard.writeText(referralUrl).then(() => {
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(referralUrl);
       setCopied(true);
+      setCopyFailed(false);
       setTimeout(() => setCopied(false), 2000);
-    });
+    } catch {
+      setCopyFailed(true);
+      setTimeout(() => setCopyFailed(false), 3000);
+    }
   }
 
   return (
@@ -86,10 +92,16 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
             )}
           </button>
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          Share this link with current residents. When a prospect submits the
-          contact form using this link, the lead is tagged as a referral.
-        </p>
+        {copyFailed ? (
+          <p className="text-[11px] text-destructive">
+            Copy failed — select the link and copy manually.
+          </p>
+        ) : (
+          <p className="text-[11px] text-muted-foreground">
+            Share this link with current residents. When a prospect submits the
+            contact form using this link, the lead is tagged as a referral.
+          </p>
+        )}
       </div>
 
       {/* QR Code */}
