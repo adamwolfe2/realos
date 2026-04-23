@@ -32,7 +32,7 @@ export function OAuthConnectButton({ provider }: { provider: OAuthProvider }) {
         <button
           type="button"
           disabled
-          className="text-xs px-3 py-1.5 border border-border rounded-md text-muted-foreground bg-card opacity-60 cursor-not-allowed"
+          className="text-xs px-3 py-1.5 border border-border rounded-md text-muted-foreground bg-card cursor-not-allowed disabled:opacity-40"
           title="OAuth disabled. Set OAUTH_ENABLED=true and OAUTH_CALLBACK_BASE_URL on Vercel."
         >
           OAuth disabled

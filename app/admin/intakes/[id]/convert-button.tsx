@@ -102,7 +102,7 @@ export function ConvertIntakeButton({ intakeId }: Props) {
         </p>
       ) : null}
       {notice ? (
-        <p className="text-xs opacity-70 border rounded p-3">{notice}</p>
+        <p className="text-xs text-muted-foreground border rounded p-3">{notice}</p>
       ) : null}
     </div>
   );

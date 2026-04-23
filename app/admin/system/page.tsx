@@ -144,7 +144,7 @@ export default async function SystemHealthPage() {
               </div>
             </div>
           </div>
-          <div className="text-xs opacity-70 tabular-nums">
+          <div className="text-xs text-muted-foreground tabular-nums">
             Checked {formatDistanceToNow(new Date(health.timestamp), { addSuffix: true })}
           </div>
         </div>

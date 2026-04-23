@@ -201,12 +201,12 @@ function MessageBubble({ message }: { message: SerializedMessage }) {
             : "bg-muted text-foreground"
         }`}
       >
-        <div className="text-[10px] uppercase tracking-widest opacity-70 mb-1">
+        <div className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">
           {isUser ? "Visitor" : "Assistant"}
         </div>
         {message.content}
         {message.ts ? (
-          <div className="text-[10px] opacity-60 mt-1 tabular-nums">
+          <div className="text-[10px] text-muted-foreground mt-1 tabular-nums">
             {format(new Date(message.ts), "MMM d, p")}
           </div>
         ) : null}

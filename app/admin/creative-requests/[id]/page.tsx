@@ -56,11 +56,11 @@ export default async function AdminCreativeDetail({
     <div className="space-y-6">
       <Link
         href="/admin/creative-requests"
-        className="text-xs opacity-60 hover:opacity-100"
+        className="text-xs text-muted-foreground hover:text-foreground transition-colors"
       >
         ← Creative queue
       </Link>
-      <div className="text-xs opacity-70">
+      <div className="text-xs text-muted-foreground">
         Tenant:{" "}
         <Link href={`/admin/clients/${request.org.id}`} className="underline">
           {request.org.name}
