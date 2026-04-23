@@ -563,9 +563,9 @@ function VisitorRow({
 
   const intentTone =
     visitor.intentScore >= 80
-      ? "text-rose-600"
+      ? "text-rose-700"
       : visitor.intentScore >= 60
-      ? "text-amber-600"
+      ? "text-amber-700"
       : "text-muted-foreground";
 
   const statusBadge = (() => {

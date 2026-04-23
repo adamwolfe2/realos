@@ -56,9 +56,9 @@ const CRON_SCHEDULE: Array<{ jobName: string; schedule: string; description: str
 // Tone helpers — semantic colors mirror /admin/audit-log + /admin/tenants.
 // ---------------------------------------------------------------------------
 function toneFor(status: HealthStatus): string {
-  if (status === "ok") return "bg-emerald-100 text-emerald-700 border-emerald-200";
-  if (status === "degraded") return "bg-amber-100 text-amber-700 border-amber-200";
-  return "bg-rose-100 text-rose-700 border-rose-200";
+  if (status === "ok") return "bg-emerald-50 text-emerald-700 border-emerald-200";
+  if (status === "degraded") return "bg-amber-50 text-amber-700 border-amber-200";
+  return "bg-rose-50 text-rose-700 border-rose-200";
 }
 
 function bannerToneFor(status: HealthStatus): string {

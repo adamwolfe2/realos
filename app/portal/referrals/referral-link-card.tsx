@@ -75,8 +75,8 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
           >
             {copied ? (
               <>
-                <Check className="h-3.5 w-3.5 text-emerald-600" />
-                <span className="text-emerald-600">Copied</span>
+                <Check className="h-3.5 w-3.5 text-emerald-700" />
+                <span className="text-emerald-700">Copied</span>
               </>
             ) : (
               <>

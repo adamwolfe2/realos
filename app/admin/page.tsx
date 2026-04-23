@@ -388,7 +388,7 @@ function FunnelRow({
         className={
           "flex h-7 w-7 items-center justify-center rounded-md shrink-0 " +
           (tone === "success"
-            ? "bg-emerald-100 text-emerald-700"
+            ? "bg-emerald-50 text-emerald-700"
             : "bg-primary/10 text-primary")
         }
       >
