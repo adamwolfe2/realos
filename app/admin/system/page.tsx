@@ -33,20 +33,23 @@ export const revalidate = 0;
 // vercel.json is unreachable from the runtime (it is at build time only).
 // ---------------------------------------------------------------------------
 const CRON_SCHEDULE: Array<{ jobName: string; schedule: string; description: string }> = [
-  { jobName: "billing-reminders", schedule: "0 9 * * *", description: "Daily — past-due tenant reminders (stub)" },
+  { jobName: "billing-reminders", schedule: "0 9 * * *", description: "Daily — past-due tenant billing reminders" },
   { jobName: "lapsed-leads", schedule: "0 11 * * *", description: "Daily — close leads inactive for 14 days" },
-  { jobName: "intake-nurture", schedule: "0 12 * * *", description: "Daily — intake follow-up (stub)" },
-  { jobName: "onboarding-drip", schedule: "0 13 * * *", description: "Daily — new-tenant onboarding emails (stub)" },
-  { jobName: "lead-nurture", schedule: "0 14 * * *", description: "Daily — lead lifecycle emails" },
-  { jobName: "lead-score-refresh", schedule: "*/30 * * * *", description: "Every 30 min — recompute lead scores" },
+  { jobName: "intake-nurture", schedule: "0 12 * * *", description: "Daily — intake follow-up email sequence" },
+  { jobName: "onboarding-drip", schedule: "0 13 * * *", description: "Daily — new-tenant onboarding nudges" },
+  { jobName: "lead-nurture", schedule: "0 14 * * *", description: "Daily — lead lifecycle email cadence" },
+  { jobName: "review-requests", schedule: "0 15 * * *", description: "Daily — Google review requests to signed residents" },
+  { jobName: "lead-score-refresh", schedule: "*/30 * * * *", description: "Every 30 min — recompute lead intent scores" },
+  { jobName: "insight-detector", schedule: "*/30 * * * *", description: "Every 30 min — anomaly detection across all orgs" },
   { jobName: "visitor-outreach", schedule: "*/15 * * * *", description: "Every 15 min — high-intent visitor outreach" },
-  { jobName: "weekly-report", schedule: "0 7 * * 1", description: "Mondays — agency weekly report (stub)" },
-  { jobName: "weekly-digest", schedule: "0 8 * * 1", description: "Mondays — tenant weekly digest (stub)" },
-  { jobName: "pixel-weekly-digest", schedule: "0 9 * * 1", description: "Mondays — visitor pixel digest" },
-  { jobName: "webhook-retry", schedule: "*/5 * * * *", description: "Every 5 min — outbound webhook retry (stub)" },
+  { jobName: "weekly-report", schedule: "0 7 * * 1", description: "Mondays — client weekly performance report" },
+  { jobName: "weekly-digest", schedule: "0 8 * * 1", description: "Mondays — tenant weekly digest email" },
+  { jobName: "pixel-weekly-digest", schedule: "0 9 * * 1", description: "Mondays — visitor pixel digest summary" },
+  { jobName: "monthly-report", schedule: "0 8 1 * *", description: "1st of month — client monthly report" },
+  { jobName: "webhook-retry", schedule: "*/5 * * * *", description: "Every 5 min — retry failed webhook deliveries" },
   { jobName: "appfolio-sync", schedule: "0 * * * *", description: "Hourly — AppFolio property/listing sync" },
-  { jobName: "seo-sync", schedule: "0 6 * * *", description: "Daily — GSC + GA4 snapshot" },
-  { jobName: "ads-sync", schedule: "0 7 * * *", description: "Daily — Google + Meta ad metrics" },
+  { jobName: "seo-sync", schedule: "0 6 * * *", description: "Daily — GSC + GA4 search console snapshot" },
+  { jobName: "ads-sync", schedule: "0 7 * * *", description: "Daily — Google Ads + Meta ad metrics sync" },
 ];
 
 // ---------------------------------------------------------------------------

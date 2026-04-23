@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 type Initial = {
   instanceSubdomain: string;
@@ -26,7 +27,6 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
   const [instanceSubdomain, setInstanceSubdomain] = useState(
     initial?.instanceSubdomain ?? ""
   );
-  const [plan, setPlan] = useState(initial?.plan ?? "");
   const [propertyGroupFilter, setPropertyGroupFilter] = useState(
     initial?.propertyGroupFilter ?? ""
   );
@@ -48,7 +48,6 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
     startTransition(async () => {
       const body: Record<string, unknown> = {
         instanceSubdomain: instanceSubdomain.trim(),
-        plan: plan || undefined,
         propertyGroupFilter: propertyGroupFilter.trim() || null,
         useEmbedFallback,
         autoSyncEnabled,
@@ -84,7 +83,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
       }
       const syncedCount = body.synced ?? 0;
       setSyncResult(
-        `Synced ${syncedCount} listings${
+        `Synced ${syncedCount} listing${syncedCount === 1 ? "" : "s"}${
           body.skippedUnknownProperty
             ? `, skipped ${body.skippedUnknownProperty} with unmatched property groups`
             : ""
@@ -96,6 +95,17 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
 
   return (
     <form onSubmit={submit} className="space-y-5 border rounded-md p-5">
+      <div className="rounded-md bg-muted/40 border border-border px-3 py-2.5 text-xs text-muted-foreground">
+        Sync behavior for this property. API credentials are managed in{" "}
+        <Link
+          href="/portal/settings/integrations"
+          className="underline underline-offset-2 hover:text-foreground transition-colors"
+        >
+          Settings → Integrations
+        </Link>
+        .
+      </div>
+
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-xs tracking-widest uppercase opacity-70">
           AppFolio subdomain
@@ -108,46 +118,34 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
           required
         />
         <span className="text-xs opacity-60">
-          The "{instanceSubdomain || "example"}" in
+          The <strong>{instanceSubdomain || "example"}</strong> part of
           https://{instanceSubdomain || "example"}.appfolio.com.
         </span>
       </label>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs tracking-widest uppercase opacity-70">
-            Plan
-          </span>
-          <select
-            value={plan}
-            onChange={(e) => setPlan(e.target.value)}
-            className="border rounded px-3 py-2 text-sm bg-background"
-          >
-            <option value="">Unknown</option>
-            <option value="core">Core</option>
-            <option value="plus">Plus</option>
-            <option value="max">Max</option>
-          </select>
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs tracking-widest uppercase opacity-70">
-            Property group filter
-          </span>
-          <input
-            value={propertyGroupFilter}
-            onChange={(e) => setPropertyGroupFilter(e.target.value)}
-            placeholder="Telegraph Commons"
-            className="border rounded px-3 py-2 text-sm bg-background"
-          />
-        </label>
-      </div>
+      <label className="flex flex-col gap-1 text-sm">
+        <span className="text-xs tracking-widest uppercase opacity-70">
+          Property group filter
+        </span>
+        <input
+          value={propertyGroupFilter}
+          onChange={(e) => setPropertyGroupFilter(e.target.value)}
+          placeholder="e.g. 2490 Channing"
+          className="border rounded px-3 py-2 text-sm bg-background"
+        />
+        <span className="text-xs opacity-60">
+          If your AppFolio account manages multiple properties, enter a snippet of this
+          property's address. Only units whose AppFolio group name contains this string
+          will sync. Leave blank to sync all units on the account.
+        </span>
+      </label>
 
       <label className="flex items-center justify-between gap-3 border rounded-md px-3 py-2 text-sm">
         <div>
           <span>Use embed-scrape mode</span>
           <p className="text-xs opacity-60 mt-0.5">
-            Works for any AppFolio tenant, no API key needed. Falls back
-            automatically if REST isn't configured.
+            Syncs public listings without an API key. Enable this if you don't
+            have REST credentials — slower but always works.
           </p>
         </div>
         <input
@@ -159,7 +157,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
 
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-xs tracking-widest uppercase opacity-70">
-          AppFolio REST API key (Plus plan)
+          AppFolio REST API key (Plus/Max plan)
         </span>
         <input
           type="password"
@@ -168,19 +166,28 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
           onChange={(e) => setApiKey(e.target.value)}
           placeholder={
             initial?.hasApiKey
-              ? "Key on file, enter a new one to replace"
-              : "sk_live_..."
+              ? "Key on file — enter a new one to rotate"
+              : "Paste your AppFolio API key"
           }
           className="border rounded px-3 py-2 text-sm bg-background"
         />
         <span className="text-xs opacity-60">
-          Encrypted at rest before saving.
+          Found in AppFolio → Settings → API Settings → Reports API. Stored
+          encrypted.
+          {initial?.hasApiKey
+            ? " Saving a new key immediately replaces the existing one."
+            : ""}
         </span>
       </label>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <label className="flex items-center justify-between gap-3 border rounded-md px-3 py-2 text-sm">
-          <span>Auto-sync on a schedule</span>
+          <div>
+            <span>Auto-sync on a schedule</span>
+            <p className="text-xs opacity-60 mt-0.5">
+              Pulls listings from AppFolio automatically.
+            </p>
+          </div>
           <input
             type="checkbox"
             checked={autoSyncEnabled}
@@ -189,26 +196,32 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
         </label>
         <label className="flex flex-col gap-1 text-sm">
           <span className="text-xs tracking-widest uppercase opacity-70">
-            Sync every (minutes)
+            Sync frequency (minutes)
           </span>
           <input
             type="number"
             min={15}
             max={1440}
+            disabled={!autoSyncEnabled}
             value={syncFrequencyMinutes}
             onChange={(e) =>
               setSyncFrequencyMinutes(parseInt(e.target.value, 10) || 60)
             }
-            className="border rounded px-3 py-2 text-sm bg-background"
+            className="border rounded px-3 py-2 text-sm bg-background disabled:opacity-40"
           />
+          <span className="text-xs opacity-60">
+            {autoSyncEnabled
+              ? `Syncs every ${syncFrequencyMinutes} min. Range: 15–1440 (24h).`
+              : "Enable auto-sync to set frequency."}
+          </span>
         </label>
       </div>
 
-      <div className="flex items-center gap-3 pt-3 border-t">
+      <div className="flex flex-wrap items-center gap-3 pt-3 border-t">
         <button
           type="submit"
           disabled={pending}
-          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
+          className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
         >
           {pending ? "Saving…" : "Save"}
         </button>
@@ -216,25 +229,27 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
           type="button"
           onClick={runSync}
           disabled={syncPending}
-          className="border px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
+          className="border px-4 py-2 text-xs font-semibold rounded disabled:opacity-40 hover:bg-muted/30 transition-colors"
         >
           {syncPending ? "Syncing…" : "Sync now"}
         </button>
-        {saved ? (
-          <span className="text-xs text-emerald-700">Saved</span>
-        ) : null}
-        {syncResult ? (
+        {saved && (
+          <span className="text-xs text-emerald-700 font-medium">
+            Settings saved.
+          </span>
+        )}
+        {syncResult && (
           <span className="text-xs text-emerald-700">{syncResult}</span>
-        ) : null}
-        {error ? (
+        )}
+        {error && (
           <span className="text-xs text-destructive">{error}</span>
-        ) : null}
-        {initial?.lastSyncAt ? (
+        )}
+        {initial?.lastSyncAt && (
           <span className="text-xs opacity-60 ml-auto">
             Last synced {new Date(initial.lastSyncAt).toLocaleString()}
             {initial?.syncStatus ? ` · ${initial.syncStatus}` : ""}
           </span>
-        ) : null}
+        )}
       </div>
     </form>
   );

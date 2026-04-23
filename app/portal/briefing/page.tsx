@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, Building2, AlertTriangle } from "lucide-react";
+import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, Building2, AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
@@ -59,6 +59,7 @@ export default async function BriefingPage({
     metrics,
     insights,
     aging,
+    appfolioIntegration,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -70,7 +71,31 @@ export default async function BriefingPage({
     getBriefingMetrics(scope.orgId),
     getRecentInsightsForBriefing(scope.orgId, user?.lastBriefingViewedAt ?? null, 8),
     getAgingLeadsSummary(scope.orgId),
+    prisma.appFolioIntegration.findUnique({
+      where: { orgId: scope.orgId },
+      select: { id: true, lastSyncAt: true, syncStatus: true },
+    }),
   ]);
+
+  const setupSteps = [
+    {
+      label: "Add your first property",
+      done: properties.length > 0,
+      href: "/portal/properties",
+    },
+    {
+      label: "Connect AppFolio",
+      done: !!appfolioIntegration?.lastSyncAt,
+      href: "/portal/settings/integrations",
+    },
+    {
+      label: "Configure the AI chatbot",
+      done: false,
+      href: "/portal/chatbot",
+    },
+  ];
+  const allSetupDone = setupSteps.every((s) => s.done);
+  const setupComplete = properties.length > 0 && !!appfolioIntegration?.lastSyncAt;
 
   const insightCards: InsightCardData[] = insights.map((i) => ({
     id: i.id,
@@ -120,6 +145,10 @@ export default async function BriefingPage({
       </header>
 
       <SinceBanner lastViewedAt={user?.lastBriefingViewedAt ?? null} delta={delta} />
+
+      {!setupComplete && (
+        <SetupCard steps={setupSteps} />
+      )}
 
       {aging.stale > 0 && (
         <AgingAlertBanner fresh={aging.fresh} aging={aging.aging} stale={aging.stale} />
@@ -289,6 +318,57 @@ function ChecklistItem({
       </span>
       <span className={enabled ? "" : "text-muted-foreground"}>{label}</span>
     </li>
+  );
+}
+
+function SetupCard({
+  steps,
+}: {
+  steps: { label: string; done: boolean; href: string }[];
+}) {
+  const remaining = steps.filter((s) => !s.done);
+  return (
+    <div className="rounded-lg border border-border bg-card p-5">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
+            Getting started
+          </p>
+          <h3 className="text-sm font-semibold text-foreground">
+            {remaining.length === steps.length
+              ? "Complete these steps to activate your workspace"
+              : `${remaining.length} step${remaining.length === 1 ? "" : "s"} left to finish setup`}
+          </h3>
+        </div>
+        <span className="text-[10px] text-muted-foreground font-mono">
+          {steps.filter((s) => s.done).length}/{steps.length} complete
+        </span>
+      </div>
+      <ul className="mt-4 space-y-2">
+        {steps.map((step) => (
+          <li key={step.href}>
+            <Link
+              href={step.href}
+              className={`flex items-center gap-3 rounded-md px-3 py-2.5 text-sm transition-colors ${
+                step.done
+                  ? "text-muted-foreground"
+                  : "hover:bg-muted/50 text-foreground font-medium"
+              }`}
+            >
+              <CheckCircle2
+                className={`h-4 w-4 shrink-0 ${
+                  step.done ? "text-emerald-500" : "text-muted-foreground/40"
+                }`}
+              />
+              <span className={step.done ? "line-through" : ""}>{step.label}</span>
+              {!step.done && (
+                <ArrowRight className="ml-auto h-3.5 w-3.5 text-muted-foreground" />
+              )}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 
