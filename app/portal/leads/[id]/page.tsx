@@ -9,7 +9,6 @@ import {
   DollarSign,
   Home,
   Mail,
-  MoreHorizontal,
   Phone,
   Radar,
   Send,
@@ -72,7 +71,7 @@ export default async function LeadDetailPage({
     where: {
       orgId: scope.orgId,
       noteType: "LEAD_INTERACTION",
-      body: { contains: lead.id },
+      body: { startsWith: `[lead:${lead.id}]` },
     },
     orderBy: { createdAt: "desc" },
     take: 30,
@@ -191,20 +190,6 @@ export default async function LeadDetailPage({
               <Send className="h-4 w-4" />
             </a>
           ) : null}
-          <button
-            type="button"
-            aria-label="More actions"
-            title="More actions"
-            className={cn(
-              "inline-flex h-9 w-9 items-center justify-center rounded-[10px]",
-              "bg-card ring-1 ring-border",
-              "text-foreground",
-              "transition-colors duration-200",
-              "hover:bg-muted hover:text-foreground"
-            )}
-          >
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
         </div>
       </div>
 

@@ -4,14 +4,17 @@ import { useState } from "react";
 
 export function InstallSnippet({ snippet }: { snippet: string }) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   async function copy() {
     try {
       await navigator.clipboard.writeText(snippet);
       setCopied(true);
+      setCopyFailed(false);
       setTimeout(() => setCopied(false), 2000);
-    } catch (err) {
-      console.error("Copy failed", err);
+    } catch {
+      setCopyFailed(true);
+      setTimeout(() => setCopyFailed(false), 3000);
     }
   }
 
@@ -35,6 +38,11 @@ export function InstallSnippet({ snippet }: { snippet: string }) {
           {copied ? "Copied" : "Copy"}
         </button>
       </div>
+      {copyFailed && (
+        <p className="text-[11px] text-destructive">
+          Copy failed — select the snippet manually and copy with Ctrl+C / Cmd+C.
+        </p>
+      )}
       <p className="text-[11px] opacity-60">
         The widget reads live config from the server, so changes above
         propagate without re-installing.
