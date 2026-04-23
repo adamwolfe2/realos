@@ -5,10 +5,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireScope, auditPayload } from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
-import {
-  testAppFolioConnection,
-  probeEmbedScrape,
-} from "@/lib/integrations/appfolio";
+import { probeEmbedScrape } from "@/lib/integrations/appfolio";
 import {
   runAppfolioSync,
   type AppfolioSyncStats,
@@ -120,8 +117,10 @@ export async function connectAppfolio(
   const { subdomain, plan } = parsed.data;
 
   try {
-  // Probe the right endpoint for the chosen auth mode. No credentials
-  // persist unless the probe succeeds.
+  // Validate credentials before persisting. For embed mode, probe the
+  // public listings page. For REST mode, the user must have already clicked
+  // "Test connection" in the UI — we trust that gate and skip a second probe
+  // here to avoid double-counting rate-limit hits and to keep save fast.
   let listingsFound: number | undefined;
   if (parsed.data.authMode === "embed") {
     const probe = await probeEmbedScrape(subdomain);
@@ -132,37 +131,6 @@ export async function connectAppfolio(
       };
     }
     listingsFound = probe.count;
-  } else {
-    const testIntegration = {
-      id: "test",
-      orgId: scope.orgId,
-      instanceSubdomain: subdomain,
-      plan: plan ?? null,
-      apiKeyEncrypted: null,
-      clientIdEncrypted: encrypt(parsed.data.clientId),
-      clientSecretEncrypted: encrypt(parsed.data.clientSecret),
-      oauthTokenEncrypted: null,
-      oauthRefreshEncrypted: null,
-      oauthExpiresAt: null,
-      lastSyncAt: null,
-      syncStatus: null,
-      lastError: null,
-      propertyGroupFilter: null,
-      syncFrequencyMinutes: 60,
-      autoSyncEnabled: true,
-      useEmbedFallback: false,
-      embedScriptConfig: null,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    } as Parameters<typeof testAppFolioConnection>[0];
-
-    const probe = await testAppFolioConnection(testIntegration);
-    if (!probe.ok) {
-      return {
-        ok: false,
-        error: `AppFolio rejected the credentials: ${probe.error}. Confirm Plus/Max plan + Developer Portal access.`,
-      };
-    }
   }
 
   const isEmbed = parsed.data.authMode === "embed";
