@@ -1,5 +1,5 @@
 /**
- * Wholesail Stripe Integration — Configuration & Initialisation
+ * LeaseStack Stripe Integration — Configuration & Initialisation
  *
  * Single source of truth for Stripe client setup.
  * Prefer importing from here rather than lib/payments/stripe.ts for new code.

@@ -1,18 +1,7 @@
 // ============================================================================
 // 00-schema.prisma — Complete database schema for {{PRODUCT_NAME}}
 // ============================================================================
-// Paste this directly into prisma/schema.prisma after forking Wholesail and
-// running `pnpm db:reset`. Then `pnpm db:push` to migrate.
-//
-// Keeps from Wholesail: User, Organization (extended), Address, AuditEvent,
-//   ClientNote, Lead (extended), IntakeSubmission, Project, ProjectTask,
-//   ProjectCost, ProjectNote, EmailSubscriber
-// Adds for real estate: Property, Listing, Tour, Application, Visitor,
-//   ChatbotConversation, CreativeRequest, AdAccount, AdCampaign,
-//   DomainBinding, TenantSiteConfig, CursiveIntegration, AppFolioIntegration
-// Removes from Wholesail: Product, Order, OrderItem, Invoice, Payment,
-//   Shipment, ShipmentEvent, Quote, QuoteItem, SavedCart, StandingOrder,
-//   InventoryLevel, PricingRule, ProductDrop, Supplier, RepTask
+// Initialize with: pnpm db:push
 // ============================================================================
 
 generator client {

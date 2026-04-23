@@ -1,6 +1,6 @@
 // ---------------------------------------------------------------------------
-// Compat shim. The distribution-era portal-config was deeply coupled to
-// Wholesail's per-client config (pricing tiers, referral codes, loyalty
+// Compat shim. The prior portal-config was deeply coupled to
+// per-client config (pricing tiers, referral codes, loyalty
 // thresholds, etc.). We replaced most of those concepts with per-Organization
 // rows in the new schema. Anything that still imports from this module now
 // gets plain env-backed brand values so the build can pass. Callers migrate

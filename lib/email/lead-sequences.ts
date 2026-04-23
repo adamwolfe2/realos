@@ -23,9 +23,8 @@ export type SendParams = {
 // ---------------------------------------------------------------------------
 // Automated lead nurture sequence. Day 1 → Day 3 → Day 7 → Day 30 → Year 1.
 // Every email honors the unsubscribe link and writes its own send log via
-// the caller (cron), not here. Copy is intentionally student-housing-leaning
-// because that's the wedge vertical; we'll add subtype-aware variants once
-// the other residential subtypes ship.
+// the caller (cron), not here. Copy is intentionally residential-generic.
+// Subtype-specific variants (student, senior, luxury) can extend this once needed.
 // ---------------------------------------------------------------------------
 
 type SendResult = { ok: boolean; error?: string };
@@ -121,8 +120,8 @@ const RENDERERS: Record<
   year_one: (p) => ({
     subject: `Leasing for next year at ${esc(p.propertyName ?? p.orgName)} just opened`,
     bodyHtml: intro(p) + `
-      <p style="margin:0 0 12px;">Wanted to reach back out, we just opened leasing for the next academic year.</p>
-      <p style="margin:0 0 12px;">You'd get first pick of the best-laid-out rooms if you'd like to lock in a tour this week.</p>`,
+      <p style="margin:0 0 12px;">Wanted to reach back out — we just opened leasing for the next lease term.</p>
+      <p style="margin:0 0 12px;">You'd get first pick of available units if you'd like to lock in a tour this week.</p>`,
     ctaText: "Lock in a tour",
   }),
 };

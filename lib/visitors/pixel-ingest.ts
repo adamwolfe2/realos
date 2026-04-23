@@ -192,7 +192,7 @@ export async function upsertSession(input: SessionInit): Promise<{
 
 // ---------------------------------------------------------------------------
 // Event recording. Updates session aggregates in the same transaction-ish
-// pattern as Wholesail's ingest helpers. We deliberately do not wrap in a
+// pattern used across ingest helpers. We deliberately do not wrap in a
 // Prisma transaction because the Neon HTTP adapter does not support
 // interactive transactions; the two writes are individually idempotent
 // enough at this scale.

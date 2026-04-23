@@ -93,9 +93,5 @@ export async function runInsightDetectorsForAll(): Promise<InsightsRunSummary[]>
     select: { id: true },
   });
 
-  const out: InsightsRunSummary[] = [];
-  for (const org of orgs) {
-    out.push(await runInsightDetectors(org.id));
-  }
-  return out;
+  return Promise.all(orgs.map((org) => runInsightDetectors(org.id)));
 }

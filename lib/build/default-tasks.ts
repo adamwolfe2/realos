@@ -2,10 +2,9 @@
  * Default ProjectTask seed data for new tenant builds.
  * Organized by phase (0-5) matching the agency fulfillment workflow.
  *
- * Forked from Wholesail's operator checklist. Distribution-specific steps
- * (product import, Stripe Connect, catalog branding) were replaced with
- * real-estate-specific steps (AppFolio OAuth, Cursive pixel install,
- * chatbot knowledge base, tenant marketing site setup).
+ * Default operator checklist for new tenant builds.
+ * Real-estate-specific steps include:
+ * AppFolio OAuth, Cursive pixel install, chatbot knowledge base, tenant marketing site setup.
  */
 
 export type DefaultTask = {
