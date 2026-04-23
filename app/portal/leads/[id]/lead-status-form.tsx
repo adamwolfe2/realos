@@ -68,6 +68,7 @@ export function LeadStatusForm({
   return (
     <div className="space-y-2">
       <select
+        aria-label="Lead status"
         value={status}
         disabled={pending}
         onChange={(e) => change(e.target.value as LeadStatus)}
