@@ -70,8 +70,8 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
     <form onSubmit={submit} className="space-y-5 border rounded-md p-5">
       <h2 className="text-sm font-semibold">Company info</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <TF label="Company name" value={state.name} onChange={(v) => update("name", v)} />
-        <TF label="Short name" value={state.shortName} onChange={(v) => update("shortName", v)} />
+        <TF label="Company name" value={state.name} onChange={(v) => update("name", v)} required maxLength={200} />
+        <TF label="Short name" value={state.shortName} onChange={(v) => update("shortName", v)} maxLength={60} />
         <TF label="Primary contact" value={state.primaryContactName} onChange={(v) => update("primaryContactName", v)} />
         <TF label="Contact email" value={state.primaryContactEmail} onChange={(v) => update("primaryContactEmail", v)} type="email" />
         <TF label="Contact phone" value={state.primaryContactPhone} onChange={(v) => update("primaryContactPhone", v)} />
@@ -90,8 +90,8 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <TF label="Logo URL" value={state.logoUrl} onChange={(v) => update("logoUrl", v)} type="url" />
         <TF label="Brand font" value={state.brandFont} onChange={(v) => update("brandFont", v)} placeholder="Inter, serif" />
-        <TF label="Primary color (hex)" value={state.primaryColor} onChange={(v) => update("primaryColor", v)} placeholder="#111827" />
-        <TF label="Secondary color (hex)" value={state.secondaryColor} onChange={(v) => update("secondaryColor", v)} placeholder="#6b7280" />
+        <TF label="Primary color (hex)" value={state.primaryColor} onChange={(v) => update("primaryColor", v)} placeholder="#111827" maxLength={7} pattern="^#[0-9a-fA-F]{3,6}$" />
+        <TF label="Secondary color (hex)" value={state.secondaryColor} onChange={(v) => update("secondaryColor", v)} placeholder="#6b7280" maxLength={7} pattern="^#[0-9a-fA-F]{3,6}$" />
       </div>
 
       <div className="flex items-center gap-3 pt-3 border-t">
@@ -119,24 +119,34 @@ function TF({
   onChange,
   type = "text",
   placeholder,
+  required,
+  maxLength,
+  pattern,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
   placeholder?: string;
+  required?: boolean;
+  maxLength?: number;
+  pattern?: string;
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
       <span className="text-xs tracking-widest uppercase text-muted-foreground">
         {label}
+        {required && <span className="text-destructive ml-0.5" aria-hidden="true">*</span>}
       </span>
       <input
         type={type}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="border rounded px-3 py-2 text-sm bg-background"
+        required={required}
+        maxLength={maxLength}
+        pattern={pattern}
+        className="border rounded px-3 py-2 text-sm bg-background invalid:border-destructive/60"
       />
     </label>
   );
