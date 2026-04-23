@@ -38,14 +38,14 @@ export default async function AppFolioSettingsPage({
       <header>
         <Link
           href={`/portal/properties/${property.id}`}
-          className="text-xs opacity-60 hover:opacity-100"
+          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
           ← {property.name}
         </Link>
         <h1 className="text-2xl font-semibold tracking-tight mt-2">
           AppFolio integration
         </h1>
-        <p className="text-sm opacity-60 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Pull live listings from AppFolio and let them flow into your
           marketing site. Embed-scrape mode works for any tenant; REST
           mode requires an AppFolio Plus API key.

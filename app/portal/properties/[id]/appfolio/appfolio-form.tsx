@@ -106,7 +106,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
       </div>
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-xs tracking-widest uppercase opacity-70">
+        <span className="text-xs tracking-widest uppercase text-muted-foreground">
           AppFolio subdomain
         </span>
         <input
@@ -116,14 +116,14 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
           className="border rounded px-3 py-2 text-sm bg-background"
           required
         />
-        <span className="text-xs opacity-60">
+        <span className="text-xs text-muted-foreground">
           The <strong>{instanceSubdomain || "example"}</strong> part of
           https://{instanceSubdomain || "example"}.appfolio.com.
         </span>
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-xs tracking-widest uppercase opacity-70">
+        <span className="text-xs tracking-widest uppercase text-muted-foreground">
           Property group filter
         </span>
         <input
@@ -132,7 +132,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
           placeholder="e.g. 2490 Channing"
           className="border rounded px-3 py-2 text-sm bg-background"
         />
-        <span className="text-xs opacity-60">
+        <span className="text-xs text-muted-foreground">
           If your AppFolio account manages multiple properties, enter a snippet of this
           property's address. Only units whose AppFolio group name contains this string
           will sync. Leave blank to sync all units on the account.
@@ -142,7 +142,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
       <label className="flex items-center justify-between gap-3 border rounded-md px-3 py-2 text-sm">
         <div>
           <span>Use embed-scrape mode</span>
-          <p className="text-xs opacity-60 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             Syncs public listings without an API key. Enable this if you don't
             have REST credentials — slower but always works.
           </p>
@@ -155,7 +155,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
       </label>
 
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-xs tracking-widest uppercase opacity-70">
+        <span className="text-xs tracking-widest uppercase text-muted-foreground">
           AppFolio REST API key (Plus/Max plan)
         </span>
         <input
@@ -170,7 +170,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
           }
           className="border rounded px-3 py-2 text-sm bg-background"
         />
-        <span className="text-xs opacity-60">
+        <span className="text-xs text-muted-foreground">
           Found in AppFolio → Settings → API Settings → Reports API. Stored
           encrypted.
           {initial?.hasApiKey
@@ -183,7 +183,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
         <label className="flex items-center justify-between gap-3 border rounded-md px-3 py-2 text-sm">
           <div>
             <span>Auto-sync on a schedule</span>
-            <p className="text-xs opacity-60 mt-0.5">
+            <p className="text-xs text-muted-foreground mt-0.5">
               Pulls listings from AppFolio automatically.
             </p>
           </div>
@@ -194,7 +194,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-xs tracking-widest uppercase opacity-70">
+          <span className="text-xs tracking-widest uppercase text-muted-foreground">
             Sync frequency (minutes)
           </span>
           <input
@@ -208,7 +208,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
             }
             className="border rounded px-3 py-2 text-sm bg-background disabled:opacity-40"
           />
-          <span className="text-xs opacity-60">
+          <span className="text-xs text-muted-foreground">
             {autoSyncEnabled
               ? `Syncs every ${syncFrequencyMinutes} min. Range: 15–1440 (24h).`
               : "Enable auto-sync to set frequency."}
@@ -244,7 +244,7 @@ export function AppFolioForm({ initial }: { initial: Initial }) {
           <span className="text-xs text-destructive">{error}</span>
         )}
         {initial?.lastSyncAt && (
-          <span className="text-xs opacity-60 ml-auto">
+          <span className="text-xs text-muted-foreground ml-auto" aria-live="polite">
             Last synced {new Date(initial.lastSyncAt).toLocaleString()}
             {initial?.syncStatus ? ` · ${initial.syncStatus}` : ""}
           </span>

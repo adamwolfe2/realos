@@ -362,7 +362,7 @@ export default async function VisitorsPage({
       ) : noVisitorsAtAll ? (
         <EmptyNoVisitors />
       ) : visitors.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-sm opacity-70 text-center">
+        <div className="rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground text-center">
           No visitors match these filters. Try widening the time window or the
           status filter.
         </div>
@@ -488,7 +488,7 @@ function TabGroup({
 }) {
   return (
     <div className="flex items-center gap-3 flex-wrap">
-      <span className="text-[10px] tracking-widest uppercase opacity-60 w-14 shrink-0">
+      <span className="text-[10px] tracking-widest uppercase text-muted-foreground w-14 shrink-0">
         {legend}
       </span>
       <div className="flex gap-1 flex-wrap">
@@ -577,7 +577,7 @@ function VisitorRow({
         return { label: "Identified", dot: "bg-blue-500", text: "text-blue-700" };
       case VisitorIdentificationStatus.ANONYMOUS:
       default:
-        return { label: "Anonymous", dot: "bg-neutral-400", text: "opacity-70" };
+        return { label: "Anonymous", dot: "bg-neutral-400", text: "text-muted-foreground" };
     }
   })();
 
@@ -607,7 +607,7 @@ function VisitorRow({
       {/* Identity */}
       <div className="min-w-0">
         <div className="font-medium truncate">{identity.displayName}</div>
-        <div className="text-[12px] opacity-70 truncate">{subtitle}</div>
+        <div className="text-[12px] text-muted-foreground truncate">{subtitle}</div>
       </div>
 
       {/* Context (page + session) — hidden on mobile */}
@@ -615,7 +615,7 @@ function VisitorRow({
         <div className="truncate opacity-80">
           {identity.lastPagePath ?? "No page tracked"}
         </div>
-        <div className="opacity-60 mt-0.5">
+        <div className="text-muted-foreground mt-0.5">
           {visitor.sessionCount} {visitor.sessionCount === 1 ? "session" : "sessions"}
           {" \u00b7 "}
           {seenAgo}
@@ -623,7 +623,7 @@ function VisitorRow({
       </div>
 
       {/* Location — hidden on mobile */}
-      <div className="hidden md:flex text-xs opacity-70 min-w-0 items-center gap-1">
+      <div className="hidden md:flex text-xs text-muted-foreground min-w-0 items-center gap-1">
         {identity.location ? (
           <>
             <MapPin className="h-3 w-3 shrink-0" />
@@ -721,7 +721,7 @@ function Pager({
   const shown = Math.min(page * PAGE_SIZE, totalInView);
   const hasMore = shown < totalInView;
   return (
-    <div className="flex items-center justify-between text-xs opacity-70">
+    <div className="flex items-center justify-between text-xs text-muted-foreground">
       <span>
         Showing {shown} of {totalInView}
       </span>
@@ -747,7 +747,7 @@ function EmptyNoPixel() {
       <div className="text-sm font-semibold">
         Install the Cursive pixel to see named website visitors here.
       </div>
-      <p className="text-sm opacity-70 max-w-md mx-auto">
+      <p className="text-sm text-muted-foreground max-w-md mx-auto">
         Once the pixel is live, every resolved visitor appears in this feed in
         real time \u2014 name, company, job title, and the pages they viewed.
       </p>
@@ -765,7 +765,7 @@ function EmptyNoVisitors() {
   return (
     <div className="rounded-lg border border-border bg-card p-8 text-center space-y-2">
       <div className="text-sm font-semibold">No visitors yet.</div>
-      <p className="text-sm opacity-70 max-w-md mx-auto">
+      <p className="text-sm text-muted-foreground max-w-md mx-auto">
         Once someone visits your site, they&apos;ll appear here in real time.
       </p>
     </div>

@@ -64,7 +64,7 @@ export default async function SettingsPage() {
         <div className="flex items-baseline justify-between gap-3 mb-2">
           <div>
             <h2 className="text-sm font-semibold">Integrations</h2>
-            <p className="text-xs opacity-60 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Connect the Cursive visitor pixel and other third-party
               services.
             </p>
@@ -82,7 +82,7 @@ export default async function SettingsPage() {
         <div className="flex items-baseline justify-between gap-3 mb-2">
           <div>
             <h2 className="text-sm font-semibold">API keys</h2>
-            <p className="text-xs opacity-60 mt-1">
+            <p className="text-xs text-muted-foreground mt-1">
               Generate scoped API keys so Zapier, Typeform, and bespoke
               systems can push leads, visitors, tours, and chatbot events
               into your CRM.

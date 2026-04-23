@@ -38,7 +38,7 @@ export function MasterToggle({
     <section className="rounded-lg border border-border bg-card p-5 flex items-center justify-between gap-4">
       <div>
         <h2 className="text-sm font-semibold">Widget status</h2>
-        <p className="text-xs opacity-60 mt-1">
+        <p className="text-xs text-muted-foreground mt-1">
           Master switch for the embedded chatbot widget. When off, the
           install script silently does nothing on your site.
         </p>

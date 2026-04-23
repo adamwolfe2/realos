@@ -22,7 +22,7 @@ export function ConnectPixelForm({
   return (
     <form action={formAction} className="space-y-4">
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-xs tracking-widest uppercase opacity-70">
+        <span className="text-xs tracking-widest uppercase text-muted-foreground">
           Website name
         </span>
         <input
@@ -32,7 +32,7 @@ export function ConnectPixelForm({
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
-        <span className="text-xs tracking-widest uppercase opacity-70">
+        <span className="text-xs tracking-widest uppercase text-muted-foreground">
           Website URL
         </span>
         <input
@@ -42,7 +42,7 @@ export function ConnectPixelForm({
           placeholder="https://example.com"
           className="border rounded px-3 py-2 text-sm bg-background"
         />
-        <span className="text-[11px] opacity-60">
+        <span className="text-[11px] text-muted-foreground">
           Include the full URL of the site where you'll install the pixel.
         </span>
       </label>

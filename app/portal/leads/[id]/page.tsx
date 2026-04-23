@@ -573,7 +573,7 @@ function ActionLink({
       <div
         className={cn(
           base,
-          "text-muted-foreground opacity-60 cursor-not-allowed"
+          "text-muted-foreground cursor-not-allowed"
         )}
       >
         {icon}

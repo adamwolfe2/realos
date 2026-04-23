@@ -21,7 +21,7 @@ export function InstallSnippet({ snippet }: { snippet: string }) {
   return (
     <section className="rounded-lg border border-border bg-card p-5 space-y-3">
       <h2 className="text-sm font-semibold">Install snippet</h2>
-      <p className="text-xs opacity-70">
+      <p className="text-xs text-muted-foreground">
         Paste this before the closing <code>&lt;/head&gt;</code> tag on your
         site. Works on Wix, WordPress, Webflow, custom sites — anywhere you
         can add a script.
@@ -43,7 +43,7 @@ export function InstallSnippet({ snippet }: { snippet: string }) {
           Copy failed — select the snippet manually and copy with Ctrl+C / Cmd+C.
         </p>
       )}
-      <p className="text-[11px] opacity-60">
+      <p className="text-[11px] text-muted-foreground">
         The widget reads live config from the server, so changes above
         propagate without re-installing.
       </p>
