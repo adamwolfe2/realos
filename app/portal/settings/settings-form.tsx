@@ -128,7 +128,7 @@ function TF({
 }) {
   return (
     <label className="flex flex-col gap-1 text-sm">
-      <span className="text-xs tracking-widest uppercase opacity-70">
+      <span className="text-xs tracking-widest uppercase text-muted-foreground">
         {label}
       </span>
       <input

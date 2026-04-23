@@ -49,7 +49,7 @@ export function CreateApiKeyForm() {
       ) : (
         <form action={formAction} className="space-y-4 border rounded-md p-4">
           <label className="flex flex-col gap-1 text-sm">
-            <span className="text-xs tracking-widest uppercase opacity-70">
+            <span className="text-xs tracking-widest uppercase text-muted-foreground">
               Name
             </span>
             <input
@@ -59,13 +59,13 @@ export function CreateApiKeyForm() {
               placeholder="Zapier production"
               className="border rounded px-3 py-2 text-sm bg-background"
             />
-            <span className="text-[11px] opacity-60">
+            <span className="text-[11px] text-muted-foreground">
               Operator-facing label so you can tell keys apart later.
             </span>
           </label>
 
           <fieldset className="space-y-2">
-            <legend className="text-xs tracking-widest uppercase opacity-70">
+            <legend className="text-xs tracking-widest uppercase text-muted-foreground">
               Scopes
             </legend>
             <div className="grid grid-cols-2 gap-2">
@@ -91,7 +91,7 @@ export function CreateApiKeyForm() {
                 </span>
               </label>
             </div>
-            <p className="text-[11px] opacity-60">
+            <p className="text-[11px] text-muted-foreground">
               Choosing the wildcard overrides the specific boxes.
             </p>
           </fieldset>
@@ -107,7 +107,7 @@ export function CreateApiKeyForm() {
             <button
               type="button"
               onClick={() => setOpen(false)}
-              className="text-xs opacity-70 underline underline-offset-2"
+              className="text-xs text-muted-foreground underline underline-offset-2"
             >
               Cancel
             </button>
@@ -131,6 +131,7 @@ function NewKeyBanner({
   scopes: string[];
 }) {
   const [copied, setCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed) return null;
@@ -139,9 +140,11 @@ function NewKeyBanner({
     try {
       await navigator.clipboard.writeText(rawKey);
       setCopied(true);
+      setCopyFailed(false);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Best-effort.
+      setCopyFailed(true);
+      setTimeout(() => setCopyFailed(false), 3000);
     }
   }
 
@@ -152,7 +155,7 @@ function NewKeyBanner({
           <p className="text-sm font-semibold">
             Copy this key now — it won't be shown again.
           </p>
-          <p className="text-[11px] opacity-70 mt-1">
+          <p className="text-[11px] text-muted-foreground mt-1">
             We only store a hash. If you lose the raw key, revoke this one and
             generate a new one.
           </p>
@@ -160,24 +163,31 @@ function NewKeyBanner({
         <button
           type="button"
           onClick={() => setDismissed(true)}
-          className="text-[11px] opacity-70 underline underline-offset-2"
+          className="text-[11px] text-muted-foreground underline underline-offset-2"
         >
           Dismiss
         </button>
       </div>
-      <div className="flex items-center gap-2">
-        <code className="flex-1 font-mono text-[11px] bg-background border rounded px-3 py-2 overflow-x-auto whitespace-nowrap">
-          {rawKey}
-        </code>
-        <button
-          type="button"
-          onClick={copy}
-          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-2 text-xs font-semibold rounded"
-        >
-          {copied ? "Copied" : "Copy"}
-        </button>
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <code className="flex-1 font-mono text-[11px] bg-background border rounded px-3 py-2 overflow-x-auto whitespace-nowrap">
+            {rawKey}
+          </code>
+          <button
+            type="button"
+            onClick={copy}
+            className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-2 text-xs font-semibold rounded shrink-0"
+          >
+            {copied ? "Copied" : "Copy"}
+          </button>
+        </div>
+        {copyFailed && (
+          <p className="text-[11px] text-destructive">
+            Copy failed — select and copy the key manually.
+          </p>
+        )}
       </div>
-      <p className="text-[11px] opacity-70">
+      <p className="text-[11px] text-muted-foreground">
         Key <span className="font-mono">{name}</span> · scopes:{" "}
         <span className="font-mono">{scopes.join(", ")}</span>
       </p>

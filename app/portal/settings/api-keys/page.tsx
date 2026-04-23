@@ -52,7 +52,7 @@ export default async function ApiKeysPage() {
       <section className="rounded-lg border border-border bg-card p-5 space-y-5">
         <div>
           <h2 className="text-sm font-semibold">Create a key</h2>
-          <p className="text-xs opacity-60 mt-1">
+          <p className="text-xs text-muted-foreground mt-1">
             Generated keys are shown exactly once. Store them in your
             integration vault (e.g. Zapier secrets) immediately.
           </p>
@@ -63,12 +63,12 @@ export default async function ApiKeysPage() {
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <div className="flex items-baseline justify-between gap-3">
           <h2 className="text-sm font-semibold">Active keys</h2>
-          <span className="text-[11px] opacity-60">
+          <span className="text-[11px] text-muted-foreground">
             {active.length} active
           </span>
         </div>
         {active.length === 0 ? (
-          <p className="text-xs opacity-70">
+          <p className="text-xs text-muted-foreground">
             No active keys yet. Use the form above to create one.
           </p>
         ) : (
@@ -94,10 +94,10 @@ export default async function ApiKeysPage() {
       {revoked.length > 0 ? (
         <section className="rounded-lg border border-border bg-card p-5 space-y-4">
           <div className="flex items-baseline justify-between gap-3">
-            <h2 className="text-sm font-semibold opacity-70">
+            <h2 className="text-sm font-semibold text-muted-foreground">
               Revoked keys
             </h2>
-            <span className="text-[11px] opacity-60">
+            <span className="text-[11px] text-muted-foreground">
               {revoked.length} revoked
             </span>
           </div>
@@ -122,7 +122,7 @@ export default async function ApiKeysPage() {
 
       <section className="rounded-lg border border-border bg-card p-5 space-y-2">
         <h2 className="text-sm font-semibold">How to use</h2>
-        <p className="text-xs opacity-70">
+        <p className="text-xs text-muted-foreground">
           Send a <code className="font-mono">POST</code> request to one of the
           ingest endpoints with your key in the{" "}
           <code className="font-mono">Authorization</code> header.
@@ -133,7 +133,7 @@ export default async function ApiKeysPage() {
   -H "Content-Type: application/json" \\
   -d '{"email":"student@berkeley.edu","firstName":"Alex","source":"FORM"}'`}
         </pre>
-        <ul className="text-[11px] opacity-70 list-disc pl-5 space-y-1">
+        <ul className="text-[11px] text-muted-foreground list-disc pl-5 space-y-1">
           <li>
             <code className="font-mono">/api/ingest/lead</code> · scope{" "}
             <code className="font-mono">ingest:lead</code>
@@ -181,7 +181,7 @@ function ApiKeyRow({
   return (
     <li
       className={`py-3 flex flex-wrap items-start gap-x-6 gap-y-1 justify-between ${
-        isRevoked ? "opacity-60" : ""
+        isRevoked ? "text-muted-foreground" : ""
       }`}
     >
       <div className="min-w-0 flex-1 space-y-1">
@@ -196,7 +196,7 @@ function ApiKeyRow({
             </span>
           ) : null}
         </div>
-        <div className="text-[11px] opacity-70 flex flex-wrap gap-x-3 gap-y-0.5">
+        <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5">
           <span>
             Scopes:{" "}
             <span className="font-mono">
