@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Share2 } from "lucide-react";
+import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
@@ -136,7 +137,7 @@ export default async function ReferralsPage() {
     referralLeads30d.map((r) => [r.propertyId ?? "", r._count.id])
   );
 
-  const stats: ReferralPropertyStat[] = properties.map((p) => ({
+  const baseStats = properties.map((p) => ({
     propertyId: p.id,
     propertyName: p.name,
     propertySlug: p.slug,
@@ -146,6 +147,24 @@ export default async function ReferralsPage() {
     referralApps: appsByProperty.get(p.id)?.apps ?? 0,
     referralSigned: appsByProperty.get(p.id)?.signed ?? 0,
   }));
+
+  // Generate QR codes server-side for each property
+  const stats: ReferralPropertyStat[] = await Promise.all(
+    baseStats.map(async (s) => {
+      const referralUrl = `https://${s.orgSlug}.leasestack.co/contact?ref=${s.propertySlug}`;
+      let qrDataUrl: string | null = null;
+      try {
+        qrDataUrl = await QRCode.toDataURL(referralUrl, {
+          width: 200,
+          margin: 1,
+          color: { dark: "#111111", light: "#ffffff" },
+        });
+      } catch {
+        // QR generation failure is non-fatal
+      }
+      return { ...s, qrDataUrl };
+    })
+  );
 
   // Summary totals
   const totalLeads = stats.reduce((n, s) => n + s.referralLeads, 0);

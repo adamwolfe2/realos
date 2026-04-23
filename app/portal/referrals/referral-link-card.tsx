@@ -12,6 +12,7 @@ export type ReferralPropertyStat = {
   referralLeads30d: number;
   referralApps: number;
   referralSigned: number;
+  qrDataUrl: string | null;
 };
 
 export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
@@ -90,6 +91,37 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
           contact form using this link, the lead is tagged as a referral.
         </p>
       </div>
+
+      {/* QR Code */}
+      {stat.qrDataUrl ? (
+        <div className="space-y-2">
+          <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+            QR code
+          </div>
+          <div className="flex items-start gap-4">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={stat.qrDataUrl}
+              alt={`QR code for ${stat.propertyName} referral link`}
+              className="w-24 h-24 border border-border rounded-md"
+            />
+            <div className="space-y-2 flex-1 min-w-0">
+              <p className="text-[11px] text-muted-foreground leading-relaxed">
+                Print or display this QR code on flyers, bulletin boards, or in
+                common areas. Residents scan it to open the referral link
+                directly.
+              </p>
+              <a
+                href={stat.qrDataUrl}
+                download={`${stat.propertySlug}-referral-qr.png`}
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-white px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted transition-colors"
+              >
+                Download QR
+              </a>
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       {/* Email template suggestion */}
       <details className="group">
