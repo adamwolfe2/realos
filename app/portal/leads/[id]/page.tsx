@@ -373,7 +373,7 @@ export default async function LeadDetailPage({
                     className="rounded-[10px] bg-card ring-1 ring-border p-3"
                   >
                     <p className="text-xs text-foreground whitespace-pre-wrap leading-relaxed">
-                      {n.body}
+                      {n.body.replace(/^\[lead:[^\]]+\]\s*/, "")}
                     </p>
                     <p className="mt-2 text-[10px] text-muted-foreground">
                       {format(n.createdAt, "MMM d, h:mm a")}

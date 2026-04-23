@@ -46,21 +46,21 @@ export type PortalNavOrg = {
   setupComplete: boolean;
 };
 
-type NavItem = {
+export type NavItem = {
   href: string;
   label: string;
   icon: LucideIcon;
   show: (org: PortalNavOrg) => boolean;
 };
 
-type NavGroup = {
+export type NavGroup = {
   label: string;
   items: NavItem[];
 };
 
 const ALWAYS = () => true;
 
-const NAV_GROUPS: NavGroup[] = [
+export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Overview",
     items: [

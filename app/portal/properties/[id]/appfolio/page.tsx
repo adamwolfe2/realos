@@ -61,7 +61,6 @@ export default async function AppFolioSettingsPage({
           integration
             ? {
                 instanceSubdomain: integration.instanceSubdomain,
-                plan: integration.plan ?? "",
                 propertyGroupFilter: integration.propertyGroupFilter,
                 useEmbedFallback: integration.useEmbedFallback,
                 autoSyncEnabled: integration.autoSyncEnabled,

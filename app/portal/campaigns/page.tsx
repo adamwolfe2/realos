@@ -155,11 +155,11 @@ export default async function CampaignsPage() {
             <tbody className="divide-y divide-border">
               {campaigns.map((c) => (
                 <tr key={c.id} className="hover:bg-muted/30 transition-colors">
-                  <td className="px-4 py-3 font-medium text-foreground">
-                    {c.name}
+                  <td className="px-4 py-3 font-medium text-foreground max-w-[14rem]">
+                    <span className="block truncate">{c.name}</span>
                   </td>
-                  <td className="px-4 py-3 text-sm text-muted-foreground">
-                    {c.property?.name ?? "—"}
+                  <td className="px-4 py-3 text-sm text-muted-foreground max-w-[10rem]">
+                    <span className="block truncate">{c.property?.name ?? "—"}</span>
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground">
                     {platformLabel(c.adAccount?.platform ?? c.platform)}

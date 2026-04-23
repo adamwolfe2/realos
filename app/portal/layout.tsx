@@ -5,6 +5,7 @@ import { getScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { BRAND_NAME } from "@/lib/brand";
 import { PortalNav } from "@/components/portal/portal-nav";
+import { MobileNavDrawer } from "@/components/portal/mobile-nav-drawer";
 import { deriveSetupProgress } from "@/lib/setup/derive-progress";
 import Image from "next/image";
 import Link from "next/link";
@@ -78,16 +79,19 @@ export default async function PortalLayout({
     <div className="flex flex-col h-screen bg-background text-foreground">
       {/* Mobile top bar */}
       <div className="md:hidden shrink-0 flex items-center justify-between h-14 px-4 bg-card border-b border-border z-40">
-        <Link href="/portal" aria-label={`${BRAND_NAME} portal home`}>
-          <Image
-            src="/logos/leasestack-wordmark.png"
-            alt={BRAND_NAME}
-            width={110}
-            height={20}
-            className="h-5 w-auto"
-            priority
-          />
-        </Link>
+        <div className="flex items-center gap-2">
+          <MobileNavDrawer org={navOrg} />
+          <Link href="/portal" aria-label={`${BRAND_NAME} portal home`}>
+            <Image
+              src="/logos/leasestack-wordmark.png"
+              alt={BRAND_NAME}
+              width={110}
+              height={20}
+              className="h-5 w-auto"
+              priority
+            />
+          </Link>
+        </div>
         <div className="flex items-center gap-3">
           <NotificationBell />
           <UserButton />

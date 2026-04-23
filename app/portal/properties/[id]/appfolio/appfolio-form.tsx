@@ -6,7 +6,6 @@ import Link from "next/link";
 
 type Initial = {
   instanceSubdomain: string;
-  plan: string;
   propertyGroupFilter: string | null;
   useEmbedFallback: boolean;
   autoSyncEnabled: boolean;

@@ -11,7 +11,6 @@ import { AuditAction, BackendPlatform } from "@prisma/client";
 
 const patch = z.object({
   instanceSubdomain: z.string().min(1).max(200).optional(),
-  plan: z.enum(["core", "plus", "max", "unknown"]).optional(),
   propertyGroupFilter: z.string().max(200).optional().nullable(),
   apiKey: z.string().min(4).max(500).optional(),
   useEmbedFallback: z.boolean().optional(),
@@ -30,7 +29,6 @@ export async function GET() {
       integration: {
         id: integration.id,
         instanceSubdomain: integration.instanceSubdomain,
-        plan: integration.plan,
         propertyGroupFilter: integration.propertyGroupFilter,
         useEmbedFallback: integration.useEmbedFallback,
         autoSyncEnabled: integration.autoSyncEnabled,
@@ -64,7 +62,6 @@ export async function PATCH(req: NextRequest) {
     const data = {
       instanceSubdomain:
         d.instanceSubdomain !== undefined ? d.instanceSubdomain : undefined,
-      plan: d.plan,
       propertyGroupFilter:
         d.propertyGroupFilter !== undefined
           ? d.propertyGroupFilter ?? null
@@ -83,7 +80,6 @@ export async function PATCH(req: NextRequest) {
       create: {
         orgId: scope.orgId,
         instanceSubdomain: d.instanceSubdomain ?? "",
-        plan: d.plan,
         propertyGroupFilter: d.propertyGroupFilter ?? null,
         useEmbedFallback: d.useEmbedFallback ?? true,
         autoSyncEnabled: d.autoSyncEnabled ?? true,
@@ -114,7 +110,6 @@ export async function PATCH(req: NextRequest) {
       integration: {
         id: integration.id,
         instanceSubdomain: integration.instanceSubdomain,
-        plan: integration.plan,
         propertyGroupFilter: integration.propertyGroupFilter,
         useEmbedFallback: integration.useEmbedFallback,
         autoSyncEnabled: integration.autoSyncEnabled,
