@@ -10,10 +10,10 @@ export const metadata: Metadata = { title: "Support" };
 export const dynamic = "force-dynamic";
 
 const STATUS_TONE: Record<ChatbotConversationStatus, string> = {
-  ACTIVE: "bg-emerald-100 text-emerald-700",
-  LEAD_CAPTURED: "bg-sky-100 text-sky-700",
+  ACTIVE: "bg-emerald-50 text-emerald-700",
+  LEAD_CAPTURED: "bg-sky-50 text-sky-700",
   ABANDONED: "bg-foreground/10 text-foreground",
-  HANDED_OFF: "bg-amber-100 text-amber-700",
+  HANDED_OFF: "bg-amber-50 text-amber-700",
   CLOSED: "bg-foreground/10 text-foreground",
 };
 

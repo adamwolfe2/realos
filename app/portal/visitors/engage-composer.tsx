@@ -92,6 +92,7 @@ export function EngageComposer({
           defaultPlaceholder ??
           "Hi, I noticed you were checking out floor plans. Anything I can help with?"
         }
+        aria-label="Message to send to visitor"
         className="w-full text-sm border border-border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-primary"
         disabled={pending}
         autoFocus

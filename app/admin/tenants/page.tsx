@@ -152,15 +152,15 @@ function DomainRow({
       <span
         className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded ${
           sslOk
-            ? "bg-emerald-100 text-emerald-700"
-            : "bg-amber-100 text-amber-700"
+            ? "bg-emerald-50 text-emerald-700"
+            : "bg-amber-50 text-amber-700"
         }`}
         title={`SSL: ${domain.sslStatus ?? "unknown"}`}
       >
         {sslOk ? "SSL" : domain.sslStatus ?? "Pending"}
       </span>
       {!domain.dnsConfigured ? (
-        <span className="text-[10px] uppercase tracking-wide bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded">
+        <span className="text-[10px] uppercase tracking-wide bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded">
           DNS
         </span>
       ) : null}

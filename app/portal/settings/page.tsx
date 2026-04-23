@@ -141,8 +141,7 @@ export default async function SettingsPage() {
           </ul>
         )}
         <p className="text-xs text-muted-foreground mt-3">
-          Inviting + role changes happen in the Clerk dashboard. Sprint 10
-          adds in-portal invite + role management.
+          To invite teammates or change roles, contact your account manager.
         </p>
       </section>
     </div>

@@ -19,11 +19,11 @@ type Notification = {
 };
 
 const KIND_COLOR: Record<string, string> = {
-  lead_created: "bg-emerald-100 text-emerald-700",
-  tour_scheduled: "bg-sky-100 text-sky-700",
-  chatbot_lead: "bg-violet-100 text-violet-700",
-  integration_error: "bg-rose-100 text-rose-700",
-  sync_complete: "bg-foreground/10 text-foreground",
+  lead_created: "bg-emerald-50 text-emerald-700",
+  tour_scheduled: "bg-sky-50 text-sky-700",
+  chatbot_lead: "bg-violet-50 text-violet-700",
+  integration_error: "bg-rose-50 text-rose-700",
+  sync_complete: "bg-muted text-muted-foreground",
 };
 
 type Filter = "all" | "unread" | "today" | "week";
@@ -138,8 +138,17 @@ export default function NotificationsPage() {
 
       <div className="rounded-lg border border-border bg-card overflow-hidden">
         {loading ? (
-          <div className="px-4 py-16 text-center text-sm text-muted-foreground">
-            Loading...
+          <div className="animate-pulse divide-y divide-border">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="px-5 py-4 flex items-start gap-3">
+                <div className="h-2 w-2 rounded-full bg-muted/60 mt-2 shrink-0" />
+                <div className="flex-1 space-y-1.5">
+                  <div className="h-4 w-64 bg-muted rounded" />
+                  <div className="h-3 w-48 bg-muted/60 rounded" />
+                </div>
+                <div className="h-3 w-14 bg-muted/40 rounded shrink-0" />
+              </div>
+            ))}
           </div>
         ) : visible.length === 0 ? (
           <div className="px-4 py-16 text-center text-sm text-muted-foreground">

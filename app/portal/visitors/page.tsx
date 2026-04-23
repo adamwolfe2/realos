@@ -679,7 +679,7 @@ function Avatar({
       <div className="h-10 w-10 rounded-full border overflow-hidden bg-white flex items-center justify-center shrink-0">
         <Image
           src={identity.logoUrl}
-          alt={identity.companyName ?? ""}
+          alt={identity.companyName ?? "Company logo"}
           width={40}
           height={40}
           className="h-10 w-10 object-contain"

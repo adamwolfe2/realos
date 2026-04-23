@@ -203,16 +203,16 @@ export function DomainsPanel({
                 <span
                   className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded ${
                     d.sslStatus === "active"
-                      ? "bg-emerald-100 text-emerald-700"
+                      ? "bg-emerald-50 text-emerald-700"
                       : d.sslStatus === "failed"
-                        ? "bg-rose-100 text-rose-700"
-                        : "bg-amber-100 text-amber-700"
+                        ? "bg-rose-50 text-rose-700"
+                        : "bg-amber-50 text-amber-700"
                   }`}
                 >
                   SSL {d.sslStatus ?? "pending"}
                 </span>
                 {!d.dnsConfigured ? (
-                  <span className="text-[10px] uppercase tracking-wide bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] uppercase tracking-wide bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded">
                     DNS
                   </span>
                 ) : null}
@@ -261,7 +261,7 @@ export function DomainsPanel({
           </p>
           <div className="rounded border border-amber-200 bg-white overflow-hidden">
             <table className="w-full text-xs">
-              <thead className="bg-amber-100/60 text-[10px] uppercase tracking-wide">
+              <thead className="bg-amber-50 text-[10px] uppercase tracking-wide">
                 <tr>
                   <th className="px-2 py-1.5 text-left">Type</th>
                   <th className="px-2 py-1.5 text-left">Host</th>
