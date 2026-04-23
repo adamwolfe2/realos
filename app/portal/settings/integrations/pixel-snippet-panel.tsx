@@ -211,20 +211,29 @@ export function PixelSnippetPanel(props: Props) {
           </button>
         </div>
         {testStatus.kind === "ok" ? (
-          <p className="text-[11px] text-emerald-700">
-            Sent. Refresh{" "}
-            <a href="/portal/visitors" className="underline">
-              /portal/visitors
-            </a>{" "}
-            to see the new session. Token:{" "}
-            <code className="font-mono">{testStatus.sessionToken}</code>
-          </p>
+          <div className="space-y-1.5">
+            <p className="text-[11px] text-emerald-700 font-medium">
+              Test event received. The visitor feed will update within 15 seconds.
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Session token:{" "}
+              <code className="font-mono text-foreground">
+                {testStatus.sessionToken}
+              </code>
+            </p>
+            <a
+              href="/portal/visitors"
+              className="inline-block text-[11px] text-primary underline underline-offset-2"
+            >
+              Open visitor feed →
+            </a>
+          </div>
         ) : testStatus.kind === "error" ? (
           <p className="text-[11px] text-rose-700">{testStatus.message}</p>
         ) : (
           <p className="text-[11px] text-muted-foreground">
-            Fires a single pageview against your own pixel from this device.
-            Useful for verifying the ingest pipeline end-to-end.
+            Fires a single pageview from this browser to verify the ingest
+            pipeline end-to-end before pasting the snippet on your site.
           </p>
         )}
       </div>

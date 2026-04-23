@@ -10,6 +10,7 @@ import {
   Activity,
   History,
   HeartPulse,
+  Radio,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -71,6 +72,7 @@ export const adminNavGroups: NavGroup[] = [
         badgeKey: "openCreative",
       },
       { href: "/admin/campaigns", label: "Ad campaigns", icon: Megaphone },
+      { href: "/admin/pixel", label: "Pixel health", icon: Radio },
     ],
   },
   {
