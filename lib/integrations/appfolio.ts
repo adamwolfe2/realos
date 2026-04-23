@@ -425,19 +425,80 @@ export async function fetchAllPages(
 export async function testAppFolioConnection(
   integration: AppFolioIntegration
 ): Promise<{ ok: true } | { ok: false; error: string }> {
+  const subdomain = integration.instanceSubdomain;
+  if (!subdomain) return { ok: false, error: "Subdomain is required" };
+
+  let clientId: string;
+  let clientSecret: string;
   try {
-    const client = appfolioRestClient(integration);
-    // Use the leads report as the auth probe — it reliably accepts a narrow
-    // date window and returns quickly (empty results is fine). The listings
-    // report requires different parameter formats and is unreliable as a probe.
-    const today = new Date();
-    const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-    await client.fetchReport("leads", { fromDate: yesterday, toDate: today });
-    return { ok: true };
+    const creds = resolveRestCreds(integration);
+    clientId = creds.clientId;
+    clientSecret = creds.clientSecret;
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return { ok: false, error: message };
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Missing credentials",
+    };
   }
+
+  const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+  const authHeaders = {
+    Authorization: `Basic ${basic}`,
+    Accept: "application/json",
+    "User-Agent": USER_AGENT,
+  };
+
+  // Probe sequence: try each report/param variant in order.
+  // A 401/403 → definitive auth failure. A 200 → success.
+  // A 400/404/422 → bad params or unsupported report, try next variant.
+  const probes: Array<{ url: string; label: string }> = [
+    {
+      url: `https://${subdomain}.appfolio.com/api/v1/reports/listings.json?paginate_results=true`,
+      label: "listings",
+    },
+    {
+      url: `https://${subdomain}.appfolio.com/api/v1/reports/leads.json?paginate_results=true`,
+      label: "leads (no dates)",
+    },
+    {
+      url: (() => {
+        const today = new Date();
+        const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+        return `https://${subdomain}.appfolio.com/api/v1/reports/leads.json?paginate_results=true&from_date=${mmddyyyy(yesterday)}&to_date=${mmddyyyy(today)}`;
+      })(),
+      label: "leads (with dates)",
+    },
+  ];
+
+  let lastError = "Connection test failed";
+  for (const probe of probes) {
+    let response: Response;
+    try {
+      response = await fetch(probe.url, {
+        method: "GET",
+        cache: "no-store",
+        headers: authHeaders,
+      });
+    } catch (err) {
+      lastError = err instanceof Error ? err.message : "Network error";
+      continue;
+    }
+
+    if (response.ok) return { ok: true };
+
+    if (response.status === 401 || response.status === 403) {
+      const text = await response.text().catch(() => "");
+      return {
+        ok: false,
+        error: `AppFolio authentication failed (${response.status}). Check your Client ID and Client Secret.${text ? ` Details: ${text.slice(0, 200)}` : ""}`,
+      };
+    }
+
+    // 400/404/422 — bad params or report not available, try next probe
+    lastError = `AppFolio ${probe.label} returned ${response.status}`;
+  }
+
+  return { ok: false, error: lastError };
 }
 
 // ---------------------------------------------------------------------------
