@@ -593,8 +593,13 @@ function formatDuration(seconds: number): string {
   const mins = Math.floor(seconds / 60);
   if (mins < 60) return `${mins}m`;
   const hrs = Math.floor(mins / 60);
-  const remainingMins = mins % 60;
-  return remainingMins > 0 ? `${hrs}h ${remainingMins}m` : `${hrs}h`;
+  if (hrs < 24) {
+    const remainingMins = mins % 60;
+    return remainingMins > 0 ? `${hrs}h ${remainingMins}m` : `${hrs}h`;
+  }
+  const days = Math.floor(hrs / 24);
+  const remainingHrs = hrs % 24;
+  return remainingHrs > 0 ? `${days}d ${remainingHrs}h` : `${days}d`;
 }
 
 function linkedinUrl(enrichedData: unknown): string | null {

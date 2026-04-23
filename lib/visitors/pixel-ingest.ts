@@ -316,6 +316,14 @@ export async function recordEvent(input: EventInput): Promise<void> {
       });
   }
 
+  // Recompute intent score on signals that move it: scroll milestones, timing.
+  if (
+    input.visitorId &&
+    (input.type === "scroll" || input.type === "timing" || input.type === "identify")
+  ) {
+    await recomputeIntentScore(input.visitorId);
+  }
+
   // Touch CursiveIntegration.lastEventAt so the dashboard "last event" badge
   // reflects first-party pixel traffic too.
   await prisma.cursiveIntegration
@@ -325,6 +333,55 @@ export async function recordEvent(input: EventInput): Promise<void> {
         lastEventAt: input.occurredAt,
         totalEventsCount: { increment: 1 },
       },
+    })
+    .catch(() => null);
+}
+
+// ---------------------------------------------------------------------------
+// Intent score — computed from first-party behavioral signals.
+// Mirrors the AudienceLab webhook's computeIntentScore but uses session data.
+// ---------------------------------------------------------------------------
+
+export async function recomputeIntentScore(visitorId: string): Promise<void> {
+  const visitor = await prisma.visitor
+    .findUnique({
+      where: { id: visitorId },
+      select: {
+        email: true,
+        firstName: true,
+        lastName: true,
+        sessionCount: true,
+        totalTimeSeconds: true,
+        sessions: {
+          orderBy: { maxScrollDepth: "desc" },
+          take: 1,
+          select: { maxScrollDepth: true, pageviewCount: true },
+        },
+      },
+    })
+    .catch(() => null);
+
+  if (!visitor) return;
+
+  let score = 0;
+  if (visitor.email) score += 40;
+  if (visitor.firstName && visitor.lastName) score += 10;
+  const sessionCount = visitor.sessionCount ?? 0;
+  if (sessionCount > 1) score += 10;
+  if (sessionCount > 3) score += 5;
+  const totalTime = visitor.totalTimeSeconds ?? 0;
+  if (totalTime > 120) score += 10;
+  if (totalTime > 300) score += 5;
+  const bestSession = visitor.sessions[0];
+  if (bestSession) {
+    if (bestSession.maxScrollDepth >= 75) score += 10;
+    if (bestSession.pageviewCount >= 3) score += 5;
+  }
+
+  await prisma.visitor
+    .update({
+      where: { id: visitorId },
+      data: { intentScore: Math.min(100, score) },
     })
     .catch(() => null);
 }
@@ -384,4 +441,6 @@ export async function recordIdentify(input: IdentifyInput): Promise<void> {
       lastSeenAt: new Date(),
     },
   });
+
+  await recomputeIntentScore(input.visitorId);
 }

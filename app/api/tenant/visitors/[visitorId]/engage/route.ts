@@ -25,7 +25,9 @@ export const runtime = "nodejs";
 
 const body = z.object({
   message: z.string().min(1).max(2000),
-  sessionId: z.string().uuid(),
+  // Accept both UUID format (AudienceLab convos) and vst_* tokens (first-party pixel).
+  // Cross-tenant security is enforced by the ChatbotConversation DB lookup below, not by format.
+  sessionId: z.string().min(1).max(200),
   openWidget: z.boolean().optional().default(true),
 });
 
