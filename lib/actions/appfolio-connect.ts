@@ -193,9 +193,16 @@ export async function connectAppfolio(
 
   // Fire-and-forget initial backfill. The tile will reflect status on the
   // next page render.
-  void runAppfolioSync(scope.orgId, { fullBackfill: true }).catch((err) => {
-    console.warn("[appfolio-connect] initial sync error", err);
-  });
+  // Intentionally not awaited — sync runs in the background after save.
+  // Wrapped in an IIFE so any thrown error (including Neon HTTP transaction
+  // errors from upserts) never reaches the outer catch and breaks the save.
+  void (async () => {
+    try {
+      await runAppfolioSync(scope.orgId, { fullBackfill: true });
+    } catch (err) {
+      console.warn("[appfolio-connect] initial sync error", err);
+    }
+  })();
 
   revalidatePath(PORTAL_PATH);
   revalidatePath(PORTAL_HOME);

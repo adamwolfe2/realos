@@ -199,48 +199,31 @@ export async function runAppfolioSync(
         );
         continue;
       }
-      await prisma.listing.upsert({
-        where: {
-          propertyId_backendListingId: {
-            propertyId,
-            backendListingId: mapped.backendListingId,
-          },
-        },
-        create: {
-          propertyId,
-          backendListingId: mapped.backendListingId,
-          unitType: mapped.unitType ?? null,
-          unitNumber: mapped.unitNumber ?? null,
-          bedrooms: mapped.bedrooms ?? null,
-          bathrooms: mapped.bathrooms ?? null,
-          squareFeet: mapped.squareFeet ?? null,
-          priceCents: mapped.priceCents ?? null,
-          isAvailable: mapped.isAvailable,
-          availableFrom: mapped.availableFrom ?? null,
-          photoUrls: mapped.photoUrls
-            ? (mapped.photoUrls as unknown as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-          description: mapped.description ?? null,
-          raw: mapped.raw,
-          lastSyncedAt: new Date(),
-        },
-        update: {
-          unitType: mapped.unitType ?? null,
-          unitNumber: mapped.unitNumber ?? null,
-          bedrooms: mapped.bedrooms ?? null,
-          bathrooms: mapped.bathrooms ?? null,
-          squareFeet: mapped.squareFeet ?? null,
-          priceCents: mapped.priceCents ?? null,
-          isAvailable: mapped.isAvailable,
-          availableFrom: mapped.availableFrom ?? null,
-          photoUrls: mapped.photoUrls
-            ? (mapped.photoUrls as unknown as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-          description: mapped.description ?? null,
-          raw: mapped.raw,
-          lastSyncedAt: new Date(),
-        },
-      });
+      const syncListingWhere = {
+        propertyId_backendListingId: { propertyId, backendListingId: mapped.backendListingId },
+      } as const;
+      const syncListingData = {
+        unitType: mapped.unitType ?? null,
+        unitNumber: mapped.unitNumber ?? null,
+        bedrooms: mapped.bedrooms ?? null,
+        bathrooms: mapped.bathrooms ?? null,
+        squareFeet: mapped.squareFeet ?? null,
+        priceCents: mapped.priceCents ?? null,
+        isAvailable: mapped.isAvailable,
+        availableFrom: mapped.availableFrom ?? null,
+        photoUrls: mapped.photoUrls
+          ? (mapped.photoUrls as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
+        description: mapped.description ?? null,
+        raw: mapped.raw,
+        lastSyncedAt: new Date(),
+      };
+      const existingSyncListing = await prisma.listing.findUnique({ where: syncListingWhere, select: { id: true } });
+      if (existingSyncListing) {
+        await prisma.listing.update({ where: syncListingWhere, data: syncListingData });
+      } else {
+        await prisma.listing.create({ data: { propertyId, backendListingId: mapped.backendListingId, ...syncListingData } });
+      }
       stats.listingsUpserted += 1;
     }
   } catch (err) {
@@ -327,29 +310,32 @@ async function upsertAppfolioLead(
     propertyId: propertyId ?? undefined,
   };
 
-  await prisma.lead.upsert({
-    where,
-    create: {
-      orgId,
-      externalSystem: EXTERNAL_SYSTEM,
-      externalId: mapped.externalId,
-      firstName: mapped.firstName,
-      lastName: mapped.lastName,
-      email: mapped.email,
-      phone: mapped.phone,
-      source: mapped.source,
-      sourceDetail: mapped.sourceDetail,
-      status: mapped.status,
-      desiredMoveIn: mapped.desiredMoveIn,
-      budgetMaxCents: mapped.budgetMaxCents,
-      preferredUnitType: mapped.preferredUnitType,
-      notes: mapped.notes,
-      propertyId: propertyId ?? null,
-      firstSeenAt: mapped.createdAt ?? new Date(),
-      lastActivityAt: new Date(),
-    },
-    update: data,
-  });
+  const existing = await prisma.lead.findUnique({ where, select: { id: true } });
+  if (existing) {
+    await prisma.lead.update({ where, data });
+  } else {
+    await prisma.lead.create({
+      data: {
+        orgId,
+        externalSystem: EXTERNAL_SYSTEM,
+        externalId: mapped.externalId,
+        firstName: mapped.firstName,
+        lastName: mapped.lastName,
+        email: mapped.email,
+        phone: mapped.phone,
+        source: mapped.source,
+        sourceDetail: mapped.sourceDetail,
+        status: mapped.status,
+        desiredMoveIn: mapped.desiredMoveIn,
+        budgetMaxCents: mapped.budgetMaxCents,
+        preferredUnitType: mapped.preferredUnitType,
+        notes: mapped.notes,
+        propertyId: propertyId ?? null,
+        firstSeenAt: mapped.createdAt ?? new Date(),
+        lastActivityAt: new Date(),
+      },
+    });
+  }
 }
 
 async function upsertAppfolioTour(
@@ -374,32 +360,32 @@ async function upsertAppfolioTour(
   const propertyId = lead.propertyId ?? fallbackPropertyId;
   if (!propertyId) return false;
 
-  await prisma.tour.upsert({
-    where: {
-      externalSystem_externalId: {
-        externalSystem: EXTERNAL_SYSTEM,
-        externalId: mapped.externalId,
-      },
-    },
-    create: {
-      leadId: lead.id,
-      propertyId,
-      status: mapped.status,
-      scheduledAt: mapped.scheduledAt,
-      completedAt: mapped.completedAt,
-      notes: mapped.notes,
+  const tourWhere = {
+    externalSystem_externalId: {
       externalSystem: EXTERNAL_SYSTEM,
       externalId: mapped.externalId,
     },
-    update: {
-      leadId: lead.id,
-      propertyId,
-      status: mapped.status,
-      scheduledAt: mapped.scheduledAt,
-      completedAt: mapped.completedAt,
-      notes: mapped.notes,
-    },
-  });
+  } as const;
+  const tourData = {
+    leadId: lead.id,
+    propertyId,
+    status: mapped.status,
+    scheduledAt: mapped.scheduledAt,
+    completedAt: mapped.completedAt,
+    notes: mapped.notes,
+  };
+  const existingTour = await prisma.tour.findUnique({ where: tourWhere, select: { id: true } });
+  if (existingTour) {
+    await prisma.tour.update({ where: tourWhere, data: tourData });
+  } else {
+    await prisma.tour.create({
+      data: {
+        ...tourData,
+        externalSystem: EXTERNAL_SYSTEM,
+        externalId: mapped.externalId,
+      },
+    });
+  }
 
   // Auto-advance lead status when a tour is scheduled.
   if (

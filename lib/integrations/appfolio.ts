@@ -904,48 +904,36 @@ export async function syncListingsForOrg(
         continue;
       }
 
-      await prisma.listing.upsert({
-        where: {
-          propertyId_backendListingId: {
-            propertyId: property.id,
-            backendListingId: rl.backendListingId,
-          },
-        },
-        create: {
+      const listingWhere = {
+        propertyId_backendListingId: {
           propertyId: property.id,
           backendListingId: rl.backendListingId,
-          unitType: rl.unitType ?? null,
-          unitNumber: rl.unitNumber ?? null,
-          bedrooms: rl.bedrooms ?? null,
-          bathrooms: rl.bathrooms ?? null,
-          squareFeet: rl.squareFeet ?? null,
-          priceCents: rl.priceCents ?? null,
-          isAvailable: rl.isAvailable,
-          availableFrom: rl.availableFrom ?? null,
-          photoUrls: rl.photoUrls
-            ? (rl.photoUrls as unknown as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-          description: rl.description ?? null,
-          raw: rl.raw,
-          lastSyncedAt: new Date(),
         },
-        update: {
-          unitType: rl.unitType ?? null,
-          unitNumber: rl.unitNumber ?? null,
-          bedrooms: rl.bedrooms ?? null,
-          bathrooms: rl.bathrooms ?? null,
-          squareFeet: rl.squareFeet ?? null,
-          priceCents: rl.priceCents ?? null,
-          isAvailable: rl.isAvailable,
-          availableFrom: rl.availableFrom ?? null,
-          photoUrls: rl.photoUrls
-            ? (rl.photoUrls as unknown as Prisma.InputJsonValue)
-            : Prisma.JsonNull,
-          description: rl.description ?? null,
-          raw: rl.raw,
-          lastSyncedAt: new Date(),
-        },
-      });
+      } as const;
+      const listingData = {
+        unitType: rl.unitType ?? null,
+        unitNumber: rl.unitNumber ?? null,
+        bedrooms: rl.bedrooms ?? null,
+        bathrooms: rl.bathrooms ?? null,
+        squareFeet: rl.squareFeet ?? null,
+        priceCents: rl.priceCents ?? null,
+        isAvailable: rl.isAvailable,
+        availableFrom: rl.availableFrom ?? null,
+        photoUrls: rl.photoUrls
+          ? (rl.photoUrls as unknown as Prisma.InputJsonValue)
+          : Prisma.JsonNull,
+        description: rl.description ?? null,
+        raw: rl.raw,
+        lastSyncedAt: new Date(),
+      };
+      const existingListing = await prisma.listing.findUnique({ where: listingWhere, select: { id: true } });
+      if (existingListing) {
+        await prisma.listing.update({ where: listingWhere, data: listingData });
+      } else {
+        await prisma.listing.create({
+          data: { propertyId: property.id, backendListingId: rl.backendListingId, ...listingData },
+        });
+      }
       matchedSet.add(property.id);
       synced++;
     }
