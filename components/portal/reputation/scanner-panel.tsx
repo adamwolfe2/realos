@@ -80,15 +80,14 @@ export function ScannerPanel({
     flagged: false,
   });
 
-  // Sort priority:
-  //   1. Flagged mentions float to the top (operator marked them for follow-up)
-  //   2. Negative first (most actionable — these need a response)
-  //   3. Then MIXED, NEUTRAL, POSITIVE
-  //   4. Unclassified (null sentiment) last
-  //   5. Within the same bucket, newest first
-  const sentimentRank = (
-    s: Sentiment | null | undefined
-  ): number => {
+  // Sort priority (top to bottom):
+  //   1. Flagged mentions — operator already marked these for follow-up
+  //   2. Source rank — Reddit + forums first (raw organic discussion, the
+  //      most-sought intent signal), then structured user reviews (Yelp,
+  //      Google, ApartmentRatings, Niche, BBB), then everything else
+  //   3. Sentiment — negative first within each source bucket (actionable)
+  //   4. Newest first within sentiment bucket
+  const sentimentRank = (s: Sentiment | null | undefined): number => {
     switch (s) {
       case "NEGATIVE":
         return 0;
@@ -101,6 +100,29 @@ export function ScannerPanel({
       default:
         return 4;
     }
+  };
+
+  const sourceRank = (m: MentionView): number => {
+    let host = "";
+    try {
+      host = new URL(m.sourceUrl).host.toLowerCase().replace(/^www\./, "");
+    } catch {
+      // fall through
+    }
+    // Tier 0: organic discussion (Reddit, College Confidential, Quora).
+    if (m.source === "REDDIT" || /reddit\.com$/.test(host)) return 0;
+    if (/collegeconfidential\.com$/.test(host)) return 0;
+    if (/quora\.com$/.test(host)) return 0;
+    // Tier 1: structured user reviews.
+    if (m.source === "YELP" || /yelp\.com$/.test(host)) return 1;
+    if (/apartmentratings\.com$/.test(host)) return 1;
+    if (/niche\.com$/.test(host)) return 1;
+    if (/bbb\.org$/.test(host)) return 1;
+    if (/glassdoor\.com$/.test(host)) return 1;
+    // Tier 2: Google Reviews (structured, responded to via Business Profile).
+    if (m.source === "GOOGLE_REVIEW" || /google\.com$/.test(host)) return 2;
+    // Tier 3: other social / web.
+    return 3;
   };
 
   const filtered = React.useMemo(() => {
@@ -118,7 +140,11 @@ export function ScannerPanel({
     return list.sort((a, b) => {
       // Flagged first
       if (a.flagged !== b.flagged) return a.flagged ? -1 : 1;
-      // Sentiment priority
+      // Source tier (Reddit/forums first)
+      const sa = sourceRank(a);
+      const sb = sourceRank(b);
+      if (sa !== sb) return sa - sb;
+      // Sentiment (negative first)
       const rankA = sentimentRank(a.sentiment);
       const rankB = sentimentRank(b.sentiment);
       if (rankA !== rankB) return rankA - rankB;

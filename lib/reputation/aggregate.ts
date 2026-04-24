@@ -184,9 +184,13 @@ export async function loadReputationMetrics(
 ): Promise<ReputationMetrics> {
   const now = new Date();
   const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  const sixMonthsAgo = new Date(now);
-  sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
-  sixMonthsAgo.setDate(1);
+  // 12-month trend window so Google reviews dated 9-11 months ago show up
+  // on the bar chart. Tavily results without published_date still bucket
+  // into the scan date (recent bar), but nothing gets excluded for being
+  // "too old" within a year.
+  const twelveMonthsAgo = new Date(now);
+  twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
+  twelveMonthsAgo.setDate(1);
 
   const where = { orgId, propertyId };
 
@@ -244,8 +248,8 @@ export async function loadReputationMetrics(
       where: {
         ...where,
         OR: [
-          { publishedAt: { gte: sixMonthsAgo } },
-          { AND: [{ publishedAt: null }, { createdAt: { gte: sixMonthsAgo } }] },
+          { publishedAt: { gte: twelveMonthsAgo } },
+          { AND: [{ publishedAt: null }, { createdAt: { gte: twelveMonthsAgo } }] },
         ],
       },
       select: { publishedAt: true, createdAt: true, sentiment: true },
@@ -299,10 +303,10 @@ export async function loadReputationMetrics(
     .sort((a, b) => b.count - a.count)
     .slice(0, 8);
 
-  // Monthly volume — bucket by YYYY-MM, last 6 months.
+  // Monthly volume — bucket by YYYY-MM, last 12 months.
   const monthKeys: string[] = [];
-  const m = new Date(sixMonthsAgo);
-  for (let i = 0; i < 6; i++) {
+  const m = new Date(twelveMonthsAgo);
+  for (let i = 0; i < 12; i++) {
     const label = `${m.getFullYear()}-${String(m.getMonth() + 1).padStart(2, "0")}`;
     monthKeys.push(label);
     m.setMonth(m.getMonth() + 1);

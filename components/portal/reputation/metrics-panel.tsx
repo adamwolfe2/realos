@@ -48,8 +48,12 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
   const hasAnyData = metrics.totalMentions > 0;
   if (!hasAnyData) return null;
 
+  const hasTopics = metrics.topicBreakdown.length > 0;
+  const hasKeywords = metrics.negativeKeywords.length > 0;
+  const hasTrend = metrics.monthlyVolume.some((d) => d.count > 0);
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* KPI tile row — platform-level hero numbers */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile
@@ -70,7 +74,7 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
           hint={
             metrics.googleReviewCount > 0
               ? `${metrics.googleReviewCount} Google reviews`
-              : "No Google reviews yet"
+              : "Scan to populate"
           }
         />
         <KpiTile
@@ -78,8 +82,8 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
           value={metrics.totalMentions}
           hint={
             metrics.newLast30d > 0
-              ? `${metrics.newLast30d} new in last 30d`
-              : "No new in last 30d"
+              ? `+${metrics.newLast30d} in last 30d`
+              : "—"
           }
           icon={<MessageSquare className="h-4 w-4" />}
         />
@@ -88,7 +92,7 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
           value={
             metrics.negativePct === null ? "—" : `${metrics.negativePct}%`
           }
-          hint="Share of classified mentions"
+          hint="Of classified mentions"
           icon={<AlertCircle className="h-4 w-4" />}
         />
         <KpiTile
@@ -96,42 +100,65 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
           value={metrics.unreviewedCount}
           hint={
             metrics.flaggedCount > 0
-              ? `${metrics.flaggedCount} flagged for action`
-              : "Unreviewed mentions"
+              ? `${metrics.flaggedCount} flagged`
+              : "Unreviewed"
           }
           icon={<Flag className="h-4 w-4" />}
         />
       </section>
 
-      {/* Chart row — sentiment donut, source donut, topic bars */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <DashboardSection title="Sentiment" eyebrow="Classified mentions">
+      {/* Chart row — sentiment donut + source donut + optional topics bars.
+          When topics are empty (early-stage property) we collapse to a
+          2-column layout so the row doesn't look sparse. */}
+      <section
+        className={
+          hasTopics
+            ? "grid grid-cols-1 lg:grid-cols-3 gap-3"
+            : "grid grid-cols-1 lg:grid-cols-2 gap-3"
+        }
+      >
+        <DashboardSection title="Sentiment" eyebrow="Classified">
           <SentimentDonut data={metrics.sentimentBreakdown} />
         </DashboardSection>
-        <DashboardSection title="Platform mix" eyebrow="By source">
+        <DashboardSection title="Platforms" eyebrow="By source">
           <SourceDonut data={metrics.sourceBreakdown} />
         </DashboardSection>
-        <DashboardSection title="Top topics" eyebrow="Recurring themes">
-          <TopicBars data={metrics.topicBreakdown} />
-        </DashboardSection>
+        {hasTopics ? (
+          <DashboardSection title="Top topics" eyebrow="Recurring themes">
+            <TopicBars data={metrics.topicBreakdown} />
+          </DashboardSection>
+        ) : null}
       </section>
 
-      {/* Monthly volume + negative keywords */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        <DashboardSection
-          title="Mentions over time"
-          eyebrow="Last 6 months"
-          className="lg:col-span-2"
+      {/* Trend + complaints — only render sections that have data. If both
+          are empty (brand new property), skip the entire row. */}
+      {hasTrend || hasKeywords ? (
+        <section
+          className={
+            hasTrend && hasKeywords
+              ? "grid grid-cols-1 lg:grid-cols-3 gap-3"
+              : "grid grid-cols-1 gap-3"
+          }
         >
-          <MonthlyVolumeChart data={metrics.monthlyVolume} />
-        </DashboardSection>
-        <DashboardSection
-          title="Recurring complaints"
-          eyebrow="Top phrases in negative mentions"
-        >
-          <NegativeKeywords data={metrics.negativeKeywords} />
-        </DashboardSection>
-      </section>
+          {hasTrend ? (
+            <DashboardSection
+              title="Mentions over time"
+              eyebrow="Last 12 months"
+              className={hasKeywords ? "lg:col-span-2" : undefined}
+            >
+              <MonthlyVolumeChart data={metrics.monthlyVolume} />
+            </DashboardSection>
+          ) : null}
+          {hasKeywords ? (
+            <DashboardSection
+              title="Recurring complaints"
+              eyebrow="In negative mentions"
+            >
+              <NegativeKeywords data={metrics.negativeKeywords} />
+            </DashboardSection>
+          ) : null}
+        </section>
+      ) : null}
     </div>
   );
 }
@@ -245,8 +272,8 @@ function DonutWithLegend({
   centerLabel: string;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr] items-center gap-4">
-      <div className="relative h-[140px] w-[140px] mx-auto">
+    <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] items-center gap-3">
+      <div className="relative h-[120px] w-[120px] mx-auto">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>
             <Tooltip
@@ -264,8 +291,8 @@ function DonutWithLegend({
               data={data}
               dataKey="value"
               nameKey="name"
-              innerRadius={44}
-              outerRadius={66}
+              innerRadius={38}
+              outerRadius={56}
               stroke="white"
               strokeWidth={2}
               paddingAngle={1.5}
@@ -387,7 +414,7 @@ function MonthlyVolumeChart({
   });
 
   return (
-    <div className="h-[220px]">
+    <div className="h-[160px]">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={formatted} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
           <XAxis

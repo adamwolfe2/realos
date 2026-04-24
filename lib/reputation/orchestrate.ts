@@ -11,6 +11,13 @@ import {
   searchTavily,
   TAVILY_COST_CENTS_PER_QUERY,
   TAVILY_QUERIES_PER_SCAN,
+  LISTING_BLOCKLIST,
+  deriveOwnedDomains,
+  deriveOwnedSocialPaths,
+  isOwnedHost,
+  isOwnedSocialPage,
+  isListingUrl,
+  isWrongBusinessPage,
 } from "./tavily";
 import {
   searchGooglePlaces,
@@ -70,6 +77,14 @@ export async function* orchestrateScan(
     propertyId: property.id,
     sources: ALL_SOURCES,
   };
+
+  // Pre-scan cleanup: drop existing PropertyMention rows that fail the
+  // current filters. Listing sites (realtor, rent.com, rentcollegepads),
+  // property-owned social pages (instagram/{slug}, facebook/{slug}), and
+  // listing-shaped URLs (/rentals/details/, /a/Name-12345/, /biz_redir,
+  // .pdf) may have been persisted by earlier scans before the filters
+  // existed or tightened. Without this pass they linger forever.
+  await deleteBadExistingMentions(property);
 
   // Emit initial "running" status for every source so the UI shows all chips
   // immediately.
@@ -193,10 +208,53 @@ export async function* orchestrateScan(
     });
   }
 
-  // Trim new mentions to MAX_MENTIONS_TO_ANALYZE before sending to Claude
-  // (prefer most recent by publishedAt, then longest excerpt as a weak proxy
-  // for "most substantive").
-  const toAnalyze = [...newMentions]
+  // Classification pool: all new mentions + any existing mentions that are
+  // still unclassified (sentiment == null). The latter catches mentions
+  // inserted by earlier scans when the analyzer was silently failing on a
+  // too-strict schema. One extra Haiku call fully backfills a property.
+  const unclassifiedExisting = await prisma.propertyMention.findMany({
+    where: {
+      orgId: property.orgId,
+      propertyId: property.id,
+      sentiment: null,
+    },
+    select: {
+      id: true,
+      urlHash: true,
+      source: true,
+      sourceUrl: true,
+      title: true,
+      excerpt: true,
+      rating: true,
+    },
+    take: MAX_MENTIONS_TO_ANALYZE,
+  });
+
+  const poolNew: Array<{ hash: string; mention: ScannedMention }> =
+    newMentions.map(({ hash, mention }) => ({ hash, mention }));
+  const poolExisting: Array<{
+    id: string;
+    hash: string;
+    mention: ScannedMention;
+  }> = unclassifiedExisting.map((r) => ({
+    id: r.id,
+    hash: r.urlHash,
+    mention: {
+      source: r.source,
+      sourceUrl: r.sourceUrl,
+      title: r.title,
+      excerpt: r.excerpt,
+      authorName: null,
+      publishedAt: null,
+      rating: r.rating,
+    },
+  }));
+
+  // Sort together, newest-first, cap at MAX_MENTIONS_TO_ANALYZE.
+  const combined = [
+    ...poolNew.map((p) => ({ kind: "new" as const, ...p })),
+    ...poolExisting.map((p) => ({ kind: "existing" as const, ...p })),
+  ]
     .sort((a, b) => {
       const ta = a.mention.publishedAt?.getTime() ?? 0;
       const tb = b.mention.publishedAt?.getTime() ?? 0;
@@ -205,12 +263,32 @@ export async function* orchestrateScan(
     })
     .slice(0, MAX_MENTIONS_TO_ANALYZE);
 
-  yield { type: "analysis_started", toAnalyze: toAnalyze.length };
+  yield { type: "analysis_started", toAnalyze: combined.length };
 
   // Claude classification.
   const classifications = await analyzeSentimentAndTopics(
-    toAnalyze.map((m) => ({ id: m.hash, mention: m.mention }))
+    combined.map((m) => ({ id: m.hash, mention: m.mention }))
   );
+
+  // Write back classifications to existing rows.
+  const existingToUpdate = combined.filter(
+    (c) => c.kind === "existing"
+  ) as Array<{ kind: "existing"; id: string; hash: string }>;
+  for (const row of existingToUpdate) {
+    const analysis = classifications.get(row.hash);
+    if (!analysis) continue;
+    try {
+      await prisma.propertyMention.update({
+        where: { id: row.id },
+        data: {
+          sentiment: analysis.sentiment,
+          topics: analysis.topics as Prisma.InputJsonValue,
+        },
+      });
+    } catch {
+      // Non-fatal.
+    }
+  }
 
   // Persist all new mentions (even ones we didn't analyze) so we don't
   // discover them again next scan — unanalyzed rows have sentiment = null
@@ -332,6 +410,61 @@ export async function* orchestrateScan(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+// Pre-scan cleanup: walk the property's existing PropertyMention rows and
+// delete any whose URL now falls on the listing blocklist, matches an
+// owned-social pattern, or is a known listing-URL shape. Also deletes
+// Yelp/Niche/ApartmentRatings rows whose URL slug doesn't match the
+// property name (wrong-business mentions). Keeps the feed honest over
+// time as we tighten filters without requiring a manual DB wipe.
+async function deleteBadExistingMentions(
+  property: PropertySeed
+): Promise<void> {
+  const rows = await prisma.propertyMention.findMany({
+    where: { orgId: property.orgId, propertyId: property.id },
+    select: { id: true, sourceUrl: true },
+  });
+  if (rows.length === 0) return;
+
+  const ownedDomains = deriveOwnedDomains(property);
+  const ownedSocialPaths = deriveOwnedSocialPaths(property);
+
+  const toDelete: string[] = [];
+  for (const r of rows) {
+    if (shouldDelete(r.sourceUrl, property.name, ownedDomains, ownedSocialPaths)) {
+      toDelete.push(r.id);
+    }
+  }
+  if (toDelete.length === 0) return;
+
+  await prisma.propertyMention.deleteMany({
+    where: { id: { in: toDelete } },
+  });
+}
+
+function shouldDelete(
+  url: string,
+  propertyName: string,
+  ownedDomains: string[],
+  ownedSocialPaths: string[]
+): boolean {
+  try {
+    const host = new URL(url).host.toLowerCase().replace(/^www\./, "");
+    // Host is on the listing blocklist.
+    if (
+      LISTING_BLOCKLIST.some((d) => host === d || host.endsWith(`.${d}`))
+    ) {
+      return true;
+    }
+    if (isOwnedHost(url, ownedDomains)) return true;
+    if (isOwnedSocialPage(url, ownedSocialPaths)) return true;
+    if (isListingUrl(url)) return true;
+    if (isWrongBusinessPage(url, propertyName)) return true;
+  } catch {
+    return true; // malformed URL, junk data
+  }
+  return false;
+}
 
 function dedupeByUrlHash(
   mentions: ScannedMention[]

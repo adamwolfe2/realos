@@ -33,8 +33,9 @@ export const TAVILY_QUERIES_PER_SCAN = 4;
 
 // Hard-blocked domains — listings, syndicated aggregators, property-owned.
 // We pass these to Tavily as exclude_domains on every query so the budget
-// isn't wasted fetching them.
-const LISTING_BLOCKLIST = [
+// isn't wasted fetching them. Also exported so orchestrate.ts can sweep
+// pre-existing PropertyMention rows whose host now falls on this list.
+export const LISTING_BLOCKLIST = [
   "realtor.com",
   "rent.com",
   "rentable.co",
@@ -297,7 +298,7 @@ function slugifyName(name: string): string {
 
 // Likely-owned website domains inferred from the property name + Google review
 // URL.
-function deriveOwnedDomains(property: PropertySeed): string[] {
+export function deriveOwnedDomains(property: PropertySeed): string[] {
   const domains = new Set<string>();
   const slug = slugifyName(property.name);
   if (slug.length >= 3) {
@@ -326,7 +327,7 @@ function deriveOwnedDomains(property: PropertySeed): string[] {
 
 // Social-media paths under shared platforms that the property itself operates:
 // instagram.com/telegraphcommonsberkeley, facebook.com/telegraphcommons, etc.
-function deriveOwnedSocialPaths(property: PropertySeed): string[] {
+export function deriveOwnedSocialPaths(property: PropertySeed): string[] {
   const slug = slugifyName(property.name);
   if (slug.length < 3) return [];
   const variants = [slug, `${slug}berkeley`, `${slug}apartments`];
@@ -349,7 +350,7 @@ function deriveOwnedSocialPaths(property: PropertySeed): string[] {
   return paths;
 }
 
-function isOwnedHost(url: string, ownedDomains: string[]): boolean {
+export function isOwnedHost(url: string, ownedDomains: string[]): boolean {
   if (ownedDomains.length === 0) return false;
   try {
     const host = new URL(url).host.toLowerCase().replace(/^www\./, "");
@@ -359,7 +360,7 @@ function isOwnedHost(url: string, ownedDomains: string[]): boolean {
   }
 }
 
-function isOwnedSocialPage(url: string, ownedSocialPaths: string[]): boolean {
+export function isOwnedSocialPage(url: string, ownedSocialPaths: string[]): boolean {
   if (ownedSocialPaths.length === 0) return false;
   try {
     const u = new URL(url);
@@ -380,7 +381,7 @@ function isOwnedSocialPage(url: string, ownedSocialPaths: string[]): boolean {
 
 // URL path patterns that are never user reviews: listing detail pages,
 // search result pages, syndicated availability pages.
-function isListingUrl(url: string): boolean {
+export function isListingUrl(url: string): boolean {
   try {
     const u = new URL(url);
     const path = u.pathname.toLowerCase();
@@ -411,7 +412,7 @@ function isListingUrl(url: string): boolean {
 // the property name appears in the page copy, even though the page itself
 // is for a DIFFERENT business. We require the URL's business slug to
 // contain the property name tokens.
-function isWrongBusinessPage(url: string, propertyName: string): boolean {
+export function isWrongBusinessPage(url: string, propertyName: string): boolean {
   try {
     const u = new URL(url);
     const host = u.host.toLowerCase().replace(/^www\./, "");
