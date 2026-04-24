@@ -64,12 +64,22 @@ export function StepPortfolio({
       </div>
 
       {data.currentBackendPlatform === "APPFOLIO" && (
-        <IntakeField
-          label="AppFolio plan"
-          value={data.backendPlanTier}
-          onChange={(v) => onChange({ backendPlanTier: v })}
-          placeholder="Core / Plus / Max"
-        />
+        <div>
+          <p className="text-xs tracking-widest uppercase opacity-70 mb-2">
+            AppFolio plan
+          </p>
+          <div className="grid grid-cols-3 gap-3">
+            {(["Core", "Plus", "Max"] as const).map((tier) => (
+              <OptionButton
+                key={tier}
+                selected={data.backendPlanTier === tier}
+                onClick={() => onChange({ backendPlanTier: tier })}
+              >
+                {tier}
+              </OptionButton>
+            ))}
+          </div>
+        </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -77,7 +87,7 @@ export function StepPortfolio({
           label="Current marketing vendor"
           value={data.currentVendor}
           onChange={(v) => onChange({ currentVendor: v })}
-          placeholder="e.g. Conversion Logix"
+          placeholder="e.g. an agency retainer"
         />
         <IntakeField
           label="Current monthly marketing spend ($)"

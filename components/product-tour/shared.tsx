@@ -13,6 +13,13 @@ export const TOKENS = {
   white:           "#ffffff",
   nearBlack:       "#141413",
   darkSurface:     "#30302e",
+  // Brand accent is LeaseStack blue (was terracotta in the Claude draft).
+  // Token names kept for now to avoid churn across every view file; rename
+  // in a follow-up if the tour grows more contributors.
+  accent:          "#2563EB",
+  accentHover:     "#1D4ED8",
+  accentLight:     "#5B8CE6",
+  // Legacy aliases so existing inline references keep working.
   terracotta:      "#2563EB",
   terracottaHover: "#1D4ED8",
   coral:           "#5B8CE6",

@@ -49,20 +49,34 @@ export function StepServices({
 
       <div className="space-y-3">
         {MODULE_CATALOG.map((m) => {
-          const checked = !!data.modules[m.key];
+          // website + leadCapture ship to every operator as part of the base
+          // retainer. We show them as locked-on here so the intake reflects
+          // what the convert-to-client server action actually provisions.
+          const isCore = m.priceHint === "Core";
+          const checked = isCore ? true : !!data.modules[m.key];
           return (
             <label
               key={m.key}
-              className="flex items-start justify-between gap-4 p-4 border rounded-md cursor-pointer hover:bg-muted/30 transition-colors"
+              className={`flex items-start justify-between gap-4 p-4 border rounded-md transition-colors ${
+                isCore ? "bg-muted/40 cursor-default" : "cursor-pointer hover:bg-muted/30"
+              }`}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex flex-wrap items-baseline gap-2">
                   <h3 className="font-medium text-sm">{m.label}</h3>
-                  <span className="text-xs opacity-60">{m.priceHint}</span>
+                  <span className="text-xs opacity-60">
+                    {isCore ? "Included in every plan" : m.priceHint}
+                  </span>
                 </div>
                 <p className="text-xs opacity-70 mt-1">{m.desc}</p>
               </div>
-              <Switch checked={checked} onCheckedChange={() => toggle(m.key)} />
+              <Switch
+                checked={checked}
+                disabled={isCore}
+                onCheckedChange={() => {
+                  if (!isCore) toggle(m.key);
+                }}
+              />
             </label>
           );
         })}

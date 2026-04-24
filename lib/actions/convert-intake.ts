@@ -101,11 +101,16 @@ function deriveModuleFlags(selectedModules: unknown): {
     ? selectedModules.filter((m): m is string => typeof m === "string")
     : [];
   const has = (key: string) => selected.includes(key);
+  // DECISION: website + leadCapture are Core features (every operator gets
+  // them, they're bundled in the base retainer). The intake UI marks them as
+  // "Core" in MODULE_CATALOG. We force them on server-side so a prospect who
+  // accidentally toggled them off still gets them provisioned.
   return {
-    moduleWebsite: has("website"),
+    moduleWebsite: true,
+    moduleLeadCapture: true,
     modulePixel: has("pixel"),
     moduleChatbot: has("chatbot"),
-    // Support both "google_ads" and "googleAds" forms for safety.
+    // Support both snake_case and camelCase for safety across intake versions.
     moduleGoogleAds: has("google_ads") || has("googleAds"),
     moduleMetaAds: has("meta_ads") || has("metaAds"),
     moduleSEO: has("seo"),
@@ -115,7 +120,6 @@ function deriveModuleFlags(selectedModules: unknown): {
     moduleReferrals: has("referrals"),
     moduleCreativeStudio:
       has("creative_studio") || has("creativeStudio"),
-    moduleLeadCapture: true,
   };
 }
 
