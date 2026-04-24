@@ -164,6 +164,23 @@ export const Icons = {
       />
     </svg>
   ),
+  briefing: ({ size = 16, color = "currentColor" }: IconProps) => (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      <path d="M8 2l1.4 3.1L12.5 6l-2.3 2 .7 3.2L8 9.8 5.1 11.2l.7-3.2L3.5 6l3.1-.9z" stroke={color} strokeWidth="1.3" strokeLinejoin="round" />
+    </svg>
+  ),
+  visitors: ({ size = 16, color = "currentColor" }: IconProps) => (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      <path d="M1.5 8c1.8-3 4-4.5 6.5-4.5S12.7 5 14.5 8c-1.8 3-4 4.5-6.5 4.5S3.3 11 1.5 8z" stroke={color} strokeWidth="1.3" strokeLinejoin="round" />
+      <circle cx="8" cy="8" r="2" stroke={color} strokeWidth="1.3" />
+    </svg>
+  ),
+  seo: ({ size = 16, color = "currentColor" }: IconProps) => (
+    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
+      <path d="M2.5 11L6 7.5L8.5 10l4.5-5" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M10 5h3v3" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  ),
   search: ({ size = 16, color = "currentColor" }: IconProps) => (
     <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
       <circle cx="7" cy="7" r="4.5" stroke={color} strokeWidth="1.4" />

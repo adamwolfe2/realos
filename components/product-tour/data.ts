@@ -469,3 +469,114 @@ export const ACTIVITY: ActivityItem[] = [
   { kind: "chat",     text: "Chatbot captured a lead on /amenities", at: "4h ago" },
   { kind: "ad",       text: "Google Performance Max spent $812 this week", at: "6h ago" },
 ];
+
+// ---------------------------------------------------------------------------
+// Briefing (the Monday daily digest)
+// ---------------------------------------------------------------------------
+
+export type BriefingHighlight = {
+  kind: "win" | "watch" | "note";
+  title: string;
+  body: string;
+};
+
+export const BRIEFING: {
+  date: string;
+  greeting: string;
+  summary: string;
+  highlights: BriefingHighlight[];
+  focus: string;
+} = {
+  date: "Monday, July 14",
+  greeting: "Good morning, Acme Portfolio",
+  summary:
+    "Leasing velocity ticked up 14% week over week. Three properties are on pace, one is soft. Creative for the fall push shipped Friday and is already in rotation.",
+  highlights: [
+    {
+      kind: "win",
+      title: "Oak Grove is ahead of pace.",
+      body: "38 leads last week, 8 tours booked, 1 signed lease. Tour-to-lease rate is 12.5%, above the 9% portfolio average. Keep Meta concept B running, pull concept A.",
+    },
+    {
+      kind: "watch",
+      title: "Riverside is soft.",
+      body: "Only 4 leads last week. The September open still shows a 14-day rent lag behind the comp set. Recommending a $200 incentive test for two weeks.",
+    },
+    {
+      kind: "note",
+      title: "Chatbot captured 12 leads overnight.",
+      body: "AI assistant handled 27 conversations between 9pm and 7am, captured 12 emails. 3 are already scored above 80 and sitting in 'New' for the leasing team.",
+    },
+  ],
+  focus:
+    "This week: approve the Riverside incentive plan (we'll handle the ad-copy and landing update inside 48h), review the new fall-season ad concepts in /creative, and sign off on the September rent roll in /reports.",
+};
+
+// ---------------------------------------------------------------------------
+// Visitors (identity-pixel resolved anonymous traffic)
+// ---------------------------------------------------------------------------
+
+export type Visitor = {
+  id: string;
+  name: string;
+  email?: string;
+  company?: string;
+  lastPage: string;
+  sessions: number;
+  firstSeen: string;
+  lastSeen: string;
+  score: number;
+  stage: "Identified" | "Nurturing" | "Converted" | "Anonymous";
+};
+
+export const VISITORS: Visitor[] = [
+  { id: "V1", name: "Maya R.",    email: "maya@example.com",     company: "—",                    lastPage: "/floor-plans",   sessions: 4, firstSeen: "4 days ago",  lastSeen: "2m ago",  score: 92, stage: "Identified" },
+  { id: "V2", name: "Sophie K.",  email: "sophie@example.com",   company: "Stanford (parent)",    lastPage: "/contact",       sessions: 3, firstSeen: "6 days ago",  lastSeen: "12m ago", score: 94, stage: "Converted" },
+  { id: "V3", name: "Daniel L.",  email: "daniel@example.com",   company: "—",                    lastPage: "/amenities",     sessions: 2, firstSeen: "1 day ago",   lastSeen: "1h ago",  score: 88, stage: "Nurturing" },
+  { id: "V4", name: "Jin H.",     email: "jin@example.com",      company: "—",                    lastPage: "/floor-plans",   sessions: 1, firstSeen: "Today",       lastSeen: "30m ago", score: 74, stage: "Identified" },
+  { id: "V5", name: "Arjun P.",   email: "arjun@example.com",    company: "—",                    lastPage: "/amenities",     sessions: 5, firstSeen: "2 weeks ago", lastSeen: "6h ago",  score: 81, stage: "Nurturing" },
+  { id: "V6", name: "Noelle D.",  email: "noelle@example.com",   company: "—",                    lastPage: "/pricing-info",  sessions: 2, firstSeen: "3 days ago",  lastSeen: "45m ago", score: 77, stage: "Nurturing" },
+  { id: "V7", name: "Marcus T.",  email: "marcus@example.com",   company: "—",                    lastPage: "/tour",          sessions: 2, firstSeen: "Yesterday",   lastSeen: "Yesterday", score: 68, stage: "Nurturing" },
+  { id: "V8", name: "Ella C.",    email: "ella@example.com",     company: "Referred by resident", lastPage: "/apply",         sessions: 1, firstSeen: "Yesterday",   lastSeen: "Yesterday", score: 89, stage: "Identified" },
+  { id: "V9", name: "Luis R.",    email: "luis@example.com",     company: "—",                    lastPage: "/floor-plans",   sessions: 1, firstSeen: "1h ago",      lastSeen: "1h ago",  score: 62, stage: "Identified" },
+];
+
+export const VISITOR_STATS = {
+  resolveRate: "94%",
+  identifiedThisWeek: 312,
+  stillAnonymous: 18,
+  movedToLead: 47,
+};
+
+// ---------------------------------------------------------------------------
+// SEO (search performance)
+// ---------------------------------------------------------------------------
+
+export type SeoQuery = {
+  query: string;
+  impressions: number;
+  clicks: number;
+  position: number;
+  delta: number;
+};
+
+export const SEO_QUERIES: SeoQuery[] = [
+  { query: "apartments near sample university",   impressions: 8420, clicks: 612, position: 1.8, delta:  0.4 },
+  { query: "studio apartments downtown",          impressions: 4212, clicks: 287, position: 2.9, delta: -0.6 },
+  { query: "pet-friendly apartments sample city", impressions: 3188, clicks: 211, position: 4.1, delta:  1.1 },
+  { query: "furnished rentals fall 2026",         impressions: 2410, clicks: 168, position: 2.2, delta:  0.8 },
+  { query: "oak grove residences",                impressions: 1982, clicks: 612, position: 1.0, delta:  0.0 },
+  { query: "student housing near campus",         impressions: 1741, clicks: 102, position: 5.4, delta: -1.2 },
+  { query: "2 bedroom apartment harbor point",    impressions: 1482, clicks:  98, position: 1.4, delta:  0.2 },
+];
+
+export const SEO_TREND = [
+  { wk: "W1", impressions: 12800, position: 6.2 },
+  { wk: "W2", impressions: 14200, position: 5.8 },
+  { wk: "W3", impressions: 16400, position: 5.3 },
+  { wk: "W4", impressions: 18100, position: 4.6 },
+  { wk: "W5", impressions: 19800, position: 4.1 },
+  { wk: "W6", impressions: 22400, position: 3.5 },
+  { wk: "W7", impressions: 23600, position: 3.2 },
+  { wk: "W8", impressions: 25100, position: 2.9 },
+];

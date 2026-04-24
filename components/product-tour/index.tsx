@@ -9,10 +9,16 @@ import {
   AD_CHANNELS,
   WEEK_BARS,
   ACTIVITY,
+  BRIEFING,
+  VISITORS,
+  VISITOR_STATS,
+  SEO_QUERIES,
+  SEO_TREND,
   type LeadRow,
   type LeadStage,
   type LeadSource,
   type CreativeStatus,
+  type Visitor,
 } from "./data";
 import { TOKENS, Icons, Pill, ScoreBadge, Tile, SectionHeader } from "./shared";
 import { LiveTicker } from "@/components/platform/live-ticker";
@@ -38,21 +44,27 @@ import { LiveTicker } from "@/components/platform/live-ticker";
 // ---------------------------------------------------------------------------
 
 type ViewKey =
+  | "briefing"
   | "dashboard"
   | "leads"
+  | "visitors"
   | "conversations"
   | "creative"
   | "campaigns"
+  | "seo"
   | "properties"
   | "reports"
   | "settings";
 
 const VIEWS: Array<{ key: ViewKey; label: string; short: string; icon: keyof typeof Icons; count?: number }> = [
+  { key: "briefing",      label: "Briefing",      short: "Brief",  icon: "briefing" },
   { key: "dashboard",     label: "Dashboard",     short: "Dash",   icon: "dashboard" },
   { key: "leads",         label: "Leads",         short: "Leads",  icon: "leads",       count: 42 },
+  { key: "visitors",      label: "Visitors",      short: "Pixel",  icon: "visitors",    count: 312 },
   { key: "conversations", label: "Conversations", short: "Chat",   icon: "chat",        count: 6  },
   { key: "creative",      label: "Creative",      short: "Studio", icon: "creative",    count: 7  },
   { key: "campaigns",     label: "Campaigns",     short: "Ads",    icon: "campaigns" },
+  { key: "seo",           label: "SEO",           short: "SEO",    icon: "seo" },
   { key: "properties",    label: "Properties",    short: "Props",  icon: "properties",  count: 4  },
   { key: "reports",       label: "Reports",       short: "Report", icon: "reports" },
   { key: "settings",      label: "Settings",      short: "Config", icon: "settings" },
@@ -397,11 +409,14 @@ function Sidebar({
 function Contents({ view }: { view: ViewKey }) {
   return (
     <div className="p-3 md:p-8 text-[13px] md:text-base">
+      {view === "briefing" && <BriefingView />}
       {view === "dashboard" && <Dashboard />}
       {view === "leads" && <LeadsView />}
+      {view === "visitors" && <VisitorsView />}
       {view === "conversations" && <ConversationsView />}
       {view === "creative" && <CreativeView />}
       {view === "campaigns" && <CampaignsView />}
+      {view === "seo" && <SeoView />}
       {view === "properties" && <PropertiesView />}
       {view === "reports" && <ReportsView />}
       {view === "settings" && <SettingsView />}
@@ -2404,6 +2419,522 @@ function SettingsRow({
         </p>
       </div>
       <div className="flex-shrink-0">{action}</div>
+    </div>
+  );
+}
+
+// ===========================================================================
+// 9. BRIEFING (daily AI digest)
+// ===========================================================================
+
+function BriefingView() {
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-4 mb-6">
+        <div>
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              color: TOKENS.stone,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+            }}
+          >
+            {BRIEFING.date} · AI briefing
+          </p>
+          <h1
+            className="mt-1.5"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "28px",
+              fontWeight: 500,
+              color: TOKENS.nearBlack,
+              lineHeight: 1.1,
+            }}
+          >
+            {BRIEFING.greeting}
+          </h1>
+        </div>
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{ minHeight: "36px", padding: "6px 14px", fontSize: "13px", borderRadius: "10px" }}
+        >
+          Share with team
+        </button>
+      </div>
+
+      <div
+        className="p-6 mb-5"
+        style={{
+          backgroundColor: TOKENS.accent,
+          borderRadius: "16px",
+          color: TOKENS.white,
+        }}
+      >
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "10.5px",
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+            opacity: 0.9,
+          }}
+        >
+          Weekly summary
+        </p>
+        <p
+          className="mt-2"
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "19px",
+            fontWeight: 500,
+            lineHeight: 1.5,
+          }}
+        >
+          {BRIEFING.summary}
+        </p>
+      </div>
+
+      <div className="space-y-3">
+        {BRIEFING.highlights.map((h, i) => {
+          const toneColor =
+            h.kind === "win"   ? TOKENS.success :
+            h.kind === "watch" ? TOKENS.warning :
+            TOKENS.accent;
+          const toneBg =
+            h.kind === "win"   ? "rgba(58,125,68,0.12)" :
+            h.kind === "watch" ? "rgba(184,134,11,0.12)" :
+            "rgba(37,99,235,0.10)";
+          const toneLabel =
+            h.kind === "win"   ? "WIN" :
+            h.kind === "watch" ? "WATCH" :
+            "NOTE";
+          return (
+            <div
+              key={i}
+              className="p-5 flex gap-4"
+              style={{
+                backgroundColor: TOKENS.white,
+                borderRadius: "14px",
+                boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
+              }}
+            >
+              <span
+                className="flex-shrink-0 inline-flex items-center justify-center"
+                style={{
+                  width: "44px",
+                  height: "24px",
+                  borderRadius: "6px",
+                  backgroundColor: toneBg,
+                  color: toneColor,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "10px",
+                  fontWeight: 600,
+                  letterSpacing: "0.12em",
+                }}
+              >
+                {toneLabel}
+              </span>
+              <div className="flex-1 min-w-0">
+                <h3
+                  style={{
+                    fontFamily: "var(--font-display)",
+                    fontSize: "17px",
+                    fontWeight: 500,
+                    color: TOKENS.nearBlack,
+                    lineHeight: 1.3,
+                  }}
+                >
+                  {h.title}
+                </h3>
+                <p
+                  className="mt-2"
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "13.5px",
+                    color: TOKENS.charcoal,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  {h.body}
+                </p>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      <div
+        className="mt-5 p-5"
+        style={{
+          backgroundColor: TOKENS.ivory,
+          borderRadius: "14px",
+          boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
+        }}
+      >
+        <p
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "10.5px",
+            color: TOKENS.stone,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+          }}
+        >
+          Focus this week
+        </p>
+        <p
+          className="mt-2"
+          style={{
+            fontFamily: "var(--font-sans)",
+            fontSize: "14px",
+            color: TOKENS.charcoal,
+            lineHeight: 1.65,
+          }}
+        >
+          {BRIEFING.focus}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ===========================================================================
+// 10. VISITORS (identity-pixel resolved traffic)
+// ===========================================================================
+
+function VisitorsView() {
+  const [filter, setFilter] = useState<"All" | Visitor["stage"]>("All");
+  const rows = VISITORS.filter((v) => filter === "All" || v.stage === filter);
+
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
+        <div>
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              color: TOKENS.stone,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+            }}
+          >
+            Identity pixel
+          </p>
+          <h1
+            className="mt-1.5"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "28px",
+              fontWeight: 500,
+              color: TOKENS.nearBlack,
+              lineHeight: 1.1,
+            }}
+          >
+            Visitors
+          </h1>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        {[
+          { label: "Resolve rate",      value: VISITOR_STATS.resolveRate },
+          { label: "Identified / week", value: VISITOR_STATS.identifiedThisWeek.toLocaleString() },
+          { label: "Moved to lead",     value: VISITOR_STATS.movedToLead.toLocaleString() },
+          { label: "Still anonymous",   value: VISITOR_STATS.stillAnonymous.toLocaleString() },
+        ].map((k) => (
+          <div
+            key={k.label}
+            style={{
+              backgroundColor: TOKENS.white,
+              borderRadius: "12px",
+              padding: "14px 16px",
+              boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
+            }}
+          >
+            <p
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: "10px",
+                color: TOKENS.stone,
+                letterSpacing: "0.1em",
+                textTransform: "uppercase",
+                fontWeight: 500,
+              }}
+            >
+              {k.label}
+            </p>
+            <p
+              className="mt-1"
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "24px",
+                fontWeight: 500,
+                color: TOKENS.nearBlack,
+                lineHeight: 1.1,
+              }}
+            >
+              {k.value}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex items-center gap-1.5 mb-4">
+        {(["All", "Identified", "Nurturing", "Converted"] as const).map((s) => {
+          const active = filter === s;
+          return (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setFilter(s)}
+              style={{
+                padding: "6px 12px",
+                borderRadius: "999px",
+                fontFamily: "var(--font-sans)",
+                fontSize: "12px",
+                fontWeight: active ? 500 : 400,
+                color: active ? TOKENS.nearBlack : TOKENS.olive,
+                backgroundColor: active ? TOKENS.sand : TOKENS.white,
+                border: `1px solid ${active ? TOKENS.ring : TOKENS.borderCream}`,
+                cursor: "pointer",
+                transition: "background-color 0.2s",
+              }}
+            >
+              {s}
+            </button>
+          );
+        })}
+      </div>
+
+      <Tile>
+        <div
+          className="grid grid-cols-[1fr_1.3fr_1fr_80px_80px] gap-3 px-5 py-2.5"
+          style={{
+            backgroundColor: TOKENS.parchment,
+            borderBottom: `1px solid ${TOKENS.borderCream}`,
+            color: TOKENS.stone,
+            fontFamily: "var(--font-mono)",
+            fontSize: "10.5px",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+          }}
+        >
+          <span>Visitor</span>
+          <span>Context</span>
+          <span>Last page</span>
+          <span className="text-right">Score</span>
+          <span className="text-right">Sessions</span>
+        </div>
+        {rows.map((v, i) => (
+          <div
+            key={v.id}
+            className="grid grid-cols-[1fr_1.3fr_1fr_80px_80px] gap-3 px-5 py-3 items-center"
+            style={{
+              borderBottom: i < rows.length - 1 ? `1px solid ${TOKENS.borderCream}` : "none",
+              fontFamily: "var(--font-sans)",
+              fontSize: "13.5px",
+            }}
+          >
+            <div className="min-w-0">
+              <p className="truncate" style={{ color: TOKENS.nearBlack, fontWeight: 500 }}>
+                {v.name}
+              </p>
+              <p className="truncate" style={{ color: TOKENS.stone, fontSize: "12px" }}>
+                {v.email}
+              </p>
+            </div>
+            <div className="min-w-0">
+              <Pill tone={v.stage === "Converted" ? "success" : v.stage === "Nurturing" ? "warning" : "terracotta"}>
+                {v.stage}
+              </Pill>
+              {v.company && v.company !== "—" ? (
+                <span className="ml-2" style={{ color: TOKENS.stone, fontSize: "12px" }}>
+                  {v.company}
+                </span>
+              ) : null}
+            </div>
+            <span className="truncate" style={{ color: TOKENS.charcoal, fontFamily: "var(--font-mono)", fontSize: "12px" }}>
+              {v.lastPage}
+            </span>
+            <span className="text-right">
+              <ScoreBadge score={v.score} />
+            </span>
+            <span className="text-right" style={{ color: TOKENS.charcoal, fontFamily: "var(--font-mono)", fontSize: "12px" }}>
+              {v.sessions}
+            </span>
+          </div>
+        ))}
+      </Tile>
+    </div>
+  );
+}
+
+// ===========================================================================
+// 11. SEO (search performance)
+// ===========================================================================
+
+function SeoView() {
+  const maxImp = Math.max(...SEO_TREND.map((d) => d.impressions));
+  const latest = SEO_TREND[SEO_TREND.length - 1];
+  const first  = SEO_TREND[0];
+  const impDelta = Math.round(((latest.impressions - first.impressions) / first.impressions) * 100);
+
+  return (
+    <div>
+      <div className="flex items-start justify-between gap-4 mb-5">
+        <div>
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "11px",
+              color: TOKENS.stone,
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+            }}
+          >
+            Organic + AEO
+          </p>
+          <h1
+            className="mt-1.5"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "28px",
+              fontWeight: 500,
+              color: TOKENS.nearBlack,
+              lineHeight: 1.1,
+            }}
+          >
+            SEO
+          </h1>
+        </div>
+        <button
+          type="button"
+          className="btn-secondary"
+          style={{ minHeight: "36px", padding: "6px 14px", fontSize: "13px", borderRadius: "10px" }}
+        >
+          Request new landing page
+        </button>
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+        <div style={{ backgroundColor: TOKENS.white, borderRadius: "12px", padding: "14px 16px", boxShadow: `0 0 0 1px ${TOKENS.borderCream}` }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>Impressions (8w)</p>
+          <div className="mt-1 flex items-baseline gap-2">
+            <p style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 500, color: TOKENS.nearBlack }}>
+              {latest.impressions.toLocaleString()}
+            </p>
+            <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: TOKENS.success, fontWeight: 500 }}>
+              +{impDelta}%
+            </span>
+          </div>
+        </div>
+        <div style={{ backgroundColor: TOKENS.white, borderRadius: "12px", padding: "14px 16px", boxShadow: `0 0 0 1px ${TOKENS.borderCream}` }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>Avg position</p>
+          <p className="mt-1" style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 500, color: TOKENS.nearBlack }}>{latest.position.toFixed(1)}</p>
+        </div>
+        <div style={{ backgroundColor: TOKENS.white, borderRadius: "12px", padding: "14px 16px", boxShadow: `0 0 0 1px ${TOKENS.borderCream}` }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>Indexed pages</p>
+          <p className="mt-1" style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 500, color: TOKENS.nearBlack }}>184</p>
+        </div>
+        <div style={{ backgroundColor: TOKENS.white, borderRadius: "12px", padding: "14px 16px", boxShadow: `0 0 0 1px ${TOKENS.borderCream}` }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>AEO citations</p>
+          <p className="mt-1" style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 500, color: TOKENS.nearBlack }}>27</p>
+        </div>
+      </div>
+
+      <SectionHeader title="Impressions, last 8 weeks" />
+      <Tile>
+        <div className="p-5">
+          <div className="flex items-end gap-2.5 h-[160px]">
+            {SEO_TREND.map((d) => (
+              <div key={d.wk} className="flex-1 flex flex-col items-stretch">
+                <div className="flex-1 flex flex-col-reverse">
+                  <div
+                    style={{
+                      height: `${(d.impressions / maxImp) * 100}%`,
+                      background: `linear-gradient(to top, ${TOKENS.accent}, ${TOKENS.accentLight})`,
+                      borderRadius: "4px 4px 0 0",
+                    }}
+                  />
+                </div>
+                <p className="mt-2 text-center" style={{ fontFamily: "var(--font-mono)", fontSize: "10.5px", color: TOKENS.stone }}>
+                  {d.wk}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </Tile>
+
+      <div className="mt-5">
+        <SectionHeader title="Top queries" />
+        <Tile>
+          <div
+            className="grid grid-cols-[1.6fr_90px_80px_90px_70px] gap-3 px-5 py-2.5"
+            style={{
+              backgroundColor: TOKENS.parchment,
+              borderBottom: `1px solid ${TOKENS.borderCream}`,
+              color: TOKENS.stone,
+              fontFamily: "var(--font-mono)",
+              fontSize: "10.5px",
+              letterSpacing: "0.1em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+            }}
+          >
+            <span>Query</span>
+            <span className="text-right">Impr.</span>
+            <span className="text-right">Clicks</span>
+            <span className="text-right">Position</span>
+            <span className="text-right">Delta</span>
+          </div>
+          {SEO_QUERIES.map((q, i) => (
+            <div
+              key={q.query}
+              className="grid grid-cols-[1.6fr_90px_80px_90px_70px] gap-3 px-5 py-3 items-center"
+              style={{
+                borderBottom: i < SEO_QUERIES.length - 1 ? `1px solid ${TOKENS.borderCream}` : "none",
+                fontFamily: "var(--font-sans)",
+                fontSize: "13.5px",
+              }}
+            >
+              <span className="truncate" style={{ color: TOKENS.nearBlack, fontWeight: 500 }}>
+                {q.query}
+              </span>
+              <span className="text-right" style={{ color: TOKENS.charcoal, fontFamily: "var(--font-mono)", fontSize: "12px" }}>
+                {q.impressions.toLocaleString()}
+              </span>
+              <span className="text-right" style={{ color: TOKENS.charcoal, fontFamily: "var(--font-mono)", fontSize: "12px" }}>
+                {q.clicks}
+              </span>
+              <span className="text-right" style={{ color: TOKENS.charcoal, fontFamily: "var(--font-mono)", fontSize: "12px" }}>
+                #{q.position.toFixed(1)}
+              </span>
+              <span
+                className="text-right"
+                style={{
+                  color: q.delta > 0 ? TOKENS.success : q.delta < 0 ? TOKENS.error : TOKENS.stone,
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "12px",
+                  fontWeight: 500,
+                }}
+              >
+                {q.delta > 0 ? `+${q.delta.toFixed(1)}` : q.delta.toFixed(1)}
+              </span>
+            </div>
+          ))}
+        </Tile>
+      </div>
     </div>
   );
 }
