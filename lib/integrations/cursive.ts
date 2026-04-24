@@ -1,15 +1,19 @@
 import "server-only";
 
 // ---------------------------------------------------------------------------
-// AudienceLab SuperPixel integration.
-// Cursive is an AudienceLab reseller — this module talks directly to AL's
-// public pixel API. Auth is `X-Api-Key`, NOT Bearer. Request body is
-// camelCase, response is snake_case. See:
-//   POST   https://api.audiencelab.io/pixels           (create)
-//   DELETE https://api.audiencelab.io/pixels/{id}      (archive, 204)
+// Cursive SuperPixel integration (powered by AudienceLab upstream).
 //
-// We intentionally do NOT pull a visitor list — AL is push-only via the
-// webhook receiver at /api/webhooks/cursive.
+// Internal implementation note: Cursive resells AudienceLab's pixel API
+// under the hood. All user-facing strings must say "Cursive" only; the
+// upstream provider is never mentioned in the UI.
+//
+// Auth is `X-Api-Key`, NOT Bearer. Request body is camelCase, response is
+// snake_case. Endpoints:
+//   POST   /pixels           (create)
+//   DELETE /pixels/{id}      (archive, 204)
+//
+// We intentionally do NOT pull a visitor list — the upstream pushes events
+// to the webhook receiver at /api/webhooks/cursive.
 // ---------------------------------------------------------------------------
 
 const CURSIVE_BASE =
@@ -46,7 +50,7 @@ export async function provisionCursivePixel(params: {
   });
   if (!res.ok) {
     const body = await res.text().catch(() => "");
-    throw new Error(`AudienceLab provision failed, ${res.status}: ${body}`);
+    throw new Error(`Cursive pixel provisioning failed (${res.status}): ${body}`);
   }
   const raw = (await res.json()) as Record<string, unknown>;
   const pixelId = typeof raw.pixel_id === "string" ? raw.pixel_id : "";
@@ -54,7 +58,7 @@ export async function provisionCursivePixel(params: {
   const scriptSnippet = typeof raw.script === "string" ? raw.script : "";
   if (!pixelId || !installUrl || !scriptSnippet) {
     throw new Error(
-      "AudienceLab provision response missing pixel_id, install_url, or script."
+      "Cursive pixel provisioning needs manual setup. We'll configure this for you shortly."
     );
   }
   return { pixelId, installUrl, scriptSnippet };
@@ -71,6 +75,6 @@ export async function archiveCursivePixel(pixelId: string): Promise<void> {
   // 204 No Content on success, 404 if already gone.
   if (!res.ok && res.status !== 404) {
     const body = await res.text().catch(() => "");
-    throw new Error(`AudienceLab archive failed, ${res.status}: ${body}`);
+    throw new Error(`Cursive pixel cleanup failed (${res.status}): ${body}`);
   }
 }

@@ -128,14 +128,12 @@ export default async function IntegrationsPage() {
       />
     ) : pixelEligible ? (
       <div className="space-y-6">
-        <ConnectPixelForm defaultWebsiteName={org.name} />
-        <div className="pt-5 border-t border-border space-y-3">
+        <div className="space-y-3">
           <div>
-            <h3 className="text-sm font-semibold">First-party pixel snippet</h3>
+            <h3 className="text-sm font-semibold">Your pixel snippet</h3>
             <p className="text-[11px] text-muted-foreground mt-1">
-              Skip the AudienceLab handshake and start collecting visitor
-              sessions immediately with our own lightweight pixel. Pageviews,
-              scroll depth, time on page, UTM, and referrer flow into the
+              Paste this tag on your marketing site and pageviews, scroll
+              depth, time on page, UTM, and referrer start flowing into the
               visitor feed in real time.
             </p>
           </div>
@@ -150,12 +148,26 @@ export default async function IntegrationsPage() {
             appBaseUrl={appBaseUrl}
           />
         </div>
+        <div className="pt-5 border-t border-border space-y-3">
+          <div>
+            <h3 className="text-sm font-semibold">
+              Turn anonymous visitors into named leads
+            </h3>
+            <p className="text-[11px] text-muted-foreground mt-1">
+              Optional upgrade. Resolves visitors against a consented identity
+              graph and drops named leads into your CRM with the pages they
+              viewed and how they found you. We&apos;ll follow up to finish
+              the handshake if anything needs manual setup.
+            </p>
+          </div>
+          <ConnectPixelForm defaultWebsiteName={org.name} />
+        </div>
       </div>
     ) : (
       <div className="space-y-4">
         <p className="text-xs text-muted-foreground rounded-md border border-border bg-muted/30 p-3">
-          Your workspace doesn&apos;t have the visitor identification module
-          enabled, so the AudienceLab integration is locked. You can still
+          Your workspace doesn&apos;t have visitor identification enabled on
+          this plan, so the identity-resolution pixel is locked. You can still
           run the first-party pixel below to capture pageviews and sessions
           right away.
         </p>
@@ -360,7 +372,7 @@ function PixelManage({
         <div className="space-y-2">
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-xs font-medium text-foreground">
-              AudienceLab install snippet
+              Cursive install snippet
             </span>
             <CopySnippetButton snippet={installSnippet} />
           </div>
@@ -382,8 +394,8 @@ function PixelManage({
           <h3 className="text-sm font-semibold">First-party pixel snippet</h3>
           <p className="text-[11px] text-muted-foreground mt-1">
             Lightweight, dependency-free pixel for pageviews, scroll depth,
-            time on page, UTM, and referrer. Runs alongside AudienceLab and
-            feeds the same visitor feed.
+            time on page, UTM, and referrer. Runs alongside the Cursive
+            identification pixel and feeds the same visitor feed.
           </p>
         </div>
         <PixelSnippetPanel

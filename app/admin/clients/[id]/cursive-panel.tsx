@@ -95,11 +95,12 @@ export function CursivePanel({
           </button>
         </div>
         <p className="text-[11px] text-muted-foreground mt-1.5">
-          Paste this into Cursive → Pixel → Edit webhook. Auth header
+          Paste this into the Cursive pixel settings under Webhooks. The
+          upstream shared-secret header
           <code className="font-mono mx-1">x-audiencelab-secret</code>
-          uses the
+          is verified against our
           <code className="font-mono mx-1">CURSIVE_WEBHOOK_SECRET</code>
-          env var.
+          env var (left as-is since the upstream vendor sets the header name).
         </p>
       </div>
 
@@ -157,7 +158,7 @@ export function CursivePanel({
             className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-muted/40 disabled:opacity-40"
             title={
               segmentId.trim()
-                ? "Pull resolved visitors from AudienceLab"
+                ? "Pull resolved visitors from the Cursive segment"
                 : "Set a segment ID first"
             }
           >

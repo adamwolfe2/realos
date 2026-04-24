@@ -94,6 +94,9 @@ export function PixelSnippetPanel(props: Props) {
 
   const scriptUrl = `${props.appBaseUrl}/api/public/pixel/${publicKey}.js`;
   const ingestUrl = `${props.appBaseUrl}/api/public/visitors/track`;
+  // Relative path for browser-side fetches so CSP same-origin (and www/apex
+  // domain splits) don't block the test pageview with "Failed to fetch".
+  const relativeIngestPath = "/api/public/visitors/track";
   const installSnippet = `<script async src="${scriptUrl}"></script>`;
   const curlCmd = [
     `curl -X POST ${ingestUrl} \\`,
@@ -104,7 +107,7 @@ export function PixelSnippetPanel(props: Props) {
   async function onSendTestEvent() {
     setTestStatus({ kind: "sending" });
     try {
-      const res = await fetch(ingestUrl, {
+      const res = await fetch(relativeIngestPath, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

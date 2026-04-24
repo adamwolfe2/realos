@@ -112,7 +112,7 @@ export default async function PixelHealthPage() {
                     <div className="flex flex-wrap gap-1">
                       {r.hasCursive && (
                         <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200">
-                          AudienceLab
+                          Cursive
                         </span>
                       )}
                       {r.hasFirstParty && (

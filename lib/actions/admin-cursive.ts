@@ -157,7 +157,7 @@ export async function syncCursiveSegment(
       const body = await res.text().catch(() => "");
       return {
         ok: false,
-        error: `AudienceLab segment fetch failed (${res.status}): ${body.slice(0, 200)}`,
+        error: `Cursive segment fetch failed (${res.status}): ${body.slice(0, 200)}`,
       };
     }
     const json = (await res.json()) as Record<string, unknown>;
@@ -190,7 +190,7 @@ export async function syncCursiveSegment(
         action: AuditAction.SETTING_CHANGE,
         entityType: "CursiveIntegration",
         entityId: orgId,
-        description: `Synced ${pulled} resolutions from AudienceLab segment`,
+        description: `Synced ${pulled} resolutions from Cursive segment`,
         diff: { pulled, created, updated },
       },
     ),

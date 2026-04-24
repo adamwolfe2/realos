@@ -98,7 +98,7 @@ export default async function SystemHealthPage() {
     { key: "env", label: "Environment", icon: KeyRound, check: health.checks.env },
     { key: "clerk", label: "Clerk", icon: Shield, check: health.checks.clerk },
     { key: "anthropic", label: "Anthropic", icon: Brain, check: health.checks.anthropic },
-    { key: "cursive", label: "Cursive / AudienceLab", icon: Radio, check: health.checks.cursive },
+    { key: "cursive", label: "Cursive pixel", icon: Radio, check: health.checks.cursive },
     { key: "stripe", label: "Stripe", icon: CreditCard, check: health.checks.stripe },
     { key: "resend", label: "Resend", icon: Mail, check: health.checks.resend },
   ] as const;
