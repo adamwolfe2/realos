@@ -46,7 +46,7 @@ export type SetupProgress = {
 };
 
 export async function deriveSetupProgress(orgId: string): Promise<SetupProgress | null> {
-  const [org, userCount, adAccounts] = await Promise.all([
+  const [org, userCount, adAccounts, seoIntegrations, weeklyReport] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: orgId },
       select: {
@@ -76,6 +76,14 @@ export async function deriveSetupProgress(orgId: string): Promise<SetupProgress 
       where: { orgId },
       select: { platform: true, lastSyncAt: true },
     }),
+    prisma.seoIntegration.findMany({
+      where: { orgId },
+      select: { provider: true, lastSyncAt: true },
+    }),
+    prisma.clientReport.findFirst({
+      where: { orgId, kind: "weekly" },
+      select: { id: true },
+    }),
   ]);
 
   if (!org) return null;
@@ -94,6 +102,8 @@ export async function deriveSetupProgress(orgId: string): Promise<SetupProgress 
     appfolio: org.appfolioIntegration,
     tenantSiteConfig: org.tenantSiteConfig,
     adAccounts,
+    seoIntegrations,
+    hasWeeklyReport: weeklyReport != null,
     userCount,
   };
 

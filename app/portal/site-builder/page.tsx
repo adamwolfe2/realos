@@ -17,7 +17,6 @@ export default async function SiteBuilderPage() {
         name: true,
         slug: true,
         moduleWebsite: true,
-        moduleChatbot: true,
         modulePixel: true,
         bringYourOwnSite: true,
       },
@@ -55,7 +54,6 @@ export default async function SiteBuilderPage() {
         orgName={org.name}
         orgSlug={org.slug}
         primaryDomain={primaryBinding?.hostname ?? null}
-        moduleChatbot={org.moduleChatbot}
         modulePixel={org.modulePixel}
         initial={existingConfig}
       />

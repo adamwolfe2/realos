@@ -1,5 +1,5 @@
-import type { Organization, CursiveIntegration, AppFolioIntegration, TenantSiteConfig, AdAccount } from "@prisma/client";
-import { AdPlatform } from "@prisma/client";
+import type { Organization, CursiveIntegration, AppFolioIntegration, TenantSiteConfig, AdAccount, SeoIntegration } from "@prisma/client";
+import { AdPlatform, SeoProvider } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Setup Hub step definitions.
@@ -9,9 +9,7 @@ import { AdPlatform } from "@prisma/client";
 // module gating. Steps are intentionally hardcoded — the set is small and
 // evolves slowly, so a config file beats a DB table.
 //
-// Completion is derived from existing data (no new schema columns). Two steps
-// are visual placeholders whose `isComplete` returns false forever — they
-// exist so clients see where they're headed even before we ship the backend.
+// Completion is derived from existing data — no new schema columns.
 // ---------------------------------------------------------------------------
 
 export type SetupPhase = "foundation" | "growth" | "polish";
@@ -38,6 +36,8 @@ export type SetupCheckContext = {
   appfolio: Pick<AppFolioIntegration, "lastSyncAt"> | null;
   tenantSiteConfig: Pick<TenantSiteConfig, "chatbotEnabled"> | null;
   adAccounts: Array<Pick<AdAccount, "platform" | "lastSyncAt">>;
+  seoIntegrations: Array<Pick<SeoIntegration, "provider" | "lastSyncAt">>;
+  hasWeeklyReport: boolean;
   userCount: number;
 };
 
@@ -57,7 +57,6 @@ export type SetupStepDefinition = {
 };
 
 const trueCheck = () => true;
-const falseCheck = () => false;
 
 export const SETUP_STEPS: SetupStepDefinition[] = [
   // ── Foundation (Week 1) ───────────────────────────────────────────────────
@@ -169,9 +168,10 @@ export const SETUP_STEPS: SetupStepDefinition[] = [
     estimateMinutes: 5,
     actionHref: "/portal/settings/integrations",
     actionLabel: "Connect GA4",
-    // Placeholder: no TenantSiteConfig.ga4PropertyId column yet. Stays pending
-    // so the step exists visually as a signpost for where the flow is heading.
-    isComplete: falseCheck,
+    isComplete: (ctx) =>
+      ctx.seoIntegrations.some(
+        (s) => s.provider === SeoProvider.GA4 && s.lastSyncAt != null
+      ),
   },
 
   // ── Polish (anytime) ──────────────────────────────────────────────────────
@@ -196,10 +196,9 @@ export const SETUP_STEPS: SetupStepDefinition[] = [
     description:
       "Your leasing team gets a Monday morning summary. Auto-generated, owner-ready.",
     estimateMinutes: 5,
-    actionHref: "/portal/settings",
+    actionHref: "/portal/reports",
     actionLabel: "Set up reports",
-    // Placeholder: the weekly-report configuration page doesn't exist yet.
-    isComplete: falseCheck,
+    isComplete: (ctx) => ctx.hasWeeklyReport,
   },
 ];
 

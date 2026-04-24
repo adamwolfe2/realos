@@ -26,13 +26,7 @@ type FormState = {
   showReviews: boolean;
   showBlog: boolean;
   enableExitIntent: boolean;
-  enableChatbot: boolean;
   enablePixel: boolean;
-  chatbotAvatarUrl: string;
-  chatbotPersonaName: string;
-  chatbotGreeting: string;
-  chatbotKnowledgeBase: string;
-  chatbotIdleTriggerSeconds: number;
   exitIntentHeadline: string;
   exitIntentBody: string;
   exitIntentCtaText: string;
@@ -64,13 +58,7 @@ function init(initial: Initial, orgName: string): FormState {
     showReviews: initial?.showReviews ?? false,
     showBlog: initial?.showBlog ?? false,
     enableExitIntent: initial?.enableExitIntent ?? true,
-    enableChatbot: initial?.enableChatbot ?? false,
     enablePixel: initial?.enablePixel ?? false,
-    chatbotAvatarUrl: initial?.chatbotAvatarUrl ?? "",
-    chatbotPersonaName: initial?.chatbotPersonaName ?? "",
-    chatbotGreeting: initial?.chatbotGreeting ?? "",
-    chatbotKnowledgeBase: initial?.chatbotKnowledgeBase ?? "",
-    chatbotIdleTriggerSeconds: initial?.chatbotIdleTriggerSeconds ?? 5,
     exitIntentHeadline: initial?.exitIntentHeadline ?? "",
     exitIntentBody: initial?.exitIntentBody ?? "",
     exitIntentCtaText: initial?.exitIntentCtaText ?? "",
@@ -97,14 +85,12 @@ export function SiteBuilderForm({
   orgName,
   orgSlug,
   primaryDomain,
-  moduleChatbot,
   modulePixel,
   initial,
 }: {
   orgName: string;
   orgSlug: string;
   primaryDomain: string | null;
-  moduleChatbot: boolean;
   modulePixel: boolean;
   initial: Initial;
 }) {
@@ -127,8 +113,6 @@ export function SiteBuilderForm({
     if (!isValidUrl(state.primaryCtaUrl))
       errors.primaryCtaUrl = "Not a valid URL";
     if (!isValidUrl(state.ogImageUrl)) errors.ogImageUrl = "Not a valid URL";
-    if (!isValidUrl(state.chatbotAvatarUrl))
-      errors.chatbotAvatarUrl = "Not a valid URL";
     if (!isValidEmail(state.contactEmail))
       errors.contactEmail = "Not a valid email";
     if (state.metaTitle.length > META_TITLE_MAX)
@@ -180,13 +164,7 @@ export function SiteBuilderForm({
         showReviews: state.showReviews,
         showBlog: state.showBlog,
         enableExitIntent: state.enableExitIntent,
-        enableChatbot: moduleChatbot ? state.enableChatbot : false,
         enablePixel: modulePixel ? state.enablePixel : false,
-        chatbotAvatarUrl: toNullIfEmpty(state.chatbotAvatarUrl),
-        chatbotPersonaName: toNullIfEmpty(state.chatbotPersonaName),
-        chatbotGreeting: toNullIfEmpty(state.chatbotGreeting),
-        chatbotKnowledgeBase: toNullIfEmpty(state.chatbotKnowledgeBase),
-        chatbotIdleTriggerSeconds: state.chatbotIdleTriggerSeconds,
         exitIntentHeadline: toNullIfEmpty(state.exitIntentHeadline),
         exitIntentBody: toNullIfEmpty(state.exitIntentBody),
         exitIntentCtaText: toNullIfEmpty(state.exitIntentCtaText),
@@ -374,54 +352,14 @@ export function SiteBuilderForm({
 
       <Section
         title="Chatbot"
-        description={
-          moduleChatbot
-            ? "Floating widget that captures leads conversationally."
-            : "Module disabled. Ask agency to enable it on this workspace."
-        }
+        description="Configure persona, greeting, and knowledge base on the dedicated Chatbot page."
       >
-        <Toggle
-          label="Show chatbot widget on the site"
-          checked={state.enableChatbot && moduleChatbot}
-          onChange={(v) => update("enableChatbot", v)}
-          disabled={!moduleChatbot}
-        />
-        <div className="grid sm:grid-cols-2 gap-3">
-          <Field
-            label="Persona name"
-            value={state.chatbotPersonaName}
-            onChange={(v) => update("chatbotPersonaName", v)}
-            help='Bot identity, e.g. "Sarah" or "Concierge".'
-          />
-          <Field
-            label="Avatar URL"
-            value={state.chatbotAvatarUrl}
-            onChange={(v) => update("chatbotAvatarUrl", v)}
-            type="url"
-            error={validation.chatbotAvatarUrl}
-          />
-          <Field
-            label="Greeting"
-            value={state.chatbotGreeting}
-            onChange={(v) => update("chatbotGreeting", v)}
-          />
-          <NumberField
-            label="Idle trigger seconds"
-            value={state.chatbotIdleTriggerSeconds}
-            onChange={(v) => update("chatbotIdleTriggerSeconds", v)}
-            min={0}
-            max={600}
-            help="Seconds before the bot proactively pops up."
-          />
-        </div>
-        <TextArea
-          label="Knowledge base"
-          value={state.chatbotKnowledgeBase}
-          onChange={(v) => update("chatbotKnowledgeBase", v)}
-          rows={10}
-          counter={{ current: state.chatbotKnowledgeBase.length, soft: true }}
-          help="Facts, pricing guidance, tour-booking instructions, things the bot must know. Plain text."
-        />
+        <a
+          href="/portal/chatbot"
+          className="inline-flex items-center gap-1.5 rounded-[8px] border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:border-primary/40"
+        >
+          Open chatbot settings
+        </a>
       </Section>
 
       <Section

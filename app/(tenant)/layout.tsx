@@ -40,7 +40,7 @@ export default async function TenantLayout({
   if (tenant.bringYourOwnSite) {
     return (
       <>
-        {config?.enableChatbot ? (
+        {config?.chatbotEnabled ? (
           <ChatbotLoader orgId={tenant.id} config={config} />
         ) : null}
         {config?.enablePixel ? (
@@ -67,7 +67,7 @@ export default async function TenantLayout({
       <TenantNav tenant={tenant} />
       <main className="flex-1">{children}</main>
       <TenantFooter tenant={tenant} />
-      {config?.enableChatbot ? (
+      {config?.chatbotEnabled ? (
         <ChatbotLoader orgId={tenant.id} config={config} />
       ) : null}
       {config?.enablePixel ? (

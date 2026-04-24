@@ -9,6 +9,8 @@ import { ProvisionPixelButton } from "./provision-pixel-button";
 import { ModuleToggle } from "./module-toggle";
 import { CursivePanel } from "./cursive-panel";
 import { DomainsPanel } from "./domains-panel";
+import { InviteUserButton } from "./invite-user-button";
+import { LaunchReadiness } from "./launch-readiness";
 import type { ToggleableModule } from "@/lib/actions/admin-modules";
 import { headers } from "next/headers";
 import { StatCard } from "@/components/admin/stat-card";
@@ -158,6 +160,12 @@ export default async function ClientDetail({
                 hasPixel={!!org.cursiveIntegration?.cursivePixelId}
               />
             ) : null}
+            <InviteUserButton
+              orgId={org.id}
+              clerkOrgId={org.clerkOrgId}
+              suggestedEmail={org.primaryContactEmail}
+              suggestedName={org.primaryContactName}
+            />
             <ImpersonateButton orgId={org.id} />
           </>
         }
@@ -179,6 +187,85 @@ export default async function ClientDetail({
         <StatCard label="Ad campaigns" value={org._count.adCampaigns} />
         <StatCard label="Domains" value={org._count.domains} />
       </section>
+
+      <LaunchReadiness
+        items={[
+          {
+            label: "Clerk org linked",
+            status: org.clerkOrgId ? "ok" : "missing",
+            hint: org.clerkOrgId
+              ? undefined
+              : "Convert the intake or re-provision to create the Clerk org.",
+          },
+          {
+            label: "Primary contact email",
+            status: org.primaryContactEmail ? "ok" : "missing",
+            hint: org.primaryContactEmail ?? "Add a primary contact before inviting.",
+          },
+          {
+            label: "At least one team member",
+            status: org._count.users > 0 ? "ok" : "warn",
+            hint:
+              org._count.users > 0
+                ? `${org._count.users} user${org._count.users === 1 ? "" : "s"}`
+                : "No users yet. Sending an invite counts.",
+          },
+          {
+            label: "Primary property added",
+            status: org._count.properties > 0 ? "ok" : "missing",
+            href: "/admin/clients/" + org.id,
+            hint:
+              org._count.properties > 0
+                ? `${org._count.properties} propert${org._count.properties === 1 ? "y" : "ies"}`
+                : "At least one Property is required for listings.",
+          },
+          {
+            label: "Custom domain attached",
+            status: org.domains.length > 0 ? "ok" : "warn",
+            hint:
+              org.domains.length > 0
+                ? org.domains.map((d) => d.hostname).join(", ")
+                : "Fallback is {slug}.leasestack.co — configure a real hostname soon.",
+          },
+          {
+            label: "Cursive pixel provisioned",
+            status: org.cursiveIntegration?.cursivePixelId ? "ok" : "missing",
+            hint: org.cursiveIntegration?.cursivePixelId
+              ? `Pixel ${org.cursiveIntegration.cursivePixelId}`
+              : "Click 'Provision pixel' above.",
+          },
+          {
+            label: "Pixel enabled on tenant site",
+            status: org.tenantSiteConfig?.enablePixel ? "ok" : "warn",
+            hint: org.tenantSiteConfig?.enablePixel
+              ? "Rendering on the live site."
+              : "Client toggles this in Site builder — we can pre-enable.",
+          },
+          {
+            label: "Chatbot enabled on tenant site",
+            status: org.tenantSiteConfig?.chatbotEnabled ? "ok" : "warn",
+            hint: org.tenantSiteConfig?.chatbotEnabled
+              ? "Loader renders on the live site."
+              : "Client toggles this from /portal/chatbot.",
+          },
+          {
+            label: "AppFolio connected",
+            status: org.appfolioIntegration?.lastSyncAt ? "ok" : "warn",
+            hint: org.appfolioIntegration?.lastSyncAt
+              ? `Last sync ${org.appfolioIntegration.lastSyncAt.toISOString().slice(0, 10)}`
+              : "Client pastes credentials in /portal/settings/integrations.",
+          },
+          {
+            label: "Brand colors + logo",
+            status:
+              org.logoUrl && org.primaryColor ? "ok" : org.logoUrl || org.primaryColor ? "warn" : "warn",
+            hint:
+              org.logoUrl && org.primaryColor
+                ? "Portal is branded."
+                : "Client sets these in /portal/settings.",
+          },
+        ]}
+      />
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <SectionCard
