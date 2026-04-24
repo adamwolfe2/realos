@@ -8,6 +8,8 @@ import {
   Flag,
   Check,
   CircleCheck,
+  Link2,
+  MessageSquareReply,
 } from "lucide-react";
 import type { MentionSource, Sentiment } from "@prisma/client";
 import { Button } from "@/components/ui/button";
@@ -77,6 +79,36 @@ function getHost(url: string): string {
   }
 }
 
+// Show the host + a shortened path so the operator can see WHERE the mention
+// lives at a glance (e.g. "reddit.com/r/berkeley/telegraph_commons") without
+// visiting it. Truncated to 70 chars to stay in one line on mobile.
+function shortUrl(url: string): string {
+  try {
+    const u = new URL(url);
+    const full = `${u.host.replace(/^www\./, "")}${u.pathname}`;
+    return full.length > 70 ? `${full.slice(0, 67)}…` : full;
+  } catch {
+    return url;
+  }
+}
+
+function getResponseTarget(source: string): string {
+  // CTA language tuned per source — landlords respond differently to a Google
+  // review (reply via Business Profile) vs a Reddit thread (post a comment).
+  switch (source) {
+    case "GOOGLE_REVIEW":
+      return "Reply on Google";
+    case "REDDIT":
+      return "Comment on Reddit";
+    case "YELP":
+      return "Reply on Yelp";
+    case "FACEBOOK_PUBLIC":
+      return "View on Facebook";
+    default:
+      return "View post";
+  }
+}
+
 export function MentionCard({
   mention,
   onUpdated,
@@ -90,9 +122,20 @@ export function MentionCard({
 
   const meta = SOURCE_META[mention.source];
   const host = getHost(mention.sourceUrl) || meta.host;
+  const urlShort = shortUrl(mention.sourceUrl);
+  const responseCta = getResponseTarget(mention.source);
   const when = mention.publishedAt
     ? formatDistanceToNow(new Date(mention.publishedAt), { addSuffix: true })
     : null;
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(mention.sourceUrl);
+      toast.success("Link copied — paste into Slack, email, or a doc");
+    } catch {
+      toast.error("Could not copy link");
+    }
+  };
 
   const patch = async (
     body: { reviewed?: boolean; flagged?: boolean },
@@ -191,17 +234,44 @@ export function MentionCard({
         ))}
       </div>
 
+      {/* URL preview — shows the operator exactly where the mention lives
+          before they click. Helps answer "is this the real post or a
+          scraper aggregator?" at a glance. */}
+      <a
+        href={mention.sourceUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground truncate max-w-full"
+        title={mention.sourceUrl}
+      >
+        <Link2 className="h-3 w-3 shrink-0" aria-hidden="true" />
+        <span className="truncate">{urlShort}</span>
+      </a>
+
       <footer className="mt-3 flex items-center gap-2 flex-wrap">
-        <Button variant="outline" size="sm" asChild>
+        {/* Primary CTA: source-aware language. Reddit posts get "Comment on
+            Reddit" because that's the operator's intended action. */}
+        <Button size="sm" asChild>
           <a
             href={mention.sourceUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="gap-1.5"
           >
-            Open
-            <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+            <MessageSquareReply className="h-3.5 w-3.5" aria-hidden="true" />
+            {responseCta}
+            <ExternalLink className="h-3 w-3" aria-hidden="true" />
           </a>
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={copyLink}
+          className="gap-1.5"
+          title="Copy link for Slack / email / handoff"
+        >
+          <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
+          Copy link
         </Button>
         <Button
           variant={reviewed ? "secondary" : "outline"}

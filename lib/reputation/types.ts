@@ -87,6 +87,15 @@ export type PropertySeed = {
   city: string | null;
   state: string | null;
   postalCode: string | null;
+  propertyType: "RESIDENTIAL" | "COMMERCIAL" | "MIXED" | null;
+  residentialSubtype:
+    | "STUDENT_HOUSING"
+    | "MULTIFAMILY"
+    | "SENIOR_LIVING"
+    | "SINGLE_FAMILY_RENTAL"
+    | "CO_LIVING"
+    | "SHORT_TERM_RENTAL"
+    | null;
   googlePlaceId: string | null;
   googleReviewUrl: string | null;
   yelpBusinessId: string | null;
