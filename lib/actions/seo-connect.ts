@@ -88,20 +88,26 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
     return { ok: false, error: message };
   }
 
+  // Use the sanitised canonical JSON everywhere downstream. parseServiceAccountJson
+  // fixes the common Vercel-env-var-with-raw-newlines case and re-serialises
+  // with proper "\n" escapes. Persisting this form also prevents every later
+  // sync from re-doing the sanitisation.
+  const canonicalSaJson = parsedSa.raw;
+
   // Probe before persisting.
   let permissionLevel: string | null | undefined;
   let propertyDisplayName: string | null | undefined;
   if (provider === "GSC") {
-    const probe = await testGscConnection(serviceAccountJson, propertyIdentifier);
+    const probe = await testGscConnection(canonicalSaJson, propertyIdentifier);
     if (!probe.ok) return { ok: false, error: probe.error };
     permissionLevel = probe.permissionLevel;
   } else {
-    const probe = await testGa4Connection(serviceAccountJson, propertyIdentifier);
+    const probe = await testGa4Connection(canonicalSaJson, propertyIdentifier);
     if (!probe.ok) return { ok: false, error: probe.error };
     propertyDisplayName = probe.propertyDisplayName;
   }
 
-  const encryptedJson = encrypt(serviceAccountJson);
+  const encryptedJson = encrypt(canonicalSaJson);
   const providerEnum =
     provider === "GSC" ? SeoProvider.GSC : SeoProvider.GA4;
 
