@@ -7,6 +7,15 @@ const SERIES = [
   { key: "applications" as const, label: "Applications", color: "#8b5cf6" },
 ];
 
+// ---------------------------------------------------------------------------
+// Leasing velocity — grouped bars per week.
+//
+// A line chart over sparse data shows spikes that look broken. Bars show
+// each week honestly: empty weeks are empty, busy weeks are tall. The
+// reader's eye still picks up momentum from the silhouette, without the
+// misleading connected-line artifact.
+// ---------------------------------------------------------------------------
+
 export function LeasingVelocityChart({
   data,
 }: {
@@ -20,29 +29,50 @@ export function LeasingVelocityChart({
     );
   }
 
+  const totalActivity = data.reduce(
+    (acc, d) => acc + d.leads + d.tours + d.applications,
+    0,
+  );
+
+  if (totalActivity === 0) {
+    return (
+      <div className="rounded-md border border-dashed border-border bg-muted/20 p-6 text-center">
+        <p className="text-sm font-medium text-foreground">
+          Waiting on the first lead.
+        </p>
+        <p className="mt-1 text-xs text-muted-foreground">
+          Once leads, tours, and applications start flowing, you&apos;ll see week-over-week momentum here.
+        </p>
+      </div>
+    );
+  }
+
   const maxVal = Math.max(
     1,
     ...data.flatMap((d) => [d.leads, d.tours, d.applications]),
   );
 
+  const n = data.length;
+  // viewBox units — SVG scales with the container.
   const W = 100;
   const H = 56;
-  const paddingLeft = 0;
+  const chartH = H;
+  const paddingTop = 2;
   const paddingBottom = 0;
-  const chartH = H - paddingBottom;
-  const n = data.length;
+  const plotH = chartH - paddingTop - paddingBottom;
 
-  function toX(i: number): number {
-    return paddingLeft + (i / Math.max(1, n - 1)) * (W - paddingLeft);
-  }
-  function toY(v: number): number {
-    return chartH - (v / maxVal) * (chartH - 4) - 2;
-  }
+  const groupWidth = W / n;
+  const barsPerGroup = SERIES.length;
+  const barGap = groupWidth * 0.08;
+  const barWidth = Math.max(
+    0.6,
+    (groupWidth - barGap * (barsPerGroup + 1)) / barsPerGroup,
+  );
 
-  function polyline(key: "leads" | "tours" | "applications"): string {
-    return data
-      .map((d, i) => `${toX(i).toFixed(2)},${toY(d[key]).toFixed(2)}`)
-      .join(" ");
+  function barHeight(v: number): number {
+    // Minimum 0.6 so any non-zero value is visible as a tick.
+    if (v === 0) return 0;
+    return Math.max(0.6, (v / maxVal) * (plotH - paddingTop));
   }
 
   return (
@@ -50,61 +80,72 @@ export function LeasingVelocityChart({
       <svg
         viewBox={`0 0 ${W} ${H}`}
         preserveAspectRatio="none"
-        className="w-full h-28"
-        style={{ overflow: "visible" }}
+        className="w-full h-32"
+        role="img"
         aria-label="Leasing velocity — leads, tours, applications by week"
       >
+        {/* Gridlines at 25/50/75/100% of max */}
         {[0.25, 0.5, 0.75, 1].map((frac) => {
-          const y = toY(maxVal * frac);
+          const y = chartH - paddingBottom - frac * (plotH - paddingTop);
           return (
             <line
               key={frac}
-              x1={paddingLeft}
+              x1={0}
               y1={y}
               x2={W}
               y2={y}
               stroke="#E3E3E3"
-              strokeWidth="0.5"
+              strokeWidth="0.4"
+              vectorEffect="non-scaling-stroke"
             />
           );
         })}
 
-        {SERIES.map(({ key, label, color }) => (
-          <polyline
-            key={key}
-            points={polyline(key)}
-            fill="none"
-            stroke={color}
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            vectorEffect="non-scaling-stroke"
-          >
-            <title>{label}</title>
-          </polyline>
-        ))}
+        {/* Grouped bars per week */}
+        {data.map((d, i) => {
+          const groupX = i * groupWidth;
+          return (
+            <g key={i}>
+              {SERIES.map(({ key, color, label }, s) => {
+                const val = d[key];
+                const h = barHeight(val);
+                const x = groupX + barGap + s * (barWidth + barGap);
+                const y = chartH - paddingBottom - h;
+                return (
+                  <rect
+                    key={key}
+                    x={x}
+                    y={y}
+                    width={barWidth}
+                    height={h}
+                    fill={color}
+                    rx={0.3}
+                  >
+                    <title>{`${label}: ${val} · ${d.weekLabel}`}</title>
+                  </rect>
+                );
+              })}
+            </g>
+          );
+        })}
 
-        {SERIES.map(({ key, color }) =>
-          data.map((d, i) => (
-            <circle
-              key={`${key}-${i}`}
-              cx={toX(i)}
-              cy={toY(d[key])}
-              r="1"
-              fill={color}
-              vectorEffect="non-scaling-stroke"
-            >
-              <title>{`${key}: ${d[key]} · ${d.weekLabel}`}</title>
-            </circle>
-          )),
-        )}
-
+        {/* Baseline */}
+        <line
+          x1={0}
+          y1={chartH - paddingBottom}
+          x2={W}
+          y2={chartH - paddingBottom}
+          stroke="#CBD5E1"
+          strokeWidth="0.5"
+          vectorEffect="non-scaling-stroke"
+        />
       </svg>
-      {/* x-axis labels rendered as HTML to avoid SVG clipping */}
+
+      {/* X-axis labels — render every other week to avoid crowding, always include the last one */}
       <div className="relative h-4" aria-hidden="true">
         {data.map((d, i) => {
           if (i % 2 !== 0 && i !== n - 1) return null;
-          const pct = (i / Math.max(1, n - 1)) * 100;
+          const pct = ((i + 0.5) / n) * 100;
           return (
             <span
               key={i}
@@ -121,7 +162,7 @@ export function LeasingVelocityChart({
         {SERIES.map(({ key, label, color }) => (
           <div key={key} className="flex items-center gap-1.5">
             <span
-              className="inline-block h-2 w-4 rounded-full"
+              className="inline-block h-2 w-4 rounded-sm"
               style={{ backgroundColor: color }}
             />
             <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
@@ -129,6 +170,9 @@ export function LeasingVelocityChart({
             </span>
           </div>
         ))}
+        <span className="ml-auto text-[10px] tabular-nums text-muted-foreground">
+          Peak week · {maxVal.toLocaleString()}
+        </span>
       </div>
     </div>
   );

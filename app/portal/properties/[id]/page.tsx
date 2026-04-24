@@ -80,13 +80,6 @@ export default async function PropertyDetail({
             </p>
           ) : null}
         </div>
-        <Link
-          href={`/portal/properties/${property.id}/appfolio`}
-          className="text-xs px-3 py-2 border border-border rounded-md bg-card text-foreground hover:border-muted-foreground"
-          style={{ borderRadius: 7 }}
-        >
-          AppFolio settings
-        </Link>
       </header>
 
       <Suspense>
