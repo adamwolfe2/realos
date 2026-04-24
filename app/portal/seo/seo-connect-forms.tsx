@@ -16,6 +16,27 @@ const SA_EMAIL = "leasestack-integrations@leasestack.iam.gserviceaccount.com";
 
 type Provider = "GSC" | "GA4";
 
+function CopyEmailButton({ email }: { email: string }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <button
+      type="button"
+      onClick={async () => {
+        try {
+          await navigator.clipboard.writeText(email);
+          setCopied(true);
+          setTimeout(() => setCopied(false), 1800);
+        } catch {
+          /* ignore - clipboard unavailable */
+        }
+      }}
+      className="inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[10.5px] font-medium text-foreground hover:bg-muted/40 transition-colors"
+    >
+      {copied ? "Copied" : "Copy email"}
+    </button>
+  );
+}
+
 export function ConnectSeoForm({ provider }: { provider: Provider }) {
   const [state, formAction, pending] = useActionState<
     ConnectSeoResult,
@@ -29,42 +50,112 @@ export function ConnectSeoForm({ provider }: { provider: Provider }) {
       <input type="hidden" name="provider" value={provider} />
 
       {/* Step 1: grant access */}
-      <div className="rounded-md border border-border bg-muted/30 px-4 py-3 space-y-2">
-        <p className="text-xs font-medium text-foreground">
-          Step 1 — Grant read access to LeaseStack
+      <div className="rounded-md border border-border bg-muted/30 px-4 py-3 space-y-3">
+        <div className="flex items-center justify-between gap-3">
+          <p className="text-xs font-medium text-foreground">
+            Step 1 — Grant read access to LeaseStack
+          </p>
+          <CopyEmailButton email={SA_EMAIL} />
+        </div>
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Follow the exact clicks below. Google puts the user you&apos;re
+          adding at the <strong>property</strong> level, which is not the same
+          as the account level, which is the most common reason this fails.
         </p>
-        <ol className="text-[11px] text-muted-foreground space-y-1 list-decimal list-inside leading-relaxed">
+        <ol className="text-[11px] text-muted-foreground space-y-2 list-decimal list-outside pl-5 leading-relaxed">
           {isGsc ? (
             <>
               <li>
-                Open{" "}
-                <span className="font-mono text-foreground">
+                Go to{" "}
+                <a
+                  href="https://search.google.com/search-console"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-foreground underline underline-offset-2"
+                >
                   search.google.com/search-console
-                </span>{" "}
-                and select this client&apos;s property.
+                </a>{" "}
+                signed in as someone who owns the property. If there are
+                multiple properties, pick the one whose URL matches the site
+                you&apos;re connecting here.
               </li>
-              <li>Settings → Users and permissions → Add user.</li>
               <li>
-                Email:{" "}
+                In the left sidebar, scroll to the bottom and click{" "}
+                <strong>Settings</strong> (gear icon).
+              </li>
+              <li>
+                Click <strong>Users and permissions</strong>, then{" "}
+                <strong>Add user</strong> in the top-right.
+              </li>
+              <li>
+                Paste this email into the Email address field:{" "}
                 <span className="font-mono text-foreground">{SA_EMAIL}</span>
               </li>
-              <li>Permission: Full (or Restricted for read-only). Save.</li>
+              <li>
+                Set permission to <strong>Full</strong> (or{" "}
+                <strong>Restricted</strong> if you only want read-only). Click{" "}
+                <strong>Add</strong>.
+              </li>
+              <li>
+                You should see the email appear in the Users list. If you
+                don&apos;t see it, you added it to the wrong property.
+              </li>
             </>
           ) : (
             <>
               <li>
-                Open{" "}
-                <span className="font-mono text-foreground">
+                Go to{" "}
+                <a
+                  href="https://analytics.google.com"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-mono text-foreground underline underline-offset-2"
+                >
                   analytics.google.com
-                </span>{" "}
-                and select this client&apos;s property.
+                </a>
+                . In the <strong>top-left property picker</strong>, switch to
+                the GA4 property whose numeric Property ID you&apos;re about
+                to paste in Step 2. This is the most common mistake:{" "}
+                <strong>the selected property must match the ID</strong>.
               </li>
-              <li>Admin → Property Access Management → + Add users.</li>
               <li>
-                Email:{" "}
+                Click the <strong>gear icon labeled Admin</strong> in the
+                bottom-left corner of the screen.
+              </li>
+              <li>
+                You&apos;ll see two columns of settings. Look at the{" "}
+                <strong>right column (Property)</strong>, not the left
+                (Account). Click <strong>Property access management</strong>.
+                <br />
+                <em className="opacity-80">
+                  Adding the user under the Account column will NOT work and
+                  is the #1 cause of &quot;insufficient permissions&quot;.
+                </em>
+              </li>
+              <li>
+                Click the blue <strong>+</strong> button in the top-right,
+                then <strong>Add users</strong>.
+              </li>
+              <li>
+                Paste this email into the Email addresses field:{" "}
                 <span className="font-mono text-foreground">{SA_EMAIL}</span>
               </li>
-              <li>Role: Viewer. Save.</li>
+              <li>
+                Under <strong>Direct roles and data restrictions</strong>,
+                check <strong>Viewer</strong>. Leave everything else as
+                default.
+              </li>
+              <li>
+                Uncheck <strong>Notify new users by email</strong> (service
+                accounts don&apos;t read email). Click <strong>Add</strong> in
+                the top-right.
+              </li>
+              <li>
+                Confirm the email appears in the access list. It can take up
+                to a minute for Google to propagate; if Step 2 still says
+                &quot;insufficient permissions,&quot; wait 60 seconds and try
+                again.
+              </li>
             </>
           )}
         </ol>
@@ -84,15 +175,23 @@ export function ConnectSeoForm({ provider }: { provider: Provider }) {
         hint={
           isGsc ? (
             <>
-              Paste the full property URL (URL-prefix property) or{" "}
-              <code className="font-mono">sc-domain:example.com</code> for a
-              domain property.
+              Paste the full property URL exactly as it appears in Search
+              Console &mdash; with <code className="font-mono">https://</code>{" "}
+              and the trailing slash &mdash; e.g.{" "}
+              <code className="font-mono">https://www.example.com/</code>. For
+              a domain-level property, use the form{" "}
+              <code className="font-mono">sc-domain:example.com</code>.
             </>
           ) : (
             <>
-              Found in GA4 Admin → Property Settings → Property ID. Numeric
-              only, e.g. <code className="font-mono">338445667</code> — not
-              the <code className="font-mono">G-XXXX</code> measurement tag.
+              In GA4, click <strong>Admin</strong> (gear bottom-left){" "}
+              &rarr; <strong>Property settings</strong> (top of the Property
+              column) &rarr; <strong>Property details</strong>. The numeric{" "}
+              <strong>Property ID</strong> appears in the top-right &mdash;
+              e.g. <code className="font-mono">338445667</code>. Do{" "}
+              <strong>not</strong> paste the{" "}
+              <code className="font-mono">G-XXXX</code> measurement ID &mdash;
+              that&apos;s a different identifier.
             </>
           )
         }

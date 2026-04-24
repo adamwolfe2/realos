@@ -88,19 +88,38 @@ export async function testGscConnection(
     if (!matched) {
       const visible = (sites.data.siteEntry ?? [])
         .map((s) => s.siteUrl)
-        .filter(Boolean)
-        .join(", ");
+        .filter(Boolean);
+      if (visible.length === 0) {
+        return {
+          ok: false,
+          error:
+            "Google says the service account has not been added to any Search Console property yet. In Search Console: Settings (gear, bottom of left sidebar) -> Users and permissions -> Add user -> paste the service-account email with Full or Restricted permission. Double-check you added it to the property you pasted above.",
+        };
+      }
       return {
         ok: false,
-        error: `The service account can authenticate but does not have access to "${siteUrl}". Add it as a user in Search Console. ${
-          visible ? `Visible sites: ${visible}` : "No sites visible to this service account."
-        }`,
+        error: `The service account was added to Search Console but not to "${siteUrl}". Confirm the URL exactly matches what GSC shows (including https:// and the trailing slash) OR switch to the sc-domain:example.com form for a domain-level property. Properties visible to this service account right now: ${visible.join(", ")}`,
       };
     }
     return { ok: true, permissionLevel: matched.permissionLevel ?? null };
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    return { ok: false, error: message };
+    const raw = err instanceof Error ? err.message : "Unknown error";
+    const s = raw.toLowerCase();
+    if (s.includes("invalid_grant") || s.includes("unauthorized_client") || s.includes("jwt")) {
+      return {
+        ok: false,
+        error:
+          "Google rejected the service account credentials. The stored GOOGLE_SERVICE_ACCOUNT_JSON may be malformed. Contact support so they can re-paste the key.",
+      };
+    }
+    if (s.includes("searchconsole") && s.includes("has not been used")) {
+      return {
+        ok: false,
+        error:
+          "The Google Search Console API is not enabled for this service account's project. Enable it in Google Cloud Console, then retry.",
+      };
+    }
+    return { ok: false, error: `Google returned: ${raw}` };
   }
 }
 

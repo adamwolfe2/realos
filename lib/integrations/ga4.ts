@@ -116,8 +116,29 @@ export async function testGa4Connection(
     }
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
-    return { ok: false, error: message };
+    return { ok: false, error: friendlyGa4Error(message) };
   }
+}
+
+/**
+ * Translate the raw Google API error into a message that tells the operator
+ * which exact step in the GA4 connect flow needs attention.
+ */
+function friendlyGa4Error(raw: string): string {
+  const s = raw.toLowerCase();
+  if (s.includes("insufficient") || s.includes("permission")) {
+    return "Google says the service account does not yet have access to this GA4 property. In GA4: Admin (bottom-left gear) -> Property column (right) -> Property access management -> + Add users -> paste the email above with Viewer role. Note: adding under the Account column does NOT work, it must be the Property column.";
+  }
+  if (s.includes("property id") || s.includes("does not exist") || s.includes("not found") || s.includes("invalid value")) {
+    return "Google could not find that GA4 property ID. Confirm you pasted the numeric Property ID (e.g. 338445667), not the G-XXXX measurement ID. The Property ID is in GA4 under Admin -> Property settings -> Property details, top-right.";
+  }
+  if (s.includes("invalid_grant") || s.includes("unauthorized_client") || s.includes("jwt")) {
+    return "Google rejected the service account credentials. The stored GOOGLE_SERVICE_ACCOUNT_JSON may be malformed. Contact support so they can re-paste the key.";
+  }
+  if (s.includes("analyticsadmin") && s.includes("has not been used")) {
+    return "The Google Analytics Admin API is not enabled for this service account's project. Enable it in Google Cloud Console, then retry.";
+  }
+  return `Google returned: ${raw}`;
 }
 
 // Daily organic sessions/users for a date window. Filtered to organic search.
