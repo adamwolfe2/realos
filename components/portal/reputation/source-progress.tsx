@@ -15,9 +15,7 @@ export type SourceState = {
 
 const SOURCE_LABELS: Record<string, string> = {
   google: "Google Reviews",
-  tavily: "Web mentions",
-  reddit: "Reddit",
-  yelp: "Yelp",
+  tavily: "Reddit + web",
 };
 
 export function SourceProgress({
@@ -25,7 +23,7 @@ export function SourceProgress({
 }: {
   sources: Record<string, SourceState>;
 }) {
-  const keys = ["google", "tavily", "reddit", "yelp"];
+  const keys = ["google", "tavily"];
   return (
     <div className="flex flex-wrap gap-2">
       {keys.map((k) => {

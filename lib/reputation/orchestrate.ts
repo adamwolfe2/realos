@@ -7,13 +7,15 @@ import {
   Sentiment,
 } from "@prisma/client";
 import { hashUrl } from "./dedupe";
-import { searchTavily, TAVILY_COST_CENTS_PER_QUERY } from "./tavily";
+import {
+  searchTavily,
+  TAVILY_COST_CENTS_PER_QUERY,
+  TAVILY_QUERIES_PER_SCAN,
+} from "./tavily";
 import {
   searchGooglePlaces,
   GOOGLE_PLACES_COST_CENTS_PER_CALL,
 } from "./google-places";
-import { searchReddit } from "./reddit";
-import { searchYelp } from "./yelp";
 import {
   analyzeSentimentAndTopics,
   ANALYSIS_COST_CENTS_PER_SCAN,
@@ -37,7 +39,7 @@ import type {
 // ---------------------------------------------------------------------------
 
 const MAX_MENTIONS_TO_ANALYZE = 80;
-const ALL_SOURCES: SourceKey[] = ["google", "tavily", "reddit", "yelp"];
+const ALL_SOURCES: SourceKey[] = ["google", "tavily"];
 
 export type OrchestrateArgs = {
   property: PropertySeed;
@@ -83,8 +85,6 @@ export async function* orchestrateScan(
   > = {
     google: searchGooglePlaces(property),
     tavily: searchTavily(property),
-    reddit: searchReddit(property),
-    yelp: searchYelp(property),
   };
 
   // Track results so we can dedupe + analyze after all return.
@@ -294,8 +294,6 @@ export async function* orchestrateScan(
       sources: {
         google: summarizeSource(sourceResults.google),
         tavily: summarizeSource(sourceResults.tavily),
-        reddit: summarizeSource(sourceResults.reddit),
-        yelp: summarizeSource(sourceResults.yelp),
       } as Prisma.InputJsonValue,
     },
   });
@@ -451,8 +449,9 @@ function estimateCostCents(
   >
 ): number {
   let cents = 0;
-  // Tavily: 3 queries in buildQueries.
-  if (results.tavily?.ok) cents += TAVILY_COST_CENTS_PER_QUERY * 3;
+  // Tavily: fixed number of parallel queries per scan (see tavily.ts).
+  if (results.tavily?.ok)
+    cents += TAVILY_COST_CENTS_PER_QUERY * TAVILY_QUERIES_PER_SCAN;
   // Google Places: one call (plus the searchText call when resolved fresh).
   if (results.google?.ok) {
     cents += GOOGLE_PLACES_COST_CENTS_PER_CALL;
@@ -460,7 +459,6 @@ function estimateCostCents(
       cents += GOOGLE_PLACES_COST_CENTS_PER_CALL;
     }
   }
-  // Reddit + Yelp are free.
   // Claude analysis cost (flat rate — Haiku is cheap enough that we
   // account by scan, not by token).
   cents += ANALYSIS_COST_CENTS_PER_SCAN;

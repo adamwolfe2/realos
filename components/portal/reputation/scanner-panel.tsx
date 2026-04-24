@@ -110,8 +110,6 @@ export function ScannerPanel({
     setSources({
       google: { status: "running" },
       tavily: { status: "running" },
-      reddit: { status: "running" },
-      yelp: { status: "running" },
     });
     setAnalysisCount(null);
 
@@ -339,8 +337,8 @@ export function ScannerPanel({
               </p>
             ) : (
               <p className="text-[11px] text-muted-foreground mt-2">
-                Never scanned — click Scan Now to search Google, Reddit, Yelp
-                and the open web.
+                Never scanned — click Scan Now to search Google Reviews,
+                Reddit, Facebook, and the open web.
               </p>
             )}
           </div>
@@ -537,6 +535,7 @@ function SourceFilter({
     { value: "ALL", label: "All sources" },
     { value: "GOOGLE_REVIEW", label: "Google" },
     { value: "REDDIT", label: "Reddit" },
+    { value: "FACEBOOK_PUBLIC", label: "Facebook" },
     { value: "YELP", label: "Yelp" },
     { value: "TAVILY_WEB", label: "Web" },
   ];

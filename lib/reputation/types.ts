@@ -23,7 +23,11 @@ export type ScannedMention = {
   topics?: string[] | null;
 };
 
-export type SourceKey = "google" | "tavily" | "reddit" | "yelp";
+// Active sources for Phase 1. Reddit + Yelp were cut in favor of Tavily's
+// unified web coverage (which already indexes Reddit + Facebook + review
+// aggregators). MentionSource on a persisted row can still be REDDIT, YELP,
+// FACEBOOK_PUBLIC etc. — we classify by the hostname of the Tavily result.
+export type SourceKey = "google" | "tavily";
 
 export type ScanSourceResult = {
   source: SourceKey;

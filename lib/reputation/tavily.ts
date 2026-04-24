@@ -21,6 +21,10 @@ const TAVILY_ENDPOINT = "https://api.tavily.com/search";
 // on ReputationScan.estCostCents, not for billing.
 export const TAVILY_COST_CENTS_PER_QUERY = 1; // round up: ~$0.008 basic, ~$0.012 advanced
 
+// How many parallel Tavily queries per scan. Kept in one place so the cost
+// estimator in orchestrate.ts stays in sync.
+export const TAVILY_QUERIES_PER_SCAN = 5;
+
 type TavilyResult = {
   url: string;
   title?: string;
@@ -39,7 +43,8 @@ type TavilyResponse = {
 async function tavilySearch(
   apiKey: string,
   query: string,
-  includeDomains?: string[]
+  includeDomains?: string[],
+  maxResults = 10
 ): Promise<TavilyResult[]> {
   const res = await fetch(TAVILY_ENDPOINT, {
     method: "POST",
@@ -50,10 +55,12 @@ async function tavilySearch(
     body: JSON.stringify({
       query,
       search_depth: "advanced",
-      max_results: 10,
+      max_results: maxResults,
       include_answer: false,
       include_raw_content: false,
-      include_domains: includeDomains,
+      ...(includeDomains && includeDomains.length > 0
+        ? { include_domains: includeDomains }
+        : {}),
     }),
     // Tavily can be slow on advanced depth; give it 15s before we abort.
     signal: AbortSignal.timeout(15_000),
@@ -104,14 +111,57 @@ function toScannedMention(r: TavilyResult): ScannedMention {
   };
 }
 
-function buildQueries(property: PropertySeed): string[] {
+// Tavily is our unified source for everything except native Google Reviews.
+// Each query targets a different slice of the web. We use `include_domains`
+// where supported — it's more reliable than `site:` operators in the query
+// string — and leave it unset for broad crawls.
+function buildQueryPlan(property: PropertySeed): Array<{
+  query: string;
+  includeDomains?: string[];
+  maxResults?: number;
+}> {
   const name = property.name;
   const loc = [property.city, property.state].filter(Boolean).join(", ");
   const locSuffix = loc ? ` ${loc}` : "";
   return [
-    `"${name}"${locSuffix} reviews`,
-    `"${name}" reddit`,
-    `"${name}" apartments.com OR apartmentratings.com OR niche.com OR yelp.com OR bbb.org`,
+    // 1. Reddit — threads mentioning the property.
+    {
+      query: `"${name}"${locSuffix}`,
+      includeDomains: ["reddit.com"],
+      maxResults: 10,
+    },
+    // 2. Facebook — public posts, pages, groups.
+    {
+      query: `"${name}"${locSuffix}`,
+      includeDomains: ["facebook.com"],
+      maxResults: 5,
+    },
+    // 3. Dedicated apartment + review aggregators.
+    {
+      query: `"${name}"${locSuffix}`,
+      includeDomains: [
+        "apartments.com",
+        "apartmentratings.com",
+        "niche.com",
+        "yelp.com",
+        "bbb.org",
+        "rentcafe.com",
+        "trulia.com",
+        "zillow.com",
+      ],
+      maxResults: 10,
+    },
+    // 4. General web — "reviews" intent query, broad crawl.
+    {
+      query: `"${name}"${locSuffix} reviews`,
+      maxResults: 10,
+    },
+    // 5. Tenant / resident experience — catches forum threads, news, blog posts
+    // that don't surface under "reviews" but carry strong signal.
+    {
+      query: `"${name}"${locSuffix} (tenants OR residents OR students OR "living at" OR "lived at")`,
+      maxResults: 10,
+    },
   ];
 }
 
@@ -129,10 +179,12 @@ export async function searchTavily(
     };
   }
 
-  const queries = buildQueries(property);
+  const plan = buildQueryPlan(property);
   try {
     const settled = await Promise.allSettled(
-      queries.map((q) => tavilySearch(apiKey, q))
+      plan.map((p) =>
+        tavilySearch(apiKey, p.query, p.includeDomains, p.maxResults)
+      )
     );
 
     // Aggregate results across queries. Tavily can return the same URL from
