@@ -2,8 +2,26 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
-import { requireAgency, auditPayload, ForbiddenError } from "@/lib/tenancy/scope";
-import { AuditAction, UserRole } from "@prisma/client";
+import {
+  requireScope,
+  auditPayload,
+  ForbiddenError,
+  type ScopedContext,
+} from "@/lib/tenancy/scope";
+import { AuditAction, OrgType, UserRole } from "@prisma/client";
+
+const CLIENT_ALLOWED_ROLES: ReadonlySet<UserRole> = new Set([
+  UserRole.CLIENT_OWNER,
+  UserRole.CLIENT_ADMIN,
+  UserRole.CLIENT_VIEWER,
+  UserRole.LEASING_AGENT,
+]);
+
+const AGENCY_ROLES: ReadonlySet<UserRole> = new Set([
+  UserRole.AGENCY_OWNER,
+  UserRole.AGENCY_ADMIN,
+  UserRole.AGENCY_OPERATOR,
+]);
 
 const body = z.object({
   email: z.string().email(),
@@ -28,9 +46,9 @@ function normalizeRole(input: z.infer<typeof body>["role"]): UserRole {
 }
 
 export async function POST(req: NextRequest) {
-  let scope;
+  let scope: ScopedContext;
   try {
-    scope = await requireAgency();
+    scope = await requireScope();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: err.status });
@@ -66,11 +84,38 @@ export async function POST(req: NextRequest) {
   if (!org) {
     return NextResponse.json({ error: "Organization not found" }, { status: 404 });
   }
-  if (org.orgType !== "CLIENT") {
+  if (org.orgType !== OrgType.CLIENT) {
     return NextResponse.json(
       { error: "Can only invite users to CLIENT organizations" },
       { status: 400 }
     );
+  }
+
+  // Authorization:
+  //   Agency actors can invite any role into any client org.
+  //   Client actors (CLIENT_OWNER or CLIENT_ADMIN) can invite client-team roles
+  //   only, and only into their own org.
+  const caller = await prisma.user.findUnique({
+    where: { clerkUserId: scope.clerkUserId },
+    select: { role: true, orgId: true },
+  });
+  const callerIsAgency = !!caller && AGENCY_ROLES.has(caller.role);
+  if (!callerIsAgency) {
+    if (!caller || caller.orgId !== org.id) {
+      return NextResponse.json({ error: "Not authorized" }, { status: 403 });
+    }
+    if (caller.role !== UserRole.CLIENT_OWNER && caller.role !== UserRole.CLIENT_ADMIN) {
+      return NextResponse.json(
+        { error: "Only Owners or Admins can invite teammates." },
+        { status: 403 }
+      );
+    }
+    if (!CLIENT_ALLOWED_ROLES.has(role)) {
+      return NextResponse.json(
+        { error: "You can only invite client-team roles." },
+        { status: 400 }
+      );
+    }
   }
 
   // Pre-create or update the DB User row so /api/auth/role can claim it by

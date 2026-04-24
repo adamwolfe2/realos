@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { SettingsForm } from "./settings-form";
+import { ClientTeamPanel } from "./team-panel";
 import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -10,15 +12,34 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const scope = await requireScope();
-  const [org, users] = await Promise.all([
+  const [org, users, viewer] = await Promise.all([
     prisma.organization.findUnique({ where: { id: scope.orgId } }),
     prisma.user.findMany({
       where: { orgId: scope.orgId },
       orderBy: [{ role: "asc" }, { createdAt: "asc" }],
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        lastName: true,
+        role: true,
+        clerkUserId: true,
+        lastLoginAt: true,
+      },
+    }),
+    prisma.user.findUnique({
+      where: { clerkUserId: scope.clerkUserId },
+      select: { id: true, role: true },
     }),
   ]);
 
   if (!org) return null;
+
+  const canManage =
+    viewer?.role === UserRole.CLIENT_OWNER ||
+    viewer?.role === UserRole.CLIENT_ADMIN ||
+    viewer?.role === UserRole.AGENCY_OWNER ||
+    viewer?.role === UserRole.AGENCY_ADMIN;
 
   const modules: Array<[string, boolean]> = [
     ["Website", org.moduleWebsite],
@@ -122,27 +143,12 @@ export default async function SettingsPage() {
 
       <section className="rounded-lg border border-border bg-card p-5">
         <h2 className="text-sm font-semibold mb-4">Team</h2>
-        {users.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No users yet. Invite teammates from the Clerk dashboard.
-          </p>
-        ) : (
-          <ul className="divide-y text-sm">
-            {users.map((u) => (
-              <li key={u.id} className="py-2 flex items-baseline justify-between">
-                <span>
-                  {[u.firstName, u.lastName].filter(Boolean).join(" ") ||
-                    u.email}
-                  <span className="text-[11px] text-muted-foreground ml-2">{u.email}</span>
-                </span>
-                <span className="text-[11px] text-muted-foreground">{u.role}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-        <p className="text-xs text-muted-foreground mt-3">
-          To invite teammates or change roles, contact your account manager.
-        </p>
+        <ClientTeamPanel
+          members={users}
+          orgId={org.id}
+          canManage={canManage}
+          viewerUserId={viewer?.id ?? ""}
+        />
       </section>
     </div>
   );

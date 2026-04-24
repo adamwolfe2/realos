@@ -11,6 +11,7 @@ import { CursivePanel } from "./cursive-panel";
 import { DomainsPanel } from "./domains-panel";
 import { InviteUserButton } from "./invite-user-button";
 import { LaunchReadiness } from "./launch-readiness";
+import { TeamPanel } from "./team-panel";
 import type { ToggleableModule } from "@/lib/actions/admin-modules";
 import { headers } from "next/headers";
 import { StatCard } from "@/components/admin/stat-card";
@@ -104,6 +105,22 @@ export default async function ClientDetail({
     orderBy: { createdAt: "desc" },
     take: 10,
     include: { property: { select: { name: true } } },
+  });
+
+  const teamMembers = await prisma.user.findMany({
+    where: { orgId: org.id },
+    orderBy: [{ role: "asc" }, { createdAt: "asc" }],
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      role: true,
+      clerkUserId: true,
+      lastLoginAt: true,
+      createdAt: true,
+    },
+    take: 100,
   });
 
   const recentAudits = await prisma.auditEvent.findMany({
@@ -266,6 +283,13 @@ export default async function ClientDetail({
           },
         ]}
       />
+
+      <SectionCard
+        label="Team members"
+        description="Roles are enforced immediately. Removing a user revokes their Clerk session and any pending invites for that email."
+      >
+        <TeamPanel members={teamMembers} />
+      </SectionCard>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <SectionCard
