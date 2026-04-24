@@ -64,6 +64,12 @@ export const clientWriteLimiter = createLimiter(redis, 20, '1 m')
 // 5 enrich/scrape requests per userId per minute
 export const enrichLimiter = createLimiter(redis, 5, '1 m')
 
+// 3 reputation scans per userId per hour. On-demand and relatively expensive
+// (external API fan-out + Claude classification) so we cap per-user pressure.
+// Org-level daily cap (20/day) is enforced in the route handler via a
+// Prisma count, not here.
+export const reputationScanLimiter = createLimiter(redis, 3, '1 h')
+
 // 30 admin read requests per userId per minute
 export const adminReadLimiter = createLimiter(redis, 30, '1 m')
 

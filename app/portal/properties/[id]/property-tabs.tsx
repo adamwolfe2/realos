@@ -10,6 +10,7 @@ import {
   BarChart3,
   MessageSquare,
   Building2,
+  Star,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ type TabKey =
   | "leads"
   | "ads"
   | "chatbot"
+  | "reputation"
   | "occupancy";
 
 type TabDef = {
@@ -42,6 +44,7 @@ const TABS_BASE: TabDef[] = [
   { key: "leads", label: "Leads", icon: Users },
   { key: "ads", label: "Ads", icon: BarChart3 },
   { key: "chatbot", label: "Chatbot", icon: MessageSquare },
+  { key: "reputation", label: "Reputation", icon: Star },
 ];
 
 const OCCUPANCY_TAB: TabDef = {

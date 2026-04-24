@@ -11,6 +11,7 @@ import { LeadsTab } from "./tabs/leads";
 import { AdsTab } from "./tabs/ads";
 import { ChatbotTab } from "./tabs/chatbot";
 import { OccupancyTab } from "./tabs/occupancy";
+import { ReputationTab } from "./tabs/reputation";
 
 export const metadata: Metadata = { title: "Property detail" };
 export const dynamic = "force-dynamic";
@@ -141,6 +142,21 @@ export default async function PropertyDetail({
               orgId={scope.orgId}
               propertyId={property.id}
               propertyName={property.name}
+            />
+          ),
+          reputation: (
+            <ReputationTab
+              orgId={scope.orgId}
+              propertyId={property.id}
+              propertyName={property.name}
+              propertyAddress={[
+                property.addressLine1,
+                property.city,
+                property.state,
+                property.postalCode,
+              ]
+                .filter(Boolean)
+                .join(", ") || null}
             />
           ),
           occupancy: showOccupancyTab ? (

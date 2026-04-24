@@ -332,6 +332,8 @@ model Organization {
   insights             Insight[]
   clientReports        ClientReport[]
   conversationFlags    ConversationFlag[]
+  reputationScans      ReputationScan[]
+  reputationMentions   PropertyMention[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -505,14 +507,17 @@ model Property {
   syncError            String?
 
   // Marketing
-  heroImageUrl    String?
-  photoUrls       Json? // Array of URLs
-  virtualTourUrl  String?
-  googleReviewUrl String?   // Google Maps review link for this property
-  amenities      Json? // Array of strings
-  yearBuilt      Int?
-  totalUnits     Int?
-  description    String? @db.Text
+  heroImageUrl     String?
+  photoUrls        Json? // Array of URLs
+  virtualTourUrl   String?
+  googleReviewUrl  String? // Google Maps review link for this property
+  googlePlaceId    String? // Google Places place_id, seeds the Reputation Scanner
+  yelpBusinessId   String? // Yelp Fusion business id (alias or numeric id) for the Reputation Scanner
+  redditSubreddits Json? // Array of subreddit names (without "r/") to prioritize during reputation scans
+  amenities        Json? // Array of strings
+  yearBuilt        Int?
+  totalUnits       Int?
+  description      String? @db.Text
 
   // SEO
   metaTitle       String?
@@ -532,6 +537,8 @@ model Property {
   creativeRequests     CreativeRequest[]
   adCampaigns          AdCampaign[]
   insights             Insight[]
+  reputationScans      ReputationScan[]
+  reputationMentions   PropertyMention[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -798,8 +805,8 @@ model CursiveIntegration {
   publicKeyIssuedAt DateTime?
 
   // AudienceLab segment binding for the admin "Sync from segment" pull
-  cursiveSegmentId   String?
-  lastSegmentSyncAt  DateTime?
+  cursiveSegmentId  String?
+  lastSegmentSyncAt DateTime?
 
   // Weekly digest delivery preferences
   weeklyDigestEnabled Boolean @default(true)
@@ -1582,8 +1589,8 @@ model Notification {
   kind String // lead_created | tour_scheduled | chatbot_lead | integration_error | sync_complete
 
   // Display
-  title      String
-  body       String? @db.Text
+  title String
+  body  String? @db.Text
 
   // Optional link back to the source entity
   entityType String?
@@ -1723,4 +1730,102 @@ model ConversationFlag {
   @@index([orgId, flag])
   @@index([conversationId])
   @@index([orgId, createdAt(sort: Desc)])
+}
+
+// ============================================================================
+// REPUTATION SCANNER
+// ----------------------------------------------------------------------------
+// On-demand reputation & intent-signal scanner. A customer clicks "Scan Now"
+// on a Property; the API route fans out to Google Places, Tavily, Reddit, and
+// Yelp, dedupes by URL hash, classifies sentiment/topics via Claude Haiku,
+// and persists results here. ReputationScan captures the run metadata;
+// PropertyMention captures each individual mention (one row per unique
+// URL per property per org).
+// ============================================================================
+
+enum ReputationScanStatus {
+  RUNNING
+  SUCCEEDED
+  PARTIAL // at least one source failed but others returned data
+  FAILED
+}
+
+enum MentionSource {
+  GOOGLE_REVIEW
+  REDDIT
+  YELP
+  TAVILY_WEB
+  FACEBOOK_PUBLIC
+  OTHER
+}
+
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+  MIXED
+}
+
+model ReputationScan {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  triggeredByUserId String? // internal User.id, not Clerk id
+  status            ReputationScanStatus @default(RUNNING)
+
+  // Per-source result summary: { google: { found, newCount, ok, error? }, ... }
+  sources Json?
+
+  newMentionCount   Int     @default(0)
+  totalMentionCount Int     @default(0)
+  estCostCents      Int     @default(0)
+  durationMs        Int?
+  error             String?
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  mentions PropertyMention[]
+
+  @@index([orgId, propertyId, createdAt(sort: Desc)])
+  @@index([orgId, status])
+}
+
+model PropertyMention {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  source    MentionSource
+  sourceUrl String // canonical URL
+  urlHash   String // sha256 of normalized URL, used for dedupe
+
+  title       String?
+  excerpt     String    @db.Text
+  authorName  String?
+  publishedAt DateTime?
+  rating      Float? // 1-5 when available (Google, Yelp)
+
+  sentiment Sentiment?
+  topics    Json? // Array of strings, e.g. ["maintenance", "noise"]
+
+  reviewedByUserId String?
+  flagged          Boolean @default(false)
+
+  firstSeenScanId String
+  firstSeenScan   ReputationScan @relation(fields: [firstSeenScanId], references: [id], onDelete: Cascade)
+  lastSeenAt      DateTime       @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, propertyId, urlHash])
+  @@index([orgId, propertyId, publishedAt(sort: Desc)])
+  @@index([orgId, propertyId, sentiment])
+  @@index([firstSeenScanId])
 }
