@@ -77,7 +77,7 @@ export default function CommercialPage() {
                 >
                   <p
                     style={{
-                      color: "#2F6FE5",
+                      color: "#2563EB",
                       fontFamily: "var(--font-mono)",
                       fontSize: "10px",
                       letterSpacing: "0.14em",
@@ -123,7 +123,7 @@ export default function CommercialPage() {
             <p
               className="mb-6"
               style={{
-                color: "#2F6FE5",
+                color: "#2563EB",
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
                 letterSpacing: "0.22em",
@@ -203,7 +203,7 @@ function RoadmapCard() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            color: "#2F6FE5",
+            color: "#2563EB",
             fontWeight: 600,
           }}
         >
@@ -256,7 +256,7 @@ function RoadmapCard() {
 function StatusDot({ status }: { status: string }) {
   const map: Record<string, { bg: string; label: string }> = {
     live:     { bg: "#3a7d44", label: "live"     },
-    opening:  { bg: "#2F6FE5", label: "opening"  },
+    opening:  { bg: "#2563EB", label: "opening"  },
     building: { bg: "#b8860b", label: "building" },
     planned:  { bg: "#b0aea5", label: "planned"  },
   };

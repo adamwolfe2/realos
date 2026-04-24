@@ -92,8 +92,8 @@ function LiveCard({
             width: "34px",
             height: "34px",
             borderRadius: "10px",
-            backgroundColor: "rgba(47,111,229,0.12)",
-            color: "#2F6FE5",
+            backgroundColor: "rgba(37,99,235,0.12)",
+            color: "#2563EB",
           }}
         >
           <DeliverableIcon kind={icon} />

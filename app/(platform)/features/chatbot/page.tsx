@@ -195,8 +195,8 @@ function ChatPipeline() {
                   width: "34px",
                   height: "34px",
                   borderRadius: "10px",
-                  backgroundColor: "rgba(47,111,229,0.12)",
-                  color: "#2F6FE5",
+                  backgroundColor: "rgba(37,99,235,0.12)",
+                  color: "#2563EB",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   fontWeight: 600,
@@ -284,7 +284,7 @@ function ChatMetrics() {
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "#2F6FE5",
+                color: "#2563EB",
                 fontWeight: 600,
               }}
             >

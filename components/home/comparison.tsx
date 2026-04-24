@@ -146,8 +146,8 @@ export function Comparison() {
                   width: "40px",
                   height: "40px",
                   borderRadius: "12px",
-                  backgroundColor: "rgba(47,111,229,0.12)",
-                  color: "#2F6FE5",
+                  backgroundColor: "rgba(37,99,235,0.12)",
+                  color: "#2563EB",
                 }}
                 aria-hidden="true"
               >
@@ -161,7 +161,7 @@ export function Comparison() {
               <p
                 className="inline-flex items-center gap-2"
                 style={{
-                  color: "#2F6FE5",
+                  color: "#2563EB",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   letterSpacing: "0.14em",
@@ -176,7 +176,7 @@ export function Comparison() {
                     width: "6px",
                     height: "6px",
                     borderRadius: "50%",
-                    backgroundColor: "#2F6FE5",
+                    backgroundColor: "#2563EB",
                   }}
                 />
                 {comparison.rightLabel}
@@ -204,8 +204,8 @@ export function Comparison() {
                       width: "20px",
                       height: "20px",
                       borderRadius: "50%",
-                      backgroundColor: "rgba(47,111,229,0.10)",
-                      color: "#2F6FE5",
+                      backgroundColor: "rgba(37,99,235,0.10)",
+                      color: "#2563EB",
                       marginTop: "2px",
                     }}
                   >

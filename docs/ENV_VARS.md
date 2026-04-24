@@ -1,4 +1,4 @@
-# Wholesail — Environment Variables
+# LeaseStack — Environment Variables
 
 Copy `.env.example` → `.env.local` and fill in the values.
 Never commit `.env.local` — it is in `.gitignore`.
@@ -15,7 +15,7 @@ Never commit `.env.local` — it is in `.gitignore`.
 | `CLERK_SECRET_KEY` | Clerk server key | clerk.com → API Keys |
 | `CLERK_WEBHOOK_SECRET` | Clerk webhook signing secret | clerk.com → Webhooks → Endpoint → Signing Secret |
 | `RESEND_API_KEY` | Transactional email | resend.com → API Keys |
-| `NEXT_PUBLIC_APP_URL` | Public base URL | `https://wholesailhub.com` |
+| `NEXT_PUBLIC_APP_URL` | Public base URL | `https://leasestack.co` |
 
 ## Clerk Auth URLs (set as Next.js env vars)
 
@@ -34,7 +34,7 @@ Never commit `.env.local` — it is in `.gitignore`.
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `RESEND_FROM_EMAIL` | Sender address (must be verified domain) | `Wholesail <noreply@wholesailhub.com>` |
+| `RESEND_FROM_EMAIL` | Sender address (must be verified domain) | `LeaseStack <hello@leasestack.co>` |
 | `OPS_NOTIFICATION_EMAIL` | Internal ops alert email | Falls back to `RESEND_FROM_EMAIL` |
 | `OPS_NAME` | Operator name used in SMS + email copy | `"our team"` |
 
@@ -111,8 +111,8 @@ Before going live, confirm these are set in Vercel → Settings → Environment 
 - [ ] `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` + `CLERK_SECRET_KEY` (production Clerk app)
 - [ ] `CLERK_WEBHOOK_SECRET` (production webhook endpoint registered)
 - [ ] `RESEND_API_KEY` (domain verified in Resend)
-- [ ] `RESEND_FROM_EMAIL=Wholesail <noreply@wholesailhub.com>`
-- [ ] `NEXT_PUBLIC_APP_URL=https://wholesailhub.com`
+- [ ] `RESEND_FROM_EMAIL=LeaseStack <hello@leasestack.co>`
+- [ ] `NEXT_PUBLIC_APP_URL=https://leasestack.co`
 - [ ] `ANTHROPIC_API_KEY` (for AI admin assistant + config generator)
 - [ ] `BOOTSTRAP_SECRET` (for first admin user setup)
 - [ ] `OPS_NAME` (operator first name for customer-facing messages)
@@ -125,6 +125,6 @@ Before going live, confirm these are set in Vercel → Settings → Environment 
 
 | Service | Endpoint | Events |
 |---|---|---|
-| Clerk | `https://wholesailhub.com/api/webhooks/clerk` | `user.created`, `user.updated` |
-| Stripe | `https://wholesailhub.com/api/webhooks/stripe` | `checkout.session.completed`, `invoice.paid`, `charge.dispute.created`, etc. |
-| Bloo.io | `https://wholesailhub.com/api/webhooks/blooio` | All inbound messages + delivery status |
+| Clerk | `https://leasestack.co/api/webhooks/clerk` | `user.created`, `user.updated` |
+| Stripe | `https://leasestack.co/api/webhooks/stripe` | `checkout.session.completed`, `invoice.paid`, `charge.dispute.created`, etc. |
+| Bloo.io | `https://leasestack.co/api/webhooks/blooio` | All inbound messages + delivery status |

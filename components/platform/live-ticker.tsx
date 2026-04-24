@@ -23,7 +23,7 @@ const EVENTS: Event[] = [
   { kind: "lead",     text: "Ravi K. captured by AI chatbot",       where: "asking about move-in dates" },
 ];
 
-const ACCENT = "#2F6FE5";
+const ACCENT = "#2563EB";
 const INK = "#141413";
 const MUTED = "#87867f";
 const BORDER = "#f0eee6";
@@ -84,7 +84,7 @@ export function LiveTicker({
             width: "30px",
             height: "30px",
             borderRadius: "8px",
-            backgroundColor: "rgba(47,111,229,0.10)",
+            backgroundColor: "rgba(37,99,235,0.10)",
             color: ACCENT,
           }}
         >

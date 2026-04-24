@@ -14,19 +14,19 @@ type Visitor = {
 };
 
 const POOL: Omit<Visitor, "id" | "ago">[] = [
-  { initials: "MR", name: "Marisol Reyes",   org: "UC Berkeley · sophomore", page: "/floor-plans/2-bed",   color: "#2F6FE5", resolved: true  },
+  { initials: "MR", name: "Marisol Reyes",   org: "UC Berkeley · sophomore", page: "/floor-plans/2-bed",   color: "#2563EB", resolved: true  },
   { initials: "DJ", name: "Derek Johansson",  org: "parent · Illinois",       page: "/parents",              color: "#5B8CE6", resolved: true  },
   { initials: "—",  name: "Anonymous visitor", org: "Berkeley, CA",             page: "/floor-plans",          color: "#b0aea5", resolved: false },
-  { initials: "AL", name: "Aisha Lin",        org: "Cal Housing transfer",    page: "/amenities",            color: "#2F6FE5", resolved: true  },
+  { initials: "AL", name: "Aisha Lin",        org: "Cal Housing transfer",    page: "/amenities",            color: "#2563EB", resolved: true  },
   { initials: "TM", name: "Tomás Mendes",     org: "NYU · rising junior",      page: "/floor-plans/3-bed",    color: "#5B8CE6", resolved: true  },
   { initials: "—",  name: "Anonymous visitor", org: "mobile · Oakland",         page: "/gallery",              color: "#b0aea5", resolved: false },
-  { initials: "SP", name: "Sofia Petrova",    org: "parent · California",      page: "/parents-faq",          color: "#2F6FE5", resolved: true  },
-  { initials: "RK", name: "Ravi Krishnan",    org: "UC Berkeley · junior",     page: "/tour/schedule",        color: "#2F6FE5", resolved: true  },
+  { initials: "SP", name: "Sofia Petrova",    org: "parent · California",      page: "/parents-faq",          color: "#2563EB", resolved: true  },
+  { initials: "RK", name: "Ravi Krishnan",    org: "UC Berkeley · junior",     page: "/tour/schedule",        color: "#2563EB", resolved: true  },
   { initials: "—",  name: "Anonymous visitor", org: "Seattle, WA",              page: "/location",             color: "#b0aea5", resolved: false },
   { initials: "JW", name: "Jordan Wu",        org: "Stanford · transfer",      page: "/floor-plans/1-bed",    color: "#5B8CE6", resolved: true  },
 ];
 
-const ACCENT = "#2F6FE5";
+const ACCENT = "#2563EB";
 const INK = "#141413";
 const MUTED = "#87867f";
 const BORDER = "#f0eee6";
@@ -139,7 +139,7 @@ export function VisitorStream() {
             style={{
               borderBottom: i < rows.length - 1 ? `1px solid ${BORDER}` : "none",
               animation: i === 0 ? "rowIn 520ms cubic-bezier(.2,.7,.2,1)" : undefined,
-              backgroundColor: i === 0 ? "rgba(47,111,229,0.04)" : "transparent",
+              backgroundColor: i === 0 ? "rgba(37,99,235,0.04)" : "transparent",
               transition: "background-color 1400ms ease",
             }}
           >
@@ -182,7 +182,7 @@ export function VisitorStream() {
                       letterSpacing: "0.12em",
                       textTransform: "uppercase",
                       color: ACCENT,
-                      backgroundColor: "rgba(47,111,229,0.12)",
+                      backgroundColor: "rgba(37,99,235,0.12)",
                       padding: "2px 6px",
                       borderRadius: "4px",
                       fontWeight: 600,

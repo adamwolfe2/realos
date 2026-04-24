@@ -74,7 +74,7 @@ export function WhatYouGet() {
           <p
             className="mb-4"
             style={{
-              color: "#2F6FE5",
+              color: "#2563EB",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.22em",
@@ -96,7 +96,7 @@ export function WhatYouGet() {
           >
             Eight surfaces, one platform,
             <br />
-            <span style={{ color: "#2F6FE5" }}>live in fourteen days.</span>
+            <span style={{ color: "#2563EB" }}>live in fourteen days.</span>
           </h2>
           <p
             className="mt-5 max-w-2xl"
@@ -152,8 +152,8 @@ function DeliverableCard({ d }: { d: Deliverable }) {
             width: "34px",
             height: "34px",
             borderRadius: "10px",
-            backgroundColor: "rgba(47,111,229,0.12)",
-            color: "#2F6FE5",
+            backgroundColor: "rgba(37,99,235,0.12)",
+            color: "#2563EB",
           }}
         >
           <DeliverableIcon kind={d.icon} />
@@ -247,7 +247,7 @@ function GrowthTimeline() {
         <div>
           <p
             style={{
-              color: "#2F6FE5",
+              color: "#2563EB",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.22em",
@@ -282,7 +282,7 @@ function GrowthTimeline() {
             left: "8%",
             right: "8%",
             height: "2px",
-            background: "linear-gradient(to right, #f0eee6 0%, #2F6FE5 30%, #2F6FE5 60%, #f0eee6 100%)",
+            background: "linear-gradient(to right, #f0eee6 0%, #2563EB 30%, #2563EB 60%, #f0eee6 100%)",
             opacity: 0.5,
           }}
         />
@@ -295,7 +295,7 @@ function GrowthTimeline() {
               style={{
                 backgroundColor: "#ffffff",
                 borderRadius: "14px",
-                boxShadow: `0 0 0 1px ${isLaunch ? "rgba(47,111,229,0.35)" : "#f0eee6"}`,
+                boxShadow: `0 0 0 1px ${isLaunch ? "rgba(37,99,235,0.35)" : "#f0eee6"}`,
               }}
             >
               <div className="flex items-center gap-2">
@@ -305,7 +305,7 @@ function GrowthTimeline() {
                     width: "10px",
                     height: "10px",
                     borderRadius: "50%",
-                    backgroundColor: i < 2 ? "#b0aea5" : "#2F6FE5",
+                    backgroundColor: i < 2 ? "#b0aea5" : "#2563EB",
                     boxShadow: "0 0 0 4px #ffffff",
                     position: "relative",
                     zIndex: 1,
@@ -313,7 +313,7 @@ function GrowthTimeline() {
                 />
                 <p
                   style={{
-                    color: "#2F6FE5",
+                    color: "#2563EB",
                     fontFamily: "var(--font-mono)",
                     fontSize: "10px",
                     letterSpacing: "0.18em",
@@ -351,13 +351,13 @@ function GrowthTimeline() {
                 <p
                   className="mt-3"
                   style={{
-                    color: step.metricTone === "up" ? "#1f7a3a" : "#2F6FE5",
+                    color: step.metricTone === "up" ? "#1f7a3a" : "#2563EB",
                     fontFamily: "var(--font-mono)",
                     fontSize: "11px",
                     letterSpacing: "0.06em",
                     fontWeight: 700,
                     padding: "4px 8px",
-                    backgroundColor: step.metricTone === "up" ? "rgba(31,122,58,0.10)" : "rgba(47,111,229,0.10)",
+                    backgroundColor: step.metricTone === "up" ? "rgba(31,122,58,0.10)" : "rgba(37,99,235,0.10)",
                     borderRadius: "6px",
                     display: "inline-block",
                   }}

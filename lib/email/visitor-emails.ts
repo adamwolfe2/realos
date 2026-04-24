@@ -143,7 +143,7 @@ export async function sendVisitorWeeklyDigest(input: {
 function row(label: string, value: string): string {
   return `
     <tr>
-      <td style="padding:6px 12px 6px 0;font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.08em;width:55%;">${escape(
+      <td style="padding:6px 12px 6px 0;font-size:12px;color:#87867f;text-transform:uppercase;letter-spacing:0.08em;width:55%;">${escape(
         label
       )}</td>
       <td style="padding:6px 0;font-size:16px;color:#0a0a0a;font-weight:600;">${escape(value)}</td>

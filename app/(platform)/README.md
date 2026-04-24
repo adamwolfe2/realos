@@ -1,7 +1,8 @@
-# Marketing Pages (Wholesail-specific)
+# Marketing Pages (LeaseStack)
 
-These pages are Wholesail's own marketing/acquisition site.
-When forking this template for a new client, DELETE this entire directory
-and replace with client-specific marketing pages or remove entirely.
+These pages power LeaseStack's own marketing and acquisition site
+(leasestack.co). They live under the `(platform)` route group so the
+public marketing surface is visually and logically separate from
+`/admin` (master console) and `/portal` (per-tenant operator view).
 
-These pages will NOT affect the operational platform (admin, client-portal, API routes).
+Editing this directory does not affect the operational platform.

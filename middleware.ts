@@ -96,8 +96,18 @@ async function coreHandler(
     return response;
   }
 
+  // DECISION: DEMO_MODE lets prospects (and us) click through /portal and
+  // /admin without a Clerk session, using a seeded demo org resolved by
+  // getScope(). Must be set explicitly (never ships-on-by-default). Both
+  // NEXT_PUBLIC_DEMO_MODE and DEMO_MODE are accepted so the flag works
+  // from Vercel UI regardless of which env surface the user filled in.
+  const demoMode =
+    process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
+    process.env.DEMO_MODE === "true";
+
   // Platform hostname gates.
   if (isAdminRoute(req) || isApiAdminRoute(req)) {
+    if (demoMode) return NextResponse.next();
     if (!getAuth) {
       // Clerk not configured; redirect to sign-in page which itself warns.
       return NextResponse.redirect(new URL("/sign-in", req.url));
@@ -109,6 +119,7 @@ async function coreHandler(
   }
 
   if (isPortalRoute(req) || isApiTenantRoute(req)) {
+    if (demoMode) return NextResponse.next();
     if (!getAuth) {
       return NextResponse.redirect(new URL("/sign-in", req.url));
     }

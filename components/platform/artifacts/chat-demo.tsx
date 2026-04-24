@@ -18,7 +18,7 @@ const SCRIPT: Turn[] = [
   { role: "event", text: "Lead captured · emailed floor-plan PDF · added to CRM" },
 ];
 
-const ACCENT = "#2F6FE5";
+const ACCENT = "#2563EB";
 const INK = "#141413";
 const MUTED = "#87867f";
 const BORDER = "#f0eee6";
@@ -198,7 +198,7 @@ function Bubble({ turn }: { turn: Turn }) {
       <div
         className="flex items-center gap-2 px-3 py-2 my-2"
         style={{
-          backgroundColor: "rgba(47,111,229,0.08)",
+          backgroundColor: "rgba(37,99,235,0.08)",
           border: `1px dashed ${ACCENT}`,
           borderRadius: "10px",
           animation: "bubbleIn 380ms ease",

@@ -144,8 +144,8 @@ export function FeaturePage({
                   aria-hidden="true"
                   className="inline-flex items-center justify-center flex-shrink-0 mt-1 w-4 h-4 rounded-full"
                   style={{
-                    backgroundColor: "rgba(47,111,229,0.14)",
-                    color: "#2F6FE5",
+                    backgroundColor: "rgba(37,99,235,0.14)",
+                    color: "#2563EB",
                   }}
                 >
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none">

@@ -13,8 +13,8 @@ export const TOKENS = {
   white:           "#ffffff",
   nearBlack:       "#141413",
   darkSurface:     "#30302e",
-  terracotta:      "#2F6FE5",
-  terracottaHover: "#2558C4",
+  terracotta:      "#2563EB",
+  terracottaHover: "#1D4ED8",
   coral:           "#5B8CE6",
   charcoal:        "#4d4c48",
   olive:           "#5e5d59",
@@ -42,7 +42,7 @@ export function Pill({
 }) {
   const colors = {
     neutral:    { bg: TOKENS.sand,                       fg: TOKENS.charcoal,  border: TOKENS.ring },
-    terracotta: { bg: "rgba(47,111,229,0.12)",           fg: TOKENS.terracotta,border: "rgba(47,111,229,0.3)" },
+    terracotta: { bg: "rgba(37,99,235,0.12)",           fg: TOKENS.terracotta,border: "rgba(37,99,235,0.3)" },
     success:    { bg: "rgba(58,125,68,0.12)",            fg: TOKENS.success,   border: "rgba(58,125,68,0.3)" },
     warning:    { bg: "rgba(184,134,11,0.12)",           fg: TOKENS.warning,   border: "rgba(184,134,11,0.3)" },
     muted:      { bg: TOKENS.borderCream,                fg: TOKENS.stone,     border: TOKENS.borderCream },

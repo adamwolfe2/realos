@@ -45,12 +45,11 @@ matches to an `Organization`, and routes to the correct surface.
 
 ## Build strategy
 
-Hard fork of [adamwolfe2/wholesail](https://github.com/adamwolfe2/wholesail).
-Kept all infrastructure scaffolding (auth, billing, email framework, admin
-shell, shadcn/ui, intake wizard framework). Stripped every distribution-domain
-concept (products, orders, invoices, shipments, quotes, carts). Replaced with
-the real-estate domain (properties, listings, leads, visitors, applications,
-chatbot conversations, creative requests, ad campaigns).
+Infrastructure scaffolding carried over from an earlier template (auth,
+billing, email framework, admin shell, shadcn/ui, intake wizard framework).
+Domain rebuilt from scratch around the real-estate model: properties,
+listings, leads, visitors, applications, chatbot conversations, creative
+requests, ad campaigns.
 
 Sprint plan lives in `prd/` (12 sprints, roughly two weeks end to end).
 Sprint summaries append to `BUILD_LOG.md` as each one ships.
@@ -109,7 +108,7 @@ prd/             product requirements (12 sprints)
 
 ## Environment variables
 
-See `.env.example` for the full list. Key additions over Wholesail's defaults:
+See `.env.example` for the full list. Key real-estate-specific vars:
 
 - `CURSIVE_API_KEY`, `CURSIVE_API_URL`
 - `APPFOLIO_OAUTH_CLIENT_ID`, `APPFOLIO_OAUTH_CLIENT_SECRET`

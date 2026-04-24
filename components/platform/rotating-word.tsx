@@ -11,7 +11,7 @@ type Props = {
 
 export function RotatingWord({
   words,
-  color = "#2F6FE5",
+  color = "#2563EB",
   intervalMs = 2400,
   italic = true,
 }: Props) {

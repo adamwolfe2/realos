@@ -22,7 +22,7 @@ export default function SignUpPage() {
           href="/"
           className="inline-flex items-center hover:opacity-80 transition-opacity"
           style={{
-            color: "#171A20",
+            color: "#141413",
             fontFamily: "var(--font-sans)",
             fontSize: "17px",
             fontWeight: 500,
@@ -38,7 +38,7 @@ export default function SignUpPage() {
             <h1
               className="mb-2"
               style={{
-                color: "#171A20",
+                color: "#141413",
                 fontFamily: "var(--font-sans)",
                 fontSize: "28px",
                 fontWeight: 500,
@@ -71,19 +71,19 @@ export default function SignUpPage() {
                 headerTitle: "hidden",
                 headerSubtitle: "hidden",
                 socialButtonsBlockButton:
-                  "border border-[#EEEEEE] bg-white hover:bg-[#F4F4F4] text-[#171A20] text-sm font-medium rounded-md h-10 transition-colors",
+                  "border border-[#EEEEEE] bg-white hover:bg-[#F4F4F4] text-[#141413] text-sm font-medium rounded-md h-10 transition-colors",
                 dividerLine: "bg-[#EEEEEE]",
                 dividerText: "text-[#8E8E8E] text-xs",
                 formFieldLabel: "text-xs font-medium text-[#393C41] mb-1",
                 formFieldInput:
-                  "border border-[#EEEEEE] bg-white focus:border-[#3E6AE1] focus:ring-0 rounded-md h-10 text-sm text-[#171A20] placeholder:text-[#8E8E8E]",
+                  "border border-[#EEEEEE] bg-white focus:border-[#3E6AE1] focus:ring-0 rounded-md h-10 text-sm text-[#141413] placeholder:text-[#8E8E8E]",
                 formButtonPrimary:
                   "bg-[#3E6AE1] hover:bg-[#3457C8] text-white rounded-md h-10 text-sm font-medium transition-colors",
                 footerActionLink:
                   "text-[#3E6AE1] hover:text-[#3457C8] underline underline-offset-2",
                 identityPreviewEditButton:
                   "text-[#3E6AE1] underline underline-offset-2",
-                otpCodeFieldInput: "border border-[#EEEEEE] rounded-md text-[#171A20]",
+                otpCodeFieldInput: "border border-[#EEEEEE] rounded-md text-[#141413]",
                 alertText: "text-sm",
                 formFieldErrorText: "text-xs text-[#b53333]",
               },

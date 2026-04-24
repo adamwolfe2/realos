@@ -56,8 +56,8 @@ describe("buildBaseHtml", () => {
       headline: "Test",
       bodyHtml: "<p>Body</p>",
     });
-    // Default brand name is "Wholesail"
-    expect(html).toContain("Wholesail");
+    // Default brand name is "LeaseStack"
+    expect(html).toContain("LeaseStack");
   });
 
   it("includes the headline in output", async () => {

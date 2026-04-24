@@ -24,7 +24,7 @@ const DEFAULT_PROPERTIES: PortfolioProperty[] = [
   { name: "The Rhodes",         location: "Nashville, TN",  units: 212, leased: 168, trend: "up"    },
 ];
 
-const ACCENT = "#2F6FE5";
+const ACCENT = "#2563EB";
 const INK = "#141413";
 const MUTED = "#87867f";
 const BORDER = "#f0eee6";
@@ -148,7 +148,7 @@ export function PortfolioOccupancy({
                         letterSpacing: "0.1em",
                         textTransform: "uppercase",
                         color: ACCENT,
-                        backgroundColor: "rgba(47,111,229,0.12)",
+                        backgroundColor: "rgba(37,99,235,0.12)",
                         padding: "2px 6px",
                         borderRadius: "4px",
                         fontWeight: 600,

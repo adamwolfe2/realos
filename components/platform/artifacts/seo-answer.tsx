@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { ChatGPTMark, PerplexityMark, ClaudeMark, GeminiMark, GoogleMark } from "./brand-logos";
 
-const ACCENT = "#2F6FE5";
+const ACCENT = "#2563EB";
 const INK = "#141413";
 const MUTED = "#87867f";
 const BORDER = "#f0eee6";
@@ -269,7 +269,7 @@ export function SeoAnswer() {
                       style={{
                         fontSize: "9px",
                         padding: "1px 6px",
-                        backgroundColor: "rgba(47,111,229,0.12)",
+                        backgroundColor: "rgba(37,99,235,0.12)",
                         borderRadius: "4px",
                         letterSpacing: "0.08em",
                       }}
@@ -332,7 +332,7 @@ function renderAnswerWithHighlights(text: string) {
       <mark
         key={key++}
         style={{
-          backgroundColor: "rgba(47,111,229,0.16)",
+          backgroundColor: "rgba(37,99,235,0.16)",
           color: ACCENT,
           padding: "0 2px",
           borderRadius: "3px",

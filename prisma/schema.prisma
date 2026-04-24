@@ -11,7 +11,7 @@ generator client {
 
 // DECISION: Prisma 7 moved connection URLs out of the schema into
 // prisma.config.ts. DATABASE_URL and DIRECT_DATABASE_URL are read there.
-// This matches Wholesail's Prisma 7 configuration and the PRD schema is kept
+// Standard Prisma 7 configuration. The PRD schema is kept
 // otherwise byte-identical.
 datasource db {
   provider = "postgresql"

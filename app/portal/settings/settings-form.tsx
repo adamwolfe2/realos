@@ -91,7 +91,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
         <TF label="Logo URL" value={state.logoUrl} onChange={(v) => update("logoUrl", v)} type="url" />
         <TF label="Brand font" value={state.brandFont} onChange={(v) => update("brandFont", v)} placeholder="Inter, serif" />
         <TF label="Primary color (hex)" value={state.primaryColor} onChange={(v) => update("primaryColor", v)} placeholder="#111827" maxLength={7} pattern="^#[0-9a-fA-F]{3,6}$" />
-        <TF label="Secondary color (hex)" value={state.secondaryColor} onChange={(v) => update("secondaryColor", v)} placeholder="#6b7280" maxLength={7} pattern="^#[0-9a-fA-F]{3,6}$" />
+        <TF label="Secondary color (hex)" value={state.secondaryColor} onChange={(v) => update("secondaryColor", v)} placeholder="#87867f" maxLength={7} pattern="^#[0-9a-fA-F]{3,6}$" />
       </div>
 
       <div className="flex items-center gap-3 pt-3 border-t">

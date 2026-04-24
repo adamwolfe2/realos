@@ -101,8 +101,8 @@ export default function RootLayout({
   // DECISION: Always wrap with ClerkProvider so components deeper in the tree
   // that use Clerk hooks (e.g., PostHogUserIdentifier, auth-aware navigation)
   // can prerender safely. Clerk handles missing env keys with a warning rather
-  // than a crash. Wholesail conditionally wrapped; that broke `/not-found`
-  // prerender when Clerk env vars weren't set.
+  // than a crash. Conditional wrapping broke `/not-found` prerender when
+  // Clerk env vars weren't set.
   return (
     <ClerkProvider>
       <html

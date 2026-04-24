@@ -17,7 +17,7 @@ const CARDS = [
     body:
       "Sprint pricing, international applicants, turn-heavy calendars. Our wedge vertical, live today.",
     tag: "Live",
-    accent: "#2F6FE5",
+    accent: "#2563EB",
   },
   {
     href: "/multifamily",
@@ -25,7 +25,7 @@ const CARDS = [
     body:
       "Portfolio-level dashboards, fair-housing compliant creative, per-property retargeting pools.",
     tag: "Live",
-    accent: "#2F6FE5",
+    accent: "#2563EB",
   },
   {
     href: "/senior-living",
@@ -33,7 +33,7 @@ const CARDS = [
     body:
       "Patient nurture, family-first copy, compliance-aware forms and ads.",
     tag: "Live",
-    accent: "#2F6FE5",
+    accent: "#2563EB",
   },
 ];
 
@@ -159,7 +159,7 @@ export default function ResidentialHub() {
             <p
               className="mb-6"
               style={{
-                color: "#2F6FE5",
+                color: "#2563EB",
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
                 letterSpacing: "0.22em",

@@ -8,8 +8,8 @@ const CAL_NAMESPACE = process.env.NEXT_PUBLIC_CAL_NAMESPACE ?? "leasestack";
 const CAL_LINK = process.env.NEXT_PUBLIC_CAL_LINK ?? "adamwolfe/leasestack";
 
 // ---------------------------------------------------------------------------
-// Inline Cal.com embed. Forked from Wholesail; removed the portal-config
-// dependency and swapped the namespace/link to real-estate defaults.
+// Inline Cal.com embed for the LeaseStack "book a demo" flow. No portal-config
+// dependency; namespace/link come from env or the real-estate default.
 // ---------------------------------------------------------------------------
 
 export function CalEmbed({ name, email }: { name?: string; email?: string }) {

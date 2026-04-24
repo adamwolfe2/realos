@@ -105,12 +105,12 @@ export function PlatformNav() {
               style={{
                 minHeight: "36px",
                 padding: "8px 16px",
-                backgroundColor: "#2F6FE5",
+                backgroundColor: "#2563EB",
                 color: "#faf9f5",
                 fontSize: "14px",
                 fontWeight: 500,
                 borderRadius: "10px",
-                boxShadow: "0 0 0 1px #2F6FE5 inset",
+                boxShadow: "0 0 0 1px #2563EB inset",
                 transition: "background-color 0.2s ease",
               }}
             >
@@ -218,7 +218,7 @@ function Dropdown({
                   href={item.href}
                   className="block px-4 py-2.5"
                   style={{
-                    color: "#171A20",
+                    color: "#141413",
                     fontFamily: "var(--font-sans)",
                     fontSize: "14px",
                     fontWeight: 500,
@@ -326,7 +326,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
                 justifyContent: "center",
                 height: "52px",
                 borderRadius: "12px",
-                backgroundColor: "#2F6FE5",
+                backgroundColor: "#2563EB",
                 color: "#faf9f5",
                 fontSize: "16px",
                 fontWeight: 600,

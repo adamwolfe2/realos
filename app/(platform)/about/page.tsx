@@ -54,7 +54,7 @@ export default function AboutPage() {
             <p
               className="mb-6"
               style={{
-                color: "#2F6FE5",
+                color: "#2563EB",
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
                 letterSpacing: "0.22em",
@@ -136,7 +136,7 @@ function StackCard() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            color: "#2F6FE5",
+            color: "#2563EB",
             fontWeight: 600,
           }}
         >
@@ -178,8 +178,8 @@ function StackCard() {
                 width: "18px",
                 height: "18px",
                 borderRadius: "50%",
-                backgroundColor: "rgba(47,111,229,0.12)",
-                color: "#2F6FE5",
+                backgroundColor: "rgba(37,99,235,0.12)",
+                color: "#2563EB",
               }}
             >
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
@@ -266,7 +266,7 @@ function VendorCollapse() {
       <div
         className="p-5 text-center"
         style={{
-          backgroundColor: "#2F6FE5",
+          backgroundColor: "#2563EB",
           color: "#ffffff",
           borderRadius: "16px",
         }}
@@ -348,7 +348,7 @@ function OperatorWeek() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            color: "#2F6FE5",
+            color: "#2563EB",
             fontWeight: 600,
           }}
         >
@@ -357,7 +357,7 @@ function OperatorWeek() {
       </div>
       <ul>
         {rows.map((r, i) => {
-          const color = r.tag === "you" ? "#2F6FE5" : r.tag === "us" ? "#b8860b" : "#87867f";
+          const color = r.tag === "you" ? "#2563EB" : r.tag === "us" ? "#b8860b" : "#87867f";
           return (
             <li
               key={`${r.day}-${r.item}`}
@@ -398,7 +398,7 @@ function OperatorWeek() {
                   fontWeight: 700,
                   padding: "2px 8px",
                   borderRadius: "4px",
-                  backgroundColor: r.tag === "you" ? "rgba(47,111,229,0.12)" : r.tag === "us" ? "rgba(184,134,11,0.12)" : "rgba(135,134,127,0.12)",
+                  backgroundColor: r.tag === "you" ? "rgba(37,99,235,0.12)" : r.tag === "us" ? "rgba(184,134,11,0.12)" : "rgba(135,134,127,0.12)",
                 }}
               >
                 {r.tag}

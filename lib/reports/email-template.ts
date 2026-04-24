@@ -3,7 +3,7 @@
 //
 // @react-email/components is not installed; this module renders a clean HTML
 // string directly. Colors follow the design spec: primary blue #2563EB, text
-// #111, muted #6B7280, background white. No Tailwind classes, no emojis.
+// #111, muted #87867f, background white. No Tailwind classes, no emojis.
 // ---------------------------------------------------------------------------
 
 import type { WeeklyDigest } from "./weekly-digest";
@@ -30,7 +30,7 @@ function formatDelta(delta: number): string {
 function deltaColor(delta: number): string {
   if (delta > 0) return "#047857";
   if (delta < 0) return "#B91C1C";
-  return "#6B7280";
+  return "#87867f";
 }
 
 function e(s: string): string {
@@ -63,7 +63,7 @@ type KpiItem = {
 
 function kpiCard(item: KpiItem): string {
   const deltaHtml = item.delta
-    ? `<span style="display:block;margin-top:4px;font-size:12px;font-weight:600;color:${item.deltaColor ?? "#6B7280"};">${e(item.delta)} vs last week</span>`
+    ? `<span style="display:block;margin-top:4px;font-size:12px;font-weight:600;color:${item.deltaColor ?? "#87867f"};">${e(item.delta)} vs last week</span>`
     : "";
 
   return `
@@ -71,7 +71,7 @@ function kpiCard(item: KpiItem): string {
       <table width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-radius:4px;">
         <tr>
           <td style="padding:16px;">
-            <span style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#6B7280;font-weight:600;">${e(item.label)}</span>
+            <span style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#87867f;font-weight:600;">${e(item.label)}</span>
             <span style="display:block;margin-top:6px;font-size:28px;font-weight:700;color:#111111;font-variant-numeric:tabular-nums;">${e(item.value)}</span>
             ${deltaHtml}
           </td>
@@ -209,7 +209,7 @@ export function buildWeeklyDigestEmail(
           <tr>
             <td style="padding:28px 32px 0;">
               <h1 style="margin:0;font-size:22px;font-weight:700;color:#111111;">${e(orgName)}</h1>
-              <p style="margin:6px 0 0;font-size:14px;color:#6B7280;">${e(weekLabel)}</p>
+              <p style="margin:6px 0 0;font-size:14px;color:#87867f;">${e(weekLabel)}</p>
             </td>
           </tr>
 
@@ -236,7 +236,7 @@ export function buildWeeklyDigestEmail(
             topProperties.length > 0
               ? `<tr>
               <td style="padding:0 32px;">
-                <p style="margin:24px 0 0;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#6B7280;">Top Properties</p>
+                <p style="margin:24px 0 0;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#87867f;">Top Properties</p>
                 ${topPropertiesTable(topProperties)}
               </td>
             </tr>`
@@ -246,7 +246,7 @@ export function buildWeeklyDigestEmail(
           <!-- Portal CTA -->
           <tr>
             <td style="padding:28px 32px 32px;">
-              <p style="margin:0 0 16px;font-size:13px;color:#6B7280;">Full lead history, visitor analytics, and campaign details are in your portal.</p>
+              <p style="margin:0 0 16px;font-size:13px;color:#87867f;">Full lead history, visitor analytics, and campaign details are in your portal.</p>
               <a href="${e(portalUrl)}" style="display:inline-block;background-color:#2563EB;color:#FFFFFF;font-size:13px;font-weight:600;text-decoration:none;padding:13px 28px;letter-spacing:0.04em;">
                 Open Portal
               </a>
@@ -257,9 +257,9 @@ export function buildWeeklyDigestEmail(
           <tr>
             <td style="padding:20px 32px;border-top:1px solid #E5E7EB;background-color:#F9FAFB;">
               <p style="margin:0;font-size:12px;color:#9CA3AF;">
-                Powered by <a href="https://leasestack.co" style="color:#6B7280;text-decoration:none;">LeaseStack</a>
+                Powered by <a href="https://leasestack.co" style="color:#87867f;text-decoration:none;">LeaseStack</a>
                 &nbsp;&middot;&nbsp;
-                <a href="${e(portalUrl)}/settings/notifications" style="color:#6B7280;text-decoration:none;">Unsubscribe</a>
+                <a href="${e(portalUrl)}/settings/notifications" style="color:#87867f;text-decoration:none;">Unsubscribe</a>
               </p>
             </td>
           </tr>

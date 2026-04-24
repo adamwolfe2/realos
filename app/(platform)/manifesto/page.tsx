@@ -105,7 +105,7 @@ function Hero() {
                 }}
               >
                 Real estate is the last large vertical still buying marketing as a retainer.
-                We think it should be a <span style={{ color: "#2F6FE5" }}>product</span>.
+                We think it should be a <span style={{ color: "#2563EB" }}>product</span>.
               </p>
             </Reveal>
           </div>
@@ -149,7 +149,7 @@ function FounderCard() {
             width: "36px",
             height: "36px",
             borderRadius: "50%",
-            backgroundColor: "#2F6FE5",
+            backgroundColor: "#2563EB",
             color: "#ffffff",
             fontFamily: "var(--font-mono)",
             fontSize: "13px",

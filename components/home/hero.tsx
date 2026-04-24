@@ -9,7 +9,7 @@ export function Hero() {
       headline={
         <span style={{ display: "block" }}>
           <span style={{ display: "block" }}>
-            The <span style={{ color: "#2F6FE5" }}>#1</span> Real Estate
+            The <span style={{ color: "#2563EB" }}>#1</span> Real Estate
           </span>
           <span style={{ display: "block" }}>
             Ecosystem for{" "}
@@ -24,7 +24,7 @@ export function Hero() {
           <strong style={{ color: "#141413", fontWeight: 600 }}>Premium Website</strong>,{" "}
           <strong style={{ color: "#141413", fontWeight: 600 }}>AI Chatbot</strong>,{" "}
           <strong style={{ color: "#141413", fontWeight: 600 }}>Visitor Tracking Pixel</strong>, and{" "}
-          <span style={{ color: "#2F6FE5", fontWeight: 600 }}>#1</span> search visibility. Live in 14 days.
+          <span style={{ color: "#2563EB", fontWeight: 600 }}>#1</span> search visibility. Live in 14 days.
         </>
       }
       ctas={[

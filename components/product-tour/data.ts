@@ -118,7 +118,7 @@ export const LEADS: LeadRow[] = [
     stage: "new",
     createdAt: "45m ago",
     timeline: [
-      { kind: "visit",  text: "Direct visit to /pricing",                   at: "45m ago" },
+      { kind: "visit",  text: "Direct visit to /floor-plans",               at: "45m ago" },
       { kind: "form",   text: "Submitted tour request",                     at: "44m ago" },
     ],
   },

@@ -26,7 +26,7 @@ export async function sendReviewRequestEmail({
     <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
       Would you mind taking 60 seconds to leave us a Google review? It makes a huge difference for future residents.
     </p>
-    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#6b7280;">
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#87867f;">
       Takes less than a minute. Thank you for being part of our community.
     </p>
   `;

@@ -9,7 +9,7 @@ export function Proof() {
         <p
           className="mb-6"
           style={{
-            color: "#2F6FE5",
+            color: "#2563EB",
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
             letterSpacing: "0.22em",

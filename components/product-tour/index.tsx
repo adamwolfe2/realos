@@ -100,17 +100,20 @@ function Topbar() {
         borderBottom: `1px solid ${TOKENS.borderCream}`,
       }}
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-3">
+        <img
+          src="/logos/leasestack-wordmark.png"
+          alt="LeaseStack"
+          style={{ height: "22px", width: "auto", display: "block" }}
+        />
         <span
-          className="inline-flex items-center justify-center w-6 h-6 rounded-md"
-          style={{ backgroundColor: TOKENS.terracotta, color: TOKENS.ivory }}
-        >
-          <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
-            <path d="M2.5 10V4.5L6.5 2l4 2.5V10" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round" />
-            <path d="M2.5 10h8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
-            <circle cx="6.5" cy="7" r="1" fill="currentColor" />
-          </svg>
-        </span>
+          className="inline-block"
+          style={{
+            width: "1px",
+            height: "18px",
+            backgroundColor: TOKENS.borderCream,
+          }}
+        />
         <span
           style={{
             color: TOKENS.nearBlack,
@@ -1033,7 +1036,7 @@ function LeadDrawer({ lead, onClose }: { lead: LeadRow; onClose: () => void }) {
                     style={{
                       width: "22px",
                       height: "22px",
-                      backgroundColor: "rgba(47,111,229,0.12)",
+                      backgroundColor: "rgba(37,99,235,0.12)",
                       color: TOKENS.terracotta,
                       marginTop: "1px",
                     }}
@@ -1503,7 +1506,7 @@ function CreativeTypeIcon({ type }: { type: string }) {
       style={{
         width: "32px",
         height: "32px",
-        backgroundColor: "rgba(47,111,229,0.10)",
+        backgroundColor: "rgba(37,99,235,0.10)",
         color: TOKENS.terracotta,
         borderRadius: "8px",
         fontFamily: "var(--font-display)",

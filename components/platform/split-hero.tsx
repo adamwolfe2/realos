@@ -41,12 +41,12 @@ export function SplitHero({
                   style={{
                     width: "28px",
                     height: "1px",
-                    backgroundColor: "#2F6FE5",
+                    backgroundColor: "#2563EB",
                   }}
                 />
                 <p
                   style={{
-                    color: "#2F6FE5",
+                    color: "#2563EB",
                     fontFamily: "var(--font-mono)",
                     fontSize: "11px",
                     letterSpacing: "0.12em",
@@ -74,7 +74,7 @@ export function SplitHero({
                 {headlineAccent ? (
                   <>
                     {" "}
-                    <span style={{ color: "#2F6FE5" }}>{headlineAccent}</span>
+                    <span style={{ color: "#2563EB" }}>{headlineAccent}</span>
                   </>
                 ) : null}
               </h1>
@@ -273,8 +273,8 @@ export function SplitSection({
                           width: "18px",
                           height: "18px",
                           borderRadius: "50%",
-                          backgroundColor: "rgba(47,111,229,0.12)",
-                          color: "#2F6FE5",
+                          backgroundColor: "rgba(37,99,235,0.12)",
+                          color: "#2563EB",
                         }}
                       >
                         <svg width="10" height="10" viewBox="0 0 10 10" fill="none">

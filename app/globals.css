@@ -124,7 +124,7 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
   --accent:          var(--terracotta);
   --accent-hover:    var(--terracotta-hover);
   --accent-bright:   var(--terracotta);
-  --accent-wash:     rgba(47, 111, 229, 0.10);
+  --accent-wash:     rgba(37, 99, 235, 0.10);
   --accent-glow:     transparent;
 
   --danger: var(--error);
@@ -195,7 +195,7 @@ body {
 }
 .btn-primary:hover {
   background-color: var(--terracotta-hover);
-  box-shadow: 0 0 0 1px var(--terracotta-hover) inset, 0 4px 14px rgba(47,111,229,0.18);
+  box-shadow: 0 0 0 1px var(--terracotta-hover) inset, 0 4px 14px rgba(37,99,235,0.18);
 }
 
 .btn-secondary {

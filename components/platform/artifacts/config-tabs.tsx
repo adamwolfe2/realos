@@ -7,7 +7,7 @@ import {
   GeminiMark, LinkedInMark, VercelMark, FigmaMark,
 } from "./brand-logos";
 
-const ACCENT = "#2F6FE5";
+const ACCENT = "#2563EB";
 const INK = "#141413";
 const MUTED = "#87867f";
 const BORDER = "#f0eee6";
@@ -376,7 +376,7 @@ function FeatureIcon({ kind }: { kind: Row["icon"] }) {
     width: "22px",
     height: "22px",
     borderRadius: "6px",
-    backgroundColor: "rgba(47,111,229,0.12)",
+    backgroundColor: "rgba(37,99,235,0.12)",
     color: ACCENT,
   } as const;
   return (

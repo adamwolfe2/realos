@@ -110,7 +110,7 @@ function CitedByAI() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            color: "#2F6FE5",
+            color: "#2563EB",
             fontWeight: 600,
           }}
         >
@@ -212,7 +212,7 @@ function AuditGrid() {
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: "10px",
-            color: "#2F6FE5",
+            color: "#2563EB",
             fontWeight: 600,
           }}
         >
@@ -279,8 +279,8 @@ function AuditBadge({ value }: { value: string }) {
         fontSize: "10px",
         padding: "3px 8px",
         borderRadius: "5px",
-        backgroundColor: cited ? "rgba(47,111,229,0.12)" : "transparent",
-        color: cited ? "#2F6FE5" : "#87867f",
+        backgroundColor: cited ? "rgba(37,99,235,0.12)" : "transparent",
+        color: cited ? "#2563EB" : "#87867f",
         fontWeight: 600,
         letterSpacing: "0.04em",
         textTransform: cited ? "uppercase" : "none",
@@ -368,7 +368,7 @@ function RankProgress() {
                       top: 0,
                       height: "100%",
                       width: `${100 - afterPct}%`,
-                      backgroundColor: "#2F6FE5",
+                      backgroundColor: "#2563EB",
                       borderRadius: "3px",
                       transition: "width 800ms ease",
                     }}

@@ -33,9 +33,51 @@ export type ScopedContext = {
   isImpersonating: boolean;
 };
 
+// DEMO_MODE fallback. When no Clerk session exists AND the flag is on, we
+// resolve a synthetic scope pointed at the first CLIENT org in the DB (for
+// /portal) or the first AGENCY org (for /admin). Requires DATABASE_URL to
+// be set and the seed script to have run. Returns null if the DB is empty
+// or unreachable; callers then surface their normal "not authenticated"
+// error rather than leaking into prod.
+async function getDemoScope(): Promise<ScopedContext | null> {
+  const demoMode =
+    process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
+    process.env.DEMO_MODE === "true";
+  if (!demoMode) return null;
+
+  const agencyOrg = await prisma.organization
+    .findFirst({ where: { orgType: OrgType.AGENCY } })
+    .catch(() => null);
+  const clientOrg = await prisma.organization
+    .findFirst({ where: { orgType: OrgType.CLIENT } })
+    .catch(() => null);
+
+  const target = clientOrg ?? agencyOrg;
+  if (!target) return null;
+
+  // Synthesise a user-shaped scope. We don't touch Clerk or the User table;
+  // audit writes are guarded elsewhere by isDemoMode() where relevant.
+  return {
+    userId: "demo-user",
+    clerkUserId: "demo-user",
+    orgId: target.id,
+    actualOrgId: agencyOrg?.id ?? target.id,
+    orgType: target.orgType,
+    actualOrgType: agencyOrg?.orgType ?? target.orgType,
+    role: (agencyOrg?.orgType ?? target.orgType) === OrgType.AGENCY
+      ? UserRole.AGENCY_OWNER
+      : UserRole.CLIENT_OWNER,
+    email: "demo@leasestack.co",
+    isAgency: (agencyOrg?.orgType ?? target.orgType) === OrgType.AGENCY,
+    isImpersonating: false,
+  };
+}
+
 export async function getScope(): Promise<ScopedContext | null> {
   const { userId: clerkUserId, sessionClaims } = await auth();
-  if (!clerkUserId) return null;
+  if (!clerkUserId) {
+    return await getDemoScope();
+  }
 
   const user = await prisma.user
     .findUnique({
@@ -43,7 +85,7 @@ export async function getScope(): Promise<ScopedContext | null> {
       include: { org: true },
     })
     .catch(() => null);
-  if (!user || !user.org) return null;
+  if (!user || !user.org) return await getDemoScope();
 
   const actualOrgType = user.org.orgType;
   const isAgency = actualOrgType === OrgType.AGENCY;

@@ -31,7 +31,7 @@ const SENTIMENT_COLORS: Record<string, string> = {
   POSITIVE: "#10b981", // emerald
   NEGATIVE: "#ef4444", // rose
   MIXED: "#f59e0b", // amber
-  NEUTRAL: "#6b7280", // gray
+  NEUTRAL: "#87867f", // gray
   UNCLASSIFIED: "#d1d5db", // light gray
 };
 
@@ -41,7 +41,7 @@ const SOURCE_COLORS: Record<string, string> = {
   YELP: "#AF0606",
   FACEBOOK_PUBLIC: "#1877F2",
   TAVILY_WEB: "#2563EB",
-  OTHER: "#6b7280",
+  OTHER: "#87867f",
 };
 
 export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
@@ -240,7 +240,7 @@ function SourceDonut({
   const pieData = data.map((d) => ({
     name: sourceLabel(d.source, sampleUrl[d.source]),
     value: d.count,
-    color: SOURCE_COLORS[d.source] ?? "#6b7280",
+    color: SOURCE_COLORS[d.source] ?? "#87867f",
     key: d.source,
     logoSource: d.source as MentionSource,
     logoUrl: sampleUrl[d.source],

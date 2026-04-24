@@ -19,7 +19,7 @@ const TOUCHES: Touch[] = [
   { when: "Day 112",     kind: "call",  title: "Lease signed",             detail: "Resident moved in. Referral card sent to the family that helped." },
 ];
 
-const ACCENT = "#2F6FE5";
+const ACCENT = "#2563EB";
 const INK = "#141413";
 const MUTED = "#87867f";
 const BORDER = "#f0eee6";
