@@ -1,6 +1,13 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaNeonHttp } from "@prisma/adapter-neon";
-import type { HTTPQueryOptions } from "@neondatabase/serverless";
+import { PrismaNeon } from "@prisma/adapter-neon";
+import { neonConfig } from "@neondatabase/serverless";
+import ws from "ws";
+
+// Node.js Vercel functions don't ship a WebSocket implementation — point
+// the Neon driver at the `ws` package we vendor so Pool connections work.
+if (typeof WebSocket === "undefined") {
+  neonConfig.webSocketConstructor = ws;
+}
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -11,11 +18,10 @@ function createPrismaClient() {
   if (!connectionString) {
     throw new Error("DATABASE_URL is not set");
   }
-  // HTTP adapter — more reliable than WebSocket in Node.js 18+ / Vercel serverless
-  const adapter = new PrismaNeonHttp(
-    connectionString,
-    {} as HTTPQueryOptions<boolean, boolean>
-  );
+  // WebSocket-based Pool adapter: supports transactions and upserts. The
+  // previous HTTP adapter silently broke every `$transaction` and `upsert`
+  // with "Transactions are not supported in HTTP mode".
+  const adapter = new PrismaNeon({ connectionString });
   return new PrismaClient({ adapter });
 }
 
