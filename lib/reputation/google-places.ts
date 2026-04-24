@@ -168,7 +168,16 @@ function toScannedMention(
 export async function searchGooglePlaces(
   property: PropertySeed,
   placeIdOverride?: string
-): Promise<ScanSourceResult & { resolvedPlaceId?: string | null }> {
+): Promise<
+  ScanSourceResult & {
+    resolvedPlaceId?: string | null;
+    // Aggregate values from place.rating / place.userRatingCount — the
+    // property's TOTAL Google rating and review count, not the 5 "most
+    // helpful" reviews we persist as individual mentions.
+    aggregateRating?: number | null;
+    aggregateCount?: number | null;
+  }
+> {
   const apiKey = process.env.GOOGLE_PLACES_API_KEY;
   if (!apiKey) {
     return {
@@ -201,24 +210,33 @@ export async function searchGooglePlaces(
     };
   }
 
-  // Cache by placeId. Orchestrator persists the normalized ScannedMention
-  // list rather than the raw Google response so the cache shape is stable
-  // even if the upstream response evolves.
+  // Cache by placeId. We cache the normalized ScannedMention list PLUS the
+  // aggregate rating fields so the KPI tile stays accurate even on a cache
+  // hit. Previous cache shape was `ScannedMention[]`; the new shape is
+  // `{ mentions, rating, count }`. The read path handles both for one
+  // rollout-friendly cycle.
+  type CacheShape = {
+    mentions: ScannedMention[];
+    rating: number | null;
+    count: number | null;
+  };
   const redis = getRedis();
-  const cacheKey = `reputation:google:${placeId}`;
+  const cacheKey = `reputation:google:${placeId}:v2`;
   if (redis) {
     try {
-      const cached = await redis.get<ScannedMention[]>(cacheKey);
-      if (cached && Array.isArray(cached)) {
+      const cached = await redis.get<CacheShape>(cacheKey);
+      if (cached && Array.isArray(cached.mentions)) {
         return {
           source: "google",
           ok: true,
-          found: cached.length,
-          mentions: cached.map((m) => ({
+          found: cached.mentions.length,
+          mentions: cached.mentions.map((m) => ({
             ...m,
             publishedAt: m.publishedAt ? new Date(m.publishedAt) : null,
           })),
           resolvedPlaceId: resolvedNow ? placeId : undefined,
+          aggregateRating: cached.rating,
+          aggregateCount: cached.count,
         };
       }
     } catch {
@@ -231,10 +249,19 @@ export async function searchGooglePlaces(
     const mentions = (place.reviews ?? []).map((r) =>
       toScannedMention(r, place.googleMapsUri, placeId as string)
     );
+    const aggregateRating =
+      typeof place.rating === "number" ? place.rating : null;
+    const aggregateCount =
+      typeof place.userRatingCount === "number" ? place.userRatingCount : null;
 
     if (redis) {
       try {
-        await redis.set(cacheKey, mentions, { ex: CACHE_TTL_SECONDS });
+        const payload: CacheShape = {
+          mentions,
+          rating: aggregateRating,
+          count: aggregateCount,
+        };
+        await redis.set(cacheKey, payload, { ex: CACHE_TTL_SECONDS });
       } catch {
         // Non-fatal.
       }
@@ -246,6 +273,8 @@ export async function searchGooglePlaces(
       found: mentions.length,
       mentions,
       resolvedPlaceId: resolvedNow ? placeId : undefined,
+      aggregateRating,
+      aggregateCount,
     };
   } catch (err) {
     return {

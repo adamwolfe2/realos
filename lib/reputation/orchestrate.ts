@@ -81,7 +81,7 @@ export async function* orchestrateScan(
   // the stream can emit source-by-source results.
   const sourcePromises: Record<
     SourceKey,
-    Promise<ScanSourceResult & { resolvedPlaceId?: string | null }>
+    Promise<ScanSourceResult & { resolvedPlaceId?: string | null; aggregateRating?: number | null; aggregateCount?: number | null }>
   > = {
     google: searchGooglePlaces(property),
     tavily: searchTavily(property),
@@ -89,17 +89,17 @@ export async function* orchestrateScan(
 
   // Track results so we can dedupe + analyze after all return.
   const sourceResults: Partial<
-    Record<SourceKey, ScanSourceResult & { resolvedPlaceId?: string | null }>
+    Record<SourceKey, ScanSourceResult & { resolvedPlaceId?: string | null; aggregateRating?: number | null; aggregateCount?: number | null }>
   > = {};
 
   // Convert the record into [key, promise] pairs and race them so we stream
   // results in fastest-first order.
   const pending = new Map<
     SourceKey,
-    Promise<ScanSourceResult & { resolvedPlaceId?: string | null }>
+    Promise<ScanSourceResult & { resolvedPlaceId?: string | null; aggregateRating?: number | null; aggregateCount?: number | null }>
   >(
     (Object.entries(sourcePromises) as Array<
-      [SourceKey, Promise<ScanSourceResult & { resolvedPlaceId?: string | null }>]
+      [SourceKey, Promise<ScanSourceResult & { resolvedPlaceId?: string | null; aggregateRating?: number | null; aggregateCount?: number | null }>]
     >).map(([k, p]) => [k, p])
   );
 
@@ -134,14 +134,29 @@ export async function* orchestrateScan(
     }
   }
 
-  // If Google resolved a new Place ID, persist it so future scans skip
-  // the text-search fallback.
+  // Persist Google meta onto the Property row: resolved Place ID (if we had
+  // to look it up), and the aggregate rating + review count. The aggregate
+  // drives the KPI tile — we want "4.0 ★ across 49 reviews", not the 5.0
+  // from averaging the 5 "most helpful" individual reviews.
   const resolvedPlaceId = sourceResults.google?.resolvedPlaceId;
+  const aggregateRating = sourceResults.google?.aggregateRating;
+  const aggregateCount = sourceResults.google?.aggregateCount;
+  const propertyUpdate: Prisma.PropertyUpdateInput = {};
   if (resolvedPlaceId && !property.googlePlaceId) {
+    propertyUpdate.googlePlaceId = resolvedPlaceId;
+  }
+  if (typeof aggregateRating === "number") {
+    propertyUpdate.googleAggRating = aggregateRating;
+    propertyUpdate.googleAggUpdatedAt = new Date();
+  }
+  if (typeof aggregateCount === "number") {
+    propertyUpdate.googleAggReviewCount = aggregateCount;
+  }
+  if (Object.keys(propertyUpdate).length > 0) {
     try {
       await prisma.property.update({
         where: { id: property.id },
-        data: { googlePlaceId: resolvedPlaceId },
+        data: propertyUpdate,
       });
     } catch {
       // Non-fatal.
@@ -433,7 +448,7 @@ type SourceSummary = {
 };
 
 function summarizeSource(
-  r: (ScanSourceResult & { resolvedPlaceId?: string | null }) | undefined
+  r: (ScanSourceResult & { resolvedPlaceId?: string | null; aggregateRating?: number | null; aggregateCount?: number | null }) | undefined
 ): SourceSummary {
   if (!r) return { ok: false, found: 0, error: "not run" };
   return {
@@ -445,7 +460,7 @@ function summarizeSource(
 
 function estimateCostCents(
   results: Partial<
-    Record<SourceKey, ScanSourceResult & { resolvedPlaceId?: string | null }>
+    Record<SourceKey, ScanSourceResult & { resolvedPlaceId?: string | null; aggregateRating?: number | null; aggregateCount?: number | null }>
   >
 ): number {
   let cents = 0;

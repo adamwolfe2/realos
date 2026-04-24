@@ -512,6 +512,14 @@ model Property {
   virtualTourUrl   String?
   googleReviewUrl  String? // Google Maps review link for this property
   googlePlaceId    String? // Google Places place_id, seeds the Reputation Scanner
+  // Google aggregate rating cached from Places API. place.rating is averaged
+  // across ALL reviews Google has (e.g. 4.0 across 49); place.userRatingCount
+  // is the total count. These numbers drive the Reputation KPI tile; the 5
+  // "most-helpful" individual reviews Places returns are persisted separately
+  // as PropertyMention rows for the feed.
+  googleAggRating      Float?
+  googleAggReviewCount Int?
+  googleAggUpdatedAt   DateTime?
   yelpBusinessId   String? // Yelp Fusion business id (alias or numeric id) for the Reputation Scanner
   redditSubreddits Json? // Array of subreddit names (without "r/") to prioritize during reputation scans
   amenities        Json? // Array of strings

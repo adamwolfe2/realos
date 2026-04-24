@@ -197,7 +197,7 @@ export async function loadReputationMetrics(
     flaggedCount,
     sentimentRows,
     sourceRows,
-    googleAgg,
+    googleMeta,
     negExcerpts,
     monthlyRaw,
     topicRows,
@@ -222,10 +222,16 @@ export async function loadReputationMetrics(
       where,
       _count: { _all: true },
     }),
-    prisma.propertyMention.aggregate({
-      where: { ...where, source: "GOOGLE_REVIEW" },
-      _avg: { rating: true },
-      _count: { _all: true },
+    // Read aggregate Google rating + review count from the Property row
+    // (cached there on each scan — these are place.rating / userRatingCount
+    // from the Places API, i.e. averages over ALL Google reviews, not just
+    // the 5 "most helpful" that we persist as individual mentions).
+    prisma.property.findUnique({
+      where: { id: propertyId },
+      select: {
+        googleAggRating: true,
+        googleAggReviewCount: true,
+      },
     }),
     prisma.propertyMention.findMany({
       where: { ...where, sentiment: "NEGATIVE" },
@@ -336,10 +342,11 @@ export async function loadReputationMetrics(
     negativePct,
     unreviewedCount,
     flaggedCount,
-    googleAvgRating: googleAgg._avg.rating
-      ? Math.round(googleAgg._avg.rating * 10) / 10
-      : null,
-    googleReviewCount: googleAgg._count._all,
+    googleAvgRating:
+      typeof googleMeta?.googleAggRating === "number"
+        ? Math.round(googleMeta.googleAggRating * 10) / 10
+        : null,
+    googleReviewCount: googleMeta?.googleAggReviewCount ?? 0,
     sourceBreakdown,
     sentimentBreakdown,
     topicBreakdown,
