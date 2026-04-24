@@ -5,7 +5,7 @@ import { MentionSource } from "@prisma/client";
 // ---------------------------------------------------------------------------
 // Tavily — our unified source for everything except native Google Reviews.
 //
-// PRINCIPLES (tuned against real Telegraph Commons scan results, 2026-04):
+// PRINCIPLES (tuned against real multi-tenant scan results):
 //   1. Target REVIEW-CAPABLE domains only. Listings (realtor, rent.com,
 //      trulia, zillow, apartmentguide base pages, rentcollegepads) get
 //      hard-excluded — they're property-owned or syndicated listings, not
@@ -18,9 +18,8 @@ import { MentionSource } from "@prisma/client";
 //   4. Post-filter by URL shape: paths like /listings/, /rentals/details/,
 //      /a/Property-Name-12345/, /search?, /biz/?find= are never reviews.
 //   5. Post-filter by KEYWORD match: the excerpt must contain the property
-//      name literally. Tavily's relevance ranking is too loose without
-//      this — we saw "2414 Telegraph" and "2850 Telegraph Ave" matches for
-//      a "Telegraph Commons" query.
+//      name literally. Tavily's relevance ranking is loose enough that
+//      near-miss street-address matches sneak in otherwise.
 // ---------------------------------------------------------------------------
 
 const TAVILY_ENDPOINT = "https://api.tavily.com/search";
@@ -326,11 +325,12 @@ export function deriveOwnedDomains(property: PropertySeed): string[] {
 }
 
 // Social-media paths under shared platforms that the property itself operates:
-// instagram.com/telegraphcommonsberkeley, facebook.com/telegraphcommons, etc.
+// e.g. instagram.com/{propertyslug}, facebook.com/{propertyslug}.
 export function deriveOwnedSocialPaths(property: PropertySeed): string[] {
   const slug = slugifyName(property.name);
   if (slug.length < 3) return [];
-  const variants = [slug, `${slug}berkeley`, `${slug}apartments`];
+  const cityToken = property.city ? slugifyName(property.city) : "";
+  const variants = [slug, cityToken ? `${slug}${cityToken}` : "", `${slug}apartments`].filter(Boolean);
   const paths: string[] = [];
   for (const host of [
     "instagram.com",
@@ -471,8 +471,9 @@ function mentionLooksLikeReview(
   const nameLower = propertyName.toLowerCase();
 
   // Must literally mention the property name — Tavily's relevance ranking
-  // sometimes surfaces adjacent-address matches ("2414 Telegraph", "near
-  // 2850 Telegraph Ave") that don't actually reference the target property.
+  // sometimes surfaces adjacent-address matches (neighboring street numbers,
+  // same-street different-buildings) that don't actually reference the
+  // target property.
   if (!textLower.includes(nameLower)) return false;
 
   // Reddit, Yelp, ApartmentRatings, BBB, Niche, CollegeConfidential, Quora

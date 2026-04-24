@@ -79,8 +79,8 @@ export const SETUP_STEPS: SetupStepDefinition[] = [
     icon: "Database",
     title: "Connect AppFolio",
     description:
-      "See every lead, tour, and signed lease in real time, attributed by source.",
-    estimateMinutes: 10,
+      "See every lead, tour, and signed lease in real time. If you're on Core, pick Public Listings mode — just your subdomain, no API keys. Plus/Max plans can connect the full Reports API.",
+    estimateMinutes: 5,
     actionHref: "/portal/settings/integrations",
     actionLabel: "Connect AppFolio",
     isComplete: (ctx) => ctx.appfolio?.lastSyncAt != null,

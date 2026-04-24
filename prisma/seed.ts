@@ -58,9 +58,14 @@ async function main() {
     },
   });
 
-  // 3. Telegraph Commons, first CLIENT tenant.
+  // 3. Example CLIENT tenant for local development. Not for production.
+  const demoSlug = process.env.DEMO_TENANT_SLUG ?? "demo-residences";
+  const demoName = process.env.DEMO_TENANT_NAME ?? "Demo Residences";
+  const demoPropertyName =
+    process.env.DEMO_PROPERTY_NAME ?? "Demo Residences Main";
+
   const tc = await prisma.organization.upsert({
-    where: { slug: "telegraph-commons" },
+    where: { slug: demoSlug },
     update: {
       orgType: OrgType.CLIENT,
       propertyType: PropertyType.RESIDENTIAL,
@@ -69,16 +74,16 @@ async function main() {
       subscriptionTier: SubscriptionTier.SCALE,
     },
     create: {
-      name: "SG Real Estate",
-      shortName: "SG",
-      slug: "telegraph-commons",
+      name: demoName,
+      shortName: demoName.split(" ")[0] ?? "Demo",
+      slug: demoSlug,
       orgType: OrgType.CLIENT,
       propertyType: PropertyType.RESIDENTIAL,
       residentialSubtype: ResidentialSubtype.STUDENT_HOUSING,
       status: TenantStatus.BUILD_IN_PROGRESS,
-      primaryContactName: "Jessica Vernaglia",
-      primaryContactEmail: "jessica@sgrealestateco.com",
-      primaryContactPhone: "510-692-4200",
+      primaryContactName: "Demo Contact",
+      primaryContactEmail: "demo@example.com",
+      primaryContactPhone: "555-0100",
       primaryContactRole: "VP of Operations",
       subscriptionTier: SubscriptionTier.SCALE,
       moduleWebsite: true,
@@ -93,33 +98,33 @@ async function main() {
   });
 
   await prisma.property.upsert({
-    where: { orgId_slug: { orgId: tc.id, slug: "telegraph-commons" } },
+    where: { orgId_slug: { orgId: tc.id, slug: demoSlug } },
     update: {
       backendPlatform: BackendPlatform.APPFOLIO,
-      backendPropertyGroup: "Telegraph Commons",
+      backendPropertyGroup: demoPropertyName,
     },
     create: {
       orgId: tc.id,
-      name: "Telegraph Commons",
-      slug: "telegraph-commons",
+      name: demoPropertyName,
+      slug: demoSlug,
       propertyType: PropertyType.RESIDENTIAL,
       residentialSubtype: ResidentialSubtype.STUDENT_HOUSING,
-      addressLine1: "2490 Channing Way",
-      city: "Berkeley",
+      addressLine1: "100 Main Street",
+      city: "Anytown",
       state: "CA",
-      postalCode: "94704",
-      latitude: 37.8678,
-      longitude: -122.2585,
+      postalCode: "00000",
+      latitude: 37.7749,
+      longitude: -122.4194,
       backendPlatform: BackendPlatform.APPFOLIO,
-      backendPropertyGroup: "Telegraph Commons",
+      backendPropertyGroup: demoPropertyName,
       totalUnits: 100,
       description:
-        "Private dorm-style student housing two blocks from UC Berkeley, all-inclusive with furnished rooms, study lounges, Berkeley shuttle access.",
+        "Private dorm-style student housing, all-inclusive with furnished rooms, study lounges, shuttle access.",
     },
   });
 
   console.log(
-    `\nSeeded:\n  - Agency org (${agency.slug})\n  - Adam as AGENCY_OWNER\n  - Telegraph Commons CLIENT tenant + property\n`
+    `\nSeeded:\n  - Agency org (${agency.slug})\n  - Agency owner\n  - ${demoName} CLIENT tenant + property\n`
   );
 }
 

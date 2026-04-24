@@ -11,9 +11,9 @@ export type ChatbotTenant = Organization & {
 };
 
 // ---------------------------------------------------------------------------
-// System prompt builder. Forked pattern from telegraph-commons: short,
-// specific, first-person. We compose it from TenantSiteConfig + live
-// Listing rows so the chatbot answers pricing questions accurately.
+// System prompt builder. Short, specific, first-person. We compose the prompt
+// from TenantSiteConfig + live Listing rows so the chatbot answers pricing
+// and availability questions accurately.
 // DECISION: never fabricate facts. If we don't have pricing or availability
 // for a given unit, the prompt instructs the bot to say so and surface the
 // configured contact channels.

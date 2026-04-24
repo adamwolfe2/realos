@@ -10,19 +10,19 @@ const BORDER = "#f0eee6";
 const PARCHMENT = "#faf9f5";
 
 const ANSWER =
-  "Telegraph Commons is a private student-housing property at 2490 Channing Way, a three-minute walk from UC Berkeley's Sproul Plaza. Units are fully furnished with Google Wifi, fiber ethernet, and daily janitorial service included. Walk Score 99.";
+  "A private student-housing property two blocks from the main campus quad. Fully furnished units with wifi, fiber ethernet, and daily housekeeping included. Walk Score 99.";
 
 const CITATIONS = [
-  { rank: 1, domain: "telegraphcommons.com", page: "/amenities",    chosen: true  },
-  { rank: 2, domain: "telegraphcommons.com", page: "/location",     chosen: true  },
-  { rank: 3, domain: "reddit.com",           page: "/r/berkeley",    chosen: false },
-  { rank: 4, domain: "berkeley.edu",         page: "/housing",       chosen: false },
+  { rank: 1, domain: "property-site.com",   page: "/amenities",    chosen: true  },
+  { rank: 2, domain: "property-site.com",   page: "/location",     chosen: true  },
+  { rank: 3, domain: "reddit.com",          page: "/r/campus",      chosen: false },
+  { rank: 4, domain: "university.edu",      page: "/housing",       chosen: false },
 ];
 
 const QUERIES = [
-  "best student housing near uc berkeley",
-  "off campus housing uc berkeley with wifi included",
-  "furnished apartments walking distance to sproul plaza",
+  "best student housing near campus",
+  "off-campus apartments with wifi included",
+  "furnished student apartments walking distance to campus",
 ];
 
 export function SeoAnswer() {
@@ -317,21 +317,20 @@ export function SeoAnswer() {
 }
 
 function renderAnswerWithHighlights(text: string) {
-  const brand = "Telegraph Commons";
+  // Highlight the key positioning phrase so readers' eyes find it fast.
+  const phrases = ["student-housing property", "Walk Score 99"];
+  const pattern = new RegExp(`(${phrases.map((p) => escapeRegExp(p)).join("|")})`, "g");
   const parts: React.ReactNode[] = [];
-  let cursor = 0;
-  let i = 0;
-  while (cursor < text.length) {
-    const next = text.indexOf(brand, cursor);
-    if (next === -1) {
-      parts.push(<span key={i++}>{text.slice(cursor)}</span>);
-      break;
+  let lastIndex = 0;
+  let key = 0;
+  for (const match of text.matchAll(pattern)) {
+    const idx = match.index ?? 0;
+    if (idx > lastIndex) {
+      parts.push(<span key={key++}>{text.slice(lastIndex, idx)}</span>);
     }
-    if (next > cursor) parts.push(<span key={i++}>{text.slice(cursor, next)}</span>);
-    const end = Math.min(next + brand.length, text.length);
     parts.push(
       <mark
-        key={i++}
+        key={key++}
         style={{
           backgroundColor: "rgba(47,111,229,0.16)",
           color: ACCENT,
@@ -340,12 +339,19 @@ function renderAnswerWithHighlights(text: string) {
           fontWeight: 600,
         }}
       >
-        {text.slice(next, end)}
+        {match[0]}
       </mark>,
     );
-    cursor = end;
+    lastIndex = idx + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(<span key={key++}>{text.slice(lastIndex)}</span>);
   }
   return parts;
+}
+
+function escapeRegExp(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 function wait(ms: number) {

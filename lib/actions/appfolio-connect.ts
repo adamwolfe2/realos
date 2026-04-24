@@ -56,7 +56,7 @@ const connectSchema = z.discriminatedUnion("authMode", [
       .transform(normalizeSubdomain)
       .refine((v) => subdomainRegex.test(v), {
         message:
-          "Subdomain must look like 'sgrealestate' (no dots, no https://).",
+          "Subdomain must be the slug before .appfolio.com — letters, numbers, and hyphens only.",
       }),
     addressFilter: z.string().trim().max(500).optional(),
   }),
@@ -70,7 +70,7 @@ const connectSchema = z.discriminatedUnion("authMode", [
       .transform(normalizeSubdomain)
       .refine((v) => subdomainRegex.test(v), {
         message:
-          "Subdomain must look like 'sgrealestate' (no dots, no https://).",
+          "Subdomain must be the slug before .appfolio.com — letters, numbers, and hyphens only.",
       }),
     clientId: z.string().trim().min(4, "Client ID is required").max(500),
     clientSecret: z.string().trim().min(4, "Client secret is required").max(500),

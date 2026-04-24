@@ -143,13 +143,13 @@ export function ReportEditorControls({
 
       <label className="flex flex-col gap-1.5">
         <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-          Personal note from Adam
+          Personal note
         </span>
         <textarea
           value={notes}
           onChange={(e) => setNotes(e.target.value)}
           rows={5}
-          placeholder="Hey Norman. Solid week. Organic traffic is up because the Parents FAQ page started ranking. I'd recommend doubling down on long-tail queries around campus neighborhoods next."
+          placeholder="A quick context-setting note from you — what's working, what to double down on next, anything the client should know before skimming the numbers."
           className="rounded-md border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           maxLength={2000}
         />

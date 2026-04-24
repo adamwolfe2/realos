@@ -11,9 +11,9 @@ const LOOKBACK_HOURS = 2;
  *
  * Fires when an identified visitor (has an email) has shown high-intent
  * behavior in the last 2 hours but hasn't yet become a lead: long session,
- * multiple page views, viewing floor plans or the apply page. This is the
- * kind of signal Norman's team has never had — "someone is about to convert,
- * reach out now."
+ * multiple page views, viewing floor plans or the apply page. The kind of
+ * "someone is about to convert, reach out now" signal leasing teams almost
+ * never have.
  */
 export const hotVisitorDetector: Detector = {
   name: "hot-visitor",

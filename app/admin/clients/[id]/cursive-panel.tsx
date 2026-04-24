@@ -124,7 +124,7 @@ export function CursivePanel({
           hint="Hostname the pixel script lives on. Used as a referrer hint."
           value={domain}
           onChange={setDomain}
-          placeholder="telegraphcommons.com"
+          placeholder="example.com"
         />
         <Field
           label="First-party public site key"

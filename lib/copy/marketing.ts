@@ -117,7 +117,7 @@ export const MARKETING = {
       body:
         "A resident-facing site on the client's own domain, live listings synced hourly, AI chatbot grounded in property facts, visitor identification firing, leads flowing into the operator portal. Click through both surfaces exactly as a prospective resident or a portfolio operator would.",
       siteLabel: "The resident-facing site",
-      siteHref: "https://www.telegraphcommons.com",
+      siteHref: "/demo",
       siteCaption:
         "A production student-housing deployment rendered on the client's domain, under fourteen days from intake.",
       portalLabel: "The operator portal",

@@ -69,8 +69,8 @@ function getHost(url: string): string {
 }
 
 // Show the host + a shortened path so the operator can see WHERE the mention
-// lives at a glance (e.g. "reddit.com/r/berkeley/telegraph_commons") without
-// visiting it. Truncated to 70 chars to stay in one line on mobile.
+// lives at a glance (e.g. "reddit.com/r/city/thread_title") without visiting
+// it. Truncated to 70 chars to stay in one line on mobile.
 function shortUrl(url: string): string {
   try {
     const u = new URL(url);

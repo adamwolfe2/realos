@@ -74,11 +74,11 @@ export default function SEOAEOFeaturePage() {
 
 function CitedByAI() {
   const engines: Array<{ name: string; mark: ReactNode; line: string }> = [
-    { name: "ChatGPT",     mark: <ChatGPTMark size={22} />,     line: "\"Telegraph Commons. 3-minute walk to UC Berkeley, fully furnished, wifi included.\"" },
-    { name: "Perplexity",  mark: <PerplexityMark size={22} />,  line: "\"Telegraph Commons is the top-rated student housing on Channing Way.\"" },
-    { name: "Claude",      mark: <ClaudeMark size={22} />,      line: "\"For UC Berkeley students, Telegraph Commons offers furnished rooms with all utilities included.\"" },
-    { name: "Gemini",      mark: <GeminiMark size={22} />,      line: "\"Telegraph Commons. A highly-rated option near Sproul Plaza.\"" },
-    { name: "Google",      mark: <GoogleMark size={22} />,      line: "\"Best student housing near UC Berkeley\". Ranked #1 for the query." },
+    { name: "ChatGPT",     mark: <ChatGPTMark size={22} />,     line: "\"A flagship student-housing property. Steps from campus, fully furnished, wifi included.\"" },
+    { name: "Perplexity",  mark: <PerplexityMark size={22} />,  line: "\"The top-rated option for students searching in this neighborhood.\"" },
+    { name: "Claude",      mark: <ClaudeMark size={22} />,      line: "\"For students near campus, this property offers furnished rooms with utilities included.\"" },
+    { name: "Gemini",      mark: <GeminiMark size={22} />,      line: "\"A highly-rated student-housing option close to the main campus quad.\"" },
+    { name: "Google",      mark: <GoogleMark size={22} />,      line: "\"Best student housing near campus.\" Ranked #1 for the query." },
   ];
   return (
     <div
@@ -176,11 +176,11 @@ function CitedByAI() {
 
 function AuditGrid() {
   const queries = [
-    { q: "best student housing near uc berkeley",        chatgpt: "cited", perplexity: "cited",  google: "#2"  },
-    { q: "furnished apartments near sproul plaza",       chatgpt: "cited", perplexity: "cited",  google: "#1"  },
-    { q: "affordable off-campus housing cal",            chatgpt: "cited", perplexity: "—",      google: "#4"  },
+    { q: "best student housing near campus",             chatgpt: "cited", perplexity: "cited",  google: "#2"  },
+    { q: "furnished apartments near main quad",          chatgpt: "cited", perplexity: "cited",  google: "#1"  },
+    { q: "affordable off-campus housing",                chatgpt: "cited", perplexity: "—",      google: "#4"  },
     { q: "student dorms with wifi included",             chatgpt: "cited", perplexity: "cited",  google: "#3"  },
-    { q: "telegraph avenue student housing",             chatgpt: "cited", perplexity: "cited",  google: "#1"  },
+    { q: "downtown student apartments",                  chatgpt: "cited", perplexity: "cited",  google: "#1"  },
   ];
   return (
     <div
@@ -293,10 +293,10 @@ function AuditBadge({ value }: { value: string }) {
 
 function RankProgress() {
   const items = [
-    { keyword: "student housing near uc berkeley", before: 18, after: 2  },
-    { keyword: "furnished apartments near sproul", before: 11, after: 1  },
-    { keyword: "off-campus housing cal",           before: 22, after: 4  },
-    { keyword: "telegraph avenue apartments",      before: 8,  after: 1  },
+    { keyword: "student housing near campus",      before: 18, after: 2  },
+    { keyword: "furnished apartments near quad",   before: 11, after: 1  },
+    { keyword: "off-campus housing",               before: 22, after: 4  },
+    { keyword: "downtown student apartments",      before: 8,  after: 1  },
   ];
   return (
     <div

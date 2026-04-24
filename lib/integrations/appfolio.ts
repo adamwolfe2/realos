@@ -16,9 +16,9 @@ import {
 // AppFolio integration.
 //
 // Two modes:
-//   1. EMBED_SCRAPE (ported from github.com/adamwolfe2/telegraph-commons),
-//      works today against https://{subdomain}.appfolio.com/listings for any
-//      tenant, even without the Plus plan. Parses cheerio-loaded HTML.
+//   1. EMBED_SCRAPE — works today against
+//      https://{subdomain}.appfolio.com/listings for any tenant, even without
+//      a Plus plan. Parses cheerio-loaded HTML.
 //   2. REST — AppFolio Plus/Max exposes a REST API at
 //      https://{subdomain}.appfolio.com/api/v1/reports/{report_name}.json
 //      that returns paginated JSON. Authenticated with HTTP Basic using the
@@ -50,7 +50,7 @@ export type NormalizedListing = {
 };
 
 // ---------------------------------------------------------------------------
-// Mode 1, EMBED_SCRAPE, ported from telegraph-commons/src/lib/appfolio.ts
+// Mode 1, EMBED_SCRAPE — HTML parse of the public listings page.
 // ---------------------------------------------------------------------------
 
 function parseRent(input: string): number | null {
@@ -894,10 +894,11 @@ export async function syncListingsForOrg(
 
     for (const rl of remoteListings) {
       const fallbackProperty = properties[0];
-      // TODO(Sprint 06): richer property matching once AppFolio payload
-      // exposes property_group reliably in embed-scrape mode. For now we
-      // assume everything from the scrape lives under the first property,
-      // which matches Telegraph Commons' reality (single building).
+      // TODO: richer property matching once AppFolio payload exposes
+      // property_group reliably in embed-scrape mode. For now we assume
+      // everything from the scrape lives under the first property — correct
+      // for single-building tenants; multi-building tenants fall back to
+      // REST mode.
       const property = fallbackProperty;
       if (!property) {
         skipped++;

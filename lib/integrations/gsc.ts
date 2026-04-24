@@ -17,8 +17,8 @@ type JWT = InstanceType<typeof google.auth.JWT>;
 // GSC site (Search Console → Settings → Users and permissions → Add user).
 //
 // Property identifier accepted formats:
-//   - "https://www.telegraphcommons.com/"  (URL-prefix property)
-//   - "sc-domain:telegraphcommons.com"     (domain property)
+//   - "https://www.example.com/"  (URL-prefix property)
+//   - "sc-domain:example.com"     (domain property)
 //
 // We pull two views:
 //   1. By date — totals per day → SeoSnapshot

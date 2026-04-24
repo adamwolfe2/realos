@@ -10,7 +10,7 @@ import { sendReportEmail } from "@/lib/email/send-report";
 // Runs on the 1st of each month at 08:00 UTC (see vercel.json). For every
 // active client with a primaryContactEmail, generates a monthly snapshot
 // and sends it directly — no draft stage, no operator review required.
-// This is the "AM never has to log in" flow Norman asked for.
+// This is the "AM never has to log in" flow — monthly auto-emailed report.
 //
 // Idempotency: skips orgs that already have a monthly ClientReport for
 // the current calendar month's period window.

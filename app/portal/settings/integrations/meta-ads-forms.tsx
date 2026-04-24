@@ -19,36 +19,66 @@ export function ConnectMetaAdsForm() {
 
   return (
     <form action={formAction} className="space-y-4">
-      <p className="text-xs text-muted-foreground rounded-md border border-border bg-muted/30 p-3 leading-relaxed">
-        Generate a System User access token in Business Manager, then paste it
-        here with your ad account ID. Tokens issued as &quot;never expire&quot;
-        keep working until you revoke them.
-      </p>
+      <div className="rounded-md border border-border bg-muted/30 p-4 space-y-2">
+        <p className="text-xs font-medium text-foreground">
+          Step 1 — Generate a System User access token in Business Manager
+        </p>
+        <ol className="text-[11px] text-muted-foreground space-y-1 list-decimal list-inside leading-relaxed">
+          <li>
+            Open{" "}
+            <code className="font-mono text-foreground">
+              business.facebook.com
+            </code>{" "}
+            and select the Business Manager that owns the ad account.
+          </li>
+          <li>
+            Business Settings → Users → System Users → Add → give it Admin
+            access.
+          </li>
+          <li>
+            Click Generate New Token → select the app → scopes:{" "}
+            <code className="font-mono text-foreground">ads_read</code> and{" "}
+            <code className="font-mono text-foreground">ads_management</code>{" "}
+            → set Token Expiration to Never. Copy the token now (only shown
+            once).
+          </li>
+          <li>
+            Still in Business Settings → Accounts → Ad Accounts → assign the
+            ad account to the System User with at least Analyst access.
+          </li>
+        </ol>
+      </div>
 
-      <Field
-        label="Account label"
-        name="displayName"
-        placeholder="e.g. Telegraph Commons - Meta"
-      />
+      <div className="rounded-md border border-border bg-muted/30 p-4 space-y-4">
+        <p className="text-xs font-medium text-foreground">
+          Step 2 — Paste your credentials
+        </p>
 
-      <Field
-        label="System User access token"
-        name="systemUserAccessToken"
-        required
-        type="password"
-        autoComplete="off"
-        mono
-        hint="From Business Manager → Settings → Users → System Users → Generate new token. Scope: ads_read."
-      />
+        <Field
+          label="Account label (shown in your dashboard)"
+          name="displayName"
+          placeholder="e.g. Prospecting · Instagram"
+        />
 
-      <Field
-        label="Ad account ID"
-        name="adAccountId"
-        required
-        placeholder="1234567890 or act_1234567890"
-        mono
-        hint="The numeric ID at the top of your Meta Ads Manager URL. We accept either form."
-      />
+        <Field
+          label="System User access token"
+          name="systemUserAccessToken"
+          required
+          type="password"
+          autoComplete="off"
+          mono
+          hint="The never-expiring token from Step 1. Stored encrypted at rest."
+        />
+
+        <Field
+          label="Ad account ID"
+          name="adAccountId"
+          required
+          placeholder="1234567890 or act_1234567890"
+          mono
+          hint="The numeric ID at the top of your Meta Ads Manager URL. Either form works — we'll normalize it."
+        />
+      </div>
 
       <div className="flex items-center gap-3 pt-1">
         <button

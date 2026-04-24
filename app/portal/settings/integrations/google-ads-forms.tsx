@@ -19,56 +19,84 @@ export function ConnectGoogleAdsForm() {
 
   return (
     <form action={formAction} className="space-y-4">
-      <p className="text-xs text-muted-foreground rounded-md border border-border bg-muted/30 p-3 leading-relaxed">
-        Google Ads still requires an OAuth refresh token even when you have a
-        developer token. Generate one once via the OAuth Playground using the
-        Google Ads API scope <code>https://www.googleapis.com/auth/adwords</code>,
-        then paste it below. We&apos;ll exchange it for short-lived access
-        tokens at sync time.
-      </p>
+      <div className="rounded-md border border-border bg-muted/30 p-4 space-y-2">
+        <p className="text-xs font-medium text-foreground">
+          Step 1 — Generate an OAuth refresh token
+        </p>
+        <ol className="text-[11px] text-muted-foreground space-y-1 list-decimal list-inside leading-relaxed">
+          <li>
+            Open Google Cloud Console → APIs &amp; Services → Credentials →
+            Create OAuth client ID (Web application). Note the Client ID and
+            Client Secret.
+          </li>
+          <li>
+            Visit{" "}
+            <code className="font-mono text-foreground">
+              developers.google.com/oauthplayground
+            </code>{" "}
+            → gear icon → check &quot;Use your own OAuth credentials&quot; →
+            paste the Client ID and Secret.
+          </li>
+          <li>
+            Under APIs, scroll to Google Ads API → select scope{" "}
+            <code className="font-mono text-foreground">
+              https://www.googleapis.com/auth/adwords
+            </code>{" "}
+            → Authorize → Exchange authorization code for tokens. Copy the
+            refresh token.
+          </li>
+        </ol>
+      </div>
 
-      <Field
-        label="Account label"
-        name="displayName"
-        placeholder="e.g. Telegraph Commons - Search"
-      />
+      <div className="rounded-md border border-border bg-muted/30 p-4 space-y-4">
+        <p className="text-xs font-medium text-foreground">
+          Step 2 — Paste your credentials
+        </p>
 
-      <Field
-        label="Client customer ID"
-        name="clientCustomerId"
-        required
-        placeholder="123-456-7890"
-        mono
-        hint="The Google Ads account whose metrics you want. 10 digits, dashes optional."
-      />
+        <Field
+          label="Account label (shown in your dashboard)"
+          name="displayName"
+          placeholder="e.g. Brand Search · Primary"
+        />
 
-      <Field
-        label="OAuth client ID"
-        name="oauthClientId"
-        required
-        autoComplete="off"
-        mono
-        hint="From Google Cloud Console → APIs & Services → Credentials."
-      />
+        <Field
+          label="Client customer ID"
+          name="clientCustomerId"
+          required
+          placeholder="123-456-7890"
+          mono
+          hint="The Google Ads account whose metrics you want. 10 digits, dashes optional. Found in Google Ads → top-right of any page."
+        />
 
-      <Field
-        label="OAuth client secret"
-        name="oauthClientSecret"
-        required
-        type="password"
-        autoComplete="off"
-        mono
-      />
+        <Field
+          label="OAuth client ID"
+          name="oauthClientId"
+          required
+          autoComplete="off"
+          mono
+          hint="The Client ID from Step 1."
+        />
 
-      <Field
-        label="Refresh token"
-        name="refreshToken"
-        required
-        type="password"
-        autoComplete="off"
-        mono
-        hint="One-time generation: visit https://developers.google.com/oauthplayground, scope adwords."
-      />
+        <Field
+          label="OAuth client secret"
+          name="oauthClientSecret"
+          required
+          type="password"
+          autoComplete="off"
+          mono
+          hint="The Client Secret from Step 1. Stored encrypted at rest."
+        />
+
+        <Field
+          label="Refresh token"
+          name="refreshToken"
+          required
+          type="password"
+          autoComplete="off"
+          mono
+          hint="The refresh token from the OAuth Playground in Step 1. We exchange it for short-lived access tokens at sync time."
+        />
+      </div>
 
       <div className="flex items-center gap-3 pt-1">
         <button

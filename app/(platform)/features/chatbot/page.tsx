@@ -74,7 +74,7 @@ export default function ChatbotFeaturePage() {
 
 function ChatConfig() {
   const rows: Array<{ k: string; v: string; logos?: ReactNode[] }> = [
-    { k: "How it greets",       v: "\"Hey! Ask me anything about Telegraph Commons.\"" },
+    { k: "How it greets",       v: "\"Hi — ask me anything about the property.\"" },
     { k: "When it opens",        v: "After 5 seconds, or when they scroll down" },
     { k: "What it knows",       v: "Your live unit list, amenities, and pricing rules" },
     { k: "When pricing is asked", v: "Quotes what you've approved. Never guesses" },

@@ -30,7 +30,7 @@ export type CallPriorityLead = {
 };
 
 /**
- * Rank leads by "who should Norman call first". Composition:
+ * Rank leads by "who should the leasing team call first". Composition:
  *   - hot: high score, recent activity (<24h), not yet toured
  *   - stalled: NEW/CONTACTED, no activity 5+ days
  *   - new-high-score: created <48h, score >= 60, not yet called

@@ -10,10 +10,10 @@ type Event = {
 
 const EVENTS: Event[] = [
   { kind: "lease",    text: "Priya V. signed a lease",              where: "Oak Grove · 2BR" },
-  { kind: "tour",     text: "Maya R. booked a tour",                where: "Telegraph Commons · Sat 10:30" },
+  { kind: "tour",     text: "Maya R. booked a tour",                where: "Westbrook Heights · Sat 10:30" },
   { kind: "lead",     text: "Daniel L. came from a Meta ad",        where: "intent score 88" },
   { kind: "identify", text: "12 new identified visitors",           where: "last hour" },
-  { kind: "ai",       text: "ChatGPT cited your Berkeley page",     where: "student housing query" },
+  { kind: "ai",       text: "ChatGPT cited your amenities page",    where: "student housing query" },
   { kind: "ad",       text: "New Meta creative 'Fall Move-in' shipped", where: "48h turnaround" },
   { kind: "lease",    text: "Alejandra S. signed a lease",          where: "Park & Pearl · 1BR" },
   { kind: "tour",     text: "Jordan K. booked a virtual tour",      where: "Sage at Greenpoint" },

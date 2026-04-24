@@ -90,72 +90,90 @@ export function ConnectAppfolioForm() {
 
       <div className="space-y-2">
         <span className="text-xs font-medium text-foreground">
-          Connection type
+          Step 1 — Choose your connection type
         </span>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <ModeCard
-            active={mode === "rest"}
-            onClick={() => { setMode("rest"); resetTest(); }}
-            title="Developer Portal API"
-            body="Plus/Max plans. Reports API Client ID + Client Secret. Full lead + unit sync."
-          />
-          <ModeCard
             active={mode === "embed"}
             onClick={() => { setMode("embed"); resetTest(); }}
-            title="Public listings (Core)"
-            body="No credentials required. We scrape the public listings page for available units."
+            title="Public listings (any plan)"
+            body="No credentials required. We scrape the public listings page for available units. Works for every AppFolio plan."
+          />
+          <ModeCard
+            active={mode === "rest"}
+            onClick={() => { setMode("rest"); resetTest(); }}
+            title="Developer Portal API (Plus/Max)"
+            body="Full lead and unit sync via the Reports API. Requires a Client ID and Client Secret from AppFolio Developer Portal."
           />
         </div>
       </div>
 
-      <Field
-        label="Subdomain"
-        name="subdomain"
-        placeholder="sgrealestate"
-        required
-        value={subdomain}
-        onChange={(v) => { setSubdomain(v); resetTest(); }}
-        hint={
-          <>
-            The part before <code>.appfolio.com</code> in your portal URL.
-          </>
-        }
-      />
-
-      {mode === "rest" ? (
-        <>
-          <Field
-            label="Client ID"
-            name="clientId"
-            required
-            autoComplete="off"
-            mono
-            value={clientId}
-            onChange={(v) => { setClientId(v); resetTest(); }}
-            hint="From AppFolio → Settings → API Settings → Reports API."
-          />
-          <Field
-            label="Client secret"
-            name="clientSecret"
-            type="password"
-            required
-            autoComplete="off"
-            mono
-            value={clientSecret}
-            onChange={(v) => { setClientSecret(v); resetTest(); }}
-            hint="Stored encrypted at rest. You can rotate it at any time."
-          />
-        </>
-      ) : (
+      <div className="space-y-4 rounded-md border border-border bg-muted/30 p-4">
+        <p className="text-xs font-medium text-foreground">
+          Step 2 — Enter your AppFolio details
+        </p>
         <Field
-          label="Address filter (optional)"
-          name="addressFilter"
-          placeholder="e.g. 2490 Channing"
-          value={addressFilter}
-          onChange={(v) => { setAddressFilter(v); resetTest(); }}
-          hint="If your AppFolio account manages multiple properties, paste a snippet of the address to filter to just this property's units."
+          label="AppFolio subdomain"
+          name="subdomain"
+          placeholder="your-company"
+          required
+          value={subdomain}
+          onChange={(v) => { setSubdomain(v); resetTest(); }}
+          hint={
+            <>
+              The part before <code className="font-mono">.appfolio.com</code>{" "}
+              in your portal URL. If you log in at{" "}
+              <code className="font-mono">acme.appfolio.com</code>, enter{" "}
+              <code className="font-mono">acme</code>.
+            </>
+          }
         />
-      )}
+
+        {mode === "rest" ? (
+          <>
+            <Field
+              label="Reports API Client ID"
+              name="clientId"
+              required
+              autoComplete="off"
+              mono
+              value={clientId}
+              onChange={(v) => { setClientId(v); resetTest(); }}
+              hint="Found in AppFolio under Settings → API Settings → Reports API. Click Generate API Key if you don't have one yet."
+            />
+            <Field
+              label="Reports API Client Secret"
+              name="clientSecret"
+              type="password"
+              required
+              autoComplete="off"
+              mono
+              value={clientSecret}
+              onChange={(v) => { setClientSecret(v); resetTest(); }}
+              hint="Shown once at generation. Stored encrypted at rest. You can rotate it anytime."
+            />
+          </>
+        ) : (
+          <Field
+            label="Property filter (optional)"
+            name="addressFilter"
+            placeholder="e.g. 100 Main Street"
+            value={addressFilter}
+            onChange={(v) => { setAddressFilter(v); resetTest(); }}
+            hint="If your AppFolio account manages multiple properties, paste a snippet of the address to filter to just this property's units. Leave blank to sync all."
+          />
+        )}
+      </div>
+
+      <div className="space-y-2 rounded-md border border-border bg-muted/30 p-4">
+        <p className="text-xs font-medium text-foreground">
+          Step 3 — Test and save
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          We check your credentials against AppFolio before storing anything.
+          Test has to pass before Save activates.
+        </p>
+      </div>
 
       {/* Test connection row */}
       <div className="flex items-center gap-3 flex-wrap pt-1">

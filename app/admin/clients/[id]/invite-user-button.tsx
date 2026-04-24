@@ -100,7 +100,7 @@ export function InviteUserButton({
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="norman@sgrealestateco.com"
+              placeholder="name@company.com"
               className="w-full rounded border border-border bg-background px-2.5 py-1.5 text-sm text-foreground"
             />
           </label>
@@ -112,7 +112,7 @@ export function InviteUserButton({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Norman Gensinger"
+              placeholder="Full name"
               className="w-full rounded border border-border bg-background px-2.5 py-1.5 text-sm text-foreground"
             />
           </label>

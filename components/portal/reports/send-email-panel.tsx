@@ -98,7 +98,7 @@ export function SendEmailPanel({
             type="text"
             value={recipients}
             onChange={(e) => setRecipients(e.target.value)}
-            placeholder="norman@spectrumpartners.com, leasing@..."
+            placeholder="name@company.com, leasing@..."
             className="rounded-md border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
           <span className="text-[10px] text-muted-foreground">
@@ -113,7 +113,7 @@ export function SendEmailPanel({
             type="text"
             value={recipientName}
             onChange={(e) => setRecipientName(e.target.value)}
-            placeholder="Norman"
+            placeholder="First name"
             className="rounded-md border border-border bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
           />
         </label>

@@ -16,8 +16,8 @@ type ChatbotMessage = {
  *
  * Scans recent chatbot conversations for repeated user questions that the bot
  * answered with generic "contact the leasing office" or "I don't know"
- * responses. These are prompt-tuning opportunities Norman would never see
- * without reading every transcript. Fires one insight per pattern per week.
+ * responses. These are prompt-tuning opportunities the operator would never
+ * see without reading every transcript. Fires one insight per pattern per week.
  *
  * Patterns detected:
  *   1. Multiple pricing questions → suggest adding current pricing to prompt

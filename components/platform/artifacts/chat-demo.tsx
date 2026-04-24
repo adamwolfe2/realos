@@ -8,14 +8,14 @@ type Turn =
   | { role: "event"; text: string };
 
 const SCRIPT: Turn[] = [
-  { role: "bot",   text: "Hey! Looking for student housing near UC Berkeley? I know Telegraph Commons inside and out. Ask me anything." },
+  { role: "bot",   text: "Hi — looking for student housing near campus? Ask me anything about the property." },
   { role: "user",  text: "what's the walk to campus?" },
-  { role: "bot",   text: "Three-minute walk. 2 blocks from Sproul Plaza. Walk Score 99. Most residents roll out of bed and are in lecture before their coffee is cold." },
+  { role: "bot",   text: "Three-minute walk, two blocks from the main quad. Walk Score 99. Most residents roll out of bed and are in lecture before their coffee is cold." },
   { role: "user",  text: "is wifi included?" },
-  { role: "bot",   text: "Yep. Google Wifi in every room, plus fiber ethernet and cable. Rent is all-inclusive." },
+  { role: "bot",   text: "Yep. Wifi in every room, plus fiber ethernet and cable. Rent is all-inclusive." },
   { role: "bot",   text: "I can send you a floor-plan sheet and current openings. What's your email?" },
-  { role: "user",  text: "marisol.reyes@berkeley.edu" },
-  { role: "event", text: "Lead captured · Marisol Reyes · emailed floor-plan PDF · added to CRM" },
+  { role: "user",  text: "student@university.edu" },
+  { role: "event", text: "Lead captured · emailed floor-plan PDF · added to CRM" },
 ];
 
 const ACCENT = "#2F6FE5";
@@ -106,7 +106,7 @@ export function ChatDemo() {
                 lineHeight: 1.2,
               }}
             >
-              Telegraph Commons assistant
+              Property assistant
             </p>
             <p
               style={{

@@ -293,7 +293,7 @@ export function DomainsPanel({
             type="text"
             value={hostname}
             onChange={(e) => setHostname(e.target.value)}
-            placeholder="telegraphcommons.com"
+            placeholder="example.com"
             className="mt-1 w-full text-sm rounded-md border border-border bg-card px-2.5 py-1.5"
           />
         </div>
