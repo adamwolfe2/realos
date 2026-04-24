@@ -83,7 +83,7 @@ export default async function PortalLayout({
           <MobileNavDrawer org={navOrg} />
           <Link href="/portal" aria-label={`${BRAND_NAME} portal home`}>
             <Image
-              src="/logos/leasestack-wordmark.png"
+              src="/logos/leasestack-wordmark.svg"
               alt={BRAND_NAME}
               width={110}
               height={20}

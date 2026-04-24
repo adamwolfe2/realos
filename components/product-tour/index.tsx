@@ -114,7 +114,7 @@ function Topbar() {
     >
       <div className="flex items-center gap-3">
         <img
-          src="/logos/leasestack-wordmark.png"
+          src="/logos/leasestack-wordmark.svg"
           alt="LeaseStack"
           style={{ height: "22px", width: "auto", display: "block" }}
         />
@@ -428,6 +428,106 @@ function Contents({ view }: { view: ViewKey }) {
 // 1. DASHBOARD
 // ===========================================================================
 
+const LEAD_SOURCES: Array<{ label: string; pct: number; color: string }> = [
+  { label: "Chat",     pct: 32, color: TOKENS.accent },
+  { label: "Paid",     pct: 26, color: TOKENS.accentLight },
+  { label: "Pixel",    pct: 18, color: TOKENS.warning },
+  { label: "Form",     pct: 14, color: TOKENS.success },
+  { label: "Referral", pct: 10, color: TOKENS.coral },
+];
+
+const FUNNEL: Array<{ label: string; count: number }> = [
+  { label: "Visitors", count: 12480 },
+  { label: "Leads",    count: 168   },
+  { label: "Tours",    count: 31    },
+  { label: "Applied",  count: 11    },
+  { label: "Signed",   count: 4     },
+];
+
+function LeadSourceDonut() {
+  // Build a conic-gradient string from the LEAD_SOURCES percentages.
+  let cursor = 0;
+  const stops = LEAD_SOURCES.map((s) => {
+    const from = cursor;
+    cursor += s.pct;
+    return `${s.color} ${from}% ${cursor}%`;
+  }).join(", ");
+  return (
+    <div
+      className="relative flex-shrink-0 rounded-full"
+      style={{
+        width: "140px",
+        height: "140px",
+        background: `conic-gradient(${stops})`,
+      }}
+    >
+      <div
+        className="absolute inset-[14%] rounded-full flex flex-col items-center justify-center"
+        style={{
+          backgroundColor: TOKENS.white,
+          boxShadow: `inset 0 0 0 1px ${TOKENS.borderCream}`,
+        }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-display)",
+            fontSize: "24px",
+            fontWeight: 500,
+            color: TOKENS.nearBlack,
+            lineHeight: 1,
+          }}
+        >
+          168
+        </span>
+        <span
+          className="mt-1"
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "9.5px",
+            color: TOKENS.stone,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            fontWeight: 500,
+          }}
+        >
+          Leads
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function MiniPropStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "9px",
+          color: TOKENS.stone,
+          letterSpacing: "0.1em",
+          textTransform: "uppercase",
+          fontWeight: 500,
+        }}
+      >
+        {label}
+      </p>
+      <p
+        className="mt-0.5"
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: "15px",
+          fontWeight: 500,
+          color: TOKENS.nearBlack,
+          lineHeight: 1.2,
+        }}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
+
 function Dashboard() {
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");
   const multiplier = period === "7d" ? 1 : period === "30d" ? 4.2 : 12.5;
@@ -517,6 +617,164 @@ function Dashboard() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <div>
+          <SectionHeader title="Leads by source (last 7 days)" />
+          <Tile>
+            <div className="p-5 flex items-center gap-6">
+              <LeadSourceDonut />
+              <ul className="flex-1 space-y-2">
+                {LEAD_SOURCES.map((s) => (
+                  <li key={s.label} className="flex items-center gap-3">
+                    <span
+                      className="inline-block rounded-full flex-shrink-0"
+                      style={{ width: "10px", height: "10px", backgroundColor: s.color }}
+                    />
+                    <span
+                      className="flex-1"
+                      style={{
+                        fontFamily: "var(--font-sans)",
+                        fontSize: "13px",
+                        color: TOKENS.charcoal,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {s.label}
+                    </span>
+                    <span
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "12px",
+                        color: TOKENS.nearBlack,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {s.pct}%
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </Tile>
+        </div>
+
+        <div>
+          <SectionHeader title="Conversion funnel (week)" />
+          <Tile>
+            <ul className="p-5 space-y-2.5">
+              {FUNNEL.map((s, i) => {
+                const pct = Math.max(2, (s.count / FUNNEL[0].count) * 100);
+                const prevConv =
+                  i === 0 ? null : Math.round((s.count / FUNNEL[i - 1].count) * 100);
+                return (
+                  <li key={s.label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <span
+                        style={{
+                          fontFamily: "var(--font-sans)",
+                          fontSize: "13px",
+                          color: TOKENS.charcoal,
+                          fontWeight: 500,
+                        }}
+                      >
+                        {s.label}
+                      </span>
+                      <span
+                        style={{
+                          fontFamily: "var(--font-mono)",
+                          fontSize: "11px",
+                          color: TOKENS.stone,
+                        }}
+                      >
+                        <span style={{ color: TOKENS.nearBlack, fontWeight: 500 }}>
+                          {s.count.toLocaleString()}
+                        </span>
+                        {prevConv !== null ? ` · ${prevConv}%` : ""}
+                      </span>
+                    </div>
+                    <div
+                      className="h-7 rounded-md"
+                      style={{
+                        width: `${pct}%`,
+                        backgroundColor: TOKENS.accent,
+                        opacity: 0.15 + (i * 0.18),
+                      }}
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </Tile>
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <SectionHeader
+          title="Properties"
+          right={
+            <button
+              type="button"
+              className="btn-secondary"
+              style={{ minHeight: "32px", padding: "4px 12px", fontSize: "12px", borderRadius: "8px" }}
+            >
+              View all
+            </button>
+          }
+        />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {PROPERTIES.slice(0, 3).map((p) => {
+            const dotColor =
+              p.occupancyPct >= 90 ? TOKENS.success :
+              p.occupancyPct >= 80 ? TOKENS.warning :
+              TOKENS.accent;
+            return (
+              <div
+                key={p.id}
+                style={{
+                  backgroundColor: TOKENS.white,
+                  borderRadius: "14px",
+                  padding: "14px 16px",
+                  boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="inline-block rounded-full flex-shrink-0"
+                    style={{ width: "8px", height: "8px", backgroundColor: dotColor }}
+                  />
+                  <span
+                    className="truncate"
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontSize: "16px",
+                      fontWeight: 500,
+                      color: TOKENS.nearBlack,
+                    }}
+                  >
+                    {p.name}
+                  </span>
+                </div>
+                <p
+                  className="mt-0.5 truncate"
+                  style={{
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "11.5px",
+                    color: TOKENS.stone,
+                  }}
+                >
+                  {p.location}
+                </p>
+                <div className="mt-3 grid grid-cols-3 gap-2">
+                  <MiniPropStat label="Occ" value={p.occupancyPct > 0 ? `${p.occupancyPct}%` : "—"} />
+                  <MiniPropStat label="Leads/wk" value={String(p.leadsThisWeek)} />
+                  <MiniPropStat label="Revenue" value={p.revenue} />
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">

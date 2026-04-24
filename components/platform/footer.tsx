@@ -29,7 +29,7 @@ export function PlatformFooter() {
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
         <Link href="/" className="flex items-center" aria-label="LeaseStack home">
           <img
-            src="/logos/leasestack-wordmark.png"
+            src="/logos/leasestack-wordmark.svg"
             alt="LeaseStack"
             style={{ height: "44px", width: "auto", display: "block", opacity: 0.85 }}
           />
