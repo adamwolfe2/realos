@@ -85,10 +85,13 @@ export function ProductTour() {
     >
       <Topbar />
       <MobileTabBar active={view} onSelect={setView} />
-      <div className="flex min-h-[560px] md:min-h-[720px]" style={{ backgroundColor: TOKENS.ivory }}>
+      <div
+        className="flex h-[620px] md:h-[720px]"
+        style={{ backgroundColor: TOKENS.ivory }}
+      >
         <Sidebar active={view} onSelect={setView} />
         <div
-          className="flex-1 min-w-0"
+          className="flex-1 min-w-0 overflow-y-auto scrollbar-hide"
           style={{ backgroundColor: TOKENS.parchment }}
         >
           <Contents view={view} />
@@ -114,7 +117,7 @@ function Topbar() {
     >
       <div className="flex items-center gap-3">
         <img
-          src="/logos/leasestack-wordmark.svg"
+          src="/logos/leasestack-wordmark.png"
           alt="LeaseStack"
           style={{ height: "22px", width: "auto", display: "block" }}
         />
@@ -2688,12 +2691,12 @@ function SettingsRow({
 function BriefingView() {
   return (
     <div>
-      <div className="flex items-start justify-between gap-4 mb-6">
+      <div className="flex items-start justify-between gap-4 mb-4">
         <div>
           <p
             style={{
               fontFamily: "var(--font-mono)",
-              fontSize: "11px",
+              fontSize: "10px",
               color: TOKENS.stone,
               letterSpacing: "0.14em",
               textTransform: "uppercase",
@@ -2703,13 +2706,13 @@ function BriefingView() {
             {BRIEFING.date} · AI briefing
           </p>
           <h1
-            className="mt-1.5"
+            className="mt-1"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "28px",
+              fontSize: "20px",
               fontWeight: 500,
               color: TOKENS.nearBlack,
-              lineHeight: 1.1,
+              lineHeight: 1.15,
             }}
           >
             {BRIEFING.greeting}
@@ -2718,24 +2721,24 @@ function BriefingView() {
         <button
           type="button"
           className="btn-secondary"
-          style={{ minHeight: "36px", padding: "6px 14px", fontSize: "13px", borderRadius: "10px" }}
+          style={{ minHeight: "30px", padding: "4px 10px", fontSize: "11.5px", borderRadius: "8px" }}
         >
-          Share with team
+          Share
         </button>
       </div>
 
       <div
-        className="p-6 mb-5"
+        className="p-4 mb-3"
         style={{
           backgroundColor: TOKENS.accent,
-          borderRadius: "16px",
+          borderRadius: "12px",
           color: TOKENS.white,
         }}
       >
         <p
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: "10.5px",
+            fontSize: "9.5px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
             fontWeight: 500,
@@ -2745,19 +2748,19 @@ function BriefingView() {
           Weekly summary
         </p>
         <p
-          className="mt-2"
+          className="mt-1.5"
           style={{
-            fontFamily: "var(--font-display)",
-            fontSize: "19px",
-            fontWeight: 500,
-            lineHeight: 1.5,
+            fontFamily: "var(--font-sans)",
+            fontSize: "13.5px",
+            fontWeight: 400,
+            lineHeight: 1.55,
           }}
         >
           {BRIEFING.summary}
         </p>
       </div>
 
-      <div className="space-y-3">
+      <div className="space-y-2">
         {BRIEFING.highlights.map((h, i) => {
           const toneColor =
             h.kind === "win"   ? TOKENS.success :
@@ -2774,23 +2777,23 @@ function BriefingView() {
           return (
             <div
               key={i}
-              className="p-5 flex gap-4"
+              className="p-3.5 flex gap-3"
               style={{
                 backgroundColor: TOKENS.white,
-                borderRadius: "14px",
+                borderRadius: "10px",
                 boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
               }}
             >
               <span
                 className="flex-shrink-0 inline-flex items-center justify-center"
                 style={{
-                  width: "44px",
-                  height: "24px",
-                  borderRadius: "6px",
+                  width: "42px",
+                  height: "20px",
+                  borderRadius: "5px",
                   backgroundColor: toneBg,
                   color: toneColor,
                   fontFamily: "var(--font-mono)",
-                  fontSize: "10px",
+                  fontSize: "9px",
                   fontWeight: 600,
                   letterSpacing: "0.12em",
                 }}
@@ -2801,7 +2804,7 @@ function BriefingView() {
                 <h3
                   style={{
                     fontFamily: "var(--font-display)",
-                    fontSize: "17px",
+                    fontSize: "14px",
                     fontWeight: 500,
                     color: TOKENS.nearBlack,
                     lineHeight: 1.3,
@@ -2810,12 +2813,12 @@ function BriefingView() {
                   {h.title}
                 </h3>
                 <p
-                  className="mt-2"
+                  className="mt-1"
                   style={{
                     fontFamily: "var(--font-sans)",
-                    fontSize: "13.5px",
+                    fontSize: "12.5px",
                     color: TOKENS.charcoal,
-                    lineHeight: 1.6,
+                    lineHeight: 1.55,
                   }}
                 >
                   {h.body}
@@ -2827,17 +2830,17 @@ function BriefingView() {
       </div>
 
       <div
-        className="mt-5 p-5"
+        className="mt-3 p-3.5"
         style={{
           backgroundColor: TOKENS.ivory,
-          borderRadius: "14px",
+          borderRadius: "10px",
           boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
         }}
       >
         <p
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: "10.5px",
+            fontSize: "9.5px",
             color: TOKENS.stone,
             letterSpacing: "0.14em",
             textTransform: "uppercase",
@@ -2847,12 +2850,12 @@ function BriefingView() {
           Focus this week
         </p>
         <p
-          className="mt-2"
+          className="mt-1"
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: "14px",
+            fontSize: "12.5px",
             color: TOKENS.charcoal,
-            lineHeight: 1.65,
+            lineHeight: 1.55,
           }}
         >
           {BRIEFING.focus}

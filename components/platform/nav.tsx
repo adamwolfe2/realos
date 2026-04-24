@@ -58,7 +58,7 @@ export function PlatformNav() {
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-20 flex items-center justify-between gap-4">
         <Link href="/" className="flex items-center" aria-label="LeaseStack home">
           <img
-            src="/logos/leasestack-wordmark.svg"
+            src="/logos/leasestack-wordmark.png"
             alt="LeaseStack"
             height={56}
             style={{
@@ -274,7 +274,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
           <div className="flex items-center justify-between mb-6">
             <Link href="/" onClick={onClose} aria-label="LeaseStack home">
               <img
-                src="/logos/leasestack-wordmark.svg"
+                src="/logos/leasestack-wordmark.png"
                 alt="LeaseStack"
                 style={{ height: "44px", width: "auto", display: "block" }}
               />

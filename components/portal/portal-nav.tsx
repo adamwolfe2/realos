@@ -206,7 +206,7 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
             />
           ) : (
             <Image
-              src="/logos/leasestack-wordmark.svg"
+              src="/logos/leasestack-wordmark.png"
               alt={BRAND_NAME}
               width={140}
               height={32}

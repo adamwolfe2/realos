@@ -4,11 +4,11 @@ import { BRAND_NAME, getSiteUrl } from "@/lib/brand";
 import { Reveal } from "@/components/platform/reveal";
 
 // ---------------------------------------------------------------------------
-// Manifesto — a founder's note, written to be emailed as a single link to
+// Manifesto — a founder-voice note, written to be emailed as a single link to
 // operators and investors. Not a product tour, not a pitch deck. Editorial
 // prose on the same parchment canvas as the rest of the marketing site.
 //
-// Voice: first person, Adam Wolfe. Confident, specific, no dollar figures,
+// Voice: first-person plural ("we"). Confident, specific, no dollar figures,
 // no customer names, no vendor brand names. Honest about the stage.
 // ---------------------------------------------------------------------------
 
@@ -61,7 +61,7 @@ function Hero() {
       style={{ backgroundColor: "#f5f4ed", borderBottom: "1px solid #f0eee6" }}
     >
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-24 md:pt-28 pb-14 md:pb-16">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 lg:items-center">
           <div className="lg:col-span-7">
             <Reveal>
               <p
@@ -75,7 +75,7 @@ function Hero() {
                   fontWeight: 500,
                 }}
               >
-                A note from the founder
+                A note from the team
               </p>
             </Reveal>
             <Reveal delay={60}>
@@ -148,15 +148,16 @@ function FounderCard() {
           style={{
             width: "36px",
             height: "36px",
-            borderRadius: "50%",
+            borderRadius: "10px",
             backgroundColor: "#2563EB",
             color: "#ffffff",
-            fontFamily: "var(--font-mono)",
-            fontSize: "13px",
+            fontFamily: "var(--font-display)",
+            fontSize: "15px",
             fontWeight: 700,
+            letterSpacing: "-0.02em",
           }}
         >
-          AW
+          LS
         </span>
         <div>
           <p
@@ -168,7 +169,7 @@ function FounderCard() {
               lineHeight: 1.2,
             }}
           >
-            Adam Wolfe
+            The {BRAND_NAME} team
           </p>
           <p
             style={{
@@ -181,7 +182,7 @@ function FounderCard() {
               fontWeight: 500,
             }}
           >
-            Founder · {BRAND_NAME}
+            Founder note · {BRAND_NAME}
           </p>
         </div>
       </div>
@@ -252,7 +253,7 @@ function Body() {
       >
         <Prose>
           <p>
-            I have sat in more real-estate marketing reviews than I can
+            We have sat in more real-estate marketing reviews than we can
             honestly count. Different operators, different portfolios,
             different verticals. The meeting was always the same. Someone
             presented a deck with impressions, clicks, and reach. Someone else
@@ -264,7 +265,7 @@ function Body() {
           <Heading>The observation</Heading>
 
           <p>
-            Every independent operator I talked to was paying five to eight
+            Every independent operator we talked to was paying five to eight
             vendors to do what should be one job. A retainer agency bought the
             ads. A separate shop built the website, which nobody on the team
             could edit. A third vendor bolted on a chatbot that answered one
@@ -317,7 +318,7 @@ function Body() {
           <Heading>Why now</Heading>
 
           <p>
-            I would not have tried to build this three years ago. Two things
+            We would not have tried to build this three years ago. Two things
             changed.
           </p>
           <p>
@@ -386,8 +387,18 @@ function Body() {
             to become obvious and then compounds fast. If you have seen this
             movie before in another industry, we would like to talk.
           </p>
-          <p>
-            &mdash; Adam
+          <p
+            style={{
+              marginTop: "36px",
+              fontFamily: "var(--font-mono)",
+              fontSize: "12px",
+              letterSpacing: "0.12em",
+              textTransform: "uppercase",
+              color: "#87867f",
+              fontWeight: 500,
+            }}
+          >
+            &mdash; The {BRAND_NAME} team
           </p>
         </Prose>
       </div>
