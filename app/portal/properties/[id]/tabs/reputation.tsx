@@ -4,6 +4,11 @@ import {
   type InitialScan,
 } from "@/components/portal/reputation/scanner-panel";
 import type { MentionView } from "@/components/portal/reputation/mention-card";
+import { MetricsPanel } from "@/components/portal/reputation/metrics-panel";
+import {
+  loadReputationMetrics,
+  type ReputationMetrics,
+} from "@/lib/reputation/aggregate";
 
 // ---------------------------------------------------------------------------
 // Reputation tab — server component. Seeds the client scanner with the 20
@@ -52,8 +57,9 @@ export async function ReputationTab({
     newMentionCount: number;
   }> = [];
   let latestScan: { completedAt: Date | null } | null = null;
+  let metrics: ReputationMetrics | null = null;
   try {
-    [mentionRows, scanRows, latestScan] = await Promise.all([
+    [mentionRows, scanRows, latestScan, metrics] = await Promise.all([
       prisma.propertyMention.findMany({
         where: { orgId, propertyId },
         orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
@@ -94,6 +100,7 @@ export async function ReputationTab({
         orderBy: { completedAt: "desc" },
         select: { completedAt: true },
       }),
+      loadReputationMetrics(orgId, propertyId),
     ]);
   } catch {
     // Schema not migrated yet, or transient DB error — render empty state.
@@ -126,14 +133,17 @@ export async function ReputationTab({
   }));
 
   return (
-    <ScannerPanel
-      propertyId={propertyId}
-      propertyName={propertyName}
-      propertyAddress={propertyAddress}
-      initialMentions={mentions}
-      initialScans={initialScans}
-      initialNextCursor={hasMore ? mentions[mentions.length - 1].id : null}
-      lastScanAt={latestScan?.completedAt?.toISOString() ?? null}
-    />
+    <div className="space-y-6">
+      {metrics ? <MetricsPanel metrics={metrics} /> : null}
+      <ScannerPanel
+        propertyId={propertyId}
+        propertyName={propertyName}
+        propertyAddress={propertyAddress}
+        initialMentions={mentions}
+        initialScans={initialScans}
+        initialNextCursor={hasMore ? mentions[mentions.length - 1].id : null}
+        lastScanAt={latestScan?.completedAt?.toISOString() ?? null}
+      />
+    </div>
   );
 }

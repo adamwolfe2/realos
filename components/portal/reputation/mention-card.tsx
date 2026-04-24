@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { SourceLogo, sourceLabel } from "./source-logo";
 
 export type MentionView = {
   id: string;
@@ -31,18 +32,6 @@ export type MentionView = {
   reviewed: boolean;
   flagged: boolean;
   isNew?: boolean;
-};
-
-const SOURCE_META: Record<
-  MentionSource,
-  { label: string; host: string }
-> = {
-  GOOGLE_REVIEW: { label: "Google", host: "google.com" },
-  REDDIT: { label: "Reddit", host: "reddit.com" },
-  YELP: { label: "Yelp", host: "yelp.com" },
-  TAVILY_WEB: { label: "Web", host: "" },
-  FACEBOOK_PUBLIC: { label: "Facebook", host: "facebook.com" },
-  OTHER: { label: "Other", host: "" },
 };
 
 function sentimentBadge(s: Sentiment | null) {
@@ -120,8 +109,8 @@ export function MentionCard({
   const [flagged, setFlagged] = React.useState(mention.flagged);
   const [pending, setPending] = React.useState(false);
 
-  const meta = SOURCE_META[mention.source];
-  const host = getHost(mention.sourceUrl) || meta.host;
+  const label = sourceLabel(mention.source, mention.sourceUrl);
+  const host = getHost(mention.sourceUrl);
   const urlShort = shortUrl(mention.sourceUrl);
   const responseCta = getResponseTarget(mention.source);
   const when = mention.publishedAt
@@ -184,9 +173,20 @@ export function MentionCard({
       )}
     >
       <header className="flex items-center gap-2 flex-wrap text-[11px] text-muted-foreground">
-        <span className="font-medium text-foreground">{meta.label}</span>
-        {host ? <span>·</span> : null}
-        {host ? <span>{host}</span> : null}
+        <span className="inline-flex items-center gap-1.5">
+          <SourceLogo
+            source={mention.source}
+            url={mention.sourceUrl}
+            className="h-4 w-4"
+          />
+          <span className="font-semibold text-foreground">{label}</span>
+        </span>
+        {host && host.toLowerCase() !== label.toLowerCase() + ".com" ? (
+          <>
+            <span>·</span>
+            <span>{host}</span>
+          </>
+        ) : null}
         {typeof mention.rating === "number" ? (
           <>
             <span>·</span>

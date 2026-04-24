@@ -15,7 +15,7 @@ export type SourceState = {
 
 const SOURCE_LABELS: Record<string, string> = {
   google: "Google Reviews",
-  tavily: "Reddit + web",
+  tavily: "Reddit, Yelp, aggregators, forums",
 };
 
 export function SourceProgress({

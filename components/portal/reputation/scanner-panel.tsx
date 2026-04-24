@@ -80,8 +80,31 @@ export function ScannerPanel({
     flagged: false,
   });
 
+  // Sort priority:
+  //   1. Flagged mentions float to the top (operator marked them for follow-up)
+  //   2. Negative first (most actionable — these need a response)
+  //   3. Then MIXED, NEUTRAL, POSITIVE
+  //   4. Unclassified (null sentiment) last
+  //   5. Within the same bucket, newest first
+  const sentimentRank = (
+    s: Sentiment | null | undefined
+  ): number => {
+    switch (s) {
+      case "NEGATIVE":
+        return 0;
+      case "MIXED":
+        return 1;
+      case "NEUTRAL":
+        return 2;
+      case "POSITIVE":
+        return 3;
+      default:
+        return 4;
+    }
+  };
+
   const filtered = React.useMemo(() => {
-    return mentions.filter((m) => {
+    const list = mentions.filter((m) => {
       if (filters.sentiment !== "ALL" && m.sentiment !== filters.sentiment) {
         return false;
       }
@@ -91,6 +114,18 @@ export function ScannerPanel({
       if (filters.unreviewed && m.reviewed) return false;
       if (filters.flagged && !m.flagged) return false;
       return true;
+    });
+    return list.sort((a, b) => {
+      // Flagged first
+      if (a.flagged !== b.flagged) return a.flagged ? -1 : 1;
+      // Sentiment priority
+      const rankA = sentimentRank(a.sentiment);
+      const rankB = sentimentRank(b.sentiment);
+      if (rankA !== rankB) return rankA - rankB;
+      // Newest first within bucket
+      const timeA = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
+      const timeB = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
+      return timeB - timeA;
     });
   }, [mentions, filters]);
 

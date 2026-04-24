@@ -8,11 +8,11 @@ import type { ScannedMention } from "./types";
 // ---------------------------------------------------------------------------
 // Batched sentiment + topic classification via Claude Haiku.
 //
-// One generateObject call per scan (not per mention). Each item in the
-// prompt carries a short id so we can map Claude's response back to our
-// mention array without ambiguity. Haiku handles 50+ short items per call
-// comfortably; we trim longer excerpts to 800 chars before sending to keep
-// token usage predictable.
+// One generateObject call per scan. The schema is INTENTIONALLY PERMISSIVE:
+// we previously required `topics: z.array(...).min(1)` which caused silent
+// full-batch failures when Claude returned 0 tags for any single mention
+// (and zod validation is all-or-nothing for arrays). Now we accept 0–5 topic
+// strings, then filter to known TOPIC_TAGS downstream.
 // ---------------------------------------------------------------------------
 
 export const TOPIC_TAGS = [
@@ -30,12 +30,16 @@ export const TOPIC_TAGS = [
 
 export type TopicTag = (typeof TOPIC_TAGS)[number];
 
+const TOPIC_SET = new Set<string>(TOPIC_TAGS);
+
 const analysisSchema = z.object({
   mentions: z.array(
     z.object({
       id: z.string(),
       sentiment: z.enum(["POSITIVE", "NEGATIVE", "NEUTRAL", "MIXED"]),
-      topics: z.array(z.enum(TOPIC_TAGS)).min(1).max(3),
+      // Permissive: accept any strings, cap at 5. We filter to valid tags
+      // downstream so one rogue string can't fail the whole batch.
+      topics: z.array(z.string()).max(5).default([]),
     })
   ),
 });
@@ -46,26 +50,27 @@ type AnalysisItem = {
   topics: TopicTag[];
 };
 
-// Conservative Haiku cost estimate: ~$0.80 per 1M input tokens, ~$4 per 1M
-// output tokens. A 50-mention scan is ~12k input + ~2k output tokens. Round
-// up to 1 cent so the number isn't deceptively small when mentions pile up.
+// Conservative Haiku cost estimate (~$0.005/scan for typical batch size).
 export const ANALYSIS_COST_CENTS_PER_SCAN = 1;
 
 /**
  * Analyze a batch of mentions. Returns the classifications keyed by the
  * caller-supplied id. Callers are responsible for tagging each ScannedMention
- * with a stable id before calling (we use the urlHash downstream in
- * orchestrate.ts).
+ * with a stable id before calling (we use the urlHash downstream).
  *
- * Degrades gracefully: if ANTHROPIC_API_KEY is missing or the model call
- * throws, returns an empty Map so the orchestrator falls back to un-analyzed
- * mentions rather than failing the whole scan.
+ * Degrades gracefully: on missing ANTHROPIC_API_KEY or a model error, returns
+ * an empty Map and logs to console.error so Vercel logs surface the cause.
  */
 export async function analyzeSentimentAndTopics(
   items: Array<{ id: string; mention: ScannedMention }>
 ): Promise<Map<string, AnalysisItem>> {
   if (items.length === 0) return new Map();
-  if (!process.env.ANTHROPIC_API_KEY) return new Map();
+  if (!process.env.ANTHROPIC_API_KEY) {
+    console.error(
+      "[reputation.analyze] ANTHROPIC_API_KEY missing — mentions will be unclassified"
+    );
+    return new Map();
+  }
 
   const prompt = buildPrompt(items);
 
@@ -74,23 +79,27 @@ export async function analyzeSentimentAndTopics(
       model: anthropic("claude-haiku-4-5-20251001"),
       schema: analysisSchema,
       prompt,
-      // Keep latency in check even if the model gets chatty.
       maxOutputTokens: 2048,
     });
 
     const map = new Map<string, AnalysisItem>();
     for (const row of object.mentions) {
+      const topics = row.topics
+        .map((t) => t.toLowerCase())
+        .filter((t): t is TopicTag => TOPIC_SET.has(t));
       map.set(row.id, {
         id: row.id,
         sentiment: row.sentiment as Sentiment,
-        topics: row.topics as TopicTag[],
+        topics,
       });
     }
     return map;
-  } catch {
-    // Silent fallback — persisting un-analyzed mentions is strictly better
-    // than losing the scan. The UI renders a "not analyzed" state for
-    // rows with sentiment = null.
+  } catch (err) {
+    // Log so operators can see why sentiment is missing in Vercel logs.
+    console.error(
+      "[reputation.analyze] Claude classification failed:",
+      err instanceof Error ? err.message : err
+    );
     return new Map();
   }
 }
@@ -99,22 +108,22 @@ function buildPrompt(
   items: Array<{ id: string; mention: ScannedMention }>
 ): string {
   const lines = items.map(({ id, mention }) => {
-    const text = mention.excerpt.slice(0, 800).replace(/\s+/g, " ").trim();
+    const text = mention.excerpt.slice(0, 600).replace(/\s+/g, " ").trim();
     const src = mention.source;
     const rating =
       typeof mention.rating === "number" ? ` (rating: ${mention.rating}/5)` : "";
     return `- id: ${id} | source: ${src}${rating}\n  text: ${text}`;
   });
-  return `You are classifying public mentions of a rental property.
+  return `Classify each public mention of a rental property below.
 
-For each item below, decide:
+For each item, return:
   - sentiment: POSITIVE | NEGATIVE | NEUTRAL | MIXED
-  - topics: 1–3 tags from: ${TOPIC_TAGS.join(", ")}
+  - topics: 0 to 3 tags from [${TOPIC_TAGS.join(", ")}]. If nothing fits, return an empty array.
 
-Rules:
-- Sentiment reflects the author's feeling about the property, not their general mood.
-- Use MIXED only when positive and negative signals are both clearly present.
-- Use NEUTRAL for factual questions or generic mentions with no clear sentiment (e.g. "anyone live here?").
+Guidance:
+- Sentiment reflects the author's feeling about the property, not general mood.
+- Use MIXED only when positive and negative signals are clearly both present.
+- Use NEUTRAL for factual questions or generic mentions with no clear sentiment ("anyone live at X?").
 - Prefer specific topics (maintenance, staff, noise) over "general" when possible.
 
 Return exactly one classification per input id.

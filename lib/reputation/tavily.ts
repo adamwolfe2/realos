@@ -3,28 +3,86 @@ import type { ScanSourceResult, ScannedMention, PropertySeed } from "./types";
 import { MentionSource } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
-// Tavily web search — the workhorse source. Runs three parallel queries per
-// scan to cover general web, Reddit, and common review aggregators. Each
-// result is classified into a MentionSource by hostname so dedupe works
-// across sources (a Reddit thread surfaced by both Tavily and the Reddit API
-// direct search collapses to one PropertyMention row).
+// Tavily — our unified source for everything except native Google Reviews.
 //
-// No dedicated SDK dep: we call the public REST endpoint directly. The
-// official @tavily/core client is a thin wrapper and adds an install we
-// don't need.
+// PRINCIPLES (tuned against real Telegraph Commons scan results, 2026-04):
+//   1. Target REVIEW-CAPABLE domains only. Listings (realtor, rent.com,
+//      trulia, zillow, apartmentguide base pages, rentcollegepads) get
+//      hard-excluded — they're property-owned or syndicated listings, not
+//      user reviews.
+//   2. Own-social-media pages (instagram.com/{slug}, facebook.com/{slug},
+//      twitter.com/{slug}) get filtered post-fetch.
+//   3. Post-filter by CONTENT shape: a result without first-person voice or
+//      review language is almost certainly a listing even when it slipped
+//      through the domain filter.
+//   4. Post-filter by URL shape: paths like /listings/, /rentals/details/,
+//      /a/Property-Name-12345/, /search?, /biz/?find= are never reviews.
+//   5. Post-filter by KEYWORD match: the excerpt must contain the property
+//      name literally. Tavily's relevance ranking is too loose without
+//      this — we saw "2414 Telegraph" and "2850 Telegraph Ave" matches for
+//      a "Telegraph Commons" query.
 // ---------------------------------------------------------------------------
 
 const TAVILY_ENDPOINT = "https://api.tavily.com/search";
 
-// Cost accounting — tuned to Tavily advanced-search pricing at time of build.
-// See docs (and update if pricing changes) — used purely for cost telemetry
-// on ReputationScan.estCostCents, not for billing.
-export const TAVILY_COST_CENTS_PER_QUERY = 1; // round up: ~$0.008 basic, ~$0.012 advanced
+// Cost accounting — ~$0.008 per advanced search call.
+export const TAVILY_COST_CENTS_PER_QUERY = 1;
 
-// How many parallel Tavily queries per scan. Kept in one place so the cost
-// estimator in orchestrate.ts stays in sync. Count is fixed for budget
-// predictability; buildQueryPlan returns this many query specs every time.
-export const TAVILY_QUERIES_PER_SCAN = 7;
+// Fixed count for predictable cost accounting.
+export const TAVILY_QUERIES_PER_SCAN = 4;
+
+// Hard-blocked domains — listings, syndicated aggregators, property-owned.
+// We pass these to Tavily as exclude_domains on every query so the budget
+// isn't wasted fetching them.
+const LISTING_BLOCKLIST = [
+  "realtor.com",
+  "rent.com",
+  "rentable.co",
+  "rentcafe.com",
+  "rentcollegepads.com",
+  "apartmentguide.com",
+  "apartments.com", // mostly listings; reviews are thin and often astroturfed
+  "trulia.com",
+  "zillow.com",
+  "forrentuniversity.com",
+  "apartmentlist.com",
+  "hotpads.com",
+  "padmapper.com",
+  "rentberry.com",
+  "zumper.com",
+  "streeteasy.com",
+  "rentprogress.com",
+  // Property-management vendor microsites that syndicate listings under
+  // "Reviews" headers without actual user reviews (e.g. properties.tbgpm.com).
+  "tbgpm.com",
+  // Corporate / press release noise
+  "prnewswire.com",
+  "businesswire.com",
+];
+
+// Review-capable domains — real user voices live here.
+const REVIEW_AGGREGATORS = [
+  "yelp.com",
+  "apartmentratings.com",
+  "niche.com",
+  "bbb.org",
+  "glassdoor.com", // sometimes has resident reviews for owned REITs
+  "tripadvisor.com", // relevant for some commercial/hospitality properties
+];
+
+// College + student discussion forums.
+const COLLEGE_FORUMS = [
+  "collegeconfidential.com",
+  "quora.com",
+  "medium.com",
+  "berkeley.edu",
+  "ucla.edu",
+  "usc.edu",
+  "stanford.edu",
+  "ucdavis.edu",
+  "ucsd.edu",
+  "ucsb.edu",
+];
 
 type TavilyResult = {
   url: string;
@@ -44,7 +102,8 @@ type TavilyResponse = {
 async function tavilySearch(
   apiKey: string,
   query: string,
-  includeDomains?: string[],
+  includeDomains: string[] | undefined,
+  excludeDomains: string[],
   maxResults = 10
 ): Promise<TavilyResult[]> {
   const res = await fetch(TAVILY_ENDPOINT, {
@@ -62,8 +121,10 @@ async function tavilySearch(
       ...(includeDomains && includeDomains.length > 0
         ? { include_domains: includeDomains }
         : {}),
+      ...(excludeDomains.length > 0
+        ? { exclude_domains: excludeDomains }
+        : {}),
     }),
-    // Tavily can be slow on advanced depth; give it 15s before we abort.
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) {
@@ -74,25 +135,20 @@ async function tavilySearch(
   return json.results ?? [];
 }
 
+// Classify hostnames into MentionSource so the UI filter + per-source
+// branding work. Unknown hosts keep TAVILY_WEB as a catch-all.
 function classifySource(url: string): MentionSource {
   try {
     const host = new URL(url).host.toLowerCase();
     if (/(^|\.)reddit\.com$/.test(host)) return MentionSource.REDDIT;
     if (/(^|\.)yelp\.com$/.test(host)) return MentionSource.YELP;
     if (
-      host === "google.com" ||
       /(^|\.)google\.com$/.test(host) ||
       /(^|\.)maps\.google\.com$/.test(host)
     ) {
       return MentionSource.GOOGLE_REVIEW;
     }
-    if (
-      host === "facebook.com" ||
-      /(^|\.)facebook\.com$/.test(host) ||
-      host === "m.facebook.com"
-    ) {
-      return MentionSource.FACEBOOK_PUBLIC;
-    }
+    if (/(^|\.)facebook\.com$/.test(host)) return MentionSource.FACEBOOK_PUBLIC;
     return MentionSource.TAVILY_WEB;
   } catch {
     return MentionSource.TAVILY_WEB;
@@ -112,150 +168,47 @@ function toScannedMention(r: TavilyResult): ScannedMention {
   };
 }
 
-// Tavily is our unified source for everything except native Google Reviews.
-// The property name is ALWAYS quoted (`"${name}"`) so Tavily requires an
-// exact-phrase match — this is the user's #1 requirement: every mention
-// must contain the literal property keyword.
-//
-// Each query targets a different slice of the web. We use `include_domains`
-// where supported — it's more reliable than `site:` operators in the query
-// string — and leave it unset for broad crawls.
 function buildQueryPlan(property: PropertySeed): Array<{
   query: string;
   includeDomains?: string[];
   maxResults?: number;
-  label?: string;
+  label: string;
 }> {
   const name = property.name;
   const loc = [property.city, property.state].filter(Boolean).join(", ");
   const locSuffix = loc ? ` ${loc}` : "";
-  const isStudentHousing = property.residentialSubtype === "STUDENT_HOUSING";
-
-  // Query 5 specializes based on property type. Student housing surfaces the
-  // most intent on college forums + subreddits; general multifamily cares
-  // more about tenant/landlord language.
-  const contextQuery = isStudentHousing
-    ? `"${name}"${locSuffix} (dorm OR "student housing" OR roommate OR campus OR college OR university)`
-    : `"${name}"${locSuffix} (tenants OR residents OR "living at" OR "lived at" OR landlord OR lease)`;
 
   return [
-    // 1. Reddit — subreddits mentioning the exact property name. Tavily's
-    // relevance ranking inside reddit.com surfaces the most-upvoted threads
-    // containing the phrase first, which is exactly what we want.
+    // 1. Reddit — discussion threads containing exact property name.
     {
       query: `"${name}"${locSuffix}`,
       includeDomains: ["reddit.com"],
       maxResults: 10,
       label: "reddit",
     },
-    // 2. Facebook — public posts, pages, groups.
+    // 2. Review aggregators — Yelp, ApartmentRatings, Niche, BBB, Glassdoor.
     {
       query: `"${name}"${locSuffix}`,
-      includeDomains: ["facebook.com"],
-      maxResults: 5,
-      label: "facebook",
-    },
-    // 3. College + student forums — where prospective tenants compare options.
-    // Especially critical for student housing; still useful for any property
-    // near a campus.
-    {
-      query: `"${name}"${locSuffix}`,
-      includeDomains: [
-        "collegeconfidential.com",
-        "quora.com",
-        "medium.com",
-        "ucdavis.edu",
-        "berkeley.edu",
-        "ucla.edu",
-        "usc.edu",
-        "stanford.edu",
-      ],
-      maxResults: 10,
-      label: "college_forums",
-    },
-    // 4. Dedicated apartment + review aggregators.
-    {
-      query: `"${name}"${locSuffix}`,
-      includeDomains: [
-        "apartments.com",
-        "apartmentratings.com",
-        "niche.com",
-        "yelp.com",
-        "bbb.org",
-        "rentcafe.com",
-        "trulia.com",
-        "zillow.com",
-        "rent.com",
-      ],
+      includeDomains: REVIEW_AGGREGATORS,
       maxResults: 10,
       label: "aggregators",
     },
-    // 5. General web — "reviews" intent, broad crawl.
+    // 3. College + student discussion forums.
     {
-      query: `"${name}"${locSuffix} reviews`,
+      query: `"${name}"${locSuffix}`,
+      includeDomains: COLLEGE_FORUMS,
       maxResults: 10,
-      label: "reviews_intent",
+      label: "forums",
     },
-    // 6. Strong-signal language — catches extreme opinions (rave or rant)
-    // that the generic "reviews" query often misses. Quoted name enforces
-    // keyword match; the OR chain expands recall across sentiment polarity.
+    // 4. Strong-signal language — broad crawl (no domain filter) but with
+    // extreme language that's a reliable proxy for user-review content.
+    // The listing blocklist applied via exclude_domains keeps this narrow.
     {
-      query: `"${name}"${locSuffix} (avoid OR scam OR worst OR "do not rent" OR horrible OR "stay away" OR recommend OR "best apartment" OR love OR amazing)`,
+      query: `"${name}"${locSuffix} (review OR reviews OR avoid OR scam OR worst OR "do not rent" OR horrible OR "stay away" OR recommend OR "best apartment" OR "loved living" OR "lived here")`,
       maxResults: 10,
       label: "strong_signals",
     },
-    // 7. Resident / context query, tailored by property type.
-    {
-      query: contextQuery,
-      maxResults: 10,
-      label: "context",
-    },
   ];
-}
-
-function deriveOwnedDomains(property: PropertySeed): string[] {
-  const domains = new Set<string>();
-  // Heuristic 1: slugified property name + common TLDs. Catches "Telegraph
-  // Commons" → telegraphcommons.com. Breaks for compound names with periods
-  // but that's a rare edge case.
-  const slug = property.name
-    .toLowerCase()
-    .replace(/&/g, "and")
-    .replace(/[^a-z0-9]+/g, "");
-  if (slug.length >= 3) {
-    for (const tld of [".com", ".co", ".net", ".io", ".org"]) {
-      domains.add(slug + tld);
-    }
-  }
-  // Heuristic 2: extract domain from googleReviewUrl if it points at the
-  // property's own site rather than maps.google.com.
-  if (property.googleReviewUrl) {
-    try {
-      const host = new URL(property.googleReviewUrl).host
-        .toLowerCase()
-        .replace(/^www\./, "");
-      if (
-        !host.includes("google.com") &&
-        !host.includes("maps.google") &&
-        !host.includes("yelp.com")
-      ) {
-        domains.add(host);
-      }
-    } catch {
-      // ignore malformed URLs
-    }
-  }
-  return Array.from(domains);
-}
-
-function isOwnedHost(url: string, ownedDomains: string[]): boolean {
-  if (ownedDomains.length === 0) return false;
-  try {
-    const host = new URL(url).host.toLowerCase().replace(/^www\./, "");
-    return ownedDomains.some((d) => host === d || host.endsWith(`.${d}`));
-  } catch {
-    return false;
-  }
 }
 
 export async function searchTavily(
@@ -273,23 +226,23 @@ export async function searchTavily(
   }
 
   const plan = buildQueryPlan(property);
-  // Heuristic self-site filter — a property's own marketing website isn't a
-  // "mention" from someone else, even if it matches the exact-phrase query.
-  // We derive the likely owned domains from the property name + googleReviewUrl
-  // and exclude any result whose host matches.
   const ownedDomains = deriveOwnedDomains(property);
+  const ownedSocialPaths = deriveOwnedSocialPaths(property);
+  const excludeDomains = [...LISTING_BLOCKLIST, ...ownedDomains];
 
   try {
     const settled = await Promise.allSettled(
       plan.map((p) =>
-        tavilySearch(apiKey, p.query, p.includeDomains, p.maxResults)
+        tavilySearch(
+          apiKey,
+          p.query,
+          p.includeDomains,
+          excludeDomains,
+          p.maxResults
+        )
       )
     );
 
-    // Aggregate results across queries. Tavily can return the same URL from
-    // multiple queries; dedupe by raw URL here so we don't over-report
-    // `found`. Final cross-source dedupe happens in orchestrate.ts via
-    // urlHash.
     const seen = new Map<string, ScannedMention>();
     let firstError: string | undefined;
 
@@ -302,7 +255,12 @@ export async function searchTavily(
         if (!r.url) continue;
         if (seen.has(r.url)) continue;
         if (isOwnedHost(r.url, ownedDomains)) continue;
-        seen.set(r.url, toScannedMention(r));
+        if (isOwnedSocialPage(r.url, ownedSocialPaths)) continue;
+        if (isListingUrl(r.url)) continue;
+        if (isWrongBusinessPage(r.url, property.name)) continue;
+        const mention = toScannedMention(r);
+        if (!mentionLooksLikeReview(mention, property.name)) continue;
+        seen.set(r.url, mention);
       }
     }
 
@@ -324,4 +282,266 @@ export async function searchTavily(
       error: err instanceof Error ? err.message : String(err),
     };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Filter helpers.
+// ---------------------------------------------------------------------------
+
+function slugifyName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "");
+}
+
+// Likely-owned website domains inferred from the property name + Google review
+// URL.
+function deriveOwnedDomains(property: PropertySeed): string[] {
+  const domains = new Set<string>();
+  const slug = slugifyName(property.name);
+  if (slug.length >= 3) {
+    for (const tld of [".com", ".co", ".net", ".io", ".org"]) {
+      domains.add(slug + tld);
+    }
+  }
+  if (property.googleReviewUrl) {
+    try {
+      const host = new URL(property.googleReviewUrl).host
+        .toLowerCase()
+        .replace(/^www\./, "");
+      if (
+        !host.includes("google.com") &&
+        !host.includes("maps.google") &&
+        !host.includes("yelp.com")
+      ) {
+        domains.add(host);
+      }
+    } catch {
+      // ignore malformed URLs
+    }
+  }
+  return Array.from(domains);
+}
+
+// Social-media paths under shared platforms that the property itself operates:
+// instagram.com/telegraphcommonsberkeley, facebook.com/telegraphcommons, etc.
+function deriveOwnedSocialPaths(property: PropertySeed): string[] {
+  const slug = slugifyName(property.name);
+  if (slug.length < 3) return [];
+  const variants = [slug, `${slug}berkeley`, `${slug}apartments`];
+  const paths: string[] = [];
+  for (const host of [
+    "instagram.com",
+    "facebook.com",
+    "m.facebook.com",
+    "twitter.com",
+    "x.com",
+    "tiktok.com",
+    "linkedin.com",
+    "youtube.com",
+  ]) {
+    for (const v of variants) {
+      paths.push(`${host}/${v}`);
+      paths.push(`${host}/@${v}`);
+    }
+  }
+  return paths;
+}
+
+function isOwnedHost(url: string, ownedDomains: string[]): boolean {
+  if (ownedDomains.length === 0) return false;
+  try {
+    const host = new URL(url).host.toLowerCase().replace(/^www\./, "");
+    return ownedDomains.some((d) => host === d || host.endsWith(`.${d}`));
+  } catch {
+    return false;
+  }
+}
+
+function isOwnedSocialPage(url: string, ownedSocialPaths: string[]): boolean {
+  if (ownedSocialPaths.length === 0) return false;
+  try {
+    const u = new URL(url);
+    const host = u.host.toLowerCase().replace(/^www\./, "");
+    const path = u.pathname.toLowerCase();
+    for (const p of ownedSocialPaths) {
+      const [pHost, ...pRest] = p.split("/");
+      const pPath = "/" + pRest.join("/");
+      if (host === pHost && (path === pPath || path.startsWith(pPath + "/"))) {
+        return true;
+      }
+    }
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+// URL path patterns that are never user reviews: listing detail pages,
+// search result pages, syndicated availability pages.
+function isListingUrl(url: string): boolean {
+  try {
+    const u = new URL(url);
+    const path = u.pathname.toLowerCase();
+    const search = u.search.toLowerCase();
+    // /a/{Name}-{number}/ is ApartmentGuide/Apartments.com listing detail.
+    if (/\/a\/[^/]+-\d{5,}/.test(path)) return true;
+    // /rentals/details/, /listings/, /apartment/, /rent/ etc.
+    if (/\/(rentals|listings|listing|apartment|rent)\/[^/]+/.test(path))
+      return true;
+    // /city/{state}/listings/, /for-rent/
+    if (/\/for-rent\//.test(path)) return true;
+    // Yelp search result pages and redirects
+    if (/\/search/.test(path) && search.includes("find_")) return true;
+    if (path === "/search") return true;
+    if (/\/biz_redir/.test(path)) return true;
+    // Prospect ratings / syndicated review-looking pages from PM vendors
+    if (/prospect-ratings/.test(path)) return true;
+    // Government / municipal PDFs
+    if (path.endsWith(".pdf")) return true;
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+// Wrong-business filter for sites with business-slug URLs. Yelp's biz pages
+// show "nearby" links to other local businesses; Tavily picks those up when
+// the property name appears in the page copy, even though the page itself
+// is for a DIFFERENT business. We require the URL's business slug to
+// contain the property name tokens.
+function isWrongBusinessPage(url: string, propertyName: string): boolean {
+  try {
+    const u = new URL(url);
+    const host = u.host.toLowerCase().replace(/^www\./, "");
+    const path = u.pathname.toLowerCase();
+
+    const propertyTokens = propertyName
+      .toLowerCase()
+      .split(/[\s&]+/)
+      .filter((t) => t.length >= 3);
+    if (propertyTokens.length === 0) return false;
+
+    // Yelp: /biz/{slug}
+    if (/(^|\.)yelp\.com$/.test(host)) {
+      const m = path.match(/^\/biz\/([^/]+)/);
+      if (m) {
+        const slug = m[1];
+        // Every significant token in the property name must appear in the slug
+        return !propertyTokens.every((t) => slug.includes(t));
+      }
+    }
+
+    // Niche: /places-to-live/{slug}/
+    if (/(^|\.)niche\.com$/.test(host)) {
+      const m = path.match(/\/places-to-live\/([^/]+)/);
+      if (m) {
+        const slug = m[1];
+        return !propertyTokens.every((t) => slug.includes(t));
+      }
+    }
+
+    // ApartmentRatings: /ca/{city}/{slug}/
+    if (/(^|\.)apartmentratings\.com$/.test(host)) {
+      const m = path.match(/\/[a-z]{2}\/[^/]+\/([^/]+)/);
+      if (m) {
+        const slug = m[1];
+        return !propertyTokens.every((t) => slug.includes(t));
+      }
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+// Content-level filter — requires the excerpt to contain the property name
+// AND to read more like a review than a listing. Listings have telltale
+// phrasing ("LEASING FOR FALL", "Apply Now", "### More about", "Find Homes
+// on the go!", phone numbers prefixed with markdown headers).
+function mentionLooksLikeReview(
+  m: ScannedMention,
+  propertyName: string
+): boolean {
+  const text = `${m.title ?? ""} ${m.excerpt ?? ""}`;
+  const textLower = text.toLowerCase();
+  const nameLower = propertyName.toLowerCase();
+
+  // Must literally mention the property name — Tavily's relevance ranking
+  // sometimes surfaces adjacent-address matches ("2414 Telegraph", "near
+  // 2850 Telegraph Ave") that don't actually reference the target property.
+  if (!textLower.includes(nameLower)) return false;
+
+  // Reddit, Yelp, ApartmentRatings, BBB, Niche, CollegeConfidential, Quora
+  // pages are trusted even with minimal text (thread titles often suffice).
+  const alwaysTrust = /(^|\.)(reddit|yelp|apartmentratings|bbb|niche|collegeconfidential|quora)\.com$/;
+  try {
+    const host = new URL(m.sourceUrl).host.toLowerCase().replace(/^www\./, "");
+    if (alwaysTrust.test(host)) return true;
+  } catch {
+    // fall through
+  }
+
+  // Reject listing-style content everywhere else.
+  const listingTells = [
+    "leasing for fall",
+    "apply now",
+    "schedule a tour",
+    "schedule tour",
+    "find homes on the go",
+    "## description",
+    "### more about",
+    "## availability",
+    "floor plans",
+    "available at",
+    "all utilities included",
+    "### amenities",
+    "### features",
+    "## pricing",
+    "shared & private dorm",
+  ];
+  for (const tell of listingTells) {
+    if (textLower.includes(tell)) return false;
+  }
+
+  // Reward review-style content — first-person voice, staff/management
+  // references, experience language.
+  const reviewTells = [
+    " i lived ",
+    " i live ",
+    " we lived ",
+    " we stayed ",
+    " my apartment",
+    " my stay",
+    " the staff",
+    " management was",
+    " maintenance was",
+    " maintenance is",
+    "months ago",
+    "year ago",
+    " been here",
+    " lived here",
+    " moved in",
+    " moved out",
+    " would recommend",
+    " would not recommend",
+    " do not recommend",
+    " avoid ",
+    " scam ",
+    " worst ",
+    " horrible ",
+    " amazing ",
+    " loved living",
+    " love living",
+    " great place",
+    " bad place",
+  ];
+  for (const tell of reviewTells) {
+    if (textLower.includes(tell)) return true;
+  }
+
+  // Default for non-trusted hosts without strong review signal: drop.
+  return false;
 }
