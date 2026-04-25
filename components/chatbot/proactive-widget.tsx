@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ChatInterface } from "./chat-interface";
+import { trackChatbotOpened } from "@/lib/chatbot/analytics";
 
 const SESSION_STORAGE_KEY = "leasestack.chatbot.session.v1";
 const DISMISSED_STORAGE_KEY = "leasestack.chatbot.dismissed.v1";
@@ -44,16 +45,28 @@ function ensureSessionId(): string {
 
 export function ProactiveWidget({
   orgId,
+  slug,
+  brandName,
   personaName,
   avatarUrl,
   greeting,
   idleTriggerSeconds,
+  primaryCtaText,
+  primaryCtaUrl,
+  phoneNumber,
+  contactEmail,
 }: {
   orgId: string;
+  slug: string;
+  brandName: string;
   personaName: string;
   avatarUrl?: string | null;
   greeting: string;
   idleTriggerSeconds: number;
+  primaryCtaText?: string | null;
+  primaryCtaUrl?: string | null;
+  phoneNumber?: string | null;
+  contactEmail?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [bubbleShown, setBubbleShown] = useState(false);
@@ -180,9 +193,10 @@ export function ProactiveWidget({
     }
   }
 
-  function openChat() {
+  function openChat(source: "button" | "bubble") {
     setOpen(true);
     setBubbleShown(false);
+    trackChatbotOpened(source);
   }
 
   return (
@@ -215,7 +229,7 @@ export function ProactiveWidget({
               <div className="flex gap-3 mt-2">
                 <button
                   type="button"
-                  onClick={openChat}
+                  onClick={() => openChat("bubble")}
                   className="text-xs font-semibold underline underline-offset-2"
                 >
                   Reply
@@ -236,9 +250,18 @@ export function ProactiveWidget({
       <button
         type="button"
         aria-label={open ? "Close chat" : "Open chat"}
-        onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-6 right-4 z-40 w-14 h-14 rounded-full shadow-2xl text-white flex items-center justify-center text-2xl"
-        style={{ backgroundColor: "var(--tenant-primary)" }}
+        onClick={() => {
+          if (open) {
+            setOpen(false);
+          } else {
+            openChat("button");
+          }
+        }}
+        className="fixed right-4 z-40 w-14 h-14 rounded-full shadow-2xl text-white flex items-center justify-center text-2xl"
+        style={{
+          backgroundColor: "var(--tenant-primary)",
+          bottom: "max(1.5rem, calc(1.5rem + env(safe-area-inset-bottom)))",
+        }}
       >
         {open ? "×" : "💬"}
       </button>
@@ -246,10 +269,16 @@ export function ProactiveWidget({
       {open ? (
         <ChatInterface
           orgId={orgId}
+          slug={slug}
+          brandName={brandName}
           sessionId={sessionId}
           personaName={personaName}
           avatarUrl={avatarUrl}
           greeting={greeting}
+          primaryCtaText={primaryCtaText ?? null}
+          primaryCtaUrl={primaryCtaUrl ?? null}
+          phoneNumber={phoneNumber ?? null}
+          contactEmail={contactEmail ?? null}
           onClose={() => setOpen(false)}
           injectedMessages={pendingEngagements}
           onInjectedConsumed={(ids) => {

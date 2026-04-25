@@ -4,7 +4,7 @@ import { getTenantFromHeaders } from "@/lib/tenancy/tenant-context";
 import { TenantNav } from "@/components/tenant-site/nav";
 import { TenantFooter } from "@/components/tenant-site/footer";
 import { ExitIntentPopup } from "@/components/tenant-site/exit-intent-popup";
-import { ChatbotLoader } from "@/components/chatbot/chatbot-loader";
+import { ChatbotLoaderFor } from "@/components/chatbot/chatbot-loader";
 import { CursivePixelLoader } from "@/components/pixel/cursive-pixel-loader";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -41,7 +41,7 @@ export default async function TenantLayout({
     return (
       <>
         {config?.chatbotEnabled ? (
-          <ChatbotLoader orgId={tenant.id} config={config} />
+          <ChatbotLoaderFor tenant={tenant} config={config} />
         ) : null}
         {config?.enablePixel ? (
           <CursivePixelLoader orgId={tenant.id} />
@@ -68,7 +68,7 @@ export default async function TenantLayout({
       <main className="flex-1">{children}</main>
       <TenantFooter tenant={tenant} />
       {config?.chatbotEnabled ? (
-        <ChatbotLoader orgId={tenant.id} config={config} />
+        <ChatbotLoaderFor tenant={tenant} config={config} />
       ) : null}
       {config?.enablePixel ? (
         <CursivePixelLoader orgId={tenant.id} />
