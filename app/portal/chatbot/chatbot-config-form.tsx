@@ -15,6 +15,7 @@ type FormState = {
   chatbotCaptureMode: ChatbotCaptureMode;
   chatbotKnowledgeBase: string;
   chatbotIdleTriggerSeconds: number;
+  ga4MeasurementId: string;
 };
 
 const KB_MAX = 5000;
@@ -225,6 +226,27 @@ export function ChatbotConfigForm({
             );
           })}
         </div>
+      </section>
+
+      {/* Analytics */}
+      <section className="rounded-lg border border-border bg-card p-5 space-y-3">
+        <h2 className="text-sm font-semibold text-foreground">Analytics</h2>
+        <p className="text-xs text-muted-foreground">
+          Optional. Paste your GA4 measurement ID and the chatbot will fire
+          <code className="font-mono text-[11px] ml-1">chatbot_opened</code> and
+          <code className="font-mono text-[11px] ml-1">chatbot_lead_captured</code>
+          {" "}events directly into your GA4 property. If your site already runs
+          GTM these events flow through your existing
+          <code className="font-mono text-[11px] ml-1">dataLayer</code>.
+        </p>
+        <Field
+          label="GA4 measurement ID"
+          name="ga4MeasurementId"
+          value={state.ga4MeasurementId}
+          onChange={(v) => update("ga4MeasurementId", v)}
+          placeholder="G-XXXXXXXXXX"
+          hint="Find in GA4 Admin → Data Streams → Web → Measurement ID."
+        />
       </section>
 
       {/* Knowledge base */}

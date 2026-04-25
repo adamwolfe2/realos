@@ -72,6 +72,16 @@ const saveSchema = z.object({
       )
       .nullable()
   ),
+  ga4MeasurementId: baseStringSchema.pipe(
+    z
+      .string()
+      .regex(
+        /^G-[A-Z0-9]+$/i,
+        "Looks like an invalid GA4 ID — expected format G-XXXXXXXXXX"
+      )
+      .max(40)
+      .nullable()
+  ),
 });
 
 function parseBool(value: FormDataEntryValue | null): boolean {
@@ -108,6 +118,7 @@ export async function saveChatbotConfig(
       ),
       chatbotCaptureMode: firstString(formData.get("chatbotCaptureMode")),
       chatbotKnowledgeBase: firstString(formData.get("chatbotKnowledgeBase")),
+      ga4MeasurementId: firstString(formData.get("ga4MeasurementId")),
     };
 
     const parsed = saveSchema.safeParse(raw);

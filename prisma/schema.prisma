@@ -461,7 +461,11 @@ model TenantSiteConfig {
   chatbotKnowledgeBase      String?            @db.Text
   chatbotIdleTriggerSeconds Int                @default(5)
 
-  // Exit intent config
+  // Tenant analytics. When ga4MeasurementId is set, the embed widget will
+  // lazy-load gtag.js with that ID on the host page if no dataLayer/gtag is
+  // already present, then fire chatbot_opened / chatbot_lead_captured events
+  // directly into the tenant's GA4 property. Bypasses GTM entirely.
+  ga4MeasurementId String?
   exitIntentHeadline  String?
   exitIntentBody      String?
   exitIntentCtaText   String?

@@ -48,6 +48,7 @@ export default async function ChatbotPage() {
         chatbotCaptureMode: true,
         chatbotKnowledgeBase: true,
         chatbotIdleTriggerSeconds: true,
+        ga4MeasurementId: true,
       },
     }),
     resolveAppUrl(),
@@ -66,6 +67,7 @@ export default async function ChatbotPage() {
       existingConfig?.chatbotCaptureMode ?? ChatbotCaptureMode.ON_INTENT,
     chatbotKnowledgeBase: existingConfig?.chatbotKnowledgeBase ?? "",
     chatbotIdleTriggerSeconds: existingConfig?.chatbotIdleTriggerSeconds ?? 5,
+    ga4MeasurementId: existingConfig?.ga4MeasurementId ?? "",
   };
 
   const snippet = `<script src="${appUrl}/embed/chatbot.js" data-slug="${org.slug}" defer></script>`;

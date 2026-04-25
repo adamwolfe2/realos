@@ -54,6 +54,11 @@ export async function GET(req: NextRequest) {
       moduleChatbot: true,
       primaryColor: true,
       logoUrl: true,
+      properties: {
+        orderBy: { updatedAt: "desc" },
+        take: 1,
+        select: { name: true },
+      },
       tenantSiteConfig: {
         select: {
           chatbotEnabled: true,
@@ -68,6 +73,7 @@ export async function GET(req: NextRequest) {
           primaryCtaUrl: true,
           phoneNumber: true,
           contactEmail: true,
+          ga4MeasurementId: true,
         },
       },
     },
@@ -93,7 +99,7 @@ export async function GET(req: NextRequest) {
       enabled: true,
       orgId: org.id,
       slug,
-      brandName: org.shortName ?? org.name,
+      brandName: org.properties[0]?.name ?? org.shortName ?? org.name,
       personaName: cfg.chatbotPersonaName ?? "Leasing",
       greeting:
         cfg.chatbotGreeting ??
@@ -107,6 +113,7 @@ export async function GET(req: NextRequest) {
       primaryCtaUrl: cfg.primaryCtaUrl ?? null,
       phoneNumber: cfg.phoneNumber ?? null,
       contactEmail: cfg.contactEmail ?? null,
+      ga4MeasurementId: cfg.ga4MeasurementId ?? null,
     },
     { status: 200, headers: CORS_HEADERS }
   );

@@ -103,12 +103,36 @@
     .then(function (cfg) {
       if (!cfg || !cfg.enabled) return;
       state.config = cfg;
+      ensureAnalytics(cfg);
       mount();
       fetchListingsSummary();
     })
     .catch(function (err) {
       console.warn("[leasestack chatbot] config fetch failed:", err);
     });
+
+  // Lazy-load gtag.js with the tenant's GA4 measurement ID iff the host page
+  // doesn't already have GTM (window.dataLayer) or gtag installed. This means
+  // a tenant who only configures a measurement ID in the LeaseStack portal
+  // still gets chatbot_opened / chatbot_lead_captured firing into their GA4
+  // property — no GTM container required.
+  function ensureAnalytics(cfg) {
+    if (!cfg.ga4MeasurementId) return;
+    if (Array.isArray(window.dataLayer)) return;
+    if (typeof window.gtag === "function") return;
+    var id = String(cfg.ga4MeasurementId).trim();
+    if (!/^G-[A-Z0-9]+$/i.test(id)) return;
+
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = function () { window.dataLayer.push(arguments); };
+    window.gtag("js", new Date());
+    window.gtag("config", id, { send_page_view: false });
+
+    var s = document.createElement("script");
+    s.async = true;
+    s.src = "https://www.googletagmanager.com/gtag/js?id=" + encodeURIComponent(id);
+    document.head.appendChild(s);
+  }
 
   function mount() {
     var host = document.createElement("div");
