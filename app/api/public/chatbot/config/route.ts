@@ -67,6 +67,7 @@ export async function GET(req: NextRequest) {
           primaryCtaText: true,
           primaryCtaUrl: true,
           phoneNumber: true,
+          contactEmail: true,
         },
       },
     },
@@ -105,6 +106,7 @@ export async function GET(req: NextRequest) {
       primaryCtaText: cfg.primaryCtaText ?? null,
       primaryCtaUrl: cfg.primaryCtaUrl ?? null,
       phoneNumber: cfg.phoneNumber ?? null,
+      contactEmail: cfg.contactEmail ?? null,
     },
     { status: 200, headers: CORS_HEADERS }
   );
