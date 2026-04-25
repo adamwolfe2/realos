@@ -9,6 +9,7 @@ import {
   type ScopedContext,
 } from "@/lib/tenancy/scope";
 import { AuditAction, OrgType, UserRole } from "@prisma/client";
+import { sendTeammateInviteEmail } from "@/lib/email/onboarding-emails";
 
 const CLIENT_ALLOWED_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.CLIENT_OWNER,
@@ -97,7 +98,7 @@ export async function POST(req: NextRequest) {
   //   only, and only into their own org.
   const caller = await prisma.user.findUnique({
     where: { clerkUserId: scope.clerkUserId },
-    select: { role: true, orgId: true },
+    select: { role: true, orgId: true, firstName: true, lastName: true, email: true },
   });
   const callerIsAgency = !!caller && AGENCY_ROLES.has(caller.role);
   if (!callerIsAgency) {
@@ -148,24 +149,60 @@ export async function POST(req: NextRequest) {
     userId = created.id;
   }
 
-  // Best-effort Clerk invitation — sends the sign-up email. Skips silently
-  // when Clerk isn't fully configured (e.g. Resend not set up yet) so the
-  // DB seed still lets operators onboard via manual /sign-up.
+  // Best-effort Clerk invitation. We pass `notify: false` so Clerk does NOT
+  // send its own (un-brandable) email. We then send a LeaseStack-branded
+  // Resend email that explicitly names the inviting organization. Skips
+  // silently when Clerk isn't fully configured so the DB seed still lets
+  // operators onboard via manual /sign-up.
   let clerkInviteSent = false;
   let clerkError: string | null = null;
+  let acceptUrl: string | null = null;
   try {
     const client = await clerkClient();
     const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/auth/redirect`;
-    await client.invitations.createInvitation({
+    const invitation = await client.invitations.createInvitation({
       emailAddress: email,
       publicMetadata: { orgId: org.id, role },
       redirectUrl: redirectUrl || undefined,
       ignoreExisting: true,
+      notify: false,
     });
+    acceptUrl = invitation.url ?? null;
     clerkInviteSent = true;
   } catch (err) {
     clerkError = err instanceof Error ? err.message : "Clerk invitation failed";
     console.warn("[invite] Clerk invitation failed (continuing):", clerkError);
+  }
+
+  // Send our own LeaseStack-branded invitation email naming the inviting org.
+  // Falls back to the public sign-up URL when Clerk did not return a
+  // ready-to-accept ticket URL (e.g. Clerk skipped because the user already
+  // exists, or Clerk isn't configured).
+  let inviteEmailSent = false;
+  let inviteEmailError: string | null = null;
+  try {
+    const fallbackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/sign-up`;
+    const inviterName =
+      [caller?.firstName, caller?.lastName].filter(Boolean).join(" ").trim() ||
+      null;
+    const result = await sendTeammateInviteEmail({
+      to: email,
+      orgName: org.name,
+      role,
+      acceptUrl: acceptUrl ?? fallbackUrl,
+      inviterName,
+      inviterEmail: caller?.email ?? null,
+    });
+    if (result.ok) {
+      inviteEmailSent = true;
+    } else {
+      inviteEmailError = result.error ?? "Email send failed";
+      console.warn("[invite] LeaseStack invitation email failed:", inviteEmailError);
+    }
+  } catch (err) {
+    inviteEmailError =
+      err instanceof Error ? err.message : "LeaseStack invitation email failed";
+    console.warn("[invite] LeaseStack invitation email threw:", inviteEmailError);
   }
 
   await prisma.auditEvent.create({
@@ -176,7 +213,7 @@ export async function POST(req: NextRequest) {
         entityType: "User",
         entityId: userId,
         description: `Invited ${email} to ${org.name} as ${role}${
-          clerkInviteSent ? "" : " (Clerk email not sent)"
+          inviteEmailSent ? "" : " (invite email not sent)"
         }`,
       }
     ),
@@ -187,6 +224,8 @@ export async function POST(req: NextRequest) {
     userId,
     clerkInviteSent,
     clerkError,
+    inviteEmailSent,
+    inviteEmailError,
     signUpUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/sign-up`,
   });
 }

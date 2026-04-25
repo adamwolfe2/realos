@@ -249,6 +249,94 @@ export async function sendClientPortalReadyEmail(input: {
   });
 }
 
+// ---------------------------------------------------------------------------
+// sendTeammateInviteEmail — sent when a client owner/admin (or agency operator)
+// invites a teammate into a CLIENT organization. Suppresses Clerk's default
+// invitation email so we control branding (LeaseStack, never the Clerk app
+// name) and explicitly name the inviting company/property/portfolio.
+// ---------------------------------------------------------------------------
+
+const ROLE_LABELS: Record<string, string> = {
+  CLIENT_OWNER: "Owner",
+  CLIENT_ADMIN: "Admin",
+  CLIENT_VIEWER: "Viewer",
+  LEASING_AGENT: "Leasing agent",
+  AGENCY_OWNER: "Agency owner",
+  AGENCY_ADMIN: "Agency admin",
+  AGENCY_OPERATOR: "Agency operator",
+};
+
+export async function sendTeammateInviteEmail(input: {
+  to: string;
+  orgName: string;
+  role: string;
+  acceptUrl: string;
+  inviterName?: string | null;
+  inviterEmail?: string | null;
+  expiresInDays?: number;
+}): Promise<SendResult> {
+  if (!isValidEmail(input.to)) {
+    return { ok: false, error: "Invalid recipient" };
+  }
+
+  const roleLabel = ROLE_LABELS[input.role] ?? input.role;
+  const inviter = input.inviterName?.trim() || input.inviterEmail?.trim() || null;
+  const expires = input.expiresInDays ?? 30;
+
+  const introLine = inviter
+    ? `<strong>${escape(inviter)}</strong> invited you to join <strong>${escape(
+        input.orgName
+      )}</strong> on ${escape(BRAND_NAME)} as <strong>${escape(roleLabel)}</strong>.`
+    : `You have been invited to join <strong>${escape(
+        input.orgName
+      )}</strong> on ${escape(BRAND_NAME)} as <strong>${escape(roleLabel)}</strong>.`;
+
+  const bodyHtml = `
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">${introLine}</p>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
+      ${escape(BRAND_NAME)} is the marketing platform powering ${escape(
+    input.orgName
+  )}'s lead capture, visitor intelligence, advertising, and resident
+      conversations. Once you accept, you'll have access to dashboards, leads,
+      and reports for ${escape(input.orgName)}.
+    </p>
+    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#5b5b5b;">
+      This invitation expires in ${expires} days. If you weren't expecting this,
+      you can safely ignore the email.
+    </p>
+  `;
+
+  const html = buildBaseHtml({
+    headline: `You're invited to ${input.orgName}`,
+    bodyHtml,
+    ctaText: "Accept invitation",
+    ctaUrl: input.acceptUrl,
+  });
+
+  const text = [
+    inviter
+      ? `${inviter} invited you to join ${input.orgName} on ${BRAND_NAME} as ${roleLabel}.`
+      : `You have been invited to join ${input.orgName} on ${BRAND_NAME} as ${roleLabel}.`,
+    "",
+    `${BRAND_NAME} powers ${input.orgName}'s marketing platform. Once you accept, you'll have access to dashboards, leads, and reports for ${input.orgName}.`,
+    "",
+    `Accept your invitation: ${input.acceptUrl}`,
+    "",
+    `This invitation expires in ${expires} days.`,
+    "",
+    `${BRAND_NAME}`,
+    APP_URL,
+  ].join("\n");
+
+  return safeSend({
+    to: input.to,
+    subject: `You're invited to ${input.orgName} on ${BRAND_NAME}`,
+    html,
+    text,
+    replyTo: BRAND_EMAIL,
+  });
+}
+
 function row(label: string, value: string): string {
   return `
     <tr>

@@ -19,7 +19,10 @@ import {
   auditPayload,
   type ScopedContext,
 } from "@/lib/tenancy/scope";
-import { sendClientPortalReadyEmail } from "@/lib/email/onboarding-emails";
+import {
+  sendClientPortalReadyEmail,
+  sendTeammateInviteEmail,
+} from "@/lib/email/onboarding-emails";
 
 // ---------------------------------------------------------------------------
 // Admin action: convert an IntakeSubmission into a fully provisioned CLIENT
@@ -312,25 +315,58 @@ export async function convertIntakeToClient(
     };
   }
 
-  // Step 3: invite the primary contact. Best-effort — failures are logged
-  // but do not unwind the conversion.
-  try {
-    const client = await clerkClient();
-    await client.organizations.createOrganizationInvitation({
-      organizationId: clerkOrgId,
-      emailAddress: intake.primaryContactEmail,
-      role: "org:admin",
-      inviterUserId: scope.clerkUserId,
-    });
-  } catch (err) {
-    console.warn(
-      "convertIntakeToClient: Clerk invitation failed (continuing)",
-      err
-    );
+  // Step 3: invite the primary contact. We use a regular Clerk invitation
+  // (not an org invitation) with `notify: false` so Clerk does NOT send its
+  // un-brandable email. We then send our own LeaseStack-branded invite that
+  // names the inviting organization. Best-effort — failures are logged but
+  // do not unwind the conversion.
+  let inviteAcceptUrl: string | null = null;
+  if (intake.primaryContactEmail) {
+    try {
+      const client = await clerkClient();
+      const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/auth/redirect`;
+      const invitation = await client.invitations.createInvitation({
+        emailAddress: intake.primaryContactEmail,
+        publicMetadata: { orgId: org.id, role: "CLIENT_OWNER" },
+        redirectUrl: redirectUrl || undefined,
+        ignoreExisting: true,
+        notify: false,
+      });
+      inviteAcceptUrl = invitation.url ?? null;
+    } catch (err) {
+      console.warn(
+        "convertIntakeToClient: Clerk invitation failed (continuing)",
+        err
+      );
+    }
   }
 
-  // Step 4: send the portal-ready welcome email. Best-effort — a failure here
-  // must not roll back the conversion or block the success response.
+  // Step 4: send the LeaseStack-branded invite email. Names the inviting
+  // organization so the recipient knows who invited them. Best-effort — a
+  // failure here must not roll back the conversion or block the success
+  // response.
+  if (intake.primaryContactEmail) {
+    try {
+      const fallbackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/sign-up`;
+      await sendTeammateInviteEmail({
+        to: intake.primaryContactEmail,
+        orgName: org.name,
+        role: "CLIENT_OWNER",
+        acceptUrl: inviteAcceptUrl ?? fallbackUrl,
+        inviterName: null,
+        inviterEmail: null,
+      });
+    } catch (err) {
+      console.warn(
+        "convertIntakeToClient: invite email failed (continuing)",
+        err
+      );
+    }
+  }
+
+  // Step 5: send the portal-ready welcome email (separate from the invite).
+  // Best-effort — a failure here must not roll back the conversion or block
+  // the success response.
   if (intake.primaryContactEmail && intake.primaryContactName) {
     try {
       await sendClientPortalReadyEmail({
