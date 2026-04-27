@@ -1,6 +1,11 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="64" height="64" rx="12" fill="#0A0A0A"/>
-  <rect x="14" y="14" width="36" height="9" rx="4.5" fill="#3B7BF6"/>
-  <rect x="14" y="28" width="36" height="9" rx="4.5" fill="#3B7BF6" opacity="0.7"/>
-  <rect x="14" y="42" width="36" height="9" rx="4.5" fill="#3B7BF6" opacity="0.4"/>
+  <rect width="64" height="64" rx="12" fill="#FFFFFF"/>
+  <g fill="#2A4DBC">
+    <path d="M21 16 L43 16 L40 21 L21 21 Z"/>
+    <path d="M21 24 L43 24 L40 29 L21 29 Z"/>
+    <path d="M21 32 L43 32 L40 37 L21 37 Z"/>
+    <path d="M21 40 L43 40 L40 45 L21 45 Z"/>
+    <path d="M21 48 L43 48 L40 48 L21 48 Z"/>
+    <rect x="18.5" y="15" width="3" height="34"/>
+  </g>
 </svg>

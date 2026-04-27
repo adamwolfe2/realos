@@ -1,6 +1,18 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="180" height="180" rx="36" fill="#0A0A0A"/>
-  <rect x="36" y="38" width="108" height="26" rx="13" fill="#3B7BF6"/>
-  <rect x="36" y="77" width="108" height="26" rx="13" fill="#3B7BF6" opacity="0.7"/>
-  <rect x="36" y="116" width="108" height="26" rx="13" fill="#3B7BF6" opacity="0.4"/>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="512" height="512" rx="96" fill="#FFFFFF"/>
+  <!-- LeaseStack mark: stacked building / floors silhouette in brand blue -->
+  <g fill="#2A4DBC">
+    <!-- Floor 1 (top) -->
+    <path d="M168 128 L344 128 L320 168 L168 168 Z"/>
+    <!-- Floor 2 -->
+    <path d="M168 192 L344 192 L320 232 L168 232 Z"/>
+    <!-- Floor 3 -->
+    <path d="M168 256 L344 256 L320 296 L168 296 Z"/>
+    <!-- Floor 4 -->
+    <path d="M168 320 L344 320 L320 360 L168 360 Z"/>
+    <!-- Floor 5 (bottom) -->
+    <path d="M168 384 L344 384 L320 384 L168 384 Z"/>
+    <!-- Left vertical column (building edge) -->
+    <rect x="148" y="120" width="24" height="272"/>
+  </g>
 </svg>
