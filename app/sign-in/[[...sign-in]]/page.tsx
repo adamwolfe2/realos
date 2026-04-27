@@ -1,5 +1,6 @@
 import { SignIn } from "@clerk/nextjs";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
 
@@ -20,15 +21,17 @@ export default function SignInPage() {
       >
         <Link
           href="/"
+          aria-label={BRAND_NAME}
           className="inline-flex items-center hover:opacity-80 transition-opacity"
-          style={{
-            color: "#141413",
-            fontFamily: "var(--font-sans)",
-            fontSize: "17px",
-            fontWeight: 500,
-          }}
         >
-          {BRAND_NAME}
+          <Image
+            src="/logos/leasestack-wordmark.png"
+            alt={BRAND_NAME}
+            width={140}
+            height={26}
+            priority
+            className="h-6 w-auto"
+          />
         </Link>
       </header>
 
