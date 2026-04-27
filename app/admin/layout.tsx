@@ -5,6 +5,7 @@ import { unstable_cache } from "next/cache";
 import { AdminMobileNav } from "./mobile-nav";
 import { AdminSidebar } from "./admin-sidebar";
 import { AdminNotifications } from "@/components/admin-notifications";
+import { BugReportButton } from "@/components/feedback/bug-report-button";
 import { BRAND_NAME } from "@/lib/brand";
 import { getScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
@@ -115,6 +116,8 @@ export default async function AdminLayout({
           <div className="p-4 pb-20 md:p-5 md:pb-8 lg:p-6 xl:p-8">{children}</div>
         </main>
       </div>
+
+      <BugReportButton />
     </div>
   );
 }

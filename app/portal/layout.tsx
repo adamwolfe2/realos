@@ -10,6 +10,7 @@ import { deriveSetupProgress } from "@/lib/setup/derive-progress";
 import Image from "next/image";
 import Link from "next/link";
 import { NotificationBell } from "@/components/portal/notification-bell";
+import { BugReportButton } from "@/components/feedback/bug-report-button";
 
 export const metadata: Metadata = {
   title: { template: `%s | ${BRAND_NAME} Portal`, default: `${BRAND_NAME} Portal` },
@@ -129,6 +130,8 @@ export default async function PortalLayout({
           <div className="p-4 pb-20 md:p-6 md:pb-10">{children}</div>
         </main>
       </div>
+
+      <BugReportButton />
     </div>
   );
 }
