@@ -176,7 +176,6 @@ export default async function VisitorsPage({
         installedOnDomain: true,
         lastEventAt: true,
         totalEventsCount: true,
-        publicSiteKey: true,
       },
     }),
     (async () => {
@@ -207,9 +206,7 @@ export default async function VisitorsPage({
     })(),
   ]);
 
-  const hasPixel = Boolean(
-    integration?.cursivePixelId || integration?.publicSiteKey
-  );
+  const hasPixel = Boolean(integration?.cursivePixelId);
   const noVisitorsAtAll = await (async () => {
     if (totalInView > 0) return false;
     return (

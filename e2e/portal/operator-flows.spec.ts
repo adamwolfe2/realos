@@ -37,10 +37,10 @@ test.describe("Portal operator flows (skipped: auth not wired)", () => {
     //   "Google Ads", "Meta Ads", "Visitor identification"
   });
 
-  test("can generate a pixel snippet and a pk_site_* key appears", async () => {
+  test("can request a Cursive pixel and the queued state shows up", async () => {
     // - Navigate to /portal/settings/integrations
-    // - Click "Generate pixel snippet"
-    // - Expect a code block containing /api/public/pixel/pk_site_
-    // - Expect the displayed key prefix to start with "pk_site_"
+    // - Click into the visitor identification tile
+    // - Submit the connect form with a website URL
+    // - Expect the pending state with "Setting up your pixel"
   });
 });

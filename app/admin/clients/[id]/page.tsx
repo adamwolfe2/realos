@@ -5,7 +5,6 @@ import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { OrgType } from "@prisma/client";
 import { ImpersonateButton } from "./impersonate-button";
-import { ProvisionPixelButton } from "./provision-pixel-button";
 import { ModuleToggle } from "./module-toggle";
 import { CursivePanel } from "./cursive-panel";
 import { DomainsPanel } from "./domains-panel";
@@ -171,12 +170,6 @@ export default async function ClientDetail({
         }
         actions={
           <>
-            {org.modulePixel ? (
-              <ProvisionPixelButton
-                orgId={org.id}
-                hasPixel={!!org.cursiveIntegration?.cursivePixelId}
-              />
-            ) : null}
             <InviteUserButton
               orgId={org.id}
               clerkOrgId={org.clerkOrgId}
@@ -335,8 +328,6 @@ export default async function ClientDetail({
               cursivePixelId: org.cursiveIntegration?.cursivePixelId ?? null,
               cursiveSegmentId: org.cursiveIntegration?.cursiveSegmentId ?? null,
               installedOnDomain: org.cursiveIntegration?.installedOnDomain ?? null,
-              publicSiteKey: org.cursiveIntegration?.publicSiteKey ?? null,
-              publicKeyPrefix: org.cursiveIntegration?.publicKeyPrefix ?? null,
               lastEventAt: org.cursiveIntegration?.lastEventAt
                 ? org.cursiveIntegration.lastEventAt.toISOString()
                 : null,

@@ -10,7 +10,7 @@ import {
   ConnectPixelForm,
   DisconnectPixelForm,
 } from "./integration-forms";
-import { PixelSnippetPanel } from "./pixel-snippet-panel";
+import { PixelRequestStatus } from "@prisma/client";
 import {
   ConnectAppfolioForm,
   DisconnectAppfolioForm,
@@ -51,9 +51,6 @@ export default async function IntegrationsPage() {
         provisionedAt: true,
         lastEventAt: true,
         totalEventsCount: true,
-        publicSiteKey: true,
-        publicKeyPrefix: true,
-        publicKeyIssuedAt: true,
       },
     }),
     prisma.appFolioIntegration.findUnique({
@@ -97,15 +94,17 @@ export default async function IntegrationsPage() {
 
   if (!org) return null;
 
+  const pendingPixelRequest = await prisma.pixelProvisionRequest.findFirst({
+    where: { orgId: scope.orgId, status: PixelRequestStatus.PENDING },
+    orderBy: { requestedAt: "desc" },
+    select: { id: true, websiteName: true, websiteUrl: true, requestedAt: true },
+  });
+
   const pixelProvisioned = Boolean(pixel?.cursivePixelId);
-  const pixelInstallSnippet = pixel?.pixelScriptUrl
-    ? `<script src="${pixel.pixelScriptUrl}" async></script>`
+  const pixelInstallSnippet = pixel?.cursivePixelId
+    ? `<script async src="https://api.audiencelab.io/pixel/${pixel.cursivePixelId}.js"></script>`
     : null;
   const pixelEligible = org.modulePixel || org.moduleChatbot;
-
-  const appBaseUrl = (
-    process.env.NEXT_PUBLIC_APP_URL ?? "https://leasestack.co"
-  ).replace(/\/$/, "");
 
   const appfolioConnected =
     !!appfolio &&
@@ -121,66 +120,21 @@ export default async function IntegrationsPage() {
         lastEventAt={pixel!.lastEventAt ?? null}
         totalEventsCount={pixel!.totalEventsCount ?? 0}
         installSnippet={pixelInstallSnippet}
-        publicSiteKey={pixel?.publicSiteKey ?? null}
-        publicKeyPrefix={pixel?.publicKeyPrefix ?? null}
-        publicKeyIssuedAt={pixel?.publicKeyIssuedAt ?? null}
-        appBaseUrl={appBaseUrl}
+      />
+    ) : pendingPixelRequest ? (
+      <PixelRequestPending
+        websiteName={pendingPixelRequest.websiteName}
+        websiteUrl={pendingPixelRequest.websiteUrl}
+        requestedAt={pendingPixelRequest.requestedAt}
       />
     ) : pixelEligible ? (
-      <div className="space-y-6">
-        <div className="space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold">Your pixel snippet</h3>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              Paste this tag on your marketing site and pageviews, scroll
-              depth, time on page, UTM, and referrer start flowing into the
-              visitor feed in real time.
-            </p>
-          </div>
-          <PixelSnippetPanel
-            initialPublicKey={pixel?.publicSiteKey ?? null}
-            initialPrefix={pixel?.publicKeyPrefix ?? null}
-            initialIssuedAt={
-              pixel?.publicKeyIssuedAt
-                ? pixel.publicKeyIssuedAt.toISOString()
-                : null
-            }
-            appBaseUrl={appBaseUrl}
-          />
-        </div>
-        <div className="pt-5 border-t border-border space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold">
-              Turn anonymous visitors into named leads
-            </h3>
-            <p className="text-[11px] text-muted-foreground mt-1">
-              Optional upgrade. Resolves visitors against a consented identity
-              graph and drops named leads into your CRM with the pages they
-              viewed and how they found you. We&apos;ll follow up to finish
-              the handshake if anything needs manual setup.
-            </p>
-          </div>
-          <ConnectPixelForm defaultWebsiteName={org.name} />
-        </div>
-      </div>
+      <ConnectPixelForm defaultWebsiteName={org.name} />
     ) : (
-      <div className="space-y-4">
-        <p className="text-xs text-muted-foreground rounded-md border border-border bg-muted/30 p-3">
-          Your workspace doesn&apos;t have visitor identification enabled on
-          this plan, so the identity-resolution pixel is locked. You can still
-          run the first-party pixel below to capture pageviews and sessions
-          right away.
+      <div className="rounded-md border border-border bg-muted/30 p-4">
+        <p className="text-xs text-muted-foreground">
+          Visitor identification isn&apos;t enabled on your current plan.
+          Talk to your account manager to turn it on.
         </p>
-        <PixelSnippetPanel
-          initialPublicKey={pixel?.publicSiteKey ?? null}
-          initialPrefix={pixel?.publicKeyPrefix ?? null}
-          initialIssuedAt={
-            pixel?.publicKeyIssuedAt
-              ? pixel.publicKeyIssuedAt.toISOString()
-              : null
-          }
-          appBaseUrl={appBaseUrl}
-        />
       </div>
     ),
     appfolio: appfolioConnected ? (
@@ -320,10 +274,6 @@ function PixelManage({
   lastEventAt,
   totalEventsCount,
   installSnippet,
-  publicSiteKey,
-  publicKeyPrefix,
-  publicKeyIssuedAt,
-  appBaseUrl,
 }: {
   pixelId: string;
   installedOnDomain: string | null;
@@ -331,10 +281,6 @@ function PixelManage({
   lastEventAt: Date | null;
   totalEventsCount: number;
   installSnippet: string | null;
-  publicSiteKey: string | null;
-  publicKeyPrefix: string | null;
-  publicKeyIssuedAt: Date | null;
-  appBaseUrl: string;
 }) {
   return (
     <div className="space-y-5">
@@ -372,7 +318,7 @@ function PixelManage({
         <div className="space-y-2">
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-xs font-medium text-foreground">
-              Cursive install snippet
+              Install snippet
             </span>
             <CopySnippetButton snippet={installSnippet} />
           </div>
@@ -384,31 +330,51 @@ function PixelManage({
           </pre>
           <p className="text-[11px] text-muted-foreground">
             Paste this tag into the {"<head>"} of every page on your site
-            where you want visitor identification to run.
+            where you want visitor identification to run. Named visitors
+            start showing up in your portal within a few minutes of the first
+            pageview.
           </p>
         </div>
       ) : null}
 
-      <div className="pt-5 border-t border-border space-y-3">
-        <div>
-          <h3 className="text-sm font-semibold">First-party pixel snippet</h3>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            Lightweight, dependency-free pixel for pageviews, scroll depth,
-            time on page, UTM, and referrer. Runs alongside the Cursive
-            identification pixel and feeds the same visitor feed.
-          </p>
-        </div>
-        <PixelSnippetPanel
-          initialPublicKey={publicSiteKey}
-          initialPrefix={publicKeyPrefix}
-          initialIssuedAt={
-            publicKeyIssuedAt ? publicKeyIssuedAt.toISOString() : null
-          }
-          appBaseUrl={appBaseUrl}
-        />
-      </div>
-
       <DisconnectPixelForm />
+    </div>
+  );
+}
+
+// Shown after a customer submits the connect form but before ops has finished
+// setting up the pixel in AudienceLab. Reassures them the request is in flight
+// without any of the dual-pixel UI.
+function PixelRequestPending({
+  websiteName,
+  websiteUrl,
+  requestedAt,
+}: {
+  websiteName: string;
+  websiteUrl: string;
+  requestedAt: Date;
+}) {
+  return (
+    <div className="rounded-md border border-border bg-muted/30 p-5 space-y-3">
+      <div className="flex items-center gap-2">
+        <span className="inline-block h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+        <h3 className="text-sm font-semibold">Setting up your pixel</h3>
+      </div>
+      <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+        <DetailRow label="Website" value={websiteName} />
+        <DetailRow label="URL" value={websiteUrl} mono />
+        <DetailRow
+          label="Requested"
+          value={formatDistanceToNow(requestedAt, { addSuffix: true })}
+        />
+      </dl>
+      <p className="text-[12px] text-muted-foreground leading-relaxed">
+        Our team is provisioning your identity-resolution pixel. We&apos;ll
+        email you the install snippet within one business day — usually much
+        sooner. You&apos;ll be able to paste it into the head of your site and
+        named visitors will start showing up in your portal within a few
+        minutes of the first pageview.
+      </p>
     </div>
   );
 }

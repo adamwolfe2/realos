@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAgency, ForbiddenError, auditPayload } from "@/lib/tenancy/scope";
-import { AuditAction, Prisma } from "@prisma/client";
+import { AuditAction, PixelRequestStatus, Prisma } from "@prisma/client";
+import { sendPixelReadyCustomerEmail } from "@/lib/email/pixel-emails";
 
 // ---------------------------------------------------------------------------
 // Agency-only Cursive (AudienceLab) integration management.
@@ -71,11 +72,16 @@ export async function saveCursiveSettings(
       cursivePixelId: cursivePixelId || null,
       cursiveSegmentId: cursiveSegmentId || null,
       installedOnDomain: installedOnDomain || null,
+      provisionedAt: cursivePixelId ? new Date() : null,
     },
     update: {
       cursivePixelId: cursivePixelId || null,
       cursiveSegmentId: cursiveSegmentId || null,
       installedOnDomain: installedOnDomain || null,
+      provisionedAt:
+        cursivePixelId && !previous?.cursivePixelId
+          ? new Date()
+          : undefined,
     },
   });
 
@@ -95,8 +101,95 @@ export async function saveCursiveSettings(
     ),
   });
 
+  // Auto-fulfillment: if this save just introduced a pixel_id where there
+  // wasn't one before, mark any pending PixelProvisionRequest fulfilled and
+  // email the customer their install snippet.
+  const transitionedToFulfilled =
+    !!cursivePixelId && !previous?.cursivePixelId;
+  if (transitionedToFulfilled) {
+    await fulfillPendingRequests({
+      orgId,
+      pixelId: cursivePixelId,
+    });
+  }
+
   revalidatePath(`/admin/clients/${orgId}`);
+  revalidatePath("/admin/pixel-requests");
   return { ok: true };
+}
+
+async function fulfillPendingRequests(args: {
+  orgId: string;
+  pixelId: string;
+}): Promise<void> {
+  const pending = await prisma.pixelProvisionRequest.findMany({
+    where: { orgId: args.orgId, status: PixelRequestStatus.PENDING },
+    select: { id: true, requestedByUserId: true, websiteUrl: true },
+  });
+  if (pending.length === 0) return;
+
+  await prisma.pixelProvisionRequest.updateMany({
+    where: { id: { in: pending.map((p) => p.id) } },
+    data: {
+      status: PixelRequestStatus.FULFILLED,
+      fulfilledAt: new Date(),
+      fulfilledPixelId: args.pixelId,
+    },
+  });
+
+  // Look up requester emails so we can notify each one. Org primary contact
+  // is the fallback if the original requester user no longer exists.
+  const requesterIds = pending
+    .map((p) => p.requestedByUserId)
+    .filter((id): id is string => Boolean(id));
+  const [requesters, org] = await Promise.all([
+    requesterIds.length
+      ? prisma.user.findMany({
+          where: { id: { in: requesterIds } },
+          select: { id: true, email: true, firstName: true, lastName: true },
+        })
+      : Promise.resolve(
+          [] as Array<{
+            id: string;
+            email: string;
+            firstName: string | null;
+            lastName: string | null;
+          }>,
+        ),
+    prisma.organization.findUnique({
+      where: { id: args.orgId },
+      select: { primaryContactEmail: true, primaryContactName: true, name: true },
+    }),
+  ]);
+  const userById = new Map(requesters.map((u) => [u.id, u]));
+
+  const installSnippet = buildInstallSnippet(args.pixelId);
+
+  for (const p of pending) {
+    const user = p.requestedByUserId
+      ? userById.get(p.requestedByUserId)
+      : undefined;
+    const userName = user
+      ? [user.firstName, user.lastName].filter(Boolean).join(" ").trim()
+      : "";
+    const to = user?.email ?? org?.primaryContactEmail ?? null;
+    const customerName =
+      userName || org?.primaryContactName || org?.name || "there";
+    if (!to) continue;
+    void sendPixelReadyCustomerEmail({
+      to,
+      customerName,
+      websiteUrl: p.websiteUrl,
+      installSnippet,
+    }).catch(() => undefined);
+  }
+}
+
+function buildInstallSnippet(pixelId: string): string {
+  // AudienceLab serves the V4 pixel script keyed by pixel_id. We mirror the
+  // shape the AL UI hands operators today; if AL changes the canonical URL
+  // we update this single helper.
+  return `<script async src="https://api.audiencelab.io/pixel/${pixelId}.js"></script>`;
 }
 
 // ---------------------------------------------------------------------------

@@ -317,6 +317,7 @@ model Organization {
   auditEvents          AuditEvent[]
   clientNotes          ClientNote[]
   cursiveIntegration   CursiveIntegration?
+  pixelProvisionRequests PixelProvisionRequest[]
   appfolioIntegration  AppFolioIntegration?
   seoIntegrations      SeoIntegration[]
   seoSnapshots         SeoSnapshot[]
@@ -808,14 +809,6 @@ model CursiveIntegration {
   lastEventAt       DateTime?
   totalEventsCount  Int       @default(0)
 
-  // First-party pixel — public, embeddable site key that the JS snippet uses
-  // to identify the tenant. Safe to publish (rate-limited, scoped to write
-  // anonymous pageview/session events only). Distinct from `ApiKey` which is
-  // server-side and may write any record.
-  publicSiteKey     String?   @unique // e.g. "pk_site_<base62>"
-  publicKeyPrefix   String? // first ~12 chars for display
-  publicKeyIssuedAt DateTime?
-
   // AudienceLab segment binding for the admin "Sync from segment" pull
   cursiveSegmentId  String?
   lastSegmentSyncAt DateTime?
@@ -826,6 +819,41 @@ model CursiveIntegration {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// AudienceLab does not expose a programmatic pixel-creation API, so when a
+// tenant asks for visitor identification we queue a request here. Ops sets
+// up the pixel + segment + workflow in the AL UI, then pastes the resulting
+// pixel_id into the admin Cursive panel — which marks the matching request
+// FULFILLED and emails the customer with their install snippet.
+enum PixelRequestStatus {
+  PENDING
+  FULFILLED
+  CANCELLED
+}
+
+model PixelProvisionRequest {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  websiteName String
+  websiteUrl  String
+
+  status      PixelRequestStatus @default(PENDING)
+  requestedByUserId String?
+  requestedAt DateTime           @default(now())
+  fulfilledAt DateTime?
+
+  // Snapshot of the resulting pixel_id once fulfilled (for audit/debugging).
+  fulfilledPixelId String?
+  notes            String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, status])
+  @@index([status, requestedAt])
 }
 
 // ============================================================================

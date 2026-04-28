@@ -12,6 +12,7 @@ import {
   HeartPulse,
   Radio,
   Plug,
+  Inbox,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -24,7 +25,8 @@ export interface NavItem {
     | "activeBuilds"
     | "unreadMessages"
     | "openCreative"
-    | "atRiskTenants";
+    | "atRiskTenants"
+    | "pendingPixelRequests";
 }
 
 export interface NavGroup {
@@ -73,6 +75,12 @@ export const adminNavGroups: NavGroup[] = [
         badgeKey: "openCreative",
       },
       { href: "/admin/campaigns", label: "Ad campaigns", icon: Megaphone },
+      {
+        href: "/admin/pixel-requests",
+        label: "Pixel requests",
+        icon: Inbox,
+        badgeKey: "pendingPixelRequests",
+      },
       { href: "/admin/pixel", label: "Pixel health", icon: Radio },
     ],
   },

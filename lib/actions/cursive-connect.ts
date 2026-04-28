@@ -4,20 +4,17 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
-import {
-  archiveCursivePixel,
-  provisionCursivePixel,
-} from "@/lib/integrations/cursive";
-import { OrgType } from "@prisma/client";
+import { sendPixelRequestOpsEmail } from "@/lib/email/pixel-emails";
+import { OrgType, PixelRequestStatus } from "@prisma/client";
 
-// ---------------------------------------------------------------------------
-// Portal-side Cursive/AudienceLab pixel server actions.
+// Portal-side Cursive (AudienceLab) pixel server actions.
 //
-// `connectPixel` provisions a new AL pixel for the CLIENT org and persists
-// the returned install snippet on CursiveIntegration. `disconnectPixel`
-// archives the pixel in AL and clears the integration row. Both require the
-// caller's effective org to be a CLIENT (agency impersonators are allowed).
-// ---------------------------------------------------------------------------
+// AudienceLab does not expose a programmatic pixel-creation API — pixels are
+// created in the AL dashboard. So `connectPixel` queues a request that ops
+// fulfills manually; the customer is told upfront that we'll email them when
+// the pixel is live (typically within one business day). `disconnectPixel`
+// just clears the integration row and any pending request — nothing to call
+// upstream.
 
 const PORTAL_PATH = "/portal/settings/integrations";
 
@@ -36,17 +33,15 @@ const connectSchema = z.object({
     .max(500),
 });
 
-export type ConnectPixelResult = {
-  ok: boolean;
-  error?: string;
-};
+export type ConnectPixelResult =
+  | { ok: true; queued?: boolean }
+  | { ok: false; error: string };
 
 function normalizeUrl(raw: string): URL {
   const trimmed = raw.trim();
   const withScheme = /^https?:\/\//i.test(trimmed)
     ? trimmed
     : `https://${trimmed}`;
-  // Throws on invalid URL — caller wraps in try/catch.
   return new URL(withScheme);
 }
 
@@ -65,9 +60,10 @@ export async function connectPixel(
   try {
     scope = await requireClientScope();
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Not authorized";
-    return { ok: false, error: message };
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Not authorized",
+    };
   }
 
   const parsed = connectSchema.safeParse({
@@ -75,21 +71,7 @@ export async function connectPixel(
     websiteUrl: formData.get("websiteUrl")?.toString() ?? "",
   });
   if (!parsed.success) {
-    const first = parsed.error.issues[0]?.message ?? "Invalid input";
-    return { ok: false, error: first };
-  }
-
-  const org = await prisma.organization.findUnique({
-    where: { id: scope.orgId },
-    select: { id: true, name: true, modulePixel: true, moduleChatbot: true },
-  });
-  if (!org) return { ok: false, error: "Organization not found" };
-  if (!org.modulePixel && !org.moduleChatbot) {
-    return {
-      ok: false,
-      error:
-        "Pixel module is not enabled for your workspace. Contact your account manager.",
-    };
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
   }
 
   let websiteUrl: URL;
@@ -102,59 +84,86 @@ export async function connectPixel(
     return { ok: false, error: "Website URL must be http or https." };
   }
 
-  const appBase = process.env.NEXT_PUBLIC_APP_URL;
-  if (!appBase) {
+  const org = await prisma.organization.findUnique({
+    where: { id: scope.orgId },
+    select: {
+      id: true,
+      name: true,
+      modulePixel: true,
+      moduleChatbot: true,
+      cursiveIntegration: { select: { cursivePixelId: true } },
+    },
+  });
+  if (!org) return { ok: false, error: "Organization not found" };
+  if (!org.modulePixel && !org.moduleChatbot) {
     return {
       ok: false,
       error:
-        "NEXT_PUBLIC_APP_URL is not configured; cannot build webhook URL.",
+        "Pixel module is not enabled for your workspace. Contact your account manager.",
     };
   }
-  let webhookUrl: string;
-  try {
-    webhookUrl = new URL("/api/webhooks/cursive", appBase).toString();
-  } catch {
-    return { ok: false, error: "Invalid NEXT_PUBLIC_APP_URL configuration." };
+  if (org.cursiveIntegration?.cursivePixelId) {
+    return {
+      ok: false,
+      error: "A pixel is already connected for this workspace.",
+    };
   }
 
   const websiteName = parsed.data.websiteName ?? org.name;
 
-  try {
-    const provisioned = await provisionCursivePixel({
+  // Look up the requesting user's email so ops can reply directly.
+  const user = await prisma.user.findUnique({
+    where: { id: scope.userId },
+    select: { id: true, email: true },
+  });
+
+  // Idempotent: if a pending request already exists for this org we just
+  // return success rather than queueing duplicates.
+  const existing = await prisma.pixelProvisionRequest.findFirst({
+    where: { orgId: org.id, status: PixelRequestStatus.PENDING },
+    select: { id: true },
+  });
+
+  let requestId = existing?.id;
+  if (!existing) {
+    const created = await prisma.pixelProvisionRequest.create({
+      data: {
+        orgId: org.id,
+        websiteName,
+        websiteUrl: websiteUrl.toString(),
+        requestedByUserId: user?.id ?? null,
+      },
+      select: { id: true },
+    });
+    requestId = created.id;
+
+    // Best-effort ops notification. Don't fail the request if email is down.
+    void sendPixelRequestOpsEmail({
+      orgName: org.name,
+      orgId: org.id,
       websiteName,
       websiteUrl: websiteUrl.toString(),
-      webhookUrl,
-    });
-
-    await prisma.cursiveIntegration.upsert({
-      where: { orgId: org.id },
-      create: {
-        orgId: org.id,
-        cursivePixelId: provisioned.pixelId,
-        pixelScriptUrl: provisioned.installUrl,
-        installedOnDomain: websiteUrl.hostname,
-        provisionedAt: new Date(),
-      },
-      update: {
-        cursivePixelId: provisioned.pixelId,
-        pixelScriptUrl: provisioned.installUrl,
-        installedOnDomain: websiteUrl.hostname,
-        provisionedAt: new Date(),
-      },
-    });
-
-    await prisma.organization.update({
-      where: { id: org.id },
-      data: { modulePixel: true },
-    });
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Pixel provisioning failed";
-    return { ok: false, error: message };
+      requestedByEmail: user?.email ?? null,
+      requestId: created.id,
+    }).catch(() => undefined);
   }
 
+  // Pre-create the integration row so installedOnDomain is captured even
+  // before ops fulfills. The Cursive panel reads this row, so this also
+  // means the admin sees the requested domain pre-filled.
+  await prisma.cursiveIntegration.upsert({
+    where: { orgId: org.id },
+    create: {
+      orgId: org.id,
+      installedOnDomain: websiteUrl.hostname,
+    },
+    update: {
+      installedOnDomain: websiteUrl.hostname,
+    },
+  });
+
   revalidatePath(PORTAL_PATH);
-  return { ok: true };
+  return { ok: true, queued: true };
 }
 
 export async function disconnectPixel(): Promise<ConnectPixelResult> {
@@ -162,35 +171,26 @@ export async function disconnectPixel(): Promise<ConnectPixelResult> {
   try {
     scope = await requireClientScope();
   } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Not authorized";
-    return { ok: false, error: message };
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Not authorized",
+    };
   }
 
-  const integration = await prisma.cursiveIntegration.findUnique({
-    where: { orgId: scope.orgId },
-    select: { id: true, cursivePixelId: true },
-  });
-  if (!integration || !integration.cursivePixelId) {
-    return { ok: true };
-  }
-
-  try {
-    await archiveCursivePixel(integration.cursivePixelId);
-  } catch (err) {
-    const message =
-      err instanceof Error ? err.message : "Pixel archive failed";
-    return { ok: false, error: message };
-  }
-
-  await prisma.cursiveIntegration.update({
-    where: { orgId: scope.orgId },
-    data: {
-      cursivePixelId: null,
-      pixelScriptUrl: null,
-      installedOnDomain: null,
-    },
-  });
+  await prisma.$transaction([
+    prisma.cursiveIntegration.updateMany({
+      where: { orgId: scope.orgId },
+      data: {
+        cursivePixelId: null,
+        pixelScriptUrl: null,
+        installedOnDomain: null,
+      },
+    }),
+    prisma.pixelProvisionRequest.updateMany({
+      where: { orgId: scope.orgId, status: PixelRequestStatus.PENDING },
+      data: { status: PixelRequestStatus.CANCELLED },
+    }),
+  ]);
 
   await prisma.organization.update({
     where: { id: scope.orgId },

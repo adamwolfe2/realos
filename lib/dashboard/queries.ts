@@ -499,7 +499,7 @@ export async function getIntegrationHealth(orgId: string): Promise<IntegrationCh
     }),
     prisma.cursiveIntegration.findUnique({
       where: { orgId },
-      select: { publicSiteKey: true, cursivePixelId: true, lastEventAt: true },
+      select: { cursivePixelId: true, lastEventAt: true },
     }),
     prisma.visitorEvent.findFirst({
       where: { orgId, occurredAt: { gte: recentEventCutoff } },
@@ -607,12 +607,11 @@ function appfolioStatus(
 }
 
 function cursiveStatus(
-  c: { publicSiteKey: string | null; cursivePixelId: string | null; lastEventAt: Date | null } | null,
+  c: { cursivePixelId: string | null; lastEventAt: Date | null } | null,
   hasRecentEvent: boolean,
 ): IntegrationChipStatus {
   if (!c) return "off";
-  const installed = !!c.publicSiteKey || !!c.cursivePixelId;
-  if (!installed) return "off";
+  if (!c.cursivePixelId) return "off";
   if (!hasRecentEvent && !c.lastEventAt) return "degraded";
   if (c.lastEventAt && Date.now() - c.lastEventAt.getTime() > 7 * DAY_MS) {
     return "degraded";
@@ -636,7 +635,7 @@ export async function getFirstRunProgress(orgId: string): Promise<FirstRunProgre
     prisma.property.count({ where: { orgId } }),
     prisma.cursiveIntegration.findUnique({
       where: { orgId },
-      select: { publicSiteKey: true, cursivePixelId: true, lastEventAt: true },
+      select: { cursivePixelId: true, lastEventAt: true },
     }),
     prisma.seoIntegration.findFirst({
       where: { orgId, provider: SeoProvider.GSC },
@@ -648,7 +647,7 @@ export async function getFirstRunProgress(orgId: string): Promise<FirstRunProgre
     }),
   ]);
 
-  const pixelInstalled = !!cursive?.lastEventAt || !!cursive?.publicSiteKey;
+  const pixelInstalled = !!cursive?.lastEventAt || !!cursive?.cursivePixelId;
   const gscConnected = !!gsc;
   const marketingSiteCustomized = !!(
     siteConfig?.heroHeadline ||

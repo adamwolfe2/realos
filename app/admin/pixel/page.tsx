@@ -20,7 +20,6 @@ export default async function PixelHealthPage() {
     select: {
       orgId: true,
       cursivePixelId: true,
-      publicSiteKey: true,
       installedOnDomain: true,
       lastEventAt: true,
       totalEventsCount: true,
@@ -35,18 +34,16 @@ export default async function PixelHealthPage() {
   const rows = integrations.map((i) => {
     const lastMs = i.lastEventAt ? new Date(i.lastEventAt).getTime() : null;
     const hasCursive = Boolean(i.cursivePixelId);
-    const hasFirstParty = Boolean(i.publicSiteKey);
     const firing = lastMs !== null && now - lastMs < FIRING_WINDOW_MS;
     const stale = lastMs !== null && now - lastMs >= FIRING_WINDOW_MS && now - lastMs < STALE_WINDOW_MS;
-    const dark = lastMs === null || now - lastMs >= STALE_WINDOW_MS;
 
     let pixelStatus: "firing" | "stale" | "dark" | "unconfigured";
-    if (!hasCursive && !hasFirstParty) pixelStatus = "unconfigured";
+    if (!hasCursive) pixelStatus = "unconfigured";
     else if (firing) pixelStatus = "firing";
     else if (stale) pixelStatus = "stale";
     else pixelStatus = "dark";
 
-    return { ...i, hasCursive, hasFirstParty, pixelStatus };
+    return { ...i, hasCursive, pixelStatus };
   });
 
   const counts = {
@@ -79,9 +76,6 @@ export default async function PixelHealthPage() {
                   Client
                 </th>
                 <th className="text-left px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
-                  Pixel types
-                </th>
-                <th className="text-left px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
                   Domain
                 </th>
                 <th className="text-left px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
@@ -107,23 +101,6 @@ export default async function PixelHealthPage() {
                       {r.org.name}
                     </Link>
                     <div className="text-[11px] text-muted-foreground">{r.org.slug}</div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-1">
-                      {r.hasCursive && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200">
-                          Cursive
-                        </span>
-                      )}
-                      {r.hasFirstParty && (
-                        <span className="text-[10px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200">
-                          First-party
-                        </span>
-                      )}
-                      {!r.hasCursive && !r.hasFirstParty && (
-                        <span className="text-[10px] text-muted-foreground">None</span>
-                      )}
-                    </div>
                   </td>
                   <td className="px-4 py-3 text-xs text-muted-foreground">
                     {r.installedOnDomain ?? "—"}
@@ -151,7 +128,7 @@ export default async function PixelHealthPage() {
               ))}
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={7} className="px-4 py-10 text-center text-sm text-muted-foreground">
+                  <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">
                     No pixel integrations configured.
                   </td>
                 </tr>

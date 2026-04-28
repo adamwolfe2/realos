@@ -10,8 +10,6 @@ type Initial = {
   cursivePixelId: string | null;
   cursiveSegmentId: string | null;
   installedOnDomain: string | null;
-  publicSiteKey: string | null;
-  publicKeyPrefix: string | null;
   lastEventAt: string | null;
   lastSegmentSyncAt: string | null;
   totalEventsCount: number;
@@ -77,7 +75,7 @@ export function CursivePanel({
   }
 
   return (
-    <div className="space-y-5">
+    <div id="cursive-panel" className="space-y-5">
       <div>
         <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">
           Webhook URL
@@ -107,14 +105,14 @@ export function CursivePanel({
       <div className="grid gap-3 sm:grid-cols-2">
         <Field
           label="Cursive (V4) pixel ID"
-          hint="From Cursive → Pixel. Required to route incoming webhook events to this tenant."
+          hint="From AudienceLab → Pixel. Saving this for the first time auto-fulfills the customer's pending request and emails them their install snippet."
           value={pixelId}
           onChange={setPixelId}
           placeholder="e.g. 7a91c…"
         />
         <Field
           label="Audience segment ID"
-          hint="From Cursive → Segments. Required to use Sync from segment."
+          hint="From AudienceLab → Segments. Required to use Sync from segment."
           value={segmentId}
           onChange={setSegmentId}
           placeholder="d3ee9fb0-0dd2-4b4d-aa60-8ac9bd81e8e4"
@@ -125,15 +123,6 @@ export function CursivePanel({
           value={domain}
           onChange={setDomain}
           placeholder="example.com"
-        />
-        <Field
-          label="First-party public site key"
-          hint="Generated automatically. Used by the script snippet operators paste on their site."
-          value={initial.publicSiteKey ?? ""}
-          onChange={() => undefined}
-          placeholder="Not yet provisioned. Click Provision pixel."
-          readOnly
-          mono
         />
       </div>
 

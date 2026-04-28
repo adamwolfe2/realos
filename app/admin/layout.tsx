@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 // admin page load.
 const getAdminNavBadges = unstable_cache(
   async () => {
-    const [pendingIntakes, activeBuilds, openCreative, atRiskTenants] =
+    const [pendingIntakes, activeBuilds, openCreative, atRiskTenants, pendingPixelRequests] =
       await Promise.all([
         prisma.intakeSubmission.count({
           where: { reviewedAt: null, convertedAt: null },
@@ -58,12 +58,16 @@ const getAdminNavBadges = unstable_cache(
         prisma.organization.count({
           where: { orgType: OrgType.CLIENT, status: TenantStatus.AT_RISK },
         }).catch(() => 0),
+        prisma.pixelProvisionRequest.count({
+          where: { status: "PENDING" },
+        }).catch(() => 0),
       ]);
     return {
       pendingIntakes,
       activeBuilds,
       openCreative,
       atRiskTenants,
+      pendingPixelRequests,
       unreadMessages: 0,
     } as Record<string, number>;
   },
