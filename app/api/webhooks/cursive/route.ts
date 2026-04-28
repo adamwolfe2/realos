@@ -69,6 +69,18 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-audiencelab-signature") ??
     req.headers.get("x-webhook-signature");
   if (!verifyAuth({ rawBody, secret, sharedSecret, signature })) {
+    // TEMP DIAGNOSTIC: AL's per-pixel webhook (set in pixel UI Step 2)
+    // does not appear to send our x-audiencelab-secret header. Log every
+    // header on 401 so we can see what auth AL actually presents and
+    // adapt verifyAuth. Remove once we know.
+    const headerDump: Record<string, string> = {};
+    req.headers.forEach((v, k) => {
+      headerDump[k] = k.toLowerCase().includes("auth") || k.toLowerCase().includes("secret") || k.toLowerCase().includes("sign")
+        ? `[REDACTED len=${v.length}]`
+        : v;
+    });
+    console.warn("[cursive-webhook] 401 headers:", JSON.stringify(headerDump));
+    console.warn("[cursive-webhook] 401 body sample:", rawBody.slice(0, 500));
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
