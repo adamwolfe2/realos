@@ -102,7 +102,7 @@ export default async function IntegrationsPage() {
 
   const pixelProvisioned = Boolean(pixel?.cursivePixelId);
   const pixelInstallSnippet = pixel?.cursivePixelId
-    ? `<script async src="https://api.audiencelab.io/pixel/${pixel.cursivePixelId}.js"></script>`
+    ? `<script src="https://cdn.idpixel.app/v1/idp-analytics-${pixel.cursivePixelId}.min.js" defer></script>`
     : null;
   const pixelEligible = org.modulePixel || org.moduleChatbot;
 

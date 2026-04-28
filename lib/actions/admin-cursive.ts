@@ -186,10 +186,10 @@ async function fulfillPendingRequests(args: {
 }
 
 function buildInstallSnippet(pixelId: string): string {
-  // AudienceLab serves the V4 pixel script keyed by pixel_id. We mirror the
-  // shape the AL UI hands operators today; if AL changes the canonical URL
-  // we update this single helper.
-  return `<script async src="https://api.audiencelab.io/pixel/${pixelId}.js"></script>`;
+  // AudienceLab serves the V4 pixel script via cdn.idpixel.app. The URL
+  // pattern is what the AL "Install Pixel" modal hands operators today; if
+  // AL changes the canonical URL we update this single helper.
+  return `<script src="https://cdn.idpixel.app/v1/idp-analytics-${pixelId}.min.js" defer></script>`;
 }
 
 // ---------------------------------------------------------------------------
