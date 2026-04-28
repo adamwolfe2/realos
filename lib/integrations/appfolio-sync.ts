@@ -187,12 +187,13 @@ export async function runAppfolioSync(
   }
 
   // 3. UNITS / LISTINGS — pulled from `unit_directory` (v2 directory report).
+  // Don't pass a date window: directory reports filter on LastModified, so
+  // a unit that hasn't been edited recently (but is still listed and
+  // available) would silently drop out of the sync and our Listing rows
+  // would go stale. We fetch the full directory each run; idempotent
+  // upserts keep this safe.
   try {
     const rows = await fetchAllPages(client, "unit_directory", {
-      fromDate: options.fullBackfill
-        ? new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
-        : fromDate,
-      toDate,
       extraFilters: integration.propertyGroupFilter
         ? { property_group: integration.propertyGroupFilter }
         : undefined,
