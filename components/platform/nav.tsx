@@ -13,6 +13,7 @@ const PRODUCT_LINKS = [
   { href: "/features/chatbot", label: "AI chatbot" },
   { href: "/features/seo-aeo", label: "Search + AI discovery" },
   { href: "/features/ads",     label: "Managed ads" },
+  { href: "/audiences",        label: "Audience Sync" },
 ];
 
 const VERTICAL_LINKS = [

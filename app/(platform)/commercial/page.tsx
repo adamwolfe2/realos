@@ -4,12 +4,13 @@ import { SplitHero } from "@/components/platform/split-hero";
 import { Reveal } from "@/components/platform/reveal";
 
 export const metadata: Metadata = {
-  title: "Commercial real estate marketing, in build",
+  title: "Commercial real estate marketing and Audience Sync",
   description:
-    "Commercial-first modules are in build, office, retail, industrial, flex space, and medical office. Get on the design-partner list.",
+    "Audience Sync is live for commercial owners today. Office, retail, industrial, flex, and medical leasing modules ship next. Get on the design-partner list.",
 };
 
 const MODULES = [
+  { key: "audiences",  title: "Audience Sync",           status: "live today",          body: "Verified office, retail, and industrial intent segments. Push to your ad accounts and CRM today. Cross-property targeting with zip and state filters." },
   { key: "office",     title: "Office leasing",          status: "design partner · Q3", body: "Tenant rep outreach, tour scheduling, sublease mapping, VTS handoff."   },
   { key: "retail",     title: "Retail & restaurant",     status: "design partner · Q3", body: "Foot-traffic analytics, co-tenant matching, concept pitch collateral." },
   { key: "industrial", title: "Industrial & flex",       status: "design partner · Q4", body: "Bay specs, dock-door counts, loading specs, 3PL-ready listings."       },
@@ -21,14 +22,14 @@ export default function CommercialPage() {
     <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
       <SplitHero
         eyebrow="Commercial real estate"
-        headline="Commercial is"
-        headlineAccent="in build."
-        subhead="The platform is live for residential operators today: student housing, multifamily, and senior living. Commercial modules ship next: office, retail, industrial, flex space, and medical office. Five design-partner spots open."
+        headline="Commercial is shipping."
+        headlineAccent="Audience Sync is live."
+        subhead="Audience Sync is live for commercial owners today, push verified office, retail, and industrial intent segments to your ad accounts and CRM. Office, retail, industrial, flex, and medical leasing modules ship next. Five design-partner spots open."
         ctas={[
           { label: "Apply as a design partner", href: "/onboarding" },
           { label: "See the residential platform", href: "/residential", variant: "secondary" },
         ]}
-        caption="First five partners shape the spec · priced below GA · shipping this year"
+        caption="Audience Sync live today. Five design-partner spots open. Leasing modules shipping this year."
         artifact={<RoadmapCard />}
       />
 
@@ -59,7 +60,7 @@ export default function CommercialPage() {
                   lineHeight: 1.15,
                 }}
               >
-                Four commercial surfaces. Built with partners.
+                Five commercial surfaces. Built with partners.
               </h2>
             </div>
           </Reveal>

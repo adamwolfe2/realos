@@ -21,6 +21,11 @@ const VERTICALS = [
     label: "Commercial",
     tag: "Office, industrial, retail. Broker-aware, spec-sheet driven. Coming soon.",
   },
+  {
+    href: "/audiences",
+    label: "Audience Sync",
+    tag: "Verified buyer and seller segments. Push live to Meta, Google, and any CRM.",
+  },
 ];
 
 export function Verticals() {

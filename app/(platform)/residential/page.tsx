@@ -35,6 +35,14 @@ const CARDS = [
     tag: "Live",
     accent: "#2563EB",
   },
+  {
+    href: "/audiences",
+    title: "Audience Sync",
+    body:
+      "Verified buyer and seller segments piped to your ad accounts and CRM. Cross-vertical, live today.",
+    tag: "Live",
+    accent: "#2563EB",
+  },
 ];
 
 export default function ResidentialHub() {
@@ -49,7 +57,7 @@ export default function ResidentialHub() {
           { label: "Book a demo", href: "/onboarding" },
           { label: "See it live", href: "/#live", variant: "secondary" },
         ]}
-        caption="Three residential verticals live · commercial shipping this year"
+        caption="Three residential verticals live. Audience Sync shipping today. Commercial later this year."
         artifact={<PortfolioOccupancy label="Your residential portfolio" />}
       />
 
@@ -85,7 +93,7 @@ export default function ResidentialHub() {
             </div>
           </Reveal>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             {CARDS.map((c, i) => (
               <Reveal key={c.href} delay={i * 80}>
                 <Link
