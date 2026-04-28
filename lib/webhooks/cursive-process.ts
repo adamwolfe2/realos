@@ -345,6 +345,29 @@ export async function processCursiveEvent(
     });
   }
 
+  // Engagement bridge: when AL fires a page_view event with a page_url, mirror
+  // it as a VisitorSession + VisitorEvent so the portal session timeline + the
+  // dashboard visitor metrics actually populate. Wrapped so a session-write
+  // failure never breaks the visitor write — the AL ack still succeeds.
+  if (eventType === "page_view" && pageUrl) {
+    try {
+      await recordPageViewSession({
+        orgId: integration.orgId,
+        visitorId: visitor.id,
+        anonymousId: profileId ?? uid ?? cookieId ?? `al:${visitor.id}`,
+        pageUrl,
+        eventTime,
+        referrer: referrer ?? null,
+        utmSource: utmSource ?? null,
+        utmMedium: utmMedium ?? null,
+        utmCampaign: utmCampaign ?? null,
+      });
+    } catch (err) {
+      // Non-fatal: log via Sentry breadcrumb when configured but never throw.
+      console.error("[cursive-bridge] session write failed", err);
+    }
+  }
+
   await prisma.cursiveIntegration.update({
     where: { orgId: integration.orgId },
     data: {
@@ -354,6 +377,98 @@ export async function processCursiveEvent(
   });
 
   return { visitorId: visitor.id, leadId };
+}
+
+// ---------------------------------------------------------------------------
+// Page-view → session bridge
+//
+// AL provides identity but not engagement, and our schema has VisitorSession
+// + VisitorEvent built for first-party pixel events. The session timeline UI
+// reads from those tables, so when AL fires a page_view event we materialize
+// it here. Bucketing rule: append to the most recent open session (lastEventAt
+// within 30 min) OR start a new one. Time-on-site is left at 0 — AL does not
+// emit visibilitychange/unload pings, so we do not have honest dwell data.
+// ---------------------------------------------------------------------------
+
+const SESSION_IDLE_MS = 30 * 60 * 1000;
+
+async function recordPageViewSession(args: {
+  orgId: string;
+  visitorId: string;
+  anonymousId: string;
+  pageUrl: string;
+  eventTime: Date;
+  referrer: string | null;
+  utmSource: string | null;
+  utmMedium: string | null;
+  utmCampaign: string | null;
+}): Promise<void> {
+  const path = pathFromUrl(args.pageUrl);
+
+  const idleThreshold = new Date(args.eventTime.getTime() - SESSION_IDLE_MS);
+  const recentSession = await prisma.visitorSession.findFirst({
+    where: {
+      orgId: args.orgId,
+      visitorId: args.visitorId,
+      lastEventAt: { gte: idleThreshold },
+    },
+    orderBy: { lastEventAt: "desc" },
+    select: { id: true, startedAt: true },
+  });
+
+  let sessionId: string;
+  if (recentSession) {
+    sessionId = recentSession.id;
+    await prisma.visitorSession.update({
+      where: { id: recentSession.id },
+      data: {
+        lastEventAt: args.eventTime,
+        pageviewCount: { increment: 1 },
+      },
+    });
+  } else {
+    const created = await prisma.visitorSession.create({
+      data: {
+        orgId: args.orgId,
+        visitorId: args.visitorId,
+        anonymousId: args.anonymousId,
+        sessionToken: crypto.randomUUID(),
+        firstUrl: args.pageUrl,
+        firstReferrer: args.referrer,
+        utmSource: args.utmSource,
+        utmMedium: args.utmMedium,
+        utmCampaign: args.utmCampaign,
+        startedAt: args.eventTime,
+        lastEventAt: args.eventTime,
+        pageviewCount: 1,
+        totalTimeSeconds: 0,
+        maxScrollDepth: 0,
+      },
+      select: { id: true },
+    });
+    sessionId = created.id;
+  }
+
+  await prisma.visitorEvent.create({
+    data: {
+      orgId: args.orgId,
+      sessionId,
+      visitorId: args.visitorId,
+      type: "pageview",
+      url: args.pageUrl,
+      path,
+      occurredAt: args.eventTime,
+    },
+  });
+}
+
+function pathFromUrl(url: string): string | null {
+  try {
+    const u = new URL(url);
+    return (u.pathname || "/") + (u.search || "");
+  } catch {
+    return url.length < 256 ? url : null;
+  }
 }
 
 async function upsertLead(args: {

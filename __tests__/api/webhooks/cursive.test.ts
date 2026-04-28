@@ -607,6 +607,63 @@ describe("email parsing", () => {
   });
 });
 
+describe("page_view → VisitorSession bridge", () => {
+  beforeEach(() => {
+    mock.seedIntegration({ orgId: ORG_ID, cursivePixelId: PIXEL_ID });
+  });
+
+  it("creates a VisitorSession + VisitorEvent on a page_view with page_url", async () => {
+    const ev = enrichedPageView({
+      event: "page_view",
+      page_url: "https://telegraphcommons.com/floor-plans?utm=foo",
+    });
+    await post(makeRequest(ev));
+    expect(mock.store.visitorSessions).toHaveLength(1);
+    expect(mock.store.visitorEvents).toHaveLength(1);
+    const session = mock.store.visitorSessions[0];
+    expect(session.pageviewCount).toBe(1);
+    expect(session.firstUrl).toBe(
+      "https://telegraphcommons.com/floor-plans?utm=foo"
+    );
+    const event = mock.store.visitorEvents[0];
+    expect(event.type).toBe("pageview");
+    expect(event.path).toBe("/floor-plans?utm=foo");
+  });
+
+  it("appends to the existing session when within the idle window", async () => {
+    const first = enrichedPageView({
+      event: "page_view",
+      page_url: "https://telegraphcommons.com/",
+      event_timestamp: "2026-04-17T12:00:00Z",
+    });
+    const second = enrichedPageView({
+      event: "page_view",
+      page_url: "https://telegraphcommons.com/floor-plans",
+      event_timestamp: "2026-04-17T12:05:00Z",
+      profile_id: "profile-001",
+    });
+    await post(makeRequest(first));
+    await post(makeRequest(second));
+    expect(mock.store.visitorSessions).toHaveLength(1);
+    expect(mock.store.visitorSessions[0].pageviewCount).toBe(2);
+    expect(mock.store.visitorEvents).toHaveLength(2);
+  });
+
+  it("does not write a session for non-page_view events", async () => {
+    // The default enrichedPageView has event="page_view", so override.
+    const auth = enrichedPageView({ event: "authentication" });
+    await post(makeRequest(auth));
+    expect(mock.store.visitorSessions).toHaveLength(0);
+    expect(mock.store.visitorEvents).toHaveLength(0);
+  });
+
+  it("does not write a session when page_url is missing", async () => {
+    const ev = enrichedPageView({ event: "page_view", page_url: undefined });
+    await post(makeRequest(ev));
+    expect(mock.store.visitorSessions).toHaveLength(0);
+  });
+});
+
 describe("CursiveIntegration counters", () => {
   it("updates lastEventAt and increments totalEventsCount per processed event", async () => {
     mock.seedIntegration({ orgId: ORG_ID, cursivePixelId: PIXEL_ID });

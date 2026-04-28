@@ -81,10 +81,14 @@ export interface CursivePrismaStore {
   visitors: Row[];
   leads: Row[];
   webhookEvents: Row[];
+  visitorSessions: Row[];
+  visitorEvents: Row[];
   counters: {
     visitor: { n: number };
     lead: { n: number };
     webhookEvent: { n: number };
+    visitorSession: { n: number };
+    visitorEvent: { n: number };
   };
 }
 
@@ -94,10 +98,14 @@ export function createCursivePrismaMock() {
     visitors: [],
     leads: [],
     webhookEvents: [],
+    visitorSessions: [],
+    visitorEvents: [],
     counters: {
       visitor: { n: 0 },
       lead: { n: 0 },
       webhookEvent: { n: 0 },
+      visitorSession: { n: 0 },
+      visitorEvent: { n: 0 },
     },
   };
 
@@ -261,6 +269,61 @@ export function createCursivePrismaMock() {
           );
         }
       ),
+    },
+    visitorSession: {
+      findFirst: vi.fn(
+        async (args: {
+          where: Record<string, unknown>;
+          orderBy?: unknown;
+          select?: unknown;
+        }) => {
+          const where = { ...args.where };
+          // Strip the lastEventAt date filter — the mock matches simple
+          // equality only, and we don't need real date semantics for the
+          // unit tests that drive this path. Tests pre-seed sessions if
+          // they want to assert "append vs new".
+          delete (where as Record<string, unknown>).lastEventAt;
+          const matches = store.visitorSessions.filter((r) =>
+            matchesWhere(r, where as Record<string, unknown>)
+          );
+          // Approximate desc-by-lastEventAt by reversing insertion order.
+          return matches.length > 0 ? matches[matches.length - 1] : null;
+        }
+      ),
+      create: vi.fn(async (args: { data: Record<string, unknown> }) => {
+        const row: Row = {
+          id: genId("sess", store.counters.visitorSession),
+          ...args.data,
+        };
+        store.visitorSessions.push(row);
+        return row;
+      }),
+      update: vi.fn(
+        async (args: {
+          where: Record<string, unknown>;
+          data: Record<string, unknown>;
+        }) => {
+          const idx = store.visitorSessions.findIndex((r) =>
+            matchesWhere(r, args.where)
+          );
+          if (idx === -1) throw new Error("visitorSession not found");
+          store.visitorSessions[idx] = applyUpdate(
+            store.visitorSessions[idx],
+            args.data
+          );
+          return store.visitorSessions[idx];
+        }
+      ),
+    },
+    visitorEvent: {
+      create: vi.fn(async (args: { data: Record<string, unknown> }) => {
+        const row: Row = {
+          id: genId("ev", store.counters.visitorEvent),
+          ...args.data,
+        };
+        store.visitorEvents.push(row);
+        return row;
+      }),
     },
   };
 
