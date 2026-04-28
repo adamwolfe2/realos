@@ -1,5 +1,9 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse, type NextRequest } from "next/server";
+import {
+  NextResponse,
+  type NextFetchEvent,
+  type NextRequest,
+} from "next/server";
 import {
   resolveTenantByHostname,
   isPlatformHostname,
@@ -145,9 +149,22 @@ function withTenantHeaders(
   return next;
 }
 
-const handler = clerkIsConfigured()
+const wrappedHandler = clerkIsConfigured()
   ? clerkMiddleware(async (auth, req) => coreHandler(req, auth))
   : async (req: NextRequest) => coreHandler(req);
+
+// Public APIs (third-party webhooks, crons, public ingest endpoints) skip
+// the Clerk-wrapped handler entirely. Clerk's session handshake parses
+// cookies/auth headers on every request and throws on payload shapes it
+// doesn't expect — AL webhooks were tripping a `SyntaxError: Invalid
+// character` from inside Clerk before our `coreHandler` could run, surfacing
+// as Vercel's `MIDDLEWARE_INVOCATION_FAILED`. Short-circuiting here means
+// these routes get NextResponse.next() with zero auth processing on their
+// way to the route handler, where each one enforces its own auth scheme.
+const handler = async (req: NextRequest, event: NextFetchEvent) => {
+  if (isPublicApi(req)) return NextResponse.next();
+  return wrappedHandler(req, event);
+};
 
 export default handler;
 
