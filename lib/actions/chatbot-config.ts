@@ -82,6 +82,16 @@ const saveSchema = z.object({
       .max(40)
       .nullable()
   ),
+  gtmContainerId: baseStringSchema.pipe(
+    z
+      .string()
+      .regex(
+        /^GTM-[A-Z0-9]+$/i,
+        "Looks like an invalid GTM ID — expected format GTM-XXXXXXX"
+      )
+      .max(40)
+      .nullable()
+  ),
 });
 
 function parseBool(value: FormDataEntryValue | null): boolean {
@@ -119,6 +129,7 @@ export async function saveChatbotConfig(
       chatbotCaptureMode: firstString(formData.get("chatbotCaptureMode")),
       chatbotKnowledgeBase: firstString(formData.get("chatbotKnowledgeBase")),
       ga4MeasurementId: firstString(formData.get("ga4MeasurementId")),
+      gtmContainerId: firstString(formData.get("gtmContainerId")),
     };
 
     const parsed = saveSchema.safeParse(raw);
@@ -130,12 +141,33 @@ export async function saveChatbotConfig(
       };
     }
 
+    // gtmContainerId is not yet a first-class schema column, so we persist it
+    // inside the existing customJson Json blob alongside any prior keys.
+    // The tenant layout reads it back via readGtmContainerId().
+    const existingConfig = await prisma.tenantSiteConfig.findUnique({
+      where: { orgId: scope.orgId },
+      select: { customJson: true },
+    });
+    const priorCustom: Record<string, unknown> =
+      existingConfig?.customJson && typeof existingConfig.customJson === "object"
+        ? (existingConfig.customJson as Record<string, unknown>)
+        : {};
+    const nextCustom: Record<string, unknown> = { ...priorCustom };
+    if (parsed.data.gtmContainerId) {
+      nextCustom.gtmContainerId = parsed.data.gtmContainerId;
+    } else {
+      delete nextCustom.gtmContainerId;
+    }
+
     // Billing gate — refuse to flip the master toggle on when the module
     // isn't active on this plan. We still let operators edit the rest of
     // the fields so they can stage content before billing activates.
+    const { gtmContainerId: _gtm, ...persistFields } = parsed.data;
+    void _gtm;
     const data = {
-      ...parsed.data,
+      ...persistFields,
       chatbotEnabled: org.moduleChatbot ? parsed.data.chatbotEnabled : false,
+      customJson: nextCustom as Prisma.InputJsonValue,
     };
 
     const config = await prisma.tenantSiteConfig.upsert({

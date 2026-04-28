@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { TrackedLink } from "./tracked-link";
 
 export function Hero({
   headline,
@@ -49,8 +49,10 @@ export function Hero({
           </p>
         ) : null}
         <div className="mt-8 flex flex-wrap gap-3">
-          <Link
+          <TrackedLink
             href={ctaUrl}
+            event="apply_clicked"
+            params={{ source: "hero" }}
             className="px-6 py-3 text-sm font-semibold rounded"
             style={{
               backgroundColor: "var(--tenant-primary)",
@@ -58,14 +60,16 @@ export function Hero({
             }}
           >
             {ctaText}
-          </Link>
+          </TrackedLink>
           {secondaryCtaText && secondaryCtaUrl ? (
-            <Link
+            <TrackedLink
               href={secondaryCtaUrl}
+              event="tour_scheduled"
+              params={{ source: "hero" }}
               className="px-6 py-3 text-sm font-semibold rounded bg-white text-slate-900"
             >
               {secondaryCtaText}
-            </Link>
+            </TrackedLink>
           ) : null}
         </div>
       </div>

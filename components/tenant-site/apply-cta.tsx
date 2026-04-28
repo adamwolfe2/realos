@@ -1,8 +1,9 @@
-import Link from "next/link";
 import type { TenantWithSite } from "@/lib/tenancy/tenant-context";
+import { TrackedLink } from "./tracked-link";
 
 export function ApplyCta({ tenant }: { tenant: TenantWithSite }) {
   const config = tenant.tenantSiteConfig;
+  const applyHref = config?.primaryCtaUrl ?? "/apply";
   return (
     <section className="max-w-6xl mx-auto px-4 md:px-6 py-20">
       <div
@@ -22,18 +23,22 @@ export function ApplyCta({ tenant }: { tenant: TenantWithSite }) {
           </p>
         </div>
         <div className="flex flex-wrap gap-3">
-          <Link
-            href={config?.primaryCtaUrl ?? "/apply"}
+          <TrackedLink
+            href={applyHref}
+            event="apply_clicked"
+            params={{ source: "apply_cta", tenantId: tenant.id }}
             className="inline-block px-6 py-3 text-sm font-semibold rounded bg-white text-slate-900"
           >
             {config?.primaryCtaText ?? "Apply Now"}
-          </Link>
-          <Link
+          </TrackedLink>
+          <TrackedLink
             href="/schedule"
+            event="tour_scheduled"
+            params={{ source: "apply_cta", tenantId: tenant.id }}
             className="inline-block px-6 py-3 text-sm font-semibold rounded border border-white/30"
           >
             Schedule a tour
-          </Link>
+          </TrackedLink>
         </div>
       </div>
     </section>

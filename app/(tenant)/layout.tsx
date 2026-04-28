@@ -6,6 +6,10 @@ import { TenantFooter } from "@/components/tenant-site/footer";
 import { ExitIntentPopup } from "@/components/tenant-site/exit-intent-popup";
 import { ChatbotLoaderFor } from "@/components/chatbot/chatbot-loader";
 import { CursivePixelLoader } from "@/components/pixel/cursive-pixel-loader";
+import {
+  TenantAnalytics,
+  readGtmContainerId,
+} from "@/components/tenant-site/tenant-analytics";
 
 export async function generateMetadata(): Promise<Metadata> {
   const tenant = await getTenantFromHeaders();
@@ -37,6 +41,7 @@ export default async function TenantLayout({
 
   // Bring-your-own-site mode: client hosts the marketing site elsewhere and
   // only wants our chatbot + pixel scripts. Skip the full layout.
+  // We do NOT inject GTM/GA4 here — the tenant manages those on their own site.
   if (tenant.bringYourOwnSite) {
     return (
       <>
@@ -64,6 +69,10 @@ export default async function TenantLayout({
       className="min-h-screen flex flex-col bg-white text-slate-900"
       style={brandStyle}
     >
+      <TenantAnalytics
+        ga4MeasurementId={config?.ga4MeasurementId ?? null}
+        gtmContainerId={readGtmContainerId(config?.customJson)}
+      />
       <TenantNav tenant={tenant} />
       <main className="flex-1">{children}</main>
       <TenantFooter tenant={tenant} />

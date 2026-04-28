@@ -4,6 +4,7 @@ import { ChatbotCaptureMode } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { ChatbotConfigForm } from "./chatbot-config-form";
+import { readGtmContainerId } from "@/components/tenant-site/tenant-analytics";
 import { MasterToggle } from "./master-toggle";
 import { InstallSnippet } from "./install-snippet";
 import { PageHeader } from "@/components/admin/page-header";
@@ -49,6 +50,7 @@ export default async function ChatbotPage() {
         chatbotKnowledgeBase: true,
         chatbotIdleTriggerSeconds: true,
         ga4MeasurementId: true,
+        customJson: true,
       },
     }),
     resolveAppUrl(),
@@ -68,6 +70,7 @@ export default async function ChatbotPage() {
     chatbotKnowledgeBase: existingConfig?.chatbotKnowledgeBase ?? "",
     chatbotIdleTriggerSeconds: existingConfig?.chatbotIdleTriggerSeconds ?? 5,
     ga4MeasurementId: existingConfig?.ga4MeasurementId ?? "",
+    gtmContainerId: readGtmContainerId(existingConfig?.customJson) ?? "",
   };
 
   const snippet = `<script src="${appUrl}/embed/chatbot.js" data-slug="${org.slug}" defer></script>`;

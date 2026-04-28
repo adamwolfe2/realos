@@ -1,5 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import {
+  ArrowRight,
+  Boxes,
+  KeyRound,
+  Plug,
+  Users,
+  Check,
+} from "lucide-react";
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
@@ -12,26 +20,31 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const scope = await requireScope();
-  const [org, users, viewer] = await Promise.all([
-    prisma.organization.findUnique({ where: { id: scope.orgId } }),
-    prisma.user.findMany({
-      where: { orgId: scope.orgId },
-      orderBy: [{ role: "asc" }, { createdAt: "asc" }],
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        clerkUserId: true,
-        lastLoginAt: true,
-      },
-    }),
-    prisma.user.findUnique({
-      where: { clerkUserId: scope.clerkUserId },
-      select: { id: true, role: true },
-    }),
-  ]);
+  const [org, users, viewer, apiKeyCount, integrationsActive] =
+    await Promise.all([
+      prisma.organization.findUnique({ where: { id: scope.orgId } }),
+      prisma.user.findMany({
+        where: { orgId: scope.orgId },
+        orderBy: [{ role: "asc" }, { createdAt: "asc" }],
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+          clerkUserId: true,
+          lastLoginAt: true,
+        },
+      }),
+      prisma.user.findUnique({
+        where: { clerkUserId: scope.clerkUserId },
+        select: { id: true, role: true },
+      }),
+      prisma.apiKey.count({
+        where: { orgId: scope.orgId, revokedAt: null },
+      }),
+      countActiveIntegrations(scope.orgId),
+    ]);
 
   if (!org) return null;
 
@@ -55,8 +68,10 @@ export default async function SettingsPage() {
     ["Creative studio", org.moduleCreativeStudio],
   ];
 
+  const onCount = modules.filter(([, v]) => v).length;
+
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8 max-w-4xl">
       <PageHeader
         title="Settings"
         description="Update company info and brand tokens. Module selection and plan tier are managed by your account manager."
@@ -81,57 +96,62 @@ export default async function SettingsPage() {
         }}
       />
 
-      <section className="rounded-lg border border-border bg-card p-5">
-        <div className="flex items-baseline justify-between gap-3 mb-2">
-          <div>
-            <h2 className="text-sm font-semibold">Integrations</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Connect the Cursive visitor pixel and other third-party
-              services.
-            </p>
-          </div>
-          <Link
-            href="/portal/settings/integrations"
-            className="text-xs underline underline-offset-2 opacity-80 shrink-0"
-          >
-            Integrations →
-          </Link>
-        </div>
-      </section>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <NavCard
+          href="/portal/settings/integrations"
+          icon={<Plug className="size-4" aria-hidden="true" />}
+          title="Integrations"
+          description="Connect the visitor pixel, AppFolio, Google Ads, Meta Ads, GA4, and GSC."
+          stat={`${integrationsActive} connected`}
+        />
+        <NavCard
+          href="/portal/settings/api-keys"
+          icon={<KeyRound className="size-4" aria-hidden="true" />}
+          title="API keys"
+          description="Generate scoped keys so Zapier, Typeform, and bespoke systems can push leads, visitors, tours, and chatbot events into your CRM."
+          stat={`${apiKeyCount} active`}
+        />
+      </div>
 
-      <section className="rounded-lg border border-border bg-card p-5">
-        <div className="flex items-baseline justify-between gap-3 mb-2">
-          <div>
-            <h2 className="text-sm font-semibold">API keys</h2>
-            <p className="text-xs text-muted-foreground mt-1">
-              Generate scoped API keys so Zapier, Typeform, and bespoke
-              systems can push leads, visitors, tours, and chatbot events
-              into your CRM.
-            </p>
+      <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <header className="flex items-start justify-between gap-3 mb-5">
+          <div className="flex items-start gap-2.5">
+            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <Boxes className="size-4" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">
+                Active modules
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                {onCount} of {modules.length} enabled. Contact your account
+                manager to add or remove modules.
+              </p>
+            </div>
           </div>
-          <Link
-            href="/portal/settings/api-keys"
-            className="text-xs underline underline-offset-2 opacity-80 shrink-0"
-          >
-            API keys →
-          </Link>
-        </div>
-      </section>
-
-      <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="text-sm font-semibold mb-4">Active modules</h2>
-        <ul className="grid grid-cols-2 md:grid-cols-3 gap-y-1.5 gap-x-4">
+        </header>
+        <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
           {modules.map(([k, v]) => (
             <li
               key={k}
-              className="flex items-center justify-between gap-3 text-xs"
+              className={`flex items-center gap-2.5 rounded-md border px-3 py-2 text-xs ${
+                v
+                  ? "border-emerald-200 bg-emerald-50/40 text-foreground"
+                  : "border-border bg-background text-muted-foreground"
+              }`}
             >
-              <span>{k}</span>
               <span
-                className={`px-1.5 py-0.5 rounded text-xs ${
-                  v
-                    ? "bg-emerald-50 text-emerald-700"
-                    : "bg-muted text-muted-foreground"
+                className={`inline-flex size-4 shrink-0 items-center justify-center rounded-full ${
+                  v ? "bg-emerald-600 text-white" : "bg-muted"
+                }`}
+                aria-hidden="true"
+              >
+                {v ? <Check className="size-3" /> : null}
+              </span>
+              <span className="truncate font-medium">{k}</span>
+              <span
+                className={`ml-auto text-[10px] uppercase tracking-widest ${
+                  v ? "text-emerald-700" : "text-muted-foreground"
                 }`}
               >
                 {v ? "On" : "Off"}
@@ -141,8 +161,21 @@ export default async function SettingsPage() {
         </ul>
       </section>
 
-      <section className="rounded-lg border border-border bg-card p-5">
-        <h2 className="text-sm font-semibold mb-4">Team</h2>
+      <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+        <header className="flex items-start justify-between gap-3 mb-5">
+          <div className="flex items-start gap-2.5">
+            <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">
+              <Users className="size-4" aria-hidden="true" />
+            </span>
+            <div>
+              <h2 className="text-sm font-semibold text-foreground">Team</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Invite teammates and assign roles. Owners + Admins can manage
+                billing and settings.
+              </p>
+            </div>
+          </div>
+        </header>
         <ClientTeamPanel
           members={users}
           orgId={org.id}
@@ -152,4 +185,70 @@ export default async function SettingsPage() {
       </section>
     </div>
   );
+}
+
+function NavCard({
+  href,
+  icon,
+  title,
+  description,
+  stat,
+}: {
+  href: string;
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  stat?: string;
+}) {
+  return (
+    <Link
+      href={href}
+      className="group rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-foreground/20 hover:bg-accent/40"
+    >
+      <div className="flex items-start gap-3">
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground group-hover:bg-foreground group-hover:text-background transition-colors">
+          {icon}
+        </span>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline justify-between gap-2 flex-wrap">
+            <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+            {stat ? (
+              <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                {stat}
+              </span>
+            ) : null}
+          </div>
+          <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
+            {description}
+          </p>
+          <span className="inline-flex items-center gap-1 mt-3 text-xs font-medium text-foreground group-hover:text-primary">
+            Manage
+            <ArrowRight className="size-3 transition-transform group-hover:translate-x-0.5" />
+          </span>
+        </div>
+      </div>
+    </Link>
+  );
+}
+
+async function countActiveIntegrations(orgId: string): Promise<number> {
+  const [pixel, appfolio, seo, ads] = await Promise.all([
+    prisma.cursiveIntegration.count({
+      where: { orgId, cursivePixelId: { not: null } },
+    }),
+    prisma.appFolioIntegration.count({
+      where: {
+        orgId,
+        OR: [
+          { clientIdEncrypted: { not: null } },
+          { useEmbedFallback: true },
+        ],
+      },
+    }),
+    prisma.seoIntegration.count({ where: { orgId } }),
+    prisma.adAccount.count({
+      where: { orgId, credentialsEncrypted: { not: null } },
+    }),
+  ]);
+  return pixel + appfolio + seo + ads;
 }

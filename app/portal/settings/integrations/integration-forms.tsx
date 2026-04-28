@@ -1,6 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import {
   connectPixel,
   disconnectPixel,
@@ -21,39 +24,45 @@ export function ConnectPixelForm({
 
   return (
     <form action={formAction} className="space-y-4">
-      <div className="rounded-md border border-border bg-muted/30 p-4 space-y-3">
+      <div className="rounded-md border border-border bg-muted/30 p-4 space-y-4">
         <p className="text-xs font-medium text-foreground">
           Step 1 — Tell us where the pixel will live
         </p>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-[11px] font-medium text-foreground">
+        <div className="flex flex-col gap-1.5">
+          <Label
+            htmlFor="websiteName"
+            className="text-[11px] font-medium text-foreground"
+          >
             Website name
-          </span>
-          <input
+          </Label>
+          <Input
+            id="websiteName"
             name="websiteName"
             defaultValue={defaultWebsiteName}
-            className="border rounded px-3 py-2 text-sm bg-background"
           />
           <span className="text-[11px] text-muted-foreground">
             Shown in your portal and in the webhook metadata. The public name
             of the property or site.
           </span>
-        </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="text-[11px] font-medium text-foreground">
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <Label
+            htmlFor="websiteUrl"
+            className="text-[11px] font-medium text-foreground"
+          >
             Website URL
-          </span>
-          <input
+          </Label>
+          <Input
+            id="websiteUrl"
             name="websiteUrl"
             type="url"
             required
             placeholder="https://example.com"
-            className="border rounded px-3 py-2 text-sm bg-background"
           />
           <span className="text-[11px] text-muted-foreground">
             The full URL of the site where you&apos;ll paste the install snippet.
           </span>
-        </label>
+        </div>
       </div>
 
       <div className="rounded-md border border-border bg-muted/30 p-4 space-y-2">
@@ -68,14 +77,10 @@ export function ConnectPixelForm({
         </p>
       </div>
 
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-xs font-semibold rounded disabled:opacity-40"
-        >
+      <div className="flex items-center gap-3 flex-wrap">
+        <Button type="submit" disabled={pending} size="sm">
           {pending ? "Connecting…" : "Connect Cursive pixel"}
-        </button>
+        </Button>
         {state && !state.ok && state.error ? (
           <span className="text-xs text-destructive">{state.error}</span>
         ) : null}
