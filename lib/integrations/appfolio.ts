@@ -249,20 +249,19 @@ async function fetchEmbedScrape(
 // credentials without needing a valid date range or specific report access.
 // ---------------------------------------------------------------------------
 
-// Report names used in our sync. AppFolio v2 report names may differ from
-// v1 — these are the names we pass and the server will 400/404 if wrong.
+// Report names used in our sync. AppFolio v2 report IDs.
 //
-// AppFolio v2 directory reports follow the {entity}_directory naming
-// convention. Bare entity names like "tenants" or "listings" are NOT valid
-// v2 report IDs and get rejected with `{"message":["Id is not a valid
-// report."]}`. The unit-level data that powers our Listing rows lives in
-// `unit_directory`; the mapper handles the field shape.
+// `guest_cards` returns one row per individual lead/inquiry — this is what
+// we want for the Lead pipeline. `prospect_source_tracking` looks similar
+// but is an aggregate ROLLUP by source ("Apartments.com → 270 inquiries"),
+// not a list of leads, so it can't drive lead upserts.
 //
-// `showings` is a v1 CRUD entity, not a v2 report — if AppFolio rejects it
-// we fall through gracefully (sync resilience handles it).
+// `tenant_directory` and `unit_directory` are the directory reports for
+// SIGNED attribution and Listing rows respectively. All v2 reports return
+// snake_case column keys (e.g., `unit_id`, `property_id`, `market_rent`)
+// — the mappers below read snake_case directly.
 const REPORT_NAMES = [
-  "prospect_source_tracking",
-  "showings",
+  "guest_cards",
   "tenant_directory",
   "unit_directory",
 ] as const;
@@ -652,59 +651,69 @@ export type MappedLead = {
   raw: RawRow;
 };
 
+// Splits AppFolio's combined "Last, First" name field into parts.
+function splitGuestCardName(
+  raw: unknown
+): { firstName: string | null; lastName: string | null } {
+  const s = asString(raw);
+  if (!s) return { firstName: null, lastName: null };
+  const idx = s.indexOf(",");
+  if (idx === -1) return { firstName: s, lastName: null };
+  const last = s.slice(0, idx).trim();
+  const first = s.slice(idx + 1).trim();
+  return { firstName: first || null, lastName: last || null };
+}
+
+// Mapper for the `guest_cards` v2 report — individual leads. Snake_case
+// keys per the v2 response shape.
 export function mapLeadPayload(raw: RawRow): MappedLead | null {
-  const externalId = asString(raw.Id ?? raw.id);
+  const externalId = asString(
+    raw.guest_card_uuid ?? raw.guest_card_id ?? raw.inquiry_id ?? raw.id
+  );
   if (!externalId) return null;
-  const { source, sourceDetail } = mapSourceToEnum(raw.Source);
-  const status = mapStatusToEnum(raw.Status);
 
-  const firstName = asString(raw.FirstName);
-  const lastName = asString(raw.LastName);
-  const middle = asString(raw.MiddleInitial);
+  const { source, sourceDetail } = mapSourceToEnum(raw.source);
+  const status = mapStatusToEnum(raw.status);
+  const { firstName, lastName } = splitGuestCardName(raw.name);
 
-  const maxRent = asNumber(raw.MaxRent);
-  const bedrooms = asNumber(raw.Bedrooms);
+  const maxRent = asNumber(raw.max_rent);
+  const bedBath = asString(raw.bed_bath_preference);
 
-  const propertyIds = asStringArray(raw.PropertyIds);
-  const singleProp = asString(raw.PropertyId);
-  if (singleProp && !propertyIds.includes(singleProp)) {
-    propertyIds.unshift(singleProp);
-  }
-  const unitIds = asStringArray(raw.UnitIds);
+  const propertyIds: string[] = [];
+  const singleProp = asString(raw.property_id);
+  if (singleProp) propertyIds.push(singleProp);
+  const unitIds: string[] = [];
+  const unitId = asString(raw.unit_id);
+  if (unitId) unitIds.push(unitId);
 
   return {
     externalId,
-    email: asString(raw.Email)?.toLowerCase() ?? null,
-    firstName: firstName ?? null,
-    lastName: lastName ?? null,
-    phone: asString(raw.PhoneNumber),
+    email: asString(raw.email_address)?.toLowerCase() ?? null,
+    firstName,
+    lastName,
+    phone: asString(raw.phone_number),
     source,
     sourceDetail,
     status,
-    desiredMoveIn: asDate(raw.DesiredMovein ?? raw.DesiredMoveIn),
+    desiredMoveIn: asDate(raw.move_in_preference),
     budgetMaxCents: maxRent != null ? Math.round(maxRent * 100) : null,
-    preferredUnitType:
-      bedrooms != null ? `${bedrooms}-bed` : asString(raw.UnitType),
+    preferredUnitType: bedBath && bedBath !== "- / -" ? bedBath : null,
     notes: [
-      middle ? `Middle initial: ${middle}` : null,
-      asString(raw.AdditionalOccupants)
-        ? `Additional occupants: ${raw.AdditionalOccupants}`
+      asString(raw.credit_score) ? `Credit score: ${raw.credit_score}` : null,
+      asString(raw.monthly_income)
+        ? `Monthly income: ${raw.monthly_income}`
         : null,
-      asString(raw.CreditScore)
-        ? `Credit score: ${raw.CreditScore}`
+      asString(raw.pet_preference) ? `Pets: ${raw.pet_preference}` : null,
+      asString(raw.last_activity_type)
+        ? `Last activity: ${raw.last_activity_type}`
         : null,
-      asString(raw.MonthlyIncome)
-        ? `Monthly income: ${raw.MonthlyIncome}`
-        : null,
-      raw.HasCats ? "Has cats" : null,
-      raw.HasDogs ? "Has dogs" : null,
-      raw.HasOtherPet ? "Has other pet" : null,
+      asString(raw.notes) ? String(raw.notes) : null,
     ]
       .filter(Boolean)
       .join(" • ") || null,
     propertyIds,
     unitIds,
-    createdAt: asDate(raw.CreatedAt),
+    createdAt: asDate(raw.received),
     raw,
   };
 }
@@ -751,62 +760,78 @@ export type MappedTenant = {
   raw: RawRow;
 };
 
+// Picks the first email from `tenant_directory.emails`, which is a
+// comma-separated string when a tenant has multiple addresses on file.
+function firstEmail(raw: unknown): string | null {
+  const s = asString(raw);
+  if (!s) return null;
+  const first = s.split(/[,;]/)[0]?.trim();
+  return first ? first.toLowerCase() : null;
+}
+
+// Mapper for the `tenant_directory` v2 report. Each row represents a
+// tenant-occupancy pairing, so the stable identifier is the occupancy
+// (a tenant can have multiple occupancies over time).
 export function mapTenantPayload(raw: RawRow): MappedTenant | null {
-  const externalId = asString(raw.Id ?? raw.id);
+  const externalId = asString(
+    raw.occupancy_id ??
+      raw.selected_tenant_id ??
+      raw.tenant_integration_id ??
+      raw.guest_card_id ??
+      raw.id
+  );
   if (!externalId) return null;
   return {
     externalId,
-    email: asString(raw.Email)?.toLowerCase() ?? null,
-    firstName: asString(raw.FirstName),
-    lastName: asString(raw.LastName),
-    companyName: asString(raw.CompanyName),
-    unitExternalId: asString(raw.UnitId),
-    propertyExternalId: asString(raw.PropertyId),
+    email: firstEmail(raw.emails),
+    firstName: asString(raw.first_name),
+    lastName: asString(raw.last_name),
+    companyName: asString(raw.company_name),
+    unitExternalId: asString(raw.unit_id),
+    propertyExternalId: asString(raw.property_id),
     raw,
   };
 }
 
+// "Yes"/"No" coercion for AppFolio's string boolean columns.
+function asYesNo(v: unknown): boolean | null {
+  const s = asString(v);
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  if (lower === "yes" || lower === "true" || lower === "y") return true;
+  if (lower === "no" || lower === "false" || lower === "n") return false;
+  return null;
+}
+
+// Mapper for the `unit_directory` v2 report. Snake_case columns; numeric
+// id; rent fields can be string ("0.00") or null; sqft is a comma-formatted
+// string ("2,680"); availability comes from `rent_ready` ("Yes"/"No").
 export function mapListingPayload(raw: RawRow): NormalizedListing | null {
-  // unit_directory uses Id; older `listings` report used Id/ListingId.
-  const externalId = asString(raw.Id ?? raw.id ?? raw.ListingId ?? raw.UnitId);
+  const externalId = asString(raw.unit_id ?? raw.id ?? raw.rentable_uid);
   if (!externalId) return null;
-  const rent = asNumber(
-    raw.MarketRent ?? raw.AdvertisedRent ?? raw.Rent ?? raw.rent,
-  );
-  const beds = asNumber(raw.Bedrooms ?? raw.bedrooms);
-  const baths = asNumber(raw.Bathrooms ?? raw.bathrooms);
-  const sqft = asInt(raw.SquareFeet ?? raw.square_feet);
-  const available = asDate(
-    raw.AvailableOn ?? raw.AvailableFrom ?? raw.available_from,
-  );
-  const photos = asStringArray(
-    raw.Photos ?? raw.PhotoUrls ?? raw.UnitPhotos ?? raw.photos,
-  );
-  // unit_directory exposes IsRentReady / Status; older listings exposed
-  // IsAvailable / Available.
+  const rent = asNumber(raw.market_rent ?? raw.advertised_rent ?? raw.rent);
+  const beds = asNumber(raw.bedrooms);
+  const baths = asNumber(raw.bathrooms);
+  const sqft = asInt(raw.sqft);
+  const available = asDate(raw.ready_for_showing_on);
+  const description = asString(raw.marketing_description ?? raw.description);
+  const rentReady = asYesNo(raw.rent_ready);
+  const rentable = asYesNo(raw.rentable);
   const isAvailable =
-    raw.IsAvailable !== undefined
-      ? Boolean(raw.IsAvailable)
-      : raw.Available !== undefined
-        ? Boolean(raw.Available)
-        : raw.IsRentReady !== undefined
-          ? Boolean(raw.IsRentReady)
-          : true;
+    rentReady !== null ? rentReady : rentable !== null ? rentable : true;
 
   return {
     backendListingId: externalId,
-    unitType: asString(raw.UnitType ?? raw.unit_type ?? raw.Type),
-    unitNumber: asString(raw.UnitNumber ?? raw.unit_number ?? raw.Address2),
+    unitType: asString(raw.unit_type),
+    unitNumber: asString(raw.unit_name),
     bedrooms: beds,
     bathrooms: baths,
     squareFeet: sqft,
     priceCents: rent != null ? Math.round(rent * 100) : null,
     isAvailable,
     availableFrom: available,
-    photoUrls: photos,
-    description: asString(
-      raw.MarketingDescription ?? raw.Description ?? raw.description,
-    ),
+    photoUrls: [],
+    description,
     raw: { source: "rest", ...raw } as Prisma.InputJsonValue,
   };
 }

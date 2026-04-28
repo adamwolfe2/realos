@@ -28,11 +28,14 @@ import {
 //   - first sync (lastSyncAt null) or fullBackfill === true  → last 90 days
 //   - incremental (lastSyncAt set)                            → since lastSyncAt
 //
-// AppFolio v2 reports we use (verified against /docs/appfolio-api.md +
-// AppFolio's published Reports v2 surface):
-//   - prospect_source_tracking — leads
-//   - tenant_directory         — tenants (for SIGNED attribution)
-//   - unit_directory           — units / listings
+// AppFolio v2 reports we use:
+//   - guest_cards      — individual leads (per-row inquiry)
+//   - tenant_directory — tenants (for SIGNED attribution)
+//   - unit_directory   — units / listings
+//
+// `prospect_source_tracking` looks like a leads report but is actually an
+// aggregate ROLLUP by source (one row per source with counts). Useless
+// for individual-lead upserts.
 //
 // Tours / showings are NOT a v2 report — they live as a v1 CRUD entity
 // (/api/v1/showings.json). Tour bookings already arrive via the Cal.com
@@ -148,9 +151,9 @@ export async function runAppfolioSync(
   let phasesCompleted = 0;
   const totalPhases = 3;
 
-  // 1. LEADS — AppFolio v2 report: prospect_source_tracking
+  // 1. LEADS — AppFolio v2 report: guest_cards
   try {
-    const rows = await fetchAllPages(client, "prospect_source_tracking", { fromDate, toDate });
+    const rows = await fetchAllPages(client, "guest_cards", { fromDate, toDate });
     for (const row of rows) {
       const mapped = mapLeadPayload(row);
       if (!mapped) continue;
@@ -167,17 +170,36 @@ export async function runAppfolioSync(
   // (Tours intentionally skipped: showings is a v1 CRUD entity, not a v2
   // report. Tour bookings arrive via the Cal.com webhook instead.)
 
-  // 2. TENANTS (→ Lead SIGNED attribution)
+  // 2. TENANTS (→ Lead SIGNED attribution).
+  // Directory reports are full snapshots and don't honor date filters the
+  // way per-record reports do — passing fromDate/toDate against
+  // tenant_directory returns nothing on some org configs. We fetch the
+  // full directory and only do DB work for emails that actually match an
+  // existing Lead, so the loop stays cheap even with thousands of rows.
   try {
     const rows = await fetchAllPages(client, "tenant_directory", {
-      fromDate,
-      toDate,
+      extraFilters: { status: "all" },
     });
+    const tenantEmails = new Set<string>();
+    const tenantsByEmail = new Map<string, MappedTenant>();
     for (const row of rows) {
       const mapped = mapTenantPayload(row);
       if (!mapped || !mapped.email) continue;
-      const matched = await markLeadSignedByTenant(orgId, mapped);
-      if (matched) stats.tenantsMatched += 1;
+      tenantEmails.add(mapped.email);
+      tenantsByEmail.set(mapped.email, mapped);
+    }
+    if (tenantEmails.size > 0) {
+      const matchingLeads = await prisma.lead.findMany({
+        where: { orgId, email: { in: Array.from(tenantEmails) } },
+        select: { email: true },
+      });
+      for (const lead of matchingLeads) {
+        if (!lead.email) continue;
+        const tenant = tenantsByEmail.get(lead.email);
+        if (!tenant) continue;
+        const matched = await markLeadSignedByTenant(orgId, tenant);
+        if (matched) stats.tenantsMatched += 1;
+      }
     }
     phasesCompleted += 1;
   } catch (err) {
@@ -205,10 +227,10 @@ export async function runAppfolioSync(
       // For multi-building tenants we MUST NOT fall back to properties[0]
       // — that would make every unit collide on
       // (propertyId, backendListingId) and silently overwrite each other.
-      const rawPropertyId =
-        (row.PropertyId as string | undefined) ??
-        (row.property_id as string | undefined) ??
-        null;
+      // v2 returns property_id as a number (e.g., 134). Coerce to string
+      // so the Map lookup against backendPropertyId actually matches.
+      const rawPropRaw = row.property_id ?? row.PropertyId ?? null;
+      const rawPropertyId = rawPropRaw != null ? String(rawPropRaw) : null;
       let propertyId: string | null;
       if (rawPropertyId && propertyByExternalId.has(rawPropertyId)) {
         propertyId = propertyByExternalId.get(rawPropertyId) ?? null;
