@@ -809,6 +809,10 @@ model CursiveIntegration {
   lastEventAt       DateTime?
   totalEventsCount  Int       @default(0)
 
+  // Per-tenant webhook token. URL-as-secret so AL's per-pixel webhook UI
+  // works without our shared header. 32 hex chars = 128 bits of entropy.
+  webhookToken      String?   @unique
+
   // AudienceLab segment binding for the admin "Sync from segment" pull
   cursiveSegmentId  String?
   lastSegmentSyncAt DateTime?

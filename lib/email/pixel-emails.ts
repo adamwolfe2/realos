@@ -123,10 +123,24 @@ export async function sendPixelReadyCustomerEmail(input: {
   customerName: string;
   websiteUrl: string;
   installSnippet: string;
+  webhookUrl?: string | null;
 }): Promise<SendResult> {
   if (!isValidEmail(input.to)) return { ok: false, error: "Invalid recipient" };
 
   const portalUrl = `${APP_URL}/portal/settings/integrations`;
+
+  const webhookSection = input.webhookUrl
+    ? `
+    <p style="margin:0 0 6px;font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;">
+      AudienceLab webhook URL
+    </p>
+    <pre style="margin:0 0 8px;padding:12px;background:#0a0a0a;color:#f8f9fa;font-family:Menlo,Monaco,Consolas,monospace;font-size:11px;line-height:1.5;border-radius:4px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;">${escape(input.webhookUrl)}</pre>
+    <p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#374151;">
+      Paste this into the AudienceLab pixel under Webhooks. AudienceLab's Test
+      button should pass immediately. No additional headers required.
+    </p>
+  `
+    : "";
 
   const bodyHtml = `
     <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">Hi ${escape(input.customerName)},</p>
@@ -139,6 +153,7 @@ export async function sendPixelReadyCustomerEmail(input: {
       Install snippet
     </p>
     <pre style="margin:0 0 16px;padding:12px;background:#0a0a0a;color:#f8f9fa;font-family:Menlo,Monaco,Consolas,monospace;font-size:11px;line-height:1.5;border-radius:4px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;">${escape(input.installSnippet)}</pre>
+    ${webhookSection}
     <p style="margin:0 0 12px;font-size:13px;line-height:1.6;color:#374151;">
       You can always grab this snippet again from your portal under Settings → Integrations.
     </p>

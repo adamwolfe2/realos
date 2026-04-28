@@ -19,10 +19,12 @@ type Initial = {
 export function CursivePanel({
   orgId,
   webhookUrl,
+  tenantWebhookUrl,
   initial,
 }: {
   orgId: string;
   webhookUrl: string;
+  tenantWebhookUrl: string | null;
   initial: Initial;
 }) {
   const [pixelId, setPixelId] = useState(initial.cursivePixelId ?? "");
@@ -42,12 +44,12 @@ export function CursivePanel({
     | { kind: "error"; text: string; status?: number }
     | null
   >(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<"shared" | "tenant" | null>(null);
 
-  function onCopyWebhook() {
-    navigator.clipboard.writeText(webhookUrl).then(() => {
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
+  function onCopy(kind: "shared" | "tenant", value: string) {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(kind);
+      setTimeout(() => setCopied(null), 1500);
     });
   }
 
@@ -101,7 +103,38 @@ export function CursivePanel({
     <div id="cursive-panel" className="space-y-5">
       <div>
         <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">
-          Webhook URL
+          Per-tenant webhook URL (recommended for AL pixel UI)
+        </div>
+        {tenantWebhookUrl ? (
+          <>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-xs font-mono bg-muted/40 border border-border rounded px-2 py-1.5 break-all">
+                {tenantWebhookUrl}
+              </code>
+              <button
+                type="button"
+                onClick={() => onCopy("tenant", tenantWebhookUrl)}
+                className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-muted/40"
+              >
+                {copied === "tenant" ? "Copied" : "Copy"}
+              </button>
+            </div>
+            <p className="text-[11px] text-muted-foreground mt-1.5">
+              Paste this URL into the AudienceLab pixel under Webhooks (Step 2).
+              The path token is the auth, no headers required, so AL&apos;s
+              built-in Test button passes immediately.
+            </p>
+          </>
+        ) : (
+          <p className="text-[11px] text-muted-foreground rounded-md border border-dashed border-border bg-muted/20 px-2.5 py-2">
+            Save a Cursive pixel ID below to mint a per-tenant webhook token.
+          </p>
+        )}
+      </div>
+
+      <div>
+        <div className="text-xs uppercase tracking-wide text-muted-foreground mb-1.5">
+          Shared webhook URL (Studio Segment Trigger)
         </div>
         <div className="flex items-center gap-2">
           <code className="flex-1 text-xs font-mono bg-muted/40 border border-border rounded px-2 py-1.5 break-all">
@@ -109,19 +142,19 @@ export function CursivePanel({
           </code>
           <button
             type="button"
-            onClick={onCopyWebhook}
+            onClick={() => onCopy("shared", webhookUrl)}
             className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-muted/40"
           >
-            {copied ? "Copied" : "Copy"}
+            {copied === "shared" ? "Copied" : "Copy"}
           </button>
         </div>
         <p className="text-[11px] text-muted-foreground mt-1.5">
-          Paste this into the Cursive pixel settings under Webhooks. The
-          upstream shared-secret header
+          Use this for the Studio Segment Trigger workflow only. It requires
+          the
           <code className="font-mono mx-1">x-audiencelab-secret</code>
-          is verified against our
+          header verified against our
           <code className="font-mono mx-1">CURSIVE_WEBHOOK_SECRET</code>
-          env var (left as-is since the upstream vendor sets the header name).
+          env var.
         </p>
       </div>
 

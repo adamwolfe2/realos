@@ -513,12 +513,12 @@ describe("lead gate (spec §10)", () => {
     expect(mock.store.leads).toHaveLength(0);
   });
 
-  it("creates a Visitor but no Lead for anonymous page_view", async () => {
+  it("skips anonymous page_view (resolution gate persists nothing)", async () => {
     const { json } = await post(makeRequest(anonymousPageView()));
-    expect(json.processed?.[0].visitorId).toBeTruthy();
+    expect(json.processed?.[0].visitorId).toBeNull();
     expect(json.processed?.[0].leadId).toBeNull();
-    expect(mock.store.visitors).toHaveLength(1);
-    expect(mock.store.visitors[0].status).toBe("ANONYMOUS");
+    expect(json.processed?.[0].skipped).toBe("unresolved event");
+    expect(mock.store.visitors).toHaveLength(0);
     expect(mock.store.leads).toHaveLength(0);
   });
 

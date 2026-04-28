@@ -321,22 +321,37 @@ export default async function ClientDetail({
           description="Bind the V4 pixel and segment IDs from Cursive. The webhook URL below is what they need in their pixel settings."
           className="lg:col-span-2"
         >
-          <CursivePanel
-            orgId={org.id}
-            webhookUrl={`${(await headers()).get("x-forwarded-proto") ?? "https"}://${(await headers()).get("host") ?? "leasestack.co"}/api/webhooks/cursive`}
-            initial={{
-              cursivePixelId: org.cursiveIntegration?.cursivePixelId ?? null,
-              cursiveSegmentId: org.cursiveIntegration?.cursiveSegmentId ?? null,
-              installedOnDomain: org.cursiveIntegration?.installedOnDomain ?? null,
-              lastEventAt: org.cursiveIntegration?.lastEventAt
-                ? org.cursiveIntegration.lastEventAt.toISOString()
-                : null,
-              lastSegmentSyncAt: org.cursiveIntegration?.lastSegmentSyncAt
-                ? org.cursiveIntegration.lastSegmentSyncAt.toISOString()
-                : null,
-              totalEventsCount: org.cursiveIntegration?.totalEventsCount ?? 0,
-            }}
-          />
+          {await (async () => {
+            const hdrs = await headers();
+            const proto = hdrs.get("x-forwarded-proto") ?? "https";
+            const host = hdrs.get("host") ?? "leasestack.co";
+            const sharedWebhookUrl = `${proto}://${host}/api/webhooks/cursive`;
+            const tenantWebhookUrl = org.cursiveIntegration?.webhookToken
+              ? `${proto}://${host}/api/webhooks/cursive/${org.cursiveIntegration.webhookToken}`
+              : null;
+            return (
+              <CursivePanel
+                orgId={org.id}
+                webhookUrl={sharedWebhookUrl}
+                tenantWebhookUrl={tenantWebhookUrl}
+                initial={{
+                  cursivePixelId: org.cursiveIntegration?.cursivePixelId ?? null,
+                  cursiveSegmentId:
+                    org.cursiveIntegration?.cursiveSegmentId ?? null,
+                  installedOnDomain:
+                    org.cursiveIntegration?.installedOnDomain ?? null,
+                  lastEventAt: org.cursiveIntegration?.lastEventAt
+                    ? org.cursiveIntegration.lastEventAt.toISOString()
+                    : null,
+                  lastSegmentSyncAt: org.cursiveIntegration?.lastSegmentSyncAt
+                    ? org.cursiveIntegration.lastSegmentSyncAt.toISOString()
+                    : null,
+                  totalEventsCount:
+                    org.cursiveIntegration?.totalEventsCount ?? 0,
+                }}
+              />
+            );
+          })()}
         </SectionCard>
 
         <SectionCard label="Properties">

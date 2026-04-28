@@ -1,5 +1,6 @@
 "use server";
 
+import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -62,8 +63,15 @@ export async function saveCursiveSettings(
       cursivePixelId: true,
       cursiveSegmentId: true,
       installedOnDomain: true,
+      webhookToken: true,
     },
   });
+
+  // Mint a per-tenant webhook token the first time we see a pixel_id. The
+  // token becomes the auth on /api/webhooks/cursive/[token], which is what
+  // we hand to AL's per-pixel webhook UI (it can't pass our shared header).
+  const shouldMintToken = Boolean(cursivePixelId) && !previous?.webhookToken;
+  const newToken = shouldMintToken ? generateWebhookToken() : undefined;
 
   await prisma.cursiveIntegration.upsert({
     where: { orgId },
@@ -73,6 +81,7 @@ export async function saveCursiveSettings(
       cursiveSegmentId: cursiveSegmentId || null,
       installedOnDomain: installedOnDomain || null,
       provisionedAt: cursivePixelId ? new Date() : null,
+      webhookToken: newToken ?? null,
     },
     update: {
       cursivePixelId: cursivePixelId || null,
@@ -82,6 +91,7 @@ export async function saveCursiveSettings(
         cursivePixelId && !previous?.cursivePixelId
           ? new Date()
           : undefined,
+      webhookToken: newToken ?? undefined,
     },
   });
 
@@ -107,9 +117,11 @@ export async function saveCursiveSettings(
   const transitionedToFulfilled =
     !!cursivePixelId && !previous?.cursivePixelId;
   if (transitionedToFulfilled) {
+    const tokenForEmail = newToken ?? previous?.webhookToken ?? null;
     await fulfillPendingRequests({
       orgId,
       pixelId: cursivePixelId,
+      webhookToken: tokenForEmail,
     });
   }
 
@@ -118,9 +130,16 @@ export async function saveCursiveSettings(
   return { ok: true };
 }
 
+function generateWebhookToken(): string {
+  // 16 random bytes → 32 lowercase hex chars (128 bits). Validated by the
+  // /api/webhooks/cursive/[token] route with /^[a-f0-9]{32}$/.
+  return crypto.randomBytes(16).toString("hex");
+}
+
 async function fulfillPendingRequests(args: {
   orgId: string;
   pixelId: string;
+  webhookToken: string | null;
 }): Promise<void> {
   const pending = await prisma.pixelProvisionRequest.findMany({
     where: { orgId: args.orgId, status: PixelRequestStatus.PENDING },
@@ -164,6 +183,9 @@ async function fulfillPendingRequests(args: {
   const userById = new Map(requesters.map((u) => [u.id, u]));
 
   const installSnippet = buildInstallSnippet(args.pixelId);
+  const webhookUrl = args.webhookToken
+    ? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://www.leasestack.co"}/api/webhooks/cursive/${args.webhookToken}`
+    : null;
 
   for (const p of pending) {
     const user = p.requestedByUserId
@@ -181,6 +203,7 @@ async function fulfillPendingRequests(args: {
       customerName,
       websiteUrl: p.websiteUrl,
       installSnippet,
+      webhookUrl,
     }).catch(() => undefined);
   }
 }

@@ -109,6 +109,12 @@ export function createCursivePrismaMock() {
           null
         );
       }),
+      findUnique: vi.fn(async (args: { where: Record<string, unknown> }) => {
+        return (
+          store.cursiveIntegrations.find((r) => matchesWhere(r, args.where)) ??
+          null
+        );
+      }),
       update: vi.fn(
         async (args: {
           where: Record<string, unknown>;
@@ -232,6 +238,29 @@ export function createCursivePrismaMock() {
         store.webhookEvents.push(row);
         return row;
       }),
+      update: vi.fn(
+        async (args: {
+          where: Record<string, unknown>;
+          data: Record<string, unknown>;
+        }) => {
+          const idx = store.webhookEvents.findIndex((r) =>
+            matchesWhere(r, args.where)
+          );
+          if (idx === -1) throw new Error("webhookEvent not found");
+          store.webhookEvents[idx] = applyUpdate(
+            store.webhookEvents[idx],
+            args.data
+          );
+          return store.webhookEvents[idx];
+        }
+      ),
+      findUnique: vi.fn(
+        async (args: { where: Record<string, unknown> }) => {
+          return (
+            store.webhookEvents.find((r) => matchesWhere(r, args.where)) ?? null
+          );
+        }
+      ),
     },
   };
 
