@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import crypto from "node:crypto";
 import { prisma } from "@/lib/db";
 import { ForbiddenError, requireAudienceSync } from "@/lib/tenancy/scope";
-import { encrypt, maybeDecrypt } from "@/lib/crypto";
+import { encrypt, maybeDecrypt, maybeEncrypt } from "@/lib/crypto";
 import {
   geoFilterFn,
   listAlSegments,
@@ -16,6 +16,7 @@ import {
   AudienceDestinationType,
   AudienceScheduleFrequency,
   AudienceSyncStatus,
+  OrgType,
   type AudienceDestination,
   type AudienceSegment,
 } from "@prisma/client";
@@ -716,4 +717,157 @@ export async function toggleAudienceSchedule(
   revalidatePath("/portal/audiences/schedules");
   revalidatePath(`/portal/audiences/${sched.segmentId}`);
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Per-org AudienceLab API key override.
+//
+// By default, every AUDIENCE_SYNC org reads AL segments using the platform-
+// shared CURSIVE_API_KEY env var. An org can opt into a personal AL key by
+// setting Organization.cursiveApiKeyOverride; resolveApiKey() in the AL
+// client prefers the override when present.
+//
+// The raw key is encrypted at rest with maybeEncrypt() and never logged.
+// Only the last 4 chars are returned to the client as a hint.
+// ---------------------------------------------------------------------------
+
+const AL_KEY_MIN_LENGTH = 8;
+
+function lastFour(value: string): string {
+  return value.slice(-4);
+}
+
+// Block AL_PARTNER / AGENCY users from setting the key on themselves
+// without an active impersonation. They must impersonate a CLIENT org to
+// configure that client's key. CLIENT orgs (the typical case) always pass.
+function assertCanWriteOrgKey(
+  scope: Awaited<ReturnType<typeof requireAudienceSync>>,
+) {
+  if (scope.orgType !== OrgType.CLIENT) {
+    throw new ForbiddenError(
+      "Switch to a client workspace to update its AudienceLab key.",
+    );
+  }
+}
+
+export type SetOrgAlApiKeyResult =
+  | { ok: true; keyHint: string }
+  | { ok: false; error: string };
+
+export async function setOrgAlApiKey(
+  rawKey: string,
+): Promise<SetOrgAlApiKeyResult> {
+  const scope = await requireAudienceSyncOrThrow();
+  try {
+    assertCanWriteOrgKey(scope);
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
+    throw err;
+  }
+
+  const trimmed = typeof rawKey === "string" ? rawKey.trim() : "";
+  if (!trimmed) {
+    return { ok: false, error: "API key is required." };
+  }
+  if (trimmed.length < AL_KEY_MIN_LENGTH) {
+    return {
+      ok: false,
+      error: `API key must be at least ${AL_KEY_MIN_LENGTH} characters.`,
+    };
+  }
+  if (/\s/.test(trimmed)) {
+    return { ok: false, error: "API key cannot contain whitespace." };
+  }
+
+  const encrypted = maybeEncrypt(trimmed);
+  // Cross-org safety: write is gated by `id: scope.orgId` — never another org.
+  await prisma.organization.update({
+    where: { id: scope.orgId },
+    data: { cursiveApiKeyOverride: encrypted },
+  });
+
+  revalidatePath("/portal/audiences/settings");
+  revalidatePath("/portal/audiences");
+  return { ok: true, keyHint: lastFour(trimmed) };
+}
+
+export type ClearOrgAlApiKeyResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+export async function clearOrgAlApiKey(): Promise<ClearOrgAlApiKeyResult> {
+  const scope = await requireAudienceSyncOrThrow();
+  try {
+    assertCanWriteOrgKey(scope);
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
+    throw err;
+  }
+
+  await prisma.organization.update({
+    where: { id: scope.orgId },
+    data: { cursiveApiKeyOverride: null },
+  });
+
+  revalidatePath("/portal/audiences/settings");
+  revalidatePath("/portal/audiences");
+  return { ok: true };
+}
+
+export type TestOrgAlApiKeyResult =
+  | { ok: true; segmentCount: number; usingOverride: boolean }
+  | { ok: false; error: string };
+
+export async function testOrgAlApiKey(): Promise<TestOrgAlApiKeyResult> {
+  const scope = await requireAudienceSyncOrThrow();
+
+  const override = await getOrgApiKeyOverride(scope.orgId);
+  const platformKey = process.env.CURSIVE_API_KEY?.trim() || undefined;
+  const effectiveKey = override ?? platformKey;
+  if (!effectiveKey) {
+    return {
+      ok: false,
+      error:
+        "No AudienceLab key configured. Save a key for this org or ask the platform admin to set CURSIVE_API_KEY.",
+    };
+  }
+
+  const result = await listAlSegments({
+    apiKey: effectiveKey,
+    page: 1,
+    pageSize: 1,
+  });
+  if (!result.ok) {
+    return { ok: false, error: result.message };
+  }
+
+  return {
+    ok: true,
+    segmentCount: result.data.length,
+    usingOverride: !!override,
+  };
+}
+
+// Server-only helper: returns whether the current org has a key override and
+// the last 4 chars (no plaintext crosses the wire). Used by the settings page.
+export async function getOrgAlApiKeyStatus(): Promise<{
+  hasOverride: boolean;
+  keyHint: string | null;
+  inheritedFromPlatform: boolean;
+}> {
+  const scope = await requireAudienceSyncOrThrow();
+  const decrypted = await getOrgApiKeyOverride(scope.orgId);
+  const inheritedFromPlatform = !!process.env.CURSIVE_API_KEY?.trim();
+  if (!decrypted) {
+    return {
+      hasOverride: false,
+      keyHint: null,
+      inheritedFromPlatform,
+    };
+  }
+  return {
+    hasOverride: true,
+    keyHint: lastFour(decrypted),
+    inheritedFromPlatform,
+  };
 }

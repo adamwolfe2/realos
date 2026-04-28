@@ -77,6 +77,7 @@ export const AUDIENCE_NAV_GROUPS: NavGroup[] = [
       { href: "/portal/audiences/destinations", label: "Destinations", icon: Send, show: ALWAYS },
       { href: "/portal/audiences/schedules", label: "Schedules", icon: Calendar, show: ALWAYS },
       { href: "/portal/audiences/history", label: "Sync history", icon: History, show: ALWAYS },
+      { href: "/portal/audiences/settings", label: "Settings", icon: Settings, show: ALWAYS },
     ],
   },
   {

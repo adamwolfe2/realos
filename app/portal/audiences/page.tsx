@@ -61,6 +61,7 @@ export default async function AudiencesPage() {
     destinationsBySegment,
     activeDestinations,
     failedRuns24h,
+    orgKeyStatus,
   ] = await Promise.all([
     prisma.audienceSegment.findMany({
       where: { orgId: scope.orgId, visible: true },
@@ -121,7 +122,13 @@ export default async function AudiencesPage() {
         destination: { select: { name: true } },
       },
     }),
+    prisma.organization.findUnique({
+      where: { id: scope.orgId },
+      select: { cursiveApiKeyOverride: true },
+    }),
   ]);
+
+  const usingCustomKey = !!orgKeyStatus?.cursiveApiKeyOverride;
 
   const destCountBySegment = new Map<string, number>();
   for (const row of destinationsBySegment) {
@@ -242,6 +249,17 @@ export default async function AudiencesPage() {
             Live segments from your AudienceLab catalog. Push to ad accounts,
             CRMs, or download as CSV.
           </p>
+          {usingCustomKey ? (
+            <p className="text-xs text-muted-foreground mt-1">
+              Using a custom AudienceLab key.{" "}
+              <Link
+                href="/portal/audiences/settings"
+                className="underline-offset-2 hover:underline text-foreground"
+              >
+                Manage
+              </Link>
+            </p>
+          ) : null}
         </div>
         <div className="flex items-center gap-2">
           <Button asChild variant="outline" size="sm" className="rounded-md">
