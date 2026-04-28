@@ -25,6 +25,9 @@ import {
   Sparkles,
   FileText,
   Share2,
+  Target,
+  Send,
+  History,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -33,6 +36,7 @@ import { BRAND_NAME } from "@/lib/brand";
 
 export type PortalNavOrg = {
   name: string;
+  productLine?: string;
   moduleWebsite: boolean;
   modulePixel: boolean;
   moduleChatbot: boolean;
@@ -44,6 +48,7 @@ export type PortalNavOrg = {
   bringYourOwnSite: boolean;
   onboardingDismissed: boolean;
   setupComplete: boolean;
+  isAudienceSync?: boolean;
 };
 
 export type NavItem = {
@@ -59,6 +64,28 @@ export type NavGroup = {
 };
 
 const ALWAYS = () => true;
+
+// Audience Sync product line nav. Shown when org.isAudienceSync is true
+// (or AL_PARTNER user without an impersonation target). Replaces the full
+// student-housing nav with a focused four-section dashboard.
+export const AUDIENCE_NAV_GROUPS: NavGroup[] = [
+  {
+    label: "Audiences",
+    items: [
+      { href: "/portal/audiences", label: "Segments", icon: Target, show: ALWAYS },
+      { href: "/portal/audiences/destinations", label: "Destinations", icon: Send, show: ALWAYS },
+      { href: "/portal/audiences/history", label: "Sync history", icon: History, show: ALWAYS },
+    ],
+  },
+  {
+    label: "Account",
+    items: [
+      { href: "/portal/notifications", label: "Notifications", icon: Bell, show: ALWAYS },
+      { href: "/portal/billing", label: "Billing", icon: CreditCard, show: ALWAYS },
+      { href: "/portal/settings", label: "Settings", icon: Settings, show: ALWAYS },
+    ],
+  },
+];
 
 export const NAV_GROUPS: NavGroup[] = [
   {
@@ -229,7 +256,7 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3" aria-label="Portal navigation">
-        {NAV_GROUPS.map((group) => {
+        {(org.isAudienceSync ? AUDIENCE_NAV_GROUPS : NAV_GROUPS).map((group) => {
           const visible = group.items.filter((item) => item.show(org));
           if (!visible.length) return null;
           return (

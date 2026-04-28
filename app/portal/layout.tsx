@@ -38,6 +38,7 @@ export default async function PortalLayout({
       name: true,
       slug: true,
       orgType: true,
+      productLine: true,
       logoUrl: true,
       onboardingDismissed: true,
       moduleWebsite: true,
@@ -52,7 +53,12 @@ export default async function PortalLayout({
     },
   });
 
-  if (!org || org.orgType !== "CLIENT") {
+  if (!org) {
+    redirect(scope.isAgency || scope.isAlPartner ? "/admin" : "/sign-in");
+  }
+  // AL_PARTNER users without an impersonation target land on the audiences
+  // catalog. Don't bounce them to /admin since they don't have agency UI.
+  if (org.orgType !== "CLIENT" && !scope.isAlPartner) {
     redirect(scope.isAgency ? "/admin" : "/sign-in");
   }
 
@@ -61,8 +67,11 @@ export default async function PortalLayout({
     setupProgress != null &&
     setupProgress.completedCount === setupProgress.totalCount;
 
+  const isAudienceSync = org.productLine === "AUDIENCE_SYNC";
+
   const navOrg = {
     name: org.name,
+    productLine: org.productLine,
     moduleWebsite: org.moduleWebsite,
     modulePixel: org.modulePixel,
     moduleChatbot: org.moduleChatbot,
@@ -74,6 +83,7 @@ export default async function PortalLayout({
     bringYourOwnSite: org.bringYourOwnSite,
     onboardingDismissed: org.onboardingDismissed,
     setupComplete,
+    isAudienceSync,
   };
 
   return (

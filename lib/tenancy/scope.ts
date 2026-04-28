@@ -1,7 +1,7 @@
 import "server-only";
 import { auth, clerkClient } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
-import { OrgType, UserRole, Prisma } from "@prisma/client";
+import { OrgType, ProductLine, UserRole, Prisma } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // ScopedContext. The single source of truth for "whose data is this request
@@ -27,9 +27,11 @@ export type ScopedContext = {
   actualOrgId: string;            // Real org from the session
   orgType: OrgType;               // Effective org type
   actualOrgType: OrgType;         // Real org type from the session
+  productLine: ProductLine;       // Effective org product line
   role: UserRole;
   email: string;
   isAgency: boolean;              // Shorthand for actualOrgType === AGENCY
+  isAlPartner: boolean;           // role === AL_PARTNER. Cross-org access to AUDIENCE_SYNC orgs
   isImpersonating: boolean;
 };
 
@@ -64,11 +66,13 @@ async function getDemoScope(): Promise<ScopedContext | null> {
     actualOrgId: agencyOrg?.id ?? target.id,
     orgType: target.orgType,
     actualOrgType: agencyOrg?.orgType ?? target.orgType,
+    productLine: target.productLine ?? ProductLine.STUDENT_HOUSING,
     role: (agencyOrg?.orgType ?? target.orgType) === OrgType.AGENCY
       ? UserRole.AGENCY_OWNER
       : UserRole.CLIENT_OWNER,
     email: "demo@leasestack.co",
     isAgency: (agencyOrg?.orgType ?? target.orgType) === OrgType.AGENCY,
+    isAlPartner: false,
     isImpersonating: false,
   };
 }
@@ -88,17 +92,24 @@ export async function getScope(): Promise<ScopedContext | null> {
   if (!user || !user.org) return await getDemoScope();
 
   const actualOrgType = user.org.orgType;
+  const actualProductLine = user.org.productLine ?? ProductLine.STUDENT_HOUSING;
   const isAgency = actualOrgType === OrgType.AGENCY;
+  const isAlPartner = user.role === UserRole.AL_PARTNER;
 
   // Impersonation is expressed as `publicMetadata.impersonateOrgId`. The
   // default Clerk JWT does NOT include publicMetadata in sessionClaims, so we
   // try sessionClaims first (cheap), then fall back to a server-side fetch
   // via clerkClient (one extra request, always fresh). The fallback is what
   // makes impersonation actually work without a custom JWT template.
+  //
+  // AGENCY users can impersonate any org. AL_PARTNER users can impersonate
+  // any AUDIENCE_SYNC org (enforced below by re-checking productLine on the
+  // target).
+  const canImpersonate = isAgency || isAlPartner;
   let publicMetadata =
     (sessionClaims?.publicMetadata as Record<string, unknown> | undefined) ??
     {};
-  if (isAgency && !publicMetadata.impersonateOrgId) {
+  if (canImpersonate && !publicMetadata.impersonateOrgId) {
     try {
       const client = await clerkClient();
       const fresh = await client.users.getUser(clerkUserId);
@@ -109,19 +120,30 @@ export async function getScope(): Promise<ScopedContext | null> {
     }
   }
   const impersonateOrgId =
-    isAgency && typeof publicMetadata.impersonateOrgId === "string"
+    canImpersonate && typeof publicMetadata.impersonateOrgId === "string"
       ? (publicMetadata.impersonateOrgId as string)
       : undefined;
 
   let effectiveOrgId = user.orgId;
   let effectiveOrgType = actualOrgType;
+  let effectiveProductLine = actualProductLine;
   if (impersonateOrgId) {
     const target = await prisma.organization
-      .findUnique({ where: { id: impersonateOrgId }, select: { id: true, orgType: true } })
+      .findUnique({
+        where: { id: impersonateOrgId },
+        select: { id: true, orgType: true, productLine: true },
+      })
       .catch(() => null);
     if (target) {
-      effectiveOrgId = target.id;
-      effectiveOrgType = target.orgType;
+      // AL partners are gated to AUDIENCE_SYNC targets only. Silently fall
+      // back to their own org if they try to impersonate something else.
+      if (isAlPartner && target.productLine !== ProductLine.AUDIENCE_SYNC) {
+        // ignore
+      } else {
+        effectiveOrgId = target.id;
+        effectiveOrgType = target.orgType;
+        effectiveProductLine = target.productLine ?? actualProductLine;
+      }
     }
   }
 
@@ -132,9 +154,11 @@ export async function getScope(): Promise<ScopedContext | null> {
     actualOrgId: user.orgId,
     orgType: effectiveOrgType,
     actualOrgType,
+    productLine: effectiveProductLine,
     role: user.role,
     email: user.email,
     isAgency,
+    isAlPartner,
     isImpersonating: !!impersonateOrgId && impersonateOrgId !== user.orgId,
   };
 }
@@ -164,6 +188,21 @@ export async function requireClient(): Promise<ScopedContext> {
   // Agency users get CLIENT access whenever they're impersonating.
   if (scope.orgType !== OrgType.CLIENT) {
     throw new ForbiddenError("Client context required");
+  }
+  return scope;
+}
+
+// Used by /portal/audiences. Allows:
+//   - Members of an AUDIENCE_SYNC client org
+//   - AGENCY users impersonating an AUDIENCE_SYNC org
+//   - AL_PARTNER users (whose own org is AGENCY-typed) impersonating an
+//     AUDIENCE_SYNC org. Without an active impersonation they're allowed
+//     in for the segment list / catalog view across all AUDIENCE_SYNC orgs.
+export async function requireAudienceSync(): Promise<ScopedContext> {
+  const scope = await requireScope();
+  if (scope.isAgency || scope.isAlPartner) return scope;
+  if (scope.productLine !== ProductLine.AUDIENCE_SYNC) {
+    throw new ForbiddenError("Audience Sync access only");
   }
   return scope;
 }

@@ -26,6 +26,16 @@ enum OrgType {
   CLIENT // Each real estate company
 }
 
+// Which product surface an org uses. STUDENT_HOUSING is the original
+// LeaseStack offering (sites, chatbot, AppFolio, marketing OS).
+// AUDIENCE_SYNC is the residential/commercial product: AL segments piped
+// to ad accounts and CRMs. AGENCY_INTERNAL is reserved for our own org.
+enum ProductLine {
+  STUDENT_HOUSING
+  AUDIENCE_SYNC
+  AGENCY_INTERNAL
+}
+
 enum PropertyType {
   RESIDENTIAL
   COMMERCIAL
@@ -73,6 +83,7 @@ enum UserRole {
   CLIENT_ADMIN // Client team member with full portal access
   CLIENT_VIEWER // Read-only client access
   LEASING_AGENT // Specific role on client team
+  AL_PARTNER // AudienceLab partner with cross-org visibility on AUDIENCE_SYNC orgs
 }
 
 enum TenantStatus {
@@ -240,13 +251,18 @@ enum AuditAction {
 // ============================================================================
 
 model Organization {
-  id               String  @id @default(cuid())
+  id               String      @id @default(cuid())
   name             String
   shortName        String?
-  slug             String  @unique // {slug}.platformdomain.com
-  orgType          OrgType @default(CLIENT)
-  clerkOrgId       String? @unique
-  stripeCustomerId String? @unique
+  slug             String      @unique // {slug}.platformdomain.com
+  orgType          OrgType     @default(CLIENT)
+  productLine      ProductLine @default(STUDENT_HOUSING)
+  clerkOrgId       String?     @unique
+  stripeCustomerId String?     @unique
+
+  // Optional override for AL credentials when an AUDIENCE_SYNC org wants to
+  // use their own AudienceLab account instead of the platform-shared key.
+  cursiveApiKeyOverride String?
 
   // Property classification
   propertyType       PropertyType        @default(RESIDENTIAL)
@@ -301,40 +317,43 @@ model Organization {
   bringYourOwnSite Boolean @default(false)
 
   // Relationships
-  users                User[]
-  properties           Property[]
-  domains              DomainBinding[]
-  tenantSiteConfig     TenantSiteConfig?
-  leads                Lead[]
-  visitors             Visitor[]
-  chatbotConversations ChatbotConversation[]
-  creativeRequests     CreativeRequest[]
-  adAccounts           AdAccount[]
-  adCampaigns          AdCampaign[]
-  emailSubscribers     EmailSubscriber[]
-  intakeSubmission     IntakeSubmission?
-  projects             Project[]
-  auditEvents          AuditEvent[]
-  clientNotes          ClientNote[]
-  cursiveIntegration   CursiveIntegration?
+  users                  User[]
+  properties             Property[]
+  domains                DomainBinding[]
+  tenantSiteConfig       TenantSiteConfig?
+  leads                  Lead[]
+  visitors               Visitor[]
+  chatbotConversations   ChatbotConversation[]
+  creativeRequests       CreativeRequest[]
+  adAccounts             AdAccount[]
+  adCampaigns            AdCampaign[]
+  emailSubscribers       EmailSubscriber[]
+  intakeSubmission       IntakeSubmission?
+  projects               Project[]
+  auditEvents            AuditEvent[]
+  clientNotes            ClientNote[]
+  cursiveIntegration     CursiveIntegration?
   pixelProvisionRequests PixelProvisionRequest[]
-  appfolioIntegration  AppFolioIntegration?
-  seoIntegrations      SeoIntegration[]
-  seoSnapshots         SeoSnapshot[]
-  seoQueries           SeoQuery[]
-  seoLandingPages      SeoLandingPage[]
-  addresses            Address[]
-  apiKeys              ApiKey[]
-  integrationRequests  IntegrationRequest[]
-  visitorSessions      VisitorSession[]
-  visitorEvents        VisitorEvent[]
-  chatbotEngagements   ChatbotEngagement[]
-  notifications        Notification[]
-  insights             Insight[]
-  clientReports        ClientReport[]
-  conversationFlags    ConversationFlag[]
-  reputationScans      ReputationScan[]
-  reputationMentions   PropertyMention[]
+  appfolioIntegration    AppFolioIntegration?
+  seoIntegrations        SeoIntegration[]
+  seoSnapshots           SeoSnapshot[]
+  seoQueries             SeoQuery[]
+  seoLandingPages        SeoLandingPage[]
+  addresses              Address[]
+  apiKeys                ApiKey[]
+  integrationRequests    IntegrationRequest[]
+  visitorSessions        VisitorSession[]
+  visitorEvents          VisitorEvent[]
+  chatbotEngagements     ChatbotEngagement[]
+  notifications          Notification[]
+  insights               Insight[]
+  clientReports          ClientReport[]
+  conversationFlags      ConversationFlag[]
+  reputationScans        ReputationScan[]
+  reputationMentions     PropertyMention[]
+  audienceSegments       AudienceSegment[]
+  audienceDestinations   AudienceDestination[]
+  audienceSyncRuns       AudienceSyncRun[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -466,7 +485,7 @@ model TenantSiteConfig {
   // lazy-load gtag.js with that ID on the host page if no dataLayer/gtag is
   // already present, then fire chatbot_opened / chatbot_lead_captured events
   // directly into the tenant's GA4 property. Bypasses GTM entirely.
-  ga4MeasurementId String?
+  ga4MeasurementId    String?
   exitIntentHeadline  String?
   exitIntentBody      String?
   exitIntentCtaText   String?
@@ -512,11 +531,11 @@ model Property {
   syncError            String?
 
   // Marketing
-  heroImageUrl     String?
-  photoUrls        Json? // Array of URLs
-  virtualTourUrl   String?
-  googleReviewUrl  String? // Google Maps review link for this property
-  googlePlaceId    String? // Google Places place_id, seeds the Reputation Scanner
+  heroImageUrl         String?
+  photoUrls            Json? // Array of URLs
+  virtualTourUrl       String?
+  googleReviewUrl      String? // Google Maps review link for this property
+  googlePlaceId        String? // Google Places place_id, seeds the Reputation Scanner
   // Google aggregate rating cached from Places API. place.rating is averaged
   // across ALL reviews Google has (e.g. 4.0 across 49); place.userRatingCount
   // is the total count. These numbers drive the Reputation KPI tile; the 5
@@ -525,12 +544,12 @@ model Property {
   googleAggRating      Float?
   googleAggReviewCount Int?
   googleAggUpdatedAt   DateTime?
-  yelpBusinessId   String? // Yelp Fusion business id (alias or numeric id) for the Reputation Scanner
-  redditSubreddits Json? // Array of subreddit names (without "r/") to prioritize during reputation scans
-  amenities        Json? // Array of strings
-  yearBuilt        Int?
-  totalUnits       Int?
-  description      String? @db.Text
+  yelpBusinessId       String? // Yelp Fusion business id (alias or numeric id) for the Reputation Scanner
+  redditSubreddits     Json? // Array of subreddit names (without "r/") to prioritize during reputation scans
+  amenities            Json? // Array of strings
+  yearBuilt            Int?
+  totalUnits           Int?
+  description          String?   @db.Text
 
   // SEO
   metaTitle       String?
@@ -811,7 +830,7 @@ model CursiveIntegration {
 
   // Per-tenant webhook token. URL-as-secret so AL's per-pixel webhook UI
   // works without our shared header. 32 hex chars = 128 bits of entropy.
-  webhookToken      String?   @unique
+  webhookToken String? @unique
 
   // AudienceLab segment binding for the admin "Sync from segment" pull
   cursiveSegmentId  String?
@@ -844,10 +863,10 @@ model PixelProvisionRequest {
   websiteName String
   websiteUrl  String
 
-  status      PixelRequestStatus @default(PENDING)
+  status            PixelRequestStatus @default(PENDING)
   requestedByUserId String?
-  requestedAt DateTime           @default(now())
-  fulfilledAt DateTime?
+  requestedAt       DateTime           @default(now())
+  fulfilledAt       DateTime?
 
   // Snapshot of the resulting pixel_id once fulfilled (for audit/debugging).
   fulfilledPixelId String?
@@ -1095,8 +1114,9 @@ model AdAccount {
   lastSyncAt       DateTime?
   lastSyncError    String?   @db.Text
 
-  adCampaigns  AdCampaign[]
-  metricsDaily AdMetricDaily[]
+  adCampaigns          AdCampaign[]
+  metricsDaily         AdMetricDaily[]
+  audienceDestinations AudienceDestination[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1872,4 +1892,129 @@ model PropertyMention {
   @@index([orgId, propertyId, publishedAt(sort: Desc)])
   @@index([orgId, propertyId, sentiment])
   @@index([firstSeenScanId])
+}
+
+// ============================================================================
+// AUDIENCE SYNC — residential/commercial product line
+// ============================================================================
+// AudienceSegment caches AudienceLab segments visible to an org. Cache is
+// refreshed on dashboard load or via a manual "Refresh" action. We don't
+// persist members here; members are fetched on-demand at push time.
+
+enum AudienceDestinationType {
+  CSV_DOWNLOAD
+  WEBHOOK
+  META_CUSTOM_AUDIENCE
+  GOOGLE_CUSTOMER_MATCH
+}
+
+enum AudienceSyncStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+model AudienceSegment {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // AudienceLab segment id (their primary key, opaque string)
+  alSegmentId String
+  name        String
+  description String?
+
+  // Last known member count from AL. Refreshed on list pulls.
+  memberCount Int @default(0)
+
+  // Stash the raw AL payload for the segment so we can render attribute
+  // chips without a second round-trip. Updated on every refresh.
+  rawPayload Json?
+
+  // Whether this org chooses to surface the segment in their dashboard.
+  // Defaults to true on import; toggled off if user hides it.
+  visible Boolean @default(true)
+
+  lastFetchedAt DateTime?
+
+  destinations AudienceDestination[]
+  syncRuns     AudienceSyncRun[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, alSegmentId])
+  @@index([orgId, visible])
+}
+
+model AudienceDestination {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  type AudienceDestinationType
+  name String // operator-friendly label
+
+  // For WEBHOOK: target URL + signing secret. Stored encrypted (AES-GCM)
+  // via the same maybeDecrypt helper used for ad creds.
+  webhookUrl       String?
+  webhookSecretEnc String?
+
+  // For META_CUSTOM_AUDIENCE / GOOGLE_CUSTOMER_MATCH: pointer to the
+  // already-connected AdAccount. Reuses existing OAuth credentials.
+  adAccountId String?
+  adAccount   AdAccount? @relation(fields: [adAccountId], references: [id], onDelete: SetNull)
+
+  // External audience id on the destination platform (Meta CA id, Google
+  // user list resource name). Created lazily on first push.
+  externalAudienceId String?
+
+  // Optional segment binding. When set, this destination is "default" for
+  // the segment and shows on its detail page. Null means "shared/global"
+  // across all segments in the org.
+  segmentId String?
+  segment   AudienceSegment? @relation(fields: [segmentId], references: [id], onDelete: SetNull)
+
+  enabled    Boolean   @default(true)
+  lastUsedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  syncRuns AudienceSyncRun[]
+
+  @@index([orgId, type])
+  @@index([segmentId])
+  @@index([adAccountId])
+}
+
+model AudienceSyncRun {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  segmentId     String
+  segment       AudienceSegment     @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  destinationId String
+  destination   AudienceDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  status      AudienceSyncStatus @default(PENDING)
+  memberCount Int                @default(0)
+
+  // Geo filter snapshot at run time (zip codes, state, radius). Null if
+  // no filter was applied.
+  filterSnapshot Json?
+
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  errorMessage String?
+
+  // Triggered by user (userId) or system cron (null).
+  triggeredByUserId String?
+
+  @@index([orgId, startedAt(sort: Desc)])
+  @@index([segmentId, startedAt(sort: Desc)])
+  @@index([destinationId, startedAt(sort: Desc)])
+  @@index([status])
 }

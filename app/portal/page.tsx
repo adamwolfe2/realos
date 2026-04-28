@@ -7,11 +7,13 @@ import {
   Coins,
   Search,
 } from "lucide-react";
+import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   ApplicationStatus,
   LeadStatus,
+  ProductLine,
   TourStatus,
 } from "@prisma/client";
 import { SetupBanner } from "@/components/portal/setup/setup-banner";
@@ -66,6 +68,11 @@ export default async function PortalHome({
   searchParams: Promise<{ showSetup?: string }>;
 }) {
   const scope = await requireScope();
+  // AUDIENCE_SYNC orgs and AL partners use the dedicated audiences surface;
+  // the student-housing dashboard isn't relevant to them.
+  if (scope.productLine === ProductLine.AUDIENCE_SYNC || scope.isAlPartner) {
+    redirect("/portal/audiences");
+  }
   const { showSetup } = await searchParams;
   const forceShowSetup = showSetup === "1";
   const since28d = new Date(Date.now() - 28 * DAY);
