@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { ArrowUpRight } from "lucide-react";
+import { InlinePush, type InlinePushDestination } from "./inline-push";
 
 export type SegmentRow = {
   id: string;
@@ -8,9 +9,14 @@ export type SegmentRow = {
   description: string | null;
   alSegmentId: string;
   memberCount: number;
-  lastFetchedAt: Date | null;
+  // Timestamp in ms (or null) — using a primitive avoids Date serialization
+  // issues when this row crosses the server → client component boundary.
+  lastFetchedAt: number | null;
   spark: number[];
   destinationCount: number;
+  emailMatchRate?: number | null;
+  phoneMatchRate?: number | null;
+  topStates?: string[];
 };
 
 function formatCount(n: number): string {
@@ -19,9 +25,9 @@ function formatCount(n: number): string {
   return n.toLocaleString();
 }
 
-function timeAgo(d: Date | null): string {
-  if (!d) return "—";
-  const ms = Date.now() - d.getTime();
+function timeAgo(timestamp: number | null): string {
+  if (timestamp == null) return "—";
+  const ms = Date.now() - timestamp;
   const m = Math.floor(ms / 60000);
   if (m < 1) return "just now";
   if (m < 60) return `${m}m ago`;
@@ -31,11 +37,17 @@ function timeAgo(d: Date | null): string {
   return `${days}d ago`;
 }
 
-export function SegmentTable({ rows }: { rows: SegmentRow[] }) {
+export function SegmentTable({
+  rows,
+  destinations,
+}: {
+  rows: SegmentRow[];
+  destinations: InlinePushDestination[];
+}) {
   if (rows.length === 0) {
     return (
       <div className="text-sm text-muted-foreground py-6 text-center">
-        No segments yet. Hit Refresh segments to pull your AudienceLab catalog.
+        No segments match your filters. Adjust search or hit Refresh segments.
       </div>
     );
   }
@@ -48,11 +60,16 @@ export function SegmentTable({ rows }: { rows: SegmentRow[] }) {
               Segment
             </th>
             <th className="text-right font-semibold py-2 px-3">Reach</th>
-            <th className="text-left font-semibold py-2 px-3 w-[20%]">
+            <th className="text-left font-semibold py-2 px-3 hidden md:table-cell">
               28d activity
             </th>
-            <th className="text-right font-semibold py-2 px-3">Destinations</th>
-            <th className="text-right font-semibold py-2 px-3">Synced</th>
+            <th className="text-right font-semibold py-2 px-3 hidden lg:table-cell">
+              Destinations
+            </th>
+            <th className="text-right font-semibold py-2 px-3 hidden md:table-cell">
+              Synced
+            </th>
+            <th className="px-3 text-right"></th>
             <th className="px-5"></th>
           </tr>
         </thead>
@@ -74,27 +91,36 @@ export function SegmentTable({ rows }: { rows: SegmentRow[] }) {
                     {row.description ??
                       `AL id ${row.alSegmentId.slice(0, 14)}…`}
                   </div>
+                  <MatchQualityPills
+                    email={row.emailMatchRate}
+                    phone={row.phoneMatchRate}
+                  />
                 </Link>
               </td>
-              <td className="py-3 px-3 text-right tabular-nums font-medium">
+              <td className="py-3 px-3 text-right tabular-nums font-medium align-top">
                 {formatCount(row.memberCount)}
               </td>
-              <td className="py-3 px-3">
+              <td className="py-3 px-3 align-top hidden md:table-cell">
                 <Sparkline data={row.spark} />
               </td>
-              <td className="py-3 px-3 text-right tabular-nums text-muted-foreground">
+              <td className="py-3 px-3 text-right tabular-nums text-muted-foreground align-top hidden lg:table-cell">
                 {row.destinationCount > 0 ? (
-                  <span className="text-foreground">
-                    {row.destinationCount}
-                  </span>
+                  <span className="text-foreground">{row.destinationCount}</span>
                 ) : (
                   "—"
                 )}
               </td>
-              <td className="py-3 px-3 text-right text-xs text-muted-foreground tabular-nums">
+              <td className="py-3 px-3 text-right text-xs text-muted-foreground tabular-nums align-top hidden md:table-cell">
                 {timeAgo(row.lastFetchedAt)}
               </td>
-              <td className="py-3 px-5 text-right">
+              <td className="py-3 px-3 text-right align-top">
+                <InlinePush
+                  segmentId={row.id}
+                  segmentName={row.name}
+                  destinations={destinations}
+                />
+              </td>
+              <td className="py-3 px-5 text-right align-top">
                 <Link
                   href={`/portal/audiences/${row.id}`}
                   className={cn(
@@ -110,6 +136,48 @@ export function SegmentTable({ rows }: { rows: SegmentRow[] }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function MatchQualityPills({
+  email,
+  phone,
+}: {
+  email?: number | null;
+  phone?: number | null;
+}) {
+  if (email == null && phone == null) return null;
+  return (
+    <div className="flex items-center gap-1.5 mt-1.5">
+      {email != null ? (
+        <span
+          className={cn(
+            "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+            email >= 0.7
+              ? "text-emerald-700 bg-emerald-50"
+              : email >= 0.5
+                ? "text-amber-700 bg-amber-50"
+                : "text-muted-foreground bg-muted",
+          )}
+        >
+          {Math.round(email * 100)}% email
+        </span>
+      ) : null}
+      {phone != null ? (
+        <span
+          className={cn(
+            "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+            phone >= 0.5
+              ? "text-emerald-700 bg-emerald-50"
+              : phone >= 0.3
+                ? "text-amber-700 bg-amber-50"
+                : "text-muted-foreground bg-muted",
+          )}
+        >
+          {Math.round(phone * 100)}% phone
+        </span>
+      ) : null}
     </div>
   );
 }

@@ -7,16 +7,15 @@ import { Button } from "@/components/ui/button";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { RefreshSegmentsButton } from "@/components/audiences/refresh-button";
-import { SegmentTable } from "@/components/audiences/segment-table";
+import { SegmentListView } from "@/components/audiences/segment-list-view";
 import { TopLocations } from "@/components/audiences/top-locations";
 import { RecentSyncs } from "@/components/audiences/recent-syncs";
+import { FailureBanner, type FailureSummary } from "@/components/audiences/failure-banner";
 import {
   Target,
   Users,
   Send,
   Activity,
-  ArrowUpRight,
-  Plus,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +49,7 @@ export default async function AudiencesPage() {
 
   const since28d = new Date(Date.now() - 28 * DAY);
   const sincePrev28d = new Date(Date.now() - 56 * DAY);
+  const since24h = new Date(Date.now() - DAY);
 
   const [
     segments,
@@ -59,6 +59,8 @@ export default async function AudiencesPage() {
     runsPrev28d,
     recentRuns,
     destinationsBySegment,
+    activeDestinations,
+    failedRuns24h,
   ] = await Promise.all([
     prisma.audienceSegment.findMany({
       where: { orgId: scope.orgId, visible: true },
@@ -103,6 +105,22 @@ export default async function AudiencesPage() {
       where: { orgId: scope.orgId, enabled: true },
       _count: { _all: true },
     }),
+    prisma.audienceDestination.findMany({
+      where: { orgId: scope.orgId, enabled: true },
+      select: { id: true, name: true, type: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.audienceSyncRun.findMany({
+      where: {
+        orgId: scope.orgId,
+        status: "FAILED",
+        startedAt: { gte: since24h },
+      },
+      orderBy: { startedAt: "desc" },
+      include: {
+        destination: { select: { name: true } },
+      },
+    }),
   ]);
 
   const destCountBySegment = new Map<string, number>();
@@ -121,7 +139,6 @@ export default async function AudiencesPage() {
         : null;
   const pushes28d = runs28d._count?._all ?? 0;
 
-  // Aggregate top locations by zip from raw payloads (PERSONAL_ZIP / PERSONAL_STATE)
   const stateAgg = new Map<string, number>();
   for (const seg of segments) {
     const raw = seg.rawPayload as Record<string, unknown> | null;
@@ -142,16 +159,33 @@ export default async function AudiencesPage() {
     .sort((a, b) => b.value - a.value)
     .slice(0, 6);
 
-  const segmentRows = segments.map((s) => ({
-    id: s.id,
-    name: s.name,
-    description: s.description,
-    alSegmentId: s.alSegmentId,
-    memberCount: s.memberCount,
-    lastFetchedAt: s.lastFetchedAt,
-    spark: deterministicSpark(s.alSegmentId, s.memberCount),
-    destinationCount: destCountBySegment.get(s.id) ?? 0,
-  }));
+  const segmentRows = segments.map((s) => {
+    const raw = (s.rawPayload as Record<string, unknown> | null) ?? null;
+    const stateBreakdown = raw?.top_states as
+      | Array<{ state: string; count: number }>
+      | undefined;
+    return {
+      id: s.id,
+      name: s.name,
+      description: s.description,
+      alSegmentId: s.alSegmentId,
+      memberCount: s.memberCount,
+      lastFetchedAt: s.lastFetchedAt ? s.lastFetchedAt.getTime() : null,
+      spark: deterministicSpark(s.alSegmentId, s.memberCount),
+      destinationCount: destCountBySegment.get(s.id) ?? 0,
+      emailMatchRate:
+        typeof raw?.email_match_rate === "number"
+          ? (raw.email_match_rate as number)
+          : null,
+      phoneMatchRate:
+        typeof raw?.phone_match_rate === "number"
+          ? (raw.phone_match_rate as number)
+          : null,
+      topStates: stateBreakdown?.map((s) => s.state) ?? [],
+    };
+  });
+
+  const availableStates = Array.from(stateAgg.keys()).sort();
 
   const recentSyncRows = recentRuns.map((r) => ({
     id: r.id,
@@ -165,8 +199,40 @@ export default async function AudiencesPage() {
     errorMessage: r.errorMessage,
   }));
 
+  // Group failed runs by destination for the alert banner
+  const failuresByDestination = new Map<
+    string,
+    { count: number; destinationName: string; lastError: string | null; lastFailedAt: Date }
+  >();
+  for (const run of failedRuns24h) {
+    const key = run.destination.name;
+    const existing = failuresByDestination.get(key);
+    if (existing) {
+      existing.count += 1;
+      if (run.startedAt > existing.lastFailedAt) {
+        existing.lastFailedAt = run.startedAt;
+        existing.lastError = run.errorMessage;
+      }
+    } else {
+      failuresByDestination.set(key, {
+        count: 1,
+        destinationName: key,
+        lastError: run.errorMessage,
+        lastFailedAt: run.startedAt,
+      });
+    }
+  }
+  const failureSummaries: FailureSummary[] = Array.from(
+    failuresByDestination.values(),
+  ).sort((a, b) => b.count - a.count);
+
   return (
     <div className="space-y-5">
+      <FailureBanner
+        totalFailedRuns={failedRuns24h.length}
+        destinations={failureSummaries}
+      />
+
       <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">
@@ -243,12 +309,16 @@ export default async function AudiencesPage() {
         description={
           segments.length === 0
             ? "Sync your AudienceLab segments to get started."
-            : `${segments.length} segment${segments.length === 1 ? "" : "s"} ready to push`
+            : `${segments.length} segment${segments.length === 1 ? "" : "s"} ready to push. Search, filter, and push inline without leaving the page.`
         }
         href="/portal/audiences/destinations"
         hrefLabel="Manage destinations"
       >
-        <SegmentTable rows={segmentRows} />
+        <SegmentListView
+          rows={segmentRows}
+          destinations={activeDestinations}
+          availableStates={availableStates}
+        />
       </DashboardSection>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
