@@ -188,6 +188,21 @@ async function processEvent(
   const hemSha256 =
     pickString(flat, "hem_sha256") ??
     (normalizedEmail ? sha256(normalizedEmail) : null);
+  const firstName = pickString(flat, "resolution.FIRST_NAME", "FIRST_NAME");
+  const lastName = pickString(flat, "resolution.LAST_NAME", "LAST_NAME");
+
+  // Resolution gate. AL's per-pixel webhook fires on every pixel event,
+  // including anonymous page_views with cookie IDs only. We ack those
+  // with 200 so AL doesn't retry, but never persist them. Only events
+  // carrying real identity data (hashed email, plaintext email, or a
+  // first/last name from AL's resolution layer) become Visitor rows.
+  // Studio Segment Trigger payloads pass through unchanged.
+  const isResolution = Boolean(
+    hemSha256 || normalizedEmail || firstName || lastName,
+  );
+  if (!isResolution) {
+    return { visitorId: null, leadId: null, skipped: "unresolved event" };
+  }
 
   const fingerprint = computeFingerprint({
     pixelId,
@@ -216,8 +231,6 @@ async function processEvent(
   const identityKey =
     profileId ?? uid ?? hemSha256 ?? cookieId ?? `anon:${pixelId}:${Date.now()}`;
 
-  const firstName = pickString(flat, "resolution.FIRST_NAME", "FIRST_NAME");
-  const lastName = pickString(flat, "resolution.LAST_NAME", "LAST_NAME");
   const phone =
     pickString(
       flat,
