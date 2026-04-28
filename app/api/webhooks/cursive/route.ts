@@ -70,17 +70,29 @@ export async function POST(req: NextRequest) {
     req.headers.get("x-webhook-signature");
   if (!verifyAuth({ rawBody, secret, sharedSecret, signature })) {
     // TEMP DIAGNOSTIC: AL's per-pixel webhook (set in pixel UI Step 2)
-    // does not appear to send our x-audiencelab-secret header. Log every
-    // header on 401 so we can see what auth AL actually presents and
-    // adapt verifyAuth. Remove once we know.
+    // does not appear to send our x-audiencelab-secret header. Persist
+    // the headers and body sample to the DB on every 401 so we can
+    // figure out what auth shape AL actually uses. Vercel runtime logs
+    // collapse multi-line console.warn output, so DB is more reliable.
     const headerDump: Record<string, string> = {};
     req.headers.forEach((v, k) => {
       headerDump[k] = k.toLowerCase().includes("auth") || k.toLowerCase().includes("secret") || k.toLowerCase().includes("sign")
         ? `[REDACTED len=${v.length}]`
         : v;
     });
-    console.warn("[cursive-webhook] 401 headers:", JSON.stringify(headerDump));
-    console.warn("[cursive-webhook] 401 body sample:", rawBody.slice(0, 500));
+    const diagPayload = `HEADERS=${JSON.stringify(headerDump)}\n\nBODY=${rawBody.slice(0, 4000)}`;
+    try {
+      await prisma.webhookEvent.create({
+        data: {
+          source: "cursive",
+          status: "auth_failed",
+          processingError: "401 Invalid signature — diagnostic capture",
+          rawBody: diagPayload,
+          attempts: 1,
+          lastAttemptAt: new Date(),
+        },
+      });
+    } catch {}
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
 
