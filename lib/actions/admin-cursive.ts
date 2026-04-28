@@ -318,18 +318,32 @@ async function upsertResolutionAsVisitor(
   item: Record<string, unknown>,
   installedOnDomain: string | null,
 ): Promise<"created" | "updated" | "skipped"> {
-  const profileId = pickString(item, "profile_id", "id");
-  const uid = pickString(item, "uid");
-  const cookieId = pickString(item, "cookie_id");
-  const hemSha256 = pickString(item, "hem_sha256");
-  const emailRaw = pickString(item, "email_raw", "email", "PERSONAL_EMAIL");
-  const normalizedEmail = emailRaw ? emailRaw.toLowerCase().trim() : null;
+  const profileId = pickString(item, "profile_id", "id", "PROFILE_ID");
+  const uid = pickString(item, "uid", "UID");
+  const cookieId = pickString(item, "cookie_id", "COOKIE_ID");
+  // AL segments endpoint returns SCREAMING_SNAKE_CASE; webhooks use lowercase.
+  // Accept both so the same upsert path serves both flows.
+  const hemSha256 = pickString(item, "hem_sha256", "HEM_SHA256");
+  // Segment endpoint returns plural PERSONAL_EMAILS / PERSONAL_VERIFIED_EMAILS,
+  // sometimes comma-separated. Take the first valid one.
+  const emailRaw =
+    pickString(
+      item,
+      "email_raw",
+      "email",
+      "PERSONAL_EMAIL",
+      "PERSONAL_VERIFIED_EMAILS",
+      "PERSONAL_EMAILS",
+    ) ?? undefined;
+  const firstEmail = emailRaw?.split(",")[0]?.trim();
+  const normalizedEmail = firstEmail ? firstEmail.toLowerCase() : null;
   const firstName = pickString(item, "FIRST_NAME", "first_name", "firstName");
   const lastName = pickString(item, "LAST_NAME", "last_name", "lastName");
   const phone = pickString(
     item,
     "MOBILE_PHONE",
     "PERSONAL_PHONE",
+    "DIRECT_NUMBER",
     "phone",
   );
 
