@@ -52,9 +52,22 @@ export async function POST(req: NextRequest) {
   const reporterLabel = `${scope.email} (${
     scope.isAgency ? "agency" : "client"
   } / ${scope.role})`;
+  const reporterPublicLabel = `${scope.isAgency ? "agency" : "client"} / ${scope.role}`;
 
   const issueTitle = `[Bug] ${parsed.title}`;
-  const issueBody = renderIssueBody({
+  // GitHub body — repo may be public, so omit reporter email and orgId.
+  // The full reporter context still goes to the ops email below.
+  const githubBody = renderIssueBody({
+    description: parsed.description,
+    severity: parsed.severity,
+    reporter: reporterPublicLabel,
+    orgId: null,
+    pageUrl: parsed.pageUrl,
+    pagePath: parsed.pagePath,
+    userAgent: parsed.userAgent,
+    viewport: parsed.viewport,
+  });
+  const emailBody = renderIssueBody({
     description: parsed.description,
     severity: parsed.severity,
     reporter: reporterLabel,
@@ -68,12 +81,12 @@ export async function POST(req: NextRequest) {
   const [github, email] = await Promise.all([
     fileGithubIssue({
       title: issueTitle,
-      body: issueBody,
+      body: githubBody,
       severity: parsed.severity,
     }),
     sendEmailNotification({
       title: issueTitle,
-      body: issueBody,
+      body: emailBody,
       severity: parsed.severity,
       reporter: reporterLabel,
     }),
@@ -103,7 +116,7 @@ function renderIssueBody(input: {
   description: string;
   severity: string;
   reporter: string;
-  orgId: string;
+  orgId: string | null;
   pageUrl?: string;
   pagePath?: string;
   userAgent?: string;
@@ -112,7 +125,7 @@ function renderIssueBody(input: {
   const lines = [
     `**Severity:** ${input.severity}`,
     `**Reporter:** ${input.reporter}`,
-    `**Org ID:** \`${input.orgId}\``,
+    input.orgId ? `**Org ID:** \`${input.orgId}\`` : null,
     input.pageUrl ? `**URL:** ${input.pageUrl}` : null,
     input.pagePath ? `**Path:** \`${input.pagePath}\`` : null,
     input.viewport ? `**Viewport:** ${input.viewport}` : null,
