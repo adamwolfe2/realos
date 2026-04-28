@@ -165,7 +165,10 @@ export async function runAppfolioSync(
 
   // 3. TENANTS (→ Lead SIGNED attribution)
   try {
-    const rows = await fetchAllPages(client, "tenants", { fromDate, toDate });
+    const rows = await fetchAllPages(client, "tenant_directory", {
+      fromDate,
+      toDate,
+    });
     for (const row of rows) {
       const mapped = mapTenantPayload(row);
       if (!mapped || !mapped.email) continue;

@@ -251,10 +251,15 @@ async function fetchEmbedScrape(
 
 // Report names used in our sync. AppFolio v2 report names may differ from
 // v1 — these are the names we pass and the server will 400/404 if wrong.
+//
+// "tenant_directory" (not "tenants"): AppFolio's REST v2 directory reports
+// use the {entity}_directory naming convention (unit_directory,
+// vendor_directory, tenant_directory). Passing the bare "tenants" gets
+// rejected with `{"message":["Id is not a valid report."]}`.
 const REPORT_NAMES = [
   "prospect_source_tracking",
   "showings",
-  "tenants",
+  "tenant_directory",
   "listings",
 ] as const;
 

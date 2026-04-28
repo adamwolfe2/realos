@@ -86,6 +86,31 @@ try {
   });
   console.log(`Deleted ${deletedTestLeads.count} synthetic test Lead rows.`);
 
+  // E2E lead-capture tests POST to the public form with emails like
+  // playwright+lead-<timestamp>@example.com. Those land as standalone Lead
+  // rows on real client orgs (e.g. SG Real Estate / Telegraph Commons) and
+  // never get cleaned up by the intake/org sweep above.
+  const playwrightLeadWhere = {
+    OR: [
+      { email: { startsWith: "playwright+lead-" } },
+      { email: { startsWith: "playwright+" } },
+      { firstName: "Playwright", lastName: "Lead" },
+    ],
+  };
+  const deletedPwLeads = await prisma.lead.deleteMany({ where: playwrightLeadWhere });
+  console.log(`Deleted ${deletedPwLeads.count} Playwright Lead rows.`);
+
+  // Same for any visitors / chatbot convos those tests created.
+  const deletedPwVisitors = await prisma.visitor.deleteMany({
+    where: { email: { startsWith: "playwright+" } },
+  });
+  console.log(`Deleted ${deletedPwVisitors.count} Playwright Visitor rows.`);
+
+  const deletedPwChats = await prisma.chatbotConversation.deleteMany({
+    where: { capturedEmail: { startsWith: "playwright+" } },
+  });
+  console.log(`Deleted ${deletedPwChats.count} Playwright ChatbotConversation rows.`);
+
   console.log(`\nDone.\n`);
 } finally {
   await prisma.$disconnect();
