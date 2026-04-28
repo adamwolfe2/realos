@@ -309,6 +309,101 @@ async function failRun(runId: string, error: string) {
 }
 
 // ---------------------------------------------------------------------------
+// Member preview — fetch a small page of members and mask all PII server-side
+// before returning to the client. This is the "trust play" UI: brokers see
+// what's actually in a segment without ever receiving raw PII in the browser.
+// ---------------------------------------------------------------------------
+
+export type MaskedMember = {
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  country: string | null;
+};
+
+export type PreviewSegmentMembersResult =
+  | { ok: true; members: MaskedMember[] }
+  | { ok: false; error: string };
+
+const PREVIEW_DEFAULT = 5;
+const PREVIEW_MAX = 10;
+
+export async function previewSegmentMembers(
+  segmentId: string,
+  count?: number,
+): Promise<PreviewSegmentMembersResult> {
+  const scope = await requireAudienceSyncOrThrow();
+
+  const segment = await prisma.audienceSegment.findFirst({
+    where: { id: segmentId, orgId: scope.orgId },
+    select: { id: true, alSegmentId: true },
+  });
+  if (!segment) return { ok: false, error: "Segment not found." };
+
+  const requested = Number.isFinite(count) && (count ?? 0) > 0
+    ? Math.floor(count as number)
+    : PREVIEW_DEFAULT;
+  const cap = Math.min(requested, PREVIEW_MAX);
+
+  const orgKey = await getOrgApiKeyOverride(scope.orgId);
+  const result = await streamAlSegmentMembers(segment.alSegmentId, {
+    apiKey: orgKey,
+    maxMembers: cap,
+    pageSize: cap,
+  });
+  if (!result.ok) return { ok: false, error: result.message };
+
+  const masked = result.data.slice(0, cap).map(maskMember);
+  return { ok: true, members: masked };
+}
+
+function maskMember(m: AlMember): MaskedMember {
+  return {
+    firstName: m.firstName?.trim() ? m.firstName.trim() : null,
+    lastName: maskLastName(m.lastName),
+    email: maskEmail(m.email),
+    phone: maskPhone(m.phone),
+    city: m.city?.trim() ? m.city.trim() : null,
+    state: m.state?.trim() ? m.state.trim() : null,
+    postalCode: m.postalCode?.trim() ? m.postalCode.trim() : null,
+    country: m.country?.trim() ? m.country.trim() : null,
+  };
+}
+
+function maskLastName(value: string | undefined): string | null {
+  const v = value?.trim();
+  if (!v) return null;
+  return `${v.charAt(0).toUpperCase()}.`;
+}
+
+function maskEmail(value: string | undefined): string | null {
+  const v = value?.trim();
+  if (!v) return null;
+  const at = v.lastIndexOf("@");
+  if (at <= 0 || at === v.length - 1) return null;
+  const local = v.slice(0, at);
+  const domain = v.slice(at + 1);
+  if (!local || !domain) return null;
+  // First 2 chars + asterisks padded to original local-part length.
+  const visible = local.slice(0, 2);
+  const stars = "*".repeat(Math.max(local.length - visible.length, 1));
+  return `${visible}${stars}@${domain}`;
+}
+
+function maskPhone(value: string | undefined): string | null {
+  const v = value?.trim();
+  if (!v) return null;
+  const digits = v.replace(/\D/g, "");
+  if (digits.length < 4) return null;
+  const last4 = digits.slice(-4);
+  return `***-***-${last4}`;
+}
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 

@@ -8,6 +8,7 @@ import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { TopLocations } from "@/components/audiences/top-locations";
 import { PushPanel } from "@/components/audiences/push-panel";
+import { MemberPreview } from "@/components/audiences/member-preview";
 import {
   ArrowLeft,
   Users,
@@ -161,6 +162,14 @@ export default async function SegmentDetailPage({
             type: d.type,
           }))}
         />
+      </DashboardSection>
+
+      <DashboardSection
+        eyebrow="Sample data"
+        title="Member preview"
+        description="Five anonymized members so you can see what's in this segment before you push."
+      >
+        <MemberPreview segmentId={segment.id} />
       </DashboardSection>
 
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
