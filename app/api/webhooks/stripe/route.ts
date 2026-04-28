@@ -306,6 +306,10 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.text();
+  // Cap at 3 MB to prevent memory/CPU DoS via forged oversize POSTs.
+  if (Buffer.byteLength(body, "utf8") > 3 * 1024 * 1024) {
+    return NextResponse.json({ error: "Body too large" }, { status: 413 });
+  }
   const signature = req.headers.get("stripe-signature");
   if (!signature) {
     return NextResponse.json({ error: "Missing signature" }, { status: 400 });

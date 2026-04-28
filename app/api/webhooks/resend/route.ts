@@ -18,6 +18,10 @@ export async function POST(req: NextRequest) {
   }
 
   const rawBody = await req.text();
+  // Cap at 3 MB to prevent memory/CPU DoS via forged oversize POSTs.
+  if (Buffer.byteLength(rawBody, "utf8") > 3 * 1024 * 1024) {
+    return NextResponse.json({ error: "Body too large" }, { status: 413 });
+  }
   if (!verifySignature(rawBody, req.headers)) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 401 });
   }
@@ -99,9 +103,11 @@ function normalizeRecipients(raw: string | string[] | null): string[] {
 function verifySignature(body: string, headers: Headers): boolean {
   const secret = process.env.RESEND_WEBHOOK_SECRET;
   if (!secret) {
-    // DECISION: when no secret is configured we accept everything. Flip this
-    // to "reject" once we set the secret in env and the Resend dashboard.
-    return true;
+    // Fail closed in production. Without a secret, anyone can POST forged
+    // bounce/complaint events that flip Lead.unsubscribedFromEmails on any
+    // tenant — killing their email deliverability. Allow only in dev/preview
+    // so local development can exercise the route without a real secret.
+    return process.env.NODE_ENV !== "production";
   }
   const svixId = headers.get("svix-id");
   const svixTimestamp = headers.get("svix-timestamp");

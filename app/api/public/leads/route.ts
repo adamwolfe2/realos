@@ -17,6 +17,7 @@ import {
 } from "@/lib/email/lead-emails";
 import { notifyNewIntake as notifyNewLeadSlack } from "@/lib/integrations/slack";
 import { notifyLeadCreated } from "@/lib/notifications/create";
+import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 
 const schema = z.object({
   orgId: z.string().min(1),
@@ -61,6 +62,15 @@ export async function POST(req: NextRequest) {
     );
   }
   const data = parsed.data;
+
+  // Origin guard: require the request to come from the tenant's own site.
+  // Without this, any chatbot config response leaks orgId and an attacker
+  // could forge leads against any tenant's pipeline (and trigger our
+  // Resend templates against their primaryContactEmail).
+  const guard = await requireMatchingOrigin(req, data.orgId);
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.error }, { status: guard.status });
+  }
 
   // Confirm the tenant exists and is a CLIENT.
   const org = await prisma.organization.findUnique({

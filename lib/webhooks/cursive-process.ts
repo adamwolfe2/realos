@@ -268,6 +268,18 @@ export async function processCursiveEvent(
 
   let visitor;
   if (existing) {
+    // Append the new page view to the rolling pagesViewed JSON. Cap at the
+    // last MAX_PAGES_VIEWED entries so a chatty browser cannot blow up the
+    // row size.
+    const MAX_PAGES_VIEWED = 50;
+    let mergedPages: Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined;
+    if (pagesEntry) {
+      const prevArr = Array.isArray(existing.pagesViewed)
+        ? (existing.pagesViewed as unknown[])
+        : [];
+      const next = [...prevArr, ...pagesEntry].slice(-MAX_PAGES_VIEWED);
+      mergedPages = next as unknown as Prisma.InputJsonValue;
+    }
     visitor = await prisma.visitor.update({
       where: { id: existing.id },
       data: {
@@ -299,34 +311,73 @@ export async function processCursiveEvent(
         utmMedium: utmMedium ?? existing.utmMedium ?? undefined,
         utmCampaign: utmCampaign ?? existing.utmCampaign ?? undefined,
         intentScore: Math.max(existing.intentScore, intentScore),
+        pagesViewed: mergedPages,
       },
     });
   } else {
-    visitor = await prisma.visitor.create({
-      data: {
-        orgId: integration.orgId,
-        cursiveVisitorId: identityKey,
-        hashedEmail: hemSha256,
-        status,
-        firstName: firstName ?? null,
-        lastName: lastName ?? null,
-        email: normalizedEmail,
-        phone,
-        enrichedData: mergedEnrichment,
-        firstSeenAt: eventTime,
-        lastSeenAt: eventTime,
-        sessionCount: 1,
-        pagesViewed: pagesEntry
-          ? (pagesEntry as unknown as Prisma.InputJsonValue)
-          : Prisma.JsonNull,
-        totalTimeSeconds: 0,
-        referrer: referrer ?? null,
-        utmSource: utmSource ?? null,
-        utmMedium: utmMedium ?? null,
-        utmCampaign: utmCampaign ?? null,
-        intentScore,
-      },
-    });
+    // Two parallel webhooks for the same identity can both miss the
+    // findFirst above and both reach this create branch — the second
+    // throws P2002 on cursiveVisitorId/email unique constraints. Catch
+    // and fall back to find+update so AL doesn't see a 500 and retry
+    // the entire batch.
+    try {
+      visitor = await prisma.visitor.create({
+        data: {
+          orgId: integration.orgId,
+          cursiveVisitorId: identityKey,
+          hashedEmail: hemSha256,
+          status,
+          firstName: firstName ?? null,
+          lastName: lastName ?? null,
+          email: normalizedEmail,
+          phone,
+          enrichedData: mergedEnrichment,
+          firstSeenAt: eventTime,
+          lastSeenAt: eventTime,
+          sessionCount: 1,
+          pagesViewed: pagesEntry
+            ? (pagesEntry as unknown as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+          totalTimeSeconds: 0,
+          referrer: referrer ?? null,
+          utmSource: utmSource ?? null,
+          utmMedium: utmMedium ?? null,
+          utmCampaign: utmCampaign ?? null,
+          intentScore,
+        },
+      });
+    } catch (err) {
+      if (
+        err instanceof Prisma.PrismaClientKnownRequestError &&
+        err.code === "P2002"
+      ) {
+        const winner = orClauses.length
+          ? await prisma.visitor.findFirst({
+              where: { orgId: integration.orgId, OR: orClauses },
+            })
+          : null;
+        if (!winner) throw err;
+        visitor = await prisma.visitor.update({
+          where: { id: winner.id },
+          data: {
+            lastSeenAt:
+              eventTime > winner.lastSeenAt ? eventTime : winner.lastSeenAt,
+            sessionCount:
+              eventType === "page_view"
+                ? { increment: 1 }
+                : winner.sessionCount,
+            firstName: firstName ?? winner.firstName ?? undefined,
+            lastName: lastName ?? winner.lastName ?? undefined,
+            email: normalizedEmail ?? winner.email ?? undefined,
+            hashedEmail: hemSha256 ?? winner.hashedEmail ?? undefined,
+            intentScore: Math.max(winner.intentScore, intentScore),
+            enrichedData: mergedEnrichment,
+          },
+        });
+      } else {
+        throw err;
+      }
+    }
   }
 
   let leadId: string | null = null;
@@ -502,23 +553,52 @@ async function upsertLead(args: {
     });
     return existing.id;
   }
-  const lead = await prisma.lead.create({
-    data: {
-      orgId: args.orgId,
-      source: LeadSource.PIXEL_OUTREACH,
-      sourceDetail: args.sourceDetail,
-      status: LeadStatus.NEW,
-      firstName: args.firstName,
-      lastName: args.lastName,
-      email: args.email,
-      phone: args.phone,
-      visitorId: args.visitorId,
-      enrichedData: args.enrichedData,
-      notes: args.pageUrl ? `First seen on ${args.pageUrl}` : null,
-      score: args.intentScore,
-    },
-  });
-  return lead.id;
+  // Race-safe create: catch P2002 on (orgId, email) unique and fall back
+  // to find+update with the same data the update branch would have written.
+  try {
+    const lead = await prisma.lead.create({
+      data: {
+        orgId: args.orgId,
+        source: LeadSource.PIXEL_OUTREACH,
+        sourceDetail: args.sourceDetail,
+        status: LeadStatus.NEW,
+        firstName: args.firstName,
+        lastName: args.lastName,
+        email: args.email,
+        phone: args.phone,
+        visitorId: args.visitorId,
+        enrichedData: args.enrichedData,
+        notes: args.pageUrl ? `First seen on ${args.pageUrl}` : null,
+        score: args.intentScore,
+      },
+    });
+    return lead.id;
+  } catch (err) {
+    if (
+      err instanceof Prisma.PrismaClientKnownRequestError &&
+      err.code === "P2002"
+    ) {
+      const winner = await prisma.lead.findFirst({
+        where: { orgId: args.orgId, email: args.email },
+        select: { id: true },
+      });
+      if (!winner) throw err;
+      await prisma.lead.update({
+        where: { id: winner.id },
+        data: {
+          visitorId: args.visitorId,
+          firstName: args.firstName ?? undefined,
+          lastName: args.lastName ?? undefined,
+          phone: args.phone ?? undefined,
+          lastActivityAt: new Date(),
+          enrichedData: args.enrichedData,
+          score: Math.max(0, args.intentScore),
+        },
+      });
+      return winner.id;
+    }
+    throw err;
+  }
 }
 
 // ---------------------------------------------------------------------------

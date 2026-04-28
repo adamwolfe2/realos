@@ -67,12 +67,10 @@ export async function saveCursiveSettings(
     },
   });
 
-  // Mint a per-tenant webhook token the first time we see a pixel_id. The
-  // token becomes the auth on /api/webhooks/cursive/[token], which is what
-  // we hand to AL's per-pixel webhook UI (it can't pass our shared header).
-  const shouldMintToken = Boolean(cursivePixelId) && !previous?.webhookToken;
-  const newToken = shouldMintToken ? generateWebhookToken() : undefined;
-
+  // First update the non-token fields. We never let the token race here
+  // because two concurrent saves would both see a null webhookToken, both
+  // mint a fresh one, and the second upsert would overwrite the first —
+  // silently invalidating the AL webhook URL we already shipped to ops.
   await prisma.cursiveIntegration.upsert({
     where: { orgId },
     create: {
@@ -81,7 +79,8 @@ export async function saveCursiveSettings(
       cursiveSegmentId: cursiveSegmentId || null,
       installedOnDomain: installedOnDomain || null,
       provisionedAt: cursivePixelId ? new Date() : null,
-      webhookToken: newToken ?? null,
+      // No token yet — minted atomically below if needed.
+      webhookToken: null,
     },
     update: {
       cursivePixelId: cursivePixelId || null,
@@ -91,9 +90,34 @@ export async function saveCursiveSettings(
         cursivePixelId && !previous?.cursivePixelId
           ? new Date()
           : undefined,
-      webhookToken: newToken ?? undefined,
+      // Never touch the token here. Only the conditional updateMany below
+      // is allowed to set it, and only when it's still null.
     },
   });
+
+  // Mint a per-tenant webhook token the first time we see a pixel_id.
+  // updateMany with `webhookToken: null` in the where makes this race-safe:
+  // only one of two concurrent saves will affect a row; the loser's token
+  // is never written. We re-fetch the resulting token to thread into the
+  // fulfillment email below.
+  let webhookToken: string | null = previous?.webhookToken ?? null;
+  if (cursivePixelId && !webhookToken) {
+    const newToken = generateWebhookToken();
+    const result = await prisma.cursiveIntegration.updateMany({
+      where: { orgId, webhookToken: null },
+      data: { webhookToken: newToken },
+    });
+    if (result.count === 1) {
+      webhookToken = newToken;
+    } else {
+      // Another concurrent save won the race; read whatever was persisted.
+      const after = await prisma.cursiveIntegration.findUnique({
+        where: { orgId },
+        select: { webhookToken: true },
+      });
+      webhookToken = after?.webhookToken ?? null;
+    }
+  }
 
   await prisma.auditEvent.create({
     data: auditPayload(
@@ -117,11 +141,10 @@ export async function saveCursiveSettings(
   const transitionedToFulfilled =
     !!cursivePixelId && !previous?.cursivePixelId;
   if (transitionedToFulfilled) {
-    const tokenForEmail = newToken ?? previous?.webhookToken ?? null;
     await fulfillPendingRequests({
       orgId,
       pixelId: cursivePixelId,
-      webhookToken: tokenForEmail,
+      webhookToken,
     });
   }
 

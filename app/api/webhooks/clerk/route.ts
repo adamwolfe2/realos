@@ -110,6 +110,11 @@ export async function POST(req: NextRequest) {
   }
 
   const payload = await req.text();
+  // Clerk events are small (<10 KB normally). Cap at 3 MB to prevent
+  // memory/CPU DoS from a forged oversize POST being HMAC-verified.
+  if (Buffer.byteLength(payload, "utf8") > 3 * 1024 * 1024) {
+    return NextResponse.json({ error: "Body too large" }, { status: 413 });
+  }
   const wh = new Webhook(WEBHOOK_SECRET);
 
   let event: WebhookEvent;

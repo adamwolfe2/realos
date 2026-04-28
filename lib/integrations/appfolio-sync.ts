@@ -206,10 +206,26 @@ export async function runAppfolioSync(
     for (const row of rows) {
       const mapped = mapListingPayload(row);
       if (!mapped) continue;
-      const propertyId = fallbackPropertyId;
+      // Resolve the AppFolio PropertyId on the row to a local Property.
+      // For multi-building tenants we MUST NOT fall back to properties[0]
+      // — that would make every unit collide on
+      // (propertyId, backendListingId) and silently overwrite each other.
+      const rawPropertyId =
+        (row.PropertyId as string | undefined) ??
+        (row.property_id as string | undefined) ??
+        null;
+      let propertyId: string | null;
+      if (rawPropertyId && propertyByExternalId.has(rawPropertyId)) {
+        propertyId = propertyByExternalId.get(rawPropertyId) ?? null;
+      } else if (properties.length === 1) {
+        // Single-property tenants: safe to use the only Property.
+        propertyId = fallbackPropertyId;
+      } else {
+        propertyId = null;
+      }
       if (!propertyId) {
         stats.warnings.push(
-          `listing ${mapped.backendListingId}: no Property to attach`
+          `listing ${mapped.backendListingId}: no Property mapped (AppFolio PropertyId=${rawPropertyId ?? "none"})`
         );
         continue;
       }

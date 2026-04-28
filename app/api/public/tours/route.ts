@@ -13,6 +13,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { notifyTourScheduled } from "@/lib/notifications/create";
+import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 
 const schema = z.object({
   orgId: z.string().min(1),
@@ -53,6 +54,12 @@ export async function POST(req: NextRequest) {
     );
   }
   const data = parsed.data;
+
+  // Origin guard — see /api/public/leads/route.ts for the full rationale.
+  const guard = await requireMatchingOrigin(req, data.orgId);
+  if (!guard.ok) {
+    return NextResponse.json({ error: guard.error }, { status: guard.status });
+  }
 
   // Confirm ownership: property belongs to orgId, org is a CLIENT.
   const property = await prisma.property.findFirst({

@@ -16,8 +16,19 @@ const ALLOWED_SOURCES = new Set(["clerk", "cursive", "resend", "stripe"]);
 
 export async function GET(req: Request) {
   return recordCronRun("webhook-retry", async () => {
+    // Fail closed: missing CRON_SECRET means the route is fully open and
+    // anyone can drive replay traffic against /api/webhooks/*.
+    if (!process.env.CRON_SECRET) {
+      return {
+        result: NextResponse.json(
+          { error: "Cron secret not configured" },
+          { status: 503 },
+        ) as NextResponseType,
+        recordsProcessed: 0,
+      };
+    }
     const auth = req.headers.get("authorization");
-    if (process.env.CRON_SECRET && auth !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
       return {
         result: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) as NextResponseType,
         recordsProcessed: 0,
