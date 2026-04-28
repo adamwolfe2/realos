@@ -107,6 +107,10 @@ const REQUIRED_ENVS = [
   "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
   "ANTHROPIC_API_KEY",
   "CRON_SECRET",
+  // Used to AES-256-GCM encrypt per-tenant secrets (AppFolio creds, OAuth
+  // tokens). Missing means AppFolio sync and ad-platform OAuth crash on
+  // first decrypt.
+  "ENCRYPTION_KEY",
 ] as const;
 
 const OPTIONAL_ENVS = [
@@ -115,6 +119,11 @@ const OPTIONAL_ENVS = [
   "RESEND_API_KEY",
   "STRIPE_SECRET_KEY",
   "VERCEL_API_TOKEN",
+  // Upstash Redis powers all rate limiters. If missing, every public
+  // endpoint fails OPEN (no rate limit). Health surfaces the warning so
+  // ops sees it without us having to fail closed at runtime.
+  "KV_REST_API_URL",
+  "KV_REST_API_TOKEN",
 ] as const;
 
 export function checkEnv(): CheckResult {
