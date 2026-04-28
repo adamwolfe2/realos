@@ -359,7 +359,6 @@ export function SyncAppfolioButton() {
       {result && result.ok ? (
         <span className="text-xs text-emerald-700">
           Synced {result.stats.leadsUpserted} leads,{" "}
-          {result.stats.toursUpserted} tours,{" "}
           {result.stats.tenantsMatched} tenants,{" "}
           {result.stats.listingsUpserted} listings
           {result.stats.warnings.length > 0
