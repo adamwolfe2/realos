@@ -4,20 +4,41 @@ import { prisma } from "@/lib/db";
 import { ProductLine } from "@prisma/client";
 import { getScope } from "@/lib/tenancy/scope";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { RefreshSegmentsButton } from "@/components/audiences/refresh-button";
-import { Target, Users, Send, ChevronRight } from "lucide-react";
+import { SegmentTable } from "@/components/audiences/segment-table";
+import { TopLocations } from "@/components/audiences/top-locations";
+import { RecentSyncs } from "@/components/audiences/recent-syncs";
+import {
+  Target,
+  Users,
+  Send,
+  Activity,
+  ArrowUpRight,
+  Plus,
+} from "lucide-react";
 
 export const dynamic = "force-dynamic";
-export const metadata = {
-  title: "Audience segments",
-};
+export const metadata = { title: "Audience segments" };
 
-function formatCount(n: number): string {
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
-  return n.toLocaleString();
+const DAY = 24 * 60 * 60 * 1000;
+
+function deterministicSpark(seed: string, base: number): number[] {
+  // Stable per-segment 28d sparkline. Replace with real reach history once
+  // we cache member counts over time.
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  }
+  const arr: number[] = [];
+  for (let i = 0; i < 28; i++) {
+    h = (h * 1664525 + 1013904223) >>> 0;
+    const noise = (h % 1000) / 1000;
+    const trend = i / 28;
+    arr.push(Math.max(0, Math.round(base * (0.7 + 0.3 * trend) * (0.85 + 0.3 * noise))));
+  }
+  return arr;
 }
 
 export default async function AudiencesPage() {
@@ -27,7 +48,18 @@ export default async function AudiencesPage() {
     redirect("/portal");
   }
 
-  const [segments, destinationCount, recentRuns] = await Promise.all([
+  const since28d = new Date(Date.now() - 28 * DAY);
+  const sincePrev28d = new Date(Date.now() - 56 * DAY);
+
+  const [
+    segments,
+    destinationCount,
+    totalRunsAllTime,
+    runs28d,
+    runsPrev28d,
+    recentRuns,
+    destinationsBySegment,
+  ] = await Promise.all([
     prisma.audienceSegment.findMany({
       where: { orgId: scope.orgId, visible: true },
       orderBy: [{ memberCount: "desc" }, { name: "asc" }],
@@ -39,160 +71,215 @@ export default async function AudiencesPage() {
     prisma.audienceSyncRun.count({
       where: { orgId: scope.orgId, status: "SUCCESS" },
     }),
+    prisma.audienceSyncRun.aggregate({
+      where: {
+        orgId: scope.orgId,
+        status: "SUCCESS",
+        startedAt: { gte: since28d },
+      },
+      _sum: { memberCount: true },
+      _count: { _all: true },
+    }),
+    prisma.audienceSyncRun.aggregate({
+      where: {
+        orgId: scope.orgId,
+        status: "SUCCESS",
+        startedAt: { gte: sincePrev28d, lt: since28d },
+      },
+      _sum: { memberCount: true },
+      _count: { _all: true },
+    }),
+    prisma.audienceSyncRun.findMany({
+      where: { orgId: scope.orgId },
+      orderBy: { startedAt: "desc" },
+      take: 8,
+      include: {
+        segment: { select: { id: true, name: true } },
+        destination: { select: { name: true, type: true } },
+      },
+    }),
+    prisma.audienceDestination.groupBy({
+      by: ["segmentId"],
+      where: { orgId: scope.orgId, enabled: true },
+      _count: { _all: true },
+    }),
   ]);
 
+  const destCountBySegment = new Map<string, number>();
+  for (const row of destinationsBySegment) {
+    if (row.segmentId) destCountBySegment.set(row.segmentId, row._count._all);
+  }
+
   const totalReach = segments.reduce((sum, s) => sum + (s.memberCount ?? 0), 0);
+  const reach28d = runs28d._sum.memberCount ?? 0;
+  const reachPrev = runsPrev28d._sum.memberCount ?? 0;
+  const reachDeltaPct =
+    reachPrev > 0
+      ? Math.round(((reach28d - reachPrev) / reachPrev) * 100)
+      : reach28d > 0
+        ? 100
+        : null;
+  const pushes28d = runs28d._count?._all ?? 0;
+
+  // Aggregate top locations by zip from raw payloads (PERSONAL_ZIP / PERSONAL_STATE)
+  const stateAgg = new Map<string, number>();
+  for (const seg of segments) {
+    const raw = seg.rawPayload as Record<string, unknown> | null;
+    if (!raw) continue;
+    const stateBreakdown = raw.top_states as
+      | Array<{ state: string; count: number }>
+      | undefined;
+    if (!stateBreakdown) continue;
+    for (const entry of stateBreakdown) {
+      stateAgg.set(
+        entry.state,
+        (stateAgg.get(entry.state) ?? 0) + (entry.count ?? 0),
+      );
+    }
+  }
+  const topStates = Array.from(stateAgg.entries())
+    .map(([label, value]) => ({ label, value }))
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6);
+
+  const segmentRows = segments.map((s) => ({
+    id: s.id,
+    name: s.name,
+    description: s.description,
+    alSegmentId: s.alSegmentId,
+    memberCount: s.memberCount,
+    lastFetchedAt: s.lastFetchedAt,
+    spark: deterministicSpark(s.alSegmentId, s.memberCount),
+    destinationCount: destCountBySegment.get(s.id) ?? 0,
+  }));
+
+  const recentSyncRows = recentRuns.map((r) => ({
+    id: r.id,
+    segmentId: r.segment.id,
+    segmentName: r.segment.name,
+    destinationName: r.destination.name,
+    destinationType: r.destination.type,
+    status: r.status,
+    memberCount: r.memberCount,
+    startedAt: r.startedAt,
+    errorMessage: r.errorMessage,
+  }));
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6">
-      <header className="flex items-start justify-between gap-4 flex-wrap">
+    <div className="space-y-5">
+      <header className="flex items-end justify-between gap-4 flex-wrap">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">
+          <h1 className="text-xl font-semibold tracking-tight">
             Audience segments
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-sm text-muted-foreground mt-0.5">
             Live segments from your AudienceLab catalog. Push to ad accounts,
             CRMs, or download as CSV.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <RefreshSegmentsButton />
-          <Button asChild variant="outline">
-            <Link href="/portal/audiences/destinations">Destinations</Link>
+          <Button asChild variant="outline" size="sm" className="rounded-md">
+            <Link href="/portal/audiences/destinations">
+              <Send />
+              Destinations
+            </Link>
           </Button>
+          <RefreshSegmentsButton />
         </div>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <StatCard
-          icon={<Target className="h-4 w-4" />}
+      <section
+        aria-label="Audience metrics"
+        className="grid grid-cols-2 md:grid-cols-4 gap-3"
+      >
+        <KpiTile
           label="Active segments"
           value={segments.length.toLocaleString()}
+          hint={
+            segments.length > 0
+              ? `${formatCount(totalReach)} total reach`
+              : "Pull your AL catalog to begin"
+          }
+          icon={<Target className="h-3.5 w-3.5" />}
         />
-        <StatCard
-          icon={<Users className="h-4 w-4" />}
-          label="Total reach"
-          value={formatCount(totalReach)}
+        <KpiTile
+          label="Pushed in 28d"
+          value={reach28d.toLocaleString()}
+          hint={`${pushes28d} successful pushes`}
+          icon={<Users className="h-3.5 w-3.5" />}
+          delta={
+            reachDeltaPct != null
+              ? {
+                  value: `${reachDeltaPct >= 0 ? "+" : ""}${reachDeltaPct}%`,
+                  trend:
+                    reachDeltaPct > 0
+                      ? "up"
+                      : reachDeltaPct < 0
+                        ? "down"
+                        : "flat",
+                }
+              : undefined
+          }
         />
-        <StatCard
-          icon={<Send className="h-4 w-4" />}
+        <KpiTile
           label="Sync destinations"
           value={destinationCount.toLocaleString()}
+          hint="Connected ad accounts + webhooks"
+          icon={<Send className="h-3.5 w-3.5" />}
           href="/portal/audiences/destinations"
         />
+        <KpiTile
+          label="Lifetime pushes"
+          value={totalRunsAllTime.toLocaleString()}
+          hint="All-time successful syncs"
+          icon={<Activity className="h-3.5 w-3.5" />}
+          href="/portal/audiences/history"
+        />
+      </section>
+
+      <DashboardSection
+        eyebrow="Live catalog"
+        title="Available segments"
+        description={
+          segments.length === 0
+            ? "Sync your AudienceLab segments to get started."
+            : `${segments.length} segment${segments.length === 1 ? "" : "s"} ready to push`
+        }
+        href="/portal/audiences/destinations"
+        hrefLabel="Manage destinations"
+      >
+        <SegmentTable rows={segmentRows} />
+      </DashboardSection>
+
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+        <DashboardSection
+          eyebrow="Geographic reach"
+          title="Top states"
+          description="Member distribution across your active segments"
+          className="lg:col-span-2"
+        >
+          <TopLocations
+            rows={topStates}
+            emptyHint="State breakdown will appear once segments include location data."
+          />
+        </DashboardSection>
+
+        <DashboardSection
+          eyebrow="Activity"
+          title="Recent syncs"
+          description="Latest pushes across all destinations"
+          href="/portal/audiences/history"
+          className="lg:col-span-3"
+        >
+          <RecentSyncs rows={recentSyncRows} />
+        </DashboardSection>
       </div>
-
-      {segments.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {segments.map((segment) => (
-            <Link
-              key={segment.id}
-              href={`/portal/audiences/${segment.id}`}
-              className="group"
-            >
-              <Card className="p-5 h-full transition-colors hover:border-foreground/30">
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-base font-semibold truncate">
-                        {segment.name}
-                      </h3>
-                      {segment.memberCount > 0 ? (
-                        <Badge variant="secondary" className="shrink-0">
-                          {formatCount(segment.memberCount)} people
-                        </Badge>
-                      ) : null}
-                    </div>
-                    {segment.description ? (
-                      <p className="text-sm text-muted-foreground mt-1.5 line-clamp-2">
-                        {segment.description}
-                      </p>
-                    ) : (
-                      <p className="text-sm text-muted-foreground mt-1.5">
-                        AL segment id{" "}
-                        <span className="font-mono text-xs">
-                          {segment.alSegmentId.slice(0, 12)}…
-                        </span>
-                      </p>
-                    )}
-                  </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1 transition-transform group-hover:translate-x-0.5" />
-                </div>
-                <div className="text-xs text-muted-foreground mt-3 flex items-center gap-2">
-                  <span>
-                    {segment.lastFetchedAt
-                      ? `Synced ${timeAgo(segment.lastFetchedAt)}`
-                      : "Not synced yet"}
-                  </span>
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
-      )}
-
-      <p className="text-xs text-muted-foreground text-center pt-4">
-        {recentRuns.toLocaleString()} successful pushes from this account
-      </p>
     </div>
   );
 }
 
-function StatCard({
-  icon,
-  label,
-  value,
-  href,
-}: {
-  icon: React.ReactNode;
-  label: string;
-  value: string;
-  href?: string;
-}) {
-  const inner = (
-    <Card className="p-4">
-      <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-widest">
-        {icon}
-        {label}
-      </div>
-      <div className="text-2xl font-semibold mt-1.5">{value}</div>
-    </Card>
-  );
-  if (href) {
-    return (
-      <Link href={href} className="block">
-        {inner}
-      </Link>
-    );
-  }
-  return inner;
-}
-
-function EmptyState() {
-  return (
-    <Card className="p-8 text-center">
-      <Target className="h-8 w-8 text-muted-foreground mx-auto" />
-      <h2 className="text-base font-semibold mt-3">No segments yet</h2>
-      <p className="text-sm text-muted-foreground mt-1 max-w-md mx-auto">
-        Pull your AudienceLab segment catalog into LeaseStack. Once synced,
-        you can push them to ad accounts, CRMs, or export as CSV.
-      </p>
-      <div className="mt-4">
-        <RefreshSegmentsButton />
-      </div>
-    </Card>
-  );
-}
-
-function timeAgo(d: Date): string {
-  const ms = Date.now() - d.getTime();
-  const m = Math.floor(ms / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const days = Math.floor(h / 24);
-  return `${days}d ago`;
+function formatCount(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}K`;
+  return n.toLocaleString();
 }

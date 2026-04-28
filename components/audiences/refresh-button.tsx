@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { refreshAudienceSegments } from "@/lib/actions/audiences";
 
-export function RefreshSegmentsButton() {
+export function RefreshSegmentsButton({
+  variant = "default",
+  size = "sm",
+}: {
+  variant?: "default" | "outline" | "ghost";
+  size?: "default" | "sm";
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
@@ -19,7 +25,7 @@ export function RefreshSegmentsButton() {
       const result = await refreshAudienceSegments();
       if (result.ok) {
         setMessage(
-          `Synced ${result.total} segments (${result.created} new, ${result.updated} updated)`,
+          `Synced ${result.total} segments — ${result.created} new, ${result.updated} updated`,
         );
         router.refresh();
       } else {
@@ -32,9 +38,11 @@ export function RefreshSegmentsButton() {
     <div className="flex flex-col items-end gap-1">
       <Button
         type="button"
-        variant="default"
+        variant={variant}
+        size={size}
         onClick={handleClick}
         disabled={pending}
+        className="rounded-md"
       >
         <RefreshCw className={pending ? "animate-spin" : ""} />
         {pending ? "Syncing…" : "Refresh segments"}

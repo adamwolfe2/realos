@@ -3,9 +3,9 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProductLine } from "@prisma/client";
 import { getScope } from "@/lib/tenancy/scope";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft } from "lucide-react";
+import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
+import { ArrowLeft, FileDown, Webhook, Facebook, BarChart3, Send } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Sync history" };
@@ -28,86 +28,137 @@ export default async function HistoryPage() {
   });
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
+    <div className="space-y-5">
       <div>
         <Link
           href="/portal/audiences"
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
+          <ArrowLeft className="h-3 w-3" />
           Back to segments
         </Link>
       </div>
 
       <header>
-        <h1 className="text-2xl font-semibold tracking-tight">Sync history</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Every push, manual or scheduled, with member counts and errors.
+        <h1 className="text-xl font-semibold tracking-tight">Sync history</h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Every push, manual or scheduled. Member counts and errors logged.
         </p>
       </header>
 
-      {runs.length === 0 ? (
-        <Card className="p-8 text-center">
-          <p className="text-sm text-muted-foreground">
+      <DashboardSection
+        eyebrow="Activity log"
+        title="All sync runs"
+        description={`${runs.length} run${runs.length === 1 ? "" : "s"} in this view`}
+      >
+        {runs.length === 0 ? (
+          <div className="text-sm text-muted-foreground py-6 text-center">
             No syncs yet. Pick a segment and push it to a destination.
-          </p>
-        </Card>
-      ) : (
-        <Card className="divide-y divide-border">
-          {runs.map((run) => (
-            <div key={run.id} className="p-4 flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Link
-                    href={`/portal/audiences/${run.segment.id}`}
-                    className="font-medium hover:underline truncate"
-                  >
-                    {run.segment.name}
-                  </Link>
-                  <span className="text-muted-foreground text-sm">→</span>
-                  <span className="text-sm truncate">
-                    {run.destination.name}
-                  </span>
-                  <Badge variant="outline" className="shrink-0">
-                    {run.destination.type.toLowerCase().replace(/_/g, " ")}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {run.memberCount.toLocaleString()} members •{" "}
-                  {new Date(run.startedAt).toLocaleString()}
-                  {run.finishedAt
-                    ? ` • finished in ${formatDuration(
-                        run.startedAt,
-                        run.finishedAt,
-                      )}`
-                    : ""}
-                </p>
-                {run.errorMessage ? (
-                  <p className="text-xs text-destructive mt-1.5">
-                    {run.errorMessage}
-                  </p>
-                ) : null}
-              </div>
-              <RunBadge status={run.status} />
-            </div>
-          ))}
-        </Card>
-      )}
+          </div>
+        ) : (
+          <div className="-mx-5 -mb-5">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  <th className="text-left font-semibold py-2 px-5">Segment</th>
+                  <th className="text-left font-semibold py-2 px-3">Destination</th>
+                  <th className="text-right font-semibold py-2 px-3">Members</th>
+                  <th className="text-left font-semibold py-2 px-3">Started</th>
+                  <th className="text-right font-semibold py-2 px-3">Duration</th>
+                  <th className="text-right font-semibold py-2 px-5">Status</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {runs.map((run) => (
+                  <tr key={run.id} className="hover:bg-muted/40 transition-colors">
+                    <td className="py-3 px-5 align-top">
+                      <Link
+                        href={`/portal/audiences/${run.segment.id}`}
+                        className="font-medium hover:text-primary truncate block"
+                      >
+                        {run.segment.name}
+                      </Link>
+                    </td>
+                    <td className="py-3 px-3 align-top">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <DestinationIcon type={run.destination.type} />
+                        <span className="text-sm truncate">
+                          {run.destination.name}
+                        </span>
+                      </div>
+                      {run.errorMessage ? (
+                        <p className="text-[11px] text-rose-700 mt-1 truncate max-w-md">
+                          {run.errorMessage}
+                        </p>
+                      ) : null}
+                    </td>
+                    <td className="py-3 px-3 text-right tabular-nums">
+                      {run.memberCount.toLocaleString()}
+                    </td>
+                    <td className="py-3 px-3 text-xs text-muted-foreground tabular-nums">
+                      {new Date(run.startedAt).toLocaleString(undefined, {
+                        month: "short",
+                        day: "numeric",
+                        hour: "numeric",
+                        minute: "2-digit",
+                      })}
+                    </td>
+                    <td className="py-3 px-3 text-right text-xs text-muted-foreground tabular-nums">
+                      {run.finishedAt
+                        ? formatDuration(run.startedAt, run.finishedAt)
+                        : "—"}
+                    </td>
+                    <td className="py-3 px-5 text-right">
+                      <RunPill status={run.status} />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </DashboardSection>
     </div>
   );
 }
 
-function RunBadge({ status }: { status: string }) {
-  if (status === "SUCCESS") {
-    return <Badge variant="secondary">Success</Badge>;
-  }
-  if (status === "FAILED") {
-    return <Badge variant="destructive">Failed</Badge>;
-  }
-  if (status === "RUNNING") {
-    return <Badge variant="outline">Running</Badge>;
-  }
-  return <Badge variant="outline">{status.toLowerCase()}</Badge>;
+function DestinationIcon({ type }: { type: string }) {
+  const Icon =
+    type === "CSV_DOWNLOAD"
+      ? FileDown
+      : type === "WEBHOOK"
+        ? Webhook
+        : type === "META_CUSTOM_AUDIENCE"
+          ? Facebook
+          : type === "GOOGLE_CUSTOMER_MATCH"
+            ? BarChart3
+            : Send;
+  return (
+    <span className="inline-flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground bg-muted shrink-0">
+      <Icon className="h-3 w-3" />
+    </span>
+  );
+}
+
+function RunPill({ status }: { status: string }) {
+  const tone =
+    status === "SUCCESS"
+      ? "text-emerald-700 bg-emerald-50"
+      : status === "FAILED"
+        ? "text-rose-700 bg-rose-50"
+        : status === "RUNNING"
+          ? "text-amber-700 bg-amber-50"
+          : "text-muted-foreground bg-muted";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+        tone,
+      )}
+    >
+      {status.toLowerCase()}
+    </span>
+  );
 }
 
 function formatDuration(start: Date, end: Date): string {

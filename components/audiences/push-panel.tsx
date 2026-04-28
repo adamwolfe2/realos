@@ -3,7 +3,6 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,36 +82,30 @@ export function PushPanel({
 
   if (destinations.length === 0) {
     return (
-      <Card className="p-6">
-        <div className="flex items-start gap-3">
-          <Send className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
-          <div className="flex-1">
-            <h2 className="font-semibold">No destinations connected</h2>
-            <p className="text-sm text-muted-foreground mt-1">
-              Add a webhook URL or generate a CSV download to push this
-              segment somewhere useful.
-            </p>
-            <Button asChild className="mt-3">
-              <Link href="/portal/audiences/destinations">
-                Add a destination
-              </Link>
-            </Button>
-          </div>
+      <div className="flex items-start gap-3 py-2">
+        <Send className="h-5 w-5 text-muted-foreground shrink-0 mt-0.5" />
+        <div className="flex-1">
+          <p className="text-sm font-medium">No destinations connected yet</p>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Add a webhook URL or pick a connected ad account to start pushing.
+          </p>
+          <Button asChild size="sm" className="mt-3 rounded-md">
+            <Link href="/portal/audiences/destinations">
+              Add a destination
+            </Link>
+          </Button>
         </div>
-      </Card>
+      </div>
     );
   }
 
   return (
-    <Card className="p-5 space-y-4">
+    <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div>
-          <h2 className="text-base font-semibold">Push segment</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            ~{memberCount.toLocaleString()} members in source. Filter narrows
-            the push.
-          </p>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          ~{memberCount.toLocaleString()} members in source. Filter narrows the
+          push.
+        </p>
         <button
           type="button"
           onClick={() => setShowFilters((v) => !v)}
@@ -186,7 +179,12 @@ export function PushPanel({
       ) : null}
 
       <div className="flex items-center gap-3 flex-wrap">
-        <Button onClick={handlePush} disabled={pending}>
+        <Button
+          onClick={handlePush}
+          disabled={pending}
+          size="sm"
+          className="rounded-md"
+        >
           {currentTypeIs(destinationId, destinations, "CSV_DOWNLOAD") ? (
             <Download />
           ) : (
@@ -201,7 +199,7 @@ export function PushPanel({
           <span className="text-xs text-destructive">{error}</span>
         ) : null}
       </div>
-    </Card>
+    </div>
   );
 }
 
