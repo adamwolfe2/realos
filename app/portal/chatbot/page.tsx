@@ -12,14 +12,23 @@ import { PageHeader } from "@/components/admin/page-header";
 export const metadata: Metadata = { title: "Chatbot" };
 export const dynamic = "force-dynamic";
 
-// Fallback to the request origin when NEXT_PUBLIC_APP_URL isn't set (local
-// dev). Vercel sets the env var so production always uses the canonical URL.
+// Builds the canonical embed URL for the install snippet. We always serve
+// the snippet from `www.leasestack.co` so the host page doesn't pay the
+// 307 redirect from the apex on every script load. Local dev falls back
+// to the request origin when NEXT_PUBLIC_APP_URL isn't set.
 async function resolveAppUrl(): Promise<string> {
   const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
-  if (fromEnv) return fromEnv.replace(/\/$/, "");
+  if (fromEnv) {
+    const trimmed = fromEnv.replace(/\/$/, "");
+    if (/^https?:\/\/leasestack\.co$/i.test(trimmed)) {
+      return "https://www.leasestack.co";
+    }
+    return trimmed;
+  }
   const h = await headers();
   const proto = h.get("x-forwarded-proto") ?? "https";
   const host = h.get("host") ?? "localhost:3000";
+  if (host === "leasestack.co") return "https://www.leasestack.co";
   return `${proto}://${host}`;
 }
 

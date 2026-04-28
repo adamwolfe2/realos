@@ -10,7 +10,7 @@ export const BRAND = {
   tagline: "Managed marketing for real estate operators",
   email: "hello@leasestack.co",
   supportEmail: "support@leasestack.co",
-  url: "https://leasestack.co",
+  url: "https://www.leasestack.co",
   agencySlug: process.env.AGENCY_ORG_SLUG ?? "leasestack-agency",
 } as const;
 

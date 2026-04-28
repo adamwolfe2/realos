@@ -126,25 +126,25 @@ requests / minute).
 
 ```bash
 # Create or merge a lead
-curl -X POST https://app.leasestack.co/api/ingest/lead \
+curl -X POST https://www.leasestack.co/api/ingest/lead \
   -H "Authorization: Bearer re_live_..." \
   -H "Content-Type: application/json" \
   -d '{"email":"student@berkeley.edu","firstName":"Alex","source":"FORM"}'
 
 # Upsert a visitor by external id
-curl -X POST https://app.leasestack.co/api/ingest/visitor \
+curl -X POST https://www.leasestack.co/api/ingest/visitor \
   -H "Authorization: Bearer re_live_..." \
   -H "Content-Type: application/json" \
   -d '{"externalId":"abc-123","email":"a@b.com","utmSource":"google"}'
 
 # Schedule a tour for an existing lead
-curl -X POST https://app.leasestack.co/api/ingest/tour \
+curl -X POST https://www.leasestack.co/api/ingest/tour \
   -H "Authorization: Bearer re_live_..." \
   -H "Content-Type: application/json" \
   -d '{"leadEmail":"a@b.com","propertyId":"prop_...","scheduledAt":"2026-05-01T17:00:00Z"}'
 
 # Append chatbot turns (merges by sessionId)
-curl -X POST https://app.leasestack.co/api/ingest/chatbot \
+curl -X POST https://www.leasestack.co/api/ingest/chatbot \
   -H "Authorization: Bearer re_live_..." \
   -H "Content-Type: application/json" \
   -d '{"sessionId":"sess-1","email":"a@b.com","messages":[{"role":"user","content":"hi"}]}'

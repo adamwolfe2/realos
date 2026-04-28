@@ -4,8 +4,8 @@
   // LeaseStack chatbot embed.
   //
   // Usage:
-  //   <script src="https://app.leasestack.co/embed/chatbot.js"
-  //           data-slug="telegraph-commons" defer></script>
+  //   <script src="https://www.leasestack.co/embed/chatbot.js"
+  //           data-slug="<your-slug>" defer></script>
   //
   // Zero deps. Shadow DOM for style isolation. Works on any host platform
   // (Wix, WordPress, Vercel, static HTML). Mirrors the Telegraph Commons
