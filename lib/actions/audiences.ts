@@ -14,10 +14,12 @@ import {
 } from "@/lib/integrations/al-segments";
 import {
   AudienceDestinationType,
+  AudienceScheduleFrequency,
   AudienceSyncStatus,
   type AudienceDestination,
   type AudienceSegment,
 } from "@prisma/client";
+import { computeNextRunAt } from "@/lib/audiences/schedule";
 
 // ---------------------------------------------------------------------------
 // Refresh segments — pull AL's segment list and upsert into the cache.
@@ -198,14 +200,41 @@ export async function pushSegmentToDestination(
   input: PushSegmentInput,
 ): Promise<PushResult> {
   const scope = await requireAudienceSyncOrThrow();
+  return executeSegmentPush({
+    orgId: scope.orgId,
+    segmentId: input.segmentId,
+    destinationId: input.destinationId,
+    geoFilter: input.geoFilter,
+    maxMembers: input.maxMembers,
+    triggeredByUserId: scope.userId,
+  });
+}
 
+// ---------------------------------------------------------------------------
+// executeSegmentPush — the auth-free internal that runs the push pipeline.
+// pushSegmentToDestination wraps this with a Clerk scope check; the cron
+// handler at /api/cron/run-audience-syncs calls it directly after verifying
+// its own bearer token. Callers MUST authorize before invoking this.
+// ---------------------------------------------------------------------------
+export type ExecuteSegmentPushInput = {
+  orgId: string;
+  segmentId: string;
+  destinationId: string;
+  geoFilter?: GeoFilter;
+  maxMembers?: number;
+  triggeredByUserId?: string | null;
+};
+
+export async function executeSegmentPush(
+  input: ExecuteSegmentPushInput,
+): Promise<PushResult> {
   const segment = await prisma.audienceSegment.findFirst({
-    where: { id: input.segmentId, orgId: scope.orgId },
+    where: { id: input.segmentId, orgId: input.orgId },
   });
   if (!segment) return { ok: false, error: "Segment not found." };
 
   const destination = await prisma.audienceDestination.findFirst({
-    where: { id: input.destinationId, orgId: scope.orgId },
+    where: { id: input.destinationId, orgId: input.orgId },
   });
   if (!destination) return { ok: false, error: "Destination not found." };
   if (!destination.enabled) {
@@ -214,18 +243,18 @@ export async function pushSegmentToDestination(
 
   const run = await prisma.audienceSyncRun.create({
     data: {
-      orgId: scope.orgId,
+      orgId: input.orgId,
       segmentId: segment.id,
       destinationId: destination.id,
       status: AudienceSyncStatus.RUNNING,
       filterSnapshot: (input.geoFilter as object) ?? undefined,
-      triggeredByUserId: scope.userId,
+      triggeredByUserId: input.triggeredByUserId ?? null,
     },
     select: { id: true },
   });
 
   try {
-    const orgKey = await getOrgApiKeyOverride(scope.orgId);
+    const orgKey = await getOrgApiKeyOverride(input.orgId);
     const members = await streamAlSegmentMembers(segment.alSegmentId, {
       apiKey: orgKey,
       maxMembers: input.maxMembers ?? 5000,
@@ -537,5 +566,154 @@ async function pushToWebhook(
       error: `Webhook responded ${res.status}: ${text.slice(0, 200)}`,
     };
   }
+  return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// Recurring schedules — one row per (segment, destination, frequency).
+// The cron at /api/cron/run-audience-syncs reads enabled rows whose
+// nextRunAt has passed, runs them, and advances nextRunAt.
+// ---------------------------------------------------------------------------
+
+export type CreateScheduleInput = {
+  segmentId: string;
+  destinationId: string;
+  frequency: AudienceScheduleFrequency;
+  dayOfWeek?: number | null;
+  hourUtc: number;
+  geoFilter?: GeoFilter;
+};
+
+export async function createAudienceSchedule(
+  input: CreateScheduleInput,
+): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const scope = await requireAudienceSyncOrThrow();
+
+  if (!input.segmentId || !input.destinationId) {
+    return { ok: false, error: "Segment and destination are required." };
+  }
+  if (
+    input.frequency !== "DAILY" &&
+    input.frequency !== "WEEKLY"
+  ) {
+    return { ok: false, error: "Frequency must be DAILY or WEEKLY." };
+  }
+  if (
+    !Number.isInteger(input.hourUtc) ||
+    input.hourUtc < 0 ||
+    input.hourUtc > 23
+  ) {
+    return { ok: false, error: "Hour (UTC) must be between 0 and 23." };
+  }
+  if (input.frequency === "WEEKLY") {
+    if (
+      input.dayOfWeek == null ||
+      !Number.isInteger(input.dayOfWeek) ||
+      input.dayOfWeek < 0 ||
+      input.dayOfWeek > 6
+    ) {
+      return {
+        ok: false,
+        error: "Day of week (0-6, Sun=0) is required for weekly schedules.",
+      };
+    }
+  }
+
+  // Verify segment + destination belong to this org.
+  const [segment, destination] = await Promise.all([
+    prisma.audienceSegment.findFirst({
+      where: { id: input.segmentId, orgId: scope.orgId },
+      select: { id: true },
+    }),
+    prisma.audienceDestination.findFirst({
+      where: { id: input.destinationId, orgId: scope.orgId },
+      select: { id: true, enabled: true },
+    }),
+  ]);
+  if (!segment) return { ok: false, error: "Segment not found." };
+  if (!destination) return { ok: false, error: "Destination not found." };
+
+  const dayOfWeek =
+    input.frequency === "WEEKLY" ? (input.dayOfWeek as number) : null;
+  const nextRunAt = computeNextRunAt(
+    input.frequency,
+    dayOfWeek,
+    input.hourUtc,
+  );
+
+  const created = await prisma.audienceSyncSchedule.create({
+    data: {
+      orgId: scope.orgId,
+      segmentId: input.segmentId,
+      destinationId: input.destinationId,
+      frequency: input.frequency,
+      dayOfWeek,
+      hourUtc: input.hourUtc,
+      filterSnapshot: (input.geoFilter as object) ?? undefined,
+      enabled: true,
+      nextRunAt,
+      createdByUserId: scope.userId ?? null,
+    },
+    select: { id: true },
+  });
+
+  revalidatePath("/portal/audiences/schedules");
+  revalidatePath(`/portal/audiences/${input.segmentId}`);
+  return { ok: true, id: created.id };
+}
+
+export async function deleteAudienceSchedule(
+  id: string,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const scope = await requireAudienceSyncOrThrow();
+  const sched = await prisma.audienceSyncSchedule.findFirst({
+    where: { id, orgId: scope.orgId },
+    select: { id: true, segmentId: true },
+  });
+  if (!sched) return { ok: false, error: "Schedule not found." };
+  await prisma.audienceSyncSchedule.delete({ where: { id: sched.id } });
+  revalidatePath("/portal/audiences/schedules");
+  revalidatePath(`/portal/audiences/${sched.segmentId}`);
+  return { ok: true };
+}
+
+export async function toggleAudienceSchedule(
+  id: string,
+  enabled: boolean,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const scope = await requireAudienceSyncOrThrow();
+  const sched = await prisma.audienceSyncSchedule.findFirst({
+    where: { id, orgId: scope.orgId },
+    select: {
+      id: true,
+      segmentId: true,
+      frequency: true,
+      dayOfWeek: true,
+      hourUtc: true,
+    },
+  });
+  if (!sched) return { ok: false, error: "Schedule not found." };
+
+  // When re-enabling, recompute nextRunAt so we don't immediately fire on a
+  // long-disabled schedule.
+  const data: {
+    enabled: boolean;
+    nextRunAt?: Date;
+  } = { enabled };
+  if (enabled) {
+    data.nextRunAt = computeNextRunAt(
+      sched.frequency,
+      sched.dayOfWeek ?? null,
+      sched.hourUtc,
+    );
+  }
+
+  await prisma.audienceSyncSchedule.update({
+    where: { id: sched.id },
+    data,
+  });
+
+  revalidatePath("/portal/audiences/schedules");
+  revalidatePath(`/portal/audiences/${sched.segmentId}`);
   return { ok: true };
 }

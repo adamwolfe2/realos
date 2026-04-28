@@ -28,6 +28,7 @@ import {
   Target,
   Send,
   History,
+  Calendar,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -74,6 +75,7 @@ export const AUDIENCE_NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/portal/audiences", label: "Segments", icon: Target, show: ALWAYS },
       { href: "/portal/audiences/destinations", label: "Destinations", icon: Send, show: ALWAYS },
+      { href: "/portal/audiences/schedules", label: "Schedules", icon: Calendar, show: ALWAYS },
       { href: "/portal/audiences/history", label: "Sync history", icon: History, show: ALWAYS },
     ],
   },

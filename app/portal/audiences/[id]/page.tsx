@@ -16,6 +16,7 @@ import {
   Mail,
   Phone,
   Send,
+  Calendar,
 } from "lucide-react";
 
 export const dynamic = "force-dynamic";
@@ -152,6 +153,8 @@ export default async function SegmentDetailPage({
         eyebrow="Push to destination"
         title="Send segment"
         description="Filter by location and pick where to send. CSV downloads stream right back to your browser."
+        href={`/portal/audiences/schedules?segmentId=${segment.id}`}
+        hrefLabel="Schedule recurring push"
       >
         <PushPanel
           segmentId={segment.id}
@@ -162,6 +165,19 @@ export default async function SegmentDetailPage({
             type: d.type,
           }))}
         />
+        <div className="mt-4 pt-3 border-t border-border flex items-center gap-1.5 text-xs text-muted-foreground">
+          <Calendar className="h-3 w-3" />
+          <span>
+            Want this to run automatically?{" "}
+            <Link
+              href={`/portal/audiences/schedules?segmentId=${segment.id}`}
+              className="font-medium text-primary hover:underline"
+            >
+              Set up a schedule
+            </Link>
+            .
+          </span>
+        </div>
       </DashboardSection>
 
       <DashboardSection

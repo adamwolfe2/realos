@@ -354,6 +354,7 @@ model Organization {
   audienceSegments       AudienceSegment[]
   audienceDestinations   AudienceDestination[]
   audienceSyncRuns       AudienceSyncRun[]
+  audienceSchedules      AudienceSyncSchedule[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -1940,6 +1941,7 @@ model AudienceSegment {
 
   destinations AudienceDestination[]
   syncRuns     AudienceSyncRun[]
+  schedules    AudienceSyncSchedule[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1982,7 +1984,8 @@ model AudienceDestination {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  syncRuns AudienceSyncRun[]
+  syncRuns  AudienceSyncRun[]
+  schedules AudienceSyncSchedule[]
 
   @@index([orgId, type])
   @@index([segmentId])
@@ -2017,4 +2020,46 @@ model AudienceSyncRun {
   @@index([segmentId, startedAt(sort: Desc)])
   @@index([destinationId, startedAt(sort: Desc)])
   @@index([status])
+}
+
+// AudienceSyncSchedule defines a recurring push of a segment to a destination.
+// The cron at /api/cron/run-audience-syncs picks rows where enabled=true and
+// nextRunAt <= now() each tick, executes the push, then advances nextRunAt to
+// the next due time based on frequency.
+enum AudienceScheduleFrequency {
+  DAILY
+  WEEKLY
+}
+
+model AudienceSyncSchedule {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  segmentId     String
+  segment       AudienceSegment     @relation(fields: [segmentId], references: [id], onDelete: Cascade)
+  destinationId String
+  destination   AudienceDestination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+
+  frequency AudienceScheduleFrequency
+  // 0-6 (Sunday=0). Required when frequency = WEEKLY, ignored when DAILY.
+  dayOfWeek Int?
+  // 0-23, the hour of the day (UTC) the run kicks off.
+  hourUtc   Int
+
+  // Optional GeoFilter snapshot { zipCodes?: string[]; states?: string[]; cities?: string[] }
+  filterSnapshot Json?
+
+  enabled    Boolean   @default(true)
+  lastRunAt  DateTime?
+  nextRunAt  DateTime
+
+  createdByUserId String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([orgId, enabled])
+  @@index([nextRunAt, enabled])
+  @@index([segmentId])
+  @@index([destinationId])
 }

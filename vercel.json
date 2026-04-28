@@ -67,6 +67,10 @@
     {
       "path": "/api/cron/review-requests",
       "schedule": "0 15 * * *"
+    },
+    {
+      "path": "/api/cron/run-audience-syncs",
+      "schedule": "0 * * * *"
     }
   ]
 }
