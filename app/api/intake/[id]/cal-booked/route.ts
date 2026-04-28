@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/db";
+import { notifyNewIntake } from "@/lib/integrations/slack";
 
 // Cal.com booking webhook. Flips IntakeSubmission.bookedCallAt when a
-// consultation is booked. Email/Slack notifications are wired in Sprint 10.
+// consultation is booked.
 // DECISION: The schema stores the booked timestamp + Cal.com booking id, not
 // the legacy boolean calBooked flag.
 export async function POST(
@@ -47,7 +48,14 @@ export async function POST(
   try {
     const intake = await prisma.intakeSubmission.findUnique({
       where: { id },
-      select: { id: true, bookedCallAt: true },
+      select: {
+        id: true,
+        bookedCallAt: true,
+        companyName: true,
+        primaryContactName: true,
+        primaryContactEmail: true,
+        propertyType: true,
+      },
     });
 
     if (!intake) {
@@ -63,7 +71,19 @@ export async function POST(
           status: "consultation_booked",
         },
       });
-      // TODO(Sprint 10): notify agency ops via Resend + Slack.
+
+      // Fire-and-forget Slack ping so ops sees the booking land in real time.
+      // Reuses the new-intake template since the existing block layout
+      // already covers the fields we have here.
+      void notifyNewIntake({
+        companyName: `${intake.companyName} (call booked)`,
+        contactName: intake.primaryContactName,
+        contactEmail: intake.primaryContactEmail,
+        propertyType: intake.propertyType,
+        intakeId: intake.id,
+      }).catch((err) => {
+        console.warn("[cal-booked] slack notify failed:", err);
+      });
     }
 
     return NextResponse.json({ ok: true });

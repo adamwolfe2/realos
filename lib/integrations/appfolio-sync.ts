@@ -133,10 +133,12 @@ export async function runAppfolioSync(
   let topLevelError: string | null = null;
   // Resilience: track per-phase completion separately from row counts. A
   // phase that runs the request to completion (even with 0 rows) counts as
-  // "the connector worked" — the sync should go back to idle and bump
-  // lastSyncAt so the user sees progress. Only when *every* phase throws do
-  // we mark the integration as error.
-  let anyPhaseCompleted = false;
+  // "the connector worked" — the integration goes back to idle. But we
+  // only advance lastSyncAt to "now" when *every* phase completed, so a
+  // partial failure doesn't shrink the failed phase's window forever on
+  // subsequent incremental syncs.
+  let phasesCompleted = 0;
+  const totalPhases = 4;
 
   // 1. LEADS — AppFolio v2 report: prospect_source_tracking
   try {
@@ -147,7 +149,7 @@ export async function runAppfolioSync(
       await upsertAppfolioLead(orgId, mapped, resolvePropertyId(mapped.propertyIds));
       stats.leadsUpserted += 1;
     }
-    anyPhaseCompleted = true;
+    phasesCompleted += 1;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     stats.warnings.push(`leads: ${message}`);
@@ -166,7 +168,7 @@ export async function runAppfolioSync(
       if (upserted) stats.toursUpserted += 1;
       else stats.warnings.push(`showing ${mapped.externalId}: no matching lead`);
     }
-    anyPhaseCompleted = true;
+    phasesCompleted += 1;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     stats.warnings.push(`showings: ${message}`);
@@ -185,7 +187,7 @@ export async function runAppfolioSync(
       const matched = await markLeadSignedByTenant(orgId, mapped);
       if (matched) stats.tenantsMatched += 1;
     }
-    anyPhaseCompleted = true;
+    phasesCompleted += 1;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     stats.warnings.push(`tenants: ${message}`);
@@ -256,25 +258,35 @@ export async function runAppfolioSync(
       }
       stats.listingsUpserted += 1;
     }
-    anyPhaseCompleted = true;
+    phasesCompleted += 1;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     stats.warnings.push(`listings: ${message}`);
     topLevelError = topLevelError ?? `listings: ${message}`;
   }
 
-  // Sync is "successful" if at least one phase ran to completion. A phase
-  // that returned 0 rows still counts — the connector is healthy, the
-  // tenant just doesn't have data in that report yet.
-  const succeeded = anyPhaseCompleted;
+  // Connector is "healthy" if at least one phase completed (even with 0
+  // rows) — the integration goes back to idle. But lastSyncAt only
+  // advances when *every* phase completed; partial syncs preserve the
+  // existing lastSyncAt so the failed phase's window doesn't shrink and
+  // lose unsynced data.
+  const allPhasesCompleted = phasesCompleted === totalPhases;
+  const anyPhaseCompleted = phasesCompleted > 0;
 
   try {
     await prisma.appFolioIntegration.update({
       where: { orgId },
       data: {
-        syncStatus: topLevelError && !succeeded ? "error" : "idle",
-        lastSyncAt: succeeded ? new Date() : integration.lastSyncAt,
-        lastError: topLevelError && !succeeded ? topLevelError : null,
+        syncStatus: anyPhaseCompleted ? "idle" : "error",
+        lastSyncAt: allPhasesCompleted
+          ? new Date()
+          : integration.lastSyncAt,
+        lastError:
+          anyPhaseCompleted && !allPhasesCompleted
+            ? topLevelError
+            : !anyPhaseCompleted
+              ? topLevelError
+              : null,
       },
     });
 
@@ -304,9 +316,9 @@ export async function runAppfolioSync(
   }
 
   return {
-    ok: succeeded,
+    ok: anyPhaseCompleted,
     stats,
-    error: topLevelError && !succeeded ? topLevelError : undefined,
+    error: !anyPhaseCompleted ? topLevelError ?? undefined : undefined,
   };
 }
 
