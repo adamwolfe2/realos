@@ -399,3 +399,147 @@ function pickString(
   }
   return undefined;
 }
+
+// ---------------------------------------------------------------------------
+// Test webhook — sends a synthetic AL-shaped event to /api/webhooks/cursive
+// using the org's saved cursivePixelId so operators can verify the LeaseStack
+// side of the binding (auth, pixel_id routing, visitor write) works without
+// waiting for AL to fire. Does not verify AL → LeaseStack reachability; for
+// that, watch Vercel logs after launching the AL workflow.
+// ---------------------------------------------------------------------------
+
+export type TestWebhookResult =
+  | {
+      ok: true;
+      status: number;
+      visitorEmail: string;
+      visitorId: string | null;
+      cleanupHint: string;
+    }
+  | { ok: false; error: string; status?: number; body?: string };
+
+export async function testCursiveWebhook(
+  orgId: string,
+): Promise<TestWebhookResult> {
+  try {
+    await requireAgency();
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
+    throw err;
+  }
+
+  const integration = await prisma.cursiveIntegration.findUnique({
+    where: { orgId },
+    select: { cursivePixelId: true, installedOnDomain: true },
+  });
+  if (!integration?.cursivePixelId) {
+    return {
+      ok: false,
+      error:
+        "Save a Cursive pixel ID first. The test event needs a pixel_id to route through.",
+    };
+  }
+
+  const secret = process.env.CURSIVE_WEBHOOK_SECRET;
+  if (!secret) {
+    return {
+      ok: false,
+      error:
+        "CURSIVE_WEBHOOK_SECRET env var is not configured on the server.",
+    };
+  }
+
+  const appBase = process.env.NEXT_PUBLIC_APP_URL;
+  if (!appBase) {
+    return {
+      ok: false,
+      error: "NEXT_PUBLIC_APP_URL env var is not configured on the server.",
+    };
+  }
+
+  const webhookUrl = new URL("/api/webhooks/cursive", appBase).toString();
+
+  // Synthetic event shaped like a real AL page_view with full resolution.
+  // The unique profile_id + timestamp makes this immune to body-hash and
+  // event-fingerprint dedup so the operator can re-test as many times as
+  // they like.
+  const stamp = new Date().toISOString();
+  const profileId = `leasestack-test-${Date.now()}`;
+  const visitorEmail = `webhook-test+${profileId}@leasestack-test.invalid`;
+  const event = {
+    pixel_id: integration.cursivePixelId,
+    event: "page_view",
+    event_timestamp: stamp,
+    profile_id: profileId,
+    email_raw: visitorEmail,
+    page_url: integration.installedOnDomain
+      ? `https://${integration.installedOnDomain}/?leasestack-test=1`
+      : "https://example.com/?leasestack-test=1",
+    resolution: {
+      pixel_id: integration.cursivePixelId,
+      FIRST_NAME: "LeaseStack",
+      LAST_NAME: "Test",
+      PERSONAL_EMAIL_VALIDATION_STATUS: "Valid",
+      MOBILE_PHONE: "+15555550100",
+      COMPANY_DOMAIN: "leasestack-test.invalid",
+    },
+    event_data: {
+      url: integration.installedOnDomain
+        ? `https://${integration.installedOnDomain}/?leasestack-test=1`
+        : "https://example.com/?leasestack-test=1",
+      utm_source: "leasestack",
+      utm_medium: "test",
+      utm_campaign: "webhook-binding-check",
+    },
+  };
+
+  let res: Response;
+  try {
+    res = await fetch(webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-audiencelab-secret": secret,
+      },
+      body: JSON.stringify(event),
+      cache: "no-store",
+    });
+  } catch (err) {
+    return {
+      ok: false,
+      error:
+        err instanceof Error
+          ? `Could not reach ${webhookUrl}: ${err.message}`
+          : "Network error reaching the webhook.",
+    };
+  }
+
+  const bodyText = await res.text().catch(() => "");
+  if (!res.ok) {
+    return {
+      ok: false,
+      status: res.status,
+      error:
+        res.status === 401
+          ? "Webhook returned 401 — CURSIVE_WEBHOOK_SECRET on the server doesn't match the secret used here."
+          : `Webhook returned ${res.status}.`,
+      body: bodyText.slice(0, 500),
+    };
+  }
+
+  // Look up the visitor we just created so the UI can deep-link.
+  const created = await prisma.visitor.findFirst({
+    where: { orgId, email: visitorEmail.toLowerCase() },
+    select: { id: true },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return {
+    ok: true,
+    status: res.status,
+    visitorEmail,
+    visitorId: created?.id ?? null,
+    cleanupHint:
+      "This created a real Visitor row marked with a @leasestack-test.invalid email. Delete it from the visitor feed when you're done verifying.",
+  };
+}

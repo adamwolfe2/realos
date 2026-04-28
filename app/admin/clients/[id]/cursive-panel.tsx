@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import {
   saveCursiveSettings,
   syncCursiveSegment,
+  testCursiveWebhook,
 } from "@/lib/actions/admin-cursive";
 
 type Initial = {
@@ -36,6 +37,11 @@ export function CursivePanel({
     kind: "ok" | "error";
     text: string;
   } | null>(null);
+  const [testMsg, setTestMsg] = useState<
+    | { kind: "ok"; visitorEmail: string; visitorId: string | null; status: number }
+    | { kind: "error"; text: string; status?: number }
+    | null
+  >(null);
   const [copied, setCopied] = useState(false);
 
   function onCopyWebhook() {
@@ -70,6 +76,23 @@ export function CursivePanel({
         });
       } else {
         setSyncMsg({ kind: "error", text: res.error });
+      }
+    });
+  }
+
+  function onTest() {
+    setTestMsg(null);
+    startTransition(async () => {
+      const res = await testCursiveWebhook(orgId);
+      if (res.ok) {
+        setTestMsg({
+          kind: "ok",
+          visitorEmail: res.visitorEmail,
+          visitorId: res.visitorId,
+          status: res.status,
+        });
+      } else {
+        setTestMsg({ kind: "error", text: res.error, status: res.status });
       }
     });
   }
@@ -139,7 +162,20 @@ export function CursivePanel({
             {formatTime(initial.lastSegmentSyncAt)}.
           </div>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            type="button"
+            onClick={onTest}
+            disabled={pending || !initial.cursivePixelId}
+            className="text-xs px-3 py-1.5 border border-border rounded-md hover:bg-muted/40 disabled:opacity-40"
+            title={
+              initial.cursivePixelId
+                ? "Send a synthetic event through /api/webhooks/cursive to verify auth + pixel routing"
+                : "Save a pixel ID first"
+            }
+          >
+            {pending ? "Working…" : "Send test event"}
+          </button>
           <button
             type="button"
             onClick={onSync}
@@ -181,6 +217,39 @@ export function CursivePanel({
         >
           {syncMsg.text}
         </p>
+      )}
+      {testMsg && testMsg.kind === "ok" && (
+        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-[11px] text-emerald-900 space-y-1">
+          <p className="font-medium">
+            Webhook round-trip succeeded ({testMsg.status}). The pixel binding
+            is wired correctly on our side.
+          </p>
+          <p>
+            Test visitor created with email{" "}
+            <code className="font-mono bg-emerald-100 px-1 rounded">
+              {testMsg.visitorEmail}
+            </code>
+            . Delete it from the visitor feed when you&apos;re done.
+          </p>
+          {testMsg.visitorId && (
+            <a
+              href={`/portal/visitors/${testMsg.visitorId}`}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-block underline underline-offset-2"
+            >
+              Open test visitor →
+            </a>
+          )}
+        </div>
+      )}
+      {testMsg && testMsg.kind === "error" && (
+        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-900 space-y-1">
+          <p className="font-medium">
+            Webhook test failed{testMsg.status ? ` (${testMsg.status})` : ""}.
+          </p>
+          <p>{testMsg.text}</p>
+        </div>
       )}
     </div>
   );
