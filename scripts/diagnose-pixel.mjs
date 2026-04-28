@@ -61,7 +61,7 @@ try {
   const events = await prisma.webhookEvent.findMany({
     where: {
       source: "cursive",
-      createdAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
+      receivedAt: { gte: new Date(Date.now() - 60 * 60 * 1000) },
     },
     select: {
       id: true,
@@ -69,14 +69,14 @@ try {
       orgId: true,
       eventType: true,
       processingError: true,
-      createdAt: true,
+      receivedAt: true,
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: { receivedAt: "desc" },
     take: 10,
   });
   for (const e of events) {
     console.log(
-      `  ${e.createdAt.toISOString()} status=${e.status.padEnd(10)} orgId=${e.orgId ?? "—"} type=${e.eventType ?? "—"} err=${e.processingError?.slice(0, 80) ?? ""}`,
+      `  ${e.receivedAt.toISOString()} status=${e.status.padEnd(10)} orgId=${e.orgId ?? "—"} type=${e.eventType ?? "—"} err=${e.processingError?.slice(0, 80) ?? ""}`,
     );
   }
   console.log(`  Total recent: ${events.length}`);
