@@ -5,31 +5,39 @@ import {
   BackendPlatform,
   LeadStatus,
   Prisma,
-  TourStatus,
 } from "@prisma/client";
 import {
   appfolioRestClient,
   fetchAllPages,
   mapLeadPayload,
   mapListingPayload,
-  mapShowingPayload,
   mapTenantPayload,
   type MappedLead,
-  type MappedShowing,
   type MappedTenant,
 } from "./appfolio";
 
 // ---------------------------------------------------------------------------
 // AppFolio REST sync worker.
 //
-// Runs four reports in order (leads, showings, tenants, listings), each
-// wrapped so one failure doesn't kill the whole sync. Idempotent via the
-// compound unique indexes on (orgId, externalSystem, externalId) for Lead
-// and (externalSystem, externalId) for Tour — see prisma/schema.prisma.
+// Runs three v2 reports (leads, tenants, units), each wrapped so one
+// failure doesn't kill the whole sync. Idempotent via the compound unique
+// indexes on (orgId, externalSystem, externalId) for Lead and
+// (propertyId, backendListingId) for Listing — see prisma/schema.prisma.
 //
 // Date windows:
 //   - first sync (lastSyncAt null) or fullBackfill === true  → last 90 days
 //   - incremental (lastSyncAt set)                            → since lastSyncAt
+//
+// AppFolio v2 reports we use (verified against /docs/appfolio-api.md +
+// AppFolio's published Reports v2 surface):
+//   - prospect_source_tracking — leads
+//   - tenant_directory         — tenants (for SIGNED attribution)
+//   - unit_directory           — units / listings
+//
+// Tours / showings are NOT a v2 report — they live as a v1 CRUD entity
+// (/api/v1/showings.json). Tour bookings already arrive via the Cal.com
+// webhook at /api/intake/[id]/cal-booked, so we don't pull them from
+// AppFolio at all.
 // ---------------------------------------------------------------------------
 
 const EXTERNAL_SYSTEM = "appfolio";
@@ -138,7 +146,7 @@ export async function runAppfolioSync(
   // partial failure doesn't shrink the failed phase's window forever on
   // subsequent incremental syncs.
   let phasesCompleted = 0;
-  const totalPhases = 4;
+  const totalPhases = 3;
 
   // 1. LEADS — AppFolio v2 report: prospect_source_tracking
   try {
@@ -156,26 +164,10 @@ export async function runAppfolioSync(
     topLevelError = topLevelError ?? `leads: ${message}`;
   }
 
-  // 2. SHOWINGS (→ Tours). Note: `showings` is a v1 CRUD entity, not a v2
-  // report — AppFolio may reject it with "Id is not a valid report." If it
-  // does, the resilience guard above keeps the sync from being blocked.
-  try {
-    const rows = await fetchAllPages(client, "showings", { fromDate, toDate });
-    for (const row of rows) {
-      const mapped = mapShowingPayload(row);
-      if (!mapped) continue;
-      const upserted = await upsertAppfolioTour(orgId, mapped, fallbackPropertyId);
-      if (upserted) stats.toursUpserted += 1;
-      else stats.warnings.push(`showing ${mapped.externalId}: no matching lead`);
-    }
-    phasesCompleted += 1;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    stats.warnings.push(`showings: ${message}`);
-    topLevelError = topLevelError ?? `showings: ${message}`;
-  }
+  // (Tours intentionally skipped: showings is a v1 CRUD entity, not a v2
+  // report. Tour bookings arrive via the Cal.com webhook instead.)
 
-  // 3. TENANTS (→ Lead SIGNED attribution)
+  // 2. TENANTS (→ Lead SIGNED attribution)
   try {
     const rows = await fetchAllPages(client, "tenant_directory", {
       fromDate,
@@ -194,7 +186,7 @@ export async function runAppfolioSync(
     topLevelError = topLevelError ?? `tenants: ${message}`;
   }
 
-  // 4. UNITS / LISTINGS — pulled from `unit_directory` (v2 directory report).
+  // 3. UNITS / LISTINGS — pulled from `unit_directory` (v2 directory report).
   try {
     const rows = await fetchAllPages(client, "unit_directory", {
       fromDate: options.fullBackfill
@@ -377,85 +369,6 @@ async function upsertAppfolioLead(
       },
     });
   }
-}
-
-async function upsertAppfolioTour(
-  orgId: string,
-  mapped: MappedShowing,
-  fallbackPropertyId: string | null
-): Promise<boolean> {
-  if (!mapped.leadExternalId) return false;
-
-  const lead = await prisma.lead.findUnique({
-    where: {
-      orgId_externalSystem_externalId: {
-        orgId,
-        externalSystem: EXTERNAL_SYSTEM,
-        externalId: mapped.leadExternalId,
-      },
-    },
-    select: { id: true, propertyId: true, status: true },
-  });
-  if (!lead) return false;
-
-  const propertyId = lead.propertyId ?? fallbackPropertyId;
-  if (!propertyId) return false;
-
-  const tourWhere = {
-    externalSystem_externalId: {
-      externalSystem: EXTERNAL_SYSTEM,
-      externalId: mapped.externalId,
-    },
-  } as const;
-  const tourData = {
-    leadId: lead.id,
-    propertyId,
-    status: mapped.status,
-    scheduledAt: mapped.scheduledAt,
-    completedAt: mapped.completedAt,
-    notes: mapped.notes,
-  };
-  const existingTour = await prisma.tour.findUnique({ where: tourWhere, select: { id: true } });
-  if (existingTour) {
-    await prisma.tour.update({ where: tourWhere, data: tourData });
-  } else {
-    await prisma.tour.create({
-      data: {
-        ...tourData,
-        externalSystem: EXTERNAL_SYSTEM,
-        externalId: mapped.externalId,
-      },
-    });
-  }
-
-  // Auto-advance lead status when a tour is scheduled.
-  if (
-    mapped.status === TourStatus.SCHEDULED &&
-    (lead.status === LeadStatus.NEW || lead.status === LeadStatus.CONTACTED)
-  ) {
-    await prisma.lead.update({
-      where: { id: lead.id },
-      data: {
-        status: LeadStatus.TOUR_SCHEDULED,
-        lastActivityAt: new Date(),
-      },
-    });
-  } else if (
-    mapped.status === TourStatus.COMPLETED &&
-    (lead.status === LeadStatus.NEW ||
-      lead.status === LeadStatus.CONTACTED ||
-      lead.status === LeadStatus.TOUR_SCHEDULED)
-  ) {
-    await prisma.lead.update({
-      where: { id: lead.id },
-      data: {
-        status: LeadStatus.TOURED,
-        lastActivityAt: new Date(),
-      },
-    });
-  }
-
-  return true;
 }
 
 async function markLeadSignedByTenant(
