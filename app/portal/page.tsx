@@ -36,8 +36,12 @@ import {
   getLeadStatusCounts,
   getOrganicSessionsKpi,
   getPropertyMetrics,
+  getRecentIdentifiedVisitors,
+  getReputationPulse,
 } from "@/lib/dashboard/queries";
 import { LeasingVelocityChart } from "@/components/portal/dashboard/leasing-velocity-chart";
+import { RecentIdentifiedVisitors } from "@/components/portal/dashboard/recent-identified-visitors";
+import { ReputationPulse } from "@/components/portal/dashboard/reputation-pulse";
 import { getOpenInsights, getInsightCounts } from "@/lib/insights/queries";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 import { Sparkles } from "lucide-react";
@@ -89,6 +93,8 @@ export default async function PortalHome({
     openInsights,
     insightCounts,
     velocityData,
+    recentIdentified,
+    reputationPulse,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -158,6 +164,8 @@ export default async function PortalHome({
     getOpenInsights(scope.orgId, { limit: 3 }),
     getInsightCounts(scope.orgId),
     getLeasingVelocityTrend(scope.orgId),
+    getRecentIdentifiedVisitors(scope.orgId, 6),
+    getReputationPulse(scope.orgId, 5),
   ]);
 
   // 28d leads + active campaigns + sparkline per property.
@@ -442,6 +450,33 @@ export default async function PortalHome({
           >
             <LeasingVelocityChart data={velocityData} />
           </DashboardSection>
+
+          {/* Recent identified visitors + reputation pulse */}
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <DashboardSection
+              eyebrow="Pixel resolved"
+              title="Recently identified visitors"
+              description="Real people who hit your site, resolved by name and email"
+              href="/portal/visitors"
+              hrefLabel="See all visitors"
+            >
+              <RecentIdentifiedVisitors visitors={recentIdentified} />
+            </DashboardSection>
+
+            <DashboardSection
+              eyebrow="What people are saying"
+              title="Reputation pulse"
+              description="Latest reviews and mentions across Google, Reddit, Yelp, and the open web"
+              href={
+                reputationPulse[0]
+                  ? `/portal/properties/${reputationPulse[0].propertyId}?tab=reputation`
+                  : "/portal/properties"
+              }
+              hrefLabel="Open reputation"
+            >
+              <ReputationPulse items={reputationPulse} />
+            </DashboardSection>
+          </section>
 
           {/* Properties + activity feed */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">

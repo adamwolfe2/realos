@@ -131,6 +131,12 @@ export async function runAppfolioSync(
   }
 
   let topLevelError: string | null = null;
+  // Resilience: track per-phase completion separately from row counts. A
+  // phase that runs the request to completion (even with 0 rows) counts as
+  // "the connector worked" — the sync should go back to idle and bump
+  // lastSyncAt so the user sees progress. Only when *every* phase throws do
+  // we mark the integration as error.
+  let anyPhaseCompleted = false;
 
   // 1. LEADS — AppFolio v2 report: prospect_source_tracking
   try {
@@ -141,13 +147,16 @@ export async function runAppfolioSync(
       await upsertAppfolioLead(orgId, mapped, resolvePropertyId(mapped.propertyIds));
       stats.leadsUpserted += 1;
     }
+    anyPhaseCompleted = true;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     stats.warnings.push(`leads: ${message}`);
     topLevelError = topLevelError ?? `leads: ${message}`;
   }
 
-  // 2. SHOWINGS (→ Tours)
+  // 2. SHOWINGS (→ Tours). Note: `showings` is a v1 CRUD entity, not a v2
+  // report — AppFolio may reject it with "Id is not a valid report." If it
+  // does, the resilience guard above keeps the sync from being blocked.
   try {
     const rows = await fetchAllPages(client, "showings", { fromDate, toDate });
     for (const row of rows) {
@@ -157,6 +166,7 @@ export async function runAppfolioSync(
       if (upserted) stats.toursUpserted += 1;
       else stats.warnings.push(`showing ${mapped.externalId}: no matching lead`);
     }
+    anyPhaseCompleted = true;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     stats.warnings.push(`showings: ${message}`);
@@ -175,15 +185,16 @@ export async function runAppfolioSync(
       const matched = await markLeadSignedByTenant(orgId, mapped);
       if (matched) stats.tenantsMatched += 1;
     }
+    anyPhaseCompleted = true;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     stats.warnings.push(`tenants: ${message}`);
     topLevelError = topLevelError ?? `tenants: ${message}`;
   }
 
-  // 4. LISTINGS
+  // 4. UNITS / LISTINGS — pulled from `unit_directory` (v2 directory report).
   try {
-    const rows = await fetchAllPages(client, "listings", {
+    const rows = await fetchAllPages(client, "unit_directory", {
       fromDate: options.fullBackfill
         ? new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000)
         : fromDate,
@@ -229,18 +240,17 @@ export async function runAppfolioSync(
       }
       stats.listingsUpserted += 1;
     }
+    anyPhaseCompleted = true;
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown error";
     stats.warnings.push(`listings: ${message}`);
     topLevelError = topLevelError ?? `listings: ${message}`;
   }
 
-  const succeeded =
-    stats.leadsUpserted +
-      stats.toursUpserted +
-      stats.tenantsMatched +
-      stats.listingsUpserted >
-    0 || !topLevelError;
+  // Sync is "successful" if at least one phase ran to completion. A phase
+  // that returned 0 rows still counts — the connector is healthy, the
+  // tenant just doesn't have data in that report yet.
+  const succeeded = anyPhaseCompleted;
 
   try {
     await prisma.appFolioIntegration.update({

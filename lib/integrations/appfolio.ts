@@ -252,15 +252,19 @@ async function fetchEmbedScrape(
 // Report names used in our sync. AppFolio v2 report names may differ from
 // v1 — these are the names we pass and the server will 400/404 if wrong.
 //
-// "tenant_directory" (not "tenants"): AppFolio's REST v2 directory reports
-// use the {entity}_directory naming convention (unit_directory,
-// vendor_directory, tenant_directory). Passing the bare "tenants" gets
-// rejected with `{"message":["Id is not a valid report."]}`.
+// AppFolio v2 directory reports follow the {entity}_directory naming
+// convention. Bare entity names like "tenants" or "listings" are NOT valid
+// v2 report IDs and get rejected with `{"message":["Id is not a valid
+// report."]}`. The unit-level data that powers our Listing rows lives in
+// `unit_directory`; the mapper handles the field shape.
+//
+// `showings` is a v1 CRUD entity, not a v2 report — if AppFolio rejects it
+// we fall through gracefully (sync resilience handles it).
 const REPORT_NAMES = [
   "prospect_source_tracking",
   "showings",
   "tenant_directory",
-  "listings",
+  "unit_directory",
 ] as const;
 
 export type AppFolioReportName = (typeof REPORT_NAMES)[number];
@@ -763,25 +767,36 @@ export function mapTenantPayload(raw: RawRow): MappedTenant | null {
 }
 
 export function mapListingPayload(raw: RawRow): NormalizedListing | null {
-  const externalId = asString(raw.Id ?? raw.id ?? raw.ListingId);
+  // unit_directory uses Id; older `listings` report used Id/ListingId.
+  const externalId = asString(raw.Id ?? raw.id ?? raw.ListingId ?? raw.UnitId);
   if (!externalId) return null;
-  const rent = asNumber(raw.Rent ?? raw.MarketRent ?? raw.rent);
+  const rent = asNumber(
+    raw.MarketRent ?? raw.AdvertisedRent ?? raw.Rent ?? raw.rent,
+  );
   const beds = asNumber(raw.Bedrooms ?? raw.bedrooms);
   const baths = asNumber(raw.Bathrooms ?? raw.bathrooms);
   const sqft = asInt(raw.SquareFeet ?? raw.square_feet);
-  const available = asDate(raw.AvailableOn ?? raw.AvailableFrom ?? raw.available_from);
-  const photos = asStringArray(raw.Photos ?? raw.PhotoUrls ?? raw.photos);
+  const available = asDate(
+    raw.AvailableOn ?? raw.AvailableFrom ?? raw.available_from,
+  );
+  const photos = asStringArray(
+    raw.Photos ?? raw.PhotoUrls ?? raw.UnitPhotos ?? raw.photos,
+  );
+  // unit_directory exposes IsRentReady / Status; older listings exposed
+  // IsAvailable / Available.
   const isAvailable =
     raw.IsAvailable !== undefined
       ? Boolean(raw.IsAvailable)
       : raw.Available !== undefined
-      ? Boolean(raw.Available)
-      : true;
+        ? Boolean(raw.Available)
+        : raw.IsRentReady !== undefined
+          ? Boolean(raw.IsRentReady)
+          : true;
 
   return {
     backendListingId: externalId,
     unitType: asString(raw.UnitType ?? raw.unit_type ?? raw.Type),
-    unitNumber: asString(raw.UnitNumber ?? raw.unit_number),
+    unitNumber: asString(raw.UnitNumber ?? raw.unit_number ?? raw.Address2),
     bedrooms: beds,
     bathrooms: baths,
     squareFeet: sqft,
@@ -789,7 +804,9 @@ export function mapListingPayload(raw: RawRow): NormalizedListing | null {
     isAvailable,
     availableFrom: available,
     photoUrls: photos,
-    description: asString(raw.Description ?? raw.description),
+    description: asString(
+      raw.MarketingDescription ?? raw.Description ?? raw.description,
+    ),
     raw: { source: "rest", ...raw } as Prisma.InputJsonValue,
   };
 }
@@ -800,8 +817,8 @@ async function fetchRest(
   integration: AppFolioIntegration
 ): Promise<NormalizedListing[]> {
   const client = appfolioRestClient(integration);
-  const rows = await fetchAllPages(client, "listings", {
-    // Listings report doesn't strictly require a date window, but AppFolio
+  const rows = await fetchAllPages(client, "unit_directory", {
+    // unit_directory doesn't strictly require a date window, but AppFolio
     // sometimes 400s without one. Use a wide window.
     fromDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
     toDate: new Date(),

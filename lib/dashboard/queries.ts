@@ -4,9 +4,12 @@ import {
   AdPlatform,
   LeadSource,
   LeadStatus,
+  MentionSource,
+  Sentiment,
   SeoProvider,
   SeoSyncStatus,
   TourStatus,
+  VisitorIdentificationStatus,
 } from "@prisma/client";
 import type { LeadSourceSlice } from "@/components/portal/dashboard/lead-source-donut";
 import type {
@@ -822,4 +825,119 @@ export async function getLeasingVelocityTrend(
       applications: appsPerWeek[i],
     };
   });
+}
+
+// ---------------------------------------------------------------------------
+// Recent identified visitors
+//
+// Latest few Visitors that have at least one of (firstName, lastName, email).
+// Used by the dashboard "Recent identified visitors" panel so the operator
+// always has a wall of real names to look at, not an empty card.
+// ---------------------------------------------------------------------------
+
+export type RecentIdentifiedVisitor = {
+  id: string;
+  name: string;
+  email: string | null;
+  lastSeenAt: Date;
+  utmSource: string | null;
+  referrer: string | null;
+  intentScore: number;
+};
+
+export async function getRecentIdentifiedVisitors(
+  orgId: string,
+  limit = 6,
+): Promise<RecentIdentifiedVisitor[]> {
+  const rows = await prisma.visitor.findMany({
+    where: {
+      orgId,
+      status: {
+        in: [
+          VisitorIdentificationStatus.IDENTIFIED,
+          VisitorIdentificationStatus.ENRICHED,
+          VisitorIdentificationStatus.MATCHED_TO_LEAD,
+        ],
+      },
+    },
+    orderBy: { lastSeenAt: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      email: true,
+      lastSeenAt: true,
+      utmSource: true,
+      referrer: true,
+      intentScore: true,
+    },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    name: displayName(r.firstName, r.lastName),
+    email: r.email,
+    lastSeenAt: r.lastSeenAt,
+    utmSource: r.utmSource,
+    referrer: r.referrer,
+    intentScore: r.intentScore,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Reputation pulse
+//
+// Latest property mentions across the org so operators can spot a fresh
+// review the moment it lands. Linked to the per-property reputation tab.
+// ---------------------------------------------------------------------------
+
+export type ReputationPulseItem = {
+  id: string;
+  propertyId: string;
+  propertyName: string;
+  source: MentionSource;
+  title: string | null;
+  excerpt: string;
+  authorName: string | null;
+  publishedAt: Date | null;
+  sentiment: Sentiment | null;
+  rating: number | null;
+  sourceUrl: string;
+};
+
+export async function getReputationPulse(
+  orgId: string,
+  limit = 5,
+): Promise<ReputationPulseItem[]> {
+  const rows = await prisma.propertyMention.findMany({
+    where: { orgId },
+    orderBy: [{ publishedAt: "desc" }, { lastSeenAt: "desc" }],
+    take: limit,
+    select: {
+      id: true,
+      propertyId: true,
+      source: true,
+      title: true,
+      excerpt: true,
+      authorName: true,
+      publishedAt: true,
+      sentiment: true,
+      rating: true,
+      sourceUrl: true,
+      property: { select: { name: true } },
+    },
+  });
+  return rows.map((r) => ({
+    id: r.id,
+    propertyId: r.propertyId,
+    propertyName: r.property?.name ?? "Property",
+    source: r.source,
+    title: r.title,
+    excerpt: r.excerpt,
+    authorName: r.authorName,
+    publishedAt: r.publishedAt,
+    sentiment: r.sentiment,
+    rating: r.rating,
+    sourceUrl: r.sourceUrl,
+  }));
 }
