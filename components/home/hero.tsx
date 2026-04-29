@@ -5,7 +5,7 @@ import { RotatingWord } from "@/components/platform/rotating-word";
 export function Hero() {
   return (
     <SplitHero
-      eyebrow="For multifamily and student-housing operators"
+      eyebrow="For real estate operators and brokers"
       headline={
         <span style={{ display: "block" }}>
           <span style={{ display: "block" }}>
@@ -21,15 +21,12 @@ export function Hero() {
       }
       subhead={
         <>
-          <strong style={{ color: "#141413", fontWeight: 600 }}>Premium Website</strong>,{" "}
-          <strong style={{ color: "#141413", fontWeight: 600 }}>AI Chatbot</strong>,{" "}
-          <strong style={{ color: "#141413", fontWeight: 600 }}>Visitor Tracking Pixel</strong>, and{" "}
-          <span style={{ color: "#2563EB", fontWeight: 600 }}>#1</span> search visibility. Live in 14 days.
+          LeaseStack syncs your site, ads, chatbot, online presence, and buyer & seller audience data on one platform, built for real estate operators and brokers who love AI.
         </>
       }
       ctas={[
         { label: "Book a demo", href: "/onboarding" },
-        { label: "See it live", href: "/#live", variant: "secondary" },
+        { label: "See it live", href: "/demo", variant: "secondary" },
       ]}
       trust={[
         { value: "14 days", label: "Call to live" },

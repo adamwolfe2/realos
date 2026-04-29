@@ -20,7 +20,7 @@ export default function PixelFeaturePage() {
         subhead="Most analytics tell you impressions. We tell you which prospect just visited, which unit they looked at, and how to reach them, all before they fill out a form."
         ctas={[
           { label: "Book a demo", href: "/onboarding" },
-          { label: "See it live", href: "/#live", variant: "secondary" },
+          { label: "See it live", href: "/demo", variant: "secondary" },
         ]}
         caption="Live on your site · consented identity graph · fully compliant"
         artifact={<VisitorStream />}
@@ -375,7 +375,7 @@ function FinalBand() {
             <Link href="/onboarding" className="btn-primary">
               Book a demo
             </Link>
-            <Link href="/#live" className="btn-secondary">
+            <Link href="/demo" className="btn-secondary">
               See it live
             </Link>
           </div>

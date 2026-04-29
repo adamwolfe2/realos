@@ -24,7 +24,7 @@ export default function SEOAEOFeaturePage() {
         subhead="Prospects now ask AI for housing options before they open a search tab. If your pages aren't in Google's index and aren't cited by ChatGPT or Perplexity, you're invisible. We build the infrastructure so both surface you."
         ctas={[
           { label: "Book a demo", href: "/onboarding" },
-          { label: "See it live", href: "/#live", variant: "secondary" },
+          { label: "See it live", href: "/demo", variant: "secondary" },
         ]}
         caption="Schema on every page · dynamic sitemap · monthly AI-discovery audit"
         artifact={<SeoAnswer />}
@@ -154,7 +154,7 @@ function CitedByAI() {
         ))}
       </ul>
       <div
-        className="px-5 py-3"
+        className="px-5 py-3 flex items-center justify-between gap-3"
         style={{ borderTop: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
       >
         <span
@@ -168,6 +168,22 @@ function CitedByAI() {
           }}
         >
           Ask any of them about your market. You'll be the answer
+        </span>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "9px",
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: "#87867f",
+            fontWeight: 600,
+            padding: "2px 6px",
+            borderRadius: "4px",
+            backgroundColor: "rgba(135,134,127,0.12)",
+            flexShrink: 0,
+          }}
+        >
+          Illustrative
         </span>
       </div>
     </div>
@@ -432,7 +448,7 @@ function FinalBand() {
             <Link href="/onboarding" className="btn-primary">
               Book a demo
             </Link>
-            <Link href="/#live" className="btn-secondary">
+            <Link href="/demo" className="btn-secondary">
               See it live
             </Link>
           </div>

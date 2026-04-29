@@ -22,7 +22,7 @@ export const MARKETING = {
       primaryCta: "Book a demo",
       primaryHref: "/onboarding",
       secondaryCta: "See it live",
-      secondaryHref: "/#live",
+      secondaryHref: "/demo",
       microProof: "Built for residential and commercial portfolios.",
     },
     whatYouGet: {

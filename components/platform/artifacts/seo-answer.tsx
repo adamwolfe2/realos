@@ -300,6 +300,22 @@ export function SeoAnswer() {
         >
           Your pages are the answer when prospects ask the AI
         </span>
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "9px",
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            color: MUTED,
+            fontWeight: 600,
+            padding: "2px 6px",
+            borderRadius: "4px",
+            backgroundColor: "rgba(135,134,127,0.12)",
+            flexShrink: 0,
+          }}
+        >
+          Illustrative
+        </span>
       </div>
 
       <style jsx>{`

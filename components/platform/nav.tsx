@@ -61,12 +61,7 @@ export function PlatformNav() {
           <img
             src="/logos/leasestack-wordmark.png"
             alt="LeaseStack"
-            height={56}
-            style={{
-              height: "56px",
-              width: "auto",
-              display: "block",
-            }}
+            className="h-8 md:h-14 w-auto block"
           />
         </Link>
 
@@ -277,7 +272,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
               <img
                 src="/logos/leasestack-wordmark.png"
                 alt="LeaseStack"
-                style={{ height: "44px", width: "auto", display: "block" }}
+                className="h-8 w-auto block"
               />
             </Link>
             <button

@@ -24,7 +24,7 @@ export default function ChatbotFeaturePage() {
         subhead="Most leasing chatbots are glorified FAQs. Ours is trained on your live listings, pricing rules, and application process. It speaks like a leasing associate, captures leads, and hands the conversation to your team when the lead is warm."
         ctas={[
           { label: "Book a demo", href: "/onboarding" },
-          { label: "See it live", href: "/#live", variant: "secondary" },
+          { label: "See it live", href: "/demo", variant: "secondary" },
         ]}
         caption="Live 24/7 · trained on your listings · captures leads directly to CRM"
         artifact={<ChatDemo />}
@@ -244,7 +244,21 @@ function ChatMetrics() {
     { label: "Escalated to human",   value: "8",     delta: "hot threads · Slack" },
   ];
   return (
-    <div className="w-full grid grid-cols-2 gap-3">
+    <div className="w-full">
+      <p
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          color: "#87867f",
+          fontWeight: 500,
+          marginBottom: "10px",
+        }}
+      >
+        Sample dashboard · illustrative
+      </p>
+    <div className="grid grid-cols-2 gap-3">
       {deltas.map((d, i) => (
         <Reveal key={d.label} delay={i * 70}>
           <div
@@ -293,6 +307,7 @@ function ChatMetrics() {
           </div>
         </Reveal>
       ))}
+      </div>
     </div>
   );
 }
@@ -336,7 +351,7 @@ function FinalBand() {
             <Link href="/onboarding" className="btn-primary">
               Book a demo
             </Link>
-            <Link href="/#live" className="btn-secondary">
+            <Link href="/demo" className="btn-secondary">
               See it live
             </Link>
           </div>

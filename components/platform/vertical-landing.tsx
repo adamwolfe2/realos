@@ -40,7 +40,7 @@ export function VerticalLanding({
         subhead={subhead}
         ctas={[
           { label: "Book a demo", href: ctaHref },
-          { label: "See it live", href: "/#live", variant: "secondary" },
+          { label: "See it live", href: "/demo", variant: "secondary" },
         ]}
         caption={caption}
         artifact={artifact}
@@ -272,7 +272,7 @@ export function VerticalLanding({
               <Link href={ctaHref} className="btn-primary">
                 Book a demo
               </Link>
-              <Link href="/#live" className="btn-secondary">
+              <Link href="/demo" className="btn-secondary">
                 See it live
               </Link>
             </div>

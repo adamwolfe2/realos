@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 
 // Claude-style feature page: parchment canvas, Fraunces serif headline,
 // terracotta eyebrow + checkmarks, editorial pacing.
@@ -11,6 +12,7 @@ export function FeaturePage({
   howItWorks,
   results,
   bestFor,
+  artifact,
 }: {
   eyebrow: string;
   headline: string;
@@ -19,6 +21,7 @@ export function FeaturePage({
   howItWorks: string[];
   results: string[];
   bestFor: string;
+  artifact?: ReactNode;
 }) {
   return (
     <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
@@ -63,6 +66,14 @@ export function FeaturePage({
           </p>
         </div>
       </header>
+
+      {artifact ? (
+        <section style={{ backgroundColor: "#f5f4ed" }}>
+          <div className="max-w-[920px] mx-auto px-4 md:px-8 pb-16">
+            {artifact}
+          </div>
+        </section>
+      ) : null}
 
       <section style={{ backgroundColor: "#faf9f5" }}>
         <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16 text-center">
@@ -185,7 +196,7 @@ export function FeaturePage({
             <Link href="/onboarding" className="btn-primary">
               Book a demo
             </Link>
-            <Link href="/#live" className="btn-secondary">
+            <Link href="/demo" className="btn-secondary">
               See it live
             </Link>
           </div>

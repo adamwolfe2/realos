@@ -10,7 +10,7 @@ export function PlatformFooter() {
   const links: Array<{ label: string; href: string }> = [
     { label: "Demo",              href: "/onboarding" },
     { label: "Product",           href: "/features/pixel" },
-    { label: "See it live",       href: "/#live" },
+    { label: "See it live",       href: "/demo" },
     { label: "Solutions",         href: "/student-housing" },
     { label: "Blog",              href: "/blog" },
     { label: "About",             href: "/about" },

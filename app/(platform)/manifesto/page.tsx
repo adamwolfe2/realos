@@ -467,7 +467,7 @@ function Close() {
           <Link href="/onboarding" className="btn-primary">
             Book a call
           </Link>
-          <Link href="/#live" className="btn-secondary">
+          <Link href="/demo" className="btn-secondary">
             See it running
           </Link>
         </div>

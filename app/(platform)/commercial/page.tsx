@@ -22,14 +22,14 @@ export default function CommercialPage() {
     <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
       <SplitHero
         eyebrow="Commercial real estate"
-        headline="Commercial is shipping."
-        headlineAccent="Audience Sync is live."
-        subhead="Audience Sync is live for commercial owners today, push verified office, retail, and industrial intent segments to your ad accounts and CRM. Office, retail, industrial, flex, and medical leasing modules ship next. Five design-partner spots open."
+        headline="Audience Sync for commercial is live today."
+        headlineAccent="Leasing modules in design-partner pilot."
+        subhead="Audience Sync is live for commercial owners today: push verified office, retail, and industrial intent segments to your ad accounts and CRM. Office, retail, industrial, flex, and medical leasing modules are in a limited design-partner pilot."
         ctas={[
           { label: "Apply as a design partner", href: "/onboarding" },
           { label: "See the residential platform", href: "/residential", variant: "secondary" },
         ]}
-        caption="Audience Sync live today. Five design-partner spots open. Leasing modules shipping this year."
+        caption="Audience Sync live today. Limited design-partner pilot for leasing modules."
         artifact={<RoadmapCard />}
       />
 
@@ -132,7 +132,7 @@ export default function CommercialPage() {
                 fontWeight: 600,
               }}
             >
-              Five design-partner spots
+              Limited design-partner pilot
             </p>
           </Reveal>
           <Reveal delay={60}>
@@ -208,7 +208,7 @@ function RoadmapCard() {
             fontWeight: 600,
           }}
         >
-          5 / 5 partner spots
+          Design-partner pilot
         </span>
       </div>
 

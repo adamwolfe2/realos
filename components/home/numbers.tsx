@@ -21,7 +21,7 @@ export function Numbers() {
   return (
     <section style={{ backgroundColor: "#f5f4ed" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
-        <p className="eyebrow mb-10 text-center">The numbers we hit</p>
+        <p className="eyebrow mb-10 text-center">What good looks like</p>
         <div
           className="md:grid md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6 lg:gap-4 flex overflow-x-auto md:overflow-visible pb-3 md:pb-0"
           style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}

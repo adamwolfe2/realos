@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { FeaturePage } from "@/components/platform/feature-page";
+import { ConfigTabs } from "@/components/platform/artifacts/config-tabs";
 
 export const metadata: Metadata = {
   title: "Managed Google + Meta ads",
@@ -28,6 +29,7 @@ export default function AdsFeaturePage() {
         "Creative refreshed weekly out of the Creative Studio, no separate production retainer.",
       ]}
       bestFor="Operators who want paid performance defended every week, not explained every quarter. Most powerful once the pixel is running, so retargeting audiences exist."
+      artifact={<ConfigTabs />}
     />
   );
 }

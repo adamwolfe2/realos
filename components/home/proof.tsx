@@ -54,7 +54,7 @@ export function Proof() {
           <Link href="/onboarding" className="btn-primary">
             Book a demo
           </Link>
-          <Link href="/#live" className="btn-secondary">
+          <Link href="/demo" className="btn-secondary">
             See it live
           </Link>
         </div>
