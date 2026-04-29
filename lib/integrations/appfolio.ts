@@ -353,9 +353,36 @@ export function appfolioRestClient(
     reportName: string,
     options: RestFetchOptions = {}
   ) {
-    // Pagination URLs are returned by AppFolio and used verbatim (GET).
+    // Pagination URLs are returned by AppFolio. They are sometimes RELATIVE
+    // (e.g. "/api/v2/reports/guest_cards.json?metadata_id=...&page=2") which
+    // would make `fetch()` throw "Failed to parse URL". Absolutize against
+    // the tenant subdomain, then validate the host stays under .appfolio.com
+    // so a compromised pagination URL can't redirect Basic-auth credentials
+    // to an attacker-controlled host.
     if (options.nextPageUrl) {
-      const response = await fetch(options.nextPageUrl, {
+      let absoluteUrl: URL;
+      try {
+        absoluteUrl = new URL(
+          options.nextPageUrl,
+          `https://${subdomain}.appfolio.com`
+        );
+      } catch {
+        throw new Error(
+          `AppFolio ${reportName} pagination URL invalid: ${options.nextPageUrl}`
+        );
+      }
+      const host = absoluteUrl.hostname.toLowerCase();
+      if (!host.endsWith(".appfolio.com")) {
+        throw new Error(
+          `AppFolio ${reportName} pagination host not allowed: ${host}`
+        );
+      }
+      if (absoluteUrl.protocol !== "https:") {
+        throw new Error(
+          `AppFolio ${reportName} pagination protocol not allowed: ${absoluteUrl.protocol}`
+        );
+      }
+      const response = await fetch(absoluteUrl.toString(), {
         method: "GET",
         cache: "no-store",
         headers: {
