@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { ForbiddenError, requireAudienceSync } from "@/lib/tenancy/scope";
 import { encrypt, maybeDecrypt, maybeEncrypt } from "@/lib/crypto";
 import {
+  alSurfaceFromMeta,
   geoFilterFn,
   listAlSegments,
   streamAlSegmentMembers,
@@ -376,8 +377,12 @@ export async function executeSegmentPush(
 
   try {
     const orgKey = await getOrgApiKeyOverride(input.orgId);
+    const surface = alSurfaceFromMeta(
+      segment.rawPayload as Record<string, unknown> | null,
+    );
     const members = await streamAlSegmentMembers(segment.alSegmentId, {
       apiKey: orgKey,
+      surface,
       maxMembers: input.maxMembers ?? 5000,
       filter: input.geoFilter ? geoFilterFn(input.geoFilter) : undefined,
     });
@@ -490,7 +495,7 @@ export async function previewSegmentMembers(
 
   const segment = await prisma.audienceSegment.findFirst({
     where: { id: segmentId, orgId: scope.orgId },
-    select: { id: true, alSegmentId: true },
+    select: { id: true, alSegmentId: true, rawPayload: true },
   });
   if (!segment) return { ok: false, error: "Segment not found." };
 
@@ -500,8 +505,12 @@ export async function previewSegmentMembers(
   const cap = Math.min(requested, PREVIEW_MAX);
 
   const orgKey = await getOrgApiKeyOverride(scope.orgId);
+  const surface = alSurfaceFromMeta(
+    segment.rawPayload as Record<string, unknown> | null,
+  );
   const result = await streamAlSegmentMembers(segment.alSegmentId, {
     apiKey: orgKey,
+    surface,
     maxMembers: cap,
     pageSize: cap,
   });
