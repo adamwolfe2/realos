@@ -25,6 +25,119 @@ import {
 import { computeNextRunAt } from "@/lib/audiences/schedule";
 
 // ---------------------------------------------------------------------------
+// Insight computation. AudienceLab returns a list of members per segment
+// but no aggregate distributions (top states / zips / cities, match rates).
+// We sample a slice of members and compute those ourselves so the segment
+// detail page renders real data.
+//
+// Cost tradeoff: a 300-member sample is ~3 round-trips at page_size=100 and
+// adds ~1-2s to "Add segment" / "Refresh insights" but populates the entire
+// detail dashboard from a single AL fetch. The result extrapolates raw
+// counts to the full segment using totalRecords / sampleSize.
+// ---------------------------------------------------------------------------
+
+const INSIGHT_SAMPLE_SIZE = 300;
+
+type SegmentInsights = {
+  email_match_rate: number;
+  phone_match_rate: number;
+  top_states: Array<{ state: string; count: number }>;
+  top_zips: Array<{ zip: string; city?: string; count: number }>;
+  top_cities: Array<{ city: string; state?: string; count: number }>;
+  sample_size: number;
+  insights_computed_at: string;
+};
+
+async function computeSegmentInsights(
+  alSegmentId: string,
+  surface: ReturnType<typeof alSurfaceFromMeta>,
+  totalRecords: number,
+  apiKey: string | undefined,
+): Promise<SegmentInsights | null> {
+  const result = await streamAlSegmentMembers(alSegmentId, {
+    apiKey,
+    surface,
+    maxMembers: INSIGHT_SAMPLE_SIZE,
+    pageSize: 100,
+  });
+  if (!result.ok) return null;
+  const members = result.data;
+  const sampleSize = members.length;
+  if (sampleSize === 0) {
+    return {
+      email_match_rate: 0,
+      phone_match_rate: 0,
+      top_states: [],
+      top_zips: [],
+      top_cities: [],
+      sample_size: 0,
+      insights_computed_at: new Date().toISOString(),
+    };
+  }
+
+  const stateCounts = new Map<string, number>();
+  const zipCounts = new Map<string, { count: number; city?: string }>();
+  const cityCounts = new Map<string, { count: number; state?: string }>();
+  let emailMatch = 0;
+  let phoneMatch = 0;
+
+  for (const m of members) {
+    if (m.state) {
+      const st = m.state.trim().toUpperCase();
+      stateCounts.set(st, (stateCounts.get(st) ?? 0) + 1);
+    }
+    if (m.postalCode) {
+      const zip = m.postalCode.split("-")[0]?.trim();
+      if (zip) {
+        const existing = zipCounts.get(zip);
+        zipCounts.set(zip, {
+          count: (existing?.count ?? 0) + 1,
+          city: existing?.city ?? m.city ?? undefined,
+        });
+      }
+    }
+    if (m.city) {
+      const ct = m.city.trim();
+      const existing = cityCounts.get(ct);
+      cityCounts.set(ct, {
+        count: (existing?.count ?? 0) + 1,
+        state: existing?.state ?? m.state ?? undefined,
+      });
+    }
+    if (m.email) emailMatch++;
+    if (m.phone) phoneMatch++;
+  }
+
+  // Extrapolate sample counts to the full segment when we know the size.
+  const ratio =
+    totalRecords > 0 && sampleSize > 0 ? totalRecords / sampleSize : 1;
+  const scale = (n: number) => Math.round(n * ratio);
+
+  const top_states = Array.from(stateCounts.entries())
+    .map(([state, count]) => ({ state, count: scale(count) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+  const top_zips = Array.from(zipCounts.entries())
+    .map(([zip, { count, city }]) => ({ zip, city, count: scale(count) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+  const top_cities = Array.from(cityCounts.entries())
+    .map(([city, { count, state }]) => ({ city, state, count: scale(count) }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+
+  return {
+    email_match_rate: emailMatch / sampleSize,
+    phone_match_rate: phoneMatch / sampleSize,
+    top_states,
+    top_zips,
+    top_cities,
+    sample_size: sampleSize,
+    insights_computed_at: new Date().toISOString(),
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Add segment by ID — AudienceLab does not expose a list-all-segments
 // endpoint. Operators paste a segment ID from the AL dashboard, we validate
 // it via /segments/{id}, and cache a row so the rest of the dashboard lights
@@ -69,6 +182,17 @@ export async function addAudienceSegmentById(
       ? meta.total_records
       : Number(meta.total_records ?? 0) || 0;
 
+  // Compute insights so the segment detail page populates immediately on
+  // add. Best-effort: if AL fails the secondary fetch we still save the
+  // segment with raw meta and the operator can hit "Refresh insights" later.
+  const insights = await computeSegmentInsights(
+    trimmedId,
+    validation.data.surface,
+    memberCount,
+    orgKey,
+  );
+  const fullMeta = insights ? { ...meta, ...insights } : meta;
+
   const existing = await prisma.audienceSegment.findUnique({
     where: {
       orgId_alSegmentId: { orgId: scope.orgId, alSegmentId: trimmedId },
@@ -83,12 +207,13 @@ export async function addAudienceSegmentById(
         name: trimmedName,
         description: input.description?.trim() || null,
         memberCount,
-        rawPayload: meta as object,
+        rawPayload: fullMeta as object,
         lastFetchedAt: new Date(),
         visible: true,
       },
     });
     revalidatePath("/portal/audiences");
+    revalidatePath(`/portal/audiences/${existing.id}`);
     return {
       ok: true,
       segmentId: existing.id,
@@ -104,17 +229,88 @@ export async function addAudienceSegmentById(
       name: trimmedName,
       description: input.description?.trim() || null,
       memberCount,
-      rawPayload: meta as object,
+      rawPayload: fullMeta as object,
       lastFetchedAt: new Date(),
     },
     select: { id: true },
   });
   revalidatePath("/portal/audiences");
+  revalidatePath(`/portal/audiences/${created.id}`);
   return {
     ok: true,
     segmentId: created.id,
     alreadyExisted: false,
     hasMembers: validation.data.hasMembers,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Refresh insights — re-samples a segment and re-aggregates the detail-page
+// data. Used by the "Refresh insights" button on segment detail.
+// ---------------------------------------------------------------------------
+
+export type RefreshInsightsResult =
+  | {
+      ok: true;
+      sampleSize: number;
+      emailMatchPct: number;
+      phoneMatchPct: number;
+      stateCount: number;
+    }
+  | { ok: false; error: string };
+
+export async function refreshSegmentInsights(
+  segmentId: string,
+): Promise<RefreshInsightsResult> {
+  const scope = await requireAudienceSyncOrThrow();
+
+  const segment = await prisma.audienceSegment.findFirst({
+    where: { id: segmentId, orgId: scope.orgId },
+    select: {
+      id: true,
+      alSegmentId: true,
+      memberCount: true,
+      rawPayload: true,
+    },
+  });
+  if (!segment) return { ok: false, error: "Segment not found." };
+
+  const orgKey = await getOrgApiKeyOverride(scope.orgId);
+  const surface = alSurfaceFromMeta(
+    segment.rawPayload as Record<string, unknown> | null,
+  );
+  const insights = await computeSegmentInsights(
+    segment.alSegmentId,
+    surface,
+    segment.memberCount,
+    orgKey,
+  );
+  if (!insights) {
+    return {
+      ok: false,
+      error: "AudienceLab returned no members for the sample.",
+    };
+  }
+
+  const existingMeta =
+    (segment.rawPayload as Record<string, unknown> | null) ?? {};
+  const merged = { ...existingMeta, ...insights };
+
+  await prisma.audienceSegment.update({
+    where: { id: segment.id },
+    data: {
+      rawPayload: merged as object,
+      lastFetchedAt: new Date(),
+    },
+  });
+  revalidatePath(`/portal/audiences/${segment.id}`);
+  revalidatePath("/portal/audiences");
+  return {
+    ok: true,
+    sampleSize: insights.sample_size,
+    emailMatchPct: Math.round(insights.email_match_rate * 100),
+    phoneMatchPct: Math.round(insights.phone_match_rate * 100),
+    stateCount: insights.top_states.length,
   };
 }
 
@@ -166,11 +362,18 @@ export async function refreshAudienceSegments(): Promise<RefreshSegmentsResult> 
       failed++;
       continue;
     }
-    const meta = validation.data.meta;
+    const baseMeta = validation.data.meta;
     const memberCount =
-      typeof meta.total_records === "number"
-        ? meta.total_records
-        : Number(meta.total_records ?? 0) || 0;
+      typeof baseMeta.total_records === "number"
+        ? baseMeta.total_records
+        : Number(baseMeta.total_records ?? 0) || 0;
+    const insights = await computeSegmentInsights(
+      aud.id,
+      validation.data.surface,
+      memberCount,
+      orgKey,
+    );
+    const meta = insights ? { ...baseMeta, ...insights } : baseMeta;
 
     const existing = await prisma.audienceSegment.findUnique({
       where: {

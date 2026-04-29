@@ -9,6 +9,7 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { TopLocations } from "@/components/audiences/top-locations";
 import { PushPanel } from "@/components/audiences/push-panel";
 import { MemberPreview } from "@/components/audiences/member-preview";
+import { RefreshInsightsButton } from "@/components/audiences/refresh-insights-button";
 import {
   ArrowLeft,
   Users,
@@ -108,6 +109,7 @@ export default async function SegmentDetailPage({
             Synced {timeAgo(segment.lastFetchedAt)}
           </p>
         </div>
+        <RefreshInsightsButton segmentId={segment.id} />
       </header>
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
@@ -199,7 +201,7 @@ export default async function SegmentDetailPage({
               label: s.state,
               value: s.count,
             }))}
-            emptyHint="No state data on this segment."
+            emptyHint="No state data yet. Refresh insights to compute from a sample."
           />
         </DashboardSection>
 
@@ -214,7 +216,7 @@ export default async function SegmentDetailPage({
               sublabel: z.city,
               value: z.count,
             }))}
-            emptyHint="No zip code data on this segment."
+            emptyHint="No zip data yet. Refresh insights to compute from a sample."
           />
         </DashboardSection>
       </div>

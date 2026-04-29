@@ -10,10 +10,12 @@ import {
   Plus,
   Trash2,
   FileDown,
-  Webhook,
-  Facebook,
-  BarChart3,
+  Webhook as WebhookIcon,
 } from "lucide-react";
+import {
+  MetaMark,
+  GoogleMark,
+} from "@/components/platform/artifacts/brand-logos";
 import {
   createAudienceDestination,
   deleteAudienceDestination,
@@ -31,6 +33,50 @@ type DestRow = {
 };
 
 type AdAccountOpt = { id: string; label: string };
+
+type DestinationKind = {
+  id: "CSV_DOWNLOAD" | "WEBHOOK" | "META_CUSTOM_AUDIENCE" | "GOOGLE_CUSTOMER_MATCH";
+  label: string;
+  description: string;
+  badge: "Live" | "Preview";
+  logo: React.ReactNode;
+  accent: string;
+};
+
+const DESTINATION_KINDS: DestinationKind[] = [
+  {
+    id: "CSV_DOWNLOAD",
+    label: "CSV download",
+    description: "Stream the segment as a CSV right back to your browser.",
+    badge: "Live",
+    logo: <FileDown className="h-5 w-5 text-foreground" />,
+    accent: "bg-blue-50",
+  },
+  {
+    id: "WEBHOOK",
+    label: "Webhook",
+    description: "Signed JSON POST to any HTTPS endpoint. HMAC SHA-256.",
+    badge: "Live",
+    logo: <WebhookIcon className="h-5 w-5 text-foreground" />,
+    accent: "bg-blue-50",
+  },
+  {
+    id: "META_CUSTOM_AUDIENCE",
+    label: "Meta Custom Audience",
+    description: "Push members directly into a Meta Ads custom audience.",
+    badge: "Preview",
+    logo: <MetaMark size={20} />,
+    accent: "bg-[#E7F0FE]",
+  },
+  {
+    id: "GOOGLE_CUSTOMER_MATCH",
+    label: "Google Customer Match",
+    description: "Send hashed members to a Google Ads customer match list.",
+    badge: "Preview",
+    logo: <GoogleMark size={20} />,
+    accent: "bg-[#FFF4E5]",
+  },
+];
 
 export function DestinationsManager({
   destinations,
@@ -62,12 +108,14 @@ export function DestinationsManager({
         />
       ) : null}
 
-      {destinations.length === 0 ? (
-        <div className="text-sm text-muted-foreground py-6 text-center border border-dashed border-border rounded-md">
+      {destinations.length === 0 && !adding ? (
+        <div className="text-sm text-muted-foreground py-8 text-center border border-dashed border-border rounded-md">
           No destinations yet. Add a webhook URL or pick a connected ad
           account to start pushing.
         </div>
-      ) : (
+      ) : null}
+
+      {destinations.length > 0 ? (
         <div className="-mx-5 -mb-5">
           <table className="w-full text-sm">
             <thead>
@@ -86,7 +134,7 @@ export function DestinationsManager({
             </tbody>
           </table>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -106,11 +154,22 @@ function DestinationRow({ destination }: { destination: DestRow }) {
     });
   }
 
+  const kind =
+    DESTINATION_KINDS.find((k) => k.id === destination.type) ??
+    DESTINATION_KINDS[0];
+
   return (
     <tr className="hover:bg-muted/40 transition-colors">
       <td className="py-3 px-5 align-top">
         <div className="flex items-center gap-2.5 min-w-0">
-          <DestinationIcon type={destination.type} />
+          <span
+            className={cn(
+              "inline-flex h-8 w-8 items-center justify-center rounded-md shrink-0",
+              kind.accent,
+            )}
+          >
+            {kind.logo}
+          </span>
           <div className="min-w-0">
             <div className="font-medium truncate">{destination.name}</div>
             {!destination.enabled ? (
@@ -125,7 +184,7 @@ function DestinationRow({ destination }: { destination: DestRow }) {
         ) : null}
       </td>
       <td className="py-3 px-3 align-top text-muted-foreground">
-        {prettyType(destination.type)}
+        {kind.label}
       </td>
       <td className="py-3 px-3 align-top">
         <div className="text-xs text-muted-foreground font-mono truncate max-w-xs">
@@ -160,7 +219,7 @@ function AddDestinationForm({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [type, setType] = useState<string>("CSV_DOWNLOAD");
+  const [type, setType] = useState<DestinationKind["id"]>("CSV_DOWNLOAD");
   const [name, setName] = useState("");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [webhookSecret, setWebhookSecret] = useState("");
@@ -172,11 +231,7 @@ function AddDestinationForm({
     setError(null);
     startTransition(async () => {
       const result = await createAudienceDestination({
-        type: type as
-          | "CSV_DOWNLOAD"
-          | "WEBHOOK"
-          | "META_CUSTOM_AUDIENCE"
-          | "GOOGLE_CUSTOMER_MATCH",
+        type,
         name,
         webhookUrl: type === "WEBHOOK" ? webhookUrl : undefined,
         webhookSecret: type === "WEBHOOK" ? webhookSecret : undefined,
@@ -198,30 +253,59 @@ function AddDestinationForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="bg-muted/30 border border-border rounded-md p-4 space-y-3"
+      className="bg-muted/30 border border-border rounded-md p-5 space-y-4"
     >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        <div>
-          <Label htmlFor="d-type" className="text-xs">
-            Destination type
-          </Label>
-          <select
-            id="d-type"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            className="mt-1 flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm shadow-xs"
-          >
-            <option value="CSV_DOWNLOAD">CSV download</option>
-            <option value="WEBHOOK">Webhook</option>
-            <option value="META_CUSTOM_AUDIENCE">
-              Meta Custom Audience (preview)
-            </option>
-            <option value="GOOGLE_CUSTOMER_MATCH">
-              Google Customer Match (preview)
-            </option>
-          </select>
+      <div>
+        <Label className="text-xs">Pick a destination</Label>
+        <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {DESTINATION_KINDS.map((kind) => {
+            const active = type === kind.id;
+            return (
+              <button
+                key={kind.id}
+                type="button"
+                onClick={() => setType(kind.id)}
+                className={cn(
+                  "text-left p-4 rounded-md border transition-all",
+                  active
+                    ? "border-primary bg-primary/5 ring-2 ring-primary/20"
+                    : "border-border bg-card hover:border-foreground/30",
+                )}
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <span
+                    className={cn(
+                      "inline-flex h-9 w-9 items-center justify-center rounded-md",
+                      kind.accent,
+                    )}
+                  >
+                    {kind.logo}
+                  </span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-md px-1.5 py-0.5 text-[10px] font-semibold tracking-wide",
+                      kind.badge === "Live"
+                        ? "text-emerald-700 bg-emerald-50"
+                        : "text-amber-700 bg-amber-50",
+                    )}
+                  >
+                    {kind.badge}
+                  </span>
+                </div>
+                <div className="mt-3 text-sm font-semibold text-foreground">
+                  {kind.label}
+                </div>
+                <div className="mt-0.5 text-[11px] text-muted-foreground line-clamp-2">
+                  {kind.description}
+                </div>
+              </button>
+            );
+          })}
         </div>
-        <div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="md:col-span-2">
           <Label htmlFor="d-name" className="text-xs">
             Label
           </Label>
@@ -229,7 +313,15 @@ function AddDestinationForm({
             id="d-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Berkeley search retargeting"
+            placeholder={
+              type === "CSV_DOWNLOAD"
+                ? "Berkeley team CSV export"
+                : type === "WEBHOOK"
+                  ? "HubSpot Sync via Zapier"
+                  : type === "META_CUSTOM_AUDIENCE"
+                    ? "Bay Area retargeting"
+                    : "Customer Match — Active Buyers"
+            }
             className="mt-1"
             required
           />
@@ -276,7 +368,7 @@ function AddDestinationForm({
           {adAccounts.length === 0 ? (
             <p className="text-xs text-muted-foreground mt-1">
               No connected ad accounts yet. Connect one in Settings →
-              Integrations first.
+              Integrations first, then come back here.
             </p>
           ) : (
             <select
@@ -299,7 +391,7 @@ function AddDestinationForm({
 
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
 
-      <div className="flex items-center gap-2 pt-1">
+      <div className="flex items-center gap-2 pt-1 border-t border-border -mx-5 px-5 pt-3">
         <Button
           type="submit"
           disabled={pending}
@@ -320,35 +412,4 @@ function AddDestinationForm({
       </div>
     </form>
   );
-}
-
-function DestinationIcon({ type }: { type: string }) {
-  const Icon =
-    type === "CSV_DOWNLOAD"
-      ? FileDown
-      : type === "WEBHOOK"
-        ? Webhook
-        : type === "META_CUSTOM_AUDIENCE"
-          ? Facebook
-          : type === "GOOGLE_CUSTOMER_MATCH"
-            ? BarChart3
-            : Webhook;
-  const tone =
-    type === "CSV_DOWNLOAD" || type === "WEBHOOK"
-      ? "text-primary bg-primary/10"
-      : "text-muted-foreground bg-muted";
-  return (
-    <span
-      className={cn(
-        "inline-flex h-7 w-7 items-center justify-center rounded-md shrink-0",
-        tone,
-      )}
-    >
-      <Icon className="h-3.5 w-3.5" />
-    </span>
-  );
-}
-
-function prettyType(t: string): string {
-  return t.toLowerCase().replace(/_/g, " ");
 }
