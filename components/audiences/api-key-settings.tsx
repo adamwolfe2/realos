@@ -219,14 +219,18 @@ export function ApiKeySettings({
             {testResult.kind === "ok" ? (
               <>
                 <p className="font-medium">
-                  Connected. AL returned {testResult.segmentCount} segment
-                  {testResult.segmentCount === 1 ? "" : "s"}.
+                  {testResult.segmentCount > 0
+                    ? "Connected. Cached segment fetched cleanly."
+                    : "Key looks valid. Add a segment to confirm end-to-end."}
                 </p>
                 <p className="text-muted-foreground mt-0.5">
                   Used the {testResult.usingOverride
                     ? "org override"
                     : "platform default"}{" "}
                   key.
+                  {testResult.segmentCount === 0
+                    ? " AudienceLab does not expose a list-all endpoint, so a true ping requires a segment ID."
+                    : ""}
                 </p>
               </>
             ) : (
