@@ -11,7 +11,11 @@ import "server-only";
 // `data`, `results`, `items`, `result`, or `resolutions`. We tolerate all.
 
 const AL_BASE = process.env.CURSIVE_API_URL ?? "https://api.audiencelab.io";
-const DEFAULT_PAGE_SIZE = 50;
+const DEFAULT_PAGE_SIZE = 100;
+// AL renamed the segment-style API to /audiences for newer accounts. The
+// older /segments endpoint exists too but returns 500 / 404 when called
+// against an /audiences-style ID. We default to /audiences.
+const AL_RESOURCE = "audiences";
 
 export type AlMember = {
   // Stable identity, when present
@@ -138,7 +142,7 @@ export async function listAlSegments(
   const page = options.page ?? 1;
   const pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
   const res = await alFetch(
-    `/segments?page=${page}&page_size=${pageSize}`,
+    `/${AL_RESOURCE}?page=${page}&page_size=${pageSize}`,
     apiKey,
   );
   if (!res.ok) {
@@ -211,7 +215,7 @@ export async function validateAlSegmentId(
     };
   }
   const res = await alFetch(
-    `/segments/${encodeURIComponent(segmentId)}?page=1&page_size=1`,
+    `/${AL_RESOURCE}/${encodeURIComponent(segmentId)}?page=1&page_size=1`,
     apiKey,
   );
   if (!res.ok) {
@@ -221,13 +225,22 @@ export async function validateAlSegmentId(
       status: res.status,
       message:
         res.status === 404
-          ? `Segment "${segmentId}" not found in AudienceLab. Double-check the ID.`
+          ? `Audience "${segmentId}" not found in AudienceLab. Double-check the ID.`
           : res.status === 401 || res.status === 403
-            ? `AudienceLab rejected the API key for this segment (${res.status}).`
-            : `Segment validation failed (${res.status}): ${body.slice(0, 200)}`,
+            ? `AudienceLab rejected the API key for this audience (${res.status}).`
+            : `Audience validation failed (${res.status}): ${body.slice(0, 200)}`,
     };
   }
   const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  // AL's /audiences/{id} returns { status: "NOT_FOUND" } with HTTP 200 when
+  // the ID is unknown. Treat that as a 404.
+  if (json.status === "NOT_FOUND") {
+    return {
+      ok: false,
+      status: 404,
+      message: `Audience "${segmentId}" not found in AudienceLab. Double-check the ID.`,
+    };
+  }
   const items = extractItems(json);
   // Strip the items array from meta to keep the cached payload small.
   const meta: Record<string, unknown> = {};
@@ -276,7 +289,7 @@ export async function getAlSegmentMembersPage(
   const page = options.page ?? 1;
   const pageSize = options.pageSize ?? DEFAULT_PAGE_SIZE;
   const res = await alFetch(
-    `/segments/${encodeURIComponent(segmentId)}?page=${page}&page_size=${pageSize}`,
+    `/${AL_RESOURCE}/${encodeURIComponent(segmentId)}?page=${page}&page_size=${pageSize}`,
     apiKey,
   );
   if (!res.ok) {
@@ -342,7 +355,23 @@ function toAlMember(item: Record<string, unknown>): AlMember {
   const profileId = pickString(item, "PROFILE_ID", "profile_id", "id");
   const uid = pickString(item, "UID", "uid");
   const cookieId = pickString(item, "COOKIE_ID", "cookie_id");
-  const hemSha256 = pickString(item, "HEM_SHA256", "hem_sha256");
+  // AL's /audiences endpoint surfaces SHA256_PERSONAL_EMAIL (and BUSINESS).
+  // Older /segments endpoint used HEM_SHA256. Accept both shapes; prefer the
+  // personal email hash, fall back to business if that's all that's present.
+  const sha256Personal = pickString(
+    item,
+    "SHA256_PERSONAL_EMAIL",
+    "sha256_personal_email",
+  );
+  const sha256Business = pickString(
+    item,
+    "SHA256_BUSINESS_EMAIL",
+    "sha256_business_email",
+  );
+  const hemSha256 =
+    pickString(item, "HEM_SHA256", "hem_sha256") ??
+    sha256Personal?.split(",")[0]?.trim() ??
+    sha256Business?.split(",")[0]?.trim();
   const emailRaw =
     pickString(
       item,

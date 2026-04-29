@@ -62,6 +62,12 @@ export async function addAudienceSegmentById(
     return { ok: false, error: validation.message };
   }
 
+  const meta = validation.data.meta;
+  const memberCount =
+    typeof meta.total_records === "number"
+      ? meta.total_records
+      : Number(meta.total_records ?? 0) || 0;
+
   const existing = await prisma.audienceSegment.findUnique({
     where: {
       orgId_alSegmentId: { orgId: scope.orgId, alSegmentId: trimmedId },
@@ -75,7 +81,8 @@ export async function addAudienceSegmentById(
       data: {
         name: trimmedName,
         description: input.description?.trim() || null,
-        rawPayload: validation.data.meta as object,
+        memberCount,
+        rawPayload: meta as object,
         lastFetchedAt: new Date(),
         visible: true,
       },
@@ -95,8 +102,8 @@ export async function addAudienceSegmentById(
       alSegmentId: trimmedId,
       name: trimmedName,
       description: input.description?.trim() || null,
-      memberCount: 0,
-      rawPayload: validation.data.meta as object,
+      memberCount,
+      rawPayload: meta as object,
       lastFetchedAt: new Date(),
     },
     select: { id: true },
@@ -111,56 +118,101 @@ export async function addAudienceSegmentById(
 }
 
 // ---------------------------------------------------------------------------
-// Refresh segments — re-validates each known segment against AL and refreshes
-// its cached metadata. Does NOT auto-discover new segments because AL has no
-// list-all endpoint; new segments are added via addAudienceSegmentById.
+// Refresh segments — auto-discovers all audiences from AL via GET /audiences
+// (the list endpoint), upserts new ones, and refreshes metadata on existing
+// rows. Operators can still add a single audience by ID via
+// addAudienceSegmentById, useful when they want only a subset of their AL
+// catalog visible in the dashboard.
 // ---------------------------------------------------------------------------
 
 export type RefreshSegmentsResult =
-  | { ok: true; total: number; refreshed: number; failed: number }
+  | { ok: true; total: number; created: number; updated: number; failed: number }
   | { ok: false; error: string };
 
 export async function refreshAudienceSegments(): Promise<RefreshSegmentsResult> {
   const scope = await requireAudienceSyncOrThrow();
   const orgKey = await getOrgApiKeyOverride(scope.orgId);
 
-  const segments = await prisma.audienceSegment.findMany({
-    where: { orgId: scope.orgId },
-    select: { id: true, alSegmentId: true },
-  });
-
-  if (segments.length === 0) {
-    return { ok: true, total: 0, refreshed: 0, failed: 0 };
+  // Page through up to 200 audiences. Anything past that is rare and the
+  // operator can add the rest manually.
+  const discovered: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    raw: Record<string, unknown>;
+  }> = [];
+  let page = 1;
+  for (let i = 0; i < 4; i++) {
+    const result = await listAlSegments({
+      apiKey: orgKey,
+      page,
+      pageSize: 50,
+    });
+    if (!result.ok) return { ok: false, error: result.message };
+    discovered.push(...result.data);
+    if (result.data.length < 50) break;
+    page++;
   }
 
-  let refreshed = 0;
+  let created = 0;
+  let updated = 0;
   let failed = 0;
-  for (const seg of segments) {
-    const validation = await validateAlSegmentId(seg.alSegmentId, {
-      apiKey: orgKey,
-    });
+  for (const aud of discovered) {
+    // Validate each audience to capture total_records and meta. Skip on
+    // failure rather than aborting the whole refresh.
+    const validation = await validateAlSegmentId(aud.id, { apiKey: orgKey });
     if (!validation.ok) {
       failed++;
       continue;
     }
-    await prisma.audienceSegment.update({
-      where: { id: seg.id },
-      data: {
-        rawPayload: validation.data.meta as object,
-        lastFetchedAt: new Date(),
+    const meta = validation.data.meta;
+    const memberCount =
+      typeof meta.total_records === "number"
+        ? meta.total_records
+        : Number(meta.total_records ?? 0) || 0;
+
+    const existing = await prisma.audienceSegment.findUnique({
+      where: {
+        orgId_alSegmentId: { orgId: scope.orgId, alSegmentId: aud.id },
       },
+      select: { id: true },
     });
-    refreshed++;
+    if (existing) {
+      await prisma.audienceSegment.update({
+        where: { id: existing.id },
+        data: {
+          name: aud.name,
+          description: aud.description ?? null,
+          memberCount,
+          rawPayload: meta as object,
+          lastFetchedAt: new Date(),
+        },
+      });
+      updated++;
+    } else {
+      await prisma.audienceSegment.create({
+        data: {
+          orgId: scope.orgId,
+          alSegmentId: aud.id,
+          name: aud.name,
+          description: aud.description ?? null,
+          memberCount,
+          rawPayload: meta as object,
+          lastFetchedAt: new Date(),
+        },
+      });
+      created++;
+    }
   }
   revalidatePath("/portal/audiences");
-  return { ok: true, total: segments.length, refreshed, failed };
+  return {
+    ok: true,
+    total: discovered.length,
+    created,
+    updated,
+    failed,
+  };
 }
-
-// Reference the legacy import so the file still compiles cleanly when other
-// code paths transition off list-all discovery. AL may add a list endpoint
-// in the future; keeping the function imported means that transition is a
-// one-line change here, not a re-import in five files.
-void listAlSegments;
 
 // ---------------------------------------------------------------------------
 // Destinations

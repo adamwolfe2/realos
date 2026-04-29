@@ -25,10 +25,14 @@ export function RefreshSegmentsButton({
       const result = await refreshAudienceSegments();
       if (result.ok) {
         if (result.total === 0) {
-          setMessage("No segments yet. Add one to start.");
+          setMessage("No audiences found in AudienceLab.");
         } else {
+          const parts: string[] = [];
+          if (result.created > 0) parts.push(`${result.created} new`);
+          if (result.updated > 0) parts.push(`${result.updated} updated`);
+          if (result.failed > 0) parts.push(`${result.failed} failed`);
           setMessage(
-            `Refreshed ${result.refreshed} of ${result.total}${result.failed > 0 ? `, ${result.failed} failed` : ""}`,
+            `Synced ${result.total} audience${result.total === 1 ? "" : "s"}${parts.length ? ` — ${parts.join(", ")}` : ""}`,
           );
         }
         router.refresh();
