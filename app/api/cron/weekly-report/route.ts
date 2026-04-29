@@ -4,6 +4,9 @@ import { recordCronRun } from "@/lib/health/cron-run";
 import { generateReportSnapshot } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
 import { notifyReportDraftReady } from "@/lib/notifications/create";
+import { verifyCronAuth } from "@/lib/cron/auth";
+
+export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // GET /api/cron/weekly-report
 //
@@ -20,16 +23,8 @@ import { notifyReportDraftReady } from "@/lib/notifications/create";
 //
 // Auth: Bearer CRON_SECRET.
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 503 },
-    );
-  }
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
 
   return recordCronRun("weekly-report", async () => {
     const orgs = await prisma.organization.findMany({

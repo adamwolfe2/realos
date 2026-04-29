@@ -3,6 +3,9 @@ import { prisma } from "@/lib/db";
 import { LeadStatus, Prisma } from "@prisma/client";
 import { sendLeadCadenceEmail } from "@/lib/email/lead-sequences";
 import { recordCronRun } from "@/lib/health/cron-run";
+import { verifyCronAuth } from "@/lib/cron/auth";
+
+export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // GET /api/cron/lead-nurture
 // Hourly cadence. For each lifecycle stage, finds leads older than the
@@ -57,16 +60,8 @@ const EXCLUDED_STATUSES: LeadStatus[] = [
 ];
 
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 503 }
-    );
-  }
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
 
   return recordCronRun("lead-nurture", async () => {
   const now = Date.now();

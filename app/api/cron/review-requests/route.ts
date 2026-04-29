@@ -3,20 +3,15 @@ import { prisma } from "@/lib/db";
 import { LeadStatus } from "@prisma/client";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { sendReviewRequestEmail } from "@/lib/email/review-request";
+import { verifyCronAuth } from "@/lib/cron/auth";
+
+export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // GET /api/cron/review-requests
 // Daily. Sends a Google review request to residents who signed 7+ days ago.
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 503 }
-    );
-  }
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
 
   return recordCronRun("review-requests", async () => {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);

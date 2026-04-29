@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { OrgType, SubscriptionStatus, TenantStatus } from "@prisma/client";
 import { recordCronRun } from "@/lib/health/cron-run";
+import { verifyCronAuth } from "@/lib/cron/auth";
 import {
   buildBaseHtml,
   getResend,
@@ -11,22 +12,16 @@ import {
   BRAND_EMAIL,
 } from "@/lib/email/shared";
 
+export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
+
 // GET /api/cron/billing-reminders
 // Daily at 09:00 UTC. Sends billing reminder emails to CLIENT orgs whose
 // subscriptionStatus is PAST_DUE. Deduplicates via AuditEvent rows so the
 // same org receives at most one reminder per 7-day window.
 // After 14+ days past-due, sends an escalated notice and sets status=PAUSED.
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 503 }
-    );
-  }
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
 
   return recordCronRun("billing-reminders", async () => {
     const now = new Date();

@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { runAdsSyncForAccount } from "@/lib/integrations/ads-sync";
 import { recordCronRun } from "@/lib/health/cron-run";
+import { verifyCronAuth } from "@/lib/cron/auth";
+
+export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // GET /api/cron/ads-sync
 //
@@ -11,16 +14,8 @@ import { recordCronRun } from "@/lib/health/cron-run";
 //
 // Auth: Bearer CRON_SECRET (matches the AppFolio cron pattern).
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 503 }
-    );
-  }
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
 
   return recordCronRun("ads-sync", async () => {
     const accounts = await prisma.adAccount.findMany({

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { runInsightDetectorsForAll } from "@/lib/insights/run";
+import { verifyCronAuth } from "@/lib/cron/auth";
+
+export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // GET /api/cron/insight-detector
 //
@@ -8,16 +11,8 @@ import { runInsightDetectorsForAll } from "@/lib/insights/run";
 // detector registry. Upserts are dedupe-keyed so re-firing is safe and
 // cheap. Auth: Bearer CRON_SECRET.
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 503 },
-    );
-  }
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
 
   return recordCronRun("insight-detector", async () => {
     const summaries = await runInsightDetectorsForAll();

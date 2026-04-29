@@ -4,6 +4,9 @@ import { recordCronRun } from "@/lib/health/cron-run";
 import { executeSegmentPush } from "@/lib/actions/audiences";
 import { computeNextRunAt } from "@/lib/audiences/schedule";
 import type { GeoFilter } from "@/lib/integrations/al-segments";
+import { verifyCronAuth } from "@/lib/cron/auth";
+
+export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // Hard cap per tick to avoid Vercel function timeouts. Hourly cadence + cap of
 // 100 means we comfortably handle thousands of schedules with multiple ticks.
@@ -17,20 +20,31 @@ const MAX_SCHEDULES_PER_TICK = 100;
 //
 // Auth: Bearer CRON_SECRET, matching the rest of the cron suite.
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 503 },
-    );
-  }
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
 
   return recordCronRun("run-audience-syncs", async () => {
     const startedAt = Date.now();
     const now = new Date();
+
+    // Reaper: flip orphan RUNNING runs to FAILED. A row stays RUNNING if the
+    // lambda was killed mid-push (timeout, OOM, deploy). Without this, the
+    // history UI shows a forever-spinning run.
+    const REAPER_AGE_MS = 15 * 60 * 1000; // 15 min
+    const reaperCutoff = new Date(Date.now() - REAPER_AGE_MS);
+    await prisma.audienceSyncRun.updateMany({
+      where: {
+        status: "RUNNING",
+        startedAt: { lt: reaperCutoff },
+      },
+      data: {
+        status: "FAILED",
+        finishedAt: new Date(),
+        errorMessage: "Lambda terminated before push completed",
+      },
+    }).catch(() => {
+      // Reaper failure is non-fatal — proceed with the tick.
+    });
 
     const due = await prisma.audienceSyncSchedule.findMany({
       where: { enabled: true, nextRunAt: { lte: now } },
@@ -74,8 +88,8 @@ export async function GET(req: NextRequest) {
         new Date(),
       );
       await prisma.audienceSyncSchedule
-        .update({
-          where: { id: schedule.id },
+        .updateMany({
+          where: { id: schedule.id, enabled: true },
           data: { lastRunAt: new Date(), nextRunAt },
         })
         .catch(() => {

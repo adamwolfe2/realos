@@ -23,6 +23,7 @@ import {
   type AudienceSegment,
 } from "@prisma/client";
 import { computeNextRunAt } from "@/lib/audiences/schedule";
+import { isAllowedUrlWithDns } from "@/lib/utils/ssrf-protection";
 
 // ---------------------------------------------------------------------------
 // Insight computation. AudienceLab returns a list of members per segment
@@ -442,13 +443,13 @@ export async function createAudienceDestination(
     if (!input.webhookUrl?.trim()) {
       return { ok: false, error: "Webhook URL is required." };
     }
-    try {
-      const url = new URL(input.webhookUrl);
-      if (url.protocol !== "https:") {
-        return { ok: false, error: "Webhook URL must be https." };
-      }
-    } catch {
-      return { ok: false, error: "Webhook URL is not a valid URL." };
+    const allowed = await isAllowedUrlWithDns(input.webhookUrl);
+    if (!allowed) {
+      return {
+        ok: false,
+        error:
+          "Webhook URL must be a public https endpoint (no private, loopback, or metadata hosts).",
+      };
     }
   }
   if (
@@ -583,10 +584,14 @@ export async function executeSegmentPush(
     const surface = alSurfaceFromMeta(
       segment.rawPayload as Record<string, unknown> | null,
     );
+    // Hard cap to prevent OOM on serverless. 25K members at ~250B/row = ~6 MB CSV
+    // which is safe to base64-roundtrip. Larger segments need streaming.
+    const HARD_MAX_MEMBERS = 25_000;
+    const maxMembers = Math.min(input.maxMembers ?? 5000, HARD_MAX_MEMBERS);
     const members = await streamAlSegmentMembers(segment.alSegmentId, {
       apiKey: orgKey,
       surface,
-      maxMembers: input.maxMembers ?? 5000,
+      maxMembers: maxMembers,
       filter: input.geoFilter ? geoFilterFn(input.geoFilter) : undefined,
     });
     if (!members.ok) {
@@ -606,7 +611,12 @@ export async function executeSegmentPush(
         break;
       }
       case "WEBHOOK": {
-        const result = await pushToWebhook(destination, segment, members.data);
+        const result = await pushToWebhook(
+          destination,
+          segment,
+          members.data,
+          run.id,
+        );
         if (!result.ok) {
           await failRun(run.id, result.error);
           return { ok: false, error: result.error, runId: run.id };
@@ -825,10 +835,14 @@ function membersToCsv(members: AlMember[]): string {
 
 function csvEscape(value: string): string {
   if (value === "") return "";
-  if (/[",\n\r]/.test(value)) {
-    return `"${value.replace(/"/g, '""')}"`;
+  // Excel/Sheets formula injection: cells starting with =, +, -, @, tab, CR
+  // get evaluated as formulas. Prefix with single quote to neutralize.
+  const needsFormulaGuard = /^[=+\-@\t\r]/.test(value);
+  const guarded = needsFormulaGuard ? `'${value}` : value;
+  if (/[",\n\r]/.test(guarded)) {
+    return `"${guarded.replace(/"/g, '""')}"`;
   }
-  return value;
+  return guarded;
 }
 
 function slugify(s: string): string {
@@ -843,9 +857,21 @@ async function pushToWebhook(
   destination: AudienceDestination,
   segment: AudienceSegment,
   members: AlMember[],
+  runId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!destination.webhookUrl) {
     return { ok: false, error: "Webhook URL missing." };
+  }
+  // Re-validate the URL right before fetch. Defends against DNS rebinding —
+  // the value may have been verified at create time but resolved differently
+  // since then.
+  const allowed = await isAllowedUrlWithDns(destination.webhookUrl);
+  if (!allowed) {
+    return {
+      ok: false,
+      error:
+        "Webhook URL is not allowed (resolves to a private, loopback, or metadata host).",
+    };
   }
   const secret = maybeDecrypt(destination.webhookSecretEnc ?? null);
   const body = JSON.stringify({
@@ -873,6 +899,7 @@ async function pushToWebhook(
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
     "User-Agent": "LeaseStack-AudienceSync/1.0",
+    "Idempotency-Key": runId,
   };
   if (secret) {
     const sig = crypto
@@ -881,25 +908,50 @@ async function pushToWebhook(
       .digest("hex");
     headers["x-leasestack-signature"] = `sha256=${sig}`;
   }
-  let res: Response;
-  try {
-    res = await fetch(destination.webhookUrl, {
-      method: "POST",
-      headers,
-      body,
-    });
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    return { ok: false, error: `Network error: ${msg}` };
-  }
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    return {
-      ok: false,
-      error: `Webhook responded ${res.status}: ${text.slice(0, 200)}`,
-    };
-  }
-  return { ok: true };
+
+  // One retry for transient failures (network/timeout/5xx). 4xx is a contract
+  // bug on the receiver side — retrying won't help and risks spamming them.
+  const attempt = async (): Promise<
+    | { ok: true }
+    | { ok: false; retryable: boolean; error: string }
+  > => {
+    let res: Response;
+    try {
+      res = await fetch(destination.webhookUrl as string, {
+        method: "POST",
+        headers,
+        body,
+        signal: AbortSignal.timeout(15000),
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      const isAbort =
+        err instanceof Error &&
+        (err.name === "AbortError" || err.name === "TimeoutError");
+      return {
+        ok: false,
+        retryable: isAbort,
+        error: isAbort ? `Webhook timed out after 15s` : `Network error: ${msg}`,
+      };
+    }
+    if (!res.ok) {
+      const text = await res.text().catch(() => "");
+      return {
+        ok: false,
+        retryable: res.status >= 500 && res.status < 600,
+        error: `Webhook responded ${res.status}: ${text.slice(0, 200)}`,
+      };
+    }
+    return { ok: true };
+  };
+
+  const first = await attempt();
+  if (first.ok) return { ok: true };
+  if (!first.retryable) return { ok: false, error: first.error };
+  await new Promise((resolve) => setTimeout(resolve, 1000));
+  const second = await attempt();
+  if (second.ok) return { ok: true };
+  return { ok: false, error: second.error };
 }
 
 // ---------------------------------------------------------------------------

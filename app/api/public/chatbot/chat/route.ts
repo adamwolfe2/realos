@@ -170,36 +170,53 @@ async function persistConversation(args: {
     ts: now.toISOString(),
   })) as unknown as Prisma.InputJsonValue;
 
-  const conversation = await prisma.chatbotConversation.upsert({
+  const existing = await prisma.chatbotConversation.findUnique({
     where: { sessionId: args.sessionId },
-    create: {
-      orgId: args.orgId,
-      sessionId: args.sessionId,
-      messages: serializedMessages,
-      messageCount: full.length,
-      status: isLeadCaptured
-        ? ChatbotConversationStatus.LEAD_CAPTURED
-        : ChatbotConversationStatus.ACTIVE,
-      capturedName: extracted.name ?? null,
-      capturedEmail: extracted.email ?? null,
-      capturedPhone: extracted.phone ?? null,
-      propertyId: args.propertyId ?? null,
-      pageUrl: args.pageUrl ?? null,
-      userAgent: args.userAgent ?? null,
-      ipAddress: args.ipAddress ?? null,
-    },
-    update: {
-      messages: serializedMessages,
-      messageCount: full.length,
-      lastMessageAt: now,
-      status: isLeadCaptured
-        ? ChatbotConversationStatus.LEAD_CAPTURED
-        : ChatbotConversationStatus.ACTIVE,
-      capturedName: extracted.name ?? undefined,
-      capturedEmail: extracted.email ?? undefined,
-      capturedPhone: extracted.phone ?? undefined,
-    },
+    select: { id: true, orgId: true },
   });
+
+  let conversation;
+  if (existing) {
+    if (existing.orgId !== args.orgId) {
+      // Cross-tenant sessionId reuse — refuse silently. The session belongs to
+      // a different org. Returning early prevents data corruption; the caller
+      // can recover by generating a fresh sessionId on the client.
+      return null;
+    }
+    conversation = await prisma.chatbotConversation.update({
+      where: { id: existing.id },
+      data: {
+        messages: serializedMessages,
+        messageCount: full.length,
+        lastMessageAt: now,
+        status: isLeadCaptured
+          ? ChatbotConversationStatus.LEAD_CAPTURED
+          : ChatbotConversationStatus.ACTIVE,
+        capturedName: extracted.name ?? undefined,
+        capturedEmail: extracted.email ?? undefined,
+        capturedPhone: extracted.phone ?? undefined,
+      },
+    });
+  } else {
+    conversation = await prisma.chatbotConversation.create({
+      data: {
+        orgId: args.orgId,
+        sessionId: args.sessionId,
+        messages: serializedMessages,
+        messageCount: full.length,
+        status: isLeadCaptured
+          ? ChatbotConversationStatus.LEAD_CAPTURED
+          : ChatbotConversationStatus.ACTIVE,
+        capturedName: extracted.name ?? null,
+        capturedEmail: extracted.email ?? null,
+        capturedPhone: extracted.phone ?? null,
+        propertyId: args.propertyId ?? null,
+        pageUrl: args.pageUrl ?? null,
+        userAgent: args.userAgent ?? null,
+        ipAddress: args.ipAddress ?? null,
+      },
+    });
+  }
 
   if (isLeadCaptured && !conversation.leadId && extracted.email) {
     const lead = await prisma.lead.create({

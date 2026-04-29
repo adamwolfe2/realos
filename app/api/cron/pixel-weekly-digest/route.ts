@@ -3,21 +3,16 @@ import { prisma } from "@/lib/db";
 import { VisitorIdentificationStatus } from "@prisma/client";
 import { sendVisitorWeeklyDigest } from "@/lib/email/visitor-emails";
 import { recordCronRun } from "@/lib/health/cron-run";
+import { verifyCronAuth } from "@/lib/cron/auth";
+
+export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // GET /api/cron/pixel-weekly-digest
 // Runs Mondays. For every tenant with weekly digest enabled, sends the
 // last-7-day visitor roll-up to the configured recipients.
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 503 }
-    );
-  }
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
 
   return recordCronRun("pixel-weekly-digest", async () => {
   const integrations = await prisma.cursiveIntegration.findMany({

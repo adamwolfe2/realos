@@ -1,6 +1,9 @@
 import { NextResponse, type NextResponse as NextResponseType } from "next/server";
 import { prisma } from "@/lib/db";
 import { recordCronRun } from "@/lib/health/cron-run";
+import { verifyCronAuth } from "@/lib/cron/auth";
+
+export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // Retries failed inbound webhook events. Picks up rows with status=failed and
 // nextRetryAt in the past, exponentially backs off, abandons after 5 attempts.
@@ -15,25 +18,10 @@ const BACKOFF_SECS = [60, 5 * 60, 30 * 60, 2 * 60 * 60, 12 * 60 * 60];
 const ALLOWED_SOURCES = new Set(["clerk", "cursive", "resend", "stripe"]);
 
 export async function GET(req: Request) {
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
+
   return recordCronRun("webhook-retry", async () => {
-    // Fail closed: missing CRON_SECRET means the route is fully open and
-    // anyone can drive replay traffic against /api/webhooks/*.
-    if (!process.env.CRON_SECRET) {
-      return {
-        result: NextResponse.json(
-          { error: "Cron secret not configured" },
-          { status: 503 },
-        ) as NextResponseType,
-        recordsProcessed: 0,
-      };
-    }
-    const auth = req.headers.get("authorization");
-    if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-      return {
-        result: NextResponse.json({ error: "Unauthorized" }, { status: 401 }) as NextResponseType,
-        recordsProcessed: 0,
-      };
-    }
 
     const due = await prisma.webhookEvent.findMany({
       where: {

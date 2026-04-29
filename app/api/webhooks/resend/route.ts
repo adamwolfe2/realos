@@ -103,11 +103,10 @@ function normalizeRecipients(raw: string | string[] | null): string[] {
 function verifySignature(body: string, headers: Headers): boolean {
   const secret = process.env.RESEND_WEBHOOK_SECRET;
   if (!secret) {
-    // Fail closed in production. Without a secret, anyone can POST forged
-    // bounce/complaint events that flip Lead.unsubscribedFromEmails on any
-    // tenant — killing their email deliverability. Allow only in dev/preview
-    // so local development can exercise the route without a real secret.
-    return process.env.NODE_ENV !== "production";
+    // Fail closed always. A preview deployment connected to production DB
+    // would otherwise let anyone forge bounce events that flip
+    // Lead.unsubscribedFromEmails. Set RESEND_WEBHOOK_SECRET in every env.
+    return false;
   }
   const svixId = headers.get("svix-id");
   const svixTimestamp = headers.get("svix-timestamp");

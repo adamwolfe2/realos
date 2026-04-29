@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { recordCronRun } from "@/lib/health/cron-run";
+import { verifyCronAuth } from "@/lib/cron/auth";
 import {
   buildBaseHtml,
   getResend,
@@ -8,6 +9,8 @@ import {
   FROM_EMAIL,
   BRAND_NAME,
 } from "@/lib/email/shared";
+
+export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // GET /api/cron/intake-nurture
 // Daily at 12:00 UTC. Nurtures unconverted intake submissions with a 3-touch
@@ -17,16 +20,8 @@ import {
 // `_nurture` object: { day_1: true, day_4: true, day_7: true }.
 // No migration required — `raw` is `Json?` and already nullable.
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 503 }
-    );
-  }
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
 
   return recordCronRun("intake-nurture", async () => {
     const now = new Date();

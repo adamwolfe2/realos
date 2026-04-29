@@ -3,6 +3,9 @@ import { prisma } from "@/lib/db";
 import { runAppfolioSync } from "@/lib/integrations/appfolio-sync";
 import { syncListingsForOrg } from "@/lib/integrations/appfolio";
 import { recordCronRun } from "@/lib/health/cron-run";
+import { verifyCronAuth } from "@/lib/cron/auth";
+
+export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
 // GET /api/cron/appfolio-sync
 //
@@ -14,16 +17,8 @@ import { recordCronRun } from "@/lib/health/cron-run";
 // reports-based sync. Tenants still on the embed fallback fall through to
 // the old listings-only scrape path so they at least get availability data.
 export async function GET(req: NextRequest) {
-  const auth = req.headers.get("authorization");
-  if (!process.env.CRON_SECRET) {
-    return NextResponse.json(
-      { error: "CRON_SECRET not configured" },
-      { status: 503 }
-    );
-  }
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
+  const authError = verifyCronAuth(req);
+  if (authError) return authError;
 
   return recordCronRun("appfolio-sync", async () => {
     const integrations = await prisma.appFolioIntegration.findMany({
