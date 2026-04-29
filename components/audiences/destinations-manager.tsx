@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +12,9 @@ import {
   Trash2,
   FileDown,
   Webhook as WebhookIcon,
+  Send,
+  Download,
+  Check,
 } from "lucide-react";
 import {
   MetaMark,
@@ -19,6 +23,7 @@ import {
 import {
   createAudienceDestination,
   deleteAudienceDestination,
+  pushSegmentToDestination,
 } from "@/lib/actions/audiences";
 
 type DestRow = {
@@ -33,6 +38,8 @@ type DestRow = {
 };
 
 type AdAccountOpt = { id: string; label: string };
+
+type SegmentOpt = { id: string; name: string; memberCount: number };
 
 type DestinationKind = {
   id: "CSV_DOWNLOAD" | "WEBHOOK" | "META_CUSTOM_AUDIENCE" | "GOOGLE_CUSTOMER_MATCH";
@@ -81,9 +88,11 @@ const DESTINATION_KINDS: DestinationKind[] = [
 export function DestinationsManager({
   destinations,
   adAccounts,
+  segments,
 }: {
   destinations: DestRow[];
   adAccounts: AdAccountOpt[];
+  segments: SegmentOpt[];
 }) {
   const [adding, setAdding] = useState(false);
 
@@ -124,12 +133,17 @@ export function DestinationsManager({
                 <th className="text-left font-semibold py-2 px-3">Type</th>
                 <th className="text-left font-semibold py-2 px-3">Target</th>
                 <th className="text-right font-semibold py-2 px-3">Last used</th>
+                <th className="text-right font-semibold py-2 px-3">Run</th>
                 <th className="px-5"></th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
               {destinations.map((d) => (
-                <DestinationRow key={d.id} destination={d} />
+                <DestinationRow
+                  key={d.id}
+                  destination={d}
+                  segments={segments}
+                />
               ))}
             </tbody>
           </table>
@@ -139,7 +153,13 @@ export function DestinationsManager({
   );
 }
 
-function DestinationRow({ destination }: { destination: DestRow }) {
+function DestinationRow({
+  destination,
+  segments,
+}: {
+  destination: DestRow;
+  segments: SegmentOpt[];
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -157,6 +177,10 @@ function DestinationRow({ destination }: { destination: DestRow }) {
   const kind =
     DESTINATION_KINDS.find((k) => k.id === destination.type) ??
     DESTINATION_KINDS[0];
+
+  const isPreviewOnly =
+    destination.type === "META_CUSTOM_AUDIENCE" ||
+    destination.type === "GOOGLE_CUSTOMER_MATCH";
 
   return (
     <tr className="hover:bg-muted/40 transition-colors">
@@ -196,6 +220,13 @@ function DestinationRow({ destination }: { destination: DestRow }) {
           ? new Date(destination.lastUsedAt).toLocaleDateString()
           : "—"}
       </td>
+      <td className="py-3 px-3 align-top text-right">
+        <RunDestinationButton
+          destination={destination}
+          segments={segments}
+          disabled={isPreviewOnly || !destination.enabled}
+        />
+      </td>
       <td className="py-3 px-5 align-top text-right">
         <button
           onClick={handleDelete}
@@ -208,6 +239,203 @@ function DestinationRow({ destination }: { destination: DestRow }) {
       </td>
     </tr>
   );
+}
+
+type RunStatus =
+  | { kind: "idle" }
+  | { kind: "pushing"; segmentId: string }
+  | { kind: "success"; message: string }
+  | { kind: "error"; message: string };
+
+function RunDestinationButton({
+  destination,
+  segments,
+  disabled,
+}: {
+  destination: DestRow;
+  segments: SegmentOpt[];
+  disabled: boolean;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [status, setStatus] = useState<RunStatus>({ kind: "idle" });
+  const [pending, startTransition] = useTransition();
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDown(e: MouseEvent) {
+      if (status.kind === "pushing") return;
+      const node = wrapperRef.current;
+      if (node && !node.contains(e.target as Node)) setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && status.kind !== "pushing") setOpen(false);
+    }
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, status.kind]);
+
+  const isCsv = destination.type === "CSV_DOWNLOAD";
+
+  function handlePush(segment: SegmentOpt) {
+    setStatus({ kind: "pushing", segmentId: segment.id });
+    startTransition(async () => {
+      const result = await pushSegmentToDestination({
+        segmentId: segment.id,
+        destinationId: destination.id,
+      });
+      if (!result.ok) {
+        setStatus({ kind: "error", message: result.error });
+        return;
+      }
+      if (result.csvBase64 && result.filename) {
+        triggerCsvDownload(result.csvBase64, result.filename);
+      }
+      setStatus({
+        kind: "success",
+        message: `${result.memberCount.toLocaleString()} ${
+          isCsv ? "downloaded" : "pushed"
+        }`,
+      });
+      router.refresh();
+      window.setTimeout(() => {
+        setStatus({ kind: "idle" });
+        setOpen(false);
+      }, 2200);
+    });
+  }
+
+  if (disabled) {
+    return (
+      <span className="text-[11px] text-muted-foreground">—</span>
+    );
+  }
+
+  return (
+    <div ref={wrapperRef} className="relative inline-block">
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          if (!open) setStatus({ kind: "idle" });
+          setOpen((v) => !v);
+        }}
+        className={cn(
+          "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium transition-colors",
+          open
+            ? "bg-primary text-primary-foreground"
+            : "text-foreground bg-muted hover:bg-primary/10 hover:text-primary",
+        )}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={
+          isCsv
+            ? `Download ${destination.name}`
+            : `Push to ${destination.name}`
+        }
+      >
+        {isCsv ? (
+          <Download className="h-3 w-3" />
+        ) : (
+          <Send className="h-3 w-3" />
+        )}
+        {isCsv ? "Download" : "Push now"}
+      </button>
+
+      {open ? (
+        <div
+          role="listbox"
+          aria-label={`Segments for ${destination.name}`}
+          className={cn(
+            "absolute right-0 top-full mt-1 z-30 w-72 rounded-md border border-border bg-card shadow-lg",
+            "py-1",
+          )}
+        >
+          <div className="px-3 py-1.5 text-[10px] uppercase tracking-widest text-muted-foreground border-b border-border">
+            {isCsv ? "Pick a segment to download" : "Pick a segment to push"}
+          </div>
+
+          {segments.length === 0 ? (
+            <div className="px-3 py-3 text-xs text-muted-foreground">
+              No segments yet.{" "}
+              <Link
+                href="/portal/audiences"
+                className="underline underline-offset-2 hover:text-foreground"
+              >
+                Add a segment
+              </Link>{" "}
+              first.
+            </div>
+          ) : (
+            <div className="max-h-64 overflow-y-auto">
+              {segments.map((s) => {
+                const isPushing =
+                  status.kind === "pushing" && status.segmentId === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => handlePush(s)}
+                    disabled={pending}
+                    className={cn(
+                      "w-full flex items-center gap-2 px-3 py-2 text-sm text-left",
+                      "hover:bg-muted/60 transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                    )}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="truncate font-medium">{s.name}</div>
+                      <div className="text-[10px] text-muted-foreground tabular-nums">
+                        {s.memberCount.toLocaleString()} members
+                      </div>
+                    </div>
+                    {isPushing ? <Spinner /> : null}
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {status.kind === "success" ? (
+            <div className="border-t border-border px-3 py-2 text-[11px] text-emerald-700 flex items-start gap-1.5">
+              <Check className="h-3 w-3 mt-0.5 shrink-0" />
+              <span>{status.message}</span>
+            </div>
+          ) : null}
+          {status.kind === "error" ? (
+            <div className="border-t border-border px-3 py-2 text-[11px] text-rose-700">
+              {status.message}
+            </div>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+function Spinner() {
+  return (
+    <span className="inline-block h-3 w-3 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+  );
+}
+
+function triggerCsvDownload(base64: string, filename: string) {
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  const blob = new Blob([bytes], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 function AddDestinationForm({

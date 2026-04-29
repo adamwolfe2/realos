@@ -17,7 +17,7 @@ export default async function DestinationsPage() {
     redirect("/portal");
   }
 
-  const [destinations, adAccounts] = await Promise.all([
+  const [destinations, adAccounts, segments] = await Promise.all([
     prisma.audienceDestination.findMany({
       where: { orgId: scope.orgId },
       orderBy: { createdAt: "desc" },
@@ -34,6 +34,15 @@ export default async function DestinationsPage() {
         externalAccountId: true,
       },
       orderBy: { createdAt: "desc" },
+    }),
+    prisma.audienceSegment.findMany({
+      where: { orgId: scope.orgId, visible: true },
+      orderBy: { updatedAt: "desc" },
+      select: {
+        id: true,
+        name: true,
+        memberCount: true,
+      },
     }),
   ]);
 
@@ -81,6 +90,11 @@ export default async function DestinationsPage() {
           adAccounts={adAccounts.map((a) => ({
             id: a.id,
             label: `${a.displayName ?? a.externalAccountId} — ${a.platform}`,
+          }))}
+          segments={segments.map((s) => ({
+            id: s.id,
+            name: s.name,
+            memberCount: s.memberCount,
           }))}
         />
       </DashboardSection>
