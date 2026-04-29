@@ -9,6 +9,7 @@ import {
   geoFilterFn,
   listAlSegments,
   streamAlSegmentMembers,
+  validateAlSegmentId,
   type AlMember,
   type GeoFilter,
 } from "@/lib/integrations/al-segments";
@@ -23,76 +24,143 @@ import {
 import { computeNextRunAt } from "@/lib/audiences/schedule";
 
 // ---------------------------------------------------------------------------
-// Refresh segments — pull AL's segment list and upsert into the cache.
-// Called from the dashboard "Refresh" button and on first load when the
-// org has no cached segments yet.
+// Add segment by ID — AudienceLab does not expose a list-all-segments
+// endpoint. Operators paste a segment ID from the AL dashboard, we validate
+// it via /segments/{id}, and cache a row so the rest of the dashboard lights
+// up. This is the primary onboarding path for new segments.
+// ---------------------------------------------------------------------------
+
+export type AddSegmentInput = {
+  alSegmentId: string;
+  name: string;
+  description?: string;
+};
+
+export type AddSegmentResult =
+  | { ok: true; segmentId: string; alreadyExisted: boolean; hasMembers: boolean }
+  | { ok: false; error: string };
+
+export async function addAudienceSegmentById(
+  input: AddSegmentInput,
+): Promise<AddSegmentResult> {
+  const scope = await requireAudienceSyncOrThrow();
+  const trimmedId = input.alSegmentId.trim();
+  const trimmedName = input.name.trim();
+  if (!trimmedId) {
+    return { ok: false, error: "Segment ID is required." };
+  }
+  if (!trimmedName) {
+    return { ok: false, error: "Display name is required." };
+  }
+  if (trimmedId.length < 3) {
+    return { ok: false, error: "Segment ID looks too short to be valid." };
+  }
+
+  const orgKey = await getOrgApiKeyOverride(scope.orgId);
+  const validation = await validateAlSegmentId(trimmedId, { apiKey: orgKey });
+  if (!validation.ok) {
+    return { ok: false, error: validation.message };
+  }
+
+  const existing = await prisma.audienceSegment.findUnique({
+    where: {
+      orgId_alSegmentId: { orgId: scope.orgId, alSegmentId: trimmedId },
+    },
+    select: { id: true },
+  });
+
+  if (existing) {
+    await prisma.audienceSegment.update({
+      where: { id: existing.id },
+      data: {
+        name: trimmedName,
+        description: input.description?.trim() || null,
+        rawPayload: validation.data.meta as object,
+        lastFetchedAt: new Date(),
+        visible: true,
+      },
+    });
+    revalidatePath("/portal/audiences");
+    return {
+      ok: true,
+      segmentId: existing.id,
+      alreadyExisted: true,
+      hasMembers: validation.data.hasMembers,
+    };
+  }
+
+  const created = await prisma.audienceSegment.create({
+    data: {
+      orgId: scope.orgId,
+      alSegmentId: trimmedId,
+      name: trimmedName,
+      description: input.description?.trim() || null,
+      memberCount: 0,
+      rawPayload: validation.data.meta as object,
+      lastFetchedAt: new Date(),
+    },
+    select: { id: true },
+  });
+  revalidatePath("/portal/audiences");
+  return {
+    ok: true,
+    segmentId: created.id,
+    alreadyExisted: false,
+    hasMembers: validation.data.hasMembers,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Refresh segments — re-validates each known segment against AL and refreshes
+// its cached metadata. Does NOT auto-discover new segments because AL has no
+// list-all endpoint; new segments are added via addAudienceSegmentById.
 // ---------------------------------------------------------------------------
 
 export type RefreshSegmentsResult =
-  | { ok: true; total: number; created: number; updated: number }
+  | { ok: true; total: number; refreshed: number; failed: number }
   | { ok: false; error: string };
 
 export async function refreshAudienceSegments(): Promise<RefreshSegmentsResult> {
   const scope = await requireAudienceSyncOrThrow();
   const orgKey = await getOrgApiKeyOverride(scope.orgId);
-  // Page through segments; cap at 200 for the first cut
-  const allSegments: Array<{
-    id: string;
-    name: string;
-    description?: string;
-    memberCount?: number;
-    raw: Record<string, unknown>;
-  }> = [];
-  let page = 1;
-  for (let i = 0; i < 4; i++) {
-    const result = await listAlSegments({
-      apiKey: orgKey,
-      page,
-      pageSize: 50,
-    });
-    if (!result.ok) return { ok: false, error: result.message };
-    allSegments.push(...result.data);
-    if (result.data.length < 50) break;
-    page++;
+
+  const segments = await prisma.audienceSegment.findMany({
+    where: { orgId: scope.orgId },
+    select: { id: true, alSegmentId: true },
+  });
+
+  if (segments.length === 0) {
+    return { ok: true, total: 0, refreshed: 0, failed: 0 };
   }
 
-  let created = 0;
-  let updated = 0;
-  for (const seg of allSegments) {
-    const existing = await prisma.audienceSegment.findUnique({
-      where: { orgId_alSegmentId: { orgId: scope.orgId, alSegmentId: seg.id } },
-      select: { id: true },
+  let refreshed = 0;
+  let failed = 0;
+  for (const seg of segments) {
+    const validation = await validateAlSegmentId(seg.alSegmentId, {
+      apiKey: orgKey,
     });
-    if (existing) {
-      await prisma.audienceSegment.update({
-        where: { id: existing.id },
-        data: {
-          name: seg.name,
-          description: seg.description ?? null,
-          memberCount: seg.memberCount ?? 0,
-          rawPayload: seg.raw as object,
-          lastFetchedAt: new Date(),
-        },
-      });
-      updated++;
-    } else {
-      await prisma.audienceSegment.create({
-        data: {
-          orgId: scope.orgId,
-          alSegmentId: seg.id,
-          name: seg.name,
-          description: seg.description ?? null,
-          memberCount: seg.memberCount ?? 0,
-          rawPayload: seg.raw as object,
-          lastFetchedAt: new Date(),
-        },
-      });
-      created++;
+    if (!validation.ok) {
+      failed++;
+      continue;
     }
+    await prisma.audienceSegment.update({
+      where: { id: seg.id },
+      data: {
+        rawPayload: validation.data.meta as object,
+        lastFetchedAt: new Date(),
+      },
+    });
+    refreshed++;
   }
   revalidatePath("/portal/audiences");
-  return { ok: true, total: allSegments.length, created, updated };
+  return { ok: true, total: segments.length, refreshed, failed };
 }
+
+// Reference the legacy import so the file still compiles cleanly when other
+// code paths transition off list-all discovery. AL may add a list endpoint
+// in the future; keeping the function imported means that transition is a
+// one-line change here, not a re-import in five files.
+void listAlSegments;
 
 // ---------------------------------------------------------------------------
 // Destinations

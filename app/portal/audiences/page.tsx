@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { RefreshSegmentsButton } from "@/components/audiences/refresh-button";
+import { AddSegmentButton } from "@/components/audiences/add-segment-button";
 import { SegmentListView } from "@/components/audiences/segment-list-view";
 import { TopLocations } from "@/components/audiences/top-locations";
 import { RecentSyncs } from "@/components/audiences/recent-syncs";
@@ -261,14 +262,15 @@ export default async function AudiencesPage() {
             </p>
           ) : null}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <Button asChild variant="outline" size="sm" className="rounded-md">
             <Link href="/portal/audiences/destinations">
               <Send />
               Destinations
             </Link>
           </Button>
-          <RefreshSegmentsButton />
+          <RefreshSegmentsButton variant="outline" />
+          <AddSegmentButton />
         </div>
       </header>
 
@@ -326,7 +328,7 @@ export default async function AudiencesPage() {
         title="Available segments"
         description={
           segments.length === 0
-            ? "Sync your AudienceLab segments to get started."
+            ? "Click Add segment to paste an AudienceLab segment ID. We validate it on save and unlock everything else from there."
             : `${segments.length} segment${segments.length === 1 ? "" : "s"} ready to push. Search, filter, and push inline without leaving the page.`
         }
         href="/portal/audiences/destinations"

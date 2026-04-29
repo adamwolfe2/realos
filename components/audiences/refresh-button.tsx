@@ -24,9 +24,13 @@ export function RefreshSegmentsButton({
     startTransition(async () => {
       const result = await refreshAudienceSegments();
       if (result.ok) {
-        setMessage(
-          `Synced ${result.total} segments — ${result.created} new, ${result.updated} updated`,
-        );
+        if (result.total === 0) {
+          setMessage("No segments yet. Add one to start.");
+        } else {
+          setMessage(
+            `Refreshed ${result.refreshed} of ${result.total}${result.failed > 0 ? `, ${result.failed} failed` : ""}`,
+          );
+        }
         router.refresh();
       } else {
         setError(result.error);
@@ -45,7 +49,7 @@ export function RefreshSegmentsButton({
         className="rounded-md"
       >
         <RefreshCw className={pending ? "animate-spin" : ""} />
-        {pending ? "Syncing…" : "Refresh segments"}
+        {pending ? "Refreshing…" : "Refresh"}
       </Button>
       {message ? (
         <span className="text-xs text-muted-foreground">{message}</span>

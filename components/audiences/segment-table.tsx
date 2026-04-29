@@ -47,7 +47,8 @@ export function SegmentTable({
   if (rows.length === 0) {
     return (
       <div className="text-sm text-muted-foreground py-6 text-center">
-        No segments match your filters. Adjust search or hit Refresh segments.
+        No segments match your filters. Adjust search, or click "Add segment"
+        to bring an AudienceLab segment ID into this workspace.
       </div>
     );
   }

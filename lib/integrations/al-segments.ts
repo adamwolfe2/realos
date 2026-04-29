@@ -182,6 +182,70 @@ export async function listAlSegments(
   return { ok: true, data: segments.filter((s) => s.id) };
 }
 
+// Validate that a segment ID exists and is reachable with the current key.
+// AL doesn't expose a "GET /segments/{id}/metadata" endpoint, so we hit the
+// members endpoint with page_size=1 and use the response shape as proof of
+// life. Returns the first member's raw payload for downstream metadata
+// inference (top_states, email_match_rate, etc. if AL surfaces them at the
+// segment level via top-level json keys).
+export type AlSegmentValidation = {
+  segmentId: string;
+  reachable: true;
+  hasMembers: boolean;
+  // Top-level response keys other than the items array — sometimes AL puts
+  // segment metadata here (name, total, schema). Caller can pluck what's
+  // useful and store as the cached rawPayload.
+  meta: Record<string, unknown>;
+};
+
+export async function validateAlSegmentId(
+  segmentId: string,
+  options: { apiKey?: string } = {},
+): Promise<AlResult<AlSegmentValidation>> {
+  const apiKey = resolveApiKey(options.apiKey);
+  if (!apiKey) {
+    return {
+      ok: false,
+      status: 500,
+      message: "AudienceLab API key not configured.",
+    };
+  }
+  const res = await alFetch(
+    `/segments/${encodeURIComponent(segmentId)}?page=1&page_size=1`,
+    apiKey,
+  );
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    return {
+      ok: false,
+      status: res.status,
+      message:
+        res.status === 404
+          ? `Segment "${segmentId}" not found in AudienceLab. Double-check the ID.`
+          : res.status === 401 || res.status === 403
+            ? `AudienceLab rejected the API key for this segment (${res.status}).`
+            : `Segment validation failed (${res.status}): ${body.slice(0, 200)}`,
+    };
+  }
+  const json = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+  const items = extractItems(json);
+  // Strip the items array from meta to keep the cached payload small.
+  const meta: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(json)) {
+    if (Array.isArray(v)) continue;
+    meta[k] = v;
+  }
+  return {
+    ok: true,
+    data: {
+      segmentId,
+      reachable: true,
+      hasMembers: items.length > 0,
+      meta,
+    },
+  };
+}
+
 export type AlSegmentMembersOptions = {
   apiKey?: string;
   page?: number;
