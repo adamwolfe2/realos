@@ -24,7 +24,19 @@ export default async function PropertiesList() {
       <PageHeader
         title="Properties"
         description="Listings, leads, and tours for every property in your portfolio."
-        actions={<PropertyFormDialog />}
+        actions={
+          <div className="flex items-center gap-2">
+            {properties.length >= 2 ? (
+              <Link
+                href="/portal/properties/compare"
+                className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted"
+              >
+                Compare
+              </Link>
+            ) : null}
+            <PropertyFormDialog />
+          </div>
+        }
       />
 
       {properties.length === 0 ? (

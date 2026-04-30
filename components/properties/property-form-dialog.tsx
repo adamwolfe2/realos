@@ -7,6 +7,7 @@ import {
   CommercialSubtype,
 } from "@prisma/client";
 import { createProperty, updateProperty } from "@/lib/actions/properties";
+import { ImageUploader } from "@/components/ui/upload/image-uploader";
 
 type EditableProperty = {
   id?: string;
@@ -268,12 +269,18 @@ export function PropertyFormDialog({
                 </div>
               </fieldset>
 
-              <Field
-                label="Hero image URL"
-                value={data.heroImageUrl ?? ""}
-                onChange={(v) => set("heroImageUrl", v || null)}
-                type="url"
-              />
+              <div>
+                <label className="block text-xs font-medium text-foreground mb-1.5">
+                  Hero image
+                </label>
+                <ImageUploader
+                  value={data.heroImageUrl}
+                  onChange={(url) => set("heroImageUrl", url)}
+                  label="Upload property hero image"
+                  alt="Property hero"
+                  preview="wide"
+                />
+              </div>
               <Field
                 label="Virtual tour URL"
                 value={data.virtualTourUrl ?? ""}

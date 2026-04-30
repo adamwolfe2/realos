@@ -44,6 +44,7 @@ export async function GET(req: NextRequest) {
           firstName: lead.firstName,
           propertyName: lead.property.name,
           googleReviewUrl: lead.property.googleReviewUrl,
+          leadId: lead.id,
         });
         await prisma.lead.update({
           where: { id: lead.id },

@@ -23,6 +23,9 @@ import { buildTimeline } from "@/components/portal/leads/timeline-events";
 import { EnrichmentCard, SidebarCard } from "@/components/portal/leads/enrichment-card";
 import { CopyButton } from "@/components/portal/leads/copy-button";
 import { LeadEmailComposer } from "@/components/portal/leads/email-composer";
+import { ReviewRequestButton } from "@/components/portal/leads/review-request-button";
+import { LeadSmsComposer } from "@/components/portal/leads/sms-composer";
+import { isSmsConfigured } from "@/lib/sms/twilio";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 import { MarkLostButton } from "./mark-lost-button";
 
@@ -45,7 +48,9 @@ export default async function LeadDetailPage({
   const lead = await prisma.lead.findFirst({
     where: { id, ...tenantWhere(scope) },
     include: {
-      property: { select: { id: true, name: true } },
+      property: {
+        select: { id: true, name: true, googleReviewUrl: true },
+      },
       tours: { orderBy: { scheduledAt: "desc" } },
       applications: { orderBy: { createdAt: "desc" } },
       conversations: {
@@ -181,6 +186,11 @@ export default async function LeadDetailPage({
             defaultSubject={`Following up on your interest in ${
               lead.property?.name ?? "our properties"
             }`}
+          />
+          <LeadSmsComposer
+            leadId={lead.id}
+            to={lead.phone}
+            smsEnabled={isSmsConfigured()}
           />
         </div>
       </div>
@@ -387,6 +397,17 @@ export default async function LeadDetailPage({
                 href={lead.phone ? `tel:${lead.phone}` : null}
                 label="Call"
                 icon={<Phone className="h-3.5 w-3.5" />}
+              />
+              <ReviewRequestButton
+                leadId={lead.id}
+                alreadySentAt={
+                  lead.reviewRequestSentAt
+                    ? lead.reviewRequestSentAt.toISOString()
+                    : null
+                }
+                hasEmail={Boolean(lead.email)}
+                hasReviewUrl={Boolean(lead.property?.googleReviewUrl)}
+                unsubscribed={lead.unsubscribedFromEmails}
               />
               <MarkLostButton leadId={lead.id} />
             </div>

@@ -7,6 +7,7 @@ import {
   MessageCircle,
   Radar,
   Sparkles,
+  Star,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -72,6 +73,8 @@ function iconFor(event: TimelineEvent): IconConfig {
       return { icon: FileText, tone: "default" };
     case "status_signed":
       return { icon: CheckCircle2, tone: "success" };
+    case "review_request_sent":
+      return { icon: Star, tone: "accent" };
   }
 }
 
@@ -274,6 +277,18 @@ function renderBody(event: TimelineEvent): React.ReactNode {
           </p>
           <p className="mt-0.5 text-xs text-muted-foreground">
             {timeLabel(event.ts)}
+          </p>
+        </>
+      );
+    case "review_request_sent":
+      return (
+        <>
+          <p className="text-sm text-foreground">
+            <span className="font-medium">Review request sent</span>{" "}
+            <span className="text-muted-foreground">— Google review email</span>
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {timeLabel(event.ts)} · {exactTime(event.ts)}
           </p>
         </>
       );

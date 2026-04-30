@@ -71,6 +71,11 @@ export type TimelineEvent =
       kind: "status_signed";
       id: string;
       ts: Date;
+    }
+  | {
+      kind: "review_request_sent";
+      id: string;
+      ts: Date;
     };
 
 export type ChatbotConversationLite = Pick<
@@ -244,6 +249,15 @@ export function buildTimeline(lead: LeadWithLinks): TimelineEvent[] {
       kind: "status_signed",
       id: `signed-${lead.id}`,
       ts: lead.convertedAt,
+    });
+  }
+
+  // Review request sent (manual or auto via cron)
+  if (lead.reviewRequestSentAt) {
+    events.push({
+      kind: "review_request_sent",
+      id: `review-${lead.id}`,
+      ts: lead.reviewRequestSentAt,
     });
   }
 

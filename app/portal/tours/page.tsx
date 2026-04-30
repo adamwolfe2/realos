@@ -252,31 +252,42 @@ export default async function ToursPage() {
                     <ul className="space-y-1.5">
                       {items.map((t) => (
                         <li key={t.id}>
-                          <Link
-                            href={`/portal/leads/${t.lead.id}`}
-                            className="block rounded-md border border-border bg-card hover:border-primary/40 hover:bg-muted/40 px-2 py-1.5 transition-colors"
-                          >
-                            <div className="flex items-center justify-between gap-1.5">
-                              <span className="text-[10px] font-semibold text-foreground tabular-nums">
-                                {t.scheduledAt
-                                  ? format(t.scheduledAt, "h:mma").toLowerCase()
-                                  : "—"}
-                              </span>
-                              <span
-                                className={`text-[9px] font-semibold uppercase tracking-wider px-1 rounded ${STATUS_TONE[t.status]}`}
+                          <div className="rounded-md border border-border bg-card hover:border-primary/40 hover:bg-muted/40 transition-colors">
+                            <Link
+                              href={`/portal/leads/${t.lead.id}`}
+                              className="block px-2 pt-1.5 pb-1"
+                            >
+                              <div className="flex items-center justify-between gap-1.5">
+                                <span className="text-[10px] font-semibold text-foreground tabular-nums">
+                                  {t.scheduledAt
+                                    ? format(t.scheduledAt, "h:mma").toLowerCase()
+                                    : "—"}
+                                </span>
+                                <span
+                                  className={`text-[9px] font-semibold uppercase tracking-wider px-1 rounded ${STATUS_TONE[t.status]}`}
+                                >
+                                  {STATUS_LABEL[t.status]}
+                                </span>
+                              </div>
+                              <p className="text-[11px] font-medium text-foreground truncate mt-0.5">
+                                {[t.lead.firstName, t.lead.lastName]
+                                  .filter(Boolean)
+                                  .join(" ") || t.lead.email || "Anonymous"}
+                              </p>
+                              <p className="text-[10px] text-muted-foreground truncate">
+                                {t.property.name}
+                              </p>
+                            </Link>
+                            {t.scheduledAt ? (
+                              <a
+                                href={`/api/tenant/tours/${t.id}/ics`}
+                                className="block px-2 py-1 border-t border-border text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                                title="Download .ics calendar event"
                               >
-                                {STATUS_LABEL[t.status]}
-                              </span>
-                            </div>
-                            <p className="text-[11px] font-medium text-foreground truncate mt-0.5">
-                              {[t.lead.firstName, t.lead.lastName]
-                                .filter(Boolean)
-                                .join(" ") || t.lead.email || "Anonymous"}
-                            </p>
-                            <p className="text-[10px] text-muted-foreground truncate">
-                              {t.property.name}
-                            </p>
-                          </Link>
+                                Add to calendar
+                              </a>
+                            ) : null}
+                          </div>
                         </li>
                       ))}
                     </ul>
