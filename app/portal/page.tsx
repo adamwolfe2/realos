@@ -17,6 +17,7 @@ import {
   MessageSquare,
   Building2,
   AlertTriangle,
+  ClipboardList,
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -100,6 +101,8 @@ export default async function PortalHome({
     toursScheduled,
     toursPrev28d,
     applicationsSubmitted28d,
+    applicationsAwaitingReview,
+    toursRequestedCount,
     properties,
     hotVisitors,
     adSpend,
@@ -159,6 +162,18 @@ export default async function PortalHome({
         lead: where,
         createdAt: { gte: since28d },
       },
+    }),
+    prisma.application.count({
+      where: {
+        lead: where,
+        OR: [
+          { status: ApplicationStatus.SUBMITTED },
+          { status: ApplicationStatus.UNDER_REVIEW },
+        ],
+      },
+    }),
+    prisma.tour.count({
+      where: { lead: where, status: TourStatus.REQUESTED },
     }),
     prisma.property.findMany({
       where,
@@ -693,6 +708,9 @@ export default async function PortalHome({
                       leads28d: 0,
                       leadsSpark: new Array<number>(28).fill(0),
                       activeCampaigns: 0,
+                      reputationMentionCount: 0,
+                      reputationNegativeCount: 0,
+                      reputationUnreviewedCount: 0,
                     };
                     const address = [p.addressLine1, p.city, p.state]
                       .filter(Boolean)
@@ -716,6 +734,9 @@ export default async function PortalHome({
                         leadsSpark={metrics.leadsSpark}
                         activeCampaigns={metrics.activeCampaigns}
                         accent={org?.primaryColor ?? undefined}
+                        reputationMentionCount={metrics.reputationMentionCount}
+                        reputationNegativeCount={metrics.reputationNegativeCount}
+                        reputationUnreviewedCount={metrics.reputationUnreviewedCount}
                       />
                     );
                   })}
@@ -757,6 +778,36 @@ export default async function PortalHome({
                   reputationSummary.unreviewedCount > 0
                     ? reputationSummary.unreviewedCount
                     : null
+                }
+              />
+              <QuickAccessTile
+                href="/portal/tours"
+                label="Tours"
+                icon={<CalendarCheck className="h-4 w-4" />}
+                meta={
+                  toursScheduled > 0
+                    ? `${toursScheduled} scheduled`
+                    : "Calendar + pipeline"
+                }
+                badge={toursRequestedCount > 0 ? toursRequestedCount : null}
+                badgeTone={toursRequestedCount > 0 ? "rose" : undefined}
+              />
+              <QuickAccessTile
+                href="/portal/applications"
+                label="Applications"
+                icon={<ClipboardList className="h-4 w-4" />}
+                meta={
+                  applicationsSubmitted28d > 0
+                    ? `${applicationsSubmitted28d} this month`
+                    : "Pipeline"
+                }
+                badge={
+                  applicationsAwaitingReview > 0
+                    ? applicationsAwaitingReview
+                    : null
+                }
+                badgeTone={
+                  applicationsAwaitingReview > 0 ? "rose" : undefined
                 }
               />
               <QuickAccessTile

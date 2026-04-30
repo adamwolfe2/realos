@@ -10,6 +10,7 @@ import { deriveSetupProgress } from "@/lib/setup/derive-progress";
 import Image from "next/image";
 import Link from "next/link";
 import { NotificationBell } from "@/components/portal/notification-bell";
+import { CmdKSearch } from "@/components/portal/search/cmdk-search";
 import { BugReportButton } from "@/components/feedback/bug-report-button";
 
 export const metadata: Metadata = {
@@ -135,9 +136,16 @@ export default async function PortalLayout({
         <PortalNav org={navOrg} />
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto bg-background"
+          className="flex-1 overflow-y-auto bg-background flex flex-col"
         >
-          <div className="p-4 pb-20 md:p-6 md:pb-10">{children}</div>
+          {/* Desktop top utility bar — search + notifications. Search button
+              hidden on mobile (Cmd+K still works); mobile already has its
+              own top bar above. */}
+          <div className="hidden md:flex shrink-0 h-12 items-center justify-end gap-2 px-6 border-b border-border bg-card/40">
+            <CmdKSearch />
+            <NotificationBell />
+          </div>
+          <div className="flex-1 p-4 pb-20 md:p-6 md:pb-10">{children}</div>
         </main>
       </div>
 

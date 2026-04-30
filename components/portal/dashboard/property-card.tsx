@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { Building2, MapPin, Megaphone } from "lucide-react";
+import { Building2, MapPin, Megaphone, Star, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type PropertyDashboardCardProps = {
@@ -13,6 +13,9 @@ export type PropertyDashboardCardProps = {
   leadsSpark: number[];
   activeCampaigns: number;
   accent?: string;
+  reputationMentionCount?: number;
+  reputationNegativeCount?: number;
+  reputationUnreviewedCount?: number;
 };
 
 export function PropertyDashboardCard({
@@ -25,16 +28,22 @@ export function PropertyDashboardCard({
   leadsSpark,
   activeCampaigns,
   accent,
+  reputationMentionCount = 0,
+  reputationNegativeCount = 0,
+  reputationUnreviewedCount = 0,
 }: PropertyDashboardCardProps) {
   return (
-    <Link
-      href={`/portal/properties/${id}`}
+    <div
       className={cn(
-        "group relative block rounded-md border border-border bg-card overflow-hidden",
+        "group relative rounded-md border border-border bg-card overflow-hidden",
         "transition-all duration-150 hover:border-primary/30 hover:shadow-sm",
       )}
     >
-      <div className="flex items-center">
+      {/* Primary clickable card body — opens property detail */}
+      <Link
+        href={`/portal/properties/${id}`}
+        className="flex items-center"
+      >
         <Thumbnail src={thumbnailUrl} fallbackLetter={name.slice(0, 1)} accent={accent} />
         <div className="flex-1 min-w-0 px-3 py-2.5">
           <div className="flex items-center justify-between gap-2">
@@ -63,8 +72,48 @@ export function PropertyDashboardCard({
             </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+
+      {/* Footer strip: ad campaigns + reputation. Each piece is its own
+          link that drills into the right per-property tab — gives the
+          dashboard direct access to per-property sub-pages. */}
+      {(activeCampaigns > 0 || reputationMentionCount > 0) ? (
+        <div className="border-t border-border bg-muted/20 px-3 py-1.5 flex items-center gap-2 text-[10px]">
+          {activeCampaigns > 0 ? (
+            <Link
+              href={`/portal/properties/${id}?tab=ads`}
+              className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+            >
+              <Megaphone className="h-2.5 w-2.5" />
+              <span>{activeCampaigns} active</span>
+            </Link>
+          ) : null}
+          {activeCampaigns > 0 && reputationMentionCount > 0 ? (
+            <span aria-hidden="true" className="text-muted-foreground">·</span>
+          ) : null}
+          {reputationMentionCount > 0 ? (
+            <Link
+              href={`/portal/properties/${id}?tab=reputation`}
+              className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+            >
+              <Star className="h-2.5 w-2.5" />
+              <span>
+                {reputationMentionCount}
+                {reputationNegativeCount > 0
+                  ? ` · ${reputationNegativeCount} neg`
+                  : ""}
+              </span>
+              {reputationUnreviewedCount > 0 ? (
+                <span className="inline-flex items-center gap-0.5 text-amber-700">
+                  <AlertTriangle className="h-2.5 w-2.5" />
+                  {reputationUnreviewedCount}
+                </span>
+              ) : null}
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+    </div>
   );
 }
 

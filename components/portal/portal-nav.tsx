@@ -30,6 +30,7 @@ import {
   History,
   Calendar,
   Star,
+  ClipboardList,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -117,6 +118,8 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/portal/properties", label: "Properties", icon: Building2, show: ALWAYS },
       { href: "/portal/leads", label: "Leads", icon: Users, show: ALWAYS },
+      { href: "/portal/tours", label: "Tours", icon: Calendar, show: ALWAYS },
+      { href: "/portal/applications", label: "Applications", icon: ClipboardList, show: ALWAYS },
       {
         href: "/portal/visitors",
         label: "Visitors",

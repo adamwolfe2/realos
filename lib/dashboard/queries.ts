@@ -256,6 +256,11 @@ export type PropertyMetrics = {
   leads28d: number;
   leadsSpark: number[];
   activeCampaigns: number;
+  // Reputation roll-up so the dashboard property card can surface review
+  // health without needing a second fetch round-trip.
+  reputationMentionCount: number;
+  reputationNegativeCount: number;
+  reputationUnreviewedCount: number;
 };
 
 export async function getPropertyMetrics(
@@ -267,7 +272,14 @@ export async function getPropertyMetrics(
 
   const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
 
-  const [leadGroups, campaignGroups, allLeadDates] = await Promise.all([
+  const [
+    leadGroups,
+    campaignGroups,
+    allLeadDates,
+    mentionTotals,
+    mentionNegative,
+    mentionUnreviewed,
+  ] = await Promise.all([
     prisma.lead.groupBy({
       by: ["propertyId"],
       where: {
@@ -294,6 +306,29 @@ export async function getPropertyMetrics(
       },
       select: { propertyId: true, createdAt: true },
     }),
+    prisma.propertyMention.groupBy({
+      by: ["propertyId"],
+      where: { orgId, propertyId: { in: propertyIds } },
+      _count: { _all: true },
+    }),
+    prisma.propertyMention.groupBy({
+      by: ["propertyId"],
+      where: {
+        orgId,
+        propertyId: { in: propertyIds },
+        sentiment: "NEGATIVE",
+      },
+      _count: { _all: true },
+    }),
+    prisma.propertyMention.groupBy({
+      by: ["propertyId"],
+      where: {
+        orgId,
+        propertyId: { in: propertyIds },
+        reviewedByUserId: null,
+      },
+      _count: { _all: true },
+    }),
   ]);
 
   const leadCountByProp = new Map<string, number>();
@@ -317,11 +352,27 @@ export async function getPropertyMetrics(
     sparkByProp.set(row.propertyId, arr);
   }
 
+  const mentionTotalByProp = new Map<string, number>();
+  for (const row of mentionTotals) {
+    mentionTotalByProp.set(row.propertyId, row._count._all);
+  }
+  const mentionNegativeByProp = new Map<string, number>();
+  for (const row of mentionNegative) {
+    mentionNegativeByProp.set(row.propertyId, row._count._all);
+  }
+  const mentionUnreviewedByProp = new Map<string, number>();
+  for (const row of mentionUnreviewed) {
+    mentionUnreviewedByProp.set(row.propertyId, row._count._all);
+  }
+
   for (const id of propertyIds) {
     out.set(id, {
       leads28d: leadCountByProp.get(id) ?? 0,
       leadsSpark: sparkByProp.get(id) ?? new Array<number>(WINDOW_DAYS).fill(0),
       activeCampaigns: campaignCountByProp.get(id) ?? 0,
+      reputationMentionCount: mentionTotalByProp.get(id) ?? 0,
+      reputationNegativeCount: mentionNegativeByProp.get(id) ?? 0,
+      reputationUnreviewedCount: mentionUnreviewedByProp.get(id) ?? 0,
     });
   }
 
