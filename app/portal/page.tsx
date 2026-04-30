@@ -18,6 +18,9 @@ import {
   Building2,
   AlertTriangle,
   ClipboardList,
+  Wrench,
+  Home,
+  CalendarClock,
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -25,8 +28,12 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   ApplicationStatus,
   LeadStatus,
+  LeaseStatus,
   ProductLine,
+  ResidentStatus,
   TourStatus,
+  WorkOrderStatus,
+  WorkOrderPriority,
 } from "@prisma/client";
 import { SetupBanner } from "@/components/portal/setup/setup-banner";
 import { SetupWizardGate } from "@/components/portal/onboarding/setup-wizard-gate";
@@ -121,6 +128,14 @@ export default async function PortalHome({
     reputationSummary,
     chatbotSummary,
     orgModules,
+    rentRollSum,
+    activeResidentsCount,
+    noticeGivenCount,
+    leasesExpiring120dCount,
+    pastDueLeasesCount,
+    pastDueBalance,
+    openWorkOrdersCount,
+    urgentWorkOrdersCount,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -219,6 +234,54 @@ export default async function PortalHome({
         bringYourOwnSite: true,
       },
     }),
+    // AppFolio mirror metrics
+    prisma.lease.aggregate({
+      where: { ...where, status: LeaseStatus.ACTIVE },
+      _sum: { monthlyRentCents: true },
+    }),
+    prisma.resident.count({
+      where: { ...where, status: ResidentStatus.ACTIVE },
+    }),
+    prisma.resident.count({
+      where: { ...where, status: ResidentStatus.NOTICE_GIVEN },
+    }),
+    prisma.lease.count({
+      where: {
+        ...where,
+        status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
+        endDate: {
+          gte: new Date(),
+          lte: new Date(Date.now() + 120 * DAY),
+        },
+      },
+    }),
+    prisma.lease.count({
+      where: { ...where, isPastDue: true },
+    }),
+    prisma.lease.aggregate({
+      where: { ...where, isPastDue: true },
+      _sum: { currentBalanceCents: true },
+    }),
+    prisma.workOrder.count({
+      where: {
+        ...where,
+        status: {
+          in: [
+            WorkOrderStatus.NEW,
+            WorkOrderStatus.SCHEDULED,
+            WorkOrderStatus.IN_PROGRESS,
+            WorkOrderStatus.ON_HOLD,
+          ],
+        },
+      },
+    }),
+    prisma.workOrder.count({
+      where: {
+        ...where,
+        priority: WorkOrderPriority.URGENT,
+        status: { not: WorkOrderStatus.COMPLETED },
+      },
+    }),
   ]);
 
   // 28d leads + active campaigns + sparkline per property.
@@ -252,6 +315,17 @@ export default async function PortalHome({
       totalLeadsSpark[i] += m.leadsSpark[i];
     }
   }
+
+  // Format helper for AppFolio rent roll display
+  const rentRollMonthly = rentRollSum._sum.monthlyRentCents ?? 0;
+  const rentRollMonthlyDisplay =
+    rentRollMonthly > 0
+      ? `$${(rentRollMonthly / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+      : "—";
+  const pastDueDisplay =
+    (pastDueBalance._sum.currentBalanceCents ?? 0) > 0
+      ? `$${((pastDueBalance._sum.currentBalanceCents ?? 0) / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+      : null;
 
   // Portfolio occupancy: weighted by units. Some properties may not have
   // unit-count metadata yet, so we filter to those that do for accuracy.
@@ -326,6 +400,60 @@ export default async function PortalHome({
       <SetupWizardGate shouldShow={showFirstRun} steps={wizardSteps} />
 
       <SetupBanner forceShow={forceShowSetup} />
+
+      {/* Past-due lease alert — surfaces from AppFolio delinquency. Operator
+          should already see this in AppFolio, but the dashboard makes it
+          impossible to miss before they open the other tab. */}
+      {pastDueLeasesCount > 0 ? (
+        <Link
+          href="/portal/renewals"
+          className="flex items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 hover:bg-rose-100 transition-colors group"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <AlertTriangle className="h-4 w-4 text-rose-700 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-rose-900 truncate">
+                {pastDueLeasesCount.toLocaleString()} past-due
+                {" "}
+                {pastDueLeasesCount === 1 ? "lease" : "leases"}
+                {pastDueDisplay ? ` · ${pastDueDisplay} owed` : ""}
+              </p>
+              <p className="text-[11px] text-rose-800">
+                From AppFolio delinquency report. Open Renewals to review.
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-medium text-rose-900 group-hover:text-rose-950 whitespace-nowrap">
+            Review →
+          </span>
+        </Link>
+      ) : null}
+
+      {/* Urgent open work-order alert. Don't surface unless we've actually
+          synced any work orders (avoids empty noise on first install). */}
+      {urgentWorkOrdersCount > 0 ? (
+        <Link
+          href="/portal/work-orders"
+          className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 hover:bg-amber-100 transition-colors group"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <Wrench className="h-4 w-4 text-amber-700 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-amber-900 truncate">
+                {urgentWorkOrdersCount.toLocaleString()} urgent work
+                {" "}
+                {urgentWorkOrdersCount === 1 ? "order" : "orders"} open
+              </p>
+              <p className="text-[11px] text-amber-800">
+                Stop-the-bleed maintenance tickets. Source of truth: AppFolio.
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-medium text-amber-900 group-hover:text-amber-950 whitespace-nowrap">
+            Review →
+          </span>
+        </Link>
+      ) : null}
 
       {/* Unreviewed reputation alert — surfaces buried action items.
           Reputation Scanner used to be hidden in property detail tabs. This
@@ -637,6 +765,70 @@ export default async function PortalHome({
             </DashboardSection>
           </section>
 
+          {/* AppFolio mirror strip — rent roll, residents, renewals, work
+              orders. AppFolio remains source of truth; we surface the
+              numbers so operators don't have to leave the dashboard. */}
+          {(rentRollMonthly > 0 ||
+            activeResidentsCount > 0 ||
+            openWorkOrdersCount > 0) ? (
+            <section
+              aria-label="AppFolio mirror"
+              className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3"
+            >
+              <KpiTile
+                label="Monthly rent roll"
+                value={rentRollMonthlyDisplay}
+                hint={`From ${activeResidentsCount.toLocaleString()} active leases`}
+                icon={<DollarSign className="h-3.5 w-3.5" />}
+                href="/portal/renewals"
+              />
+              <KpiTile
+                label="Active residents"
+                value={activeResidentsCount.toLocaleString()}
+                hint="Mirrored from AppFolio"
+                icon={<Home className="h-3.5 w-3.5" />}
+                href="/portal/residents"
+              />
+              <KpiTile
+                label="Notice given"
+                value={noticeGivenCount.toLocaleString()}
+                hint="Coming open soon"
+                icon={<AlertTriangle className="h-3.5 w-3.5" />}
+                href="/portal/residents?status=NOTICE_GIVEN"
+              />
+              <KpiTile
+                label="Expiring (120d)"
+                value={leasesExpiring120dCount.toLocaleString()}
+                hint="Need renewal action"
+                icon={<CalendarClock className="h-3.5 w-3.5" />}
+                href="/portal/renewals"
+              />
+              <KpiTile
+                label="Open work orders"
+                value={openWorkOrdersCount.toLocaleString()}
+                hint={
+                  urgentWorkOrdersCount > 0
+                    ? `${urgentWorkOrdersCount} urgent`
+                    : "Maintenance queue"
+                }
+                icon={<Wrench className="h-3.5 w-3.5" />}
+                href="/portal/work-orders"
+                delta={
+                  urgentWorkOrdersCount > 0
+                    ? { value: `${urgentWorkOrdersCount} urgent`, trend: "down" }
+                    : undefined
+                }
+              />
+              <KpiTile
+                label="Past-due leases"
+                value={pastDueLeasesCount.toLocaleString()}
+                hint={pastDueDisplay ? `${pastDueDisplay} owed` : "All current"}
+                icon={<AlertTriangle className="h-3.5 w-3.5" />}
+                href="/portal/renewals"
+              />
+            </section>
+          ) : null}
+
           {/* Portfolio summary strip — occupancy + total units + active
               campaigns. Sized between KPIs and property cards so it visually
               ties them together. */}
@@ -809,6 +1001,45 @@ export default async function PortalHome({
                 badgeTone={
                   applicationsAwaitingReview > 0 ? "rose" : undefined
                 }
+              />
+              <QuickAccessTile
+                href="/portal/residents"
+                label="Residents"
+                icon={<Home className="h-4 w-4" />}
+                meta={
+                  activeResidentsCount > 0
+                    ? `${activeResidentsCount} active`
+                    : "AppFolio mirror"
+                }
+                badge={noticeGivenCount > 0 ? noticeGivenCount : null}
+              />
+              <QuickAccessTile
+                href="/portal/renewals"
+                label="Renewals"
+                icon={<CalendarClock className="h-4 w-4" />}
+                meta={
+                  leasesExpiring120dCount > 0
+                    ? `${leasesExpiring120dCount} expiring`
+                    : "Lease pipeline"
+                }
+                badge={
+                  pastDueLeasesCount > 0 ? pastDueLeasesCount : null
+                }
+                badgeTone={pastDueLeasesCount > 0 ? "rose" : undefined}
+              />
+              <QuickAccessTile
+                href="/portal/work-orders"
+                label="Work orders"
+                icon={<Wrench className="h-4 w-4" />}
+                meta={
+                  openWorkOrdersCount > 0
+                    ? `${openWorkOrdersCount} open`
+                    : "Maintenance"
+                }
+                badge={
+                  urgentWorkOrdersCount > 0 ? urgentWorkOrdersCount : null
+                }
+                badgeTone={urgentWorkOrdersCount > 0 ? "rose" : undefined}
               />
               <QuickAccessTile
                 href="/portal/briefing"

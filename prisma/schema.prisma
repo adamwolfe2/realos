@@ -355,6 +355,9 @@ model Organization {
   audienceDestinations   AudienceDestination[]
   audienceSyncRuns       AudienceSyncRun[]
   audienceSchedules      AudienceSyncSchedule[]
+  residents              Resident[]
+  leases                 Lease[]
+  workOrders             WorkOrder[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -572,6 +575,9 @@ model Property {
   insights             Insight[]
   reputationScans      ReputationScan[]
   reputationMentions   PropertyMention[]
+  residents            Resident[]
+  leases               Lease[]
+  workOrders           WorkOrder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -608,6 +614,11 @@ model Listing {
   description String? @db.Text
 
   raw Json? // Raw payload from backend
+
+  // AppFolio mirrors keyed off the unit
+  residents  Resident[]
+  leases     Lease[]
+  workOrders WorkOrder[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -674,6 +685,7 @@ model Lead {
   conversations ChatbotConversation[]
   tours         Tour[]
   applications  Application[]
+  residents     Resident[]
 
   // Ownership
   assignedToUserId String?
@@ -750,6 +762,203 @@ model Application {
 
   @@index([leadId])
   @@index([propertyId, status])
+}
+
+// ============================================================================
+// APPFOLIO MIRRORED ENTITIES — Residents, Leases, Work Orders
+//
+// AppFolio remains the source of truth for everything below. We mirror only
+// what we need to surface in the operator dashboard (renewal pipeline,
+// vacancy forecasting, property health). Every row carries `externalSystem`
+// + `externalId` for idempotent upsert and `raw` JSON for the original
+// payload so we can evolve our normalization without re-syncing.
+// ============================================================================
+
+enum ResidentStatus {
+  ACTIVE
+  PAST
+  NOTICE_GIVEN
+  EVICTED
+  APPLICANT
+}
+
+model Resident {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Optional link to the listing (unit) the resident occupies. Nullable
+  // because AppFolio rows occasionally lack the Unit join key.
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  // Optional bridge to a Lead row when we can match by email.
+  leadId String?
+  lead   Lead?   @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  // Identity
+  firstName String?
+  lastName  String?
+  email     String?
+  phone     String?
+
+  status ResidentStatus @default(ACTIVE)
+
+  // Lease summary (denormalized so we can sort by lease end without
+  // hopping). Kept in sync with the Lease row.
+  currentLeaseId   String?  @unique
+  currentLease     Lease?   @relation("CurrentLease", fields: [currentLeaseId], references: [id], onDelete: SetNull)
+  unitNumber       String?
+  moveInDate       DateTime?
+  moveOutDate      DateTime?
+  noticeGivenDate  DateTime?
+  monthlyRentCents Int?
+
+  externalSystem String? // "appfolio"
+  externalId     String? // AppFolio occupancyId / tenantId
+
+  raw Json?
+
+  leases     Lease[]
+  workOrders WorkOrder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, externalSystem, externalId])
+  @@index([orgId, status])
+  @@index([propertyId, status])
+  @@index([email])
+  @@index([moveOutDate])
+}
+
+enum LeaseStatus {
+  PENDING
+  ACTIVE
+  EXPIRING
+  RENEWED
+  ENDED
+  EVICTED
+}
+
+model Lease {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  residentId String?
+  resident   Resident? @relation(fields: [residentId], references: [id], onDelete: SetNull)
+
+  status LeaseStatus @default(ACTIVE)
+
+  startDate         DateTime?
+  endDate           DateTime?
+  monthlyRentCents  Int?
+  securityDepositCents Int?
+  termMonths        Int?
+
+  // Renewal / decision tracking — driven by AppFolio updates and
+  // operator action.
+  renewalSentAt    DateTime?
+  renewalDecision  String? // "accepted", "declined", "negotiating"
+  noticeGivenAt    DateTime?
+
+  // Delinquency snapshot (from delinquency report)
+  currentBalanceCents Int? @default(0)
+  isPastDue           Boolean @default(false)
+  pastDueAsOf         DateTime?
+
+  externalSystem String?
+  externalId     String?
+
+  raw Json?
+
+  // Inverse relation back-pointer for Resident.currentLeaseId
+  currentForResident Resident? @relation("CurrentLease")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, externalSystem, externalId])
+  @@index([orgId, status])
+  @@index([propertyId, status])
+  @@index([endDate])
+  @@index([isPastDue, currentBalanceCents])
+}
+
+enum WorkOrderStatus {
+  NEW
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum WorkOrderPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+model WorkOrder {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  listingId String?
+  listing   Listing? @relation(fields: [listingId], references: [id], onDelete: SetNull)
+
+  residentId String?
+  resident   Resident? @relation(fields: [residentId], references: [id], onDelete: SetNull)
+
+  // The AppFolio work order number ("WO-2024-1138")
+  workOrderNumber String?
+
+  status   WorkOrderStatus   @default(NEW)
+  priority WorkOrderPriority @default(NORMAL)
+
+  category    String? // "Plumbing", "HVAC", "Appliance", etc.
+  title       String?
+  description String? @db.Text
+  unitNumber  String?
+
+  vendorName  String?
+  vendorEmail String?
+
+  reportedAt   DateTime?
+  scheduledFor DateTime?
+  completedAt  DateTime?
+
+  estimatedCostCents Int?
+  actualCostCents    Int?
+
+  externalSystem String?
+  externalId     String?
+
+  raw Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, externalSystem, externalId])
+  @@index([orgId, status])
+  @@index([propertyId, status, priority])
+  @@index([reportedAt])
+  @@index([completedAt])
 }
 
 // ============================================================================

@@ -12,8 +12,16 @@ import {
   mapLeadPayload,
   mapListingPayload,
   mapTenantPayload,
+  mapResidentPayload,
+  mapLeasePayload,
+  mapDelinquencyPayload,
+  mapWorkOrderPayload,
+  mapPropertyPayload,
   type MappedLead,
   type MappedTenant,
+  type MappedResident,
+  type MappedLease,
+  type MappedWorkOrder,
 } from "./appfolio";
 
 // ---------------------------------------------------------------------------
@@ -51,6 +59,12 @@ export type AppfolioSyncStats = {
   toursUpserted: number;
   tenantsMatched: number;
   listingsUpserted: number;
+  // New phases
+  propertiesUpserted: number;
+  residentsUpserted: number;
+  leasesUpserted: number;
+  workOrdersUpserted: number;
+  delinquenciesUpdated: number;
   warnings: string[];
 };
 
@@ -69,6 +83,11 @@ export async function runAppfolioSync(
     toursUpserted: 0,
     tenantsMatched: 0,
     listingsUpserted: 0,
+    propertiesUpserted: 0,
+    residentsUpserted: 0,
+    leasesUpserted: 0,
+    workOrdersUpserted: 0,
+    delinquenciesUpdated: 0,
     warnings: [],
   };
 
@@ -149,7 +168,7 @@ export async function runAppfolioSync(
   // partial failure doesn't shrink the failed phase's window forever on
   // subsequent incremental syncs.
   let phasesCompleted = 0;
-  const totalPhases = 3;
+  const totalPhases = 8;
 
   // 1. LEADS — AppFolio v2 report: guest_cards
   try {
@@ -280,6 +299,210 @@ export async function runAppfolioSync(
     topLevelError = topLevelError ?? `listings: ${message}`;
   }
 
+  // Listing-by-external-id map for downstream phases that need to bridge
+  // unit_id → local Listing.id. Built once after listings are upserted.
+  const listings = await prisma.listing.findMany({
+    where: { propertyId: { in: properties.map((p) => p.id) } },
+    select: { id: true, propertyId: true, backendListingId: true },
+  });
+  const listingByExternalId = new Map<string, string>();
+  for (const l of listings) {
+    if (l.backendListingId) listingByExternalId.set(l.backendListingId, l.id);
+  }
+
+  // 4. PROPERTIES — auto-discover new buildings AppFolio knows about.
+  // Failures in this phase don't break later phases; we still process
+  // residents/leases/work-orders against existing properties.
+  try {
+    const rows = await fetchAllPages(client, "property_directory");
+    for (const row of rows) {
+      const mapped = mapPropertyPayload(row);
+      if (!mapped) continue;
+      const existing = await prisma.property.findFirst({
+        where: {
+          orgId,
+          backendPlatform: BackendPlatform.APPFOLIO,
+          backendPropertyId: mapped.externalId,
+        },
+        select: { id: true },
+      });
+      if (existing) continue; // Property already known; user-edited fields are sticky.
+      const slug = await uniquePropertySlug(orgId, mapped.name ?? mapped.externalId);
+      const created = await prisma.property.create({
+        data: {
+          orgId,
+          name: mapped.name ?? `Property ${mapped.externalId}`,
+          slug,
+          propertyType: "RESIDENTIAL",
+          backendPlatform: BackendPlatform.APPFOLIO,
+          backendPropertyId: mapped.externalId,
+          addressLine1: mapped.addressLine1,
+          addressLine2: mapped.addressLine2,
+          city: mapped.city,
+          state: mapped.state,
+          postalCode: mapped.postalCode,
+          country: mapped.country,
+          totalUnits: mapped.totalUnits,
+          yearBuilt: mapped.yearBuilt,
+        },
+      });
+      propertyByExternalId.set(mapped.externalId, created.id);
+      stats.propertiesUpserted += 1;
+    }
+    phasesCompleted += 1;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    stats.warnings.push(`properties: ${message}`);
+    topLevelError = topLevelError ?? `properties: ${message}`;
+  }
+
+  // 5. RESIDENTS — full tenant_directory roster as Resident rows.
+  // residentByExternalId is built so subsequent phases (leases, work
+  // orders) can resolve tenant_id → local Resident.id.
+  const residentByExternalId = new Map<string, string>();
+  try {
+    const rows = await fetchAllPages(client, "tenant_directory", {
+      extraFilters: { status: "all" },
+    });
+    for (const row of rows) {
+      const mapped = mapResidentPayload(row);
+      if (!mapped) continue;
+      const propertyId =
+        (mapped.propertyExternalId &&
+          propertyByExternalId.get(mapped.propertyExternalId)) ||
+        fallbackPropertyId;
+      if (!propertyId) {
+        stats.warnings.push(
+          `resident ${mapped.externalId}: no Property mapped`,
+        );
+        continue;
+      }
+      const listingId =
+        (mapped.unitExternalId && listingByExternalId.get(mapped.unitExternalId)) ||
+        null;
+      const id = await upsertResident(orgId, propertyId, listingId, mapped);
+      residentByExternalId.set(mapped.externalId, id);
+      stats.residentsUpserted += 1;
+    }
+    phasesCompleted += 1;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    stats.warnings.push(`residents: ${message}`);
+    topLevelError = topLevelError ?? `residents: ${message}`;
+  }
+
+  // 6. LEASES — rent_roll for active leases. Updates Resident.currentLeaseId
+  // when we can match the resident.
+  const leaseByExternalId = new Map<string, string>();
+  try {
+    const rows = await fetchAllPages(client, "rent_roll");
+    for (const row of rows) {
+      const mapped = mapLeasePayload(row);
+      if (!mapped) continue;
+      const propertyId =
+        (mapped.propertyExternalId &&
+          propertyByExternalId.get(mapped.propertyExternalId)) ||
+        fallbackPropertyId;
+      if (!propertyId) {
+        stats.warnings.push(`lease ${mapped.externalId}: no Property mapped`);
+        continue;
+      }
+      const listingId =
+        (mapped.unitExternalId && listingByExternalId.get(mapped.unitExternalId)) ||
+        null;
+      const residentId =
+        (mapped.residentExternalId &&
+          residentByExternalId.get(mapped.residentExternalId)) ||
+        null;
+      const leaseId = await upsertLease(orgId, propertyId, listingId, residentId, mapped);
+      leaseByExternalId.set(mapped.externalId, leaseId);
+      stats.leasesUpserted += 1;
+    }
+    phasesCompleted += 1;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    stats.warnings.push(`leases: ${message}`);
+    topLevelError = topLevelError ?? `leases: ${message}`;
+  }
+
+  // 7. DELINQUENCY — denormalize past-due balance onto each Lease.
+  try {
+    const rows = await fetchAllPages(client, "delinquency");
+    for (const row of rows) {
+      const mapped = mapDelinquencyPayload(row);
+      if (!mapped) continue;
+      const leaseId = leaseByExternalId.get(mapped.leaseExternalId);
+      if (!leaseId) {
+        // Try to find by external id directly in case rent_roll didn't
+        // include this row (e.g., terminated lease still owing money).
+        const existing = await prisma.lease.findFirst({
+          where: {
+            orgId,
+            externalSystem: EXTERNAL_SYSTEM,
+            externalId: mapped.leaseExternalId,
+          },
+          select: { id: true },
+        });
+        if (!existing) continue;
+        await prisma.lease.update({
+          where: { id: existing.id },
+          data: {
+            currentBalanceCents: mapped.currentBalanceCents,
+            isPastDue: mapped.isPastDue,
+            pastDueAsOf: mapped.asOf,
+          },
+        });
+        stats.delinquenciesUpdated += 1;
+        continue;
+      }
+      await prisma.lease.update({
+        where: { id: leaseId },
+        data: {
+          currentBalanceCents: mapped.currentBalanceCents,
+          isPastDue: mapped.isPastDue,
+          pastDueAsOf: mapped.asOf,
+        },
+      });
+      stats.delinquenciesUpdated += 1;
+    }
+    phasesCompleted += 1;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    stats.warnings.push(`delinquency: ${message}`);
+    topLevelError = topLevelError ?? `delinquency: ${message}`;
+  }
+
+  // 8. WORK ORDERS — maintenance ticket sync.
+  try {
+    const rows = await fetchAllPages(client, "work_order", { fromDate, toDate });
+    for (const row of rows) {
+      const mapped = mapWorkOrderPayload(row);
+      if (!mapped) continue;
+      const propertyId =
+        (mapped.propertyExternalId &&
+          propertyByExternalId.get(mapped.propertyExternalId)) ||
+        fallbackPropertyId;
+      if (!propertyId) {
+        stats.warnings.push(`work-order ${mapped.externalId}: no Property mapped`);
+        continue;
+      }
+      const listingId =
+        (mapped.unitExternalId && listingByExternalId.get(mapped.unitExternalId)) ||
+        null;
+      const residentId =
+        (mapped.residentExternalId &&
+          residentByExternalId.get(mapped.residentExternalId)) ||
+        null;
+      await upsertWorkOrder(orgId, propertyId, listingId, residentId, mapped);
+      stats.workOrdersUpserted += 1;
+    }
+    phasesCompleted += 1;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    stats.warnings.push(`work-orders: ${message}`);
+    topLevelError = topLevelError ?? `work-orders: ${message}`;
+  }
+
   // Connector is "healthy" if at least one phase completed (even with 0
   // rows) — the integration goes back to idle. But lastSyncAt only
   // advances when *every* phase completed; partial syncs preserve the
@@ -319,6 +542,11 @@ export async function runAppfolioSync(
           toursUpserted: stats.toursUpserted,
           tenantsMatched: stats.tenantsMatched,
           listingsUpserted: stats.listingsUpserted,
+          propertiesUpserted: stats.propertiesUpserted,
+          residentsUpserted: stats.residentsUpserted,
+          leasesUpserted: stats.leasesUpserted,
+          workOrdersUpserted: stats.workOrdersUpserted,
+          delinquenciesUpdated: stats.delinquenciesUpdated,
           warnings: stats.warnings,
           fullBackfill: !!options.fullBackfill,
           fromDate: fromDate.toISOString(),
@@ -415,4 +643,196 @@ async function markLeadSignedByTenant(
     },
   });
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// Slug helper for auto-created Property rows from property_directory. The
+// schema requires unique (orgId, slug); collisions get -2, -3, etc.
+async function uniquePropertySlug(orgId: string, name: string): Promise<string> {
+  const base = name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48) || "property";
+  let candidate = base;
+  let n = 2;
+  while (n <= 50) {
+    const existing = await prisma.property.findFirst({
+      where: { orgId, slug: candidate },
+      select: { id: true },
+    });
+    if (!existing) return candidate;
+    candidate = `${base}-${n++}`;
+  }
+  return `${base}-${Date.now().toString(36)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Resident upsert — keyed on (orgId, externalSystem, externalId). Best-effort
+// match to an existing Lead by email so the Resident row carries leadId.
+async function upsertResident(
+  orgId: string,
+  propertyId: string,
+  listingId: string | null,
+  mapped: MappedResident,
+): Promise<string> {
+  let leadId: string | null = null;
+  if (mapped.email) {
+    const lead = await prisma.lead.findFirst({
+      where: { orgId, email: mapped.email },
+      select: { id: true },
+    });
+    if (lead) leadId = lead.id;
+  }
+
+  const where = {
+    orgId_externalSystem_externalId: {
+      orgId,
+      externalSystem: EXTERNAL_SYSTEM,
+      externalId: mapped.externalId,
+    },
+  } as const;
+  const data = {
+    propertyId,
+    listingId,
+    leadId,
+    firstName: mapped.firstName,
+    lastName: mapped.lastName,
+    email: mapped.email,
+    phone: mapped.phone,
+    status: mapped.status,
+    unitNumber: mapped.unitNumber,
+    moveInDate: mapped.moveInDate,
+    moveOutDate: mapped.moveOutDate,
+    noticeGivenDate: mapped.noticeGivenDate,
+    monthlyRentCents: mapped.monthlyRentCents,
+    raw: mapped.raw as unknown as Prisma.InputJsonValue,
+  };
+
+  const existing = await prisma.resident.findUnique({ where, select: { id: true } });
+  if (existing) {
+    await prisma.resident.update({ where, data });
+    return existing.id;
+  }
+  const created = await prisma.resident.create({
+    data: {
+      orgId,
+      externalSystem: EXTERNAL_SYSTEM,
+      externalId: mapped.externalId,
+      ...data,
+    },
+  });
+  return created.id;
+}
+
+// ---------------------------------------------------------------------------
+// Lease upsert — keyed on (orgId, externalSystem, externalId). Updates
+// Resident.currentLeaseId if both exist.
+async function upsertLease(
+  orgId: string,
+  propertyId: string,
+  listingId: string | null,
+  residentId: string | null,
+  mapped: MappedLease,
+): Promise<string> {
+  const where = {
+    orgId_externalSystem_externalId: {
+      orgId,
+      externalSystem: EXTERNAL_SYSTEM,
+      externalId: mapped.externalId,
+    },
+  } as const;
+  const data = {
+    propertyId,
+    listingId,
+    residentId,
+    status: mapped.status,
+    startDate: mapped.startDate,
+    endDate: mapped.endDate,
+    monthlyRentCents: mapped.monthlyRentCents,
+    securityDepositCents: mapped.securityDepositCents,
+    termMonths: mapped.termMonths,
+    raw: mapped.raw as unknown as Prisma.InputJsonValue,
+  };
+
+  let leaseId: string;
+  const existing = await prisma.lease.findUnique({ where, select: { id: true } });
+  if (existing) {
+    await prisma.lease.update({ where, data });
+    leaseId = existing.id;
+  } else {
+    const created = await prisma.lease.create({
+      data: {
+        orgId,
+        externalSystem: EXTERNAL_SYSTEM,
+        externalId: mapped.externalId,
+        ...data,
+      },
+    });
+    leaseId = created.id;
+  }
+
+  // Tie this lease as the resident's current lease if it's active/expiring
+  // and the resident exists. Don't override a more-recent ACTIVE lease with
+  // an older ENDED one.
+  if (residentId && (mapped.status === "ACTIVE" || mapped.status === "EXPIRING")) {
+    await prisma.resident.update({
+      where: { id: residentId },
+      data: { currentLeaseId: leaseId },
+    });
+  }
+
+  return leaseId;
+}
+
+// ---------------------------------------------------------------------------
+// Work order upsert — keyed on (orgId, externalSystem, externalId).
+async function upsertWorkOrder(
+  orgId: string,
+  propertyId: string,
+  listingId: string | null,
+  residentId: string | null,
+  mapped: MappedWorkOrder,
+): Promise<void> {
+  const where = {
+    orgId_externalSystem_externalId: {
+      orgId,
+      externalSystem: EXTERNAL_SYSTEM,
+      externalId: mapped.externalId,
+    },
+  } as const;
+  const data = {
+    propertyId,
+    listingId,
+    residentId,
+    workOrderNumber: mapped.workOrderNumber,
+    status: mapped.status,
+    priority: mapped.priority,
+    category: mapped.category,
+    title: mapped.title,
+    description: mapped.description,
+    unitNumber: mapped.unitNumber,
+    vendorName: mapped.vendorName,
+    vendorEmail: mapped.vendorEmail,
+    reportedAt: mapped.reportedAt,
+    scheduledFor: mapped.scheduledFor,
+    completedAt: mapped.completedAt,
+    estimatedCostCents: mapped.estimatedCostCents,
+    actualCostCents: mapped.actualCostCents,
+    raw: mapped.raw as unknown as Prisma.InputJsonValue,
+  };
+  const existing = await prisma.workOrder.findUnique({ where, select: { id: true } });
+  if (existing) {
+    await prisma.workOrder.update({ where, data });
+    return;
+  }
+  await prisma.workOrder.create({
+    data: {
+      orgId,
+      externalSystem: EXTERNAL_SYSTEM,
+      externalId: mapped.externalId,
+      ...data,
+    },
+  });
 }

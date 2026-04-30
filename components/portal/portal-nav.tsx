@@ -31,6 +31,9 @@ import {
   Calendar,
   Star,
   ClipboardList,
+  Wrench,
+  Home,
+  CalendarClock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -127,6 +130,14 @@ export const NAV_GROUPS: NavGroup[] = [
         show: (o) => o.modulePixel,
       },
       { href: "/portal/reputation", label: "Reputation", icon: Star, show: ALWAYS },
+    ],
+  },
+  {
+    label: "Operations",
+    items: [
+      { href: "/portal/residents", label: "Residents", icon: Home, show: ALWAYS },
+      { href: "/portal/renewals", label: "Renewals", icon: CalendarClock, show: ALWAYS },
+      { href: "/portal/work-orders", label: "Work orders", icon: Wrench, show: ALWAYS },
     ],
   },
   {

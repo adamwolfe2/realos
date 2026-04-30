@@ -115,7 +115,12 @@ export async function adminClearStuckSyncStatus(
         toursUpserted: 0,
         tenantsMatched: 0,
         listingsUpserted: 0,
-        warnings: [],
+        propertiesUpserted: 0,
+        residentsUpserted: 0,
+        leasesUpserted: 0,
+        workOrdersUpserted: 0,
+        delinquenciesUpdated: 0,
+        warnings: [] as string[],
       },
     };
   } catch (err) {
@@ -159,6 +164,11 @@ export async function adminMarkPropertiesAppfolio(
         toursUpserted: 0,
         tenantsMatched: 0,
         listingsUpserted: 0,
+        propertiesUpserted: 0,
+        residentsUpserted: 0,
+        leasesUpserted: 0,
+        workOrdersUpserted: 0,
+        delinquenciesUpdated: 0,
         warnings: [`updated ${result.count} property rows`],
       },
     };

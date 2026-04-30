@@ -260,10 +260,26 @@ async function fetchEmbedScrape(
 // SIGNED attribution and Listing rows respectively. All v2 reports return
 // snake_case column keys (e.g., `unit_id`, `property_id`, `market_rent`)
 // — the mappers below read snake_case directly.
+// Reports we know how to map and persist. AppFolio v2 returns snake_case
+// keys on every report.
+//
+//   guest_cards          — individual leads / inquiries
+//   tenant_directory     — current + past tenants (drives Resident roster)
+//   unit_directory       — units / availability
+//   rent_roll            — active leases with monthly rent + end dates
+//   tenant_tickler       — lease end dates / renewal alerts
+//   delinquency          — past-due tenants
+//   work_order           — maintenance tickets
+//   property_directory   — full property metadata (auto-create Property)
 const REPORT_NAMES = [
   "guest_cards",
   "tenant_directory",
   "unit_directory",
+  "rent_roll",
+  "tenant_tickler",
+  "delinquency",
+  "work_order",
+  "property_directory",
 ] as const;
 
 export type AppFolioReportName = (typeof REPORT_NAMES)[number];
@@ -884,6 +900,298 @@ async function fetchRest(
     if (mapped) normalized.push(mapped);
   }
   return normalized;
+}
+
+// ---------------------------------------------------------------------------
+// AppFolio mirrored entity mappers.
+//
+// These five mappers cover the operator-relevant reports the dashboard
+// surfaces (residents, leases, delinquency, work orders, properties).
+// Every mapper:
+//   - returns null when the row is missing the canonical id
+//   - reads snake_case keys with fallbacks for AppFolio variants
+//   - never mutates the raw row; raw is preserved for the .raw column
+// ---------------------------------------------------------------------------
+
+export type MappedResident = {
+  externalId: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string | null;
+  phone: string | null;
+  unitExternalId: string | null;
+  propertyExternalId: string | null;
+  unitNumber: string | null;
+  status: "ACTIVE" | "PAST" | "NOTICE_GIVEN" | "EVICTED" | "APPLICANT";
+  moveInDate: Date | null;
+  moveOutDate: Date | null;
+  noticeGivenDate: Date | null;
+  monthlyRentCents: number | null;
+  raw: RawRow;
+};
+
+function residentStatusFromRaw(raw: RawRow): MappedResident["status"] {
+  const s = (asString(raw.status) ?? asString(raw.tenant_status) ?? "")
+    .toLowerCase();
+  if (s.includes("evict")) return "EVICTED";
+  if (s.includes("notice")) return "NOTICE_GIVEN";
+  if (s.includes("applicant")) return "APPLICANT";
+  if (s === "current" || s === "active") return "ACTIVE";
+  if (asDate(raw.move_out)) return "PAST";
+  return "ACTIVE";
+}
+
+// Mapper for `tenant_directory`. Reused for both Resident roster and the
+// existing tenant-signed attribution. The legacy MappedTenant return type
+// is kept; this richer mapper is additive.
+export function mapResidentPayload(raw: RawRow): MappedResident | null {
+  const externalId = asString(
+    raw.tenant_id ?? raw.occupancy_id ?? raw.id,
+  );
+  if (!externalId) return null;
+
+  const firstName = asString(raw.first_name) ?? null;
+  const lastName = asString(raw.last_name) ?? null;
+  const email = asString(raw.email_address ?? raw.email)?.toLowerCase() ?? null;
+  const phone = asString(raw.phone_number ?? raw.phone) ?? null;
+
+  const unitExternalId = asString(raw.unit_id) ?? null;
+  const propertyExternalId = asString(raw.property_id) ?? null;
+  const unitNumber = asString(raw.unit_name) ?? null;
+
+  const monthlyRent = asNumber(raw.rent ?? raw.monthly_rent ?? raw.market_rent);
+  const monthlyRentCents = monthlyRent != null ? Math.round(monthlyRent * 100) : null;
+
+  return {
+    externalId,
+    firstName,
+    lastName,
+    email,
+    phone,
+    unitExternalId,
+    propertyExternalId,
+    unitNumber,
+    status: residentStatusFromRaw(raw),
+    moveInDate: asDate(raw.move_in ?? raw.move_in_date) ?? null,
+    moveOutDate: asDate(raw.move_out ?? raw.move_out_date) ?? null,
+    noticeGivenDate: asDate(raw.notice_given_date ?? raw.notice_date) ?? null,
+    monthlyRentCents,
+    raw,
+  };
+}
+
+// ---------------------------------------------------------------------------
+
+export type MappedLease = {
+  externalId: string;
+  residentExternalId: string | null;
+  unitExternalId: string | null;
+  propertyExternalId: string | null;
+  status: "PENDING" | "ACTIVE" | "EXPIRING" | "RENEWED" | "ENDED" | "EVICTED";
+  startDate: Date | null;
+  endDate: Date | null;
+  monthlyRentCents: number | null;
+  securityDepositCents: number | null;
+  termMonths: number | null;
+  raw: RawRow;
+};
+
+function leaseStatusFromRaw(raw: RawRow): MappedLease["status"] {
+  const s = (asString(raw.status) ?? asString(raw.lease_status) ?? "")
+    .toLowerCase();
+  if (s.includes("evict")) return "EVICTED";
+  if (s === "expired" || s === "ended" || s === "moved out") return "ENDED";
+  if (s === "renewed") return "RENEWED";
+  if (s === "expiring") return "EXPIRING";
+  if (s === "pending" || s === "future") return "PENDING";
+  // Heuristic on dates if status is missing
+  const end = asDate(raw.end_date ?? raw.lease_end_date);
+  if (end) {
+    const now = Date.now();
+    const days = (end.getTime() - now) / (24 * 60 * 60 * 1000);
+    if (days < 0) return "ENDED";
+    if (days <= 60) return "EXPIRING";
+  }
+  return "ACTIVE";
+}
+
+// Mapper for `rent_roll` — one row per active lease with monthly rent
+// and lease end date. Used for the renewals pipeline and rent-roll KPI.
+export function mapLeasePayload(raw: RawRow): MappedLease | null {
+  const externalId = asString(
+    raw.lease_id ?? raw.occupancy_id ?? raw.id,
+  );
+  if (!externalId) return null;
+
+  const monthlyRent = asNumber(raw.rent ?? raw.market_rent ?? raw.monthly_rent);
+  const security = asNumber(raw.security_deposit ?? raw.deposit);
+  const term = asNumber(raw.lease_term ?? raw.term_months);
+
+  return {
+    externalId,
+    residentExternalId: asString(raw.tenant_id ?? raw.occupant_id) ?? null,
+    unitExternalId: asString(raw.unit_id) ?? null,
+    propertyExternalId: asString(raw.property_id) ?? null,
+    status: leaseStatusFromRaw(raw),
+    startDate: asDate(raw.start_date ?? raw.lease_start_date) ?? null,
+    endDate: asDate(raw.end_date ?? raw.lease_end_date) ?? null,
+    monthlyRentCents: monthlyRent != null ? Math.round(monthlyRent * 100) : null,
+    securityDepositCents: security != null ? Math.round(security * 100) : null,
+    termMonths: term != null ? Math.round(term) : null,
+    raw,
+  };
+}
+
+// ---------------------------------------------------------------------------
+
+export type MappedDelinquency = {
+  leaseExternalId: string;
+  currentBalanceCents: number;
+  isPastDue: boolean;
+  asOf: Date;
+};
+
+// Mapper for `delinquency`. Returns balance + flag keyed off lease/occupancy.
+// We intentionally don't model an entire DelinquencyRecord row — the data
+// is denormalized onto Lease (currentBalanceCents, isPastDue, pastDueAsOf).
+export function mapDelinquencyPayload(
+  raw: RawRow,
+): MappedDelinquency | null {
+  const leaseExternalId = asString(
+    raw.lease_id ?? raw.occupancy_id ?? raw.tenant_id ?? raw.id,
+  );
+  if (!leaseExternalId) return null;
+  const balance = asNumber(
+    raw.balance ?? raw.total_balance ?? raw.amount_due ?? raw.past_due,
+  );
+  const cents = balance != null ? Math.round(balance * 100) : 0;
+  return {
+    leaseExternalId,
+    currentBalanceCents: cents,
+    isPastDue: cents > 0,
+    asOf: asDate(raw.as_of ?? raw.report_date) ?? new Date(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+
+export type MappedWorkOrder = {
+  externalId: string;
+  workOrderNumber: string | null;
+  status:
+    | "NEW"
+    | "SCHEDULED"
+    | "IN_PROGRESS"
+    | "COMPLETED"
+    | "CANCELLED"
+    | "ON_HOLD";
+  priority: "LOW" | "NORMAL" | "HIGH" | "URGENT";
+  category: string | null;
+  title: string | null;
+  description: string | null;
+  unitNumber: string | null;
+  unitExternalId: string | null;
+  propertyExternalId: string | null;
+  residentExternalId: string | null;
+  vendorName: string | null;
+  vendorEmail: string | null;
+  reportedAt: Date | null;
+  scheduledFor: Date | null;
+  completedAt: Date | null;
+  estimatedCostCents: number | null;
+  actualCostCents: number | null;
+  raw: RawRow;
+};
+
+function workOrderStatusFromRaw(raw: RawRow): MappedWorkOrder["status"] {
+  const s = (asString(raw.status) ?? asString(raw.work_order_status) ?? "")
+    .toLowerCase();
+  if (s === "new" || s === "open") return "NEW";
+  if (s === "scheduled") return "SCHEDULED";
+  if (s.includes("progress") || s === "assigned") return "IN_PROGRESS";
+  if (s === "completed" || s === "closed" || s === "done") return "COMPLETED";
+  if (s === "cancelled" || s === "canceled") return "CANCELLED";
+  if (s.includes("hold")) return "ON_HOLD";
+  return "NEW";
+}
+
+function workOrderPriorityFromRaw(raw: RawRow): MappedWorkOrder["priority"] {
+  const s = (asString(raw.priority) ?? "").toLowerCase();
+  if (s === "low") return "LOW";
+  if (s === "high") return "HIGH";
+  if (s === "urgent" || s === "emergency") return "URGENT";
+  return "NORMAL";
+}
+
+// Mapper for `work_order` — maintenance tickets.
+export function mapWorkOrderPayload(raw: RawRow): MappedWorkOrder | null {
+  const externalId = asString(
+    raw.work_order_id ?? raw.service_request_id ?? raw.id,
+  );
+  if (!externalId) return null;
+
+  const estimated = asNumber(raw.estimated_cost ?? raw.estimate);
+  const actual = asNumber(raw.actual_cost ?? raw.cost ?? raw.invoice_total);
+
+  return {
+    externalId,
+    workOrderNumber: asString(raw.work_order_number ?? raw.number) ?? null,
+    status: workOrderStatusFromRaw(raw),
+    priority: workOrderPriorityFromRaw(raw),
+    category: asString(raw.category ?? raw.type) ?? null,
+    title: asString(raw.subject ?? raw.title) ?? null,
+    description: asString(raw.description ?? raw.notes) ?? null,
+    unitNumber: asString(raw.unit_name) ?? null,
+    unitExternalId: asString(raw.unit_id) ?? null,
+    propertyExternalId: asString(raw.property_id) ?? null,
+    residentExternalId:
+      asString(raw.tenant_id ?? raw.requested_by_tenant_id) ?? null,
+    vendorName: asString(raw.vendor_name ?? raw.assigned_to) ?? null,
+    vendorEmail: asString(raw.vendor_email) ?? null,
+    reportedAt: asDate(raw.created_on ?? raw.reported_on ?? raw.date_reported) ?? null,
+    scheduledFor: asDate(raw.scheduled_for ?? raw.scheduled_date) ?? null,
+    completedAt: asDate(raw.completed_on ?? raw.completed_date) ?? null,
+    estimatedCostCents: estimated != null ? Math.round(estimated * 100) : null,
+    actualCostCents: actual != null ? Math.round(actual * 100) : null,
+    raw,
+  };
+}
+
+// ---------------------------------------------------------------------------
+
+export type MappedProperty = {
+  externalId: string;
+  name: string | null;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  country: string | null;
+  totalUnits: number | null;
+  yearBuilt: number | null;
+  raw: RawRow;
+};
+
+// Mapper for `property_directory`. Used to auto-create Property rows when
+// AppFolio reveals new buildings, so the operator doesn't have to add them
+// manually before sync runs.
+export function mapPropertyPayload(raw: RawRow): MappedProperty | null {
+  const externalId = asString(raw.property_id ?? raw.id);
+  if (!externalId) return null;
+  return {
+    externalId,
+    name: asString(raw.name ?? raw.property_name) ?? null,
+    addressLine1: asString(raw.address_line_1 ?? raw.address) ?? null,
+    addressLine2: asString(raw.address_line_2) ?? null,
+    city: asString(raw.city) ?? null,
+    state: asString(raw.state) ?? null,
+    postalCode: asString(raw.postal_code ?? raw.zip) ?? null,
+    country: asString(raw.country) ?? "US",
+    totalUnits: asInt(raw.unit_count ?? raw.total_units) ?? null,
+    yearBuilt: asInt(raw.year_built) ?? null,
+    raw,
+  };
 }
 
 // ---------------------------------------------------------------------------
