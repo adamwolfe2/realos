@@ -15,6 +15,8 @@ import {
   Share2,
   Megaphone,
   MessageSquare,
+  Building2,
+  AlertTriangle,
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -236,6 +238,25 @@ export default async function PortalHome({
     }
   }
 
+  // Portfolio occupancy: weighted by units. Some properties may not have
+  // unit-count metadata yet, so we filter to those that do for accuracy.
+  let portfolioTotalUnits = 0;
+  let portfolioAvailableUnits = 0;
+  for (const p of properties) {
+    if (p.totalUnits && p.totalUnits > 0) {
+      portfolioTotalUnits += p.totalUnits;
+      portfolioAvailableUnits += p.availableCount ?? 0;
+    }
+  }
+  const portfolioOccupancyPct =
+    portfolioTotalUnits > 0
+      ? Math.round(
+          ((portfolioTotalUnits - portfolioAvailableUnits) /
+            portfolioTotalUnits) *
+            100
+        )
+      : null;
+
   const showFirstRun = leadsTotal === 0 && propertiesCount === 0;
 
   const wizardSteps = [
@@ -290,6 +311,36 @@ export default async function PortalHome({
       <SetupWizardGate shouldShow={showFirstRun} steps={wizardSteps} />
 
       <SetupBanner forceShow={forceShowSetup} />
+
+      {/* Unreviewed reputation alert — surfaces buried action items.
+          Reputation Scanner used to be hidden in property detail tabs. This
+          banner makes it impossible to miss when there's something to act on. */}
+      {reputationSummary.unreviewedCount > 0 ? (
+        <Link
+          href="/portal/reputation"
+          className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 hover:bg-amber-100 transition-colors group"
+        >
+          <div className="flex items-center gap-2.5 min-w-0">
+            <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-semibold text-amber-900 truncate">
+                {reputationSummary.unreviewedCount.toLocaleString()} unreviewed
+                {" "}
+                {reputationSummary.unreviewedCount === 1 ? "mention" : "mentions"}
+                {reputationSummary.negativeCount > 0
+                  ? ` · ${reputationSummary.negativeCount} negative`
+                  : ""}
+              </p>
+              <p className="text-[11px] text-amber-800">
+                Triage Google reviews, Reddit threads, and Yelp posts before they snowball.
+              </p>
+            </div>
+          </div>
+          <span className="text-xs font-medium text-amber-900 group-hover:text-amber-950 whitespace-nowrap">
+            Review →
+          </span>
+        </Link>
+      ) : null}
 
       {/* Data sources bar */}
       {integrationChips.length > 0 ? (
@@ -570,6 +621,56 @@ export default async function PortalHome({
               <ReputationPulse items={reputationPulse} />
             </DashboardSection>
           </section>
+
+          {/* Portfolio summary strip — occupancy + total units + active
+              campaigns. Sized between KPIs and property cards so it visually
+              ties them together. */}
+          {portfolioTotalUnits > 0 ? (
+            <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <KpiTile
+                label="Portfolio occupancy"
+                value={
+                  portfolioOccupancyPct != null
+                    ? `${portfolioOccupancyPct}%`
+                    : "—"
+                }
+                hint={`${(portfolioTotalUnits - portfolioAvailableUnits).toLocaleString()} of ${portfolioTotalUnits.toLocaleString()} occupied`}
+                icon={<Building2 className="h-3.5 w-3.5" />}
+                href="/portal/properties"
+              />
+              <KpiTile
+                label="Available units"
+                value={portfolioAvailableUnits.toLocaleString()}
+                hint="Across all properties"
+                icon={<Building2 className="h-3.5 w-3.5" />}
+                href="/portal/properties"
+              />
+              <KpiTile
+                label="Properties"
+                value={propertiesCount.toLocaleString()}
+                hint={`${properties.length === propertiesCount ? "All shown below" : `Showing ${properties.length}`}`}
+                icon={<Building2 className="h-3.5 w-3.5" />}
+                href="/portal/properties"
+              />
+              <KpiTile
+                label="Active campaigns"
+                value={Array.from(propertyMetrics.values())
+                  .reduce((sum, m) => sum + m.activeCampaigns, 0)
+                  .toLocaleString()}
+                hint="Google + Meta combined"
+                icon={<Megaphone className="h-3.5 w-3.5" />}
+                href="/portal/campaigns"
+                locked={
+                  adsOff
+                    ? {
+                        reason: "Requires Google Ads or Meta",
+                        href: "/portal/settings/integrations",
+                      }
+                    : undefined
+                }
+              />
+            </section>
+          ) : null}
 
           {/* Properties + activity feed */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
