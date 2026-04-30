@@ -11,6 +11,9 @@ import {
   MessageSquare,
   Building2,
   Star,
+  Home,
+  CalendarClock,
+  Wrench,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -30,7 +33,10 @@ type TabKey =
   | "ads"
   | "chatbot"
   | "reputation"
-  | "occupancy";
+  | "occupancy"
+  | "residents"
+  | "renewals"
+  | "work-orders";
 
 type TabDef = {
   key: TabKey;
@@ -53,6 +59,12 @@ const OCCUPANCY_TAB: TabDef = {
   icon: Building2,
 };
 
+const OPERATIONS_TABS: TabDef[] = [
+  { key: "residents", label: "Residents", icon: Home },
+  { key: "renewals", label: "Renewals", icon: CalendarClock },
+  { key: "work-orders", label: "Work orders", icon: Wrench },
+];
+
 function PropertyTabsInner({
   initialTab,
   showOccupancy,
@@ -67,7 +79,10 @@ function PropertyTabsInner({
   const searchParams = useSearchParams();
 
   const tabs = React.useMemo(
-    () => (showOccupancy ? [...TABS_BASE, OCCUPANCY_TAB] : TABS_BASE),
+    () =>
+      showOccupancy
+        ? [...TABS_BASE, OCCUPANCY_TAB, ...OPERATIONS_TABS]
+        : [...TABS_BASE, ...OPERATIONS_TABS],
     [showOccupancy],
   );
 

@@ -12,6 +12,9 @@ import { AdsTab } from "./tabs/ads";
 import { ChatbotTab } from "./tabs/chatbot";
 import { OccupancyTab } from "./tabs/occupancy";
 import { ReputationTab } from "./tabs/reputation";
+import { ResidentsTab } from "./tabs/residents";
+import { RenewalsTab } from "./tabs/renewals";
+import { WorkOrdersTab } from "./tabs/work-orders";
 
 export const metadata: Metadata = { title: "Property detail" };
 export const dynamic = "force-dynamic";
@@ -158,6 +161,24 @@ export default async function PropertyDetail({
               propertyId={property.id}
             />
           ) : null,
+          residents: (
+            <ResidentsTab
+              orgId={scope.orgId}
+              propertyId={property.id}
+            />
+          ),
+          renewals: (
+            <RenewalsTab
+              orgId={scope.orgId}
+              propertyId={property.id}
+            />
+          ),
+          "work-orders": (
+            <WorkOrdersTab
+              orgId={scope.orgId}
+              propertyId={property.id}
+            />
+          ),
         }}
       />
       </Suspense>
