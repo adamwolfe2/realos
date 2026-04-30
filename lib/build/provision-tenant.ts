@@ -8,7 +8,7 @@ import {
   TenantStatus,
   Prisma,
 } from "@prisma/client";
-import { attachDomainToProject } from "./domain-attach";
+import { attachDomainToProjectWithRetry } from "./domain-attach";
 import { getDefaultProjectTasks } from "./default-tasks";
 
 // ---------------------------------------------------------------------------
@@ -228,7 +228,7 @@ export async function provisionTenant(
       });
       domainBindingId = binding.id;
 
-      const attached = await attachDomainToProject(hostname);
+      const attached = await attachDomainToProjectWithRetry(hostname);
       vercelDomainAttached = true;
 
       await prisma.domainBinding.update({

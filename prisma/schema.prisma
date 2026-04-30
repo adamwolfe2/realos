@@ -812,6 +812,7 @@ model Visitor {
 
   @@index([orgId, status])
   @@index([orgId, lastSeenAt])
+  @@index([orgId, email])
   @@index([cursiveVisitorId])
   @@index([hashedEmail])
 }
@@ -1009,6 +1010,8 @@ model ChatbotConversation {
 
   @@index([orgId, status])
   @@index([orgId, lastMessageAt])
+  @@index([leadId])
+  @@index([propertyId])
   @@index([sessionId])
 }
 

@@ -31,20 +31,28 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const results: Array<{
+    type SyncResult = {
       orgId: string;
       ok: boolean;
       stats?: unknown;
       error?: string;
       skipped?: boolean;
-    }> = [];
+    };
 
-    for (const integration of integrations) {
+    // Run tenants in parallel with a concurrency cap. Sequential execution
+    // serialized 6+ tenants to ~6x the wall-clock time and risked Vercel cron
+    // timeout. Cap at 4 to avoid hammering AppFolio's rate limit.
+    const CONCURRENCY = 4;
+    const queue = [...integrations];
+    const results: SyncResult[] = [];
+
+    async function processOne(
+      integration: (typeof integrations)[number]
+    ): Promise<SyncResult> {
       const minutes = integration.syncFrequencyMinutes ?? 60;
       const cutoff = Date.now() - minutes * 60 * 1000;
       if (integration.lastSyncAt && integration.lastSyncAt.getTime() > cutoff) {
-        results.push({ orgId: integration.orgId, ok: true, skipped: true });
-        continue;
+        return { orgId: integration.orgId, ok: true, skipped: true };
       }
 
       const hasRestCreds =
@@ -54,57 +62,74 @@ export async function GET(req: NextRequest) {
       if (hasRestCreds) {
         try {
           const r = await runAppfolioSync(integration.orgId);
-          results.push({
+          if (!r.ok && r.error) {
+            await prisma.appFolioIntegration
+              .update({
+                where: { orgId: integration.orgId },
+                data: { syncStatus: "error", lastError: r.error },
+              })
+              .catch(() => undefined);
+          }
+          return {
             orgId: integration.orgId,
             ok: r.ok,
             stats: r.stats,
             error: r.error,
-          });
-          // runAppfolioSync handles its own DB persistence, but if it returned
-          // ok=false without throwing we still want lastError surfaced.
-          if (!r.ok && r.error) {
-            await prisma.appFolioIntegration.update({
-              where: { orgId: integration.orgId },
-              data: { syncStatus: "error", lastError: r.error },
-            }).catch(() => undefined);
-          }
+          };
         } catch (err) {
           const message = err instanceof Error ? err.message : "Unknown error";
-          results.push({ orgId: integration.orgId, ok: false, error: message });
-          // Persist the unexpected throw so the portal user sees it.
-          await prisma.appFolioIntegration.update({
-            where: { orgId: integration.orgId },
-            data: { syncStatus: "error", lastError: message },
-          }).catch(() => undefined);
-        }
-      } else {
-        // Embed-fallback path for Core-plan tenants.
-        try {
-          const r = await syncListingsForOrg(integration.orgId);
-          results.push({
-            orgId: integration.orgId,
-            ok: r.error == null,
-            stats: { listingsUpserted: r.synced },
-            error: r.error ?? undefined,
-          });
-          // syncListingsForOrg updates DB on success/error, but guard against
-          // any gap by persisting lastSyncAt on success.
-          if (r.error == null) {
-            await prisma.appFolioIntegration.update({
+          await prisma.appFolioIntegration
+            .update({
               where: { orgId: integration.orgId },
-              data: { syncStatus: "idle", lastSyncAt: new Date(), lastError: null },
-            }).catch(() => undefined);
-          }
-        } catch (err) {
-          const message = err instanceof Error ? err.message : "Unknown error";
-          results.push({ orgId: integration.orgId, ok: false, error: message });
-          await prisma.appFolioIntegration.update({
-            where: { orgId: integration.orgId },
-            data: { syncStatus: "error", lastError: message },
-          }).catch(() => undefined);
+              data: { syncStatus: "error", lastError: message },
+            })
+            .catch(() => undefined);
+          return { orgId: integration.orgId, ok: false, error: message };
         }
       }
+
+      // Embed-fallback path for Core-plan tenants.
+      try {
+        const r = await syncListingsForOrg(integration.orgId);
+        if (r.error == null) {
+          await prisma.appFolioIntegration
+            .update({
+              where: { orgId: integration.orgId },
+              data: { syncStatus: "idle", lastSyncAt: new Date(), lastError: null },
+            })
+            .catch(() => undefined);
+        }
+        return {
+          orgId: integration.orgId,
+          ok: r.error == null,
+          stats: { listingsUpserted: r.synced },
+          error: r.error ?? undefined,
+        };
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        await prisma.appFolioIntegration
+          .update({
+            where: { orgId: integration.orgId },
+            data: { syncStatus: "error", lastError: message },
+          })
+          .catch(() => undefined);
+        return { orgId: integration.orgId, ok: false, error: message };
+      }
     }
+
+    async function worker() {
+      while (queue.length > 0) {
+        const next = queue.shift();
+        if (!next) break;
+        results.push(await processOne(next));
+      }
+    }
+
+    await Promise.all(
+      Array.from({ length: Math.min(CONCURRENCY, integrations.length) }, () =>
+        worker()
+      )
+    );
 
     return {
       result: NextResponse.json({

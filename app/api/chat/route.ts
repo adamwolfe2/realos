@@ -15,6 +15,7 @@ import {
 } from "@prisma/client";
 import { buildSystemPrompt, type ChatbotTenant } from "@/lib/chatbot/build-system-prompt";
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
+import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -62,6 +63,17 @@ export async function POST(req: NextRequest) {
     );
   }
   const { orgId, sessionId, messages, pageUrl } = parsed.data;
+
+  // Verify the request's Origin header resolves to the claimed orgId. Without
+  // this, anyone on the internet could spoof another tenant's orgId, drain
+  // their Anthropic budget, and pollute their lead pipeline.
+  const guard = await requireMatchingOrigin(req, orgId);
+  if (!guard.ok) {
+    return NextResponse.json(
+      { error: guard.error },
+      { status: guard.status }
+    );
+  }
 
   const org = await prisma.organization.findUnique({
     where: { id: orgId },

@@ -23,6 +23,7 @@ import {
   sendClientPortalReadyEmail,
   sendTeammateInviteEmail,
 } from "@/lib/email/onboarding-emails";
+import { getDefaultProjectTasks } from "@/lib/build/default-tasks";
 
 // ---------------------------------------------------------------------------
 // Admin action: convert an IntakeSubmission into a fully provisioned CLIENT
@@ -190,7 +191,11 @@ export async function convertIntakeToClient(
   );
   const modules = deriveModuleFlags(intake.selectedModules);
 
-  // Step 1: create Organization + link intake in a single transaction.
+  // Step 1: create Organization + Project (with 28-task fulfillment checklist)
+  // + tenantSiteConfig + link intake in a single transaction. The Project +
+  // tasks are what surface in /admin/pipeline and /admin/clients/[id], so the
+  // new tenant is immediately actionable without manual setup.
+  const defaultTasks = getDefaultProjectTasks();
   let org: { id: string; name: string; slug: string };
   try {
     org = await prisma.$transaction(async (tx) => {
@@ -215,8 +220,40 @@ export async function convertIntakeToClient(
           hqState: intake.hqState ?? null,
           bringYourOwnSite: true,
           ...modules,
+          tenantSiteConfig: {
+            create: {
+              siteTitle: intake.companyName,
+              primaryCtaText: "Apply Now",
+              showListings: true,
+              showFloorPlans: true,
+              showAmenities: true,
+              enableExitIntent: true,
+            },
+          },
         },
         select: { id: true, name: true, slug: true },
+      });
+
+      // Project + default 28-task checklist. Without this the new tenant is
+      // invisible to the build pipeline UI.
+      await tx.project.create({
+        data: {
+          orgId: created.id,
+          name: `${created.name} Build`,
+          description: "Tenant onboarding checklist",
+          status: "active",
+          startedAt: new Date(),
+          tasks: {
+            createMany: {
+              data: defaultTasks.map((t, idx) => ({
+                title: t.label,
+                description: t.description ?? null,
+                phase: t.phase != null ? String(t.phase) : null,
+                sortOrder: idx,
+              })),
+            },
+          },
+        },
       });
 
       await tx.intakeSubmission.update({

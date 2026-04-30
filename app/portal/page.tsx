@@ -6,6 +6,15 @@ import {
   DollarSign,
   Coins,
   Search,
+  Star,
+  Bot,
+  Brush,
+  FileText,
+  Gauge,
+  TrendingUp,
+  Share2,
+  Megaphone,
+  MessageSquare,
 } from "lucide-react";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -40,6 +49,8 @@ import {
   getPropertyMetrics,
   getRecentIdentifiedVisitors,
   getReputationPulse,
+  getReputationSummary,
+  getChatbotSummary,
 } from "@/lib/dashboard/queries";
 import { LeasingVelocityChart } from "@/components/portal/dashboard/leasing-velocity-chart";
 import { RecentIdentifiedVisitors } from "@/components/portal/dashboard/recent-identified-visitors";
@@ -102,6 +113,9 @@ export default async function PortalHome({
     velocityData,
     recentIdentified,
     reputationPulse,
+    reputationSummary,
+    chatbotSummary,
+    orgModules,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -173,6 +187,21 @@ export default async function PortalHome({
     getLeasingVelocityTrend(scope.orgId),
     getRecentIdentifiedVisitors(scope.orgId, 6),
     getReputationPulse(scope.orgId, 5),
+    getReputationSummary(scope.orgId),
+    getChatbotSummary(scope.orgId),
+    prisma.organization.findUnique({
+      where: { id: scope.orgId },
+      select: {
+        moduleChatbot: true,
+        moduleSEO: true,
+        moduleGoogleAds: true,
+        moduleMetaAds: true,
+        moduleCreativeStudio: true,
+        moduleReferrals: true,
+        moduleWebsite: true,
+        bringYourOwnSite: true,
+      },
+    }),
   ]);
 
   // 28d leads + active campaigns + sparkline per property.
@@ -256,7 +285,7 @@ export default async function PortalHome({
     integrationChips.find((c) => c.key === "ga4")?.status === "off";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       {/* Setup wizard overlay — floats above dashboard, dismissed via localStorage */}
       <SetupWizardGate shouldShow={showFirstRun} steps={wizardSteps} />
 
@@ -306,10 +335,12 @@ export default async function PortalHome({
         </section>
       ) : null}
 
-      {/* KPI strip — six tiles across at desktop, wraps on smaller screens */}
+      {/* KPI strip — eight tiles across at desktop, wraps on smaller screens.
+          Surfaces brand-health (reputation) and chatbot ROI directly so they
+          aren't buried in per-property pages. */}
       <section
         aria-label="Key metrics"
-        className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3"
+        className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3"
       >
             <KpiTile
               label="Total leads"
@@ -418,10 +449,65 @@ export default async function PortalHome({
               href="/portal/seo"
               locked={organicOff ? { reason: "Requires GSC or GA4", href: "/portal/settings/integrations" } : undefined}
             />
+            <KpiTile
+              label="Avg Google rating"
+              value={
+                reputationSummary.avgGoogleRating != null
+                  ? reputationSummary.avgGoogleRating.toFixed(1)
+                  : "—"
+              }
+              hint={
+                reputationSummary.googleReviewCount > 0
+                  ? `${reputationSummary.googleReviewCount.toLocaleString()} reviews · ${reputationSummary.newLast30d} new (30d)`
+                  : "No reviews yet"
+              }
+              icon={<Star className="h-3.5 w-3.5" />}
+              href="/portal/reputation"
+              delta={
+                reputationSummary.negativeCount > 0
+                  ? {
+                      value: `${reputationSummary.negativeCount} neg`,
+                      trend: "down",
+                    }
+                  : undefined
+              }
+            />
+            <KpiTile
+              label="Chatbot capture"
+              value={
+                chatbotSummary.captureRatePct != null
+                  ? `${chatbotSummary.captureRatePct}%`
+                  : "—"
+              }
+              hint={`${chatbotSummary.leadsCaptured28d} leads · ${chatbotSummary.conversations28d} chats (28d)`}
+              icon={<Bot className="h-3.5 w-3.5" />}
+              href="/portal/conversations"
+              locked={
+                !orgModules?.moduleChatbot
+                  ? {
+                      reason: "Chatbot module disabled",
+                      href: "/portal/settings",
+                    }
+                  : undefined
+              }
+              delta={
+                chatbotSummary.deltaPct != null
+                  ? {
+                      value: `${chatbotSummary.deltaPct >= 0 ? "+" : ""}${chatbotSummary.deltaPct}%`,
+                      trend:
+                        chatbotSummary.deltaPct > 0
+                          ? "up"
+                          : chatbotSummary.deltaPct < 0
+                            ? "down"
+                            : "flat",
+                    }
+                  : undefined
+              }
+            />
           </section>
 
           {/* Performance row */}
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
             <DashboardSection
               eyebrow="Where leads come from"
               title="Lead source breakdown"
@@ -459,7 +545,7 @@ export default async function PortalHome({
           </DashboardSection>
 
           {/* Recent identified visitors + reputation pulse */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <DashboardSection
               eyebrow="Pixel resolved"
               title="Recently identified visitors"
@@ -486,7 +572,7 @@ export default async function PortalHome({
           </section>
 
           {/* Properties + activity feed */}
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
             <DashboardSection
               title="Properties"
               eyebrow="Portfolio"
@@ -548,6 +634,105 @@ export default async function PortalHome({
             </DashboardSection>
           </section>
 
+          {/* Quick access — surfaces every feature one click away from the
+              dashboard. Used to be invisible: Reputation/Briefing/Site
+              Builder/Reports were 2-3 clicks deep with no homepage entry. */}
+          <DashboardSection
+            eyebrow="One click away"
+            title="Quick access"
+            description="Jump straight to any module from the dashboard"
+          >
+            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
+              <QuickAccessTile
+                href="/portal/reputation"
+                label="Reputation"
+                icon={<Star className="h-4 w-4" />}
+                meta={
+                  reputationSummary.totalMentions > 0
+                    ? `${reputationSummary.totalMentions} mentions`
+                    : "Run a scan"
+                }
+                badge={
+                  reputationSummary.unreviewedCount > 0
+                    ? reputationSummary.unreviewedCount
+                    : null
+                }
+              />
+              <QuickAccessTile
+                href="/portal/briefing"
+                label="AI Briefing"
+                icon={<Gauge className="h-4 w-4" />}
+                meta="Daily digest"
+              />
+              <QuickAccessTile
+                href="/portal/insights"
+                label="Insights"
+                icon={<Sparkles className="h-4 w-4" />}
+                meta={
+                  insightCounts.total > 0
+                    ? `${insightCounts.total} open signals`
+                    : "All clear"
+                }
+                badge={insightCounts.critical > 0 ? insightCounts.critical : null}
+                badgeTone={insightCounts.critical > 0 ? "rose" : undefined}
+              />
+              <QuickAccessTile
+                href="/portal/reports"
+                label="Reports"
+                icon={<FileText className="h-4 w-4" />}
+                meta="Weekly + monthly"
+              />
+              {orgModules?.moduleChatbot ? (
+                <QuickAccessTile
+                  href="/portal/conversations"
+                  label="Conversations"
+                  icon={<MessageSquare className="h-4 w-4" />}
+                  meta={`${chatbotSummary.conversations28d} in 28d`}
+                />
+              ) : null}
+              {orgModules?.moduleSEO ? (
+                <QuickAccessTile
+                  href="/portal/seo"
+                  label="SEO"
+                  icon={<TrendingUp className="h-4 w-4" />}
+                  meta={`${organic.sessions.toLocaleString()} sessions`}
+                />
+              ) : null}
+              {(orgModules?.moduleGoogleAds || orgModules?.moduleMetaAds) ? (
+                <QuickAccessTile
+                  href="/portal/campaigns"
+                  label="Campaigns"
+                  icon={<Megaphone className="h-4 w-4" />}
+                  meta={`$${adSpend.spendUsd.toLocaleString()} spend`}
+                />
+              ) : null}
+              {orgModules?.moduleCreativeStudio ? (
+                <QuickAccessTile
+                  href="/portal/creative"
+                  label="Creative studio"
+                  icon={<Brush className="h-4 w-4" />}
+                  meta="Ad assets"
+                />
+              ) : null}
+              {orgModules?.moduleWebsite && !orgModules?.bringYourOwnSite ? (
+                <QuickAccessTile
+                  href="/portal/site-builder"
+                  label="Site builder"
+                  icon={<Brush className="h-4 w-4" />}
+                  meta="Edit your site"
+                />
+              ) : null}
+              {orgModules?.moduleReferrals ? (
+                <QuickAccessTile
+                  href="/portal/referrals"
+                  label="Referrals"
+                  icon={<Share2 className="h-4 w-4" />}
+                  meta="Track referrers"
+                />
+              ) : null}
+            </div>
+          </DashboardSection>
+
           {/* Funnel rollup mini-stat (uses real status counts so operator sees
               live pipeline shape even before the funnel above is wired). */}
           <section className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
@@ -574,5 +759,55 @@ export default async function PortalHome({
             ))}
       </section>
     </div>
+  );
+}
+
+// One-click feature shortcut. Compact tile with icon + label + secondary
+// metric. Optional badge (e.g. unreviewed count, critical insight count).
+function QuickAccessTile({
+  href,
+  label,
+  icon,
+  meta,
+  badge,
+  badgeTone,
+}: {
+  href: string;
+  label: string;
+  icon: React.ReactNode;
+  meta?: string;
+  badge?: number | null;
+  badgeTone?: "rose";
+}) {
+  const badgeClass =
+    badgeTone === "rose"
+      ? "bg-rose-100 text-rose-700"
+      : "bg-primary/10 text-primary";
+  return (
+    <Link
+      href={href}
+      className="group relative flex items-center gap-2.5 rounded-lg border border-border bg-card hover:bg-muted/40 hover:border-primary/40 transition-all px-3 py-2.5 min-w-0"
+    >
+      <span className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-md bg-muted text-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
+        {icon}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-xs font-semibold text-foreground truncate">
+          {label}
+        </span>
+        {meta ? (
+          <span className="block text-[10px] text-muted-foreground truncate">
+            {meta}
+          </span>
+        ) : null}
+      </span>
+      {badge != null && badge > 0 ? (
+        <span
+          className={`shrink-0 inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full px-1 text-[10px] font-semibold tabular-nums ${badgeClass}`}
+        >
+          {badge}
+        </span>
+      ) : null}
+    </Link>
   );
 }

@@ -760,11 +760,31 @@ function EmptyNoPixel() {
 
 function EmptyNoVisitors() {
   return (
-    <div className="rounded-lg border border-border bg-card p-8 text-center space-y-2">
-      <div className="text-sm font-semibold">No visitors yet.</div>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto">
-        Once someone visits your site, they&apos;ll appear here in real time.
+    <div className="rounded-xl border border-dashed border-border bg-card p-8 md:p-12 text-center">
+      <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-2">
+        No visitors yet
       </p>
+      <h3 className="text-lg font-semibold text-foreground mb-1.5">
+        Install the pixel to start identifying visitors.
+      </h3>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-5">
+        The Cursive pixel resolves anonymous traffic to real names and emails
+        in real time. Once installed, visitors appear here within seconds.
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <a
+          href="/portal/settings/integrations"
+          className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
+        >
+          Install the pixel
+        </a>
+        <a
+          href="/portal/site-builder"
+          className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+        >
+          Customize your site
+        </a>
+      </div>
     </div>
   );
 }

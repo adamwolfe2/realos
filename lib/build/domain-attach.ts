@@ -78,6 +78,34 @@ export async function attachDomainToProject(hostname: string) {
   return (await res.json()) as VercelDomainStatus;
 }
 
+// Retry-aware variant. Vercel's domains API occasionally returns 5xx during
+// rolling deploys; if the call fails with a transient error we retry up to 3
+// times with exponential backoff (200ms, 600ms, 1.4s). Permanent errors
+// (4xx) bubble immediately so the operator sees a real failure.
+export async function attachDomainToProjectWithRetry(
+  hostname: string,
+  attempts = 3
+): Promise<VercelDomainStatus> {
+  let lastErr: unknown;
+  for (let i = 0; i < attempts; i++) {
+    try {
+      return await attachDomainToProject(hostname);
+    } catch (err) {
+      lastErr = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      // 4xx errors are not retriable — domain conflict, validation, etc.
+      if (/\b4\d\d\b/.test(msg)) throw err;
+      if (i < attempts - 1) {
+        const delay = 200 * Math.pow(3, i);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  throw lastErr instanceof Error
+    ? lastErr
+    : new Error("attachDomainToProjectWithRetry: unknown failure");
+}
+
 export async function removeDomainFromProject(hostname: string) {
   const res = await fetch(
     `${VERCEL_API}${projectPath()}/domains/${encodeURIComponent(hostname)}${qs(teamQs())}`,

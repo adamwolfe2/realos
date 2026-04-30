@@ -28,12 +28,27 @@ export default async function PropertiesList() {
       />
 
       {properties.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-center space-y-3">
-          <p className="text-sm text-muted-foreground">
-            No properties set up yet. Add one manually below or wait for
-            AppFolio sync to populate.
+        <div className="rounded-xl border border-dashed border-border bg-card p-8 md:p-12 text-center">
+          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-2">
+            No properties yet
           </p>
-          <PropertyFormDialog />
+          <h3 className="text-lg font-semibold text-foreground mb-1.5">
+            Add your first property to start tracking everything.
+          </h3>
+          <p className="text-sm text-muted-foreground max-w-md mx-auto mb-5">
+            Properties are the foundation — leads, tours, ad campaigns,
+            chatbot transcripts, reputation scans, and traffic data all map
+            back to a property.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <PropertyFormDialog />
+            <Link
+              href="/portal/settings/integrations"
+              className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+            >
+              Sync from AppFolio instead
+            </Link>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">

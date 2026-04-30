@@ -941,3 +941,122 @@ export async function getReputationPulse(
     sourceUrl: r.sourceUrl,
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Reputation summary tile — portfolio-wide aggregate for the dashboard KPI.
+// Cheap to compute and gives operators a one-glance answer to "how is my
+// brand looking right now?". Used on /portal as a KPI tile that links to the
+// new /portal/reputation portfolio page.
+// ---------------------------------------------------------------------------
+
+export type ReputationSummary = {
+  avgGoogleRating: number | null;
+  googleReviewCount: number;
+  totalMentions: number;
+  newLast30d: number;
+  negativeCount: number;
+  unreviewedCount: number;
+};
+
+export async function getReputationSummary(
+  orgId: string,
+): Promise<ReputationSummary> {
+  const last30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const [properties, mentionsTotal, mentionsNew30d, negativeCount, unreviewed] =
+    await Promise.all([
+      prisma.property.findMany({
+        where: { orgId },
+        select: { googleAggRating: true, googleAggReviewCount: true },
+      }),
+      prisma.propertyMention.count({ where: { orgId } }),
+      prisma.propertyMention.count({
+        where: { orgId, createdAt: { gte: last30d } },
+      }),
+      prisma.propertyMention.count({
+        where: { orgId, sentiment: "NEGATIVE" },
+      }),
+      prisma.propertyMention.count({
+        where: { orgId, reviewedByUserId: null },
+      }),
+    ]);
+
+  let weightedSum = 0;
+  let weightedCount = 0;
+  for (const p of properties) {
+    if (
+      typeof p.googleAggRating === "number" &&
+      typeof p.googleAggReviewCount === "number" &&
+      p.googleAggReviewCount > 0
+    ) {
+      weightedSum += p.googleAggRating * p.googleAggReviewCount;
+      weightedCount += p.googleAggReviewCount;
+    }
+  }
+  const avgGoogleRating =
+    weightedCount > 0 ? Math.round((weightedSum / weightedCount) * 10) / 10 : null;
+
+  return {
+    avgGoogleRating,
+    googleReviewCount: weightedCount,
+    totalMentions: mentionsTotal,
+    newLast30d: mentionsNew30d,
+    negativeCount,
+    unreviewedCount: unreviewed,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Chatbot KPI — captures and capture rate over the last 28 days. Surfaces the
+// chatbot's ROI directly on the dashboard. capture-rate denominator is total
+// active conversations (excluding flagged/spam) not raw site visitors.
+// ---------------------------------------------------------------------------
+
+export type ChatbotSummary = {
+  conversations28d: number;
+  leadsCaptured28d: number;
+  captureRatePct: number | null;
+  prev28dConversations: number;
+  deltaPct: number | null;
+};
+
+export async function getChatbotSummary(
+  orgId: string,
+): Promise<ChatbotSummary> {
+  const since28d = new Date(Date.now() - 28 * DAY_MS);
+  const sincePrev = new Date(Date.now() - 56 * DAY_MS);
+
+  const [convo28d, captured28d, convoPrev28d] = await Promise.all([
+    prisma.chatbotConversation.count({
+      where: { orgId, createdAt: { gte: since28d } },
+    }),
+    prisma.chatbotConversation.count({
+      where: {
+        orgId,
+        createdAt: { gte: since28d },
+        status: "LEAD_CAPTURED",
+      },
+    }),
+    prisma.chatbotConversation.count({
+      where: {
+        orgId,
+        createdAt: { gte: sincePrev, lt: since28d },
+      },
+    }),
+  ]);
+
+  const captureRatePct =
+    convo28d > 0 ? Math.round((captured28d / convo28d) * 100) : null;
+  const deltaPct =
+    convoPrev28d > 0
+      ? Math.round(((convo28d - convoPrev28d) / convoPrev28d) * 100)
+      : null;
+
+  return {
+    conversations28d: convo28d,
+    leadsCaptured28d: captured28d,
+    captureRatePct,
+    prev28dConversations: convoPrev28d,
+    deltaPct,
+  };
+}

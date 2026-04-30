@@ -38,6 +38,35 @@ export async function GET(req: NextRequest) {
       },
     });
 
+    // Batch-fetch all billing-reminder audit events for these orgs in a single
+    // query, then bucket per org. Replaces the N+1 pattern of two findFirst()
+    // calls per org which dominated wall-clock time as more tenants entered
+    // PAST_DUE.
+    const orgIds = orgs.map((o) => o.id);
+    const reminderEvents =
+      orgIds.length > 0
+        ? await prisma.auditEvent.findMany({
+            where: { orgId: { in: orgIds }, entityType: "billing_reminder" },
+            select: { orgId: true, createdAt: true },
+            orderBy: { createdAt: "asc" },
+          })
+        : [];
+
+    const reminderRange = new Map<
+      string,
+      { first: Date; last: Date }
+    >();
+    for (const ev of reminderEvents) {
+      if (!ev.orgId) continue;
+      const r = reminderRange.get(ev.orgId);
+      if (!r) {
+        reminderRange.set(ev.orgId, { first: ev.createdAt, last: ev.createdAt });
+      } else {
+        if (ev.createdAt < r.first) r.first = ev.createdAt;
+        if (ev.createdAt > r.last) r.last = ev.createdAt;
+      }
+    }
+
     const portalBase =
       process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
     const billingUrl = `${portalBase}/portal/billing`;
@@ -55,37 +84,18 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
-        // Find the most recent billing reminder sent to this org.
-        const lastReminder = await prisma.auditEvent.findFirst({
-          where: {
-            orgId: org.id,
-            entityType: "billing_reminder",
-          },
-          orderBy: { createdAt: "desc" },
-        });
+        const reminders = reminderRange.get(org.id);
 
         // Skip if we sent a reminder within the last 7 days.
-        if (
-          lastReminder &&
-          lastReminder.createdAt.getTime() > sevenDaysAgo.getTime()
-        ) {
+        if (reminders && reminders.last.getTime() > sevenDaysAgo.getTime()) {
           results.push({ orgId: org.id, action: "skip_rate_limited" });
           continue;
         }
 
-        // Determine escalation: past-due for 14+ days.
-        // We use the first-ever reminder's createdAt as the "past-due since" date.
-        const firstReminder = await prisma.auditEvent.findFirst({
-          where: {
-            orgId: org.id,
-            entityType: "billing_reminder",
-          },
-          orderBy: { createdAt: "asc" },
-        });
-
+        // Escalation: first reminder was 14+ days ago.
         const isEscalated =
-          firstReminder != null &&
-          firstReminder.createdAt.getTime() <= fourteenDaysAgo.getTime();
+          reminders != null &&
+          reminders.first.getTime() <= fourteenDaysAgo.getTime();
 
         const firstName =
           (org.primaryContactName ?? "there").split(" ")[0] ?? "there";

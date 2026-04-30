@@ -190,7 +190,48 @@ export default async function LeadsKanbanPage({
         </div>
       )}
 
-      <LeadKanban items={items} />
+      {totalCount === 0 ? (
+        <EmptyLeadsState />
+      ) : (
+        <LeadKanban items={items} />
+      )}
+    </div>
+  );
+}
+
+function EmptyLeadsState() {
+  return (
+    <div className="rounded-xl border border-dashed border-border bg-card p-8 md:p-12 text-center">
+      <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-2">
+        No leads yet
+      </p>
+      <h3 className="text-lg font-semibold text-foreground mb-1.5">
+        Your pipeline is empty.
+      </h3>
+      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-5">
+        Once leads start coming in from your chatbot, contact forms, ads, or
+        AppFolio sync, they&apos;ll show up here. Pick a starting point below.
+      </p>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        <Link
+          href="/portal/site-builder"
+          className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
+        >
+          Set up lead capture
+        </Link>
+        <Link
+          href="/portal/settings/integrations"
+          className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+        >
+          Connect AppFolio
+        </Link>
+        <Link
+          href="/portal/settings/api-keys"
+          className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+        >
+          Push leads via API
+        </Link>
+      </div>
     </div>
   );
 }

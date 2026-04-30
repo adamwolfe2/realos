@@ -29,6 +29,7 @@ import {
   Send,
   History,
   Calendar,
+  Star,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -122,6 +123,7 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Eye,
         show: (o) => o.modulePixel,
       },
+      { href: "/portal/reputation", label: "Reputation", icon: Star, show: ALWAYS },
     ],
   },
   {
@@ -167,6 +169,12 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Platform",
     items: [
+      {
+        href: "/portal/site-builder",
+        label: "Site builder",
+        icon: Brush,
+        show: (o) => o.moduleWebsite && !o.bringYourOwnSite,
+      },
       { href: "/portal/seo", label: "SEO", icon: TrendingUp, show: (o) => o.moduleSEO },
       {
         href: "/portal/referrals",
