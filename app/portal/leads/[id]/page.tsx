@@ -11,7 +11,6 @@ import {
   Mail,
   Phone,
   Radar,
-  Send,
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
@@ -23,6 +22,7 @@ import { Timeline } from "@/components/portal/leads/timeline";
 import { buildTimeline } from "@/components/portal/leads/timeline-events";
 import { EnrichmentCard, SidebarCard } from "@/components/portal/leads/enrichment-card";
 import { CopyButton } from "@/components/portal/leads/copy-button";
+import { LeadEmailComposer } from "@/components/portal/leads/email-composer";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 import { MarkLostButton } from "./mark-lost-button";
 
@@ -174,22 +174,14 @@ export default async function LeadDetailPage({
         </nav>
         <div className="flex items-center gap-2">
           <CopyButton value={lead.email} label="Copy email" />
-          {lead.email ? (
-            <a
-              href={`mailto:${lead.email}`}
-              aria-label="Send email"
-              title="Send email"
-              className={cn(
-                "inline-flex h-9 w-9 items-center justify-center rounded-[10px]",
-                "bg-card ring-1 ring-border",
-                "text-foreground",
-                "transition-colors duration-200",
-                "hover:bg-muted hover:text-foreground"
-              )}
-            >
-              <Send className="h-4 w-4" />
-            </a>
-          ) : null}
+          <LeadEmailComposer
+            leadId={lead.id}
+            to={lead.email}
+            unsubscribed={lead.unsubscribedFromEmails}
+            defaultSubject={`Following up on your interest in ${
+              lead.property?.name ?? "our properties"
+            }`}
+          />
         </div>
       </div>
 
