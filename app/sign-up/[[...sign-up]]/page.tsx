@@ -1,8 +1,8 @@
 import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
-import Image from "next/image";
 import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
+import { LeaseStackWordmark } from "@/components/brand/leasestack-wordmark";
 
 export const metadata: Metadata = {
   title: `Create account | ${BRAND_NAME}`,
@@ -16,11 +16,11 @@ const VALUE_PROPS = [
   },
   {
     title: "Visitor identification + reputation in one place",
-    body: "Resolved website visitors, Google reviews, Reddit mentions — all the brand signals worth acting on.",
+    body: "Resolved website visitors, Google reviews, Reddit mentions — every brand signal worth acting on.",
   },
   {
     title: "Built for student-housing operators",
-    body: "Purpose-built for university-adjacent properties, leasing seasons, and roommate matching workflows.",
+    body: "Purpose-built for university-adjacent properties, leasing seasons, and roommate-matching workflows.",
   },
 ];
 
@@ -28,27 +28,31 @@ export default function SignUpPage() {
   return (
     <div className="min-h-screen bg-white text-foreground flex flex-col md:flex-row">
       <aside className="hidden md:flex md:w-[44%] lg:w-[40%] xl:w-[36%] flex-col justify-between p-12 bg-[#0A0A0A] text-white">
-        <Link href="/" aria-label={BRAND_NAME} className="inline-flex items-center hover:opacity-90">
-          <Image
-            src="/logos/leasestack-wordmark.png"
-            alt={BRAND_NAME}
-            width={200}
-            height={36}
-            priority
-            className="h-8 w-auto"
-            style={{ filter: "invert(1)" }}
-          />
+        <Link
+          href="/"
+          aria-label={BRAND_NAME}
+          className="inline-flex hover:opacity-90 transition-opacity"
+        >
+          <LeaseStackWordmark tone="light" className="text-[20px]" />
         </Link>
 
         <div className="space-y-8 max-w-md">
           <div>
-            <p className="text-[11px] tracking-[0.18em] uppercase font-semibold text-white/60">
+            <p className="text-[11px] tracking-[0.18em] uppercase font-semibold text-white/55">
               Real estate operator portal
             </p>
-            <h2 className="mt-3 text-3xl font-semibold leading-tight">
-              Marketing, leasing, and operations
+            <h2
+              className="mt-3 text-[34px] leading-[1.1] font-semibold tracking-tight"
+              style={{
+                fontFamily:
+                  "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
+              }}
+            >
+              Marketing, leasing, and
               <br />
-              in a single dashboard.
+              operations in a single
+              <br />
+              dashboard.
             </h2>
           </div>
 
@@ -67,33 +71,38 @@ export default function SignUpPage() {
           </ul>
         </div>
 
-        <p className="text-[11px] text-white/50">
+        <p className="text-[11px] text-white/45 tracking-wide">
           &copy; {new Date().getFullYear()} {BRAND_NAME}
         </p>
       </aside>
 
       <main className="flex-1 flex flex-col">
-        <header className="md:hidden px-6 py-5 border-b border-[#EEEEEE]">
+        <header className="px-6 md:px-10 py-5 md:py-6 border-b border-[#EEEEEE] flex items-center justify-between">
           <Link
             href="/"
             aria-label={BRAND_NAME}
-            className="inline-flex items-center hover:opacity-80 transition-opacity"
+            className="inline-flex hover:opacity-80 transition-opacity"
           >
-            <Image
-              src="/logos/leasestack-wordmark.png"
-              alt={BRAND_NAME}
-              width={150}
-              height={28}
-              priority
-              className="h-7 w-auto"
-            />
+            <LeaseStackWordmark tone="dark" className="text-[18px]" />
+          </Link>
+          <Link
+            href="/sign-in"
+            className="text-xs font-semibold text-foreground hover:underline underline-offset-4"
+          >
+            Sign in →
           </Link>
         </header>
 
         <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
-          <div className="w-full max-w-md">
+          <div className="w-full max-w-[420px]">
             <div className="mb-8">
-              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-1">
+              <h1
+                className="text-[32px] leading-tight font-semibold tracking-tight text-foreground mb-2"
+                style={{
+                  fontFamily:
+                    "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
+                }}
+              >
                 Create your account
               </h1>
               <p className="text-sm text-muted-foreground">
@@ -109,26 +118,40 @@ export default function SignUpPage() {
                   logoPlacement: "none",
                   socialButtonsVariant: "blockButton",
                 },
+                variables: {
+                  colorPrimary: "#0A0A0A",
+                  colorText: "#0A0A0A",
+                  colorTextSecondary: "#5C5E62",
+                  colorBackground: "#FFFFFF",
+                  colorInputBackground: "#FFFFFF",
+                  colorInputText: "#0A0A0A",
+                  colorDanger: "#b53333",
+                  borderRadius: "8px",
+                  fontFamily:
+                    "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
+                  fontSize: "14px",
+                },
                 elements: {
                   rootBox: "w-full",
-                  card: "w-full shadow-none border border-[#EEEEEE] bg-white rounded-lg p-6",
+                  card: "w-full shadow-none border border-[#E5E5E5] bg-white rounded-xl p-7",
                   headerTitle: "hidden",
                   headerSubtitle: "hidden",
                   socialButtonsBlockButton:
-                    "border border-[#EEEEEE] bg-white hover:bg-[#F4F4F4] text-[#141413] text-sm font-medium rounded-md h-10 transition-colors",
+                    "border border-[#E5E5E5] bg-white hover:bg-[#F7F7F7] text-foreground text-sm font-medium rounded-md h-11 transition-colors",
                   dividerLine: "bg-[#EEEEEE]",
-                  dividerText: "text-[#8E8E8E] text-xs",
-                  formFieldLabel: "text-xs font-medium text-[#393C41] mb-1",
+                  dividerText: "text-[#8E8E8E] text-xs uppercase tracking-wider",
+                  formFieldLabel:
+                    "text-[11px] font-semibold text-[#393C41] mb-1.5 uppercase tracking-wider",
                   formFieldInput:
-                    "border border-[#EEEEEE] bg-white focus:border-[#0A0A0A] focus:ring-0 rounded-md h-10 text-sm text-[#141413] placeholder:text-[#8E8E8E]",
+                    "border border-[#D4D4D4] bg-white focus:border-[#0A0A0A] focus:ring-2 focus:ring-[#0A0A0A]/10 focus:outline-none rounded-md h-11 text-sm text-foreground placeholder:text-[#8E8E8E] transition-colors",
                   formButtonPrimary:
-                    "bg-[#0A0A0A] hover:bg-[#1f1f1f] text-white rounded-md h-10 text-sm font-semibold transition-colors",
+                    "!bg-[#0A0A0A] hover:!bg-[#1f1f1f] !text-white !shadow-none !border-0 rounded-md h-11 text-sm font-semibold transition-colors",
                   footerActionLink:
-                    "text-[#0A0A0A] font-semibold hover:underline underline-offset-2",
+                    "text-foreground font-semibold hover:underline underline-offset-2",
                   identityPreviewEditButton:
-                    "text-[#0A0A0A] underline underline-offset-2",
+                    "text-foreground underline underline-offset-2",
                   otpCodeFieldInput:
-                    "border border-[#EEEEEE] rounded-md text-[#141413]",
+                    "border border-[#D4D4D4] rounded-md text-foreground",
                   alertText: "text-sm",
                   formFieldErrorText: "text-xs text-[#b53333]",
                 },
@@ -149,10 +172,14 @@ export default function SignUpPage() {
           </div>
         </div>
 
-        <footer className="md:hidden px-6 py-4 border-t border-[#EEEEEE]">
-          <p className="text-center text-[11px] text-muted-foreground">
-            &copy; {new Date().getFullYear()} {BRAND_NAME}
-          </p>
+        <footer className="px-6 md:px-10 py-4 border-t border-[#EEEEEE] flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>&copy; {new Date().getFullYear()} {BRAND_NAME}</span>
+          <a
+            href="mailto:hello@leasestack.co"
+            className="hover:text-foreground"
+          >
+            hello@leasestack.co
+          </a>
         </footer>
       </main>
     </div>
