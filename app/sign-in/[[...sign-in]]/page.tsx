@@ -187,6 +187,30 @@ export default function SignInPage() {
               </Link>
               .
             </p>
+
+            {/* Invitee recovery hint. Clerk's "Couldn't find your account"
+                message is a dead-end for invitees who arrive here instead
+                of clicking the email's Accept Invitation button — they
+                have a pending DB row but no Clerk account yet. This banner
+                points them at /sign-up where /api/auth/role will claim
+                the pending row by email on first sign-up. */}
+            <div className="mt-6 rounded-lg border border-[#EEEEEE] bg-[#F9F9F9] px-4 py-3">
+              <p className="text-xs font-semibold text-foreground">
+                Were you invited to {BRAND_NAME}?
+              </p>
+              <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
+                Click the <span className="font-semibold">Accept invitation</span>{" "}
+                button in your invitation email — or{" "}
+                <Link
+                  href="/sign-up"
+                  className="font-semibold text-foreground underline underline-offset-2 hover:no-underline"
+                >
+                  create an account
+                </Link>{" "}
+                with the same email. We&apos;ll route you to the right portal
+                automatically.
+              </p>
+            </div>
           </div>
         </div>
 

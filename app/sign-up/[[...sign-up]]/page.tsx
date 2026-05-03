@@ -9,6 +9,15 @@ export const metadata: Metadata = {
   description: `Create your ${BRAND_NAME} account.`,
 };
 
+// Light validation — Clerk does the real check; we just prevent obvious
+// junk from being passed into initialValues which would render
+// 'undefined@undefined' style strings in the UI.
+function isLikelyEmail(v: string | undefined): boolean {
+  if (!v) return false;
+  const s = v.trim();
+  return s.length > 3 && s.length < 200 && /.+@.+\..+/.test(s);
+}
+
 const VALUE_PROPS = [
   {
     title: "Operations dashboard, mirrored from AppFolio",
@@ -24,7 +33,18 @@ const VALUE_PROPS = [
   },
 ];
 
-export default function SignUpPage() {
+export default async function SignUpPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ email?: string }>;
+}) {
+  // Pre-fill the email when invitees arrive via /sign-up?email=… (set by the
+  // invite endpoint's fallback URL). Removes the "I have an invite but no
+  // account" dead-end entirely — the email is already in the form so they
+  // just pick a password and our /api/auth/role claims the pre-created
+  // User row by email on first sign-in.
+  const params = await searchParams;
+  const prefillEmail = isLikelyEmail(params.email) ? params.email!.trim() : undefined;
   return (
     <div className="min-h-screen bg-white text-foreground flex flex-col md:flex-row">
       <aside className="hidden md:flex md:w-[44%] lg:w-[40%] xl:w-[36%] flex-col justify-between p-12 bg-[#0A0A0A] text-white">
@@ -110,9 +130,25 @@ export default function SignUpPage() {
               </p>
             </div>
 
+            {prefillEmail ? (
+              <div className="mb-5 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3">
+                <p className="text-xs font-semibold text-blue-900">
+                  Accepting an invitation
+                </p>
+                <p className="text-[11px] text-blue-900/80 mt-0.5 leading-snug">
+                  Pick a password to finish creating your account for{" "}
+                  <span className="font-mono">{prefillEmail}</span>. We&apos;ll
+                  drop you into the right portal as soon as you sign up.
+                </p>
+              </div>
+            ) : null}
+
             <SignUp
               fallbackRedirectUrl="/auth/redirect"
               signInUrl="/sign-in"
+              initialValues={
+                prefillEmail ? { emailAddress: prefillEmail } : undefined
+              }
               appearance={{
                 layout: {
                   logoPlacement: "none",

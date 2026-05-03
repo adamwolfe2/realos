@@ -175,13 +175,15 @@ export async function POST(req: NextRequest) {
   }
 
   // Send our own LeaseStack-branded invitation email naming the inviting org.
-  // Falls back to the public sign-up URL when Clerk did not return a
-  // ready-to-accept ticket URL (e.g. Clerk skipped because the user already
-  // exists, or Clerk isn't configured).
+  // Falls back to /sign-up?email=… when Clerk did not return a ready-to-
+  // accept ticket URL (e.g. Clerk skipped because the user already exists,
+  // or Clerk isn't configured). The pre-filled email means the invitee
+  // never sees a "couldn't find your account" dead-end on /sign-in even
+  // when the Clerk one-click URL is unavailable.
   let inviteEmailSent = false;
   let inviteEmailError: string | null = null;
   try {
-    const fallbackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/sign-up`;
+    const fallbackUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/sign-up?email=${encodeURIComponent(email)}`;
     const inviterName =
       [caller?.firstName, caller?.lastName].filter(Boolean).join(" ").trim() ||
       null;
@@ -222,8 +224,12 @@ export async function POST(req: NextRequest) {
   // Always return the best-available link so the UI can offer a manual
   // copy fallback when the email failed (Resend mis-config, domain not
   // verified, recipient bouncing, etc.). Prefer the Clerk one-click accept
-  // URL; fall back to the public /sign-up page when Clerk didn't issue one.
-  const fallbackSignUp = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/sign-up`;
+  // URL; fall back to /sign-up?email=… so the invitee lands on a form
+  // pre-filled with their email. The DB row we created above is keyed by
+  // email, so /api/auth/role will claim it on first sign-up regardless of
+  // which path they take.
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? "";
+  const fallbackSignUp = `${baseUrl}/sign-up?email=${encodeURIComponent(email)}`;
   const inviteLink = acceptUrl ?? fallbackSignUp;
 
   return NextResponse.json({
