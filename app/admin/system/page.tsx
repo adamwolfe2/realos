@@ -11,6 +11,11 @@ import {
   type HealthStatus,
 } from "@/lib/health/checks";
 import {
+  getReadinessForAllTenants,
+  type TenantReadiness,
+  type CheckState,
+} from "@/lib/admin/demo-readiness";
+import {
   Database,
   Shield,
   Brain,
@@ -79,7 +84,7 @@ function statusLabel(status: HealthStatus): string {
 export default async function SystemHealthPage() {
   await requireAgency();
 
-  const [health, recentAudits] = await Promise.all([
+  const [health, recentAudits, tenantReadiness] = await Promise.all([
     runSystemHealthDeep(),
     prisma.auditEvent
       .findMany({
@@ -91,6 +96,7 @@ export default async function SystemHealthPage() {
         },
       })
       .catch(() => []),
+    getReadinessForAllTenants().catch(() => [] as TenantReadiness[]),
   ]);
 
   const checkCards = [
@@ -170,6 +176,21 @@ export default async function SystemHealthPage() {
           <PulseStat label="Chatbot conversations" value={health.pulse.chatbotConversationsLast24h} />
           <PulseStat label="Webhook events" value={health.pulse.webhookEventsLast24h} />
         </div>
+      </section>
+
+      {/* Per-tenant demo readiness — the checklist agency staff scan
+          before any sales call. Catches the "open the demo and discover
+          the pixel went silent yesterday" failure mode. */}
+      <section>
+        <div className="flex items-center justify-between gap-3 mb-3 flex-wrap">
+          <h2 className="text-sm font-semibold text-foreground">
+            Demo readiness · per tenant
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            Pre-flight checks before walking a prospect through the portal.
+          </p>
+        </div>
+        <DemoReadinessTable rows={tenantReadiness} />
       </section>
 
       {/* Cron schedule + last run */}
@@ -289,6 +310,107 @@ function CheckCard({
           {check.message}
         </div>
       ) : null}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Demo readiness table — every CLIENT tenant with their pre-flight checks
+// ---------------------------------------------------------------------------
+
+const STATE_DOT: Record<CheckState, string> = {
+  pass: "bg-emerald-500",
+  warn: "bg-amber-500",
+  fail: "bg-rose-500",
+  skip: "bg-muted-foreground/30",
+};
+
+const STATE_LABEL: Record<CheckState, string> = {
+  pass: "OK",
+  warn: "Warn",
+  fail: "Fail",
+  skip: "—",
+};
+
+function DemoReadinessTable({ rows }: { rows: TenantReadiness[] }) {
+  if (rows.length === 0) {
+    return (
+      <div className="rounded-lg border border-border bg-card p-8 text-center text-sm text-muted-foreground">
+        No client tenants found.
+      </div>
+    );
+  }
+  // Sort: tenants with failures first, then warnings, then clean ones. The
+  // operator scans this top-to-bottom in the seconds before a demo.
+  const sorted = [...rows].sort((a, b) => {
+    if (a.failCount !== b.failCount) return b.failCount - a.failCount;
+    if (a.warnCount !== b.warnCount) return b.warnCount - a.warnCount;
+    return a.orgName.localeCompare(b.orgName);
+  });
+
+  return (
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <ul className="divide-y divide-border">
+        {sorted.map((row) => {
+          const overall: CheckState =
+            row.failCount > 0 ? "fail" : row.warnCount > 0 ? "warn" : "pass";
+          return (
+            <li key={row.orgId} className="px-4 py-3">
+              <div className="flex items-center justify-between gap-3 mb-2 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span
+                    className={`h-2 w-2 rounded-full shrink-0 ${STATE_DOT[overall]}`}
+                  />
+                  <Link
+                    href={`/admin/clients/${row.orgId}`}
+                    className="text-sm font-semibold text-foreground hover:underline truncate"
+                  >
+                    {row.orgName}
+                  </Link>
+                  <span className="text-[11px] text-muted-foreground tabular-nums">
+                    {row.passCount} ok
+                    {row.warnCount ? ` · ${row.warnCount} warn` : ""}
+                    {row.failCount ? ` · ${row.failCount} fail` : ""}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-[11px]">
+                  <Link
+                    href={`/admin/integrations/appfolio`}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    AppFolio →
+                  </Link>
+                  <Link
+                    href={`/admin/clients/${row.orgId}`}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    Tenant →
+                  </Link>
+                </div>
+              </div>
+              <ul className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-1.5">
+                {row.checks.map((c) => (
+                  <li
+                    key={c.id}
+                    className="flex items-start gap-2 text-xs min-w-0"
+                  >
+                    <span
+                      className={`mt-1 h-1.5 w-1.5 rounded-full shrink-0 ${STATE_DOT[c.state]}`}
+                      title={STATE_LABEL[c.state]}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <span className="font-medium text-foreground">
+                        {c.label}
+                      </span>
+                      <span className="text-muted-foreground"> · {c.hint}</span>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

@@ -388,6 +388,9 @@ export default async function PortalHome({
   ];
 
   const cursiveOff = integrationChips.find((c) => c.key === "cursive")?.status === "off";
+  const appfolioChip = integrationChips.find((c) => c.key === "appfolio");
+  const appfolioOff = appfolioChip?.status === "off";
+  const appfolioDegraded = appfolioChip?.status === "degraded";
   const adsOff =
     integrationChips.find((c) => c.key === "google-ads")?.status === "off" &&
     integrationChips.find((c) => c.key === "meta-ads")?.status === "off";
@@ -764,6 +767,37 @@ export default async function PortalHome({
               <ReputationPulse items={reputationPulse} />
             </DashboardSection>
           </section>
+
+          {/* AppFolio not-connected hint — the mirror strip below hides
+              itself when there's no data, but that creates a silent
+              absence. This banner explains why the operations metrics are
+              missing and gives a one-click setup CTA. */}
+          {appfolioOff &&
+          rentRollMonthly === 0 &&
+          activeResidentsCount === 0 &&
+          openWorkOrdersCount === 0 ? (
+            <Link
+              href="/portal/settings/integrations"
+              className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-4 py-3 hover:border-foreground/40 transition-colors group"
+            >
+              <div className="flex items-center gap-2.5 min-w-0">
+                <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold text-foreground">
+                    Connect AppFolio to unlock the operations dashboard
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    Mirror residents, leases, work orders, and rent roll
+                    here — without leaving AppFolio as your source of
+                    truth.
+                  </p>
+                </div>
+              </div>
+              <span className="text-xs font-medium text-foreground group-hover:underline whitespace-nowrap">
+                Connect →
+              </span>
+            </Link>
+          ) : null}
 
           {/* AppFolio mirror strip — rent roll, residents, renewals, work
               orders. AppFolio remains source of truth; we surface the
