@@ -15,6 +15,7 @@ import {
 } from "@/lib/chatbot/build-system-prompt";
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
 import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
+import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import {
   publicApiLimiter,
   checkRateLimit,
@@ -118,6 +119,13 @@ export async function POST(req: NextRequest) {
   const orgId = org.id;
   const systemPrompt = buildSystemPrompt(org as ChatbotTenant);
   const userAgent = req.headers.get("user-agent") ?? undefined;
+  // Match the chat's host pageUrl to a specific property when possible.
+  // Multi-property tenants used to lose attribution because the previous
+  // logic always picked the most-recently-updated property.
+  const resolvedPropertyId = resolvePropertyForChatPage(
+    pageUrl,
+    org.properties.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))
+  );
 
   const result = streamText({
     model: anthropic("claude-haiku-4-5-20251001"),
@@ -133,7 +141,7 @@ export async function POST(req: NextRequest) {
           pageUrl,
           userAgent,
           ipAddress: ip,
-          propertyId: org.properties[0]?.id,
+          propertyId: resolvedPropertyId ?? org.properties[0]?.id,
         });
       } catch (err) {
         console.error("[public/chatbot/chat] persistence error:", err);

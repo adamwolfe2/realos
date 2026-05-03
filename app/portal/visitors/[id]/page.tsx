@@ -106,20 +106,47 @@ export default async function VisitorDetailPage({
     (s) => s.lastEventAt.getTime() >= Date.now() - LIVE_WINDOW_MS
   );
 
-  // Engagement metrics
-  const totalSessions = visitor.sessions.length;
-  const totalPageviews = visitor.sessions.reduce(
+  // Engagement metrics. The VisitorSession table is populated only when
+  // AL/Cursive sends a page_view event, but AL-identified visitors
+  // routinely arrive via identify-only events with no engagement
+  // payload. Fall back to the aggregates on the Visitor record itself
+  // (set by the AL identify pipeline) so a visitor with intent score 70
+  // doesn't display as "0 sessions / 0 pageviews / 0s on site" — the
+  // audit caught this exact dead-end on Timothy Farris.
+  const sessionRowCount = visitor.sessions.length;
+  const sessionRowPageviews = visitor.sessions.reduce(
     (acc, s) => acc + s.pageviewCount,
     0
   );
-  const totalTimeSeconds = visitor.sessions.reduce(
+  const sessionRowTime = visitor.sessions.reduce(
     (acc, s) => acc + s.totalTimeSeconds,
     0
   );
-  const maxScrollDepth = visitor.sessions.reduce(
+  const sessionRowScroll = visitor.sessions.reduce(
     (acc, s) => Math.max(acc, s.maxScrollDepth),
     0
   );
+
+  // Prefer first-party session data when present (it's per-event accurate),
+  // fall back to the AL-supplied Visitor-row aggregates otherwise. This
+  // way the UI is always honest: it shows whichever source has higher
+  // signal, never zero when AL knows otherwise.
+  const totalSessions = Math.max(sessionRowCount, visitor.sessionCount ?? 0);
+  const totalPageviews = Math.max(
+    sessionRowPageviews,
+    // AL stores recent pages in pagesViewed JSON when known; count length
+    // as a soft proxy for pageviews when no per-session table exists.
+    Array.isArray(visitor.pagesViewed) ? visitor.pagesViewed.length : 0
+  );
+  const totalTimeSeconds = Math.max(
+    sessionRowTime,
+    visitor.totalTimeSeconds ?? 0
+  );
+  const maxScrollDepth = sessionRowScroll;
+  // Tells the UI whether to show a hint that engagement was synthesized
+  // from AL aggregates (no per-pageview detail). Drives the "limited
+  // engagement detail" copy below the metrics row.
+  const usingAggregateFallback = sessionRowCount === 0 && totalSessions > 0;
 
   const isLive =
     visitor.sessions.some(
@@ -330,12 +357,20 @@ export default async function VisitorDetailPage({
             <StatCard
               label="Sessions"
               value={totalSessions}
-              hint="Unique visits"
+              hint={
+                usingAggregateFallback
+                  ? "From AL aggregate"
+                  : "Unique visits"
+              }
             />
             <StatCard
               label="Pageviews"
               value={totalPageviews}
-              hint="Across all sessions"
+              hint={
+                usingAggregateFallback
+                  ? "Pages tracked by AL"
+                  : "Across all sessions"
+              }
             />
             <StatCard
               label="Time on site"
@@ -344,11 +379,32 @@ export default async function VisitorDetailPage({
             />
             <StatCard
               label="Max scroll"
-              value={`${maxScrollDepth}%`}
-              hint="Deepest scroll depth"
+              value={maxScrollDepth > 0 ? `${maxScrollDepth}%` : "—"}
+              hint={
+                usingAggregateFallback
+                  ? "Pixel detail required"
+                  : "Deepest scroll depth"
+              }
               tone={maxScrollDepth >= 75 ? "success" : undefined}
             />
           </div>
+
+          {/* Honest disclosure when engagement metrics come from AL's
+              aggregated identify payload rather than first-party
+              page_view events. Without this hint, an operator looking
+              at "0% max scroll" on a 70-intent visitor would assume the
+              data is broken when it's actually just unavailable. */}
+          {usingAggregateFallback ? (
+            <div className="rounded-lg border border-border bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">
+                Engagement detail limited.
+              </span>{" "}
+              This visitor was identified by AL/Cursive without a matching
+              first-party page_view event, so per-session timing and
+              scroll depth aren&apos;t available. Install the page-view
+              snippet on every property page to backfill these.
+            </div>
+          ) : null}
 
           {/* Intent score */}
           <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-5 py-4">

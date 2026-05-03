@@ -15,6 +15,7 @@ import {
 } from "@/lib/rate-limit";
 import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
 import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
+import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 
 // POST /api/public/chatbot/lead
 //
@@ -91,10 +92,12 @@ export async function POST(req: NextRequest) {
     where: { slug },
     include: {
       tenantSiteConfig: { select: { chatbotEnabled: true } },
+      // Pull all properties so we can match the chat's pageUrl to the
+      // right one. The audit caught chatbot leads being attributed to
+      // the wrong (or no) property because the previous query was
+      // take: 1 — multi-property orgs always lost attribution.
       properties: {
-        orderBy: { updatedAt: "desc" },
-        take: 1,
-        select: { id: true },
+        select: { id: true, slug: true, name: true },
       },
     },
   });
@@ -113,7 +116,13 @@ export async function POST(req: NextRequest) {
   }
 
   const orgId = org.id;
-  const propertyId = org.properties[0]?.id ?? null;
+  // Resolve the chat's host page → property. Audit BUG-08 found chatbot
+  // leads displaying property "—" because we were always attributing to
+  // the most-recently-updated property regardless of where the chat
+  // actually happened. Now we match against the URL when possible and
+  // only fall back to the first property when no match is found AND
+  // there's exactly one property (single-property tenants).
+  const propertyId = resolvePropertyForChatPage(pageUrl, org.properties);
   const userAgent = req.headers.get("user-agent") ?? undefined;
   const sessionId = crypto.randomUUID();
 
@@ -212,3 +221,7 @@ export async function POST(req: NextRequest) {
     );
   }
 }
+
+// Property attribution helper extracted to lib/chatbot/property-attribution.ts
+// so the /chat route uses the same logic. See JSDoc there for resolution
+// strategy.
