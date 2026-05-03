@@ -415,12 +415,14 @@ export default async function PortfolioReputationPage() {
     </div>
   );
   } catch (err) {
-    // Render-time crash — log full diagnostic info + return a clean fallback
-    // so we never bubble to the global "Something went wrong" boundary on
-    // a customer demo. The diagnostic dump goes to Vercel logs so the next
-    // time we see this we can identify the exact field that broke.
+    // Render-time crash — log full diagnostic info + surface the actual
+    // error in the rendered fallback so we can identify the exact field
+    // that broke without round-tripping through Vercel logs. Once the
+    // page is reliably stable this can be reverted to the user-friendly
+    // copy.
     const message = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error ? err.stack : undefined;
+    const firstStackLine = stack?.split("\n").slice(0, 4).join("\n") ?? "";
     console.error("[reputation] render crashed:", {
       message,
       stack,
@@ -432,12 +434,20 @@ export default async function PortfolioReputationPage() {
         propertyHealthCount: metrics?.propertyHealth?.length,
         monthlyVolumeCount: metrics?.monthlyVolume?.length,
         googleAvgRatingType: typeof metrics?.googleAvgRating,
+        feedCount: feed?.length,
+        firstFeedItem: feed?.[0],
+        firstPropertyHealth: metrics?.propertyHealth?.[0],
       },
-      feedCount: feed?.length,
     });
     return (
       <ReputationFallback
-        message="Reputation view ran into an issue rendering. The data may be partially seeded — refresh in a moment."
+        message="Reputation view ran into an issue rendering."
+        diagnostic={{
+          error: message,
+          stack: firstStackLine,
+          metricsCount: metrics?.totalMentions ?? 0,
+          feedCount: feed?.length ?? 0,
+        }}
       />
     );
   }
@@ -470,7 +480,18 @@ function SentimentBar({
   );
 }
 
-function ReputationFallback({ message }: { message: string }) {
+function ReputationFallback({
+  message,
+  diagnostic,
+}: {
+  message: string;
+  diagnostic?: {
+    error: string;
+    stack: string;
+    metricsCount: number;
+    feedCount: number;
+  };
+}) {
   return (
     <div className="space-y-4">
       <header>
@@ -495,6 +516,41 @@ function ReputationFallback({ message }: { message: string }) {
           → choose a property → Reputation tab.
         </p>
       </div>
+
+      {/* Diagnostic block — surfaces the actual error so we can debug from
+          a screenshot instead of round-tripping through Vercel logs. Drop
+          this once the page is reliably stable for two consecutive deploys. */}
+      {diagnostic ? (
+        <details
+          open
+          className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-900"
+        >
+          <summary className="cursor-pointer font-semibold">
+            Diagnostic — share with engineering
+          </summary>
+          <div className="mt-2 space-y-2">
+            <div>
+              <span className="font-semibold">Error: </span>
+              <code className="font-mono break-all">{diagnostic.error}</code>
+            </div>
+            <div>
+              <span className="font-semibold">Data: </span>
+              <code className="font-mono">
+                {diagnostic.metricsCount} mentions · {diagnostic.feedCount}{" "}
+                feed items
+              </code>
+            </div>
+            {diagnostic.stack ? (
+              <div>
+                <span className="font-semibold">Stack: </span>
+                <pre className="mt-1 whitespace-pre-wrap break-all text-[10px] font-mono opacity-80">
+                  {diagnostic.stack}
+                </pre>
+              </div>
+            ) : null}
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }
