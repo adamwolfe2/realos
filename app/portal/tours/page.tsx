@@ -42,6 +42,7 @@ const STATUS_TONE: Record<TourStatus, string> = {
 
 export default async function ToursPage() {
   const scope = await requireScope();
+  try {
   const where = tenantWhere(scope);
   const now = new Date();
   const startOfThisWeek = startOfWeek(now, { weekStartsOn: 1 });
@@ -369,4 +370,22 @@ export default async function ToursPage() {
       </DashboardSection>
     </div>
   );
+  } catch (err) {
+    console.error("[ToursPage] Failed to load tour data:", err);
+    return (
+      <div className="space-y-4">
+        <PageHeader
+          title="Tours"
+          description="Calendar, pipeline, and outcomes for every property tour."
+        />
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Tour data could not be loaded. If this error persists, check{" "}
+          <a href="/portal/settings/integrations" className="underline font-medium">
+            Settings → Integrations
+          </a>
+          .
+        </div>
+      </div>
+    );
+  }
 }

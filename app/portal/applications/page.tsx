@@ -51,6 +51,7 @@ const STATUS_COLUMN_ORDER: ApplicationStatus[] = [
 
 export default async function ApplicationsPage() {
   const scope = await requireScope();
+  try {
   const where = tenantWhere(scope);
   const last90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
   const last30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
@@ -252,4 +253,21 @@ export default async function ApplicationsPage() {
       </DashboardSection>
     </div>
   );
+  } catch (err) {
+    console.error("[ApplicationsPage] Failed to load application data:", err);
+    return (
+      <div className="space-y-4">
+        <PageHeader
+          title="Applications"
+          description="Every lease application from started through decision."
+        />
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Application data could not be loaded. This usually means AppFolio hasn&apos;t synced yet.{" "}
+          <a href="/portal/settings/integrations" className="underline font-medium">
+            Go to Settings → Integrations
+          </a>
+        </div>
+      </div>
+    );
+  }
 }

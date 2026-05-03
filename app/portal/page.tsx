@@ -96,6 +96,7 @@ export default async function PortalHome({
   }
   const { showSetup } = await searchParams;
   const forceShowSetup = showSetup === "1";
+  try {
   const since28d = new Date(Date.now() - 28 * DAY);
   const where = tenantWhere<{ orgId?: string }>(scope);
 
@@ -1142,6 +1143,25 @@ export default async function PortalHome({
       </section>
     </div>
   );
+  } catch (err) {
+    console.error("[PortalHome] Failed to load dashboard data:", err);
+    return (
+      <div className="space-y-4">
+        <div>
+          <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-foreground">
+            Dashboard
+          </h1>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Dashboard data could not be loaded. This is usually temporary — try refreshing. If the issue persists, check{" "}
+          <a href="/portal/settings/integrations" className="underline font-medium">
+            Settings → Integrations
+          </a>
+          .
+        </div>
+      </div>
+    );
+  }
 }
 
 // One-click feature shortcut. Compact tile with icon + label + secondary

@@ -30,6 +30,7 @@ export default async function BriefingPage({
   const scope = await requireScope();
   const params = await searchParams;
 
+  try {
   const user = await prisma.user.findUnique({
     where: { id: scope.userId },
     select: { lastBriefingViewedAt: true, firstName: true },
@@ -249,6 +250,29 @@ export default async function BriefingPage({
       </section>
     </div>
   );
+  } catch (err) {
+    console.error("[BriefingPage] Failed to load briefing data:", err);
+    return (
+      <div className="space-y-4">
+        <div>
+          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+            <Gauge className="h-3 w-3" />
+            Daily briefing
+          </div>
+          <h1 className="mt-1 text-[28px] leading-tight font-semibold tracking-tight text-foreground">
+            Daily briefing
+          </h1>
+        </div>
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Briefing data could not be loaded. This is usually temporary — try refreshing. If the issue persists, check{" "}
+          <a href="/portal/settings/integrations" className="underline font-medium">
+            Settings → Integrations
+          </a>
+          .
+        </div>
+      </div>
+    );
+  }
 }
 
 function PropertyFilter({
