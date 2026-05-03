@@ -101,6 +101,12 @@ export function buildBaseHtml({
       </td></tr>`
     : "";
 
+  // Support contact line for the footer. Reads from BRAND_EMAIL env (or
+  // the default). Always rendered so the recipient never wonders where to
+  // ask a question — required for trust, and a soft CAN-SPAM hygiene win.
+  const supportEmail = process.env.ADMIN_EMAIL?.trim() || "hello@leasestack.co";
+  const tagline = "Real estate operator portal";
+
   return `<!DOCTYPE html>
 <html lang="en">
 <head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
@@ -108,8 +114,9 @@ export function buildBaseHtml({
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:${outerBg};padding:32px 16px;">
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:${innerBg};border:1px solid ${border};">
-        <tr><td style="background-color:${headerBg};padding:24px 32px;">
-          <p style="margin:0;color:${headerText};font-size:11px;letter-spacing:0.15em;text-transform:uppercase;font-weight:600;">${BRAND_NAME}</p>
+        <tr><td style="background-color:${headerBg};padding:22px 32px 20px;">
+          <p style="margin:0;color:${headerText};font-size:12px;letter-spacing:0.18em;text-transform:uppercase;font-weight:700;">${BRAND_NAME}</p>
+          <p style="margin:4px 0 0;color:${headerText};opacity:0.65;font-size:11px;letter-spacing:0.04em;">${tagline}</p>
         </td></tr>
         ${alertBlock}
         <tr><td style="padding:32px 32px 24px;">
@@ -117,10 +124,25 @@ export function buildBaseHtml({
           ${bodyHtml}
         </td></tr>
         ${ctaBlock}
-        <tr><td style="padding:20px 32px;border-top:1px solid ${border};background-color:${footerBg};">
-          <p style="margin:0;color:${footerText};font-size:11px;letter-spacing:0.1em;text-transform:uppercase;">${BRAND_NAME}</p>
-          <p style="margin:4px 0 0;color:${footerSubText};font-size:12px;">${APP_URL.replace(/^https?:\/\//, "")}${BRAND_LOCATION ? ` &nbsp;&middot;&nbsp; ${BRAND_LOCATION}` : ""}</p>
-          ${includeUnsubscribe ? `<p style="margin:8px 0 0;"><a href="${APP_URL}/portal/settings" style="color:${footerSubText};font-size:11px;text-decoration:underline;">Unsubscribe or manage email preferences</a></p>` : ""}
+        <tr><td style="padding:24px 32px;border-top:1px solid ${border};background-color:${footerBg};">
+          <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td style="vertical-align:top;">
+                <p style="margin:0;color:${footerText};font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">${BRAND_NAME}</p>
+                <p style="margin:6px 0 0;color:${footerSubText};font-size:12px;line-height:1.5;">
+                  <a href="${APP_URL}" style="color:${footerSubText};text-decoration:none;">${APP_URL.replace(/^https?:\/\//, "")}</a>
+                  ${BRAND_LOCATION ? `<br/>${BRAND_LOCATION}` : ""}
+                </p>
+              </td>
+              <td style="vertical-align:top;text-align:right;">
+                <p style="margin:0;color:${footerSubText};font-size:11px;letter-spacing:0.04em;">Questions?</p>
+                <p style="margin:4px 0 0;font-size:12px;">
+                  <a href="mailto:${supportEmail}" style="color:${footerText};text-decoration:underline;">${supportEmail}</a>
+                </p>
+              </td>
+            </tr>
+          </table>
+          ${includeUnsubscribe ? `<p style="margin:14px 0 0;border-top:1px solid ${border};padding-top:12px;"><a href="${APP_URL}/portal/settings" style="color:${footerSubText};font-size:11px;text-decoration:underline;">Unsubscribe or manage email preferences</a></p>` : ""}
         </td></tr>
       </table>
     </td></tr>

@@ -288,25 +288,38 @@ export async function sendTeammateInviteEmail(input: {
   const expires = input.expiresInDays ?? 30;
 
   const introLine = inviter
-    ? `<strong>${escape(inviter)}</strong> invited you to join <strong>${escape(
+    ? `<strong>${escape(inviter)}</strong> added you to <strong>${escape(
         input.orgName
-      )}</strong> on ${escape(BRAND_NAME)} as <strong>${escape(roleLabel)}</strong>.`
-    : `You have been invited to join <strong>${escape(
+      )}</strong> as <strong>${escape(roleLabel)}</strong>.`
+    : `You've been added to <strong>${escape(
         input.orgName
-      )}</strong> on ${escape(BRAND_NAME)} as <strong>${escape(roleLabel)}</strong>.`;
+      )}</strong> as <strong>${escape(roleLabel)}</strong>.`;
+
+  // Body copy notes:
+  //  - Position LeaseStack as the operator portal (not "marketing platform"),
+  //    matching the audit feedback that the surface now spans operations
+  //    too (residents, renewals, work orders).
+  //  - Lead with the value-prop the invitee actually cares about — what
+  //    they'll see when they click — rather than a feature dump.
+  //  - Surface the inviter's email as a reply-to so questions don't bounce.
+  const inviterContact = input.inviterEmail
+    ? `Reply directly to <a href="mailto:${escape(input.inviterEmail)}" style="color:#0A0A0A;text-decoration:underline;">${escape(input.inviterEmail)}</a> with any questions.`
+    : `If you have questions, reply to this email and our team will route it.`;
 
   const bodyHtml = `
-    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">${introLine}</p>
-    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;">
-      ${escape(BRAND_NAME)} is the marketing platform powering ${escape(
-    input.orgName
-  )}'s lead capture, visitor intelligence, advertising, and resident
-      conversations. Once you accept, you'll have access to dashboards, leads,
-      and reports for ${escape(input.orgName)}.
+    <p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#0A0A0A;">${introLine}</p>
+    <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#0A0A0A;">
+      ${escape(BRAND_NAME)} is ${escape(input.orgName)}'s operator portal —
+      one place to track leads, tours, applications, residents, and renewals
+      alongside reputation and visitor activity. Click below to set your
+      password and get in.
     </p>
-    <p style="margin:0 0 12px;font-size:14px;line-height:1.6;color:#5b5b5b;">
-      This invitation expires in ${expires} days. If you weren't expecting this,
-      you can safely ignore the email.
+    <p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:#5b5b5b;">
+      ${inviterContact}
+    </p>
+    <p style="margin:0 0 12px;font-size:12px;line-height:1.6;color:#87867f;">
+      This invitation expires in ${expires} days. If you weren't expecting it,
+      you can safely ignore this email.
     </p>
   `;
 
@@ -319,25 +332,36 @@ export async function sendTeammateInviteEmail(input: {
 
   const text = [
     inviter
-      ? `${inviter} invited you to join ${input.orgName} on ${BRAND_NAME} as ${roleLabel}.`
-      : `You have been invited to join ${input.orgName} on ${BRAND_NAME} as ${roleLabel}.`,
+      ? `${inviter} added you to ${input.orgName} as ${roleLabel}.`
+      : `You've been added to ${input.orgName} as ${roleLabel}.`,
     "",
-    `${BRAND_NAME} powers ${input.orgName}'s marketing platform. Once you accept, you'll have access to dashboards, leads, and reports for ${input.orgName}.`,
+    `${BRAND_NAME} is ${input.orgName}'s operator portal — one place to track leads, tours, applications, residents, and renewals alongside reputation and visitor activity.`,
     "",
     `Accept your invitation: ${input.acceptUrl}`,
     "",
-    `This invitation expires in ${expires} days.`,
+    input.inviterEmail
+      ? `Questions? Reply directly to ${input.inviterEmail}.`
+      : `Questions? Reply to this email and our team will route it.`,
     "",
-    `${BRAND_NAME}`,
-    APP_URL,
+    `This invitation expires in ${expires} days. If you weren't expecting it, you can safely ignore this email.`,
+    "",
+    `— ${BRAND_NAME} · ${APP_URL.replace(/^https?:\/\//, "")}`,
   ].join("\n");
 
   return safeSend({
     to: input.to,
-    subject: `You're invited to ${input.orgName} on ${BRAND_NAME}`,
+    // Subject naming the inviter when we have it lifts open rates
+    // versus the generic "You're invited" wording. Falls back to the
+    // org name when the invite came from a system flow.
+    subject: inviter
+      ? `${inviter} invited you to ${input.orgName}`
+      : `You're invited to ${input.orgName} on ${BRAND_NAME}`,
     html,
     text,
-    replyTo: BRAND_EMAIL,
+    // Replies route to the inviting human first, falling back to the
+    // generic LeaseStack mailbox. Removes the "I got an invite from
+    // hello@ — who do I ask?" friction.
+    replyTo: input.inviterEmail || BRAND_EMAIL,
   });
 }
 
