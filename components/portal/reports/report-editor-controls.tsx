@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { archiveReport, updateReport } from "@/lib/actions/reports";
 
@@ -30,21 +30,60 @@ export function ReportEditorControls({
   const router = useRouter();
   const [headline, setHeadline] = useState(initialHeadline);
   const [notes, setNotes] = useState(initialNotes);
-  const [saveState, setSaveState] = useState<"idle" | "saving" | "saved">("idle");
+  const [saveState, setSaveState] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [copied, setCopied] = useState(false);
   const [pending, startTransition] = useTransition();
+  // Track the last successfully-saved values so the autosave effect can
+  // detect "no changes since last save" and skip the network round-trip.
+  const lastSavedRef = useRef({
+    headline: initialHeadline,
+    notes: initialNotes,
+  });
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  function handleSave() {
+  // Autosave with 1.2s debounce — fires whenever headline or notes drift
+  // from what was last persisted. Replaces the previous "Autosave is off"
+  // copy which the audit flagged as a confidence issue: client-facing
+  // reports should not lose draft edits on a stray navigation.
+  useEffect(() => {
+    if (
+      headline === lastSavedRef.current.headline &&
+      notes === lastSavedRef.current.notes
+    ) {
+      return;
+    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      doSave();
+    }, 1200);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headline, notes]);
+
+  function doSave() {
+    const snapshot = { headline, notes };
     setSaveState("saving");
     startTransition(async () => {
       try {
-        await updateReport(reportId, { headline, notes });
+        await updateReport(reportId, snapshot);
+        lastSavedRef.current = snapshot;
+        setLastSavedAt(new Date());
         setSaveState("saved");
-        setTimeout(() => setSaveState("idle"), 1800);
+        setTimeout(() => setSaveState("idle"), 1500);
       } catch {
-        setSaveState("idle");
+        setSaveState("error");
       }
     });
+  }
+
+  function handleSave() {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    doSave();
   }
 
   function handleMarkShared() {
@@ -156,12 +195,22 @@ export function ReportEditorControls({
       </label>
 
       <div className="flex items-center justify-between gap-3">
-        <span className="text-xs text-muted-foreground">
+        <span
+          className={`text-xs ${
+            saveState === "error"
+              ? "text-rose-700"
+              : "text-muted-foreground"
+          }`}
+        >
           {saveState === "saving"
-            ? "Saving..."
+            ? "Saving…"
             : saveState === "saved"
               ? "Saved"
-              : "Autosave is off. Hit save to persist your changes."}
+              : saveState === "error"
+                ? "Save failed — click Save draft to retry."
+                : lastSavedAt
+                  ? `Autosaved ${formatRelativeTime(lastSavedAt)}`
+                  : "Autosaves as you type."}
         </span>
         <button
           type="button"
@@ -174,4 +223,17 @@ export function ReportEditorControls({
       </div>
     </section>
   );
+}
+
+// Compact "X ago" string for the autosave indicator. Avoids importing
+// date-fns just for one helper inside a client component bundle.
+function formatRelativeTime(date: Date): string {
+  const ageSec = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
+  if (ageSec < 5) return "just now";
+  if (ageSec < 60) return `${ageSec}s ago`;
+  const min = Math.floor(ageSec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
 }
