@@ -357,6 +357,7 @@ export default async function RenewalsPage() {
           status={{
             state: "failed",
             lastSyncAt: null,
+            syncStartedAt: null,
             lastError:
               err instanceof Error ? err.message : "Renewal data could not be loaded.",
             subdomain: null,

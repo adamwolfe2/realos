@@ -121,9 +121,40 @@ export async function runAppfolioSync(
       ? new Date(now.getTime() - DEFAULT_BACKFILL_DAYS * 24 * 60 * 60 * 1000)
       : integration.lastSyncAt;
 
+  // Concurrency guard. If a sync is already in flight + started less
+  // than 10 min ago, no-op instead of racing a second one. The
+  // StaleOnLoadTrigger can fire from multiple tabs in rapid succession;
+  // without this guard we'd start parallel syncs that fight over the
+  // integration row's syncStatus and double-write the same upserts.
+  // Older "syncing" rows are presumed stuck (Vercel function timeouts)
+  // and get steamrolled by the new run.
+  const STUCK_AFTER_MS = 10 * 60 * 1000;
+  if (
+    integration.syncStatus === "syncing" &&
+    integration.syncStartedAt &&
+    Date.now() - integration.syncStartedAt.getTime() < STUCK_AFTER_MS
+  ) {
+    return {
+      ok: true,
+      stats,
+      // Not really an error — the existing sync will complete the work.
+      // We surface this as a no-op success so the manual-sync API doesn't
+      // 500 and the on-load trigger can dedupe naturally.
+    };
+  }
+
+  // Mark sync as started + capture the wall-clock start time. The UI
+  // reads syncStartedAt to (a) compute real elapsed time across page
+  // navigations and (b) detect stuck syncs (>10 min) as failures rather
+  // than letting them sit forever.
+  const syncStartedAt = new Date();
   await prisma.appFolioIntegration.update({
     where: { orgId },
-    data: { syncStatus: "syncing", lastError: null },
+    data: {
+      syncStatus: "syncing",
+      syncStartedAt,
+      lastError: null,
+    },
   });
 
   let client;
@@ -133,7 +164,11 @@ export async function runAppfolioSync(
     const message = err instanceof Error ? err.message : "Unknown error";
     await prisma.appFolioIntegration.update({
       where: { orgId },
-      data: { syncStatus: "error", lastError: message },
+      data: {
+        syncStatus: "error",
+        syncStartedAt: null,
+        lastError: message,
+      },
     });
     return { ok: false, stats, error: message };
   }
@@ -535,6 +570,11 @@ export async function runAppfolioSync(
       where: { orgId },
       data: {
         syncStatus: anyPhaseCompleted ? "idle" : "error",
+        // Always clear the start-time marker on completion. Stuck-sync
+        // detection in the status helper only fires while syncStartedAt
+        // is set + syncStatus === "syncing" — leaving it set here would
+        // false-positive the next page load.
+        syncStartedAt: null,
         lastSyncAt: allPhasesCompleted
           ? new Date()
           : integration.lastSyncAt,

@@ -64,39 +64,55 @@ type SyncStats = {
 type SyncStatePayload = {
   syncStatus: Status | string | null;
   lastSyncAt: string | null;
+  syncStartedAt?: string | null;
   lastError: string | null;
   lastSyncStats?: SyncStats | null;
 } | null;
 
 export function AppFolioSyncPoller({
-  startedAt,
+  startedAt: initialStartedAt,
 }: {
-  /** ISO date when the current sync row entered the "syncing" state. */
+  /**
+   * ISO date when the current sync run actually began (from the
+   * integration row's syncStartedAt). Persisting the start time across
+   * page navigations is what makes the elapsed-time counter look
+   * continuous instead of resetting to 0s on every page mount.
+   */
   startedAt: string | null;
 }) {
   const router = useRouter();
+  // Source of truth for elapsed time. Initialized from the prop;
+  // refined by the network poll's first response if the prop was stale
+  // (e.g. tab reopened mid-sync).
+  const [startedAtMs, setStartedAtMs] = useState<number | null>(() =>
+    initialStartedAt ? new Date(initialStartedAt).getTime() : null
+  );
   const [elapsedSec, setElapsedSec] = useState(() =>
-    startedAt ? Math.max(0, Math.round((Date.now() - new Date(startedAt).getTime()) / 1000)) : 0
+    startedAtMs != null
+      ? Math.max(0, Math.round((Date.now() - startedAtMs) / 1000))
+      : 0
   );
   const [done, setDone] = useState<null | "ok" | "error">(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [stats, setStats] = useState<SyncStats | null>(null);
   const stopAt = useRef(Date.now() + MAX_POLL_DURATION_MS);
 
-  // Local elapsed-time ticker — independent of the network poll so the
-  // operator sees seconds tick up smoothly even on a slow API response.
+  // Local elapsed-time ticker — ticks every second so the counter feels
+  // smooth between API polls. Reads from startedAtMs so the displayed
+  // time is always relative to when the SYNC actually started, not
+  // when this component happened to mount.
   useEffect(() => {
     const tick = setInterval(() => {
-      if (startedAt) {
+      if (startedAtMs != null) {
         setElapsedSec(
-          Math.max(0, Math.round((Date.now() - new Date(startedAt).getTime()) / 1000))
+          Math.max(0, Math.round((Date.now() - startedAtMs) / 1000))
         );
       } else {
         setElapsedSec((s) => s + 1);
       }
     }, 1000);
     return () => clearInterval(tick);
-  }, [startedAt]);
+  }, [startedAtMs]);
 
   // Network poll — checks the integration row every 5s.
   useEffect(() => {
@@ -116,6 +132,13 @@ export function AppFolioSyncPoller({
         const json = (await res.json()) as { integration: SyncStatePayload };
         const integ = json.integration;
         const status = (integ?.syncStatus ?? "").toLowerCase();
+        // Adopt the server's authoritative syncStartedAt the first time
+        // we see it. Handles the case where this component mounted
+        // before the parent server-render captured the up-to-date
+        // timestamp (rare but possible during the initial sync trigger).
+        if (status === "syncing" && integ?.syncStartedAt && startedAtMs == null) {
+          setStartedAtMs(new Date(integ.syncStartedAt).getTime());
+        }
         if (status === "syncing") {
           timer = setTimeout(poll, POLL_INTERVAL_MS);
           return;
@@ -149,7 +172,7 @@ export function AppFolioSyncPoller({
       cancelled = true;
       if (timer) clearTimeout(timer);
     };
-  }, [router]);
+  }, [router, startedAtMs]);
 
   if (done === "ok") {
     const summary = stats ? formatStatsSummary(stats) : null;

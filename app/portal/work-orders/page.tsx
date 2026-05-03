@@ -368,6 +368,7 @@ export default async function WorkOrdersPage() {
           status={{
             state: "failed",
             lastSyncAt: null,
+            syncStartedAt: null,
             lastError:
               err instanceof Error ? err.message : "Work order data could not be loaded.",
             subdomain: null,

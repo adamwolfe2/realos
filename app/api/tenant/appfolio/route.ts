@@ -36,6 +36,10 @@ export async function GET() {
         hasApiKey: !!integration.apiKeyEncrypted,
         lastSyncAt: integration.lastSyncAt,
         syncStatus: integration.syncStatus,
+        // Real wall-clock start time of the current sync (when status
+        // is "syncing"). Lets the poller render a continuous elapsed
+        // counter across page navigations.
+        syncStartedAt: integration.syncStartedAt,
         lastError: integration.lastError,
         // Detailed per-phase counts + warnings so the poller can show
         // "X residents · Y leases · Z work orders pulled" instead of a

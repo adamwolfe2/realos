@@ -110,12 +110,15 @@ export function AppFolioStatusBanner({
 
   if (status.state === "syncing") {
     // Active poller — checks every 5s and auto-refreshes the page when
-    // the sync finishes. Replaces the previous static "in progress" copy
-    // that left operators wondering whether the sync was alive or stuck.
-    // We pass startedAt=null because lastSyncAt on the integration row
-    // represents the *last successful* sync, not when the current sync
-    // started — so the poller counts from "page open" instead.
-    return <AppFolioSyncPoller startedAt={null} />;
+    // the sync finishes. Now passes the real syncStartedAt timestamp
+    // from the integration row so elapsed time persists across page
+    // navigations (a previous local-only counter reset on every mount
+    // and read like the sync had restarted).
+    return (
+      <AppFolioSyncPoller
+        startedAt={status.syncStartedAt ? status.syncStartedAt.toISOString() : null}
+      />
+    );
   }
 
   if (status.state === "failed") {

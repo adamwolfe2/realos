@@ -26,6 +26,14 @@ export type AppFolioConnectionState =
 export type AppFolioStatus = {
   state: AppFolioConnectionState;
   lastSyncAt: Date | null;
+  /**
+   * Wall-clock start time of the currently-running sync, when
+   * syncStatus === "syncing". Used by the poller to compute real
+   * elapsed time across page navigations (a per-component local
+   * counter resets on every mount and reads as a "sync restart").
+   * Null when no sync is in progress.
+   */
+  syncStartedAt: Date | null;
   lastError: string | null;
   subdomain: string | null;
   /** True when last sync is >24h old (sync should run hourly). */
@@ -64,6 +72,7 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
         apiKeyEncrypted: true,
         useEmbedFallback: true,
         syncStatus: true,
+        syncStartedAt: true,
         lastSyncAt: true,
         lastError: true,
         lastSyncStats: true,
@@ -78,12 +87,15 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
     return {
       state: "not_connected",
       lastSyncAt: null,
+      syncStartedAt: null,
       lastError: null,
       subdomain: null,
       stale: false,
       stats: null,
     };
   }
+
+  const syncStartedAt = integ.syncStartedAt ?? null;
 
   const hasCreds =
     Boolean(integ.instanceSubdomain) &&
@@ -95,6 +107,7 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
     return {
       state: "not_connected",
       lastSyncAt: integ.lastSyncAt ?? null,
+      syncStartedAt,
       lastError: integ.lastError ?? null,
       subdomain: integ.instanceSubdomain ?? null,
       stale: false,
@@ -103,9 +116,33 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
   }
 
   if (integ.syncStatus === "syncing") {
+    // Stuck-sync detection. If syncStartedAt is set + older than 10 min,
+    // the sync function probably timed out (Vercel function maxDuration
+    // is 5 min) and the row is wedged. Surface as failed so the operator
+    // sees the actionable state instead of an indefinite spinner.
+    const STUCK_AFTER_MS = 10 * 60 * 1000;
+    const isStuck =
+      syncStartedAt != null &&
+      Date.now() - syncStartedAt.getTime() > STUCK_AFTER_MS;
+    if (isStuck) {
+      return {
+        state: "failed",
+        lastSyncAt: integ.lastSyncAt ?? null,
+        syncStartedAt,
+        lastError:
+          integ.lastError ??
+          `Sync stuck for ${Math.round(
+            (Date.now() - syncStartedAt.getTime()) / 60000
+          )} minutes — likely timed out. Click Retry to re-run.`,
+        subdomain: integ.instanceSubdomain ?? null,
+        stale: false,
+        stats,
+      };
+    }
     return {
       state: "syncing",
       lastSyncAt: integ.lastSyncAt ?? null,
+      syncStartedAt,
       lastError: integ.lastError ?? null,
       subdomain: integ.instanceSubdomain ?? null,
       stale: false,
@@ -117,6 +154,7 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
     return {
       state: "failed",
       lastSyncAt: integ.lastSyncAt ?? null,
+      syncStartedAt,
       lastError: integ.lastError,
       subdomain: integ.instanceSubdomain ?? null,
       stale: false,
@@ -128,6 +166,7 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
     return {
       state: "never_synced",
       lastSyncAt: null,
+      syncStartedAt,
       lastError: null,
       subdomain: integ.instanceSubdomain ?? null,
       stale: false,
@@ -141,6 +180,7 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
   return {
     state: "synced",
     lastSyncAt: integ.lastSyncAt,
+    syncStartedAt,
     lastError: null,
     subdomain: integ.instanceSubdomain ?? null,
     stale,

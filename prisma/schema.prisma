@@ -1430,8 +1430,15 @@ model AppFolioIntegration {
 
   // Sync state
   lastSyncAt DateTime?
-  syncStatus String? // idle, syncing, error
-  lastError  String?
+  // When the current "syncing" run actually started. Persisted so the UI
+  // can show real elapsed time across page navigations (a per-component
+  // local counter resets on every mount and reads as a "sync restart"
+  // even when the underlying sync is still running). Cleared on
+  // completion. Used by the status helper to mark stuck syncs (older
+  // than 10 min) as failed instead of letting them sit forever.
+  syncStartedAt DateTime?
+  syncStatus    String? // idle, syncing, error
+  lastError     String?
   // Detailed stats from the most recent sync run. Persisted so the UI can
   // surface "X residents · Y leases · Z work orders pulled" + per-phase
   // warnings even when the sync technically succeeded but a sub-endpoint
