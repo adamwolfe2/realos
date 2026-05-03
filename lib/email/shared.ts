@@ -10,8 +10,10 @@ import { getSiteUrl, BRAND_NAME, BRAND_LOCATION, BRAND_COLOR } from "@/lib/brand
 // Brand constants (used by every domain email module)
 // ---------------------------------------------------------------------------
 
-export const FROM_EMAIL =
-  process.env.RESEND_FROM_EMAIL ?? `${BRAND_NAME} <hello@leasestack.co>`;
+// Some Vercel env vars are stored with a trailing \n — trim defensively.
+export const FROM_EMAIL = (
+  process.env.RESEND_FROM_EMAIL ?? `${BRAND_NAME} <hello@leasestack.co>`
+).trim();
 export const APP_URL = getSiteUrl();
 export const OPS_NAME = process.env.OPS_NAME ?? `${BRAND_NAME} Team`;
 export { BRAND_NAME, BRAND_LOCATION, BRAND_COLOR };
@@ -22,8 +24,9 @@ export const BRAND_EMAIL = process.env.ADMIN_EMAIL ?? "hello@leasestack.co";
 // ---------------------------------------------------------------------------
 
 export function getResend() {
-  if (!process.env.RESEND_API_KEY) return null;
-  return new Resend(process.env.RESEND_API_KEY);
+  const key = process.env.RESEND_API_KEY?.trim();
+  if (!key) return null;
+  return new Resend(key);
 }
 
 // ---------------------------------------------------------------------------
