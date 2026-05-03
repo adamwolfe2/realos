@@ -9,107 +9,160 @@ export const metadata: Metadata = {
   description: `Sign in to your ${BRAND_NAME} account.`,
 };
 
+// Two-pane sign-in layout: left = branded value-prop panel (desktop only),
+// right = Clerk auth form. Mobile collapses to a single-column form with
+// the wordmark stacked above. This replaces the previous bare-form layout
+// that read as "generic SaaS template" instead of LeaseStack.
+
+const VALUE_PROPS = [
+  {
+    title: "Operations dashboard, mirrored from AppFolio",
+    body: "Residents, renewals, work orders, and rent roll surfaced beside leads, tours, and applications.",
+  },
+  {
+    title: "Visitor identification + reputation in one place",
+    body: "Resolved website visitors, Google reviews, Reddit mentions — all the brand signals worth acting on.",
+  },
+  {
+    title: "Built for student-housing operators",
+    body: "Purpose-built for university-adjacent properties, leasing seasons, and roommate matching workflows.",
+  },
+];
+
 export default function SignInPage() {
   return (
-    <div
-      className="min-h-screen flex flex-col"
-      style={{ backgroundColor: "#FFFFFF" }}
-    >
-      <header
-        className="px-6 py-4"
-        style={{ borderBottom: "1px solid #EEEEEE" }}
-      >
-        <Link
-          href="/"
-          aria-label={BRAND_NAME}
-          className="inline-flex items-center hover:opacity-80 transition-opacity"
-        >
+    <div className="min-h-screen bg-white text-foreground flex flex-col md:flex-row">
+      {/* Left pane — brand + value props (desktop) */}
+      <aside className="hidden md:flex md:w-[44%] lg:w-[40%] xl:w-[36%] flex-col justify-between p-12 bg-[#0A0A0A] text-white">
+        <Link href="/" aria-label={BRAND_NAME} className="inline-flex items-center hover:opacity-90">
           <Image
             src="/logos/leasestack-wordmark.png"
             alt={BRAND_NAME}
-            width={140}
-            height={26}
+            width={200}
+            height={36}
             priority
-            className="h-6 w-auto"
+            className="h-8 w-auto invert brightness-0"
+            style={{ filter: "invert(1)" }}
           />
         </Link>
-      </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-12">
-        <div className="w-full max-w-md">
-          <div className="mb-8 text-center">
-            <h1
-              className="mb-2"
-              style={{
-                color: "#141413",
-                fontFamily: "var(--font-sans)",
-                fontSize: "28px",
-                fontWeight: 500,
-              }}
-            >
-              Sign in
-            </h1>
-            <p
-              style={{
-                color: "#5C5E62",
-                fontFamily: "var(--font-sans)",
-                fontSize: "14px",
-              }}
-            >
-              Welcome back.
+        <div className="space-y-8 max-w-md">
+          <div>
+            <p className="text-[11px] tracking-[0.18em] uppercase font-semibold text-white/60">
+              Real estate operator portal
             </p>
+            <h2 className="mt-3 text-3xl font-semibold leading-tight">
+              Marketing, leasing, and operations
+              <br />
+              in a single dashboard.
+            </h2>
           </div>
 
-          <SignIn
-            fallbackRedirectUrl="/auth/redirect"
-            signUpUrl="/sign-up"
-            appearance={{
-              layout: {
-                logoPlacement: "none",
-                socialButtonsVariant: "blockButton",
-              },
-              elements: {
-                rootBox: "w-full",
-                card: "w-full shadow-none border border-[#EEEEEE] bg-white rounded-md p-6",
-                headerTitle: "hidden",
-                headerSubtitle: "hidden",
-                socialButtonsBlockButton:
-                  "border border-[#EEEEEE] bg-white hover:bg-[#F4F4F4] text-[#141413] text-sm font-medium rounded-md h-10 transition-colors",
-                dividerLine: "bg-[#EEEEEE]",
-                dividerText: "text-[#8E8E8E] text-xs",
-                formFieldLabel: "text-xs font-medium text-[#393C41] mb-1",
-                formFieldInput:
-                  "border border-[#EEEEEE] bg-white focus:border-[#3E6AE1] focus:ring-0 rounded-md h-10 text-sm text-[#141413] placeholder:text-[#8E8E8E]",
-                formButtonPrimary:
-                  "bg-[#3E6AE1] hover:bg-[#3457C8] text-white rounded-md h-10 text-sm font-medium transition-colors",
-                footerActionLink:
-                  "text-[#3E6AE1] hover:text-[#3457C8] underline underline-offset-2",
-                identityPreviewEditButton:
-                  "text-[#3E6AE1] underline underline-offset-2",
-                otpCodeFieldInput: "border border-[#EEEEEE] rounded-md text-[#141413]",
-                alertText: "text-sm",
-                formFieldErrorText: "text-xs text-[#b53333]",
-              },
-            }}
-          />
+          <ul className="space-y-5">
+            {VALUE_PROPS.map((vp) => (
+              <li key={vp.title} className="flex gap-3">
+                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-white/70 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-white">{vp.title}</p>
+                  <p className="text-xs text-white/65 mt-0.5 leading-relaxed">
+                    {vp.body}
+                  </p>
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
-      </div>
 
-      <footer
-        className="px-6 py-3"
-        style={{ borderTop: "1px solid #EEEEEE" }}
-      >
-        <p
-          className="text-center"
-          style={{
-            color: "#8E8E8E",
-            fontFamily: "var(--font-sans)",
-            fontSize: "11px",
-          }}
-        >
+        <p className="text-[11px] text-white/50">
           &copy; {new Date().getFullYear()} {BRAND_NAME}
         </p>
-      </footer>
+      </aside>
+
+      {/* Right pane — auth form */}
+      <main className="flex-1 flex flex-col">
+        {/* Mobile-only top bar with wordmark */}
+        <header className="md:hidden px-6 py-5 border-b border-[#EEEEEE]">
+          <Link
+            href="/"
+            aria-label={BRAND_NAME}
+            className="inline-flex items-center hover:opacity-80 transition-opacity"
+          >
+            <Image
+              src="/logos/leasestack-wordmark.png"
+              alt={BRAND_NAME}
+              width={150}
+              height={28}
+              priority
+              className="h-7 w-auto"
+            />
+          </Link>
+        </header>
+
+        <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+          <div className="w-full max-w-md">
+            <div className="mb-8">
+              <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground mb-1">
+                Welcome back
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Sign in to your {BRAND_NAME} portal.
+              </p>
+            </div>
+
+            <SignIn
+              fallbackRedirectUrl="/auth/redirect"
+              signUpUrl="/sign-up"
+              appearance={{
+                layout: {
+                  logoPlacement: "none",
+                  socialButtonsVariant: "blockButton",
+                },
+                elements: {
+                  rootBox: "w-full",
+                  card: "w-full shadow-none border border-[#EEEEEE] bg-white rounded-lg p-6",
+                  headerTitle: "hidden",
+                  headerSubtitle: "hidden",
+                  socialButtonsBlockButton:
+                    "border border-[#EEEEEE] bg-white hover:bg-[#F4F4F4] text-[#141413] text-sm font-medium rounded-md h-10 transition-colors",
+                  dividerLine: "bg-[#EEEEEE]",
+                  dividerText: "text-[#8E8E8E] text-xs",
+                  formFieldLabel: "text-xs font-medium text-[#393C41] mb-1",
+                  formFieldInput:
+                    "border border-[#EEEEEE] bg-white focus:border-[#0A0A0A] focus:ring-0 rounded-md h-10 text-sm text-[#141413] placeholder:text-[#8E8E8E]",
+                  formButtonPrimary:
+                    "bg-[#0A0A0A] hover:bg-[#1f1f1f] text-white rounded-md h-10 text-sm font-semibold transition-colors",
+                  footerActionLink:
+                    "text-[#0A0A0A] font-semibold hover:underline underline-offset-2",
+                  identityPreviewEditButton:
+                    "text-[#0A0A0A] underline underline-offset-2",
+                  otpCodeFieldInput:
+                    "border border-[#EEEEEE] rounded-md text-[#141413]",
+                  alertText: "text-sm",
+                  formFieldErrorText: "text-xs text-[#b53333]",
+                },
+              }}
+            />
+
+            <p className="mt-6 text-center text-[11px] text-muted-foreground">
+              By continuing you agree to our{" "}
+              <Link href="/terms" className="underline hover:text-foreground">
+                Terms
+              </Link>{" "}
+              and{" "}
+              <Link href="/privacy" className="underline hover:text-foreground">
+                Privacy
+              </Link>
+              .
+            </p>
+          </div>
+        </div>
+
+        <footer className="md:hidden px-6 py-4 border-t border-[#EEEEEE]">
+          <p className="text-center text-[11px] text-muted-foreground">
+            &copy; {new Date().getFullYear()} {BRAND_NAME}
+          </p>
+        </footer>
+      </main>
     </div>
   );
 }

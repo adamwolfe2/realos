@@ -1,6 +1,6 @@
 import * as React from "react";
 import Link from "next/link";
-import { Building2, MapPin, Megaphone, Star, AlertTriangle } from "lucide-react";
+import { MapPin, Megaphone, Star, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type PropertyDashboardCardProps = {
@@ -94,19 +94,19 @@ export function PropertyDashboardCard({
           {reputationMentionCount > 0 ? (
             <Link
               href={`/portal/properties/${id}?tab=reputation`}
-              className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground"
+              className="inline-flex items-center gap-1.5 text-muted-foreground hover:text-foreground"
             >
               <Star className="h-2.5 w-2.5" />
-              <span>
-                {reputationMentionCount}
-                {reputationNegativeCount > 0
-                  ? ` · ${reputationNegativeCount} neg`
-                  : ""}
-              </span>
+              <span>{reputationMentionCount} mentions</span>
+              {reputationNegativeCount > 0 ? (
+                <span className="text-rose-700">
+                  · {reputationNegativeCount} neg
+                </span>
+              ) : null}
               {reputationUnreviewedCount > 0 ? (
                 <span className="inline-flex items-center gap-0.5 text-amber-700">
                   <AlertTriangle className="h-2.5 w-2.5" />
-                  {reputationUnreviewedCount}
+                  {reputationUnreviewedCount} new
                 </span>
               ) : null}
             </Link>
@@ -128,28 +128,33 @@ function Thumbnail({
 }) {
   if (src) {
     return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={src}
-        alt=""
-        className="h-full w-14 shrink-0 object-cover"
-        loading="lazy"
-      />
+      <div className="relative h-full w-14 shrink-0 self-stretch overflow-hidden">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={src}
+          alt=""
+          className="h-full w-14 object-cover"
+          loading="lazy"
+        />
+        <span
+          className="absolute inset-y-0 right-0 w-0.5"
+          style={{ backgroundColor: accent ?? "hsl(var(--primary))" }}
+          aria-hidden="true"
+        />
+      </div>
     );
   }
+  // No hero image: render a single clean monogram. Previously layered a
+  // letter on top of the Building2 icon which read as a broken placeholder.
   return (
     <div
-      className="relative h-full w-14 shrink-0 grid place-items-center bg-muted self-stretch"
+      className="relative h-full w-14 shrink-0 grid place-items-center self-stretch"
+      style={{ backgroundColor: accent ?? "#0A0A0A" }}
       aria-hidden="true"
     >
-      <Building2 className="h-4 w-4 text-muted-foreground" />
-      <span className="absolute top-1.5 left-1.5 text-[10px] font-semibold text-foreground">
-        {fallbackLetter}
+      <span className="text-base font-semibold text-white tracking-tight">
+        {fallbackLetter.toUpperCase()}
       </span>
-      <span
-        className="absolute inset-y-0 right-0 w-0.5"
-        style={{ backgroundColor: accent ?? "hsl(var(--primary))" }}
-      />
     </div>
   );
 }

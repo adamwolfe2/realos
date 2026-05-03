@@ -8,11 +8,6 @@ import {
   Search,
   Star,
   Bot,
-  Brush,
-  FileText,
-  Gauge,
-  TrendingUp,
-  Share2,
   Megaphone,
   MessageSquare,
   Building2,
@@ -27,7 +22,6 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   ApplicationStatus,
-  LeadStatus,
   LeaseStatus,
   ProductLine,
   ResidentStatus,
@@ -54,7 +48,6 @@ import {
   getIntegrationHealth,
   getLeadSourceBreakdown,
   getLeasingVelocityTrend,
-  getLeadStatusCounts,
   getOrganicSessionsKpi,
   getPropertyMetrics,
   getRecentIdentifiedVisitors,
@@ -119,7 +112,6 @@ export default async function PortalHome({
     funnelStages,
     activity,
     integrationChips,
-    statusCounts,
     firstRun,
     openInsights,
     insightCounts,
@@ -213,7 +205,6 @@ export default async function PortalHome({
     getFunnel(scope.orgId),
     getActivityFeed(scope.orgId, 10),
     getIntegrationHealth(scope.orgId),
-    getLeadStatusCounts(scope.orgId),
     getFirstRunProgress(scope.orgId),
     getOpenInsights(scope.orgId, { limit: 3 }),
     getInsightCounts(scope.orgId),
@@ -226,6 +217,7 @@ export default async function PortalHome({
       where: { id: scope.orgId },
       select: {
         moduleChatbot: true,
+        modulePixel: true,
         moduleSEO: true,
         moduleGoogleAds: true,
         moduleMetaAds: true,
@@ -493,6 +485,135 @@ export default async function PortalHome({
       {integrationChips.length > 0 ? (
         <IntegrationHealth chips={integrationChips} />
       ) : null}
+
+      {/* Quick access — pinned to the top so the demo path is one click
+          away. Trimmed to demo-confident modules only. Tiles that depend
+          on AppFolio are hidden when the integration is off (the
+          "Connect AppFolio" CTA further down handles that case). */}
+      <DashboardSection
+        eyebrow="One click away"
+        title="Quick access"
+        description="Jump straight to any module from the dashboard"
+      >
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+          <QuickAccessTile
+            href="/portal/leads"
+            label="Leads"
+            icon={<Users className="h-4 w-4" />}
+            meta={`${leadsNew28d.toLocaleString()} in 28d`}
+          />
+          <QuickAccessTile
+            href="/portal/tours"
+            label="Tours"
+            icon={<CalendarCheck className="h-4 w-4" />}
+            meta={
+              toursScheduled > 0
+                ? `${toursScheduled} scheduled`
+                : "Calendar + pipeline"
+            }
+            badge={toursRequestedCount > 0 ? toursRequestedCount : null}
+            badgeTone={toursRequestedCount > 0 ? "rose" : undefined}
+          />
+          <QuickAccessTile
+            href="/portal/applications"
+            label="Applications"
+            icon={<ClipboardList className="h-4 w-4" />}
+            meta={
+              applicationsSubmitted28d > 0
+                ? `${applicationsSubmitted28d} this month`
+                : "Pipeline"
+            }
+            badge={
+              applicationsAwaitingReview > 0 ? applicationsAwaitingReview : null
+            }
+            badgeTone={applicationsAwaitingReview > 0 ? "rose" : undefined}
+          />
+          {orgModules?.modulePixel ? (
+            <QuickAccessTile
+              href="/portal/visitors"
+              label="Visitors"
+              icon={<Flame className="h-4 w-4" />}
+              meta={
+                hotVisitors.count > 0
+                  ? `${hotVisitors.count} hot now`
+                  : "Pixel feed"
+              }
+            />
+          ) : null}
+          <QuickAccessTile
+            href="/portal/reputation"
+            label="Reputation"
+            icon={<Star className="h-4 w-4" />}
+            meta={
+              reputationSummary.totalMentions > 0
+                ? `${reputationSummary.totalMentions} mentions`
+                : "Reviews + mentions"
+            }
+            badge={
+              reputationSummary.unreviewedCount > 0
+                ? reputationSummary.unreviewedCount
+                : null
+            }
+          />
+          {!appfolioOff ? (
+            <>
+              <QuickAccessTile
+                href="/portal/residents"
+                label="Residents"
+                icon={<Home className="h-4 w-4" />}
+                meta={
+                  activeResidentsCount > 0
+                    ? `${activeResidentsCount} active`
+                    : "AppFolio mirror"
+                }
+                badge={noticeGivenCount > 0 ? noticeGivenCount : null}
+              />
+              <QuickAccessTile
+                href="/portal/renewals"
+                label="Renewals"
+                icon={<CalendarClock className="h-4 w-4" />}
+                meta={
+                  leasesExpiring120dCount > 0
+                    ? `${leasesExpiring120dCount} expiring`
+                    : "Lease pipeline"
+                }
+                badge={pastDueLeasesCount > 0 ? pastDueLeasesCount : null}
+                badgeTone={pastDueLeasesCount > 0 ? "rose" : undefined}
+              />
+              <QuickAccessTile
+                href="/portal/work-orders"
+                label="Work orders"
+                icon={<Wrench className="h-4 w-4" />}
+                meta={
+                  openWorkOrdersCount > 0
+                    ? `${openWorkOrdersCount} open`
+                    : "Maintenance"
+                }
+                badge={
+                  urgentWorkOrdersCount > 0 ? urgentWorkOrdersCount : null
+                }
+                badgeTone={urgentWorkOrdersCount > 0 ? "rose" : undefined}
+              />
+            </>
+          ) : null}
+          {orgModules?.moduleChatbot ? (
+            <QuickAccessTile
+              href="/portal/conversations"
+              label="Conversations"
+              icon={<MessageSquare className="h-4 w-4" />}
+              meta={`${chatbotSummary.conversations28d} in 28d`}
+            />
+          ) : null}
+          {orgModules?.moduleGoogleAds || orgModules?.moduleMetaAds ? (
+            <QuickAccessTile
+              href="/portal/campaigns"
+              label="Campaigns"
+              icon={<Megaphone className="h-4 w-4" />}
+              meta={`$${adSpend.spendUsd.toLocaleString()} spend`}
+            />
+          ) : null}
+        </div>
+      </DashboardSection>
 
       {/* Insights strip — opens the day with what changed, if anything */}
       {insightCounts.total > 0 ? (
@@ -982,199 +1103,6 @@ export default async function PortalHome({
             </DashboardSection>
           </section>
 
-          {/* Quick access — surfaces every feature one click away from the
-              dashboard. Used to be invisible: Reputation/Briefing/Site
-              Builder/Reports were 2-3 clicks deep with no homepage entry. */}
-          <DashboardSection
-            eyebrow="One click away"
-            title="Quick access"
-            description="Jump straight to any module from the dashboard"
-          >
-            <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2">
-              <QuickAccessTile
-                href="/portal/reputation"
-                label="Reputation"
-                icon={<Star className="h-4 w-4" />}
-                meta={
-                  reputationSummary.totalMentions > 0
-                    ? `${reputationSummary.totalMentions} mentions`
-                    : "Run a scan"
-                }
-                badge={
-                  reputationSummary.unreviewedCount > 0
-                    ? reputationSummary.unreviewedCount
-                    : null
-                }
-              />
-              <QuickAccessTile
-                href="/portal/tours"
-                label="Tours"
-                icon={<CalendarCheck className="h-4 w-4" />}
-                meta={
-                  toursScheduled > 0
-                    ? `${toursScheduled} scheduled`
-                    : "Calendar + pipeline"
-                }
-                badge={toursRequestedCount > 0 ? toursRequestedCount : null}
-                badgeTone={toursRequestedCount > 0 ? "rose" : undefined}
-              />
-              <QuickAccessTile
-                href="/portal/applications"
-                label="Applications"
-                icon={<ClipboardList className="h-4 w-4" />}
-                meta={
-                  applicationsSubmitted28d > 0
-                    ? `${applicationsSubmitted28d} this month`
-                    : "Pipeline"
-                }
-                badge={
-                  applicationsAwaitingReview > 0
-                    ? applicationsAwaitingReview
-                    : null
-                }
-                badgeTone={
-                  applicationsAwaitingReview > 0 ? "rose" : undefined
-                }
-              />
-              <QuickAccessTile
-                href="/portal/residents"
-                label="Residents"
-                icon={<Home className="h-4 w-4" />}
-                meta={
-                  activeResidentsCount > 0
-                    ? `${activeResidentsCount} active`
-                    : "AppFolio mirror"
-                }
-                badge={noticeGivenCount > 0 ? noticeGivenCount : null}
-              />
-              <QuickAccessTile
-                href="/portal/renewals"
-                label="Renewals"
-                icon={<CalendarClock className="h-4 w-4" />}
-                meta={
-                  leasesExpiring120dCount > 0
-                    ? `${leasesExpiring120dCount} expiring`
-                    : "Lease pipeline"
-                }
-                badge={
-                  pastDueLeasesCount > 0 ? pastDueLeasesCount : null
-                }
-                badgeTone={pastDueLeasesCount > 0 ? "rose" : undefined}
-              />
-              <QuickAccessTile
-                href="/portal/work-orders"
-                label="Work orders"
-                icon={<Wrench className="h-4 w-4" />}
-                meta={
-                  openWorkOrdersCount > 0
-                    ? `${openWorkOrdersCount} open`
-                    : "Maintenance"
-                }
-                badge={
-                  urgentWorkOrdersCount > 0 ? urgentWorkOrdersCount : null
-                }
-                badgeTone={urgentWorkOrdersCount > 0 ? "rose" : undefined}
-              />
-              <QuickAccessTile
-                href="/portal/briefing"
-                label="AI Briefing"
-                icon={<Gauge className="h-4 w-4" />}
-                meta="Daily digest"
-              />
-              <QuickAccessTile
-                href="/portal/insights"
-                label="Insights"
-                icon={<Sparkles className="h-4 w-4" />}
-                meta={
-                  insightCounts.total > 0
-                    ? `${insightCounts.total} open signals`
-                    : "All clear"
-                }
-                badge={insightCounts.critical > 0 ? insightCounts.critical : null}
-                badgeTone={insightCounts.critical > 0 ? "rose" : undefined}
-              />
-              <QuickAccessTile
-                href="/portal/reports"
-                label="Reports"
-                icon={<FileText className="h-4 w-4" />}
-                meta="Weekly + monthly"
-              />
-              {orgModules?.moduleChatbot ? (
-                <QuickAccessTile
-                  href="/portal/conversations"
-                  label="Conversations"
-                  icon={<MessageSquare className="h-4 w-4" />}
-                  meta={`${chatbotSummary.conversations28d} in 28d`}
-                />
-              ) : null}
-              {orgModules?.moduleSEO ? (
-                <QuickAccessTile
-                  href="/portal/seo"
-                  label="SEO"
-                  icon={<TrendingUp className="h-4 w-4" />}
-                  meta={`${organic.sessions.toLocaleString()} sessions`}
-                />
-              ) : null}
-              {(orgModules?.moduleGoogleAds || orgModules?.moduleMetaAds) ? (
-                <QuickAccessTile
-                  href="/portal/campaigns"
-                  label="Campaigns"
-                  icon={<Megaphone className="h-4 w-4" />}
-                  meta={`$${adSpend.spendUsd.toLocaleString()} spend`}
-                />
-              ) : null}
-              {orgModules?.moduleCreativeStudio ? (
-                <QuickAccessTile
-                  href="/portal/creative"
-                  label="Creative studio"
-                  icon={<Brush className="h-4 w-4" />}
-                  meta="Ad assets"
-                />
-              ) : null}
-              {orgModules?.moduleWebsite && !orgModules?.bringYourOwnSite ? (
-                <QuickAccessTile
-                  href="/portal/site-builder"
-                  label="Site builder"
-                  icon={<Brush className="h-4 w-4" />}
-                  meta="Edit your site"
-                />
-              ) : null}
-              {orgModules?.moduleReferrals ? (
-                <QuickAccessTile
-                  href="/portal/referrals"
-                  label="Referrals"
-                  icon={<Share2 className="h-4 w-4" />}
-                  meta="Track referrers"
-                />
-              ) : null}
-            </div>
-          </DashboardSection>
-
-          {/* Funnel rollup mini-stat (uses real status counts so operator sees
-              live pipeline shape even before the funnel above is wired). */}
-          <section className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
-            {[
-              { label: "New", count: statusCounts.get(LeadStatus.NEW) ?? 0 },
-              { label: "Contacted", count: statusCounts.get(LeadStatus.CONTACTED) ?? 0 },
-              { label: "Tour scheduled", count: statusCounts.get(LeadStatus.TOUR_SCHEDULED) ?? 0 },
-              { label: "Toured", count: statusCounts.get(LeadStatus.TOURED) ?? 0 },
-              { label: "Applied", count: statusCounts.get(LeadStatus.APPLIED) ?? 0 },
-              { label: "Approved", count: statusCounts.get(LeadStatus.APPROVED) ?? 0 },
-              { label: "Signed", count: statusCounts.get(LeadStatus.SIGNED) ?? 0 },
-            ].map((s) => (
-              <div
-                key={s.label}
-                className="rounded-lg border border-border bg-card px-3 py-2.5"
-              >
-                <div className="text-xs tracking-widest uppercase font-semibold text-muted-foreground">
-                  {s.label}
-                </div>
-                <div className="mt-0.5 text-base font-semibold tabular-nums text-foreground">
-                  {s.count.toLocaleString()}
-                </div>
-              </div>
-            ))}
-      </section>
     </div>
   );
   } catch (err) {
