@@ -29,6 +29,7 @@ export async function RenewalsTab({
   orgId: string;
   propertyId: string;
 }) {
+  try {
   const now = new Date();
   const next120 = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000);
 
@@ -247,4 +248,16 @@ export async function RenewalsTab({
       ) : null}
     </div>
   );
+  } catch (err) {
+    console.error("[RenewalsTab] Failed to load AppFolio lease data:", err);
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center">
+        <p className="text-sm font-semibold text-amber-900">Renewal data unavailable</p>
+        <p className="mt-1 text-xs text-amber-700">
+          AppFolio sync may not be configured for this property. Check{" "}
+          <a href="/portal/settings/integrations" className="underline">Settings → Integrations</a>.
+        </p>
+      </div>
+    );
+  }
 }

@@ -38,6 +38,7 @@ export async function ResidentsTab({
   orgId: string;
   propertyId: string;
 }) {
+  try {
   const [residents, counts] = await Promise.all([
     prisma.resident.findMany({
       where: { orgId, propertyId },
@@ -244,4 +245,16 @@ export async function ResidentsTab({
       </DashboardSection>
     </div>
   );
+  } catch (err) {
+    console.error("[ResidentsTab] Failed to load AppFolio data:", err);
+    return (
+      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center">
+        <p className="text-sm font-semibold text-amber-900">Resident data unavailable</p>
+        <p className="mt-1 text-xs text-amber-700">
+          AppFolio sync may not be configured for this property. Check{" "}
+          <a href="/portal/settings/integrations" className="underline">Settings → Integrations</a>.
+        </p>
+      </div>
+    );
+  }
 }
