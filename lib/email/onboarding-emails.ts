@@ -38,12 +38,15 @@ async function safeSend(opts: {
       ...(opts.text ? { text: opts.text } : {}),
       ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
     });
+    if (r.error) {
+      console.error("[email] Resend rejected send:", r.error);
+      return { ok: false, error: r.error.message ?? "Resend API error" };
+    }
     return { ok: true, id: r.data?.id };
   } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : "Unknown error",
-    };
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    console.error("[email] Resend send threw:", msg);
+    return { ok: false, error: msg };
   }
 }
 

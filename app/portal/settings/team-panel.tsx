@@ -253,6 +253,12 @@ function InviteForm({
       if (!res.ok) {
         throw new Error(body.error ?? `Failed (${res.status})`);
       }
+      // Surface email delivery failures even when the invite was created.
+      if (!body.inviteEmailSent && body.inviteEmailError) {
+        throw new Error(
+          `Invite created but email failed: ${body.inviteEmailError}. Check Resend configuration.`
+        );
+      }
       const okEmail = email;
       setState({ kind: "ok", email: okEmail });
       setEmail("");
@@ -333,7 +339,7 @@ function InviteForm({
           <span className="text-[11px] text-destructive">{state.message}</span>
         ) : (
           <span className="text-[11px] text-muted-foreground">
-            Clerk sends the signup email. They land on your portal once they confirm.
+            They'll receive a branded email from hello@leasestack.co with a sign-up link.
           </span>
         )}
       </div>
