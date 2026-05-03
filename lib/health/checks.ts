@@ -258,7 +258,8 @@ export async function checkStripe(): Promise<CheckResult> {
 }
 
 export async function checkResend(): Promise<CheckResult> {
-  if (!process.env.RESEND_API_KEY) {
+  const key = process.env.RESEND_API_KEY?.trim();
+  if (!key) {
     return {
       status: "degraded",
       latencyMs: 0,
@@ -269,7 +270,7 @@ export async function checkResend(): Promise<CheckResult> {
     "https://api.resend.com/domains",
     {
       method: "GET",
-      headers: { Authorization: `Bearer ${process.env.RESEND_API_KEY}` },
+      headers: { Authorization: `Bearer ${key}` },
     },
     "resend"
   );
