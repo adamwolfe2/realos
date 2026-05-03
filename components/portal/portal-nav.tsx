@@ -57,6 +57,21 @@ export type PortalNavOrg = {
   isAudienceSync?: boolean;
   /** True when an AppFolio integration record exists — gates Operations nav group */
   appFolioConnected?: boolean;
+  /**
+   * Soft-gating flags for Analytics-tier nav items. Hide pages that have
+   * zero data (Briefing, Insights, Reports) so empty tabs don't bloat the
+   * sidebar before the tenant has anything to look at. Set true once the
+   * underlying tables have at least one row.
+   */
+  hasReports?: boolean;
+  hasInsights?: boolean;
+  hasCreativeRequests?: boolean;
+  /**
+   * True when the org has at least one lead AND one property — the
+   * minimum corpus the briefing draws from. Hides Briefing on
+   * brand-new tenants where the call sheet would be empty.
+   */
+  briefingHasContent?: boolean;
 };
 
 export type NavItem = {
@@ -113,9 +128,28 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Analytics",
     items: [
-      { href: "/portal/briefing", label: "Briefing", icon: Gauge, show: ALWAYS },
-      { href: "/portal/insights", label: "Insights", icon: Sparkles, show: ALWAYS },
-      { href: "/portal/reports", label: "Reports", icon: FileText, show: ALWAYS },
+      // Each Analytics page hides when its source data is empty so the
+      // sidebar doesn't surface dead-end clicks. The pages themselves
+      // remain reachable by URL for power users; we just hide the entry
+      // point until there's something to show.
+      {
+        href: "/portal/briefing",
+        label: "Briefing",
+        icon: Gauge,
+        show: (o) => Boolean(o.briefingHasContent),
+      },
+      {
+        href: "/portal/insights",
+        label: "Insights",
+        icon: Sparkles,
+        show: (o) => Boolean(o.hasInsights),
+      },
+      {
+        href: "/portal/reports",
+        label: "Reports",
+        icon: FileText,
+        show: (o) => Boolean(o.hasReports),
+      },
     ],
   },
   {
@@ -178,7 +212,11 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/portal/creative",
         label: "Creative",
         icon: Brush,
-        show: (o) => o.moduleCreativeStudio,
+        // Only surface when the module is active AND the operator has
+        // already filed at least one request. Until then it's an empty
+        // request form that takes up sidebar real estate without
+        // showing what the page actually does.
+        show: (o) => o.moduleCreativeStudio && Boolean(o.hasCreativeRequests),
       },
     ],
   },

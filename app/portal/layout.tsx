@@ -32,7 +32,18 @@ export default async function PortalLayout({
     redirect("/admin");
   }
 
-  const [org, appfolioIntegration] = await Promise.all([
+  // Sidebar gating queries — kept lightweight (count-only) so the layout
+  // doesn't pay a heavy cost on every page navigation. We check existence
+  // (take: 1) instead of full counts to short-circuit at the first row.
+  const [
+    org,
+    appfolioIntegration,
+    insightCount,
+    reportCount,
+    creativeCount,
+    leadCount,
+    propertyCount,
+  ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
       select: {
@@ -58,6 +69,13 @@ export default async function PortalLayout({
       where: { orgId: scope.orgId },
       select: { instanceSubdomain: true, autoSyncEnabled: true },
     }),
+    prisma.insight.count({ where: { orgId: scope.orgId } }).catch(() => 0),
+    prisma.clientReport.count({ where: { orgId: scope.orgId } }).catch(() => 0),
+    prisma.creativeRequest
+      .count({ where: { orgId: scope.orgId } })
+      .catch(() => 0),
+    prisma.lead.count({ where: { orgId: scope.orgId } }).catch(() => 0),
+    prisma.property.count({ where: { orgId: scope.orgId } }).catch(() => 0),
   ]);
 
   if (!org) {
@@ -94,6 +112,13 @@ export default async function PortalLayout({
     // Show Operations (residents / renewals / work orders) only when AppFolio
     // is configured — the pages show empty states otherwise and confuse users.
     appFolioConnected: Boolean(appfolioIntegration?.instanceSubdomain),
+    // Soft-gate Analytics-tier nav so brand-new tenants don't see five
+    // empty pages they have to ignore. Items appear in the sidebar the
+    // moment their underlying tables have at least one row.
+    hasInsights: insightCount > 0,
+    hasReports: reportCount > 0,
+    hasCreativeRequests: creativeCount > 0,
+    briefingHasContent: leadCount > 0 && propertyCount > 0,
   };
 
   return (

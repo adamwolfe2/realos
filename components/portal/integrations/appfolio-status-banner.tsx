@@ -10,6 +10,7 @@ import {
 import type { AppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { RunAppFolioSyncButton } from "./run-appfolio-sync-button";
 import { StaleOnLoadTrigger } from "@/components/portal/sync/stale-on-load-trigger";
+import { AppFolioSyncPoller } from "./appfolio-sync-poller";
 import { classifyFreshness } from "@/lib/sync/freshness";
 
 // ---------------------------------------------------------------------------
@@ -108,14 +109,13 @@ export function AppFolioStatusBanner({
   }
 
   if (status.state === "syncing") {
-    return (
-      <Banner
-        tone="info"
-        icon={<Clock className="h-4 w-4 animate-pulse" />}
-        title="AppFolio sync in progress."
-        body={`${resourceLabel} will refresh automatically as soon as the current sync finishes. This usually takes under a minute.`}
-      />
-    );
+    // Active poller — checks every 5s and auto-refreshes the page when
+    // the sync finishes. Replaces the previous static "in progress" copy
+    // that left operators wondering whether the sync was alive or stuck.
+    // We pass startedAt=null because lastSyncAt on the integration row
+    // represents the *last successful* sync, not when the current sync
+    // started — so the poller counts from "page open" instead.
+    return <AppFolioSyncPoller startedAt={null} />;
   }
 
   if (status.state === "failed") {
