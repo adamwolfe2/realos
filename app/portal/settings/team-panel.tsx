@@ -33,8 +33,8 @@ const AGENCY_ROLES: ReadonlySet<UserRole> = new Set([
 type InviteState =
   | { kind: "idle" }
   | { kind: "sending" }
-  | { kind: "ok"; email: string }
-  | { kind: "error"; message: string };
+  | { kind: "ok"; email: string; inviteLink: string | null; emailSent: boolean }
+  | { kind: "error"; message: string; inviteLink: string | null };
 
 type Props = {
   members: Member[];
@@ -253,14 +253,24 @@ function InviteForm({
       if (!res.ok) {
         throw new Error(body.error ?? `Failed (${res.status})`);
       }
-      // Surface email delivery failures even when the invite was created.
-      if (!body.inviteEmailSent && body.inviteEmailError) {
-        throw new Error(
-          `Invite created but email failed: ${body.inviteEmailError}. Check Resend configuration.`
-        );
+      const inviteLink: string | null = body.inviteLink ?? null;
+      // Email failed but the user + invite link are still valid — surface the
+      // exact failure AND offer a copy-link fallback so the operator isn't
+      // blocked by a transient Resend issue.
+      if (!body.inviteEmailSent) {
+        const message = body.inviteEmailError
+          ? `Invite created but email failed: ${body.inviteEmailError}. Copy the link below to send manually.`
+          : "Invite created but the email did not send. Copy the link below to send manually.";
+        setState({ kind: "error", message, inviteLink });
+        return;
       }
       const okEmail = email;
-      setState({ kind: "ok", email: okEmail });
+      setState({
+        kind: "ok",
+        email: okEmail,
+        inviteLink,
+        emailSent: true,
+      });
       setEmail("");
       setName("");
       setTimeout(() => {
@@ -268,11 +278,12 @@ function InviteForm({
         onSuccess();
         // Full reload to pull the new user into the list with fresh server-side data.
         window.location.reload();
-      }, 1500);
+      }, 4000);
     } catch (err) {
       setState({
         kind: "error",
         message: err instanceof Error ? err.message : "Invite failed",
+        inviteLink: null,
       });
     }
   }
@@ -334,15 +345,66 @@ function InviteForm({
           {state.kind === "sending" ? "Sending…" : "Send invite"}
         </button>
         {state.kind === "ok" ? (
-          <span className="text-[11px] text-primary">Invite sent to {state.email}.</span>
+          <span className="text-[11px] text-primary">
+            Invite sent to {state.email}.
+          </span>
         ) : state.kind === "error" ? (
-          <span className="text-[11px] text-destructive">{state.message}</span>
+          <span className="text-[11px] text-destructive max-w-md">
+            {state.message}
+          </span>
         ) : (
           <span className="text-[11px] text-muted-foreground">
-            They'll receive a branded email from hello@leasestack.co with a sign-up link.
+            They&apos;ll receive a branded email from hello@leasestack.co with
+            a sign-up link.
           </span>
         )}
       </div>
+
+      {/* Copy-link fallback. Renders on success (so operator can DM the link
+          as backup) and on failure (so a Resend hiccup doesn't block onboarding). */}
+      {(state.kind === "ok" || state.kind === "error") && state.inviteLink ? (
+        <CopyInviteLink link={state.inviteLink} />
+      ) : null}
     </form>
+  );
+}
+
+function CopyInviteLink({ link }: { link: string }) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      // Most browsers permit clipboard.writeText in user-gesture handlers; if
+      // it fails, the link is still selectable in the input below.
+    }
+  }
+  return (
+    <div className="rounded-md border border-border bg-background p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          Manual invite link
+        </span>
+        <button
+          type="button"
+          onClick={copy}
+          className="text-[11px] font-semibold text-primary hover:underline"
+        >
+          {copied ? "Copied!" : "Copy link"}
+        </button>
+      </div>
+      <input
+        readOnly
+        value={link}
+        onFocus={(e) => e.currentTarget.select()}
+        className="w-full rounded-sm border border-border bg-muted/40 px-2 py-1 text-[11px] font-mono text-foreground"
+      />
+      <p className="text-[10px] text-muted-foreground leading-snug">
+        Send this directly to the invitee if the email didn&apos;t arrive.
+        The link signs them in to your team with the role above.
+      </p>
+    </div>
   );
 }

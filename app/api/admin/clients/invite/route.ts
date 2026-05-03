@@ -219,6 +219,13 @@ export async function POST(req: NextRequest) {
     ),
   });
 
+  // Always return the best-available link so the UI can offer a manual
+  // copy fallback when the email failed (Resend mis-config, domain not
+  // verified, recipient bouncing, etc.). Prefer the Clerk one-click accept
+  // URL; fall back to the public /sign-up page when Clerk didn't issue one.
+  const fallbackSignUp = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/sign-up`;
+  const inviteLink = acceptUrl ?? fallbackSignUp;
+
   return NextResponse.json({
     ok: true,
     userId,
@@ -226,6 +233,7 @@ export async function POST(req: NextRequest) {
     clerkError,
     inviteEmailSent,
     inviteEmailError,
-    signUpUrl: `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/sign-up`,
+    inviteLink,
+    signUpUrl: fallbackSignUp,
   });
 }
