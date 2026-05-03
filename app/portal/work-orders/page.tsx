@@ -372,6 +372,7 @@ export default async function WorkOrdersPage() {
               err instanceof Error ? err.message : "Work order data could not be loaded.",
             subdomain: null,
             stale: false,
+            stats: null,
           }}
           resourceLabel="work orders"
         />

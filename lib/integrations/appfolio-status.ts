@@ -30,6 +30,27 @@ export type AppFolioStatus = {
   subdomain: string | null;
   /** True when last sync is >24h old (sync should run hourly). */
   stale: boolean;
+  /**
+   * Per-phase counts + warnings from the most recent sync. Surfaces in
+   * the banner so operators see "pulled 0 residents" as a visible signal
+   * even when the sync technically succeeded — typically means an
+   * AppFolio plan limitation (Core can't access reports endpoints) or
+   * a creds permission gap.
+   */
+  stats: AppFolioSyncStatsSummary | null;
+};
+
+export type AppFolioSyncStatsSummary = {
+  residentsUpserted: number;
+  leasesUpserted: number;
+  workOrdersUpserted: number;
+  listingsUpserted: number;
+  propertiesUpserted: number;
+  delinquenciesUpdated: number;
+  warnings: string[];
+  phasesCompleted: number;
+  totalPhases: number;
+  completedAt: string | null;
 };
 
 export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> {
@@ -45,9 +66,13 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
         syncStatus: true,
         lastSyncAt: true,
         lastError: true,
+        lastSyncStats: true,
       },
     })
     .catch(() => null);
+
+  // Coerce the JSONB column into a typed shape the UI can rely on.
+  const stats = parseStats(integ?.lastSyncStats);
 
   if (!integ) {
     return {
@@ -56,6 +81,7 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
       lastError: null,
       subdomain: null,
       stale: false,
+      stats: null,
     };
   }
 
@@ -72,6 +98,7 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
       lastError: integ.lastError ?? null,
       subdomain: integ.instanceSubdomain ?? null,
       stale: false,
+      stats,
     };
   }
 
@@ -82,6 +109,7 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
       lastError: integ.lastError ?? null,
       subdomain: integ.instanceSubdomain ?? null,
       stale: false,
+      stats,
     };
   }
 
@@ -92,6 +120,7 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
       lastError: integ.lastError,
       subdomain: integ.instanceSubdomain ?? null,
       stale: false,
+      stats,
     };
   }
 
@@ -102,6 +131,7 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
       lastError: null,
       subdomain: integ.instanceSubdomain ?? null,
       stale: false,
+      stats,
     };
   }
 
@@ -114,5 +144,34 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
     lastError: null,
     subdomain: integ.instanceSubdomain ?? null,
     stale,
+    stats,
+  };
+}
+
+// Defensive shape coercion. The DB column is JSONB so anything could be in
+// there; treat unknown / partial shapes as missing instead of crashing the
+// status helper.
+function parseStats(raw: unknown): AppFolioSyncStatsSummary | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const num = (k: string) =>
+    typeof r[k] === "number" && Number.isFinite(r[k] as number)
+      ? (r[k] as number)
+      : 0;
+  const warnings = Array.isArray(r.warnings)
+    ? (r.warnings as unknown[]).filter((w): w is string => typeof w === "string")
+    : [];
+  return {
+    residentsUpserted: num("residentsUpserted"),
+    leasesUpserted: num("leasesUpserted"),
+    workOrdersUpserted: num("workOrdersUpserted"),
+    listingsUpserted: num("listingsUpserted"),
+    propertiesUpserted: num("propertiesUpserted"),
+    delinquenciesUpdated: num("delinquenciesUpdated"),
+    warnings,
+    phasesCompleted: num("phasesCompleted"),
+    totalPhases: num("totalPhases"),
+    completedAt:
+      typeof r.completedAt === "string" ? r.completedAt : null,
   };
 }

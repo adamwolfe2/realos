@@ -37,6 +37,11 @@ export async function GET() {
         lastSyncAt: integration.lastSyncAt,
         syncStatus: integration.syncStatus,
         lastError: integration.lastError,
+        // Detailed per-phase counts + warnings so the poller can show
+        // "X residents · Y leases · Z work orders pulled" instead of a
+        // generic "Sync complete" that hides whether anything actually
+        // moved.
+        lastSyncStats: integration.lastSyncStats ?? null,
       },
     });
   } catch (err) {

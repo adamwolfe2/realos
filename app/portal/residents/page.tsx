@@ -428,6 +428,7 @@ export default async function ResidentsPage({
               err instanceof Error ? err.message : "Resident data could not be loaded.",
             subdomain: null,
             stale: false,
+            stats: null,
           }}
           resourceLabel="residents"
         />

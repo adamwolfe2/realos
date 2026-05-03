@@ -511,6 +511,25 @@ export async function runAppfolioSync(
   const allPhasesCompleted = phasesCompleted === totalPhases;
   const anyPhaseCompleted = phasesCompleted > 0;
 
+  // Build the persisted stats payload — same shape as in-memory stats plus
+  // a few derived fields so the UI doesn't have to recompute them.
+  const persistedStats: Prisma.InputJsonValue = {
+    leadsUpserted: stats.leadsUpserted,
+    toursUpserted: stats.toursUpserted,
+    tenantsMatched: stats.tenantsMatched,
+    listingsUpserted: stats.listingsUpserted,
+    propertiesUpserted: stats.propertiesUpserted,
+    residentsUpserted: stats.residentsUpserted,
+    leasesUpserted: stats.leasesUpserted,
+    workOrdersUpserted: stats.workOrdersUpserted,
+    delinquenciesUpdated: stats.delinquenciesUpdated,
+    warnings: stats.warnings.slice(0, 50), // cap to avoid runaway JSON
+    phasesCompleted,
+    totalPhases,
+    completedAt: new Date().toISOString(),
+    fullBackfill: !!options.fullBackfill,
+  };
+
   try {
     await prisma.appFolioIntegration.update({
       where: { orgId },
@@ -525,6 +544,7 @@ export async function runAppfolioSync(
             : !anyPhaseCompleted
               ? topLevelError
               : null,
+        lastSyncStats: persistedStats,
       },
     });
 

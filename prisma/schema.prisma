@@ -1432,6 +1432,12 @@ model AppFolioIntegration {
   lastSyncAt DateTime?
   syncStatus String? // idle, syncing, error
   lastError  String?
+  // Detailed stats from the most recent sync run. Persisted so the UI can
+  // surface "X residents · Y leases · Z work orders pulled" + per-phase
+  // warnings even when the sync technically succeeded but a sub-endpoint
+  // (e.g. residents) silently returned 0 rows or 403'd. Shape matches
+  // AppfolioSyncStats in lib/integrations/appfolio-sync.ts.
+  lastSyncStats Json?
 
   // Configuration
   propertyGroupFilter  String? // Only sync specific property groups

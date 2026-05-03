@@ -160,17 +160,81 @@ export function AppFolioStatusBanner({
     );
   }
 
+  // Synced. Build the count summary from persisted stats so the operator
+  // sees what was actually pulled — distinguishes "we synced 0 residents
+  // because AppFolio is empty" from "we synced 0 residents because the
+  // residents endpoint failed silently".
+  const statsSummary = status.stats
+    ? formatPulledCounts(status.stats)
+    : null;
+  const warnings = status.stats?.warnings ?? [];
+  const hasWarnings = warnings.length > 0;
+
   return (
-    <Banner
-      tone="ok"
-      icon={<CheckCircle2 className="h-4 w-4" />}
-      title={`Synced from AppFolio · ${formatDistanceToNow(status.lastSyncAt!, {
-        addSuffix: true,
-      })}`}
-      body={`AppFolio remains the source of truth for ${resourceLabel}. This view is read-only.`}
-      action={<RunAppFolioSyncButton label="Sync now" subtle />}
-    />
+    <div className="space-y-2">
+      <Banner
+        tone={hasWarnings ? "warn" : "ok"}
+        icon={
+          hasWarnings ? (
+            <AlertTriangle className="h-4 w-4" />
+          ) : (
+            <CheckCircle2 className="h-4 w-4" />
+          )
+        }
+        title={`Synced from AppFolio · ${formatDistanceToNow(
+          status.lastSyncAt!,
+          { addSuffix: true }
+        )}`}
+        body={
+          statsSummary
+            ? `${statsSummary} AppFolio remains the source of truth.`
+            : `AppFolio remains the source of truth for ${resourceLabel}. This view is read-only.`
+        }
+        action={<RunAppFolioSyncButton label="Sync now" subtle />}
+      />
+      {hasWarnings ? (
+        <details className="rounded-lg border border-amber-200 bg-amber-50/60 px-4 py-2.5 text-xs text-amber-900">
+          <summary className="cursor-pointer font-semibold">
+            {warnings.length} sync warning{warnings.length === 1 ? "" : "s"}
+            {" · "}
+            <span className="font-normal opacity-80">
+              click to inspect
+            </span>
+          </summary>
+          <ul className="mt-2 space-y-0.5 max-h-40 overflow-y-auto pl-4 list-disc">
+            {warnings.slice(0, 25).map((w, i) => (
+              <li key={i} className="break-all">{w}</li>
+            ))}
+            {warnings.length > 25 ? (
+              <li className="opacity-60">+{warnings.length - 25} more…</li>
+            ) : null}
+          </ul>
+          <p className="mt-2 text-[11px] opacity-75">
+            Warnings often mean an AppFolio plan limitation (Core can&apos;t
+            access REST reports) or a permissions gap on the credentials.
+          </p>
+        </details>
+      ) : null}
+    </div>
   );
+}
+
+// Turn the persisted stats counts into a one-line summary phrase. Skips
+// zeros so the line stays readable.
+function formatPulledCounts(stats: NonNullable<AppFolioStatus["stats"]>): string {
+  const parts: string[] = [];
+  const push = (n: number, label: string) => {
+    if (n > 0) parts.push(`${n.toLocaleString()} ${label}`);
+  };
+  push(stats.residentsUpserted, "residents");
+  push(stats.leasesUpserted, "leases");
+  push(stats.workOrdersUpserted, "work orders");
+  push(stats.listingsUpserted, "listings");
+  push(stats.delinquenciesUpdated, "delinquency rows");
+  if (parts.length === 0) {
+    return "Last sync pulled 0 rows from AppFolio.";
+  }
+  return `Last sync pulled ${parts.join(" · ")}.`;
 }
 
 function truncate(input: string, max: number): string {

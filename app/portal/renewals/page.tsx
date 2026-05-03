@@ -361,6 +361,7 @@ export default async function RenewalsPage() {
               err instanceof Error ? err.message : "Renewal data could not be loaded.",
             subdomain: null,
             stale: false,
+            stats: null,
           }}
           resourceLabel="leases"
         />
