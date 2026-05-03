@@ -37,6 +37,14 @@ export function isValidEmail(email: string | undefined | null): email is string 
   return !!email && email.includes("@");
 }
 
+// Resend (and SMTP) reject subject lines containing CR/LF as a
+// header-injection guard. We've seen trailing \n flow in from env-var
+// substitutions (BRAND_NAME) into subject lines and silently kill invites.
+// Every transactional email should run subjects through this before send.
+export function sanitizeSubject(subject: string): string {
+  return subject.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim();
+}
+
 // ---------------------------------------------------------------------------
 // buildBaseHtml -- branded email shell used by every transactional email.
 // ---------------------------------------------------------------------------

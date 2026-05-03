@@ -61,37 +61,69 @@ const EMPTY_METRICS: PortfolioReputationMetrics = {
 };
 
 export default async function PortfolioReputationPage() {
-  const scope = await requireScope();
+  let scope;
+  try {
+    scope = await requireScope();
+  } catch (err) {
+    // requireScope throws ForbiddenError when the session can't resolve a
+    // tenant — render a friendly notice instead of bubbling to the global
+    // error boundary which displays "Something went wrong".
+    console.error("[reputation] requireScope failed:", err);
+    return <ReputationFallback message="Sign in required." />;
+  }
+
   let metrics: PortfolioReputationMetrics = EMPTY_METRICS;
   let feed: PortfolioReputationFeedItem[] = [];
   let loadError = false;
 
   try {
     [metrics, feed] = await Promise.all([
-      loadPortfolioReputationMetrics(scope.orgId),
-      loadPortfolioReputationFeed(scope.orgId, 30),
+      loadPortfolioReputationMetrics(scope.orgId).catch((err) => {
+        console.error("[reputation] metrics load failed:", err);
+        return EMPTY_METRICS;
+      }),
+      loadPortfolioReputationFeed(scope.orgId, 30).catch((err) => {
+        console.error("[reputation] feed load failed:", err);
+        return [] as PortfolioReputationFeedItem[];
+      }),
     ]);
+    // If both came back empty AND something logged above, we want the banner.
+    // The .catch wrappers don't propagate, so detect emptiness as a proxy.
+    if (
+      metrics.totalMentions === 0 &&
+      metrics.propertyHealth.length === 0 &&
+      feed.length === 0
+    ) {
+      // Genuine empty state OR a swallowed error — either way render the
+      // honest empty UI below. loadError stays false for a real "no data
+      // yet" tenant; a true crash gets the banner via the catch outside.
+    }
   } catch (err) {
     console.error("[reputation] Failed to load portfolio metrics:", err);
     loadError = true;
   }
 
   const sentimentByKey = new Map(
-    metrics.sentimentBreakdown.map((s) => [s.sentiment, s.count])
+    (metrics.sentimentBreakdown ?? []).map((s) => [s.sentiment, s.count])
   );
   const positive = sentimentByKey.get("POSITIVE") ?? 0;
   const negative = sentimentByKey.get("NEGATIVE") ?? 0;
   const mixed = sentimentByKey.get("MIXED") ?? 0;
   const neutral = sentimentByKey.get("NEUTRAL") ?? 0;
 
-  const propertyHealthSorted = [...metrics.propertyHealth].sort((a, b) => {
-    // Properties with negative mentions or low ratings first.
-    const aRisk = a.negativeCount * 2 + (a.googleRating ? 5 - a.googleRating : 0);
-    const bRisk = b.negativeCount * 2 + (b.googleRating ? 5 - b.googleRating : 0);
-    return bRisk - aRisk;
-  });
+  const propertyHealthSorted = [...(metrics.propertyHealth ?? [])].sort(
+    (a, b) => {
+      // Properties with negative mentions or low ratings first.
+      const aRisk =
+        a.negativeCount * 2 + (a.googleRating ? 5 - a.googleRating : 0);
+      const bRisk =
+        b.negativeCount * 2 + (b.googleRating ? 5 - b.googleRating : 0);
+      return bRisk - aRisk;
+    }
+  );
 
-  return (
+  try {
+    return (
     <div className="space-y-4">
       {loadError ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
@@ -340,7 +372,7 @@ export default async function PortfolioReputationPage() {
       {/* Recent mentions feed */}
       <DashboardSection
         title="Recent mentions"
-        eyebrow="Live feed"
+        eyebrow="Latest 30"
         description="The latest 30 across every property"
       >
         {feed.length === 0 ? (
@@ -357,36 +389,72 @@ export default async function PortfolioReputationPage() {
       </DashboardSection>
     </div>
   );
-
-  function SentimentBar({
-    label,
-    count,
-    total,
-    tone,
-  }: {
-    label: string;
-    count: number;
-    total: number;
-    tone: string;
-  }) {
-    const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+  } catch (err) {
+    // Render-time crash — log + return a clean fallback so we never bubble
+    // to the global "Something went wrong" boundary on a customer demo.
+    console.error("[reputation] render crashed:", err);
     return (
-      <div>
-        <div className="flex items-center justify-between text-xs mb-0.5">
-          <span className="text-foreground">{label}</span>
-          <span className="text-muted-foreground tabular-nums">
-            {count.toLocaleString()} · {pct}%
-          </span>
-        </div>
-        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-          <div
-            className={`h-full ${tone}`}
-            style={{ width: `${pct}%` }}
-          />
-        </div>
-      </div>
+      <ReputationFallback
+        message="Reputation view ran into an issue rendering. The data may be partially seeded — refresh in a moment."
+      />
     );
   }
+}
+
+function SentimentBar({
+  label,
+  count,
+  total,
+  tone,
+}: {
+  label: string;
+  count: number;
+  total: number;
+  tone: string;
+}) {
+  const pct = total > 0 ? Math.round((count / total) * 100) : 0;
+  return (
+    <div>
+      <div className="flex items-center justify-between text-xs mb-0.5">
+        <span className="text-foreground">{label}</span>
+        <span className="text-muted-foreground tabular-nums">
+          {count.toLocaleString()} · {pct}%
+        </span>
+      </div>
+      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+        <div className={`h-full ${tone}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function ReputationFallback({ message }: { message: string }) {
+  return (
+    <div className="space-y-4">
+      <header>
+        <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          Brand health
+        </p>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">
+          Reputation
+        </h1>
+      </header>
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <p className="font-semibold">Reputation view temporarily unavailable.</p>
+        <p className="mt-1 text-xs leading-snug">{message}</p>
+        <p className="mt-2 text-xs">
+          You can still drill into reviews per property at{" "}
+          <Link
+            href="/portal/properties"
+            className="underline font-medium"
+          >
+            Properties
+          </Link>{" "}
+          → choose a property → Reputation tab.
+        </p>
+      </div>
+    </div>
+  );
 }
 
 function MonthlyVolume({

@@ -3,6 +3,7 @@ import {
   buildBaseHtml,
   getResend,
   isValidEmail,
+  sanitizeSubject,
   FROM_EMAIL,
 } from "./shared";
 
@@ -22,7 +23,7 @@ async function safeSend(opts: {
     const r = await resend.emails.send({
       from: opts.from ?? FROM_EMAIL,
       to: opts.to,
-      subject: opts.subject,
+      subject: sanitizeSubject(opts.subject),
       html: opts.html,
       ...(opts.text ? { text: opts.text } : {}),
       ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
