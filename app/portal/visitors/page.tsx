@@ -15,6 +15,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { ExportButton } from "@/components/ui/export-button";
 import { StatCard } from "@/components/admin/stat-card";
 import { EngageComposer } from "./engage-composer";
+import { AutoRefresh } from "./auto-refresh";
 
 export const metadata: Metadata = { title: "Visitor feed" };
 export const revalidate = 15;
@@ -274,9 +275,10 @@ export default async function VisitorsPage({
 
   return (
     <div className="space-y-6">
+      <AutoRefresh intervalMs={15000} />
       <PageHeader
         title="Visitor feed"
-        description="Real people visiting your site, identified by the pixel. Updates every 15 seconds."
+        description="Real people visiting your site, identified by the pixel. Auto-refreshes every 15 seconds."
         actions={
           <div className="flex items-center gap-3">
             {hasPixel ? (
@@ -777,12 +779,6 @@ function EmptyNoVisitors() {
           className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
         >
           Install the pixel
-        </a>
-        <a
-          href="/portal/site-builder"
-          className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
-        >
-          Customize your site
         </a>
       </div>
     </div>

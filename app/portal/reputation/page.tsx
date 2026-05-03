@@ -6,6 +6,7 @@ import { requireScope } from "@/lib/tenancy/scope";
 import {
   loadPortfolioReputationMetrics,
   loadPortfolioReputationFeed,
+  type PortfolioReputationMetrics,
   type PortfolioReputationFeedItem,
 } from "@/lib/reputation/portfolio";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
@@ -45,12 +46,35 @@ function truncate(input: string, max = 220): string {
   return s.length > max ? `${s.slice(0, max - 1)}…` : s;
 }
 
+const EMPTY_METRICS: PortfolioReputationMetrics = {
+  totalMentions: 0,
+  newLast30d: 0,
+  negativePct: null,
+  unreviewedCount: 0,
+  flaggedCount: 0,
+  googleAvgRating: null,
+  googleReviewCount: 0,
+  sourceBreakdown: [],
+  sentimentBreakdown: [],
+  propertyHealth: [],
+  monthlyVolume: [],
+};
+
 export default async function PortfolioReputationPage() {
   const scope = await requireScope();
-  const [metrics, feed] = await Promise.all([
-    loadPortfolioReputationMetrics(scope.orgId),
-    loadPortfolioReputationFeed(scope.orgId, 30),
-  ]);
+  let metrics: PortfolioReputationMetrics = EMPTY_METRICS;
+  let feed: PortfolioReputationFeedItem[] = [];
+  let loadError = false;
+
+  try {
+    [metrics, feed] = await Promise.all([
+      loadPortfolioReputationMetrics(scope.orgId),
+      loadPortfolioReputationFeed(scope.orgId, 30),
+    ]);
+  } catch (err) {
+    console.error("[reputation] Failed to load portfolio metrics:", err);
+    loadError = true;
+  }
 
   const sentimentByKey = new Map(
     metrics.sentimentBreakdown.map((s) => [s.sentiment, s.count])
@@ -69,6 +93,14 @@ export default async function PortfolioReputationPage() {
 
   return (
     <div className="space-y-4">
+      {loadError ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+          <strong>Reputation data unavailable.</strong> The scanner tables may still be
+          initializing — run a reputation scan from any property to seed the data. This
+          page will display results once the first scan completes.
+        </div>
+      ) : null}
+
       {/* Page heading */}
       <header className="flex items-end justify-between gap-3 flex-wrap">
         <div>

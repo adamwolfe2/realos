@@ -529,12 +529,11 @@ export default async function PortalHome({
         </section>
       ) : null}
 
-      {/* KPI strip — eight tiles across at desktop, wraps on smaller screens.
-          Surfaces brand-health (reputation) and chatbot ROI directly so they
-          aren't buried in per-property pages. */}
+      {/* KPI strip — four tiles per row, two rows at desktop. Labels are
+          readable at this width and values don't overflow. */}
       <section
         aria-label="Key metrics"
-        className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-3"
+        className="grid grid-cols-2 md:grid-cols-4 gap-3"
       >
             <KpiTile
               label="Total leads"
@@ -558,7 +557,7 @@ export default async function PortalHome({
               href="/portal/leads"
             />
             <KpiTile
-              label="Hot visitors now"
+              label="Hot visitors"
               value={hotVisitors.count.toLocaleString()}
               hint="Active in the last 5 minutes"
               spark={hotVisitors.sparkline}
@@ -568,7 +567,7 @@ export default async function PortalHome({
               locked={cursiveOff ? { reason: "Requires pixel", href: "/portal/settings/integrations" } : undefined}
             />
             <KpiTile
-              label="Tour requests"
+              label="Tours"
               value={toursScheduled.toLocaleString()}
               hint={`${applicationsSubmitted28d.toLocaleString()} apps in 28d`}
               icon={<CalendarCheck className="h-3.5 w-3.5" />}
@@ -622,7 +621,7 @@ export default async function PortalHome({
               locked={adsOff ? { reason: "Requires Google Ads or Meta", href: "/portal/settings/integrations" } : undefined}
             />
             <KpiTile
-              label="Organic sessions"
+              label="Organic"
               value={organic.sessions.toLocaleString()}
               hint="From GSC + GA4"
               spark={organic.sparkline}
@@ -644,7 +643,7 @@ export default async function PortalHome({
               locked={organicOff ? { reason: "Requires GSC or GA4", href: "/portal/settings/integrations" } : undefined}
             />
             <KpiTile
-              label="Avg Google rating"
+              label="Google rating"
               value={
                 reputationSummary.avgGoogleRating != null
                   ? reputationSummary.avgGoogleRating.toFixed(1)
@@ -667,7 +666,7 @@ export default async function PortalHome({
               }
             />
             <KpiTile
-              label="Chatbot capture"
+              label="Chatbot"
               value={
                 chatbotSummary.captureRatePct != null
                   ? `${chatbotSummary.captureRatePct}%`

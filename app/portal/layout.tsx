@@ -32,27 +32,33 @@ export default async function PortalLayout({
     redirect("/admin");
   }
 
-  const org = await prisma.organization.findUnique({
-    where: { id: scope.orgId },
-    select: {
-      id: true,
-      name: true,
-      slug: true,
-      orgType: true,
-      productLine: true,
-      logoUrl: true,
-      onboardingDismissed: true,
-      moduleWebsite: true,
-      modulePixel: true,
-      moduleChatbot: true,
-      moduleGoogleAds: true,
-      moduleMetaAds: true,
-      moduleCreativeStudio: true,
-      moduleSEO: true,
-      moduleReferrals: true,
-      bringYourOwnSite: true,
-    },
-  });
+  const [org, appfolioIntegration] = await Promise.all([
+    prisma.organization.findUnique({
+      where: { id: scope.orgId },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        orgType: true,
+        productLine: true,
+        logoUrl: true,
+        onboardingDismissed: true,
+        moduleWebsite: true,
+        modulePixel: true,
+        moduleChatbot: true,
+        moduleGoogleAds: true,
+        moduleMetaAds: true,
+        moduleCreativeStudio: true,
+        moduleSEO: true,
+        moduleReferrals: true,
+        bringYourOwnSite: true,
+      },
+    }),
+    prisma.appFolioIntegration.findUnique({
+      where: { orgId: scope.orgId },
+      select: { instanceSubdomain: true, autoSyncEnabled: true },
+    }),
+  ]);
 
   if (!org) {
     redirect(scope.isAgency || scope.isAlPartner ? "/admin" : "/sign-in");
@@ -85,6 +91,9 @@ export default async function PortalLayout({
     onboardingDismissed: org.onboardingDismissed,
     setupComplete,
     isAudienceSync,
+    // Show Operations (residents / renewals / work orders) only when AppFolio
+    // is configured — the pages show empty states otherwise and confuse users.
+    appFolioConnected: Boolean(appfolioIntegration?.instanceSubdomain),
   };
 
   return (

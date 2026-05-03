@@ -74,10 +74,10 @@ function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live, l
         </div>
       ) : (
         <>
-          <div className="mt-2 flex items-baseline justify-between gap-2">
+          <div className="mt-2 flex items-baseline justify-between gap-2 min-w-0">
             <div
               className={cn(
-                "text-2xl leading-none font-semibold tracking-tight tabular-nums text-foreground",
+                "text-2xl leading-none font-semibold tracking-tight tabular-nums text-foreground min-w-0 truncate",
                 loading && "text-transparent bg-muted rounded animate-pulse",
               )}
             >
@@ -87,7 +87,7 @@ function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live, l
           </div>
 
           {hint ? (
-            <div className="mt-1 text-[11px] text-muted-foreground">{hint}</div>
+            <div className="mt-1 text-[11px] text-muted-foreground truncate">{hint}</div>
           ) : null}
 
           {spark && spark.length > 1 && !loading ? (

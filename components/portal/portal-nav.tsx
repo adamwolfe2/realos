@@ -55,6 +55,8 @@ export type PortalNavOrg = {
   onboardingDismissed: boolean;
   setupComplete: boolean;
   isAudienceSync?: boolean;
+  /** True when an AppFolio integration record exists — gates Operations nav group */
+  appFolioConnected?: boolean;
 };
 
 export type NavItem = {
@@ -135,9 +137,9 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Operations",
     items: [
-      { href: "/portal/residents", label: "Residents", icon: Home, show: ALWAYS },
-      { href: "/portal/renewals", label: "Renewals", icon: CalendarClock, show: ALWAYS },
-      { href: "/portal/work-orders", label: "Work orders", icon: Wrench, show: ALWAYS },
+      { href: "/portal/residents", label: "Residents", icon: Home, show: (o) => Boolean(o.appFolioConnected) },
+      { href: "/portal/renewals", label: "Renewals", icon: CalendarClock, show: (o) => Boolean(o.appFolioConnected) },
+      { href: "/portal/work-orders", label: "Work orders", icon: Wrench, show: (o) => Boolean(o.appFolioConnected) },
     ],
   },
   {
@@ -183,12 +185,6 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Platform",
     items: [
-      {
-        href: "/portal/site-builder",
-        label: "Site builder",
-        icon: Brush,
-        show: (o) => o.moduleWebsite && !o.bringYourOwnSite,
-      },
       { href: "/portal/seo", label: "SEO", icon: TrendingUp, show: (o) => o.moduleSEO },
       {
         href: "/portal/referrals",
