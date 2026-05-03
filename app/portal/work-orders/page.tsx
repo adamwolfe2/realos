@@ -13,6 +13,8 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
+import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
+import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { WorkOrderStatus, WorkOrderPriority } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Work orders" };
@@ -81,6 +83,7 @@ export default async function WorkOrdersPage() {
   const last90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
   const [
+    appfolioStatus,
     openCount,
     urgentCount,
     completed30dCount,
@@ -88,6 +91,7 @@ export default async function WorkOrdersPage() {
     pipelineRows,
     perPropertyTotals,
   ] = await Promise.all([
+    getAppFolioStatus(scope.orgId),
     prisma.workOrder.count({
       where: {
         ...where,
@@ -188,6 +192,8 @@ export default async function WorkOrdersPage() {
         title="Work orders"
         description="Maintenance pipeline mirrored from AppFolio. Operator fulfillment happens in AppFolio; this view keeps you ahead of property issues."
       />
+
+      <AppFolioStatusBanner status={appfolioStatus} resourceLabel="work orders" />
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <KpiTile
@@ -354,14 +360,17 @@ export default async function WorkOrdersPage() {
           title="Work orders"
           description="Maintenance pipeline mirrored from AppFolio. Operator fulfillment happens in AppFolio; this view keeps you ahead of property issues."
         />
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Work order data could not be loaded. This usually means AppFolio hasn&apos;t synced yet
-          or the integration isn&apos;t configured.{" "}
-          <a href="/portal/settings/integrations" className="underline font-medium">
-            Go to Settings → Integrations
-          </a>{" "}
-          to connect AppFolio and run an initial sync.
-        </div>
+        <AppFolioStatusBanner
+          status={{
+            state: "failed",
+            lastSyncAt: null,
+            lastError:
+              err instanceof Error ? err.message : "Work order data could not be loaded.",
+            subdomain: null,
+            stale: false,
+          }}
+          resourceLabel="work orders"
+        />
       </div>
     );
   }

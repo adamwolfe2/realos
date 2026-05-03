@@ -14,6 +14,8 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
+import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
+import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { ResidentStatus } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Residents" };
@@ -82,6 +84,7 @@ export default async function ResidentsPage({
   };
 
   const [
+    appfolioStatus,
     activeCount,
     noticeCount,
     pastCount,
@@ -91,6 +94,7 @@ export default async function ResidentsPage({
     properties,
     noticeBoard,
   ] = await Promise.all([
+    getAppFolioStatus(scope.orgId),
     prisma.resident.count({ where: { ...where, status: ResidentStatus.ACTIVE } }),
     prisma.resident.count({
       where: { ...where, status: ResidentStatus.NOTICE_GIVEN },
@@ -149,6 +153,8 @@ export default async function ResidentsPage({
         title="Residents"
         description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
       />
+
+      <AppFolioStatusBanner status={appfolioStatus} resourceLabel="residents" />
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <KpiTile
@@ -410,14 +416,17 @@ export default async function ResidentsPage({
           title="Residents"
           description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
         />
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Resident data could not be loaded. This usually means AppFolio hasn&apos;t synced yet
-          or the integration isn&apos;t configured.{" "}
-          <a href="/portal/settings/integrations" className="underline font-medium">
-            Go to Settings → Integrations
-          </a>{" "}
-          to connect AppFolio and run an initial sync.
-        </div>
+        <AppFolioStatusBanner
+          status={{
+            state: "failed",
+            lastSyncAt: null,
+            lastError:
+              err instanceof Error ? err.message : "Resident data could not be loaded.",
+            subdomain: null,
+            stale: false,
+          }}
+          resourceLabel="residents"
+        />
       </div>
     );
   }

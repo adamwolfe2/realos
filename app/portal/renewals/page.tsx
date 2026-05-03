@@ -13,6 +13,8 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
+import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
+import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { LeaseStatus } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Renewals" };
@@ -47,6 +49,7 @@ export default async function RenewalsPage() {
   const next120 = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000);
 
   const [
+    appfolioStatus,
     activeCount,
     expiringCount,
     expiredCount,
@@ -55,6 +58,7 @@ export default async function RenewalsPage() {
     upcoming,
     rentRollTotal,
   ] = await Promise.all([
+    getAppFolioStatus(scope.orgId),
     prisma.lease.count({ where: { ...where, status: LeaseStatus.ACTIVE } }),
     prisma.lease.count({
       where: {
@@ -126,6 +130,8 @@ export default async function RenewalsPage() {
         title="Renewals"
         description="Lease expirations from AppFolio. Act on renewals 120 days out so resignation deadlines never slip."
       />
+
+      <AppFolioStatusBanner status={appfolioStatus} resourceLabel="leases" />
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KpiTile
@@ -343,14 +349,17 @@ export default async function RenewalsPage() {
           title="Renewals"
           description="Lease expirations from AppFolio. Act on renewals 120 days out so resignation deadlines never slip."
         />
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Renewal data could not be loaded. This usually means AppFolio hasn&apos;t synced yet
-          or the integration isn&apos;t configured.{" "}
-          <a href="/portal/settings/integrations" className="underline font-medium">
-            Go to Settings → Integrations
-          </a>{" "}
-          to connect AppFolio and run an initial sync.
-        </div>
+        <AppFolioStatusBanner
+          status={{
+            state: "failed",
+            lastSyncAt: null,
+            lastError:
+              err instanceof Error ? err.message : "Renewal data could not be loaded.",
+            subdomain: null,
+            stale: false,
+          }}
+          resourceLabel="leases"
+        />
       </div>
     );
   }
