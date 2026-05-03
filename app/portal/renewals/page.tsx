@@ -41,6 +41,7 @@ const BUCKETS = [
 
 export default async function RenewalsPage() {
   const scope = await requireScope();
+  try {
   const where = tenantWhere(scope);
   const now = new Date();
   const next120 = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000);
@@ -334,4 +335,23 @@ export default async function RenewalsPage() {
       </DashboardSection>
     </div>
   );
+  } catch (err) {
+    console.error("[renewals] Failed to load AppFolio lease data:", err);
+    return (
+      <div className="space-y-4">
+        <PageHeader
+          title="Renewals"
+          description="Lease expirations from AppFolio. Act on renewals 120 days out so resignation deadlines never slip."
+        />
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Renewal data could not be loaded. This usually means AppFolio hasn&apos;t synced yet
+          or the integration isn&apos;t configured.{" "}
+          <a href="/portal/settings/integrations" className="underline font-medium">
+            Go to Settings → Integrations
+          </a>{" "}
+          to connect AppFolio and run an initial sync.
+        </div>
+      </div>
+    );
+  }
 }

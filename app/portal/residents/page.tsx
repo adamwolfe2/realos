@@ -54,6 +54,7 @@ export default async function ResidentsPage({
   searchParams: Promise<{ status?: string; q?: string; property?: string }>;
 }) {
   const scope = await requireScope();
+  try {
   const where = tenantWhere(scope);
   const sp = await searchParams;
 
@@ -401,4 +402,23 @@ export default async function ResidentsPage({
       </DashboardSection>
     </div>
   );
+  } catch (err) {
+    console.error("[residents] Failed to load AppFolio data:", err);
+    return (
+      <div className="space-y-4">
+        <PageHeader
+          title="Residents"
+          description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
+        />
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Resident data could not be loaded. This usually means AppFolio hasn&apos;t synced yet
+          or the integration isn&apos;t configured.{" "}
+          <a href="/portal/settings/integrations" className="underline font-medium">
+            Go to Settings → Integrations
+          </a>{" "}
+          to connect AppFolio and run an initial sync.
+        </div>
+      </div>
+    );
+  }
 }

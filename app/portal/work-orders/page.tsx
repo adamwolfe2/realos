@@ -75,6 +75,7 @@ function fmtMoney(cents: number | null | undefined): string {
 
 export default async function WorkOrdersPage() {
   const scope = await requireScope();
+  try {
   const where = tenantWhere(scope);
   const last30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const last90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
@@ -345,4 +346,23 @@ export default async function WorkOrdersPage() {
       </DashboardSection>
     </div>
   );
+  } catch (err) {
+    console.error("[work-orders] Failed to load AppFolio work order data:", err);
+    return (
+      <div className="space-y-4">
+        <PageHeader
+          title="Work orders"
+          description="Maintenance pipeline mirrored from AppFolio. Operator fulfillment happens in AppFolio; this view keeps you ahead of property issues."
+        />
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Work order data could not be loaded. This usually means AppFolio hasn&apos;t synced yet
+          or the integration isn&apos;t configured.{" "}
+          <a href="/portal/settings/integrations" className="underline font-medium">
+            Go to Settings → Integrations
+          </a>{" "}
+          to connect AppFolio and run an initial sync.
+        </div>
+      </div>
+    );
+  }
 }

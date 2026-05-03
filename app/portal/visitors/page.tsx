@@ -18,7 +18,7 @@ import { EngageComposer } from "./engage-composer";
 import { AutoRefresh } from "./auto-refresh";
 
 export const metadata: Metadata = { title: "Visitor feed" };
-export const revalidate = 15;
+export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
 
