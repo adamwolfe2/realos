@@ -216,6 +216,20 @@ export default async function VisitorsPage({
     );
   })();
 
+  // Pixel freshness — operators have been burned by silent pixel failures
+  // (CSP regressions, ad blockers, removed snippet). Surface staleness any
+  // time the pixel exists but no events have fired recently. Two thresholds:
+  // > 24h shows an amber warning, > 7d shows a red one. Don't block the
+  // page; the visitor feed is still useful for historical review.
+  const pixelLastEventAt = integration?.lastEventAt ?? null;
+  const pixelAgeMs = pixelLastEventAt
+    ? Date.now() - pixelLastEventAt.getTime()
+    : null;
+  const pixelStale =
+    hasPixel && (pixelAgeMs == null || pixelAgeMs > 24 * 60 * 60 * 1000);
+  const pixelDormant =
+    hasPixel && (pixelAgeMs == null || pixelAgeMs > 7 * 24 * 60 * 60 * 1000);
+
   // Live chats — any chatbot conversation with activity in the last 5 minutes.
   // We engage at the conversation level because that's where the sessionId
   // lives. The widget polls /api/public/chatbot/inbox keyed by sessionId.
@@ -350,6 +364,17 @@ export default async function VisitorsPage({
         />
       </section>
 
+      {/* Pixel staleness warning — surfaces silent pixel failures so the
+          operator doesn't sit on an empty feed thinking it's "live". Hidden
+          when pixel is healthy. */}
+      {hasPixel && pixelStale ? (
+        <PixelStalenessBanner
+          lastEventAt={pixelLastEventAt}
+          dormant={pixelDormant}
+          domain={integration?.installedOnDomain ?? null}
+        />
+      ) : null}
+
       {/* Live chats — operator can engage active chatbot conversations */}
       {liveChats.length > 0 ? (
         <LiveChatsPanel chats={liveChats} />
@@ -375,6 +400,55 @@ export default async function VisitorsPage({
           />
         </>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PixelStalenessBanner — explicit warning when the Cursive pixel hasn't
+// fired in 24h+. Operators previously had no signal that the snippet had
+// gone quiet; they'd assume "no traffic" when the real issue was a removed
+// script or a CSP regression on the property site.
+// ---------------------------------------------------------------------------
+
+function PixelStalenessBanner({
+  lastEventAt,
+  dormant,
+  domain,
+}: {
+  lastEventAt: Date | null;
+  dormant: boolean;
+  domain: string | null;
+}) {
+  const ageLabel = lastEventAt
+    ? formatDistanceToNow(lastEventAt, { addSuffix: true })
+    : "never";
+  const tone = dormant
+    ? "border-rose-200 bg-rose-50 text-rose-900"
+    : "border-amber-200 bg-amber-50 text-amber-900";
+  const headline = dormant
+    ? "No pixel events in the last 7 days."
+    : "No pixel events in the last 24 hours.";
+  return (
+    <div
+      role="status"
+      className={`rounded-lg border px-4 py-3 flex items-start justify-between gap-3 flex-wrap ${tone}`}
+    >
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold leading-tight">{headline}</p>
+        <p className="text-xs mt-1 leading-snug opacity-90">
+          Last event {ageLabel}
+          {domain ? ` from ${domain}` : ""}. Verify the snippet is still on
+          your property site and that ad blockers / CSP rules aren&apos;t
+          stripping it. The feed below shows historical visitors only.
+        </p>
+      </div>
+      <Link
+        href="/portal/settings/integrations"
+        className="shrink-0 inline-flex items-center rounded-md bg-foreground text-background px-3 py-1.5 text-xs font-semibold hover:opacity-90"
+      >
+        Verify pixel install
+      </Link>
     </div>
   );
 }

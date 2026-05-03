@@ -937,9 +937,9 @@ export default async function PortalHome({
             </DashboardSection>
 
             <DashboardSection
-              eyebrow="Real-time"
-              title="Live activity"
-              description="Events from leads, tours, ads, and your chatbot"
+              eyebrow="Recent"
+              title="Activity feed"
+              description="Latest events from leads, tours, ads, and your chatbot. Refresh the page to see new items."
               href="/portal/leads"
               hrefLabel="Open leads"
               className="lg:col-span-1"
