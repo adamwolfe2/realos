@@ -46,6 +46,7 @@ export async function OverviewTab({
     prisma.property.findFirst({
       where: { id: propertyId, orgId },
       select: {
+        availableCount: true,
         _count: { select: { listings: true, leads: true } },
         listings: {
           where: { isAvailable: true },
@@ -54,6 +55,23 @@ export async function OverviewTab({
       },
     }),
   ]);
+
+  // Available units source-of-truth resolution. AppFolio mirrors the
+  // physical-unit count to Property.availableCount; the listings table can
+  // contain many more rows than physical units (one per unit-bed
+  // configuration). Prefer the mirror, fall back to a count of available
+  // listings, and cap by totalUnits so we never display absurd numbers.
+  const totalUnits = property.totalUnits ?? null;
+  const rawAvailable =
+    listingCounts?.availableCount != null
+      ? listingCounts.availableCount
+      : (listingCounts?.listings.length ?? 0);
+  const availableUnits =
+    totalUnits != null
+      ? Math.max(0, Math.min(totalUnits, rawAvailable))
+      : Math.max(0, rawAvailable);
+  const leasedUnits =
+    totalUnits != null ? Math.max(0, totalUnits - availableUnits) : null;
 
   const leadsDeltaPct = pctChange(kpis.leads28d, kpis.leadsPrev28d);
   const leadsDelta = leadsDeltaPct == null
@@ -110,12 +128,23 @@ export async function OverviewTab({
 
       <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
         <KpiTile
-          label="Listings"
-          value={listingCounts?._count.listings ?? 0}
+          label="Available units"
+          value={availableUnits}
+          hint={
+            totalUnits != null
+              ? `${leasedUnits} of ${totalUnits} leased`
+              : "From AppFolio"
+          }
         />
         <KpiTile
-          label="Available"
-          value={listingCounts?.listings.length ?? 0}
+          label="Total units"
+          value={totalUnits ?? "—"}
+          hint="From AppFolio"
+        />
+        <KpiTile
+          label="Listings configured"
+          value={listingCounts?._count.listings ?? 0}
+          hint="Unit-type rows"
         />
         <KpiTile
           label="All-time leads"

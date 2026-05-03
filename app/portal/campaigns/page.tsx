@@ -17,6 +17,33 @@ function platformLabel(raw: string | null | undefined): string {
   return raw;
 }
 
+// Build a "manage in native platform" URL when we know the platform +
+// external id. Lets the row be a one-click escape hatch into Google Ads
+// or Meta Ads Manager since LeaseStack doesn't yet ship its own campaign
+// detail page. Returns null when we can't build a useful URL — caller
+// renders the row as non-interactive in that case.
+function platformManageUrl(args: {
+  platform: string | null | undefined;
+  externalCampaignId: string | null | undefined;
+  externalAccountId: string | null | undefined;
+}): string | null {
+  const platform = (args.platform ?? "").toUpperCase();
+  const cid = args.externalCampaignId;
+  if (!cid) return null;
+  if (platform.includes("GOOGLE")) {
+    // Google Ads campaign edit page — opens in the right account when the
+    // operator is already signed in.
+    return `https://ads.google.com/aw/campaigns?campaignId=${encodeURIComponent(cid)}`;
+  }
+  if (platform.includes("META") || platform.includes("FACEBOOK")) {
+    const acct = args.externalAccountId
+      ? `&act=${encodeURIComponent(args.externalAccountId)}`
+      : "";
+    return `https://business.facebook.com/adsmanager/manage/campaigns?selected_campaign_ids=${encodeURIComponent(cid)}${acct}`;
+  }
+  return null;
+}
+
 function statusBadge(status: string | null) {
   const s = (status ?? "").toUpperCase();
   if (s === "ENABLED" || s === "ACTIVE")
@@ -38,27 +65,67 @@ function statusLabel(status: string | null) {
 
 export default async function CampaignsPage() {
   const scope = await requireScope();
-  const [campaigns, properties] = await Promise.all([
+  // 28-day rolling window — matches the Ads dashboard so the two pages
+  // never disagree on spend totals (audit BUG-05).
+  const since28d = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
+
+  const [campaigns, properties, metricsByCampaign] = await Promise.all([
     prisma.adCampaign.findMany({
       where: tenantWhere(scope),
       orderBy: [{ status: "asc" }, { startedAt: "desc" }],
       include: {
         property: { select: { id: true, name: true } },
-        adAccount: { select: { platform: true } },
+        adAccount: {
+          select: { platform: true, externalAccountId: true },
+        },
       },
     }),
     prisma.property.findMany({
       where: tenantWhere(scope),
       select: { id: true, name: true },
     }),
+    prisma.adMetricDaily.groupBy({
+      by: ["campaignId"],
+      where: {
+        ...tenantWhere(scope),
+        date: { gte: since28d },
+      },
+      _sum: {
+        spendCents: true,
+        clicks: true,
+        conversions: true,
+      },
+    }),
   ]);
 
-  const totalSpend = campaigns.reduce(
-    (sum, c) => sum + (c.spendToDateCents ?? 0),
-    0
-  );
-  const totalClicks = campaigns.reduce((sum, c) => sum + (c.clicks ?? 0), 0);
-  const totalConv = campaigns.reduce((sum, c) => sum + (c.conversions ?? 0), 0);
+  // Roll daily metrics up onto each campaign so the table + summary tiles
+  // always match the Ads page. Falls back to the denormalized
+  // spendToDateCents counter when no daily metrics exist.
+  const metricsMap = new Map<
+    string,
+    { spendCents: number; clicks: number; conversions: number }
+  >();
+  for (const m of metricsByCampaign) {
+    metricsMap.set(m.campaignId, {
+      spendCents: m._sum.spendCents ?? 0,
+      clicks: m._sum.clicks ?? 0,
+      conversions: m._sum.conversions ?? 0,
+    });
+  }
+
+  function spendFor(c: { id: string; spendToDateCents: number | null }) {
+    return metricsMap.get(c.id)?.spendCents ?? c.spendToDateCents ?? 0;
+  }
+  function clicksFor(c: { id: string; clicks: number | null }) {
+    return metricsMap.get(c.id)?.clicks ?? c.clicks ?? 0;
+  }
+  function convFor(c: { id: string; conversions: number | null }) {
+    return metricsMap.get(c.id)?.conversions ?? c.conversions ?? 0;
+  }
+
+  const totalSpend = campaigns.reduce((sum, c) => sum + spendFor(c), 0);
+  const totalClicks = campaigns.reduce((sum, c) => sum + clicksFor(c), 0);
+  const totalConv = campaigns.reduce((sum, c) => sum + convFor(c), 0);
   const activeCampaigns = campaigns.filter(
     (c) => (c.status ?? "").toUpperCase() === "ENABLED"
   ).length;
@@ -153,10 +220,33 @@ export default async function CampaignsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border">
-              {campaigns.map((c) => (
+              {campaigns.map((c) => {
+                const manageUrl = platformManageUrl({
+                  platform: c.adAccount?.platform ?? c.platform,
+                  externalCampaignId: c.externalCampaignId,
+                  externalAccountId: c.adAccount?.externalAccountId ?? null,
+                });
+                return (
                 <tr key={c.id} className="hover:bg-muted/30 transition-colors">
                   <td className="px-4 py-3 font-medium text-foreground max-w-[14rem]">
-                    <span className="block truncate">{c.name}</span>
+                    {manageUrl ? (
+                      <a
+                        href={manageUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block truncate hover:text-primary hover:underline underline-offset-2"
+                        title={`Open in ${platformLabel(c.adAccount?.platform ?? c.platform)} ↗`}
+                      >
+                        {c.name}
+                      </a>
+                    ) : (
+                      <span
+                        className="block truncate"
+                        title="Sync data so we can link out to this campaign in the native ad platform"
+                      >
+                        {c.name}
+                      </span>
+                    )}
                   </td>
                   <td className="px-4 py-3 text-sm text-muted-foreground max-w-[10rem]">
                     <span className="block truncate">{c.property?.name ?? "—"}</span>
@@ -170,15 +260,15 @@ export default async function CampaignsPage() {
                       : "—"}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
-                    {c.spendToDateCents
-                      ? `$${Math.round(c.spendToDateCents / 100).toLocaleString()}`
+                    {spendFor(c) > 0
+                      ? `$${Math.round(spendFor(c) / 100).toLocaleString()}`
                       : "—"}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
-                    {(c.clicks ?? 0).toLocaleString()}
+                    {clicksFor(c).toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
-                    {(c.conversions ?? 0).toLocaleString()}
+                    {Math.round(convFor(c)).toLocaleString()}
                   </td>
                   <td className="px-4 py-3 text-center">
                     <span
@@ -188,7 +278,8 @@ export default async function CampaignsPage() {
                     </span>
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

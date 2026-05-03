@@ -118,7 +118,7 @@ export const SETUP_STEPS: SetupStepDefinition[] = [
     description:
       "Everyone on your team sees the lead stream the moment it arrives.",
     estimateMinutes: 5,
-    actionHref: "/portal/settings",
+    actionHref: "/portal/settings#team",
     actionLabel: "Invite team",
     isComplete: (ctx) => ctx.userCount > 1,
   },

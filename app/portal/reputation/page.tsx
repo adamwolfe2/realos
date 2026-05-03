@@ -41,9 +41,36 @@ const SENTIMENT_LABEL: Record<Sentiment, string> = {
   MIXED: "Mixed",
 };
 
-function truncate(input: string, max = 220): string {
-  const s = input.trim().replace(/\s+/g, " ");
+function truncate(input: string | null | undefined, max = 220): string {
+  if (!input) return "";
+  const s = String(input).trim().replace(/\s+/g, " ");
   return s.length > max ? `${s.slice(0, max - 1)}…` : s;
+}
+
+// Defensive number → display helper. Catches Decimal-typed values from
+// Prisma (which lack `.toLocaleString` formatting consistent with Number)
+// and stray nulls so a single bad row can't blank the whole page.
+function safeNum(v: unknown): number {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string") {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : 0;
+  }
+  if (v && typeof v === "object" && "toString" in v) {
+    const n = Number((v as { toString: () => string }).toString());
+    return Number.isFinite(n) ? n : 0;
+  }
+  return 0;
+}
+
+function fmtInt(v: unknown): string {
+  return safeNum(v).toLocaleString();
+}
+
+function fmtRating(v: unknown): string {
+  if (v == null) return "—";
+  const n = safeNum(v);
+  return n > 0 ? n.toFixed(1) : "—";
 }
 
 const EMPTY_METRICS: PortfolioReputationMetrics = {
@@ -162,45 +189,41 @@ export default async function PortfolioReputationPage() {
       >
         <KpiTile
           label="Avg Google rating"
-          value={
-            metrics.googleAvgRating != null
-              ? metrics.googleAvgRating.toFixed(1)
-              : "—"
-          }
+          value={fmtRating(metrics.googleAvgRating)}
           hint={
-            metrics.googleReviewCount > 0
-              ? `${metrics.googleReviewCount.toLocaleString()} reviews`
+            safeNum(metrics.googleReviewCount) > 0
+              ? `${fmtInt(metrics.googleReviewCount)} reviews`
               : "No reviews yet"
           }
           icon={<Star className="h-3.5 w-3.5" />}
         />
         <KpiTile
           label="Total mentions"
-          value={metrics.totalMentions.toLocaleString()}
-          hint={`${metrics.newLast30d} new in 30d`}
+          value={fmtInt(metrics.totalMentions)}
+          hint={`${fmtInt(metrics.newLast30d)} new in 30d`}
           icon={<MessageCircle className="h-3.5 w-3.5" />}
         />
         <KpiTile
           label="Negative share"
-          value={metrics.negativePct != null ? `${metrics.negativePct}%` : "—"}
-          hint={`${negative} negative mentions`}
+          value={metrics.negativePct != null ? `${safeNum(metrics.negativePct)}%` : "—"}
+          hint={`${fmtInt(negative)} negative mentions`}
           icon={<AlertTriangle className="h-3.5 w-3.5" />}
         />
         <KpiTile
           label="Unreviewed"
-          value={metrics.unreviewedCount.toLocaleString()}
+          value={fmtInt(metrics.unreviewedCount)}
           hint="Need your attention"
           icon={<MessageCircle className="h-3.5 w-3.5" />}
         />
         <KpiTile
           label="Flagged"
-          value={metrics.flaggedCount.toLocaleString()}
+          value={fmtInt(metrics.flaggedCount)}
           hint="Marked for follow-up"
           icon={<Flag className="h-3.5 w-3.5" />}
         />
         <KpiTile
           label="Properties tracked"
-          value={metrics.propertyHealth.length.toLocaleString()}
+          value={fmtInt(metrics.propertyHealth?.length ?? 0)}
           hint="Each scanned independently"
           icon={<Star className="h-3.5 w-3.5" />}
         />
@@ -246,18 +269,18 @@ export default async function PortfolioReputationPage() {
           eyebrow="Where the chatter lives"
           description="Volume by platform"
         >
-          {metrics.sourceBreakdown.length === 0 ? (
+          {(metrics.sourceBreakdown ?? []).length === 0 ? (
             <p className="text-xs text-muted-foreground">
               No mentions yet. Run a scan from any property.
             </p>
           ) : (
             <ul className="space-y-1.5">
-              {metrics.sourceBreakdown
+              {(metrics.sourceBreakdown ?? [])
                 .slice()
-                .sort((a, b) => b.count - a.count)
+                .sort((a, b) => safeNum(b.count) - safeNum(a.count))
                 .map((row) => (
                   <li
-                    key={row.source}
+                    key={String(row.source)}
                     className="flex items-center justify-between gap-2 py-1"
                   >
                     <span className="flex items-center gap-2 min-w-0">
@@ -271,7 +294,7 @@ export default async function PortfolioReputationPage() {
                       </span>
                     </span>
                     <span className="text-xs font-semibold tabular-nums text-foreground">
-                      {row.count.toLocaleString()}
+                      {fmtInt(row.count)}
                     </span>
                   </li>
                 ))}
@@ -319,36 +342,38 @@ export default async function PortfolioReputationPage() {
                     className="border-b border-border last:border-0 hover:bg-muted/40"
                   >
                     <td className="px-4 md:px-2 py-2.5 font-medium text-foreground">
-                      {p.propertyName}
+                      {p.propertyName ?? "Property"}
                     </td>
                     <td className="px-2 py-2.5 text-right tabular-nums">
-                      {p.googleRating != null ? (
+                      {p.googleRating != null && safeNum(p.googleRating) > 0 ? (
                         <span className="inline-flex items-center gap-0.5">
                           <Star className="h-3 w-3 fill-current text-amber-500" />
-                          {p.googleRating.toFixed(1)}
+                          {fmtRating(p.googleRating)}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </td>
                     <td className="px-2 py-2.5 text-right tabular-nums text-muted-foreground">
-                      {p.googleReviewCount.toLocaleString()}
+                      {fmtInt(p.googleReviewCount)}
                     </td>
                     <td className="px-2 py-2.5 text-right tabular-nums">
-                      {p.totalMentions.toLocaleString()}
+                      {fmtInt(p.totalMentions)}
                     </td>
                     <td className="px-2 py-2.5 text-right tabular-nums">
-                      {p.negativeCount > 0 ? (
+                      {safeNum(p.negativeCount) > 0 ? (
                         <span className="text-rose-700 font-medium">
-                          {p.negativeCount}
+                          {fmtInt(p.negativeCount)}
                         </span>
                       ) : (
                         <span className="text-muted-foreground">0</span>
                       )}
                     </td>
                     <td className="px-2 py-2.5 text-right tabular-nums">
-                      {p.unreviewedCount > 0 ? (
-                        <span className="font-medium">{p.unreviewedCount}</span>
+                      {safeNum(p.unreviewedCount) > 0 ? (
+                        <span className="font-medium">
+                          {fmtInt(p.unreviewedCount)}
+                        </span>
                       ) : (
                         <span className="text-muted-foreground">0</span>
                       )}
@@ -390,9 +415,26 @@ export default async function PortfolioReputationPage() {
     </div>
   );
   } catch (err) {
-    // Render-time crash — log + return a clean fallback so we never bubble
-    // to the global "Something went wrong" boundary on a customer demo.
-    console.error("[reputation] render crashed:", err);
+    // Render-time crash — log full diagnostic info + return a clean fallback
+    // so we never bubble to the global "Something went wrong" boundary on
+    // a customer demo. The diagnostic dump goes to Vercel logs so the next
+    // time we see this we can identify the exact field that broke.
+    const message = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+    console.error("[reputation] render crashed:", {
+      message,
+      stack,
+      orgId: scope.orgId,
+      metricsShape: {
+        totalMentions: typeof metrics?.totalMentions,
+        sourceBreakdownCount: metrics?.sourceBreakdown?.length,
+        sentimentBreakdownCount: metrics?.sentimentBreakdown?.length,
+        propertyHealthCount: metrics?.propertyHealth?.length,
+        monthlyVolumeCount: metrics?.monthlyVolume?.length,
+        googleAvgRatingType: typeof metrics?.googleAvgRating,
+      },
+      feedCount: feed?.length,
+    });
     return (
       <ReputationFallback
         message="Reputation view ran into an issue rendering. The data may be partially seeded — refresh in a moment."
@@ -462,7 +504,12 @@ function MonthlyVolume({
 }: {
   data: Array<{ month: string; count: number; negative: number }>;
 }) {
-  const max = Math.max(1, ...data.map((d) => d.count));
+  const safeData = (data ?? []).map((d) => ({
+    month: String(d?.month ?? ""),
+    count: safeNum(d?.count),
+    negative: safeNum(d?.negative),
+  }));
+  const max = Math.max(1, ...safeData.map((d) => d.count));
   return (
     <div className="flex items-end gap-1.5 h-24">
       {data.map((d) => {
@@ -498,39 +545,56 @@ function MonthlyVolume({
 }
 
 function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
-  const when = mention.publishedAt;
+  // Defensive normalization. Audit found this row was the most likely
+  // crash site — a single malformed mention should NOT take down the
+  // whole page. Coerce every field to a safe type before rendering.
+  const safeUrl = typeof mention.sourceUrl === "string" ? mention.sourceUrl : "";
+  const propertyName = mention.propertyName ?? "Property";
+  const propertyId = mention.propertyId ?? "";
+  const sentiment = mention.sentiment;
+  const sentimentTone = sentiment ? SENTIMENT_TONE[sentiment] : "";
+  const sentimentLabel = sentiment ? SENTIMENT_LABEL[sentiment] : "";
+  const ratingNum = mention.rating != null ? safeNum(mention.rating) : null;
+  const when = mention.publishedAt instanceof Date ? mention.publishedAt : null;
+
   return (
     <li className="py-3">
       <div className="flex items-start gap-3">
         <div className="shrink-0 pt-0.5">
-          <SourceLogo source={mention.source} url={mention.sourceUrl} className="h-5 w-5" />
+          <SourceLogo source={mention.source} url={safeUrl} className="h-5 w-5" />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2 mb-0.5 flex-wrap">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-                {sourceLabel(mention.source, mention.sourceUrl)}
+                {sourceLabel(mention.source, safeUrl)}
               </span>
               <span aria-hidden="true" className="text-muted-foreground">·</span>
-              <Link
-                href={`/portal/properties/${mention.propertyId}?tab=reputation`}
-                className="text-xs font-medium text-foreground hover:text-primary truncate"
-              >
-                {mention.propertyName}
-              </Link>
+              {propertyId ? (
+                <Link
+                  href={`/portal/properties/${propertyId}?tab=reputation`}
+                  className="text-xs font-medium text-foreground hover:text-primary truncate"
+                >
+                  {propertyName}
+                </Link>
+              ) : (
+                <span className="text-xs font-medium text-foreground truncate">
+                  {propertyName}
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {mention.rating != null ? (
+              {ratingNum != null && ratingNum > 0 ? (
                 <span className="inline-flex items-center gap-0.5 text-xs text-foreground">
                   <Star className="h-3 w-3 fill-current text-amber-500" />
-                  {mention.rating.toFixed(1)}
+                  {ratingNum.toFixed(1)}
                 </span>
               ) : null}
-              {mention.sentiment ? (
+              {sentiment && sentimentTone ? (
                 <span
-                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border ${SENTIMENT_TONE[mention.sentiment]}`}
+                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border ${sentimentTone}`}
                 >
-                  {SENTIMENT_LABEL[mention.sentiment]}
+                  {sentimentLabel}
                 </span>
               ) : null}
               {mention.flagged ? (
@@ -542,7 +606,7 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
           </div>
           {mention.title ? (
             <p className="text-xs font-medium text-foreground mb-0.5">
-              {mention.title}
+              {String(mention.title)}
             </p>
           ) : null}
           <p className="text-xs text-muted-foreground leading-snug line-clamp-2">
@@ -551,22 +615,26 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
           <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
             {mention.authorName ? (
               <>
-                <span className="truncate max-w-[120px]">{mention.authorName}</span>
+                <span className="truncate max-w-[120px]">{String(mention.authorName)}</span>
                 <span aria-hidden="true">·</span>
               </>
             ) : null}
             {when ? (
               <span>{formatDistanceToNow(when, { addSuffix: true })}</span>
             ) : null}
-            <span aria-hidden="true">·</span>
-            <a
-              href={mention.sourceUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-foreground underline-offset-2 hover:underline"
-            >
-              View source
-            </a>
+            {safeUrl ? (
+              <>
+                <span aria-hidden="true">·</span>
+                <a
+                  href={safeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-foreground underline-offset-2 hover:underline"
+                >
+                  View source
+                </a>
+              </>
+            ) : null}
           </div>
         </div>
       </div>

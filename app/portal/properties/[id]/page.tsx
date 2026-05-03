@@ -85,7 +85,7 @@ export default async function PropertyDetail({
         </div>
       </header>
 
-      <Suspense>
+      <Suspense fallback={<PropertyTabsSkeleton />}>
       <PropertyTabs
         initialTab={tab ?? "overview"}
         showOccupancy={showOccupancyTab}
@@ -182,6 +182,54 @@ export default async function PropertyDetail({
         }}
       />
       </Suspense>
+    </div>
+  );
+}
+
+// Streamed-tab skeleton. Renders immediately under the property header
+// while the heavy per-tab Prisma queries resolve, so the page never looks
+// blank between the header and the tab content. Matches the dimensions
+// of the real tab bar + KPI strip closely enough that there's no layout
+// shift when content arrives.
+function PropertyTabsSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse" aria-label="Loading property data">
+      <div className="flex gap-1.5 border-b border-border pb-0">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="h-9 w-24 bg-muted/60 rounded-t" />
+        ))}
+      </div>
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            className="rounded-lg border border-border bg-card p-4 space-y-2"
+          >
+            <div className="h-3 w-20 bg-muted/60 rounded" />
+            <div className="h-7 w-16 bg-muted rounded" />
+            <div className="h-3 w-24 bg-muted/40 rounded" />
+          </div>
+        ))}
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <div
+            key={i}
+            className="rounded-xl border border-border bg-card p-5 space-y-3"
+          >
+            <div className="h-4 w-32 bg-muted rounded" />
+            {Array.from({ length: 4 }).map((_, j) => (
+              <div
+                key={j}
+                className="flex justify-between gap-2"
+              >
+                <div className="h-3 w-20 bg-muted/60 rounded" />
+                <div className="h-3 w-32 bg-muted/80 rounded" />
+              </div>
+            ))}
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

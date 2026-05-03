@@ -161,7 +161,10 @@ export default async function SettingsPage() {
         </ul>
       </section>
 
-      <section className="rounded-xl border border-border bg-card p-6 shadow-sm">
+      <section
+        id="team"
+        className="rounded-xl border border-border bg-card p-6 shadow-sm scroll-mt-24"
+      >
         <header className="flex items-start justify-between gap-3 mb-5">
           <div className="flex items-start gap-2.5">
             <span className="mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-md bg-muted text-muted-foreground">

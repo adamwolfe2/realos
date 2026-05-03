@@ -1,8 +1,11 @@
 export default function LeadDetailLoading() {
   return (
-    <div className="animate-pulse">
+    <div className="animate-pulse" aria-label="Loading lead">
       {/* Back link */}
-      <div className="h-4 w-24 bg-muted/60 rounded mb-6" />
+      <div className="h-4 w-24 bg-muted/60 rounded mb-3" />
+      <p className="text-xs text-muted-foreground mb-4 not-sr-only">
+        Loading lead…
+      </p>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main column */}

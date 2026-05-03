@@ -744,6 +744,7 @@ export async function getPropertyOccupancy(
     where: { id: propertyId, orgId },
     select: {
       totalUnits: true,
+      availableCount: true,
       priceMin: true,
       priceMax: true,
       listings: {
@@ -773,10 +774,22 @@ export async function getPropertyOccupancy(
     },
   });
 
-  const availableUnits = property.listings.filter((l) => l.isAvailable).length;
+  // Availability source-of-truth resolution. Prefer the AppFolio-mirrored
+  // Property.availableCount because the listings table can hold many more
+  // rows than physical units (one row per unit-bed-bath configuration,
+  // historical / out-of-service rows, etc.). Falling back to
+  // listings.filter(isAvailable).length used to produce nonsense like
+  // "available: 2249 / total: 100 → leased: -2149". Cap defensively in
+  // case AppFolio's denormalized counter ever drifts above totalUnits.
+  const rawAvailable =
+    property.availableCount != null
+      ? property.availableCount
+      : property.listings.filter((l) => l.isAvailable).length;
+  const availableUnits = Math.max(0, Math.min(totalUnits, rawAvailable));
+  const leasedUnits = Math.max(0, totalUnits - availableUnits);
   const occupancyPct =
     totalUnits > 0
-      ? Math.max(0, Math.round(((totalUnits - availableUnits) / totalUnits) * 100))
+      ? Math.max(0, Math.min(100, Math.round((leasedUnits / totalUnits) * 100)))
       : 0;
 
   const byBedType = buildByBedType(property.listings, activeAppsCount);
