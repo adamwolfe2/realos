@@ -15,7 +15,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { ExportButton } from "@/components/ui/export-button";
 import { StatCard } from "@/components/admin/stat-card";
 import { EngageComposer } from "./engage-composer";
-import { AutoRefresh } from "./auto-refresh";
+import { AutoRefresh } from "@/components/portal/sync/auto-refresh";
 
 export const metadata: Metadata = { title: "Visitor feed" };
 export const dynamic = "force-dynamic";

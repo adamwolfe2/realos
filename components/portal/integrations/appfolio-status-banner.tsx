@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import type { AppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { RunAppFolioSyncButton } from "./run-appfolio-sync-button";
+import { StaleOnLoadTrigger } from "@/components/portal/sync/stale-on-load-trigger";
+import { classifyFreshness } from "@/lib/sync/freshness";
 
 // ---------------------------------------------------------------------------
 // AppFolioStatusBanner — honest disclosure of the current AppFolio sync state
@@ -39,11 +41,29 @@ const TONES: Record<Tone, string> = {
 export function AppFolioStatusBanner({
   status,
   resourceLabel,
+  orgId,
 }: {
   status: AppFolioStatus;
   /** Plural noun for the resource displayed on the page (e.g. "residents"). */
   resourceLabel: string;
+  /**
+   * Tenant org id. When provided, enables the stale-on-load auto-sync
+   * trigger so opening the page on stale data fires a background refresh
+   * exactly once per tab session. Omit (or pass undefined) to disable.
+   */
+  orgId?: string;
 }) {
+  // Decide whether to drop in a StaleOnLoadTrigger. Skip when not
+  // connected, syncing, or actively failing — auto-firing those just
+  // burns invocations on a known-broken integration.
+  const freshness = classifyFreshness("appfolio", status.lastSyncAt, {
+    syncInProgress: status.state === "syncing",
+    hasError: status.state === "failed",
+  });
+  const autoTrigger =
+    orgId && (status.state === "synced" || status.state === "never_synced") &&
+    freshness.shouldAutoTrigger;
+
   if (status.state === "not_connected") {
     return (
       <Banner
@@ -65,17 +85,25 @@ export function AppFolioStatusBanner({
 
   if (status.state === "never_synced") {
     return (
-      <Banner
-        tone="info"
-        icon={<CircleDashed className="h-4 w-4" />}
-        title="AppFolio is connected. First sync hasn't run yet."
-        body={
-          status.subdomain
-            ? `Credentials saved for ${status.subdomain}.appfolio.com. Run the first sync to populate ${resourceLabel}.`
-            : `Credentials saved. Run the first sync to populate ${resourceLabel}.`
-        }
-        action={<RunAppFolioSyncButton />}
-      />
+      <>
+        {orgId ? (
+          <StaleOnLoadTrigger
+            endpoint="/api/tenant/appfolio/sync"
+            dedupeKey={`appfolio:${orgId}`}
+          />
+        ) : null}
+        <Banner
+          tone="info"
+          icon={<CircleDashed className="h-4 w-4 animate-pulse" />}
+          title="AppFolio is connected. Pulling first sync…"
+          body={
+            status.subdomain
+              ? `Credentials saved for ${status.subdomain}.appfolio.com. Initial backfill running — ${resourceLabel} will appear shortly.`
+              : `Credentials saved. Initial backfill running — ${resourceLabel} will appear shortly.`
+          }
+          action={<RunAppFolioSyncButton />}
+        />
+      </>
     );
   }
 
@@ -112,15 +140,23 @@ export function AppFolioStatusBanner({
   // synced
   if (status.stale) {
     return (
-      <Banner
-        tone="warn"
-        icon={<Clock className="h-4 w-4" />}
-        title="AppFolio data may be stale."
-        body={`Last sync ${formatDistanceToNow(status.lastSyncAt!, {
-          addSuffix: true,
-        })}. Sync usually runs hourly — re-run if you expect newer ${resourceLabel}.`}
-        action={<RunAppFolioSyncButton />}
-      />
+      <>
+        {autoTrigger ? (
+          <StaleOnLoadTrigger
+            endpoint="/api/tenant/appfolio/sync"
+            dedupeKey={`appfolio:${orgId}`}
+          />
+        ) : null}
+        <Banner
+          tone="warn"
+          icon={<Clock className="h-4 w-4 animate-pulse" />}
+          title="Refreshing AppFolio data…"
+          body={`Last sync ${formatDistanceToNow(status.lastSyncAt!, {
+            addSuffix: true,
+          })}. Auto-refresh kicked off — newer ${resourceLabel} will load momentarily.`}
+          action={<RunAppFolioSyncButton />}
+        />
+      </>
     );
   }
 

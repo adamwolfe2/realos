@@ -193,7 +193,11 @@ export default async function WorkOrdersPage() {
         description="Maintenance pipeline mirrored from AppFolio. Operator fulfillment happens in AppFolio; this view keeps you ahead of property issues."
       />
 
-      <AppFolioStatusBanner status={appfolioStatus} resourceLabel="work orders" />
+      <AppFolioStatusBanner
+        status={appfolioStatus}
+        resourceLabel="work orders"
+        orgId={scope.orgId}
+      />
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <KpiTile

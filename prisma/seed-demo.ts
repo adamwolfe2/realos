@@ -33,11 +33,46 @@ import type { HTTPQueryOptions } from "@neondatabase/serverless";
 // Bootstrap Prisma (mirrors seed.ts)
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// PRODUCTION SAFETY — three independent guards must all clear before this
+// script touches the database. The Norman launch demands: NO MORE FAKE DATA
+// IN PRODUCTION. If you genuinely need to seed demo content, set up a
+// throwaway Neon branch and point DATABASE_URL at it explicitly.
+// ---------------------------------------------------------------------------
 if (process.env.NODE_ENV === "production") {
-  throw new Error("Demo seed must not run in production. Aborting.");
+  throw new Error(
+    "[seed-demo] Refusing to run when NODE_ENV=production. Aborting."
+  );
+}
+if (process.env.VERCEL_ENV === "production") {
+  throw new Error(
+    "[seed-demo] Refusing to run against a Vercel production environment. Aborting."
+  );
+}
+if (process.env.ALLOW_DEMO_SEED !== "true") {
+  throw new Error(
+    "[seed-demo] Demo seeding is disabled. Set ALLOW_DEMO_SEED=true to bypass — but only do so when DATABASE_URL points at a throwaway DB."
+  );
 }
 
 const connectionString = process.env.DATABASE_URL;
+
+// Best-effort production hostname guard. Trips on the most common Neon /
+// Supabase / RDS production naming conventions ("prod", "production",
+// "main"). False positives are recoverable; a false negative is a
+// fake-data leak that destroys customer trust.
+if (connectionString) {
+  const lower = connectionString.toLowerCase();
+  const looksProd = ["prod", "production", "live", "primary"].some((k) =>
+    lower.includes(k)
+  );
+  if (looksProd && process.env.I_KNOW_THIS_IS_NOT_PROD !== "true") {
+    throw new Error(
+      `[seed-demo] DATABASE_URL contains a production-looking token. ` +
+        `Set I_KNOW_THIS_IS_NOT_PROD=true to override after triple-checking the connection string.`
+    );
+  }
+}
 if (!connectionString) throw new Error("DATABASE_URL is not set");
 
 const adapter = new PrismaNeonHttp(

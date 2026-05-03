@@ -131,7 +131,11 @@ export default async function RenewalsPage() {
         description="Lease expirations from AppFolio. Act on renewals 120 days out so resignation deadlines never slip."
       />
 
-      <AppFolioStatusBanner status={appfolioStatus} resourceLabel="leases" />
+      <AppFolioStatusBanner
+        status={appfolioStatus}
+        resourceLabel="leases"
+        orgId={scope.orgId}
+      />
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KpiTile

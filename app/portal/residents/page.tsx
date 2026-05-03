@@ -154,7 +154,11 @@ export default async function ResidentsPage({
         description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
       />
 
-      <AppFolioStatusBanner status={appfolioStatus} resourceLabel="residents" />
+      <AppFolioStatusBanner
+        status={appfolioStatus}
+        resourceLabel="residents"
+        orgId={scope.orgId}
+      />
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <KpiTile

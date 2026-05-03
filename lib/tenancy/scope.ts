@@ -41,7 +41,22 @@ export type ScopedContext = {
 // be set and the seed script to have run. Returns null if the DB is empty
 // or unreachable; callers then surface their normal "not authenticated"
 // error rather than leaking into prod.
+//
+// PRODUCTION SAFETY: DEMO_MODE is hard-disabled when VERCEL_ENV=production
+// or NODE_ENV=production. Even if an env var slips through with the flag
+// set, prod traffic will never see synthesized demo scopes — the only
+// source of truth in production is a real Clerk session.
 async function getDemoScope(): Promise<ScopedContext | null> {
+  // Belt-and-suspenders production refusal. If anyone ever sets
+  // DEMO_MODE=true in a Vercel production environment by mistake, this
+  // guard ensures unauthenticated traffic still goes through the normal
+  // sign-in flow instead of leaking into a "first CLIENT org" surface.
+  if (
+    process.env.VERCEL_ENV === "production" ||
+    process.env.NODE_ENV === "production"
+  ) {
+    return null;
+  }
   const demoMode =
     process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
     process.env.DEMO_MODE === "true";

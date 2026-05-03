@@ -31,6 +31,7 @@ import {
 } from "@prisma/client";
 import { SetupBanner } from "@/components/portal/setup/setup-banner";
 import { SetupWizardGate } from "@/components/portal/onboarding/setup-wizard-gate";
+import { AutoRefresh } from "@/components/portal/sync/auto-refresh";
 
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
@@ -392,6 +393,11 @@ export default async function PortalHome({
 
   return (
     <div className="space-y-4">
+      {/* Auto-refresh dashboard data every 45s. Cheap — just re-runs the
+          server-component Prisma queries against existing data the cron
+          jobs and on-demand syncs keep fresh. No integration API calls. */}
+      <AutoRefresh intervalMs={45_000} />
+
       {/* Setup wizard overlay — floats above dashboard, dismissed via localStorage */}
       <SetupWizardGate shouldShow={showFirstRun} steps={wizardSteps} />
 
