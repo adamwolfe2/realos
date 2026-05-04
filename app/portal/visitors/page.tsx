@@ -289,7 +289,7 @@ export default async function VisitorsPage({
   const selection = { window: windowKey, status: statusKey, sort: sortKey, page };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 ls-page-fade">
       <AutoRefresh intervalMs={15000} />
       <PageHeader
         title="Visitor feed"

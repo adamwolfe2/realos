@@ -17,6 +17,7 @@ import {
   type ResidentStatus,
 } from "@prisma/client";
 import { Sparkles } from "lucide-react";
+import { AnimatedNumber } from "@/components/portal/ui/animated-number";
 
 type OverviewProperty = {
   propertyType: PropertyType;
@@ -374,7 +375,7 @@ export async function OverviewTab({
                 Monthly rent roll
               </p>
               <p className="mt-0.5 text-2xl font-semibold tabular-nums tracking-tight text-foreground">
-                ${monthlyRentRoll.toLocaleString()}
+                <AnimatedNumber value={monthlyRentRoll} format="currency" />
               </p>
             </div>
             <div>
@@ -382,7 +383,7 @@ export async function OverviewTab({
                 Active leases
               </p>
               <p className="mt-0.5 text-base font-semibold tabular-nums text-foreground">
-                {activeResidents}
+                <AnimatedNumber value={activeResidents} />
               </p>
             </div>
             <div>
@@ -390,10 +391,14 @@ export async function OverviewTab({
                 Avg rent / unit
               </p>
               <p className="mt-0.5 text-base font-semibold tabular-nums text-foreground">
-                $
-                {activeResidents > 0
-                  ? Math.round(monthlyRentRoll / activeResidents).toLocaleString()
-                  : "0"}
+                <AnimatedNumber
+                  value={
+                    activeResidents > 0
+                      ? Math.round(monthlyRentRoll / activeResidents)
+                      : 0
+                  }
+                  format="currency"
+                />
               </p>
             </div>
           </div>

@@ -179,6 +179,69 @@ body {
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 
+/* ── Premium polish ──────────────────────────────────────────────────────
+   Subtle page-mount fade-in + soft card-hover elevation. CSS-only; no
+   animation library needed. Applies via utility classes so we opt-in
+   per surface and keep heavy lists from re-animating on every render.
+   ────────────────────────────────────────────────────────────────────── */
+
+@keyframes ls-fade-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes ls-fade-in-stagger {
+  /* Used on grid/list children so they rise in sequence rather than
+     simultaneously. The timing curve matches the macOS dock — fast
+     enter, gentle settle. Triggered via animation-delay set inline. */
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Page surfaces opt in via `.ls-page-fade` */
+.ls-page-fade {
+  animation: ls-fade-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+/* Cards in a grid get a slight stagger via :nth-child delays. Capped at
+   8 children so very long lists don't have late-element flicker. */
+.ls-stagger > * {
+  animation: ls-fade-in-stagger 360ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation-fill-mode: both;
+}
+.ls-stagger > *:nth-child(1) { animation-delay: 0ms; }
+.ls-stagger > *:nth-child(2) { animation-delay: 30ms; }
+.ls-stagger > *:nth-child(3) { animation-delay: 60ms; }
+.ls-stagger > *:nth-child(4) { animation-delay: 90ms; }
+.ls-stagger > *:nth-child(5) { animation-delay: 120ms; }
+.ls-stagger > *:nth-child(6) { animation-delay: 150ms; }
+.ls-stagger > *:nth-child(7) { animation-delay: 180ms; }
+.ls-stagger > *:nth-child(8) { animation-delay: 210ms; }
+
+/* Soft hover elevation for any interactive card. Pairs with hover:bg
+   utilities already in the components. The transform pulls the card up
+   1px which reads as "lifted" without breaking grid alignment. */
+.ls-hover-lift {
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 180ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    border-color 180ms ease;
+}
+.ls-hover-lift:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 24px -12px rgba(20, 20, 19, 0.12);
+}
+
+/* Respect users with reduced-motion preferences. */
+@media (prefers-reduced-motion: reduce) {
+  .ls-page-fade,
+  .ls-stagger > *,
+  .ls-hover-lift {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
+}
+
 /* Kanban column widths: 85vw on mobile (swipe one at a time), responsive grid on md+ */
 .kanban-mobile-swipe { grid-template-columns: repeat(var(--kanban-col-count, 10), 85vw); }
 @media (min-width: 768px) {

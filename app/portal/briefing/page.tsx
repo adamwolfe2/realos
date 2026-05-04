@@ -127,7 +127,7 @@ export default async function BriefingPage({
   const greeting = "Daily briefing";
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 ls-page-fade">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">

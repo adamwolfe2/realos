@@ -121,7 +121,7 @@ export default async function AttributionPage({
   ];
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 ls-page-fade">
       <PageHeader
         title="Attribution"
         description={`Lead and session attribution across every connected channel. Same surface as Clarity Attribution — included in your LeaseStack subscription.${

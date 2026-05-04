@@ -1,33 +1,39 @@
+import {
+  Skeleton,
+  SkeletonKpi,
+  SkeletonRow,
+} from "@/components/portal/ui/skeleton";
+
+// Loading state for /portal/visitors. Matches DataTable footprint plus
+// the 3 KPI tiles above it.
 export default function VisitorsLoading() {
   return (
-    <div className="space-y-6 animate-pulse">
+    <div className="space-y-3">
       <div className="space-y-1">
-        <div className="h-7 w-28 bg-muted rounded-md" />
-        <div className="h-4 w-72 bg-muted/60 rounded" />
+        <Skeleton className="h-6 w-28" />
+        <Skeleton className="h-3 w-72 mt-1" />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-2">
-            <div className="h-3 w-20 bg-muted/60 rounded" />
-            <div className="h-7 w-16 bg-muted rounded-md" />
-            <div className="h-3 w-14 bg-muted/40 rounded" />
-          </div>
+      <div className="rounded-lg border border-border bg-card px-3 py-2 flex gap-4">
+        <Skeleton className="h-5 w-40" />
+        <Skeleton className="h-5 w-48" />
+        <Skeleton className="h-5 w-36" />
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <SkeletonKpi key={i} />
         ))}
       </div>
-      <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
-        <div className="px-5 py-3 flex gap-4">
-          <div className="h-4 w-32 bg-muted rounded" />
-          <div className="h-4 w-24 bg-muted/60 rounded" />
-          <div className="h-4 w-24 bg-muted/60 rounded" />
-          <div className="h-4 w-20 bg-muted/40 rounded" />
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        <div className="flex items-center gap-3 border-b border-border bg-secondary/40 px-3 py-2">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton
+              key={i}
+              className={i === 0 ? "h-2.5 w-24 flex-[2]" : "h-2.5 w-12 flex-1"}
+            />
+          ))}
         </div>
         {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="px-5 py-3.5 flex items-center gap-4">
-            <div className="h-4 w-36 bg-muted rounded" />
-            <div className="h-4 w-20 bg-muted/50 rounded" />
-            <div className="h-4 w-16 bg-muted/50 rounded" />
-            <div className="h-4 w-12 bg-muted/40 rounded" />
-          </div>
+          <SkeletonRow key={i} cols={8} />
         ))}
       </div>
     </div>

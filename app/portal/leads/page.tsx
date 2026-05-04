@@ -92,7 +92,7 @@ export default async function LeadsKanbanPage({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 ls-page-fade">
       <PageHeader
         title="Leads"
         description="Click any lead to see full detail, conversation history, tours, and applications."

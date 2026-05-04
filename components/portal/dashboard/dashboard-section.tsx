@@ -27,7 +27,7 @@ export function DashboardSection({
   return (
     <section
       className={cn(
-        "rounded-lg border border-border bg-card flex flex-col",
+        "rounded-lg border border-border bg-card flex flex-col ls-hover-lift",
         className,
       )}
     >

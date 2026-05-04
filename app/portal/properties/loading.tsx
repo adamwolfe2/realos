@@ -1,26 +1,32 @@
+import { Skeleton, SkeletonRow } from "@/components/portal/ui/skeleton";
+
+// Loading state for /portal/properties — matches the DataTable footprint
+// of the loaded page (header + table) so layout doesn't shift on hydrate.
 export default function PropertiesLoading() {
   return (
-    <div className="space-y-6 animate-pulse">
-      <div>
-        <div className="h-7 w-32 bg-muted rounded-md" />
-        <div className="h-4 w-80 bg-muted/60 rounded mt-2" />
+    <div className="space-y-3">
+      <div className="flex items-baseline justify-between gap-3">
+        <div>
+          <Skeleton className="h-6 w-32" />
+          <Skeleton className="h-3 w-80 mt-2" />
+        </div>
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-7 w-20" />
+          <Skeleton className="h-7 w-28" />
+        </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-        {Array.from({ length: 4 }).map((_, i) => (
-          <div
-            key={i}
-            className="rounded-lg border border-border bg-card p-5 space-y-4"
-          >
-            <div className="h-5 w-40 bg-muted rounded" />
-            <div className="grid grid-cols-3 gap-2">
-              {Array.from({ length: 3 }).map((_, j) => (
-                <div key={j} className="space-y-1">
-                  <div className="h-3 w-12 bg-muted/60 rounded" />
-                  <div className="h-6 w-8 bg-muted rounded" />
-                </div>
-              ))}
-            </div>
-          </div>
+      <div className="rounded-lg border border-border bg-card overflow-hidden">
+        {/* Sticky header echo */}
+        <div className="flex items-center gap-3 border-b border-border bg-secondary/40 px-3 py-2">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Skeleton
+              key={i}
+              className={i === 0 ? "h-2.5 w-24 flex-[2]" : "h-2.5 w-12 flex-1"}
+            />
+          ))}
+        </div>
+        {Array.from({ length: 8 }).map((_, i) => (
+          <SkeletonRow key={i} cols={6} />
         ))}
       </div>
     </div>

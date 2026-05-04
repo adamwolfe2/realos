@@ -37,8 +37,7 @@ function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live, l
   return (
     <div
       className={cn(
-        "relative h-full rounded-lg border border-border bg-card p-3 transition-shadow duration-150",
-        "hover:shadow-sm",
+        "relative h-full rounded-lg border border-border bg-card p-3 ls-hover-lift",
       )}
     >
       <div className="flex items-center justify-between gap-2">

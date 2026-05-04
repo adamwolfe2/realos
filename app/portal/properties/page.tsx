@@ -69,7 +69,7 @@ export default async function PropertiesList() {
   const totalLeads = properties.reduce((s, p) => s + p._count.leads, 0);
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 ls-page-fade">
       <PageHeader
         title="Properties"
         description={

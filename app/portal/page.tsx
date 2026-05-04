@@ -392,7 +392,7 @@ export default async function PortalHome({
     integrationChips.find((c) => c.key === "ga4")?.status === "off";
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-2 ls-page-fade">
       {/* Auto-refresh dashboard data every 45s. Cheap — just re-runs the
           server-component Prisma queries against existing data the cron
           jobs and on-demand syncs keep fresh. No integration API calls. */}
@@ -664,7 +664,7 @@ export default async function PortalHome({
           readable at this width and values don't overflow. */}
       <section
         aria-label="Key metrics"
-        className="grid grid-cols-2 md:grid-cols-4 gap-2"
+        className="grid grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
       >
             <KpiTile
               label="Total leads"
