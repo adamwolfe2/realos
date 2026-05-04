@@ -43,6 +43,8 @@ export default async function PortalLayout({
     creativeCount,
     leadCount,
     propertyCount,
+    tourCount,
+    applicationCount,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -76,6 +78,21 @@ export default async function PortalLayout({
       .catch(() => 0),
     prisma.lead.count({ where: { orgId: scope.orgId } }).catch(() => 0),
     prisma.property.count({ where: { orgId: scope.orgId } }).catch(() => 0),
+    // Tours come from the public booking form (/api/public/tours) and the
+    // API-key tour ingestion endpoint (/api/ingest/tour) — NOT AppFolio
+    // (showings is a v1 CRUD entity, not a v2 report). Hide the nav until
+    // a real tour exists so brand-new tenants don't see a dead surface.
+    prisma.tour
+      .count({ where: { lead: { orgId: scope.orgId } } })
+      .catch(() => 0),
+    // Applications currently have no production write path. The page
+    // hides until rows exist, which today only happens via demo seeding.
+    // TODO: wire AppFolio rental_application_status (or equivalent)
+    // into runAppfolioSync, OR build a public application form, before
+    // surfacing this to operators as a feature.
+    prisma.application
+      .count({ where: { lead: { orgId: scope.orgId } } })
+      .catch(() => 0),
   ]);
 
   if (!org) {
@@ -119,6 +136,13 @@ export default async function PortalLayout({
     hasReports: reportCount > 0,
     hasCreativeRequests: creativeCount > 0,
     briefingHasContent: leadCount > 0 && propertyCount > 0,
+    // Honest disclosure for Audience nav: only show Tours / Applications
+    // once a real row exists, since neither is currently AppFolio-backed.
+    // Power users can still URL-navigate to the empty pages; we just
+    // remove the dead-end click from the sidebar so feature surface
+    // matches what's actually wired.
+    hasTours: tourCount > 0,
+    hasApplications: applicationCount > 0,
   };
 
   return (

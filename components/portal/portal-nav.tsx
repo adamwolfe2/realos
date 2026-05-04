@@ -73,6 +73,18 @@ export type PortalNavOrg = {
    * brand-new tenants where the call sheet would be empty.
    */
   briefingHasContent?: boolean;
+  /**
+   * Tours come from the public booking form / API ingest, not AppFolio
+   * (showings is a v1 CRUD entity, not a v2 report). Hide the nav until
+   * a real tour exists.
+   */
+  hasTours?: boolean;
+  /**
+   * Applications have no production write path yet — the page is empty
+   * for every real tenant. Hide until either AppFolio rental_application
+   * sync ships or a public application form is wired.
+   */
+  hasApplications?: boolean;
 };
 
 export type NavItem = {
@@ -169,8 +181,13 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/portal/properties", label: "Properties", icon: Building2, show: ALWAYS },
       { href: "/portal/leads", label: "Leads", icon: Users, show: ALWAYS },
-      { href: "/portal/tours", label: "Tours", icon: Calendar, show: ALWAYS },
-      { href: "/portal/applications", label: "Applications", icon: ClipboardList, show: ALWAYS },
+      // Tours: gated on at least one tour existing. Source is the public
+      // booking form or the API-key ingest endpoint — NOT AppFolio.
+      { href: "/portal/tours", label: "Tours", icon: Calendar, show: (o) => Boolean(o.hasTours) },
+      // Applications: gated until rows exist. There is no production
+      // write path today; surfacing an empty page as a "feature" misleads
+      // operators about what the platform can do.
+      { href: "/portal/applications", label: "Applications", icon: ClipboardList, show: (o) => Boolean(o.hasApplications) },
       {
         href: "/portal/visitors",
         label: "Visitors",
