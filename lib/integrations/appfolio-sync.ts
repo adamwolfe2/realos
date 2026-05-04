@@ -265,6 +265,58 @@ export async function runAppfolioSync(
         propertyByExternalId.set(mapped.externalId, existing.id);
         continue;
       }
+
+      // Pre-existing manual Property with the same name (or address) but
+      // no backendPropertyId? Adopt it instead of creating a duplicate.
+      // Without this, customers who manually entered properties before
+      // connecting AppFolio end up with TWO rows per building — the
+      // manual one (with hero image, slug, marketing copy) AND a synced
+      // one carrying the resident/lease/work-order data. Operators then
+      // click into the manual row and see "no residents synced yet"
+      // because the children attached to the synced twin.
+      const orphan = await prisma.property.findFirst({
+        where: {
+          orgId,
+          backendPropertyId: null,
+          OR: [
+            mapped.name
+              ? { name: { equals: mapped.name, mode: "insensitive" } }
+              : undefined,
+            mapped.addressLine1
+              ? {
+                  addressLine1: {
+                    equals: mapped.addressLine1,
+                    mode: "insensitive",
+                  },
+                }
+              : undefined,
+          ].filter(Boolean) as Prisma.PropertyWhereInput[],
+        },
+        select: { id: true },
+      });
+      if (orphan) {
+        await prisma.property.update({
+          where: { id: orphan.id },
+          data: {
+            backendPlatform: BackendPlatform.APPFOLIO,
+            backendPropertyId: mapped.externalId,
+            // Backfill empty address/unit fields from AppFolio without
+            // overwriting whatever the operator may have hand-edited.
+            addressLine1: mapped.addressLine1 ?? undefined,
+            addressLine2: mapped.addressLine2 ?? undefined,
+            city: mapped.city ?? undefined,
+            state: mapped.state ?? undefined,
+            postalCode: mapped.postalCode ?? undefined,
+            country: mapped.country ?? undefined,
+            totalUnits: mapped.totalUnits ?? undefined,
+            yearBuilt: mapped.yearBuilt ?? undefined,
+          },
+        });
+        propertyByExternalId.set(mapped.externalId, orphan.id);
+        stats.propertiesUpserted += 1;
+        continue;
+      }
+
       const slug = await uniquePropertySlug(orgId, mapped.name ?? mapped.externalId);
       const created = await prisma.property.create({
         data: {
