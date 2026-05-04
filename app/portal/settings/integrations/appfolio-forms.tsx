@@ -376,19 +376,66 @@ export function SyncAppfolioButton() {
         {isPending ? "Syncing…" : "Sync now"}
       </button>
       {result && result.ok ? (
-        <span className="text-xs text-emerald-700">
-          Synced {result.stats.leadsUpserted} leads,{" "}
-          {result.stats.tenantsMatched} tenants,{" "}
-          {result.stats.listingsUpserted} listings
-          {result.stats.warnings.length > 0
-            ? ` (${result.stats.warnings.length} warnings)`
-            : ""}
-          .
-        </span>
+        <div className="flex flex-col gap-1 min-w-0">
+          <span className="text-xs text-emerald-700">
+            {formatSyncSummary(result.stats)}
+          </span>
+          {result.stats.warnings.length > 0 ? (
+            <details className="text-[11px] text-amber-700">
+              <summary className="cursor-pointer font-medium">
+                {result.stats.warnings.length} warning
+                {result.stats.warnings.length === 1 ? "" : "s"} (click to inspect)
+              </summary>
+              <ul className="mt-1 ml-3 list-disc space-y-0.5 max-h-32 overflow-y-auto">
+                {result.stats.warnings.slice(0, 15).map((w, i) => (
+                  <li key={i} className="break-all">{w}</li>
+                ))}
+                {result.stats.warnings.length > 15 ? (
+                  <li className="opacity-60">
+                    +{result.stats.warnings.length - 15} more…
+                  </li>
+                ) : null}
+              </ul>
+            </details>
+          ) : null}
+        </div>
       ) : null}
       {result && !result.ok ? (
         <span className="text-xs text-rose-700">{result.error}</span>
       ) : null}
     </div>
   );
+}
+
+// Honest one-line summary of every phase. Skips zeros so the line stays
+// readable; if every phase pulled 0 we say so explicitly instead of
+// silently rendering an empty success message.
+type StatsLike = {
+  propertiesUpserted: number;
+  leadsUpserted: number;
+  tenantsMatched: number;
+  listingsUpserted: number;
+  residentsUpserted: number;
+  leasesUpserted: number;
+  delinquenciesUpdated: number;
+  workOrdersUpserted: number;
+};
+
+function formatSyncSummary(stats: StatsLike): string {
+  const parts: string[] = [];
+  const push = (n: number, label: string) => {
+    if (n > 0) parts.push(`${n.toLocaleString()} ${label}`);
+  };
+  push(stats.propertiesUpserted, "properties");
+  push(stats.leadsUpserted, "leads");
+  push(stats.tenantsMatched, "tenant matches");
+  push(stats.listingsUpserted, "listings");
+  push(stats.residentsUpserted, "residents");
+  push(stats.leasesUpserted, "leases");
+  push(stats.delinquenciesUpdated, "delinquencies");
+  push(stats.workOrdersUpserted, "work orders");
+  if (parts.length === 0) {
+    return "Sync ran but pulled 0 rows. Check the warnings (or your AppFolio plan tier — Core can't access REST reports).";
+  }
+  return `Synced ${parts.join(" · ")}.`;
 }

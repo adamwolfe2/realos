@@ -128,19 +128,46 @@ export async function runAppfolioSync(
   // integration row's syncStatus and double-write the same upserts.
   // Older "syncing" rows are presumed stuck (Vercel function timeouts)
   // and get steamrolled by the new run.
+  //
+  // When the guard fires we now return ok:false with an explicit message.
+  // Previously we returned ok:true with empty stats which rendered as
+  // "Synced 0 leads, 0 tenants, 0 listings" — making operators think
+  // their AppFolio account was empty when reality was just "another sync
+  // is already running, please wait".
   const STUCK_AFTER_MS = 10 * 60 * 1000;
   if (
     integration.syncStatus === "syncing" &&
     integration.syncStartedAt &&
     Date.now() - integration.syncStartedAt.getTime() < STUCK_AFTER_MS
   ) {
+    const elapsedSec = Math.round(
+      (Date.now() - integration.syncStartedAt.getTime()) / 1000,
+    );
     return {
-      ok: true,
+      ok: false,
       stats,
-      // Not really an error — the existing sync will complete the work.
-      // We surface this as a no-op success so the manual-sync API doesn't
-      // 500 and the on-load trigger can dedupe naturally.
+      error: `Another sync is already running (${elapsedSec}s elapsed). Wait for it to finish, or click Clear stuck sync if it's been more than 10 minutes.`,
     };
+  }
+
+  // Sweep stuck rows BEFORE marking ours as in-flight. A row in
+  // syncStatus='syncing' with syncStartedAt > 10 min ago is a killed
+  // Vercel function; clear it so this run starts from a clean slate.
+  if (
+    integration.syncStatus === "syncing" &&
+    (!integration.syncStartedAt ||
+      Date.now() - integration.syncStartedAt.getTime() >= STUCK_AFTER_MS)
+  ) {
+    await prisma.appFolioIntegration
+      .update({
+        where: { orgId },
+        data: {
+          syncStatus: "error",
+          syncStartedAt: null,
+          lastError: "Previous sync timed out — auto-cleared.",
+        },
+      })
+      .catch(() => undefined);
   }
 
   // Mark sync as started + capture the wall-clock start time. The UI
