@@ -20,7 +20,7 @@ export default async function PropertiesList() {
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <PageHeader
         title="Properties"
         description="Listings, leads, and tours for every property in your portfolio."
@@ -63,41 +63,40 @@ export default async function PropertiesList() {
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2">
           {properties.map((p) => (
             <Link
               key={p.id}
               href={`/portal/properties/${p.id}`}
-              className="block rounded-lg border border-border bg-card p-5 hover:border-foreground/20 hover:bg-accent/30 transition-colors"
+              className="block rounded-lg border border-border bg-card px-3 py-2.5 hover:border-foreground/20 hover:bg-accent/30 transition-colors"
             >
-              <div className="flex items-baseline justify-between gap-3">
-                <h2 className="text-lg font-semibold tracking-tight text-foreground truncate">
-                  {p.name}
-                </h2>
+              <div className="flex items-start justify-between gap-2 min-w-0">
+                <div className="min-w-0 flex-1">
+                  <h2 className="text-sm font-semibold tracking-tight text-foreground truncate">
+                    {p.name}
+                  </h2>
+                  {p.addressLine1 || p.city ? (
+                    <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                      {[p.addressLine1, p.city, p.state]
+                        .filter(Boolean)
+                        .join(", ")}
+                    </p>
+                  ) : null}
+                </div>
                 {p.lastSyncedAt ? (
-                  <span className="text-[11px] text-muted-foreground whitespace-nowrap">
-                    Synced{" "}
+                  <span className="text-[10px] text-muted-foreground whitespace-nowrap shrink-0">
                     {formatDistanceToNow(p.lastSyncedAt, { addSuffix: true })}
                   </span>
                 ) : null}
               </div>
-              {p.addressLine1 ? (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {p.addressLine1}
-                  {p.city ? `, ${p.city}` : ""}
-                  {p.state ? `, ${p.state}` : ""}
-                </p>
-              ) : null}
-              <dl className="grid grid-cols-3 mt-5 gap-2">
+              <dl className="mt-2 flex items-center gap-4 text-xs">
                 <Stat label="Listings" value={p._count.listings} />
                 <Stat label="Available" value={p.availableCount ?? 0} />
                 <Stat label="Leads" value={p._count.leads} />
+                {p.totalUnits ? (
+                  <Stat label="Units" value={p.totalUnits} muted />
+                ) : null}
               </dl>
-              {p.totalUnits ? (
-                <p className="text-[11px] text-muted-foreground mt-3">
-                  {p.totalUnits} total units
-                </p>
-              ) : null}
             </Link>
           ))}
         </div>
@@ -106,11 +105,25 @@ export default async function PropertiesList() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
+function Stat({
+  label,
+  value,
+  muted,
+}: {
+  label: string;
+  value: number;
+  muted?: boolean;
+}) {
   return (
-    <div>
-      <dt className="text-[11px] text-muted-foreground">{label}</dt>
-      <dd className="text-lg font-semibold tabular-nums text-foreground mt-0.5">
+    <div className="flex items-baseline gap-1.5 min-w-0">
+      <dt className="text-[10px] tracking-wider uppercase font-semibold text-muted-foreground">
+        {label}
+      </dt>
+      <dd
+        className={`text-sm font-semibold tabular-nums leading-none ${
+          muted ? "text-muted-foreground" : "text-foreground"
+        }`}
+      >
         {value}
       </dd>
     </div>
