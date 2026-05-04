@@ -47,7 +47,7 @@ function formatStatsSummary(stats: SyncStats): string {
   return `Pulled ${parts.join(" · ")}.`;
 }
 
-type Status = "idle" | "syncing" | "error";
+type Status = "idle" | "syncing" | "error" | "stuck";
 
 type SyncStats = {
   residentsUpserted?: number;
@@ -92,9 +92,11 @@ export function AppFolioSyncPoller({
       ? Math.max(0, Math.round((Date.now() - startedAtMs) / 1000))
       : 0
   );
-  const [done, setDone] = useState<null | "ok" | "error">(null);
+  const [done, setDone] = useState<null | "ok" | "error" | "stuck">(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [stats, setStats] = useState<SyncStats | null>(null);
+  const [clearing, setClearing] = useState(false);
+  const [clearError, setClearError] = useState<string | null>(null);
   const stopAt = useRef(Date.now() + MAX_POLL_DURATION_MS);
 
   // Local elapsed-time ticker — ticks every second so the counter feels
@@ -113,6 +115,18 @@ export function AppFolioSyncPoller({
     }, 1000);
     return () => clearInterval(tick);
   }, [startedAtMs]);
+
+  // Client-side stuck-sync safety net. The server-side detection in
+  // /api/tenant/appfolio also returns "stuck", but if polling stopped
+  // (after MAX_POLL_DURATION_MS) before that flip happened, we still
+  // need to flip the UI from "syncing" to "stuck" so the operator
+  // gets a recovery action instead of staring at an indefinite spinner.
+  useEffect(() => {
+    if (done !== null) return;
+    if (elapsedSec > 10 * 60) {
+      setDone("stuck");
+    }
+  }, [elapsedSec, done]);
 
   // Network poll — checks the integration row every 5s.
   useEffect(() => {
@@ -136,8 +150,18 @@ export function AppFolioSyncPoller({
         // we see it. Handles the case where this component mounted
         // before the parent server-render captured the up-to-date
         // timestamp (rare but possible during the initial sync trigger).
-        if (status === "syncing" && integ?.syncStartedAt && startedAtMs == null) {
+        if (
+          (status === "syncing" || status === "stuck") &&
+          integ?.syncStartedAt &&
+          startedAtMs == null
+        ) {
           setStartedAtMs(new Date(integ.syncStartedAt).getTime());
+        }
+        if (status === "stuck") {
+          // Server detected the sync is wedged (>10 min since start).
+          // Stop polling, render the Clear UI.
+          setDone("stuck");
+          return;
         }
         if (status === "syncing") {
           timer = setTimeout(poll, POLL_INTERVAL_MS);
@@ -225,10 +249,69 @@ export function AppFolioSyncPoller({
     );
   }
 
-  // Still syncing — show elapsed time + cadence guidance so the operator
-  // knows roughly when it should finish.
+  // Pre-format elapsed time for both the syncing and stuck states.
   const niceTime =
-    elapsedSec < 60 ? `${elapsedSec}s` : `${Math.floor(elapsedSec / 60)}m ${elapsedSec % 60}s`;
+    elapsedSec < 60
+      ? `${elapsedSec}s`
+      : `${Math.floor(elapsedSec / 60)}m ${elapsedSec % 60}s`;
+
+  if (done === "stuck") {
+    // Server flagged this sync as wedged. The underlying function was
+    // killed by Vercel's maxDuration before the cleanup writes ran.
+    // Offer a Clear button that resets syncStatus → error so the next
+    // run starts fresh.
+    async function handleClear() {
+      setClearing(true);
+      setClearError(null);
+      try {
+        const res = await fetch("/api/tenant/appfolio/clear-stuck", {
+          method: "POST",
+        });
+        const json = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          setClearError(json?.error ?? `Clear failed (${res.status})`);
+          setClearing(false);
+          return;
+        }
+        // Sync row reset; refresh so the banner switches to the failed
+        // state and the operator can hit Retry.
+        router.refresh();
+      } catch (err) {
+        setClearError(err instanceof Error ? err.message : "Clear failed");
+        setClearing(false);
+      }
+    }
+    return (
+      <div className="flex items-start gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-rose-900">
+        <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-semibold leading-tight">
+            AppFolio sync stuck — running for {niceTime}.
+          </p>
+          <p className="text-xs mt-1 opacity-90 leading-snug">
+            The sync function was likely killed by a serverless timeout
+            before it could finish writing. Click Clear stuck sync to
+            reset the row, then Retry to re-run with the fresh
+            5-minute timeout.
+          </p>
+          {clearError ? (
+            <p className="mt-2 text-xs font-medium">{clearError}</p>
+          ) : null}
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={handleClear}
+              disabled={clearing}
+              className="inline-flex items-center rounded-md bg-rose-900 text-white px-3 py-1.5 text-xs font-semibold hover:bg-rose-950 disabled:opacity-60"
+            >
+              {clearing ? "Clearing…" : "Clear stuck sync"}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div

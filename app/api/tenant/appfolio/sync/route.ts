@@ -4,6 +4,15 @@ import { runAppfolioSync } from "@/lib/integrations/appfolio-sync";
 import { syncListingsForOrg } from "@/lib/integrations/appfolio";
 import { prisma } from "@/lib/db";
 
+// Vercel default for on-demand HTTP routes is 60s on Pro; the AppFolio
+// REST sync routinely needs 90–120s for a fresh tenant pulling 90 days
+// of guest_cards + tenant_directory + unit_directory + property_directory
+// + tenant_directory + rent_roll + delinquency + work_order. Without
+// this bump the function gets killed mid-flight, leaves syncStatus
+// wedged in "syncing", and the user sees a 17m+ "syncing" banner that
+// will never complete.
+export const maxDuration = 300; // matches the cron handler
+
 // Tenant-scoped on-demand AppFolio sync. Powers both the manual "Run sync"
 // button on the operations pages and the StaleOnLoadTrigger that fires
 // when a user opens a stale page.

@@ -25,6 +25,18 @@ export async function GET() {
       where: { orgId: scope.orgId },
     });
     if (!integration) return NextResponse.json({ integration: null });
+
+    // Stuck-sync detection. If the row says "syncing" but syncStartedAt
+    // is older than 10 minutes, the underlying sync function has
+    // certainly been killed by Vercel's maxDuration. Surface as
+    // "stuck" so the poller can render a Clear button instead of
+    // polling forever on a wedged row.
+    const STUCK_AFTER_MS = 10 * 60 * 1000;
+    const isStuck =
+      integration.syncStatus === "syncing" &&
+      integration.syncStartedAt != null &&
+      Date.now() - integration.syncStartedAt.getTime() > STUCK_AFTER_MS;
+
     return NextResponse.json({
       integration: {
         id: integration.id,
@@ -35,16 +47,12 @@ export async function GET() {
         syncFrequencyMinutes: integration.syncFrequencyMinutes,
         hasApiKey: !!integration.apiKeyEncrypted,
         lastSyncAt: integration.lastSyncAt,
-        syncStatus: integration.syncStatus,
-        // Real wall-clock start time of the current sync (when status
-        // is "syncing"). Lets the poller render a continuous elapsed
-        // counter across page navigations.
+        // Effective syncStatus: surfaces "stuck" when the row is
+        // syncing-but-wedged so the client can render the right UI
+        // without computing the threshold itself.
+        syncStatus: isStuck ? "stuck" : integration.syncStatus,
         syncStartedAt: integration.syncStartedAt,
         lastError: integration.lastError,
-        // Detailed per-phase counts + warnings so the poller can show
-        // "X residents · Y leases · Z work orders pulled" instead of a
-        // generic "Sync complete" that hides whether anything actually
-        // moved.
         lastSyncStats: integration.lastSyncStats ?? null,
       },
     });
