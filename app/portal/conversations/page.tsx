@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { ChatbotConversationStatus, Prisma } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { PageHeader } from "@/components/admin/page-header";
 import { humanChatbotStatus } from "@/lib/format";
 import {
@@ -165,7 +166,7 @@ export default async function ConversationsList({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <PageHeader
         title="Chatbot conversations"
         description="Read every transcript, flag patterns to tune the system prompt, and find the leads worth chasing. Filters are URL-driven so you can bookmark or share a view."
@@ -191,18 +192,16 @@ export default async function ConversationsList({
       </p>
 
       {conversations.length === 0 ? (
-        <div className="rounded-xl border border-border bg-card p-10 text-center">
-          <p className="text-sm text-muted-foreground">
-            No conversations match this view yet.
-          </p>
-          {qRaw || activeFlag ? (
-            <p className="text-xs text-muted-foreground mt-1">
-              Try clearing your search or filter.
-            </p>
-          ) : null}
-        </div>
+        <EmptyState
+          title="No conversations match this view yet."
+          body={
+            qRaw || activeFlag
+              ? "Try clearing your search or filter."
+              : "When visitors chat with your bot, transcripts land here. Make sure the embed snippet is on the property site."
+          }
+        />
       ) : (
-        <ul className="rounded-xl border border-border bg-card divide-y divide-border overflow-hidden">
+        <ul className="rounded-lg border border-border bg-card divide-y divide-border overflow-hidden">
           {conversations.map((c) => {
             const firstMessage = firstUserMessage(c.messages);
             const uniqueFlags = dedupeFlags(c.flags.map((f) => f.flag));
