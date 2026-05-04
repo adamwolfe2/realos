@@ -133,9 +133,16 @@ export function ConnectAppfolioForm() {
           <>
             <Field
               label="Reports API Client ID"
+              // Non-standard name so password managers don't try to
+              // suggest a saved entry from the user's personal AppFolio.
+              // Audit BUG #2 — agency operators impersonate tenants on
+              // shared screens and we never want their personal creds
+              // pre-filling someone else's form.
               name="clientId"
               required
               autoComplete="off"
+              data-1p-ignore="true"
+              data-lpignore="true"
               mono
               value={clientId}
               onChange={(v) => { setClientId(v); resetTest(); }}
@@ -146,7 +153,14 @@ export function ConnectAppfolioForm() {
               name="clientSecret"
               type="password"
               required
-              autoComplete="off"
+              // 'new-password' is the only autocomplete value Chrome
+              // respects for password fields — 'off' is silently
+              // ignored. Combined with the data-*-ignore attributes
+              // covers 1Password, LastPass, Bitwarden, and Chrome's
+              // built-in suggester.
+              autoComplete="new-password"
+              data-1p-ignore="true"
+              data-lpignore="true"
               mono
               value={clientSecret}
               onChange={(v) => { setClientSecret(v); resetTest(); }}
@@ -277,6 +291,7 @@ function Field({
   hint,
   value,
   onChange,
+  ...rest
 }: {
   label: string;
   name: string;
@@ -288,11 +303,15 @@ function Field({
   hint?: React.ReactNode;
   value?: string;
   onChange?: (v: string) => void;
+  // Allow data-1p-ignore, data-lpignore, etc. to pass through to the
+  // underlying input so password managers honour them.
+  [key: `data-${string}`]: string | undefined;
 }) {
   return (
     <label className="flex flex-col gap-1.5">
       <span className="text-xs font-medium text-foreground">{label}</span>
       <input
+        {...rest}
         name={name}
         type={type}
         required={required}

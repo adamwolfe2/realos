@@ -25,10 +25,22 @@ const STATE_STYLES: Record<IntegrationState, StateStyle> = {
     ctaClass: "text-foreground hover:text-primary",
   },
   managed: {
-    badgeLabel: "Active",
-    badgeClass: "bg-blue-50 text-blue-700",
-    cta: "Manage",
+    // 'managed' = on plan, awaiting agency provisioning. Was previously
+    // labelled "Active" which lied — the integration wasn't actually
+    // active yet, just provisioned. (audit BUG #1)
+    badgeLabel: "Provisioning",
+    badgeClass: "bg-amber-50 text-amber-800",
+    cta: "View status",
     ctaClass: "text-foreground hover:text-primary",
+  },
+  plan_locked: {
+    // New state when the org's plan doesn't include this module. Replaces
+    // the previous mislabelled "Active" → "drawer says upgrade required"
+    // dead-end so the badge tells the truth from the marketplace itself.
+    badgeLabel: "Upgrade required",
+    badgeClass: "bg-slate-100 text-slate-700",
+    cta: "Talk to your AM",
+    ctaClass: "text-primary hover:underline underline-offset-2",
   },
   available: {
     badgeLabel: "Available",

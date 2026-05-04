@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useEffect, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   connectSeo,
   disconnectSeo,
@@ -38,10 +39,24 @@ function CopyEmailButton({ email }: { email: string }) {
 }
 
 export function ConnectSeoForm({ provider }: { provider: Provider }) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState<
     ConnectSeoResult,
     FormData
   >(async (_prev, formData) => connectSeo(formData), CONNECT_INITIAL);
+
+  // After a successful connect, refresh the parent server component so
+  // the marketplace tile badge flips from "Available" → "Connected"
+  // immediately. Audit BUG #3 caught the prior dead-end where the form
+  // showed "Connected. Backfill running…" but the badge stayed
+  // "Available" because nothing told the page to re-render.
+  useEffect(() => {
+    if (state && state.ok && state.provider === provider) {
+      // Slight delay so the user actually sees the success copy first.
+      const id = setTimeout(() => router.refresh(), 1500);
+      return () => clearTimeout(id);
+    }
+  }, [state, provider, router]);
 
   const isGsc = provider === "GSC";
 

@@ -19,6 +19,7 @@ export type IntegrationState =
   | "available"
   | "requested"
   | "managed"
+  | "plan_locked"
   | "coming_soon";
 
 export type IntegrationStatus = {
@@ -32,6 +33,7 @@ export async function resolveIntegrationStatuses(
   orgId: string
 ): Promise<IntegrationStatus[]> {
   const [
+    org,
     cursive,
     appfolio,
     seoIntegrations,
@@ -39,6 +41,18 @@ export async function resolveIntegrationStatuses(
     pendingRequests,
     resolvedRequests,
   ] = await Promise.all([
+    prisma.organization
+      .findUnique({
+        where: { id: orgId },
+        select: {
+          modulePixel: true,
+          moduleChatbot: true,
+          moduleSEO: true,
+          moduleGoogleAds: true,
+          moduleMetaAds: true,
+        },
+      })
+      .catch(() => null),
     prisma.cursiveIntegration
       .findUnique({
         where: { orgId },
@@ -118,6 +132,7 @@ export async function resolveIntegrationStatuses(
   }
 
   return INTEGRATIONS.map((i) => resolveOne(i, {
+    org,
     cursive,
     appfolio,
     seoBySlug,
@@ -130,6 +145,13 @@ export async function resolveIntegrationStatuses(
 function resolveOne(
   def: IntegrationDefinition,
   ctx: {
+    org: {
+      modulePixel: boolean;
+      moduleChatbot: boolean;
+      moduleSEO: boolean;
+      moduleGoogleAds: boolean;
+      moduleMetaAds: boolean;
+    } | null;
     cursive: { cursivePixelId: string | null; lastEventAt: Date | null } | null;
     appfolio: {
       instanceSubdomain: string | null;
@@ -149,9 +171,23 @@ function resolveOne(
   }
 
   if (def.slug === "visitor-identification") {
+    // Three-way state, in priority order:
+    //   - connected: pixel ID provisioned + present
+    //   - plan_locked: org's plan doesn't include the pixel module — show
+    //     "Upgrade required" instead of the misleading "Active" badge
+    //     (audit BUG #1)
+    //   - managed: pixel module on plan, awaiting agency provisioning
+    if (ctx.cursive?.cursivePixelId) {
+      return {
+        slug: def.slug,
+        state: "connected",
+        lastEventAt: ctx.cursive.lastEventAt ?? null,
+      };
+    }
+    const onPlan = !!ctx.org?.modulePixel || !!ctx.org?.moduleChatbot;
     return {
       slug: def.slug,
-      state: ctx.cursive?.cursivePixelId ? "connected" : "managed",
+      state: onPlan ? "managed" : "plan_locked",
       lastEventAt: ctx.cursive?.lastEventAt ?? null,
     };
   }
@@ -218,6 +254,8 @@ export function stateLabel(state: IntegrationState): string {
       return "Activation requested";
     case "available":
       return "Available";
+    case "plan_locked":
+      return "Plan upgrade required";
     case "coming_soon":
       return "Coming soon";
   }

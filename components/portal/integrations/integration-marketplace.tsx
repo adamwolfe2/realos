@@ -50,18 +50,17 @@ export function IntegrationMarketplace({
   const filtered = React.useMemo(() => {
     if (filter === "all") return LIVE;
     if (filter === "installed") {
-      return LIVE.filter((i) => {
-        const s = byStatus.get(i.slug);
-        return s === "connected" || s === "managed";
-      });
+      // Only true 'connected' integrations count as installed. 'managed'
+      // means provisioning-in-progress and 'plan_locked' means upgrade
+      // required — neither is actually installed.
+      return LIVE.filter((i) => byStatus.get(i.slug) === "connected");
     }
     return LIVE.filter((i) => i.category === filter);
   }, [filter, byStatus, LIVE]);
 
-  const installedCount = LIVE.filter((i) => {
-    const s = byStatus.get(i.slug);
-    return s === "connected" || s === "managed";
-  }).length;
+  const installedCount = LIVE.filter(
+    (i) => byStatus.get(i.slug) === "connected"
+  ).length;
 
   const openDef = openSlug ? LIVE.find((i) => i.slug === openSlug) : null;
   const openState = openDef ? byStatus.get(openDef.slug) ?? "available" : null;
@@ -230,19 +229,34 @@ function DrawerAction({
   state: IntegrationState;
   manageSlot: React.ReactNode;
 }) {
-  if (state === "connected" || state === "managed") {
+  if (state === "connected") {
     if (manageSlot) return <div className="space-y-3">{manageSlot}</div>;
     return (
       <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
         <p className="text-sm font-medium text-emerald-900">
-          {def.name} is active.
+          {def.name} is connected and live.
         </p>
         <p className="text-xs text-emerald-800 mt-1">
           Your agency team manages this integration. Contact support to change
-          how it's configured.
+          how it&apos;s configured.
         </p>
       </div>
     );
+  }
+
+  if (state === "managed") {
+    // Provisioning in progress. Always render the manage slot when
+    // available (e.g. ConnectPixelForm or PixelRequestPending) so the
+    // operator gets the real status, never a generic blurb.
+    if (manageSlot) return <div className="space-y-3">{manageSlot}</div>;
+    return <PlanGateBlock def={def} provisioning />;
+  }
+
+  if (state === "plan_locked") {
+    // Module isn't on the tenant's plan. Audit BUG #4 caught the prior
+    // copy was "Talk to your account manager" with no action — now
+    // renders an actual mailto + 'View pricing' link.
+    return <PlanGateBlock def={def} />;
   }
 
   if (state === "available" && def.auth === "self_serve") {
@@ -308,5 +322,70 @@ function DrawerAction({
       {def.name} is on our roadmap. Drop in again soon — or ask your account
       manager to prioritize it.
     </p>
+  );
+}
+
+// Replaces the previous static "talk to your account manager" copy across
+// every plan-gated integration with a real, actionable two-button block.
+// Audit caught this copy on the Cursive pixel surface (BUG #4); same
+// component now serves every integration in either provisioning-pending
+// or plan-locked state.
+function PlanGateBlock({
+  def,
+  provisioning = false,
+}: {
+  def: IntegrationDefinition;
+  provisioning?: boolean;
+}) {
+  const subject = encodeURIComponent(
+    provisioning
+      ? `[LeaseStack] Status update on ${def.name} provisioning`
+      : `[LeaseStack] Add ${def.name} to my plan`
+  );
+  const body = encodeURIComponent(
+    provisioning
+      ? `Hi — checking in on the status of ${def.name} provisioning for our portal. Anything you need from us to keep it moving?\n\nThanks!`
+      : `Hi — interested in adding ${def.name} to our LeaseStack plan. What's involved and what would the upgrade look like?\n\nThanks!`
+  );
+  const tone = provisioning
+    ? {
+        bg: "border-amber-200 bg-amber-50 text-amber-900",
+        accent: "text-amber-900",
+      }
+    : {
+        bg: "border-border bg-muted/30 text-foreground",
+        accent: "text-foreground",
+      };
+  return (
+    <div className={`rounded-lg border p-4 space-y-3 ${tone.bg}`}>
+      <div>
+        <p className={`text-sm font-semibold ${tone.accent}`}>
+          {provisioning
+            ? `${def.name} is being provisioned by your account team.`
+            : `${def.name} isn't on your current plan.`}
+        </p>
+        <p className="text-xs mt-1 leading-snug opacity-90">
+          {provisioning
+            ? "We typically have new pixels live within one business day. You'll get an email with the install snippet once it's ready."
+            : `Adding ${def.name} unlocks the data feed shown above. Reach your account team using one of the actions below.`}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2">
+        <a
+          href={`mailto:hello@leasestack.co?subject=${subject}&body=${body}`}
+          className="inline-flex items-center rounded-md bg-foreground text-background px-3 py-1.5 text-xs font-semibold hover:opacity-90"
+        >
+          {provisioning ? "Email account team" : "Email account team"}
+        </a>
+        {!provisioning ? (
+          <Link
+            href="/portal/settings"
+            className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium hover:bg-muted/50"
+          >
+            View current plan
+          </Link>
+        ) : null}
+      </div>
+    </div>
   );
 }
