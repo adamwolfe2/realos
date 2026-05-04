@@ -300,6 +300,38 @@ export default async function SeoPage() {
             <SeoTrendChart data={trendPoints} />
           </SectionCard>
 
+          {/* Position distribution + Quick Wins. Both derived from the
+              already-fetched top queries set so we add zero queries. */}
+          {topQueries.length > 0 ? (
+            <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+              <SectionCard
+                label="Position distribution"
+                description="Where your queries rank — buckets across the top 25 queries"
+              >
+                <PositionDistribution
+                  queries={topQueries.map((q) => ({
+                    position: q._avg.position ?? 0,
+                  }))}
+                />
+              </SectionCard>
+              <SectionCard
+                className="lg:col-span-2"
+                label="Quick wins"
+                description="Queries on page-1 fringe (positions 4–15) with high impressions and below-average CTR. Pushing these up moves clicks immediately."
+              >
+                <QuickWins
+                  queries={topQueries.map((q) => ({
+                    query: q.query,
+                    clicks: q._sum.clicks ?? 0,
+                    impressions: q._sum.impressions ?? 0,
+                    ctr: q._avg.ctr ?? 0,
+                    position: q._avg.position ?? 0,
+                  }))}
+                />
+              </SectionCard>
+            </section>
+          ) : null}
+
           <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <SectionCard
               label="Top organic queries"
@@ -550,6 +582,195 @@ function SetupHelp() {
           saving and runs an initial 30-day backfill in the background.
         </li>
       </ol>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PositionDistribution — bucket the average position across queries into
+// four ranges and render as a horizontal stacked-bar with counts.
+//
+// Buckets follow the Searchable / Clarity playbook:
+//   1–3  : top of page 1 (gold)
+//   4–10 : bottom of page 1 (blue accent)
+//   11–20: page 2 (amber)
+//   21+  : page 3+ (rose, low value)
+// Token-themed so it picks up the cream canvas.
+// ---------------------------------------------------------------------------
+
+function PositionDistribution({
+  queries,
+}: {
+  queries: Array<{ position: number }>;
+}) {
+  const buckets = [
+    { label: "1–3", color: "#10B981", count: 0, hint: "Top of page 1" },
+    { label: "4–10", color: "#2563EB", count: 0, hint: "Bottom of page 1" },
+    { label: "11–20", color: "#F59E0B", count: 0, hint: "Page 2" },
+    { label: "21+", color: "#B53333", count: 0, hint: "Page 3 or deeper" },
+  ];
+  for (const q of queries) {
+    const p = q.position;
+    if (p <= 3) buckets[0].count += 1;
+    else if (p <= 10) buckets[1].count += 1;
+    else if (p <= 20) buckets[2].count += 1;
+    else buckets[3].count += 1;
+  }
+  const total = buckets.reduce((s, b) => s + b.count, 0);
+  if (total === 0) {
+    return (
+      <p className="text-[11px] text-muted-foreground py-4">
+        Run a GSC sync to populate position data.
+      </p>
+    );
+  }
+  return (
+    <div className="space-y-2.5">
+      {/* Stacked bar */}
+      <div
+        role="img"
+        aria-label="Position distribution"
+        className="flex h-3 w-full overflow-hidden rounded-full"
+      >
+        {buckets.map((b) => {
+          const pct = total > 0 ? (b.count / total) * 100 : 0;
+          if (pct === 0) return null;
+          return (
+            <div
+              key={b.label}
+              style={{
+                width: `${pct}%`,
+                backgroundColor: b.color,
+              }}
+              className="transition-all"
+              title={`${b.label}: ${b.count} (${pct.toFixed(1)}%)`}
+            />
+          );
+        })}
+      </div>
+      {/* Legend with counts */}
+      <ul className="space-y-1">
+        {buckets.map((b) => {
+          const pct = total > 0 ? Math.round((b.count / total) * 100) : 0;
+          return (
+            <li
+              key={b.label}
+              className="flex items-baseline justify-between gap-2 text-[11px]"
+            >
+              <span className="flex items-center gap-1.5 min-w-0">
+                <span
+                  aria-hidden="true"
+                  className="h-2 w-2 rounded-full shrink-0"
+                  style={{ backgroundColor: b.color }}
+                />
+                <span className="text-foreground font-medium">{b.label}</span>
+                <span className="text-muted-foreground hidden md:inline">
+                  · {b.hint}
+                </span>
+              </span>
+              <span className="tabular-nums text-muted-foreground shrink-0">
+                <span className="text-foreground font-semibold">{b.count}</span>{" "}
+                query{b.count === 1 ? "" : "ies"} · {pct}%
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// QuickWins — surface queries that are page-1-fringe (positions 4–15) with
+// high impressions and below-average CTR. Pushing these up converts clicks
+// immediately. Server-calculated; pure data, no extra queries.
+// ---------------------------------------------------------------------------
+
+function QuickWins({
+  queries,
+}: {
+  queries: Array<{
+    query: string;
+    clicks: number;
+    impressions: number;
+    ctr: number;
+    position: number;
+  }>;
+}) {
+  const totalImpressions = queries.reduce((s, q) => s + q.impressions, 0);
+  const totalClicks = queries.reduce((s, q) => s + q.clicks, 0);
+  const avgCtr = totalImpressions > 0 ? totalClicks / totalImpressions : 0;
+  // Impressions threshold: top quartile of the visible set, with a floor of
+  // 100 so very small accounts still surface something actionable.
+  const impressionThreshold = Math.max(
+    100,
+    queries
+      .map((q) => q.impressions)
+      .sort((a, b) => b - a)[Math.floor(queries.length / 4)] ?? 0,
+  );
+  const wins = queries
+    .filter(
+      (q) =>
+        q.position >= 4 &&
+        q.position <= 15 &&
+        q.impressions >= impressionThreshold &&
+        q.ctr < avgCtr,
+    )
+    .sort((a, b) => {
+      // Score = impressions × (avgCtr - currentCtr). Higher = bigger
+      // potential lift if we move this query up a position.
+      const scoreA = a.impressions * Math.max(0, avgCtr - a.ctr);
+      const scoreB = b.impressions * Math.max(0, avgCtr - b.ctr);
+      return scoreB - scoreA;
+    })
+    .slice(0, 8);
+  if (wins.length === 0) {
+    return (
+      <p className="text-[11px] text-muted-foreground py-4">
+        No quick-win opportunities in this window — your fringe queries already
+        out-perform the site CTR average. Look for new content gaps in Topics.
+      </p>
+    );
+  }
+  return (
+    <div className="overflow-x-auto -mx-2">
+      <table className="w-full text-[11px]" aria-label="Quick win opportunities">
+        <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
+          <tr>
+            <th className="text-left font-medium px-2 py-1.5">Query</th>
+            <th className="text-right font-medium px-2 py-1.5">Pos</th>
+            <th className="text-right font-medium px-2 py-1.5">Impr.</th>
+            <th className="text-right font-medium px-2 py-1.5">Current CTR</th>
+            <th className="text-right font-medium px-2 py-1.5">Lift potential</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-border">
+          {wins.map((q) => {
+            const lift = Math.round(
+              q.impressions * Math.max(0, avgCtr - q.ctr),
+            );
+            return (
+              <tr key={q.query}>
+                <td className="px-2 py-1.5 text-foreground truncate max-w-[260px]">
+                  {q.query}
+                </td>
+                <td className="text-right tabular-nums px-2 py-1.5 text-foreground font-semibold">
+                  {q.position.toFixed(1)}
+                </td>
+                <td className="text-right tabular-nums px-2 py-1.5 text-muted-foreground">
+                  {q.impressions.toLocaleString()}
+                </td>
+                <td className="text-right tabular-nums px-2 py-1.5 text-muted-foreground">
+                  {(q.ctr * 100).toFixed(1)}%
+                </td>
+                <td className="text-right tabular-nums px-2 py-1.5 text-emerald-700 font-semibold">
+                  +{lift.toLocaleString()} clicks
+                </td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
     </div>
   );
 }
