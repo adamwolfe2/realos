@@ -185,14 +185,22 @@ export async function runAppfolioSync(
   for (const p of properties) {
     if (p.backendPropertyId) propertyByExternalId.set(p.backendPropertyId, p.id);
   }
-  const fallbackPropertyId = properties[0]?.id ?? null;
+
+  // Derive the fallback Property at call time, not capture time. Phase 0
+  // (Properties auto-discovery) runs first and may have populated
+  // propertyByExternalId after this block; downstream phases that fall
+  // back when AppFolio omits property_id need to see those new entries.
+  function getFallbackPropertyId(): string | null {
+    if (propertyByExternalId.size === 0) return null;
+    return propertyByExternalId.values().next().value ?? null;
+  }
 
   function resolvePropertyId(externalIds: string[]): string | null {
     for (const eid of externalIds) {
       const hit = propertyByExternalId.get(eid);
       if (hit) return hit;
     }
-    return fallbackPropertyId;
+    return getFallbackPropertyId();
   }
 
   let topLevelError: string | null = null;
@@ -204,6 +212,60 @@ export async function runAppfolioSync(
   // subsequent incremental syncs.
   let phasesCompleted = 0;
   const totalPhases = 8;
+
+  // 0. PROPERTIES — must run BEFORE leads/listings/residents so those
+  // phases can attribute to a real Property row on the first sync. Was
+  // Phase 4 historically; that meant the very first sync silently lost
+  // attribution for every lead and listing because their `property_id`
+  // pointed at AppFolio rows our DB had never seen. Auto-discovering
+  // first means downstream phases find their Property in the map.
+  try {
+    const rows = await fetchAllPages(client, "property_directory");
+    for (const row of rows) {
+      const mapped = mapPropertyPayload(row);
+      if (!mapped) continue;
+      const existing = await prisma.property.findFirst({
+        where: {
+          orgId,
+          backendPlatform: BackendPlatform.APPFOLIO,
+          backendPropertyId: mapped.externalId,
+        },
+        select: { id: true },
+      });
+      if (existing) {
+        // Property already known. User-edited fields stay sticky; we
+        // still ensure it's in our local map for downstream phases.
+        propertyByExternalId.set(mapped.externalId, existing.id);
+        continue;
+      }
+      const slug = await uniquePropertySlug(orgId, mapped.name ?? mapped.externalId);
+      const created = await prisma.property.create({
+        data: {
+          orgId,
+          name: mapped.name ?? `Property ${mapped.externalId}`,
+          slug,
+          propertyType: "RESIDENTIAL",
+          backendPlatform: BackendPlatform.APPFOLIO,
+          backendPropertyId: mapped.externalId,
+          addressLine1: mapped.addressLine1,
+          addressLine2: mapped.addressLine2,
+          city: mapped.city,
+          state: mapped.state,
+          postalCode: mapped.postalCode,
+          country: mapped.country,
+          totalUnits: mapped.totalUnits,
+          yearBuilt: mapped.yearBuilt,
+        },
+      });
+      propertyByExternalId.set(mapped.externalId, created.id);
+      stats.propertiesUpserted += 1;
+    }
+    phasesCompleted += 1;
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "Unknown error";
+    stats.warnings.push(`properties: ${message}`);
+    topLevelError = topLevelError ?? `properties: ${message}`;
+  }
 
   // 1. LEADS — AppFolio v2 report: guest_cards
   try {
@@ -288,9 +350,12 @@ export async function runAppfolioSync(
       let propertyId: string | null;
       if (rawPropertyId && propertyByExternalId.has(rawPropertyId)) {
         propertyId = propertyByExternalId.get(rawPropertyId) ?? null;
-      } else if (properties.length === 1) {
-        // Single-property tenants: safe to use the only Property.
-        propertyId = fallbackPropertyId;
+      } else if (propertyByExternalId.size === 1) {
+        // Single-property tenants: safe to use the only Property. Read from
+        // the map so we pick up properties auto-discovered by Phase 0
+        // (the captured `properties` array reflects pre-sync state).
+        const onlyId = propertyByExternalId.values().next().value;
+        propertyId = onlyId ?? null;
       } else {
         propertyId = null;
       }
@@ -345,51 +410,9 @@ export async function runAppfolioSync(
     if (l.backendListingId) listingByExternalId.set(l.backendListingId, l.id);
   }
 
-  // 4. PROPERTIES — auto-discover new buildings AppFolio knows about.
-  // Failures in this phase don't break later phases; we still process
-  // residents/leases/work-orders against existing properties.
-  try {
-    const rows = await fetchAllPages(client, "property_directory");
-    for (const row of rows) {
-      const mapped = mapPropertyPayload(row);
-      if (!mapped) continue;
-      const existing = await prisma.property.findFirst({
-        where: {
-          orgId,
-          backendPlatform: BackendPlatform.APPFOLIO,
-          backendPropertyId: mapped.externalId,
-        },
-        select: { id: true },
-      });
-      if (existing) continue; // Property already known; user-edited fields are sticky.
-      const slug = await uniquePropertySlug(orgId, mapped.name ?? mapped.externalId);
-      const created = await prisma.property.create({
-        data: {
-          orgId,
-          name: mapped.name ?? `Property ${mapped.externalId}`,
-          slug,
-          propertyType: "RESIDENTIAL",
-          backendPlatform: BackendPlatform.APPFOLIO,
-          backendPropertyId: mapped.externalId,
-          addressLine1: mapped.addressLine1,
-          addressLine2: mapped.addressLine2,
-          city: mapped.city,
-          state: mapped.state,
-          postalCode: mapped.postalCode,
-          country: mapped.country,
-          totalUnits: mapped.totalUnits,
-          yearBuilt: mapped.yearBuilt,
-        },
-      });
-      propertyByExternalId.set(mapped.externalId, created.id);
-      stats.propertiesUpserted += 1;
-    }
-    phasesCompleted += 1;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    stats.warnings.push(`properties: ${message}`);
-    topLevelError = topLevelError ?? `properties: ${message}`;
-  }
+  // (Properties moved to Phase 0 — see top of function. Removed from the
+  // post-Listings position so leads/listings/residents can attribute to
+  // a real Property row on the first sync.)
 
   // 5. RESIDENTS — full tenant_directory roster as Resident rows.
   // residentByExternalId is built so subsequent phases (leases, work
@@ -405,7 +428,7 @@ export async function runAppfolioSync(
       const propertyId =
         (mapped.propertyExternalId &&
           propertyByExternalId.get(mapped.propertyExternalId)) ||
-        fallbackPropertyId;
+        getFallbackPropertyId();
       if (!propertyId) {
         stats.warnings.push(
           `resident ${mapped.externalId}: no Property mapped`,
@@ -437,7 +460,7 @@ export async function runAppfolioSync(
       const propertyId =
         (mapped.propertyExternalId &&
           propertyByExternalId.get(mapped.propertyExternalId)) ||
-        fallbackPropertyId;
+        getFallbackPropertyId();
       if (!propertyId) {
         stats.warnings.push(`lease ${mapped.externalId}: no Property mapped`);
         continue;
@@ -516,7 +539,7 @@ export async function runAppfolioSync(
       const propertyId =
         (mapped.propertyExternalId &&
           propertyByExternalId.get(mapped.propertyExternalId)) ||
-        fallbackPropertyId;
+        getFallbackPropertyId();
       if (!propertyId) {
         stats.warnings.push(`work-order ${mapped.externalId}: no Property mapped`);
         continue;
