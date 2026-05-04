@@ -32,52 +32,53 @@ export function PropertyDashboardCard({
   reputationNegativeCount = 0,
   reputationUnreviewedCount = 0,
 }: PropertyDashboardCardProps) {
+  const hasFooter = activeCampaigns > 0 || reputationMentionCount > 0;
   return (
     <div
       className={cn(
-        "group relative rounded-md border border-border bg-card overflow-hidden",
-        "transition-all duration-150 hover:border-primary/30 hover:shadow-sm",
+        "group relative rounded-lg border border-border bg-card overflow-hidden h-full flex flex-col",
+        "transition-colors duration-150 hover:border-foreground/20",
       )}
     >
       {/* Primary clickable card body — opens property detail */}
       <Link
         href={`/portal/properties/${id}`}
-        className="flex items-center"
+        className="flex items-center gap-3 px-3 py-2.5 flex-1"
       >
-        <Thumbnail src={thumbnailUrl} fallbackLetter={name.slice(0, 1)} accent={accent} />
-        <div className="flex-1 min-w-0 px-3 py-2.5">
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0 flex-1">
-              <h3 className="font-semibold text-xs text-foreground tracking-tight truncate">
-                {name}
-              </h3>
-              {address ? (
-                <p className="mt-0.5 text-[10px] text-muted-foreground flex items-center gap-0.5 truncate">
-                  <MapPin className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
-                  <span className="truncate">{address}</span>
-                </p>
-              ) : null}
+        <Thumbnail
+          src={thumbnailUrl}
+          fallbackLetter={name.slice(0, 1)}
+          accent={accent}
+        />
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-sm text-foreground tracking-tight truncate">
+            {name}
+          </h3>
+          {address ? (
+            <p className="mt-0.5 text-[11px] text-muted-foreground flex items-center gap-1 truncate">
+              <MapPin className="h-3 w-3 shrink-0 opacity-60" aria-hidden="true" />
+              <span className="truncate">{address}</span>
+            </p>
+          ) : null}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {occupancyPct != null ? <OccupancyBadge pct={occupancyPct} /> : null}
+          <div className="text-right min-w-[40px]">
+            <div className="text-[9px] tracking-widest uppercase font-semibold text-muted-foreground leading-none">
+              Leads
             </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {occupancyPct != null ? <OccupancyBadge pct={occupancyPct} /> : null}
-              <div className="text-right">
-                <div className="text-[9px] tracking-widest uppercase font-semibold text-muted-foreground leading-none">
-                  Leads
-                </div>
-                <div className="text-sm font-semibold tabular-nums text-foreground leading-tight">
-                  {leads28d}
-                </div>
-              </div>
-              <MiniSpark data={leadsSpark} />
+            <div className="mt-0.5 text-sm font-semibold tabular-nums text-foreground leading-none">
+              {leads28d}
             </div>
           </div>
+          {leads28d > 0 ? <MiniSpark data={leadsSpark} /> : null}
         </div>
       </Link>
 
-      {/* Footer strip: ad campaigns + reputation. Each piece is its own
-          link that drills into the right per-property tab — gives the
-          dashboard direct access to per-property sub-pages. */}
-      {(activeCampaigns > 0 || reputationMentionCount > 0) ? (
+      {/* Footer strip: ad campaigns + reputation. Only renders when at
+          least one signal exists — otherwise the card looks balanced
+          against siblings that DO have footers. */}
+      {hasFooter ? (
         <div className="border-t border-border bg-muted/20 px-3 py-1.5 flex items-center gap-2 text-[10px]">
           {activeCampaigns > 0 ? (
             <Link
@@ -128,31 +129,34 @@ function Thumbnail({
 }) {
   if (src) {
     return (
-      <div className="relative h-full w-14 shrink-0 self-stretch overflow-hidden">
+      <div className="relative h-9 w-9 shrink-0 overflow-hidden rounded-md border border-border">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={src}
           alt=""
-          className="h-full w-14 object-cover"
+          className="h-full w-full object-cover"
           loading="lazy"
-        />
-        <span
-          className="absolute inset-y-0 right-0 w-0.5"
-          style={{ backgroundColor: accent ?? "hsl(var(--primary))" }}
-          aria-hidden="true"
         />
       </div>
     );
   }
-  // No hero image: render a single clean monogram. Previously layered a
-  // letter on top of the Building2 icon which read as a broken placeholder.
+  // Compact rounded monogram. Previously a 56px-wide black slab took
+  // the entire card height and dominated the layout — the brutalist
+  // letter blocks were the loudest thing on the dashboard.
   return (
     <div
-      className="relative h-full w-14 shrink-0 grid place-items-center self-stretch"
-      style={{ backgroundColor: accent ?? "#0A0A0A" }}
+      className="relative h-9 w-9 shrink-0 grid place-items-center rounded-md border border-border"
+      style={{
+        backgroundColor: accent
+          ? `${accent}14`
+          : "hsl(var(--muted))",
+      }}
       aria-hidden="true"
     >
-      <span className="text-base font-semibold text-white tracking-tight">
+      <span
+        className="text-sm font-semibold tracking-tight"
+        style={{ color: accent ?? "hsl(var(--foreground))" }}
+      >
         {fallbackLetter.toUpperCase()}
       </span>
     </div>
