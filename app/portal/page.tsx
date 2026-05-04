@@ -392,7 +392,7 @@ export default async function PortalHome({
     integrationChips.find((c) => c.key === "ga4")?.status === "off";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-2">
       {/* Auto-refresh dashboard data every 45s. Cheap — just re-runs the
           server-component Prisma queries against existing data the cron
           jobs and on-demand syncs keep fresh. No integration API calls. */}
@@ -409,7 +409,7 @@ export default async function PortalHome({
       {pastDueLeasesCount > 0 ? (
         <Link
           href="/portal/renewals"
-          className="flex items-center justify-between gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-2.5 hover:bg-rose-100 transition-colors group"
+          className="flex items-center justify-between gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 hover:bg-rose-100 transition-colors group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <AlertTriangle className="h-4 w-4 text-rose-700 shrink-0" />
@@ -436,7 +436,7 @@ export default async function PortalHome({
       {urgentWorkOrdersCount > 0 ? (
         <Link
           href="/portal/work-orders"
-          className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 hover:bg-amber-100 transition-colors group"
+          className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 hover:bg-amber-100 transition-colors group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <Wrench className="h-4 w-4 text-amber-700 shrink-0" />
@@ -463,7 +463,7 @@ export default async function PortalHome({
       {reputationSummary.unreviewedCount > 0 ? (
         <Link
           href="/portal/reputation"
-          className="flex items-center justify-between gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-2.5 hover:bg-amber-100 transition-colors group"
+          className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 hover:bg-amber-100 transition-colors group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
             <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0" />
@@ -501,7 +501,7 @@ export default async function PortalHome({
         title="Quick access"
         description="Jump straight to any module from the dashboard"
       >
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5">
           <QuickAccessTile
             href="/portal/leads"
             label="Leads"
@@ -623,8 +623,8 @@ export default async function PortalHome({
 
       {/* Insights strip — opens the day with what changed, if anything */}
       {insightCounts.total > 0 ? (
-        <section className="rounded-xl border border-border bg-card p-4">
-          <div className="flex items-center justify-between gap-3 mb-3">
+        <section className="rounded-lg border border-border bg-card p-3">
+          <div className="flex items-center justify-between gap-2 mb-2">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 text-xs uppercase tracking-widest font-semibold text-muted-foreground">
                 <Sparkles className="h-3 w-3 text-primary" />
@@ -645,7 +645,7 @@ export default async function PortalHome({
               See all
             </Link>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
             {(openInsights as InsightCardData[]).map((insight) => (
               <InsightCard
                 key={insight.id}
@@ -664,7 +664,7 @@ export default async function PortalHome({
           readable at this width and values don't overflow. */}
       <section
         aria-label="Key metrics"
-        className="grid grid-cols-2 md:grid-cols-4 gap-3"
+        className="grid grid-cols-2 md:grid-cols-4 gap-2"
       >
             <KpiTile
               label="Total leads"
@@ -869,7 +869,7 @@ export default async function PortalHome({
           </DashboardSection>
 
           {/* Recent identified visitors + reputation pulse */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-2">
             <DashboardSection
               eyebrow="Pixel resolved"
               title="Recently identified visitors"
@@ -934,7 +934,7 @@ export default async function PortalHome({
             openWorkOrdersCount > 0) ? (
             <section
               aria-label="AppFolio mirror"
-              className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3"
+              className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2"
             >
               <KpiTile
                 label="Monthly rent roll"
@@ -994,7 +994,7 @@ export default async function PortalHome({
               campaigns. Sized between KPIs and property cards so it visually
               ties them together. */}
           {portfolioTotalUnits > 0 ? (
-            <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
               <KpiTile
                 label="Portfolio occupancy"
                 value={
@@ -1041,7 +1041,7 @@ export default async function PortalHome({
           ) : null}
 
           {/* Properties + activity feed */}
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+          <section className="grid grid-cols-1 lg:grid-cols-3 gap-2">
             <DashboardSection
               title="Properties"
               eyebrow="Portfolio"
