@@ -54,10 +54,12 @@ export async function GET(req: NextRequest) {
       moduleChatbot: true,
       primaryColor: true,
       logoUrl: true,
+      // Pull all properties so we can scope to the one whose slug matches
+      // the embed slug. Falls back to the most-recently-updated property's
+      // name (legacy behavior) when no slug match is found.
       properties: {
         orderBy: { updatedAt: "desc" },
-        take: 1,
-        select: { name: true },
+        select: { name: true, slug: true },
       },
       tenantSiteConfig: {
         select: {
@@ -94,12 +96,26 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  // Multi-property orgs (e.g. SG Real Estate has Telegraph Commons +
+  // Yosemite Avenue Apartments) need the embed scoped to a single property.
+  // Match by property slug = embed slug. If nothing matches, fall back to
+  // the org's shortName or name (single-property orgs typically don't have
+  // a property whose slug equals the org slug, so this preserves their
+  // legacy behavior).
+  const matchedProperty = org.properties.find((p) => p.slug === slug);
+  const brandName =
+    matchedProperty?.name ??
+    org.shortName ??
+    org.name ??
+    org.properties[0]?.name ??
+    "Leasing";
+
   return NextResponse.json(
     {
       enabled: true,
       orgId: org.id,
       slug,
-      brandName: org.properties[0]?.name ?? org.shortName ?? org.name,
+      brandName,
       personaName: cfg.chatbotPersonaName ?? "Leasing",
       greeting:
         cfg.chatbotGreeting ??

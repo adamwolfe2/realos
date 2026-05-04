@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
         orderBy: { updatedAt: "desc" },
         select: {
           id: true,
+          slug: true,
           listings: {
             where: { isAvailable: true },
             select: {
@@ -79,12 +80,28 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const listings = org.properties.flatMap((p) => p.listings);
+  // Scope to a single property when the embed slug matches a property slug
+  // (multi-property org case). Without scoping, a tenant org with stale or
+  // imported listings under sibling properties would pollute the greeting
+  // (e.g. a $2/mo test record dragging lowestRent to garbage). When no slug
+  // matches, fall back to all properties (single-property org case).
+  const matchedProperty = org.properties.find((p) => p.slug === slug);
+  const scopedProperties = matchedProperty
+    ? [matchedProperty]
+    : org.properties;
+  const listings = scopedProperties.flatMap((p) => p.listings);
   const openCount = listings.length;
 
+  // Defensive floor on rent: anything below $200/mo is almost certainly a
+  // junk record (test data, imported placeholder, missing decimal). We'd
+  // rather suppress the greeting than show "$2/mo".
+  const MIN_PLAUSIBLE_RENT_CENTS = 20_000;
   const rents = listings
     .map((l) => l.priceCents)
-    .filter((c): c is number => typeof c === "number" && c > 0);
+    .filter(
+      (c): c is number =>
+        typeof c === "number" && c >= MIN_PLAUSIBLE_RENT_CENTS
+    );
   const lowestCents = rents.length ? Math.min(...rents) : null;
   const lowestRent = lowestCents
     ? Math.round(lowestCents / 100)

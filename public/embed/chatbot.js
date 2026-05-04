@@ -510,6 +510,10 @@
       })
       .then(function (acc) {
         assistantEl.classList.remove("rec-streaming");
+        // Streaming used textContent on each chunk so partial markdown
+        // doesn't render half-parsed; once the message is final, swap to
+        // markdown HTML so **bold**, line breaks, and links render.
+        if (acc) assistantEl.innerHTML = renderMarkdown(acc);
         state.history.push({ role: "assistant", content: acc });
         // 800ms after the first assistant reply completes, consider the
         // inline lead capture card. Skipped if leadCaptured or OFF mode.
@@ -537,10 +541,40 @@
     var el = document.createElement("div");
     el.className = "rec-msg rec-msg-" + role;
     if (opts.streaming) el.classList.add("rec-streaming");
-    el.textContent = content;
+    // User messages stay as plain text (no markdown surface area).
+    // Assistant messages render a tiny safe markdown subset so that **bold**,
+    // *italic*, line breaks, and bullets don't show as raw asterisks.
+    if (role === "assistant") {
+      el.innerHTML = renderMarkdown(content);
+    } else {
+      el.textContent = content;
+    }
     elements.messages.appendChild(el);
     elements.messages.scrollTop = elements.messages.scrollHeight;
     return el;
+  }
+
+  // Minimal markdown renderer. Escapes HTML first, then converts:
+  //   **bold** *italic* `code` [text](url) plus newlines and "- " bullets.
+  // This avoids pulling in a parser library and keeps the embed at zero deps.
+  function renderMarkdown(raw) {
+    if (raw == null) return "";
+    var s = escapeHtml(String(raw));
+    // Code spans first so we don't double-process their contents.
+    s = s.replace(/`([^`]+)`/g, "<code>$1</code>");
+    // Bold before italic (** before *), otherwise "*" inside "**" gets eaten.
+    s = s.replace(/\*\*([^*\n]+)\*\*/g, "<strong>$1</strong>");
+    s = s.replace(/(^|[^*])\*([^*\n]+)\*/g, "$1<em>$2</em>");
+    // Markdown links — only allow http(s) and mailto for safety.
+    s = s.replace(
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+|mailto:[^\s)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noreferrer noopener">$1</a>'
+    );
+    // Bullet lines: "- foo" → "• foo"
+    s = s.replace(/(^|\n)\s*[-*]\s+/g, "$1• ");
+    // Newlines → <br>
+    s = s.replace(/\n/g, "<br>");
+    return s;
   }
 
   // --- Analytics -----------------------------------------------------------
@@ -598,7 +632,14 @@
       '<div class="rec-avatar-wrap">' + avatarMarkup +
       '<span class="rec-online-dot" aria-hidden="true"></span></div>';
 
-    var ctaLabel = escapeHtml(cfg.primaryCtaText || "Availability");
+    // The first action button is always "Schedule a Tour", so if the tenant
+    // (mistakenly) configured primaryCtaText to also say "Schedule a Tour",
+    // collapse the second button to a generic "Availability" so we don't
+    // render two buttons with the identical label.
+    var rawCtaLabel = (cfg.primaryCtaText || "Availability").trim();
+    var ctaLabel = escapeHtml(
+      /tour|schedule/i.test(rawCtaLabel) ? "Availability" : rawCtaLabel
+    );
     var hasAvailability = !!cfg.primaryCtaUrl;
     var hasContact = !!(cfg.phoneNumber || cfg.contactEmail);
 
@@ -696,7 +737,12 @@
       ".rec-online-dot { position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px; border-radius: 999px; background: #34d399; border: 2px solid #fff; }" +
       ".rec-panel { position: absolute; right: 0; bottom: 72px; width: 400px; max-width: calc(100vw - 32px); height: 640px; max-height: calc(100vh - 100px); background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; box-shadow: 0 16px 48px rgba(0,0,0,0.24); display: none; flex-direction: column; overflow: hidden; }" +
       ".rec-root.rec-open .rec-panel { display: flex; }" +
-      ".rec-header { display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px; background: linear-gradient(135deg, var(--rec-color), #1a1a2e); color: #fff; }" +
+      // Subtle in-palette gradient — previously this faded to a hard-coded
+      // navy `#1a1a2e` which produced a muddy dark hue on the right side
+      // for warm brand colors (gold/yellow/orange). Now it darkens the
+      // brand color itself by ~22%, so the header stays on-brand for any
+      // tenant. `color-mix` is supported in all modern browsers we target.
+      ".rec-header { display: flex; align-items: center; gap: 10px; padding: 14px 14px 12px; background: linear-gradient(135deg, var(--rec-color), color-mix(in srgb, var(--rec-color) 78%, #000)); color: #fff; }" +
       ".rec-titles { flex: 1; min-width: 0; }" +
       ".rec-title { font-weight: 600; font-size: 14px; }" +
       ".rec-title-brand { font-weight: 400; opacity: 0.85; }" +
