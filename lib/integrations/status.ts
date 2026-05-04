@@ -73,7 +73,13 @@ export async function resolveIntegrationStatuses(
       .catch(() => null),
     prisma.seoIntegration
       .findMany({
-        where: { orgId },
+        // Demo-seeded SEO rows store the literal string "DEMO_SEED"
+        // for the encrypted JSON. Filter them out so the marketplace
+        // tile reflects "Available" instead of falsely "Connected".
+        where: {
+          orgId,
+          serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
+        },
         select: { provider: true, lastSyncAt: true },
       })
       .catch(() => []),

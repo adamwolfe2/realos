@@ -31,18 +31,20 @@ export function DashboardSection({
         className,
       )}
     >
-      <header className="flex items-start justify-between gap-3 px-5 pt-5">
+      <header className="flex items-start justify-between gap-3 px-4 pt-3">
         <div className="min-w-0">
           {eyebrow ? (
-            <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-1">
+            <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-0.5">
               {eyebrow}
             </div>
           ) : null}
-          <h2 className="text-base font-semibold tracking-tight text-foreground">
+          <h2 className="text-sm font-semibold tracking-tight text-foreground">
             {title}
           </h2>
           {description ? (
-            <p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
+            <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
+              {description}
+            </p>
           ) : null}
         </div>
         <div className="shrink-0 flex items-center gap-2">
@@ -50,7 +52,7 @@ export function DashboardSection({
           {href ? (
             <Link
               href={href}
-              className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"
             >
               {hrefLabel}
               <ArrowRight className="h-3 w-3" aria-hidden="true" />
@@ -58,7 +60,7 @@ export function DashboardSection({
           ) : null}
         </div>
       </header>
-      <div className={cn("p-5 pt-4 flex-1", contentClassName)}>{children}</div>
+      <div className={cn("px-4 pb-3 pt-3 flex-1", contentClassName)}>{children}</div>
     </section>
   );
 }

@@ -78,18 +78,23 @@ export async function getAdSpendKpi(orgId: string) {
   const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
   const since56d = new Date(Date.now() - 2 * WINDOW_DAYS * DAY_MS);
 
+  // Filter by adAccount.credentialsEncrypted so seeded fake metrics
+  // (Telegraph Commons demo data) don't leak into the dashboard KPI
+  // when the tenant hasn't actually connected an ad account.
+  const realAccount = { adAccount: { credentialsEncrypted: { not: null } } };
+
   const [current, previous, dailyRows] = await Promise.all([
     prisma.adMetricDaily.aggregate({
-      where: { orgId, date: { gte: since28d } },
+      where: { orgId, date: { gte: since28d }, ...realAccount },
       _sum: { spendCents: true },
     }),
     prisma.adMetricDaily.aggregate({
-      where: { orgId, date: { gte: since56d, lt: since28d } },
+      where: { orgId, date: { gte: since56d, lt: since28d }, ...realAccount },
       _sum: { spendCents: true },
     }),
     prisma.adMetricDaily.groupBy({
       by: ["date"],
-      where: { orgId, date: { gte: since28d } },
+      where: { orgId, date: { gte: since28d }, ...realAccount },
       _sum: { spendCents: true },
       orderBy: { date: "asc" },
     }),
@@ -121,6 +126,26 @@ export async function getAdSpendKpi(orgId: string) {
 export async function getOrganicSessionsKpi(orgId: string) {
   const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
   const since56d = new Date(Date.now() - 2 * WINDOW_DAYS * DAY_MS);
+
+  // Gate on a real SEO integration. Seeded demo rows use the literal
+  // string "DEMO_SEED" for the encrypted JSON; if the org's only
+  // SeoIntegration is a demo row, treat snapshots as 0 so the KPI tile
+  // doesn't broadcast fake organic traffic numbers.
+  const realSeo = await prisma.seoIntegration.findFirst({
+    where: {
+      orgId,
+      serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
+    },
+    select: { id: true },
+  });
+  if (!realSeo) {
+    return {
+      sessions: 0,
+      previousSessions: 0,
+      deltaPct: 0,
+      sparkline: bucketDailyTotals([], WINDOW_DAYS),
+    };
+  }
 
   const [snapshots, prevSnapshots] = await Promise.all([
     prisma.seoSnapshot.findMany({
@@ -533,12 +558,17 @@ export async function getIntegrationHealth(orgId: string): Promise<IntegrationCh
   const recentEventCutoff = new Date(Date.now() - 7 * DAY_MS);
 
   const [seo, ads, appfolio, cursive, recentPixelEvent] = await Promise.all([
+    // Filter out demo-seeded SEO integrations and ad accounts so the
+    // dashboard health row only reports on real, credentialed connections.
     prisma.seoIntegration.findMany({
-      where: { orgId },
+      where: {
+        orgId,
+        serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
+      },
       select: { provider: true, status: true, lastSyncAt: true },
     }),
     prisma.adAccount.findMany({
-      where: { orgId },
+      where: { orgId, credentialsEncrypted: { not: null } },
       select: { platform: true, accessStatus: true, lastSyncAt: true },
     }),
     prisma.appFolioIntegration.findUnique({
@@ -692,7 +722,11 @@ export async function getFirstRunProgress(orgId: string): Promise<FirstRunProgre
       select: { cursivePixelId: true, lastEventAt: true },
     }),
     prisma.seoIntegration.findFirst({
-      where: { orgId, provider: SeoProvider.GSC },
+      where: {
+        orgId,
+        provider: SeoProvider.GSC,
+        serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
+      },
       select: { id: true, status: true },
     }),
     prisma.tenantSiteConfig.findUnique({

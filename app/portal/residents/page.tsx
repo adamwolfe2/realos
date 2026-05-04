@@ -16,6 +16,7 @@ import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { ResidentStatus } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Residents" };
@@ -37,12 +38,12 @@ const STATUS_LABEL: Record<ResidentStatus, string> = {
   APPLICANT: "Applicant",
 };
 
-const STATUS_TONE: Record<ResidentStatus, string> = {
-  ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  NOTICE_GIVEN: "bg-amber-50 text-amber-800 border-amber-200",
-  EVICTED: "bg-rose-50 text-rose-700 border-rose-200",
-  PAST: "bg-muted text-muted-foreground border-border",
-  APPLICANT: "bg-blue-50 text-blue-800 border-blue-200",
+const STATUS_TONE: Record<ResidentStatus, StatusTone> = {
+  ACTIVE: "success",
+  NOTICE_GIVEN: "warning",
+  EVICTED: "danger",
+  PAST: "neutral",
+  APPLICANT: "active",
 };
 
 function fmtMoney(cents: number | null | undefined): string {
@@ -368,11 +369,10 @@ export default async function ResidentsPage({
                         {r.unitNumber ?? r.listing?.unitNumber ?? "—"}
                       </td>
                       <td className="px-2 py-2">
-                        <span
-                          className={`inline-flex items-center rounded-full border px-1.5 py-0.5 text-[10px] font-semibold ${STATUS_TONE[r.status]}`}
-                        >
-                          {STATUS_LABEL[r.status]}
-                        </span>
+                        <StatusPill
+                          label={STATUS_LABEL[r.status]}
+                          tone={STATUS_TONE[r.status]}
+                        />
                         {r.currentLease?.isPastDue ? (
                           <span className="ml-1 inline-flex items-center text-[10px] text-rose-700 font-semibold">
                             past-due {fmtMoney(r.currentLease.currentBalanceCents)}

@@ -288,7 +288,7 @@ export default async function VisitorsPage({
   const selection = { window: windowKey, status: statusKey, sort: sortKey, page };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <AutoRefresh intervalMs={15000} />
       <PageHeader
         title="Visitor feed"
@@ -314,8 +314,10 @@ export default async function VisitorsPage({
         }
       />
 
-      {/* Filter controls */}
-      <div className="flex flex-col gap-3 rounded-lg border border-border bg-card p-4">
+      {/* Filter controls — single inline row. Window / Status / Sort sit
+          side-by-side instead of stacking, with each group flowing to the
+          next line only when the viewport actually runs out of width. */}
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-border bg-card px-3 py-2">
         <TabGroup
           legend="Window"
           items={WINDOWS.map((w) => ({
@@ -427,20 +429,23 @@ function PixelStalenessBanner({
     ? "border-rose-200 bg-rose-50 text-rose-900"
     : "border-amber-200 bg-amber-50 text-amber-900";
   const headline = dormant
-    ? "No pixel events in the last 7 days."
-    : "No pixel events in the last 24 hours.";
+    ? "Pixel hasn't fired in 7+ days — feed isn't live."
+    : "Pixel hasn't fired in 24+ hours — feed isn't live.";
   return (
     <div
       role="status"
-      className={`rounded-lg border px-4 py-3 flex items-start justify-between gap-3 flex-wrap ${tone}`}
+      className={`rounded-lg border px-3 py-2 flex items-start justify-between gap-3 flex-wrap ${tone}`}
     >
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold leading-tight">{headline}</p>
-        <p className="text-xs mt-1 leading-snug opacity-90">
-          Last event {ageLabel}
-          {domain ? ` from ${domain}` : ""}. Verify the snippet is still on
-          your property site and that ad blockers / CSP rules aren&apos;t
-          stripping it. The feed below shows historical visitors only.
+        <p className="text-xs font-semibold leading-tight">{headline}</p>
+        <p className="text-[11px] mt-0.5 leading-snug opacity-90">
+          Real-time sync IS running (this page polls every 15s) — but the
+          pixel snippet on{" "}
+          <span className="font-semibold">{domain ?? "your property site"}</span>{" "}
+          stopped sending events {ageLabel}. Check the snippet is still in
+          the &lt;head&gt;, ad blockers / CSP rules aren&apos;t stripping it,
+          and the domain matches. Until events resume, the feed below shows
+          historical visitors only.
         </p>
       </div>
       <Link
@@ -560,21 +565,21 @@ function TabGroup({
   items: Array<{ key: string; label: string; active: boolean; href: string }>;
 }) {
   return (
-    <div className="flex items-center gap-3 flex-wrap">
-      <span className="text-[10px] tracking-widest uppercase text-muted-foreground w-14 shrink-0">
+    <div className="flex items-center gap-2 min-w-0">
+      <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground shrink-0">
         {legend}
       </span>
-      <div className="flex gap-1 flex-wrap">
+      <div className="inline-flex items-center rounded-md border border-border bg-background p-0.5">
         {items.map((item) => (
           <Link
             key={item.key}
             href={item.href || "?"}
             scroll={false}
             className={cn(
-              "text-xs px-3 py-1.5 rounded-md border transition-colors",
+              "text-[11px] px-2 py-1 rounded transition-colors whitespace-nowrap",
               item.active
-                ? "bg-primary text-primary-foreground hover:bg-primary-dark transition-colors border-primary"
-                : "bg-transparent border-border hover:bg-muted"
+                ? "bg-foreground text-background"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
             {item.label}

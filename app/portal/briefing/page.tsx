@@ -116,7 +116,7 @@ export default async function BriefingPage({
   const greeting = "Daily briefing";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-3">
       <header className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
@@ -129,10 +129,10 @@ export default async function BriefingPage({
               </>
             ) : null}
           </div>
-          <h1 className="mt-1 text-[28px] leading-tight font-semibold tracking-tight text-foreground">
+          <h1 className="mt-0.5 text-xl leading-tight font-semibold tracking-tight text-foreground">
             {greeting}
           </h1>
-          <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
+          <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl leading-snug">
             Everything that moved since you last looked. Triage the call sheet,
             read the transcripts, and act on the insights before your next client touch.
           </p>
@@ -155,7 +155,7 @@ export default async function BriefingPage({
         <AgingAlertBanner fresh={aging.fresh} aging={aging.aging} stale={aging.stale} />
       )}
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <DashboardSection
           eyebrow="Priority calls"
           title="Call sheet"
@@ -167,7 +167,7 @@ export default async function BriefingPage({
           <CallSheet leads={callLeads} />
         </DashboardSection>
 
-        <div className="space-y-4">
+        <div className="space-y-3">
           <DashboardSection
             eyebrow="Momentum"
             title="Last 7 days"
@@ -202,7 +202,7 @@ export default async function BriefingPage({
         </div>
       </section>
 
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <DashboardSection
           eyebrow="Worth reading"
           title={

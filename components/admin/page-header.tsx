@@ -19,19 +19,19 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "flex flex-col md:flex-row md:items-start md:justify-between gap-4",
+        "flex flex-col md:flex-row md:items-start md:justify-between gap-3",
         className,
       )}
     >
       <div className="min-w-0">
         {eyebrow ? (
-          <div className="text-xs text-muted-foreground mb-1.5">{eyebrow}</div>
+          <div className="text-[11px] text-muted-foreground mb-1">{eyebrow}</div>
         ) : null}
-        <h1 className="text-[22px] md:text-2xl font-semibold tracking-tight text-foreground">
+        <h1 className="text-lg md:text-xl font-semibold tracking-tight text-foreground">
           {title}
         </h1>
         {description ? (
-          <p className="text-sm text-muted-foreground mt-1.5 max-w-2xl">
+          <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl leading-snug">
             {description}
           </p>
         ) : null}
@@ -64,15 +64,15 @@ export function SectionCard({
     <section
       className={cn(
         "rounded-lg border border-border bg-card",
-        padded ? "p-5" : "",
+        padded ? "p-3" : "",
         className,
       )}
     >
-      <div className="flex items-baseline justify-between gap-3 mb-3">
+      <div className="flex items-baseline justify-between gap-3 mb-2">
         <div className="min-w-0">
           <h2 className="text-sm font-semibold text-foreground">{label}</h2>
           {description ? (
-            <p className="text-xs text-muted-foreground mt-0.5">
+            <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
               {description}
             </p>
           ) : null}

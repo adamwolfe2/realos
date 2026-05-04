@@ -50,7 +50,7 @@ export function TrendChart({
   if (computedTotal === 0 || dates.length === 0) {
     return (
       <Card title={title} description={description}>
-        <div className="h-48 flex items-center justify-center text-xs text-muted-foreground text-center px-6">
+        <div className="h-32 flex items-center justify-center text-xs text-muted-foreground text-center px-6">
           {emptyMessage}
         </div>
       </Card>
@@ -94,7 +94,7 @@ export function TrendChart({
           preserveAspectRatio="none"
           role="img"
           aria-label={title}
-          className="h-56 min-w-[400px]"
+          className="h-36 min-w-[300px]"
         >
           {/* Horizontal gridlines at 25/50/75/100% of max */}
           {[0.25, 0.5, 0.75, 1].map((p) => {
@@ -166,7 +166,7 @@ export function TrendChart({
 
       {/* Legend */}
       {series.length > 0 ? (
-        <ul className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs">
+        <ul className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
           {series.map((s, i) => (
             <li
               key={s.label}
@@ -174,7 +174,7 @@ export function TrendChart({
             >
               <span
                 aria-hidden="true"
-                className="inline-block h-2.5 w-2.5 rounded-full"
+                className="inline-block h-2 w-2 rounded-full"
                 style={{
                   backgroundColor: SERIES_COLORS[i % SERIES_COLORS.length],
                 }}
@@ -222,13 +222,13 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold tracking-tight text-foreground">
+    <section className="rounded-lg border border-border bg-card p-3">
+      <div className="mb-2">
+        <h3 className="text-xs font-semibold tracking-tight text-foreground">
           {title}
         </h3>
         {description ? (
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
             {description}
           </p>
         ) : null}

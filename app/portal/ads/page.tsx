@@ -31,9 +31,19 @@ export default async function AdsPage() {
 
   const since28d = currentStart;
 
+  // HARD RULE: only show ad data that came from a real, credentialed
+  // integration. Seeded fake accounts (Telegraph Commons / UC Berkeley /
+  // 1234567890) live in the same tables but have credentialsEncrypted=NULL.
+  // Filtering at the query layer means the UI can't accidentally show
+  // fake data even if a row gets in via a script or migration.
+  const realAccountWhere = {
+    ...tenantWhere(scope),
+    credentialsEncrypted: { not: null },
+  };
+
   const [accounts, campaigns, currentMetrics, priorMetrics, leadsBySource, appsByLeadSource, signedBySource] = await Promise.all([
     prisma.adAccount.findMany({
-      where: tenantWhere(scope),
+      where: realAccountWhere,
       orderBy: [{ platform: "asc" }, { createdAt: "asc" }],
       select: {
         id: true,
@@ -47,7 +57,10 @@ export default async function AdsPage() {
       },
     }),
     prisma.adCampaign.findMany({
-      where: tenantWhere(scope),
+      where: {
+        ...tenantWhere(scope),
+        adAccount: { credentialsEncrypted: { not: null } },
+      },
       orderBy: { spendToDateCents: "desc" },
       select: {
         id: true,
@@ -67,6 +80,7 @@ export default async function AdsPage() {
       where: {
         ...tenantWhere(scope),
         date: { gte: currentStart },
+        adAccount: { credentialsEncrypted: { not: null } },
       },
       orderBy: { date: "asc" },
       select: {
@@ -82,6 +96,7 @@ export default async function AdsPage() {
       where: {
         ...tenantWhere(scope),
         date: { gte: priorStart, lt: priorEnd },
+        adAccount: { credentialsEncrypted: { not: null } },
       },
       select: {
         adAccountId: true,

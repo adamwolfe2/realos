@@ -59,8 +59,11 @@ export function MetricStrip({
     },
   ];
 
+  // 2-column grid — stacks the six metrics into 3 rows of 2 instead of
+  // 6 rows of 1, halving the vertical footprint while keeping each row
+  // easy to scan.
   return (
-    <div className="divide-y divide-border">
+    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
       {rows.map((r) => (
         <MetricRow key={r.label} metric={r} />
       ))}
@@ -80,21 +83,21 @@ function MetricRow({ metric }: { metric: Metric }) {
           : Minus;
 
   return (
-    <div className="flex items-baseline justify-between gap-3 py-2 first:pt-0 last:pb-0">
-      <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+    <div className="flex items-baseline justify-between gap-2 min-w-0">
+      <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground truncate">
         {metric.label}
       </div>
-      <div className="flex items-center gap-2">
-        <span className="text-sm font-semibold tabular-nums text-foreground">
+      <div className="flex items-center gap-1.5 shrink-0">
+        <span className="text-xs font-semibold tabular-nums text-foreground">
           {metric.value}
         </span>
         <span
           className={cn(
-            "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums",
+            "inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-semibold tabular-nums",
             deltaTone,
           )}
         >
-          <Icon className="h-3 w-3" />
+          <Icon className="h-2.5 w-2.5" />
           {metric.deltaPct === null
             ? "new"
             : `${metric.deltaPct >= 0 ? "+" : ""}${metric.deltaPct}%`}

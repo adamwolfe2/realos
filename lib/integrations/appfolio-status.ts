@@ -62,6 +62,13 @@ export type AppFolioSyncStatsSummary = {
 };
 
 export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> {
+  // Resilient query: if a column is missing in production (schema drift
+  // from dev `prisma db push` history), fall back to a reduced column set
+  // so the page still renders an honest "syncing" / "synced" status
+  // instead of silently masquerading as "not_connected" — the previous
+  // `.catch(() => null)` swallowed the real Postgres error and confused
+  // operators for days. Logs the actual error so we know which column
+  // is missing.
   const integ = await prisma.appFolioIntegration
     .findUnique({
       where: { orgId },
@@ -78,7 +85,36 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
         lastSyncStats: true,
       },
     })
-    .catch(() => null);
+    .catch(async (err) => {
+      console.warn(
+        "[appfolio-status] full select failed, falling back to minimal columns:",
+        err instanceof Error ? err.message : err,
+      );
+      return prisma.appFolioIntegration
+        .findUnique({
+          where: { orgId },
+          select: {
+            instanceSubdomain: true,
+            clientIdEncrypted: true,
+            apiKeyEncrypted: true,
+            useEmbedFallback: true,
+            lastSyncAt: true,
+          },
+        })
+        .then((row) =>
+          row
+            ? {
+                ...row,
+                clientSecretEncrypted: null,
+                syncStatus: null,
+                syncStartedAt: null,
+                lastError: null,
+                lastSyncStats: null,
+              }
+            : null,
+        )
+        .catch(() => null);
+    });
 
   // Coerce the JSONB column into a typed shape the UI can rely on.
   const stats = parseStats(integ?.lastSyncStats);

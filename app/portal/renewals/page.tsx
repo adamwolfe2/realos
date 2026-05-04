@@ -15,6 +15,7 @@ import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { LeaseStatus } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Renewals" };
@@ -34,11 +35,14 @@ function fmtMoney(cents: number | null | undefined): string {
   return `$${(cents / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
+// All buckets share the neutral card surface. Urgency is conveyed by the
+// dot color on the bucket's StatusPill header, not by full-card tinting —
+// keeps the page from looking like a traffic light.
 const BUCKETS = [
-  { label: "0–30 days", min: 0, max: 30, tone: "border-rose-200 bg-rose-50" },
-  { label: "31–60 days", min: 31, max: 60, tone: "border-amber-200 bg-amber-50" },
-  { label: "61–90 days", min: 61, max: 90, tone: "border-blue-200 bg-blue-50" },
-  { label: "91–120 days", min: 91, max: 120, tone: "border-slate-200 bg-card" },
+  { label: "0–30 days", min: 0, max: 30, tone: "danger" as const },
+  { label: "31–60 days", min: 31, max: 60, tone: "warning" as const },
+  { label: "61–90 days", min: 61, max: 90, tone: "active" as const },
+  { label: "91–120 days", min: 91, max: 120, tone: "neutral" as const },
 ] as const;
 
 export default async function RenewalsPage() {
@@ -109,7 +113,7 @@ export default async function RenewalsPage() {
   type LeaseRow = (typeof upcoming)[number];
   const buckets: Array<{
     label: string;
-    tone: string;
+    tone: StatusTone;
     items: LeaseRow[];
   }> = BUCKETS.map((b) => ({ label: b.label, tone: b.tone, items: [] }));
   for (const l of upcoming) {
@@ -196,12 +200,10 @@ export default async function RenewalsPage() {
               {buckets.map((b) => (
                 <div
                   key={b.label}
-                  className={`rounded-lg border ${b.tone} p-2.5`}
+                  className="rounded-lg border border-border bg-card p-2.5"
                 >
                   <div className="flex items-center justify-between gap-2 mb-2 px-1">
-                    <span className="text-[10px] tracking-widest uppercase font-semibold text-foreground">
-                      {b.label}
-                    </span>
+                    <StatusPill label={b.label} tone={b.tone} />
                     <span className="text-xs font-semibold tabular-nums text-foreground">
                       {b.items.length}
                     </span>

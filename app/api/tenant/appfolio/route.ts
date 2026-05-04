@@ -21,9 +21,59 @@ const patch = z.object({
 export async function GET() {
   try {
     const scope = await requireScope();
-    const integration = await prisma.appFolioIntegration.findUnique({
-      where: { orgId: scope.orgId },
-    });
+    // findUnique() WITHOUT a select fetches every column — including any
+    // that may not yet exist in the production DB. Wrap in try/catch and
+    // fall back to a minimal column set so the poller doesn't 500 just
+    // because schema drift is in flight. The 20260504_appfolio_sync_columns
+    // migration brings every prod DB up to spec, but we still want this
+    // route to work during the deploy window.
+    let integration: Awaited<
+      ReturnType<typeof prisma.appFolioIntegration.findUnique>
+    > | null = null;
+    try {
+      integration = await prisma.appFolioIntegration.findUnique({
+        where: { orgId: scope.orgId },
+      });
+    } catch (err) {
+      console.warn(
+        "[appfolio GET] full row read failed, falling back:",
+        err instanceof Error ? err.message : err,
+      );
+      const minimal = await prisma.appFolioIntegration
+        .findUnique({
+          where: { orgId: scope.orgId },
+          select: {
+            id: true,
+            instanceSubdomain: true,
+            propertyGroupFilter: true,
+            useEmbedFallback: true,
+            autoSyncEnabled: true,
+            syncFrequencyMinutes: true,
+            apiKeyEncrypted: true,
+            lastSyncAt: true,
+          },
+        })
+        .catch(() => null);
+      if (minimal) {
+        integration = {
+          ...minimal,
+          clientIdEncrypted: null,
+          clientSecretEncrypted: null,
+          oauthTokenEncrypted: null,
+          oauthRefreshEncrypted: null,
+          oauthExpiresAt: null,
+          plan: null,
+          embedScriptConfig: null,
+          syncStartedAt: null,
+          syncStatus: null,
+          lastError: null,
+          lastSyncStats: null,
+          createdAt: new Date(0),
+          updatedAt: new Date(0),
+          orgId: scope.orgId,
+        } as typeof integration;
+      }
+    }
     if (!integration) return NextResponse.json({ integration: null });
 
     // Stuck-sync detection. If the row says "syncing" but syncStartedAt

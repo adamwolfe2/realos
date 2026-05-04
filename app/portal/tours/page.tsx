@@ -7,6 +7,7 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { TourStatus } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Tours" };
@@ -32,12 +33,12 @@ const STATUS_LABEL: Record<TourStatus, string> = {
   CANCELLED: "Cancelled",
 };
 
-const STATUS_TONE: Record<TourStatus, string> = {
-  REQUESTED: "bg-amber-50 text-amber-800 border-amber-200",
-  SCHEDULED: "bg-blue-50 text-blue-800 border-blue-200",
-  COMPLETED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  NO_SHOW: "bg-rose-50 text-rose-700 border-rose-200",
-  CANCELLED: "bg-muted text-muted-foreground border-border",
+const STATUS_TONE: Record<TourStatus, StatusTone> = {
+  REQUESTED: "info",
+  SCHEDULED: "active",
+  COMPLETED: "success",
+  NO_SHOW: "danger",
+  CANCELLED: "neutral",
 };
 
 export default async function ToursPage() {
@@ -264,11 +265,10 @@ export default async function ToursPage() {
                                     ? format(t.scheduledAt, "h:mma").toLowerCase()
                                     : "—"}
                                 </span>
-                                <span
-                                  className={`text-[9px] font-semibold uppercase tracking-wider px-1 rounded ${STATUS_TONE[t.status]}`}
-                                >
-                                  {STATUS_LABEL[t.status]}
-                                </span>
+                                <StatusPill
+                                  label={STATUS_LABEL[t.status]}
+                                  tone={STATUS_TONE[t.status]}
+                                />
                               </div>
                               <p className="text-[11px] font-medium text-foreground truncate mt-0.5">
                                 {[t.lead.firstName, t.lead.lastName]
@@ -316,11 +316,10 @@ export default async function ToursPage() {
                   className="rounded-lg border border-border bg-muted/30 p-2.5"
                 >
                   <div className="flex items-center justify-between gap-2 mb-2 px-1">
-                    <span
-                      className={`text-[10px] tracking-widest uppercase font-semibold rounded px-1.5 py-0.5 border ${STATUS_TONE[status]}`}
-                    >
-                      {STATUS_LABEL[status]}
-                    </span>
+                    <StatusPill
+                      label={STATUS_LABEL[status]}
+                      tone={STATUS_TONE[status]}
+                    />
                     <span className="text-xs font-semibold tabular-nums text-muted-foreground">
                       {items.length}
                     </span>

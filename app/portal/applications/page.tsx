@@ -7,6 +7,7 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { ApplicationStatus } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Applications" };
@@ -31,13 +32,13 @@ const STATUS_LABEL: Record<ApplicationStatus, string> = {
   WITHDRAWN: "Withdrawn",
 };
 
-const STATUS_TONE: Record<ApplicationStatus, string> = {
-  STARTED: "bg-muted text-muted-foreground border-border",
-  SUBMITTED: "bg-blue-50 text-blue-800 border-blue-200",
-  UNDER_REVIEW: "bg-amber-50 text-amber-800 border-amber-200",
-  APPROVED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  DENIED: "bg-rose-50 text-rose-700 border-rose-200",
-  WITHDRAWN: "bg-muted text-muted-foreground border-border",
+const STATUS_TONE: Record<ApplicationStatus, StatusTone> = {
+  STARTED: "info",
+  SUBMITTED: "active",
+  UNDER_REVIEW: "warning",
+  APPROVED: "success",
+  DENIED: "danger",
+  WITHDRAWN: "neutral",
 };
 
 const STATUS_COLUMN_ORDER: ApplicationStatus[] = [
@@ -195,11 +196,10 @@ export default async function ApplicationsPage() {
                     className="rounded-lg border border-border bg-muted/30 p-2.5"
                   >
                     <div className="flex items-center justify-between gap-2 mb-2 px-1">
-                      <span
-                        className={`text-[10px] tracking-widest uppercase font-semibold rounded px-1.5 py-0.5 border ${STATUS_TONE[status]}`}
-                      >
-                        {STATUS_LABEL[status]}
-                      </span>
+                      <StatusPill
+                        label={STATUS_LABEL[status]}
+                        tone={STATUS_TONE[status]}
+                      />
                       <span className="text-xs font-semibold tabular-nums text-muted-foreground">
                         {items.length}
                       </span>

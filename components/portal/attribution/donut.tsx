@@ -60,7 +60,7 @@ export function SourceDonut({
   if (total === 0 || slices.length === 0) {
     return (
       <Card title={title} description={description}>
-        <div className="h-48 flex items-center justify-center text-xs text-muted-foreground text-center px-6">
+        <div className="h-32 flex items-center justify-center text-xs text-muted-foreground text-center px-6">
           {emptyMessage}
         </div>
       </Card>
@@ -74,8 +74,8 @@ export function SourceDonut({
   // Build SVG arc segments. radius/innerRadius keep the donut weight
   // close to Clarity's reference (chunky enough that small slices still
   // read at a glance).
-  const size = 192;
-  const strokeWidth = 30;
+  const size = 132;
+  const strokeWidth = 22;
   const radius = (size - strokeWidth) / 2;
   const center = size / 2;
   const circumference = 2 * Math.PI * radius;
@@ -96,8 +96,8 @@ export function SourceDonut({
 
   return (
     <Card title={title} description={description}>
-      <div className="grid grid-cols-1 md:grid-cols-[auto,1fr] gap-6 items-center">
-        <div className="relative shrink-0 mx-auto md:mx-0">
+      <div className="grid grid-cols-[auto,1fr] gap-4 items-center">
+        <div className="relative shrink-0">
           <svg
             width={size}
             height={size}
@@ -125,16 +125,16 @@ export function SourceDonut({
             aria-hidden="true"
           >
             <div>
-              <p className="text-2xl font-semibold tabular-nums text-foreground leading-none">
+              <p className="text-lg font-semibold tabular-nums text-foreground leading-none">
                 {dominantPct}%
               </p>
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
+              <p className="text-[9px] uppercase tracking-wider text-muted-foreground mt-1 px-2">
                 {totalLabel ?? `${total.toLocaleString()} total`}
               </p>
             </div>
           </div>
         </div>
-        <ul className="space-y-1.5 min-w-0">
+        <ul className="space-y-1 min-w-0">
           {sorted.map((slice, i) => {
             const pct = Math.round((slice.value / total) * 100);
             return (
@@ -177,13 +177,13 @@ function Card({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-xl border border-border bg-card p-5">
-      <div className="mb-4">
-        <h3 className="text-sm font-semibold tracking-tight text-foreground">
+    <section className="rounded-lg border border-border bg-card p-3">
+      <div className="mb-2">
+        <h3 className="text-xs font-semibold tracking-tight text-foreground">
           {title}
         </h3>
         {description ? (
-          <p className="text-[11px] text-muted-foreground mt-0.5">
+          <p className="text-[10px] text-muted-foreground mt-0.5 leading-snug">
             {description}
           </p>
         ) : null}

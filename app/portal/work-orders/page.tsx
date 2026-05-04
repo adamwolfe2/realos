@@ -15,6 +15,7 @@ import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
+import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { WorkOrderStatus, WorkOrderPriority } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Work orders" };
@@ -38,13 +39,13 @@ const STATUS_LABEL: Record<WorkOrderStatus, string> = {
   ON_HOLD: "On hold",
 };
 
-const STATUS_TONE: Record<WorkOrderStatus, string> = {
-  NEW: "bg-rose-50 text-rose-700 border-rose-200",
-  SCHEDULED: "bg-blue-50 text-blue-800 border-blue-200",
-  IN_PROGRESS: "bg-amber-50 text-amber-800 border-amber-200",
-  COMPLETED: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  CANCELLED: "bg-muted text-muted-foreground border-border",
-  ON_HOLD: "bg-slate-50 text-slate-700 border-slate-200",
+const STATUS_TONE: Record<WorkOrderStatus, StatusTone> = {
+  NEW: "danger",
+  SCHEDULED: "info",
+  IN_PROGRESS: "active",
+  COMPLETED: "success",
+  CANCELLED: "neutral",
+  ON_HOLD: "warning",
 };
 
 const PRIORITY_LABEL: Record<WorkOrderPriority, string> = {
@@ -287,11 +288,10 @@ export default async function WorkOrdersPage() {
                     className="rounded-lg border border-border bg-muted/30 p-2.5"
                   >
                     <div className="flex items-center justify-between gap-2 mb-2 px-1">
-                      <span
-                        className={`text-[10px] tracking-widest uppercase font-semibold rounded px-1.5 py-0.5 border ${STATUS_TONE[status]}`}
-                      >
-                        {STATUS_LABEL[status]}
-                      </span>
+                      <StatusPill
+                        label={STATUS_LABEL[status]}
+                        tone={STATUS_TONE[status]}
+                      />
                       <span className="text-xs font-semibold tabular-nums text-muted-foreground">
                         {items.length}
                       </span>

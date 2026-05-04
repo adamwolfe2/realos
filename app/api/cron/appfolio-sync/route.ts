@@ -21,6 +21,30 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   return recordCronRun("appfolio-sync", async () => {
+    // Self-heal stuck rows BEFORE pulling the queue. A row left in
+    // syncStatus='syncing' with a syncStartedAt > 10 min ago is a
+    // killed-mid-flight Vercel function that never wrote its cleanup.
+    // The runAppfolioSync concurrency guard already steamrolls these,
+    // but flipping them to 'error' here surfaces the failed state in
+    // the UI in the meantime instead of leaving operators staring at
+    // a perpetual spinner.
+    await prisma.appFolioIntegration
+      .updateMany({
+        where: {
+          syncStatus: "syncing",
+          syncStartedAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
+        },
+        data: {
+          syncStatus: "error",
+          syncStartedAt: null,
+          lastError:
+            "Sync timed out — function killed before completion. Cron auto-cleared the wedged row; this run will retry.",
+        },
+      })
+      .catch((err) => {
+        console.warn("[appfolio-sync] auto-clear stuck rows failed:", err);
+      });
+
     const integrations = await prisma.appFolioIntegration.findMany({
       where: {
         autoSyncEnabled: true,

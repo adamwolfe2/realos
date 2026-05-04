@@ -65,8 +65,16 @@ function fmtPositionDelta(current: number, prior: number): {
 export default async function SeoPage() {
   const scope = await requireScope();
 
+  // Only count rows backed by a real Google service-account JSON.
+  // Seeded demo rows store the literal string "DEMO_SEED" — surfacing
+  // those as "connected" misleads operators about whether real GSC/GA4
+  // data is flowing. Filter at the query so the dashboard's "no
+  // integration" empty state shows when nothing real is wired.
   const integrations = await prisma.seoIntegration.findMany({
-    where: { orgId: scope.orgId },
+    where: {
+      orgId: scope.orgId,
+      serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
+    },
     orderBy: { provider: "asc" },
   });
 
