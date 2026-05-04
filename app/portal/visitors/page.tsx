@@ -16,6 +16,7 @@ import { ExportButton } from "@/components/ui/export-button";
 import { StatCard } from "@/components/admin/stat-card";
 import { EngageComposer } from "./engage-composer";
 import { AutoRefresh } from "@/components/portal/sync/auto-refresh";
+import { DataTable, EntityCell } from "@/components/portal/ui/data-table";
 
 export const metadata: Metadata = { title: "Visitor feed" };
 export const dynamic = "force-dynamic";
@@ -604,28 +605,151 @@ function VisitorFeed({
   chatMap?: Map<string, { sessionId: string; lastMessageAt: Date }>;
 }) {
   return (
-    <ul className="rounded-lg border border-border bg-card divide-y">
-      {visitors.map((visitor) => {
-        const liveChat = chatMap?.get(visitor.id) ?? null;
-        return (
-          <li key={visitor.id}>
-            <VisitorRow visitor={visitor} />
-            {liveChat ? (
-              <div className="px-4 pb-3 -mt-1 flex items-center gap-3">
-                <span className="text-[11px] text-emerald-700 flex items-center gap-1">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Live chat
+    <DataTable
+      rows={visitors}
+      getRowHref={(v) => `/portal/visitors/${v.id}`}
+      getRowKey={(v) => v.id}
+      columns={[
+        {
+          key: "name",
+          header: "Visitor",
+          accessor: (v) => {
+            const id = extractIdentity(v);
+            const subtitle = id.isAnonymous
+              ? v.referrer
+                ? `Anonymous · via ${hostFromUrl(v.referrer)}`
+                : "Anonymous visitor"
+              : [id.jobTitle, id.companyName ? `at ${id.companyName}` : null]
+                  .filter(Boolean)
+                  .join(" ") || v.email || "";
+            return (
+              <EntityCell
+                name={id.displayName ?? "Anonymous"}
+                seed={v.id}
+                secondary={subtitle}
+              />
+            );
+          },
+        },
+        {
+          key: "email",
+          header: "Email",
+          hideOnMobile: true,
+          accessor: (v) =>
+            v.email ? (
+              <span className="text-[11px]">{v.email}</span>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            ),
+        },
+        {
+          key: "page",
+          header: "Last page",
+          hideOnMobile: true,
+          accessor: (v) => {
+            const id = extractIdentity(v);
+            return id.lastPagePath ? (
+              <span className="text-[11px] text-muted-foreground truncate inline-block max-w-[200px]">
+                {id.lastPagePath}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            );
+          },
+        },
+        {
+          key: "location",
+          header: "Location",
+          hideOnMobile: true,
+          accessor: (v) => {
+            const id = extractIdentity(v);
+            return id.location ? (
+              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                <MapPin className="h-2.5 w-2.5 opacity-60" aria-hidden="true" />
+                {id.location}
+              </span>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            );
+          },
+        },
+        {
+          key: "sessions",
+          header: "Sessions",
+          align: "right",
+          accessor: (v) => v.sessionCount,
+        },
+        {
+          key: "seen",
+          header: "Last seen",
+          accessor: (v) => (
+            <span className="text-[11px] text-muted-foreground">
+              {formatDistanceToNow(v.lastSeenAt, { addSuffix: true })}
+            </span>
+          ),
+        },
+        {
+          key: "intent",
+          header: "Intent",
+          align: "right",
+          accessor: (v) => {
+            const tone =
+              v.intentScore >= 80
+                ? "text-rose-700"
+                : v.intentScore >= 60
+                  ? "text-amber-700"
+                  : "text-muted-foreground";
+            return (
+              <span
+                className={cn(
+                  "inline-flex items-center gap-1 font-semibold tabular-nums",
+                  tone,
+                )}
+              >
+                {v.intentScore >= 80 ? (
+                  <Flame className="h-3 w-3" aria-hidden="true" />
+                ) : v.intentScore >= 60 ? (
+                  <Zap className="h-3 w-3" aria-hidden="true" />
+                ) : null}
+                {v.intentScore}
+              </span>
+            );
+          },
+        },
+        {
+          key: "status",
+          header: "Status",
+          accessor: (v) => {
+            const status = v.status;
+            const cfg =
+              status === VisitorIdentificationStatus.MATCHED_TO_LEAD
+                ? { label: "Lead", dot: "bg-emerald-500" }
+                : status === VisitorIdentificationStatus.IDENTIFIED ||
+                    status === VisitorIdentificationStatus.ENRICHED
+                  ? { label: "Identified", dot: "bg-blue-500" }
+                  : { label: "Anonymous", dot: "bg-muted-foreground/40" };
+            const liveChat = chatMap?.get(v.id);
+            return (
+              <span className="inline-flex items-center gap-2">
+                <span className="inline-flex items-center gap-1 text-[11px]">
+                  <span
+                    aria-hidden="true"
+                    className={cn("h-1.5 w-1.5 rounded-full", cfg.dot)}
+                  />
+                  {cfg.label}
                 </span>
-                <EngageComposer
-                  visitorId={visitor.id}
-                  sessionId={liveChat.sessionId}
-                />
-              </div>
-            ) : null}
-          </li>
-        );
-      })}
-    </ul>
+                {liveChat ? (
+                  <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    Live
+                  </span>
+                ) : null}
+              </span>
+            );
+          },
+        },
+      ]}
+    />
   );
 }
 

@@ -215,6 +215,7 @@ export default async function AttributionPage({
         <SourceDonut
           title="Sessions per source"
           description="Where the visits came from. UTM tags first, then referrer hostname, then direct."
+          palette="ink"
           slices={sessionsPerSource.map((s) => ({
             label: s.source,
             value: s.count,
@@ -225,6 +226,7 @@ export default async function AttributionPage({
         <SourceDonut
           title="Leads per source · multi-touch"
           description="Every channel that touched a lead before they converted. A lead seen by both google-ads and direct counts in both."
+          palette="blue"
           slices={leadsMultiTouch.map((s) => ({
             label: s.source,
             value: s.count,
@@ -239,6 +241,7 @@ export default async function AttributionPage({
         <SourceDonut
           title="Lead customers per module type"
           description="Which capture surface created each lead — chatbot, form, ads, referral."
+          palette="emerald"
           slices={headline.modules.map((m) => ({
             label: m.label,
             value: m.count,
@@ -249,6 +252,7 @@ export default async function AttributionPage({
         <SourceDonut
           title="Leads per touch frequency"
           description="How many sessions each lead had before converting. Higher = more nurture needed."
+          palette="amber"
           slices={touchFreq
             .filter((b) => b.count > 0)
             .map((b) => ({
@@ -285,6 +289,7 @@ export default async function AttributionPage({
         <SourceDonut
           title="Leads per city · last-touch"
           description="Lead's resolved city from pixel enrichment (when available)."
+          palette="violet"
           slices={citySplit.slice(0, 8).map((c) => ({
             label: c.city,
             value: c.count,
@@ -295,6 +300,7 @@ export default async function AttributionPage({
         <SourceDonut
           title="Leads per source · last-touch"
           description="Just the final attributed channel — what Clarity calls 'last-touch attribution.'"
+          palette="blue"
           slices={leadsLastTouch.map((m) => ({
             label: m.label,
             value: m.count,

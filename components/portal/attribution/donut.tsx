@@ -30,23 +30,23 @@ type Props = {
   totalLabel?: string;
   /** Empty-state message when slices.length === 0. */
   emptyMessage?: string;
+  /** Picks the chart's color theme. Each surface on /portal/attribution
+   *  passes a different value so single-slice donuts don't all look
+   *  identical (every chart was rendering as 100% black before). */
+  palette?: "ink" | "blue" | "emerald" | "amber" | "violet";
 };
 
-// Brand-aligned palette. Black-led for the dominant slice with a measured
-// accent rotation so the chart reads as LeaseStack rather than rainbow
-// SaaS. Blue first because the audit screenshot showed Clarity's eye-
-// catching blue dominant slice — we match the visual cue while owning
-// the color story.
-const COLORS = [
-  "#0A0A0A", // brand black, dominant
-  "#3E6AE1", // accent blue
-  "#10B981", // emerald
-  "#F59E0B", // amber
-  "#EF4444", // rose
-  "#8B5CF6", // violet
-  "#0EA5E9", // sky
-  "#6B7280", // slate (other)
-];
+// Brand-aligned palettes. Each chart on /portal/attribution picks a
+// different lead color so single-slice donuts read as distinct visuals
+// rather than identical black rings. Multi-slice donuts cycle through
+// supporting colors after the lead.
+const PALETTES: Record<NonNullable<Props["palette"]>, string[]> = {
+  ink: ["#1A1A1A", "#2563EB", "#10B981", "#F59E0B", "#B53333", "#8B5CF6", "#0EA5E9", "#87867F"],
+  blue: ["#2563EB", "#1A1A1A", "#10B981", "#F59E0B", "#B53333", "#8B5CF6", "#0EA5E9", "#87867F"],
+  emerald: ["#10B981", "#2563EB", "#1A1A1A", "#F59E0B", "#B53333", "#8B5CF6", "#0EA5E9", "#87867F"],
+  amber: ["#F59E0B", "#2563EB", "#10B981", "#1A1A1A", "#B53333", "#8B5CF6", "#0EA5E9", "#87867F"],
+  violet: ["#8B5CF6", "#2563EB", "#10B981", "#F59E0B", "#1A1A1A", "#B53333", "#0EA5E9", "#87867F"],
+};
 
 export function SourceDonut({
   slices,
@@ -54,7 +54,9 @@ export function SourceDonut({
   description,
   totalLabel,
   emptyMessage = "No data in the selected window.",
+  palette = "ink",
 }: Props) {
+  const COLORS = PALETTES[palette];
   const total = slices.reduce((sum, s) => sum + s.value, 0);
 
   if (total === 0 || slices.length === 0) {
