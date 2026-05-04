@@ -50,11 +50,16 @@ export async function authenticateApiKey(
         keyHash: true,
         scopes: true,
         revokedAt: true,
+        // Reject expired keys at the auth layer (audit BUG #5). Treated
+        // identically to a revoked key — caller gets 401 and has to
+        // either rotate or generate a fresh one.
+        expiresAt: true,
       },
     })
     .catch(() => null);
 
   if (!record || record.revokedAt) return null;
+  if (record.expiresAt && record.expiresAt.getTime() < Date.now()) return null;
 
   // Fire-and-forget usage tracking. We deliberately do not await so the
   // ingestion endpoint is not blocked on an extra write per request.

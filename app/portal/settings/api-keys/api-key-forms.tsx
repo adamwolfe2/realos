@@ -4,7 +4,10 @@ import { useActionState, useState, useTransition } from "react";
 import {
   createApiKey,
   revokeApiKey,
+  rotateApiKey,
+  EXPIRATION_CHOICES,
   type CreateApiKeyResult,
+  type RotateApiKeyResult,
 } from "@/lib/actions/api-keys";
 
 const SCOPE_OPTIONS = [
@@ -61,6 +64,27 @@ export function CreateApiKeyForm() {
             />
             <span className="text-[11px] text-muted-foreground">
               Operator-facing label so you can tell keys apart later.
+            </span>
+          </label>
+
+          <label className="flex flex-col gap-1 text-sm">
+            <span className="text-xs tracking-widest uppercase text-muted-foreground">
+              Expiration
+            </span>
+            <select
+              name="expiration"
+              defaultValue="90d"
+              className="border rounded px-3 py-2 text-sm bg-background"
+            >
+              {EXPIRATION_CHOICES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+            <span className="text-[11px] text-muted-foreground">
+              Recommended: rotate every 90 days. We&apos;ll warn you 7 days
+              before a finite key expires.
             </span>
           </label>
 
@@ -232,6 +256,67 @@ export function RevokeApiKeyButton({
       </button>
       {error ? (
         <span className="text-[11px] text-destructive">{error}</span>
+      ) : null}
+    </div>
+  );
+}
+
+// Audit BUG #5 — single-action rotate. Generates a new key with the
+// same name + scopes + expiration window, revokes the old one, and
+// shows the raw new key inline so the operator can paste it into
+// Zapier/etc. immediately.
+export function RotateApiKeyButton({
+  id,
+  name,
+}: {
+  id: string;
+  name: string;
+}) {
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+  const [rotated, setRotated] = useState<RotateApiKeyResult | null>(null);
+
+  function onClick() {
+    if (
+      typeof window !== "undefined" &&
+      !window.confirm(
+        `Rotate "${name}"? A new key will be issued with the same scopes and expiration. The current key is revoked immediately — update every consumer with the new key right away.`
+      )
+    ) {
+      return;
+    }
+    startTransition(async () => {
+      const res = await rotateApiKey(id);
+      if (!res.ok) {
+        setError(res.error);
+      } else {
+        setRotated(res);
+        setError(null);
+      }
+    });
+  }
+
+  return (
+    <div className="flex flex-col items-end gap-2 w-full">
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={pending || !!rotated}
+        className="text-xs text-foreground underline underline-offset-2 disabled:opacity-40"
+      >
+        {pending ? "Rotating…" : "Rotate"}
+      </button>
+      {error ? (
+        <span className="text-[11px] text-destructive">{error}</span>
+      ) : null}
+      {rotated && rotated.ok ? (
+        <div className="w-full mt-2">
+          <NewKeyBanner
+            rawKey={rotated.rawKey}
+            name={rotated.name}
+            scopes={rotated.scopes}
+          />
+        </div>
       ) : null}
     </div>
   );
