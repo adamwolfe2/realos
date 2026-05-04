@@ -5,6 +5,7 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { ResidentStatus } from "@prisma/client";
 import { Users, AlertTriangle, CheckCircle2, Mail, Phone } from "lucide-react";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 
 // ---------------------------------------------------------------------------
 // Residents tab — per-property view of the AppFolio-mirrored resident roster.
@@ -85,13 +86,10 @@ export async function ResidentsTab({
 
   if (residents.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
-        <p className="text-sm font-semibold text-foreground">No residents synced yet</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          AppFolio sync will populate this tab with the active roster, lease
-          data, and notice-given predictive availability.
-        </p>
-      </div>
+      <EmptyState
+        title="No residents synced yet"
+        body="AppFolio sync will populate this tab with the active roster, lease data, and notice-given predictive availability."
+      />
     );
   }
 

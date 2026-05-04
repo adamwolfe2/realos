@@ -5,6 +5,7 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { WorkOrderStatus, WorkOrderPriority } from "@prisma/client";
 import { Wrench, AlertTriangle, CheckCircle2, Clock } from "lucide-react";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 
 // ---------------------------------------------------------------------------
 // Work Orders tab — per-property maintenance pipeline from AppFolio.
@@ -138,12 +139,10 @@ export async function WorkOrdersTab({
 
   if (workOrders.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
-        <p className="text-sm font-semibold text-foreground">No work orders yet</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          AppFolio sync will populate maintenance tickets for this property.
-        </p>
-      </div>
+      <EmptyState
+        title="No work orders yet"
+        body="AppFolio sync will populate maintenance tickets for this property."
+      />
     );
   }
 

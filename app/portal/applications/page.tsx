@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { ApplicationStatus } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Applications" };
@@ -167,24 +168,11 @@ export default async function ApplicationsPage() {
         description="Drag-free kanban — click any application to open the lead it came from"
       >
         {apps.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card p-8 md:p-12 text-center">
-            <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-2">
-              No applications yet
-            </p>
-            <h3 className="text-lg font-semibold text-foreground mb-1.5">
-              Once leads start applying, they&apos;ll show up here.
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto mb-5">
-              Applications can come in via your tenant marketing site, AppFolio
-              sync, or manual entry from a lead detail page.
-            </p>
-            <Link
-              href="/portal/leads"
-              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
-            >
-              Open leads
-            </Link>
-          </div>
+          <EmptyState
+            title="Once leads start applying, they'll show up here."
+            body="Applications come in via your tenant marketing site, AppFolio sync, or manual entry from a lead detail page."
+            action={{ label: "Open leads", href: "/portal/leads" }}
+          />
         ) : (
           <div className="overflow-x-auto -mx-4 md:mx-0">
             <div className="grid grid-cols-6 gap-3 min-w-[1080px] md:min-w-0">

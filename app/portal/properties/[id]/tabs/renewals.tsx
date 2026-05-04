@@ -5,6 +5,7 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { LeaseStatus } from "@prisma/client";
 import { Calendar, AlertTriangle, CheckCircle2, DollarSign } from "lucide-react";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 
 // ---------------------------------------------------------------------------
 // Renewals tab — per-property lease renewal pipeline from AppFolio.
@@ -95,12 +96,10 @@ export async function RenewalsTab({
 
   if (activeCount === 0 && upcoming.length === 0) {
     return (
-      <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
-        <p className="text-sm font-semibold text-foreground">No lease data yet</p>
-        <p className="mt-1 text-xs text-muted-foreground">
-          AppFolio sync will populate lease records from the rent roll report.
-        </p>
-      </div>
+      <EmptyState
+        title="No lease data yet"
+        body="AppFolio sync will populate lease records from the rent roll report."
+      />
     );
   }
 
