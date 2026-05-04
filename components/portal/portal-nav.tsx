@@ -34,6 +34,7 @@ import {
   Wrench,
   Home,
   CalendarClock,
+  PieChart,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -128,8 +129,19 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Analytics",
     items: [
-      // Each Analytics page hides when its source data is empty so the
-      // sidebar doesn't surface dead-end clicks. The pages themselves
+      // Attribution is the direct competitor surface to Clarity Attribution
+      // — same charts Clarity charges $5–10k/property/month for, included
+      // as table stakes. Always visible because it's a marketing-led
+      // value prop and we want it to be the first thing prospects see
+      // after the dashboard.
+      {
+        href: "/portal/attribution",
+        label: "Attribution",
+        icon: PieChart,
+        show: ALWAYS,
+      },
+      // Each remaining Analytics page hides when its source data is
+      // empty so the sidebar doesn't surface dead-end clicks. The pages
       // remain reachable by URL for power users; we just hide the entry
       // point until there's something to show.
       {

@@ -1,0 +1,194 @@
+import * as React from "react";
+
+// ---------------------------------------------------------------------------
+// SourceDonut — minimalist SVG donut chart for the attribution page. No
+// charting lib, no client component — pure server-rendered SVG so the
+// /portal/attribution page can stream and the surface stays cheap.
+//
+// Renders:
+//   - The donut itself (slices proportional to count)
+//   - A center label (total)
+//   - A side legend with percentage + raw count per slice
+//
+// Designed to read like Clarity's donut style: clean white background,
+// flat colors, large center percentage on the dominant slice, tabular
+// counts on the right.
+// ---------------------------------------------------------------------------
+
+export type DonutSlice = {
+  label: string;
+  value: number;
+};
+
+type Props = {
+  slices: DonutSlice[];
+  /** Heading shown above the chart. */
+  title: string;
+  /** Optional one-line description below the title. */
+  description?: string;
+  /** Total label override; defaults to sum of slice values. */
+  totalLabel?: string;
+  /** Empty-state message when slices.length === 0. */
+  emptyMessage?: string;
+};
+
+// Brand-aligned palette. Black-led for the dominant slice with a measured
+// accent rotation so the chart reads as LeaseStack rather than rainbow
+// SaaS. Blue first because the audit screenshot showed Clarity's eye-
+// catching blue dominant slice — we match the visual cue while owning
+// the color story.
+const COLORS = [
+  "#0A0A0A", // brand black, dominant
+  "#3E6AE1", // accent blue
+  "#10B981", // emerald
+  "#F59E0B", // amber
+  "#EF4444", // rose
+  "#8B5CF6", // violet
+  "#0EA5E9", // sky
+  "#6B7280", // slate (other)
+];
+
+export function SourceDonut({
+  slices,
+  title,
+  description,
+  totalLabel,
+  emptyMessage = "No data in the selected window.",
+}: Props) {
+  const total = slices.reduce((sum, s) => sum + s.value, 0);
+
+  if (total === 0 || slices.length === 0) {
+    return (
+      <Card title={title} description={description}>
+        <div className="h-48 flex items-center justify-center text-xs text-muted-foreground text-center px-6">
+          {emptyMessage}
+        </div>
+      </Card>
+    );
+  }
+
+  const sorted = [...slices].sort((a, b) => b.value - a.value);
+  const dominant = sorted[0];
+  const dominantPct = Math.round((dominant.value / total) * 100);
+
+  // Build SVG arc segments. radius/innerRadius keep the donut weight
+  // close to Clarity's reference (chunky enough that small slices still
+  // read at a glance).
+  const size = 192;
+  const strokeWidth = 30;
+  const radius = (size - strokeWidth) / 2;
+  const center = size / 2;
+  const circumference = 2 * Math.PI * radius;
+
+  let cumulative = 0;
+  const arcs = sorted.map((slice, i) => {
+    const fraction = slice.value / total;
+    const offset = -cumulative * circumference;
+    const dasharray = `${fraction * circumference} ${circumference}`;
+    cumulative += fraction;
+    return {
+      slice,
+      color: COLORS[i % COLORS.length],
+      dasharray,
+      offset,
+    };
+  });
+
+  return (
+    <Card title={title} description={description}>
+      <div className="grid grid-cols-1 md:grid-cols-[auto,1fr] gap-6 items-center">
+        <div className="relative shrink-0 mx-auto md:mx-0">
+          <svg
+            width={size}
+            height={size}
+            viewBox={`0 0 ${size} ${size}`}
+            role="img"
+            aria-label={title}
+            style={{ transform: "rotate(-90deg)" }}
+          >
+            {arcs.map((arc, i) => (
+              <circle
+                key={i}
+                cx={center}
+                cy={center}
+                r={radius}
+                fill="none"
+                stroke={arc.color}
+                strokeWidth={strokeWidth}
+                strokeDasharray={arc.dasharray}
+                strokeDashoffset={arc.offset}
+              />
+            ))}
+          </svg>
+          <div
+            className="absolute inset-0 flex items-center justify-center text-center"
+            aria-hidden="true"
+          >
+            <div>
+              <p className="text-2xl font-semibold tabular-nums text-foreground leading-none">
+                {dominantPct}%
+              </p>
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
+                {totalLabel ?? `${total.toLocaleString()} total`}
+              </p>
+            </div>
+          </div>
+        </div>
+        <ul className="space-y-1.5 min-w-0">
+          {sorted.map((slice, i) => {
+            const pct = Math.round((slice.value / total) * 100);
+            return (
+              <li
+                key={slice.label}
+                className="flex items-center justify-between gap-3 text-xs min-w-0"
+              >
+                <span className="flex items-center gap-2 min-w-0">
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
+                    style={{ backgroundColor: COLORS[i % COLORS.length] }}
+                  />
+                  <span className="truncate text-foreground">
+                    {slice.label}
+                  </span>
+                </span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">
+                  {pct}%
+                  <span className="ml-2 text-foreground">
+                    ({slice.value.toLocaleString()})
+                  </span>
+                </span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </Card>
+  );
+}
+
+function Card({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="rounded-xl border border-border bg-card p-5">
+      <div className="mb-4">
+        <h3 className="text-sm font-semibold tracking-tight text-foreground">
+          {title}
+        </h3>
+        {description ? (
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            {description}
+          </p>
+        ) : null}
+      </div>
+      {children}
+    </section>
+  );
+}
