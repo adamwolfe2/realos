@@ -154,7 +154,16 @@ export default async function LeadDetailPage({
   }
   const subtitle = subtitleParts.join(" \u00b7 ");
 
-  const timeInStatus = formatDistanceToNow(lead.updatedAt, { addSuffix: true });
+  // Audit BUG #8: previously read lead.updatedAt which Prisma's @updatedAt
+  // decorator auto-touches on every write — including the lead-score
+  // cron that ticks every 30 min. Operators saw "Updated 13 min ago"
+  // immediately after opening a lead and assumed their click had
+  // triggered the update. lastActivityAt only ticks on real activity
+  // (status changes, notes, emails sent) so this now accurately
+  // reflects human edits.
+  const timeInStatus = formatDistanceToNow(lead.lastActivityAt, {
+    addSuffix: true,
+  });
   const lastActivity = formatDistanceToNow(lead.lastActivityAt, {
     addSuffix: true,
   });
@@ -237,31 +246,49 @@ export default async function LeadDetailPage({
               </p>
             ) : null}
 
-            {/* Chip row */}
+            {/* Chip row — only renders chips for fields that actually
+                have values. Empty fields collapse into a single trailing
+                "Missing: phone, move-in, budget" indicator. Audit BUG #9
+                caught the prior placeholder chips ("No phone",
+                "Move-in —") which read as broken software. */}
             <div className="mt-4 flex flex-wrap items-center gap-1.5">
-              <Chip icon={<Mail className="h-3 w-3" />}>
-                {lead.email ?? "No email"}
-              </Chip>
-              <Chip icon={<Phone className="h-3 w-3" />}>
-                {lead.phone ?? "No phone"}
-              </Chip>
+              {lead.email ? (
+                <Chip icon={<Mail className="h-3 w-3" />}>{lead.email}</Chip>
+              ) : null}
+              {lead.phone ? (
+                <Chip icon={<Phone className="h-3 w-3" />}>{lead.phone}</Chip>
+              ) : null}
               <Chip icon={<Radar className="h-3 w-3" />}>
                 {lead.source}
                 {lead.sourceDetail ? ` \u00b7 ${lead.sourceDetail}` : ""}
               </Chip>
-              <Chip icon={<Calendar className="h-3 w-3" />}>
-                {lead.desiredMoveIn
-                  ? `Move-in ${format(lead.desiredMoveIn, "MMM d, yyyy")}`
-                  : "Move-in —"}
-              </Chip>
-              <Chip icon={<DollarSign className="h-3 w-3" />}>
-                {formatBudget(lead.budgetMinCents, lead.budgetMaxCents)}
-              </Chip>
+              {lead.desiredMoveIn ? (
+                <Chip icon={<Calendar className="h-3 w-3" />}>
+                  {`Move-in ${format(lead.desiredMoveIn, "MMM d, yyyy")}`}
+                </Chip>
+              ) : null}
+              {lead.budgetMinCents != null || lead.budgetMaxCents != null ? (
+                <Chip icon={<DollarSign className="h-3 w-3" />}>
+                  {formatBudget(lead.budgetMinCents, lead.budgetMaxCents)}
+                </Chip>
+              ) : null}
               {lead.property?.name ? (
                 <Chip icon={<Home className="h-3 w-3" />}>
                   {lead.property.name}
                 </Chip>
               ) : null}
+              <MissingFieldsChip
+                missing={
+                  [
+                    !lead.email && "email",
+                    !lead.phone && "phone",
+                    !lead.desiredMoveIn && "move-in",
+                    lead.budgetMinCents == null &&
+                      lead.budgetMaxCents == null &&
+                      "budget",
+                  ].filter((v): v is string => typeof v === "string")
+                }
+              />
             </div>
           </div>
         </div>
@@ -276,7 +303,7 @@ export default async function LeadDetailPage({
               </span>
             </div>
             <p className="mt-1 text-[11px] text-muted-foreground">
-              Updated {timeInStatus}
+              Last activity {timeInStatus}
             </p>
           </Tile>
           <Tile label="Intent">
@@ -458,6 +485,30 @@ function Chip({
         <span className="text-muted-foreground">{icon}</span>
       ) : null}
       <span className="truncate max-w-[14rem]">{children}</span>
+    </span>
+  );
+}
+
+// Compact pill that lists which lead fields are still empty. Replaces the
+// previous pattern of rendering placeholder chips ("No phone",
+// "Move-in —") which looked like the platform was broken. Shows nothing
+// when all fields are populated. (audit BUG #9)
+function MissingFieldsChip({ missing }: { missing: string[] }) {
+  if (missing.length === 0) return null;
+  const summary = missing.join(", ");
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs",
+        "bg-muted/40 text-muted-foreground",
+        "ring-1 ring-border"
+      )}
+      title={`Lead is missing: ${summary}`}
+    >
+      <span className="text-[10px] font-semibold tracking-wider uppercase">
+        Missing
+      </span>
+      <span className="truncate max-w-[14rem]">{summary}</span>
     </span>
   );
 }
