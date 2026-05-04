@@ -37,7 +37,18 @@ export default async function BriefingPage({
   });
 
   const properties = await prisma.property.findMany({
-    where: { orgId: scope.orgId },
+    where: {
+      orgId: scope.orgId,
+      // Hide placeholder properties from the focus dropdown — same
+      // filter as /portal/properties so the briefing list doesn't have
+      // 100+ "Property 1352" entries the operator has to scroll past.
+      NOT: {
+        OR: [
+          { name: { contains: "do not use", mode: "insensitive" } },
+          { name: { startsWith: "Property ", mode: "insensitive" } },
+        ],
+      },
+    },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });

@@ -61,37 +61,50 @@ export async function OccupancyTab({
       </section>
 
       {data.byBedType.length > 0 ? (
-        <DashboardSection title="Lease-up by bedroom" eyebrow="Bed type">
+        <DashboardSection
+          title="Listings by bedroom"
+          eyebrow="Unit configuration"
+          description="Distribution of unit-type rows from AppFolio. The percentage shows the share marked available right now — useful for spotting which bed type has the most open inventory."
+        >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            {data.byBedType.map((b) => (
-              <div
-                key={b.label}
-                className="rounded-xl border border-border bg-card p-4 space-y-3"
-              >
-                <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-                  {b.label}
-                </div>
-                <div className="text-[26px] leading-none font-semibold tabular-nums text-foreground">
-                  {b.occupancyPct}%
-                </div>
-                <div className="text-[11px] text-muted-foreground space-y-0.5">
-                  <div>{b.leased} leased · {b.available} available</div>
-                  {b.activeApplications > 0 ? (
-                    <div className="text-primary font-medium">
-                      {b.activeApplications} active {b.activeApplications === 1 ? "application" : "applications"}
-                    </div>
-                  ) : null}
-                  {b.priceMinCents || b.priceMaxCents ? (
+            {data.byBedType.map((b) => {
+              const availPct =
+                b.total > 0 ? Math.round((b.available / b.total) * 100) : 0;
+              return (
+                <div
+                  key={b.label}
+                  className="rounded-lg border border-border bg-card p-3 space-y-2"
+                >
+                  <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                    {b.label}
+                  </div>
+                  <div className="text-2xl leading-none font-semibold tabular-nums text-foreground">
+                    {availPct}%
+                  </div>
+                  <div className="text-[11px] text-muted-foreground space-y-0.5">
                     <div>
-                      {centsToUsdShort(b.priceMinCents)}
-                      {b.priceMinCents !== b.priceMaxCents
-                        ? `–${centsToUsdShort(b.priceMaxCents)}`
-                        : ""}
+                      {b.available} available · {b.total} total
                     </div>
-                  ) : null}
+                    {b.activeApplications > 0 ? (
+                      <div className="text-primary font-medium">
+                        {b.activeApplications} active{" "}
+                        {b.activeApplications === 1
+                          ? "application"
+                          : "applications"}
+                      </div>
+                    ) : null}
+                    {b.priceMinCents || b.priceMaxCents ? (
+                      <div>
+                        {centsToUsdShort(b.priceMinCents)}
+                        {b.priceMinCents !== b.priceMaxCents
+                          ? `–${centsToUsdShort(b.priceMaxCents)}`
+                          : ""}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </DashboardSection>
       ) : null}
@@ -133,7 +146,13 @@ export async function OccupancyTab({
                         {l.bathrooms ?? "—"}
                       </td>
                       <td className="py-2.5 text-right tabular-nums text-xs">
-                        {centsToUsdShort(l.priceCents)}
+                        {l.priceCents != null && l.priceCents > 0 ? (
+                          centsToUsdShort(l.priceCents)
+                        ) : (
+                          <span className="text-muted-foreground/70 italic font-normal text-[11px]">
+                            Contact for pricing
+                          </span>
+                        )}
                       </td>
                       <td className="py-2.5 text-center">
                         {l.isAvailable ? (

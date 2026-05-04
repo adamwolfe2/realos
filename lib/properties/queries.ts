@@ -35,11 +35,22 @@ const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
   OTHER: "Other",
 };
 
-// Build a SQL ILIKE fragment that matches any page URL that contains either
-// the property slug or the (normalized) property name. We use this because
-// SeoLandingPage / SeoQuery don't carry a propertyId FK — they're raw GSC/GA4
-// rows keyed by URL.
-function buildUrlPatterns(slug: string, name: string): string[] {
+// Build a SQL ILIKE fragment that matches any page URL associated with a
+// property. SeoLandingPage / SeoQuery rows don't carry a propertyId FK —
+// they're raw GSC/GA4 rows keyed by URL, so we match on substrings:
+//   1. Property slug (`/telegraph-commons` or `telegraph-commons`)
+//   2. Slugified name (`telegraph-commons`)
+//   3. Org domain hostnames (e.g. `telegraphcommons.com`) — critical
+//      because most properties live at a custom domain whose URLs
+//      contain neither the slug nor the slugified name. Without this,
+//      a property whose marketing site is `www.telegraphcommons.com`
+//      would never match its own GSC data and the traffic tab would
+//      show 0 sessions despite real organic traffic.
+function buildUrlPatterns(
+  slug: string,
+  name: string,
+  domains: string[] = [],
+): string[] {
   const patterns = new Set<string>();
   if (slug) {
     patterns.add(`%/${slug}%`);
@@ -50,6 +61,15 @@ function buildUrlPatterns(slug: string, name: string): string[] {
     if (compact) {
       patterns.add(`%${compact}%`);
     }
+    // Also match the de-spaced lowercase version (e.g. "telegraphcommons")
+    // for orgs whose domain drops the hyphen between words.
+    const collapsed = name.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    if (collapsed && collapsed.length >= 6) {
+      patterns.add(`%${collapsed}%`);
+    }
+  }
+  for (const d of domains) {
+    if (d) patterns.add(`%${d}%`);
   }
   return Array.from(patterns);
 }
@@ -77,7 +97,17 @@ export async function getPropertyOverviewKpis(
   const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
   const since56d = new Date(Date.now() - 2 * WINDOW_DAYS * DAY_MS);
 
-  const patterns = buildUrlPatterns(propertyMeta.slug, propertyMeta.name);
+  // Pull the org's domain bindings so SEO matching catches URLs hosted
+  // at custom domains (e.g. telegraphcommons.com) that don't contain the
+  // slug or slugified name. See buildUrlPatterns for the full rule set.
+  const domains = await prisma.domainBinding
+    .findMany({ where: { orgId }, select: { hostname: true } })
+    .catch(() => [] as Array<{ hostname: string }>);
+  const patterns = buildUrlPatterns(
+    propertyMeta.slug,
+    propertyMeta.name,
+    domains.map((d) => d.hostname),
+  );
 
   const [
     leads28d,
@@ -113,11 +143,17 @@ export async function getPropertyOverviewKpis(
         createdAt: { gte: since28d },
       },
     }),
+    // Match the dashboard-level filter: only count spend from ad accounts
+    // that have real credentials. Without this, seeded fake AdAccount rows
+    // (e.g. demo Telegraph Commons / 1234567890 with credentialsEncrypted
+    // = NULL) would surface phantom $2,971 spend on the property detail
+    // while the dashboard correctly shows $0.
     prisma.adMetricDaily.aggregate({
       where: {
         orgId,
         date: { gte: since28d },
         campaign: { orgId, propertyId },
+        adAccount: { credentialsEncrypted: { not: null } },
       },
       _sum: { spendCents: true },
     }),
@@ -203,7 +239,14 @@ export async function getPropertyTraffic(
   void propertyId;
 
   const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
-  const patterns = buildUrlPatterns(propertyMeta.slug, propertyMeta.name);
+  const domains = await prisma.domainBinding
+    .findMany({ where: { orgId }, select: { hostname: true } })
+    .catch(() => [] as Array<{ hostname: string }>);
+  const patterns = buildUrlPatterns(
+    propertyMeta.slug,
+    propertyMeta.name,
+    domains.map((d) => d.hostname),
+  );
 
   if (patterns.length === 0) {
     return {
@@ -472,7 +515,11 @@ export async function getPropertyAds(
 
   const [campaigns, dailyRows, leadsByCampaignName] = await Promise.all([
     prisma.adCampaign.findMany({
-      where: { orgId, propertyId },
+      where: {
+        orgId,
+        propertyId,
+        adAccount: { credentialsEncrypted: { not: null } },
+      },
       orderBy: { updatedAt: "desc" },
       select: {
         id: true,
@@ -486,6 +533,7 @@ export async function getPropertyAds(
         orgId,
         date: { gte: since28d },
         campaign: { orgId, propertyId },
+        adAccount: { credentialsEncrypted: { not: null } },
       },
       select: {
         campaignId: true,
@@ -833,8 +881,11 @@ function buildByBedType(
     const updated = {
       total: existing.total + 1,
       available: existing.available + (listing.isAvailable ? 1 : 0),
+      // Skip $0 prices when computing the bedroom price range — AppFolio
+      // returns priceCents=0 for vacant units without a rent roll entry,
+      // and including them surfaces "$0-$2,225" which reads as broken.
       prices:
-        listing.priceCents != null
+        listing.priceCents != null && listing.priceCents > 0
           ? [...existing.prices, listing.priceCents]
           : existing.prices,
     };

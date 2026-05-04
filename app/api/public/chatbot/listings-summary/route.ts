@@ -56,6 +56,7 @@ export async function GET(req: NextRequest) {
         select: {
           id: true,
           slug: true,
+          totalUnits: true,
           listings: {
             where: { isAvailable: true },
             select: {
@@ -89,25 +90,44 @@ export async function GET(req: NextRequest) {
   const scopedProperties = matchedProperty
     ? [matchedProperty]
     : org.properties;
-  const listings = scopedProperties.flatMap((p) => p.listings);
-  const openCount = listings.length;
 
-  // Defensive floor on rent: anything below $200/mo is almost certainly a
-  // junk record (test data, imported placeholder, missing decimal). We'd
-  // rather suppress the greeting than show "$2/mo".
-  const MIN_PLAUSIBLE_RENT_CENTS = 20_000;
-  const rents = listings
+  // Only count listings that have a real rent set. AppFolio sync
+  // populates priceCents=0 on vacant units without a rent roll entry;
+  // those would inflate openCount and surface "$2/mo" as the floor.
+  const allListings = scopedProperties.flatMap((p) => p.listings);
+  const validListings = allListings.filter(
+    (l) => typeof l.priceCents === "number" && (l.priceCents ?? 0) > 0,
+  );
+
+  // Cap openCount at the property's totalUnits — listings can drift
+  // higher than physical units when the unit_directory report includes
+  // historical bed-level rows that no longer represent open inventory.
+  // For multi-property orgs, sum totalUnits across the scope.
+  const totalUnitsCap = scopedProperties.reduce(
+    (sum, p) => sum + (p.totalUnits ?? 0),
+    0,
+  );
+  const rawOpen = validListings.length;
+  const openCount =
+    totalUnitsCap > 0 ? Math.min(rawOpen, totalUnitsCap) : rawOpen;
+
+  // Defensive floor on rent: anything below $300/mo on a residential
+  // listing is a junk record (test data, imported placeholder, missing
+  // decimal). The previous $200 floor still let "$209" through and
+  // surfaced as the chatbot greeting.
+  const MIN_PLAUSIBLE_RENT_CENTS = 30_000;
+  const rents = validListings
     .map((l) => l.priceCents)
     .filter(
       (c): c is number =>
-        typeof c === "number" && c >= MIN_PLAUSIBLE_RENT_CENTS
+        typeof c === "number" && c >= MIN_PLAUSIBLE_RENT_CENTS,
     );
   const lowestCents = rents.length ? Math.min(...rents) : null;
   const lowestRent = lowestCents
     ? Math.round(lowestCents / 100)
     : null;
 
-  const futureDates = listings
+  const futureDates = validListings
     .map((l) => l.availableFrom)
     .filter((d): d is Date => d instanceof Date);
   const earliest = futureDates.length

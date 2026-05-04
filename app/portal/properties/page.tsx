@@ -35,7 +35,22 @@ type PropertyRow = {
 export default async function PropertiesList() {
   const scope = await requireScope();
   const properties = await prisma.property.findMany({
-    where: tenantWhere(scope),
+    where: {
+      ...tenantWhere(scope),
+      // Hide AppFolio placeholder properties from the portal view:
+      // - "(do not use)" markers
+      // - generic "Property NNN" naming (auto-numbered AppFolio rows
+      //   that have no real marketing presence)
+      // - properties with zero units that haven't been hand-set up
+      NOT: {
+        OR: [
+          { name: { contains: "do not use", mode: "insensitive" } },
+          { name: { contains: "DO NOT USE", mode: "insensitive" } },
+          // /^Property \d+$/ — generic AppFolio numeric placeholders
+          { name: { startsWith: "Property ", mode: "insensitive" } },
+        ],
+      },
+    },
     orderBy: { updatedAt: "desc" },
     include: {
       _count: { select: { listings: true, leads: true, tours: true } },
