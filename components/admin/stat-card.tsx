@@ -25,7 +25,7 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "rounded-xl border p-4 transition-shadow duration-150 hover:shadow-sm",
+        "rounded-lg border p-3 transition-shadow duration-150 hover:shadow-sm",
         toneClass,
         className,
       )}
@@ -33,11 +33,11 @@ export function StatCard({
       <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
         {label}
       </div>
-      <div className="text-2xl font-semibold tracking-tight mt-2 tabular-nums text-foreground">
+      <div className="text-xl font-semibold tracking-tight mt-1.5 tabular-nums text-foreground leading-none">
         {value}
       </div>
       {hint ? (
-        <div className="text-xs text-muted-foreground mt-1">{hint}</div>
+        <div className="text-[10px] text-muted-foreground mt-1">{hint}</div>
       ) : null}
     </div>
   );

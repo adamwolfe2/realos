@@ -190,7 +190,7 @@ export default async function SeoPage() {
   }));
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <PageHeader
         title="SEO"
         description="Organic search performance from Google Search Console and Google Analytics 4. Last 28 days vs. the prior 28 days."
@@ -229,7 +229,7 @@ export default async function SeoPage() {
         </SectionCard>
       ) : (
         <>
-          <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
             <StatCard
               label="Organic sessions"
               value={fmtNumber(totalsCurrent.sessions)}
@@ -300,7 +300,7 @@ export default async function SeoPage() {
             <SeoTrendChart data={trendPoints} />
           </SectionCard>
 
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
             <SectionCard
               label="Top organic queries"
               description="Aggregated across the last 28 days. Sorted by clicks."

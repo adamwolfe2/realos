@@ -163,27 +163,8 @@ export function SourceLogo({
   return <Globe className={className} />;
 }
 
-// Human-facing label for the source. Prefers hostname-derived label when the
-// enum is the generic TAVILY_WEB bucket.
-export function sourceLabel(source: MentionSource, url: string): string {
-  let host = "";
-  try {
-    host = new URL(url).host.toLowerCase().replace(/^www\./, "");
-  } catch {
-    // ignore
-  }
-  if (source === "GOOGLE_REVIEW") return "Google";
-  if (source === "REDDIT") return "Reddit";
-  if (source === "YELP") return "Yelp";
-  if (source === "FACEBOOK_PUBLIC") return "Facebook";
-  if (/instagram\.com$/.test(host)) return "Instagram";
-  if (/quora\.com$/.test(host)) return "Quora";
-  if (/apartmentratings\.com$/.test(host)) return "ApartmentRatings";
-  if (/niche\.com$/.test(host)) return "Niche";
-  if (/bbb\.org$/.test(host)) return "BBB";
-  if (/collegeconfidential\.com$/.test(host)) return "College Confidential";
-  if (/glassdoor\.com$/.test(host)) return "Glassdoor";
-  if (/medium\.com$/.test(host)) return "Medium";
-  if (/\.edu$/.test(host)) return host.split(".")[0].toUpperCase();
-  return host || "Web";
-}
+// Re-export the pure helper from the non-client module so existing
+// `import { sourceLabel } from "...source-logo"` callers keep working
+// without modification. New server-side callers should import from
+// "...source-label" directly.
+export { sourceLabel } from "./source-label";

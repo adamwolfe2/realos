@@ -62,7 +62,7 @@ const OCCUPANCY_TAB: TabDef = {
 const OPERATIONS_TABS: TabDef[] = [
   { key: "residents", label: "Residents", icon: Home },
   { key: "renewals", label: "Renewals", icon: CalendarClock },
-  { key: "work-orders", label: "Work orders", icon: Wrench },
+  // Work orders tab intentionally removed per product decision.
 ];
 
 function PropertyTabsInner({

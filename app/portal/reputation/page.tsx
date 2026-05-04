@@ -11,7 +11,8 @@ import {
 } from "@/lib/reputation/portfolio";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
-import { SourceLogo, sourceLabel } from "@/components/portal/reputation/source-logo";
+import { SourceLogo } from "@/components/portal/reputation/source-logo";
+import { sourceLabel } from "@/components/portal/reputation/source-label";
 import type { MentionSource, Sentiment } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Reputation" };

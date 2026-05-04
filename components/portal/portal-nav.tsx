@@ -202,7 +202,11 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/portal/residents", label: "Residents", icon: Home, show: (o) => Boolean(o.appFolioConnected) },
       { href: "/portal/renewals", label: "Renewals", icon: CalendarClock, show: (o) => Boolean(o.appFolioConnected) },
-      { href: "/portal/work-orders", label: "Work orders", icon: Wrench, show: (o) => Boolean(o.appFolioConnected) },
+      // Work orders intentionally removed from nav per product decision —
+      // operators don't want maintenance tickets surfaced in LeaseStack.
+      // Page kept on disk for now (URL still resolves) so any inbound
+      // links from earlier sessions don't 404, but it's no longer a
+      // featured surface.
     ],
   },
   {

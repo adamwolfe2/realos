@@ -17,6 +17,8 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
+import { DataTable, EntityCell } from "@/components/portal/ui/data-table";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { ResidentStatus } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Residents" };
@@ -310,106 +312,129 @@ export default async function ResidentsPage({
         </DashboardSection>
       ) : null}
 
-      {/* Roster table */}
-      <DashboardSection
-        title="Roster"
-        eyebrow={`${residents.length} of all matching`}
-        description="Read-only mirror. Edit a resident in AppFolio; changes sync on next run."
-      >
-        {residents.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              No residents match these filters.
+      {/* Roster table — Twenty-style DataTable */}
+      <div>
+        <div className="flex items-baseline justify-between mb-2 px-1">
+          <div>
+            <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+              {residents.length} of all matching
             </p>
+            <h2
+              className="text-[15px] font-medium tracking-tight text-foreground"
+              style={{ fontFamily: "var(--font-display)" }}
+            >
+              Roster
+            </h2>
           </div>
+          <p className="text-[11px] text-muted-foreground">
+            Read-only mirror · edit in AppFolio
+          </p>
+        </div>
+        {residents.length === 0 ? (
+          <EmptyState
+            title="No residents match these filters."
+            body="Try clearing the status filter or widening the property selection."
+          />
         ) : (
-          <div className="overflow-x-auto -mx-4 md:mx-0">
-            <table className="w-full text-xs min-w-[800px]">
-              <thead className="text-left text-[10px] tracking-widest uppercase text-muted-foreground">
-                <tr className="border-b border-border">
-                  <th className="px-4 md:px-2 py-2 font-medium">Resident</th>
-                  <th className="px-2 py-2 font-medium">Property</th>
-                  <th className="px-2 py-2 font-medium">Unit</th>
-                  <th className="px-2 py-2 font-medium">Status</th>
-                  <th className="px-2 py-2 font-medium text-right">Rent</th>
-                  <th className="px-2 py-2 font-medium">Move-in</th>
-                  <th className="px-2 py-2 font-medium">Lease end</th>
-                  <th className="px-2 py-2 font-medium" />
-                </tr>
-              </thead>
-              <tbody>
-                {residents.map((r) => {
+          <DataTable
+            rows={residents}
+            getRowKey={(r) => r.id}
+            getRowHref={(r) =>
+              r.leadId
+                ? `/portal/leads/${r.leadId}`
+                : `/portal/properties/${r.property.id}`
+            }
+            columns={[
+              {
+                key: "name",
+                header: "Resident",
+                accessor: (r) => {
                   const name =
                     [r.firstName, r.lastName].filter(Boolean).join(" ") ||
                     r.email ||
                     "Resident";
                   return (
-                    <tr
-                      key={r.id}
-                      className="border-b border-border last:border-0 hover:bg-muted/40"
-                    >
-                      <td className="px-4 md:px-2 py-2 text-foreground">
-                        {name}
-                        <div className="text-[10px] text-muted-foreground flex items-center gap-2 mt-0.5">
-                          {r.email ? (
-                            <span className="truncate max-w-[140px]">{r.email}</span>
-                          ) : null}
-                          {r.phone ? <span>{r.phone}</span> : null}
-                        </div>
-                      </td>
-                      <td className="px-2 py-2 text-foreground">
-                        <Link
-                          href={`/portal/properties/${r.property.id}`}
-                          className="hover:text-primary"
-                        >
-                          {r.property.name}
-                        </Link>
-                      </td>
-                      <td className="px-2 py-2 text-muted-foreground">
-                        {r.unitNumber ?? r.listing?.unitNumber ?? "—"}
-                      </td>
-                      <td className="px-2 py-2">
-                        <StatusPill
-                          label={STATUS_LABEL[r.status]}
-                          tone={STATUS_TONE[r.status]}
-                        />
-                        {r.currentLease?.isPastDue ? (
-                          <span className="ml-1 inline-flex items-center text-[10px] text-rose-700 font-semibold">
-                            past-due {fmtMoney(r.currentLease.currentBalanceCents)}
-                          </span>
-                        ) : null}
-                      </td>
-                      <td className="px-2 py-2 text-right tabular-nums">
-                        {fmtMoney(
-                          r.currentLease?.monthlyRentCents ?? r.monthlyRentCents,
-                        )}
-                      </td>
-                      <td className="px-2 py-2 tabular-nums">
-                        {r.moveInDate ? format(r.moveInDate, "MMM yyyy") : "—"}
-                      </td>
-                      <td className="px-2 py-2 tabular-nums">
-                        {r.currentLease?.endDate
-                          ? format(r.currentLease.endDate, "MMM d, yyyy")
-                          : "—"}
-                      </td>
-                      <td className="px-2 py-2 text-right">
-                        {r.leadId ? (
-                          <Link
-                            href={`/portal/leads/${r.leadId}`}
-                            className="text-[11px] font-medium text-foreground hover:text-primary"
-                          >
-                            Lead →
-                          </Link>
-                        ) : null}
-                      </td>
-                    </tr>
+                    <EntityCell
+                      name={name}
+                      seed={r.id}
+                      secondary={r.email ?? r.phone ?? null}
+                    />
                   );
-                })}
-              </tbody>
-            </table>
-          </div>
+                },
+              },
+              {
+                key: "property",
+                header: "Property",
+                hideOnMobile: true,
+                accessor: (r) => (
+                  <span className="text-foreground">{r.property.name}</span>
+                ),
+              },
+              {
+                key: "unit",
+                header: "Unit",
+                hideOnMobile: true,
+                accessor: (r) =>
+                  r.unitNumber ?? r.listing?.unitNumber ?? (
+                    <span className="text-muted-foreground">—</span>
+                  ),
+              },
+              {
+                key: "status",
+                header: "Status",
+                accessor: (r) => (
+                  <span className="inline-flex items-center gap-1.5">
+                    <StatusPill
+                      label={STATUS_LABEL[r.status]}
+                      tone={STATUS_TONE[r.status]}
+                    />
+                    {r.currentLease?.isPastDue ? (
+                      <span className="text-[10px] text-rose-700 font-semibold">
+                        past-due
+                      </span>
+                    ) : null}
+                  </span>
+                ),
+              },
+              {
+                key: "rent",
+                header: "Rent",
+                align: "right",
+                accessor: (r) =>
+                  fmtMoney(
+                    r.currentLease?.monthlyRentCents ?? r.monthlyRentCents,
+                  ),
+              },
+              {
+                key: "movein",
+                header: "Move-in",
+                hideOnMobile: true,
+                accessor: (r) =>
+                  r.moveInDate ? (
+                    <span className="text-[11px] tabular-nums">
+                      {format(r.moveInDate, "MMM yyyy")}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  ),
+              },
+              {
+                key: "leaseEnd",
+                header: "Lease end",
+                hideOnMobile: true,
+                accessor: (r) =>
+                  r.currentLease?.endDate ? (
+                    <span className="text-[11px] tabular-nums">
+                      {format(r.currentLease.endDate, "MMM d, yyyy")}
+                    </span>
+                  ) : (
+                    <span className="text-muted-foreground">—</span>
+                  ),
+              },
+            ]}
+          />
         )}
-      </DashboardSection>
+      </div>
     </div>
   );
   } catch (err) {
