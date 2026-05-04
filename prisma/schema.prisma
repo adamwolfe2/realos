@@ -351,6 +351,7 @@ model Organization {
   conversationFlags      ConversationFlag[]
   reputationScans        ReputationScan[]
   reputationMentions     PropertyMention[]
+  adLibraryAdvertisers   AdLibraryAdvertiser[]
   audienceSegments       AudienceSegment[]
   audienceDestinations   AudienceDestination[]
   audienceSyncRuns       AudienceSyncRun[]
@@ -584,6 +585,7 @@ model Property {
   insights             Insight[]
   reputationScans      ReputationScan[]
   reputationMentions   PropertyMention[]
+  adLibraryAdvertisers AdLibraryAdvertiser[]
   residents            Resident[]
   leases               Lease[]
   workOrders           WorkOrder[]
@@ -2296,4 +2298,99 @@ model AudienceSyncSchedule {
   @@index([nextRunAt, enabled])
   @@index([segmentId])
   @@index([destinationId])
+}
+
+// ============================================================================
+// AD LIBRARY TRACKING
+// ============================================================================
+//
+// Snapshots of public ads found in Meta's Ad Library for any advertiser the
+// operator wants to track. Pulled via the public Ad Library API at
+// graph.facebook.com/v19.0/ads_archive (requires a Meta app access token,
+// not customer credentials — agency holds one app token). Refreshed daily
+// by cron; diffs against prior snapshots so the operator sees "3 ads
+// launched this week, 1 went inactive".
+//
+// Importantly: Meta only exposes impressions/spend RANGES for political /
+// issue / social ads. Commercial ads return creative + status + dates only.
+// We surface what's available; the schema is permissive.
+
+model AdLibraryAdvertiser {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Optional property scope — when set, the widget renders on the
+  // property detail page; when null, it's an org-wide tracker.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  // What we feed Meta's Ad Library search. Either a Page ID or a search
+  // term (the operator can paste either).
+  searchKind  AdLibrarySearchKind
+  searchValue String
+
+  // Friendly label displayed in the UI (e.g. "Telegraph Commons").
+  displayName String
+
+  lastScannedAt DateTime?
+  lastScanError String?
+
+  ads AdLibraryAd[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, searchValue])
+  @@index([orgId])
+  @@index([propertyId])
+}
+
+enum AdLibrarySearchKind {
+  PAGE_ID
+  SEARCH_TERM
+}
+
+model AdLibraryAd {
+  id           String              @id @default(cuid())
+  advertiserId String
+  advertiser   AdLibraryAdvertiser @relation(fields: [advertiserId], references: [id], onDelete: Cascade)
+
+  // Meta's library ID for this ad. Unique per advertiser.
+  externalId String
+
+  // Status from Meta — ACTIVE / INACTIVE.
+  status String
+
+  // Creative content (any field may be null depending on ad type).
+  creativeBody  String? @db.Text
+  creativeTitle String? @db.Text
+  ctaText       String?
+  imageUrl      String? @db.Text
+  videoUrl      String? @db.Text
+  linkUrl       String? @db.Text
+
+  // Reach + spend RANGES — only populated for political/issue ads.
+  impressionsLow  Int?
+  impressionsHigh Int?
+  spendLow        Int? // cents
+  spendHigh       Int? // cents
+  currency        String?
+
+  // Publisher platforms the ad runs on (FACEBOOK, INSTAGRAM, AUDIENCE_NETWORK, MESSENGER).
+  publisherPlatforms String[]
+
+  // Lifecycle dates.
+  adCreationTime  DateTime?
+  adDeliveryStart DateTime?
+  adDeliveryStop  DateTime?
+
+  // Raw payload for forward-compat — Meta adds fields without notice.
+  raw Json?
+
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  @@unique([advertiserId, externalId])
+  @@index([advertiserId, status])
 }

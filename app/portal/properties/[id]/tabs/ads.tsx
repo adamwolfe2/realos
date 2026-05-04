@@ -4,6 +4,12 @@ import {
   getPropertyAds,
   centsToUsdShort,
 } from "@/lib/properties/queries";
+import { prisma } from "@/lib/db";
+import { adLibraryConfigured } from "@/lib/integrations/ad-library";
+import {
+  AdLibraryPanel,
+  type AdLibraryAdvertiserView,
+} from "@/components/portal/ad-library/ad-library-panel";
 
 export async function AdsTab({
   orgId,
@@ -12,26 +18,83 @@ export async function AdsTab({
   orgId: string;
   propertyId: string;
 }) {
-  const data = await getPropertyAds(orgId, propertyId);
+  const [data, advertisersRaw] = await Promise.all([
+    getPropertyAds(orgId, propertyId),
+    prisma.adLibraryAdvertiser.findMany({
+      where: { orgId, propertyId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        ads: {
+          orderBy: [
+            { status: "asc" },
+            { adDeliveryStart: "desc" },
+          ],
+        },
+      },
+    }),
+  ]);
+
+  const advertisers: AdLibraryAdvertiserView[] = advertisersRaw.map((a) => ({
+    id: a.id,
+    displayName: a.displayName,
+    searchKind: a.searchKind,
+    searchValue: a.searchValue,
+    lastScannedAt: a.lastScannedAt?.toISOString() ?? null,
+    lastScanError: a.lastScanError ?? null,
+    ads: a.ads.map((ad) => ({
+      id: ad.id,
+      externalId: ad.externalId,
+      status: ad.status,
+      creativeBody: ad.creativeBody,
+      creativeTitle: ad.creativeTitle,
+      linkUrl: ad.linkUrl,
+      imageUrl: ad.imageUrl,
+      videoUrl: ad.videoUrl,
+      publisherPlatforms: ad.publisherPlatforms,
+      adCreationTime: ad.adCreationTime?.toISOString() ?? null,
+      adDeliveryStart: ad.adDeliveryStart?.toISOString() ?? null,
+      adDeliveryStop: ad.adDeliveryStop?.toISOString() ?? null,
+      spendLow: ad.spendLow,
+      spendHigh: ad.spendHigh,
+      impressionsLow: ad.impressionsLow,
+      impressionsHigh: ad.impressionsHigh,
+      currency: ad.currency,
+    })),
+  }));
+  const adLibrarySection = (
+    <DashboardSection
+      title="Public Ad Library"
+      eyebrow="Live tracker"
+      description="Real ads pulled from Meta's public Ad Library — no customer credentials required. Updates daily and tracks new launches + ads going inactive."
+    >
+      <AdLibraryPanel
+        propertyId={propertyId}
+        advertisers={advertisers}
+        configured={adLibraryConfigured()}
+      />
+    </DashboardSection>
+  );
 
   if (data.campaigns.length === 0) {
     return (
-      <div className="space-y-6">
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="space-y-3">
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <KpiTile label="Spend (28d)" value="—" />
           <KpiTile label="Leads (28d)" value="—" />
           <KpiTile label="Campaigns" value={0} />
           <KpiTile label="CPL" value="—" />
         </section>
-        <div className="rounded-xl border border-border bg-card p-6">
+        <div className="rounded-lg border border-dashed border-border bg-secondary/30 px-4 py-5">
           <p className="text-sm font-semibold text-foreground">
             No campaigns linked to this property
           </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Attach a campaign to this property from the Campaigns module to see
-            spend, CPL, and attribution here.
+          <p className="mt-1 text-[11px] text-muted-foreground leading-snug max-w-md">
+            Connect Google Ads or Meta Ads to see spend, CPL, and
+            attribution. Until then, the Ad Library tracker below shows
+            what&apos;s already running publicly.
           </p>
         </div>
+        {adLibrarySection}
       </div>
     );
   }
@@ -109,6 +172,7 @@ export async function AdsTab({
           </table>
         </div>
       </DashboardSection>
+      {adLibrarySection}
     </div>
   );
 }
