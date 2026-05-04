@@ -278,6 +278,10 @@ function DonutWithLegend({
           <PieChart>
             <Tooltip
               cursor={false}
+              // Bump the wrapper z-index so the hover bubble renders above
+              // the centered "Total N" overlay (the overlay sits inside the
+              // same absolute container and was occluding the tooltip).
+              wrapperStyle={{ zIndex: 50, outline: "none" }}
               contentStyle={{
                 fontSize: 12,
                 background: "white",

@@ -60,27 +60,11 @@ export default function ReputationError({
         </div>
       </div>
 
-      {/* Surface the actual error message for quick debugging. Wrap in
-          <details> so it's collapsed by default for end-users but
-          one-click expandable for support. */}
-      {error.message ? (
-        <details className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-900">
-          <summary className="cursor-pointer font-semibold">
-            Diagnostic — share with engineering
-          </summary>
-          <div className="mt-2 space-y-2">
-            <div>
-              <span className="font-semibold">Error: </span>
-              <code className="font-mono break-all">{error.message}</code>
-            </div>
-            {error.stack ? (
-              <pre className="mt-1 whitespace-pre-wrap break-all text-[10px] font-mono opacity-80 max-h-[200px] overflow-auto">
-                {error.stack}
-              </pre>
-            ) : null}
-          </div>
-        </details>
-      ) : null}
+      {/* Stack traces and error.message are intentionally NOT surfaced to
+          the client — they leak internal file paths and route chunk
+          structure. Engineers can grep Vercel logs by the digest above
+          (we log message + stack from the useEffect at the top of this
+          component). End-users see the friendly banner only. */}
     </div>
   );
 }

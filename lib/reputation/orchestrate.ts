@@ -186,15 +186,52 @@ export async function* orchestrateScan(
     if (r?.ok) allMentions.push(...r.mentions);
   }
 
-  const deduped = dedupeByUrlHash(allMentions);
+  const dedupedRaw = dedupeByUrlHash(allMentions);
+
+  // Off-topic filter — drop mentions whose title/excerpt looks like
+  // city-council / zoning / permit / municipal news rather than tenant
+  // sentiment about the property. Reported by ops as "Reddit feed
+  // includes news, zoning posts, and duplicates" (issue #14). The
+  // signal is robust enough that we filter before persistence so
+  // these never burn classifier tokens.
+  const deduped = dedupedRaw.filter(
+    ({ mention }) => !isOffTopicMention(mention),
+  );
+
+  // Content-shape dedupe — same title from two different URLs (e.g. a
+  // listing page indexed via Reddit AND via a Tavily web result) shows
+  // up as "the same content twice." Collapse on a normalized title key
+  // when the title is non-trivial.
+  const byTitle = new Map<
+    string,
+    { hash: string; mention: ScannedMention }
+  >();
+  for (const entry of deduped) {
+    const key = contentKey(entry.mention);
+    if (!key) continue;
+    const existingEntry = byTitle.get(key);
+    if (existingEntry) {
+      // Drop the lower-scored copy from the deduped list.
+      const keep = pickRicher(existingEntry.mention, entry.mention);
+      byTitle.set(key, keep === entry.mention ? entry : existingEntry);
+    } else {
+      byTitle.set(key, entry);
+    }
+  }
+  const dedupedFinal = deduped.filter((entry) => {
+    const key = contentKey(entry.mention);
+    if (!key) return true; // can't compare — keep
+    return byTitle.get(key) === entry;
+  });
+
   const existing = await fetchExistingHashes(
     property.orgId,
     property.id,
-    deduped.map((m) => m.hash)
+    dedupedFinal.map((m) => m.hash)
   );
 
-  const newMentions = deduped.filter((m) => !existing.has(m.hash));
-  const existingToBump = deduped.filter((m) => existing.has(m.hash));
+  const newMentions = dedupedFinal.filter((m) => !existing.has(m.hash));
+  const existingToBump = dedupedFinal.filter((m) => existing.has(m.hash));
 
   // Bump lastSeenAt on existing matches in a single batch.
   if (existingToBump.length > 0) {
@@ -611,4 +648,49 @@ function estimateCostCents(
   // account by scan, not by token).
   cents += ANALYSIS_COST_CENTS_PER_SCAN;
   return cents;
+}
+
+
+// ---------------------------------------------------------------------------
+// Off-topic + content dedupe helpers (issue #14).
+// ---------------------------------------------------------------------------
+
+// Patterns that consistently flag city-council / zoning / news /
+// government content. We see these on Reddit threads about the broader
+// neighborhood that mention the property only tangentially. They are
+// not user reviews of the property and confuse the reputation feed.
+const OFF_TOPIC_PATTERNS = [
+  /city council/i,
+  /zoning/i,
+  /planning commission/i,
+  /building permit/i,
+  /landmark(?:ed|ing)?/i,
+  /ordinance/i,
+  /appeal(?:s|ed)?.*(rejected|denied|granted)/i,
+  /affordable housing (?:bond|measure|policy)/i,
+  /entitlement(?:s)?/i,
+  /development permit/i,
+  /variance.*approved/i,
+];
+
+export function isOffTopicMention(mention: ScannedMention): boolean {
+  const haystacks = [mention.title ?? "", (mention.excerpt ?? "").slice(0, 600)];
+  for (const text of haystacks) {
+    if (!text) continue;
+    for (const re of OFF_TOPIC_PATTERNS) {
+      if (re.test(text)) return true;
+    }
+  }
+  return false;
+}
+
+// Stable content key for cross-URL dedupe. Same title across two URLs is
+// almost always the same Reddit thread / cross-posted article that the
+// URL-hash dedupe missed. Returns null when the title is too short to
+// be a reliable comparison key.
+function contentKey(mention: ScannedMention): string | null {
+  const t = (mention.title ?? "").trim().toLowerCase();
+  if (t.length < 25) return null;
+  // Collapse whitespace + punctuation so subtle variations match.
+  return t.replace(/[^a-z0-9]+/g, " ").trim();
 }

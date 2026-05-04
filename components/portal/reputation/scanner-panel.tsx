@@ -379,7 +379,7 @@ export function ScannerPanel({
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
             <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-              Reputation scanner
+              Search mentions
             </div>
             <h2 className="mt-1 text-base font-semibold tracking-tight text-foreground">
               {propertyName}
@@ -391,15 +391,16 @@ export function ScannerPanel({
             ) : null}
             {latestScanAt ? (
               <p className="text-[11px] text-muted-foreground mt-2">
-                Last scanned{" "}
+                Last searched{" "}
                 {formatDistanceToNow(new Date(latestScanAt), {
                   addSuffix: true,
-                })}
+                })}{" "}
+                · on-demand only (not continuous monitoring)
               </p>
             ) : (
               <p className="text-[11px] text-muted-foreground mt-2">
-                Never scanned — click Scan Now to search Google Reviews,
-                Reddit, Facebook, and the open web.
+                Click Search now to query Google Reviews, Reddit, Facebook,
+                and the open web on demand.
               </p>
             )}
           </div>
@@ -410,7 +411,7 @@ export function ScannerPanel({
             ) : (
               <Sparkles className="h-4 w-4" aria-hidden="true" />
             )}
-            {scanning ? "Scanning…" : "Scan now"}
+            {scanning ? "Searching…" : "Search now"}
           </Button>
         </div>
 
@@ -501,12 +502,39 @@ export function ScannerPanel({
 
       {/* Mention feed */}
       {filtered.length === 0 ? (
-        <section className="rounded-lg border border-dashed border-border bg-card/40 p-10 text-center">
-          <p className="text-sm text-muted-foreground">
-            {hasAnyMentions
-              ? "No mentions match the current filters."
-              : "No mentions yet. Click Scan now to search the web."}
-          </p>
+        <section className="rounded-lg border border-dashed border-border bg-card/40 p-8 text-center">
+          {!hasAnyMentions ? (
+            <p className="text-sm text-muted-foreground">
+              No mentions yet. Click Search now to query Google Reviews,
+              Reddit, Facebook, and the open web.
+            </p>
+          ) : filters.sentiment !== "ALL" ? (
+            <div className="space-y-1.5">
+              <p className="text-sm font-medium text-foreground">
+                No mentions classified as{" "}
+                <span className="lowercase">{filters.sentiment}</span> yet.
+              </p>
+              <p className="text-xs text-muted-foreground max-w-md mx-auto leading-snug">
+                Sentiment is assigned by the classifier as mentions come in.
+                Some sources (zoning posts, news links) stay unclassified.
+                Try clearing the sentiment filter to see all{" "}
+                {mentions.length} mention{mentions.length === 1 ? "" : "s"}.
+              </p>
+              <button
+                type="button"
+                onClick={() =>
+                  setFilters((f) => ({ ...f, sentiment: "ALL" }))
+                }
+                className="mt-1 text-xs font-semibold underline underline-offset-2 hover:no-underline"
+              >
+                Clear sentiment filter
+              </button>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              No mentions match the current filters.
+            </p>
+          )}
         </section>
       ) : (
         <section className="grid grid-cols-1 gap-3">
