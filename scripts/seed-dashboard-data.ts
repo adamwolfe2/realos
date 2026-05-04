@@ -31,13 +31,48 @@ import { PrismaNeonHttp } from "@prisma/adapter-neon";
 import type { HTTPQueryOptions } from "@neondatabase/serverless";
 import { randomUUID } from "node:crypto";
 
-if (process.env.NODE_ENV === "production" && process.env.SEED_DEMO_DATA !== "1") {
+// ---------------------------------------------------------------------------
+// PRODUCTION SAFETY — three independent guards must all clear before this
+// script writes any rows. The Norman launch demanded NO MORE FAKE DATA in
+// production. This used to allow a SEED_DEMO_DATA=1 backdoor that would let
+// demo data flow into a live tenant; that backdoor is removed.
+//
+// If you need to seed dashboard data, point DATABASE_URL at a Neon branch
+// or local DB and set ALLOW_DEMO_SEED=true.
+// ---------------------------------------------------------------------------
+if (process.env.NODE_ENV === "production") {
   throw new Error(
-    "Refusing to run demo seed in production without SEED_DEMO_DATA=1. Aborting.",
+    "[seed-dashboard-data] Refusing to run when NODE_ENV=production. Aborting.",
+  );
+}
+if (process.env.VERCEL_ENV === "production") {
+  throw new Error(
+    "[seed-dashboard-data] Refusing to run against a Vercel production environment. Aborting.",
+  );
+}
+if (process.env.ALLOW_DEMO_SEED !== "true") {
+  throw new Error(
+    "[seed-dashboard-data] Demo seeding is disabled. Set ALLOW_DEMO_SEED=true to bypass — but only when DATABASE_URL points at a throwaway DB.",
   );
 }
 
 const connectionString = process.env.DATABASE_URL;
+
+// Hostname heuristic — refuses any DATABASE_URL containing prod-sounding
+// tokens unless the operator explicitly waives the guard. Catches the
+// common "I forgot which .env was loaded" footgun.
+if (connectionString) {
+  const lower = connectionString.toLowerCase();
+  const looksProd = ["prod", "production", "live", "primary"].some((k) =>
+    lower.includes(k),
+  );
+  if (looksProd && process.env.I_KNOW_THIS_IS_NOT_PROD !== "true") {
+    throw new Error(
+      `[seed-dashboard-data] DATABASE_URL contains a production-looking token. ` +
+        `Set I_KNOW_THIS_IS_NOT_PROD=true to override after triple-checking the connection string.`,
+    );
+  }
+}
 if (!connectionString) {
   throw new Error("DATABASE_URL is not set. Source .env.local first.");
 }
