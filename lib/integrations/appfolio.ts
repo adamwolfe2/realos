@@ -1027,14 +1027,29 @@ export function mapLeasePayload(raw: RawRow): MappedLease | null {
   const security = asNumber(raw.security_deposit ?? raw.deposit);
   const term = asNumber(raw.lease_term ?? raw.term_months);
 
+  // AppFolio's rent_roll v2 report uses snake_case lease_from / lease_to
+  // (NOT start_date / end_date as the field names imply). It also exposes
+  // move_in / move_out as the actual physical dates a tenant lives in the
+  // unit. Fall through every variant so the mapper handles AppFolio's
+  // schema drift across plan tiers without losing the renewal pipeline.
   return {
     externalId,
     residentExternalId: asString(raw.tenant_id ?? raw.occupant_id) ?? null,
     unitExternalId: asString(raw.unit_id) ?? null,
     propertyExternalId: asString(raw.property_id) ?? null,
     status: leaseStatusFromRaw(raw),
-    startDate: asDate(raw.start_date ?? raw.lease_start_date) ?? null,
-    endDate: asDate(raw.end_date ?? raw.lease_end_date) ?? null,
+    startDate:
+      asDate(raw.lease_from) ??
+      asDate(raw.move_in) ??
+      asDate(raw.start_date) ??
+      asDate(raw.lease_start_date) ??
+      null,
+    endDate:
+      asDate(raw.lease_to) ??
+      asDate(raw.move_out) ??
+      asDate(raw.end_date) ??
+      asDate(raw.lease_end_date) ??
+      null,
     monthlyRentCents: monthlyRent != null ? Math.round(monthlyRent * 100) : null,
     securityDepositCents: security != null ? Math.round(security * 100) : null,
     termMonths: term != null ? Math.round(term) : null,
