@@ -27,7 +27,10 @@ export function PageHeader({
         {eyebrow ? (
           <div className="text-[11px] text-muted-foreground mb-1">{eyebrow}</div>
         ) : null}
-        <h1 className="text-lg md:text-xl font-semibold tracking-tight text-foreground">
+        <h1
+          className="text-xl md:text-2xl font-medium tracking-tight text-foreground"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
           {title}
         </h1>
         {description ? (

@@ -15,56 +15,60 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
    ============================================================================= */
 
 @theme {
-  --font-display: var(--font-inter), -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif;
-  --font-serif:   var(--font-inter), -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif;
+  /* Type system — Fraunces for display headlines (warm humanist serif),
+     Inter for UI + body, JetBrains Mono for tabular numerics + code.
+     The earlier override that pointed all three at Inter is gone; this
+     restores the brand voice from the marketing site. */
+  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
+  --font-serif:   var(--font-fraunces), Georgia, "Times New Roman", serif;
   --font-sans:    var(--font-inter), -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif;
   --font-mono:    var(--font-jetbrains), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
   /* =========================================================================
-     LeaseStack Admin design system — ported from AIMS / AI Operator Collective
-     aesthetic. Crimson swapped for blue. Semantic tokens mirror shadcn/ui so
-     existing components (components/ui/*) pick them up automatically.
+     LeaseStack design system — warm cream canvas, ink text, blue accent.
+     Matches the marketing site (#f5f4ed bg / #4d4c48 text / #2563EB brand)
+     so the portal feels like one product, not two. Semantic tokens mirror
+     shadcn/ui so components/ui/* and Radix primitives inherit them.
      ========================================================================= */
 
-  /* Canvas */
-  --color-background: #F5F5F5;
+  /* Canvas — warm parchment, not cool gray */
+  --color-background: #F5F4ED;
   --color-foreground: #1A1A1A;
   --color-card: #FFFFFF;
   --color-card-foreground: #1A1A1A;
   --color-popover: #FFFFFF;
   --color-popover-foreground: #1A1A1A;
 
-  /* Brand — blue accent (was crimson #981B1B) */
+  /* Brand */
   --color-primary: #2563EB;
   --color-primary-foreground: #FFFFFF;
   --color-primary-dark: #1D4ED8;
   --color-primary-light: #3B82F6;
 
-  /* Supporting */
-  --color-secondary: #F5F5F5;
+  /* Supporting — warm neutrals throughout */
+  --color-secondary: #FAF9F5;
   --color-secondary-foreground: #1A1A1A;
-  --color-muted: #F5F5F5;
-  --color-muted-foreground: #737373;
-  --color-accent: #EFF6FF;
+  --color-muted: #EFEDE3;
+  --color-muted-foreground: #87867F;
+  --color-accent: #EFF3FB;
   --color-accent-foreground: #2563EB;
-  --color-destructive: #DC2626;
+  --color-destructive: #B53333;
   --color-destructive-foreground: #FFFFFF;
 
-  /* Borders + rings */
-  --color-border: #E3E3E3;
-  --color-input: #E3E3E3;
+  /* Borders + rings — warm cream, not cool gray */
+  --color-border: #E8E6DC;
+  --color-input: #E8E6DC;
   --color-ring: #2563EB;
 
-  /* AIMS sidebar-specific */
+  /* Sidebar-specific: cards float ON the cream canvas */
   --color-deep: #FFFFFF;
-  --color-surface: #F5F5F5;
+  --color-surface: #FAF9F5;
 
-  /* Legacy LeaseStack aliases (ink/cream/shell/sand) — kept so existing
-     admin code keeps rendering a real color instead of silently no-op'ing. */
+  /* Legacy LeaseStack aliases */
   --color-ink: #1A1A1A;
-  --color-cream: #F5F5F5;
-  --color-shell: #E3E3E3;
-  --color-sand: #737373;
+  --color-cream: #F5F4ED;
+  --color-shell: #E8E6DC;
+  --color-sand: #87867F;
 }
 
 :root {

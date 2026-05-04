@@ -8,6 +8,7 @@ import {
   type LeadKanbanItem,
 } from "@/components/portal/lead-kanban";
 import { PageHeader } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
 import { humanLeadSource } from "@/lib/format";
 
@@ -91,7 +92,7 @@ export default async function LeadsKanbanPage({
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       <PageHeader
         title="Leads"
         description="Click any lead to see full detail, conversation history, tours, and applications."
@@ -109,51 +110,62 @@ export default async function LeadsKanbanPage({
 
       <form
         action="/portal/leads"
-        className="rounded-lg border border-border bg-card p-4"
+        className="rounded-lg border border-border bg-card px-3 py-2 flex flex-wrap items-center gap-2"
       >
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-          <SelectField
-            label="Source"
+        <label className="flex items-center gap-1.5 min-w-0">
+          <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground shrink-0">
+            Source
+          </span>
+          <select
             name="source"
             defaultValue={sp.source ?? ""}
-            options={[
-              { value: "", label: "All sources" },
-              ...SOURCES.map((s) => ({ value: s, label: humanLeadSource(s) })),
-            ]}
-          />
-          <SelectField
-            label="Property"
+            className="rounded-md border border-border bg-background px-2 py-1 text-xs"
+          >
+            <option value="">All</option>
+            {SOURCES.map((s) => (
+              <option key={s} value={s}>
+                {humanLeadSource(s)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className="flex items-center gap-1.5 min-w-0">
+          <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground shrink-0">
+            Property
+          </span>
+          <select
             name="property"
             defaultValue={sp.property ?? ""}
-            options={[
-              { value: "", label: "All properties" },
-              ...properties.map((p) => ({ value: p.id, label: p.name })),
-            ]}
-          />
-          <label className="flex flex-col gap-1.5 md:col-span-2">
-            <span className="text-xs font-medium text-foreground">Search</span>
-            <input
-              name="q"
-              defaultValue={sp.q ?? ""}
-              placeholder="Name, email, phone"
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-            />
-          </label>
-        </div>
-        <div className="flex gap-2 mt-4">
-          <button
-            type="submit"
-            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
+            className="rounded-md border border-border bg-background px-2 py-1 text-xs max-w-[200px]"
           >
-            Apply filters
-          </button>
+            <option value="">All</option>
+            {properties.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <input
+          name="q"
+          defaultValue={sp.q ?? ""}
+          placeholder="Search name, email, phone…"
+          className="rounded-md border border-border bg-background px-2 py-1 text-xs flex-1 min-w-[180px]"
+        />
+        <button
+          type="submit"
+          className="inline-flex items-center justify-center rounded-md bg-foreground text-background px-3 py-1 text-xs font-semibold hover:opacity-90"
+        >
+          Apply
+        </button>
+        {(sp.source || sp.property || sp.q) ? (
           <Link
             href="/portal/leads"
-            className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
+            className="inline-flex items-center justify-center rounded-md border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
           >
-            Reset
+            Clear
           </Link>
-        </div>
+        ) : null}
       </form>
 
       {totalPages > 1 && (
@@ -201,38 +213,15 @@ export default async function LeadsKanbanPage({
 
 function EmptyLeadsState() {
   return (
-    <div className="rounded-xl border border-dashed border-border bg-card p-8 md:p-12 text-center">
-      <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-2">
-        No leads yet
-      </p>
-      <h3 className="text-lg font-semibold text-foreground mb-1.5">
-        Your pipeline is empty.
-      </h3>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-5">
-        Once leads start coming in from your chatbot, contact forms, ads, or
-        AppFolio sync, they&apos;ll show up here. Pick a starting point below.
-      </p>
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <Link
-          href="/portal/site-builder"
-          className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
-        >
-          Set up lead capture
-        </Link>
-        <Link
-          href="/portal/settings/integrations"
-          className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
-        >
-          Connect AppFolio
-        </Link>
-        <Link
-          href="/portal/settings/api-keys"
-          className="inline-flex items-center rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
-        >
-          Push leads via API
-        </Link>
-      </div>
-    </div>
+    <EmptyState
+      title="Your pipeline is empty."
+      body="Leads from chatbot conversations, contact forms, ads, or AppFolio sync land here. Pick a starting point below."
+      action={{ label: "Set up lead capture", href: "/portal/site-builder" }}
+      secondary={{
+        label: "Connect AppFolio",
+        href: "/portal/settings/integrations",
+      }}
+    />
   );
 }
 

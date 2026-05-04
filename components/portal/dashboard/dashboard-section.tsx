@@ -38,7 +38,10 @@ export function DashboardSection({
               {eyebrow}
             </div>
           ) : null}
-          <h2 className="text-sm font-semibold tracking-tight text-foreground">
+          <h2
+            className="text-[15px] font-medium tracking-tight text-foreground leading-tight"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
             {title}
           </h2>
           {description ? (
