@@ -2786,14 +2786,5 @@ export function TelegraphRenewalsDemo() {
   );
 }
 
-// ===========================================================================
-// Detection
-// ===========================================================================
-
-export function isTelegraphCommons(meta: { slug?: string | null; name?: string | null }) {
-  const candidates = [
-    (meta.slug ?? "").toLowerCase(),
-    (meta.name ?? "").toLowerCase(),
-  ];
-  return candidates.some((s) => s.includes("telegraph"));
-}
+// Detection helper lives in ./telegraph-detection.ts so the server-component
+// page can import it without crossing the "use client" boundary.

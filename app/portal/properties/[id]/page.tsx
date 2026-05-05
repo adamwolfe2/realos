@@ -15,8 +15,8 @@ import { ReputationTab } from "./tabs/reputation";
 import { ResidentsTab } from "./tabs/residents";
 import { RenewalsTab } from "./tabs/renewals";
 import { WorkOrdersTab } from "./tabs/work-orders";
+import { isTelegraphCommons } from "./tabs/telegraph-detection";
 import {
-  isTelegraphCommons,
   TelegraphOverviewDemo,
   TelegraphTrafficDemo,
   TelegraphLeadsDemo,
