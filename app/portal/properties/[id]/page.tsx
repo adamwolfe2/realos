@@ -15,6 +15,18 @@ import { ReputationTab } from "./tabs/reputation";
 import { ResidentsTab } from "./tabs/residents";
 import { RenewalsTab } from "./tabs/renewals";
 import { WorkOrdersTab } from "./tabs/work-orders";
+import {
+  isTelegraphCommons,
+  TelegraphOverviewDemo,
+  TelegraphTrafficDemo,
+  TelegraphLeadsDemo,
+  TelegraphAdsDemo,
+  TelegraphChatbotDemo,
+  TelegraphReputationDemo,
+  TelegraphOccupancyDemo,
+  TelegraphResidentsDemo,
+  TelegraphRenewalsDemo,
+} from "./tabs/telegraph-demo";
 
 export const metadata: Metadata = { title: "Property detail" };
 export const dynamic = "force-dynamic";
@@ -59,7 +71,8 @@ export default async function PropertyDetail({
   if (!property) notFound();
 
   const meta = { slug: property.slug, name: property.name };
-  const showOccupancyTab = (property.totalUnits ?? 0) > 0;
+  const isDemo = isTelegraphCommons(meta);
+  const showOccupancyTab = isDemo || (property.totalUnits ?? 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -90,7 +103,9 @@ export default async function PropertyDetail({
         initialTab={tab ?? "overview"}
         showOccupancy={showOccupancyTab}
         panels={{
-          overview: (
+          overview: isDemo ? (
+            <TelegraphOverviewDemo />
+          ) : (
             <OverviewTab
               orgId={scope.orgId}
               propertyId={property.id}
@@ -113,34 +128,44 @@ export default async function PropertyDetail({
               }}
             />
           ),
-          traffic: (
+          traffic: isDemo ? (
+            <TelegraphTrafficDemo />
+          ) : (
             <TrafficTab
               orgId={scope.orgId}
               propertyId={property.id}
               propertyMeta={meta}
             />
           ),
-          leads: (
+          leads: isDemo ? (
+            <TelegraphLeadsDemo />
+          ) : (
             <LeadsTab
               orgId={scope.orgId}
               propertyId={property.id}
               propertyMeta={meta}
             />
           ),
-          ads: (
+          ads: isDemo ? (
+            <TelegraphAdsDemo />
+          ) : (
             <AdsTab
               orgId={scope.orgId}
               propertyId={property.id}
             />
           ),
-          chatbot: (
+          chatbot: isDemo ? (
+            <TelegraphChatbotDemo />
+          ) : (
             <ChatbotTab
               orgId={scope.orgId}
               propertyId={property.id}
               propertyName={property.name}
             />
           ),
-          reputation: (
+          reputation: isDemo ? (
+            <TelegraphReputationDemo />
+          ) : (
             <ReputationTab
               orgId={scope.orgId}
               propertyId={property.id}
@@ -155,13 +180,17 @@ export default async function PropertyDetail({
                 .join(", ") || null}
             />
           ),
-          occupancy: showOccupancyTab ? (
+          occupancy: isDemo ? (
+            <TelegraphOccupancyDemo />
+          ) : showOccupancyTab ? (
             <OccupancyTab
               orgId={scope.orgId}
               propertyId={property.id}
             />
           ) : null,
-          residents: (
+          residents: isDemo ? (
+            <TelegraphResidentsDemo />
+          ) : (
             <ResidentsTab
               orgId={scope.orgId}
               propertyId={property.id}
@@ -174,7 +203,9 @@ export default async function PropertyDetail({
               }
             />
           ),
-          renewals: (
+          renewals: isDemo ? (
+            <TelegraphRenewalsDemo />
+          ) : (
             <RenewalsTab
               orgId={scope.orgId}
               propertyId={property.id}
