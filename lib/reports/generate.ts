@@ -3,9 +3,15 @@ import { prisma } from "@/lib/db";
 import {
   AdPlatform,
   ApplicationStatus,
+  ChatbotConversationStatus,
   LeadSource,
   LeadStatus,
+  LeaseStatus,
+  MentionSource,
+  ResidentStatus,
+  Sentiment,
   TourStatus,
+  VisitorIdentificationStatus,
 } from "@prisma/client";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
@@ -119,6 +125,76 @@ export type ReportAiVisibility = {
   topBrandedTerms: string[];
 };
 
+// ---------------------------------------------------------------------------
+// Reputation, occupancy, renewals, visitor stats — added in the 2026 report
+// upgrade so the monthly client report reflects everything the operator
+// dashboard now tracks. All sections render gracefully when the underlying
+// data is empty (new tenants, no reviews yet, etc.).
+// ---------------------------------------------------------------------------
+
+export type ReportReputationSourceRow = {
+  source: string;
+  count: number;
+  rating: number | null;
+};
+
+export type ReportReputationMention = {
+  source: string;
+  rating: number | null;
+  excerpt: string;
+  publishedAt: string | null;
+  sourceUrl: string;
+};
+
+export type ReportReputationStats = {
+  overallRating: number | null;
+  totalReviews: number;
+  newInPeriod: number;
+  newInPeriodPct: number | null;
+  positiveCount: number;
+  negativeCount: number;
+  responseRatePct: number | null;
+  sourceBreakdown: ReportReputationSourceRow[];
+  topMentions: ReportReputationMention[];
+};
+
+export type ReportOccupancyStats = {
+  totalUnits: number;
+  leasedUnits: number;
+  availableUnits: number;
+  occupancyPct: number | null;
+  onNotice: number;
+  applicationsQueued: number;
+  monthlyRentRollUsd: number;
+  avgRentPerUnitUsd: number | null;
+};
+
+export type ReportRenewalStats = {
+  activeLeases: number;
+  expiringNext120: number;
+  expiringNext30: number;
+  expiringNext60: number;
+  monthlyAtRiskUsd: number;
+  pastDueCount: number;
+  pastDueBalanceUsd: number;
+};
+
+export type ReportVisitorStats = {
+  identifiedVisitors: number;
+  identifiedNewInPeriod: number;
+  withEmail: number;
+  withPhone: number;
+  identifiedWithLead: number;
+  // Trend of *new* identifications per day across the period.
+  identifiedTrend: number[];
+};
+
+export type ReportChatbotStatsExtended = ReportChatbotStats & {
+  capturedRatePct: number | null;
+  // Conversations that flipped to status=LEAD_CAPTURED in this window.
+  capturedConversations: number;
+};
+
 export type ReportSnapshot = {
   kind: ReportKind;
   periodStart: string;
@@ -132,10 +208,19 @@ export type ReportSnapshot = {
   topQueries: ReportTopQuery[];
   insights: ReportInsight[];
   chatbotStats: ReportChatbotStats;
+  // Optional extended chatbot block. Old snapshots stored before the upgrade
+  // won't have this; the view falls back to chatbotStats in that case.
+  chatbotStatsExtended?: ReportChatbotStatsExtended;
   properties: ReportPropertyRow[];
   trafficTrend: number[];
   attributionBySource: ReportAttributionRow[];
   aiVisibility: ReportAiVisibility | null;
+  // New 2026 sections — all optional so old snapshots stay readable. The
+  // view renders nothing when these are absent or empty.
+  reputationStats?: ReportReputationStats;
+  occupancyStats?: ReportOccupancyStats;
+  renewalStats?: ReportRenewalStats;
+  visitorStats?: ReportVisitorStats;
   aiAnalysis?: AiAnalysis;
 };
 
@@ -728,6 +813,48 @@ export async function generateReportSnapshot(
       }
     : null;
 
+  // -------------------------------------------------------------------------
+  // 2026 sections — reputation, occupancy, renewals, visitor identification.
+  // Each block is independently try/caught so an empty/missing data source
+  // (new tenant, schema not migrated, integration not configured) never
+  // blocks the rest of the report from generating.
+  // -------------------------------------------------------------------------
+
+  // Reputation — always lifetime + delta vs prior period.
+  const reputationStats = await buildReputationStats(
+    orgId,
+    periodStart,
+    periodEnd,
+    priorStart,
+    priorEnd,
+  ).catch(() => undefined);
+
+  // Occupancy — point-in-time snapshot of all properties on the org.
+  const occupancyStats = await buildOccupancyStats(orgId).catch(
+    () => undefined,
+  );
+
+  // Renewals — forward-looking 120-day window from periodEnd.
+  const renewalStats = await buildRenewalStats(orgId, periodEnd).catch(
+    () => undefined,
+  );
+
+  // Visitor identification — pixel-driven, period-scoped.
+  const visitorStats = await buildVisitorStats(
+    orgId,
+    periodStart,
+    periodEnd,
+    days,
+  ).catch(() => undefined);
+
+  // Chatbot extended — captured-rate breakdown for the report.
+  const chatbotStatsExtended = await buildChatbotExtended(
+    orgId,
+    periodStart,
+    periodEnd,
+    chatbotStats,
+  ).catch(() => undefined);
+
   const baseSnapshot: Omit<ReportSnapshot, "aiAnalysis"> = {
     kind,
     periodStart: periodStart.toISOString(),
@@ -741,10 +868,15 @@ export async function generateReportSnapshot(
     topQueries,
     insights,
     chatbotStats,
+    chatbotStatsExtended,
     properties,
     trafficTrend: trafficFallback,
     attributionBySource,
     aiVisibility,
+    reputationStats,
+    occupancyStats,
+    renewalStats,
+    visitorStats,
   };
 
   const aiAnalysis = await generateAiAnalysis(baseSnapshot);
@@ -752,5 +884,328 @@ export async function generateReportSnapshot(
   return {
     ...baseSnapshot,
     ...(aiAnalysis ? { aiAnalysis } : {}),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Section builders — each is independent so reports keep generating when
+// an integration is missing or the schema migration hasn't run yet.
+// ---------------------------------------------------------------------------
+
+const MENTION_SOURCE_LABELS: Record<MentionSource, string> = {
+  GOOGLE_REVIEW: "Google",
+  REDDIT: "Reddit",
+  YELP: "Yelp",
+  TAVILY_WEB: "Web",
+  FACEBOOK_PUBLIC: "Facebook",
+  OTHER: "Other",
+};
+
+async function buildReputationStats(
+  orgId: string,
+  periodStart: Date,
+  periodEnd: Date,
+  priorStart: Date,
+  priorEnd: Date,
+): Promise<ReportReputationStats | undefined> {
+  const [lifetime, sourceGroups, periodNew, priorNew, sentimentGroups, recent, reviewedAgg] =
+    await Promise.all([
+      prisma.propertyMention.aggregate({
+        where: { orgId },
+        _avg: { rating: true },
+        _count: { _all: true },
+      }),
+      prisma.propertyMention.groupBy({
+        by: ["source"],
+        where: { orgId },
+        _count: { _all: true },
+        _avg: { rating: true },
+      }),
+      prisma.propertyMention.count({
+        where: { orgId, publishedAt: { gte: periodStart, lt: periodEnd } },
+      }),
+      prisma.propertyMention.count({
+        where: { orgId, publishedAt: { gte: priorStart, lt: priorEnd } },
+      }),
+      prisma.propertyMention.groupBy({
+        by: ["sentiment"],
+        where: { orgId },
+        _count: { _all: true },
+      }),
+      prisma.propertyMention.findMany({
+        where: { orgId },
+        orderBy: { publishedAt: "desc" },
+        take: 5,
+        select: {
+          source: true,
+          rating: true,
+          excerpt: true,
+          publishedAt: true,
+          sourceUrl: true,
+        },
+      }),
+      // Response rate proxy — operator-marked "reviewed" mentions divided by
+      // the overall mention count. We don't track per-mention replies as
+      // first-class data yet, so this is the best signal available.
+      prisma.propertyMention.count({
+        where: { orgId, reviewedByUserId: { not: null } },
+      }),
+    ]);
+
+  const totalReviews = lifetime._count._all;
+  if (totalReviews === 0) return undefined;
+
+  const positiveCount =
+    sentimentGroups.find((s) => s.sentiment === Sentiment.POSITIVE)?._count
+      ._all ?? 0;
+  const negativeCount =
+    sentimentGroups.find((s) => s.sentiment === Sentiment.NEGATIVE)?._count
+      ._all ?? 0;
+
+  return {
+    overallRating:
+      lifetime._avg.rating != null
+        ? Math.round(lifetime._avg.rating * 10) / 10
+        : null,
+    totalReviews,
+    newInPeriod: periodNew,
+    newInPeriodPct: pctChange(periodNew, priorNew),
+    positiveCount,
+    negativeCount,
+    responseRatePct:
+      totalReviews > 0 ? Math.round((reviewedAgg / totalReviews) * 100) : null,
+    sourceBreakdown: sourceGroups
+      .map((g) => ({
+        source: MENTION_SOURCE_LABELS[g.source] ?? g.source,
+        count: g._count._all,
+        rating:
+          g._avg.rating != null ? Math.round(g._avg.rating * 10) / 10 : null,
+      }))
+      .sort((a, b) => b.count - a.count),
+    topMentions: recent.map((m) => ({
+      source: MENTION_SOURCE_LABELS[m.source] ?? m.source,
+      rating: m.rating,
+      excerpt: m.excerpt,
+      publishedAt: m.publishedAt ? m.publishedAt.toISOString() : null,
+      sourceUrl: m.sourceUrl,
+    })),
+  };
+}
+
+async function buildOccupancyStats(
+  orgId: string,
+): Promise<ReportOccupancyStats | undefined> {
+  const [propertyAgg, residentNoticeCount, applicationsQueued, rentRoll] =
+    await Promise.all([
+      prisma.property.aggregate({
+        where: { orgId },
+        _sum: { totalUnits: true, availableCount: true },
+      }),
+      prisma.resident.count({
+        where: { orgId, status: ResidentStatus.NOTICE_GIVEN },
+      }),
+      prisma.application.count({
+        where: {
+          status: ApplicationStatus.SUBMITTED,
+          lead: { orgId },
+        },
+      }),
+      prisma.lease.aggregate({
+        where: { orgId, status: LeaseStatus.ACTIVE },
+        _sum: { monthlyRentCents: true },
+        _count: { _all: true },
+      }),
+    ]);
+
+  const totalUnits = propertyAgg._sum.totalUnits ?? 0;
+  if (totalUnits === 0) return undefined;
+
+  const availableUnits = Math.max(
+    0,
+    Math.min(totalUnits, propertyAgg._sum.availableCount ?? 0),
+  );
+  const leasedUnits = Math.max(0, totalUnits - availableUnits);
+  const monthlyRentRollUsd = Math.round(
+    (rentRoll._sum.monthlyRentCents ?? 0) / 100,
+  );
+  const activeLeaseCount = rentRoll._count._all;
+
+  return {
+    totalUnits,
+    leasedUnits,
+    availableUnits,
+    occupancyPct:
+      totalUnits > 0 ? Math.round((leasedUnits / totalUnits) * 100) : null,
+    onNotice: residentNoticeCount,
+    applicationsQueued,
+    monthlyRentRollUsd,
+    avgRentPerUnitUsd:
+      activeLeaseCount > 0
+        ? Math.round(monthlyRentRollUsd / activeLeaseCount)
+        : null,
+  };
+}
+
+async function buildRenewalStats(
+  orgId: string,
+  periodEnd: Date,
+): Promise<ReportRenewalStats | undefined> {
+  const next30 = new Date(periodEnd.getTime() + 30 * DAY_MS);
+  const next60 = new Date(periodEnd.getTime() + 60 * DAY_MS);
+  const next120 = new Date(periodEnd.getTime() + 120 * DAY_MS);
+
+  const [
+    activeCount,
+    next30Count,
+    next60Count,
+    next120Leases,
+    pastDue,
+  ] = await Promise.all([
+    prisma.lease.count({
+      where: { orgId, status: LeaseStatus.ACTIVE },
+    }),
+    prisma.lease.count({
+      where: {
+        orgId,
+        status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
+        endDate: { gte: periodEnd, lt: next30 },
+      },
+    }),
+    prisma.lease.count({
+      where: {
+        orgId,
+        status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
+        endDate: { gte: periodEnd, lt: next60 },
+      },
+    }),
+    prisma.lease.findMany({
+      where: {
+        orgId,
+        status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
+        endDate: { gte: periodEnd, lte: next120 },
+      },
+      select: { monthlyRentCents: true },
+    }),
+    prisma.lease.aggregate({
+      where: { orgId, isPastDue: true },
+      _sum: { currentBalanceCents: true },
+      _count: { _all: true },
+    }),
+  ]);
+
+  if (activeCount === 0 && next120Leases.length === 0) return undefined;
+
+  const monthlyAtRiskCents = next120Leases.reduce(
+    (sum, l) => sum + (l.monthlyRentCents ?? 0),
+    0,
+  );
+
+  return {
+    activeLeases: activeCount,
+    expiringNext120: next120Leases.length,
+    expiringNext30: next30Count,
+    expiringNext60: next60Count,
+    monthlyAtRiskUsd: Math.round(monthlyAtRiskCents / 100),
+    pastDueCount: pastDue._count._all,
+    pastDueBalanceUsd: Math.round((pastDue._sum.currentBalanceCents ?? 0) / 100),
+  };
+}
+
+async function buildVisitorStats(
+  orgId: string,
+  periodStart: Date,
+  periodEnd: Date,
+  days: number,
+): Promise<ReportVisitorStats | undefined> {
+  const [identifiedTotal, identifiedNew, withEmail, withPhone, identifiedDaily, identifiedWithLead] =
+    await Promise.all([
+      prisma.visitor.count({
+        where: { orgId, status: VisitorIdentificationStatus.IDENTIFIED },
+      }),
+      prisma.visitor.count({
+        where: {
+          orgId,
+          status: VisitorIdentificationStatus.IDENTIFIED,
+          firstSeenAt: { gte: periodStart, lt: periodEnd },
+        },
+      }),
+      prisma.visitor.count({
+        where: {
+          orgId,
+          status: VisitorIdentificationStatus.IDENTIFIED,
+          email: { not: null },
+        },
+      }),
+      prisma.visitor.count({
+        where: {
+          orgId,
+          status: VisitorIdentificationStatus.IDENTIFIED,
+          phone: { not: null },
+        },
+      }),
+      prisma.visitor.findMany({
+        where: {
+          orgId,
+          status: VisitorIdentificationStatus.IDENTIFIED,
+          firstSeenAt: { gte: periodStart, lt: periodEnd },
+        },
+        select: { firstSeenAt: true },
+        orderBy: { firstSeenAt: "asc" },
+      }),
+      // Visitors whose hashedEmail also appears as a Lead.email — this is a
+      // proxy for "pixel-identified visitor that we now have a real lead row
+      // for". Keep the join cheap; both columns are already indexed.
+      prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
+        `select count(distinct v.id) as count
+         from "Visitor" v
+         join "Lead" l on l."orgId" = v."orgId" and l.email is not null and v.email is not null and lower(l.email) = lower(v.email)
+         where v."orgId" = $1 and v.status = 'IDENTIFIED'`,
+        orgId,
+      ),
+    ]);
+
+  if (identifiedTotal === 0) return undefined;
+
+  const identifiedTrend = bucketDaily(
+    identifiedDaily.map((v) => ({ date: v.firstSeenAt, value: 1 })),
+    days,
+    periodEnd,
+  );
+
+  const matched = identifiedWithLead[0]?.count
+    ? Number(identifiedWithLead[0].count)
+    : 0;
+
+  return {
+    identifiedVisitors: identifiedTotal,
+    identifiedNewInPeriod: identifiedNew,
+    withEmail,
+    withPhone,
+    identifiedWithLead: matched,
+    identifiedTrend,
+  };
+}
+
+async function buildChatbotExtended(
+  orgId: string,
+  periodStart: Date,
+  periodEnd: Date,
+  baseStats: ReportChatbotStats,
+): Promise<ReportChatbotStatsExtended | undefined> {
+  if (baseStats.conversations === 0) return undefined;
+  const captured = await prisma.chatbotConversation.count({
+    where: {
+      orgId,
+      createdAt: { gte: periodStart, lt: periodEnd },
+      status: ChatbotConversationStatus.LEAD_CAPTURED,
+    },
+  });
+  return {
+    ...baseStats,
+    capturedConversations: captured,
+    capturedRatePct:
+      baseStats.conversations > 0
+        ? Math.round((captured / baseStats.conversations) * 100)
+        : null,
   };
 }

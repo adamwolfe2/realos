@@ -60,15 +60,45 @@ export default async function ReportDetailPage({
       <style
         dangerouslySetInnerHTML={{
           __html: `
+            /* Print + PDF rules. Each .ls-report-section is a logical block
+               that must not be sliced across pages, otherwise the PDF
+               output breaks mid-chart. The gradient hero number uses
+               -webkit-background-clip:text which most print pipelines
+               (including Vercel's @vercel/og + Chromium PDF) support, but
+               we add a black fallback in case the gradient is dropped. */
             @media print {
               [data-no-print] { display: none !important; }
               body { background: #ffffff !important; }
               .report-page { padding: 0 !important; }
-              .report-article section, .report-article header {
+              .ls-report { gap: 12px !important; }
+              .ls-report-section {
                 box-shadow: none !important;
                 break-inside: avoid;
+                page-break-inside: avoid;
               }
+              .ls-report-section + .ls-report-section {
+                margin-top: 12px;
+              }
+              article.report-article header,
+              article.report-article section {
+                box-shadow: none !important;
+                break-inside: avoid;
+                page-break-inside: avoid;
+              }
+              /* Recharts SVGs and our hand-rolled SVG charts both need to
+                 keep their bounding boxes intact when paginated. */
+              svg { page-break-inside: avoid; }
               a { color: inherit; text-decoration: none; }
+              /* Background-clip:text gradient fallback for renderers that
+                 don't honor the clip-path. The gradient ends up covering
+                 the text (not transparent), so we restore plain blue. */
+              @supports not (-webkit-background-clip: text) {
+                .ls-report [style*="WebkitBackgroundClip"],
+                .ls-report [style*="-webkit-background-clip"] {
+                  -webkit-text-fill-color: #1D4ED8 !important;
+                  color: #1D4ED8 !important;
+                }
+              }
             }
           `,
         }}
