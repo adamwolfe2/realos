@@ -46,6 +46,19 @@ const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
 //      a property whose marketing site is `www.telegraphcommons.com`
 //      would never match its own GSC data and the traffic tab would
 //      show 0 sessions despite real organic traffic.
+// Exported so the report generator can scope SEO queries to a property's
+// URL footprint when generating per-property reports. SEO rows are URL-
+// keyed (no propertyId column) so the only way to attribute organic
+// traffic is by matching the URL against the property's slug + name +
+// associated domains.
+export function buildPropertyUrlPatterns(
+  slug: string,
+  name: string,
+  domains: string[] = [],
+): string[] {
+  return buildUrlPatterns(slug, name, domains);
+}
+
 function buildUrlPatterns(
   slug: string,
   name: string,

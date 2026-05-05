@@ -88,6 +88,16 @@ export function ReportView({
             <span className="text-base font-semibold tracking-tight text-foreground truncate">
               {orgName ?? "Performance review"}
             </span>
+            {snapshot.scope?.propertyName ? (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-blue-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                {snapshot.scope.propertyName}
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-slate-700">
+                Portfolio · all properties
+              </span>
+            )}
             <span className="text-xs text-muted-foreground shrink-0">
               {periodLabel}
             </span>

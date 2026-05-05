@@ -589,6 +589,7 @@ model Property {
   residents            Resident[]
   leases               Lease[]
   workOrders           WorkOrder[]
+  clientReports        ClientReport[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1976,6 +1977,14 @@ model ClientReport {
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
+  // Optional property scope. When set, the snapshot's queries were filtered
+  // to this property only — useful for multi-property tenants who want a
+  // per-asset client report instead of a portfolio-wide rollup. NULL means
+  // org-wide (the original behavior). SetNull on delete so historical
+  // reports survive a property removal with the scope context dropped.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
   kind        String // weekly | monthly | custom
   periodStart DateTime
   periodEnd   DateTime
@@ -2002,6 +2011,7 @@ model ClientReport {
 
   @@index([orgId, kind, periodStart(sort: Desc)])
   @@index([orgId, status, generatedAt(sort: Desc)])
+  @@index([orgId, propertyId, generatedAt(sort: Desc)])
   @@index([shareToken])
 }
 

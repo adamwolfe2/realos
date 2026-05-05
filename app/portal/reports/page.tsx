@@ -8,7 +8,7 @@ import { Prisma } from "@prisma/client";
 export const metadata: Metadata = { title: "Client reports" };
 export const dynamic = "force-dynamic";
 
-type Search = { kind?: string; status?: string };
+type Search = { kind?: string; status?: string; property?: string };
 
 export default async function ReportsListPage({
   searchParams,
@@ -25,6 +25,17 @@ export default async function ReportsListPage({
   if (sp.status === "draft" || sp.status === "shared" || sp.status === "archived") {
     where.status = sp.status;
   }
+  if (sp.property) {
+    where.propertyId = sp.property;
+  }
+
+  // Property list for the picker. Hidden when the org only has one
+  // property (single-asset tenants don't need to choose).
+  const properties = await prisma.property.findMany({
+    where: { orgId: scope.orgId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
 
   const reports = await prisma.clientReport.findMany({
     where,
@@ -40,6 +51,7 @@ export default async function ReportsListPage({
       sharedAt: true,
       viewCount: true,
       headline: true,
+      property: { select: { id: true, name: true } },
     },
   });
 
@@ -60,24 +72,51 @@ export default async function ReportsListPage({
             review every report before it leaves the building.
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <form action={generateWeekly}>
-            <button
-              type="submit"
-              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
+        <form
+          action={generateReport}
+          className="flex flex-wrap items-end gap-2 rounded-xl border border-border bg-card p-3"
+        >
+          {properties.length > 1 ? (
+            <label className="flex flex-col gap-1">
+              <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                Scope
+              </span>
+              <select
+                name="propertyId"
+                defaultValue=""
+                className="rounded-md border border-border bg-background px-3 py-2 text-sm min-w-[200px]"
+                aria-label="Property scope"
+              >
+                <option value="">Whole portfolio · all properties</option>
+                {properties.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+          <label className="flex flex-col gap-1">
+            <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+              Period
+            </span>
+            <select
+              name="kind"
+              defaultValue="monthly"
+              className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+              aria-label="Report period"
             >
-              Generate weekly report
-            </button>
-          </form>
-          <form action={generateMonthly}>
-            <button
-              type="submit"
-              className="inline-flex items-center rounded-md border border-border bg-card text-foreground px-3.5 py-2 text-sm font-medium hover:bg-muted transition-colors"
-            >
-              Generate monthly report
-            </button>
-          </form>
-        </div>
+              <option value="weekly">Weekly (7d)</option>
+              <option value="monthly">Monthly (28d)</option>
+            </select>
+          </label>
+          <button
+            type="submit"
+            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
+          >
+            Generate report
+          </button>
+        </form>
       </div>
 
       {/* Filters */}
@@ -159,6 +198,16 @@ export default async function ReportsListPage({
                       {kindLabel(r.kind)}
                     </span>
                     <StatusPill status={r.status} />
+                    {r.property ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
+                        <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                        {r.property.name}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                        Portfolio
+                      </span>
+                    )}
                   </div>
                   <div className="text-sm font-semibold text-foreground truncate">
                     {r.headline ||
@@ -184,17 +233,20 @@ export default async function ReportsListPage({
 // Server actions bound to the two generator buttons.
 // ---------------------------------------------------------------------------
 
-async function generateWeekly(): Promise<void> {
+async function generateReport(formData: FormData): Promise<void> {
   "use server";
   const { redirect } = await import("next/navigation");
-  const res = await createReport("weekly");
-  redirect(`/portal/reports/${res.id}`);
-}
-
-async function generateMonthly(): Promise<void> {
-  "use server";
-  const { redirect } = await import("next/navigation");
-  const res = await createReport("monthly");
+  const kindRaw = (formData.get("kind") ?? "monthly").toString();
+  const kind =
+    kindRaw === "weekly" || kindRaw === "monthly" || kindRaw === "custom"
+      ? (kindRaw as "weekly" | "monthly" | "custom")
+      : "monthly";
+  const propertyIdRaw = formData.get("propertyId");
+  const propertyId =
+    typeof propertyIdRaw === "string" && propertyIdRaw.length > 0
+      ? propertyIdRaw
+      : null;
+  const res = await createReport(kind, { propertyId });
   redirect(`/portal/reports/${res.id}`);
 }
 

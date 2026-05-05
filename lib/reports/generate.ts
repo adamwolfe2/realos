@@ -8,6 +8,7 @@ import {
   LeadStatus,
   LeaseStatus,
   MentionSource,
+  Prisma,
   ResidentStatus,
   Sentiment,
   TourStatus,
@@ -15,6 +16,7 @@ import {
 } from "@prisma/client";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { buildPropertyUrlPatterns } from "@/lib/properties/queries";
 
 // ---------------------------------------------------------------------------
 // Report snapshot generator.
@@ -195,8 +197,20 @@ export type ReportChatbotStatsExtended = ReportChatbotStats & {
   capturedConversations: number;
 };
 
+// Persisted scope context so the rendered view can label which slice of
+// the portfolio the snapshot represents.
+export type ReportScope = {
+  propertyId: string | null;
+  propertyName: string | null;
+  propertySlug: string | null;
+};
+
 export type ReportSnapshot = {
   kind: ReportKind;
+  // Optional on legacy snapshots (will be undefined for reports created
+  // before this field shipped). Older rows continue to render as
+  // org-wide because the absence of scope == portfolio-wide.
+  scope?: ReportScope;
   periodStart: string;
   periodEnd: string;
   kpis: ReportKpis;
@@ -385,11 +399,123 @@ Respond with ONLY valid JSON (no markdown, no explanation):
 // Snapshot generator
 // ---------------------------------------------------------------------------
 
+export type GenerateReportOptions = {
+  // When set, every query in the snapshot is scoped to this property. SEO
+  // rows (which are URL-keyed, no propertyId) are matched by URL pattern
+  // against the property's slug/name/bound domains. NULL = portfolio-wide.
+  propertyId?: string | null;
+  now?: Date;
+};
+
+// Internal scoped data resolved at the top of the function so every query
+// can use a consistent set of filter clauses without re-checking `propertyId`
+// throughout. When propertyId is null, all clauses degrade to {} (no extra
+// filtering) — preserving the original org-wide behavior bit-for-bit.
+type Scope = {
+  propertyId: string | null;
+  propertyName: string | null;
+  propertySlug: string | null;
+  // For Lead, Resident, Lease, Listing, etc. — direct column.
+  propertyClause: { propertyId?: string };
+  // For Tour, Application — they have no direct propertyId; we filter via
+  // their `lead.propertyId` relation.
+  leadRelClause: { lead?: { propertyId?: string } };
+  // SEO URL-pattern matchers (computed once).
+  seoLandingClause: Prisma.SeoLandingPageWhereInput;
+  seoQueryClause: Prisma.SeoQueryWhereInput;
+  // Snapshot signal — true means SEO scoping was actually applied.
+  seoScoped: boolean;
+};
+
+async function buildScope(
+  orgId: string,
+  propertyId: string | null,
+): Promise<Scope> {
+  if (!propertyId) {
+    return {
+      propertyId: null,
+      propertyName: null,
+      propertySlug: null,
+      propertyClause: {},
+      leadRelClause: {},
+      seoLandingClause: {},
+      seoQueryClause: {},
+      seoScoped: false,
+    };
+  }
+
+  const property = await prisma.property.findFirst({
+    where: { id: propertyId, orgId },
+    select: { id: true, slug: true, name: true },
+  });
+  if (!property) {
+    // Caller passed a property that doesn't belong to this org. Treat as
+    // a no-op scope so we never accidentally render a portfolio-wide
+    // report mislabeled as a single property.
+    return {
+      propertyId,
+      propertyName: null,
+      propertySlug: null,
+      propertyClause: { propertyId },
+      leadRelClause: { lead: { propertyId } },
+      seoLandingClause: { url: { contains: "__no_match__" } },
+      seoQueryClause: { query: { contains: "__no_match__" } },
+      seoScoped: true,
+    };
+  }
+
+  const domains = await prisma.domainBinding
+    .findMany({ where: { orgId }, select: { hostname: true } })
+    .catch(() => [] as Array<{ hostname: string }>);
+  const patterns = buildPropertyUrlPatterns(
+    property.slug,
+    property.name,
+    domains.map((d) => d.hostname),
+  );
+
+  const seoLandingClause: Prisma.SeoLandingPageWhereInput =
+    patterns.length > 0
+      ? {
+          OR: patterns.map((p) => ({
+            url: {
+              contains: p.replace(/%/g, ""),
+              mode: "insensitive" as const,
+            },
+          })),
+        }
+      : { url: { contains: "__no_match__" } };
+  const seoQueryClause: Prisma.SeoQueryWhereInput =
+    patterns.length > 0
+      ? {
+          OR: patterns.map((p) => ({
+            query: {
+              contains: p.replace(/%/g, ""),
+              mode: "insensitive" as const,
+            },
+          })),
+        }
+      : { query: { contains: "__no_match__" } };
+
+  return {
+    propertyId,
+    propertyName: property.name,
+    propertySlug: property.slug,
+    propertyClause: { propertyId },
+    leadRelClause: { lead: { propertyId } },
+    seoLandingClause,
+    seoQueryClause,
+    seoScoped: true,
+  };
+}
+
 export async function generateReportSnapshot(
   orgId: string,
   kind: ReportKind,
-  now: Date = new Date(),
+  options: GenerateReportOptions = {},
 ): Promise<ReportSnapshot> {
+  const now = options.now ?? new Date();
+  const propertyId = options.propertyId ?? null;
+  const scope = await buildScope(orgId, propertyId);
   const { periodStart, periodEnd, priorStart, priorEnd } = resolvePeriod(kind, now);
   const days = kind === "weekly" ? 7 : 28;
 
@@ -419,57 +545,90 @@ export async function generateReportSnapshot(
     propertiesList,
     propertyLeadGroups,
   ] = await Promise.all([
-    // KPI counts
+    // KPI counts — scope.propertyClause is `{}` for org-wide (legacy
+    // behavior) or `{ propertyId }` for per-property reports.
     prisma.lead.count({
-      where: { orgId, createdAt: { gte: periodStart, lt: periodEnd } },
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        createdAt: { gte: periodStart, lt: periodEnd },
+      },
     }),
     prisma.lead.count({
-      where: { orgId, createdAt: { gte: priorStart, lt: priorEnd } },
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        createdAt: { gte: priorStart, lt: priorEnd },
+      },
     }),
     prisma.tour.count({
       where: {
         createdAt: { gte: periodStart, lt: periodEnd },
         status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
-        lead: { orgId },
+        lead: { orgId, ...(scope.leadRelClause.lead ?? {}) },
       },
     }),
     prisma.tour.count({
       where: {
         createdAt: { gte: priorStart, lt: priorEnd },
         status: { in: [TourStatus.SCHEDULED, TourStatus.COMPLETED] },
-        lead: { orgId },
+        lead: { orgId, ...(scope.leadRelClause.lead ?? {}) },
       },
     }),
     prisma.application.count({
       where: {
         createdAt: { gte: periodStart, lt: periodEnd },
         status: { in: [ApplicationStatus.SUBMITTED, ApplicationStatus.APPROVED] },
-        lead: { orgId },
+        lead: { orgId, ...(scope.leadRelClause.lead ?? {}) },
       },
     }),
     prisma.application.count({
       where: {
         createdAt: { gte: priorStart, lt: priorEnd },
         status: { in: [ApplicationStatus.SUBMITTED, ApplicationStatus.APPROVED] },
-        lead: { orgId },
+        lead: { orgId, ...(scope.leadRelClause.lead ?? {}) },
       },
     }),
-    // Ad spend
+    // Ad spend — AdMetricDaily has no propertyId; we filter via the
+    // campaign relation when scoped.
     prisma.adMetricDaily.aggregate({
-      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
+      where: {
+        orgId,
+        date: { gte: periodStart, lt: periodEnd },
+        ...(scope.propertyId
+          ? { campaign: { propertyId: scope.propertyId } }
+          : {}),
+      },
       _sum: { spendCents: true },
     }),
     prisma.adMetricDaily.aggregate({
-      where: { orgId, date: { gte: priorStart, lt: priorEnd } },
+      where: {
+        orgId,
+        date: { gte: priorStart, lt: priorEnd },
+        ...(scope.propertyId
+          ? { campaign: { propertyId: scope.propertyId } }
+          : {}),
+      },
       _sum: { spendCents: true },
     }),
     prisma.adMetricDaily.groupBy({
       by: ["date"],
-      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
+      where: {
+        orgId,
+        date: { gte: periodStart, lt: periodEnd },
+        ...(scope.propertyId
+          ? { campaign: { propertyId: scope.propertyId } }
+          : {}),
+      },
       _sum: { spendCents: true },
       orderBy: { date: "asc" },
     }),
-    // Organic sessions
+    // Organic sessions — SeoSnapshot has no propertyId so we can't scope
+    // org-totals to a property at the row level. We still pull org-wide
+    // here; per-property scoping is enforced on top pages / queries via
+    // URL-pattern matching, and the trafficTrend falls back to the
+    // property-scoped landing-page aggregate below when the org-wide
+    // total exists.
     prisma.seoSnapshot.aggregate({
       where: { orgId, date: { gte: periodStart, lt: periodEnd } },
       _sum: { organicSessions: true },
@@ -486,21 +645,33 @@ export async function generateReportSnapshot(
     // Funnel from LeadStatus groupBy
     prisma.lead.groupBy({
       by: ["status"],
-      where: { orgId, createdAt: { gte: periodStart, lt: periodEnd } },
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        createdAt: { gte: periodStart, lt: periodEnd },
+      },
       _count: { _all: true },
     }),
     // Lead sources
     prisma.lead.groupBy({
       by: ["source"],
-      where: { orgId, createdAt: { gte: periodStart, lt: periodEnd } },
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        createdAt: { gte: periodStart, lt: periodEnd },
+      },
       _count: { _all: true },
     }),
     prisma.lead.count({
-      where: { orgId, createdAt: { gte: periodStart, lt: periodEnd } },
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        createdAt: { gte: periodStart, lt: periodEnd },
+      },
     }),
     // Ad perf by platform (join metrics -> campaign for platform)
     prisma.adCampaign.findMany({
-      where: { orgId },
+      where: { orgId, ...scope.propertyClause },
       select: {
         id: true,
         platform: true,
@@ -515,23 +686,33 @@ export async function generateReportSnapshot(
       by: ["source"],
       where: {
         orgId,
+        ...scope.propertyClause,
         createdAt: { gte: periodStart, lt: periodEnd },
         source: { in: [LeadSource.GOOGLE_ADS, LeadSource.META_ADS] },
       },
       _count: { _all: true },
     }),
-    // SEO top pages (sum sessions/clicks over window per url)
+    // SEO top pages — when scoped to a property, only URLs matching the
+    // property's slug/name/domain patterns are returned.
     prisma.seoLandingPage.groupBy({
       by: ["url"],
-      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
+      where: {
+        orgId,
+        date: { gte: periodStart, lt: periodEnd },
+        ...scope.seoLandingClause,
+      },
       _sum: { sessions: true },
       orderBy: { _sum: { sessions: "desc" } },
       take: 10,
     }),
-    // SEO top queries
+    // SEO top queries — same URL-pattern scoping logic.
     prisma.seoQuery.groupBy({
       by: ["query"],
-      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
+      where: {
+        orgId,
+        date: { gte: periodStart, lt: periodEnd },
+        ...scope.seoQueryClause,
+      },
       _sum: { clicks: true, impressions: true },
       _avg: { position: true },
       orderBy: { _sum: { clicks: "desc" } },
@@ -541,6 +722,7 @@ export async function generateReportSnapshot(
     prisma.insight.findMany({
       where: {
         orgId,
+        ...scope.propertyClause,
         createdAt: { gte: periodStart, lt: periodEnd },
       },
       orderBy: { createdAt: "desc" },
@@ -555,22 +737,29 @@ export async function generateReportSnapshot(
     }),
     // Chatbot stats
     prisma.chatbotConversation.aggregate({
-      where: { orgId, createdAt: { gte: periodStart, lt: periodEnd } },
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        createdAt: { gte: periodStart, lt: periodEnd },
+      },
       _count: { _all: true },
       _avg: { messageCount: true },
     }),
     prisma.lead.count({
       where: {
         orgId,
+        ...scope.propertyClause,
         createdAt: { gte: periodStart, lt: periodEnd },
         source: LeadSource.CHATBOT,
       },
     }),
-    // Property rollup
+    // Property rollup — when scoped, this collapses to the single
+    // property the report is for. No fake/seeded data ever — pure
+    // Property table reads.
     prisma.property.findMany({
-      where: { orgId },
+      where: { orgId, ...(scope.propertyId ? { id: scope.propertyId } : {}) },
       orderBy: { updatedAt: "desc" },
-      take: 20,
+      take: scope.propertyId ? 1 : 20,
       select: {
         id: true,
         name: true,
@@ -582,8 +771,10 @@ export async function generateReportSnapshot(
       by: ["propertyId"],
       where: {
         orgId,
+        ...(scope.propertyId
+          ? { propertyId: scope.propertyId }
+          : { propertyId: { not: null } }),
         createdAt: { gte: periodStart, lt: periodEnd },
-        propertyId: { not: null },
       },
       _count: { _all: true },
     }),
@@ -757,7 +948,11 @@ export async function generateReportSnapshot(
 
   // Attribution by source — load leads with id/source/status, then join tours and apps
   const allLeadsInPeriod = await prisma.lead.findMany({
-    where: { orgId, createdAt: { gte: periodStart, lt: periodEnd } },
+    where: {
+      orgId,
+      ...scope.propertyClause,
+      createdAt: { gte: periodStart, lt: periodEnd },
+    },
     select: { id: true, source: true, status: true },
   });
 
@@ -823,25 +1018,29 @@ export async function generateReportSnapshot(
   // Reputation — always lifetime + delta vs prior period.
   const reputationStats = await buildReputationStats(
     orgId,
+    scope.propertyId,
     periodStart,
     periodEnd,
     priorStart,
     priorEnd,
   ).catch(() => undefined);
 
-  // Occupancy — point-in-time snapshot of all properties on the org.
-  const occupancyStats = await buildOccupancyStats(orgId).catch(
+  // Occupancy — point-in-time snapshot. Scoped to the property when set.
+  const occupancyStats = await buildOccupancyStats(orgId, scope.propertyId).catch(
     () => undefined,
   );
 
   // Renewals — forward-looking 120-day window from periodEnd.
-  const renewalStats = await buildRenewalStats(orgId, periodEnd).catch(
-    () => undefined,
-  );
+  const renewalStats = await buildRenewalStats(
+    orgId,
+    scope.propertyId,
+    periodEnd,
+  ).catch(() => undefined);
 
   // Visitor identification — pixel-driven, period-scoped.
   const visitorStats = await buildVisitorStats(
     orgId,
+    scope.propertyId,
     periodStart,
     periodEnd,
     days,
@@ -850,6 +1049,7 @@ export async function generateReportSnapshot(
   // Chatbot extended — captured-rate breakdown for the report.
   const chatbotStatsExtended = await buildChatbotExtended(
     orgId,
+    scope.propertyId,
     periodStart,
     periodEnd,
     chatbotStats,
@@ -857,6 +1057,11 @@ export async function generateReportSnapshot(
 
   const baseSnapshot: Omit<ReportSnapshot, "aiAnalysis"> = {
     kind,
+    scope: {
+      propertyId: scope.propertyId,
+      propertyName: scope.propertyName,
+      propertySlug: scope.propertySlug,
+    },
     periodStart: periodStart.toISOString(),
     periodEnd: periodEnd.toISOString(),
     kpis,
@@ -903,37 +1108,47 @@ const MENTION_SOURCE_LABELS: Record<MentionSource, string> = {
 
 async function buildReputationStats(
   orgId: string,
+  propertyId: string | null,
   periodStart: Date,
   periodEnd: Date,
   priorStart: Date,
   priorEnd: Date,
 ): Promise<ReportReputationStats | undefined> {
+  const propertyClause = propertyId ? { propertyId } : {};
   const [lifetime, sourceGroups, periodNew, priorNew, sentimentGroups, recent, reviewedAgg] =
     await Promise.all([
       prisma.propertyMention.aggregate({
-        where: { orgId },
+        where: { orgId, ...propertyClause },
         _avg: { rating: true },
         _count: { _all: true },
       }),
       prisma.propertyMention.groupBy({
         by: ["source"],
-        where: { orgId },
+        where: { orgId, ...propertyClause },
         _count: { _all: true },
         _avg: { rating: true },
       }),
       prisma.propertyMention.count({
-        where: { orgId, publishedAt: { gte: periodStart, lt: periodEnd } },
+        where: {
+          orgId,
+          ...propertyClause,
+          publishedAt: { gte: periodStart, lt: periodEnd },
+        },
       }),
       prisma.propertyMention.count({
-        where: { orgId, publishedAt: { gte: priorStart, lt: priorEnd } },
+        where: {
+          orgId,
+          ...propertyClause,
+          publishedAt: { gte: priorStart, lt: priorEnd },
+        },
       }),
       prisma.propertyMention.groupBy({
         by: ["sentiment"],
-        where: { orgId },
+        where: { orgId, ...propertyClause },
         _count: { _all: true },
       }),
       prisma.propertyMention.findMany({
-        where: { orgId },
+        where: { orgId, ...propertyClause },
         orderBy: { publishedAt: "desc" },
         take: 5,
         select: {
@@ -948,7 +1163,7 @@ async function buildReputationStats(
       // the overall mention count. We don't track per-mention replies as
       // first-class data yet, so this is the best signal available.
       prisma.propertyMention.count({
-        where: { orgId, reviewedByUserId: { not: null } },
+        where: { orgId, ...propertyClause, reviewedByUserId: { not: null } },
       }),
     ]);
 
@@ -994,24 +1209,30 @@ async function buildReputationStats(
 
 async function buildOccupancyStats(
   orgId: string,
+  propertyId: string | null,
 ): Promise<ReportOccupancyStats | undefined> {
+  const propertyClause = propertyId ? { propertyId } : {};
   const [propertyAgg, residentNoticeCount, applicationsQueued, rentRoll] =
     await Promise.all([
       prisma.property.aggregate({
-        where: { orgId },
+        where: { orgId, ...(propertyId ? { id: propertyId } : {}) },
         _sum: { totalUnits: true, availableCount: true },
       }),
       prisma.resident.count({
-        where: { orgId, status: ResidentStatus.NOTICE_GIVEN },
+        where: {
+          orgId,
+          ...propertyClause,
+          status: ResidentStatus.NOTICE_GIVEN,
+        },
       }),
       prisma.application.count({
         where: {
           status: ApplicationStatus.SUBMITTED,
-          lead: { orgId },
+          lead: { orgId, ...(propertyId ? { propertyId } : {}) },
         },
       }),
       prisma.lease.aggregate({
-        where: { orgId, status: LeaseStatus.ACTIVE },
+        where: { orgId, ...propertyClause, status: LeaseStatus.ACTIVE },
         _sum: { monthlyRentCents: true },
         _count: { _all: true },
       }),
@@ -1048,8 +1269,10 @@ async function buildOccupancyStats(
 
 async function buildRenewalStats(
   orgId: string,
+  propertyId: string | null,
   periodEnd: Date,
 ): Promise<ReportRenewalStats | undefined> {
+  const propertyClause = propertyId ? { propertyId } : {};
   const next30 = new Date(periodEnd.getTime() + 30 * DAY_MS);
   const next60 = new Date(periodEnd.getTime() + 60 * DAY_MS);
   const next120 = new Date(periodEnd.getTime() + 120 * DAY_MS);
@@ -1062,11 +1285,12 @@ async function buildRenewalStats(
     pastDue,
   ] = await Promise.all([
     prisma.lease.count({
-      where: { orgId, status: LeaseStatus.ACTIVE },
+      where: { orgId, ...propertyClause, status: LeaseStatus.ACTIVE },
     }),
     prisma.lease.count({
       where: {
         orgId,
+        ...propertyClause,
         status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
         endDate: { gte: periodEnd, lt: next30 },
       },
@@ -1074,6 +1298,7 @@ async function buildRenewalStats(
     prisma.lease.count({
       where: {
         orgId,
+        ...propertyClause,
         status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
         endDate: { gte: periodEnd, lt: next60 },
       },
@@ -1081,13 +1306,14 @@ async function buildRenewalStats(
     prisma.lease.findMany({
       where: {
         orgId,
+        ...propertyClause,
         status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
         endDate: { gte: periodEnd, lte: next120 },
       },
       select: { monthlyRentCents: true },
     }),
     prisma.lease.aggregate({
-      where: { orgId, isPastDue: true },
+      where: { orgId, ...propertyClause, isPastDue: true },
       _sum: { currentBalanceCents: true },
       _count: { _all: true },
     }),
@@ -1113,18 +1339,25 @@ async function buildRenewalStats(
 
 async function buildVisitorStats(
   orgId: string,
+  propertyId: string | null,
   periodStart: Date,
   periodEnd: Date,
   days: number,
 ): Promise<ReportVisitorStats | undefined> {
+  const propertyClause = propertyId ? { propertyId } : {};
   const [identifiedTotal, identifiedNew, withEmail, withPhone, identifiedDaily, identifiedWithLead] =
     await Promise.all([
       prisma.visitor.count({
-        where: { orgId, status: VisitorIdentificationStatus.IDENTIFIED },
+        where: {
+          orgId,
+          ...propertyClause,
+          status: VisitorIdentificationStatus.IDENTIFIED,
+        },
       }),
       prisma.visitor.count({
         where: {
           orgId,
+          ...propertyClause,
           status: VisitorIdentificationStatus.IDENTIFIED,
           firstSeenAt: { gte: periodStart, lt: periodEnd },
         },
@@ -1132,6 +1365,7 @@ async function buildVisitorStats(
       prisma.visitor.count({
         where: {
           orgId,
+          ...propertyClause,
           status: VisitorIdentificationStatus.IDENTIFIED,
           email: { not: null },
         },
@@ -1139,6 +1373,7 @@ async function buildVisitorStats(
       prisma.visitor.count({
         where: {
           orgId,
+          ...propertyClause,
           status: VisitorIdentificationStatus.IDENTIFIED,
           phone: { not: null },
         },
@@ -1146,22 +1381,32 @@ async function buildVisitorStats(
       prisma.visitor.findMany({
         where: {
           orgId,
+          ...propertyClause,
           status: VisitorIdentificationStatus.IDENTIFIED,
           firstSeenAt: { gte: periodStart, lt: periodEnd },
         },
         select: { firstSeenAt: true },
         orderBy: { firstSeenAt: "asc" },
       }),
-      // Visitors whose hashedEmail also appears as a Lead.email — this is a
-      // proxy for "pixel-identified visitor that we now have a real lead row
-      // for". Keep the join cheap; both columns are already indexed.
-      prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
-        `select count(distinct v.id) as count
-         from "Visitor" v
-         join "Lead" l on l."orgId" = v."orgId" and l.email is not null and v.email is not null and lower(l.email) = lower(v.email)
-         where v."orgId" = $1 and v.status = 'IDENTIFIED'`,
-        orgId,
-      ),
+      // Visitors whose email also appears on a Lead — proxy for "pixel-
+      // identified visitor that has a real lead row now". Scoped further
+      // to the property when set so the count reflects that asset only.
+      propertyId
+        ? prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
+            `select count(distinct v.id) as count
+             from "Visitor" v
+             join "Lead" l on l."orgId" = v."orgId" and l.email is not null and v.email is not null and lower(l.email) = lower(v.email)
+             where v."orgId" = $1 and v.status = 'IDENTIFIED' and v."propertyId" = $2 and l."propertyId" = $2`,
+            orgId,
+            propertyId,
+          )
+        : prisma.$queryRawUnsafe<Array<{ count: bigint }>>(
+            `select count(distinct v.id) as count
+             from "Visitor" v
+             join "Lead" l on l."orgId" = v."orgId" and l.email is not null and v.email is not null and lower(l.email) = lower(v.email)
+             where v."orgId" = $1 and v.status = 'IDENTIFIED'`,
+            orgId,
+          ),
     ]);
 
   if (identifiedTotal === 0) return undefined;
@@ -1188,6 +1433,7 @@ async function buildVisitorStats(
 
 async function buildChatbotExtended(
   orgId: string,
+  propertyId: string | null,
   periodStart: Date,
   periodEnd: Date,
   baseStats: ReportChatbotStats,
@@ -1196,6 +1442,7 @@ async function buildChatbotExtended(
   const captured = await prisma.chatbotConversation.count({
     where: {
       orgId,
+      ...(propertyId ? { propertyId } : {}),
       createdAt: { gte: periodStart, lt: periodEnd },
       status: ChatbotConversationStatus.LEAD_CAPTURED,
     },

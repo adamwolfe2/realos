@@ -12,16 +12,36 @@ import { revalidatePath } from "next/cache";
 // requireScope(); operator review is mandatory so nothing here ever auto-sends.
 // ---------------------------------------------------------------------------
 
-export async function createReport(kind: ReportKind): Promise<{ id: string }> {
+export async function createReport(
+  kind: ReportKind,
+  options: { propertyId?: string | null } = {},
+): Promise<{ id: string }> {
   if (kind !== "weekly" && kind !== "monthly" && kind !== "custom") {
     throw new Error("Invalid report kind");
   }
   const scope = await requireScope();
-  const snapshot = await generateReportSnapshot(scope.orgId, kind);
+
+  // If a property was requested, validate it belongs to this org. Pre-empts
+  // any chance of an off-tenant id slipping through and gives us a stable
+  // propertyId to persist on the ClientReport row.
+  let validPropertyId: string | null = null;
+  if (options.propertyId) {
+    const owned = await prisma.property.findFirst({
+      where: { id: options.propertyId, orgId: scope.orgId },
+      select: { id: true },
+    });
+    if (!owned) throw new Error("Property not found in this workspace");
+    validPropertyId = owned.id;
+  }
+
+  const snapshot = await generateReportSnapshot(scope.orgId, kind, {
+    propertyId: validPropertyId,
+  });
 
   const report = await prisma.clientReport.create({
     data: {
       orgId: scope.orgId,
+      propertyId: validPropertyId,
       kind,
       periodStart: new Date(snapshot.periodStart),
       periodEnd: new Date(snapshot.periodEnd),
