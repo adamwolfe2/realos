@@ -412,16 +412,27 @@ function HeroBanner({
 }: {
   insight: { tone: "alert" | "warn" | "ok"; headline: string; body: string };
 }) {
-  const tone =
+  // Use a blue gradient for warn/info (the property is healthy + thriving;
+  // we just want operator attention), rose for true alerts, emerald for wins.
+  const wrapper =
     insight.tone === "alert"
-      ? "border-rose-200 bg-rose-50 text-rose-900"
-      : insight.tone === "warn"
-        ? "border-amber-200 bg-amber-50 text-amber-900"
-        : "border-emerald-200 bg-emerald-50 text-emerald-900";
+      ? "border border-rose-200 bg-rose-50"
+      : insight.tone === "ok"
+        ? "border border-emerald-200 bg-emerald-50"
+        : "border border-blue-200 bg-gradient-to-r from-blue-50 via-indigo-50 to-blue-50";
+  const text =
+    insight.tone === "alert"
+      ? "text-rose-900"
+      : insight.tone === "ok"
+        ? "text-emerald-900"
+        : "text-blue-900";
   return (
     <div
       className={
-        "rounded-2xl border px-3.5 py-2.5 flex items-start gap-2.5 " + tone
+        "rounded-2xl px-3.5 py-2.5 flex items-start gap-2.5 " +
+        wrapper +
+        " " +
+        text
       }
     >
       <Sparkles className="h-4 w-4 shrink-0 mt-0.5 opacity-80" />
@@ -750,7 +761,7 @@ export function TelegraphOverviewDemo() {
           <div className="px-4 pb-4 space-y-2">
             <ActiveItem
               icon="0–30d"
-              tone="amber"
+              tone="deep"
               label="18 leases · $84,960/mo"
               sub="Sophia Patel, Emma Johnson, Noah Garcia, +15 others"
               progress={89}
@@ -758,7 +769,7 @@ export function TelegraphOverviewDemo() {
             />
             <ActiveItem
               icon="31–60d"
-              tone="amber"
+              tone="primary"
               label="14 leases · $65,492/mo"
               sub="Logan Reed, Aria Singh, Chloe Davis, +11 others"
               progress={64}
@@ -766,7 +777,7 @@ export function TelegraphOverviewDemo() {
             />
             <ActiveItem
               icon="61–90d"
-              tone="primary"
+              tone="soft"
               label="22 leases · $102,816/mo"
               sub="Alexandra Chen, Marcus Williams, Daniel Rodriguez, +19 others"
               progress={32}
@@ -821,8 +832,8 @@ export function TelegraphOverviewDemo() {
                 { name: "Leased", value: 100, color: C.primary },
                 { name: "On notice", value: 0, color: C.primaryFaint },
               ]}
-              centerTop="100%"
-              centerBottom="Occupied"
+              centerTop="Occupied"
+              centerBottom="100%"
               size={104}
               inner={36}
               outer={48}
@@ -873,19 +884,28 @@ function ActiveItem({
   progressLabel,
 }: {
   icon: string;
-  tone: "amber" | "primary" | "muted" | "emerald";
+  tone: "deep" | "primary" | "soft" | "muted";
   label: string;
   sub: string;
   progress: number;
   progressLabel: string;
 }) {
+  // Blue-spectrum tone scale — deepest = most urgent / oldest in the queue.
+  // Keeps the renewal pipeline coherent without resorting to amber/orange.
   const tones = {
-    amber: "bg-amber-50 text-amber-700 border-amber-200",
+    deep: "bg-blue-100 text-blue-800 border-blue-300",
     primary: "bg-blue-50 text-blue-700 border-blue-200",
+    soft: "bg-blue-50/60 text-blue-600 border-blue-100",
     muted: "bg-slate-100 text-slate-700 border-slate-200",
-    emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
   };
-  const barColor = tone === "amber" ? "#F59E0B" : tone === "primary" ? C.primary : tone === "emerald" ? C.positive : "#94A3B8";
+  const barColor =
+    tone === "deep"
+      ? C.primary
+      : tone === "primary"
+        ? C.primaryMid
+        : tone === "soft"
+          ? C.primaryLight
+          : "#94A3B8";
   return (
     <div className="grid grid-cols-[60px_1fr_auto] items-center gap-3 rounded-xl border border-border bg-card/50 px-3 py-2.5 hover:border-primary/40 transition-colors group">
       <div
