@@ -1653,7 +1653,7 @@ function StatusPill({ status }: { status: string }) {
     "Tour booked": { bg: "bg-blue-50", text: "text-blue-700" },
     "Application": { bg: "bg-violet-50", text: "text-violet-700" },
     "Qualified": { bg: "bg-emerald-50", text: "text-emerald-700" },
-    "Replied": { bg: "bg-amber-50", text: "text-amber-700" },
+    "Replied": { bg: "bg-indigo-50", text: "text-indigo-700" },
     "New": { bg: "bg-slate-100", text: "text-slate-700" },
   };
   const c = config[status] ?? config["New"];
@@ -1713,23 +1713,14 @@ function RealFunnel({
                 ) : null}
               </span>
             </div>
-            <div className="relative h-6 bg-slate-100 rounded-md overflow-hidden">
+            <div className="relative h-2.5 bg-slate-100 rounded-full overflow-hidden">
               <div
-                className="absolute left-0 top-0 h-full rounded-md transition-all"
+                className="absolute left-0 top-0 h-full rounded-full transition-all"
                 style={{
                   width: `${barWidth}%`,
                   backgroundColor: colors[i],
                 }}
               />
-              {i > 0 ? (
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-white/95 mix-blend-luminosity">
-                  from {stages[i - 1].label.toLowerCase()}
-                </span>
-              ) : (
-                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-white/95">
-                  total this period
-                </span>
-              )}
             </div>
           </div>
         );
