@@ -59,7 +59,7 @@ const PRIORITY_TONE: Record<WorkOrderPriority, string> = {
   LOW: "text-muted-foreground",
   NORMAL: "text-foreground",
   HIGH: "text-amber-700 font-semibold",
-  URGENT: "text-rose-700 font-bold",
+  URGENT: "text-amber-700 font-bold",
 };
 
 const STATUS_COLUMN_ORDER: WorkOrderStatus[] = [

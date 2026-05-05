@@ -32,10 +32,10 @@ import { classifyFreshness } from "@/lib/sync/freshness";
 type Tone = "info" | "ok" | "warn" | "error" | "muted";
 
 const TONES: Record<Tone, string> = {
-  info: "border-blue-200 bg-blue-50 text-blue-900",
-  ok: "border-emerald-200 bg-emerald-50 text-emerald-900",
+  info: "border-primary/30 bg-primary/10 text-primary",
+  ok: "border-primary/30 bg-primary/10 text-primary",
   warn: "border-amber-200 bg-amber-50 text-amber-900",
-  error: "border-rose-200 bg-rose-50 text-rose-900",
+  error: "border-destructive/30 bg-destructive/10 text-destructive",
   muted: "border-border bg-muted/30 text-foreground",
 };
 

@@ -14,9 +14,9 @@ export type IntegrationChip = {
 };
 
 const DOT: Record<IntegrationStatus, string> = {
-  connected: "bg-emerald-500",
+  connected: "bg-primary",
   degraded: "bg-amber-500",
-  error: "bg-rose-500",
+  error: "bg-destructive",
   off: "bg-muted-foreground/30",
 };
 

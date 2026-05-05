@@ -156,7 +156,7 @@ export function FlagToggle({
         })}
       </div>
       {error ? (
-        <p className="text-[11px] text-rose-700">{error}</p>
+        <p className="text-[11px] text-destructive">{error}</p>
       ) : null}
     </div>
   );

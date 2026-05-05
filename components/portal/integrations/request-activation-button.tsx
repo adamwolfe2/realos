@@ -81,7 +81,7 @@ export function RequestActivationButton({
         {pending ? "Requesting…" : `Request ${name} activation`}
       </button>
       {error ? (
-        <p className="text-xs text-rose-700">{error}</p>
+        <p className="text-xs text-destructive">{error}</p>
       ) : null}
     </div>
   );

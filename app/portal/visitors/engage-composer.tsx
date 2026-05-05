@@ -125,7 +125,7 @@ export function EngageComposer({
               {status.message}
             </span>
           ) : status.kind === "ok" ? (
-            <span className="text-[11px] text-emerald-700">Sent</span>
+            <span className="text-[11px] text-primary">Sent</span>
           ) : null}
           <button
             type="button"

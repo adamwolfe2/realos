@@ -29,9 +29,9 @@ export const dynamic = "force-dynamic";
 // ---------------------------------------------------------------------------
 
 const SENTIMENT_TONE: Record<Sentiment, string> = {
-  POSITIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  POSITIVE: "bg-primary/10 text-primary border-primary/30",
   NEUTRAL: "bg-muted text-muted-foreground border-border",
-  NEGATIVE: "bg-rose-50 text-rose-700 border-rose-200",
+  NEGATIVE: "bg-muted text-muted-foreground border-border",
   MIXED: "bg-amber-50 text-amber-700 border-amber-200",
 };
 
@@ -242,13 +242,13 @@ export default async function PortfolioReputationPage() {
               label="Positive"
               count={positive}
               total={metrics.totalMentions}
-              tone="bg-emerald-500"
+              tone="bg-primary"
             />
             <SentimentBar
               label="Negative"
               count={negative}
               total={metrics.totalMentions}
-              tone="bg-rose-500"
+              tone="bg-muted-foreground"
             />
             <SentimentBar
               label="Mixed"
@@ -363,7 +363,7 @@ export default async function PortfolioReputationPage() {
                     </td>
                     <td className="px-2 py-2.5 text-right tabular-nums">
                       {safeNum(p.negativeCount) > 0 ? (
-                        <span className="text-rose-700 font-medium">
+                        <span className="text-muted-foreground font-medium">
                           {fmtInt(p.negativeCount)}
                         </span>
                       ) : (
@@ -524,7 +524,7 @@ function ReputationFallback({
       {diagnostic ? (
         <details
           open
-          className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-900"
+          className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive"
         >
           <summary className="cursor-pointer font-semibold">
             Diagnostic — share with engineering
@@ -585,7 +585,7 @@ function MonthlyVolume({
               >
                 {d.negative > 0 ? (
                   <div
-                    className="absolute bottom-0 left-0 right-0 bg-rose-400 rounded-t-sm"
+                    className="absolute bottom-0 left-0 right-0 bg-muted-foreground/70 rounded-t-sm"
                     style={{ height: `${negPct}%` }}
                   />
                 ) : null}
@@ -655,7 +655,7 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
                 </span>
               ) : null}
               {mention.flagged ? (
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-rose-700">
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-700">
                   <Flag className="h-3 w-3" />
                 </span>
               ) : null}

@@ -20,7 +20,7 @@ type StateStyle = {
 const STATE_STYLES: Record<IntegrationState, StateStyle> = {
   connected: {
     badgeLabel: "Connected",
-    badgeClass: "bg-emerald-50 text-emerald-700",
+    badgeClass: "bg-primary/10 text-primary",
     cta: "Manage",
     ctaClass: "text-foreground hover:text-primary",
   },

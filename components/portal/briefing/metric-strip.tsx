@@ -112,6 +112,6 @@ function toneFor(delta: number | null, good: "up" | "down") {
   if (delta === 0) return "text-muted-foreground bg-muted";
   const isGood = good === "up" ? delta > 0 : delta < 0;
   return isGood
-    ? "text-emerald-700 bg-emerald-50"
-    : "text-rose-700 bg-rose-50";
+    ? "text-primary bg-primary/10"
+    : "text-muted-foreground bg-muted";
 }

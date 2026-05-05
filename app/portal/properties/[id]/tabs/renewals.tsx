@@ -6,6 +6,7 @@ import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { LeaseStatus } from "@prisma/client";
 import { Calendar, AlertTriangle, CheckCircle2, DollarSign } from "lucide-react";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import { tenantNameFromRaw } from "@/lib/integrations/appfolio-display";
 
 // ---------------------------------------------------------------------------
 // Renewals tab — per-property lease renewal pipeline from AppFolio.
@@ -17,10 +18,10 @@ function fmtMoney(cents: number | null | undefined): string {
 }
 
 const BUCKETS = [
-  { label: "0–30 days", min: 0, max: 30, tone: "border-rose-200 bg-rose-50 text-rose-800" },
+  { label: "0–30 days", min: 0, max: 30, tone: "border-amber-300 bg-amber-100 text-amber-900" },
   { label: "31–60 days", min: 31, max: 60, tone: "border-amber-200 bg-amber-50 text-amber-800" },
-  { label: "61–90 days", min: 61, max: 90, tone: "border-blue-200 bg-blue-50 text-blue-800" },
-  { label: "91–120 days", min: 91, max: 120, tone: "border-slate-200 bg-card text-foreground" },
+  { label: "61–90 days", min: 61, max: 90, tone: "border-primary/30 bg-primary/10 text-primary" },
+  { label: "91–120 days", min: 91, max: 120, tone: "border-border bg-card text-foreground" },
 ] as const;
 
 export async function RenewalsTab({
@@ -61,7 +62,13 @@ export async function RenewalsTab({
           endDate: { gte: now, lte: next120 },
         },
         orderBy: { endDate: "asc" },
-        include: {
+        // Pull `raw` so we can fall back to the AppFolio rent_roll
+        // tenant display name when no Resident row is linked.
+        select: {
+          id: true,
+          endDate: true,
+          monthlyRentCents: true,
+          raw: true,
           listing: { select: { id: true, unitNumber: true } },
           resident: {
             select: {
@@ -158,6 +165,7 @@ export async function RenewalsTab({
                         [l.resident?.firstName, l.resident?.lastName]
                           .filter(Boolean)
                           .join(" ") ||
+                        tenantNameFromRaw(l.raw) ||
                         l.resident?.email ||
                         "Resident";
                       return (
@@ -208,12 +216,13 @@ export async function RenewalsTab({
                     [l.resident?.firstName, l.resident?.lastName]
                       .filter(Boolean)
                       .join(" ") ||
+                    tenantNameFromRaw(l.raw) ||
                     l.resident?.email ||
                     "Resident";
                   const days = l.endDate ? differenceInDays(l.endDate, now) : null;
                   const tone =
                     days != null && days <= 30
-                      ? "text-rose-700 font-semibold"
+                      ? "text-amber-700 font-bold"
                       : days != null && days <= 60
                         ? "text-amber-700 font-semibold"
                         : "text-foreground";

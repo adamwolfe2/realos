@@ -232,11 +232,11 @@ function DrawerAction({
   if (state === "connected") {
     if (manageSlot) return <div className="space-y-3">{manageSlot}</div>;
     return (
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-        <p className="text-sm font-medium text-emerald-900">
+      <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+        <p className="text-sm font-medium text-primary">
           {def.name} is connected and live.
         </p>
-        <p className="text-xs text-emerald-800 mt-1">
+        <p className="text-xs text-primary mt-1">
           Your agency team manages this integration. Contact support to change
           how it&apos;s configured.
         </p>

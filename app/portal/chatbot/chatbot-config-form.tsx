@@ -307,7 +307,7 @@ export function ChatbotConfigForm({
             {pending ? "Saving…" : "Save chatbot config"}
           </button>
           {saved ? (
-            <span className="text-xs text-emerald-700">Saved</span>
+            <span className="text-xs text-primary">Saved</span>
           ) : null}
           {error ? (
             <span className="text-xs text-destructive">{error}</span>

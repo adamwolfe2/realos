@@ -16,6 +16,7 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
+import { tenantNameFromRaw } from "@/lib/integrations/appfolio-display";
 import { LeaseStatus } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Renewals" };
@@ -89,7 +90,15 @@ export default async function RenewalsPage() {
         endDate: { gte: now, lte: next120 },
       },
       orderBy: { endDate: "asc" },
-      include: {
+      // `raw` carries the original AppFolio rent_roll row. We read
+      // `raw.tenant` as a fallback display name because tenant_directory
+      // and rent_roll keyed off different IDs at sync time, leaving most
+      // leases without a linked Resident row.
+      select: {
+        id: true,
+        endDate: true,
+        monthlyRentCents: true,
+        raw: true,
         property: { select: { id: true, name: true } },
         listing: { select: { id: true, unitNumber: true } },
         resident: {
@@ -219,6 +228,7 @@ export default async function RenewalsPage() {
                           [l.resident?.firstName, l.resident?.lastName]
                             .filter(Boolean)
                             .join(" ") ||
+                          tenantNameFromRaw(l.raw) ||
                           l.resident?.email ||
                           "Resident";
                         return (
@@ -290,6 +300,7 @@ export default async function RenewalsPage() {
                     [l.resident?.firstName, l.resident?.lastName]
                       .filter(Boolean)
                       .join(" ") ||
+                    tenantNameFromRaw(l.raw) ||
                     l.resident?.email ||
                     "Resident";
                   const days = l.endDate
@@ -297,7 +308,7 @@ export default async function RenewalsPage() {
                     : null;
                   const tone =
                     days != null && days <= 30
-                      ? "text-rose-700 font-semibold"
+                      ? "text-amber-700 font-bold"
                       : days != null && days <= 60
                         ? "text-amber-700 font-semibold"
                         : "text-foreground";

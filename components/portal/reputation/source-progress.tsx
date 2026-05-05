@@ -41,7 +41,7 @@ export function SourceProgress({
             ? "border-destructive/40 bg-destructive/5 text-destructive"
             : s.status === "running"
               ? "border-border bg-muted/50 text-muted-foreground"
-              : "border-emerald-500/30 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400";
+              : "border-primary/30 bg-primary/10 text-primary";
         return (
           <span
             key={k}

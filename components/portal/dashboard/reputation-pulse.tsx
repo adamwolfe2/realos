@@ -15,9 +15,9 @@ const SOURCE_LABEL: Record<MentionSource, string> = {
 };
 
 const SENTIMENT_TONE: Record<Sentiment, string> = {
-  POSITIVE: "bg-emerald-50 text-emerald-700",
+  POSITIVE: "bg-primary/10 text-primary",
   NEUTRAL: "bg-muted text-muted-foreground",
-  NEGATIVE: "bg-rose-50 text-rose-700",
+  NEGATIVE: "bg-muted text-muted-foreground",
   MIXED: "bg-amber-50 text-amber-700",
 };
 

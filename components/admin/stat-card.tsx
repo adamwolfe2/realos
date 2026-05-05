@@ -14,13 +14,17 @@ export function StatCard({
   hint?: string;
   className?: string;
 }) {
+  // All StatCards now render on a neutral white surface. Earlier we tinted
+  // success → emerald and danger → red, which produced the green/pink/cream
+  // rainbow effect across SEO + Attribution. Tone is now communicated via
+  // delta chips and copy, not by painting the entire tile background.
   const toneClass =
     tone === "warn"
-      ? "border-primary/30 bg-primary/5"
+      ? "border-primary/40 bg-primary/[0.03]"
       : tone === "danger"
-        ? "border-destructive/30 bg-destructive/5"
+        ? "border-destructive/40 bg-destructive/[0.03]"
         : tone === "success"
-          ? "border-emerald-200 bg-emerald-50"
+          ? "border-primary/40 bg-primary/[0.03]"
           : "border-border bg-card";
   return (
     <div

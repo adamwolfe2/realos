@@ -125,7 +125,7 @@ const REASON_CONFIG: Record<
   hot: {
     label: "Hot",
     icon: Flame,
-    cls: "bg-rose-50 text-rose-700 ring-rose-200/70",
+    cls: "bg-primary/10 text-primary ring-primary/30",
   },
   stalled: {
     label: "Stalled",
@@ -135,11 +135,11 @@ const REASON_CONFIG: Record<
   "new-high-score": {
     label: "Fresh + scored",
     icon: Sparkle,
-    cls: "bg-emerald-50 text-emerald-700 ring-emerald-200/70",
+    cls: "bg-primary/10 text-primary ring-primary/30",
   },
   "recent-chatbot": {
     label: "From chat",
     icon: Sparkle,
-    cls: "bg-sky-50 text-sky-700 ring-sky-200/70",
+    cls: "bg-primary/10 text-primary ring-primary/30",
   },
 };

@@ -49,7 +49,7 @@ export function MasterToggle({
       <div className="flex items-center gap-3">
         <span
           className={`text-xs font-semibold ${
-            live ? "text-emerald-700" : "text-muted-foreground"
+            live ? "text-primary" : "text-muted-foreground"
           }`}
         >
           {live ? "On" : "Off"}
@@ -62,7 +62,7 @@ export function MasterToggle({
           disabled={!moduleActive || pending}
           onClick={flip}
           className={`relative inline-flex h-7 w-12 items-center rounded-full transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${
-            live ? "bg-emerald-600" : "bg-muted"
+            live ? "bg-primary" : "bg-muted"
           }`}
         >
           <span

@@ -409,23 +409,23 @@ export default async function PortalHome({
       {pastDueLeasesCount > 0 ? (
         <Link
           href="/portal/renewals"
-          className="flex items-center justify-between gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 hover:bg-rose-100 transition-colors group"
+          className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 hover:bg-amber-100 transition-colors group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <AlertTriangle className="h-4 w-4 text-rose-700 shrink-0" />
+            <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-rose-900 truncate">
+              <p className="text-xs font-semibold text-amber-900 truncate">
                 {pastDueLeasesCount.toLocaleString()} past-due
                 {" "}
                 {pastDueLeasesCount === 1 ? "lease" : "leases"}
                 {pastDueDisplay ? ` · ${pastDueDisplay} owed` : ""}
               </p>
-              <p className="text-[11px] text-rose-800">
+              <p className="text-[11px] text-amber-800">
                 From AppFolio delinquency report. Open Renewals to review.
               </p>
             </div>
           </div>
-          <span className="text-xs font-medium text-rose-900 group-hover:text-rose-950 whitespace-nowrap">
+          <span className="text-xs font-medium text-amber-900 group-hover:text-amber-950 whitespace-nowrap">
             Review →
           </span>
         </Link>
@@ -1055,44 +1055,65 @@ export default async function PortalHome({
                   occupancy here.
                 </p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {properties.map((p) => {
-                    const metrics = propertyMetrics.get(p.id) ?? {
-                      leads28d: 0,
-                      leadsSpark: new Array<number>(28).fill(0),
-                      activeCampaigns: 0,
-                      reputationMentionCount: 0,
-                      reputationNegativeCount: 0,
-                      reputationUnreviewedCount: 0,
-                    };
-                    const address = [p.addressLine1, p.city, p.state]
-                      .filter(Boolean)
-                      .join(", ");
-                    const occupancyPct = p.totalUnits
-                      ? Math.round(
-                          ((p.totalUnits - (p.availableCount ?? 0)) /
-                            p.totalUnits) *
-                            100,
-                        )
-                      : null;
-                    return (
-                      <PropertyDashboardCard
-                        key={p.id}
-                        id={p.id}
-                        name={p.name}
-                        address={address || null}
-                        thumbnailUrl={p.heroImageUrl}
-                        occupancyPct={occupancyPct}
-                        leads28d={metrics.leads28d}
-                        leadsSpark={metrics.leadsSpark}
-                        activeCampaigns={metrics.activeCampaigns}
-                        accent={org?.primaryColor ?? undefined}
-                        reputationMentionCount={metrics.reputationMentionCount}
-                        reputationNegativeCount={metrics.reputationNegativeCount}
-                        reputationUnreviewedCount={metrics.reputationUnreviewedCount}
-                      />
-                    );
-                  })}
+                <div className="rounded-lg border border-border bg-card overflow-hidden">
+                  {/* Header strip — small caps, only visible on lg where
+                      every column actually renders. Mobile collapses to
+                      avatar/name/address/leads automatically. */}
+                  <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 border-b border-border bg-muted/30 text-[9px] tracking-widest uppercase font-semibold text-muted-foreground">
+                    <div className="w-10 shrink-0" aria-hidden="true" />
+                    <div className="flex-1 min-w-0">Property</div>
+                    <div className="w-[120px] shrink-0 text-right">
+                      Occupancy
+                    </div>
+                    <div className="w-[68px] shrink-0 text-right">Units</div>
+                    <div className="w-[68px] shrink-0 text-right">Ads</div>
+                    <div className="w-[68px] shrink-0 text-right">Reviews</div>
+                    <div className="w-[72px] shrink-0 text-right">
+                      Leads (28d)
+                    </div>
+                    <div className="w-4 shrink-0" aria-hidden="true" />
+                  </div>
+                  <div className="divide-y divide-border">
+                    {properties.map((p) => {
+                      const metrics = propertyMetrics.get(p.id) ?? {
+                        leads28d: 0,
+                        leadsSpark: new Array<number>(28).fill(0),
+                        activeCampaigns: 0,
+                        reputationMentionCount: 0,
+                        reputationNegativeCount: 0,
+                        reputationUnreviewedCount: 0,
+                      };
+                      const address = [p.addressLine1, p.city, p.state]
+                        .filter(Boolean)
+                        .join(", ");
+                      const occupancyPct = p.totalUnits
+                        ? Math.round(
+                            ((p.totalUnits - (p.availableCount ?? 0)) /
+                              p.totalUnits) *
+                              100,
+                          )
+                        : null;
+                      return (
+                        <PropertyDashboardCard
+                          key={p.id}
+                          id={p.id}
+                          name={p.name}
+                          address={address || null}
+                          thumbnailUrl={p.heroImageUrl}
+                          occupancyPct={occupancyPct}
+                          totalUnits={p.totalUnits ?? null}
+                          availableCount={p.availableCount ?? null}
+                          leads28d={metrics.leads28d}
+                          leadsSpark={metrics.leadsSpark}
+                          activeCampaigns={metrics.activeCampaigns}
+                          accent={org?.primaryColor ?? undefined}
+                          reputationMentionCount={metrics.reputationMentionCount}
+                          reputationNegativeCount={metrics.reputationNegativeCount}
+                          reputationUnreviewedCount={metrics.reputationUnreviewedCount}
+                        />
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </DashboardSection>
@@ -1151,7 +1172,7 @@ function QuickAccessTile({
 }) {
   const badgeClass =
     badgeTone === "rose"
-      ? "bg-rose-100 text-rose-700"
+      ? "bg-amber-100 text-amber-700"
       : "bg-primary/10 text-primary";
   return (
     <Link

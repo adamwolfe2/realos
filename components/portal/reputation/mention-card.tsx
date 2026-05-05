@@ -40,7 +40,7 @@ function sentimentBadge(s: Sentiment | null) {
   }
   if (s === "POSITIVE") {
     return (
-      <Badge className="bg-emerald-600 text-white hover:bg-emerald-600">
+      <Badge className="bg-primary text-primary-foreground hover:bg-primary">
         positive
       </Badge>
     );

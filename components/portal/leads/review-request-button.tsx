@@ -69,7 +69,7 @@ export function ReviewRequestButton({
         {pending ? (
           <Loader2 className="h-3 w-3 animate-spin" />
         ) : done ? (
-          <Check className="h-3 w-3 text-emerald-600" />
+          <Check className="h-3 w-3 text-primary" />
         ) : (
           <Star className="h-3 w-3" />
         )}
@@ -85,7 +85,7 @@ export function ReviewRequestButton({
         </p>
       ) : null}
       {error ? (
-        <p className="text-[11px] text-rose-700">{error}</p>
+        <p className="text-[11px] text-destructive">{error}</p>
       ) : null}
     </div>
   );

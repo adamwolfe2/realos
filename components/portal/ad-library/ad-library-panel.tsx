@@ -165,7 +165,7 @@ function TrackForm({ propertyId }: { propertyId: string | null }) {
         )}
       </button>
       {error ? (
-        <p className="basis-full text-[11px] text-rose-700">{error}</p>
+        <p className="basis-full text-[11px] text-destructive">{error}</p>
       ) : null}
     </form>
   );
@@ -238,13 +238,13 @@ function AdvertiserCard({
               ? `scanned ${formatDistanceToNow(new Date(advertiser.lastScannedAt), { addSuffix: true })}`
               : "never scanned"}
             {scanResult ? (
-              <span className="ml-2 text-emerald-700 font-medium">
+              <span className="ml-2 text-primary font-medium">
                 · {scanResult}
               </span>
             ) : null}
           </p>
           {advertiser.lastScanError ? (
-            <p className="text-[11px] text-rose-700 mt-1 inline-flex items-center gap-1">
+            <p className="text-[11px] text-destructive mt-1 inline-flex items-center gap-1">
               <AlertTriangle className="h-2.5 w-2.5" aria-hidden="true" />
               {advertiser.lastScanError}
             </p>
@@ -266,7 +266,7 @@ function AdvertiserCard({
             onClick={handleRemove}
             disabled={removing}
             aria-label="Stop tracking"
-            className="inline-flex items-center justify-center rounded-md border border-border bg-card p-1 text-muted-foreground hover:text-rose-700 hover:border-rose-200 disabled:opacity-60 transition-colors"
+            className="inline-flex items-center justify-center rounded-md border border-border bg-card p-1 text-muted-foreground hover:text-destructive hover:border-destructive/30 disabled:opacity-60 transition-colors"
           >
             <Trash2 className="h-3 w-3" aria-hidden="true" />
           </button>
@@ -301,7 +301,7 @@ function AdvertiserCard({
 
 function AdRow({ ad }: { ad: AdLibraryAdView }) {
   const isActive = ad.status === "ACTIVE";
-  const dot = isActive ? "bg-emerald-500" : "bg-muted-foreground/40";
+  const dot = isActive ? "bg-primary" : "bg-muted-foreground/40";
   const platforms = ad.publisherPlatforms
     .map((p) => p.toLowerCase().replace(/_/g, " "))
     .join(", ");
@@ -328,7 +328,7 @@ function AdRow({ ad }: { ad: AdLibraryAdView }) {
           <p
             className={cn(
               "text-[11px] font-semibold uppercase tracking-wider",
-              isActive ? "text-emerald-700" : "text-muted-foreground",
+              isActive ? "text-primary" : "text-muted-foreground",
             )}
           >
             {isActive ? "Active" : "Inactive"}

@@ -136,13 +136,13 @@ export default async function SettingsPage() {
               key={k}
               className={`flex items-center gap-2.5 rounded-md border px-3 py-2 text-xs ${
                 v
-                  ? "border-emerald-200 bg-emerald-50/40 text-foreground"
+                  ? "border-primary/30 bg-primary/10 text-foreground"
                   : "border-border bg-background text-muted-foreground"
               }`}
             >
               <span
                 className={`inline-flex size-4 shrink-0 items-center justify-center rounded-full ${
-                  v ? "bg-emerald-600 text-white" : "bg-muted"
+                  v ? "bg-primary text-primary-foreground" : "bg-muted"
                 }`}
                 aria-hidden="true"
               >
@@ -151,7 +151,7 @@ export default async function SettingsPage() {
               <span className="truncate font-medium">{k}</span>
               <span
                 className={`ml-auto text-[10px] uppercase tracking-widest ${
-                  v ? "text-emerald-700" : "text-muted-foreground"
+                  v ? "text-primary" : "text-muted-foreground"
                 }`}
               >
                 {v ? "On" : "Off"}

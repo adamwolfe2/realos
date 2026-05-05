@@ -21,10 +21,10 @@ const STATUS_LABEL: Record<WorkOrderStatus, string> = {
 };
 
 const STATUS_TONE: Record<WorkOrderStatus, string> = {
-  NEW: "bg-rose-50 text-rose-700 border-rose-200",
-  SCHEDULED: "bg-blue-50 text-blue-800 border-blue-200",
+  NEW: "bg-primary/10 text-primary border-primary/30",
+  SCHEDULED: "bg-muted text-muted-foreground border-border",
   IN_PROGRESS: "bg-amber-50 text-amber-800 border-amber-200",
-  COMPLETED: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  COMPLETED: "bg-primary/10 text-primary border-primary/30",
   CANCELLED: "bg-muted text-muted-foreground border-border",
   ON_HOLD: "bg-slate-50 text-slate-700 border-slate-200",
 };
@@ -40,7 +40,7 @@ const PRIORITY_TONE: Record<WorkOrderPriority, string> = {
   LOW: "text-muted-foreground",
   NORMAL: "text-foreground",
   HIGH: "text-amber-700 font-semibold",
-  URGENT: "text-rose-700 font-bold",
+  URGENT: "text-amber-700 font-bold",
 };
 
 const OPEN_STATUSES = [

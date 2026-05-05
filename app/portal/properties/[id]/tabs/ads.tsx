@@ -184,7 +184,7 @@ function StatusChip({ status }: { status: string | null }) {
     <span
       className={
         isActive
-          ? "inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-50 text-emerald-700"
+          ? "inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-primary/10 text-primary"
           : "inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-muted text-muted-foreground"
       }
     >

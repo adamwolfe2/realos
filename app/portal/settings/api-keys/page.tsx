@@ -185,7 +185,7 @@ export default async function ApiKeysPage() {
           </div>
           <ul className="text-[11px] text-muted-foreground list-none pl-0 space-y-1">
             <li>
-              <code className="font-mono text-emerald-700">200</code> · created
+              <code className="font-mono text-primary">200</code> · created
               or updated
             </li>
             <li>
@@ -194,11 +194,11 @@ export default async function ApiKeysPage() {
               includes <code className="font-mono">{`{ "error": ..., "details": [...] }`}</code>
             </li>
             <li>
-              <code className="font-mono text-rose-700">401</code> · key missing,
+              <code className="font-mono text-destructive">401</code> · key missing,
               revoked, or expired
             </li>
             <li>
-              <code className="font-mono text-rose-700">403</code> · key valid
+              <code className="font-mono text-destructive">403</code> · key valid
               but lacks the required scope
             </li>
             <li>
@@ -206,7 +206,7 @@ export default async function ApiKeysPage() {
               hit
             </li>
             <li>
-              <code className="font-mono text-rose-700">500</code> · server
+              <code className="font-mono text-destructive">500</code> · server
               error — safe to retry with exponential backoff
             </li>
           </ul>
@@ -297,11 +297,11 @@ function ApiKeyRow({
         : "healthy";
   const expiryToneClass =
     expiryBucket === "expired"
-      ? "bg-rose-50 text-rose-700"
+      ? "bg-destructive/10 text-destructive"
       : expiryBucket === "soon"
         ? "bg-amber-50 text-amber-800"
         : expiryBucket === "healthy"
-          ? "bg-slate-100 text-slate-700"
+          ? "bg-muted text-muted-foreground"
           : "bg-slate-50 text-muted-foreground";
   const expiryLabel =
     expiryBucket === "expired"

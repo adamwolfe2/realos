@@ -33,43 +33,43 @@ const STATUS_META: Record<
 > = {
   NEW: {
     label: "New",
-    className: "bg-blue-50 text-blue-700 border-blue-200",
+    className: "bg-primary/10 text-primary border-primary/30",
   },
   CONTACTED: {
     label: "Contacted",
-    className: "bg-purple-50 text-purple-700 border-purple-200",
+    className: "bg-muted text-muted-foreground border-border",
   },
   TOUR_SCHEDULED: {
     label: "Tour scheduled",
-    className: "bg-amber-50 text-amber-700 border-amber-200",
+    className: "bg-muted text-muted-foreground border-border",
   },
   TOURED: {
     label: "Toured",
-    className: "bg-teal-50 text-teal-700 border-teal-200",
+    className: "bg-muted text-muted-foreground border-border",
   },
   APPLICATION_SENT: {
     label: "App sent",
-    className: "bg-orange-50 text-orange-700 border-orange-200",
+    className: "bg-muted text-muted-foreground border-border",
   },
   APPLIED: {
     label: "Applied",
-    className: "bg-indigo-50 text-indigo-700 border-indigo-200",
+    className: "bg-primary/10 text-primary border-primary/30",
   },
   APPROVED: {
     label: "Approved",
-    className: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    className: "bg-primary/10 text-primary border-primary/30",
   },
   SIGNED: {
     label: "Signed",
-    className: "bg-green-50 text-green-700 border-green-200",
+    className: "bg-primary/15 text-primary border-primary/30",
   },
   LOST: {
     label: "Lost",
-    className: "bg-red-50 text-red-600 border-red-200",
+    className: "bg-muted text-muted-foreground border-border",
   },
   UNQUALIFIED: {
     label: "Unqualified",
-    className: "bg-gray-50 text-gray-500 border-gray-200",
+    className: "bg-muted text-muted-foreground border-border",
   },
 };
 
@@ -87,9 +87,9 @@ function ageTier(iso: string): "fresh" | "aging" | "stale" {
 }
 
 const AGE_DOT_CLASS: Record<ReturnType<typeof ageTier>, string> = {
-  fresh: "bg-emerald-400",
+  fresh: "bg-primary",
   aging: "bg-amber-400",
-  stale: "bg-rose-500",
+  stale: "bg-amber-600",
 };
 
 function relativeTime(iso: string): string {
@@ -250,7 +250,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
             type="button"
             onClick={deleteAll}
             disabled={pending}
-            className="text-xs text-rose-700 hover:text-rose-900 disabled:opacity-50"
+            className="text-xs text-destructive hover:opacity-80 disabled:opacity-50"
           >
             Delete
           </button>
@@ -265,7 +265,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
             Clear
           </button>
           {error ? (
-            <p className="basis-full rounded border border-rose-200 bg-rose-50 px-2 py-1 text-[11px] text-rose-800">
+            <p className="basis-full rounded border border-destructive/30 bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
               {error}
             </p>
           ) : null}
@@ -309,9 +309,9 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                 <span className="inline-flex items-center justify-end gap-2">
                   Added
                   <span className="inline-flex items-center gap-1 font-normal normal-case tracking-normal text-[10px] text-muted-foreground">
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" title="0-6 days" />
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary" title="0-6 days" />
                     <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-400" title="7-14 days" />
-                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-rose-500" title="15+ days" />
+                    <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-600" title="15+ days" />
                   </span>
                 </span>
               </th>
@@ -391,9 +391,9 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                         className={cn(
                           "text-xs font-medium tabular-nums",
                           item.score >= 70
-                            ? "text-emerald-600"
+                            ? "text-primary"
                             : item.score >= 40
-                            ? "text-amber-600"
+                            ? "text-primary/70"
                             : "text-muted-foreground"
                         )}
                       >

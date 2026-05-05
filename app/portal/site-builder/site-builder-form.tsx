@@ -416,7 +416,7 @@ export function SiteBuilderForm({
             ) : isDirty ? (
               "Unsaved changes"
             ) : savedAt ? (
-              <span className="text-emerald-700">
+              <span className="text-primary">
                 Saved {savedAt.toLocaleTimeString()}
               </span>
             ) : (

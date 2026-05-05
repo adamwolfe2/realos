@@ -89,12 +89,12 @@ export function ConnectMetaAdsForm() {
           {pending ? "Testing & connecting…" : "Connect Meta Ads"}
         </button>
         {state.ok ? (
-          <span className="text-xs text-emerald-700">
+          <span className="text-xs text-primary">
             Connected to {state.accountName ?? "ad account"}.
             {state.currency ? ` Currency: ${state.currency}.` : ""}
           </span>
         ) : state.error ? (
-          <span className="text-xs text-rose-700">{state.error}</span>
+          <span className="text-xs text-destructive">{state.error}</span>
         ) : null}
       </div>
     </form>
@@ -136,7 +136,7 @@ export function MetaAdsManage({
       </dl>
 
       {lastSyncError ? (
-        <p className="text-[11px] text-rose-700 rounded-md border border-rose-200 bg-rose-50 p-3">
+        <p className="text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/10 p-3">
           {lastSyncError}
         </p>
       ) : null}
@@ -161,12 +161,12 @@ export function DisconnectMetaAdsForm({ accountId }: { accountId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="text-xs font-medium text-rose-700 hover:text-rose-900 hover:underline underline-offset-2 disabled:opacity-60"
+        className="text-xs font-medium text-destructive hover:opacity-80 hover:underline underline-offset-2 disabled:opacity-60"
       >
         {pending ? "Disconnecting…" : "Disconnect"}
       </button>
       {!state.ok && state.error ? (
-        <span className="text-xs text-rose-700">{state.error}</span>
+        <span className="text-xs text-destructive">{state.error}</span>
       ) : null}
     </form>
   );

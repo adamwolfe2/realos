@@ -180,8 +180,8 @@ export default async function VisitorDetailPage({
             <VisitorAvatar identity={identity} visitorId={visitor.id} palette={palette} />
             <span>{identity.displayName}</span>
             {isLive ? (
-              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="inline-flex items-center gap-1.5 text-xs font-medium text-primary bg-primary/10 border border-primary/30 px-2 py-0.5 rounded-md">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                 Live now
               </span>
             ) : null}
@@ -219,8 +219,8 @@ export default async function VisitorDetailPage({
 
       {/* Engage button (live only) */}
       {isLive && liveSession ? (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4">
-          <div className="text-sm font-medium text-emerald-800 mb-3">
+        <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+          <div className="text-sm font-medium text-primary mb-3">
             This visitor is active right now. Send them a message and it will
             appear in the chatbot widget within seconds.
           </div>
@@ -412,9 +412,9 @@ export default async function VisitorDetailPage({
               className={cn(
                 "text-4xl font-semibold tabular-nums",
                 visitor.intentScore >= 80
-                  ? "text-red-600"
+                  ? "text-primary"
                   : visitor.intentScore >= 60
-                  ? "text-orange-500"
+                  ? "text-primary/70"
                   : "text-muted-foreground"
               )}
             >
@@ -470,8 +470,8 @@ export default async function VisitorDetailPage({
                           </span>
                           {session.lastEventAt.getTime() >=
                           Date.now() - LIVE_WINDOW_MS ? (
-                            <span className="inline-flex items-center gap-1 text-[11px] text-emerald-700">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            <span className="inline-flex items-center gap-1 text-[11px] text-primary">
+                              <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                               Active
                             </span>
                           ) : null}
@@ -619,20 +619,20 @@ function statusBadgeConfig(status: VisitorIdentificationStatus) {
     case VisitorIdentificationStatus.MATCHED_TO_LEAD:
       return {
         label: "Matched to lead",
-        dot: "bg-emerald-500",
-        classes: "text-emerald-700 bg-emerald-50 border-emerald-200",
+        dot: "bg-primary",
+        classes: "text-primary bg-primary/10 border-primary/30",
       };
     case VisitorIdentificationStatus.ENRICHED:
       return {
         label: "Enriched",
-        dot: "bg-blue-500",
-        classes: "text-blue-700 bg-blue-50 border-blue-200",
+        dot: "bg-primary/60",
+        classes: "text-primary bg-primary/10 border-primary/30",
       };
     case VisitorIdentificationStatus.IDENTIFIED:
       return {
         label: "Identified",
-        dot: "bg-blue-400",
-        classes: "text-blue-700 bg-blue-50 border-blue-200",
+        dot: "bg-primary/50",
+        classes: "text-primary bg-primary/10 border-primary/30",
       };
     case VisitorIdentificationStatus.ANONYMOUS:
     default:

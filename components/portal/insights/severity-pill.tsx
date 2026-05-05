@@ -11,7 +11,7 @@ export function SeverityPill({ severity, size = "md" }: Props) {
     critical: {
       label: "Critical",
       icon: AlertOctagon,
-      cls: "bg-rose-50 text-rose-700 ring-rose-200/70",
+      cls: "bg-destructive/10 text-destructive ring-destructive/30",
     },
     warning: {
       label: "Warning",
@@ -21,7 +21,7 @@ export function SeverityPill({ severity, size = "md" }: Props) {
     info: {
       label: "Info",
       icon: Info,
-      cls: "bg-sky-50 text-sky-800 ring-sky-200/70",
+      cls: "bg-primary/10 text-primary ring-primary/30",
     },
   }[severity] ?? {
     label: severity,

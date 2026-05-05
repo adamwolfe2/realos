@@ -378,7 +378,7 @@ export function AdsDashboard({
                       })}`
                     : "Awaiting first sync"}
                   {a.lastSyncError ? (
-                    <span className="text-rose-700 ml-2">
+                    <span className="text-destructive ml-2">
                       · {a.lastSyncError}
                     </span>
                   ) : null}
@@ -388,9 +388,9 @@ export function AdsDashboard({
                 className={cn(
                   "text-[11px] font-medium px-2 py-0.5 rounded-md",
                   a.accessStatus === "active"
-                    ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                    ? "bg-primary/10 text-primary border border-primary/30"
                     : a.accessStatus === "error"
-                      ? "bg-rose-50 text-rose-800 border border-rose-200"
+                      ? "bg-destructive/10 text-destructive border border-destructive/30"
                       : "bg-muted text-muted-foreground border border-border"
                 )}
               >
@@ -509,7 +509,7 @@ function StatusPill({ status }: { status: string }) {
   const norm = status.toUpperCase();
   const tone =
     norm === "ENABLED" || norm === "ACTIVE"
-      ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+      ? "bg-primary/10 text-primary border-primary/30"
       : norm === "PAUSED"
         ? "bg-amber-50 text-amber-800 border-amber-200"
         : "bg-muted text-muted-foreground border-border";

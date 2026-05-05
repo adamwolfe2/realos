@@ -439,7 +439,7 @@ export default async function ComparePropertiesPage({
       value: (id) => {
         const c = mentionsNegMap.get(id)?._count._all ?? 0;
         if (c === 0) return "0";
-        return <span className="text-rose-700 font-medium">{c}</span>;
+        return <span className="text-muted-foreground font-medium">{c}</span>;
       },
       raw: (id) => mentionsNegMap.get(id)?._count._all ?? 0,
       isHigherBetter: false,
@@ -553,7 +553,7 @@ export default async function ComparePropertiesPage({
                       key={p.id}
                       className={`px-4 py-2.5 text-sm tabular-nums ${
                         winnerId === p.id
-                          ? "bg-emerald-50/60 font-semibold text-emerald-900"
+                          ? "bg-primary/10 font-semibold text-primary"
                           : "text-foreground"
                       }`}
                     >

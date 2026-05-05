@@ -38,16 +38,16 @@ export const FLAG_TONE: Record<
   { bg: string; text: string; dot: string; ring: string }
 > = {
   quality_good: {
-    bg: "bg-emerald-50",
-    text: "text-emerald-800",
-    dot: "bg-emerald-500",
-    ring: "ring-emerald-200",
+    bg: "bg-primary/10",
+    text: "text-primary",
+    dot: "bg-primary",
+    ring: "ring-primary/30",
   },
   quality_bad: {
-    bg: "bg-rose-50",
-    text: "text-rose-800",
-    dot: "bg-rose-500",
-    ring: "ring-rose-200",
+    bg: "bg-destructive/10",
+    text: "text-destructive",
+    dot: "bg-destructive",
+    ring: "ring-destructive/30",
   },
   needs_prompt_tuning: {
     bg: "bg-amber-50",
@@ -71,16 +71,16 @@ export const FLAG_TONE: Record<
     ring: "ring-border",
   },
   followup_needed: {
-    bg: "bg-blue-50",
-    text: "text-blue-800",
-    dot: "bg-blue-500",
-    ring: "ring-blue-200",
+    bg: "bg-primary/10",
+    text: "text-primary",
+    dot: "bg-primary",
+    ring: "ring-primary/30",
   },
   handoff_missed: {
-    bg: "bg-rose-50",
-    text: "text-rose-800",
-    dot: "bg-rose-500",
-    ring: "ring-rose-200",
+    bg: "bg-destructive/10",
+    text: "text-destructive",
+    dot: "bg-destructive",
+    ring: "ring-destructive/30",
   },
 };
 

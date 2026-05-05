@@ -418,7 +418,7 @@ function AppfolioManage({
       </dl>
 
       {lastError ? (
-        <p className="text-[11px] text-rose-700 rounded-md border border-rose-200 bg-rose-50 p-3">
+        <p className="text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/10 p-3">
           {lastError}
         </p>
       ) : null}
@@ -501,7 +501,7 @@ function SeoManage({
       </dl>
 
       {lastError ? (
-        <p className="text-[11px] text-rose-700 rounded-md border border-rose-200 bg-rose-50 p-3">
+        <p className="text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/10 p-3">
           {lastError}
         </p>
       ) : null}

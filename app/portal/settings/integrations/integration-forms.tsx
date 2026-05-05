@@ -79,7 +79,7 @@ export function ConnectPixelForm({
           {pending ? "Submitting…" : "Request your pixel"}
         </Button>
         {state && state.ok && state.queued ? (
-          <span className="text-xs text-emerald-700">
+          <span className="text-xs text-primary">
             Got it. We&apos;ll email your install snippet within one business day.
           </span>
         ) : null}

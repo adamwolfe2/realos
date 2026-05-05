@@ -53,8 +53,8 @@ function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live, l
         </div>
         {live && !locked ? (
           <span className="relative inline-flex h-2 w-2 shrink-0" aria-label="Live">
-            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
           </span>
         ) : null}
       </div>
@@ -101,11 +101,15 @@ function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live, l
 }
 
 function DeltaPill({ value, trend }: { value: string; trend: Trend }) {
+  // "Up" used to render emerald and "down" used to render rose — together
+  // they produced the multi-color rainbow on the SEO / Attribution dashboards.
+  // Up now renders in brand blue (positive = on-mission), down stays red
+  // because regressions genuinely warrant alarm. Flat is muted gray.
   const tone =
     trend === "up"
-      ? "text-emerald-700 bg-emerald-50"
+      ? "text-primary bg-primary/10"
       : trend === "down"
-        ? "text-rose-700 bg-rose-50"
+        ? "text-destructive bg-destructive/10"
         : "text-muted-foreground bg-muted";
   const Icon = trend === "up" ? ArrowUpRight : trend === "down" ? ArrowDownRight : Minus;
   return (

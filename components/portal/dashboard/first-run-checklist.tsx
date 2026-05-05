@@ -102,7 +102,7 @@ export function FirstRunChecklist({ items }: { items: ChecklistItem[] }) {
                   className={cn(
                     "shrink-0 grid place-items-center h-8 w-8 rounded-md",
                     it.done
-                      ? "bg-emerald-50 text-emerald-700"
+                      ? "bg-primary/10 text-primary"
                       : "bg-muted text-muted-foreground",
                   )}
                 >

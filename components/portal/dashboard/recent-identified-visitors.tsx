@@ -5,9 +5,9 @@ import { Flame, Globe } from "lucide-react";
 import type { RecentIdentifiedVisitor } from "@/lib/dashboard/queries";
 
 function intentTone(score: number): { label: string; className: string } {
-  if (score >= 70) return { label: "Hot", className: "bg-rose-50 text-rose-700" };
-  if (score >= 40) return { label: "Warm", className: "bg-amber-50 text-amber-700" };
-  return { label: "Active", className: "bg-emerald-50 text-emerald-700" };
+  if (score >= 70) return { label: "Hot", className: "bg-primary/15 text-primary" };
+  if (score >= 40) return { label: "Warm", className: "bg-primary/10 text-primary" };
+  return { label: "Active", className: "bg-primary/10 text-primary" };
 }
 
 function sourceLabel(utmSource: string | null, referrer: string | null): string {

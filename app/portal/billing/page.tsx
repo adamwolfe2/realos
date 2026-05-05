@@ -155,7 +155,7 @@ function Mini({
 }) {
   const valueClass =
     tone === "success"
-      ? "text-emerald-700"
+      ? "text-primary"
       : tone === "warn"
         ? "text-amber-700"
         : "text-foreground";

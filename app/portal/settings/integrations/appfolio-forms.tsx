@@ -201,14 +201,14 @@ export function ConnectAppfolioForm() {
         </button>
 
         {testState.status === "ok" ? (
-          <span className="text-xs text-emerald-700 flex items-center gap-1.5">
-            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500" />
+          <span className="text-xs text-primary flex items-center gap-1.5">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary" />
             {testState.listingsFound != null
               ? `Connection verified — found ${testState.listingsFound} listing${testState.listingsFound === 1 ? "" : "s"}`
               : "Connection verified"}
           </span>
         ) : testState.status === "error" ? (
-          <span className="text-xs text-rose-700">{testState.error}</span>
+          <span className="text-xs text-destructive">{testState.error}</span>
         ) : null}
       </div>
 
@@ -227,10 +227,10 @@ export function ConnectAppfolioForm() {
           </span>
         ) : null}
         {state && !state.ok && state.error ? (
-          <span className="text-xs text-rose-700 mt-3">{state.error}</span>
+          <span className="text-xs text-destructive mt-3">{state.error}</span>
         ) : null}
         {state && state.ok && state.mode && (state as { ok: true; mode: string; listingsFound?: number }).listingsFound != null ? (
-          <span className="text-xs text-emerald-700 mt-3">
+          <span className="text-xs text-primary mt-3">
             Connected — found {(state as { ok: true; mode: string; listingsFound?: number }).listingsFound} listing
             {(state as { ok: true; mode: string; listingsFound?: number }).listingsFound === 1 ? "" : "s"}.
           </span>
@@ -342,12 +342,12 @@ export function DisconnectAppfolioForm() {
       <button
         type="submit"
         disabled={pending}
-        className="text-xs font-medium text-rose-700 hover:text-rose-900 hover:underline underline-offset-2 disabled:opacity-60"
+        className="text-xs font-medium text-destructive hover:opacity-80 hover:underline underline-offset-2 disabled:opacity-60"
       >
         {pending ? "Disconnecting…" : "Disconnect AppFolio"}
       </button>
       {state && !state.ok && state.error ? (
-        <span className="text-xs text-rose-700">{state.error}</span>
+        <span className="text-xs text-destructive">{state.error}</span>
       ) : null}
     </form>
   );
@@ -377,7 +377,7 @@ export function SyncAppfolioButton() {
       </button>
       {result && result.ok ? (
         <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-xs text-emerald-700">
+          <span className="text-xs text-primary">
             {formatSyncSummary(result.stats)}
           </span>
           {result.stats.warnings.length > 0 ? (
@@ -401,7 +401,7 @@ export function SyncAppfolioButton() {
         </div>
       ) : null}
       {result && !result.ok ? (
-        <span className="text-xs text-rose-700">{result.error}</span>
+        <span className="text-xs text-destructive">{result.error}</span>
       ) : null}
     </div>
   );

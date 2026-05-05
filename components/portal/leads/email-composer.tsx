@@ -168,7 +168,7 @@ export function LeadEmailComposer({
               </div>
 
               {error ? (
-                <p className="rounded-md border border-rose-200 bg-rose-50 text-rose-800 text-xs px-3 py-2">
+                <p className="rounded-md border border-destructive/30 bg-destructive/10 text-destructive text-xs px-3 py-2">
                   {error}
                 </p>
               ) : null}

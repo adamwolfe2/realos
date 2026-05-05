@@ -8,36 +8,35 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
 }
 
 /* =============================================================================
-   Claude-inspired design system.
-   Parchment canvas, Terracotta accent, Anthropic Serif (Fraunces stand-in)
-   for headlines, Anthropic Sans (Inter) for UI. Warm neutrals only. Ring
-   shadows over drop shadows. See DESIGN.md at project root.
+   LeaseStack design system — clean white canvas, blue accent, cool grays.
+   Inter everywhere. No serif display font. Borders + chrome are neutral
+   gray; the only colored signal is the brand blue (#2563EB). Charts use a
+   monochrome blue scale; status reds and ambers are reserved for genuine
+   errors / warnings.
    ============================================================================= */
 
 @theme {
-  /* Type system — Fraunces for display headlines (warm humanist serif),
-     Inter for UI + body, JetBrains Mono for tabular numerics + code.
-     The earlier override that pointed all three at Inter is gone; this
-     restores the brand voice from the marketing site. */
-  --font-display: var(--font-fraunces), Georgia, "Times New Roman", serif;
-  --font-serif:   var(--font-fraunces), Georgia, "Times New Roman", serif;
+  /* Type system — Inter for everything (display, body, UI), JetBrains Mono
+     only for tabular numerics + code. The Fraunces serif from the warm-cream
+     era was removed; the portal reads as a clean software product, not an
+     editorial site. */
+  --font-display: var(--font-inter), -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif;
+  --font-serif:   var(--font-inter), -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif;
   --font-sans:    var(--font-inter), -apple-system, system-ui, "Helvetica Neue", Arial, sans-serif;
   --font-mono:    var(--font-jetbrains), ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
 
   /* =========================================================================
-     LeaseStack design system — warm cream canvas, ink text, blue accent.
-     Matches the marketing site (#f5f4ed bg / #4d4c48 text / #2563EB brand)
-     so the portal feels like one product, not two. Semantic tokens mirror
-     shadcn/ui so components/ui/* and Radix primitives inherit them.
+     White canvas, cool-gray chrome, blue accent. Tokens mirror shadcn/ui so
+     components/ui/* and Radix primitives inherit cleanly.
      ========================================================================= */
 
-  /* Canvas — warm parchment, not cool gray */
-  --color-background: #F5F4ED;
-  --color-foreground: #1A1A1A;
+  /* Canvas — white surfaces sitting on a near-white app background */
+  --color-background: #FFFFFF;
+  --color-foreground: #0F172A;
   --color-card: #FFFFFF;
-  --color-card-foreground: #1A1A1A;
+  --color-card-foreground: #0F172A;
   --color-popover: #FFFFFF;
-  --color-popover-foreground: #1A1A1A;
+  --color-popover-foreground: #0F172A;
 
   /* Brand */
   --color-primary: #2563EB;
@@ -45,60 +44,61 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
   --color-primary-dark: #1D4ED8;
   --color-primary-light: #3B82F6;
 
-  /* Supporting — warm neutrals throughout */
-  --color-secondary: #FAF9F5;
-  --color-secondary-foreground: #1A1A1A;
-  --color-muted: #EFEDE3;
-  --color-muted-foreground: #87867F;
-  --color-accent: #EFF3FB;
+  /* Supporting — cool grays only */
+  --color-secondary: #F9FAFB;
+  --color-secondary-foreground: #0F172A;
+  --color-muted: #F3F4F6;
+  --color-muted-foreground: #6B7280;
+  --color-accent: #EFF6FF;
   --color-accent-foreground: #2563EB;
-  --color-destructive: #B53333;
+  --color-destructive: #DC2626;
   --color-destructive-foreground: #FFFFFF;
 
-  /* Borders + rings — warm cream, not cool gray */
-  --color-border: #E8E6DC;
-  --color-input: #E8E6DC;
+  /* Borders + rings — neutral gray */
+  --color-border: #E5E7EB;
+  --color-input: #E5E7EB;
   --color-ring: #2563EB;
 
-  /* Sidebar-specific: cards float ON the cream canvas */
+  /* Section surfaces */
   --color-deep: #FFFFFF;
-  --color-surface: #FAF9F5;
+  --color-surface: #F9FAFB;
 
-  /* Legacy LeaseStack aliases */
-  --color-ink: #1A1A1A;
-  --color-cream: #F5F4ED;
-  --color-shell: #E8E6DC;
-  --color-sand: #87867F;
+  /* Legacy aliases — kept so older files don't break, retargeted to the
+     new neutral palette. */
+  --color-ink: #0F172A;
+  --color-cream: #FFFFFF;
+  --color-shell: #E5E7EB;
+  --color-sand: #6B7280;
 }
 
 :root {
-  /* ── Canvas (warm, parchment-led) ──────────────────────────────────── */
-  --parchment:      #f5f4ed;
-  --ivory:          #faf9f5;
-  --warm-sand:      #e8e6dc;
+  /* ── Canvas (clean white, cool gray scale) ─────────────────────────── */
+  --parchment:      #ffffff;
+  --ivory:          #f9fafb;
+  --warm-sand:      #f3f4f6;
   --white:          #ffffff;
 
-  --near-black:     #141413;   /* primary text + dark sections */
-  --dark-surface:   #30302e;
+  --near-black:     #0f172a;   /* primary text + dark sections */
+  --dark-surface:   #1f2937;
 
-  /* ── Brand (blue accent, was terracotta/crimson) ───────────────────── */
+  /* ── Brand (blue) ──────────────────────────────────────────────────── */
   --terracotta:       #2563EB;
   --terracotta-hover: #1D4ED8;
   --coral:            #3B82F6;
 
-  /* ── Warm neutrals ─────────────────────────────────────────────────── */
-  --charcoal-warm:  #4d4c48;
-  --olive-gray:     #5e5d59;
-  --stone-gray:     #87867f;
-  --dark-warm:      #3d3d3a;
-  --warm-silver:    #b0aea5;
+  /* ── Cool neutrals ─────────────────────────────────────────────────── */
+  --charcoal-warm:  #1f2937;
+  --olive-gray:     #4b5563;
+  --stone-gray:     #6b7280;
+  --dark-warm:      #111827;
+  --warm-silver:    #d1d5db;
 
   /* ── Borders + rings ───────────────────────────────────────────────── */
-  --border-cream:   #f0eee6;
-  --border-warm:    #e8e6dc;
-  --border-dark:    #30302e;
-  --ring-warm:      #d1cfc5;
-  --ring-deep:      #c2c0b6;
+  --border-cream:   #e5e7eb;
+  --border-warm:    #d1d5db;
+  --border-dark:    #1f2937;
+  --ring-warm:      #d1d5db;
+  --ring-deep:      #9ca3af;
 
   /* ── Status ────────────────────────────────────────────────────────── */
   --error:          #b53333;
@@ -162,8 +162,8 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
 }
 
 body {
-  background-color: var(--parchment);
-  color: var(--charcoal-warm);
+  background-color: var(--white);
+  color: var(--near-black);
   -webkit-font-smoothing: antialiased;
   font-family: var(--font-sans);
 }
@@ -332,11 +332,14 @@ body {
 :focus-visible { outline: 2px solid var(--focus-blue); outline-offset: 2px; }
 
 /* ── Type helpers ───────────────────────────────────────────────────────── */
-.display-hero   { font-family: var(--font-display); font-size: clamp(42px, 5.2vw, 64px); font-weight: 700; line-height: 1.08; letter-spacing: -0.022em; }
-.display-large  { font-family: var(--font-display); font-size: clamp(36px, 4.4vw, 52px); font-weight: 700; line-height: 1.10; letter-spacing: -0.020em; }
-.heading-section{ font-family: var(--font-display); font-size: clamp(28px, 3.2vw, 40px); font-weight: 700; line-height: 1.12; letter-spacing: -0.018em; }
-.heading-sub    { font-family: var(--font-display); font-size: clamp(22px, 2.2vw, 28px); font-weight: 600; line-height: 1.20; letter-spacing: -0.012em; }
-.heading-card   { font-family: var(--font-display); font-size: 20px; font-weight: 600; line-height: 1.25; letter-spacing: -0.010em; }
+/* All headings render in Inter now. The Fraunces serif we briefly used has
+   been retired so the portal reads as a clean software product. Tighter
+   tracking compensates for the geometric grotesque feel at large sizes. */
+.display-hero   { font-family: var(--font-sans); font-size: clamp(42px, 5.2vw, 64px); font-weight: 700; line-height: 1.08; letter-spacing: -0.025em; }
+.display-large  { font-family: var(--font-sans); font-size: clamp(36px, 4.4vw, 52px); font-weight: 700; line-height: 1.10; letter-spacing: -0.022em; }
+.heading-section{ font-family: var(--font-sans); font-size: clamp(28px, 3.2vw, 40px); font-weight: 700; line-height: 1.12; letter-spacing: -0.020em; }
+.heading-sub    { font-family: var(--font-sans); font-size: clamp(22px, 2.2vw, 28px); font-weight: 600; line-height: 1.20; letter-spacing: -0.014em; }
+.heading-card   { font-family: var(--font-sans); font-size: 20px; font-weight: 600; line-height: 1.25; letter-spacing: -0.012em; }
 .body-lead      { font-family: var(--font-sans); font-size: 18px; line-height: 1.60; font-weight: 400; }
 .body-default   { font-family: var(--font-sans); font-size: 16px; line-height: 1.60; font-weight: 400; color: var(--charcoal-warm); }
 .body-small     { font-family: var(--font-sans); font-size: 15px; line-height: 1.55; font-weight: 400; color: var(--olive-gray); }
@@ -374,7 +377,7 @@ body {
   background-color: var(--ivory);
   padding: 2rem; margin: 2.5rem 0; border-radius: 16px;
 }
-.prose .cta-block h3 { font-family: var(--font-display); font-size: 22px; font-weight: 500; color: var(--near-black); margin: 0 0 0.5rem; line-height: 1.25; }
+.prose .cta-block h3 { font-family: var(--font-sans); font-size: 22px; font-weight: 600; color: var(--near-black); margin: 0 0 0.5rem; line-height: 1.25; letter-spacing: -0.012em; }
 .prose .cta-block p { font-family: var(--font-sans); font-size: 16px; line-height: 1.6; color: var(--charcoal-warm); margin: 0 0 1.25rem; }
 .prose .cta-block a {
   display: inline-flex; align-items: center; gap: 0.5rem;

@@ -20,11 +20,11 @@ const STATUS_LABEL: Record<ResidentStatus, string> = {
 };
 
 const STATUS_TONE: Record<ResidentStatus, string> = {
-  ACTIVE: "bg-emerald-50 text-emerald-700 border-emerald-200",
+  ACTIVE: "bg-primary/10 text-primary border-primary/30",
   NOTICE_GIVEN: "bg-amber-50 text-amber-800 border-amber-200",
-  EVICTED: "bg-rose-50 text-rose-700 border-rose-200",
+  EVICTED: "bg-destructive/10 text-destructive border-destructive/30",
   PAST: "bg-muted text-muted-foreground border-border",
-  APPLICANT: "bg-blue-50 text-blue-800 border-blue-200",
+  APPLICANT: "bg-primary/10 text-primary border-primary/30",
 };
 
 function fmtMoney(cents: number | null | undefined): string {
@@ -159,7 +159,7 @@ export async function ResidentsTab({
                       <td
                         className={`px-2 py-2 text-right tabular-nums ${
                           days != null && days <= 30
-                            ? "text-rose-700 font-semibold"
+                            ? "text-amber-700 font-semibold"
                             : "text-foreground"
                         }`}
                       >
@@ -218,7 +218,7 @@ export async function ResidentsTab({
                         {STATUS_LABEL[r.status]}
                       </span>
                       {r.currentLease?.isPastDue ? (
-                        <span className="ml-1 text-[10px] text-rose-700 font-semibold">
+                        <span className="ml-1 text-[10px] text-amber-700 font-semibold">
                           past-due {fmtMoney(r.currentLease.currentBalanceCents)}
                         </span>
                       ) : null}

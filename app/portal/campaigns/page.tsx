@@ -47,11 +47,11 @@ function platformManageUrl(args: {
 function statusBadge(status: string | null) {
   const s = (status ?? "").toUpperCase();
   if (s === "ENABLED" || s === "ACTIVE")
-    return "bg-emerald-50 text-emerald-700 border-emerald-200";
+    return "bg-primary/10 text-primary border-primary/30";
   if (s === "PAUSED")
     return "bg-amber-50 text-amber-700 border-amber-200";
   if (s === "REMOVED" || s === "DELETED")
-    return "bg-rose-50 text-rose-700 border-rose-200";
+    return "bg-muted text-muted-foreground border-border";
   return "bg-muted text-muted-foreground border-border";
 }
 

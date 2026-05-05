@@ -145,10 +145,10 @@ export function ConversationSidebar({
             {savingNote ? "Saving..." : "Save note"}
           </button>
           {savedAt ? (
-            <span className="text-[11px] text-emerald-700">Saved</span>
+            <span className="text-[11px] text-primary">Saved</span>
           ) : null}
           {noteError ? (
-            <span className="text-[11px] text-rose-700">{noteError}</span>
+            <span className="text-[11px] text-destructive">{noteError}</span>
           ) : null}
         </div>
         {/* Prior notes */}

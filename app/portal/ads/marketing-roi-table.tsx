@@ -67,7 +67,7 @@ export function MarketingRoiTable({ rows }: { rows: RoiRow[] }) {
               </td>
               <td className="py-2.5 px-3 text-right tabular-nums text-xs text-foreground">
                 {r.signed > 0 ? (
-                  <span className="text-emerald-700 font-semibold">{r.signed}</span>
+                  <span className="text-primary font-semibold">{r.signed}</span>
                 ) : "—"}
               </td>
               <td className="py-2.5 px-3 text-right tabular-nums text-xs text-muted-foreground">

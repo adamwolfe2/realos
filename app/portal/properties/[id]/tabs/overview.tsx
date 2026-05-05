@@ -52,15 +52,17 @@ const SOURCE_LABEL: Record<LeadSource, string> = {
 };
 
 // Single muted accent palette so the donut reads as data, not as a rainbow.
+// All slices step through the brand blue scale, with neutral gray taking
+// over once we run out of blue tones for long-tail buckets.
 const CHART_COLORS = [
-  "#0A0A0A",
-  "#3E6AE1",
-  "#10B981",
-  "#F59E0B",
-  "#EF4444",
-  "#8B5CF6",
-  "#0EA5E9",
-  "#6B7280",
+  "#1D4ED8",
+  "#2563EB",
+  "#3B82F6",
+  "#60A5FA",
+  "#93C5FD",
+  "#9CA3AF",
+  "#D1D5DB",
+  "#E5E7EB",
 ];
 
 export async function OverviewTab({
@@ -290,22 +292,22 @@ export async function OverviewTab({
           />
           <ul className="mt-2 grid grid-cols-2 gap-1 text-[11px]">
             <Legend
-              color="#0A0A0A"
+              color="#1D4ED8"
               label="Leased"
               value={leasedUnits ?? 0}
             />
             <Legend
-              color="#10B981"
+              color="#93C5FD"
               label="Available"
               value={availableUnits}
             />
             <Legend
-              color="#F59E0B"
+              color="#9CA3AF"
               label="Notice given"
               value={noticeResidents}
             />
             <Legend
-              color="#3E6AE1"
+              color="#2563EB"
               label="Active residents"
               value={activeResidents}
             />
@@ -319,12 +321,12 @@ export async function OverviewTab({
         >
           <FunnelBars
             stages={[
-              { label: "Leads", value: kpis.leads28d, color: "#3E6AE1" },
-              { label: "Tours", value: kpis.tours28d, color: "#0EA5E9" },
+              { label: "Leads", value: kpis.leads28d, color: "#1D4ED8" },
+              { label: "Tours", value: kpis.tours28d, color: "#2563EB" },
               {
                 label: "Applications",
                 value: kpis.applications28d,
-                color: "#10B981",
+                color: "#3B82F6",
               },
             ]}
           />
@@ -587,11 +589,11 @@ function buildAiInsight(args: {
 function AiInsightCard({ insight }: { insight: AiInsightShape }) {
   const tone =
     insight.severity === "alert"
-      ? "border-rose-200 bg-rose-50 text-rose-900"
+      ? "border-destructive/30 bg-destructive/10 text-destructive"
       : insight.severity === "warn"
         ? "border-amber-200 bg-amber-50 text-amber-900"
         : insight.severity === "ok"
-          ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+          ? "border-primary/30 bg-primary/10 text-primary"
           : "border-border bg-muted/30 text-foreground";
   return (
     <div
@@ -655,7 +657,7 @@ function OccupancyDonut({
             cy={center}
             r={radius}
             fill="none"
-            stroke="#0A0A0A"
+            stroke="#1D4ED8"
             strokeWidth={stroke}
             strokeDasharray={`${leasedFrac * circ} ${circ}`}
           />
@@ -664,7 +666,7 @@ function OccupancyDonut({
             cy={center}
             r={radius}
             fill="none"
-            stroke="#10B981"
+            stroke="#93C5FD"
             strokeWidth={stroke}
             strokeDasharray={`${availFrac * circ} ${circ}`}
             strokeDashoffset={`${-leasedFrac * circ}`}
@@ -844,7 +846,10 @@ function RenewalBars({
   buckets: Array<{ label: string; count: number; rentCents: number }>;
   max: number;
 }) {
-  const TONES = ["#EF4444", "#F59E0B", "#3E6AE1", "#6B7280"];
+  // Renewal urgency expressed via blue saturation rather than red→amber
+  // →blue. Closest expirations get the deepest blue (= "look here first"),
+  // distant buckets fade to neutral gray.
+  const TONES = ["#1D4ED8", "#2563EB", "#60A5FA", "#9CA3AF"];
   return (
     <div className="grid grid-cols-4 gap-2">
       {buckets.map((b, i) => {

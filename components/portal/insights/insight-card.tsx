@@ -40,7 +40,7 @@ export function InsightCard({
         "group relative rounded-xl border bg-card transition-shadow duration-150",
         "hover:shadow-[0_4px_24px_rgba(0,0,0,0.04)]",
         insight.severity === "critical"
-          ? "border-rose-200/70"
+          ? "border-destructive/30"
           : insight.severity === "warning"
             ? "border-amber-200/70"
             : "border-border",
@@ -59,7 +59,7 @@ export function InsightCard({
             </span>
           ) : null}
           {fresh ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-emerald-700 ring-1 ring-inset ring-emerald-200/70">
+            <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-primary ring-1 ring-inset ring-primary/30">
               New
             </span>
           ) : null}

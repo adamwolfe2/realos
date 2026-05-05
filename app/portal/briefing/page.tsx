@@ -392,7 +392,7 @@ function SetupCard({
             >
               <CheckCircle2
                 className={`h-4 w-4 shrink-0 ${
-                  step.done ? "text-emerald-500" : "text-muted-foreground/40"
+                  step.done ? "text-primary" : "text-muted-foreground/40"
                 }`}
               />
               <span className={step.done ? "line-through" : ""}>{step.label}</span>

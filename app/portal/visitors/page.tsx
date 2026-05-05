@@ -427,7 +427,7 @@ function PixelStalenessBanner({
     ? formatDistanceToNow(lastEventAt, { addSuffix: true })
     : "never";
   const tone = dormant
-    ? "border-rose-200 bg-rose-50 text-rose-900"
+    ? "border-amber-300 bg-amber-100 text-amber-900"
     : "border-amber-200 bg-amber-50 text-amber-900";
   const headline = dormant
     ? "Pixel hasn't fired in 7+ days — feed isn't live."
@@ -508,7 +508,7 @@ function LiveChatsPanel({
             >
               <div className="min-w-0">
                 <div className="flex items-center gap-2 text-sm">
-                  <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
                   <Link
                     href={`/portal/conversations/${chat.id}`}
                     className="font-medium text-primary hover:underline underline-offset-2"
@@ -695,9 +695,9 @@ function VisitorFeed({
           accessor: (v) => {
             const tone =
               v.intentScore >= 80
-                ? "text-rose-700"
+                ? "text-primary"
                 : v.intentScore >= 60
-                  ? "text-amber-700"
+                  ? "text-primary/70"
                   : "text-muted-foreground";
             return (
               <span
@@ -723,10 +723,10 @@ function VisitorFeed({
             const status = v.status;
             const cfg =
               status === VisitorIdentificationStatus.MATCHED_TO_LEAD
-                ? { label: "Lead", dot: "bg-emerald-500" }
+                ? { label: "Lead", dot: "bg-primary" }
                 : status === VisitorIdentificationStatus.IDENTIFIED ||
                     status === VisitorIdentificationStatus.ENRICHED
-                  ? { label: "Identified", dot: "bg-blue-500" }
+                  ? { label: "Identified", dot: "bg-primary/60" }
                   : { label: "Anonymous", dot: "bg-muted-foreground/40" };
             const liveChat = chatMap?.get(v.id);
             return (
@@ -739,8 +739,8 @@ function VisitorFeed({
                   {cfg.label}
                 </span>
                 {liveChat ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-emerald-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="inline-flex items-center gap-1 text-[10px] text-primary">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
                     Live
                   </span>
                 ) : null}
@@ -765,18 +765,18 @@ function VisitorRow({
 
   const intentTone =
     visitor.intentScore >= 80
-      ? "text-rose-700"
+      ? "text-primary"
       : visitor.intentScore >= 60
-      ? "text-amber-700"
+      ? "text-primary/70"
       : "text-muted-foreground";
 
   const statusBadge = (() => {
     switch (visitor.status) {
       case VisitorIdentificationStatus.MATCHED_TO_LEAD:
-        return { label: "Lead", dot: "bg-emerald-500", text: "text-emerald-700" };
+        return { label: "Lead", dot: "bg-primary", text: "text-primary" };
       case VisitorIdentificationStatus.IDENTIFIED:
       case VisitorIdentificationStatus.ENRICHED:
-        return { label: "Identified", dot: "bg-blue-500", text: "text-blue-700" };
+        return { label: "Identified", dot: "bg-primary/60", text: "text-primary" };
       case VisitorIdentificationStatus.ANONYMOUS:
       default:
         return { label: "Anonymous", dot: "bg-neutral-400", text: "text-muted-foreground" };

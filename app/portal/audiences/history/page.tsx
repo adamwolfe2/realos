@@ -87,7 +87,7 @@ export default async function HistoryPage() {
                         </span>
                       </div>
                       {run.errorMessage ? (
-                        <p className="text-[11px] text-rose-700 mt-1 truncate max-w-md">
+                        <p className="text-[11px] text-destructive mt-1 truncate max-w-md">
                           {run.errorMessage}
                         </p>
                       ) : null}
@@ -143,9 +143,9 @@ function DestinationIcon({ type }: { type: string }) {
 function RunPill({ status }: { status: string }) {
   const tone =
     status === "SUCCESS"
-      ? "text-emerald-700 bg-emerald-50"
+      ? "text-primary bg-primary/10"
       : status === "FAILED"
-        ? "text-rose-700 bg-rose-50"
+        ? "text-destructive bg-destructive/10"
         : status === "RUNNING"
           ? "text-amber-700 bg-amber-50"
           : "text-muted-foreground bg-muted";

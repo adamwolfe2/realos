@@ -223,10 +223,10 @@ export function ConnectSeoForm({ provider }: { provider: Provider }) {
             : `Connect ${isGsc ? "Search Console" : "Analytics"}`}
         </button>
         {state && !state.ok && state.error ? (
-          <span className="text-xs text-rose-700">{state.error}</span>
+          <span className="text-xs text-destructive">{state.error}</span>
         ) : null}
         {state && state.ok && state.provider === provider ? (
-          <span className="text-xs text-emerald-700">
+          <span className="text-xs text-primary">
             Connected
             {state.propertyDisplayName
               ? ` to ${state.propertyDisplayName}`
@@ -253,12 +253,12 @@ export function DisconnectSeoForm({ provider }: { provider: Provider }) {
       <button
         type="submit"
         disabled={pending}
-        className="text-xs font-medium text-rose-700 hover:text-rose-900 hover:underline underline-offset-2 disabled:opacity-60"
+        className="text-xs font-medium text-destructive hover:opacity-80 hover:underline underline-offset-2 disabled:opacity-60"
       >
         {pending ? "Disconnecting…" : `Disconnect ${provider}`}
       </button>
       {state && !state.ok && state.error ? (
-        <span className="text-xs text-rose-700">{state.error}</span>
+        <span className="text-xs text-destructive">{state.error}</span>
       ) : null}
     </form>
   );
@@ -287,14 +287,14 @@ export function SyncSeoButton() {
         {isPending ? "Syncing…" : "Sync now"}
       </button>
       {result && result.ok ? (
-        <span className="text-xs text-emerald-700">
+        <span className="text-xs text-primary">
           Pulled {result.stats.gscDays} GSC days, {result.stats.gscQueries}{" "}
           queries, {result.stats.ga4Days} GA4 days,{" "}
           {result.stats.ga4LandingPages} landing pages.
         </span>
       ) : null}
       {result && !result.ok ? (
-        <span className="text-xs text-rose-700">{result.error}</span>
+        <span className="text-xs text-destructive">{result.error}</span>
       ) : null}
     </div>
   );

@@ -7,18 +7,20 @@ import { cn } from "@/lib/utils";
 // chart looks the same regardless of which page it appears on.
 // ---------------------------------------------------------------------------
 
-// Brand-aligned palette. Black-led for the dominant slice, blue accent
-// next, then a measured rotation. Matches the marketing site so charts
-// read as on-brand rather than as a generic SaaS rainbow.
+// Brand-aligned palette — monochrome blue scale fading into neutral gray.
+// Charts now read as one cohesive visualization rather than a SaaS rainbow.
+// The dominant slice gets the deepest blue; secondary slices step down in
+// saturation; remaining buckets fall back to gray so absent / "other"
+// segments visually defer to the data that matters.
 export const CHART_PALETTE = [
-  "#1A1A1A", // ink (dominant)
-  "#2563EB", // brand blue
-  "#10B981", // emerald
-  "#F59E0B", // amber
-  "#B53333", // brand rose
-  "#8B5CF6", // violet
-  "#0EA5E9", // sky
-  "#87867F", // sand (other)
+  "#1D4ED8", // blue-700 (dominant)
+  "#2563EB", // blue-600 (brand)
+  "#3B82F6", // blue-500
+  "#60A5FA", // blue-400
+  "#93C5FD", // blue-300
+  "#9CA3AF", // gray-400
+  "#D1D5DB", // gray-300
+  "#E5E7EB", // gray-200 (other)
 ];
 
 // ---------------------------------------------------------------------------

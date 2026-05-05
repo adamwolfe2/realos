@@ -36,16 +36,18 @@ type Props = {
   palette?: "ink" | "blue" | "emerald" | "amber" | "violet";
 };
 
-// Brand-aligned palettes. Each chart on /portal/attribution picks a
-// different lead color so single-slice donuts read as distinct visuals
-// rather than identical black rings. Multi-slice donuts cycle through
-// supporting colors after the lead.
+// Monochrome blue palettes. Every donut now reads as a unified blue
+// visualization — the lead slice gets the deepest tone, supporting slices
+// step down through brand blue into pale, with neutral gray as the
+// "other" bucket. The five named palette options exist only to vary the
+// lead color across stacked donuts so single-slice rings don't all look
+// identical, but every variant stays inside a blue + gray scale.
 const PALETTES: Record<NonNullable<Props["palette"]>, string[]> = {
-  ink: ["#1A1A1A", "#2563EB", "#10B981", "#F59E0B", "#B53333", "#8B5CF6", "#0EA5E9", "#87867F"],
-  blue: ["#2563EB", "#1A1A1A", "#10B981", "#F59E0B", "#B53333", "#8B5CF6", "#0EA5E9", "#87867F"],
-  emerald: ["#10B981", "#2563EB", "#1A1A1A", "#F59E0B", "#B53333", "#8B5CF6", "#0EA5E9", "#87867F"],
-  amber: ["#F59E0B", "#2563EB", "#10B981", "#1A1A1A", "#B53333", "#8B5CF6", "#0EA5E9", "#87867F"],
-  violet: ["#8B5CF6", "#2563EB", "#10B981", "#F59E0B", "#1A1A1A", "#B53333", "#0EA5E9", "#87867F"],
+  ink:     ["#0F172A", "#2563EB", "#3B82F6", "#60A5FA", "#93C5FD", "#9CA3AF", "#D1D5DB", "#E5E7EB"],
+  blue:    ["#1D4ED8", "#2563EB", "#3B82F6", "#60A5FA", "#93C5FD", "#9CA3AF", "#D1D5DB", "#E5E7EB"],
+  emerald: ["#2563EB", "#3B82F6", "#60A5FA", "#93C5FD", "#9CA3AF", "#D1D5DB", "#E5E7EB", "#F3F4F6"],
+  amber:   ["#3B82F6", "#2563EB", "#1D4ED8", "#60A5FA", "#93C5FD", "#9CA3AF", "#D1D5DB", "#E5E7EB"],
+  violet:  ["#60A5FA", "#3B82F6", "#2563EB", "#1D4ED8", "#93C5FD", "#9CA3AF", "#D1D5DB", "#E5E7EB"],
 };
 
 export function SourceDonut({

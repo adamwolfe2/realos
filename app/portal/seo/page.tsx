@@ -479,7 +479,7 @@ function ProviderManageCard({
         <span
           className={
             connected
-              ? "text-[10px] uppercase tracking-wider font-semibold text-emerald-700"
+              ? "text-[10px] uppercase tracking-wider font-semibold text-primary"
               : "text-[10px] uppercase tracking-wider font-semibold text-muted-foreground"
           }
         >
@@ -506,7 +506,7 @@ function ProviderManageCard({
             <Detail label="Status" value={status ?? "Idle"} />
           </dl>
           {lastSyncError ? (
-            <p className="text-[11px] text-rose-700 rounded-md border border-rose-200 bg-rose-50 p-3">
+            <p className="text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/10 p-3">
               {lastSyncError}
             </p>
           ) : null}
@@ -587,15 +587,12 @@ function SetupHelp() {
 }
 
 // ---------------------------------------------------------------------------
-// PositionDistribution — bucket the average position across queries into
-// four ranges and render as a horizontal stacked-bar with counts.
+// PositionDistribution — bucket average position across queries into four
+// ranges and render as a horizontal stacked-bar with counts.
 //
-// Buckets follow the Searchable / Clarity playbook:
-//   1–3  : top of page 1 (gold)
-//   4–10 : bottom of page 1 (blue accent)
-//   11–20: page 2 (amber)
-//   21+  : page 3+ (rose, low value)
-// Token-themed so it picks up the cream canvas.
+// Buckets use a single blue scale that fades into neutral gray as ranking
+// quality decreases. Top of page 1 reads as the deepest blue (most
+// valuable); page 3+ fades to gray (least). No green/amber/red rainbow.
 // ---------------------------------------------------------------------------
 
 function PositionDistribution({
@@ -604,10 +601,10 @@ function PositionDistribution({
   queries: Array<{ position: number }>;
 }) {
   const buckets = [
-    { label: "1–3", color: "#10B981", count: 0, hint: "Top of page 1" },
-    { label: "4–10", color: "#2563EB", count: 0, hint: "Bottom of page 1" },
-    { label: "11–20", color: "#F59E0B", count: 0, hint: "Page 2" },
-    { label: "21+", color: "#B53333", count: 0, hint: "Page 3 or deeper" },
+    { label: "1–3", color: "#1D4ED8", count: 0, hint: "Top of page 1" },
+    { label: "4–10", color: "#3B82F6", count: 0, hint: "Bottom of page 1" },
+    { label: "11–20", color: "#93C5FD", count: 0, hint: "Page 2" },
+    { label: "21+", color: "#D1D5DB", count: 0, hint: "Page 3 or deeper" },
   ];
   for (const q of queries) {
     const p = q.position;
@@ -763,7 +760,7 @@ function QuickWins({
                 <td className="text-right tabular-nums px-2 py-1.5 text-muted-foreground">
                   {(q.ctr * 100).toFixed(1)}%
                 </td>
-                <td className="text-right tabular-nums px-2 py-1.5 text-emerald-700 font-semibold">
+                <td className="text-right tabular-nums px-2 py-1.5 text-primary font-semibold">
                   +{lift.toLocaleString()} clicks
                 </td>
               </tr>

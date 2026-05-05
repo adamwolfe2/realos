@@ -19,10 +19,10 @@ type NotificationRow = {
 };
 
 const KIND_COLOR: Record<string, string> = {
-  lead_created: "bg-emerald-100 text-emerald-700",
-  tour_scheduled: "bg-sky-100 text-sky-700",
-  chatbot_lead: "bg-violet-100 text-violet-700",
-  integration_error: "bg-rose-100 text-rose-700",
+  lead_created: "bg-primary/15 text-primary",
+  tour_scheduled: "bg-primary/15 text-primary",
+  chatbot_lead: "bg-muted text-muted-foreground",
+  integration_error: "bg-destructive/10 text-destructive",
   sync_complete: "bg-foreground/10 text-foreground",
 };
 

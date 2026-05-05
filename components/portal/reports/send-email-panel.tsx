@@ -142,7 +142,7 @@ function Feedback({ feedback }: { feedback: Feedback }) {
   }
   if (feedback.kind === "ok") {
     return (
-      <span className="text-xs text-emerald-700">
+      <span className="text-xs text-primary">
         Sent. Subject: {feedback.subject ?? "—"}
       </span>
     );
@@ -155,5 +155,5 @@ function Feedback({ feedback }: { feedback: Feedback }) {
       </span>
     );
   }
-  return <span className="text-xs text-rose-700">{feedback.message}</span>;
+  return <span className="text-xs text-destructive">{feedback.message}</span>;
 }

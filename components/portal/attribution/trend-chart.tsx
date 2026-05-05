@@ -25,14 +25,16 @@ type Props = {
   emptyMessage?: string;
 };
 
+// Monochrome blue series — each line steps down in saturation so multi-
+// series charts stay legible without resorting to a rainbow.
 const SERIES_COLORS = [
-  "#0A0A0A",
-  "#3E6AE1",
-  "#10B981",
-  "#F59E0B",
-  "#EF4444",
-  "#8B5CF6",
-  "#0EA5E9",
+  "#1D4ED8",
+  "#2563EB",
+  "#3B82F6",
+  "#60A5FA",
+  "#93C5FD",
+  "#9CA3AF",
+  "#D1D5DB",
 ];
 
 export function TrendChart({

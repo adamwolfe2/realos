@@ -107,12 +107,12 @@ export function ConnectGoogleAdsForm() {
           {pending ? "Testing & connecting…" : "Connect Google Ads"}
         </button>
         {state.ok ? (
-          <span className="text-xs text-emerald-700">
+          <span className="text-xs text-primary">
             Connected. {state.currency ? `Currency: ${state.currency}.` : ""}
             First backfill is running.
           </span>
         ) : state.error ? (
-          <span className="text-xs text-rose-700">{state.error}</span>
+          <span className="text-xs text-destructive">{state.error}</span>
         ) : null}
       </div>
     </form>
@@ -150,7 +150,7 @@ export function GoogleAdsManage({
       </dl>
 
       {lastSyncError ? (
-        <p className="text-[11px] text-rose-700 rounded-md border border-rose-200 bg-rose-50 p-3">
+        <p className="text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/10 p-3">
           {lastSyncError}
         </p>
       ) : null}
@@ -175,12 +175,12 @@ export function DisconnectGoogleAdsForm({ accountId }: { accountId: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="text-xs font-medium text-rose-700 hover:text-rose-900 hover:underline underline-offset-2 disabled:opacity-60"
+        className="text-xs font-medium text-destructive hover:opacity-80 hover:underline underline-offset-2 disabled:opacity-60"
       >
         {pending ? "Disconnecting…" : "Disconnect"}
       </button>
       {!state.ok && state.error ? (
-        <span className="text-xs text-rose-700">{state.error}</span>
+        <span className="text-xs text-destructive">{state.error}</span>
       ) : null}
     </form>
   );
@@ -227,12 +227,12 @@ export function SyncButton({
         {pending ? "Syncing…" : "Sync now"}
       </button>
       {result && result.ok ? (
-        <span className="text-xs text-emerald-700">
+        <span className="text-xs text-primary">
           Synced {result.campaigns} campaigns, {result.metrics} metric rows.
         </span>
       ) : null}
       {result && !result.ok ? (
-        <span className="text-xs text-rose-700">{result.error}</span>
+        <span className="text-xs text-destructive">{result.error}</span>
       ) : null}
     </div>
   );

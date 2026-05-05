@@ -51,7 +51,7 @@ export function RunAppFolioSyncButton({ label = "Run sync now", subtle = false }
   }
 
   const cls = subtle
-    ? "inline-flex items-center gap-1.5 rounded-md border border-emerald-200 bg-white/60 px-3 py-1.5 text-xs font-medium text-emerald-900 hover:bg-white disabled:opacity-50"
+    ? "inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-card px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
     : "inline-flex items-center gap-1.5 rounded-md bg-foreground text-background px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-50";
 
   return (
@@ -70,12 +70,12 @@ export function RunAppFolioSyncButton({ label = "Run sync now", subtle = false }
         {pending ? "Syncing…" : label}
       </button>
       {state.kind === "ok" ? (
-        <span className="text-[11px] text-emerald-800">
+        <span className="text-[11px] text-primary">
           Done · {state.updated} listings refreshed
         </span>
       ) : null}
       {state.kind === "error" ? (
-        <span className="text-[11px] text-rose-700 max-w-[260px] text-right">
+        <span className="text-[11px] text-destructive max-w-[260px] text-right">
           {state.message}
         </span>
       ) : null}

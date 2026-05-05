@@ -282,15 +282,20 @@ function RowLinkInjector({
 // stable color hash without us having to store one.
 // ---------------------------------------------------------------------------
 
+// Avatar palette — monochrome blue + neutral gray scale. Each entity still
+// gets a deterministic stable color (so the same lead always shows the
+// same chip) but they're all variations of brand blue and gray rather
+// than a rainbow. The result reads as one cohesive directory rather than
+// a Jira / GitHub label cloud.
 const AVATAR_PALETTE = [
-  { bg: "#1A1A1A", fg: "#FAF9F5" },
+  { bg: "#1D4ED8", fg: "#FFFFFF" },
   { bg: "#2563EB", fg: "#FFFFFF" },
-  { bg: "#10B981", fg: "#FFFFFF" },
-  { bg: "#F59E0B", fg: "#1A1A1A" },
-  { bg: "#B53333", fg: "#FFFFFF" },
-  { bg: "#8B5CF6", fg: "#FFFFFF" },
-  { bg: "#0EA5E9", fg: "#FFFFFF" },
-  { bg: "#87867F", fg: "#FFFFFF" },
+  { bg: "#3B82F6", fg: "#FFFFFF" },
+  { bg: "#60A5FA", fg: "#0F172A" },
+  { bg: "#93C5FD", fg: "#0F172A" },
+  { bg: "#1F2937", fg: "#FFFFFF" },
+  { bg: "#6B7280", fg: "#FFFFFF" },
+  { bg: "#9CA3AF", fg: "#FFFFFF" },
 ];
 
 function hashStringToIndex(s: string, modulo: number): number {

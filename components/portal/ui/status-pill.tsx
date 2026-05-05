@@ -25,13 +25,18 @@ export type StatusTone =
   | "warning" // attention — notice given, expiring, past-due
   | "danger"; // negative outcome — no-show, evicted, failed
 
+// Status dots used to span emerald / blue / amber / rose. Collapsed to a
+// minimal palette: neutral grays for "no action needed" states, brand blue
+// for in-flight + success, and a single red for genuine alarm. Warning still
+// uses amber because demoting expiring/past-due to gray loses real signal —
+// but we now only reach for it on truly time-sensitive states.
 const DOT_TONE: Record<StatusTone, string> = {
   neutral: "bg-muted-foreground/40",
-  info: "bg-foreground/55",
-  active: "bg-blue-500",
-  success: "bg-emerald-500",
+  info: "bg-muted-foreground/70",
+  active: "bg-primary",
+  success: "bg-primary",
   warning: "bg-amber-500",
-  danger: "bg-rose-500",
+  danger: "bg-destructive",
 };
 
 type Props = {

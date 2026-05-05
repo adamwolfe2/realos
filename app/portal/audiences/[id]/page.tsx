@@ -247,7 +247,7 @@ export default async function SegmentDetailPage({
                     {timeAgo(run.startedAt)}
                   </p>
                   {run.errorMessage ? (
-                    <p className="text-[11px] text-rose-700 mt-0.5 truncate">
+                    <p className="text-[11px] text-destructive mt-0.5 truncate">
                       {run.errorMessage}
                     </p>
                   ) : null}
@@ -265,9 +265,9 @@ export default async function SegmentDetailPage({
 function RunPill({ status }: { status: string }) {
   const tone =
     status === "SUCCESS"
-      ? "text-emerald-700 bg-emerald-50"
+      ? "text-primary bg-primary/10"
       : status === "FAILED"
-        ? "text-rose-700 bg-rose-50"
+        ? "text-destructive bg-destructive/10"
         : status === "RUNNING"
           ? "text-amber-700 bg-amber-50"
           : "text-muted-foreground bg-muted";

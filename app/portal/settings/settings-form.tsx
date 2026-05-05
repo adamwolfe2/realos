@@ -221,7 +221,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
           {pending ? "Saving…" : "Save settings"}
         </Button>
         {saved ? (
-          <span className="inline-flex items-center gap-1 text-xs text-emerald-700">
+          <span className="inline-flex items-center gap-1 text-xs text-primary">
             <Check className="size-3.5" aria-hidden="true" />
             Saved
           </span>

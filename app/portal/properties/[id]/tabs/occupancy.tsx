@@ -156,7 +156,7 @@ export async function OccupancyTab({
                       </td>
                       <td className="py-2.5 text-center">
                         {l.isAvailable ? (
-                          <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-emerald-50 text-emerald-700">
+                          <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-primary/10 text-primary">
                             Available
                           </span>
                         ) : (

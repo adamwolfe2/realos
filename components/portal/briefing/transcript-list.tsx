@@ -59,12 +59,12 @@ function TranscriptRow({ conversation }: { conversation: Conversation }) {
             {name}
           </Link>
           {conversation.capturedEmail ? (
-            <span className="inline-flex items-center rounded-md bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-emerald-700 ring-1 ring-inset ring-emerald-200/70">
+            <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-primary ring-1 ring-inset ring-primary/30">
               Captured
             </span>
           ) : null}
           {highIntent ? (
-            <span className="inline-flex items-center rounded-md bg-rose-50 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-rose-700 ring-1 ring-inset ring-rose-200/70">
+            <span className="inline-flex items-center rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-primary ring-1 ring-inset ring-primary/30">
               High intent
             </span>
           ) : null}

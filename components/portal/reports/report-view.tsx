@@ -331,10 +331,10 @@ function AiAnalysisSection({ analysis }: { analysis: AiAnalysis }) {
 function AiActionCard({ item }: { item: AiAnalysis["actions"][number] }) {
   const dotColor =
     item.priority === "high"
-      ? "bg-rose-500"
+      ? "bg-destructive"
       : item.priority === "medium"
         ? "bg-amber-400"
-        : "bg-sky-400";
+        : "bg-primary/40";
 
   return (
     <div className="rounded-md border border-border bg-muted/30 px-3 py-2.5">
@@ -443,9 +443,9 @@ function KpiCard({
             className={
               "inline-flex items-center rounded px-1 py-0.5 text-[10px] font-semibold tabular-nums shrink-0 " +
               (goodDirection
-                ? "text-emerald-700 bg-emerald-50"
+                ? "text-primary bg-primary/10"
                 : badDirection
-                  ? "text-rose-700 bg-rose-50"
+                  ? "text-muted-foreground bg-muted"
                   : "text-muted-foreground bg-muted")
             }
           >
@@ -601,9 +601,9 @@ function TrendChart({ data }: { data: number[] }) {
 }
 
 function severityTone(severity: string): string {
-  if (severity === "critical") return "bg-rose-100 text-rose-800";
+  if (severity === "critical") return "bg-destructive/10 text-destructive";
   if (severity === "warning") return "bg-amber-100 text-amber-800";
-  return "bg-sky-100 text-sky-800";
+  return "bg-primary/10 text-primary";
 }
 
 function formatDate(d: Date): string {

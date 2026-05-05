@@ -198,7 +198,7 @@ export function ReportEditorControls({
         <span
           className={`text-xs ${
             saveState === "error"
-              ? "text-rose-700"
+              ? "text-destructive"
               : "text-muted-foreground"
           }`}
         >

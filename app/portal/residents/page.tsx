@@ -299,7 +299,7 @@ export default async function ResidentsPage({
                         {r.moveOutDate ? format(r.moveOutDate, "MMM d, yyyy") : "—"}
                       </td>
                       <td
-                        className={`px-2 py-2 text-right tabular-nums ${days != null && days <= 30 ? "text-rose-700 font-semibold" : "text-foreground"}`}
+                        className={`px-2 py-2 text-right tabular-nums ${days != null && days <= 30 ? "text-amber-700 font-semibold" : "text-foreground"}`}
                       >
                         {days != null ? `${days}d` : "—"}
                       </td>
@@ -389,7 +389,7 @@ export default async function ResidentsPage({
                       tone={STATUS_TONE[r.status]}
                     />
                     {r.currentLease?.isPastDue ? (
-                      <span className="text-[10px] text-rose-700 font-semibold">
+                      <span className="text-[10px] text-amber-700 font-semibold">
                         past-due
                       </span>
                     ) : null}
