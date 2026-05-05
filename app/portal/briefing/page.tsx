@@ -127,9 +127,9 @@ export default async function BriefingPage({
   const greeting = "Daily briefing";
 
   return (
-    <div className="space-y-3 ls-page-fade">
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
+    <div className="space-y-3 ls-page-fade min-w-0">
+      <header className="flex items-start justify-between gap-4 flex-wrap min-w-0">
+        <div className="min-w-0">
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
             <Gauge className="h-3 w-3" />
             {org?.name ?? "Workspace"}
@@ -293,40 +293,48 @@ function PropertyFilter({
   properties: { id: string; name: string }[];
   activeId: string | null;
 }) {
+  // Cap viable visible pills + horizontal scroll so the bar never blows out
+  // the page width. Tenants with hundreds of properties used to push the
+  // entire briefing page into horizontal-scroll because this was inline-flex
+  // with no bounds. The min-w-0 + max-w-full allow the parent flex header to
+  // properly compress this child.
   return (
-    <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1">
-      <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground px-2">
+    <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1 min-w-0 max-w-full">
+      <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground px-2 shrink-0">
         <Building2 className="h-3 w-3" />
         Focus
       </span>
-      <Link
-        href="/portal/briefing"
-        className={cn(
-          "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
-          !activeId
-            ? "bg-primary text-primary-foreground"
-            : "text-muted-foreground hover:bg-muted hover:text-foreground",
-        )}
-      >
-        All
-      </Link>
-      {properties.map((p) => {
-        const active = activeId === p.id;
-        return (
-          <Link
-            key={p.id}
-            href={`/portal/briefing?property=${p.id}`}
-            className={cn(
-              "rounded-md px-2 py-1 text-[11px] font-medium transition-colors truncate max-w-[14rem]",
-              active
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            {p.name}
-          </Link>
-        );
-      })}
+      <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide min-w-0">
+        <Link
+          href="/portal/briefing"
+          className={cn(
+            "shrink-0 rounded-md px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap",
+            !activeId
+              ? "bg-primary text-primary-foreground"
+              : "text-muted-foreground hover:bg-muted hover:text-foreground",
+          )}
+        >
+          All
+        </Link>
+        {properties.map((p) => {
+          const active = activeId === p.id;
+          return (
+            <Link
+              key={p.id}
+              href={`/portal/briefing?property=${p.id}`}
+              className={cn(
+                "shrink-0 rounded-md px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap max-w-[14rem] truncate",
+                active
+                  ? "bg-primary text-primary-foreground"
+                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+              )}
+              title={p.name}
+            >
+              {p.name}
+            </Link>
+          );
+        })}
+      </div>
     </div>
   );
 }
