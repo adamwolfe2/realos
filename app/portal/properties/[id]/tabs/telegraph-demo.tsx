@@ -66,13 +66,16 @@ const C = {
   primaryLight: "#3B82F6",
   primaryFaint: "#93C5FD",
   primaryGhost: "#DBEAFE",
+  indigo: "#4F46E5",
+  indigoLight: "#6366F1",
   ink: "#0F172A",
   inkSoft: "#475569",
   muted: "#94A3B8",
+  mutedSoft: "#CBD5E1",
   border: "#E5E7EB",
   surface: "#FFFFFF",
   surfaceMuted: "#F8FAFC",
-  amber: "#F59E0B",
+  amber: "#F59E0B", // reserved for true warning states only
   positive: "#10B981",
   negative: "#EF4444",
   violet: "#8B5CF6",
@@ -220,7 +223,7 @@ function IconKpi({
   delta?: { value: string; trend: "up" | "down" | "flat" };
   hint?: string;
   icon?: React.ReactNode;
-  iconTone?: "primary" | "amber" | "violet" | "cyan" | "rose" | "emerald";
+  iconTone?: "primary" | "amber" | "violet" | "cyan" | "rose" | "emerald" | "indigo";
   spark?: number[];
   sparkColor?: string;
 }) {
@@ -231,6 +234,7 @@ function IconKpi({
     cyan: "bg-cyan-50 text-cyan-600",
     rose: "bg-rose-50 text-rose-600",
     emerald: "bg-emerald-50 text-emerald-600",
+    indigo: "bg-indigo-50 text-indigo-600",
   };
   return (
     <Card>
@@ -478,6 +482,69 @@ const LEAD_SPARK = FUNNEL_DAILY.slice(-14).map((r) => r.leads);
 const TOUR_SPARK = FUNNEL_DAILY.slice(-14).map((r) => r.tours);
 const APP_SPARK = FUNNEL_DAILY.slice(-14).map((r) => r.apps);
 
+// ---------------------------------------------------------------------------
+// Brand logos for Reputation source list. Tiny SVGs, only place we allow
+// non-blue chrome (brand colors are the point — they identify the source).
+// ---------------------------------------------------------------------------
+
+function GoogleLogo({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-label="Google">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+    </svg>
+  );
+}
+
+function YelpLogo({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-label="Yelp">
+      <path
+        fill="#D32323"
+        d="M14.05 16.32c.61.51.5 1.51-.21 1.86l-3.49 1.69c-.74.36-1.6-.21-1.55-1.04l.21-3.78c.05-.86 1.03-1.32 1.71-.79l3.33 2.06zm-3.7-3.21l-3.78-1.04c-.81-.22-1.18-1.16-.71-1.85l2.16-3.16c.47-.69 1.51-.61 1.87.13l1.62 3.55c.36.79-.32 1.66-1.16 1.39v.97l-.01.01zm5.7-1.39c-.84.27-1.52-.6-1.16-1.39l1.62-3.55c.36-.74 1.4-.82 1.87-.13l2.16 3.16c.47.69.1 1.63-.71 1.85l-3.78 1.04v-.99zm-.65 5.4c-.55-.65-.07-1.65.78-1.62l3.79.13c.83.03 1.32.93.85 1.62l-2.13 3.13c-.47.69-1.51.6-1.86-.16l-1.43-3.1zm-7.45-7.65c-.55.65-1.59.5-1.94-.27l-1.55-3.42c-.34-.76.2-1.62 1.05-1.65l3.79-.16c.86-.04 1.39.92.91 1.6l-2.26 3.9z"
+      />
+    </svg>
+  );
+}
+
+function RedditLogo({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-label="Reddit">
+      <circle cx="12" cy="12" r="11" fill="#FF4500" />
+      <path
+        fill="white"
+        d="M19.7 12c0-.94-.76-1.7-1.7-1.7-.46 0-.87.18-1.18.47-1.16-.83-2.74-1.36-4.5-1.42l.77-3.62 2.51.53c.03.64.55 1.16 1.2 1.16.66 0 1.2-.54 1.2-1.2 0-.66-.54-1.2-1.2-1.2-.47 0-.88.27-1.07.67l-2.81-.6c-.08-.02-.16 0-.23.04-.06.04-.11.11-.13.19l-.86 4.06c-1.79.05-3.4.58-4.57 1.42-.31-.29-.72-.47-1.18-.47-.94 0-1.7.76-1.7 1.7 0 .69.41 1.29 1 1.55-.03.17-.04.35-.04.53 0 2.7 3.13 4.88 7 4.88s7-2.18 7-4.88c0-.18-.01-.36-.04-.53.59-.26 1-.86 1-1.55zM8 13.2c0-.66.54-1.2 1.2-1.2.66 0 1.2.54 1.2 1.2 0 .66-.54 1.2-1.2 1.2-.66 0-1.2-.54-1.2-1.2zm6.7 3.2c-.83.83-2.42.89-2.7.89-.28 0-1.87-.06-2.7-.89-.12-.12-.12-.32 0-.45.12-.12.32-.12.45 0 .53.53 1.65.71 2.25.71.6 0 1.72-.18 2.25-.71.12-.12.32-.12.45 0 .12.13.12.33 0 .45zm-.2-2c-.66 0-1.2-.54-1.2-1.2 0-.66.54-1.2 1.2-1.2.66 0 1.2.54 1.2 1.2 0 .66-.54 1.2-1.2 1.2z"
+      />
+    </svg>
+  );
+}
+
+function ApartmentLogo({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-label="ApartmentRatings">
+      <rect x="3" y="3" width="18" height="18" rx="3" fill="#0EA5E9" />
+      <path
+        fill="white"
+        d="M7 18V9.5L12 6l5 3.5V18h-3.2v-4.5h-3.6V18H7zm3.4-7.6h3.2v-1h-3.2v1z"
+      />
+    </svg>
+  );
+}
+
+function NicheLogo({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-label="Niche">
+      <rect width="24" height="24" rx="4" fill="#0F172A" />
+      <path
+        fill="#22D3EE"
+        d="M12 6l5 3v6l-5 3-5-3V9l5-3zm0 2.3L9 10.1v3.8l3 1.8 3-1.8v-3.8L12 8.3z"
+      />
+    </svg>
+  );
+}
+
 // ===========================================================================
 // OVERVIEW
 // ===========================================================================
@@ -555,9 +622,9 @@ export function TelegraphOverviewDemo() {
           delta={{ value: "-12%", trend: "up" }}
           hint="Best in 6 months"
           icon={<DollarSign className="h-4 w-4" strokeWidth={2.25} />}
-          iconTone="amber"
+          iconTone="indigo"
           spark={[26, 25, 27, 24, 23, 25, 22, 24, 21, 22, 20, 22, 21, 20]}
-          sparkColor={C.amber}
+          sparkColor={C.indigo}
         />
       </section>
 
@@ -1130,9 +1197,9 @@ export function TelegraphTrafficDemo() {
           delta={{ value: "+1.2pts", trend: "up" }}
           hint="vs industry 4.2%"
           icon={<Zap className="h-4 w-4" strokeWidth={2.25} />}
-          iconTone="amber"
+          iconTone="indigo"
           spark={[6.8, 6.9, 7.1, 7.4, 7.6, 7.8, 7.9, 8.0, 8.1, 8.3, 8.4, 8.5, 8.5, 8.6]}
-          sparkColor={C.amber}
+          sparkColor={C.indigo}
         />
       </section>
 
@@ -1378,9 +1445,9 @@ export function TelegraphLeadsDemo() {
           delta={{ value: "+6", trend: "up" }}
           hint="Out of 100"
           icon={<Star className="h-4 w-4" strokeWidth={2.25} />}
-          iconTone="amber"
+          iconTone="indigo"
           spark={[72, 74, 75, 73, 76, 78, 77, 79, 80, 79, 81, 80, 82, 82]}
-          sparkColor={C.amber}
+          sparkColor={C.indigo}
         />
       </section>
 
@@ -1586,41 +1653,63 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   );
 }
 
+// Conversion funnel — each row shows the stage's count plus a bar that
+// represents the conversion rate FROM the previous stage. Visiting → Lead is
+// 5%, Lead → Tour is 36%, etc. This avoids the unreadable "tiny bars" problem
+// that comes from sizing each stage relative to the first one when there's
+// a 100x drop-off between stages.
 function RealFunnel({
   stages,
 }: {
   stages: Array<{ label: string; value: number }>;
 }) {
-  const max = stages[0].value;
-  const colors = [C.primaryFaint, C.primaryLight, C.primaryMid, C.primary, C.ink];
+  const colors = [
+    C.primaryFaint,
+    C.primaryLight,
+    C.primaryMid,
+    C.primary,
+    "#1E40AF",
+  ];
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-2.5">
       {stages.map((s, i) => {
-        const w = Math.max(8, (s.value / max) * 100);
-        const dropPct = i > 0 ? Math.round((s.value / stages[i - 1].value) * 100) : null;
+        const fromPrev =
+          i === 0 ? null : (s.value / stages[i - 1].value) * 100;
+        const barWidth = i === 0 ? 100 : Math.max(6, fromPrev ?? 0);
         return (
           <div key={s.label}>
-            <div className="flex items-baseline justify-between text-[11px] mb-0.5">
-              <span className="text-foreground font-semibold">{s.label}</span>
-              <span className="tabular-nums">
+            <div className="flex items-baseline justify-between gap-2 mb-1">
+              <span className="text-[11px] font-semibold text-foreground">
+                {s.label}
+              </span>
+              <span className="text-[11px] tabular-nums">
                 <span className="text-foreground font-bold">
                   {s.value.toLocaleString()}
                 </span>
-                {dropPct != null ? (
+                {fromPrev != null ? (
                   <span className="ml-1.5 text-emerald-700 font-semibold">
-                    {dropPct}%
+                    {fromPrev.toFixed(0)}% conv
                   </span>
                 ) : null}
               </span>
             </div>
-            <div className="flex justify-center">
+            <div className="relative h-6 bg-slate-100 rounded-md overflow-hidden">
               <div
-                className="h-7 rounded-md flex items-center justify-center text-[10px] font-semibold text-white tabular-nums shadow-sm"
+                className="absolute left-0 top-0 h-full rounded-md transition-all"
                 style={{
-                  width: `${w}%`,
+                  width: `${barWidth}%`,
                   backgroundColor: colors[i],
                 }}
               />
+              {i > 0 ? (
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-white/95 mix-blend-luminosity">
+                  from {stages[i - 1].label.toLowerCase()}
+                </span>
+              ) : (
+                <span className="absolute left-2 top-1/2 -translate-y-1/2 text-[10px] font-semibold text-white/95">
+                  total this period
+                </span>
+              )}
             </div>
           </div>
         );
@@ -1699,9 +1788,9 @@ export function TelegraphAdsDemo() {
           delta={{ value: "+0.6", trend: "up" }}
           hint="LTV: lease × 12mo"
           icon={<Star className="h-4 w-4" strokeWidth={2.25} />}
-          iconTone="amber"
+          iconTone="indigo"
           spark={[2.6, 2.7, 2.8, 2.8, 2.9, 3.0, 3.0, 3.1, 3.2, 3.2, 3.3, 3.3, 3.4, 3.4]}
-          sparkColor={C.amber}
+          sparkColor={C.indigo}
         />
       </section>
 
@@ -1885,9 +1974,9 @@ export function TelegraphChatbotDemo() {
           delta={{ value: "-18%", trend: "up" }}
           hint="vs 2.1s industry"
           icon={<Zap className="h-4 w-4" strokeWidth={2.25} />}
-          iconTone="amber"
+          iconTone="indigo"
           spark={[1.8, 1.7, 1.6, 1.5, 1.5, 1.4, 1.4, 1.3, 1.3, 1.2, 1.2, 1.2, 1.2, 1.2]}
-          sparkColor={C.amber}
+          sparkColor={C.indigo}
         />
       </section>
 
@@ -2040,11 +2129,11 @@ const REPUTATION_TREND = [
 
 export function TelegraphReputationDemo() {
   const sources = [
-    { src: "Google", count: 142, rating: 4.8, color: C.primary },
-    { src: "Yelp", count: 64, rating: 4.5, color: C.rose },
-    { src: "ApartmentRatings", count: 38, rating: 4.6, color: C.amber },
-    { src: "Reddit", count: 18, rating: 4.2, color: C.cyan },
-    { src: "Niche", count: 7, rating: 4.7, color: C.violet },
+    { src: "Google", count: 142, rating: 4.8, Logo: GoogleLogo },
+    { src: "Yelp", count: 64, rating: 4.5, Logo: YelpLogo },
+    { src: "ApartmentRatings", count: 38, rating: 4.6, Logo: ApartmentLogo },
+    { src: "Reddit", count: 18, rating: 4.2, Logo: RedditLogo },
+    { src: "Niche", count: 7, rating: 4.7, Logo: NicheLogo },
   ];
 
   const recent = [
@@ -2085,9 +2174,9 @@ export function TelegraphReputationDemo() {
           delta={{ value: "+0.2", trend: "up" }}
           hint="269 reviews lifetime"
           icon={<Star className="h-4 w-4" strokeWidth={2.25} />}
-          iconTone="amber"
+          iconTone="indigo"
           spark={REPUTATION_TREND.map((r) => r.rating)}
-          sparkColor={C.amber}
+          sparkColor={C.indigo}
         />
         <IconKpi
           label="New (28d)"
@@ -2157,31 +2246,33 @@ export function TelegraphReputationDemo() {
         <Card>
           <CardHead eyebrow="By source" title="Where reviews land" />
           <div className="px-4 pb-4 space-y-2">
-            {sources.map((s) => (
-              <div
-                key={s.src}
-                className="flex items-center gap-3 rounded-xl border border-border p-2.5 hover:border-primary/40 transition-colors"
-              >
+            {sources.map((s) => {
+              const Logo = s.Logo;
+              return (
                 <div
-                  className="h-9 w-9 rounded-lg flex items-center justify-center text-[12px] font-bold text-white shrink-0"
-                  style={{ backgroundColor: s.color }}
+                  key={s.src}
+                  className="flex items-center gap-3 rounded-xl border border-border p-2.5 hover:border-primary/40 hover:bg-blue-50/40 transition-colors"
                 >
-                  {s.src[0]}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-baseline justify-between gap-2 text-[12px]">
-                    <span className="font-semibold text-foreground truncate">{s.src}</span>
-                    <span className="tabular-nums text-foreground font-bold">
-                      {s.rating.toFixed(1)}★
-                    </span>
+                  <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-white border border-border shrink-0">
+                    <Logo className="h-5 w-5" />
                   </div>
-                  <div className="flex items-center justify-between mt-0.5 text-[10px] text-muted-foreground tabular-nums">
-                    <span>{s.count} reviews</span>
-                    <span>{Math.round((s.count / 269) * 100)}%</span>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-baseline justify-between gap-2 text-[12px]">
+                      <span className="font-semibold text-foreground truncate">
+                        {s.src}
+                      </span>
+                      <span className="tabular-nums text-foreground font-bold">
+                        {s.rating.toFixed(1)}★
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between mt-0.5 text-[10px] text-muted-foreground tabular-nums">
+                      <span>{s.count} reviews</span>
+                      <span>{Math.round((s.count / 269) * 100)}%</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </Card>
 
@@ -2297,9 +2388,9 @@ export function TelegraphOccupancyDemo() {
           value="72"
           hint="Predictive availability"
           icon={<Calendar className="h-4 w-4" strokeWidth={2.25} />}
-          iconTone="amber"
+          iconTone="indigo"
           spark={[58, 60, 62, 65, 64, 66, 68, 67, 69, 70, 71, 71, 72, 72]}
-          sparkColor={C.amber}
+          sparkColor={C.indigo}
         />
         <IconKpi
           label="Apps queued"
@@ -2446,7 +2537,7 @@ export function TelegraphResidentsDemo() {
           label="Notice given"
           value="72"
           icon={<Calendar className="h-4 w-4" strokeWidth={2.25} />}
-          iconTone="amber"
+          iconTone="indigo"
           hint="Predictive availability"
         />
         <IconKpi
@@ -2604,7 +2695,7 @@ export function TelegraphRenewalsDemo() {
     {
       label: "0–30 days",
       count: 18,
-      tone: "amber" as const,
+      tone: "urgent" as const,
       items: [
         { name: "Sophia Patel", unit: "301", end: "Jun 30", rent: 4280 },
         { name: "Emma Johnson", unit: "318", end: "Jul 15", rent: 5040 },
@@ -2615,7 +2706,7 @@ export function TelegraphRenewalsDemo() {
     {
       label: "31–60 days",
       count: 14,
-      tone: "amber" as const,
+      tone: "soon" as const,
       items: [
         { name: "Logan Reed", unit: "418", end: "Jul 28", rent: 4920 },
         { name: "Aria Singh", unit: "502", end: "Aug 4", rent: 5240 },
@@ -2667,7 +2758,7 @@ export function TelegraphRenewalsDemo() {
           label="Expiring (120d)"
           value="70"
           icon={<Calendar className="h-4 w-4" strokeWidth={2.25} />}
-          iconTone="amber"
+          iconTone="indigo"
           hint="Need renewal action"
         />
         <IconKpi
@@ -2696,8 +2787,8 @@ export function TelegraphRenewalsDemo() {
             right={
               <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
                 <LegendDot color={C.primary} label="Signed" />
-                <LegendDot color={C.amber} label="Expiring" />
-                <LegendDot color={C.negative} label="Lost" />
+                <LegendDot color={C.primaryFaint} label="Expiring" />
+                <LegendDot color={C.rose} label="Lost" />
               </div>
             }
           />
@@ -2710,8 +2801,8 @@ export function TelegraphRenewalsDemo() {
                   <YAxis tick={{ fontSize: 10, fill: C.muted }} tickLine={false} axisLine={false} width={28} />
                   <Tooltip {...chartTooltipProps()} />
                   <Bar dataKey="signed" name="Signed" stackId="a" fill={C.primary} />
-                  <Bar dataKey="expiring" name="Expiring" stackId="a" fill={C.amber} />
-                  <Bar dataKey="lost" name="Lost" stackId="a" fill={C.negative} radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expiring" name="Expiring" stackId="a" fill={C.primaryFaint} />
+                  <Bar dataKey="lost" name="Lost" stackId="a" fill={C.rose} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -2737,17 +2828,21 @@ export function TelegraphRenewalsDemo() {
         <div className="px-4 pb-4 grid grid-cols-2 md:grid-cols-4 gap-2">
           {buckets.map((b) => {
             const tone =
-              b.tone === "amber"
-                ? "border-amber-200 bg-amber-50/60"
-                : b.tone === "primary"
-                  ? "border-blue-200 bg-blue-50/60"
-                  : "border-border bg-card";
+              b.tone === "urgent"
+                ? "border-rose-200 bg-rose-50/50"
+                : b.tone === "soon"
+                  ? "border-blue-200 bg-blue-50/40"
+                  : b.tone === "primary"
+                    ? "border-blue-300 bg-blue-50/70"
+                    : "border-border bg-card";
             const eyebrowTone =
-              b.tone === "amber"
-                ? "text-amber-700"
-                : b.tone === "primary"
+              b.tone === "urgent"
+                ? "text-rose-700"
+                : b.tone === "soon"
                   ? "text-blue-700"
-                  : "text-muted-foreground";
+                  : b.tone === "primary"
+                    ? "text-blue-700"
+                    : "text-muted-foreground";
             return (
               <div key={b.label} className={`rounded-xl border ${tone} p-2.5`}>
                 <div className="flex items-center justify-between gap-2 mb-2 px-1">
