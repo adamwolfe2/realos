@@ -463,34 +463,93 @@ export function appfolioRestClient(
 
 const MAX_PAGES = 50;
 
+// Regexes that identify "AppFolio's pagination cursor expired" — distinct
+// from "this report doesn't exist" or "auth failed". v2 cursors carry a
+// metadata_id query param with a ~5-minute TTL; if our sync is slow between
+// pages (DB writes between fetches, network jitter), the cursor invalidates
+// and the next next_page_url returns 404 (sometimes 410). The initial POST
+// to /api/v2/reports/<name>.json never goes through that codepath — those
+// errors come from a different message ("AppFolio <name> returned 404…")
+// without the literal " page returned " substring, so we won't false-retry
+// auth or schema failures here.
+const CURSOR_EXPIRED_PATTERNS: RegExp[] = [
+  / page returned 404\b/i,
+  / page returned 410\b/i,
+];
+
+function isCursorExpired(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return CURSOR_EXPIRED_PATTERNS.some((re) => re.test(msg));
+}
+
+const PAGE_RETRY_DELAY_MS = 1500;
+const MAX_FULL_RETRIES = 1;
+
+// fetchAllPages — pulls a full v2 report by walking next_page_url cursors.
+//
+// Resilience: if pagination 404s mid-walk (cursor TTL expired upstream), we
+// restart the entire report from page 1 once. The fresh POST mints a new
+// cursor. Re-fetching the early pages is wasted work, but every consumer
+// upsert is keyed on a compound unique index (orgId+externalSystem+
+// externalId, propertyId+backendListingId, etc.) so duplicate rows on the
+// retry are no-ops. Bounded to one full retry so a genuinely broken report
+// (auth, deprecated, schema change) still surfaces as a hard error instead
+// of looping.
 export async function fetchAllPages(
   client: AppFolioRestClient,
   reportName: string,
   options: { fromDate?: Date; toDate?: Date; extraFilters?: Record<string, unknown> } = {}
 ): Promise<RawRow[]> {
-  const out: RawRow[] = [];
-  let nextPageUrl: string | null = null;
-  let pages = 0;
+  let attempt = 0;
+  let lastErr: unknown = null;
 
-  do {
-    const page = await client.fetchReport(reportName, {
-      fromDate: pages === 0 ? options.fromDate : undefined,
-      toDate: pages === 0 ? options.toDate : undefined,
-      extraFilters: pages === 0 ? options.extraFilters : undefined,
-      nextPageUrl,
-    });
-    out.push(...page.results);
-    nextPageUrl = page.nextPageUrl;
-    pages += 1;
-    if (pages >= MAX_PAGES) {
-      console.warn(
-        `[appfolio] fetchAllPages(${reportName}) hit MAX_PAGES=${MAX_PAGES}, stopping`
-      );
-      break;
+  while (attempt <= MAX_FULL_RETRIES) {
+    const out: RawRow[] = [];
+    let nextPageUrl: string | null = null;
+    let pages = 0;
+
+    try {
+      do {
+        const page = await client.fetchReport(reportName, {
+          fromDate: pages === 0 ? options.fromDate : undefined,
+          toDate: pages === 0 ? options.toDate : undefined,
+          extraFilters: pages === 0 ? options.extraFilters : undefined,
+          nextPageUrl,
+        });
+        out.push(...page.results);
+        nextPageUrl = page.nextPageUrl;
+        pages += 1;
+        if (pages >= MAX_PAGES) {
+          console.warn(
+            `[appfolio] fetchAllPages(${reportName}) hit MAX_PAGES=${MAX_PAGES}, stopping`
+          );
+          break;
+        }
+      } while (nextPageUrl);
+
+      if (attempt > 0) {
+        console.log(
+          `[appfolio] fetchAllPages(${reportName}) recovered after cursor-expiry retry; ${out.length} rows across ${pages} pages`
+        );
+      }
+      return out;
+    } catch (err) {
+      lastErr = err;
+      if (isCursorExpired(err) && attempt < MAX_FULL_RETRIES) {
+        const phase = pages > 0 ? `after ${pages} page(s)` : "before first page";
+        console.warn(
+          `[appfolio] fetchAllPages(${reportName}) pagination cursor expired ${phase} — restarting from page 1 in ${PAGE_RETRY_DELAY_MS}ms`
+        );
+        await new Promise((r) => setTimeout(r, PAGE_RETRY_DELAY_MS));
+        attempt += 1;
+        continue;
+      }
+      throw err;
     }
-  } while (nextPageUrl);
-
-  return out;
+  }
+  // Unreachable in practice; throw the last seen error so TS narrowing is
+  // happy and any future loop logic change can't accidentally swallow it.
+  throw lastErr ?? new Error(`AppFolio ${reportName} fetchAllPages failed`);
 }
 
 export async function testAppFolioConnection(
