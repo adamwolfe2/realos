@@ -16,6 +16,7 @@ import { ExportButton } from "@/components/ui/export-button";
 import { StatCard } from "@/components/admin/stat-card";
 import { EngageComposer } from "./engage-composer";
 import { AutoRefresh } from "@/components/portal/sync/auto-refresh";
+import { PixelSyncButton } from "@/components/portal/sync/pixel-sync-button";
 import { DataTable, EntityCell } from "@/components/portal/ui/data-table";
 
 export const metadata: Metadata = { title: "Visitor feed" };
@@ -178,6 +179,8 @@ export default async function VisitorsPage({
         installedOnDomain: true,
         lastEventAt: true,
         totalEventsCount: true,
+        cursiveSegmentId: true,
+        lastSegmentSyncAt: true,
       },
     }),
     (async () => {
@@ -309,6 +312,12 @@ export default async function VisitorsPage({
                     )}`
                   : " · no events yet"}
               </p>
+            ) : null}
+            {hasPixel ? (
+              <PixelSyncButton
+                lastEventAt={integration?.lastEventAt ?? null}
+                hasSegment={Boolean(integration?.cursiveSegmentId)}
+              />
             ) : null}
             <ExportButton href="/api/tenant/visitors/export" />
           </div>

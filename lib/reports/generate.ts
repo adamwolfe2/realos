@@ -623,25 +623,62 @@ export async function generateReportSnapshot(
       _sum: { spendCents: true },
       orderBy: { date: "asc" },
     }),
-    // Organic sessions — SeoSnapshot has no propertyId so we can't scope
-    // org-totals to a property at the row level. We still pull org-wide
-    // here; per-property scoping is enforced on top pages / queries via
-    // URL-pattern matching, and the trafficTrend falls back to the
-    // property-scoped landing-page aggregate below when the org-wide
-    // total exists.
-    prisma.seoSnapshot.aggregate({
-      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
-      _sum: { organicSessions: true },
-    }),
-    prisma.seoSnapshot.aggregate({
-      where: { orgId, date: { gte: priorStart, lt: priorEnd } },
-      _sum: { organicSessions: true },
-    }),
-    prisma.seoSnapshot.findMany({
-      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
-      select: { date: true, organicSessions: true },
-      orderBy: { date: "asc" },
-    }),
+    // Organic sessions — when scoped to a property, pull from
+    // SeoLandingPage rows whose URL matches the property's slug/name/
+    // domain patterns (URL-keyed = the only way to attribute organic
+    // traffic to a single building). When org-wide, use the SeoSnapshot
+    // rollup which is faster (already aggregated daily across the
+    // tenant). Behavior is identical for the org-wide path; the bug
+    // pre-fix was showing the org-wide rollup on property reports.
+    scope.propertyId
+      ? prisma.seoLandingPage.aggregate({
+          where: {
+            orgId,
+            ...scope.seoLandingClause,
+            date: { gte: periodStart, lt: periodEnd },
+          },
+          _sum: { sessions: true },
+        }).then((r) => ({ _sum: { organicSessions: r._sum.sessions ?? 0 } }))
+      : prisma.seoSnapshot.aggregate({
+          where: { orgId, date: { gte: periodStart, lt: periodEnd } },
+          _sum: { organicSessions: true },
+        }),
+    scope.propertyId
+      ? prisma.seoLandingPage.aggregate({
+          where: {
+            orgId,
+            ...scope.seoLandingClause,
+            date: { gte: priorStart, lt: priorEnd },
+          },
+          _sum: { sessions: true },
+        }).then((r) => ({ _sum: { organicSessions: r._sum.sessions ?? 0 } }))
+      : prisma.seoSnapshot.aggregate({
+          where: { orgId, date: { gte: priorStart, lt: priorEnd } },
+          _sum: { organicSessions: true },
+        }),
+    scope.propertyId
+      ? prisma.seoLandingPage
+          .groupBy({
+            by: ["date"],
+            where: {
+              orgId,
+              ...scope.seoLandingClause,
+              date: { gte: periodStart, lt: periodEnd },
+            },
+            _sum: { sessions: true },
+            orderBy: { date: "asc" },
+          })
+          .then((rows) =>
+            rows.map((r) => ({
+              date: r.date,
+              organicSessions: r._sum.sessions ?? 0,
+            })),
+          )
+      : prisma.seoSnapshot.findMany({
+          where: { orgId, date: { gte: periodStart, lt: periodEnd } },
+          select: { date: true, organicSessions: true },
+          orderBy: { date: "asc" },
+        }),
     // Funnel from LeadStatus groupBy
     prisma.lead.groupBy({
       by: ["status"],
@@ -788,8 +825,26 @@ export async function generateReportSnapshot(
   const organicSessions = organicCurrent._sum.organicSessions ?? 0;
   const priorOrganicSessions = organicPrior._sum.organicSessions ?? 0;
 
-  const costPerLead = leadsCount > 0 ? Math.round((adSpendUsd / leadsCount) * 100) / 100 : null;
-  const priorCostPerLead = priorLeadsCount > 0 ? priorAdSpendUsd / priorLeadsCount : null;
+  // CPL must only divide by *paid* leads. Including chatbot/organic/referral
+  // leads in the denominator made CPL look great on properties whose leads
+  // mostly came from non-paid channels — and made paid-channel performance
+  // unreadable. paidLeadsCount = sum of leads attributed to GOOGLE_ADS or
+  // META_ADS sources for the same scope/period as adSpend.
+  const paidLeadsCount = adLeadGroups.reduce(
+    (sum, row) => sum + row._count._all,
+    0,
+  );
+  const costPerLead =
+    paidLeadsCount > 0 && adSpendUsd > 0
+      ? Math.round((adSpendUsd / paidLeadsCount) * 100) / 100
+      : null;
+  // Prior-period CPL — we only have ad-leads by source for the current
+  // period in this query block, so prior CPL falls back to the old
+  // total-leads denom. Better than nothing for direction-of-change context.
+  const priorCostPerLead =
+    priorLeadsCount > 0 && priorAdSpendUsd > 0
+      ? priorAdSpendUsd / priorLeadsCount
+      : null;
 
   const kpis: ReportKpis = {
     leads: leadsCount,
@@ -916,15 +971,71 @@ export async function generateReportSnapshot(
     if (!row.propertyId) continue;
     leadsByProperty.set(row.propertyId, row._count._all);
   }
-  const properties: ReportPropertyRow[] = propertiesList.map((p) => ({
-    id: p.id,
-    name: p.name,
-    leads: leadsByProperty.get(p.id) ?? 0,
-    occupancyPct:
-      p.totalUnits && p.totalUnits > 0
-        ? Math.round(((p.totalUnits - (p.availableCount ?? 0)) / p.totalUnits) * 100)
-        : null,
-  }));
+
+  // Per-property occupancy — same priority order as buildOccupancyStats:
+  // active lease count first, then available listings, then the legacy
+  // denorm. Don't surface a number we can't trust; render null when no
+  // signal exists.
+  const propertyIds = propertiesList.map((p) => p.id);
+  const [activeLeasesByProp, availableListingsByProp] = propertyIds.length > 0
+    ? await Promise.all([
+        prisma.lease.groupBy({
+          by: ["propertyId"],
+          where: {
+            orgId,
+            propertyId: { in: propertyIds },
+            status: LeaseStatus.ACTIVE,
+          },
+          _count: { _all: true },
+        }),
+        prisma.listing.groupBy({
+          by: ["propertyId"],
+          where: {
+            propertyId: { in: propertyIds },
+            isAvailable: true,
+          },
+          _count: { _all: true },
+        }),
+      ])
+    : [[], []];
+  const leaseCountByPropId = new Map<string, number>();
+  for (const r of activeLeasesByProp) {
+    if (r.propertyId) leaseCountByPropId.set(r.propertyId, r._count._all);
+  }
+  const availListingByPropId = new Map<string, number>();
+  for (const r of availableListingsByProp) {
+    if (r.propertyId) availListingByPropId.set(r.propertyId, r._count._all);
+  }
+
+  const properties: ReportPropertyRow[] = propertiesList.map((p) => {
+    const total = p.totalUnits ?? 0;
+    let occupancyPct: number | null = null;
+    if (total > 0) {
+      const activeLeases = leaseCountByPropId.get(p.id) ?? 0;
+      const availListings = availListingByPropId.get(p.id) ?? 0;
+      const denormAvailable = p.availableCount ?? 0;
+      if (activeLeases > 0) {
+        occupancyPct = Math.round(
+          (Math.min(total, activeLeases) / total) * 100,
+        );
+      } else if (availListings > 0) {
+        occupancyPct = Math.round(
+          (Math.max(0, total - availListings) / total) * 100,
+        );
+      } else if (denormAvailable > 0) {
+        occupancyPct = Math.round(
+          (Math.max(0, total - denormAvailable) / total) * 100,
+        );
+      }
+      // else: no signal → null (don't lie with 100%)
+    }
+    return {
+      id: p.id,
+      name: p.name,
+      leads: leadsByProperty.get(p.id) ?? 0,
+      occupancyPct,
+    };
+  });
 
   // Traffic trend (daily organic sessions across the period)
   const trafficTrend = bucketDaily(
@@ -1212,7 +1323,7 @@ async function buildOccupancyStats(
   propertyId: string | null,
 ): Promise<ReportOccupancyStats | undefined> {
   const propertyClause = propertyId ? { propertyId } : {};
-  const [propertyAgg, residentNoticeCount, applicationsQueued, rentRoll] =
+  const [propertyAgg, residentNoticeCount, applicationsQueued, rentRoll, activeListings] =
     await Promise.all([
       prisma.property.aggregate({
         where: { orgId, ...(propertyId ? { id: propertyId } : {}) },
@@ -1236,27 +1347,71 @@ async function buildOccupancyStats(
         _sum: { monthlyRentCents: true },
         _count: { _all: true },
       }),
+      // Listings flagged available — fallback signal for tenants with no
+      // active Lease rows synced yet.
+      prisma.listing.count({
+        where: {
+          property: { orgId, ...(propertyId ? { id: propertyId } : {}) },
+          isAvailable: true,
+        },
+      }),
     ]);
 
   const totalUnits = propertyAgg._sum.totalUnits ?? 0;
   if (totalUnits === 0) return undefined;
 
-  const availableUnits = Math.max(
-    0,
-    Math.min(totalUnits, propertyAgg._sum.availableCount ?? 0),
-  );
-  const leasedUnits = Math.max(0, totalUnits - availableUnits);
+  // Occupancy source-of-truth (in priority order):
+  //
+  //   1. Active lease count (most reliable — comes from AppFolio rent roll
+  //      via the REST sync's tenant_directory + lease_history reports).
+  //   2. Listings flagged isAvailable=true (the embed-fallback path uses
+  //      this; works for tenants without REST creds).
+  //   3. Property.availableCount (legacy denorm field, only updated by
+  //      syncListingsForOrg → not reliable for REST-synced tenants).
+  //
+  // The previous report version used #3 alone, which silently defaulted to
+  // 0 for every REST tenant and produced fake "100% occupied" on every
+  // property. We now prefer #1 → #2 → #3 in that order.
+  const activeLeaseCount = rentRoll._count._all;
+  let leasedUnits: number;
+  let occupancySource: "leases" | "listings" | "denorm";
+  if (activeLeaseCount > 0) {
+    leasedUnits = Math.min(totalUnits, activeLeaseCount);
+    occupancySource = "leases";
+  } else if (activeListings > 0) {
+    leasedUnits = Math.max(0, totalUnits - activeListings);
+    occupancySource = "listings";
+  } else {
+    const denormAvailable = Math.max(
+      0,
+      Math.min(totalUnits, propertyAgg._sum.availableCount ?? 0),
+    );
+    leasedUnits = Math.max(0, totalUnits - denormAvailable);
+    occupancySource = "denorm";
+  }
+
+  const availableUnits = Math.max(0, totalUnits - leasedUnits);
   const monthlyRentRollUsd = Math.round(
     (rentRoll._sum.monthlyRentCents ?? 0) / 100,
   );
-  const activeLeaseCount = rentRoll._count._all;
+
+  // If we have no active leases AND no available listings AND no denorm,
+  // we don't know occupancy. Don't lie — render "—".
+  const hasAnyOccupancySignal =
+    activeLeaseCount > 0 ||
+    activeListings > 0 ||
+    (propertyAgg._sum.availableCount ?? 0) > 0;
+  const occupancyPct =
+    hasAnyOccupancySignal && totalUnits > 0
+      ? Math.round((leasedUnits / totalUnits) * 100)
+      : null;
+  void occupancySource; // reserved for future debug surfacing
 
   return {
     totalUnits,
     leasedUnits,
     availableUnits,
-    occupancyPct:
-      totalUnits > 0 ? Math.round((leasedUnits / totalUnits) * 100) : null,
+    occupancyPct,
     onNotice: residentNoticeCount,
     applicationsQueued,
     monthlyRentRollUsd,

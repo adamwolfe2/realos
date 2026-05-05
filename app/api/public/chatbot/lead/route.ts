@@ -183,7 +183,14 @@ export async function POST(req: NextRequest) {
         sessionId,
         messages: emptyMessages,
         messageCount: 0,
-        status: ChatbotConversationStatus.ACTIVE,
+        // Pre-chat capture means we already have a Lead bound to this
+        // conversation BEFORE any message exchange — the conversation
+        // status must reflect that. Previously this row was inserted with
+        // status=ACTIVE, which made the report's "capture rate" metric
+        // (count(LEAD_CAPTURED) / total) read 0% even when leads were
+        // actually being captured. Setting LEAD_CAPTURED on insert keeps
+        // the metric honest end-to-end.
+        status: ChatbotConversationStatus.LEAD_CAPTURED,
         capturedName: last ? `${first} ${last}` : first,
         capturedEmail: email,
         capturedPhone: phone ?? null,

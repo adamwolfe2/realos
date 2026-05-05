@@ -180,7 +180,7 @@ async function persistConversation(args: {
 
   const existing = await prisma.chatbotConversation.findUnique({
     where: { sessionId: args.sessionId },
-    select: { id: true, orgId: true },
+    select: { id: true, orgId: true, leadId: true, status: true },
   });
 
   let conversation;
@@ -191,15 +191,24 @@ async function persistConversation(args: {
       // can recover by generating a fresh sessionId on the client.
       return null;
     }
+    // Status state machine: once LEAD_CAPTURED, stay LEAD_CAPTURED. The
+    // PRE_CHAT path inserts a row with leadId set + status=LEAD_CAPTURED
+    // before any messages exist; subsequent /chat calls would otherwise
+    // demote it back to ACTIVE because extractLeadCapture finds nothing
+    // in the (so-far empty) message history. Preserve the higher state.
+    const alreadyCaptured =
+      existing.leadId != null ||
+      existing.status === ChatbotConversationStatus.LEAD_CAPTURED;
+    const nextStatus = alreadyCaptured || isLeadCaptured
+      ? ChatbotConversationStatus.LEAD_CAPTURED
+      : ChatbotConversationStatus.ACTIVE;
     conversation = await prisma.chatbotConversation.update({
       where: { id: existing.id },
       data: {
         messages: serializedMessages,
         messageCount: full.length,
         lastMessageAt: now,
-        status: isLeadCaptured
-          ? ChatbotConversationStatus.LEAD_CAPTURED
-          : ChatbotConversationStatus.ACTIVE,
+        status: nextStatus,
         capturedName: extracted.name ?? undefined,
         capturedEmail: extracted.email ?? undefined,
         capturedPhone: extracted.phone ?? undefined,

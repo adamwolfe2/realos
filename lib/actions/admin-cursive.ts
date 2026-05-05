@@ -252,17 +252,13 @@ export type SyncSegmentResult =
   | { ok: true; pulled: number; created: number; updated: number }
   | { ok: false; error: string };
 
-export async function syncCursiveSegment(
+// Internal: shared sync routine usable by both the agency action and the
+// per-tenant operator action. Caller is responsible for auth + audit
+// context. Idempotent — safe to retry; upserts dedupe on the unique
+// (orgId, cursiveVisitorId).
+export async function runCursiveSegmentSync(
   orgId: string,
 ): Promise<SyncSegmentResult> {
-  let scope;
-  try {
-    scope = await requireAgency();
-  } catch (err) {
-    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
-    throw err;
-  }
-
   const integration = await prisma.cursiveIntegration.findUnique({
     where: { orgId },
     select: { cursiveSegmentId: true, installedOnDomain: true },
@@ -270,7 +266,8 @@ export async function syncCursiveSegment(
   if (!integration?.cursiveSegmentId) {
     return {
       ok: false,
-      error: "No cursiveSegmentId set on this tenant. Bind one first.",
+      error:
+        "No AudienceLab segment bound to this workspace yet. Ask the agency to set cursiveSegmentId.",
     };
   }
 
@@ -296,7 +293,7 @@ export async function syncCursiveSegment(
       const body = await res.text().catch(() => "");
       return {
         ok: false,
-        error: `Cursive segment fetch failed (${res.status}): ${body.slice(0, 200)}`,
+        error: `AudienceLab fetch failed (${res.status}): ${body.slice(0, 200)}`,
       };
     }
     const json = (await res.json()) as Record<string, unknown>;
@@ -322,6 +319,23 @@ export async function syncCursiveSegment(
     data: { lastSegmentSyncAt: new Date() },
   });
 
+  return { ok: true, pulled, created, updated };
+}
+
+export async function syncCursiveSegment(
+  orgId: string,
+): Promise<SyncSegmentResult> {
+  let scope;
+  try {
+    scope = await requireAgency();
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
+    throw err;
+  }
+
+  const result = await runCursiveSegmentSync(orgId);
+  if (!result.ok) return result;
+
   await prisma.auditEvent.create({
     data: auditPayload(
       { ...scope, orgId },
@@ -329,14 +343,18 @@ export async function syncCursiveSegment(
         action: AuditAction.SETTING_CHANGE,
         entityType: "CursiveIntegration",
         entityId: orgId,
-        description: `Synced ${pulled} resolutions from Cursive segment`,
-        diff: { pulled, created, updated },
+        description: `Synced ${result.pulled} resolutions from Cursive segment`,
+        diff: {
+          pulled: result.pulled,
+          created: result.created,
+          updated: result.updated,
+        },
       },
     ),
   });
 
   revalidatePath(`/admin/clients/${orgId}`);
-  return { ok: true, pulled, created, updated };
+  return result;
 }
 
 function extractItems(json: Record<string, unknown>): Array<Record<string, unknown>> {
