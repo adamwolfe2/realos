@@ -727,8 +727,15 @@
       "@supports (bottom: env(safe-area-inset-bottom)) { .rec-root { bottom: max(16px, calc(16px + env(safe-area-inset-bottom))); } }" +
       ".rec-launcher { all: unset; cursor: pointer; width: 56px; height: 56px; border-radius: 999px; background: var(--rec-color); color: #fff; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 24px rgba(0,0,0,0.18); transition: transform .15s ease; }" +
       ".rec-launcher:hover { transform: scale(1.05); }" +
-      ".rec-teaser { position: absolute; right: 72px; bottom: 8px; max-width: 280px; background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 10px 32px 10px 12px; display: none; align-items: center; gap: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.14); cursor: pointer; font-size: 13px; line-height: 1.4; }" +
+      // Pin the teaser to a fixed width (was max-width). Absolutely-
+      // positioned flex containers without an explicit width fall back to
+      // min-content sizing, which collapsed the text column to the
+      // longest single word (e.g. "Telegraph") and wrapped each word onto
+      // its own line. Fixed width + flex:1 on the text child gives the
+      // bubble a stable, readable layout.
+      ".rec-teaser { position: absolute; right: 72px; bottom: 8px; width: 280px; max-width: calc(100vw - 96px); background: #fff; border: 1px solid rgba(0,0,0,0.08); border-radius: 14px; padding: 10px 32px 10px 12px; display: none; align-items: center; gap: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.14); cursor: pointer; font-size: 13px; line-height: 1.4; box-sizing: border-box; }" +
       ".rec-root.rec-teaser-visible .rec-teaser { display: flex; }" +
+      ".rec-teaser-text { flex: 1; min-width: 0; word-wrap: break-word; overflow-wrap: anywhere; }" +
       ".rec-teaser-close { position: absolute; top: 4px; right: 6px; all: unset; cursor: pointer; font-size: 16px; color: #888; padding: 2px 6px; line-height: 1; }" +
       ".rec-avatar { width: 28px; height: 28px; border-radius: 999px; object-fit: cover; flex-shrink: 0; }" +
       ".rec-avatar-dot { background: var(--rec-color); }" +
