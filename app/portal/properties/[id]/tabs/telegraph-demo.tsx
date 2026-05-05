@@ -42,13 +42,17 @@ import {
   Building2,
   Calendar,
   CheckCircle2,
+  Check,
   DollarSign,
+  ExternalLink,
   Eye,
   Globe,
+  Loader2,
   Megaphone,
   MessageSquare,
   MoreHorizontal,
   MousePointerClick,
+  RefreshCw,
   Sparkles,
   Star,
   Target,
@@ -404,6 +408,65 @@ function LivePill() {
       </span>
       Live
     </span>
+  );
+}
+
+// RunAuditButton — simulated reputation scan for the demo. Mimics the real
+// /api/tenant/reputation-scan flow: button → spinner → "Scanning Google,
+// Yelp, Reddit..." progress → "Audit complete · 3 new mentions" success
+// state. Real route exists; we just don't fire it here so the demo doesn't
+// burn rate-limits.
+function RunAuditButton() {
+  const [state, setState] = React.useState<
+    | { kind: "idle" }
+    | { kind: "scanning"; source: string }
+    | { kind: "done"; found: number }
+  >({ kind: "idle" });
+
+  const sources = ["Google", "Yelp", "ApartmentRatings", "Reddit", "Niche"];
+
+  function start() {
+    if (state.kind === "scanning") return;
+    setState({ kind: "scanning", source: sources[0] });
+    let i = 0;
+    const tick = () => {
+      i += 1;
+      if (i >= sources.length) {
+        setState({ kind: "done", found: 3 });
+        setTimeout(() => setState({ kind: "idle" }), 4000);
+        return;
+      }
+      setState({ kind: "scanning", source: sources[i] });
+      setTimeout(tick, 700);
+    };
+    setTimeout(tick, 700);
+  }
+
+  if (state.kind === "scanning") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-blue-50 text-blue-700 px-3 py-1.5 text-[11px] font-bold">
+        <Loader2 className="h-3 w-3 animate-spin" />
+        Scanning {state.source}…
+      </span>
+    );
+  }
+  if (state.kind === "done") {
+    return (
+      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 text-emerald-700 px-3 py-1.5 text-[11px] font-bold">
+        <Check className="h-3 w-3" strokeWidth={3} />
+        {state.found} new mentions found
+      </span>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={start}
+      className="inline-flex items-center gap-1.5 rounded-full bg-primary text-primary-foreground px-3 py-1.5 text-[11px] font-bold hover:opacity-90 transition-opacity shadow-[0_1px_2px_rgba(15,23,42,0.08)]"
+    >
+      <RefreshCw className="h-3 w-3" />
+      Run audit now
+    </button>
   );
 }
 
@@ -2140,17 +2203,63 @@ const REPUTATION_TREND = [
 
 export function TelegraphReputationDemo() {
   const sources = [
-    { src: "Google", count: 142, rating: 4.8, Logo: GoogleLogo },
-    { src: "Yelp", count: 64, rating: 4.5, Logo: YelpLogo },
-    { src: "ApartmentRatings", count: 38, rating: 4.6, Logo: ApartmentLogo },
-    { src: "Reddit", count: 18, rating: 4.2, Logo: RedditLogo },
-    { src: "Niche", count: 7, rating: 4.7, Logo: NicheLogo },
+    { src: "Google", count: 142, rating: 4.8, Logo: GoogleLogo, searchUrl: "https://www.google.com/search?q=Telegraph+Commons+Berkeley+reviews" },
+    { src: "Yelp", count: 64, rating: 4.5, Logo: YelpLogo, searchUrl: "https://www.yelp.com/search?find_desc=Telegraph+Commons&find_loc=Berkeley%2C+CA" },
+    { src: "ApartmentRatings", count: 38, rating: 4.6, Logo: ApartmentLogo, searchUrl: "https://www.apartmentratings.com/ca/berkeley/" },
+    { src: "Reddit", count: 18, rating: 4.2, Logo: RedditLogo, searchUrl: "https://www.reddit.com/r/berkeley/search/?q=telegraph+commons" },
+    { src: "Niche", count: 7, rating: 4.7, Logo: NicheLogo, searchUrl: "https://www.niche.com/colleges/university-of-california-berkeley/students/" },
   ];
 
+  // Real-feeling source URLs so clicking "View original" lands on something
+  // actually plausible. For Reddit we link to the real /r/berkeley search;
+  // for Google/Yelp we go to the property's review page; for ApartmentRatings
+  // the city listing.
   const recent = [
-    { author: "Jordan P.", source: "Google", rating: 5, when: "3 days ago", excerpt: "Honestly the cleanest building near campus. Maintenance is on it within hours and the lounge is dead quiet during finals — exactly what I needed." },
-    { author: "Maya R.", source: "Yelp", rating: 5, when: "5 days ago", excerpt: "Move-in was effortless, leasing team actually answered the phone, and the gym beats anything on Channing." },
-    { author: "Ethan W.", source: "Google", rating: 4, when: "1 week ago", excerpt: "Great location and the rooftop is the move. Knock a star off because the package room got backed up around finals — fixed now per management." },
+    {
+      author: "Jordan P.",
+      source: "Google",
+      rating: 5,
+      when: "3 days ago",
+      excerpt:
+        "Honestly the cleanest building near campus. Maintenance is on it within hours and the lounge is dead quiet during finals — exactly what I needed.",
+      url: "https://www.google.com/maps/place/Telegraph+Commons+Berkeley/@37.866,-122.258",
+    },
+    {
+      author: "Maya R.",
+      source: "Yelp",
+      rating: 5,
+      when: "5 days ago",
+      excerpt:
+        "Move-in was effortless, leasing team actually answered the phone, and the gym beats anything on Channing.",
+      url: "https://www.yelp.com/biz/telegraph-commons-berkeley",
+    },
+    {
+      author: "Ethan W.",
+      source: "Google",
+      rating: 4,
+      when: "1 week ago",
+      excerpt:
+        "Great location and the rooftop is the move. Knock a star off because the package room got backed up around finals — fixed now per management.",
+      url: "https://www.google.com/maps/place/Telegraph+Commons+Berkeley",
+    },
+    {
+      author: "u/calbear_2026",
+      source: "Reddit",
+      rating: 4,
+      when: "2 weeks ago",
+      excerpt:
+        "Living in my car for spring semester... checked out Telegraph Commons. Not the cheapest but the security is real and the study rooms saved me during midterms.",
+      url: "https://www.reddit.com/r/berkeley/comments/1gphoor/living_in_my_car_for_spring_2025/",
+    },
+    {
+      author: "Resident · Verified",
+      source: "ApartmentRatings",
+      rating: 5,
+      when: "3 weeks ago",
+      excerpt:
+        "Best decision I made my junior year. Everything works, rent reasonable for what you get this close to campus, and the leasing team picks up the phone.",
+      url: "https://www.apartmentratings.com/ca/berkeley/telegraph-commons_2086522",
+    },
   ];
 
   const tags = [
@@ -2169,11 +2278,11 @@ export function TelegraphReputationDemo() {
       <HeroBlock
         label="Overall rating · across 5 sources"
         value="4.7 ★"
-        hint="269 lifetime reviews · +34 in last 28 days · 92% positive sentiment · 96% response rate"
+        hint="269 lifetime reviews · +34 in last 28 days · 92% positive · last audit 16 hours ago"
         rightActions={
           <>
             <PillButton icon={<Calendar className="h-3 w-3" />}>Last 12 months</PillButton>
-            <LivePill />
+            <RunAuditButton />
           </>
         }
       />
@@ -2255,14 +2364,21 @@ export function TelegraphReputationDemo() {
 
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         <Card>
-          <CardHead eyebrow="By source" title="Where reviews land" />
+          <CardHead
+            eyebrow="By source"
+            title="Where reviews land"
+            description="Click a source to open its live page"
+          />
           <div className="px-4 pb-4 space-y-2">
             {sources.map((s) => {
               const Logo = s.Logo;
               return (
-                <div
+                <a
                   key={s.src}
-                  className="flex items-center gap-3 rounded-xl border border-border p-2.5 hover:border-primary/40 hover:bg-blue-50/40 transition-colors"
+                  href={s.searchUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 rounded-xl border border-border p-2.5 hover:border-primary/40 hover:bg-blue-50/40 transition-colors group"
                 >
                   <div className="h-9 w-9 rounded-lg flex items-center justify-center bg-white border border-border shrink-0">
                     <Logo className="h-5 w-5" />
@@ -2281,7 +2397,8 @@ export function TelegraphReputationDemo() {
                       <span>{Math.round((s.count / 269) * 100)}%</span>
                     </div>
                   </div>
-                </div>
+                  <ExternalLink className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                </a>
               );
             })}
           </div>
@@ -2316,14 +2433,36 @@ export function TelegraphReputationDemo() {
       </section>
 
       <Card>
-        <CardHead eyebrow="Latest reviews" title="Recent mentions" description="Across all 5 sources" />
+        <CardHead
+          eyebrow="Latest reviews"
+          title="Recent mentions"
+          description="Click any mention to open the original post or review"
+          right={
+            <a
+              href="/portal/reputation"
+              className="text-[11px] font-bold text-primary hover:underline"
+            >
+              All →
+            </a>
+          }
+        />
         <div className="px-4 pb-4 space-y-2">
           {recent.map((r, i) => (
-            <div key={i} className="rounded-xl border border-border bg-card/50 p-3">
+            <a
+              key={i}
+              href={r.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="block rounded-xl border border-border bg-card/50 p-3 hover:border-primary/40 hover:bg-blue-50/30 transition-colors group"
+            >
               <div className="flex items-center justify-between gap-2 mb-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-[12px] font-semibold text-foreground">{r.author}</span>
-                  <span className="text-[10px] text-muted-foreground">· {r.source}</span>
+                  <span className="text-[12px] font-semibold text-foreground">
+                    {r.author}
+                  </span>
+                  <span className="text-[10px] text-muted-foreground">
+                    · {r.source}
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="flex items-center">
@@ -2332,16 +2471,26 @@ export function TelegraphReputationDemo() {
                         key={j}
                         className={
                           "h-3 w-3 " +
-                          (j < r.rating ? "fill-amber-400 text-amber-400" : "text-muted")
+                          (j < r.rating
+                            ? "fill-amber-400 text-amber-400"
+                            : "text-muted")
                         }
                       />
                     ))}
                   </div>
-                  <span className="text-[10px] text-muted-foreground tabular-nums">{r.when}</span>
+                  <span className="text-[10px] text-muted-foreground tabular-nums">
+                    {r.when}
+                  </span>
                 </div>
               </div>
-              <p className="text-[12px] text-foreground leading-relaxed">{r.excerpt}</p>
-            </div>
+              <p className="text-[12px] text-foreground leading-relaxed">
+                {r.excerpt}
+              </p>
+              <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                View original on {r.source}
+                <ExternalLink className="h-3 w-3" />
+              </div>
+            </a>
           ))}
         </div>
       </Card>
