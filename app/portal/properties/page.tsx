@@ -8,6 +8,11 @@ import { PageHeader } from "@/components/admin/page-header";
 import { PropertyFormDialog } from "@/components/properties/property-form-dialog";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { DataTable, EntityCell } from "@/components/portal/ui/data-table";
+import {
+  EntityToolbar,
+  type ToolbarView,
+} from "@/components/portal/ui/entity-toolbar";
+import { PillCell, NumberCell, EmptyCell } from "@/components/portal/ui/cells";
 
 export const metadata: Metadata = { title: "Properties" };
 export const dynamic = "force-dynamic";
@@ -16,9 +21,9 @@ export const dynamic = "force-dynamic";
 // in the portfolio. Replaces the previous card grid that took 200px+
 // per row and made it impossible to scan a 100-property portfolio.
 //
-// Columns: Name · City · Listings · Available · Leads · Units · Synced.
-// Each row links to the property detail. Avatars use a deterministic
-// hash of the property id so each building gets a stable color chip.
+// View tabs filter the result set without leaving the URL, so the
+// operator can flip between "everything", "has vacancies",
+// "actively leasing", "recently synced" without losing context.
 
 type PropertyRow = {
   id: string;
@@ -32,21 +37,33 @@ type PropertyRow = {
   _count: { listings: number; leads: number; tours: number };
 };
 
-export default async function PropertiesList() {
+type ViewKey = "all" | "vacant" | "leasing" | "synced";
+
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+export default async function PropertiesList({
+  searchParams,
+}: {
+  searchParams: Promise<{ view?: string }>;
+}) {
   const scope = await requireScope();
-  const properties = await prisma.property.findMany({
+  const { view: rawView } = await searchParams;
+  const view: ViewKey = (
+    ["all", "vacant", "leasing", "synced"] as const
+  ).includes(rawView as never)
+    ? (rawView as ViewKey)
+    : "all";
+
+  // Fetch ALL non-placeholder properties so the view counts in the toolbar
+  // reflect the universe; filtering happens in-memory after.
+  const all = await prisma.property.findMany({
     where: {
       ...tenantWhere(scope),
-      // Hide AppFolio placeholder properties from the portal view:
-      // - "(do not use)" markers
-      // - generic "Property NNN" naming (auto-numbered AppFolio rows
-      //   that have no real marketing presence)
-      // - properties with zero units that haven't been hand-set up
+      // Hide AppFolio placeholder rows
       NOT: {
         OR: [
           { name: { contains: "do not use", mode: "insensitive" } },
           { name: { contains: "DO NOT USE", mode: "insensitive" } },
-          // /^Property \d+$/ — generic AppFolio numeric placeholders
           { name: { startsWith: "Property ", mode: "insensitive" } },
         ],
       },
@@ -57,29 +74,79 @@ export default async function PropertiesList() {
     },
   });
 
-  // Portfolio-level stats so the header has actual context.
-  const totalListings = properties.reduce(
-    (s, p) => s + p._count.listings,
-    0,
-  );
-  const totalAvailable = properties.reduce(
+  const sevenDaysAgo = new Date(Date.now() - SEVEN_DAYS_MS);
+
+  // Counts for each view so toolbar tabs render with accurate badges.
+  const counts = {
+    all: all.length,
+    vacant: all.filter((p) => (p.availableCount ?? 0) > 0).length,
+    leasing: all.filter(
+      (p) => p._count.leads > 0 || p._count.listings > 0,
+    ).length,
+    synced: all.filter(
+      (p) => p.lastSyncedAt && p.lastSyncedAt > sevenDaysAgo,
+    ).length,
+  };
+
+  // Apply the active view filter
+  const properties = all.filter((p) => {
+    if (view === "vacant") return (p.availableCount ?? 0) > 0;
+    if (view === "leasing")
+      return p._count.leads > 0 || p._count.listings > 0;
+    if (view === "synced")
+      return p.lastSyncedAt && p.lastSyncedAt > sevenDaysAgo;
+    return true;
+  });
+
+  // Portfolio-level stats so the header has actual context (always reflects
+  // the full universe, not the filtered view — gives the operator the
+  // baseline they can shrink against).
+  const totalListings = all.reduce((s, p) => s + p._count.listings, 0);
+  const totalAvailable = all.reduce(
     (s, p) => s + (p.availableCount ?? 0),
     0,
   );
-  const totalLeads = properties.reduce((s, p) => s + p._count.leads, 0);
+  const totalLeads = all.reduce((s, p) => s + p._count.leads, 0);
+
+  const views: ToolbarView[] = [
+    {
+      label: "All properties",
+      href: "?view=all",
+      count: counts.all,
+      active: view === "all",
+    },
+    {
+      label: "Has vacancies",
+      href: "?view=vacant",
+      count: counts.vacant,
+      active: view === "vacant",
+    },
+    {
+      label: "Actively leasing",
+      href: "?view=leasing",
+      count: counts.leasing,
+      active: view === "leasing",
+    },
+    {
+      label: "Recently synced",
+      href: "?view=synced",
+      count: counts.synced,
+      active: view === "synced",
+    },
+  ];
 
   return (
     <div className="space-y-3 ls-page-fade">
       <PageHeader
         title="Properties"
         description={
-          properties.length === 0
+          all.length === 0
             ? "Listings, leads, and tours for every property in your portfolio."
-            : `${properties.length.toLocaleString()} ${properties.length === 1 ? "property" : "properties"} · ${totalListings.toLocaleString()} listings · ${totalAvailable.toLocaleString()} available · ${totalLeads.toLocaleString()} leads`
+            : `${all.length.toLocaleString()} ${all.length === 1 ? "property" : "properties"} · ${totalListings.toLocaleString()} listings · ${totalAvailable.toLocaleString()} available · ${totalLeads.toLocaleString()} leads`
         }
         actions={
           <div className="flex items-center gap-2">
-            {properties.length >= 2 ? (
+            {all.length >= 2 ? (
               <Link
                 href="/portal/properties/compare"
                 className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
@@ -92,7 +159,7 @@ export default async function PropertiesList() {
         }
       />
 
-      {properties.length === 0 ? (
+      {all.length === 0 ? (
         <EmptyState
           icon={<Building2 className="h-4 w-4" />}
           title="Add your first property to start tracking everything."
@@ -103,99 +170,116 @@ export default async function PropertiesList() {
           }}
         />
       ) : (
-        <DataTable<PropertyRow>
-          rows={properties as PropertyRow[]}
-          getRowHref={(p) => `/portal/properties/${p.id}`}
-          columns={[
-            {
-              key: "name",
-              header: "Property",
-              accessor: (p) => (
-                <EntityCell
-                  name={p.name}
-                  seed={p.id}
-                  secondary={
-                    p.addressLine1 ? (
-                      <span className="inline-flex items-center gap-1">
-                        <MapPin className="h-2.5 w-2.5 opacity-60" aria-hidden="true" />
-                        {[p.addressLine1, p.city]
-                          .filter(Boolean)
-                          .join(", ")}
+        <>
+          <EntityToolbar views={views} />
+          {properties.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-xs text-muted-foreground">
+              No properties match this view.
+            </div>
+          ) : (
+            <DataTable<PropertyRow>
+              rows={properties as PropertyRow[]}
+              getRowHref={(p) => `/portal/properties/${p.id}`}
+              columns={[
+                {
+                  key: "name",
+                  header: "Property",
+                  accessor: (p) => (
+                    <EntityCell
+                      name={p.name}
+                      seed={p.id}
+                      secondary={
+                        p.addressLine1 ? (
+                          <span className="inline-flex items-center gap-1">
+                            <MapPin
+                              className="h-2.5 w-2.5 opacity-60"
+                              aria-hidden="true"
+                            />
+                            {[p.addressLine1, p.city]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </span>
+                        ) : null
+                      }
+                    />
+                  ),
+                },
+                {
+                  key: "location",
+                  header: "Location",
+                  hideOnMobile: true,
+                  accessor: (p) => {
+                    const loc = [p.city, p.state].filter(Boolean).join(", ");
+                    return loc ? (
+                      <PillCell tone="muted">{loc}</PillCell>
+                    ) : (
+                      <EmptyCell />
+                    );
+                  },
+                },
+                {
+                  key: "listings",
+                  header: "Listings",
+                  align: "right",
+                  accessor: (p) => <NumberCell value={p._count.listings} />,
+                },
+                {
+                  key: "available",
+                  header: "Available",
+                  align: "right",
+                  accessor: (p) => {
+                    const avail = p.availableCount ?? 0;
+                    return avail > 0 ? (
+                      <PillCell tone="warning">{avail} open</PillCell>
+                    ) : (
+                      <EmptyCell />
+                    );
+                  },
+                },
+                {
+                  key: "leads",
+                  header: "Leads",
+                  align: "right",
+                  accessor: (p) =>
+                    p._count.leads > 0 ? (
+                      <NumberCell value={p._count.leads} bold />
+                    ) : (
+                      <EmptyCell />
+                    ),
+                },
+                {
+                  key: "units",
+                  header: "Units",
+                  align: "right",
+                  hideOnMobile: true,
+                  accessor: (p) =>
+                    p.totalUnits ? (
+                      <NumberCell value={p.totalUnits} />
+                    ) : (
+                      <EmptyCell />
+                    ),
+                },
+                {
+                  key: "synced",
+                  header: "Last synced",
+                  hideOnMobile: true,
+                  accessor: (p) =>
+                    p.lastSyncedAt ? (
+                      <span className="text-[11px] text-muted-foreground tabular-nums">
+                        {formatDistanceToNow(p.lastSyncedAt, {
+                          addSuffix: true,
+                        })}
                       </span>
-                    ) : null
-                  }
-                />
-              ),
-            },
-            {
-              key: "location",
-              header: "Location",
-              hideOnMobile: true,
-              accessor: (p) =>
-                [p.city, p.state].filter(Boolean).join(", ") || (
-                  <span className="text-muted-foreground">—</span>
-                ),
-            },
-            {
-              key: "listings",
-              header: "Listings",
-              align: "right",
-              accessor: (p) => p._count.listings.toLocaleString(),
-            },
-            {
-              key: "available",
-              header: "Available",
-              align: "right",
-              accessor: (p) => {
-                const avail = p.availableCount ?? 0;
-                return (
-                  <span
-                    className={
-                      avail > 0
-                        ? "text-foreground font-semibold"
-                        : "text-muted-foreground"
-                    }
-                  >
-                    {avail.toLocaleString()}
-                  </span>
-                );
-              },
-            },
-            {
-              key: "leads",
-              header: "Leads",
-              align: "right",
-              accessor: (p) => p._count.leads.toLocaleString(),
-            },
-            {
-              key: "units",
-              header: "Units",
-              align: "right",
-              hideOnMobile: true,
-              accessor: (p) =>
-                p.totalUnits ? (
-                  p.totalUnits.toLocaleString()
-                ) : (
-                  <span className="text-muted-foreground">—</span>
-                ),
-            },
-            {
-              key: "synced",
-              header: "Last synced",
-              hideOnMobile: true,
-              accessor: (p) =>
-                p.lastSyncedAt ? (
-                  <span className="text-[10px] text-muted-foreground tabular-nums">
-                    {formatDistanceToNow(p.lastSyncedAt, { addSuffix: true })}
-                  </span>
-                ) : (
-                  <span className="text-[10px] text-muted-foreground">
-                    Never
-                  </span>
-                ),
-            },
-          ]}
-        />
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground">
+                        Never
+                      </span>
+                    ),
+                },
+              ]}
+            />
+          )}
+        </>
       )}
     </div>
   );

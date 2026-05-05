@@ -24,11 +24,11 @@ export default async function PropertyDetail({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ tab?: string }>;
+  searchParams: Promise<{ tab?: string; view?: string }>;
 }) {
   const scope = await requireScope();
   const { id } = await params;
-  const { tab } = await searchParams;
+  const { tab, view } = await searchParams;
 
   const property = await prisma.property.findFirst({
     where: { id, ...tenantWhere(scope) },
@@ -165,6 +165,13 @@ export default async function PropertyDetail({
             <ResidentsTab
               orgId={scope.orgId}
               propertyId={property.id}
+              view={
+                (["all", "active", "notice", "past", "evicted"] as const).includes(
+                  view as never,
+                )
+                  ? (view as "all" | "active" | "notice" | "past" | "evicted")
+                  : "active"
+              }
             />
           ),
           renewals: (

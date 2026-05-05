@@ -228,9 +228,43 @@ export async function OverviewTab({
 
   const monthlyRentRoll = (rentRoll._sum.monthlyRentCents ?? 0) / 100;
 
+  // Build a one-paragraph operator briefing — deterministic narrative that
+  // surfaces the highest-signal facts about this property. Helps Norman see
+  // the state of the building in one read instead of triangulating across
+  // five different tiles.
+  const briefing = buildPropertyBriefing({
+    name: propertyMeta.name,
+    occupancyPct,
+    totalUnits,
+    leasedUnits,
+    availableUnits,
+    monthlyRentRoll,
+    expiringNext30: buckets[0].count,
+    expiringNext120: expiringTotal,
+    leads28d: kpis.leads28d,
+    tours28d: kpis.tours28d,
+    noticeGiven: noticeResidents,
+    activeResidents: activeResidents,
+  });
+
   return (
-    <div className="space-y-3">
-      {/* AI Insight banner */}
+    <div className="space-y-3 ls-page-fade">
+      {/* Hero strip — property identity at a glance with the headline metric
+          (occupancy ring), the single-paragraph briefing, and a quick-actions
+          rail. Replaces the previous "page just dropped you into KPIs"
+          experience with a deliberate orientation moment. */}
+      <PropertyHeroStrip
+        name={propertyMeta.name}
+        occupancyPct={occupancyPct}
+        totalUnits={totalUnits}
+        leasedUnits={leasedUnits}
+        availableUnits={availableUnits}
+        monthlyRentRoll={monthlyRentRoll}
+        briefing={briefing}
+        propertyMeta={propertyMeta}
+      />
+
+      {/* AI Insight banner — one most-actionable signal */}
       <AiInsightCard insight={aiInsight} />
 
       {/* Top KPI strip — funnel-shaped (Leads → Tours → Apps → Spend → Organic) */}
@@ -470,6 +504,239 @@ export async function OverviewTab({
       </div>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// PropertyHeroStrip — opens the Overview tab. Three-column layout:
+//
+//   ┌─────────────────────────────────────────────────────────────────────┐
+//   │ [97%]   Telegraph Commons        ▸ Open Renewals  ▸ Open Ads        │
+//   │  full   2-paragraph briefing      ▸ Open Residents  ▸ Open Reports  │
+//   │  ring   ($4.4M monthly · 71 u)                                      │
+//   └─────────────────────────────────────────────────────────────────────┘
+//
+// The ring on the left is the single biggest visual on the page so the
+// operator's eye lands on the headline metric (occupancy) first. The
+// briefing is plain English so it's skim-friendly. The action rail on the
+// right takes them to the most likely next step.
+// ---------------------------------------------------------------------------
+
+function PropertyHeroStrip({
+  name,
+  occupancyPct,
+  totalUnits,
+  leasedUnits,
+  availableUnits,
+  monthlyRentRoll,
+  briefing,
+  propertyMeta,
+}: {
+  name: string;
+  occupancyPct: number | null;
+  totalUnits: number | null;
+  leasedUnits: number | null;
+  availableUnits: number;
+  monthlyRentRoll: number;
+  briefing: string;
+  propertyMeta: { slug: string; name: string };
+}) {
+  const monthlyDisplay =
+    monthlyRentRoll > 0
+      ? `$${(monthlyRentRoll / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K /mo`
+      : "—";
+  const occupancyLabel = occupancyPct != null ? `${occupancyPct}%` : "—";
+  const occupancyTone =
+    occupancyPct == null
+      ? "stroke-muted-foreground/40"
+      : occupancyPct >= 90
+        ? "stroke-primary-dark"
+        : occupancyPct >= 75
+          ? "stroke-primary"
+          : "stroke-primary/50";
+
+  return (
+    <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-5 p-4 md:p-5">
+        {/* Occupancy ring — large, anchored */}
+        <div className="flex items-center gap-4 md:gap-5">
+          <HeroOccupancyRing
+            pct={occupancyPct}
+            strokeClass={occupancyTone}
+            label={occupancyLabel}
+            sublabel={
+              totalUnits != null && leasedUnits != null
+                ? `${leasedUnits}/${totalUnits} leased`
+                : "No unit count"
+            }
+          />
+        </div>
+
+        {/* Identity + briefing */}
+        <div className="min-w-0 self-center">
+          <div className="flex items-baseline flex-wrap gap-2 mb-1.5">
+            <h2 className="text-base font-semibold text-foreground tracking-tight">
+              {name}
+            </h2>
+            <span className="text-[11px] text-muted-foreground tabular-nums">
+              {monthlyDisplay}
+            </span>
+            {availableUnits > 0 ? (
+              <span className="text-[11px] text-amber-700 font-medium tabular-nums">
+                · {availableUnits} open
+              </span>
+            ) : null}
+          </div>
+          <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[560px]">
+            {briefing}
+          </p>
+        </div>
+
+        {/* Quick actions rail */}
+        <nav
+          aria-label="Quick actions"
+          className="flex flex-row md:flex-col gap-1 md:min-w-[150px] self-center"
+        >
+          {[
+            { tab: "renewals", label: "Renewals" },
+            { tab: "residents", label: "Residents" },
+            { tab: "ads", label: "Ad performance" },
+            { tab: "reputation", label: "Reputation" },
+          ].map((a) => (
+            <a
+              key={a.tab}
+              href={`?tab=${a.tab}`}
+              className="inline-flex items-center justify-between gap-2 rounded-md border border-border px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/40 hover:border-primary/40 transition-colors group"
+            >
+              <span>{a.label}</span>
+              <span className="text-muted-foreground group-hover:text-primary transition-colors">
+                →
+              </span>
+            </a>
+          ))}
+        </nav>
+      </div>
+    </section>
+  );
+}
+
+// Big SVG occupancy ring used in the hero strip. 96px outer, 14px stroke.
+function HeroOccupancyRing({
+  pct,
+  strokeClass,
+  label,
+  sublabel,
+}: {
+  pct: number | null;
+  strokeClass: string;
+  label: string;
+  sublabel: string;
+}) {
+  const size = 96;
+  const stroke = 12;
+  const radius = (size - stroke) / 2;
+  const circ = 2 * Math.PI * radius;
+  const fraction = pct != null ? Math.max(0, Math.min(1, pct / 100)) : 0;
+  return (
+    <div className="relative shrink-0" style={{ width: size, height: size }}>
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          className="stroke-muted"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          className={strokeClass}
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={`${fraction * circ} ${circ}`}
+          transform={`rotate(-90 ${size / 2} ${size / 2})`}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className="text-[18px] font-semibold tracking-tight text-foreground tabular-nums leading-none">
+          {label}
+        </span>
+        <span className="mt-1 text-[9px] uppercase tracking-widest font-semibold text-muted-foreground">
+          {sublabel}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// buildPropertyBriefing — produces a 1–2 sentence operator-grade summary
+// of the property's current state. Picks the most relevant facts based on
+// what data exists; degrades gracefully when AppFolio + ad accounts +
+// reputation aren't all wired up yet.
+// ---------------------------------------------------------------------------
+
+function buildPropertyBriefing(args: {
+  name: string;
+  occupancyPct: number | null;
+  totalUnits: number | null;
+  leasedUnits: number | null;
+  availableUnits: number;
+  monthlyRentRoll: number;
+  expiringNext30: number;
+  expiringNext120: number;
+  leads28d: number;
+  tours28d: number;
+  noticeGiven: number;
+  activeResidents: number;
+}): string {
+  const parts: string[] = [];
+
+  if (args.occupancyPct != null) {
+    if (args.occupancyPct >= 95) {
+      parts.push(
+        `Sitting at ${args.occupancyPct}% occupancy — effectively full.`,
+      );
+    } else if (args.occupancyPct >= 85) {
+      parts.push(
+        `Occupancy is healthy at ${args.occupancyPct}% with ${args.availableUnits} unit${args.availableUnits === 1 ? "" : "s"} available.`,
+      );
+    } else {
+      parts.push(
+        `Occupancy is ${args.occupancyPct}% — ${args.availableUnits} unit${args.availableUnits === 1 ? "" : "s"} sitting and worth attention.`,
+      );
+    }
+  } else if (args.totalUnits != null) {
+    parts.push(`${args.totalUnits} units total.`);
+  }
+
+  if (args.expiringNext120 > 0) {
+    parts.push(
+      `${args.expiringNext120} lease${args.expiringNext120 === 1 ? "" : "s"} up for renewal in the next 120 days${args.expiringNext30 > 0 ? `, including ${args.expiringNext30} inside 30 days` : ""}.`,
+    );
+  }
+
+  if (args.noticeGiven > 0) {
+    parts.push(
+      `${args.noticeGiven} resident${args.noticeGiven === 1 ? " has" : "s have"} given notice — campaigns should already be live.`,
+    );
+  }
+
+  if (args.leads28d > 0) {
+    const conv =
+      args.leads28d > 0
+        ? Math.round((args.tours28d / args.leads28d) * 100)
+        : 0;
+    parts.push(
+      `${args.leads28d} lead${args.leads28d === 1 ? "" : "s"} in the last 28 days converting at ${conv}% lead-to-tour.`,
+    );
+  } else {
+    parts.push(`No leads tracked in the last 28 days yet.`);
+  }
+
+  return parts.join(" ");
 }
 
 // ---------------------------------------------------------------------------
