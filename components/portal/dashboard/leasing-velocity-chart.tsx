@@ -1,10 +1,15 @@
 import * as React from "react";
 import type { WeeklyVelocityPoint } from "@/lib/dashboard/queries";
+import { CHART_SERIES_COLORS, CHART_NEUTRALS } from "@/lib/chart-palette";
 
 const SERIES = [
-  { key: "leads" as const, label: "Leads", color: "#2563EB" },
-  { key: "tours" as const, label: "Tours", color: "#10b981" },
-  { key: "applications" as const, label: "Applications", color: "#8b5cf6" },
+  { key: "leads" as const, label: "Leads", color: CHART_SERIES_COLORS[0] },
+  { key: "tours" as const, label: "Tours", color: CHART_SERIES_COLORS[1] },
+  {
+    key: "applications" as const,
+    label: "Applications",
+    color: CHART_SERIES_COLORS[2],
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -94,7 +99,7 @@ export function LeasingVelocityChart({
               y1={y}
               x2={W}
               y2={y}
-              stroke="#E3E3E3"
+              stroke={CHART_NEUTRALS.grid}
               strokeWidth="0.4"
               vectorEffect="non-scaling-stroke"
             />
@@ -135,7 +140,7 @@ export function LeasingVelocityChart({
           y1={chartH - paddingBottom}
           x2={W}
           y2={chartH - paddingBottom}
-          stroke="#CBD5E1"
+          stroke={CHART_NEUTRALS.reference}
           strokeWidth="0.5"
           vectorEffect="non-scaling-stroke"
         />
