@@ -199,83 +199,149 @@ export default async function PortalHome({
         totalUnits: true,
       },
     }),
-    getHotVisitors(scope.orgId),
-    getAdSpendKpi(scope.orgId),
-    getOrganicSessionsKpi(scope.orgId),
-    getLeadSourceBreakdown(scope.orgId),
-    getFunnel(scope.orgId),
-    getActivityFeed(scope.orgId, 10),
-    getIntegrationHealth(scope.orgId),
-    getFirstRunProgress(scope.orgId),
-    getOpenInsights(scope.orgId, { limit: 3 }),
-    getInsightCounts(scope.orgId),
-    getLeasingVelocityTrend(scope.orgId),
-    getRecentIdentifiedVisitors(scope.orgId, 6),
-    getReputationPulse(scope.orgId, 5),
-    getReputationSummary(scope.orgId),
-    getChatbotSummary(scope.orgId),
-    prisma.organization.findUnique({
-      where: { id: scope.orgId },
-      select: {
-        moduleChatbot: true,
-        modulePixel: true,
-        moduleSEO: true,
-        moduleGoogleAds: true,
-        moduleMetaAds: true,
-        moduleCreativeStudio: true,
-        moduleReferrals: true,
-        moduleWebsite: true,
-        bringYourOwnSite: true,
-      },
-    }),
-    // AppFolio mirror metrics
-    prisma.lease.aggregate({
-      where: { ...where, status: LeaseStatus.ACTIVE },
-      _sum: { monthlyRentCents: true },
-    }),
-    prisma.resident.count({
-      where: { ...where, status: ResidentStatus.ACTIVE },
-    }),
-    prisma.resident.count({
-      where: { ...where, status: ResidentStatus.NOTICE_GIVEN },
-    }),
-    prisma.lease.count({
-      where: {
-        ...where,
-        status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
-        endDate: {
-          gte: new Date(),
-          lte: new Date(Date.now() + 120 * DAY),
+    // Helper-function calls — each wrapped in .catch() so a single
+    // failure (missing AppFolio integration, schema migration not yet
+    // applied, AL API outage) renders an empty section instead of
+    // 500ing the whole dashboard. The previous behavior bounced
+    // operators to the amber 'Dashboard data could not be loaded'
+    // fallback when ANY one of these threw — meaning a single bad
+    // PropertyMention row could blank the entire portal home.
+    // Helper-function calls — each wrapped in .catch() with the
+    // helper's actual return-type shape so a single failure (missing
+    // integration, schema migration not yet applied, AL API outage)
+    // renders an empty section instead of 500ing the whole dashboard.
+    // Pre-fix the outer try/catch caught any failure and rendered the
+    // amber "Dashboard data could not be loaded" panel — meaning one
+    // broken PropertyMention or seo-snapshot query blanked the entire
+    // portal home for that operator.
+    getHotVisitors(scope.orgId).catch(() => ({
+      count: 0,
+      sparkline: new Array<number>(28).fill(0),
+    })),
+    getAdSpendKpi(scope.orgId).catch(() => ({
+      spendUsd: 0,
+      previousSpendUsd: 0,
+      deltaPct: null as number | null,
+      sparkline: new Array<number>(28).fill(0),
+    })),
+    getOrganicSessionsKpi(scope.orgId).catch(() => ({
+      sessions: 0,
+      previousSessions: 0,
+      deltaPct: null as number | null,
+      sparkline: new Array<number>(28).fill(0),
+    })),
+    getLeadSourceBreakdown(scope.orgId).catch(() => []),
+    getFunnel(scope.orgId).catch(
+      () => [] as Array<{ label: string; value: number }>,
+    ),
+    getActivityFeed(scope.orgId, 10).catch(() => []),
+    getIntegrationHealth(scope.orgId).catch(() => []),
+    getFirstRunProgress(scope.orgId).catch(() => ({
+      hasProperty: false,
+      pixelInstalled: false,
+      gscConnected: false,
+      marketingSiteCustomized: false,
+    })),
+    getOpenInsights(scope.orgId, { limit: 3 }).catch(() => []),
+    getInsightCounts(scope.orgId).catch(() => ({
+      total: 0,
+      critical: 0,
+      warning: 0,
+      info: 0,
+      open: 0,
+    })),
+    getLeasingVelocityTrend(scope.orgId).catch(() => []),
+    getRecentIdentifiedVisitors(scope.orgId, 6).catch(() => []),
+    getReputationPulse(scope.orgId, 5).catch(() => []),
+    getReputationSummary(scope.orgId).catch(() => ({
+      avgGoogleRating: null as number | null,
+      googleReviewCount: 0,
+      totalMentions: 0,
+      newLast30d: 0,
+      negativeCount: 0,
+      unreviewedCount: 0,
+    })),
+    getChatbotSummary(scope.orgId).catch(() => ({
+      conversations28d: 0,
+      leadsCaptured28d: 0,
+      captureRatePct: null as number | null,
+      prev28dConversations: 0,
+      deltaPct: null as number | null,
+    })),
+    prisma.organization
+      .findUnique({
+        where: { id: scope.orgId },
+        select: {
+          moduleChatbot: true,
+          modulePixel: true,
+          moduleSEO: true,
+          moduleGoogleAds: true,
+          moduleMetaAds: true,
+          moduleCreativeStudio: true,
+          moduleReferrals: true,
+          moduleWebsite: true,
+          bringYourOwnSite: true,
         },
-      },
-    }),
-    prisma.lease.count({
-      where: { ...where, isPastDue: true },
-    }),
-    prisma.lease.aggregate({
-      where: { ...where, isPastDue: true },
-      _sum: { currentBalanceCents: true },
-    }),
-    prisma.workOrder.count({
-      where: {
-        ...where,
-        status: {
-          in: [
-            WorkOrderStatus.NEW,
-            WorkOrderStatus.SCHEDULED,
-            WorkOrderStatus.IN_PROGRESS,
-            WorkOrderStatus.ON_HOLD,
-          ],
+      })
+      .catch(() => null),
+    // AppFolio mirror metrics — each defaults to a zero-shape on
+    // failure so the rent-roll / occupancy strip renders empty rather
+    // than crashing the dashboard.
+    prisma.lease
+      .aggregate({
+        where: { ...where, status: LeaseStatus.ACTIVE },
+        _sum: { monthlyRentCents: true },
+      })
+      .catch(() => ({ _sum: { monthlyRentCents: 0 } })),
+    prisma.resident
+      .count({ where: { ...where, status: ResidentStatus.ACTIVE } })
+      .catch(() => 0),
+    prisma.resident
+      .count({ where: { ...where, status: ResidentStatus.NOTICE_GIVEN } })
+      .catch(() => 0),
+    prisma.lease
+      .count({
+        where: {
+          ...where,
+          status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
+          endDate: {
+            gte: new Date(),
+            lte: new Date(Date.now() + 120 * DAY),
+          },
         },
-      },
-    }),
-    prisma.workOrder.count({
-      where: {
-        ...where,
-        priority: WorkOrderPriority.URGENT,
-        status: { not: WorkOrderStatus.COMPLETED },
-      },
-    }),
+      })
+      .catch(() => 0),
+    prisma.lease.count({ where: { ...where, isPastDue: true } }).catch(() => 0),
+    prisma.lease
+      .aggregate({
+        where: { ...where, isPastDue: true },
+        _sum: { currentBalanceCents: true },
+      })
+      .catch(() => ({ _sum: { currentBalanceCents: 0 } })),
+    prisma.workOrder
+      .count({
+        where: {
+          ...where,
+          status: {
+            in: [
+              WorkOrderStatus.NEW,
+              WorkOrderStatus.SCHEDULED,
+              WorkOrderStatus.IN_PROGRESS,
+              WorkOrderStatus.ON_HOLD,
+            ],
+          },
+        },
+      })
+      .catch(() => 0),
+    prisma.workOrder
+      .count({
+        where: {
+          ...where,
+          priority: WorkOrderPriority.URGENT,
+          status: { not: WorkOrderStatus.COMPLETED },
+        },
+      })
+      .catch(() => 0),
   ]);
 
   // 28d leads + active campaigns + sparkline per property.
@@ -342,6 +408,13 @@ export default async function PortalHome({
 
   const showFirstRun = leadsTotal === 0 && propertiesCount === 0;
 
+  // Wizard step actionHref routes — every URL is verified to exist as a
+  // real Next.js route under /app/portal/. Pre-fix the wizard linked to
+  // /portal/properties/new (404) and /portal/site (404), dead-ending the
+  // most common first-action a brand-new operator takes. /portal/properties
+  // renders the empty-state CTA + the PropertyFormDialog, so the dialog
+  // opens with one click after navigation. /portal/site-builder is the
+  // actual marketing-site editor surface.
   const wizardSteps = [
     {
       id: "property",
@@ -349,7 +422,7 @@ export default async function PortalHome({
       description:
         "Properties are the foundation — everything else maps to them.",
       actionLabel: "Add property",
-      actionHref: "/portal/properties/new",
+      actionHref: "/portal/properties",
       done: firstRun.hasProperty,
     },
     {
@@ -375,7 +448,7 @@ export default async function PortalHome({
       title: "Customize your marketing site",
       description: "Set your headline, hero image, and primary CTA link.",
       actionLabel: "Customize site",
-      actionHref: "/portal/site",
+      actionHref: "/portal/site-builder",
       done: firstRun.marketingSiteCustomized,
     },
   ];
