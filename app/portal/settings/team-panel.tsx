@@ -5,6 +5,7 @@ import { UserRole } from "@prisma/client";
 import {
   updateUserRoleAsClient,
   removeUserFromOrgAsClient,
+  updatePropertyAccessAsClient,
 } from "@/lib/actions/manage-team";
 
 type Member = {
@@ -15,7 +16,13 @@ type Member = {
   role: UserRole;
   clerkUserId: string;
   lastLoginAt: Date | null;
+  // Property-level access. Empty = unrestricted (org-wide). Non-empty
+  // = locked to those properties only. Sourced from UserPropertyAccess
+  // rows in /portal/settings page.tsx.
+  propertyIds: string[];
 };
+
+type Property = { id: string; name: string };
 
 const CLIENT_ROLES: Array<{ value: UserRole; label: string; hint: string }> = [
   { value: UserRole.CLIENT_OWNER, label: "Owner", hint: "Full access + billing" },
@@ -38,6 +45,7 @@ type InviteState =
 
 type Props = {
   members: Member[];
+  properties: Property[];
   orgId: string;
   canManage: boolean;
   viewerUserId: string;
@@ -46,6 +54,7 @@ type Props = {
 export function ClientTeamPanel(props: Props) {
   const [members, setMembers] = useState(props.members);
   const [inviteOpen, setInviteOpen] = useState(false);
+  const showPropertyControls = props.properties.length > 1;
 
   return (
     <div className="space-y-4">
@@ -69,6 +78,7 @@ export function ClientTeamPanel(props: Props) {
       {inviteOpen && props.canManage ? (
         <InviteForm
           orgId={props.orgId}
+          properties={props.properties}
           onSuccess={() => setInviteOpen(false)}
         />
       ) : null}
@@ -88,6 +98,8 @@ export function ClientTeamPanel(props: Props) {
             <li key={m.id}>
               <MemberRow
                 member={m}
+                properties={props.properties}
+                showPropertyControls={showPropertyControls}
                 canManage={props.canManage}
                 isSelf={m.id === props.viewerUserId}
                 onRemove={(id) =>
@@ -96,6 +108,13 @@ export function ClientTeamPanel(props: Props) {
                 onRoleChange={(id, role) =>
                   setMembers((prev) =>
                     prev.map((x) => (x.id === id ? { ...x, role } : x))
+                  )
+                }
+                onPropertyAccessChange={(id, propertyIds) =>
+                  setMembers((prev) =>
+                    prev.map((x) =>
+                      x.id === id ? { ...x, propertyIds } : x,
+                    ),
                   )
                 }
               />
@@ -109,20 +128,27 @@ export function ClientTeamPanel(props: Props) {
 
 function MemberRow({
   member,
+  properties,
+  showPropertyControls,
   canManage,
   isSelf,
   onRemove,
   onRoleChange,
+  onPropertyAccessChange,
 }: {
   member: Member;
+  properties: Property[];
+  showPropertyControls: boolean;
   canManage: boolean;
   isSelf: boolean;
   onRemove: (id: string) => void;
   onRoleChange: (id: string, role: UserRole) => void;
+  onPropertyAccessChange: (id: string, propertyIds: string[]) => void;
 }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [role, setRole] = useState<UserRole>(member.role);
+  const [accessOpen, setAccessOpen] = useState(false);
 
   const isPending = member.clerkUserId.startsWith("seed_pending_");
   const isAgency = AGENCY_ROLES.has(member.role);
@@ -209,6 +235,20 @@ function MemberRow({
           <option value={member.role}>{member.role.replace("_", " ").toLowerCase()}</option>
         ) : null}
       </select>
+      {!disableControls && showPropertyControls ? (
+        <button
+          type="button"
+          onClick={() => setAccessOpen((v) => !v)}
+          className="text-[11px] font-medium text-primary hover:underline underline-offset-2"
+        >
+          {member.propertyIds.length === 0
+            ? "All properties"
+            : member.propertyIds.length === 1
+              ? "1 property"
+              : `${member.propertyIds.length} properties`}
+          {" • edit"}
+        </button>
+      ) : null}
       {!disableControls ? (
         <button
           type="button"
@@ -219,21 +259,167 @@ function MemberRow({
           {pending ? "…" : "Remove"}
         </button>
       ) : null}
+      {accessOpen && !disableControls && showPropertyControls ? (
+        <div className="basis-full">
+          <PropertyAccessEditor
+            userId={member.id}
+            email={member.email}
+            properties={properties}
+            initialPropertyIds={member.propertyIds}
+            onClose={() => setAccessOpen(false)}
+            onSaved={(ids) => {
+              onPropertyAccessChange(member.id, ids);
+              setAccessOpen(false);
+            }}
+          />
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PropertyAccessEditor — inline checkbox list for restricting a teammate
+// to a subset of properties. Empty selection => unrestricted (org-wide
+// access). The save action is the canonical "replace the whole list"
+// shape of updatePropertyAccessAsClient.
+// ---------------------------------------------------------------------------
+function PropertyAccessEditor({
+  userId,
+  email,
+  properties,
+  initialPropertyIds,
+  onClose,
+  onSaved,
+}: {
+  userId: string;
+  email: string;
+  properties: Property[];
+  initialPropertyIds: string[];
+  onClose: () => void;
+  onSaved: (ids: string[]) => void;
+}) {
+  const [selected, setSelected] = useState<Set<string>>(
+    new Set(initialPropertyIds),
+  );
+  const [pending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
+
+  function toggle(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function save() {
+    setError(null);
+    const ids = [...selected];
+    startTransition(async () => {
+      const res = await updatePropertyAccessAsClient({
+        userId,
+        propertyIds: ids,
+      });
+      if (res.ok) {
+        onSaved(ids);
+      } else {
+        setError(res.error);
+      }
+    });
+  }
+
+  return (
+    <div className="mt-3 rounded-md border border-border bg-muted/20 p-3">
+      <div className="flex items-baseline justify-between gap-2 mb-2">
+        <p className="text-xs font-medium text-foreground">
+          Property access — {email}
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="text-[11px] text-muted-foreground hover:text-foreground"
+        >
+          Cancel
+        </button>
+      </div>
+      <p className="text-[11px] text-muted-foreground mb-2">
+        Leave nothing checked to give org-wide access. Otherwise this user
+        will only see data for the properties you tick.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 max-h-48 overflow-y-auto">
+        {properties.map((p) => {
+          const checked = selected.has(p.id);
+          return (
+            <label
+              key={p.id}
+              className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/40 px-2 py-1 rounded"
+            >
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => toggle(p.id)}
+                className="h-3.5 w-3.5 accent-primary"
+              />
+              <span className="truncate">{p.name}</span>
+            </label>
+          );
+        })}
+      </div>
+      {error ? (
+        <div className="mt-2 text-[11px] text-destructive">{error}</div>
+      ) : null}
+      <div className="mt-2 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={save}
+          disabled={pending}
+          className="rounded-md bg-primary text-primary-foreground px-3 py-1 text-[11px] font-semibold disabled:opacity-60"
+        >
+          {pending ? "Saving…" : "Save"}
+        </button>
+        {selected.size > 0 ? (
+          <button
+            type="button"
+            onClick={() => setSelected(new Set())}
+            disabled={pending}
+            className="text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            Clear (give org-wide access)
+          </button>
+        ) : null}
+        <span className="ml-auto text-[11px] text-muted-foreground">
+          {selected.size === 0
+            ? "Org-wide"
+            : `${selected.size} of ${properties.length} selected`}
+        </span>
+      </div>
     </div>
   );
 }
 
 function InviteForm({
   orgId,
+  properties,
   onSuccess,
 }: {
   orgId: string;
+  properties: Property[];
   onSuccess: () => void;
 }) {
   const [email, setEmail] = useState("");
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>(UserRole.CLIENT_ADMIN);
+  // When `null` the invitee gets org-wide access (current default).
+  // When a Set, they get exactly those properties only — used for the
+  // Telegraph Commons team scenario where the org has 70 properties
+  // but the new teammate should only see one.
+  const [restrictedPropertyIds, setRestrictedPropertyIds] = useState<
+    Set<string> | null
+  >(null);
   const [state, setState] = useState<InviteState>({ kind: "idle" });
+  const showPropertyControls = properties.length > 1;
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -247,6 +433,12 @@ function InviteForm({
           name: name || undefined,
           role,
           organizationId: orgId,
+          // Only send propertyIds when the operator explicitly opted
+          // into restriction. Omitting the key keeps legacy behavior
+          // (org-wide access) so single-property orgs aren't affected.
+          ...(restrictedPropertyIds && restrictedPropertyIds.size > 0
+            ? { propertyIds: [...restrictedPropertyIds] }
+            : {}),
         }),
       });
       const body = await res.json().catch(() => ({}));
@@ -336,6 +528,63 @@ function InviteForm({
           ))}
         </select>
       </label>
+
+      {/* Property scope. Optional and progressive: by default the
+          invitee gets org-wide access (current behavior). Operator
+          checks "Limit to specific properties" to reveal the
+          checklist — important so we don't intimidate single-property
+          orgs with a feature they don't need. */}
+      {showPropertyControls ? (
+        <div className="rounded-md border border-border bg-background px-3 py-2.5">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <input
+              type="checkbox"
+              checked={restrictedPropertyIds !== null}
+              onChange={(e) =>
+                setRestrictedPropertyIds(e.target.checked ? new Set() : null)
+              }
+              className="h-3.5 w-3.5 accent-primary"
+            />
+            <span className="font-medium">
+              Limit access to specific properties
+            </span>
+          </label>
+          {restrictedPropertyIds !== null ? (
+            <div className="mt-2 pl-5 grid grid-cols-1 sm:grid-cols-2 gap-1 max-h-40 overflow-y-auto">
+              {properties.map((p) => {
+                const checked = restrictedPropertyIds.has(p.id);
+                return (
+                  <label
+                    key={p.id}
+                    className="flex items-center gap-2 text-xs cursor-pointer hover:bg-muted/40 px-2 py-1 rounded"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() =>
+                        setRestrictedPropertyIds((prev) => {
+                          if (!prev) return prev;
+                          const next = new Set(prev);
+                          if (next.has(p.id)) next.delete(p.id);
+                          else next.add(p.id);
+                          return next;
+                        })
+                      }
+                      className="h-3.5 w-3.5 accent-primary"
+                    />
+                    <span className="truncate">{p.name}</span>
+                  </label>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="mt-1 pl-5 text-[11px] text-muted-foreground">
+              Default: org-wide access. They&apos;ll see every property.
+            </p>
+          )}
+        </div>
+      ) : null}
+
       <div className="flex items-center gap-3 flex-wrap">
         <button
           type="submit"

@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {
   const scope = await requireScope();
-  const [org, users, viewer, apiKeyCount, integrationsActive] =
+  const [org, users, viewer, apiKeyCount, integrationsActive, properties] =
     await Promise.all([
       prisma.organization.findUnique({ where: { id: scope.orgId } }),
       prisma.user.findMany({
@@ -34,6 +34,11 @@ export default async function SettingsPage() {
           role: true,
           clerkUserId: true,
           lastLoginAt: true,
+          // Property-level access grants. Empty array = unrestricted
+          // org-wide access (legacy default for every existing user).
+          propertyAccess: {
+            select: { propertyId: true },
+          },
         },
       }),
       prisma.user.findUnique({
@@ -44,6 +49,15 @@ export default async function SettingsPage() {
         where: { orgId: scope.orgId, revokedAt: null },
       }),
       countActiveIntegrations(scope.orgId),
+      // Property list for the per-user property-access editor in the
+      // team panel. Always the full org list (admins see/edit access
+      // for everyone — they're not subject to UserPropertyAccess
+      // themselves at this org-management layer).
+      prisma.property.findMany({
+        where: { orgId: scope.orgId },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
     ]);
 
   if (!org) return null;
@@ -180,7 +194,11 @@ export default async function SettingsPage() {
           </div>
         </header>
         <ClientTeamPanel
-          members={users}
+          members={users.map((u) => ({
+            ...u,
+            propertyIds: u.propertyAccess.map((a) => a.propertyId),
+          }))}
+          properties={properties}
           orgId={org.id}
           canManage={canManage}
           viewerUserId={viewer?.id ?? ""}
