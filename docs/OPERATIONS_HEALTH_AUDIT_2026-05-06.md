@@ -209,3 +209,43 @@ Every empty catch I inspected this session is either: a URL validator (intention
 - Multi-property scoping: ✅ shipped end-to-end (schema + reads + writes + UI)
 
 Total time investment: ~6 hours of focused work, all committed and pushed.
+
+---
+
+## 8. Addendum — security hardening pass (post-audit)
+
+Two additional commits shipped after the main audit window covering vulnerabilities found while doing a final security sweep:
+
+### 8.1 Cross-tenant header spoofing — HIGH severity (`d7eaef2`)
+
+**What was wrong.** `readTenantHeaders()` and `lib/tenancy/tenant-context.ts` trusted whatever the request supplied for `x-tenant-org-id`, `x-tenant-slug`, and `x-tenant-hostname`. The middleware only set those headers on the hostname-rewrite branch (when serving a tenant marketing site), but every other code path passed through `NextResponse.next()` without sanitizing — meaning a request like:
+
+```
+curl -H "x-tenant-org-id: <victim-org>" leasestack.co/api/tenant/listings
+```
+
+would return the victim's listings because the route handler read what the request sent.
+
+**What shipped.** In `middleware.ts`, every code path now builds a `sanitizedReqHeaders` baseline that strips all three `x-tenant-*` headers before forwarding the request. The legitimate hostname-rewrite branch then re-sets them on top of the clean baseline. A new `passThrough()` helper enforces this on the `/portal` and `/admin` gates, and the public-API short circuit forwards sanitized headers too.
+
+**Telegraph impact.** None. Telegraph's tenant rendering goes through the rewrite branch which still sets the headers from the resolved hostname.
+
+### 8.2 OAuth open-redirect — MEDIUM severity (`9d6c25e`)
+
+**What was wrong.** `lib/integrations/oauth-handler.ts` lifted `returnTo` out of the start request's query string, signed it into the OAuth state token, and used it verbatim on the post-callback redirect. An attacker could craft `https://leasestack.co/api/integrations/google-ads/start?returnTo=https://attacker.com/fake` and after OAuth completed the user would be redirected to the attacker's domain — a classic phishing handoff.
+
+**What shipped.** Two-layer validation:
+1. **Start handler:** `returnTo` must start with `/portal/` and not start with `//` (defeats protocol-relative URL trick `//attacker.com`); otherwise it collapses to `/portal/settings/integrations`.
+2. **Callback handler:** re-validates the same constraint defensively before issuing the redirect, so a future bug in the start handler that lets a non-`/portal/` value get signed still cannot exit to an external domain.
+
+### 8.3 Final state after addendum
+
+- TypeScript: ✅ Zero errors confirmed via `tsc --noEmit`
+- Build: clean
+- Working tree: clean, all commits on `main`
+- Total commits this session: **10** (8 main + 2 security)
+- Total files touched: **~40**
+- Severity-classed fixes: **1 HIGH, 1 MEDIUM, plus reliability + correctness**
+
+No outstanding launch blockers identified.
+
