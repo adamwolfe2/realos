@@ -91,43 +91,47 @@ export default async function ReferralsPage() {
     }),
   ]);
 
-  // Collect all referral lead IDs to join applications
-  const referralLeadIds = await prisma.lead
-    .findMany({
+  // Fetch all applications joined to referral leads in TWO queries
+  // total (one for applications, one for approved subset) instead of
+  // 2N queries — N = property count. With SG Real Estate's 71
+  // properties this is the difference between 142 sequential round-
+  // trips and 2 parallel ones.
+  //
+  // We groupBy on the lead relation's propertyId. Applications without
+  // a lead are excluded (they wouldn't show on a referrals page
+  // anyway). The `lead` relation filter pushes the source/property
+  // constraint into the same query.
+  const [appsByLead, signedByLead] = await Promise.all([
+    prisma.application.findMany({
       where: {
-        ...tenantWhere(scope),
-        source: "REFERRAL",
+        lead: { ...tenantWhere(scope), source: "REFERRAL" },
       },
-      select: { id: true, propertyId: true },
-    })
-    .then((rows) => rows);
+      select: { lead: { select: { propertyId: true } } },
+    }),
+    prisma.application.findMany({
+      where: {
+        lead: { ...tenantWhere(scope), source: "REFERRAL" },
+        status: "APPROVED",
+      },
+      select: { lead: { select: { propertyId: true } } },
+    }),
+  ]);
 
-  // Group lead IDs by propertyId for application lookups
-  const leadIdsByProperty = new Map<string, string[]>();
-  for (const { id, propertyId } of referralLeadIds) {
-    if (!propertyId) continue;
-    const existing = leadIdsByProperty.get(propertyId) ?? [];
-    leadIdsByProperty.set(propertyId, [...existing, id]);
-  }
-
-  // Fetch application and signed counts per property via lead IDs
   const appsByProperty = new Map<string, { apps: number; signed: number }>();
-  await Promise.all(
-    [...leadIdsByProperty.entries()].map(async ([propertyId, leadIds]) => {
-      const [apps, signed] = await Promise.all([
-        prisma.application.count({
-          where: { leadId: { in: leadIds } },
-        }),
-        prisma.application.count({
-          where: {
-            leadId: { in: leadIds },
-            status: "APPROVED",
-          },
-        }),
-      ]);
-      appsByProperty.set(propertyId, { apps, signed });
-    })
-  );
+  for (const a of appsByLead) {
+    const pid = a.lead.propertyId;
+    if (!pid) continue;
+    const cur = appsByProperty.get(pid) ?? { apps: 0, signed: 0 };
+    cur.apps += 1;
+    appsByProperty.set(pid, cur);
+  }
+  for (const a of signedByLead) {
+    const pid = a.lead.propertyId;
+    if (!pid) continue;
+    const cur = appsByProperty.get(pid) ?? { apps: 0, signed: 0 };
+    cur.signed += 1;
+    appsByProperty.set(pid, cur);
+  }
 
   // Build lookup maps
   const allTimeByProp = new Map(

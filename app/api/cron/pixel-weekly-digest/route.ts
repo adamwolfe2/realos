@@ -32,62 +32,83 @@ export async function GET(req: NextRequest) {
     errors: string[];
   }> = [];
 
+  // Per-tenant try/catch — if a single tenant's count queries throw or
+  // their digest send fails wholesale, we shouldn't silently drop
+  // every other tenant's digest. Errors land in the per-tenant result
+  // record so cron-run telemetry can surface them.
   for (const integration of integrations) {
-    const rangeLabel = "the last 7 days";
-    const [totalVisitors, identified, highIntent, convertedToLead] =
-      await Promise.all([
-        prisma.visitor.count({
-          where: {
-            orgId: integration.orgId,
-            lastSeenAt: { gte: sinceWeek },
-          },
-        }),
-        prisma.visitor.count({
-          where: {
-            orgId: integration.orgId,
-            lastSeenAt: { gte: sinceWeek },
-            status: {
-              in: [
-                VisitorIdentificationStatus.IDENTIFIED,
-                VisitorIdentificationStatus.ENRICHED,
-              ],
+    try {
+      const rangeLabel = "the last 7 days";
+      const [totalVisitors, identified, highIntent, convertedToLead] =
+        await Promise.all([
+          prisma.visitor.count({
+            where: {
+              orgId: integration.orgId,
+              lastSeenAt: { gte: sinceWeek },
             },
-          },
-        }),
-        prisma.visitor.count({
-          where: {
-            orgId: integration.orgId,
-            lastSeenAt: { gte: sinceWeek },
-            intentScore: { gte: 60 },
-          },
-        }),
-        prisma.visitor.count({
-          where: {
-            orgId: integration.orgId,
-            lastSeenAt: { gte: sinceWeek },
-            status: VisitorIdentificationStatus.MATCHED_TO_LEAD,
-          },
-        }),
-      ]);
+          }),
+          prisma.visitor.count({
+            where: {
+              orgId: integration.orgId,
+              lastSeenAt: { gte: sinceWeek },
+              status: {
+                in: [
+                  VisitorIdentificationStatus.IDENTIFIED,
+                  VisitorIdentificationStatus.ENRICHED,
+                ],
+              },
+            },
+          }),
+          prisma.visitor.count({
+            where: {
+              orgId: integration.orgId,
+              lastSeenAt: { gte: sinceWeek },
+              intentScore: { gte: 60 },
+            },
+          }),
+          prisma.visitor.count({
+            where: {
+              orgId: integration.orgId,
+              lastSeenAt: { gte: sinceWeek },
+              status: VisitorIdentificationStatus.MATCHED_TO_LEAD,
+            },
+          }),
+        ]);
 
-    const recipients = buildRecipientList(integration.weeklyDigestEmails, integration.org.primaryContactEmail);
-    const errors: string[] = [];
-    let sent = 0;
-    for (const to of recipients) {
-      const r = await sendVisitorWeeklyDigest({
-        to,
-        orgName: integration.org.name,
-        totalVisitors,
-        identified,
-        highIntent,
-        convertedToLead,
-        rangeLabel,
-        portalUrl: `${portalBase}/portal/visitors`,
+      const recipients = buildRecipientList(
+        integration.weeklyDigestEmails,
+        integration.org.primaryContactEmail,
+      );
+      const errors: string[] = [];
+      let sent = 0;
+      for (const to of recipients) {
+        try {
+          const r = await sendVisitorWeeklyDigest({
+            to,
+            orgName: integration.org.name,
+            totalVisitors,
+            identified,
+            highIntent,
+            convertedToLead,
+            rangeLabel,
+            portalUrl: `${portalBase}/portal/visitors`,
+          });
+          if (r.ok) sent++;
+          else if (r.error) errors.push(`${to}: ${r.error}`);
+        } catch (err) {
+          errors.push(
+            `${to}: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+      }
+      results.push({ orgId: integration.orgId, sent, errors });
+    } catch (err) {
+      results.push({
+        orgId: integration.orgId,
+        sent: 0,
+        errors: [err instanceof Error ? err.message : String(err)],
       });
-      if (r.ok) sent++;
-      else if (r.error) errors.push(`${to}: ${r.error}`);
     }
-    results.push({ orgId: integration.orgId, sent, errors });
   }
 
     const totalSent = results.reduce((sum, r) => sum + r.sent, 0);

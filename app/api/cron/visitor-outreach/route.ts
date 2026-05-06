@@ -49,23 +49,34 @@ export async function GET(req: NextRequest) {
   let sent = 0;
   const errors: string[] = [];
 
+  // Per-iteration try/catch so one bad email (Resend transient error,
+  // malformed address that slipped past validation, DB write failure)
+  // doesn't kill the whole batch and leave the remaining 199 visitors
+  // without outreach. Each failure logs to the errors array which is
+  // surfaced in the cron-run telemetry.
   for (const v of candidates) {
-    if (!v.email) continue;
-    if (!v.org.moduleEmail && !v.org.moduleOutboundEmail) continue;
-    const result = await sendVisitorOutreachEmail({
-      to: v.email,
-      firstName: v.firstName,
-      orgName: v.org.name,
-      applyUrl: v.org.tenantSiteConfig?.primaryCtaUrl ?? null,
-    });
-    if (result.ok) {
-      await prisma.visitor.update({
-        where: { id: v.id },
-        data: { outreachSent: true, outreachSentAt: new Date() },
+    try {
+      if (!v.email) continue;
+      if (!v.org.moduleEmail && !v.org.moduleOutboundEmail) continue;
+      const result = await sendVisitorOutreachEmail({
+        to: v.email,
+        firstName: v.firstName,
+        orgName: v.org.name,
+        applyUrl: v.org.tenantSiteConfig?.primaryCtaUrl ?? null,
       });
-      sent++;
-    } else if (result.error) {
-      errors.push(`${v.id}: ${result.error}`);
+      if (result.ok) {
+        await prisma.visitor.update({
+          where: { id: v.id },
+          data: { outreachSent: true, outreachSentAt: new Date() },
+        });
+        sent++;
+      } else if (result.error) {
+        errors.push(`${v.id}: ${result.error}`);
+      }
+    } catch (err) {
+      errors.push(
+        `${v.id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 

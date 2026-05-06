@@ -36,46 +36,61 @@ export async function GET(req: NextRequest) {
     take: 1000,
   });
 
+  // Per-iteration try/catch — a single failed lead update (lead deleted
+  // mid-batch, transient connection drop) shouldn't drop the rest of
+  // the batch. The cron runs daily; lost individual updates self-heal
+  // on the next run.
   let updated = 0;
+  const errors: string[] = [];
   for (const lead of leads) {
-    let score = 0;
+    try {
+      let score = 0;
 
-    // Recency of activity
-    const daysSinceActivity = Math.floor(
-      (now - lead.lastActivityAt.getTime()) / DAY
-    );
-    if (daysSinceActivity <= 7) score += 20;
-    else if (daysSinceActivity <= 14) score += 10;
+      // Recency of activity
+      const daysSinceActivity = Math.floor(
+        (now - lead.lastActivityAt.getTime()) / DAY
+      );
+      if (daysSinceActivity <= 7) score += 20;
+      else if (daysSinceActivity <= 14) score += 10;
 
-    // Source
-    if (lead.source === LeadSource.CHATBOT) score += 30;
-    else if (lead.source === LeadSource.FORM) score += 20;
-    else if (lead.source === LeadSource.PIXEL_OUTREACH) score += 15;
-    else if (lead.source === LeadSource.REFERRAL) score += 25;
+      // Source
+      if (lead.source === LeadSource.CHATBOT) score += 30;
+      else if (lead.source === LeadSource.FORM) score += 20;
+      else if (lead.source === LeadSource.PIXEL_OUTREACH) score += 15;
+      else if (lead.source === LeadSource.REFERRAL) score += 25;
 
-    // Completeness
-    const fields = [lead.email, lead.phone, lead.firstName, lead.lastName].filter(
-      Boolean
-    ).length;
-    if (fields >= 4) score += 10;
-    else if (fields >= 2) score += 5;
+      // Completeness
+      const fields = [lead.email, lead.phone, lead.firstName, lead.lastName].filter(
+        Boolean
+      ).length;
+      if (fields >= 4) score += 10;
+      else if (fields >= 2) score += 5;
 
-    // Engagement
-    if ((lead.emailsSent ?? 0) >= 1) score += 10;
+      // Engagement
+      if ((lead.emailsSent ?? 0) >= 1) score += 10;
 
-    score = Math.max(0, Math.min(100, score));
+      score = Math.max(0, Math.min(100, score));
 
-    const intent = score >= 70 ? "hot" : score >= 40 ? "warm" : "cold";
+      const intent = score >= 70 ? "hot" : score >= 40 ? "warm" : "cold";
 
-    await prisma.lead.update({
-      where: { id: lead.id },
-      data: { score, intent },
-    });
-    updated++;
+      await prisma.lead.update({
+        where: { id: lead.id },
+        data: { score, intent },
+      });
+      updated++;
+    } catch (err) {
+      errors.push(
+        `${lead.id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
     return {
-      result: NextResponse.json({ scanned: leads.length, updated }),
+      result: NextResponse.json({
+        scanned: leads.length,
+        updated,
+        errors: errors.length ? errors : undefined,
+      }),
       recordsProcessed: updated,
     };
   });

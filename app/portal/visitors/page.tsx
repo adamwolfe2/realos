@@ -182,6 +182,13 @@ export default async function VisitorsPage({
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
+      // No explicit select here — extractIdentity (in
+      // lib/visitors/enrichment.ts) reads enrichedData + pagesViewed
+      // among others, so a partial shape would break it. The
+      // optimization opportunity is real (those JSON columns can be
+      // 10-50KB per row) but needs to flow through extractIdentity's
+      // signature first. Tracked as a follow-up; not safe to ship
+      // overnight without the corresponding refactor.
     }),
     prisma.visitor.count({ where }),
     // The visitor feed page header surfaces the "where is the pixel

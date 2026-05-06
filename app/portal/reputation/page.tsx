@@ -103,33 +103,34 @@ export default async function PortfolioReputationPage() {
   let metrics: PortfolioReputationMetrics = EMPTY_METRICS;
   let feed: PortfolioReputationFeedItem[] = [];
   let loadError = false;
+  // Track whether each sub-load failed so we can surface a real
+  // "data load issue" banner. Previously the .catch wrappers swallowed
+  // errors silently and the user saw the same "0 mentions" empty
+  // state whether the data was genuinely empty or the loader crashed.
+  let metricsFailed = false;
+  let feedFailed = false;
 
   try {
     [metrics, feed] = await Promise.all([
       loadPortfolioReputationMetrics(scope.orgId).catch((err) => {
         console.error("[reputation] metrics load failed:", err);
+        metricsFailed = true;
         return EMPTY_METRICS;
       }),
       loadPortfolioReputationFeed(scope.orgId, 30).catch((err) => {
         console.error("[reputation] feed load failed:", err);
+        feedFailed = true;
         return [] as PortfolioReputationFeedItem[];
       }),
     ]);
-    // If both came back empty AND something logged above, we want the banner.
-    // The .catch wrappers don't propagate, so detect emptiness as a proxy.
-    if (
-      metrics.totalMentions === 0 &&
-      metrics.propertyHealth.length === 0 &&
-      feed.length === 0
-    ) {
-      // Genuine empty state OR a swallowed error — either way render the
-      // honest empty UI below. loadError stays false for a real "no data
-      // yet" tenant; a true crash gets the banner via the catch outside.
-    }
   } catch (err) {
     console.error("[reputation] Failed to load portfolio metrics:", err);
     loadError = true;
   }
+  // Promote partial failures into the visible loadError flag so the
+  // page header shows the data-issue banner instead of pretending
+  // everything's fine.
+  if (metricsFailed || feedFailed) loadError = true;
 
   const sentimentByKey = new Map(
     (metrics.sentimentBreakdown ?? []).map((s) => [s.sentiment, s.count])

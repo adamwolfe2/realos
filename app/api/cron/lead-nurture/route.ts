@@ -101,42 +101,55 @@ export async function GET(req: NextRequest) {
     let fired = 0;
     let errors = 0;
 
+    // Per-iteration try/catch — Resend transient failures, malformed
+    // template inputs, or DB write errors on a single lead must not
+    // halt the rest of the cadence batch. The error count is surfaced
+    // in the results for cron-run telemetry.
     for (const lead of candidates) {
-      if (!lead.email) continue;
-      if (!lead.org.moduleEmail) continue;
+      try {
+        if (!lead.email) continue;
+        if (!lead.org.moduleEmail) continue;
 
-      const host =
-        lead.org.domains[0]?.hostname ?? `${lead.org.slug}.${platformDomain}`;
-      const applyUrl = `https://${host}/apply`;
-      const replyTo =
-        lead.org.primaryContactEmail ??
-        process.env.RESEND_FROM_EMAIL ??
-        "hello@leasestack.co";
+        const host =
+          lead.org.domains[0]?.hostname ??
+          `${lead.org.slug}.${platformDomain}`;
+        const applyUrl = `https://${host}/apply`;
+        const replyTo =
+          lead.org.primaryContactEmail ??
+          process.env.RESEND_FROM_EMAIL ??
+          "hello@leasestack.co";
 
-      const result = await sendLeadCadenceEmail(stage.key, {
-        to: lead.email,
-        firstName: lead.firstName,
-        orgName: lead.org.name,
-        propertyName: lead.property?.name ?? null,
-        applyUrl,
-        replyTo,
-        leadId: lead.id,
-      });
-
-      if (result.ok) {
-        await prisma.lead.update({
-          where: { id: lead.id },
-          data: {
-            cadenceStage: stage.sentStage,
-            lastEmailSentAt: new Date(),
-            emailsSent: { increment: 1 },
-          },
+        const result = await sendLeadCadenceEmail(stage.key, {
+          to: lead.email,
+          firstName: lead.firstName,
+          orgName: lead.org.name,
+          propertyName: lead.property?.name ?? null,
+          applyUrl,
+          replyTo,
+          leadId: lead.id,
         });
-        fired++;
-      } else {
+
+        if (result.ok) {
+          await prisma.lead.update({
+            where: { id: lead.id },
+            data: {
+              cadenceStage: stage.sentStage,
+              lastEmailSentAt: new Date(),
+              emailsSent: { increment: 1 },
+            },
+          });
+          fired++;
+        } else {
+          errors++;
+          console.warn(
+            `[cron/lead-nurture] failed to send ${stage.key} to ${lead.id}: ${result.error}`,
+          );
+        }
+      } catch (err) {
         errors++;
         console.warn(
-          `[cron/lead-nurture] failed to send ${stage.key} to ${lead.id}: ${result.error}`
+          `[cron/lead-nurture] iteration error on ${lead.id}:`,
+          err,
         );
       }
     }

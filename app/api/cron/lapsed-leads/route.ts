@@ -30,28 +30,43 @@ export async function GET(req: NextRequest) {
       take: 500,
     });
 
+    // Per-iteration try/catch — a single transaction failure (orgId no
+    // longer exists, FK violation on a renamed entity) shouldn't tank
+    // the entire daily run. Each failure logs to the errors array so
+    // cron-run telemetry surfaces it without the whole job 500ing.
     let moved = 0;
+    const errors: string[] = [];
     for (const lead of candidates) {
-      await prisma.$transaction([
-        prisma.lead.update({
-          where: { id: lead.id },
-          data: { status: LeadStatus.LOST, lastActivityAt: new Date() },
-        }),
-        prisma.auditEvent.create({
-          data: {
-            orgId: lead.orgId,
-            action: AuditAction.UPDATE,
-            entityType: "Lead",
-            entityId: lead.id,
-            description: `Auto-closed stale lead, ${lead.status} → LOST (14d inactive)`,
-          },
-        }),
-      ]);
-      moved++;
+      try {
+        await prisma.$transaction([
+          prisma.lead.update({
+            where: { id: lead.id },
+            data: { status: LeadStatus.LOST, lastActivityAt: new Date() },
+          }),
+          prisma.auditEvent.create({
+            data: {
+              orgId: lead.orgId,
+              action: AuditAction.UPDATE,
+              entityType: "Lead",
+              entityId: lead.id,
+              description: `Auto-closed stale lead, ${lead.status} → LOST (14d inactive)`,
+            },
+          }),
+        ]);
+        moved++;
+      } catch (err) {
+        errors.push(
+          `${lead.id}: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     }
 
     return {
-      result: NextResponse.json({ scanned: candidates.length, moved }),
+      result: NextResponse.json({
+        scanned: candidates.length,
+        moved,
+        errors: errors.length ? errors : undefined,
+      }),
       recordsProcessed: moved,
     };
   });
