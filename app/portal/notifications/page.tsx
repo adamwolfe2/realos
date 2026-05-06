@@ -78,7 +78,33 @@ export default function NotificationsPage() {
         );
       });
     }
-    if (item.href) router.push(item.href);
+    // Notification hrefs come from server-generated rows so they
+    // SHOULD be safe, but validate before navigating: reject anything
+    // that doesn't start with `/portal/`, `/admin/`, or our own
+    // domain. Prevents a stray malformed href from kicking the user
+    // out to an unrelated page or a phishing target if a row was
+    // ever crafted by an attacker.
+    if (item.href && isSafeHref(item.href)) {
+      router.push(item.href);
+    } else if (item.href) {
+      console.warn("[notifications] refusing to navigate to unsafe href", {
+        href: item.href,
+        notificationId: item.id,
+      });
+    }
+  }
+
+  function isSafeHref(href: string): boolean {
+    // Allow same-app paths only.
+    if (href.startsWith("/portal/") || href.startsWith("/admin/")) return true;
+    // Allow absolute leasestack.co URLs (server-generated tenant
+    // marketing-site links land here for cross-tenant report shares).
+    try {
+      const url = new URL(href);
+      return url.hostname.endsWith(".leasestack.co") || url.hostname === "leasestack.co";
+    } catch {
+      return false;
+    }
   }
 
   const FILTERS: { value: Filter; label: string }[] = [

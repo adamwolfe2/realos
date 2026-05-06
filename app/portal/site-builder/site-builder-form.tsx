@@ -171,14 +171,40 @@ export function SiteBuilderForm({
         exitIntentOfferCode: toNullIfEmpty(state.exitIntentOfferCode),
       };
 
-      const res = await fetch("/api/tenant/site-config", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+      let res: Response;
+      try {
+        res = await fetch("/api/tenant/site-config", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } catch {
+        // Network-level failure — distinct from server-returned 4xx/5xx
+        // because the user's action is different (check connectivity vs
+        // fix input).
+        setError(
+          "Couldn't reach the server. Check your connection and try again.",
+        );
+        return;
+      }
       if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        setError(body.error ?? "Failed to save");
+        const body = (await res.json().catch(() => ({}))) as {
+          error?: string;
+        };
+        // Be specific about the kind of failure. Generic "Failed to save"
+        // sent operators chasing input errors when the real cause was an
+        // auth lapse or a server fault.
+        const fallbackByStatus =
+          res.status === 401
+            ? "Your session expired. Reload the page to sign in again."
+            : res.status === 403
+              ? "You don't have permission to change site settings."
+              : res.status === 422 || res.status === 400
+                ? "One or more fields are invalid. Please review and try again."
+                : res.status >= 500
+                  ? `The server returned an error (${res.status}). Please try again — if the issue persists, contact support.`
+                  : `Save failed (${res.status}).`;
+        setError(body.error ?? fallbackByStatus);
         return;
       }
       setSavedAt(new Date());
