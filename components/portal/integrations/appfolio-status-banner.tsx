@@ -122,12 +122,29 @@ export function AppFolioStatusBanner({
   }
 
   if (status.state === "failed") {
+    // Honest disclosure of the safe-fallback behavior: when a sync
+    // fails we keep rendering whatever was last persisted to the DB
+    // rather than blanking the page. Operators used to see "sync
+    // failed" next to live-looking lease data and assume the numbers
+    // were current — the line below makes the staleness explicit.
+    //
+    // We don't have a dedicated `lastSuccessfulSyncAt` column today;
+    // `lastSyncAt` reflects the most recent attempt regardless of
+    // outcome. We surface it here as "data was last refreshed before
+    // this failure" — accurate as long as failures don't wipe rows
+    // (which they don't; the sync writer is upsert-only).
+    const fallbackPhrase = status.lastSyncAt
+      ? `Showing the snapshot from before this failure (last refresh ${formatDistanceToNow(
+          status.lastSyncAt,
+          { addSuffix: true },
+        )}).`
+      : `No prior sync ever succeeded — ${resourceLabel} are not yet available.`;
     return (
       <Banner
         tone="error"
         icon={<AlertTriangle className="h-4 w-4" />}
         title="Most recent AppFolio sync failed."
-        body={truncate(status.lastError ?? "Unknown error.", 240)}
+        body={`${truncate(status.lastError ?? "Unknown error.", 200)} ${fallbackPhrase}`}
         meta={
           status.lastSyncAt
             ? `Last attempt ${formatDistanceToNow(status.lastSyncAt, {
