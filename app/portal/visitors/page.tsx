@@ -1,20 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   parsePropertyFilter,
   propertyWhereFragment,
+  visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { Prisma, VisitorIdentificationStatus } from "@prisma/client";
-import { ArrowUpRight, Flame, MapPin, Zap } from "lucide-react";
-import {
-  avatarPaletteFor,
-  extractIdentity,
-} from "@/lib/visitors/enrichment";
+import { extractIdentity } from "@/lib/visitors/enrichment";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
 import { ExportButton } from "@/components/ui/export-button";
@@ -22,7 +18,10 @@ import { StatCard } from "@/components/admin/stat-card";
 import { EngageComposer } from "./engage-composer";
 import { AutoRefresh } from "@/components/portal/sync/auto-refresh";
 import { PixelSyncButton } from "@/components/portal/sync/pixel-sync-button";
-import { DataTable, EntityCell } from "@/components/portal/ui/data-table";
+import {
+  VisitorTable,
+  type VisitorRow,
+} from "@/components/portal/visitors/visitor-table";
 
 export const metadata: Metadata = { title: "Visitor feed" };
 export const dynamic = "force-dynamic";
@@ -130,11 +129,12 @@ export default async function VisitorsPage({
   const tenant = tenantWhere<{ orgId?: string }>(scope);
   const propertyIds = parsePropertyFilter(params);
 
-  const properties = await prisma.property.findMany({
+  const allProperties = await prisma.property.findMany({
     where: { orgId: scope.orgId },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
+  const properties = visibleProperties(scope, allProperties);
 
   const windowDef = WINDOWS.find((w) => w.key === windowKey)!;
   const since = windowDef.hours
@@ -143,7 +143,7 @@ export default async function VisitorsPage({
 
   const baseWhere: Prisma.VisitorWhereInput = {
     ...tenant,
-    ...propertyWhereFragment(propertyIds),
+    ...propertyWhereFragment(scope, propertyIds),
     ...(since ? { lastSeenAt: { gte: since } } : {}),
   };
 
@@ -393,16 +393,10 @@ export default async function VisitorsPage({
         />
       </section>
 
-      {/* Pixel staleness warning — surfaces silent pixel failures so the
-          operator doesn't sit on an empty feed thinking it's "live". Hidden
-          when pixel is healthy. */}
-      {hasPixel && pixelStale ? (
-        <PixelStalenessBanner
-          lastEventAt={pixelLastEventAt}
-          dormant={pixelDormant}
-          domain={integration?.installedOnDomain ?? null}
-        />
-      ) : null}
+      {/* Pixel staleness banner removed per UX feedback — the new
+          PixelSyncButton in the page header surfaces last-event freshness
+          and offers a one-click resync, so the redundant warning panel
+          was just noise. */}
 
       {/* Live chats — operator can engage active chatbot conversations */}
       {liveChats.length > 0 ? (
@@ -421,7 +415,24 @@ export default async function VisitorsPage({
         </div>
       ) : (
         <>
-          <VisitorFeed visitors={visitors} chatMap={visitorChatMap} />
+          <VisitorTable
+            rows={visitors.map<VisitorRow>((v) => {
+              const id = extractIdentity(v);
+              return {
+                id: v.id,
+                firstName: id.firstName,
+                lastName: id.lastName,
+                displayName: id.displayName,
+                email: v.email ?? null,
+                location: id.location,
+                lastPage: id.lastPagePath,
+                lastPageUrl: id.lastPageUrl,
+                sessions: v.sessionCount,
+                lastSeenAtIso: v.lastSeenAt.toISOString(),
+                liveChat: visitorChatMap.has(v.id),
+              };
+            })}
+          />
           <Pager
             page={page}
             totalInView={totalInView}
@@ -603,9 +614,9 @@ function TabGroup({
             href={item.href || "?"}
             scroll={false}
             className={cn(
-              "text-[11px] px-2 py-1 rounded transition-colors whitespace-nowrap",
+              "text-[11px] px-2.5 py-1 rounded transition-colors whitespace-nowrap font-medium",
               item.active
-                ? "bg-foreground text-background"
+                ? "bg-blue-600 text-white shadow-sm"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             )}
           >
@@ -618,318 +629,12 @@ function TabGroup({
 }
 
 // ---------------------------------------------------------------------------
-// Feed
-// ---------------------------------------------------------------------------
-
-function VisitorFeed({
-  visitors,
-  chatMap,
-}: {
-  visitors: Array<
-    Awaited<ReturnType<typeof prisma.visitor.findMany>>[number]
-  >;
-  chatMap?: Map<string, { sessionId: string; lastMessageAt: Date }>;
-}) {
-  return (
-    <DataTable
-      rows={visitors}
-      getRowHref={(v) => `/portal/visitors/${v.id}`}
-      getRowKey={(v) => v.id}
-      columns={[
-        {
-          key: "name",
-          header: "Visitor",
-          accessor: (v) => {
-            const id = extractIdentity(v);
-            const subtitle = id.isAnonymous
-              ? v.referrer
-                ? `Anonymous · via ${hostFromUrl(v.referrer)}`
-                : "Anonymous visitor"
-              : [id.jobTitle, id.companyName ? `at ${id.companyName}` : null]
-                  .filter(Boolean)
-                  .join(" ") || v.email || "";
-            return (
-              <EntityCell
-                name={id.displayName ?? "Anonymous"}
-                seed={v.id}
-                secondary={subtitle}
-              />
-            );
-          },
-        },
-        {
-          key: "email",
-          header: "Email",
-          hideOnMobile: true,
-          accessor: (v) =>
-            v.email ? (
-              <span className="text-[11px]">{v.email}</span>
-            ) : (
-              <span className="text-muted-foreground">—</span>
-            ),
-        },
-        {
-          key: "page",
-          header: "Last page",
-          hideOnMobile: true,
-          accessor: (v) => {
-            const id = extractIdentity(v);
-            return id.lastPagePath ? (
-              <span className="text-[11px] text-muted-foreground truncate inline-block max-w-[200px]">
-                {id.lastPagePath}
-              </span>
-            ) : (
-              <span className="text-muted-foreground">—</span>
-            );
-          },
-        },
-        {
-          key: "location",
-          header: "Location",
-          hideOnMobile: true,
-          accessor: (v) => {
-            const id = extractIdentity(v);
-            return id.location ? (
-              <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                <MapPin className="h-2.5 w-2.5 opacity-60" aria-hidden="true" />
-                {id.location}
-              </span>
-            ) : (
-              <span className="text-muted-foreground">—</span>
-            );
-          },
-        },
-        {
-          key: "sessions",
-          header: "Sessions",
-          align: "right",
-          accessor: (v) => v.sessionCount,
-        },
-        {
-          key: "seen",
-          header: "Last seen",
-          accessor: (v) => (
-            <span className="text-[11px] text-muted-foreground">
-              {formatDistanceToNow(v.lastSeenAt, { addSuffix: true })}
-            </span>
-          ),
-        },
-        {
-          key: "intent",
-          header: "Intent",
-          align: "right",
-          accessor: (v) => {
-            const tone =
-              v.intentScore >= 80
-                ? "text-primary"
-                : v.intentScore >= 60
-                  ? "text-primary/70"
-                  : "text-muted-foreground";
-            return (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1 font-semibold tabular-nums",
-                  tone,
-                )}
-              >
-                {v.intentScore >= 80 ? (
-                  <Flame className="h-3 w-3" aria-hidden="true" />
-                ) : v.intentScore >= 60 ? (
-                  <Zap className="h-3 w-3" aria-hidden="true" />
-                ) : null}
-                {v.intentScore}
-              </span>
-            );
-          },
-        },
-        {
-          key: "status",
-          header: "Status",
-          accessor: (v) => {
-            const status = v.status;
-            const cfg =
-              status === VisitorIdentificationStatus.MATCHED_TO_LEAD
-                ? { label: "Lead", dot: "bg-primary" }
-                : status === VisitorIdentificationStatus.IDENTIFIED ||
-                    status === VisitorIdentificationStatus.ENRICHED
-                  ? { label: "Identified", dot: "bg-primary/60" }
-                  : { label: "Anonymous", dot: "bg-muted-foreground/40" };
-            const liveChat = chatMap?.get(v.id);
-            return (
-              <span className="inline-flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 text-[11px]">
-                  <span
-                    aria-hidden="true"
-                    className={cn("h-1.5 w-1.5 rounded-full", cfg.dot)}
-                  />
-                  {cfg.label}
-                </span>
-                {liveChat ? (
-                  <span className="inline-flex items-center gap-1 text-[10px] text-primary">
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-                    Live
-                  </span>
-                ) : null}
-              </span>
-            );
-          },
-        },
-      ]}
-    />
-  );
-}
-
-function VisitorRow({
-  visitor,
-}: {
-  visitor: Awaited<
-    ReturnType<typeof prisma.visitor.findMany>
-  >[number];
-}) {
-  const identity = extractIdentity(visitor);
-  const seenAgo = formatDistanceToNow(visitor.lastSeenAt, { addSuffix: true });
-
-  const intentTone =
-    visitor.intentScore >= 80
-      ? "text-primary"
-      : visitor.intentScore >= 60
-      ? "text-primary/70"
-      : "text-muted-foreground";
-
-  const statusBadge = (() => {
-    switch (visitor.status) {
-      case VisitorIdentificationStatus.MATCHED_TO_LEAD:
-        return { label: "Lead", dot: "bg-primary", text: "text-primary" };
-      case VisitorIdentificationStatus.IDENTIFIED:
-      case VisitorIdentificationStatus.ENRICHED:
-        return { label: "Identified", dot: "bg-primary/60", text: "text-primary" };
-      case VisitorIdentificationStatus.ANONYMOUS:
-      default:
-        return { label: "Anonymous", dot: "bg-neutral-400", text: "text-muted-foreground" };
-    }
-  })();
-
-  const subtitle = (() => {
-    if (identity.isAnonymous) {
-      const ref = visitor.referrer ? hostFromUrl(visitor.referrer) : null;
-      return ref ? `Anonymous \u00b7 via ${ref}` : "Anonymous visitor";
-    }
-    const parts: string[] = [];
-    if (identity.jobTitle) parts.push(identity.jobTitle);
-    if (identity.companyName) {
-      parts.push(
-        parts.length > 0 ? `at ${identity.companyName}` : identity.companyName
-      );
-    }
-    return parts.join(" ") || visitor.email || "";
-  })();
-
-  return (
-    <Link
-      href={`/portal/visitors/${visitor.id}`}
-      className="group grid grid-cols-[auto_minmax(0,1fr)_auto] md:grid-cols-[auto_minmax(0,2fr)_minmax(0,2fr)_minmax(0,1fr)_auto] items-center gap-4 px-4 py-3 hover:bg-muted/40 transition-colors"
-    >
-      {/* Avatar */}
-      <Avatar identity={identity} visitorId={visitor.id} />
-
-      {/* Identity */}
-      <div className="min-w-0">
-        <div className="font-medium truncate">{identity.displayName}</div>
-        <div className="text-[12px] text-muted-foreground truncate">{subtitle}</div>
-      </div>
-
-      {/* Context (page + session) — hidden on mobile */}
-      <div className="hidden md:block min-w-0 text-xs">
-        <div className="truncate opacity-80">
-          {identity.lastPagePath ?? "No page tracked"}
-        </div>
-        <div className="text-muted-foreground mt-0.5">
-          {visitor.sessionCount} {visitor.sessionCount === 1 ? "session" : "sessions"}
-          {" \u00b7 "}
-          {seenAgo}
-        </div>
-      </div>
-
-      {/* Location — hidden on mobile */}
-      <div className="hidden md:flex text-xs text-muted-foreground min-w-0 items-center gap-1">
-        {identity.location ? (
-          <>
-            <MapPin className="h-3 w-3 shrink-0" />
-            <span className="truncate">{identity.location}</span>
-          </>
-        ) : null}
-      </div>
-
-      {/* Intent + status */}
-      <div className="flex items-center gap-3 justify-end">
-        <div className="text-right">
-          <div
-            className={cn(
-              "text-lg font-semibold tracking-tight tabular-nums flex items-center gap-1 justify-end",
-              intentTone
-            )}
-          >
-            {visitor.intentScore >= 80 ? (
-              <Flame className="h-4 w-4" />
-            ) : visitor.intentScore >= 60 ? (
-              <Zap className="h-3.5 w-3.5" />
-            ) : null}
-            {visitor.intentScore}
-          </div>
-          <div
-            className={cn(
-              "text-[10px] flex items-center gap-1 justify-end mt-0.5",
-              statusBadge.text
-            )}
-          >
-            <span className={cn("h-1.5 w-1.5 rounded-full", statusBadge.dot)} />
-            {statusBadge.label}
-          </div>
-        </div>
-        <ArrowUpRight className="h-4 w-4 opacity-0 group-hover:opacity-60 transition-opacity shrink-0" />
-      </div>
-    </Link>
-  );
-}
-
-function Avatar({
-  identity,
-  visitorId,
-}: {
-  identity: ReturnType<typeof extractIdentity>;
-  visitorId: string;
-}) {
-  const palette = avatarPaletteFor(
-    identity.companyDomain ?? identity.displayName ?? visitorId
-  );
-  if (identity.logoUrl) {
-    return (
-      <div className="h-10 w-10 rounded-full border overflow-hidden bg-white flex items-center justify-center shrink-0">
-        <Image
-          src={identity.logoUrl}
-          alt={identity.companyName ?? "Company logo"}
-          width={40}
-          height={40}
-          className="h-10 w-10 object-contain"
-          unoptimized
-        />
-      </div>
-    );
-  }
-  return (
-    <div
-      className={cn(
-        "h-10 w-10 rounded-full flex items-center justify-center text-sm font-semibold shrink-0",
-        palette
-      )}
-    >
-      {identity.initials}
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Pager
+// Feed — server-side rendering moved to the new VisitorTable client
+// component (components/portal/visitors/visitor-table.tsx) which adds
+// multi-select + bulk CSV export. Legacy VisitorFeed / VisitorRow /
+// Avatar code removed from this file; recover from git history if
+// needed (this file's previous state on commit before the visitors UX
+// overhaul has the original implementations).
 // ---------------------------------------------------------------------------
 
 function Pager({

@@ -5,6 +5,7 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   parsePropertyFilter,
   propertyWhereFragment,
+  visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
@@ -76,7 +77,7 @@ export default async function CampaignsPage({
   const scope = await requireScope();
   const sp = await searchParams;
   const propertyIds = parsePropertyFilter(sp);
-  const propertyFilter = propertyWhereFragment(propertyIds);
+  const propertyFilter = propertyWhereFragment(scope, propertyIds);
 
   // 28-day rolling window — matches the Ads dashboard so the two pages
   // never disagree on spend totals (audit BUG-05).
@@ -102,8 +103,10 @@ export default async function CampaignsPage({
       where: {
         ...tenantWhere(scope),
         date: { gte: since28d },
-        ...(propertyIds && propertyIds.length > 0
-          ? { campaign: { propertyId: { in: propertyIds } } }
+        // Restricted users would otherwise URL-hack their way to
+        // campaigns they can't see — propertyFilter is the gated form.
+        ...("propertyId" in propertyFilter
+          ? { campaign: propertyFilter }
           : {}),
       },
       _sum: {
@@ -154,7 +157,7 @@ export default async function CampaignsPage({
         actions={
           <div className="flex items-center gap-2">
             <PropertyMultiSelect
-              properties={properties}
+              properties={visibleProperties(scope, properties)}
               orgId={scope.orgId}
             />
             <Link

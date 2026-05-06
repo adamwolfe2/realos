@@ -5,6 +5,7 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   parsePropertyFilter,
   propertyWhereFragment,
+  visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { LeadSource, Prisma } from "@prisma/client";
@@ -47,7 +48,7 @@ export default async function LeadsKanbanPage({
 
   const where: Prisma.LeadWhereInput = {
     ...tenantWhere(scope),
-    ...propertyWhereFragment(propertyIds),
+    ...propertyWhereFragment(scope, propertyIds),
   };
   if (sp.source && (SOURCES as string[]).includes(sp.source)) {
     where.source = sp.source as LeadSource;
@@ -114,7 +115,7 @@ export default async function LeadsKanbanPage({
         actions={
           <div className="flex items-center gap-3">
             <PropertyMultiSelect
-              properties={properties}
+              properties={visibleProperties(scope, properties)}
               orgId={scope.orgId}
             />
             <span className="text-xs text-muted-foreground">

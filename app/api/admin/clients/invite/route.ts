@@ -36,6 +36,12 @@ const body = z.object({
     "SALES_REP",
   ]),
   organizationId: z.string().min(1),
+  // Optional property-level access list. When omitted or empty, the
+  // invitee gets unrestricted org-wide access (legacy behavior). When
+  // populated, they can ONLY see those properties' data — used to
+  // invite, e.g., the Telegraph Commons team to an SG Real Estate org
+  // without exposing the rest of the portfolio.
+  propertyIds: z.array(z.string().min(1)).optional(),
 });
 
 // Legacy roles sent by the older InviteClientDialog get normalized to the
@@ -119,6 +125,28 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Validate property ids belong to the target org BEFORE we touch
+  // anything. A malformed list shouldn't half-create a user — we want
+  // an atomic "either this whole invite is valid or none of it is."
+  const requestedPropertyIds = parsed.propertyIds ?? [];
+  let validPropertyIds: string[] = [];
+  if (requestedPropertyIds.length > 0) {
+    const found = await prisma.property.findMany({
+      where: { id: { in: requestedPropertyIds }, orgId: org.id },
+      select: { id: true },
+    });
+    validPropertyIds = found.map((p) => p.id);
+    if (validPropertyIds.length !== requestedPropertyIds.length) {
+      return NextResponse.json(
+        {
+          error:
+            "One or more selected properties don't belong to this organization.",
+        },
+        { status: 400 },
+      );
+    }
+  }
+
   // Pre-create or update the DB User row so /api/auth/role can claim it by
   // email on first sign-in, even if the Clerk webhook isn't wired up yet.
   const pendingId = `seed_pending_${email}`;
@@ -148,6 +176,26 @@ export async function POST(req: NextRequest) {
     });
     userId = created.id;
   }
+
+  // Replace any existing property access for this user with the new
+  // selection. Do it as a delete-then-create so the row set is exactly
+  // what was requested — easier mental model than diffing.
+  //   * Empty selection => unrestricted (no rows).
+  //   * Non-empty selection => restricted to those properties only.
+  // Wrapped in a transaction so a failure during create doesn't leave
+  // the user with zero rows (which would silently widen them).
+  await prisma.$transaction(async (tx) => {
+    await tx.userPropertyAccess.deleteMany({ where: { userId } });
+    if (validPropertyIds.length > 0) {
+      await tx.userPropertyAccess.createMany({
+        data: validPropertyIds.map((propertyId) => ({
+          userId,
+          propertyId,
+          grantedBy: scope.userId,
+        })),
+      });
+    }
+  });
 
   // Best-effort Clerk invitation. We pass `notify: false` so Clerk does NOT
   // send its own (un-brandable) email. We then send a LeaseStack-branded

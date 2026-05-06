@@ -5,6 +5,7 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   parsePropertyFilter,
   propertyWhereFragment,
+  visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
@@ -36,12 +37,13 @@ export default async function AdsPage({
   // queries (both have propertyId). AdAccount is org-level (a single
   // Google Ads account often runs campaigns for multiple properties),
   // so we keep the accounts list unfiltered.
-  const properties = await prisma.property.findMany({
+  const allProperties = await prisma.property.findMany({
     where: { orgId: scope.orgId },
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });
-  const propertyFilter = propertyWhereFragment(propertyIds);
+  const properties = visibleProperties(scope, allProperties);
+  const propertyFilter = propertyWhereFragment(scope, propertyIds);
 
   const now = new Date();
   // 28-day window. We compare to the prior 28-day window for delta arrows.
@@ -104,8 +106,11 @@ export default async function AdsPage({
         ...tenantWhere(scope),
         date: { gte: currentStart },
         adAccount: { credentialsEncrypted: { not: null } },
-        ...(propertyIds && propertyIds.length > 0
-          ? { campaign: { propertyId: { in: propertyIds } } }
+        // Use propertyFilter (the gated, intersected fragment) so a
+        // restricted user can't URL-hack into properties they don't
+        // own. The campaign relation has its own propertyId column.
+        ...("propertyId" in propertyFilter
+          ? { campaign: propertyFilter }
           : {}),
       },
       orderBy: { date: "asc" },
@@ -123,8 +128,11 @@ export default async function AdsPage({
         ...tenantWhere(scope),
         date: { gte: priorStart, lt: priorEnd },
         adAccount: { credentialsEncrypted: { not: null } },
-        ...(propertyIds && propertyIds.length > 0
-          ? { campaign: { propertyId: { in: propertyIds } } }
+        // Use propertyFilter (the gated, intersected fragment) so a
+        // restricted user can't URL-hack into properties they don't
+        // own. The campaign relation has its own propertyId column.
+        ...("propertyId" in propertyFilter
+          ? { campaign: propertyFilter }
           : {}),
       },
       select: {

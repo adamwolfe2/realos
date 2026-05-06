@@ -5,6 +5,7 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   parsePropertyFilter,
   propertyWhereFragment,
+  visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { createReport } from "@/lib/actions/reports";
@@ -31,7 +32,7 @@ export default async function ReportsListPage({
   const propertyIds = parsePropertyFilter(sp);
   const where: Prisma.ClientReportWhereInput = {
     ...tenantWhere(scope),
-    ...propertyWhereFragment(propertyIds),
+    ...propertyWhereFragment(scope, propertyIds),
   };
   if (sp.kind === "weekly" || sp.kind === "monthly" || sp.kind === "custom") {
     where.kind = sp.kind;
@@ -41,12 +42,14 @@ export default async function ReportsListPage({
   }
 
   // Property list for the picker. Hidden when the org only has one
-  // property (single-asset tenants don't need to choose).
-  const properties = await prisma.property.findMany({
+  // property (single-asset tenants don't need to choose). Narrowed to
+  // the user's allowed set via UserPropertyAccess.
+  const allProperties = await prisma.property.findMany({
     where: { orgId: scope.orgId },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
+  const properties = visibleProperties(scope, allProperties);
 
   const reports = await prisma.clientReport.findMany({
     where,

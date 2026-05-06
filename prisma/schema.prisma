@@ -393,12 +393,52 @@ model User {
   tasksAssigned ProjectTask[]  @relation("TaskAssignee")
   notifications Notification[]
 
+  // Per-property access grants. ZERO rows = unrestricted (org-wide
+  // access — preserves the legacy behavior so existing users aren't
+  // affected by the property-RBAC rollout). ONE OR MORE rows = the
+  // user can ONLY see those properties' data on every portal page.
+  propertyAccess UserPropertyAccess[]
+
   // Command Center: last time this operator opened the briefing view. Used to
   // compute "what's new since you last looked" deltas on /portal/briefing.
   lastBriefingViewedAt DateTime?
 
   @@index([orgId])
   @@index([role])
+}
+
+// ---------------------------------------------------------------------------
+// UserPropertyAccess — fine-grained gate for "this user can only see
+// these properties." Sits alongside the org-level User.orgId gate; both
+// are enforced. Designed so:
+//   - 0 rows for a user => unrestricted (org-wide). Default for every
+//     existing user, so this migration ships without breaking anyone.
+//   - 1+ rows => restricted. The user's view is locked to those property
+//     ids on every page (pages also filter their property dropdown to
+//     show only the allowed options).
+//
+// Property-level role override (`role`) is reserved for a future PR
+// where, e.g., a Telegraph Commons leasing agent might be a
+// CLIENT_ADMIN on Telegraph but a CLIENT_VIEWER on a sister property.
+// Not used at gate time today.
+// ---------------------------------------------------------------------------
+model UserPropertyAccess {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Optional per-property role override. NULL = inherit User.role.
+  role UserRole?
+
+  // Audit trail: who granted this access + when.
+  grantedBy String?
+  grantedAt DateTime @default(now())
+
+  @@unique([userId, propertyId])
+  @@index([userId])
+  @@index([propertyId])
 }
 
 model ApiKey {
@@ -590,6 +630,8 @@ model Property {
   leases               Lease[]
   workOrders           WorkOrder[]
   clientReports        ClientReport[]
+  // Reverse relation for property-level RBAC. See UserPropertyAccess.
+  userAccess           UserPropertyAccess[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

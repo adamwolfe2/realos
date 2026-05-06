@@ -7,15 +7,28 @@
 //   ?property=<id>            → legacy single-pick (still honored for
 //                                bookmarks / link-outs from older code)
 //
-// `null` return value means "no filter" (i.e. show all properties under
-// the current tenant scope). Pages should treat null as "don't add a
-// `propertyId` clause at all" — so the existing tenantWhere(scope) gate
-// keeps doing its job.
+// Two layers of filtering happen here:
+//
+//   1. USER SELECTION  — what the operator picked in the
+//      PropertyMultiSelect. Captured by parsePropertyFilter().
+//
+//   2. ACCESS GATE     — what the operator is *allowed* to see, based on
+//      UserPropertyAccess rows resolved into scope.allowedPropertyIds.
+//      A non-null gate ALWAYS wins; selection is intersected with it.
+//      A null gate means unrestricted (legacy / org-wide users).
+//
+// Pages combine both via propertyWhereFragment(scope, selectedIds). Never
+// use a non-scope-aware property filter on tenant pages — it would let a
+// restricted user widen their view by hand-editing the URL.
 // ---------------------------------------------------------------------------
 
 export type PropertyFilterParams = {
   properties?: string | string[];
   property?: string | string[];
+};
+
+type ScopeWithGate = {
+  allowedPropertyIds: string[] | null;
 };
 
 /**
@@ -40,15 +53,87 @@ export function parsePropertyFilter(
 }
 
 /**
- * Build the Prisma `where` fragment for filtering by selected properties.
- * Pass the result into the page's existing `where` via spread:
+ * Compute the effective property id list for the current request:
+ * intersect the user's URL selection with their access gate (if any).
  *
- *   const where = { ...tenantWhere(scope), ...propertyWhereFragment(ids) };
+ *   - Unrestricted scope + no selection  → null (no filter)
+ *   - Unrestricted scope + selection     → selection
+ *   - Restricted scope   + no selection  → the full allowed set
+ *   - Restricted scope   + selection     → selection ∩ allowed (may be [])
+ *
+ * Returning `[]` from the intersection is meaningful: the user asked for
+ * properties they don't have access to. Callers should treat this as
+ * "see nothing."
+ */
+export function effectivePropertyIds(
+  scope: ScopeWithGate,
+  selectedIds: string[] | null,
+): string[] | null {
+  if (scope.allowedPropertyIds) {
+    const allowed = new Set(scope.allowedPropertyIds);
+    if (!selectedIds) return scope.allowedPropertyIds;
+    return selectedIds.filter((id) => allowed.has(id));
+  }
+  return selectedIds;
+}
+
+/**
+ * Build the Prisma `where` fragment for filtering by selected properties,
+ * with the access gate applied. Pass the result into the page's where via
+ * spread:
+ *
+ *   const where = {
+ *     ...tenantWhere(scope),
+ *     ...propertyWhereFragment(scope, propertyIds),
+ *   };
  *
  * Pass a `field` other than "propertyId" for relations that link via a
- * different column (e.g. nested filters).
+ * different column (e.g. nested filters on a related model).
  */
 export function propertyWhereFragment(
+  scope: ScopeWithGate,
+  selectedIds: string[] | null,
+  field: string = "propertyId",
+): Record<string, unknown> {
+  const ids = effectivePropertyIds(scope, selectedIds);
+
+  // Restricted user asked for properties they don't have access to.
+  // Return a synthetic id that matches no rows so the page renders
+  // empty rather than silently widening to the full portfolio.
+  if (scope.allowedPropertyIds && ids && ids.length === 0) {
+    return { [field]: "__no_property_access__" };
+  }
+  if (!ids || ids.length === 0) return {};
+  if (ids.length === 1) return { [field]: ids[0] };
+  return { [field]: { in: ids } };
+}
+
+/**
+ * Filter a list of properties down to the ones the current scope can see.
+ * Used to populate the PropertyMultiSelect dropdown — restricted users
+ * should not see properties they can't access in the first place.
+ */
+export function visibleProperties<T extends { id: string }>(
+  scope: ScopeWithGate,
+  all: T[],
+): T[] {
+  if (!scope.allowedPropertyIds) return all;
+  const allowed = new Set(scope.allowedPropertyIds);
+  return all.filter((p) => allowed.has(p.id));
+}
+
+/**
+ * Internal helper: build a Prisma `where` fragment from a *pre-gated*
+ * list of property ids. Used inside library code (e.g. attribution
+ * queries) where the page has already applied the access gate via
+ * effectivePropertyIds() and we just need to translate the resulting
+ * id list into Prisma syntax.
+ *
+ * **Do not use this in page-level code.** Use propertyWhereFragment()
+ * which takes scope and enforces the gate. This raw form bypasses the
+ * gate by design.
+ */
+export function propertyIdsToWhere(
   ids: string[] | null,
   field: string = "propertyId",
 ): Record<string, unknown> {

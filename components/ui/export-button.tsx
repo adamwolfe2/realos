@@ -15,7 +15,7 @@ export function ExportButton({
     <Link
       href={href}
       prefetch={false}
-      className="inline-flex items-center gap-1.5 text-xs px-3 py-1.5 border border-border bg-card rounded-md hover:bg-muted/40"
+      className="inline-flex items-center justify-center gap-1.5 text-xs px-3 border border-border bg-card rounded-md hover:bg-muted/40 h-[34px] whitespace-nowrap"
     >
       <svg
         width="12"

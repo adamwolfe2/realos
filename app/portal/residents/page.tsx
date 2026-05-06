@@ -14,6 +14,7 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   parsePropertyFilter,
   propertyWhereFragment,
+  visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
@@ -74,7 +75,7 @@ export default async function ResidentsPage({
   const propertyIds = parsePropertyFilter(sp);
   const where = {
     ...tenantWhere(scope),
-    ...propertyWhereFragment(propertyIds),
+    ...propertyWhereFragment(scope, propertyIds),
   };
 
   const filterStatus = (Object.values(ResidentStatus) as string[]).includes(
@@ -141,7 +142,10 @@ export default async function ResidentsPage({
       },
     }),
     prisma.property.findMany({
-      where,
+      // Always fetch the org's full property list; we narrow to the
+      // user's allowed set below via visibleProperties() so the
+      // dropdown never shows properties they can't access.
+      where: { orgId: scope.orgId },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
@@ -169,7 +173,10 @@ export default async function ResidentsPage({
         title="Residents"
         description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
         actions={
-          <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          <PropertyMultiSelect
+            properties={visibleProperties(scope, properties)}
+            orgId={scope.orgId}
+          />
         }
       />
 

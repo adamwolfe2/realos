@@ -5,7 +5,11 @@ import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, AlertTriangle, Arrow
 // component used them.
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
-import { parsePropertyFilter } from "@/lib/tenancy/property-filter";
+import {
+  effectivePropertyIds,
+  parsePropertyFilter,
+  visibleProperties,
+} from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
@@ -57,14 +61,29 @@ export default async function BriefingPage({
     select: { id: true, name: true },
   });
 
-  // Validate every requested property id belongs to this tenant; silently
-  // drop any cross-tenant or stale ids so a stored localStorage value can
-  // never blank the briefing.
-  const validPropertyIds = (requestedIds ?? []).filter((id) =>
+  // Two-step gate.
+  //   (1) Drop tenant-invalid ids — stored localStorage value pointing
+  //       at a deleted property can never blank the briefing.
+  //   (2) Intersect with the user's allowed property set so a restricted
+  //       user can't URL-hack to a sibling property.
+  //
+  // Critical: if a restricted user's URL request resolves to an empty
+  // set after gating, we DON'T pass `null` (which would widen the helpers
+  // to "no filter" = see everything). We fall back to their full allowed
+  // set so they see their own properties, not the whole org.
+  const tenantValid = (requestedIds ?? []).filter((id) =>
     properties.some((p) => p.id === id)
   );
+  const gatedIds = effectivePropertyIds(
+    scope,
+    tenantValid.length > 0 ? tenantValid : null,
+  );
   const activePropertyIds =
-    validPropertyIds.length > 0 ? validPropertyIds : null;
+    gatedIds && gatedIds.length > 0
+      ? gatedIds
+      : scope.allowedPropertyIds && scope.allowedPropertyIds.length > 0
+        ? scope.allowedPropertyIds
+        : null;
   const activeProperty =
     activePropertyIds && activePropertyIds.length === 1
       ? properties.find((p) => p.id === activePropertyIds[0]) ?? null
@@ -155,7 +174,10 @@ export default async function BriefingPage({
             read the transcripts, and act on the insights before your next client touch.
           </p>
         </div>
-        <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+        <PropertyMultiSelect
+          properties={visibleProperties(scope, properties)}
+          orgId={scope.orgId}
+        />
         {/* Replaced the single-pick PropertyFilter with the shared
             PropertyMultiSelect so the briefing scopes the same way as
             every other portal page. The component renders nothing when

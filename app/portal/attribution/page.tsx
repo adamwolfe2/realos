@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
-import { parsePropertyFilter } from "@/lib/tenancy/property-filter";
+import {
+  effectivePropertyIds,
+  parsePropertyFilter,
+  visibleProperties,
+} from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
@@ -57,19 +61,37 @@ export default async function AttributionPage({
   );
   const requestedIds = parsePropertyFilter(params);
 
-  const properties = await prisma.property.findMany({
+  const allProperties = await prisma.property.findMany({
     where: { orgId: scope.orgId },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
+  const properties = visibleProperties(scope, allProperties);
 
-  // Validate every requested id belongs to the tenant before passing it
-  // through. Cross-tenant or stale ids fall back silently to "all
-  // properties."
-  const validPropertyIds = (requestedIds ?? []).filter((id) =>
-    properties.some((p) => p.id === id)
+  // Two-step gate:
+  //   1. Drop any requested id that doesn't belong to this tenant
+  //      (defense against URL-tampered ids from another org).
+  //   2. Intersect with the user's allowed property set via
+  //      effectivePropertyIds(); restricted users get their full
+  //      allowed list as the default, not the org's full set.
+  //
+  // Critical: a restricted user whose URL gates to an empty set must
+  // fall back to their FULL allowed set, not null. Passing null to
+  // queries.ts would mean "no filter" = see every property in the org,
+  // which would defeat the entire access gate.
+  const tenantValid = (requestedIds ?? []).filter((id) =>
+    allProperties.some((p) => p.id === id)
   );
-  const activePropertyIds = validPropertyIds.length > 0 ? validPropertyIds : null;
+  const gatedIds = effectivePropertyIds(
+    scope,
+    tenantValid.length > 0 ? tenantValid : null,
+  );
+  const activePropertyIds =
+    gatedIds && gatedIds.length > 0
+      ? gatedIds
+      : scope.allowedPropertyIds && scope.allowedPropertyIds.length > 0
+        ? scope.allowedPropertyIds
+        : null;
 
   const filters: AttributionFilters = {
     orgId: scope.orgId,

@@ -93,7 +93,7 @@ export function PixelSyncButton({
         type="button"
         disabled
         title="Bind an AudienceLab segment in admin to enable on-demand sync"
-        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground/70 cursor-not-allowed"
+        className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground/70 cursor-not-allowed h-[34px] min-w-[120px]"
       >
         <RefreshCw className="h-3 w-3" />
         Sync unavailable
@@ -101,38 +101,49 @@ export function PixelSyncButton({
     );
   }
 
+  // The button itself is fixed-size (min-width + height) so toggling
+  // between idle / syncing labels never shifts surrounding controls.
+  // Status feedback renders OUTSIDE the button in a fixed-width slot so
+  // the operator sees success/error without the layout reshuffling
+  // (which the previous version did when "Synced · X pulled, Y new"
+  // pushed the Export CSV button sideways).
   return (
-    <div className="flex items-center gap-2">
+    <div className="inline-flex items-center gap-2">
       <button
         type="button"
         onClick={runSync}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40 disabled:opacity-60 transition-colors"
+        className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 text-xs font-medium text-foreground hover:bg-muted/40 disabled:opacity-60 transition-colors h-[34px] min-w-[110px]"
       >
         <RefreshCw className={"h-3 w-3 " + (pending ? "animate-spin" : "")} />
         {pending ? "Syncing…" : "Sync now"}
       </button>
-      {status.kind === "success" ? (
-        <span
-          className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-semibold"
-          aria-live="polite"
-        >
-          <Check className="h-3 w-3" strokeWidth={3} />
-          {status.throttled
-            ? "Up to date"
-            : `Synced · ${status.pulled} pulled, ${status.created} new`}
-        </span>
-      ) : null}
-      {status.kind === "error" ? (
-        <span
-          className="inline-flex items-center gap-1 text-[11px] text-rose-700 font-semibold max-w-[280px] truncate"
-          title={status.message}
-          aria-live="polite"
-        >
-          <AlertTriangle className="h-3 w-3" />
-          {status.message}
-        </span>
-      ) : null}
+      <div
+        className="inline-flex items-center min-w-[140px]"
+        aria-live="polite"
+      >
+        {status.kind === "success" ? (
+          <span
+            className="inline-flex items-center gap-1 text-[11px] text-emerald-700 font-semibold whitespace-nowrap"
+            title={
+              status.throttled
+                ? "Already up to date"
+                : `Synced · ${status.pulled} pulled, ${status.created} new`
+            }
+          >
+            <Check className="h-3 w-3" strokeWidth={3} />
+            {status.throttled ? "Up to date" : "Synced"}
+          </span>
+        ) : status.kind === "error" ? (
+          <span
+            className="inline-flex items-center gap-1 text-[11px] text-rose-700 font-semibold truncate max-w-[140px]"
+            title={status.message}
+          >
+            <AlertTriangle className="h-3 w-3" />
+            Sync failed
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }

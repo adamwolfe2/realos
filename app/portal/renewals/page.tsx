@@ -13,6 +13,7 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
   parsePropertyFilter,
   propertyWhereFragment,
+  visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
@@ -60,17 +61,20 @@ export default async function RenewalsPage({
   try {
   const sp = await searchParams;
   const propertyIds = parsePropertyFilter(sp);
-  // Fetch all properties for the org so the multi-select dropdown has
-  // its full option list. The `where` for data queries is composed of
-  // the tenant gate AND the (optional) property filter.
-  const properties = await prisma.property.findMany({
+  // Fetch all properties for the org, then narrow to the ones this user
+  // is allowed to see (via UserPropertyAccess). The dropdown should
+  // never show options the user can't pick.
+  const allProperties = await prisma.property.findMany({
     where: { orgId: scope.orgId },
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
+  const properties = visibleProperties(scope, allProperties);
+  // The where clause composes tenant gate + property gate (which itself
+  // intersects URL selection with the user's allowed set).
   const where = {
     ...tenantWhere(scope),
-    ...propertyWhereFragment(propertyIds),
+    ...propertyWhereFragment(scope, propertyIds),
   };
   const now = new Date();
   const next120 = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000);

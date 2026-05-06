@@ -33,6 +33,22 @@ export type ScopedContext = {
   isAgency: boolean;              // Shorthand for actualOrgType === AGENCY
   isAlPartner: boolean;           // role === AL_PARTNER. Cross-org access to AUDIENCE_SYNC orgs
   isImpersonating: boolean;
+  // Property-level RBAC gate.
+  //   null  → unrestricted (org-wide access). Default for any user with
+  //           zero UserPropertyAccess rows. Preserves legacy behavior for
+  //           every existing user as we ship this feature.
+  //   []    → impossible to construct from this resolver (we collapse
+  //           empty grants to null), but if it ever appears callers MUST
+  //           treat it as "see nothing" — never as "see everything."
+  //   [...] → restricted to ONLY these property ids. Pages must filter
+  //           their property dropdowns to this set AND gate every
+  //           per-property query.
+  //
+  // Impersonation deliberately bypasses this gate — an agency user
+  // impersonating a client sees the client's full portfolio so they
+  // can support every property, regardless of any restrictions on
+  // the agency user's own org.
+  allowedPropertyIds: string[] | null;
 };
 
 // DEMO_MODE fallback. When no Clerk session exists AND the flag is on, we
@@ -89,6 +105,10 @@ async function getDemoScope(): Promise<ScopedContext | null> {
     isAgency: (agencyOrg?.orgType ?? target.orgType) === OrgType.AGENCY,
     isAlPartner: false,
     isImpersonating: false,
+    // Demo scope is always unrestricted. The whole point of demo mode is
+    // to render the full surface for showcasing, so we never hand it a
+    // property gate.
+    allowedPropertyIds: null,
   };
 }
 
@@ -162,6 +182,24 @@ export async function getScope(): Promise<ScopedContext | null> {
     }
   }
 
+  // Load property-level access grants. Empty result set => unrestricted
+  // (legacy behavior for every existing user). Impersonation deliberately
+  // BYPASSES this gate so an agency user supporting a client sees the
+  // full portfolio regardless of any restrictions on their own org.
+  let allowedPropertyIds: string[] | null = null;
+  const isImpersonating = !!impersonateOrgId && impersonateOrgId !== user.orgId;
+  if (!isImpersonating) {
+    const grants = await prisma.userPropertyAccess
+      .findMany({
+        where: { userId: user.id },
+        select: { propertyId: true },
+      })
+      .catch(() => [] as Array<{ propertyId: string }>);
+    if (grants.length > 0) {
+      allowedPropertyIds = grants.map((g) => g.propertyId);
+    }
+  }
+
   return {
     userId: user.id,
     clerkUserId,
@@ -174,7 +212,8 @@ export async function getScope(): Promise<ScopedContext | null> {
     email: user.email,
     isAgency,
     isAlPartner,
-    isImpersonating: !!impersonateOrgId && impersonateOrgId !== user.orgId,
+    isImpersonating,
+    allowedPropertyIds,
   };
 }
 
