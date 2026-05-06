@@ -775,6 +775,9 @@ model Lead {
   @@unique([orgId, externalSystem, externalId])
   @@index([orgId, status])
   @@index([orgId, source])
+  // Referrals + dashboard run 28-day groupBys by createdAt; no
+  // existing index covers the date window.
+  @@index([orgId, createdAt(sort: Desc)])
   @@index([email])
   @@index([cadenceStage])
   @@index([propertyId])
@@ -897,6 +900,9 @@ model Resident {
   @@unique([orgId, externalSystem, externalId])
   @@index([orgId, status])
   @@index([propertyId, status])
+  // Residents page filters by orgId + status + propertyId together
+  // (multi-property RBAC); composite covers all three.
+  @@index([orgId, status, propertyId])
   @@index([email])
   @@index([moveOutDate])
 }
@@ -957,6 +963,9 @@ model Lease {
   @@unique([orgId, externalSystem, externalId])
   @@index([orgId, status])
   @@index([propertyId, status])
+  // Renewals page filters lease.endDate within next 120d, scoped by
+  // org. The single-column endDate index doesn't include orgId.
+  @@index([orgId, endDate])
   @@index([endDate])
   @@index([isPastDue, currentBalanceCents])
 }
@@ -1090,6 +1099,10 @@ model Visitor {
   @@index([orgId, email])
   @@index([cursiveVisitorId])
   @@index([hashedEmail])
+  // Visitors page "Hot" tab filters by intentScore; without these
+  // composite indexes the query would full-scan the org.
+  @@index([orgId, intentScore(sort: Desc)])
+  @@index([orgId, intentScore(sort: Desc), lastSeenAt(sort: Desc)])
 }
 
 model CursiveIntegration {
@@ -1302,6 +1315,9 @@ model ChatbotConversation {
 
   @@index([orgId, status])
   @@index([orgId, lastMessageAt])
+  // /portal/conversations filters by status AND orders by
+  // lastMessageAt — the split indexes above don't cover both at once.
+  @@index([orgId, status, lastMessageAt(sort: Desc)])
   @@index([leadId])
   @@index([propertyId])
   @@index([sessionId])
@@ -1491,6 +1507,10 @@ model AdMetricDaily {
   @@unique([campaignId, date])
   @@index([orgId, date])
   @@index([adAccountId, date])
+  // Campaigns page rolls daily metrics up by campaignId; the existing
+  // unique handles point lookups but the date-DESC ordering needs an
+  // explicit index to avoid sorting at query time.
+  @@index([campaignId, date(sort: Desc)])
 }
 
 // ============================================================================

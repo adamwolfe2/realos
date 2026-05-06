@@ -35,6 +35,14 @@ export async function GET(req: NextRequest) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    throw err;
+    // Was: `throw err` — which produced an unhandled rejection in
+    // Next.js's route handler instead of a graceful 500. Surface a
+    // structured error and log so Sentry/Vercel still capture the
+    // failure for ops.
+    console.error("[api/portal/notifications] GET failed:", err);
+    return NextResponse.json(
+      { error: "Failed to load notifications. Please refresh." },
+      { status: 500 },
+    );
   }
 }

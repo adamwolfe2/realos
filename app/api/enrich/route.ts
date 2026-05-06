@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import { z } from "zod";
+import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { enrichLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { isAllowedUrl } from "@/lib/utils/ssrf-protection";
 
@@ -25,11 +25,21 @@ interface FirecrawlResponse {
 }
 
 export async function POST(req: NextRequest) {
+  // Was using bare Clerk `auth()` — upgraded to requireScope so this
+  // endpoint matches the rest of the codebase's tenant pattern. Even
+  // though enrich doesn't touch the DB, scope-resolution writes
+  // through the impersonation gate + ensures we have a real
+  // LeaseStack User row (not just any Clerk session).
+  let scope;
   try {
-    const { userId } = await auth();
-    if (!userId) {
+    scope = await requireScope();
+  } catch (err) {
+    if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    throw err;
+  }
+  try {
 
     const body = await req.json();
     const parsed = enrichSchema.safeParse(body);
@@ -48,7 +58,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const rl = await checkRateLimit(enrichLimiter, userId);
+    // Rate-limit by org rather than just userId so an org with many
+    // users can't gang up to bypass per-user limits.
+    const rl = await checkRateLimit(enrichLimiter, `org:${scope.orgId}`);
     if (!rl.allowed) {
       return NextResponse.json(
         { error: "Rate limit exceeded. Try again later." },
