@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { LeadSource } from "@prisma/client";
+import { propertyWhereFragment } from "@/lib/tenancy/property-filter";
 
 // ---------------------------------------------------------------------------
 // /portal/attribution data layer.
@@ -17,7 +18,10 @@ import { LeadSource } from "@prisma/client";
 
 export type AttributionFilters = {
   orgId: string;
-  propertyId?: string | null;
+  // Multi-property filter. `null` (or empty) means "no filter, full
+  // portfolio view." Single-element array narrows to one property; the
+  // helper handles the Prisma `in` shape internally.
+  propertyIds?: string[] | null;
   fromDate: Date;
   toDate: Date;
 };
@@ -69,8 +73,8 @@ export async function getSessionsPerSource(
     where: {
       orgId: filters.orgId,
       startedAt: { gte: filters.fromDate, lte: filters.toDate },
-      ...(filters.propertyId
-        ? { visitor: { propertyId: filters.propertyId } }
+      ...(filters.propertyIds && filters.propertyIds.length > 0
+        ? { visitor: propertyWhereFragment(filters.propertyIds) }
         : {}),
     },
     select: { utmSource: true, firstReferrer: true },
@@ -98,7 +102,7 @@ export async function getLeadsPerSourceLastTouch(
     by: ["source"],
     where: {
       orgId: filters.orgId,
-      ...(filters.propertyId ? { propertyId: filters.propertyId } : {}),
+      ...propertyWhereFragment(filters.propertyIds ?? null),
       createdAt: { gte: filters.fromDate, lte: filters.toDate },
     },
     _count: { _all: true },
@@ -126,7 +130,7 @@ export async function getLeadsPerSourceMultiTouch(
   const leads = await prisma.lead.findMany({
     where: {
       orgId: filters.orgId,
-      ...(filters.propertyId ? { propertyId: filters.propertyId } : {}),
+      ...propertyWhereFragment(filters.propertyIds ?? null),
       createdAt: { gte: filters.fromDate, lte: filters.toDate },
     },
     select: {
@@ -180,7 +184,7 @@ export async function getLeadsPerCity(
   const leads = await prisma.lead.findMany({
     where: {
       orgId: filters.orgId,
-      ...(filters.propertyId ? { propertyId: filters.propertyId } : {}),
+      ...propertyWhereFragment(filters.propertyIds ?? null),
       createdAt: { gte: filters.fromDate, lte: filters.toDate },
     },
     select: {
@@ -227,7 +231,7 @@ export async function getLeadsPerDeviceTrend(
   const leads = await prisma.lead.findMany({
     where: {
       orgId: filters.orgId,
-      ...(filters.propertyId ? { propertyId: filters.propertyId } : {}),
+      ...propertyWhereFragment(filters.propertyIds ?? null),
       createdAt: { gte: filters.fromDate, lte: filters.toDate },
     },
     select: {
@@ -272,7 +276,7 @@ export async function getLeadsPerModuleTrend(
   const leads = await prisma.lead.findMany({
     where: {
       orgId: filters.orgId,
-      ...(filters.propertyId ? { propertyId: filters.propertyId } : {}),
+      ...propertyWhereFragment(filters.propertyIds ?? null),
       createdAt: { gte: filters.fromDate, lte: filters.toDate },
     },
     select: { createdAt: true, source: true },
@@ -304,7 +308,7 @@ export async function getLeadsPerTouchFrequency(
   const leads = await prisma.lead.findMany({
     where: {
       orgId: filters.orgId,
-      ...(filters.propertyId ? { propertyId: filters.propertyId } : {}),
+      ...propertyWhereFragment(filters.propertyIds ?? null),
       createdAt: { gte: filters.fromDate, lte: filters.toDate },
     },
     select: {
@@ -352,15 +356,15 @@ export async function getAttributionHeadline(
       prisma.lead.count({
         where: {
           orgId: filters.orgId,
-          ...(filters.propertyId ? { propertyId: filters.propertyId } : {}),
+          ...propertyWhereFragment(filters.propertyIds ?? null),
           createdAt: { gte: filters.fromDate, lte: filters.toDate },
         },
       }),
       prisma.visitorSession.count({
         where: {
           orgId: filters.orgId,
-          ...(filters.propertyId
-            ? { visitor: { propertyId: filters.propertyId } }
+          ...(filters.propertyIds && filters.propertyIds.length > 0
+            ? { visitor: propertyWhereFragment(filters.propertyIds) }
             : {}),
           startedAt: { gte: filters.fromDate, lte: filters.toDate },
         },
@@ -368,7 +372,7 @@ export async function getAttributionHeadline(
       prisma.visitor.count({
         where: {
           orgId: filters.orgId,
-          ...(filters.propertyId ? { propertyId: filters.propertyId } : {}),
+          ...propertyWhereFragment(filters.propertyIds ?? null),
           status: { in: ["IDENTIFIED", "ENRICHED", "MATCHED_TO_LEAD"] },
           firstSeenAt: { gte: filters.fromDate, lte: filters.toDate },
         },

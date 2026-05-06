@@ -4,6 +4,11 @@ import Image from "next/image";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { Prisma, VisitorIdentificationStatus } from "@prisma/client";
 import { ArrowUpRight, Flame, MapPin, Zap } from "lucide-react";
 import {
@@ -123,6 +128,13 @@ export default async function VisitorsPage({
 
   const scope = await requireScope();
   const tenant = tenantWhere<{ orgId?: string }>(scope);
+  const propertyIds = parsePropertyFilter(params);
+
+  const properties = await prisma.property.findMany({
+    where: { orgId: scope.orgId },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 
   const windowDef = WINDOWS.find((w) => w.key === windowKey)!;
   const since = windowDef.hours
@@ -131,6 +143,7 @@ export default async function VisitorsPage({
 
   const baseWhere: Prisma.VisitorWhereInput = {
     ...tenant,
+    ...propertyWhereFragment(propertyIds),
     ...(since ? { lastSeenAt: { gte: since } } : {}),
   };
 
@@ -299,6 +312,10 @@ export default async function VisitorsPage({
         description="Real people visiting your site, identified by the pixel. Auto-refreshes every 15 seconds."
         actions={
           <div className="flex items-center gap-3">
+            <PropertyMultiSelect
+              properties={properties}
+              orgId={scope.orgId}
+            />
             {hasPixel ? (
               <p className="text-xs text-muted-foreground">
                 Pixel on{" "}

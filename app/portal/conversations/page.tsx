@@ -3,6 +3,11 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { ChatbotConversationStatus, Prisma } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { EmptyState } from "@/components/portal/ui/empty-state";
@@ -48,10 +53,21 @@ export default async function ConversationsList({
     flag?: string;
     sort?: string;
     status?: string;
+    property?: string;
+    properties?: string;
   }>;
 }) {
   const scope = await requireScope();
   const sp = await searchParams;
+  const propertyIds = parsePropertyFilter(sp);
+
+  // Property list for the dropdown — fetched once per render alongside
+  // the rest of the page data.
+  const properties = await prisma.property.findMany({
+    where: { orgId: scope.orgId },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
 
   const qRaw = (sp.q ?? "").trim();
   const flagParam = (sp.flag ?? "").trim();
@@ -133,6 +149,7 @@ export default async function ConversationsList({
 
   const where: Prisma.ChatbotConversationWhereInput = {
     ...tenantWhere(scope),
+    ...propertyWhereFragment(propertyIds),
   };
   if (statusParam) where.status = statusParam;
   if (activeFlag) where.flags = { some: { flag: activeFlag } };
@@ -170,6 +187,9 @@ export default async function ConversationsList({
       <PageHeader
         title="Chatbot conversations"
         description="Read every transcript, flag patterns to tune the system prompt, and find the leads worth chasing. Filters are URL-driven so you can bookmark or share a view."
+        actions={
+          <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+        }
       />
 
       <Suspense>

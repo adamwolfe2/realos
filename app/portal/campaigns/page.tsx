@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Campaigns" };
@@ -63,15 +68,23 @@ function statusLabel(status: string | null) {
   return status ?? "Unknown";
 }
 
-export default async function CampaignsPage() {
+export default async function CampaignsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ properties?: string; property?: string }>;
+}) {
   const scope = await requireScope();
+  const sp = await searchParams;
+  const propertyIds = parsePropertyFilter(sp);
+  const propertyFilter = propertyWhereFragment(propertyIds);
+
   // 28-day rolling window — matches the Ads dashboard so the two pages
   // never disagree on spend totals (audit BUG-05).
   const since28d = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
 
   const [campaigns, properties, metricsByCampaign] = await Promise.all([
     prisma.adCampaign.findMany({
-      where: tenantWhere(scope),
+      where: { ...tenantWhere(scope), ...propertyFilter },
       orderBy: [{ status: "asc" }, { startedAt: "desc" }],
       include: {
         property: { select: { id: true, name: true } },
@@ -89,6 +102,9 @@ export default async function CampaignsPage() {
       where: {
         ...tenantWhere(scope),
         date: { gte: since28d },
+        ...(propertyIds && propertyIds.length > 0
+          ? { campaign: { propertyId: { in: propertyIds } } }
+          : {}),
       },
       _sum: {
         spendCents: true,
@@ -136,12 +152,18 @@ export default async function CampaignsPage() {
         title="Ad campaigns"
         description="Campaigns running across every connected ad platform."
         actions={
-          <Link
-            href="/portal/creative"
-            className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
-          >
-            Request creative
-          </Link>
+          <div className="flex items-center gap-2">
+            <PropertyMultiSelect
+              properties={properties}
+              orgId={scope.orgId}
+            />
+            <Link
+              href="/portal/creative"
+              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
+            >
+              Request creative
+            </Link>
+          </div>
         }
       />
 

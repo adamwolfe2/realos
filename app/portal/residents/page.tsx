@@ -11,6 +11,11 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
@@ -56,12 +61,21 @@ function fmtMoney(cents: number | null | undefined): string {
 export default async function ResidentsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ status?: string; q?: string; property?: string }>;
+  searchParams: Promise<{
+    status?: string;
+    q?: string;
+    property?: string;
+    properties?: string;
+  }>;
 }) {
   const scope = await requireScope();
   try {
-  const where = tenantWhere(scope);
   const sp = await searchParams;
+  const propertyIds = parsePropertyFilter(sp);
+  const where = {
+    ...tenantWhere(scope),
+    ...propertyWhereFragment(propertyIds),
+  };
 
   const filterStatus = (Object.values(ResidentStatus) as string[]).includes(
     sp.status ?? "",
@@ -72,7 +86,6 @@ export default async function ResidentsPage({
   const baseFilter = {
     ...where,
     ...(filterStatus ? { status: filterStatus } : {}),
-    ...(sp.property ? { propertyId: sp.property } : {}),
     ...(sp.q
       ? {
           OR: [
@@ -155,6 +168,9 @@ export default async function ResidentsPage({
       <PageHeader
         title="Residents"
         description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
+        actions={
+          <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+        }
       />
 
       <AppFolioStatusBanner
@@ -217,23 +233,17 @@ export default async function ResidentsPage({
             </option>
           ))}
         </select>
-        <select
-          name="property"
-          defaultValue={sp.property ?? ""}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-        >
-          <option value="">All properties</option>
-          {properties.map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.name}
-            </option>
-          ))}
-        </select>
+        {/* Property filter moved to the page-header PropertyMultiSelect.
+            Forwarding the current selection through the form (as a hidden
+            field) so submitting status/search filters preserves it. */}
+        {sp.properties ? (
+          <input type="hidden" name="properties" value={sp.properties} />
+        ) : null}
         <input
           name="q"
           defaultValue={sp.q ?? ""}
           placeholder="Name, email, phone, unit"
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm md:col-span-2"
+          className="rounded-md border border-border bg-background px-3 py-2 text-sm md:col-span-3"
         />
         <div className="md:col-span-4 flex gap-2">
           <button

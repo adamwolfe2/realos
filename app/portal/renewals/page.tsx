@@ -10,6 +10,11 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
@@ -46,10 +51,27 @@ const BUCKETS = [
   { label: "91–120 days", min: 91, max: 120, tone: "neutral" as const },
 ] as const;
 
-export default async function RenewalsPage() {
+export default async function RenewalsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ properties?: string; property?: string }>;
+}) {
   const scope = await requireScope();
   try {
-  const where = tenantWhere(scope);
+  const sp = await searchParams;
+  const propertyIds = parsePropertyFilter(sp);
+  // Fetch all properties for the org so the multi-select dropdown has
+  // its full option list. The `where` for data queries is composed of
+  // the tenant gate AND the (optional) property filter.
+  const properties = await prisma.property.findMany({
+    where: { orgId: scope.orgId },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true },
+  });
+  const where = {
+    ...tenantWhere(scope),
+    ...propertyWhereFragment(propertyIds),
+  };
   const now = new Date();
   const next120 = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000);
 
@@ -142,6 +164,9 @@ export default async function RenewalsPage() {
       <PageHeader
         title="Renewals"
         description="Lease expirations from AppFolio. Act on renewals 120 days out so resignation deadlines never slip."
+        actions={
+          <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+        }
       />
 
       <AppFolioStatusBanner

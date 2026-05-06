@@ -1,9 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, Building2, AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
+// Removed Building2 + cn imports — only the deleted PropertyFilter
+// component used them.
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { parsePropertyFilter } from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 import { CallSheet } from "@/components/portal/briefing/call-sheet";
@@ -25,10 +28,11 @@ export const dynamic = "force-dynamic";
 export default async function BriefingPage({
   searchParams,
 }: {
-  searchParams: Promise<{ property?: string }>;
+  searchParams: Promise<{ property?: string; properties?: string }>;
 }) {
   const scope = await requireScope();
   const params = await searchParams;
+  const requestedIds = parsePropertyFilter(params);
 
   try {
   const user = await prisma.user.findUnique({
@@ -53,15 +57,18 @@ export default async function BriefingPage({
     select: { id: true, name: true },
   });
 
-  // Validate the requested property belongs to the tenant. Falls back silently
-  // if the param points somewhere else.
-  const activePropertyId =
-    params.property && properties.some((p) => p.id === params.property)
-      ? params.property
+  // Validate every requested property id belongs to this tenant; silently
+  // drop any cross-tenant or stale ids so a stored localStorage value can
+  // never blank the briefing.
+  const validPropertyIds = (requestedIds ?? []).filter((id) =>
+    properties.some((p) => p.id === id)
+  );
+  const activePropertyIds =
+    validPropertyIds.length > 0 ? validPropertyIds : null;
+  const activeProperty =
+    activePropertyIds && activePropertyIds.length === 1
+      ? properties.find((p) => p.id === activePropertyIds[0]) ?? null
       : null;
-  const activeProperty = activePropertyId
-    ? properties.find((p) => p.id === activePropertyId) ?? null
-    : null;
 
   const [
     org,
@@ -78,8 +85,8 @@ export default async function BriefingPage({
       select: { name: true },
     }),
     getSinceLastViewed(scope.orgId, user?.lastBriefingViewedAt ?? null),
-    getCallPriorityLeads(scope.orgId, { limit: 10, propertyId: activePropertyId }),
-    getTranscriptsWorthReading(scope.orgId, { limit: 6, propertyId: activePropertyId }),
+    getCallPriorityLeads(scope.orgId, { limit: 10, propertyIds: activePropertyIds }),
+    getTranscriptsWorthReading(scope.orgId, { limit: 6, propertyIds: activePropertyIds }),
     getBriefingMetrics(scope.orgId),
     getRecentInsightsForBriefing(scope.orgId, user?.lastBriefingViewedAt ?? null, 8),
     getAgingLeadsSummary(scope.orgId),
@@ -148,12 +155,11 @@ export default async function BriefingPage({
             read the transcripts, and act on the insights before your next client touch.
           </p>
         </div>
-        {properties.length > 1 ? (
-          <PropertyFilter
-            properties={properties}
-            activeId={activePropertyId}
-          />
-        ) : null}
+        <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+        {/* Replaced the single-pick PropertyFilter with the shared
+            PropertyMultiSelect so the briefing scopes the same way as
+            every other portal page. The component renders nothing when
+            the org only has one property. */}
       </header>
 
       <SinceBanner lastViewedAt={user?.lastBriefingViewedAt ?? null} delta={delta} />
@@ -286,58 +292,9 @@ export default async function BriefingPage({
   }
 }
 
-function PropertyFilter({
-  properties,
-  activeId,
-}: {
-  properties: { id: string; name: string }[];
-  activeId: string | null;
-}) {
-  // Cap viable visible pills + horizontal scroll so the bar never blows out
-  // the page width. Tenants with hundreds of properties used to push the
-  // entire briefing page into horizontal-scroll because this was inline-flex
-  // with no bounds. The min-w-0 + max-w-full allow the parent flex header to
-  // properly compress this child.
-  return (
-    <div className="flex items-center gap-1 rounded-lg border border-border bg-card p-1 min-w-0 max-w-full">
-      <span className="flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground px-2 shrink-0">
-        <Building2 className="h-3 w-3" />
-        Focus
-      </span>
-      <div className="flex items-center gap-1 overflow-x-auto scrollbar-hide min-w-0">
-        <Link
-          href="/portal/briefing"
-          className={cn(
-            "shrink-0 rounded-md px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap",
-            !activeId
-              ? "bg-primary text-primary-foreground"
-              : "text-muted-foreground hover:bg-muted hover:text-foreground",
-          )}
-        >
-          All
-        </Link>
-        {properties.map((p) => {
-          const active = activeId === p.id;
-          return (
-            <Link
-              key={p.id}
-              href={`/portal/briefing?property=${p.id}`}
-              className={cn(
-                "shrink-0 rounded-md px-2 py-1 text-[11px] font-medium transition-colors whitespace-nowrap max-w-[14rem] truncate",
-                active
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
-              )}
-              title={p.name}
-            >
-              {p.name}
-            </Link>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
+// Local PropertyFilter component removed in favor of the shared
+// PropertyMultiSelect. The pill-row UX was nice but inconsistent with
+// every other page; unifying lets operators learn one mental model.
 
 function ChecklistItem({
   icon: Icon,

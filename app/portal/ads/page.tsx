@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { ExportButton } from "@/components/ui/export-button";
 import { AdPlatform, LeadSource, LeadStatus } from "@prisma/client";
@@ -18,8 +23,25 @@ export const dynamic = "force-dynamic";
 // cost-per-conversion across every connected ad platform. Operators can
 // segment by Google Ads or Meta Ads, sort campaigns by any metric, and
 // follow CTAs to connect a new ad account if none are wired yet.
-export default async function AdsPage() {
+export default async function AdsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ properties?: string; property?: string }>;
+}) {
   const scope = await requireScope();
+  const sp = await searchParams;
+  const propertyIds = parsePropertyFilter(sp);
+
+  // Property filter on the Ads page narrows AdCampaign + AdMetricDaily
+  // queries (both have propertyId). AdAccount is org-level (a single
+  // Google Ads account often runs campaigns for multiple properties),
+  // so we keep the accounts list unfiltered.
+  const properties = await prisma.property.findMany({
+    where: { orgId: scope.orgId },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const propertyFilter = propertyWhereFragment(propertyIds);
 
   const now = new Date();
   // 28-day window. We compare to the prior 28-day window for delta arrows.
@@ -59,6 +81,7 @@ export default async function AdsPage() {
     prisma.adCampaign.findMany({
       where: {
         ...tenantWhere(scope),
+        ...propertyFilter,
         adAccount: { credentialsEncrypted: { not: null } },
       },
       orderBy: { spendToDateCents: "desc" },
@@ -81,6 +104,9 @@ export default async function AdsPage() {
         ...tenantWhere(scope),
         date: { gte: currentStart },
         adAccount: { credentialsEncrypted: { not: null } },
+        ...(propertyIds && propertyIds.length > 0
+          ? { campaign: { propertyId: { in: propertyIds } } }
+          : {}),
       },
       orderBy: { date: "asc" },
       select: {
@@ -97,6 +123,9 @@ export default async function AdsPage() {
         ...tenantWhere(scope),
         date: { gte: priorStart, lt: priorEnd },
         adAccount: { credentialsEncrypted: { not: null } },
+        ...(propertyIds && propertyIds.length > 0
+          ? { campaign: { propertyId: { in: propertyIds } } }
+          : {}),
       },
       select: {
         adAccountId: true,
@@ -107,16 +136,31 @@ export default async function AdsPage() {
     }),
     prisma.lead.groupBy({
       by: ["source"],
-      where: { orgId: scope.orgId, createdAt: { gte: since28d } },
+      where: {
+        orgId: scope.orgId,
+        ...propertyFilter,
+        createdAt: { gte: since28d },
+      },
       _count: { _all: true },
     }),
     prisma.application.findMany({
-      where: { lead: { orgId: scope.orgId, createdAt: { gte: since28d } } },
+      where: {
+        lead: {
+          orgId: scope.orgId,
+          ...propertyFilter,
+          createdAt: { gte: since28d },
+        },
+      },
       select: { lead: { select: { source: true } } },
     }),
     prisma.lead.groupBy({
       by: ["source"],
-      where: { orgId: scope.orgId, status: LeadStatus.SIGNED, createdAt: { gte: since28d } },
+      where: {
+        orgId: scope.orgId,
+        ...propertyFilter,
+        status: LeadStatus.SIGNED,
+        createdAt: { gte: since28d },
+      },
       _count: { _all: true },
     }),
   ]);
@@ -175,6 +219,10 @@ export default async function AdsPage() {
         description="Spend, clicks, and conversions from every connected ad platform. Refreshes daily."
         actions={
           <div className="flex items-center gap-2">
+            <PropertyMultiSelect
+              properties={properties}
+              orgId={scope.orgId}
+            />
             <ExportButton href="/api/tenant/ad-metrics/export?days=90" />
             <Link
               href="/portal/settings/integrations"

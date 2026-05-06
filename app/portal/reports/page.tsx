@@ -2,13 +2,23 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { createReport } from "@/lib/actions/reports";
 import { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Client reports" };
 export const dynamic = "force-dynamic";
 
-type Search = { kind?: string; status?: string; property?: string };
+type Search = {
+  kind?: string;
+  status?: string;
+  property?: string;
+  properties?: string;
+};
 
 export default async function ReportsListPage({
   searchParams,
@@ -18,15 +28,16 @@ export default async function ReportsListPage({
   const scope = await requireScope();
   const sp = await searchParams;
 
-  const where: Prisma.ClientReportWhereInput = { ...tenantWhere(scope) };
+  const propertyIds = parsePropertyFilter(sp);
+  const where: Prisma.ClientReportWhereInput = {
+    ...tenantWhere(scope),
+    ...propertyWhereFragment(propertyIds),
+  };
   if (sp.kind === "weekly" || sp.kind === "monthly" || sp.kind === "custom") {
     where.kind = sp.kind;
   }
   if (sp.status === "draft" || sp.status === "shared" || sp.status === "archived") {
     where.status = sp.status;
-  }
-  if (sp.property) {
-    where.propertyId = sp.property;
   }
 
   // Property list for the picker. Hidden when the org only has one
@@ -119,54 +130,72 @@ export default async function ReportsListPage({
         </form>
       </div>
 
-      {/* Filters */}
-      <form
-        action="/portal/reports"
-        className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-end gap-3"
-      >
-        <label className="flex flex-col gap-1.5">
+      {/* Filters: property scope sits beside the kind/status filters so
+          the operator picks "which properties" + "which kinds of reports"
+          at the same level. The multi-select lives outside the form (it
+          drives the URL directly) and the hidden field below preserves
+          the property selection across kind/status submits. */}
+      <div className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-end gap-3">
+        <div className="flex flex-col gap-1.5">
           <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-            Kind
+            Properties
           </span>
-          <select
-            name="kind"
-            defaultValue={sp.kind ?? ""}
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-          >
-            <option value="">All</option>
-            <option value="weekly">Weekly</option>
-            <option value="monthly">Monthly</option>
-            <option value="custom">Custom</option>
-          </select>
-        </label>
-        <label className="flex flex-col gap-1.5">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-            Status
-          </span>
-          <select
-            name="status"
-            defaultValue={sp.status ?? ""}
-            className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-          >
-            <option value="">All</option>
-            <option value="draft">Draft</option>
-            <option value="shared">Shared</option>
-            <option value="archived">Archived</option>
-          </select>
-        </label>
-        <button
-          type="submit"
-          className="inline-flex items-center rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+          <PropertyMultiSelect
+            properties={properties}
+            orgId={scope.orgId}
+          />
+        </div>
+        <form
+          action="/portal/reports"
+          className="flex flex-wrap items-end gap-3"
         >
-          Apply filters
-        </button>
-        <Link
-          href="/portal/reports"
-          className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
-        >
-          Reset
-        </Link>
-      </form>
+          {sp.properties ? (
+            <input type="hidden" name="properties" value={sp.properties} />
+          ) : null}
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+              Kind
+            </span>
+            <select
+              name="kind"
+              defaultValue={sp.kind ?? ""}
+              className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+            >
+              <option value="">All</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+              <option value="custom">Custom</option>
+            </select>
+          </label>
+          <label className="flex flex-col gap-1.5">
+            <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+              Status
+            </span>
+            <select
+              name="status"
+              defaultValue={sp.status ?? ""}
+              className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+            >
+              <option value="">All</option>
+              <option value="draft">Draft</option>
+              <option value="shared">Shared</option>
+              <option value="archived">Archived</option>
+            </select>
+          </label>
+          <button
+            type="submit"
+            className="inline-flex items-center rounded-md border border-border bg-background px-3 py-2 text-sm font-medium hover:bg-muted"
+          >
+            Apply filters
+          </button>
+          <Link
+            href="/portal/reports"
+            className="inline-flex items-center text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+          >
+            Reset
+          </Link>
+        </form>
+      </div>
 
       {/* List */}
       {reports.length === 0 ? (

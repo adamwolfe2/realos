@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { parsePropertyFilter } from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { SourceDonut } from "@/components/portal/attribution/donut";
@@ -39,7 +41,12 @@ export const dynamic = "force-dynamic";
 export default async function AttributionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ from?: string; to?: string; property?: string }>;
+  searchParams: Promise<{
+    from?: string;
+    to?: string;
+    property?: string;
+    properties?: string;
+  }>;
 }) {
   const scope = await requireScope();
   const params = await searchParams;
@@ -48,7 +55,7 @@ export default async function AttributionPage({
     params.from,
     params.to
   );
-  const propertyId = params.property?.trim() || null;
+  const requestedIds = parsePropertyFilter(params);
 
   const properties = await prisma.property.findMany({
     where: { orgId: scope.orgId },
@@ -56,16 +63,17 @@ export default async function AttributionPage({
     select: { id: true, name: true },
   });
 
-  // Validate the requested property belongs to the tenant. Falls back to
-  // "all properties" silently if the id is bogus or cross-tenant.
-  const activePropertyId =
-    propertyId && properties.some((p) => p.id === propertyId)
-      ? propertyId
-      : null;
+  // Validate every requested id belongs to the tenant before passing it
+  // through. Cross-tenant or stale ids fall back silently to "all
+  // properties."
+  const validPropertyIds = (requestedIds ?? []).filter((id) =>
+    properties.some((p) => p.id === id)
+  );
+  const activePropertyIds = validPropertyIds.length > 0 ? validPropertyIds : null;
 
   const filters: AttributionFilters = {
     orgId: scope.orgId,
-    propertyId: activePropertyId,
+    propertyIds: activePropertyIds,
     fromDate,
     toDate,
   };
@@ -90,9 +98,12 @@ export default async function AttributionPage({
     getLeadsPerTouchFrequency(filters),
   ]);
 
-  const activeProperty = activePropertyId
-    ? properties.find((p) => p.id === activePropertyId)
-    : null;
+  // Used in the page header description. When exactly one property is
+  // selected we name it; when multiple are selected we just say how many.
+  const activeProperty =
+    activePropertyIds && activePropertyIds.length === 1
+      ? properties.find((p) => p.id === activePropertyIds[0]) ?? null
+      : null;
 
   const dayCount = Math.round(
     (toDate.getTime() - fromDate.getTime()) / (24 * 60 * 60 * 1000)
@@ -125,8 +136,15 @@ export default async function AttributionPage({
       <PageHeader
         title="Attribution"
         description={`Lead and session attribution across every connected channel. Same surface as Clarity Attribution — included in your LeaseStack subscription.${
-          activeProperty ? ` Filtered to ${activeProperty.name}.` : ""
+          activeProperty
+            ? ` Filtered to ${activeProperty.name}.`
+            : activePropertyIds
+              ? ` Filtered to ${activePropertyIds.length} properties.`
+              : ""
         }`}
+        actions={
+          <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+        }
       />
 
       {/* Filter bar — compact inline row. Form-driven so the URL stays
@@ -157,23 +175,12 @@ export default async function AttributionPage({
             className="rounded-md border border-border bg-background px-2 py-1 text-xs"
           />
         </label>
-        <label className="flex items-center gap-1.5 min-w-0 flex-1">
-          <span className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground shrink-0">
-            Property
-          </span>
-          <select
-            name="property"
-            defaultValue={activePropertyId ?? ""}
-            className="rounded-md border border-border bg-background px-2 py-1 text-xs min-w-0 flex-1"
-          >
-            <option value="">All properties</option>
-            {properties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* Property selection lives in the page-header PropertyMultiSelect.
+            Forwarding the URL value through the form so submitting the
+            date range preserves the selection. */}
+        {params.properties ? (
+          <input type="hidden" name="properties" value={params.properties} />
+        ) : null}
         <button
           type="submit"
           className="inline-flex items-center justify-center rounded-md bg-foreground text-background px-3 py-1 text-xs font-semibold hover:opacity-90"

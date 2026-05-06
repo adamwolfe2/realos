@@ -40,10 +40,15 @@ export type CallPriorityLead = {
  */
 export async function getCallPriorityLeads(
   orgId: string,
-  opts: { limit?: number; propertyId?: string | null } = {},
+  opts: { limit?: number; propertyIds?: string[] | null } = {},
 ): Promise<CallPriorityLead[]> {
   const limit = opts.limit ?? 10;
-  const propertyFilter = opts.propertyId ? { propertyId: opts.propertyId } : {};
+  const propertyFilter =
+    opts.propertyIds && opts.propertyIds.length > 0
+      ? opts.propertyIds.length === 1
+        ? { propertyId: opts.propertyIds[0] }
+        : { propertyId: { in: opts.propertyIds } }
+      : {};
   const now = new Date();
   const since24h = new Date(now.getTime() - DAY);
   const since48h = new Date(now.getTime() - 2 * DAY);
@@ -133,10 +138,15 @@ export async function getCallPriorityLeads(
 
 export async function getTranscriptsWorthReading(
   orgId: string,
-  opts: { limit?: number; propertyId?: string | null } = {},
+  opts: { limit?: number; propertyIds?: string[] | null } = {},
 ) {
   const limit = opts.limit ?? 8;
-  const propertyFilter = opts.propertyId ? { propertyId: opts.propertyId } : {};
+  const propertyFilter =
+    opts.propertyIds && opts.propertyIds.length > 0
+      ? opts.propertyIds.length === 1
+        ? { propertyId: opts.propertyIds[0] }
+        : { propertyId: { in: opts.propertyIds } }
+      : {};
   const since48h = new Date(Date.now() - 2 * DAY);
 
   const [flagged, recentWithLead, recent] = await Promise.all([

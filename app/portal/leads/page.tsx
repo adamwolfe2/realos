@@ -2,6 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { LeadSource, Prisma } from "@prisma/client";
 import {
   LeadKanban,
@@ -27,17 +32,26 @@ function parsePage(value: string | undefined): number {
 export default async function LeadsKanbanPage({
   searchParams,
 }: {
-  searchParams: Promise<{ source?: string; property?: string; q?: string; page?: string }>;
+  searchParams: Promise<{
+    source?: string;
+    property?: string;
+    properties?: string;
+    q?: string;
+    page?: string;
+  }>;
 }) {
   const scope = await requireScope();
   const sp = await searchParams;
   const page = parsePage(sp.page);
+  const propertyIds = parsePropertyFilter(sp);
 
-  const where: Prisma.LeadWhereInput = { ...tenantWhere(scope) };
+  const where: Prisma.LeadWhereInput = {
+    ...tenantWhere(scope),
+    ...propertyWhereFragment(propertyIds),
+  };
   if (sp.source && (SOURCES as string[]).includes(sp.source)) {
     where.source = sp.source as LeadSource;
   }
-  if (sp.property) where.propertyId = sp.property;
   if (sp.q) {
     where.OR = [
       { firstName: { contains: sp.q, mode: "insensitive" } },
@@ -84,7 +98,8 @@ export default async function LeadsKanbanPage({
   function pageHref(p: number): string {
     const params = new URLSearchParams();
     if (sp.source) params.set("source", sp.source);
-    if (sp.property) params.set("property", sp.property);
+    if (sp.properties) params.set("properties", sp.properties);
+    else if (sp.property) params.set("property", sp.property);
     if (sp.q) params.set("q", sp.q);
     if (p > 1) params.set("page", String(p));
     const qs = params.toString();
@@ -98,6 +113,10 @@ export default async function LeadsKanbanPage({
         description="Click any lead to see full detail, conversation history, tours, and applications."
         actions={
           <div className="flex items-center gap-3">
+            <PropertyMultiSelect
+              properties={properties}
+              orgId={scope.orgId}
+            />
             <span className="text-xs text-muted-foreground">
               {totalCount === 0
                 ? "No leads"
@@ -129,23 +148,12 @@ export default async function LeadsKanbanPage({
             ))}
           </select>
         </label>
-        <label className="flex items-center gap-1.5 min-w-0">
-          <span className="text-[10px] font-semibold tracking-widest uppercase text-muted-foreground shrink-0">
-            Property
-          </span>
-          <select
-            name="property"
-            defaultValue={sp.property ?? ""}
-            className="rounded-md border border-border bg-background px-2 py-1 text-xs max-w-[200px]"
-          >
-            <option value="">All</option>
-            {properties.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </label>
+        {/* Property filter moved to page-header PropertyMultiSelect.
+            Forwarding the URL value through this filter form so the
+            source/search submit doesn't drop the property scope. */}
+        {sp.properties ? (
+          <input type="hidden" name="properties" value={sp.properties} />
+        ) : null}
         <input
           name="q"
           defaultValue={sp.q ?? ""}
@@ -158,7 +166,7 @@ export default async function LeadsKanbanPage({
         >
           Apply
         </button>
-        {(sp.source || sp.property || sp.q) ? (
+        {(sp.source || sp.property || sp.properties || sp.q) ? (
           <Link
             href="/portal/leads"
             className="inline-flex items-center justify-center rounded-md border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground hover:text-foreground"
