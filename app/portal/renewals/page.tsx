@@ -11,11 +11,13 @@ import {
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
+  isAccessDenied,
   parsePropertyFilter,
   propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
@@ -172,6 +174,10 @@ export default async function RenewalsPage({
           <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
         }
       />
+
+      {isAccessDenied(scope, propertyIds) ? (
+        <PropertyAccessDeniedBanner pathname="/portal/renewals" />
+      ) : null}
 
       <AppFolioStatusBanner
         status={appfolioStatus}

@@ -3,11 +3,13 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
+  isAccessDenied,
   parsePropertyFilter,
   propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { LeadSource, Prisma } from "@prisma/client";
 import {
   LeadKanban,
@@ -127,6 +129,10 @@ export default async function LeadsKanbanPage({
           </div>
         }
       />
+
+      {isAccessDenied(scope, propertyIds) ? (
+        <PropertyAccessDeniedBanner pathname="/portal/leads" />
+      ) : null}
 
       <form
         action="/portal/leads"

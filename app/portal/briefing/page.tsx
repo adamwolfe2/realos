@@ -101,7 +101,10 @@ export default async function BriefingPage({
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
-      select: { name: true },
+      // primaryContactEmail is consumed by the setup-completion check
+      // below so a missing notification address shows up in the wizard
+      // alongside "add your first property."
+      select: { name: true, primaryContactEmail: true },
     }),
     getSinceLastViewed(scope.orgId, user?.lastBriefingViewedAt ?? null),
     getCallPriorityLeads(scope.orgId, { limit: 10, propertyIds: activePropertyIds }),
@@ -115,6 +118,11 @@ export default async function BriefingPage({
     }),
   ]);
 
+  // Setup gate now also surfaces "set a notification email." Without
+  // primaryContactEmail set on the org, lead-capture emails go nowhere
+  // and the operator silently misses every inbound lead. Adding it as
+  // a required step is the simplest way to keep new users from finding
+  // out the hard way that their leads were quietly dropped.
   const setupSteps = [
     {
       label: "Add your first property",
@@ -127,13 +135,21 @@ export default async function BriefingPage({
       href: "/portal/settings/integrations",
     },
     {
+      label: "Set a notification email for new leads",
+      done: !!org?.primaryContactEmail,
+      href: "/portal/settings",
+    },
+    {
       label: "Configure the AI chatbot",
       done: false,
       href: "/portal/chatbot",
     },
   ];
   const allSetupDone = setupSteps.every((s) => s.done);
-  const setupComplete = properties.length > 0 && !!appfolioIntegration?.lastSyncAt;
+  const setupComplete =
+    properties.length > 0 &&
+    !!appfolioIntegration?.lastSyncAt &&
+    !!org?.primaryContactEmail;
 
   const insightCards: InsightCardData[] = insights.map((i) => ({
     id: i.id,

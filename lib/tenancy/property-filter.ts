@@ -78,6 +78,26 @@ export function effectivePropertyIds(
 }
 
 /**
+ * True when the URL is requesting properties the user can't see at all.
+ * Pages should render an explanatory banner so a restricted user
+ * doesn't sit in front of a blank page wondering why nothing loads.
+ *
+ * Returns false for unrestricted users — they always have access.
+ */
+export function isAccessDenied(
+  scope: ScopeWithGate,
+  selectedIds: string[] | null,
+): boolean {
+  if (!scope.allowedPropertyIds) return false;
+  if (!selectedIds || selectedIds.length === 0) return false;
+  const allowed = new Set(scope.allowedPropertyIds);
+  // Only flag denial when EVERY requested property is out of bounds.
+  // Mixed selections (some allowed, some not) silently drop the
+  // unauthorized ids and show data for the rest.
+  return selectedIds.every((id) => !allowed.has(id));
+}
+
+/**
  * Build the Prisma `where` fragment for filtering by selected properties,
  * with the access gate applied. Pass the result into the page's where via
  * spread:

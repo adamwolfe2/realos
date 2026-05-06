@@ -4,11 +4,13 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import {
+  isAccessDenied,
   parsePropertyFilter,
   propertyWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { ChatbotConversationStatus, Prisma } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { EmptyState } from "@/components/portal/ui/empty-state";
@@ -193,6 +195,10 @@ export default async function ConversationsList({
           <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
         }
       />
+
+      {isAccessDenied(scope, propertyIds) ? (
+        <PropertyAccessDeniedBanner pathname="/portal/conversations" />
+      ) : null}
 
       <Suspense>
         <TranscriptSearch
