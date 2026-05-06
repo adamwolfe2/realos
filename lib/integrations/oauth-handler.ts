@@ -64,9 +64,16 @@ export async function handleOAuthStart(
     );
   }
 
+  // Normalize returnTo to a same-origin path. Without this an attacker
+  // could phish themselves with ?returnTo=https://attacker.com/fake and
+  // the post-callback redirect would honor it. Anything that doesn't
+  // start with `/portal/` collapses back to the integrations page.
+  const rawReturnTo =
+    new URL(req.url).searchParams.get("returnTo") ?? "";
   const returnTo =
-    new URL(req.url).searchParams.get("returnTo") ??
-    "/portal/settings/integrations";
+    rawReturnTo.startsWith("/portal/") && !rawReturnTo.startsWith("//")
+      ? rawReturnTo
+      : "/portal/settings/integrations";
 
   const state = signState({
     orgId: scope.orgId,
@@ -180,7 +187,16 @@ export async function handleOAuthCallback(
     expiresInSec: tokens.expires_in ?? null,
   });
 
-  const redirect = new URL(payload.returnTo, url);
+  // Defense-in-depth: even though signState/verifyState ensures the
+  // returnTo came from us, we re-validate before the redirect. Caps any
+  // bug in the start-handler that lets a non-/portal returnTo get
+  // signed (or any future relaxation of the start-handler's check).
+  const safePath =
+    payload.returnTo.startsWith("/portal/") &&
+    !payload.returnTo.startsWith("//")
+      ? payload.returnTo
+      : "/portal/settings/integrations";
+  const redirect = new URL(safePath, url);
   redirect.searchParams.set("oauth", `${provider}_connected`);
   const res = NextResponse.redirect(redirect.toString());
   res.cookies.delete(STATE_COOKIE);
