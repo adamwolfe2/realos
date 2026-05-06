@@ -91,7 +91,16 @@ export async function connectPixel(
       name: true,
       modulePixel: true,
       moduleChatbot: true,
-      cursiveIntegration: { select: { cursivePixelId: true } },
+      // Was `cursiveIntegration` (singular). After the per-property
+      // migration this is an array — pull just the legacy org-wide
+      // row (propertyId NULL) since this server action is the
+      // org-wide connect flow. Per-property connect happens through
+      // the integrations settings UI.
+      cursiveIntegrations: {
+        where: { propertyId: null },
+        select: { cursivePixelId: true },
+        take: 1,
+      },
     },
   });
   if (!org) return { ok: false, error: "Organization not found" };
@@ -102,7 +111,7 @@ export async function connectPixel(
         "Pixel module is not enabled for your workspace. Contact your account manager.",
     };
   }
-  if (org.cursiveIntegration?.cursivePixelId) {
+  if (org.cursiveIntegrations[0]?.cursivePixelId) {
     return {
       ok: false,
       error: "A pixel is already connected for this workspace.",
@@ -148,19 +157,33 @@ export async function connectPixel(
     }).catch(() => undefined);
   }
 
-  // Pre-create the integration row so installedOnDomain is captured even
-  // before ops fulfills. The Cursive panel reads this row, so this also
-  // means the admin sees the requested domain pre-filled.
-  await prisma.cursiveIntegration.upsert({
-    where: { orgId: org.id },
-    create: {
-      orgId: org.id,
-      installedOnDomain: websiteUrl.hostname,
-    },
-    update: {
-      installedOnDomain: websiteUrl.hostname,
-    },
+  // Pre-create the integration row so installedOnDomain is captured
+  // even before ops fulfills. The org-wide connect flow always writes
+  // the legacy (propertyId = NULL) row; per-property pixels are
+  // created through the integrations settings UI which calls a
+  // different code path.
+  //
+  // We can't use upsert() here because Prisma's compound unique key
+  // doesn't accept NULL on the propertyId leg. Manual find-then-
+  // update-or-create instead.
+  const legacyRow = await prisma.cursiveIntegration.findFirst({
+    where: { orgId: org.id, propertyId: null },
+    select: { id: true },
   });
+  if (legacyRow) {
+    await prisma.cursiveIntegration.update({
+      where: { id: legacyRow.id },
+      data: { installedOnDomain: websiteUrl.hostname },
+    });
+  } else {
+    await prisma.cursiveIntegration.create({
+      data: {
+        orgId: org.id,
+        propertyId: null,
+        installedOnDomain: websiteUrl.hostname,
+      },
+    });
+  }
 
   revalidatePath(PORTAL_PATH);
   return { ok: true, queued: true };

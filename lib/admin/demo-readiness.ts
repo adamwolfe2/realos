@@ -86,9 +86,12 @@ export async function getReadinessForTenant(
         },
       })
       .catch(() => null),
+    // Demo readiness considers the legacy org-wide row only — admin
+    // demo flow predates per-property scoping. Multi-property orgs in
+    // demo mode would still surface their org-level pixel here.
     prisma.cursiveIntegration
-      .findUnique({
-        where: { orgId },
+      .findFirst({
+        where: { orgId, propertyId: null },
         select: {
           cursivePixelId: true,
           installedOnDomain: true,

@@ -33,8 +33,11 @@ export async function syncPixelFromSegment(): Promise<TenantPixelSyncResult> {
   // Throttle: if we synced very recently, return the existing state
   // without burning another AL round-trip. The page-load auto-trigger
   // would otherwise re-fetch every render.
-  const integration = await prisma.cursiveIntegration.findUnique({
-    where: { orgId: scope.orgId },
+  // Org-level segment sync — operates on the legacy org-wide row.
+  // Per-property segment sync (when AL exposes per-property segments)
+  // will be a separate action.
+  const integration = await prisma.cursiveIntegration.findFirst({
+    where: { orgId: scope.orgId, propertyId: null },
     select: {
       lastSegmentSyncAt: true,
       cursiveSegmentId: true,

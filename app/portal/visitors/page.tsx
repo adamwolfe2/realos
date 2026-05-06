@@ -184,8 +184,14 @@ export default async function VisitorsPage({
       take: PAGE_SIZE,
     }),
     prisma.visitor.count({ where }),
-    prisma.cursiveIntegration.findUnique({
+    // The visitor feed page header surfaces the "where is the pixel
+    // installed" stat. With multi-property scoping a single org may
+    // have several pixels (one per property) plus a legacy org-wide
+    // row. We pick the most-recently-active row so the header reflects
+    // the pixel actually firing.
+    prisma.cursiveIntegration.findFirst({
       where: { orgId: scope.orgId },
+      orderBy: [{ lastEventAt: "desc" }, { provisionedAt: "desc" }],
       select: {
         cursivePixelId: true,
         pixelScriptUrl: true,

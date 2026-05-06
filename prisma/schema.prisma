@@ -332,7 +332,12 @@ model Organization {
   projects               Project[]
   auditEvents            AuditEvent[]
   clientNotes            ClientNote[]
-  cursiveIntegration     CursiveIntegration?
+  // Was `cursiveIntegration` (singular, one-to-one) before the
+  // multi-property migration. Now an array because tenants can have
+  // one pixel per property plus an optional legacy org-wide row
+  // (propertyId = NULL). Consumers should use the helpers in
+  // lib/integrations/per-property.ts instead of reading directly.
+  cursiveIntegrations    CursiveIntegration[]
   pixelProvisionRequests PixelProvisionRequest[]
   appfolioIntegration    AppFolioIntegration?
   seoIntegrations        SeoIntegration[]
@@ -632,6 +637,13 @@ model Property {
   clientReports        ClientReport[]
   // Reverse relation for property-level RBAC. See UserPropertyAccess.
   userAccess           UserPropertyAccess[]
+  // Per-property integration connections. NULL on these rows means
+  // "applies to the whole org" (legacy / pre-migration behavior); a
+  // populated propertyId scopes the connection to this single property
+  // so multi-property tenants can wire each domain's GA4 + GSC + Pixel
+  // independently.
+  cursiveIntegrations  CursiveIntegration[]
+  seoIntegrations      SeoIntegration[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1082,8 +1094,17 @@ model Visitor {
 
 model CursiveIntegration {
   id    String       @id @default(cuid())
-  orgId String       @unique
+  orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Per-property scoping. NULL = legacy "applies to whole org" — every
+  // existing row at the time of the multi-property migration is NULL,
+  // which preserves the prior single-pixel-per-org behavior. New
+  // connections always specify a property so multi-property tenants
+  // (e.g. SG Real Estate's 71 properties) can run a distinct pixel per
+  // domain.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
 
   cursivePixelId    String? // The Cursive pixel ID provisioned for this tenant
   cursiveAccountId  String? // Cursive account this pixel belongs to
@@ -1107,6 +1128,14 @@ model CursiveIntegration {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Composite uniqueness allows ONE row per (org, property), with the
+  // legacy "all properties" row keyed as (orgId, NULL). Postgres treats
+  // NULL as distinct in unique indexes by default, so the prior
+  // org-wide row coexists with new per-property rows without conflict.
+  @@unique([orgId, propertyId])
+  @@index([orgId])
+  @@index([propertyId])
 }
 
 // AudienceLab does not expose a programmatic pixel-creation API, so when a
@@ -1641,9 +1670,21 @@ model SeoIntegration {
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
+  // Per-property scoping. NULL = legacy "applies to whole org" — every
+  // existing SeoIntegration row at the time of the multi-property
+  // migration is NULL, which preserves the prior single-GA4 / single-
+  // GSC-per-org behavior. New connections always specify a property so
+  // multi-property tenants can run a distinct GA4 property + GSC site
+  // per LeaseStack property.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
   provider                    SeoProvider
   // GSC: full site URL, e.g. "sc-domain:telegraphcommons.com" or
   //      "https://www.telegraphcommons.com/". GA4: property id, e.g. "123456789".
+  // (Note: this is the GA4/GSC-side identifier, NOT the LeaseStack
+  // Property.id — those are separate concerns linked via `propertyId`
+  // above.)
   propertyIdentifier          String
   serviceAccountEmail         String? // surfaced in UI so operators know which email to grant access to
   serviceAccountJsonEncrypted String      @db.Text // encrypted full JSON payload
@@ -1655,8 +1696,13 @@ model SeoIntegration {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([orgId, provider])
+  // Composite unique: one row per (org, property, provider). The
+  // legacy "all properties" row is keyed (orgId, NULL, provider) and
+  // coexists with per-property rows because Postgres treats NULL as
+  // distinct in unique indexes.
+  @@unique([orgId, propertyId, provider])
   @@index([orgId])
+  @@index([propertyId])
 }
 
 // Daily aggregate per tenant. Re-run-safe via the unique (orgId, date) index.

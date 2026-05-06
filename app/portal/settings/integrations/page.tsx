@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
 import { IntegrationMarketplace } from "@/components/portal/integrations/integration-marketplace";
+import { PerPropertyIntegrationsPanel } from "@/components/portal/integrations/per-property-panel";
 import { resolveIntegrationStatuses } from "@/lib/integrations/status";
 import { CopySnippetButton } from "./copy-snippet";
 import {
@@ -37,7 +38,7 @@ export const dynamic = "force-dynamic";
 
 export default async function IntegrationsPage() {
   const scope = await requireScope();
-  const [org, pixel, appfolio, seoIntegrations, adAccounts, statuses] = await Promise.all([
+  const [org, pixel, appfolio, seoIntegrations, adAccounts, statuses, properties] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
       select: { name: true, modulePixel: true, moduleChatbot: true },
@@ -72,12 +73,18 @@ export default async function IntegrationsPage() {
       where: { orgId: scope.orgId },
       select: {
         provider: true,
+        // After per-property migration, multiple rows can exist per
+        // provider — one for each scoped property plus an optional
+        // legacy org-wide row. propertyId distinguishes them.
+        propertyId: true,
+        property: { select: { id: true, name: true } },
         propertyIdentifier: true,
         serviceAccountEmail: true,
         lastSyncAt: true,
         lastSyncError: true,
         status: true,
       },
+      orderBy: [{ provider: "asc" }, { propertyId: "asc" }],
     }),
     prisma.adAccount.findMany({
       where: { orgId: scope.orgId },
@@ -94,6 +101,16 @@ export default async function IntegrationsPage() {
       },
     }),
     resolveIntegrationStatuses(scope.orgId),
+    // Property list is threaded into the connect forms so multi-
+    // property tenants can pick which LeaseStack property each new
+    // GA4 / GSC / Pixel connection scopes to. Empty list (single-
+    // property org) means the connect forms render without a picker
+    // and connections land on the legacy org-wide row.
+    prisma.property.findMany({
+      where: { orgId: scope.orgId },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
 
   if (!org) return null;
@@ -153,7 +170,16 @@ export default async function IntegrationsPage() {
       <ConnectAppfolioForm />
     ),
     gsc: (() => {
-      const row = seoIntegrations.find((s) => s.provider === SeoProvider.GSC);
+      // Manage-card displays the LEGACY org-wide GSC row. Per-property
+      // rows show up in the Per-Property panel below this section so
+      // each card stays focused on its scope. Falls back to the first
+      // GSC row of any kind so single-property orgs that happened to
+      // wire their connection to a property still see a manage card.
+      const gscRows = seoIntegrations.filter(
+        (s) => s.provider === SeoProvider.GSC,
+      );
+      const row =
+        gscRows.find((r) => r.propertyId === null) ?? gscRows[0] ?? null;
       return row ? (
         <SeoManage
           provider="GSC"
@@ -164,11 +190,19 @@ export default async function IntegrationsPage() {
           lastError={row.lastSyncError}
         />
       ) : (
-        <ConnectSeoForm provider="GSC" />
+        <ConnectSeoForm
+          provider="GSC"
+          properties={properties.length > 1 ? properties : []}
+        />
       );
     })(),
     ga4: (() => {
-      const row = seoIntegrations.find((s) => s.provider === SeoProvider.GA4);
+      // Same legacy-first selection as GSC above.
+      const ga4Rows = seoIntegrations.filter(
+        (s) => s.provider === SeoProvider.GA4,
+      );
+      const row =
+        ga4Rows.find((r) => r.propertyId === null) ?? ga4Rows[0] ?? null;
       return row ? (
         <SeoManage
           provider="GA4"
@@ -179,7 +213,10 @@ export default async function IntegrationsPage() {
           lastError={row.lastSyncError}
         />
       ) : (
-        <ConnectSeoForm provider="GA4" />
+        <ConnectSeoForm
+          provider="GA4"
+          properties={properties.length > 1 ? properties : []}
+        />
       );
     })(),
     "google-ads": (() => {
@@ -255,6 +292,14 @@ export default async function IntegrationsPage() {
     })(),
   };
 
+  // Per-property panel pulls in every cursive integration row (so it
+  // can render both the legacy NULL row and any per-property rows in
+  // its matrix). Cheap query — we already have the org list above.
+  const allCursiveRows = await prisma.cursiveIntegration.findMany({
+    where: { orgId: scope.orgId },
+    select: { propertyId: true, cursivePixelId: true },
+  });
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -262,6 +307,15 @@ export default async function IntegrationsPage() {
         description="Connect the tools that feed your portal. New integrations unlock automatically as your account team activates them for you."
       />
       <IntegrationMarketplace statuses={statuses} manageSlots={manageSlots} />
+      <PerPropertyIntegrationsPanel
+        properties={properties}
+        seoRows={seoIntegrations.map((s) => ({
+          provider: s.provider,
+          propertyId: s.propertyId,
+          propertyIdentifier: s.propertyIdentifier,
+        }))}
+        cursiveRows={allCursiveRows}
+      />
     </div>
   );
 }

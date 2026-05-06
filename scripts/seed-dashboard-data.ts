@@ -268,32 +268,39 @@ async function main() {
   console.log("Seeding SEO data...");
 
   // Mark integrations connected (so the dashboard shows green chips).
-  await prisma.seoIntegration.upsert({
-    where: { orgId_provider: { orgId, provider: SeoProvider.GSC } },
-    update: { status: SeoSyncStatus.IDLE, lastSyncAt: new Date() },
-    create: {
-      orgId,
-      provider: SeoProvider.GSC,
-      propertyIdentifier: "https://www.telegraphcommons.com/",
-      serviceAccountEmail: "demo-seed@telegraphcommons.iam.gserviceaccount.com",
-      serviceAccountJsonEncrypted: "DEMO_SEED",
-      status: SeoSyncStatus.IDLE,
-      lastSyncAt: new Date(),
-    },
-  });
-  await prisma.seoIntegration.upsert({
-    where: { orgId_provider: { orgId, provider: SeoProvider.GA4 } },
-    update: { status: SeoSyncStatus.IDLE, lastSyncAt: new Date() },
-    create: {
-      orgId,
-      provider: SeoProvider.GA4,
-      propertyIdentifier: "338445667",
-      serviceAccountEmail: "demo-seed@telegraphcommons.iam.gserviceaccount.com",
-      serviceAccountJsonEncrypted: "DEMO_SEED",
-      status: SeoSyncStatus.IDLE,
-      lastSyncAt: new Date(),
-    },
-  });
+  // Demo seed writes to the legacy org-wide row (propertyId = NULL).
+  // Manual find-then-update-or-create instead of upsert because Prisma
+  // can't compound-key against a NULL propertyId leg.
+  for (const provider of [SeoProvider.GSC, SeoProvider.GA4] as const) {
+    const propertyIdentifier =
+      provider === SeoProvider.GSC
+        ? "https://www.telegraphcommons.com/"
+        : "338445667";
+    const existing = await prisma.seoIntegration.findFirst({
+      where: { orgId, propertyId: null, provider },
+      select: { id: true },
+    });
+    if (existing) {
+      await prisma.seoIntegration.update({
+        where: { id: existing.id },
+        data: { status: SeoSyncStatus.IDLE, lastSyncAt: new Date() },
+      });
+    } else {
+      await prisma.seoIntegration.create({
+        data: {
+          orgId,
+          propertyId: null,
+          provider,
+          propertyIdentifier,
+          serviceAccountEmail:
+            "demo-seed@telegraphcommons.iam.gserviceaccount.com",
+          serviceAccountJsonEncrypted: "DEMO_SEED",
+          status: SeoSyncStatus.IDLE,
+          lastSyncAt: new Date(),
+        },
+      });
+    }
+  }
 
   for (let day = 30; day >= 0; day--) {
     const date = daysAgoMidnight(day);

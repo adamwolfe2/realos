@@ -57,9 +57,15 @@ export async function saveCursiveSettings(
   });
   if (!target) return { ok: false, error: "Tenant not found" };
 
-  const previous = await prisma.cursiveIntegration.findUnique({
-    where: { orgId },
+  // After the per-property migration this admin panel still operates on
+  // the LEGACY org-wide row (propertyId = NULL). Per-property pixel
+  // edits happen through a different surface that picks the property
+  // explicitly. All lookups + writes here therefore filter to the
+  // legacy row.
+  const previous = await prisma.cursiveIntegration.findFirst({
+    where: { orgId, propertyId: null },
     select: {
+      id: true,
       cursivePixelId: true,
       cursiveSegmentId: true,
       installedOnDomain: true,
@@ -71,29 +77,37 @@ export async function saveCursiveSettings(
   // because two concurrent saves would both see a null webhookToken, both
   // mint a fresh one, and the second upsert would overwrite the first —
   // silently invalidating the AL webhook URL we already shipped to ops.
-  await prisma.cursiveIntegration.upsert({
-    where: { orgId },
-    create: {
-      orgId,
-      cursivePixelId: cursivePixelId || null,
-      cursiveSegmentId: cursiveSegmentId || null,
-      installedOnDomain: installedOnDomain || null,
-      provisionedAt: cursivePixelId ? new Date() : null,
-      // No token yet — minted atomically below if needed.
-      webhookToken: null,
-    },
-    update: {
-      cursivePixelId: cursivePixelId || null,
-      cursiveSegmentId: cursiveSegmentId || null,
-      installedOnDomain: installedOnDomain || null,
-      provisionedAt:
-        cursivePixelId && !previous?.cursivePixelId
-          ? new Date()
-          : undefined,
-      // Never touch the token here. Only the conditional updateMany below
-      // is allowed to set it, and only when it's still null.
-    },
-  });
+  //
+  // Manual find-then-update-or-create instead of upsert because Prisma's
+  // compound unique key doesn't accept NULL on the propertyId leg.
+  if (previous) {
+    await prisma.cursiveIntegration.update({
+      where: { id: previous.id },
+      data: {
+        cursivePixelId: cursivePixelId || null,
+        cursiveSegmentId: cursiveSegmentId || null,
+        installedOnDomain: installedOnDomain || null,
+        provisionedAt:
+          cursivePixelId && !previous.cursivePixelId
+            ? new Date()
+            : undefined,
+        // Never touch the token here. Only the conditional updateMany
+        // below is allowed to set it, and only when it's still null.
+      },
+    });
+  } else {
+    await prisma.cursiveIntegration.create({
+      data: {
+        orgId,
+        propertyId: null,
+        cursivePixelId: cursivePixelId || null,
+        cursiveSegmentId: cursiveSegmentId || null,
+        installedOnDomain: installedOnDomain || null,
+        provisionedAt: cursivePixelId ? new Date() : null,
+        webhookToken: null,
+      },
+    });
+  }
 
   // Mint a per-tenant webhook token the first time we see a pixel_id.
   // updateMany with `webhookToken: null` in the where makes this race-safe:
@@ -104,15 +118,16 @@ export async function saveCursiveSettings(
   if (cursivePixelId && !webhookToken) {
     const newToken = generateWebhookToken();
     const result = await prisma.cursiveIntegration.updateMany({
-      where: { orgId, webhookToken: null },
+      // Only the legacy row mints tokens through this admin panel.
+      where: { orgId, propertyId: null, webhookToken: null },
       data: { webhookToken: newToken },
     });
     if (result.count === 1) {
       webhookToken = newToken;
     } else {
       // Another concurrent save won the race; read whatever was persisted.
-      const after = await prisma.cursiveIntegration.findUnique({
-        where: { orgId },
+      const after = await prisma.cursiveIntegration.findFirst({
+        where: { orgId, propertyId: null },
         select: { webhookToken: true },
       });
       webhookToken = after?.webhookToken ?? null;
@@ -259,8 +274,11 @@ export type SyncSegmentResult =
 export async function runCursiveSegmentSync(
   orgId: string,
 ): Promise<SyncSegmentResult> {
-  const integration = await prisma.cursiveIntegration.findUnique({
-    where: { orgId },
+  // Segment sync currently runs against the legacy org-wide row.
+  // When per-property segments come online (each property having its
+  // own AL segment) this will need to fan out per row.
+  const integration = await prisma.cursiveIntegration.findFirst({
+    where: { orgId, propertyId: null },
     select: { cursiveSegmentId: true, installedOnDomain: true },
   });
   if (!integration?.cursiveSegmentId) {
@@ -314,8 +332,8 @@ export async function runCursiveSegmentSync(
     if (items.length < PAGE_SIZE) break;
   }
 
-  await prisma.cursiveIntegration.update({
-    where: { orgId },
+  await prisma.cursiveIntegration.updateMany({
+    where: { orgId, propertyId: null },
     data: { lastSegmentSyncAt: new Date() },
   });
 
@@ -506,8 +524,8 @@ export async function testCursiveWebhook(
     throw err;
   }
 
-  const integration = await prisma.cursiveIntegration.findUnique({
-    where: { orgId },
+  const integration = await prisma.cursiveIntegration.findFirst({
+    where: { orgId, propertyId: null },
     select: { cursivePixelId: true, installedOnDomain: true },
   });
   if (!integration?.cursivePixelId) {

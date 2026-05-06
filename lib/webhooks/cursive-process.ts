@@ -73,10 +73,16 @@ export async function processCursiveEvent(
     if (!pixelId) {
       return { visitorId: null, leadId: null, skipped: "no pixel_id" };
     }
+    // The pixel id is globally unique across Cursive's system, so a
+    // findFirst by pixelId resolves to exactly one row regardless of
+    // whether it's a per-property or legacy org-wide pixel. We fetch
+    // propertyId too so downstream visitor/event writes can attribute
+    // to the right property for multi-property tenants.
     const found = await prisma.cursiveIntegration.findFirst({
       where: { cursivePixelId: pixelId },
       select: {
         orgId: true,
+        propertyId: true,
         cursivePixelId: true,
         installedOnDomain: true,
       },
@@ -419,13 +425,22 @@ export async function processCursiveEvent(
     }
   }
 
-  await prisma.cursiveIntegration.update({
-    where: { orgId: integration.orgId },
-    data: {
-      lastEventAt: now,
-      totalEventsCount: { increment: 1 },
-    },
-  });
+  // Bump activity counters on the SPECIFIC integration row that
+  // matched the pixel id (could be per-property or legacy org-wide).
+  // updateMany with the explicit pixelId keeps this race-safe even
+  // with multiple per-property pixels in the same org.
+  if (integration.cursivePixelId) {
+    await prisma.cursiveIntegration.updateMany({
+      where: {
+        orgId: integration.orgId,
+        cursivePixelId: integration.cursivePixelId,
+      },
+      data: {
+        lastEventAt: now,
+        totalEventsCount: { increment: 1 },
+      },
+    });
+  }
 
   return { visitorId: visitor.id, leadId };
 }

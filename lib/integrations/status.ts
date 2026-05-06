@@ -53,10 +53,16 @@ export async function resolveIntegrationStatuses(
         },
       })
       .catch(() => null),
+    // Integration-status badges are an org-level summary so they look
+    // at "any pixel connected anywhere" rather than per-property
+    // detail. findFirst with cursivePixelId set surfaces the most
+    // recent active pixel — could be the legacy org-wide row OR any
+    // per-property row.
     prisma.cursiveIntegration
-      .findUnique({
-        where: { orgId },
+      .findFirst({
+        where: { orgId, cursivePixelId: { not: null } },
         select: { cursivePixelId: true, lastEventAt: true },
+        orderBy: { lastEventAt: "desc" },
       })
       .catch(() => null),
     prisma.appFolioIntegration

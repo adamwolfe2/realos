@@ -17,6 +17,8 @@ const SA_EMAIL = "leasestack-integrations@leasestack.iam.gserviceaccount.com";
 
 type Provider = "GSC" | "GA4";
 
+type ConnectableProperty = { id: string; name: string };
+
 function CopyEmailButton({ email }: { email: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -38,12 +40,32 @@ function CopyEmailButton({ email }: { email: string }) {
   );
 }
 
-export function ConnectSeoForm({ provider }: { provider: Provider }) {
+export function ConnectSeoForm({
+  provider,
+  properties = [],
+  defaultPropertyId = null,
+}: {
+  provider: Provider;
+  /**
+   * Org's properties available for scoping. When empty, the form
+   * defaults to a legacy org-wide connection (propertyId = NULL).
+   * Multi-property tenants pass the visible/allowed list and the
+   * selector renders so each connection lands on a specific
+   * property.
+   */
+  properties?: ConnectableProperty[];
+  /**
+   * Pre-select a property — useful when the form is rendered from a
+   * per-property tab so the operator doesn't have to re-pick.
+   */
+  defaultPropertyId?: string | null;
+}) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState<
     ConnectSeoResult,
     FormData
   >(async (_prev, formData) => connectSeo(formData), CONNECT_INITIAL);
+  const showPicker = properties.length > 0;
 
   // After a successful connect, refresh the parent server component so
   // the marketplace tile badge flips from "Available" → "Connected"
@@ -63,6 +85,37 @@ export function ConnectSeoForm({ provider }: { provider: Provider }) {
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="provider" value={provider} />
+
+      {/* Step 0: pick which LeaseStack property this connection is
+          for. Only renders for orgs with more than one property —
+          single-property tenants don't see this and the connection
+          lands on the legacy org-wide row. */}
+      {showPicker ? (
+        <div className="rounded-md border border-border bg-muted/30 px-4 py-3 space-y-2">
+          <label className="block text-xs font-medium text-foreground">
+            Which property is this {isGsc ? "Search Console" : "GA4"}{" "}
+            connection for?
+          </label>
+          <select
+            name="leasestackPropertyId"
+            defaultValue={defaultPropertyId ?? ""}
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+          >
+            <option value="">All properties (org-wide)</option>
+            {properties.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
+            ))}
+          </select>
+          <p className="text-[11px] text-muted-foreground leading-snug">
+            Multi-property tenants connect a distinct{" "}
+            {isGsc ? "Search Console site" : "GA4 property"} per LeaseStack
+            property. Pick &ldquo;All properties&rdquo; only if you have a
+            single account that covers your whole portfolio.
+          </p>
+        </div>
+      ) : null}
 
       {/* Step 1: grant access */}
       <div className="rounded-md border border-border bg-muted/30 px-4 py-3 space-y-3">
@@ -241,7 +294,14 @@ export function ConnectSeoForm({ provider }: { provider: Provider }) {
   );
 }
 
-export function DisconnectSeoForm({ provider }: { provider: Provider }) {
+export function DisconnectSeoForm({
+  provider,
+  propertyId = null,
+}: {
+  provider: Provider;
+  /** Property scope of the row to remove. NULL = legacy org-wide. */
+  propertyId?: string | null;
+}) {
   const [state, formAction, pending] = useActionState<
     ConnectSeoResult,
     FormData
@@ -250,6 +310,13 @@ export function DisconnectSeoForm({ provider }: { provider: Provider }) {
   return (
     <form action={formAction} className="inline-flex items-center gap-3">
       <input type="hidden" name="provider" value={provider} />
+      {propertyId ? (
+        <input
+          type="hidden"
+          name="leasestackPropertyId"
+          value={propertyId}
+        />
+      ) : null}
       <button
         type="submit"
         disabled={pending}

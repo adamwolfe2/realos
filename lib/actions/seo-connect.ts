@@ -34,6 +34,17 @@ const connectSchema = z.object({
     .trim()
     .min(1, "Property identifier is required")
     .max(500),
+  // Optional LeaseStack property to scope this connection to. When
+  // omitted (or empty string) the connection lands on the legacy
+  // org-wide row (propertyId = NULL) so single-property tenants don't
+  // need to think about scoping. Multi-property tenants pass a real
+  // property id so each domain's GA4/GSC is independent.
+  leasestackPropertyId: z
+    .string()
+    .trim()
+    .max(60)
+    .optional()
+    .nullable(),
 });
 
 export type ConnectSeoResult =
@@ -61,6 +72,8 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
   const parsed = connectSchema.safeParse({
     provider: formData.get("provider")?.toString() ?? "",
     propertyIdentifier: formData.get("propertyIdentifier")?.toString() ?? "",
+    leasestackPropertyId:
+      formData.get("leasestackPropertyId")?.toString() || null,
   });
   if (!parsed.success) {
     return {
@@ -78,7 +91,31 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
     };
   }
 
-  const { provider, propertyIdentifier } = parsed.data;
+  const { provider, propertyIdentifier, leasestackPropertyId } = parsed.data;
+  const scopePropertyId =
+    leasestackPropertyId && leasestackPropertyId.length > 0
+      ? leasestackPropertyId
+      : null;
+
+  // If a property was specified, validate it belongs to this org —
+  // never trust a hidden form field. A bogus / cross-tenant id is
+  // silently coerced to NULL (legacy org-wide) rather than failing the
+  // connect, but we'll log a warning for ops visibility.
+  let validatedScopePropertyId: string | null = null;
+  if (scopePropertyId) {
+    const found = await prisma.property.findFirst({
+      where: { id: scopePropertyId, orgId: scope.orgId },
+      select: { id: true },
+    });
+    if (found) {
+      validatedScopePropertyId = found.id;
+    } else {
+      console.warn(
+        "[seo-connect] propertyId not found for org; falling back to org-wide",
+        { orgId: scope.orgId, propertyId: scopePropertyId },
+      );
+    }
+  }
 
   let parsedSa;
   try {
@@ -111,30 +148,43 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
   const providerEnum =
     provider === "GSC" ? SeoProvider.GSC : SeoProvider.GA4;
 
-  const existing = await prisma.seoIntegration.findUnique({
-    where: { orgId_provider: { orgId: scope.orgId, provider: providerEnum } },
+  // Lookup-then-update-or-create rather than upsert because Prisma's
+  // compound unique key won't accept NULL on the propertyId leg of
+  // (orgId, propertyId, provider). Per-property writes can still use
+  // the compound key directly via findUnique, but for consistency we
+  // funnel everything through findFirst here.
+  const existing = await prisma.seoIntegration.findFirst({
+    where: {
+      orgId: scope.orgId,
+      propertyId: validatedScopePropertyId,
+      provider: providerEnum,
+    },
     select: { id: true },
   });
 
-  const integration = await prisma.seoIntegration.upsert({
-    where: { orgId_provider: { orgId: scope.orgId, provider: providerEnum } },
-    create: {
-      orgId: scope.orgId,
-      provider: providerEnum,
-      propertyIdentifier,
-      serviceAccountEmail: parsedSa.email,
-      serviceAccountJsonEncrypted: encryptedJson,
-      status: SeoSyncStatus.IDLE,
-      lastSyncError: null,
-    },
-    update: {
-      propertyIdentifier,
-      serviceAccountEmail: parsedSa.email,
-      serviceAccountJsonEncrypted: encryptedJson,
-      status: SeoSyncStatus.IDLE,
-      lastSyncError: null,
-    },
-  });
+  const integration = existing
+    ? await prisma.seoIntegration.update({
+        where: { id: existing.id },
+        data: {
+          propertyIdentifier,
+          serviceAccountEmail: parsedSa.email,
+          serviceAccountJsonEncrypted: encryptedJson,
+          status: SeoSyncStatus.IDLE,
+          lastSyncError: null,
+        },
+      })
+    : await prisma.seoIntegration.create({
+        data: {
+          orgId: scope.orgId,
+          propertyId: validatedScopePropertyId,
+          provider: providerEnum,
+          propertyIdentifier,
+          serviceAccountEmail: parsedSa.email,
+          serviceAccountJsonEncrypted: encryptedJson,
+          status: SeoSyncStatus.IDLE,
+          lastSyncError: null,
+        },
+      });
 
   await prisma.auditEvent.create({
     data: auditPayload(scope, {
@@ -165,6 +215,15 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
 
 const disconnectSchema = z.object({
   provider: z.enum(["GSC", "GA4"]),
+  // Disconnect a specific property's integration. Empty / unset
+  // disconnects the legacy org-wide row. Multi-property tenants pass
+  // a real id to remove just that property's connection.
+  leasestackPropertyId: z
+    .string()
+    .trim()
+    .max(60)
+    .optional()
+    .nullable(),
 });
 
 export async function disconnectSeo(
@@ -180,6 +239,8 @@ export async function disconnectSeo(
 
   const parsed = disconnectSchema.safeParse({
     provider: formData.get("provider")?.toString() ?? "",
+    leasestackPropertyId:
+      formData.get("leasestackPropertyId")?.toString() || null,
   });
   if (!parsed.success) {
     return { ok: false, error: "Invalid provider" };
@@ -187,9 +248,18 @@ export async function disconnectSeo(
 
   const providerEnum =
     parsed.data.provider === "GSC" ? SeoProvider.GSC : SeoProvider.GA4;
+  const scopePropertyId =
+    parsed.data.leasestackPropertyId &&
+    parsed.data.leasestackPropertyId.length > 0
+      ? parsed.data.leasestackPropertyId
+      : null;
 
-  const existing = await prisma.seoIntegration.findUnique({
-    where: { orgId_provider: { orgId: scope.orgId, provider: providerEnum } },
+  const existing = await prisma.seoIntegration.findFirst({
+    where: {
+      orgId: scope.orgId,
+      propertyId: scopePropertyId,
+      provider: providerEnum,
+    },
     select: { id: true },
   });
   if (!existing) {
@@ -197,7 +267,7 @@ export async function disconnectSeo(
   }
 
   await prisma.seoIntegration.delete({
-    where: { orgId_provider: { orgId: scope.orgId, provider: providerEnum } },
+    where: { id: existing.id },
   });
 
   await prisma.auditEvent.create({

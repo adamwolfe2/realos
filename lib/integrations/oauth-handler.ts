@@ -247,8 +247,13 @@ async function persistTokens(args: {
       expires_at: tokenExpiresAt?.toISOString() ?? null,
     };
     const encryptedBlob = encrypt(JSON.stringify(blob));
-    const existing = await prisma.seoIntegration.findUnique({
-      where: { orgId_provider: { orgId: args.orgId, provider } },
+    // OAuth flows currently bind to the legacy org-wide row
+    // (propertyId = NULL). Per-property OAuth — picking which
+    // property the OAuth token applies to mid-flow — would require
+    // threading the chosen propertyId through the OAuth state, which
+    // is a separate UX project. For now, OAuth stays org-wide.
+    const existing = await prisma.seoIntegration.findFirst({
+      where: { orgId: args.orgId, propertyId: null, provider },
       select: { id: true },
     });
     if (existing) {
@@ -263,6 +268,7 @@ async function persistTokens(args: {
       await prisma.seoIntegration.create({
         data: {
           orgId: args.orgId,
+          propertyId: null,
           provider,
           propertyIdentifier: "PENDING_OAUTH_BIND",
           serviceAccountJsonEncrypted: encryptedBlob,

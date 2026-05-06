@@ -44,42 +44,85 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const org = await prisma.organization.findUnique({
-    where: { slug },
-    select: {
-      id: true,
-      name: true,
-      shortName: true,
-      orgType: true,
-      moduleChatbot: true,
-      primaryColor: true,
-      logoUrl: true,
-      // Pull all properties so we can scope to the one whose slug matches
-      // the embed slug. Falls back to the most-recently-updated property's
-      // name (legacy behavior) when no slug match is found.
-      properties: {
-        orderBy: { updatedAt: "desc" },
-        select: { name: true, slug: true },
-      },
-      tenantSiteConfig: {
-        select: {
-          chatbotEnabled: true,
-          chatbotPersonaName: true,
-          chatbotGreeting: true,
-          chatbotTeaserText: true,
-          chatbotBrandColor: true,
-          chatbotAvatarUrl: true,
-          chatbotCaptureMode: true,
-          chatbotIdleTriggerSeconds: true,
-          primaryCtaText: true,
-          primaryCtaUrl: true,
-          phoneNumber: true,
-          contactEmail: true,
-          ga4MeasurementId: true,
+  // Wrap the DB read so a transient outage / migration in flight never
+  // 500s the embed widget. The widget runs on every customer site, so
+  // any 500 here renders a broken UI on telegraphcommons.com (etc).
+  // Graceful-degrade to { enabled: false } and the widget silently
+  // vanishes on the host page until we recover.
+  // Narrow `org` to the exact shape returned by our `select` (instead
+  // of the wider Awaited<findUnique> that doesn't see the select
+  // discriminator). Without this Prisma's per-property migration
+  // confused the inferred type of the relation reads below.
+  type OrgConfig = {
+    id: string;
+    name: string;
+    shortName: string | null;
+    orgType: string;
+    moduleChatbot: boolean;
+    primaryColor: string | null;
+    logoUrl: string | null;
+    properties: Array<{ name: string; slug: string }>;
+    tenantSiteConfig: {
+      chatbotEnabled: boolean;
+      chatbotPersonaName: string | null;
+      chatbotGreeting: string | null;
+      chatbotTeaserText: string | null;
+      chatbotBrandColor: string | null;
+      chatbotAvatarUrl: string | null;
+      chatbotCaptureMode: string;
+      chatbotIdleTriggerSeconds: number;
+      primaryCtaText: string | null;
+      primaryCtaUrl: string | null;
+      phoneNumber: string | null;
+      contactEmail: string | null;
+      ga4MeasurementId: string | null;
+    } | null;
+  } | null;
+  let org: OrgConfig = null;
+  try {
+    org = (await prisma.organization.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        name: true,
+        shortName: true,
+        orgType: true,
+        moduleChatbot: true,
+        primaryColor: true,
+        logoUrl: true,
+        // Pull all properties so we can scope to the one whose slug matches
+        // the embed slug. Falls back to the most-recently-updated property's
+        // name (legacy behavior) when no slug match is found.
+        properties: {
+          orderBy: { updatedAt: "desc" },
+          select: { name: true, slug: true },
+        },
+        tenantSiteConfig: {
+          select: {
+            chatbotEnabled: true,
+            chatbotPersonaName: true,
+            chatbotGreeting: true,
+            chatbotTeaserText: true,
+            chatbotBrandColor: true,
+            chatbotAvatarUrl: true,
+            chatbotCaptureMode: true,
+            chatbotIdleTriggerSeconds: true,
+            primaryCtaText: true,
+            primaryCtaUrl: true,
+            phoneNumber: true,
+            contactEmail: true,
+            ga4MeasurementId: true,
+          },
         },
       },
-    },
-  });
+    })) as OrgConfig;
+  } catch (err) {
+    console.warn("[public/chatbot/config] DB read failed:", err);
+    return NextResponse.json(
+      { enabled: false },
+      { status: 200, headers: CORS_HEADERS },
+    );
+  }
 
   if (!org || org.orgType !== "CLIENT" || !org.moduleChatbot) {
     return NextResponse.json(

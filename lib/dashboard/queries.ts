@@ -581,8 +581,12 @@ export async function getIntegrationHealth(orgId: string): Promise<IntegrationCh
         lastSyncAt: true,
       },
     }),
-    prisma.cursiveIntegration.findUnique({
-      where: { orgId },
+    // Dashboard "is the pixel firing?" badge — surface ANY active
+    // pixel for the org. Multi-property tenants might have several;
+    // pick the most-recently-active so the badge reflects reality.
+    prisma.cursiveIntegration.findFirst({
+      where: { orgId, cursivePixelId: { not: null } },
+      orderBy: [{ lastEventAt: "desc" }],
       select: { cursivePixelId: true, lastEventAt: true },
     }),
     prisma.visitorEvent.findFirst({
@@ -717,8 +721,12 @@ export type FirstRunProgress = {
 export async function getFirstRunProgress(orgId: string): Promise<FirstRunProgress> {
   const [propertyCount, cursive, gsc, siteConfig] = await Promise.all([
     prisma.property.count({ where: { orgId } }),
-    prisma.cursiveIntegration.findUnique({
-      where: { orgId },
+    // Dashboard "is the pixel firing?" badge — surface ANY active
+    // pixel for the org. Multi-property tenants might have several;
+    // pick the most-recently-active so the badge reflects reality.
+    prisma.cursiveIntegration.findFirst({
+      where: { orgId, cursivePixelId: { not: null } },
+      orderBy: [{ lastEventAt: "desc" }],
       select: { cursivePixelId: true, lastEventAt: true },
     }),
     prisma.seoIntegration.findFirst({

@@ -63,8 +63,17 @@ export async function deriveSetupProgress(orgId: string): Promise<SetupProgress 
         moduleSEO: true,
         moduleChatbot: true,
         modulePixel: true,
-        cursiveIntegration: {
+        // After the per-property migration the cursive relation is
+        // an array. The setup-progress check is "is ANY pixel
+        // configured for this org?" — the legacy org-wide row, OR
+        // any per-property row counts. We pull a single row with
+        // pixel data so the existing isComplete predicate still
+        // works without rewriting every step's contract.
+        cursiveIntegrations: {
+          where: { cursivePixelId: { not: null } },
           select: { cursivePixelId: true, lastEventAt: true },
+          orderBy: [{ lastEventAt: "desc" }],
+          take: 1,
         },
         appfolioIntegration: {
           select: { lastSyncAt: true },
@@ -102,7 +111,10 @@ export async function deriveSetupProgress(orgId: string): Promise<SetupProgress 
       moduleChatbot: org.moduleChatbot,
       modulePixel: org.modulePixel,
     },
-    cursive: org.cursiveIntegration,
+    // SetupCheckContext expects the singular shape; pull the first
+    // cursive row (we limited the query to one). null when the org
+    // has no pixel-bearing rows yet.
+    cursive: org.cursiveIntegrations[0] ?? null,
     appfolio: org.appfolioIntegration,
     tenantSiteConfig: org.tenantSiteConfig,
     adAccounts,
