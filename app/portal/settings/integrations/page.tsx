@@ -149,7 +149,10 @@ export default async function IntegrationsPage() {
         requestedAt={pendingPixelRequest.requestedAt}
       />
     ) : pixelEligible ? (
-      <ConnectPixelForm defaultWebsiteName={org.name} />
+      <ConnectPixelForm
+        defaultWebsiteName={org.name}
+        properties={properties}
+      />
     ) : (
       <div className="rounded-md border border-border bg-muted/30 p-4">
         <p className="text-xs text-muted-foreground">

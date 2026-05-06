@@ -14,13 +14,23 @@ const INITIAL: ConnectPixelResult = { ok: true };
 
 export function ConnectPixelForm({
   defaultWebsiteName,
+  properties = [],
 }: {
   defaultWebsiteName: string;
+  /**
+   * When the org has more than one property, render a selector so the
+   * pixel request lands on a specific LeaseStack property. Connect
+   * action will write the resulting integration row with that
+   * propertyId once ops fulfills. Empty list = single-property tenant
+   * → no selector, request lands on the legacy org-wide row.
+   */
+  properties?: Array<{ id: string; name: string }>;
 }) {
   const [state, formAction, pending] = useActionState<
     ConnectPixelResult,
     FormData
   >(async (_prev, formData) => connectPixel(formData), INITIAL);
+  const showPicker = properties.length > 1;
 
   return (
     <form action={formAction} className="space-y-4">
@@ -37,6 +47,34 @@ export function ConnectPixelForm({
       </div>
 
       <div className="rounded-md border border-border bg-muted/30 p-4 space-y-4">
+        {showPicker ? (
+          <div className="flex flex-col gap-1.5">
+            <Label
+              htmlFor="leasestackPropertyId"
+              className="text-[11px] font-medium text-foreground"
+            >
+              Which property is this pixel for?
+            </Label>
+            <select
+              id="leasestackPropertyId"
+              name="leasestackPropertyId"
+              defaultValue=""
+              className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+            >
+              <option value="">All properties (org-wide)</option>
+              {properties.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <span className="text-[11px] text-muted-foreground leading-snug">
+              Pick a specific property to scope this pixel to its
+              domain. Multi-property tenants want one pixel per
+              property so visitor data stays separated.
+            </span>
+          </div>
+        ) : null}
         <div className="flex flex-col gap-1.5">
           <Label
             htmlFor="websiteName"

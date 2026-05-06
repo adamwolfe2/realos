@@ -31,6 +31,16 @@ const connectSchema = z.object({
     .trim()
     .min(1, "Website URL is required")
     .max(500),
+  // Optional LeaseStack property scope. Empty / unset = legacy
+  // org-wide pixel (current behavior for single-property tenants).
+  // Multi-property tenants pass the chosen property id so each
+  // domain's pixel ends up on its own row.
+  leasestackPropertyId: z
+    .string()
+    .trim()
+    .max(60)
+    .optional()
+    .nullable(),
 });
 
 export type ConnectPixelResult =
@@ -69,6 +79,8 @@ export async function connectPixel(
   const parsed = connectSchema.safeParse({
     websiteName: formData.get("websiteName")?.toString() ?? "",
     websiteUrl: formData.get("websiteUrl")?.toString() ?? "",
+    leasestackPropertyId:
+      formData.get("leasestackPropertyId")?.toString() || null,
   });
   if (!parsed.success) {
     return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
@@ -84,6 +96,24 @@ export async function connectPixel(
     return { ok: false, error: "Website URL must be http or https." };
   }
 
+  // Resolve target propertyId for this connection. Empty / unset =
+  // legacy org-wide row. Validate the id belongs to the caller's org;
+  // a bogus id silently downgrades to NULL rather than failing the
+  // request.
+  const requestedPropertyId =
+    parsed.data.leasestackPropertyId &&
+    parsed.data.leasestackPropertyId.length > 0
+      ? parsed.data.leasestackPropertyId
+      : null;
+  let scopePropertyId: string | null = null;
+  if (requestedPropertyId) {
+    const found = await prisma.property.findFirst({
+      where: { id: requestedPropertyId, orgId: scope.orgId },
+      select: { id: true },
+    });
+    if (found) scopePropertyId = found.id;
+  }
+
   const org = await prisma.organization.findUnique({
     where: { id: scope.orgId },
     select: {
@@ -91,13 +121,11 @@ export async function connectPixel(
       name: true,
       modulePixel: true,
       moduleChatbot: true,
-      // Was `cursiveIntegration` (singular). After the per-property
-      // migration this is an array — pull just the legacy org-wide
-      // row (propertyId NULL) since this server action is the
-      // org-wide connect flow. Per-property connect happens through
-      // the integrations settings UI.
+      // Pull only the row matching the chosen scope so the duplicate-
+      // pixel check is scope-aware: a pixel on Telegraph Commons
+      // shouldn't block adding one for Yosemite Avenue.
       cursiveIntegrations: {
-        where: { propertyId: null },
+        where: { propertyId: scopePropertyId },
         select: { cursivePixelId: true },
         take: 1,
       },
@@ -114,7 +142,9 @@ export async function connectPixel(
   if (org.cursiveIntegrations[0]?.cursivePixelId) {
     return {
       ok: false,
-      error: "A pixel is already connected for this workspace.",
+      error: scopePropertyId
+        ? "A pixel is already connected for this property."
+        : "A pixel is already connected for this workspace.",
     };
   }
 
@@ -158,28 +188,27 @@ export async function connectPixel(
   }
 
   // Pre-create the integration row so installedOnDomain is captured
-  // even before ops fulfills. The org-wide connect flow always writes
-  // the legacy (propertyId = NULL) row; per-property pixels are
-  // created through the integrations settings UI which calls a
-  // different code path.
+  // even before ops fulfills. Writes to the row matching the chosen
+  // scope: NULL for org-wide, or the validated property id for a
+  // per-property connection.
   //
-  // We can't use upsert() here because Prisma's compound unique key
-  // doesn't accept NULL on the propertyId leg. Manual find-then-
-  // update-or-create instead.
-  const legacyRow = await prisma.cursiveIntegration.findFirst({
-    where: { orgId: org.id, propertyId: null },
+  // Manual find-then-update-or-create instead of upsert because
+  // Prisma's compound unique key doesn't accept NULL on the
+  // propertyId leg.
+  const existingRow = await prisma.cursiveIntegration.findFirst({
+    where: { orgId: org.id, propertyId: scopePropertyId },
     select: { id: true },
   });
-  if (legacyRow) {
+  if (existingRow) {
     await prisma.cursiveIntegration.update({
-      where: { id: legacyRow.id },
+      where: { id: existingRow.id },
       data: { installedOnDomain: websiteUrl.hostname },
     });
   } else {
     await prisma.cursiveIntegration.create({
       data: {
         orgId: org.id,
-        propertyId: null,
+        propertyId: scopePropertyId,
         installedOnDomain: websiteUrl.hostname,
       },
     });
