@@ -65,7 +65,27 @@ async function coreHandler(
   const url = req.nextUrl;
   const hostname = req.headers.get("host") ?? "";
 
-  if (isPublicApi(req)) return NextResponse.next();
+  // SECURITY: any incoming x-tenant-* header is treated as untrusted and
+  // must never reach a route handler. Otherwise a request like
+  //   curl -H "x-tenant-org-id: <victim>" leasestack.co/api/tenant/listings
+  // would return the victim's listings because readTenantHeaders() in
+  // /api/tenant/listings + lib/tenancy/tenant-context just reads what the
+  // request sent. We strip them here and re-set them only when the
+  // legitimate hostname-rewrite branch below resolves a real tenant.
+  // Use NextResponse.next() with a sanitized request-headers object so
+  // the rewrite consumer (or pass-through route handler) sees a clean
+  // baseline.
+  const sanitizedReqHeaders = (() => {
+    const h = new Headers(req.headers);
+    h.delete(TENANT_HEADER_ORG_ID);
+    h.delete(TENANT_HEADER_SLUG);
+    h.delete(TENANT_HEADER_HOSTNAME);
+    return h;
+  })();
+
+  if (isPublicApi(req)) {
+    return NextResponse.next({ request: { headers: sanitizedReqHeaders } });
+  }
 
   if (
     !url.pathname.startsWith("/_next") &&
@@ -89,9 +109,17 @@ async function coreHandler(
     const rewriteUrl = url.clone();
     rewriteUrl.pathname = `${TENANT_RENDER_PREFIX}${url.pathname}`;
 
+    // Pass a CLEAN base (already stripped of any incoming x-tenant-*
+    // headers) into withTenantHeaders so only the values resolved from
+    // hostname survive into the request-headers seen by the route.
     const response = NextResponse.rewrite(rewriteUrl, {
       request: {
-        headers: withTenantHeaders(req.headers, tenant.orgId, tenant.orgSlug, hostname),
+        headers: withTenantHeaders(
+          sanitizedReqHeaders,
+          tenant.orgId,
+          tenant.orgSlug,
+          hostname,
+        ),
       },
     });
     response.headers.set(TENANT_HEADER_ORG_ID, tenant.orgId);
@@ -109,11 +137,15 @@ async function coreHandler(
     process.env.NEXT_PUBLIC_DEMO_MODE === "true" ||
     process.env.DEMO_MODE === "true";
 
-  // Platform hostname gates.
+  // Platform hostname gates. Every NextResponse.next() in this branch
+  // forwards `sanitizedReqHeaders` so a downstream route handler can
+  // never observe spoofed x-tenant-* headers from the original request.
+  const passThrough = () =>
+    NextResponse.next({ request: { headers: sanitizedReqHeaders } });
+
   if (isAdminRoute(req) || isApiAdminRoute(req)) {
-    if (demoMode) return NextResponse.next();
+    if (demoMode) return passThrough();
     if (!getAuth) {
-      // Clerk not configured; redirect to sign-in page which itself warns.
       return NextResponse.redirect(new URL("/sign-in", req.url));
     }
     const { userId } = await getAuth();
@@ -123,7 +155,7 @@ async function coreHandler(
   }
 
   if (isPortalRoute(req) || isApiTenantRoute(req)) {
-    if (demoMode) return NextResponse.next();
+    if (demoMode) return passThrough();
     if (!getAuth) {
       return NextResponse.redirect(new URL("/sign-in", req.url));
     }
@@ -133,7 +165,7 @@ async function coreHandler(
     }
   }
 
-  return NextResponse.next();
+  return passThrough();
 }
 
 function withTenantHeaders(
