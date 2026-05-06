@@ -63,7 +63,13 @@ export default async function ClientDetail({
       },
       domains: true,
       tenantSiteConfig: true,
-      cursiveIntegration: true,
+      // Per-property migration renamed cursiveIntegration → cursiveIntegrations
+      // (1:many). Pull the legacy org-wide row (propertyId = NULL) plus
+      // every per-property row; the admin UI surfaces the legacy one as
+      // the org's primary pixel and the rest as scoped overrides.
+      cursiveIntegrations: {
+        orderBy: [{ propertyId: "asc" }, { createdAt: "asc" }],
+      },
       appfolioIntegration: {
         select: {
           instanceSubdomain: true,
@@ -84,6 +90,12 @@ export default async function ClientDetail({
     },
   });
   if (!org || org.orgType !== OrgType.CLIENT) notFound();
+
+  // After the per-property integration migration the legacy "this is the
+  // org's pixel" row is the one with propertyId = NULL. The admin client
+  // panel shows that as the primary pixel so existing UX stays intact.
+  const cursiveLegacy =
+    org.cursiveIntegrations.find((c) => c.propertyId === null) ?? null;
 
   const moduleRows: Array<[ToggleableModule, string, boolean]> = [
     ["moduleWebsite", "Website", org.moduleWebsite],
@@ -239,9 +251,9 @@ export default async function ClientDetail({
           },
           {
             label: "Cursive pixel provisioned",
-            status: org.cursiveIntegration?.cursivePixelId ? "ok" : "missing",
-            hint: org.cursiveIntegration?.cursivePixelId
-              ? `Pixel ${org.cursiveIntegration.cursivePixelId}`
+            status: cursiveLegacy?.cursivePixelId ? "ok" : "missing",
+            hint: cursiveLegacy?.cursivePixelId
+              ? `Pixel ${cursiveLegacy.cursivePixelId}`
               : "Click 'Provision pixel' above.",
           },
           {
@@ -326,8 +338,8 @@ export default async function ClientDetail({
             const proto = hdrs.get("x-forwarded-proto") ?? "https";
             const host = hdrs.get("host") ?? "leasestack.co";
             const sharedWebhookUrl = `${proto}://${host}/api/webhooks/cursive`;
-            const tenantWebhookUrl = org.cursiveIntegration?.webhookToken
-              ? `${proto}://${host}/api/webhooks/cursive/${org.cursiveIntegration.webhookToken}`
+            const tenantWebhookUrl = cursiveLegacy?.webhookToken
+              ? `${proto}://${host}/api/webhooks/cursive/${cursiveLegacy.webhookToken}`
               : null;
             return (
               <CursivePanel
@@ -335,19 +347,19 @@ export default async function ClientDetail({
                 webhookUrl={sharedWebhookUrl}
                 tenantWebhookUrl={tenantWebhookUrl}
                 initial={{
-                  cursivePixelId: org.cursiveIntegration?.cursivePixelId ?? null,
+                  cursivePixelId: cursiveLegacy?.cursivePixelId ?? null,
                   cursiveSegmentId:
-                    org.cursiveIntegration?.cursiveSegmentId ?? null,
+                    cursiveLegacy?.cursiveSegmentId ?? null,
                   installedOnDomain:
-                    org.cursiveIntegration?.installedOnDomain ?? null,
-                  lastEventAt: org.cursiveIntegration?.lastEventAt
-                    ? org.cursiveIntegration.lastEventAt.toISOString()
+                    cursiveLegacy?.installedOnDomain ?? null,
+                  lastEventAt: cursiveLegacy?.lastEventAt
+                    ? cursiveLegacy.lastEventAt.toISOString()
                     : null,
-                  lastSegmentSyncAt: org.cursiveIntegration?.lastSegmentSyncAt
-                    ? org.cursiveIntegration.lastSegmentSyncAt.toISOString()
+                  lastSegmentSyncAt: cursiveLegacy?.lastSegmentSyncAt
+                    ? cursiveLegacy.lastSegmentSyncAt.toISOString()
                     : null,
                   totalEventsCount:
-                    org.cursiveIntegration?.totalEventsCount ?? 0,
+                    cursiveLegacy?.totalEventsCount ?? 0,
                 }}
               />
             );

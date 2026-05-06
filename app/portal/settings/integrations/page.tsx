@@ -42,8 +42,12 @@ export default async function IntegrationsPage() {
       where: { id: scope.orgId },
       select: { name: true, modulePixel: true, moduleChatbot: true },
     }),
-    prisma.cursiveIntegration.findUnique({
-      where: { orgId: scope.orgId },
+    // Per-property migration: pull the legacy org-wide row (propertyId =
+    // NULL). Settings / Integrations panel still renders this as "the
+    // pixel for this workspace" — per-property pixel overrides are
+    // managed elsewhere.
+    prisma.cursiveIntegration.findFirst({
+      where: { orgId: scope.orgId, propertyId: null },
       select: {
         cursivePixelId: true,
         pixelScriptUrl: true,
