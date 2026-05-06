@@ -141,71 +141,69 @@ export async function POST(req: NextRequest) {
         );
         break;
       }
+
+      // Invite flow: an explicit orgId on public_metadata pre-binds the
+      // user to that org with the supplied role. Used by the agency
+      // "Invite client" flow which sets metadata before the user signs
+      // up. Falls through to the eager-provision path when missing.
       const rawRole = public_metadata?.role;
       const role: UserRole = isValidRole(rawRole)
         ? rawRole
-        : UserRole.CLIENT_VIEWER;
-
-      // Invite flow: orgId may arrive on public_metadata. Only link if org exists
-      // and the user isn't already bound to one.
+        : UserRole.CLIENT_OWNER;
       const metaOrgId =
         typeof public_metadata?.orgId === "string"
           ? public_metadata.orgId
           : undefined;
-
       const orgExists = metaOrgId
         ? !!(await prisma.organization.findUnique({ where: { id: metaOrgId } }))
         : false;
 
-      let orgIdToLink: string | undefined = orgExists ? metaOrgId : undefined;
-      if (event.type === "user.updated" && orgIdToLink) {
-        const existing = await prisma.user.findUnique({
+      if (orgExists && metaOrgId) {
+        // Pre-bound invite path: link directly to the invitee's org with
+        // the metadata-provided role.
+        await prisma.user.upsert({
           where: { clerkUserId: id },
-          select: { orgId: true },
+          create: {
+            clerkUserId: id,
+            email,
+            firstName: first_name ?? null,
+            lastName: last_name ?? null,
+            role,
+            org: { connect: { id: metaOrgId } },
+          },
+          update: {
+            email,
+            firstName: first_name ?? null,
+            lastName: last_name ?? null,
+            role,
+            lastLoginAt:
+              event.type === "user.updated" ? new Date() : undefined,
+          },
         });
-        if (existing?.orgId) orgIdToLink = undefined;
+      } else {
+        // Self-signup or update with no metadata override: delegate to
+        // the shared provisioner so the webhook stays in sync with
+        // /api/auth/role and the portal layout's self-heal. Brand-new
+        // users get a CLIENT org of their own (NOT dropped into the
+        // agency org as a viewer — the previous behavior was the source
+        // of the dead-end).
+        try {
+          const { provisionUserForClerk } = await import(
+            "@/lib/auth/provision"
+          );
+          await provisionUserForClerk({
+            clerkUserId: id,
+            email,
+            firstName: first_name ?? null,
+            lastName: last_name ?? null,
+          });
+        } catch (err) {
+          console.error(
+            `[clerk webhook] provision failed for ${id}/${email}:`,
+            err,
+          );
+        }
       }
-
-      await prisma.user.upsert({
-        where: { clerkUserId: id },
-        create: {
-          clerkUserId: id,
-          email,
-          firstName: first_name ?? null,
-          lastName: last_name ?? null,
-          role,
-          ...(orgIdToLink
-            ? { org: { connect: { id: orgIdToLink } } }
-            : {
-                // DECISION: if no invite org attached yet, drop the new user into the
-                // AGENCY org as a viewer. Sprint 02 refines resolution via the
-                // `organization.created` and `organizationMembership.created` events
-                // so users land on the right CLIENT org automatically.
-                org: {
-                  connectOrCreate: {
-                    where: {
-                      slug: process.env.AGENCY_ORG_SLUG ?? "leasestack-agency",
-                    },
-                    create: {
-                      name: "LeaseStack Agency",
-                      slug: process.env.AGENCY_ORG_SLUG ?? "leasestack-agency",
-                      orgType: "AGENCY",
-                    },
-                  },
-                },
-              }),
-        },
-        update: {
-          email,
-          firstName: first_name ?? null,
-          lastName: last_name ?? null,
-          role,
-          ...(orgIdToLink
-            ? { org: { connect: { id: orgIdToLink } } }
-            : {}),
-          lastLoginAt: event.type === "user.updated" ? new Date() : undefined,
-        },
-      });
 
       console.info(`User ${id} synced to DB`);
       break;

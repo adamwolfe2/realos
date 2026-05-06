@@ -1,18 +1,26 @@
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import type { UserRole } from "@prisma/client";
+import { provisionUserForClerk } from "@/lib/auth/provision";
 
 // GET /api/auth/role
 //
-// Called by /auth/redirect after Clerk sign-in. Resolves the signed-in Clerk
-// user to a LeaseStack User row and returns the role + org type so the
-// client can route them to /admin vs /portal.
+// Called by /auth/redirect after Clerk sign-in. Resolves the signed-in
+// Clerk user to a LeaseStack User row and returns the role + org type so
+// the client can route them to /admin vs /portal.
 //
-// Linking strategy: on first sign-in, the Clerk userId won't match any row
-// (the seed writes a placeholder `seed_pending_<email>`). We fall back to
-// matching by email and update clerkUserId in place so subsequent lookups
-// are fast.
+// Provisioning strategy (delegated to provisionUserForClerk):
+//   1. clerkUserId match → return as-is.
+//   2. email match → claim the placeholder row (invite flow).
+//   3. neither → create a fresh CLIENT Organization + CLIENT_OWNER User
+//      so brand-new self-signups land in a working portal instead of
+//      dead-ending with "Your account is not set up yet". This is the
+//      launch-blocker we hit when the Clerk webhook hadn't fired (or
+//      wasn't configured) and the user had no pre-seeded invite row.
+//
+// Failures here are critical — every signed-in Clerk session must
+// resolve to a usable role. We log loudly on errors and still return a
+// 200-with-null so the client can show its retry / contact-support
+// affordance instead of getting a 500 from the API.
 
 export async function GET() {
   const { userId } = await auth();
@@ -20,67 +28,50 @@ export async function GET() {
     return NextResponse.json({ role: null }, { status: 401 });
   }
 
-  const linked = await prisma.user
-    .findUnique({
-      where: { clerkUserId: userId },
-      select: {
-        role: true,
-        orgId: true,
-        org: { select: { orgType: true, slug: true } },
-      },
-    })
-    .catch(() => null);
+  let email: string | null = null;
+  let firstName: string | null = null;
+  let lastName: string | null = null;
 
-  if (linked) {
-    return NextResponse.json(toResponse(linked));
+  try {
+    const clerkUser = await currentUser();
+    email =
+      clerkUser?.emailAddresses?.find(
+        (e) => e.id === clerkUser?.primaryEmailAddressId,
+      )?.emailAddress ??
+      clerkUser?.emailAddresses?.[0]?.emailAddress ??
+      null;
+    firstName = clerkUser?.firstName ?? null;
+    lastName = clerkUser?.lastName ?? null;
+  } catch (err) {
+    console.error("[auth/role] currentUser() failed:", err);
   }
-
-  const clerkUser = await currentUser().catch(() => null);
-  const email =
-    clerkUser?.emailAddresses?.find(
-      (e) => e.id === clerkUser?.primaryEmailAddressId
-    )?.emailAddress ??
-    clerkUser?.emailAddresses?.[0]?.emailAddress ??
-    null;
 
   if (!email) {
+    // No email on the Clerk session means we can't auto-provision. This
+    // is rare but legitimate — return null so the client redirects to a
+    // helpful "contact admin" message rather than 500ing.
     return NextResponse.json({ role: null });
   }
 
-  const byEmail = await prisma.user
-    .findUnique({
-      where: { email: email.toLowerCase() },
-      select: {
-        id: true,
-        role: true,
-        orgId: true,
-        org: { select: { orgType: true, slug: true } },
-      },
-    })
-    .catch(() => null);
-
-  if (!byEmail) {
+  try {
+    const provisioned = await provisionUserForClerk({
+      clerkUserId: userId,
+      email,
+      firstName,
+      lastName,
+    });
+    return NextResponse.json({
+      role: provisioned.role,
+      orgType: provisioned.org.orgType,
+      orgSlug: provisioned.org.slug,
+      // Surface whether this call actually created the org so the client
+      // can route freshly-provisioned users to the setup hub instead of
+      // an empty dashboard. Existing users get the standard /portal
+      // landing path.
+      created: provisioned.created,
+    });
+  } catch (err) {
+    console.error("[auth/role] provision failed:", err);
     return NextResponse.json({ role: null });
   }
-
-  await prisma.user
-    .update({
-      where: { id: byEmail.id },
-      data: { clerkUserId: userId, lastLoginAt: new Date() },
-    })
-    .catch(() => undefined);
-
-  return NextResponse.json(toResponse(byEmail));
-}
-
-function toResponse(user: {
-  role: UserRole;
-  orgId: string;
-  org: { orgType: string; slug: string } | null;
-}) {
-  return {
-    role: user.role,
-    orgType: user.org?.orgType ?? null,
-    orgSlug: user.org?.slug ?? null,
-  };
 }

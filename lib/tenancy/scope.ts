@@ -118,12 +118,49 @@ export async function getScope(): Promise<ScopedContext | null> {
     return await getDemoScope();
   }
 
-  const user = await prisma.user
+  let user = await prisma.user
     .findUnique({
       where: { clerkUserId },
       include: { org: true },
     })
     .catch(() => null);
+
+  // Self-heal: if the Clerk session is valid but there's no LeaseStack
+  // User row yet (Clerk webhook not configured / hasn't fired / fired
+  // partially), eager-provision now so the user lands in a working
+  // portal instead of looping back to /sign-in. This mirrors the same
+  // logic /api/auth/role uses on first sign-in but applies to ANY page
+  // load — covers the case where a user's session predates the migration
+  // that introduced provisioning, or someone tampered with the User row.
+  if (!user || !user.org) {
+    try {
+      const { currentUser } = await import("@clerk/nextjs/server");
+      const clerkUser = await currentUser();
+      const email =
+        clerkUser?.emailAddresses?.find(
+          (e) => e.id === clerkUser?.primaryEmailAddressId,
+        )?.emailAddress ??
+        clerkUser?.emailAddresses?.[0]?.emailAddress ??
+        null;
+      if (email) {
+        const { provisionUserForClerk } = await import("@/lib/auth/provision");
+        await provisionUserForClerk({
+          clerkUserId,
+          email,
+          firstName: clerkUser?.firstName ?? null,
+          lastName: clerkUser?.lastName ?? null,
+        });
+        user = await prisma.user
+          .findUnique({
+            where: { clerkUserId },
+            include: { org: true },
+          })
+          .catch(() => null);
+      }
+    } catch (err) {
+      console.error("[scope] self-heal provision failed:", err);
+    }
+  }
   if (!user || !user.org) return await getDemoScope();
 
   const actualOrgType = user.org.orgType;

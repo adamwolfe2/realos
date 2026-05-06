@@ -2,12 +2,59 @@
 
 /**
  * Smart auth redirect — runs after Clerk sign-in or sign-up.
- * Must be a client component so Clerk's session is available
- * immediately after the post-sign-in redirect.
+ *
+ * Two resilience features the previous version lacked:
+ *   1. Retries the /api/auth/role fetch up to 4 times with backoff. The
+ *      Clerk session sometimes propagates to the server a beat behind
+ *      the client, producing a transient 401. Without retry, brand-new
+ *      sign-ups would dead-end on an "auth-failed" message.
+ *   2. Reads the `created` flag from the response and routes fresh
+ *      sign-ups to /portal/setup (the welcome wizard) instead of the
+ *      empty dashboard at /portal.
  */
 import { useEffect, useState } from 'react'
 import { useAuth } from '@clerk/nextjs'
 import { useRouter } from 'next/navigation'
+
+type RoleResponse = {
+  role: string | null
+  orgType: string | null
+  orgSlug?: string | null
+  created?: boolean
+}
+
+async function fetchRoleWithRetry(): Promise<RoleResponse | null> {
+  const delays = [0, 400, 800, 1600]
+  let lastErr: unknown = null
+  for (let i = 0; i < delays.length; i++) {
+    if (delays[i] > 0) {
+      await new Promise((r) => setTimeout(r, delays[i]))
+    }
+    try {
+      const res = await fetch('/api/auth/role', {
+        cache: 'no-store',
+        credentials: 'include',
+      })
+      // 401 is the typical "session not yet propagated" symptom — retry.
+      // 5xx is also worth retrying; the server may be in a transient
+      // bad state during cold-start or migration. 4xx-other returns
+      // null role which we treat as a final answer.
+      if (res.status === 401 || res.status >= 500) {
+        lastErr = new Error(`HTTP ${res.status}`)
+        continue
+      }
+      const json = (await res.json()) as RoleResponse
+      // If the server explicitly says "role: null" treat that as a final
+      // answer (the user has no usable account) rather than retrying
+      // forever.
+      return json
+    } catch (err) {
+      lastErr = err
+    }
+  }
+  if (lastErr) console.warn('[auth/redirect] role fetch retries exhausted:', lastErr)
+  return null
+}
 
 export default function AuthRedirectPage() {
   const { userId, isLoaded } = useAuth()
@@ -22,16 +69,13 @@ export default function AuthRedirectPage() {
       return
     }
 
-    // Fetch role from DB and redirect accordingly
-    fetch('/api/auth/role')
-      .then(r => {
-        if (!r.ok) {
-          // 401 means Clerk session didn't propagate to server — show manual nav
-          throw new Error(`Role check failed: ${r.status}`)
+    fetchRoleWithRetry()
+      .then((data) => {
+        if (!data) {
+          setError('auth-failed')
+          return
         }
-        return r.json()
-      })
-      .then(({ role, orgType }: { role: string | null; orgType: string | null }) => {
+        const { role, orgType, created } = data
         const agencyRoles = ['AGENCY_OWNER', 'AGENCY_ADMIN', 'AGENCY_OPERATOR']
         const clientRoles = ['CLIENT_OWNER', 'CLIENT_ADMIN', 'CLIENT_VIEWER', 'LEASING_AGENT']
 
@@ -42,7 +86,11 @@ export default function AuthRedirectPage() {
         if (agencyRoles.includes(role) || orgType === 'AGENCY') {
           router.replace('/admin')
         } else if (clientRoles.includes(role) || orgType === 'CLIENT') {
-          router.replace('/portal')
+          // Fresh self-provisioned org → drop them into the setup hub
+          // instead of the empty dashboard. Existing users still go to
+          // the dashboard. /portal/setup gracefully no-ops when setup
+          // is already complete.
+          router.replace(created ? '/portal/setup' : '/portal')
         } else {
           setError('no-role')
         }
