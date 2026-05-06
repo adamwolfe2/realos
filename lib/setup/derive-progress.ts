@@ -55,6 +55,9 @@ export async function deriveSetupProgress(orgId: string): Promise<SetupProgress 
         onboardingDismissed: true,
         logoUrl: true,
         primaryColor: true,
+        // Used by the new "Set a notification email for new leads"
+        // foundation step. Without this, lead-capture emails go nowhere.
+        primaryContactEmail: true,
         moduleGoogleAds: true,
         moduleMetaAds: true,
         moduleSEO: true,
@@ -92,6 +95,7 @@ export async function deriveSetupProgress(orgId: string): Promise<SetupProgress 
     org: {
       logoUrl: org.logoUrl,
       primaryColor: org.primaryColor,
+      primaryContactEmail: org.primaryContactEmail,
       moduleGoogleAds: org.moduleGoogleAds,
       moduleMetaAds: org.moduleMetaAds,
       moduleSEO: org.moduleSEO,

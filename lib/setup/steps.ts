@@ -26,6 +26,7 @@ export type SetupCheckContext = {
     Organization,
     | "logoUrl"
     | "primaryColor"
+    | "primaryContactEmail"
     | "moduleGoogleAds"
     | "moduleMetaAds"
     | "moduleSEO"
@@ -72,6 +73,24 @@ export const SETUP_STEPS: SetupStepDefinition[] = [
     actionLabel: "Open dashboard",
     hideAction: true,
     isComplete: trueCheck,
+  },
+  {
+    // Notification email — without it, every lead-capture email goes
+    // nowhere and operators silently miss every inbound lead. This is
+    // a higher-priority foundation step than AppFolio because it
+    // applies to every customer (AppFolio is only for landlords).
+    id: "notification_email",
+    phase: "foundation",
+    icon: "Mail",
+    title: "Set a notification email for new leads",
+    description:
+      "Where should we send every inbound lead, tour, and chatbot conversation? Without this, leads come in silently with no one notified.",
+    estimateMinutes: 1,
+    actionHref: "/portal/settings",
+    actionLabel: "Set notification email",
+    isComplete: (ctx) =>
+      typeof ctx.org.primaryContactEmail === "string" &&
+      ctx.org.primaryContactEmail.length > 0,
   },
   {
     id: "appfolio",
