@@ -63,6 +63,7 @@ export function buildReportEmail(input: ReportEmailInput): {
   const adBlock = renderAds(snapshot);
   const attributionBlock = renderAttribution(snapshot);
   const seoBlock = renderSeo(snapshot);
+  const reputationBlock = renderReputation(snapshot);
 
   const bodyHtml = `
     <p style="margin:0 0 16px;color:${NEAR_BLACK};font-size:14px;line-height:1.55;">${greeting}</p>
@@ -88,6 +89,7 @@ export function buildReportEmail(input: ReportEmailInput): {
     ${adBlock}
     ${attributionBlock}
     ${seoBlock}
+    ${reputationBlock}
 
     <p style="margin:28px 0 8px;color:${OLIVE};font-size:13px;line-height:1.6;">
       Full report with trend charts and property breakdowns:
@@ -332,6 +334,158 @@ function renderSeo(s: ReportSnapshot): string {
   `;
 }
 
+// Reputation block — full mention bodies in email, not just KPIs.
+// Renders a compact rating + counts row, then up to 3 highlights and
+// 3 concerns with each mention's source / rating / sentiment / author
+// / date / full body / source link. Falls back to chronological recent
+// when the snapshot doesn't have curated buckets (older snapshots).
+function renderReputation(s: ReportSnapshot): string {
+  const stats = s.reputationStats;
+  if (!stats) return "";
+
+  const ratingLine =
+    stats.overallRating != null
+      ? `<span style="color:${NEAR_BLACK};font-size:24px;font-weight:700;font-feature-settings:'tnum';">${stats.overallRating.toFixed(1)}</span><span style="color:#f59e0b;font-size:18px;margin-left:4px;">★</span>`
+      : "—";
+
+  const summaryRow = `
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:14px;">
+      <tr>
+        <td style="padding:10px 12px;border:1px solid ${BORDER};background-color:${IVORY};vertical-align:top;width:33.33%;">
+          <div style="color:${STONE};font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">Overall</div>
+          <div style="margin-top:4px;">${ratingLine}</div>
+          <div style="color:${OLIVE};font-size:11px;margin-top:2px;">${stats.totalReviews.toLocaleString()} lifetime</div>
+        </td>
+        <td style="padding:10px 12px;border:1px solid ${BORDER};background-color:${IVORY};vertical-align:top;width:33.33%;">
+          <div style="color:${STONE};font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">New this period</div>
+          <div style="margin-top:4px;color:${NEAR_BLACK};font-size:22px;font-weight:700;font-feature-settings:'tnum';">${stats.newInPeriod.toLocaleString()}</div>
+          <div style="color:${OLIVE};font-size:11px;margin-top:2px;">${stats.positiveCount} positive · ${stats.negativeCount} negative</div>
+        </td>
+        <td style="padding:10px 12px;border:1px solid ${BORDER};background-color:${IVORY};vertical-align:top;width:33.33%;">
+          <div style="color:${STONE};font-size:9px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">Response rate</div>
+          <div style="margin-top:4px;color:${NEAR_BLACK};font-size:22px;font-weight:700;font-feature-settings:'tnum';">${stats.responseRatePct != null ? `${stats.responseRatePct}%` : "—"}</div>
+          <div style="color:${OLIVE};font-size:11px;margin-top:2px;">Reviewed mentions</div>
+        </td>
+      </tr>
+    </table>
+  `;
+
+  const highlights = (stats.highlights ?? []).slice(0, 3);
+  const concerns = (stats.concerns ?? []).slice(0, 3);
+  const recent = (stats.recent ?? stats.topMentions ?? []).slice(0, 4);
+
+  const highlightsHtml =
+    highlights.length > 0
+      ? `<h3 style="margin:18px 0 8px;color:${NEAR_BLACK};font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">What residents are loving</h3>${highlights.map((m) => mentionCardEmail(m, "highlight")).join("")}`
+      : "";
+
+  const concernsHtml =
+    concerns.length > 0
+      ? `<h3 style="margin:18px 0 8px;color:${NEAR_BLACK};font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">What needs attention</h3>${concerns.map((m) => mentionCardEmail(m, "concern")).join("")}`
+      : "";
+
+  const recentHtml =
+    recent.length > 0
+      ? `<h3 style="margin:18px 0 8px;color:${NEAR_BLACK};font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">Recent mentions</h3>${recent.map((m) => mentionCardEmail(m, "neutral")).join("")}`
+      : "";
+
+  return `
+    <h2 style="margin:28px 0 12px;color:${NEAR_BLACK};font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">Reputation pulse</h2>
+    ${summaryRow}
+    ${highlightsHtml}
+    ${concernsHtml}
+    ${highlightsHtml || concernsHtml ? "" : recentHtml}
+  `;
+}
+
+function mentionCardEmail(
+  m: NonNullable<ReportSnapshot["reputationStats"]>["recent"][number],
+  variant: "highlight" | "concern" | "neutral",
+): string {
+  const bg =
+    variant === "concern"
+      ? "#fef3c7"
+      : variant === "highlight"
+        ? "#ecfdf5"
+        : IVORY;
+  const borderColor =
+    variant === "concern"
+      ? "#fcd34d"
+      : variant === "highlight"
+        ? "#a7f3d0"
+        : BORDER;
+
+  const stars =
+    m.rating != null
+      ? `<span style="color:#f59e0b;font-size:13px;letter-spacing:0.5px;">${"★".repeat(Math.round(m.rating))}<span style="color:#fcd34d;">${"★".repeat(Math.max(0, 5 - Math.round(m.rating)))}</span></span> <span style="color:${NEAR_BLACK};font-size:11px;font-weight:600;">${m.rating.toFixed(1)}</span>`
+      : "";
+
+  const sentimentChip = m.sentiment
+    ? `<span style="display:inline-block;padding:2px 6px;border:1px solid ${borderColor};border-radius:3px;font-size:9px;letter-spacing:0.08em;text-transform:uppercase;font-weight:700;color:${variant === "concern" ? "#92400e" : variant === "highlight" ? "#065f46" : OLIVE};margin-left:6px;">${m.sentiment.toLowerCase()}</span>`
+    : "";
+
+  const author = m.authorName
+    ? `<div style="color:${OLIVE};font-size:11px;margin-top:2px;">${escapeHtml(m.authorName)}</div>`
+    : "";
+
+  const date = m.publishedAt
+    ? `<div style="color:${STONE};font-size:10px;font-feature-settings:'tnum';">${formatShortDate(m.publishedAt)}</div>`
+    : "";
+
+  const title = m.title
+    ? `<h4 style="margin:6px 0 6px;color:${NEAR_BLACK};font-size:13px;font-weight:600;line-height:1.4;">${escapeHtml(m.title)}</h4>`
+    : "";
+
+  // Cap email body to ~600 chars per mention. Most reviews fit; long
+  // Reddit posts get a "..." with the source link. Email clients are
+  // unforgiving about giant blockquotes.
+  const fullBody = m.excerpt ?? "";
+  const truncated = fullBody.length > 600 ? `${fullBody.slice(0, 600).trim()}…` : fullBody;
+  const body = truncated
+    ? `<p style="margin:6px 0 0;color:${NEAR_BLACK};font-size:12px;line-height:1.6;white-space:pre-wrap;">${escapeHtml(truncated)}</p>`
+    : "";
+
+  const link = m.sourceUrl
+    ? `<p style="margin:8px 0 0;"><a href="${m.sourceUrl}" style="color:${ACCENT};font-size:11px;font-weight:600;text-decoration:none;">Open on ${escapeHtml(m.source.toLowerCase())} →</a></p>`
+    : "";
+
+  return `
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:10px;">
+      <tr>
+        <td style="padding:12px 14px;border:1px solid ${borderColor};background-color:${bg};border-radius:8px;">
+          <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
+            <tr>
+              <td style="vertical-align:top;">
+                <div>
+                  <span style="color:${NEAR_BLACK};font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">${escapeHtml(m.source)}</span>
+                  ${stars ? `&nbsp;${stars}` : ""}
+                  ${sentimentChip}
+                </div>
+                ${title}
+              </td>
+              <td style="vertical-align:top;text-align:right;white-space:nowrap;">
+                ${date}
+                ${author}
+              </td>
+            </tr>
+          </table>
+          ${body}
+          ${link}
+        </td>
+      </tr>
+    </table>
+  `;
+}
+
+function formatShortDate(iso: string): string {
+  const d = new Date(iso);
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function buildPlainText(input: ReportEmailInput, period: string, kindLabel: string): string {
   const { snapshot, orgName, shareUrl, headline, notes, senderName } = input;
   const lines: string[] = [];
@@ -360,6 +514,39 @@ function buildPlainText(input: ReportEmailInput, period: string, kindLabel: stri
     lines.push("Where leases came from");
     for (const r of snapshot.attributionBySource) {
       lines.push(`  ${r.source}: ${r.leads} leads, ${r.signed} signed`);
+    }
+  }
+  if (snapshot.reputationStats) {
+    const rep = snapshot.reputationStats;
+    lines.push("");
+    lines.push("Reputation pulse");
+    if (rep.overallRating != null) {
+      lines.push(`  ${rep.overallRating.toFixed(1)}★ across ${rep.totalReviews} reviews`);
+    } else {
+      lines.push(`  ${rep.totalReviews} mentions tracked`);
+    }
+    lines.push(`  ${rep.newInPeriod} new this period · ${rep.positiveCount} positive · ${rep.negativeCount} negative`);
+    const showcase =
+      (rep.highlights ?? []).slice(0, 2).concat((rep.concerns ?? []).slice(0, 2));
+    if (showcase.length === 0) {
+      showcase.push(...((rep.recent ?? rep.topMentions ?? []).slice(0, 3)));
+    }
+    if (showcase.length > 0) {
+      lines.push("");
+      for (const m of showcase) {
+        const star = m.rating != null ? ` ${m.rating.toFixed(1)}★` : "";
+        const author = m.authorName ? ` — ${m.authorName}` : "";
+        lines.push(`  [${m.source}${star}]${author}`);
+        const body = m.excerpt
+          ? m.excerpt.replace(/\s+/g, " ").trim()
+          : "";
+        if (body) {
+          const t = body.length > 240 ? `${body.slice(0, 240)}…` : body;
+          lines.push(`  "${t}"`);
+        }
+        if (m.sourceUrl) lines.push(`  ${m.sourceUrl}`);
+        lines.push("");
+      }
     }
   }
   lines.push("");

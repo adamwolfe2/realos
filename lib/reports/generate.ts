@@ -141,11 +141,17 @@ export type ReportReputationSourceRow = {
 };
 
 export type ReportReputationMention = {
+  id: string;
   source: string;
   rating: number | null;
+  title: string | null;
   excerpt: string;
+  authorName: string | null;
   publishedAt: string | null;
   sourceUrl: string;
+  sentiment: string | null;
+  topics: string[] | null;
+  flagged: boolean;
 };
 
 export type ReportReputationStats = {
@@ -157,7 +163,15 @@ export type ReportReputationStats = {
   negativeCount: number;
   responseRatePct: number | null;
   sourceBreakdown: ReportReputationSourceRow[];
-  topMentions: ReportReputationMention[];
+  // Recent: chronological feed (last 12 in window)
+  // Highlights: positive 5★ / sentiment=POSITIVE
+  // Concerns:  negative reviews + sentiment=NEGATIVE/MIXED
+  // Curated splits make the report scannable: highlights for the
+  // marketing brag, concerns for the action list, recent for context.
+  topMentions: ReportReputationMention[]; // legacy alias kept for older snapshots; mirrors `recent`
+  recent: ReportReputationMention[];
+  highlights: ReportReputationMention[];
+  concerns: ReportReputationMention[];
 };
 
 export type ReportOccupancyStats = {
@@ -1226,57 +1240,112 @@ async function buildReputationStats(
   priorEnd: Date,
 ): Promise<ReportReputationStats | undefined> {
   const propertyClause = propertyId ? { propertyId } : {};
-  const [lifetime, sourceGroups, periodNew, priorNew, sentimentGroups, recent, reviewedAgg] =
-    await Promise.all([
-      prisma.propertyMention.aggregate({
-        where: { orgId, ...propertyClause },
-        _avg: { rating: true },
-        _count: { _all: true },
-      }),
-      prisma.propertyMention.groupBy({
-        by: ["source"],
-        where: { orgId, ...propertyClause },
-        _count: { _all: true },
-        _avg: { rating: true },
-      }),
-      prisma.propertyMention.count({
-        where: {
-          orgId,
-          ...propertyClause,
-          publishedAt: { gte: periodStart, lt: periodEnd },
-        },
-      }),
-      prisma.propertyMention.count({
-        where: {
-          orgId,
-          ...propertyClause,
-          publishedAt: { gte: priorStart, lt: priorEnd },
-        },
-      }),
-      prisma.propertyMention.groupBy({
-        by: ["sentiment"],
-        where: { orgId, ...propertyClause },
-        _count: { _all: true },
-      }),
-      prisma.propertyMention.findMany({
-        where: { orgId, ...propertyClause },
-        orderBy: { publishedAt: "desc" },
-        take: 5,
-        select: {
-          source: true,
-          rating: true,
-          excerpt: true,
-          publishedAt: true,
-          sourceUrl: true,
-        },
-      }),
-      // Response rate proxy — operator-marked "reviewed" mentions divided by
-      // the overall mention count. We don't track per-mention replies as
-      // first-class data yet, so this is the best signal available.
-      prisma.propertyMention.count({
-        where: { orgId, ...propertyClause, reviewedByUserId: { not: null } },
-      }),
-    ]);
+
+  // Full mention payload — title, author, sentiment, topics, flagged
+  // — so the report renderer (and the email) can show real Reddit
+  // threads / Google reviews / Yelp posts with attribution + click-
+  // through links instead of bare snippet stubs.
+  const FULL_SELECT = {
+    id: true,
+    source: true,
+    rating: true,
+    title: true,
+    excerpt: true,
+    authorName: true,
+    publishedAt: true,
+    sourceUrl: true,
+    sentiment: true,
+    topics: true,
+    flagged: true,
+  } as const;
+
+  const [
+    lifetime,
+    sourceGroups,
+    periodNew,
+    priorNew,
+    sentimentGroups,
+    recentRows,
+    highlightRows,
+    concernRows,
+    reviewedAgg,
+  ] = await Promise.all([
+    prisma.propertyMention.aggregate({
+      where: { orgId, ...propertyClause },
+      _avg: { rating: true },
+      _count: { _all: true },
+    }),
+    prisma.propertyMention.groupBy({
+      by: ["source"],
+      where: { orgId, ...propertyClause },
+      _count: { _all: true },
+      _avg: { rating: true },
+    }),
+    prisma.propertyMention.count({
+      where: {
+        orgId,
+        ...propertyClause,
+        publishedAt: { gte: periodStart, lt: periodEnd },
+      },
+    }),
+    prisma.propertyMention.count({
+      where: {
+        orgId,
+        ...propertyClause,
+        publishedAt: { gte: priorStart, lt: priorEnd },
+      },
+    }),
+    prisma.propertyMention.groupBy({
+      by: ["sentiment"],
+      where: { orgId, ...propertyClause },
+      _count: { _all: true },
+    }),
+    // Recent feed — most recent 12 across all sources. Drives the
+    // "Recent mentions" timeline in the report.
+    prisma.propertyMention.findMany({
+      where: { orgId, ...propertyClause },
+      orderBy: { publishedAt: "desc" },
+      take: 12,
+      select: FULL_SELECT,
+    }),
+    // Highlights — 5★ Google/Yelp OR sentiment=POSITIVE. Drives the
+    // "What residents are loving" section in the report.
+    prisma.propertyMention.findMany({
+      where: {
+        orgId,
+        ...propertyClause,
+        OR: [
+          { rating: { gte: 4.5 } },
+          { sentiment: Sentiment.POSITIVE },
+        ],
+      },
+      orderBy: [{ rating: "desc" }, { publishedAt: "desc" }],
+      take: 6,
+      select: FULL_SELECT,
+    }),
+    // Concerns — low-star reviews OR sentiment=NEGATIVE/MIXED. Drives
+    // the "What needs attention" section.
+    prisma.propertyMention.findMany({
+      where: {
+        orgId,
+        ...propertyClause,
+        OR: [
+          { rating: { lte: 3 } },
+          { sentiment: { in: [Sentiment.NEGATIVE, Sentiment.MIXED] } },
+          { flagged: true },
+        ],
+      },
+      orderBy: [{ rating: "asc" }, { publishedAt: "desc" }],
+      take: 6,
+      select: FULL_SELECT,
+    }),
+    // Response rate proxy — operator-marked "reviewed" mentions divided by
+    // the overall mention count. We don't track per-mention replies as
+    // first-class data yet, so this is the best signal available.
+    prisma.propertyMention.count({
+      where: { orgId, ...propertyClause, reviewedByUserId: { not: null } },
+    }),
+  ]);
 
   const totalReviews = lifetime._count._all;
   if (totalReviews === 0) return undefined;
@@ -1287,6 +1356,33 @@ async function buildReputationStats(
   const negativeCount =
     sentimentGroups.find((s) => s.sentiment === Sentiment.NEGATIVE)?._count
       ._all ?? 0;
+
+  function toMention(
+    m: (typeof recentRows)[number],
+  ): ReportReputationMention {
+    return {
+      id: m.id,
+      source: MENTION_SOURCE_LABELS[m.source] ?? m.source,
+      rating: m.rating,
+      title: m.title,
+      excerpt: m.excerpt,
+      authorName: m.authorName,
+      publishedAt: m.publishedAt ? m.publishedAt.toISOString() : null,
+      sourceUrl: m.sourceUrl,
+      sentiment: m.sentiment,
+      topics: Array.isArray(m.topics) ? (m.topics as string[]) : null,
+      flagged: m.flagged,
+    };
+  }
+
+  const recent = recentRows.map(toMention);
+  const highlights = highlightRows.map(toMention);
+  // Dedupe concerns vs highlights — a 4.5★ MIXED-sentiment review
+  // could land in both buckets and we don't want to print it twice.
+  const highlightIds = new Set(highlights.map((h) => h.id));
+  const concerns = concernRows
+    .filter((m) => !highlightIds.has(m.id))
+    .map(toMention);
 
   return {
     overallRating:
@@ -1308,13 +1404,12 @@ async function buildReputationStats(
           g._avg.rating != null ? Math.round(g._avg.rating * 10) / 10 : null,
       }))
       .sort((a, b) => b.count - a.count),
-    topMentions: recent.map((m) => ({
-      source: MENTION_SOURCE_LABELS[m.source] ?? m.source,
-      rating: m.rating,
-      excerpt: m.excerpt,
-      publishedAt: m.publishedAt ? m.publishedAt.toISOString() : null,
-      sourceUrl: m.sourceUrl,
-    })),
+    // topMentions kept as alias for backwards compat with older
+    // snapshots already persisted as JSON.
+    topMentions: recent,
+    recent,
+    highlights,
+    concerns,
   };
 }
 

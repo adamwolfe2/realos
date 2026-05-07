@@ -705,8 +705,14 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
               {String(mention.title)}
             </p>
           ) : null}
-          <p className="text-xs text-muted-foreground leading-snug line-clamp-2">
-            {truncate(mention.excerpt)}
+          {/* Full mention body. Was truncate(220) + line-clamp-2 which
+              hid most of the actual review/post — operators couldn't
+              read what visitors were saying without clicking through.
+              whitespace-pre-line preserves Reddit-style paragraph
+              breaks. line-clamp-6 caps very long Reddit threads while
+              still showing 5-6x more content than the old snippet. */}
+          <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line line-clamp-6">
+            {String(mention.excerpt ?? "")}
           </p>
           <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
             {mention.authorName ? (

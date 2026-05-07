@@ -28,7 +28,7 @@ const SENTIMENT_LABEL: Record<Sentiment, string> = {
   MIXED: "Mixed",
 };
 
-function truncate(input: string, max = 140): string {
+function truncate(input: string, max = 320): string {
   const s = input.trim().replace(/\s+/g, " ");
   return s.length > max ? `${s.slice(0, max - 1)}…` : s;
 }
@@ -73,8 +73,17 @@ export function ReputationPulse({ items }: { items: ReputationPulseItem[] }) {
                   </span>
                 ) : null}
               </div>
-              <p className="text-xs leading-snug text-foreground line-clamp-2">
-                {truncate(m.title ?? m.excerpt)}
+              {/* Show the title (if Reddit thread) prominently AND
+                  the body excerpt below it. Was a single line-clamp-2
+                  truncated snippet of "title or excerpt" that hid most
+                  of the actual content. */}
+              {m.title ? (
+                <p className="text-xs font-semibold text-foreground line-clamp-1 mb-0.5">
+                  {m.title}
+                </p>
+              ) : null}
+              <p className="text-xs leading-relaxed text-foreground/85 line-clamp-4 whitespace-pre-line">
+                {truncate(m.excerpt)}
               </p>
               <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
                 {m.rating != null ? (

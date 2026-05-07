@@ -4,6 +4,7 @@ import type {
   ReportAiVisibility,
   ReportOccupancyStats,
   ReportRenewalStats,
+  ReportReputationMention,
   ReportReputationStats,
   ReportSnapshot,
   ReportVisitorStats,
@@ -538,36 +539,180 @@ function ReputationSection({ stats }: { stats: ReportReputationStats }) {
         </div>
       </div>
 
-      {/* Recent mentions */}
-      {stats.topMentions.length > 0 ? (
-        <div className="mt-4 pt-3 border-t border-border space-y-2">
-          <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-            Recent mentions
-          </div>
-          {stats.topMentions.slice(0, 3).map((m, i) => (
-            <div
-              key={i}
-              className="rounded-xl border border-border bg-card/50 px-3 py-2"
-            >
-              <div className="flex items-center justify-between gap-2 mb-1">
-                <span className="text-[11px] font-semibold text-foreground">
-                  {m.source}
-                  {m.rating != null ? ` · ${m.rating.toFixed(1)}★` : ""}
+      {/* Highlights — what residents are loving. Falls back to recent
+          when older snapshots don't have the curated buckets. */}
+      {(stats.highlights ?? []).length > 0 ? (
+        <MentionGroup
+          title="Highlights"
+          subtitle="What residents are saying — by sentiment + 4.5★+ reviews"
+          mentions={stats.highlights!}
+        />
+      ) : null}
+
+      {/* Concerns — what needs attention. Useful for ops triage. */}
+      {(stats.concerns ?? []).length > 0 ? (
+        <MentionGroup
+          title="Needs attention"
+          subtitle="Negative sentiment + 3★ or below + flagged threads"
+          mentions={stats.concerns!}
+          variant="concern"
+        />
+      ) : null}
+
+      {/* Recent — chronological feed of every source for the period. */}
+      {(stats.recent ?? stats.topMentions).length > 0 ? (
+        <MentionGroup
+          title="Recent mentions"
+          subtitle="Most recent reviews + posts across Google, Reddit, Yelp, and the web"
+          mentions={stats.recent ?? stats.topMentions}
+        />
+      ) : null}
+    </Section>
+  );
+}
+
+// MentionGroup — a labeled stack of full mention cards. Used by the
+// report's reputation section for highlights / concerns / recent.
+//
+// Renders the actual review/post body (not a snippet), the author,
+// the date, the sentiment, the source, and a click-out link to the
+// original. Server-component-safe — no fetch, no interactivity beyond
+// the link itself.
+function MentionGroup({
+  title,
+  subtitle,
+  mentions,
+  variant = "neutral",
+}: {
+  title: string;
+  subtitle: string;
+  mentions: ReportReputationMention[];
+  variant?: "neutral" | "concern";
+}) {
+  return (
+    <div className="mt-4 pt-3 border-t border-border space-y-3">
+      <div>
+        <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+          {title}
+        </div>
+        <p className="text-[11px] text-muted-foreground/80 mt-0.5">
+          {subtitle}
+        </p>
+      </div>
+      <div className="space-y-2.5">
+        {mentions.map((m) => (
+          <ReportMentionCard key={m.id} mention={m} variant={variant} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ReportMentionCard({
+  mention: m,
+  variant,
+}: {
+  mention: ReportReputationMention;
+  variant: "neutral" | "concern";
+}) {
+  const sentimentTone =
+    m.sentiment === "POSITIVE"
+      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      : m.sentiment === "NEGATIVE"
+        ? "bg-red-50 text-red-700 border-red-200"
+        : m.sentiment === "MIXED"
+          ? "bg-amber-50 text-amber-800 border-amber-200"
+          : "bg-muted text-muted-foreground border-border";
+
+  return (
+    <div
+      className={`rounded-xl border px-4 py-3 ${
+        variant === "concern"
+          ? "border-amber-200 bg-amber-50/30"
+          : "border-border bg-card/60"
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[11px] font-semibold tracking-wide text-foreground uppercase">
+              {m.source}
+            </span>
+            {m.rating != null ? (
+              <span className="text-[11px] font-semibold text-amber-600">
+                {"★".repeat(Math.round(m.rating))}
+                <span className="text-amber-300">
+                  {"★".repeat(Math.max(0, 5 - Math.round(m.rating)))}
                 </span>
-                {m.publishedAt ? (
-                  <span className="text-[10px] text-muted-foreground tabular-nums">
-                    {formatDate(new Date(m.publishedAt))}
-                  </span>
-                ) : null}
-              </div>
-              <p className="text-[12px] text-foreground leading-snug">
-                {m.excerpt}
-              </p>
+                <span className="ml-1 text-foreground/70">
+                  {m.rating.toFixed(1)}
+                </span>
+              </span>
+            ) : null}
+            {m.sentiment ? (
+              <span
+                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border ${sentimentTone}`}
+              >
+                {m.sentiment.toLowerCase()}
+              </span>
+            ) : null}
+            {m.flagged ? (
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border bg-red-50 text-red-700 border-red-200">
+                Flagged
+              </span>
+            ) : null}
+          </div>
+          {m.title ? (
+            <h4 className="mt-1.5 text-[13px] font-semibold text-foreground leading-snug">
+              {m.title}
+            </h4>
+          ) : null}
+        </div>
+        <div className="text-right shrink-0">
+          {m.publishedAt ? (
+            <div className="text-[10px] text-muted-foreground tabular-nums">
+              {formatDate(new Date(m.publishedAt))}
             </div>
+          ) : null}
+          {m.authorName ? (
+            <div className="text-[10px] text-muted-foreground/80 mt-0.5">
+              {m.authorName}
+            </div>
+          ) : null}
+        </div>
+      </div>
+      {/* Full body — no truncation. The DB stores the full review/post
+          in PropertyMention.excerpt as @db.Text so we can render it
+          all. The whitespace-pre-line preserves Reddit-style
+          paragraph breaks. */}
+      {m.excerpt ? (
+        <p className="mt-2 text-[12px] text-foreground/90 leading-relaxed whitespace-pre-line">
+          {m.excerpt}
+        </p>
+      ) : null}
+      {m.topics && m.topics.length > 0 ? (
+        <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+          {m.topics.map((t: string) => (
+            <span
+              key={t}
+              className="text-[9px] uppercase tracking-wider text-muted-foreground border border-border rounded px-1.5 py-0.5 bg-background/60"
+            >
+              {t}
+            </span>
           ))}
         </div>
       ) : null}
-    </Section>
+      {m.sourceUrl ? (
+        <a
+          href={m.sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-foreground hover:underline underline-offset-2"
+        >
+          Open on {m.source.toLowerCase()} →
+        </a>
+      ) : null}
+    </div>
   );
 }
 
