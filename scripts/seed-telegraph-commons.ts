@@ -35,18 +35,49 @@ import { PrismaNeonHttp } from "@prisma/adapter-neon";
 import type { HTTPQueryOptions } from "@neondatabase/serverless";
 
 // -----------------------------------------------------------------------------
-// Safety guard
+// PRODUCTION SAFETY — three independent guards must all clear before this
+// script touches the database. The Norman launch demands: NO MORE FAKE DATA
+// IN PRODUCTION. If you genuinely need to seed demo content, set up a
+// throwaway Neon branch and point DATABASE_URL at it explicitly.
+// Mirrors the triple-guard pattern from prisma/seed-demo.ts.
 // -----------------------------------------------------------------------------
 
-if (process.env.NODE_ENV === "production" && process.env.SEED_DEMO_DATA !== "1") {
+if (process.env.NODE_ENV === "production") {
   throw new Error(
-    "Refusing to run demo seed in production without SEED_DEMO_DATA=1. Aborting.",
+    "[seed-telegraph-commons] Refusing to run when NODE_ENV=production. Aborting.",
+  );
+}
+if (process.env.VERCEL_ENV === "production") {
+  throw new Error(
+    "[seed-telegraph-commons] Refusing to run against a Vercel production environment. Aborting.",
+  );
+}
+if (process.env.ALLOW_DEMO_SEED !== "true") {
+  throw new Error(
+    "[seed-telegraph-commons] Demo seeding is disabled. Set ALLOW_DEMO_SEED=true to bypass — but only do so when DATABASE_URL points at a throwaway DB.",
   );
 }
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   throw new Error("DATABASE_URL is not set. Source .env.local first.");
+}
+
+// Best-effort production hostname guard. Trips on the most common Neon /
+// Supabase / RDS production naming conventions. False positives are
+// recoverable; a false negative is a fake-data leak that destroys
+// customer trust and tanks the Norman pilot.
+{
+  const lower = connectionString.toLowerCase();
+  const looksProd = ["prod", "production", "live", "primary"].some((k) =>
+    lower.includes(k),
+  );
+  if (looksProd && process.env.I_KNOW_THIS_IS_NOT_PROD !== "true") {
+    throw new Error(
+      `[seed-telegraph-commons] DATABASE_URL contains a production-looking token. ` +
+        `Set I_KNOW_THIS_IS_NOT_PROD=true to override after triple-checking the connection string.`,
+    );
+  }
 }
 
 const adapter = new PrismaNeonHttp(

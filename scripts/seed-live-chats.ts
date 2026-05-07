@@ -25,15 +25,53 @@ import { PrismaNeonHttp } from "@prisma/adapter-neon";
 import type { HTTPQueryOptions } from "@neondatabase/serverless";
 import { randomUUID } from "node:crypto";
 
+// -----------------------------------------------------------------------------
+// PRODUCTION SAFETY — three independent guards must all clear before this
+// script touches the database. NO MORE FAKE DATA IN PRODUCTION. If you
+// genuinely need to seed demo content, point DATABASE_URL at a Neon branch.
+// Mirrors the triple-guard pattern from prisma/seed-demo.ts.
+// -----------------------------------------------------------------------------
+
+if (process.env.NODE_ENV === "production") {
+  throw new Error(
+    "[seed-live-chats] Refusing to run when NODE_ENV=production. Aborting.",
+  );
+}
+if (process.env.VERCEL_ENV === "production") {
+  throw new Error(
+    "[seed-live-chats] Refusing to run against a Vercel production environment. Aborting.",
+  );
+}
+if (process.env.ALLOW_DEMO_SEED !== "true") {
+  throw new Error(
+    "[seed-live-chats] Demo seeding is disabled. Set ALLOW_DEMO_SEED=true to bypass — but only do so when DATABASE_URL points at a throwaway DB.",
+  );
+}
+
 const url = process.env.DATABASE_URL;
 if (!url) throw new Error("DATABASE_URL not set. Source .env.local first.");
+
+// Best-effort production hostname guard.
+{
+  const lower = url.toLowerCase();
+  const looksProd = ["prod", "production", "live", "primary"].some((k) =>
+    lower.includes(k),
+  );
+  if (looksProd && process.env.I_KNOW_THIS_IS_NOT_PROD !== "true") {
+    throw new Error(
+      `[seed-live-chats] DATABASE_URL contains a production-looking token. ` +
+        `Set I_KNOW_THIS_IS_NOT_PROD=true to override after triple-checking the connection string.`,
+    );
+  }
+}
+
 const prisma = new PrismaClient({
   adapter: new PrismaNeonHttp(url, {} as HTTPQueryOptions<boolean, boolean>),
 });
 
 const orgSlug =
   process.argv.find((a) => a.startsWith("--org="))?.split("=")[1] ??
-  "telegraph-commons";
+  "demo-residences";
 
 const SAMPLE_CHATS = [
   {

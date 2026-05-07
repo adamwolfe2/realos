@@ -12,7 +12,11 @@
  *   set -a; source .env.local; set +a; \
  *     pnpm exec tsx scripts/seed-dashboard-data.ts [--org=<slug>]
  *
- * Defaults to org slug "telegraph-commons" if --org not provided.
+ * Defaults to org slug "demo-residences" if --org not provided.
+ * NOTE: this script ships with Berkeley-themed sample text (queries,
+ * page paths, campaign names) because it was originally built for the
+ * Telegraph Commons demo branch. Do NOT point it at a real tenant —
+ * use a throwaway Neon branch only.
  *
  * Idempotent: deletes prior dashboard sample data for the org before re-seeding.
  */
@@ -85,7 +89,7 @@ const prisma = new PrismaClient({ adapter });
 
 const orgSlug =
   process.argv.find((a) => a.startsWith("--org="))?.split("=")[1] ??
-  "telegraph-commons";
+  "demo-residences";
 
 function daysAgoMidnight(days: number): Date {
   const d = new Date();

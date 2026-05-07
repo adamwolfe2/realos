@@ -15,18 +15,6 @@ import { ReputationTab } from "./tabs/reputation";
 import { ResidentsTab } from "./tabs/residents";
 import { RenewalsTab } from "./tabs/renewals";
 import { WorkOrdersTab } from "./tabs/work-orders";
-import { isTelegraphCommons } from "./tabs/telegraph-detection";
-import {
-  TelegraphOverviewDemo,
-  TelegraphTrafficDemo,
-  TelegraphLeadsDemo,
-  TelegraphAdsDemo,
-  TelegraphChatbotDemo,
-  TelegraphReputationDemo,
-  TelegraphOccupancyDemo,
-  TelegraphResidentsDemo,
-  TelegraphRenewalsDemo,
-} from "./tabs/telegraph-demo";
 
 export const metadata: Metadata = { title: "Property detail" };
 export const dynamic = "force-dynamic";
@@ -71,8 +59,13 @@ export default async function PropertyDetail({
   if (!property) notFound();
 
   const meta = { slug: property.slug, name: property.name };
-  const isDemo = isTelegraphCommons(meta);
-  const showOccupancyTab = isDemo || (property.totalUnits ?? 0) > 0;
+  // Occupancy tab visibility is driven solely by whether the property has
+  // any units configured. Previously we also force-showed it for properties
+  // whose name contained "telegraph" because of a demo override; that
+  // override has been removed so Telegraph Commons (and every other real
+  // tenant) goes through the same Prisma-backed query path as everyone
+  // else. NO MORE FAKE DATA IN PRODUCTION.
+  const showOccupancyTab = (property.totalUnits ?? 0) > 0;
 
   return (
     <div className="space-y-6">
@@ -103,9 +96,7 @@ export default async function PropertyDetail({
         initialTab={tab ?? "overview"}
         showOccupancy={showOccupancyTab}
         panels={{
-          overview: isDemo ? (
-            <TelegraphOverviewDemo />
-          ) : (
+          overview: (
             <OverviewTab
               orgId={scope.orgId}
               propertyId={property.id}
@@ -128,44 +119,34 @@ export default async function PropertyDetail({
               }}
             />
           ),
-          traffic: isDemo ? (
-            <TelegraphTrafficDemo />
-          ) : (
+          traffic: (
             <TrafficTab
               orgId={scope.orgId}
               propertyId={property.id}
               propertyMeta={meta}
             />
           ),
-          leads: isDemo ? (
-            <TelegraphLeadsDemo />
-          ) : (
+          leads: (
             <LeadsTab
               orgId={scope.orgId}
               propertyId={property.id}
               propertyMeta={meta}
             />
           ),
-          ads: isDemo ? (
-            <TelegraphAdsDemo />
-          ) : (
+          ads: (
             <AdsTab
               orgId={scope.orgId}
               propertyId={property.id}
             />
           ),
-          chatbot: isDemo ? (
-            <TelegraphChatbotDemo />
-          ) : (
+          chatbot: (
             <ChatbotTab
               orgId={scope.orgId}
               propertyId={property.id}
               propertyName={property.name}
             />
           ),
-          reputation: isDemo ? (
-            <TelegraphReputationDemo />
-          ) : (
+          reputation: (
             <ReputationTab
               orgId={scope.orgId}
               propertyId={property.id}
@@ -180,17 +161,13 @@ export default async function PropertyDetail({
                 .join(", ") || null}
             />
           ),
-          occupancy: isDemo ? (
-            <TelegraphOccupancyDemo />
-          ) : showOccupancyTab ? (
+          occupancy: showOccupancyTab ? (
             <OccupancyTab
               orgId={scope.orgId}
               propertyId={property.id}
             />
           ) : null,
-          residents: isDemo ? (
-            <TelegraphResidentsDemo />
-          ) : (
+          residents: (
             <ResidentsTab
               orgId={scope.orgId}
               propertyId={property.id}
@@ -203,9 +180,7 @@ export default async function PropertyDetail({
               }
             />
           ),
-          renewals: isDemo ? (
-            <TelegraphRenewalsDemo />
-          ) : (
+          renewals: (
             <RenewalsTab
               orgId={scope.orgId}
               propertyId={property.id}
