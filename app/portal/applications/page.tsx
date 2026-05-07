@@ -4,6 +4,14 @@ import { FileText, CheckCircle2, X, Clock, Inbox } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  isAccessDenied,
+  parsePropertyFilter,
+  propertyWhereFragment,
+  visibleProperties,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
@@ -51,8 +59,16 @@ const STATUS_COLUMN_ORDER: ApplicationStatus[] = [
   ApplicationStatus.WITHDRAWN,
 ];
 
-export default async function ApplicationsPage() {
+export default async function ApplicationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ property?: string; properties?: string }>;
+}) {
   const scope = await requireScope();
+  const sp = await searchParams;
+  const requestedIds = parsePropertyFilter(sp);
+  const accessDenied = isAccessDenied(scope, requestedIds);
+  const propertyClause = propertyWhereFragment(scope, requestedIds);
   try {
   const where = tenantWhere(scope);
   const last90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
@@ -67,10 +83,10 @@ export default async function ApplicationsPage() {
     apps,
   ] = await Promise.all([
     prisma.application.count({
-      where: { lead: where, status: ApplicationStatus.SUBMITTED },
+      where: { lead: where, ...propertyClause,status: ApplicationStatus.SUBMITTED },
     }),
     prisma.application.count({
-      where: { lead: where, status: ApplicationStatus.UNDER_REVIEW },
+      where: { lead: where, ...propertyClause,status: ApplicationStatus.UNDER_REVIEW },
     }),
     prisma.application.count({
       where: {
@@ -88,7 +104,7 @@ export default async function ApplicationsPage() {
     }),
     prisma.application.count({ where: { lead: where } }),
     prisma.application.findMany({
-      where: { lead: where, createdAt: { gte: last90 } },
+      where: { lead: where, ...propertyClause,createdAt: { gte: last90 } },
       orderBy: [{ createdAt: "desc" }],
       take: 300,
       select: {
@@ -122,11 +138,24 @@ export default async function ApplicationsPage() {
   for (const s of Object.values(ApplicationStatus)) byStatus.set(s, []);
   for (const app of apps) byStatus.get(app.status)!.push(app);
 
+  const allProperties = await prisma.property.findMany({
+    where: tenantWhere(scope),
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const properties = visibleProperties(scope, allProperties);
+
   return (
     <div className="space-y-4">
+      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
       <PageHeader
         title="Applications"
         description="Every lease application from started through decision. Click any card to open the lead and act on it."
+        actions={
+          properties.length > 1 ? (
+            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          ) : null
+        }
       />
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">

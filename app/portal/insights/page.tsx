@@ -3,6 +3,15 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import {
+  effectivePropertyIds,
+  isAccessDenied,
+  parsePropertyFilter,
+  propertyIdsToWhere,
+  visibleProperties,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { getInsightCounts, getOpenInsights } from "@/lib/insights/queries";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 import { RunDetectorsButton } from "@/components/portal/insights/run-detectors-button";
@@ -23,7 +32,13 @@ const CATEGORY_FILTERS = [
 export default async function InsightsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; severity?: string; status?: string }>;
+  searchParams: Promise<{
+    category?: string;
+    severity?: string;
+    status?: string;
+    property?: string;
+    properties?: string;
+  }>;
 }) {
   const scope = await requireScope();
   const params = await searchParams;
@@ -31,11 +46,20 @@ export default async function InsightsPage({
   const severity = params.severity ?? "all";
   const status = params.status ?? "open";
 
-  const [counts, rows, resolvedCount] = await Promise.all([
-    getInsightCounts(scope.orgId),
+  // Property gate: respect both URL multi-select AND the user's
+  // UserPropertyAccess scope. Norman should only see Telegraph
+  // Commons insights even if he removes the URL filter.
+  const requestedIds = parsePropertyFilter(params);
+  const accessDenied = isAccessDenied(scope, requestedIds);
+  const effectiveIds = effectivePropertyIds(scope, requestedIds);
+  const propertyClause = propertyIdsToWhere(effectiveIds);
+
+  const [counts, rows, resolvedCount, allProperties] = await Promise.all([
+    getInsightCounts(scope.orgId, { propertyIds: effectiveIds }),
     prisma.insight.findMany({
       where: {
         orgId: scope.orgId,
+        ...propertyClause,
         ...(category !== "all" ? { category } : {}),
         ...(severity !== "all" ? { severity } : {}),
         ...(status === "open"
@@ -64,8 +88,17 @@ export default async function InsightsPage({
         property: { select: { id: true, name: true } },
       },
     }),
-    prisma.insight.count({ where: { orgId: scope.orgId, status: "acted" } }),
+    prisma.insight.count({
+      where: { orgId: scope.orgId, status: "acted", ...propertyClause },
+    }),
+    prisma.property.findMany({
+      where: { orgId: scope.orgId },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    }),
   ]);
+
+  const properties = visibleProperties(scope, allProperties);
 
   const casted: InsightCardData[] = rows.map((r) => ({
     ...r,
@@ -74,6 +107,7 @@ export default async function InsightsPage({
 
   return (
     <div className="space-y-5">
+      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
@@ -90,6 +124,9 @@ export default async function InsightsPage({
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
+          {properties.length > 1 ? (
+            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          ) : null}
           <StatBlock label="Critical" value={counts.critical} tone="critical" />
           <StatBlock label="Warning" value={counts.warning} tone="warning" />
           <StatBlock label="Info" value={counts.info} tone="info" />

@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 
 // ---------------------------------------------------------------------------
 // Read helpers for Insight rows. Used by the Command Center, /portal/insights
@@ -43,10 +44,17 @@ export async function getOpenInsights(
   });
 }
 
-export async function getInsightCounts(orgId: string) {
+export async function getInsightCounts(
+  orgId: string,
+  options: { propertyIds?: string[] | null } = {},
+) {
   const rows = await prisma.insight.groupBy({
     by: ["severity", "status"],
-    where: { orgId, status: { in: ["open", "acknowledged"] } },
+    where: {
+      orgId,
+      status: { in: ["open", "acknowledged"] },
+      ...propertyIdsToWhere(options.propertyIds ?? null),
+    },
     _count: true,
   });
 

@@ -30,6 +30,16 @@ export default async function PropertyDetail({
   const { id } = await params;
   const { tab, view } = await searchParams;
 
+  // Property gate: a restricted user (UserPropertyAccess) must NEVER
+  // be able to load a sibling property's detail page, even by URL
+  // hacking. 404 if the requested id isn't in their allowed set.
+  if (
+    scope.allowedPropertyIds &&
+    !scope.allowedPropertyIds.includes(id)
+  ) {
+    notFound();
+  }
+
   const property = await prisma.property.findFirst({
     where: { id, ...tenantWhere(scope) },
     select: {

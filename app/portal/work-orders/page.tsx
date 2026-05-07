@@ -10,6 +10,14 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  isAccessDenied,
+  parsePropertyFilter,
+  propertyWhereFragment,
+  visibleProperties,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
@@ -76,10 +84,18 @@ function fmtMoney(cents: number | null | undefined): string {
   return `$${(cents / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
-export default async function WorkOrdersPage() {
+export default async function WorkOrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ property?: string; properties?: string }>;
+}) {
   const scope = await requireScope();
+  const sp = await searchParams;
+  const requestedIds = parsePropertyFilter(sp);
+  const accessDenied = isAccessDenied(scope, requestedIds);
+  const propertyClause = propertyWhereFragment(scope, requestedIds);
   try {
-  const where = tenantWhere(scope);
+  const where = { ...tenantWhere(scope), ...propertyClause };
   const last30 = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const last90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
 
@@ -187,11 +203,24 @@ export default async function WorkOrdersPage() {
   for (const s of STATUS_COLUMN_ORDER) byStatus.set(s, []);
   for (const w of pipelineRows) byStatus.get(w.status)?.push(w);
 
+  const allProperties = await prisma.property.findMany({
+    where: tenantWhere(scope),
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const properties = visibleProperties(scope, allProperties);
+
   return (
     <div className="space-y-4">
+      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
       <PageHeader
         title="Work orders"
         description="Maintenance pipeline mirrored from AppFolio. Operator fulfillment happens in AppFolio; this view keeps you ahead of property issues."
+        actions={
+          properties.length > 1 ? (
+            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          ) : null
+        }
       />
 
       <AppFolioStatusBanner

@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
-import { requireScope } from "@/lib/tenancy/scope";
+import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  effectivePropertyIds,
+  isAccessDenied,
+  parsePropertyFilter,
+  visibleProperties,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
 import { SeoProvider } from "@prisma/client";
@@ -62,8 +70,23 @@ function fmtPositionDelta(current: number, prior: number): {
   return { label: `${sign}${delta.toFixed(1)}`, tone };
 }
 
-export default async function SeoPage() {
+export default async function SeoPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ property?: string; properties?: string }>;
+}) {
   const scope = await requireScope();
+  const sp = await searchParams;
+  const requestedIds = parsePropertyFilter(sp);
+  const accessDenied = isAccessDenied(scope, requestedIds);
+  const effectiveIds = effectivePropertyIds(scope, requestedIds);
+
+  // SeoSnapshot/SeoQuery/SeoLandingPage are still org-level today (no
+  // propertyId column). If the user is property-restricted, hide the
+  // aggregate trend sections to avoid leaking org-wide data through
+  // them. Per-property integration cards remain visible because the
+  // SeoIntegration model itself is propertyId-aware.
+  const isRestricted = scope.allowedPropertyIds !== null;
 
   // Only count rows backed by a real Google service-account JSON.
   // Seeded demo rows store the literal string "DEMO_SEED" — surfacing
@@ -74,6 +97,16 @@ export default async function SeoPage() {
     where: {
       orgId: scope.orgId,
       serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
+      // Property gate on integrations themselves. NULL propertyId =
+      // legacy org-wide integration; show those to org-wide users only.
+      ...(effectiveIds && effectiveIds.length > 0
+        ? { propertyId: { in: effectiveIds } }
+        : isRestricted
+          ? // Restricted user with no URL filter — show only their
+            // allowed properties' integrations, skip the legacy
+            // org-wide rows.
+            { propertyId: { in: scope.allowedPropertyIds! } }
+          : {}),
     },
     orderBy: { provider: "asc" },
   });
@@ -189,11 +222,25 @@ export default async function SeoPage() {
     impressions: s.totalImpressions,
   }));
 
+  // Property list for the selector dropdown, gated to user's allowed set.
+  const allProperties = await prisma.property.findMany({
+    where: tenantWhere(scope),
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const properties = visibleProperties(scope, allProperties);
+
   return (
     <div className="space-y-3">
+      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
       <PageHeader
         title="SEO"
         description="Organic search performance from Google Search Console and Google Analytics 4. Last 28 days vs. the prior 28 days."
+        actions={
+          properties.length > 1 ? (
+            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          ) : null
+        }
       />
 
       {!hasAny ? (
@@ -226,6 +273,23 @@ export default async function SeoPage() {
             </div>
           </div>
           <SetupHelp />
+        </SectionCard>
+      ) : isRestricted ? (
+        // Property-restricted user. We can show their per-property
+        // integrations (above) but the org-aggregate trend data
+        // below would leak data outside their scope. Hide it until
+        // SeoSnapshot/SeoQuery/SeoLandingPage gain a propertyId
+        // column (planned follow-up).
+        <SectionCard
+          label="Organic search performance"
+          description="Per-property trend data is coming soon. Your integration cards above show connection status; cross-property comparison requires the agency-wide view."
+        >
+          <p className="text-sm text-muted-foreground">
+            Sessions, impressions, clicks, top queries, and top pages
+            are tracked at the organization level today. Once we
+            partition the SEO snapshot tables by property, this view
+            will narrow to just your scope.
+          </p>
         </SectionCard>
       ) : (
         <>

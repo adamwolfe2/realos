@@ -89,6 +89,27 @@ export default async function PortalHome({
   if (scope.productLine === ProductLine.AUDIENCE_SYNC || scope.isAlPartner) {
     redirect("/portal/audiences");
   }
+
+  // Property gate: a property-restricted user (UserPropertyAccess set,
+  // i.e. Norman → Telegraph Commons only) should NOT see the org-wide
+  // portfolio dashboard. The dashboard's KPIs aggregate across all
+  // org properties via 17 helper functions; rather than thread a
+  // property filter through every one tonight, route restricted users
+  // to a surface that already gates correctly.
+  //
+  //   - 1 allowed property  → that property's detail page (overview tab)
+  //   - 2+ allowed          → the /portal/properties list (gated in Phase 1b)
+  //
+  // Future: when Phase 4 adds the property selector + helper refactor,
+  // this redirect can drop and the dashboard can render scoped KPIs
+  // for restricted users too.
+  if (scope.allowedPropertyIds !== null) {
+    if (scope.allowedPropertyIds.length === 1) {
+      redirect(`/portal/properties/${scope.allowedPropertyIds[0]}`);
+    }
+    redirect("/portal/properties");
+  }
+
   const { showSetup } = await searchParams;
   const forceShowSetup = showSetup === "1";
   try {

@@ -2,7 +2,16 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Star, AlertTriangle, MessageCircle, Flag } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
-import { requireScope } from "@/lib/tenancy/scope";
+import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { prisma } from "@/lib/db";
+import {
+  effectivePropertyIds,
+  isAccessDenied,
+  parsePropertyFilter,
+  visibleProperties,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import {
   loadPortfolioReputationMetrics,
   loadPortfolioReputationFeed,
@@ -88,7 +97,11 @@ const EMPTY_METRICS: PortfolioReputationMetrics = {
   monthlyVolume: [],
 };
 
-export default async function PortfolioReputationPage() {
+export default async function PortfolioReputationPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ property?: string; properties?: string }>;
+}) {
   let scope;
   try {
     scope = await requireScope();
@@ -99,6 +112,11 @@ export default async function PortfolioReputationPage() {
     console.error("[reputation] requireScope failed:", err);
     return <ReputationFallback message="Sign in required." />;
   }
+
+  const sp = await searchParams;
+  const requestedIds = parsePropertyFilter(sp);
+  const accessDenied = isAccessDenied(scope, requestedIds);
+  const effectiveIds = effectivePropertyIds(scope, requestedIds);
 
   let metrics: PortfolioReputationMetrics = EMPTY_METRICS;
   let feed: PortfolioReputationFeedItem[] = [];
@@ -112,12 +130,16 @@ export default async function PortfolioReputationPage() {
 
   try {
     [metrics, feed] = await Promise.all([
-      loadPortfolioReputationMetrics(scope.orgId).catch((err) => {
+      loadPortfolioReputationMetrics(scope.orgId, {
+        propertyIds: effectiveIds,
+      }).catch((err) => {
         console.error("[reputation] metrics load failed:", err);
         metricsFailed = true;
         return EMPTY_METRICS;
       }),
-      loadPortfolioReputationFeed(scope.orgId, 30).catch((err) => {
+      loadPortfolioReputationFeed(scope.orgId, 30, {
+        propertyIds: effectiveIds,
+      }).catch((err) => {
         console.error("[reputation] feed load failed:", err);
         feedFailed = true;
         return [] as PortfolioReputationFeedItem[];
@@ -127,6 +149,16 @@ export default async function PortfolioReputationPage() {
     console.error("[reputation] Failed to load portfolio metrics:", err);
     loadError = true;
   }
+
+  // Property list for the selector dropdown, gated to user's allowed set.
+  const allProperties = await prisma.property
+    .findMany({
+      where: tenantWhere(scope),
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    })
+    .catch(() => [] as Array<{ id: string; name: string }>);
+  const properties = visibleProperties(scope, allProperties);
   // Promote partial failures into the visible loadError flag so the
   // page header shows the data-issue banner instead of pretending
   // everything's fine.
@@ -154,6 +186,12 @@ export default async function PortfolioReputationPage() {
   try {
     return (
     <div className="space-y-4">
+      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
+      {properties.length > 1 ? (
+        <div className="flex justify-end">
+          <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+        </div>
+      ) : null}
       {loadError ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <strong>Reputation data unavailable.</strong> The scanner tables may still be

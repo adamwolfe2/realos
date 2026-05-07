@@ -4,6 +4,14 @@ import { Calendar, MapPin, User, Clock, CheckCircle2, X } from "lucide-react";
 import { format, formatDistanceToNow, startOfWeek, addDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import {
+  isAccessDenied,
+  parsePropertyFilter,
+  propertyWhereFragment,
+  visibleProperties,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
@@ -41,8 +49,19 @@ const STATUS_TONE: Record<TourStatus, StatusTone> = {
   CANCELLED: "neutral",
 };
 
-export default async function ToursPage() {
+export default async function ToursPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ property?: string; properties?: string }>;
+}) {
   const scope = await requireScope();
+  const sp = await searchParams;
+  const requestedIds = parsePropertyFilter(sp);
+  const accessDenied = isAccessDenied(scope, requestedIds);
+  // propertyClause filters tour rows by `propertyId` directly (Tour
+  // has it on the row). The tenantWhere gate stays on `lead` so a
+  // property without leads is still scoped to the org.
+  const propertyClause = propertyWhereFragment(scope, requestedIds);
   try {
   const where = tenantWhere(scope);
   const now = new Date();
@@ -63,12 +82,14 @@ export default async function ToursPage() {
     prisma.tour.count({
       where: {
         lead: where,
+        ...propertyClause,
         status: TourStatus.REQUESTED,
       },
     }),
     prisma.tour.count({
       where: {
         lead: where,
+        ...propertyClause,
         status: TourStatus.SCHEDULED,
         scheduledAt: { gte: startOfThisWeek, lt: endOfThisWeek },
       },
@@ -76,6 +97,7 @@ export default async function ToursPage() {
     prisma.tour.count({
       where: {
         lead: where,
+        ...propertyClause,
         status: TourStatus.COMPLETED,
         createdAt: { gte: past30 },
       },
@@ -83,6 +105,7 @@ export default async function ToursPage() {
     prisma.tour.count({
       where: {
         lead: where,
+        ...propertyClause,
         status: TourStatus.NO_SHOW,
         createdAt: { gte: past30 },
       },
@@ -90,6 +113,7 @@ export default async function ToursPage() {
     prisma.tour.count({
       where: {
         lead: where,
+        ...propertyClause,
         status: TourStatus.CANCELLED,
         createdAt: { gte: past30 },
       },
@@ -97,6 +121,7 @@ export default async function ToursPage() {
     prisma.tour.findMany({
       where: {
         lead: where,
+        ...propertyClause,
         status: { in: [TourStatus.SCHEDULED, TourStatus.REQUESTED] },
         scheduledAt: { gte: now, lte: next7 },
       },
@@ -121,7 +146,7 @@ export default async function ToursPage() {
       },
     }),
     prisma.tour.findMany({
-      where: { lead: where, createdAt: { gte: past30 } },
+      where: { lead: where, ...propertyClause, createdAt: { gte: past30 } },
       orderBy: [{ scheduledAt: "asc" }, { createdAt: "desc" }],
       select: {
         id: true,
@@ -171,11 +196,26 @@ export default async function ToursPage() {
         )
       : null;
 
+  // Load property list for the multi-select dropdown, gated to the
+  // user's allowed set (Norman only sees Telegraph Commons here).
+  const allProperties = await prisma.property.findMany({
+    where: tenantWhere(scope),
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const properties = visibleProperties(scope, allProperties);
+
   return (
     <div className="space-y-4">
+      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
       <PageHeader
         title="Tours"
         description="Calendar, pipeline, and outcomes for every property tour. Click any tour to open the lead."
+        actions={
+          properties.length > 1 ? (
+            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          ) : null
+        }
       />
 
       {/* KPIs */}

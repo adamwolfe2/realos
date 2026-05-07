@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
 import type { MentionSource, Sentiment } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -44,7 +45,8 @@ export type PortfolioReputationMetrics = {
 };
 
 export async function loadPortfolioReputationMetrics(
-  orgId: string
+  orgId: string,
+  options: { propertyIds?: string[] | null } = {}
 ): Promise<PortfolioReputationMetrics> {
   const now = new Date();
   const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -52,7 +54,10 @@ export async function loadPortfolioReputationMetrics(
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
   sixMonthsAgo.setDate(1);
 
-  const where = { orgId };
+  // Property gate: if a restricted user (UserPropertyAccess) or a URL
+  // multi-select narrows the view, propagate it through every count.
+  const propertyClause = propertyIdsToWhere(options.propertyIds ?? null);
+  const where = { orgId, ...propertyClause };
 
   const [
     totalMentions,
@@ -86,7 +91,14 @@ export async function loadPortfolioReputationMetrics(
       _count: { _all: true },
     }),
     prisma.property.findMany({
-      where: { orgId },
+      // Property findMany also gates on the propertyIds filter so the
+      // weighted Google rating reflects only the visible scope.
+      where: {
+        orgId,
+        ...(options.propertyIds && options.propertyIds.length > 0
+          ? { id: { in: options.propertyIds } }
+          : {}),
+      },
       select: {
         id: true,
         name: true,
@@ -243,10 +255,11 @@ export type PortfolioReputationFeedItem = {
 
 export async function loadPortfolioReputationFeed(
   orgId: string,
-  limit = 30
+  limit = 30,
+  options: { propertyIds?: string[] | null } = {}
 ): Promise<PortfolioReputationFeedItem[]> {
   const rows = await prisma.propertyMention.findMany({
-    where: { orgId },
+    where: { orgId, ...propertyIdsToWhere(options.propertyIds ?? null) },
     orderBy: [{ publishedAt: "desc" }, { lastSeenAt: "desc" }, { id: "desc" }],
     take: limit,
     select: {

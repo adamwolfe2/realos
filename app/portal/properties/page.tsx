@@ -3,6 +3,12 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { withMarketableLifecycle } from "@/lib/properties/marketable";
+import {
+  effectivePropertyIds,
+  isAccessDenied,
+  parsePropertyFilter,
+} from "@/lib/tenancy/property-filter";
+import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { formatDistanceToNow } from "date-fns";
 import { Building2, MapPin } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
@@ -45,15 +51,37 @@ const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
 export default async function PropertiesList({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string }>;
+  searchParams: Promise<{
+    view?: string;
+    property?: string;
+    properties?: string;
+  }>;
 }) {
   const scope = await requireScope();
-  const { view: rawView } = await searchParams;
+  const sp = await searchParams;
+  const rawView = sp.view;
   const view: ViewKey = (
     ["all", "vacant", "leasing", "synced"] as const
   ).includes(rawView as never)
     ? (rawView as ViewKey)
     : "all";
+
+  // Property gate: respect UserPropertyAccess so a property-restricted
+  // user (Norman → Telegraph Commons only) cannot see sibling
+  // properties even on the org-wide list.
+  const requestedIds = parsePropertyFilter(sp);
+  const accessDenied = isAccessDenied(scope, requestedIds);
+  const effectiveIds = effectivePropertyIds(scope, requestedIds);
+  // Build the visibility constraint. If the user is restricted, filter
+  // to their allowed set even when no URL selection was made.
+  const visibilityWhere =
+    effectiveIds && effectiveIds.length > 0
+      ? { id: { in: effectiveIds } }
+      : effectiveIds && effectiveIds.length === 0 && scope.allowedPropertyIds
+        ? // Restricted user requested properties they don't have. Force
+          // empty result rather than widening to org.
+          { id: "__no_property_access__" }
+        : {};
 
   // Fetch ALL marketable properties so the view counts in the toolbar
   // reflect the universe; filtering happens in-memory after. Excludes
@@ -62,14 +90,23 @@ export default async function PropertiesList({
   // /portal/properties/curate.
   const [all, importedCount] = await Promise.all([
     prisma.property.findMany({
-      where: withMarketableLifecycle(tenantWhere(scope)),
+      where: {
+        ...withMarketableLifecycle(tenantWhere(scope)),
+        ...visibilityWhere,
+      },
       orderBy: { updatedAt: "desc" },
       include: {
         _count: { select: { listings: true, leads: true, tours: true } },
       },
     }),
+    // Curation queue badge: count IMPORTED rows but only those the
+    // user is allowed to see.
     prisma.property.count({
-      where: { ...tenantWhere(scope), lifecycle: "IMPORTED" },
+      where: {
+        ...tenantWhere(scope),
+        lifecycle: "IMPORTED",
+        ...visibilityWhere,
+      },
     }),
   ]);
 
@@ -136,6 +173,7 @@ export default async function PropertiesList({
 
   return (
     <div className="space-y-3 ls-page-fade">
+      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
       <PageHeader
         title="Properties"
         description={
