@@ -197,6 +197,22 @@ body {
   to   { opacity: 1; transform: translateY(0); }
 }
 
+/* Draws an SVG polyline left-to-right by animating stroke-dashoffset.
+   Used by the sign-in showcase sparklines + any future trend chart
+   that wants the "line drawing itself" feel. Pair with inline
+   strokeDasharray + strokeDashoffset on the polyline. */
+@keyframes ls-draw {
+  to { stroke-dashoffset: 0; }
+}
+
+/* Horizontal bar growth from 0 → full width. Used by the sign-in
+   showcase funnel + any future "filling bar" KPI. Drives transform:
+   scaleX from 0 → 1. transformOrigin must be 'left center' on the
+   element. */
+@keyframes ls-grow {
+  to { transform: scaleX(1); }
+}
+
 /* Page surfaces opt in via `.ls-page-fade` */
 .ls-page-fade {
   animation: ls-fade-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;

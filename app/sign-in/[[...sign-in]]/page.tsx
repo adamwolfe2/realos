@@ -3,96 +3,26 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
 import { LeaseStackWordmark } from "@/components/brand/leasestack-wordmark";
+import { PlatformShowcase } from "@/components/auth/platform-showcase";
 
 export const metadata: Metadata = {
   title: `Sign in | ${BRAND_NAME}`,
   description: `Sign in to your ${BRAND_NAME} account.`,
 };
 
-// Two-pane sign-in layout. Left = branded value-prop panel (desktop only),
-// right = Clerk auth form. The previous version used `filter: invert(1)`
-// on the wordmark PNG, which produced a gold/orange complement that read
-// as broken. Both panels now use <LeaseStackWordmark /> — inline SVG +
-// serif text — so the brand renders consistently regardless of background.
-
-const VALUE_PROPS = [
-  {
-    title: "Operations dashboard, mirrored from AppFolio",
-    body: "Residents, renewals, work orders, and rent roll surfaced beside leads, tours, and applications.",
-  },
-  {
-    title: "Visitor identification + reputation in one place",
-    body: "Resolved website visitors, Google reviews, Reddit mentions — every brand signal worth acting on.",
-  },
-  {
-    title: "Built for student-housing operators",
-    body: "Purpose-built for university-adjacent properties, leasing seasons, and roommate-matching workflows.",
-  },
-];
+// Two-pane sign-in layout. LEFT = compact branded auth form. RIGHT =
+// animated <PlatformShowcase /> with KPI tiles ticking up, conversion
+// funnel filling, lead-source donut chart, property card with shimmer,
+// and a live activity feed. The showcase reads as a real LeaseStack
+// dashboard so prospects see what they're signing into.
 
 export default function SignInPage() {
   return (
-    <div className="min-h-screen bg-white text-foreground flex flex-col md:flex-row">
-      {/* Left pane — brand + value props (desktop). Uses brand black
-          (#0A0A0A) as the page anchor color so the inline white wordmark
-          + value props stay punchy without any image-filter hack. */}
-      <aside className="hidden md:flex md:w-[44%] lg:w-[40%] xl:w-[36%] flex-col justify-between p-12 bg-[#0A0A0A] text-white">
-        <Link
-          href="/"
-          aria-label={BRAND_NAME}
-          className="inline-flex hover:opacity-90 transition-opacity"
-        >
-          <LeaseStackWordmark
-            tone="light"
-            className="text-[20px]"
-          />
-        </Link>
-
-        <div className="space-y-8 max-w-md">
-          <div>
-            <p className="text-[11px] tracking-[0.18em] uppercase font-semibold text-white/55">
-              Real estate operator portal
-            </p>
-            <h2
-              className="mt-3 text-[34px] leading-[1.1] font-semibold tracking-tight"
-              style={{
-                fontFamily:
-                  "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
-              }}
-            >
-              Marketing, leasing, and
-              <br />
-              operations in a single
-              <br />
-              dashboard.
-            </h2>
-          </div>
-
-          <ul className="space-y-5">
-            {VALUE_PROPS.map((vp) => (
-              <li key={vp.title} className="flex gap-3">
-                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-white/70 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-white">{vp.title}</p>
-                  <p className="text-xs text-white/65 mt-0.5 leading-relaxed">
-                    {vp.body}
-                  </p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <p className="text-[11px] text-white/45 tracking-wide">
-          &copy; {new Date().getFullYear()} {BRAND_NAME}
-        </p>
-      </aside>
-
-      {/* Right pane — auth form. Wordmark in the top bar even on
-          desktop so the form side carries the brand too (prior layout
-          left it visually anonymous). */}
-      <main className="flex-1 flex flex-col">
-        <header className="px-6 md:px-10 py-5 md:py-6 border-b border-[#EEEEEE] flex items-center justify-between">
+    <div className="min-h-screen bg-white text-foreground flex flex-col lg:flex-row">
+      {/* LEFT: Auth form. Narrow column on desktop so the showcase
+          dominates the visible canvas. */}
+      <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] flex flex-col bg-white border-r border-[#EEEEEE]">
+        <header className="px-6 lg:px-10 py-5 lg:py-6 flex items-center justify-between">
           <Link
             href="/"
             aria-label={BRAND_NAME}
@@ -108,9 +38,9 @@ export default function SignInPage() {
           </Link>
         </header>
 
-        <div className="flex-1 flex flex-col items-center justify-center px-6 py-12">
+        <div className="flex-1 flex flex-col items-center justify-center px-6 lg:px-10 py-10">
           <div className="w-full max-w-[420px]">
-            <div className="mb-8">
+            <div className="mb-7">
               <h1
                 className="text-[32px] leading-tight font-semibold tracking-tight text-foreground mb-2"
                 style={{
@@ -157,7 +87,8 @@ export default function SignInPage() {
                   socialButtonsBlockButton:
                     "border border-[#E5E5E5] bg-white hover:bg-[#F7F7F7] text-foreground text-sm font-medium rounded-md h-11 transition-colors",
                   dividerLine: "bg-[#EEEEEE]",
-                  dividerText: "text-[#8E8E8E] text-xs uppercase tracking-wider",
+                  dividerText:
+                    "text-[#8E8E8E] text-xs uppercase tracking-wider",
                   formFieldLabel:
                     "text-[11px] font-semibold text-[#393C41] mb-1.5 uppercase tracking-wider",
                   formFieldInput:
@@ -176,7 +107,7 @@ export default function SignInPage() {
               }}
             />
 
-            <p className="mt-6 text-center text-[11px] text-muted-foreground">
+            <p className="mt-5 text-center text-[11px] text-muted-foreground">
               By continuing you agree to our{" "}
               <Link href="/terms" className="underline hover:text-foreground">
                 Terms
@@ -191,15 +122,14 @@ export default function SignInPage() {
             {/* Invitee recovery hint. Clerk's "Couldn't find your account"
                 message is a dead-end for invitees who arrive here instead
                 of clicking the email's Accept Invitation button — they
-                have a pending DB row but no Clerk account yet. This banner
-                points them at /sign-up where /api/auth/role will claim
-                the pending row by email on first sign-up. */}
-            <div className="mt-6 rounded-lg border border-[#EEEEEE] bg-[#F9F9F9] px-4 py-3">
+                have a pending DB row but no Clerk account yet. */}
+            <div className="mt-5 rounded-lg border border-[#EEEEEE] bg-[#F9F9F9] px-4 py-3">
               <p className="text-xs font-semibold text-foreground">
                 Were you invited to {BRAND_NAME}?
               </p>
               <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
-                Click the <span className="font-semibold">Accept invitation</span>{" "}
+                Click the{" "}
+                <span className="font-semibold">Accept invitation</span>{" "}
                 button in your invitation email — or{" "}
                 <Link
                   href="/sign-up"
@@ -214,8 +144,10 @@ export default function SignInPage() {
           </div>
         </div>
 
-        <footer className="px-6 md:px-10 py-4 border-t border-[#EEEEEE] flex items-center justify-between text-[11px] text-muted-foreground">
-          <span>&copy; {new Date().getFullYear()} {BRAND_NAME}</span>
+        <footer className="px-6 lg:px-10 py-4 border-t border-[#EEEEEE] flex items-center justify-between text-[11px] text-muted-foreground">
+          <span>
+            &copy; {new Date().getFullYear()} {BRAND_NAME}
+          </span>
           <a
             href="mailto:hello@leasestack.co"
             className="hover:text-foreground"
@@ -224,6 +156,12 @@ export default function SignInPage() {
           </a>
         </footer>
       </main>
+
+      {/* RIGHT: Animated platform showcase. Hidden on mobile (<lg) so
+          the form gets the full screen without showcase noise. */}
+      <aside className="hidden lg:block flex-1 relative">
+        <PlatformShowcase />
+      </aside>
     </div>
   );
 }
