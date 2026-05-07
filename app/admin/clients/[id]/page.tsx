@@ -118,7 +118,7 @@ export default async function ClientDetail({
     include: { property: { select: { name: true } } },
   });
 
-  const teamMembers = await prisma.user.findMany({
+  const teamMembersRaw = await prisma.user.findMany({
     where: { orgId: org.id },
     orderBy: [{ role: "asc" }, { createdAt: "asc" }],
     select: {
@@ -130,8 +130,33 @@ export default async function ClientDetail({
       clerkUserId: true,
       lastLoginAt: true,
       createdAt: true,
+      // Pull each user's UserPropertyAccess rows so the agency team
+      // panel can edit per-user property scope inline. Empty array =
+      // org-wide; non-empty = restricted to those property ids.
+      propertyAccess: {
+        select: { propertyId: true },
+      },
     },
     take: 100,
+  });
+  const teamMembers = teamMembersRaw.map((u) => ({
+    id: u.id,
+    email: u.email,
+    firstName: u.firstName,
+    lastName: u.lastName,
+    role: u.role,
+    clerkUserId: u.clerkUserId,
+    lastLoginAt: u.lastLoginAt,
+    createdAt: u.createdAt,
+    propertyIds: u.propertyAccess.map((p) => p.propertyId),
+  }));
+
+  // Property list for the access editor. Only marketable + visible
+  // properties so the agency panel matches what operators see.
+  const teamProperties = await prisma.property.findMany({
+    where: { orgId: org.id, lifecycle: { in: ["ACTIVE", "IMPORTED"] } },
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
   });
 
   const recentAudits = await prisma.auditEvent.findMany({
@@ -293,7 +318,7 @@ export default async function ClientDetail({
         label="Team members"
         description="Roles are enforced immediately. Removing a user revokes their Clerk session and any pending invites for that email."
       >
-        <TeamPanel members={teamMembers} />
+        <TeamPanel members={teamMembers} properties={teamProperties} />
       </SectionCard>
 
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-5">
