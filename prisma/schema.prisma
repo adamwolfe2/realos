@@ -64,6 +64,32 @@ enum PropertyLifecycleSource {
   OPERATOR
 }
 
+// Property launch status. Separate concept from PropertyLifecycle:
+//   lifecycle  = "Should this Property row count at all?" (admin-level
+//                AppFolio curation: parking/storage/sub-record vs real
+//                building.)
+//   launchStatus = "Is this real building actually live with marketing
+//                data flowing?" (operator-level onboarding: site built,
+//                pixel installed, GA4/GSC connected, ads live.)
+//
+// Dashboards key off launchStatus = LIVE for "show real metrics."
+// ONBOARDING = visible in the operator's queue with a checklist.
+// DRAFT = approved but no integrations connected; counted but quiet.
+// PAUSED = operator paused; keep row, suspend reporting.
+enum PropertyLaunchStatus {
+  DRAFT
+  ONBOARDING
+  LIVE
+  PAUSED
+}
+
+// Whether launch status came from the auto-recompute (which checks
+// pixel/integration freshness) or from an operator override (sticky).
+enum PropertyLaunchStatusSource {
+  AUTO
+  OPERATOR
+}
+
 enum ResidentialSubtype {
   STUDENT_HOUSING
   MULTIFAMILY
@@ -620,6 +646,18 @@ model Property {
   lifecycleSetAt  DateTime?
   excludeReason   String?
 
+  // Launch status — see PropertyLaunchStatus enum docs. Tracks the
+  // per-property onboarding state independently of lifecycle. A
+  // property must be lifecycle=ACTIVE AND launchStatus IN (LIVE,
+  // ONBOARDING) to show in the marketing dashboards. Telegraph
+  // Commons is LIVE; SG Real Estate's 121 other ACTIVE buildings
+  // backfill to ONBOARDING and get promoted to LIVE individually as
+  // each gets its site/pixel/GA4/GSC connected.
+  launchStatus      PropertyLaunchStatus       @default(ONBOARDING)
+  launchStatusSetBy PropertyLaunchStatusSource @default(AUTO)
+  launchStatusSetAt DateTime?
+  launchedAt        DateTime?
+
   // Marketing
   heroImageUrl         String?
   photoUrls            Json? // Array of URLs
@@ -682,6 +720,7 @@ model Property {
   @@unique([orgId, slug])
   @@index([orgId])
   @@index([orgId, lifecycle])
+  @@index([orgId, launchStatus])
   @@index([backendPlatform, backendPropertyId])
 }
 
