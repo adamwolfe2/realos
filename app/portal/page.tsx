@@ -22,6 +22,15 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
+  effectivePropertyIds,
+  isAccessDenied,
+  parsePropertyFilter,
+  propertyWhereFragment,
+  visibleProperties,
+} from "@/lib/tenancy/property-filter";
+import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
+import {
   ApplicationStatus,
   LeaseStatus,
   ProductLine,
@@ -81,7 +90,11 @@ const DAY = 24 * 60 * 60 * 1000;
 export default async function PortalHome({
   searchParams,
 }: {
-  searchParams: Promise<{ showSetup?: string }>;
+  searchParams: Promise<{
+    showSetup?: string;
+    property?: string;
+    properties?: string;
+  }>;
 }) {
   const scope = await requireScope();
   // AUDIENCE_SYNC orgs and AL partners use the dedicated audiences surface;
@@ -90,19 +103,12 @@ export default async function PortalHome({
     redirect("/portal/audiences");
   }
 
-  // Property gate: a property-restricted user (UserPropertyAccess set,
-  // i.e. Norman → Telegraph Commons only) should NOT see the org-wide
-  // portfolio dashboard. The dashboard's KPIs aggregate across all
-  // org properties via 17 helper functions; rather than thread a
-  // property filter through every one tonight, route restricted users
-  // to a surface that already gates correctly.
-  //
-  //   - 1 allowed property  → that property's detail page (overview tab)
-  //   - 2+ allowed          → the /portal/properties list (gated in Phase 1b)
-  //
-  // Future: when Phase 4 adds the property selector + helper refactor,
-  // this redirect can drop and the dashboard can render scoped KPIs
-  // for restricted users too.
+  // Property-restricted users (UserPropertyAccess set, e.g. Norman →
+  // Telegraph Commons only) skip the org-wide dashboard entirely:
+  //   - 1 allowed → that property's detail page
+  //   - 2+ allowed → /portal/properties list (gated in Phase 1b)
+  // The helpers backing the dashboard tiles are not all property-aware
+  // yet, so for restricted users we route to surfaces that ARE.
   if (scope.allowedPropertyIds !== null) {
     if (scope.allowedPropertyIds.length === 1) {
       redirect(`/portal/properties/${scope.allowedPropertyIds[0]}`);
@@ -110,8 +116,21 @@ export default async function PortalHome({
     redirect("/portal/properties");
   }
 
-  const { showSetup } = await searchParams;
+  const sp = await searchParams;
+  const { showSetup } = sp;
   const forceShowSetup = showSetup === "1";
+
+  // Property selector (Phase 4): unrestricted users (David, agency)
+  // can narrow the dashboard to one or more properties via the
+  // multi-select dropdown at the top. Direct-prisma KPI queries
+  // honor the filter; helper functions that don't yet accept
+  // propertyIds remain org-wide and are flagged in the UI.
+  const requestedIds = parsePropertyFilter(sp);
+  const accessDenied = isAccessDenied(scope, requestedIds);
+  const effectiveIds = effectivePropertyIds(scope, requestedIds);
+  const propertyClause = propertyWhereFragment(scope, requestedIds);
+  const isFiltered = effectiveIds !== null && effectiveIds.length > 0;
+
   try {
   const since28d = new Date(Date.now() - 28 * DAY);
   const where = tenantWhere<{ orgId?: string }>(scope);
@@ -159,16 +178,22 @@ export default async function PortalHome({
     }),
     // Marketable properties only — excludes parking lots, storage,
     // sub-records, and rows still pending operator review (IMPORTED).
-    // The number here must match what the operator sees in the
-    // /portal/properties list and the sidebar.
-    prisma.property.count({ where: marketablePropertyWhere(scope.orgId) }),
-    prisma.lead.count({ where }),
+    // Honors the property selector (effectiveIds) so the count matches
+    // the visible scope.
+    prisma.property.count({
+      where: {
+        ...marketablePropertyWhere(scope.orgId),
+        ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
+      },
+    }),
+    prisma.lead.count({ where: { ...where, ...propertyClause } }),
     prisma.lead.count({
-      where: { ...where, createdAt: { gte: since28d } },
+      where: { ...where, ...propertyClause, createdAt: { gte: since28d } },
     }),
     prisma.lead.count({
       where: {
         ...where,
+        ...propertyClause,
         createdAt: {
           gte: new Date(Date.now() - 56 * DAY),
           lt: since28d,
@@ -179,12 +204,14 @@ export default async function PortalHome({
       where: {
         status: TourStatus.SCHEDULED,
         lead: where,
+        ...propertyClause,
       },
     }),
     prisma.tour.count({
       where: {
         status: TourStatus.SCHEDULED,
         lead: where,
+        ...propertyClause,
         createdAt: {
           gte: new Date(Date.now() - 56 * DAY),
           lt: since28d,
@@ -195,12 +222,14 @@ export default async function PortalHome({
       where: {
         status: ApplicationStatus.SUBMITTED,
         lead: where,
+        ...propertyClause,
         createdAt: { gte: since28d },
       },
     }),
     prisma.application.count({
       where: {
         lead: where,
+        ...propertyClause,
         OR: [
           { status: ApplicationStatus.SUBMITTED },
           { status: ApplicationStatus.UNDER_REVIEW },
@@ -208,10 +237,13 @@ export default async function PortalHome({
       },
     }),
     prisma.tour.count({
-      where: { lead: where, status: TourStatus.REQUESTED },
+      where: { lead: where, ...propertyClause, status: TourStatus.REQUESTED },
     }),
     prisma.property.findMany({
-      where,
+      where: {
+        ...where,
+        ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
+      },
       orderBy: { updatedAt: "desc" },
       take: 8,
       select: {
@@ -315,20 +347,23 @@ export default async function PortalHome({
     // than crashing the dashboard.
     prisma.lease
       .aggregate({
-        where: { ...where, status: LeaseStatus.ACTIVE },
+        where: { ...where, ...propertyClause, status: LeaseStatus.ACTIVE },
         _sum: { monthlyRentCents: true },
       })
       .catch(() => ({ _sum: { monthlyRentCents: 0 } })),
     prisma.resident
-      .count({ where: { ...where, status: ResidentStatus.ACTIVE } })
+      .count({ where: { ...where, ...propertyClause, status: ResidentStatus.ACTIVE } })
       .catch(() => 0),
     prisma.resident
-      .count({ where: { ...where, status: ResidentStatus.NOTICE_GIVEN } })
+      .count({
+        where: { ...where, ...propertyClause, status: ResidentStatus.NOTICE_GIVEN },
+      })
       .catch(() => 0),
     prisma.lease
       .count({
         where: {
           ...where,
+          ...propertyClause,
           status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
           endDate: {
             gte: new Date(),
@@ -337,10 +372,12 @@ export default async function PortalHome({
         },
       })
       .catch(() => 0),
-    prisma.lease.count({ where: { ...where, isPastDue: true } }).catch(() => 0),
+    prisma.lease
+      .count({ where: { ...where, ...propertyClause, isPastDue: true } })
+      .catch(() => 0),
     prisma.lease
       .aggregate({
-        where: { ...where, isPastDue: true },
+        where: { ...where, ...propertyClause, isPastDue: true },
         _sum: { currentBalanceCents: true },
       })
       .catch(() => ({ _sum: { currentBalanceCents: 0 } })),
@@ -348,6 +385,7 @@ export default async function PortalHome({
       .count({
         where: {
           ...where,
+          ...propertyClause,
           status: {
             in: [
               WorkOrderStatus.NEW,
@@ -363,6 +401,7 @@ export default async function PortalHome({
       .count({
         where: {
           ...where,
+          ...propertyClause,
           priority: WorkOrderPriority.URGENT,
           status: { not: WorkOrderStatus.COMPLETED },
         },
@@ -490,6 +529,14 @@ export default async function PortalHome({
     integrationChips.find((c) => c.key === "gsc")?.status === "off" &&
     integrationChips.find((c) => c.key === "ga4")?.status === "off";
 
+  // Visible-property list for the multi-select dropdown.
+  const allPropertiesForSelector = await prisma.property.findMany({
+    where: marketablePropertyWhere(scope.orgId),
+    select: { id: true, name: true },
+    orderBy: { name: "asc" },
+  });
+  const selectorProperties = visibleProperties(scope, allPropertiesForSelector);
+
   return (
     <div className="space-y-2 ls-page-fade">
       {/* Auto-refresh dashboard data every 45s. Cheap — just re-runs the
@@ -501,6 +548,28 @@ export default async function PortalHome({
       <SetupWizardGate shouldShow={showFirstRun} steps={wizardSteps} />
 
       <SetupBanner forceShow={forceShowSetup} />
+
+      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
+
+      {/* Property selector — David can narrow the portfolio dashboard
+          to one or more buildings. Direct-prisma KPI queries (counts,
+          rent roll, residents, work orders, leases) honor the
+          selection. Helper-backed widgets (lead source, funnel, ad
+          spend, organic) currently remain org-wide; a "showing all
+          properties" caption flags those tiles. */}
+      {selectorProperties.length > 1 ? (
+        <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
+          <div className="text-xs text-muted-foreground">
+            {isFiltered
+              ? `Filtered to ${effectiveIds!.length} ${effectiveIds!.length === 1 ? "property" : "properties"}`
+              : `Showing all ${selectorProperties.length} properties`}
+          </div>
+          <PropertyMultiSelect
+            properties={selectorProperties}
+            orgId={scope.orgId}
+          />
+        </div>
+      ) : null}
 
       {/* Past-due lease alert — surfaces from AppFolio delinquency. Operator
           should already see this in AppFolio, but the dashboard makes it
