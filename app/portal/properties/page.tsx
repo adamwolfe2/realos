@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { withMarketableLifecycle } from "@/lib/properties/marketable";
 import { formatDistanceToNow } from "date-fns";
 import { Building2, MapPin } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
@@ -54,25 +55,23 @@ export default async function PropertiesList({
     ? (rawView as ViewKey)
     : "all";
 
-  // Fetch ALL non-placeholder properties so the view counts in the toolbar
-  // reflect the universe; filtering happens in-memory after.
-  const all = await prisma.property.findMany({
-    where: {
-      ...tenantWhere(scope),
-      // Hide AppFolio placeholder rows
-      NOT: {
-        OR: [
-          { name: { contains: "do not use", mode: "insensitive" } },
-          { name: { contains: "DO NOT USE", mode: "insensitive" } },
-          { name: { startsWith: "Property ", mode: "insensitive" } },
-        ],
+  // Fetch ALL marketable properties so the view counts in the toolbar
+  // reflect the universe; filtering happens in-memory after. Excludes
+  // parking/storage/sub-records and rows still in the curation queue
+  // (lifecycle = IMPORTED). To review the queue, see
+  // /portal/properties/curate.
+  const [all, importedCount] = await Promise.all([
+    prisma.property.findMany({
+      where: withMarketableLifecycle(tenantWhere(scope)),
+      orderBy: { updatedAt: "desc" },
+      include: {
+        _count: { select: { listings: true, leads: true, tours: true } },
       },
-    },
-    orderBy: { updatedAt: "desc" },
-    include: {
-      _count: { select: { listings: true, leads: true, tours: true } },
-    },
-  });
+    }),
+    prisma.property.count({
+      where: { ...tenantWhere(scope), lifecycle: "IMPORTED" },
+    }),
+  ]);
 
   const sevenDaysAgo = new Date(Date.now() - SEVEN_DAYS_MS);
 
@@ -146,6 +145,15 @@ export default async function PropertiesList({
         }
         actions={
           <div className="flex items-center gap-2">
+            {importedCount > 0 ? (
+              <Link
+                href="/portal/properties/curate"
+                className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
+                title="Review AppFolio-imported rows that haven't been classified yet"
+              >
+                Review {importedCount} pending
+              </Link>
+            ) : null}
             {all.length >= 2 ? (
               <Link
                 href="/portal/properties/compare"

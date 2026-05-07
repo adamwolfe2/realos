@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   AdPlatform,
   LeadSource,
@@ -720,7 +721,10 @@ export type FirstRunProgress = {
 
 export async function getFirstRunProgress(orgId: string): Promise<FirstRunProgress> {
   const [propertyCount, cursive, gsc, siteConfig] = await Promise.all([
-    prisma.property.count({ where: { orgId } }),
+    // First-run "do you have any properties yet?" — only count marketable
+    // ones. AppFolio re-syncing a parking lot shouldn't trip the
+    // "has a property" milestone for the operator.
+    prisma.property.count({ where: marketablePropertyWhere(orgId) }),
     // Dashboard "is the pixel firing?" badge — surface ANY active
     // pixel for the org. Multi-property tenants might have several;
     // pick the most-recently-active so the badge reflects reality.

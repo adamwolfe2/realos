@@ -23,6 +23,7 @@ import {
   type MappedLease,
   type MappedWorkOrder,
 } from "./appfolio";
+import { classifyProperty } from "@/lib/properties/marketable";
 
 // ---------------------------------------------------------------------------
 // AppFolio REST sync worker.
@@ -257,12 +258,35 @@ export async function runAppfolioSync(
           backendPlatform: BackendPlatform.APPFOLIO,
           backendPropertyId: mapped.externalId,
         },
-        select: { id: true },
+        select: { id: true, lifecycle: true, lifecycleSetBy: true, name: true },
       });
       if (existing) {
         // Property already known. User-edited fields stay sticky; we
         // still ensure it's in our local map for downstream phases.
         propertyByExternalId.set(mapped.externalId, existing.id);
+
+        // Re-classify ONLY if the lifecycle was last set by the auto-
+        // classifier — never override an operator decision. This means
+        // re-syncs can promote an EXCLUDED row that was misclassified
+        // (after the operator renames it) but won't undo a deliberate
+        // EXCLUDED → ACTIVE call from curation.
+        if (existing.lifecycleSetBy === "AUTO_CLASSIFIER") {
+          const classification = classifyProperty({
+            name: mapped.name ?? existing.name,
+            totalUnits: mapped.totalUnits,
+            addressLine1: mapped.addressLine1,
+          });
+          if (classification.lifecycle !== existing.lifecycle) {
+            await prisma.property.update({
+              where: { id: existing.id },
+              data: {
+                lifecycle: classification.lifecycle,
+                lifecycleSetAt: new Date(),
+                excludeReason: classification.reason,
+              },
+            });
+          }
+        }
         continue;
       }
 
@@ -318,6 +342,17 @@ export async function runAppfolioSync(
       }
 
       const slug = await uniquePropertySlug(orgId, mapped.name ?? mapped.externalId);
+
+      // Auto-classify at import. High-confidence sub-records (parking,
+      // storage, "do not use", "Property 12345" placeholders) land as
+      // EXCLUDED so they never pollute counts. Everything else lands as
+      // IMPORTED for operator review in /portal/properties/curate.
+      const classification = classifyProperty({
+        name: mapped.name,
+        totalUnits: mapped.totalUnits,
+        addressLine1: mapped.addressLine1,
+      });
+
       const created = await prisma.property.create({
         data: {
           orgId,
@@ -334,6 +369,10 @@ export async function runAppfolioSync(
           country: mapped.country,
           totalUnits: mapped.totalUnits,
           yearBuilt: mapped.yearBuilt,
+          lifecycle: classification.lifecycle,
+          lifecycleSetBy: "AUTO_CLASSIFIER",
+          lifecycleSetAt: new Date(),
+          excludeReason: classification.reason,
         },
       });
       propertyByExternalId.set(mapped.externalId, created.id);

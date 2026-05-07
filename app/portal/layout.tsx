@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { UserButton } from "@clerk/nextjs";
 import { getScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { BRAND_NAME } from "@/lib/brand";
 import { PortalNav } from "@/components/portal/portal-nav";
 import { MobileNavDrawer } from "@/components/portal/mobile-nav-drawer";
@@ -77,7 +78,11 @@ export default async function PortalLayout({
       .count({ where: { orgId: scope.orgId } })
       .catch(() => 0),
     prisma.lead.count({ where: { orgId: scope.orgId } }).catch(() => 0),
-    prisma.property.count({ where: { orgId: scope.orgId } }).catch(() => 0),
+    // Sidebar count — must match the dashboard tile and the
+    // /portal/properties list. Marketable lifecycle only.
+    prisma.property
+      .count({ where: marketablePropertyWhere(scope.orgId) })
+      .catch(() => 0),
     // Tours come from the public booking form (/api/public/tours) and the
     // API-key tour ingestion endpoint (/api/ingest/tour) — NOT AppFolio
     // (showings is a v1 CRUD entity, not a v2 report). Hide the nav until

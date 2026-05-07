@@ -42,6 +42,28 @@ enum PropertyType {
   MIXED
 }
 
+// Property lifecycle. Separates "AppFolio dumped this row into the DB"
+// from "operator confirmed this is a marketable building." Dashboards,
+// sidebars, count tiles, onboarding progress, and demo-readiness all
+// filter to ACTIVE only by default. EXCLUDED rows stay in the database
+// for audit/dedup but never count or display unless the operator opens
+// the curation queue. See lib/properties/marketable.ts for the canonical
+// where-clause helper used by every count site.
+enum PropertyLifecycle {
+  IMPORTED // Fresh from AppFolio sync, awaiting operator review
+  ACTIVE // Marketable building under LeaseStack management
+  EXCLUDED // Parking lot / storage / sub-record / placeholder
+  ARCHIVED // Was active, no longer on the platform
+}
+
+// Whether the lifecycle was set by the auto-classifier (which AppFolio
+// re-syncs may revisit) or explicitly by an operator (sticky — re-syncs
+// must not overwrite).
+enum PropertyLifecycleSource {
+  AUTO_CLASSIFIER
+  OPERATOR
+}
+
 enum ResidentialSubtype {
   STUDENT_HOUSING
   MULTIFAMILY
@@ -589,6 +611,15 @@ model Property {
   lastSyncedAt         DateTime?
   syncError            String?
 
+  // Lifecycle — see PropertyLifecycle enum docs. Dashboards filter to
+  // ACTIVE by default; new AppFolio-imported rows land as IMPORTED and
+  // require operator promotion. EXCLUDED rows are sub-records (parking,
+  // storage, etc.) we keep in the DB for audit but never count or show.
+  lifecycle       PropertyLifecycle       @default(IMPORTED)
+  lifecycleSetBy  PropertyLifecycleSource @default(AUTO_CLASSIFIER)
+  lifecycleSetAt  DateTime?
+  excludeReason   String?
+
   // Marketing
   heroImageUrl         String?
   photoUrls            Json? // Array of URLs
@@ -650,6 +681,7 @@ model Property {
 
   @@unique([orgId, slug])
   @@index([orgId])
+  @@index([orgId, lifecycle])
   @@index([backendPlatform, backendPropertyId])
 }
 

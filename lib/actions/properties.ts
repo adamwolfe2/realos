@@ -127,6 +127,12 @@ export async function createProperty(
       virtualTourUrl: data.virtualTourUrl || null,
       yearBuilt: data.yearBuilt ?? null,
       totalUnits: data.totalUnits ?? null,
+      // Manual creation = operator explicitly chose to add this. Lands
+      // as ACTIVE (counts toward dashboards immediately) and is sticky
+      // so AppFolio re-syncs that adopt this row don't auto-reclassify.
+      lifecycle: "ACTIVE",
+      lifecycleSetBy: "OPERATOR",
+      lifecycleSetAt: new Date(),
     },
   });
 
@@ -277,4 +283,146 @@ export async function deleteProperty(
   revalidatePath(`/portal/properties`);
   revalidatePath(`/admin/clients/${existing.orgId}`);
   return { ok: true };
+}
+
+// ---------------------------------------------------------------------------
+// LIFECYCLE TRANSITIONS — curation queue actions
+//
+// These move a Property between IMPORTED / ACTIVE / EXCLUDED / ARCHIVED
+// and stamp lifecycleSetBy=OPERATOR so subsequent AppFolio re-syncs
+// won't auto-revert the operator's decision.
+// ---------------------------------------------------------------------------
+
+const lifecycleSchema = z.object({
+  propertyId: z.string().min(1),
+  action: z.enum(["activate", "exclude", "restore", "archive"]),
+  reason: z.string().max(500).optional().nullable(),
+});
+
+export type SetLifecycleResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+export async function setPropertyLifecycle(
+  raw: unknown,
+): Promise<SetLifecycleResult> {
+  let scope;
+  try {
+    scope = await requireScope();
+  } catch {
+    return { ok: false, error: "Not authenticated." };
+  }
+
+  const parsed = lifecycleSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+  const { propertyId, action, reason } = parsed.data;
+
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { id: true, orgId: true, name: true, lifecycle: true },
+  });
+  if (!property) return { ok: false, error: "Property not found." };
+
+  // Tenant gate: agency can act on any client's properties; clients
+  // can only act on their own.
+  if (
+    scope.role !== "AGENCY_OWNER" &&
+    scope.role !== "AGENCY_ADMIN" &&
+    scope.role !== "AGENCY_OPERATOR"
+  ) {
+    if (property.orgId !== scope.orgId) {
+      return { ok: false, error: "Not authorized to modify this property." };
+    }
+  }
+
+  const lifecycleMap = {
+    activate: "ACTIVE",
+    exclude: "EXCLUDED",
+    restore: "IMPORTED",
+    archive: "ARCHIVED",
+  } as const;
+  const next = lifecycleMap[action];
+
+  await prisma.property.update({
+    where: { id: propertyId },
+    data: {
+      lifecycle: next,
+      lifecycleSetBy: "OPERATOR",
+      lifecycleSetAt: new Date(),
+      excludeReason: action === "exclude" ? reason ?? "Operator-flagged" : null,
+    },
+  });
+
+  await prisma.auditEvent.create({
+    data: auditPayload(
+      { ...scope, orgId: property.orgId },
+      {
+        action: AuditAction.UPDATE,
+        entityType: "Property",
+        entityId: property.id,
+        description: `Lifecycle ${property.lifecycle} → ${next} ("${property.name}")`,
+      },
+    ),
+  });
+
+  revalidatePath("/portal/properties");
+  revalidatePath("/portal/properties/curate");
+  revalidatePath("/portal");
+  revalidatePath(`/admin/clients/${property.orgId}`);
+  return { ok: true };
+}
+
+// Bulk lifecycle change. Used by the curation queue's "Mark all as
+// excluded" / "Activate all" buttons.
+const bulkSchema = z.object({
+  propertyIds: z.array(z.string().min(1)).min(1).max(500),
+  action: z.enum(["activate", "exclude", "archive"]),
+});
+
+export async function setPropertyLifecycleBulk(
+  raw: unknown,
+): Promise<{ ok: true; updated: number } | { ok: false; error: string }> {
+  let scope;
+  try {
+    scope = await requireScope();
+  } catch {
+    return { ok: false, error: "Not authenticated." };
+  }
+  const parsed = bulkSchema.safeParse(raw);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Invalid input" };
+  }
+  const { propertyIds, action } = parsed.data;
+
+  // Scope guard: only operate on rows in the caller's org (or all orgs
+  // if agency).
+  const isAgency =
+    scope.role === "AGENCY_OWNER" ||
+    scope.role === "AGENCY_ADMIN" ||
+    scope.role === "AGENCY_OPERATOR";
+  const orgFilter = isAgency ? {} : { orgId: scope.orgId };
+
+  const lifecycleMap = {
+    activate: "ACTIVE",
+    exclude: "EXCLUDED",
+    archive: "ARCHIVED",
+  } as const;
+  const next = lifecycleMap[action];
+
+  const result = await prisma.property.updateMany({
+    where: { id: { in: propertyIds }, ...orgFilter },
+    data: {
+      lifecycle: next,
+      lifecycleSetBy: "OPERATOR",
+      lifecycleSetAt: new Date(),
+      excludeReason: action === "exclude" ? "Bulk operator-flagged" : null,
+    },
+  });
+
+  revalidatePath("/portal/properties");
+  revalidatePath("/portal/properties/curate");
+  revalidatePath("/portal");
+  return { ok: true, updated: result.count };
 }

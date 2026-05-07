@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { OrgType, TenantStatus } from "@prisma/client";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import {
@@ -171,7 +172,12 @@ async function checkStepCondition(
   step: "add_property" | "add_integration" | "setup_checklist"
 ): Promise<boolean> {
   if (step === "add_property") {
-    const count = await prisma.property.count({ where: { orgId } });
+    // Onboarding-drip "has the operator added a property?" — only count
+    // marketable rows. AppFolio dumping 50 parking lots into the DB
+    // doesn't mean the operator has actually onboarded a building.
+    const count = await prisma.property.count({
+      where: marketablePropertyWhere(orgId),
+    });
     return count === 0;
   }
 

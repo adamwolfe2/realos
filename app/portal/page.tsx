@@ -20,6 +20,7 @@ import {
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   ApplicationStatus,
   LeaseStatus,
@@ -135,7 +136,11 @@ export default async function PortalHome({
       where: { id: scope.orgId },
       select: { id: true, name: true, logoUrl: true, primaryColor: true },
     }),
-    prisma.property.count({ where }),
+    // Marketable properties only — excludes parking lots, storage,
+    // sub-records, and rows still pending operator review (IMPORTED).
+    // The number here must match what the operator sees in the
+    // /portal/properties list and the sidebar.
+    prisma.property.count({ where: marketablePropertyWhere(scope.orgId) }),
     prisma.lead.count({ where }),
     prisma.lead.count({
       where: { ...where, createdAt: { gte: since28d } },

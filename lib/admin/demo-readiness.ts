@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { OrgType, ResidentStatus, LeaseStatus } from "@prisma/client";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 
 // ---------------------------------------------------------------------------
 // Per-tenant demo readiness — the checklist agency staff scan before walking
@@ -99,7 +100,10 @@ export async function getReadinessForTenant(
         },
       })
       .catch(() => null),
-    prisma.property.count({ where: { orgId } }),
+    // Demo-readiness "has properties" check — only marketable ones.
+    // Don't tell sales the demo is ready when the org's only Property
+    // rows are AppFolio parking lots.
+    prisma.property.count({ where: marketablePropertyWhere(orgId) }),
     prisma.lead.count({ where: { orgId } }),
     prisma.resident.count({
       where: { orgId, status: ResidentStatus.ACTIVE },
