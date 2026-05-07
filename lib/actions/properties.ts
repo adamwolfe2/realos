@@ -426,3 +426,100 @@ export async function setPropertyLifecycleBulk(
   revalidatePath("/portal");
   return { ok: true, updated: result.count };
 }
+
+// ---------------------------------------------------------------------------
+// LAUNCH STATUS — per-property onboarding state transitions
+//
+// Operator can:
+//   - Mark as live (force LIVE)
+//   - Mark as onboarding (back to ONBOARDING for re-review)
+//   - Pause   (PAUSED — keep row, suspend reporting)
+//   - Resume  (PAUSED → ONBOARDING; auto-recompute will pick from there)
+//
+// All overrides flip launchStatusSetBy=OPERATOR so the auto-recompute
+// won't silently revert the decision.
+// ---------------------------------------------------------------------------
+
+const launchStatusSchema = z.object({
+  propertyId: z.string().min(1),
+  action: z.enum(["mark_live", "mark_onboarding", "pause", "resume"]),
+});
+
+export async function setPropertyLaunchStatus(
+  raw: unknown,
+): Promise<{ ok: true; status: string } | { ok: false; error: string }> {
+  let scope;
+  try {
+    scope = await requireScope();
+  } catch {
+    return { ok: false, error: "Not authenticated." };
+  }
+  const parsed = launchStatusSchema.safeParse(raw);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+  const { propertyId, action } = parsed.data;
+
+  const property = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { id: true, orgId: true, name: true, launchStatus: true },
+  });
+  if (!property) return { ok: false, error: "Property not found." };
+
+  // Tenant gate
+  const isAgency =
+    scope.role === "AGENCY_OWNER" ||
+    scope.role === "AGENCY_ADMIN" ||
+    scope.role === "AGENCY_OPERATOR";
+  if (!isAgency && property.orgId !== scope.orgId) {
+    return { ok: false, error: "Not authorized to modify this property." };
+  }
+  // Property-level gate (UPA): a restricted user cannot toggle launch
+  // status on a property they can't see.
+  if (
+    !isAgency &&
+    scope.allowedPropertyIds &&
+    !scope.allowedPropertyIds.includes(propertyId)
+  ) {
+    return { ok: false, error: "Not authorized to modify this property." };
+  }
+
+  const map = {
+    mark_live: "LIVE",
+    mark_onboarding: "ONBOARDING",
+    pause: "PAUSED",
+    resume: "ONBOARDING",
+  } as const;
+  const next = map[action];
+
+  await prisma.property.update({
+    where: { id: propertyId },
+    data: {
+      launchStatus: next,
+      launchStatusSetBy: "OPERATOR",
+      launchStatusSetAt: new Date(),
+      // Stamp launchedAt only if this is the first time hitting LIVE.
+      ...(next === "LIVE" ? { launchedAt: new Date() } : {}),
+    },
+  });
+
+  await prisma.auditEvent.create({
+    data: auditPayload(
+      { ...scope, orgId: property.orgId },
+      {
+        action: AuditAction.UPDATE,
+        entityType: "Property",
+        entityId: property.id,
+        description: `Launch status ${property.launchStatus} → ${next} ("${property.name}")`,
+      },
+    ),
+  });
+
+  revalidatePath(`/portal/properties/${propertyId}`);
+  revalidatePath("/portal/properties");
+  revalidatePath("/portal");
+  return { ok: true, status: next };
+}

@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PropertyTabs } from "./property-tabs";
 import { OverviewTab } from "./tabs/overview";
+import { OnboardingTab } from "./tabs/onboarding";
 import { TrafficTab } from "./tabs/traffic";
 import { LeadsTab } from "./tabs/leads";
 import { AdsTab } from "./tabs/ads";
@@ -106,6 +107,9 @@ export default async function PropertyDetail({
         initialTab={tab ?? "overview"}
         showOccupancy={showOccupancyTab}
         panels={{
+          onboarding: (
+            <OnboardingTab orgId={scope.orgId} propertyId={property.id} />
+          ),
           overview: (
             <OverviewTab
               orgId={scope.orgId}

@@ -14,6 +14,7 @@ import {
   Home,
   CalendarClock,
   Wrench,
+  Rocket,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -28,6 +29,7 @@ import { cn } from "@/lib/utils";
 
 type TabKey =
   | "overview"
+  | "onboarding"
   | "traffic"
   | "leads"
   | "ads"
@@ -46,6 +48,7 @@ type TabDef = {
 
 const TABS_BASE: TabDef[] = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
+  { key: "onboarding", label: "Onboarding", icon: Rocket },
   { key: "traffic", label: "Traffic", icon: TrendingUp },
   { key: "leads", label: "Leads", icon: Users },
   { key: "ads", label: "Ads", icon: BarChart3 },
