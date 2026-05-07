@@ -192,29 +192,65 @@
     }, 4500);
   }
 
-  // --- Live inventory greeting ---------------------------------------------
-  // Matches the "we just had rooms come available starting at $X/mo" moment
-  // from the Telegraph Commons template. Silent failure → no second bubble.
+  // --- Live inventory follow-up message ------------------------------------
+  // Optional second message sent right after the greeting on first open.
+  // Driven by an OPERATOR-EDITABLE template (state.config.followUpMessage)
+  // configured in /portal/chatbot. Supports placeholders that the widget
+  // interpolates against live inventory data:
+  //   {property_name}    — the matched property's name
+  //   {starting_rent}    — lowest available rent (formatted with commas)
+  //   {open_count}       — number of currently-available units
+  //   {next_available}   — readable date the next unit opens up
+  //
+  // If followUpMessage is null/empty the operator has chosen to suppress
+  // the second message — only the greeting is sent. If the template
+  // contains placeholders that resolve to empty (e.g. {starting_rent}
+  // when no listings are available), the entire message is skipped to
+  // avoid awkward "starting at $/mo" copy.
   function fetchListingsSummary() {
+    var template = state.config.followUpMessage;
+    if (!template || typeof template !== "string" || !template.trim()) return;
+    if (state.needsIntro) return;
+
     fetch(LISTINGS_URL, { method: "GET", credentials: "omit" })
       .then(function (res) {
         return res.ok ? res.json() : null;
       })
       .then(function (body) {
-        if (!body || body.openCount <= 0) return;
-        if (state.needsIntro) return;
+        var inventory = body || {};
+        var openCount = typeof inventory.openCount === "number" ? inventory.openCount : 0;
+        var lowestRent =
+          typeof inventory.lowestRent === "number" && inventory.lowestRent > 0
+            ? inventory.lowestRent
+            : null;
+        var nextAvailable = inventory.nextAvailable || "";
+
         var brandName = state.config.brandName || "us";
-        var priceLine = body.lowestRent
-          ? " starting at $" + body.lowestRent.toLocaleString() + "/mo"
+        var startingRent = lowestRent
+          ? lowestRent.toLocaleString()
           : "";
-        appendMessage(
-          "assistant",
-          "We just had rooms come available at " + brandName + priceLine +
-            ". What can I help you with?"
-        );
+
+        // Placeholder sub. Case-insensitive, all instances replaced.
+        var resolved = template
+          .replace(/\{property_name\}/gi, brandName)
+          .replace(/\{starting_rent\}/gi, startingRent)
+          .replace(/\{open_count\}/gi, String(openCount))
+          .replace(/\{next_available\}/gi, nextAvailable);
+
+        // Bail if the template mentioned starting_rent but we have no
+        // rent — avoids "starting at $/mo" with a dangling dollar sign.
+        if (/\{starting_rent\}/i.test(template) && !startingRent) return;
+        if (/\{open_count\}/i.test(template) && openCount <= 0) return;
+
+        // Tidy up any double-spaces left behind by an unresolved
+        // placeholder.
+        resolved = resolved.replace(/\s{2,}/g, " ").trim();
+        if (!resolved) return;
+
+        appendMessage("assistant", resolved);
         renderChips();
       })
-      .catch(function () { /* fall back to static greeting */ });
+      .catch(function () { /* fall back to greeting only */ });
   }
 
   // --- Quick Actions grid --------------------------------------------------

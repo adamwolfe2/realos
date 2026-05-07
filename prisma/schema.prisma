@@ -582,6 +582,15 @@ model TenantSiteConfig {
   chatbotAvatarUrl          String?
   chatbotPersonaName        String?
   chatbotGreeting           String?
+  // Optional second message sent right after the greeting on first
+  // open. Was previously a HARDCODED template inside public/embed/
+  // chatbot.js ("We just had rooms come available at {brandName}
+  // starting at $X/mo. What can I help you with?") — operators had
+  // no way to edit it. Now it's a full string with optional
+  // placeholders: {property_name}, {starting_rent}, {open_count},
+  // {next_available}. Set to null/empty to suppress the second
+  // message entirely (greeting only).
+  chatbotFollowUpMessage    String?            @db.Text
   chatbotTeaserText         String?
   chatbotBrandColor         String?
   chatbotCaptureMode        ChatbotCaptureMode @default(ON_INTENT)

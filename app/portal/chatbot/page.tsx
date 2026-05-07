@@ -53,6 +53,7 @@ export default async function ChatbotPage() {
         chatbotAvatarUrl: true,
         chatbotPersonaName: true,
         chatbotGreeting: true,
+        chatbotFollowUpMessage: true,
         chatbotTeaserText: true,
         chatbotBrandColor: true,
         chatbotCaptureMode: true,
@@ -72,6 +73,7 @@ export default async function ChatbotPage() {
     chatbotAvatarUrl: existingConfig?.chatbotAvatarUrl ?? "",
     chatbotPersonaName: existingConfig?.chatbotPersonaName ?? "",
     chatbotGreeting: existingConfig?.chatbotGreeting ?? "",
+    chatbotFollowUpMessage: existingConfig?.chatbotFollowUpMessage ?? "",
     chatbotTeaserText: existingConfig?.chatbotTeaserText ?? "",
     chatbotBrandColor: existingConfig?.chatbotBrandColor ?? "",
     chatbotCaptureMode:

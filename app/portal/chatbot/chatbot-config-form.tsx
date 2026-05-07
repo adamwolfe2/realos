@@ -10,6 +10,7 @@ type FormState = {
   chatbotAvatarUrl: string;
   chatbotPersonaName: string;
   chatbotGreeting: string;
+  chatbotFollowUpMessage: string;
   chatbotTeaserText: string;
   chatbotBrandColor: string;
   chatbotCaptureMode: ChatbotCaptureMode;
@@ -125,12 +126,35 @@ export function ChatbotConfigForm({
           />
         </div>
         <TextArea
-          label="Greeting"
+          label="Greeting (message 1)"
           name="chatbotGreeting"
           rows={2}
           value={state.chatbotGreeting}
           onChange={(v) => update("chatbotGreeting", v)}
-          hint="First message the bot sends (1-2 lines)."
+          hint="First message the bot sends (1-2 lines). Sent the moment the visitor opens the chat."
+          maxLength={500}
+        />
+        <TextArea
+          label="Follow-up message (message 2)"
+          name="chatbotFollowUpMessage"
+          rows={3}
+          value={state.chatbotFollowUpMessage}
+          onChange={(v) => update("chatbotFollowUpMessage", v)}
+          hint={
+            <>
+              Optional second message sent right after the greeting on first
+              open. Leave empty to send only the greeting. Supports
+              placeholders that the widget interpolates against live
+              inventory data:{" "}
+              <code className="font-mono text-[10px]">{"{property_name}"}</code>
+              ,{" "}
+              <code className="font-mono text-[10px]">{"{starting_rent}"}</code>
+              ,{" "}
+              <code className="font-mono text-[10px]">{"{open_count}"}</code>,{" "}
+              <code className="font-mono text-[10px]">{"{next_available}"}</code>
+              .
+            </>
+          }
           maxLength={500}
         />
         <Field
@@ -345,6 +369,26 @@ export function ChatbotConfigForm({
                   </p>
                 </div>
               </div>
+              {state.chatbotFollowUpMessage && (
+                <div className="flex items-end gap-2">
+                  <div
+                    aria-hidden
+                    className="h-8 w-8 rounded-full flex-shrink-0 opacity-0"
+                  />
+                  <div className="flex-1 rounded-xl rounded-bl-none border border-border bg-muted/30 px-3 py-2.5 text-sm">
+                    <p className="whitespace-pre-wrap text-foreground text-xs leading-relaxed">
+                      {state.chatbotFollowUpMessage
+                        .replace(/\{property_name\}/gi, "Telegraph Commons")
+                        .replace(/\{starting_rent\}/gi, "850")
+                        .replace(/\{open_count\}/gi, "5")
+                        .replace(/\{next_available\}/gi, "Aug 15")}
+                    </p>
+                    <p className="text-[10px] text-muted-foreground/70 mt-1.5 italic">
+                      Preview placeholders resolved against sample data.
+                    </p>
+                  </div>
+                </div>
+              )}
               {state.chatbotTeaserText && (
                 <div className="flex items-center justify-end gap-2">
                   <div
@@ -425,7 +469,7 @@ function TextArea({
   onChange: (v: string) => void;
   rows?: number;
   maxLength?: number;
-  hint?: string;
+  hint?: React.ReactNode;
 }) {
   return (
     <label className="flex flex-col gap-1.5">

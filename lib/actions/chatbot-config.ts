@@ -48,6 +48,14 @@ const saveSchema = z.object({
   chatbotGreeting: baseStringSchema.pipe(
     z.string().max(500).nullable()
   ),
+  // Optional second message sent right after the greeting on first
+  // open. Supports placeholders {property_name}, {starting_rent},
+  // {open_count}, {next_available} — interpolated by the embed
+  // widget against live inventory data. Empty/null suppresses the
+  // second message entirely.
+  chatbotFollowUpMessage: baseStringSchema.pipe(
+    z.string().max(500).nullable()
+  ),
   chatbotTeaserText: baseStringSchema.pipe(
     z.string().max(200).nullable()
   ),
@@ -121,6 +129,9 @@ export async function saveChatbotConfig(
       chatbotPersonaName: firstString(formData.get("chatbotPersonaName")),
       chatbotAvatarUrl: firstString(formData.get("chatbotAvatarUrl")),
       chatbotGreeting: firstString(formData.get("chatbotGreeting")),
+      chatbotFollowUpMessage: firstString(
+        formData.get("chatbotFollowUpMessage")
+      ),
       chatbotTeaserText: firstString(formData.get("chatbotTeaserText")),
       chatbotBrandColor: firstString(formData.get("chatbotBrandColor")),
       chatbotIdleTriggerSeconds: firstString(

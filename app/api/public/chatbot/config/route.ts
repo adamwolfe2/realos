@@ -66,6 +66,7 @@ export async function GET(req: NextRequest) {
       chatbotEnabled: boolean;
       chatbotPersonaName: string | null;
       chatbotGreeting: string | null;
+      chatbotFollowUpMessage: string | null;
       chatbotTeaserText: string | null;
       chatbotBrandColor: string | null;
       chatbotAvatarUrl: string | null;
@@ -102,6 +103,7 @@ export async function GET(req: NextRequest) {
             chatbotEnabled: true,
             chatbotPersonaName: true,
             chatbotGreeting: true,
+            chatbotFollowUpMessage: true,
             chatbotTeaserText: true,
             chatbotBrandColor: true,
             chatbotAvatarUrl: true,
@@ -163,6 +165,11 @@ export async function GET(req: NextRequest) {
       greeting:
         cfg.chatbotGreeting ??
         `Hi! I'm with ${org.shortName ?? org.name}. What can I help you with?`,
+      // Operator-editable second message. NULL/empty = suppress
+      // (greeting only). Embed widget interpolates placeholders
+      // {property_name}, {starting_rent}, {open_count},
+      // {next_available} against live inventory data.
+      followUpMessage: cfg.chatbotFollowUpMessage ?? null,
       teaserText: cfg.chatbotTeaserText ?? "Questions? I'm here.",
       brandColor: cfg.chatbotBrandColor ?? org.primaryColor ?? "#111111",
       avatarUrl: cfg.chatbotAvatarUrl ?? org.logoUrl ?? null,
