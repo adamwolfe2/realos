@@ -266,26 +266,48 @@ export async function runAppfolioSync(
         propertyByExternalId.set(mapped.externalId, existing.id);
 
         // Re-classify ONLY if the lifecycle was last set by the auto-
-        // classifier — never override an operator decision. This means
-        // re-syncs can promote an EXCLUDED row that was misclassified
-        // (after the operator renames it) but won't undo a deliberate
-        // EXCLUDED → ACTIVE call from curation.
+        // classifier — never override an operator decision. The
+        // classifier only returns confident EXCLUDE verdicts, so we
+        // never demote ACTIVE → IMPORTED on re-sync (an existing row
+        // is implicitly approved). The narrow case we DO want to act
+        // on: a previously EXCLUDED row whose name no longer matches
+        // (operator renamed "Parking lot 12" to "12 Channing Apts")
+        // should bounce out of EXCLUDED so the operator can re-review.
         if (existing.lifecycleSetBy === "AUTO_CLASSIFIER") {
           const classification = classifyProperty({
             name: mapped.name ?? existing.name,
             totalUnits: mapped.totalUnits,
             addressLine1: mapped.addressLine1,
           });
-          if (classification.lifecycle !== existing.lifecycle) {
+
+          if (classification.excluded && existing.lifecycle !== "EXCLUDED") {
+            // New pattern match — demote with a fresh reason.
             await prisma.property.update({
               where: { id: existing.id },
               data: {
-                lifecycle: classification.lifecycle,
+                lifecycle: "EXCLUDED",
                 lifecycleSetAt: new Date(),
                 excludeReason: classification.reason,
               },
             });
+          } else if (
+            !classification.excluded &&
+            existing.lifecycle === "EXCLUDED"
+          ) {
+            // Was excluded by classifier; pattern no longer matches
+            // (likely renamed). Promote to IMPORTED for re-review —
+            // never auto-promote to ACTIVE without operator say-so.
+            await prisma.property.update({
+              where: { id: existing.id },
+              data: {
+                lifecycle: "IMPORTED",
+                lifecycleSetAt: new Date(),
+                excludeReason: null,
+              },
+            });
           }
+          // Otherwise: leave alone. Don't disturb ACTIVE rows just
+          // because the classifier has no opinion.
         }
         continue;
       }
@@ -369,10 +391,13 @@ export async function runAppfolioSync(
           country: mapped.country,
           totalUnits: mapped.totalUnits,
           yearBuilt: mapped.yearBuilt,
-          lifecycle: classification.lifecycle,
+          // EXCLUDED if the classifier matched a sub-record pattern;
+          // otherwise IMPORTED so the operator approves new buildings
+          // explicitly before they show in dashboards.
+          lifecycle: classification.excluded ? "EXCLUDED" : "IMPORTED",
           lifecycleSetBy: "AUTO_CLASSIFIER",
           lifecycleSetAt: new Date(),
-          excludeReason: classification.reason,
+          excludeReason: classification.excluded ? classification.reason : null,
         },
       });
       propertyByExternalId.set(mapped.externalId, created.id);

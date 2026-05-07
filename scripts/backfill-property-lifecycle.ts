@@ -70,9 +70,8 @@ async function main() {
 
   const stats = {
     unchanged: 0,
-    promoted: 0, // EXCLUDED → IMPORTED or ACTIVE
-    demoted: 0, // IMPORTED/ACTIVE → EXCLUDED
-    flippedToImported: 0, // ACTIVE → IMPORTED (rare; classifier no longer sure)
+    newlyExcluded: 0, // ACTIVE/IMPORTED → EXCLUDED (catch from new patterns)
+    promoted: 0, // EXCLUDED → IMPORTED (operator likely renamed)
   };
 
   // Group by org for readable output
@@ -89,34 +88,50 @@ async function main() {
 
     let orgChanged = 0;
     for (const row of orgRows) {
-      const next = classifyProperty({
+      const verdict = classifyProperty({
         name: row.name,
         totalUnits: row.totalUnits,
         addressLine1: row.addressLine1,
       });
 
-      if (next.lifecycle === row.lifecycle) {
+      // Decision matrix:
+      //   verdict = excluded:    EXCLUDED → leave; otherwise demote
+      //   verdict = no-opinion:  EXCLUDED → promote to IMPORTED (rename
+      //                          case); otherwise leave alone
+      // We NEVER demote ACTIVE → IMPORTED here. ACTIVE rows are
+      // implicitly approved (either by operator or by the migration's
+      // initial backfill); the operator owns those decisions through
+      // the curation queue.
+      let nextLifecycle: typeof row.lifecycle | null = null;
+      let nextReason: string | null = null;
+
+      if (verdict.excluded && row.lifecycle !== "EXCLUDED") {
+        nextLifecycle = "EXCLUDED";
+        nextReason = verdict.reason;
+        stats.newlyExcluded++;
+      } else if (!verdict.excluded && row.lifecycle === "EXCLUDED") {
+        nextLifecycle = "IMPORTED";
+        nextReason = null;
+        stats.promoted++;
+      }
+
+      if (!nextLifecycle) {
         stats.unchanged++;
         continue;
       }
 
       orgChanged++;
-
-      if (next.lifecycle === "EXCLUDED") stats.demoted++;
-      else if (row.lifecycle === "EXCLUDED") stats.promoted++;
-      else if (next.lifecycle === "IMPORTED") stats.flippedToImported++;
-
       console.log(
-        `  ${row.lifecycle} → ${next.lifecycle}: "${row.name}"${next.reason ? ` (${next.reason})` : ""}`,
+        `  ${row.lifecycle} → ${nextLifecycle}: "${row.name}"${nextReason ? ` (${nextReason})` : ""}`,
       );
 
       if (!dryRun) {
         await prisma.property.update({
           where: { id: row.id },
           data: {
-            lifecycle: next.lifecycle,
+            lifecycle: nextLifecycle,
             lifecycleSetAt: new Date(),
-            excludeReason: next.reason,
+            excludeReason: nextReason,
           },
         });
       }
@@ -126,10 +141,9 @@ async function main() {
   }
 
   console.log("\n--- summary ---");
-  console.log(`  unchanged:                 ${stats.unchanged}`);
-  console.log(`  promoted (EXCLUDED → ...): ${stats.promoted}`);
-  console.log(`  demoted (... → EXCLUDED):  ${stats.demoted}`);
-  console.log(`  ACTIVE → IMPORTED:         ${stats.flippedToImported}`);
+  console.log(`  unchanged:                  ${stats.unchanged}`);
+  console.log(`  newly EXCLUDED:             ${stats.newlyExcluded}`);
+  console.log(`  EXCLUDED → IMPORTED (rename): ${stats.promoted}`);
 
   // Final state summary so the operator can sanity-check counts.
   console.log("\n--- final state by org ---");

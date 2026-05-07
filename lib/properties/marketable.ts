@@ -132,16 +132,32 @@ const PLACEHOLDER_NAME_PATTERNS = [
   /^old\s/i,
 ];
 
-export type AutoClassification = {
-  lifecycle: PropertyLifecycle;
-  reason: string | null;
-};
+/**
+ * Auto-classifier verdict.
+ *
+ * The classifier ONLY returns confident verdicts ("yes, exclude this —
+ * it's a parking lot"). "No opinion" means "don't touch this row" — the
+ * caller decides what default to apply.
+ *
+ * Why: existing already-approved rows must NOT be demoted to IMPORTED
+ * just because their name doesn't match a sub-record pattern. The
+ * earlier symmetric API ("returns IMPORTED for no opinion") tried to
+ * demote 122 of SG Real Estate's existing ACTIVE rows including
+ * Telegraph Commons itself the first time the backfill ran.
+ *
+ * Caller policy:
+ *   - New AppFolio import:    excluded → EXCLUDED, no-opinion → IMPORTED
+ *   - AppFolio re-sync:       excluded → EXCLUDED, no-opinion → leave
+ *   - One-shot backfill:      excluded → EXCLUDED, no-opinion → leave
+ *   - Operator-initiated:     ignore classifier; OPERATOR is sticky
+ */
+export type AutoClassification =
+  | { excluded: true; reason: string }
+  | { excluded: false };
 
 /**
- * Classify a Property at import or backfill time. Conservative by
- * design: when in doubt, return IMPORTED so the operator gets to
- * decide. Only auto-flips to EXCLUDED for high-confidence sub-record
- * patterns.
+ * Classify a Property at import or backfill time. CONFIDENT-EXCLUDES
+ * only — never demotes by default. See AutoClassification above.
  *
  * Inputs available at import (from AppFolio property_directory):
  *   - name
@@ -155,16 +171,16 @@ export function classifyProperty(input: {
 }): AutoClassification {
   const name = (input.name ?? "").trim();
 
-  // Empty name = nothing to classify on. Hold for review.
+  // Empty name with no other signal — let caller decide.
   if (!name) {
-    return { lifecycle: "IMPORTED", reason: "no name" };
+    return { excluded: false };
   }
 
   // Placeholder/admin junk → EXCLUDED
   for (const pattern of PLACEHOLDER_NAME_PATTERNS) {
     if (pattern.test(name)) {
       return {
-        lifecycle: "EXCLUDED",
+        excluded: true,
         reason: `placeholder name pattern: ${pattern.source}`,
       };
     }
@@ -174,12 +190,12 @@ export function classifyProperty(input: {
   for (const pattern of NON_MARKETABLE_NAME_PATTERNS) {
     if (pattern.test(name)) {
       return {
-        lifecycle: "EXCLUDED",
+        excluded: true,
         reason: `non-marketable sub-record: ${pattern.source}`,
       };
     }
   }
 
-  // No clear signal — let the operator decide.
-  return { lifecycle: "IMPORTED", reason: null };
+  // No high-confidence signal — caller decides.
+  return { excluded: false };
 }
