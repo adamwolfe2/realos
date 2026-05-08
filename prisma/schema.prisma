@@ -2592,3 +2592,46 @@ model AdLibraryAd {
   @@unique([advertiserId, externalId])
   @@index([advertiserId, status])
 }
+
+// ============================================================================
+// EMAIL SUPPRESSION
+// ============================================================================
+
+// Email-address-level opt-out list. Populated by:
+//   - RFC 8058 one-click unsubscribe POSTs from Gmail / Yahoo / Apple Mail
+//   - Browser-based GET unsubscribes from the visible footer link
+//   - Manual additions when someone replies "unsubscribe me" to a digest
+//
+// Every email send (sendBrandedEmail + the legacy safeSends) checks
+// this list before dispatching to Resend. Suppressed addresses are
+// silently dropped — we never re-send and we never error noisily,
+// because that would create a re-send loop on retries.
+//
+// Lowercase email is the unique key; we lowercase on insert and on
+// query.
+model EmailSuppression {
+  id    String @id @default(cuid())
+  email String @unique // lowercased
+
+  // Free-text reason. Common values:
+  //   "one-click"      — Gmail/Yahoo POST unsubscribe
+  //   "browser"        — clicked the URL in the email footer
+  //   "manual"         — operator added via admin panel
+  //   "complaint"      — Resend marked the recipient as a complainer
+  //   "bounce"         — repeated hard bounces
+  reason String?
+
+  // Email category that triggered the suppression. Lets us evolve
+  // toward a per-category opt-out (e.g. user opts out of digests but
+  // wants to keep getting invoices) — for now we treat every
+  // suppression as global so the user is always honored.
+  category String?
+
+  // Template name from the X-Entity-Ref-ID at unsub time, useful for
+  // analytics ("which template generates the most unsubscribes").
+  source String?
+
+  unsubscribedAt DateTime @default(now())
+
+  @@index([email])
+}

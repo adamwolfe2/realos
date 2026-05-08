@@ -116,11 +116,22 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
+        const unsubMailbox =
+          process.env.UNSUBSCRIBE_EMAIL?.trim() ||
+          "unsubscribe@leasestack.co";
         const r = await resend.emails.send({
           from: FROM_EMAIL,
           to: sub.primaryContactEmail,
           subject,
           html,
+          headers: {
+            "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+            "X-Entity-Ref-ID": `intake-nurture-${sub.id}`,
+          },
+          tags: [
+            { name: "template", value: "intake-nurture" },
+            { name: "category", value: "broadcast" },
+          ],
         });
 
         if (r.error) {

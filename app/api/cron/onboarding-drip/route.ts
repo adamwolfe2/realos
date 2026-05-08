@@ -120,12 +120,23 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
+        const unsubMailbox =
+          process.env.UNSUBSCRIBE_EMAIL?.trim() ||
+          "unsubscribe@leasestack.co";
         const r = await resend.emails.send({
           from: FROM_EMAIL,
           to: org.primaryContactEmail as string,
           subject,
           html,
           replyTo: BRAND_EMAIL,
+          headers: {
+            "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+            "X-Entity-Ref-ID": `onboarding-drip-${org.id}-${targetStep}`,
+          },
+          tags: [
+            { name: "template", value: `onboarding-drip-${targetStep}` },
+            { name: "category", value: "broadcast" },
+          ],
         });
 
         if (r.error) {

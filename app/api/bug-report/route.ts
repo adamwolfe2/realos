@@ -223,6 +223,18 @@ async function sendEmailNotification(input: {
       to,
       subject: `[${input.severity.toUpperCase()}] ${input.title}`,
       html,
+      headers: {
+        // Bug-report emails go to internal addresses (BRAND_EMAIL),
+        // never to customers — but we still ship the deliverability
+        // headers so they don't get treated like a stripped-down
+        // bot send by Gmail's filters.
+        "List-Unsubscribe": `<mailto:${process.env.UNSUBSCRIBE_EMAIL?.trim() ?? "unsubscribe@leasestack.co"}>`,
+        "X-Entity-Ref-ID": `bug-report-${Date.now().toString(36)}`,
+      },
+      tags: [
+        { name: "template", value: "bug-report" },
+        { name: "category", value: "transactional" },
+      ],
     });
     return { ok: true };
   } catch (err) {

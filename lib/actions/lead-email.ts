@@ -96,6 +96,8 @@ export async function sendLeadEmail(input: unknown): Promise<SendResult> {
   });
 
   let messageId: string | undefined;
+  const unsubMailbox =
+    process.env.UNSUBSCRIBE_EMAIL?.trim() || "unsubscribe@leasestack.co";
   try {
     const r = await resend.emails.send({
       from: FROM_EMAIL,
@@ -104,6 +106,14 @@ export async function sendLeadEmail(input: unknown): Promise<SendResult> {
       html,
       text: body,
       replyTo: BRAND_EMAIL,
+      headers: {
+        "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+        "X-Entity-Ref-ID": `lead-direct-${lead.id}-${Date.now().toString(36)}`,
+      },
+      tags: [
+        { name: "template", value: "lead-direct-email" },
+        { name: "category", value: "transactional" },
+      ],
     });
     if (r.error) {
       return { ok: false, error: r.error.message };

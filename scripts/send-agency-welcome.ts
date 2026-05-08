@@ -119,6 +119,8 @@ async function main() {
     .filter(Boolean)
     .join("\n");
 
+  const unsubMailbox =
+    process.env.UNSUBSCRIBE_EMAIL ?? "unsubscribe@leasestack.co";
   const result = await resend.emails.send({
     from,
     to,
@@ -126,6 +128,14 @@ async function main() {
     html,
     text,
     replyTo: brandEmail,
+    headers: {
+      "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+      "X-Entity-Ref-ID": `agency-welcome-${Date.now().toString(36)}`,
+    },
+    tags: [
+      { name: "template", value: "agency-welcome" },
+      { name: "category", value: "transactional" },
+    ],
   });
 
   if (result.error) {

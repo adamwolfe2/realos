@@ -127,12 +127,27 @@ export async function GET(req: NextRequest) {
           continue;
         }
 
+        const unsubMailbox =
+          process.env.UNSUBSCRIBE_EMAIL?.trim() ||
+          "unsubscribe@leasestack.co";
         const r = await resend.emails.send({
           from: FROM_EMAIL,
           to: org.primaryContactEmail as string,
           subject,
           html,
           replyTo: BRAND_EMAIL,
+          headers: {
+            // Billing reminders are required-by-law transactional —
+            // mailto-only unsubscribe (recipients can't truly opt out
+            // of "your card is failing" but the header is still
+            // expected by Gmail).
+            "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+            "X-Entity-Ref-ID": `billing-reminder-${org.id}`,
+          },
+          tags: [
+            { name: "template", value: "billing-reminder" },
+            { name: "category", value: "transactional" },
+          ],
         });
 
         if (r.error) {

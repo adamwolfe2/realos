@@ -105,20 +105,53 @@ export async function sendBrandedEmail(
   const refId =
     opts.entityRefId ?? `${template}-${Date.now().toString(36)}`;
 
+  // Suppression check — never re-mail an address that's opted out.
+  // Lazy-imported to keep the prisma client out of the cold-start path
+  // for handlers that build emails but don't always send them.
+  const recipients = Array.isArray(opts.to) ? opts.to : [opts.to];
+  try {
+    const { isEmailSuppressed } = await import("./suppression");
+    if (await isEmailSuppressed(recipients)) {
+      return {
+        ok: false,
+        error: `Recipient is on the email suppression list (${template})`,
+      };
+    }
+  } catch (err) {
+    // Suppression check is best-effort. Better to send than to crash
+    // because the import or DB query failed.
+    console.warn(`[email:${template}] suppression check failed:`, err);
+  }
+
+  // Resolve unsubscribe URL. For broadcast emails we auto-build a
+  // signed one-click URL keyed to the recipient if the caller didn't
+  // provide one — that's what unlocks the Gmail visible
+  // "Unsubscribe" button. For transactional we don't auto-build
+  // because the recipient just took an action that prompted the
+  // email and shouldn't be invited to opt out of it.
+  let unsubUrl = opts.unsubscribeUrl;
+  if (!unsubUrl && category === "broadcast" && recipients.length === 1) {
+    try {
+      const { buildEmailUnsubUrl } = await import("./suppression");
+      unsubUrl = buildEmailUnsubUrl(recipients[0]);
+    } catch {
+      // ignore — fall through to mailto-only header
+    }
+  }
+
   // List-Unsubscribe header. Gmail's RFC 8058 one-click only fires on
   // the URL form; the mailto form is the universal fallback.
   const unsubParts: string[] = [`<mailto:${UNSUBSCRIBE_MAILBOX}>`];
-  if (opts.unsubscribeUrl) {
-    unsubParts.unshift(`<${opts.unsubscribeUrl}>`);
+  if (unsubUrl) {
+    unsubParts.unshift(`<${unsubUrl}>`);
   }
   const headers: Record<string, string> = {
     "List-Unsubscribe": unsubParts.join(", "),
     "X-Entity-Ref-ID": refId,
   };
-  if (category === "broadcast" && opts.unsubscribeUrl) {
+  if (category === "broadcast" && unsubUrl) {
     // RFC 8058 one-click. The unsubscribeUrl MUST accept POST and
-    // respond 200 OK with empty body. Without this header, Gmail
-    // doesn't render the unsubscribe button.
+    // respond 200 OK with empty body — see /api/unsub/one-click.
     headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
   }
 

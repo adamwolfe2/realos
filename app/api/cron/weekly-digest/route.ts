@@ -77,7 +77,13 @@ export async function GET(req: NextRequest) {
         const subject = weeklyDigestSubject(digest);
         const html = buildWeeklyDigestEmail(digest, `${portalBase}/portal`);
 
-        // Send one email per recipient so each gets a personal copy
+        const unsubMailbox =
+          process.env.UNSUBSCRIBE_EMAIL?.trim() ||
+          "unsubscribe@leasestack.co";
+
+        // Send one email per recipient so each gets a personal copy.
+        // Weekly digest is broadcast — full RFC 8058 header set so
+        // Gmail renders the visible Unsubscribe button.
         const sendResults = await Promise.allSettled(
           recipientEmails.map((email) =>
             resend.emails.send({
@@ -85,8 +91,16 @@ export async function GET(req: NextRequest) {
               to: email,
               subject,
               html,
-            })
-          )
+              headers: {
+                "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+                "X-Entity-Ref-ID": `weekly-digest-${digest.orgId}-${email}`,
+              },
+              tags: [
+                { name: "template", value: "weekly-digest" },
+                { name: "category", value: "broadcast" },
+              ],
+            }),
+          ),
         );
 
         let orgSent = 0;
