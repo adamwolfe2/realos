@@ -4,6 +4,7 @@ import {
   getResend,
   isValidEmail,
   sanitizeSubject,
+  sendBrandedEmail,
   FROM_EMAIL,
   BRAND_EMAIL,
   APP_URL,
@@ -19,17 +20,26 @@ import {
 
 type SendResult = { ok: boolean; id?: string; error?: string };
 
+// Legacy local helper for the non-invite onboarding emails (intake
+// receipt, build status, etc.). New transactional emails should call
+// sendBrandedEmail directly. This wrapper is kept so existing callers
+// keep working while still getting the deliverability headers.
 async function safeSend(opts: {
   to: string;
   subject: string;
   html: string;
   text?: string;
   replyTo?: string;
+  template?: string;
 }): Promise<SendResult> {
   const resend = getResend();
   if (!resend) {
     return { ok: false, error: "Resend not configured" };
   }
+  const template = opts.template ?? "onboarding";
+  const refId = `${template}-${Date.now().toString(36)}`;
+  const unsubMailbox =
+    process.env.UNSUBSCRIBE_EMAIL?.trim() || "unsubscribe@leasestack.co";
   try {
     const r = await resend.emails.send({
       from: FROM_EMAIL,
@@ -37,7 +47,15 @@ async function safeSend(opts: {
       subject: sanitizeSubject(opts.subject),
       html: opts.html,
       ...(opts.text ? { text: opts.text } : {}),
-      ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+      replyTo: opts.replyTo ?? BRAND_EMAIL,
+      headers: {
+        "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+        "X-Entity-Ref-ID": refId,
+      },
+      tags: [
+        { name: "template", value: template },
+        { name: "category", value: "transactional" },
+      ],
     });
     if (r.error) {
       console.error("[email] Resend rejected send:", r.error);
@@ -287,47 +305,60 @@ export async function sendTeammateInviteEmail(input: {
   const inviter = input.inviterName?.trim() || input.inviterEmail?.trim() || null;
   const expires = input.expiresInDays ?? 30;
 
+  // Subject line. Avoid the "X invited you to Y" template phrase —
+  // it's a high-signal spam trigger. Frame this as a transactional
+  // account-setup email instead. The org name signals legitimacy
+  // (recipient should recognize their employer's name).
+  const subject = `Your ${input.orgName} portal access is ready`;
+
+  // Preheader (inbox preview). Names the inviter when we have one so
+  // the recipient sees personal context before they open. Limited to
+  // ~110 chars for full Gmail/Apple Mail/Outlook coverage.
+  const preheader = inviter
+    ? `${inviter} added you to ${input.orgName} on ${BRAND_NAME}. Set your password to get in.`
+    : `You've been added to ${input.orgName} on ${BRAND_NAME}. Set your password to get in.`;
+
   const introLine = inviter
     ? `<strong>${escape(inviter)}</strong> added you to <strong>${escape(
-        input.orgName
+        input.orgName,
       )}</strong> as <strong>${escape(roleLabel)}</strong>.`
     : `You've been added to <strong>${escape(
-        input.orgName
+        input.orgName,
       )}</strong> as <strong>${escape(roleLabel)}</strong>.`;
 
-  // Body copy notes:
-  //  - Position LeaseStack as the operator portal (not "marketing platform"),
-  //    matching the audit feedback that the surface now spans operations
-  //    too (residents, renewals, work orders).
-  //  - Lead with the value-prop the invitee actually cares about — what
-  //    they'll see when they click — rather than a feature dump.
-  //  - Surface the inviter's email as a reply-to so questions don't bounce.
+  // Inline support contact. Reply-to is BRAND_EMAIL (DMARC-aligned with
+  // the from-domain) so we don't trigger alignment heuristics. The
+  // inviter's address is mentioned in the body as a manual reply
+  // option but does not become the reply-to header.
   const inviterContact = input.inviterEmail
-    ? `Reply directly to <a href="mailto:${escape(input.inviterEmail)}" style="color:#0A0A0A;text-decoration:underline;">${escape(input.inviterEmail)}</a> with any questions.`
+    ? `Questions? Email <a href="mailto:${escape(input.inviterEmail)}" style="color:#0A0A0A;text-decoration:underline;">${escape(input.inviterEmail)}</a> directly, or reply to this message.`
     : `If you have questions, reply to this email and our team will route it.`;
 
   const bodyHtml = `
     <p style="margin:0 0 14px;font-size:15px;line-height:1.6;color:#0A0A0A;">${introLine}</p>
     <p style="margin:0 0 14px;font-size:14px;line-height:1.6;color:#0A0A0A;">
-      ${escape(BRAND_NAME)} is ${escape(input.orgName)}'s operator portal —
-      one place to track leads, tours, applications, residents, and renewals
-      alongside reputation and visitor activity. Click below to set your
-      password and get in.
+      ${escape(BRAND_NAME)} is the operator portal where ${escape(input.orgName)}
+      tracks leads, tours, applications, residents, and renewals alongside
+      reputation and visitor activity. Use the button below to set your
+      password and sign in.
     </p>
     <p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:#5b5b5b;">
       ${inviterContact}
     </p>
     <p style="margin:0 0 12px;font-size:12px;line-height:1.6;color:#87867f;">
-      This invitation expires in ${expires} days. If you weren't expecting it,
-      you can safely ignore this email.
+      This link expires in ${expires} days. If you weren't expecting this email,
+      you can safely ignore it — no account is created until you click through.
     </p>
   `;
 
   const html = buildBaseHtml({
-    headline: `You're invited to ${input.orgName}`,
+    title: `${BRAND_NAME} access — ${input.orgName}`,
+    headline: `Your ${input.orgName} access is ready`,
+    preheader,
     bodyHtml,
-    ctaText: "Accept invitation",
+    ctaText: "Set your password",
     ctaUrl: input.acceptUrl,
+    ctaCase: "sentence",
   });
 
   const text = [
@@ -335,33 +366,30 @@ export async function sendTeammateInviteEmail(input: {
       ? `${inviter} added you to ${input.orgName} as ${roleLabel}.`
       : `You've been added to ${input.orgName} as ${roleLabel}.`,
     "",
-    `${BRAND_NAME} is ${input.orgName}'s operator portal — one place to track leads, tours, applications, residents, and renewals alongside reputation and visitor activity.`,
+    `${BRAND_NAME} is the operator portal where ${input.orgName} tracks leads, tours, applications, residents, and renewals alongside reputation and visitor activity.`,
     "",
-    `Accept your invitation: ${input.acceptUrl}`,
+    `Set your password: ${input.acceptUrl}`,
     "",
     input.inviterEmail
-      ? `Questions? Reply directly to ${input.inviterEmail}.`
+      ? `Questions? Email ${input.inviterEmail} directly, or reply to this message.`
       : `Questions? Reply to this email and our team will route it.`,
     "",
-    `This invitation expires in ${expires} days. If you weren't expecting it, you can safely ignore this email.`,
+    `This link expires in ${expires} days. If you weren't expecting this email, you can safely ignore it — no account is created until you click through.`,
     "",
     `— ${BRAND_NAME} · ${APP_URL.replace(/^https?:\/\//, "")}`,
   ].join("\n");
 
-  return safeSend({
+  return sendBrandedEmail({
     to: input.to,
-    // Subject naming the inviter when we have it lifts open rates
-    // versus the generic "You're invited" wording. Falls back to the
-    // org name when the invite came from a system flow.
-    subject: inviter
-      ? `${inviter} invited you to ${input.orgName}`
-      : `You're invited to ${input.orgName} on ${BRAND_NAME}`,
+    subject,
     html,
     text,
-    // Replies route to the inviting human first, falling back to the
-    // generic LeaseStack mailbox. Removes the "I got an invite from
-    // hello@ — who do I ask?" friction.
-    replyTo: input.inviterEmail || BRAND_EMAIL,
+    // Reply-to is the brand mailbox, not the inviter's gmail. Keeps
+    // DMARC alignment intact. The inviter's address is surfaced in
+    // the body for manual contact.
+    replyTo: BRAND_EMAIL,
+    category: "transactional",
+    template: "teammate-invite",
   });
 }
 

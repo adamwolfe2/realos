@@ -51,12 +51,22 @@ export async function sendReviewRequestEmail({
   const resend = getResend();
   if (!resend) return { ok: false, error: "Resend not configured" };
 
+  const unsubMailbox =
+    process.env.UNSUBSCRIBE_EMAIL?.trim() || "unsubscribe@leasestack.co";
   try {
     const r = await resend.emails.send({
       from: FROM_EMAIL,
       to,
       subject: "Quick favor: Would you leave us a review?",
       html,
+      headers: {
+        "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+        "X-Entity-Ref-ID": `review-request-${Date.now().toString(36)}`,
+      },
+      tags: [
+        { name: "template", value: "review-request" },
+        { name: "category", value: "transactional" },
+      ],
     });
     return { ok: true, id: r.data?.id };
   } catch (err) {

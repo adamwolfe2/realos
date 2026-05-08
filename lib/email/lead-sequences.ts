@@ -52,6 +52,12 @@ export async function sendLeadCadenceEmail(
     unsubUrl.replace(/https?:\/\/[^/]+/, "")
   );
 
+  // Lead nurture sequence is broadcast — recipients haven't asked
+  // for these emails directly (they submitted a form once), so Gmail
+  // is most aggressive on placement here. Full RFC 8058 one-click
+  // header set is mandatory for inbox placement.
+  const unsubMailbox =
+    process.env.UNSUBSCRIBE_EMAIL?.trim() || "unsubscribe@leasestack.co";
   try {
     await resend.emails.send({
       from: `${p.orgName} <${p.replyTo}>`,
@@ -59,6 +65,15 @@ export async function sendLeadCadenceEmail(
       replyTo: p.replyTo,
       subject,
       html: htmlWithUnsub,
+      headers: {
+        "List-Unsubscribe": `<${unsubUrl}>, <mailto:${unsubMailbox}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+        "X-Entity-Ref-ID": `lead-cadence-${stage}-${p.leadId}`,
+      },
+      tags: [
+        { name: "template", value: `lead-cadence-${stage}` },
+        { name: "category", value: "broadcast" },
+      ],
     });
     return { ok: true };
   } catch (err) {

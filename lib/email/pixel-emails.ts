@@ -20,14 +20,21 @@ import {
 
 type SendResult = { ok: boolean; id?: string; error?: string };
 
+// Pixel provisioning notifications. Transactional category — sent in
+// response to a specific request lifecycle event (submit / fulfillment).
 async function safeSend(opts: {
   to: string;
   subject: string;
   html: string;
   replyTo?: string;
+  template?: string;
 }): Promise<SendResult> {
   const resend = getResend();
   if (!resend) return { ok: false, error: "Resend not configured" };
+  const template = opts.template ?? "pixel-notification";
+  const refId = `${template}-${Date.now().toString(36)}`;
+  const unsubMailbox =
+    process.env.UNSUBSCRIBE_EMAIL?.trim() || "unsubscribe@leasestack.co";
   try {
     const r = await resend.emails.send({
       from: FROM_EMAIL,
@@ -35,6 +42,14 @@ async function safeSend(opts: {
       subject: sanitizeSubject(opts.subject),
       html: opts.html,
       ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+      headers: {
+        "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+        "X-Entity-Ref-ID": refId,
+      },
+      tags: [
+        { name: "template", value: template },
+        { name: "category", value: "transactional" },
+      ],
     });
     return { ok: true, id: r.data?.id };
   } catch (err) {

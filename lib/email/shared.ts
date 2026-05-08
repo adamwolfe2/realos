@@ -30,6 +30,131 @@ export function getResend() {
 }
 
 // ---------------------------------------------------------------------------
+// sendBrandedEmail — single send-helper used by every transactional email
+// in the platform. Wraps Resend with the deliverability defaults that
+// Gmail / Yahoo / Outlook expect from a modern transactional sender:
+//
+//   1. List-Unsubscribe headers (RFC 2369 + RFC 8058 one-click) — Gmail
+//      and Yahoo's bulk-mail filters explicitly downrank senders without
+//      these. Single biggest factor for landing in spam.
+//
+//   2. X-Entity-Ref-ID — opaque per-message identifier that helps
+//      receiving mailers thread messages and gives Resend a handle to
+//      track per-send delivery in their dashboard.
+//
+//   3. Tags — Resend categorizes deliverability stats per-template, so
+//      we can see "invite has 12% spam rate, fix that template" instead
+//      of an aggregate domain number.
+//
+//   4. Tracking disabled — click-tracking wraps every link in a
+//      track.resend.com redirect, which (a) hurts deliverability on a
+//      young sending domain because the recipient's filter associates
+//      the redirect with bulk patterns, and (b) breaks the click-out
+//      experience for users who hover the link before clicking.
+//
+//   5. Reply-To always set to a brand-aligned address (not the
+//      inviter's gmail) so DMARC alignment doesn't blow up. We support
+//      a custom reply-to override but default to the BRAND_EMAIL.
+//
+// `category: "transactional"` (invite, password reset, security) → only
+//   `List-Unsubscribe: mailto:`. Most clients honor this for
+//   transactional and don't render an Unsubscribe button on the message.
+//
+// `category: "broadcast"` (digests, weekly reports, lead nurture) →
+//   adds the URL form + List-Unsubscribe-Post for one-click. Gmail
+//   shows an Unsubscribe button in the inbox preview.
+// ---------------------------------------------------------------------------
+
+export type EmailCategory = "transactional" | "broadcast";
+
+type BrandedSendInput = {
+  to: string | string[];
+  subject: string;
+  html: string;
+  text?: string;
+  replyTo?: string;
+  /** Used for List-Unsubscribe header behavior. Defaults to "transactional". */
+  category?: EmailCategory;
+  /** Used for Resend tags + X-Entity-Ref-ID. Should be a kebab-case template name. */
+  template?: string;
+  /** Optional opaque ID for X-Entity-Ref-ID. Falls back to template+timestamp. */
+  entityRefId?: string;
+  /** URL that supports both GET (visible in body) and POST (one-click). Required for "broadcast". */
+  unsubscribeUrl?: string;
+  /** Extra tags for Resend filtering. Merged with the default { template, category } tags. */
+  tags?: Array<{ name: string; value: string }>;
+};
+
+export type BrandedSendResult =
+  | { ok: true; id?: string }
+  | { ok: false; error: string };
+
+const UNSUBSCRIBE_MAILBOX =
+  process.env.UNSUBSCRIBE_EMAIL?.trim() || "unsubscribe@leasestack.co";
+
+export async function sendBrandedEmail(
+  opts: BrandedSendInput,
+): Promise<BrandedSendResult> {
+  const resend = getResend();
+  if (!resend) {
+    return { ok: false, error: "Resend not configured" };
+  }
+
+  const category: EmailCategory = opts.category ?? "transactional";
+  const template = opts.template ?? "generic";
+  const refId =
+    opts.entityRefId ?? `${template}-${Date.now().toString(36)}`;
+
+  // List-Unsubscribe header. Gmail's RFC 8058 one-click only fires on
+  // the URL form; the mailto form is the universal fallback.
+  const unsubParts: string[] = [`<mailto:${UNSUBSCRIBE_MAILBOX}>`];
+  if (opts.unsubscribeUrl) {
+    unsubParts.unshift(`<${opts.unsubscribeUrl}>`);
+  }
+  const headers: Record<string, string> = {
+    "List-Unsubscribe": unsubParts.join(", "),
+    "X-Entity-Ref-ID": refId,
+  };
+  if (category === "broadcast" && opts.unsubscribeUrl) {
+    // RFC 8058 one-click. The unsubscribeUrl MUST accept POST and
+    // respond 200 OK with empty body. Without this header, Gmail
+    // doesn't render the unsubscribe button.
+    headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+  }
+
+  const tags: Array<{ name: string; value: string }> = [
+    { name: "template", value: template },
+    { name: "category", value: category },
+    ...(opts.tags ?? []),
+  ];
+
+  try {
+    const r = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: opts.to,
+      subject: sanitizeSubject(opts.subject),
+      html: opts.html,
+      ...(opts.text ? { text: opts.text } : {}),
+      replyTo: opts.replyTo ?? BRAND_EMAIL,
+      headers,
+      tags,
+    });
+    if (r.error) {
+      console.error(
+        `[email:${template}] Resend rejected send:`,
+        r.error,
+      );
+      return { ok: false, error: r.error.message ?? "Resend API error" };
+    }
+    return { ok: true, id: r.data?.id };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    console.error(`[email:${template}] Resend send threw:`, msg);
+    return { ok: false, error: msg };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Validation
 // ---------------------------------------------------------------------------
 
@@ -45,6 +170,18 @@ export function sanitizeSubject(subject: string): string {
   return subject.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+// Escape user-provided strings before interpolating them into HTML
+// email bodies. Mirrors the helper in report-email.ts so any caller of
+// buildBaseHtml can sanitize without re-implementing.
+export function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // ---------------------------------------------------------------------------
 // buildBaseHtml -- branded email shell used by every transactional email.
 // ---------------------------------------------------------------------------
@@ -55,7 +192,16 @@ export interface BaseHtmlOptions {
   ctaText?: string;
   ctaUrl?: string;
   alertBannerHtml?: string;
+  /** Show "Unsubscribe / manage preferences" link in the footer. Required for broadcast emails (RFC 8058 visible link). */
   includeUnsubscribe?: boolean;
+  /** URL the visible Unsubscribe link points at. Required when includeUnsubscribe is true. */
+  unsubscribeUrl?: string;
+  /** Inbox preview text. Hidden in the rendered email body but used by Gmail/Apple Mail/Outlook to show a 1-line summary in the inbox list. CRITICAL for open rate. */
+  preheader?: string;
+  /** Browser tab title + accessibility. Some spam scanners deduct points for missing <title>. */
+  title?: string;
+  /** Sentence-case the CTA button instead of all-caps (default true going forward — all-caps reads as bulk/spam to filters). */
+  ctaCase?: "upper" | "sentence";
   theme?: {
     outerBg?: string;
     innerBg?: string;
@@ -76,6 +222,10 @@ export function buildBaseHtml({
   ctaUrl,
   alertBannerHtml,
   includeUnsubscribe,
+  unsubscribeUrl,
+  preheader,
+  title,
+  ctaCase = "sentence",
   theme,
 }: BaseHtmlOptions): string {
   const outerBg = theme?.outerBg ?? "#F9F7F4";
@@ -88,10 +238,16 @@ export function buildBaseHtml({
   const headlineColor = theme?.headlineColor ?? "#0A0A0A";
   const border = theme?.border ?? "#E5E1DB";
 
+  // CTA button. Default: sentence-case ("Accept invitation"). All-caps
+  // ("ACCEPT INVITATION") reads as bulk-mail and is a known spam-score
+  // contributor — only use for high-conversion broadcast where the
+  // headline already signals "this is a single transactional event."
+  const ctaTransform = ctaCase === "upper" ? "uppercase" : "none";
+  const ctaLetterSpacing = ctaCase === "upper" ? "0.06em" : "0";
   const ctaBlock =
     ctaText && ctaUrl
       ? `<tr><td style="padding:8px 32px 32px;">
-          <a href="${ctaUrl}" style="display:inline-block;background-color:${BRAND_COLOR};color:#FFFFFF;font-size:13px;font-weight:600;text-decoration:none;padding:14px 28px;letter-spacing:0.06em;text-transform:uppercase;">${ctaText}</a>
+          <a href="${ctaUrl}" style="display:inline-block;background-color:${BRAND_COLOR};color:#FFFFFF;font-size:14px;font-weight:600;text-decoration:none;padding:14px 28px;letter-spacing:${ctaLetterSpacing};text-transform:${ctaTransform};border-radius:6px;">${ctaText}</a>
         </td></tr>`
       : "";
 
@@ -107,10 +263,31 @@ export function buildBaseHtml({
   const supportEmail = process.env.ADMIN_EMAIL?.trim() || "hello@leasestack.co";
   const tagline = "Real estate operator portal";
 
+  // Preheader (inbox preview text). Hidden in the rendered body via
+  // a combination of styles + the &zwnj; trick so Gmail/Apple Mail/
+  // Outlook show it in the inbox list. Without this, the first
+  // visible text — usually "LEASESTACK / Real estate operator portal"
+  // header — wastes the preview slot.
+  const preheaderHtml = preheader
+    ? `<div style="display:none !important;visibility:hidden;mso-hide:all;font-size:1px;color:${innerBg};line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">${escapeHtml(preheader)}${" ‌".repeat(200)}</div>`
+    : "";
+
+  // <title> for accessibility + minor spam-scanner credit. Default to
+  // the headline so older callers still produce a populated tag.
+  const titleText = escapeHtml(title ?? headline);
+
   return `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/></head>
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <meta name="x-apple-disable-message-reformatting"/>
+  <meta name="color-scheme" content="light"/>
+  <meta name="supported-color-schemes" content="light"/>
+  <title>${titleText}</title>
+</head>
 <body style="margin:0;padding:0;background-color:${outerBg};font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+  ${preheaderHtml}
   <table width="100%" cellpadding="0" cellspacing="0" style="background-color:${outerBg};padding:32px 16px;">
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:${innerBg};border:1px solid ${border};">
@@ -142,7 +319,15 @@ export function buildBaseHtml({
               </td>
             </tr>
           </table>
-          ${includeUnsubscribe ? `<p style="margin:14px 0 0;border-top:1px solid ${border};padding-top:12px;"><a href="${APP_URL}/portal/settings" style="color:${footerSubText};font-size:11px;text-decoration:underline;">Unsubscribe or manage email preferences</a></p>` : ""}
+          ${
+            includeUnsubscribe
+              ? `<p style="margin:14px 0 0;border-top:1px solid ${border};padding-top:12px;">
+                  <a href="${unsubscribeUrl ?? `${APP_URL}/portal/settings`}" style="color:${footerSubText};font-size:11px;text-decoration:underline;">Unsubscribe</a>
+                  <span style="color:${footerSubText};font-size:11px;"> · </span>
+                  <a href="${APP_URL}/portal/settings" style="color:${footerSubText};font-size:11px;text-decoration:underline;">Manage email preferences</a>
+                </p>`
+              : ""
+          }
         </td></tr>
       </table>
     </td></tr>

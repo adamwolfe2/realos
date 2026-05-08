@@ -9,6 +9,9 @@ import {
 
 type SendResult = { ok: boolean; id?: string; error?: string };
 
+// Visitor outreach + digest emails. Broadcast category — these are
+// active marketing-style sends (not a direct transactional response)
+// so they get the full RFC 8058 one-click unsubscribe header set.
 async function safeSend(opts: {
   to: string;
   from?: string;
@@ -16,9 +19,26 @@ async function safeSend(opts: {
   html: string;
   text?: string;
   replyTo?: string;
+  template?: string;
+  unsubscribeUrl?: string;
 }): Promise<SendResult> {
   const resend = getResend();
   if (!resend) return { ok: false, error: "Resend not configured" };
+  const template = opts.template ?? "visitor-outreach";
+  const refId = `${template}-${Date.now().toString(36)}`;
+  const unsubMailbox =
+    process.env.UNSUBSCRIBE_EMAIL?.trim() || "unsubscribe@leasestack.co";
+  const unsubParts: string[] = [`<mailto:${unsubMailbox}>`];
+  if (opts.unsubscribeUrl) {
+    unsubParts.unshift(`<${opts.unsubscribeUrl}>`);
+  }
+  const headers: Record<string, string> = {
+    "List-Unsubscribe": unsubParts.join(", "),
+    "X-Entity-Ref-ID": refId,
+  };
+  if (opts.unsubscribeUrl) {
+    headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
+  }
   try {
     const r = await resend.emails.send({
       from: opts.from ?? FROM_EMAIL,
@@ -27,6 +47,11 @@ async function safeSend(opts: {
       html: opts.html,
       ...(opts.text ? { text: opts.text } : {}),
       ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+      headers,
+      tags: [
+        { name: "template", value: template },
+        { name: "category", value: "broadcast" },
+      ],
     });
     return { ok: true, id: r.data?.id };
   } catch (err) {

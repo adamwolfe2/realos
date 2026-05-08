@@ -9,6 +9,10 @@ import {
 
 type SendResult = { ok: boolean; id?: string; error?: string };
 
+// Lead auto-reply / acknowledgement emails. Transactional category —
+// these are sent in response to a lead-form submit, so List-Unsubscribe
+// is mailto-only; the recipient just submitted their email so they
+// expect an immediate confirmation.
 async function safeSend(opts: {
   to: string;
   from?: string;
@@ -16,9 +20,14 @@ async function safeSend(opts: {
   html: string;
   text?: string;
   replyTo?: string;
+  template?: string;
 }): Promise<SendResult> {
   const resend = getResend();
   if (!resend) return { ok: false, error: "Resend not configured" };
+  const template = opts.template ?? "lead-auto-reply";
+  const refId = `${template}-${Date.now().toString(36)}`;
+  const unsubMailbox =
+    process.env.UNSUBSCRIBE_EMAIL?.trim() || "unsubscribe@leasestack.co";
   try {
     const r = await resend.emails.send({
       from: opts.from ?? FROM_EMAIL,
@@ -27,6 +36,14 @@ async function safeSend(opts: {
       html: opts.html,
       ...(opts.text ? { text: opts.text } : {}),
       ...(opts.replyTo ? { replyTo: opts.replyTo } : {}),
+      headers: {
+        "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+        "X-Entity-Ref-ID": refId,
+      },
+      tags: [
+        { name: "template", value: template },
+        { name: "category", value: "transactional" },
+      ],
     });
     return { ok: true, id: r.data?.id };
   } catch (err) {

@@ -1,5 +1,5 @@
 import "server-only";
-import { getResend, FROM_EMAIL } from "./shared";
+import { getResend, FROM_EMAIL, BRAND_EMAIL } from "./shared";
 import { buildReportEmail, shareReportUrl, type ReportEmailInput } from "./report-email";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 
@@ -55,6 +55,22 @@ export async function sendReportEmail(input: SendReportInput): Promise<SendRepor
     };
   }
 
+  // Client reports are broadcast-category — they go to a list of
+  // recipients on a recurring schedule, so they get the full RFC 8058
+  // one-click unsubscribe header set. This is what allows Gmail to
+  // render the visible "Unsubscribe" button in the inbox preview, which
+  // is a STRONG positive deliverability signal (Gmail interprets it as
+  // "this sender is bulk-mail compliant and respects unsubscribe").
+  const refId = `client-report-${input.shareToken}`;
+  const unsubMailbox =
+    process.env.UNSUBSCRIBE_EMAIL?.trim() || "unsubscribe@leasestack.co";
+  const unsubUrl = `${shareReportUrl(input.shareToken).replace(/\/r\/.+$/, "")}/unsub`;
+  const headers: Record<string, string> = {
+    "List-Unsubscribe": `<${unsubUrl}>, <mailto:${unsubMailbox}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+    "X-Entity-Ref-ID": refId,
+  };
+
   try {
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
@@ -62,7 +78,12 @@ export async function sendReportEmail(input: SendReportInput): Promise<SendRepor
       subject,
       html,
       text,
-      ...(input.replyTo ? { replyTo: input.replyTo } : {}),
+      replyTo: input.replyTo ?? BRAND_EMAIL,
+      headers,
+      tags: [
+        { name: "template", value: `client-report-${input.snapshot.kind}` },
+        { name: "category", value: "broadcast" },
+      ],
     });
 
     if (error) {
