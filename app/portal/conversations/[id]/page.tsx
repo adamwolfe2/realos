@@ -145,9 +145,21 @@ export default async function ConversationDetail({
             </span>
           </div>
           {messages.length === 0 ? (
-            <p className="text-sm text-muted-foreground">
-              No messages on record.
-            </p>
+            // Bug #31 — replace the bare "No messages on record"
+            // with a richer explanation of what data we DO have
+            // when a visitor submitted contact info via PRE_CHAT
+            // capture but never sent a message. Operators were
+            // assuming this was a broken record.
+            <CaptureOnlyDetails
+              capturedName={convo.capturedName}
+              capturedEmail={convo.capturedEmail}
+              capturedPhone={convo.capturedPhone}
+              pageUrl={convo.pageUrl}
+              userAgent={convo.userAgent}
+              ipAddress={convo.ipAddress}
+              createdAt={convo.createdAt}
+              hasVisitorLink={Boolean(convo.visitorHash)}
+            />
           ) : (
             <div className="space-y-3">
               {messages.map((m, i) => (
@@ -250,4 +262,142 @@ function compactUrl(url: string): string {
   } catch {
     return url.slice(0, 40);
   }
+}
+
+// Bug #31 — when a visitor submitted contact info via PRE_CHAT
+// capture but never actually sent a message, the transcript shows
+// "No messages on record" which made operators think the record was
+// broken or empty. This panel explains what happened and shows every
+// piece of context we DO have, so the operator can act on the lead
+// (call them, follow up by email) instead of dismissing it.
+function CaptureOnlyDetails({
+  capturedName,
+  capturedEmail,
+  capturedPhone,
+  pageUrl,
+  userAgent,
+  ipAddress,
+  createdAt,
+  hasVisitorLink,
+}: {
+  capturedName: string | null;
+  capturedEmail: string | null;
+  capturedPhone: string | null;
+  pageUrl: string | null;
+  userAgent: string | null;
+  ipAddress: string | null;
+  createdAt: Date;
+  hasVisitorLink: boolean;
+}) {
+  const hasAnyContact = Boolean(capturedName || capturedEmail || capturedPhone);
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
+        <p className="text-sm font-semibold text-amber-900">
+          {hasAnyContact
+            ? "Capture-only conversation"
+            : "No interaction recorded"}
+        </p>
+        <p className="text-xs text-amber-900/80 mt-1 leading-relaxed">
+          {hasAnyContact
+            ? "The visitor submitted their contact info via the chatbot's pre-chat form but didn't continue into a message exchange. They're a real lead — reach out directly using the details below."
+            : "The widget loaded but no contact info or messages were captured. Likely a visitor who closed the launcher before engaging."}
+        </p>
+      </div>
+
+      {hasAnyContact ? (
+        <dl className="rounded-lg border border-border bg-muted/30 divide-y divide-border">
+          {capturedName ? (
+            <DetailRow label="Name" value={capturedName} />
+          ) : null}
+          {capturedEmail ? (
+            <DetailRow
+              label="Email"
+              value={
+                <a
+                  href={`mailto:${capturedEmail}`}
+                  className="text-foreground underline underline-offset-2 hover:no-underline"
+                >
+                  {capturedEmail}
+                </a>
+              }
+            />
+          ) : null}
+          {capturedPhone ? (
+            <DetailRow
+              label="Phone"
+              value={
+                <a
+                  href={`tel:${capturedPhone}`}
+                  className="text-foreground underline underline-offset-2 hover:no-underline"
+                >
+                  {capturedPhone}
+                </a>
+              }
+            />
+          ) : null}
+          <DetailRow
+            label="Captured at"
+            value={format(createdAt, "MMM d, yyyy 'at' p")}
+          />
+          {pageUrl ? (
+            <DetailRow
+              label="Page they were on"
+              value={
+                <a
+                  href={pageUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-foreground underline underline-offset-2 hover:no-underline truncate inline-block max-w-[280px] align-bottom"
+                >
+                  {compactUrl(pageUrl)}
+                </a>
+              }
+            />
+          ) : null}
+          {ipAddress ? (
+            <DetailRow label="IP address" value={ipAddress} />
+          ) : null}
+          {userAgent ? (
+            <DetailRow
+              label="Device / browser"
+              value={
+                <span className="text-xs text-muted-foreground">
+                  {userAgent.slice(0, 80)}
+                  {userAgent.length > 80 ? "…" : ""}
+                </span>
+              }
+            />
+          ) : null}
+          {hasVisitorLink ? (
+            <DetailRow
+              label="Visitor profile"
+              value={
+                <span className="text-xs text-muted-foreground">
+                  Linked — see sidebar to open the visitor record
+                </span>
+              }
+            />
+          ) : null}
+        </dl>
+      ) : null}
+    </div>
+  );
+}
+
+function DetailRow({
+  label,
+  value,
+}: {
+  label: string;
+  value: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-baseline gap-3 px-4 py-2.5">
+      <dt className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground w-32 shrink-0">
+        {label}
+      </dt>
+      <dd className="text-sm text-foreground min-w-0 flex-1 truncate">{value}</dd>
+    </div>
+  );
 }

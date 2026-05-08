@@ -258,6 +258,19 @@ export default async function ConversationsList({
                         <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
                           {truncate(firstMessage, 80)}
                         </p>
+                      ) : c.capturedName || c.capturedEmail ? (
+                        // Bug #31 — "Captured Lead Details": when a
+                        // visitor submitted name/email via PRE_CHAT
+                        // capture but never sent a message, the row
+                        // showed "0 msgs / no details" with no
+                        // explanation. Now surfaces the capture mode
+                        // so operators know this is a real lead, not
+                        // a stub. Click-through to detail page shows
+                        // the full metadata.
+                        <p className="text-xs text-muted-foreground mt-1 italic">
+                          Pre-chat capture · contact info on file, no
+                          message exchange
+                        </p>
                       ) : (
                         <p className="text-xs text-muted-foreground mt-1 italic">
                           No user messages yet.

@@ -65,6 +65,7 @@ export default async function PropertyDetail({
       priceMin: true,
       priceMax: true,
       description: true,
+      heroImageUrl: true,
     },
   });
   if (!property) notFound();
@@ -129,6 +130,7 @@ export default async function PropertyDetail({
                 virtualTourUrl: property.virtualTourUrl,
                 priceMinCents: property.priceMin ?? null,
                 priceMaxCents: property.priceMax ?? null,
+                heroImageUrl: property.heroImageUrl,
                 description: property.description,
               }}
             />

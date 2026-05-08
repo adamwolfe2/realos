@@ -34,6 +34,10 @@ type OverviewProperty = {
   priceMinCents: number | null;
   priceMaxCents: number | null;
   description: string | null;
+  // Bug #28 — photo for the hero strip so operators recognize the
+  // property visually instead of by name alone. Falls back to a
+  // building glyph when null.
+  heroImageUrl?: string | null;
 };
 
 const SOURCE_LABEL: Record<LeadSource, string> = {
@@ -87,6 +91,16 @@ export async function OverviewTab({
     activeResidents,
     noticeResidents,
     rentRoll,
+    // Bug #27 — Overview tab focus pivot. Pull which marketing
+    // features are currently active for this property so we can
+    // surface a "What's running" status strip near the top.
+    cursiveIntegration,
+    seoIntegrations,
+    googleAdCampaign,
+    metaAdCampaign,
+    chatbotConfig,
+    latestReputationScan,
+    chatbotConvos28d,
   ] = await Promise.all([
     getPropertyOverviewKpis(orgId, propertyId, propertyMeta),
     prisma.property.findFirst({
@@ -128,6 +142,50 @@ export async function OverviewTab({
       where: { orgId, propertyId, status: LeaseStatus.ACTIVE },
       _sum: { monthlyRentCents: true },
     }),
+    prisma.cursiveIntegration
+      .findFirst({
+        where: { orgId, propertyId },
+        select: { cursivePixelId: true, lastEventAt: true },
+      })
+      .catch(() => null),
+    prisma.seoIntegration
+      .findMany({
+        where: { orgId, propertyId },
+        select: { provider: true, lastSyncAt: true },
+      })
+      .catch(() => [] as Array<{ provider: string; lastSyncAt: Date | null }>),
+    prisma.adCampaign
+      .findFirst({
+        where: { orgId, propertyId, platform: "GOOGLE_ADS" },
+        select: { id: true, status: true },
+      })
+      .catch(() => null),
+    prisma.adCampaign
+      .findFirst({
+        where: { orgId, propertyId, platform: "META" },
+        select: { id: true, status: true },
+      })
+      .catch(() => null),
+    prisma.organization
+      .findUnique({
+        where: { id: orgId },
+        select: {
+          tenantSiteConfig: { select: { chatbotEnabled: true } },
+        },
+      })
+      .catch(() => null),
+    prisma.reputationScan
+      .findFirst({
+        where: { orgId, propertyId },
+        orderBy: { createdAt: "desc" },
+        select: { completedAt: true },
+      })
+      .catch(() => null),
+    prisma.chatbotConversation
+      .count({
+        where: { orgId, propertyId, createdAt: { gte: since28d } },
+      })
+      .catch(() => 0),
   ]);
 
   const totalUnits = property.totalUnits ?? null;
@@ -252,7 +310,10 @@ export async function OverviewTab({
       {/* Hero strip — property identity at a glance with the headline metric
           (occupancy ring), the single-paragraph briefing, and a quick-actions
           rail. Replaces the previous "page just dropped you into KPIs"
-          experience with a deliberate orientation moment. */}
+          experience with a deliberate orientation moment.
+          Bug #28 — now passes heroImageUrl + property type/subtype/year so
+          the hero shows a thumbnail and the basics inline, instead of
+          burying that info way down in a "Property details" card. */}
       <PropertyHeroStrip
         name={propertyMeta.name}
         occupancyPct={occupancyPct}
@@ -262,10 +323,42 @@ export async function OverviewTab({
         monthlyRentRoll={monthlyRentRoll}
         briefing={briefing}
         propertyMeta={propertyMeta}
+        heroImageUrl={property.heroImageUrl ?? null}
+        propertyType={property.propertyType}
+        propertySubtype={
+          property.residentialSubtype ?? property.commercialSubtype ?? null
+        }
+        yearBuilt={property.yearBuilt}
+        lastSyncedAt={property.lastSyncedAt}
       />
 
       {/* AI Insight banner — one most-actionable signal */}
       <AiInsightCard insight={aiInsight} />
+
+      {/* Bug #27 — "Active features" strip. Pivot the overview's
+          headline focus from leasing/occupancy to marketing/website.
+          Each chip shows a feature's current connection state so the
+          operator scans "what's running" at a glance. Click-through
+          deep links to the respective settings/onboarding surface. */}
+      <ActiveFeaturesStrip
+        propertyId={propertyId}
+        chatbotEnabled={
+          chatbotConfig?.tenantSiteConfig?.chatbotEnabled ?? false
+        }
+        chatbotConvos28d={chatbotConvos28d}
+        pixelInstalled={Boolean(cursiveIntegration?.cursivePixelId)}
+        pixelLastEventAt={cursiveIntegration?.lastEventAt ?? null}
+        ga4Connected={seoIntegrations.some(
+          (s) => s.provider === "GA4" && s.lastSyncAt != null,
+        )}
+        gscConnected={seoIntegrations.some(
+          (s) => s.provider === "GSC" && s.lastSyncAt != null,
+        )}
+        googleAdsConnected={Boolean(googleAdCampaign)}
+        metaAdsConnected={Boolean(metaAdCampaign)}
+        reputationScanned={Boolean(latestReputationScan?.completedAt)}
+        reputationLastAt={latestReputationScan?.completedAt ?? null}
+      />
 
       {/* Top KPI strip — funnel-shaped (Leads → Tours → Apps → Spend → Organic) */}
       <section className="grid grid-cols-2 md:grid-cols-5 gap-2">
@@ -441,46 +534,62 @@ export async function OverviewTab({
         </DashboardSection>
       </section>
 
-      {/* Property details + Marketing */}
+      {/* Property details + Marketing.
+          Bug #28 — show only the rows we have real data for. Empty
+          fields used to render as "Year built: —" which looked like
+          a tracking gap; now they're hidden so the section reads
+          cleanly. The hero strip above handles the basics inline. */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
         <DashboardSection title="Property details" eyebrow="Basics">
           <dl className="space-y-1 text-xs">
-            <Row k="Type" v={property.propertyType} />
-            <Row
-              k="Subtype"
-              v={
-                property.residentialSubtype ??
-                property.commercialSubtype ??
-                "—"
-              }
-            />
-            <Row k="Total units" v={property.totalUnits?.toString() ?? "—"} />
-            <Row k="Year built" v={property.yearBuilt?.toString() ?? "—"} />
-            <Row k="Backend" v={property.backendPlatform} />
-            <Row
-              k="Property group"
-              v={property.backendPropertyGroup ?? "—"}
-            />
-            <Row
-              k="Last synced"
-              v={
-                property.lastSyncedAt
-                  ? new Date(property.lastSyncedAt).toLocaleString()
-                  : "Never"
-              }
-            />
+            {property.propertyType ? (
+              <Row k="Type" v={property.propertyType} />
+            ) : null}
+            {property.residentialSubtype || property.commercialSubtype ? (
+              <Row
+                k="Subtype"
+                v={
+                  property.residentialSubtype ?? property.commercialSubtype ?? ""
+                }
+              />
+            ) : null}
+            {property.totalUnits != null ? (
+              <Row k="Total units" v={property.totalUnits.toString()} />
+            ) : null}
+            {property.yearBuilt != null ? (
+              <Row k="Year built" v={property.yearBuilt.toString()} />
+            ) : null}
+            {property.backendPlatform &&
+            property.backendPlatform !== "NONE" ? (
+              <Row k="Backend" v={property.backendPlatform} />
+            ) : null}
+            {property.backendPropertyGroup ? (
+              <Row k="Property group" v={property.backendPropertyGroup} />
+            ) : null}
+            {property.lastSyncedAt ? (
+              <Row
+                k="Last synced"
+                v={new Date(property.lastSyncedAt).toLocaleString()}
+              />
+            ) : null}
           </dl>
         </DashboardSection>
 
         <DashboardSection title="Marketing" eyebrow="SEO & listings">
           <dl className="space-y-1 text-xs">
-            <Row k="Meta title" v={property.metaTitle ?? "—"} />
-            <Row
-              k="Meta description"
-              v={property.metaDescription ?? "—"}
-            />
-            <Row k="Virtual tour" v={property.virtualTourUrl ?? "—"} />
-            <Row k="Price range" v={priceRange} />
+            {/* Bug #28 — hide unpopulated SEO/listing rows instead of
+                rendering "—" placeholders. Listings + all-time leads
+                always show because zero is a meaningful value there. */}
+            {property.metaTitle ? (
+              <Row k="Meta title" v={property.metaTitle} />
+            ) : null}
+            {property.metaDescription ? (
+              <Row k="Meta description" v={property.metaDescription} />
+            ) : null}
+            {property.virtualTourUrl ? (
+              <Row k="Virtual tour" v={property.virtualTourUrl} />
+            ) : null}
+            {priceRange !== "—" ? <Row k="Price range" v={priceRange} /> : null}
             <Row
               k="Listings configured"
               v={(listingCounts?._count.listings ?? 0).toString()}
@@ -521,6 +630,159 @@ export async function OverviewTab({
 // right takes them to the most likely next step.
 // ---------------------------------------------------------------------------
 
+// Bug #27 — Active features strip. Each chip shows a marketing-side
+// feature's connection state, with a deep link to the relevant
+// settings or onboarding surface. Renders as a compact, scannable
+// row near the top of the overview so operators see "what's
+// running" without scrolling. Connected chips lead with a green
+// dot; not-connected chips are muted with a "Set up" link.
+function ActiveFeaturesStrip({
+  propertyId,
+  chatbotEnabled,
+  chatbotConvos28d,
+  pixelInstalled,
+  pixelLastEventAt,
+  ga4Connected,
+  gscConnected,
+  googleAdsConnected,
+  metaAdsConnected,
+  reputationScanned,
+  reputationLastAt,
+}: {
+  propertyId: string;
+  chatbotEnabled: boolean;
+  chatbotConvos28d: number;
+  pixelInstalled: boolean;
+  pixelLastEventAt: Date | null;
+  ga4Connected: boolean;
+  gscConnected: boolean;
+  googleAdsConnected: boolean;
+  metaAdsConnected: boolean;
+  reputationScanned: boolean;
+  reputationLastAt: Date | null;
+}) {
+  const PIXEL_FRESH_DAYS = 14;
+  const pixelFiring =
+    pixelInstalled &&
+    pixelLastEventAt != null &&
+    Date.now() - pixelLastEventAt.getTime() <
+      PIXEL_FRESH_DAYS * 24 * 60 * 60 * 1000;
+
+  type Chip = {
+    label: string;
+    connected: boolean;
+    detail: string;
+    href: string;
+  };
+  const chips: Chip[] = [
+    {
+      label: "Chatbot",
+      connected: chatbotEnabled,
+      detail: chatbotEnabled
+        ? `${chatbotConvos28d} conversation${chatbotConvos28d === 1 ? "" : "s"} (28d)`
+        : "Not enabled",
+      href: "/portal/chatbot",
+    },
+    {
+      label: "Cursive Pixel",
+      connected: pixelFiring,
+      detail: pixelFiring
+        ? "Firing"
+        : pixelInstalled
+          ? "Installed but no recent events"
+          : "Not installed",
+      href: `/portal/properties/${propertyId}?tab=onboarding`,
+    },
+    {
+      label: "GA4",
+      connected: ga4Connected,
+      detail: ga4Connected ? "Connected" : "Not connected",
+      href: `/portal/seo?provider=GA4&propertyId=${propertyId}`,
+    },
+    {
+      label: "GSC",
+      connected: gscConnected,
+      detail: gscConnected ? "Connected" : "Not connected",
+      href: `/portal/seo?provider=GSC&propertyId=${propertyId}`,
+    },
+    {
+      label: "Google Ads",
+      connected: googleAdsConnected,
+      detail: googleAdsConnected ? "Active campaign" : "Not connected",
+      href: `/portal/integrations/ads?platform=GOOGLE&propertyId=${propertyId}`,
+    },
+    {
+      label: "Meta Ads",
+      connected: metaAdsConnected,
+      detail: metaAdsConnected ? "Active campaign" : "Not connected",
+      href: `/portal/integrations/ads?platform=META&propertyId=${propertyId}`,
+    },
+    {
+      label: "Reputation",
+      connected: reputationScanned,
+      detail: reputationScanned
+        ? reputationLastAt
+          ? `Last scan ${reputationLastAt.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
+          : "Connected"
+        : "No scans yet",
+      href: `/portal/properties/${propertyId}?tab=reputation`,
+    },
+  ];
+
+  const liveCount = chips.filter((c) => c.connected).length;
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-3 md:p-4">
+      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
+        <div>
+          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+            Active features
+          </p>
+          <p className="text-xs text-foreground/70 mt-0.5">
+            {liveCount} of {chips.length} marketing channels live
+          </p>
+        </div>
+      </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1.5">
+        {chips.map((chip) => (
+          <a
+            key={chip.label}
+            href={chip.href}
+            className={`group rounded-lg border px-2.5 py-2 transition-colors ${
+              chip.connected
+                ? "border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50"
+                : "border-border bg-muted/30 hover:bg-muted/50"
+            }`}
+          >
+            <div className="flex items-center gap-1.5">
+              <span
+                aria-hidden="true"
+                className={`h-1.5 w-1.5 rounded-full ${
+                  chip.connected
+                    ? "bg-emerald-500"
+                    : "bg-muted-foreground/40"
+                }`}
+              />
+              <span className="text-[11px] font-semibold text-foreground truncate">
+                {chip.label}
+              </span>
+            </div>
+            <p
+              className={`text-[10px] mt-0.5 truncate ${
+                chip.connected
+                  ? "text-emerald-700"
+                  : "text-muted-foreground"
+              }`}
+            >
+              {chip.detail}
+            </p>
+          </a>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 function PropertyHeroStrip({
   name,
   occupancyPct,
@@ -530,6 +792,11 @@ function PropertyHeroStrip({
   monthlyRentRoll,
   briefing,
   propertyMeta,
+  heroImageUrl,
+  propertyType,
+  propertySubtype,
+  yearBuilt,
+  lastSyncedAt,
 }: {
   name: string;
   occupancyPct: number | null;
@@ -539,6 +806,11 @@ function PropertyHeroStrip({
   monthlyRentRoll: number;
   briefing: string;
   propertyMeta: { slug: string; name: string };
+  heroImageUrl: string | null;
+  propertyType: PropertyType;
+  propertySubtype: ResidentialSubtype | CommercialSubtype | null;
+  yearBuilt: number | null;
+  lastSyncedAt: Date | null;
 }) {
   const monthlyDisplay =
     monthlyRentRoll > 0
@@ -554,9 +826,53 @@ function PropertyHeroStrip({
           ? "stroke-primary"
           : "stroke-primary/50";
 
+  // Bug #28 — inline property-detail summary. Builds a clean line of
+  // "Type · Subtype · Year · Last synced" from whatever fields are
+  // populated, dropping silently when a field is null. No more "Year
+  // built: —" or "Subtype: —" leaking into the UI.
+  const subtypeLabel =
+    typeof propertySubtype === "string"
+      ? propertySubtype.replace(/_/g, " ").toLowerCase()
+      : null;
+  const detailBits: string[] = [];
+  if (subtypeLabel) {
+    detailBits.push(subtypeLabel);
+  } else if (propertyType) {
+    detailBits.push(propertyType.replace(/_/g, " ").toLowerCase());
+  }
+  if (totalUnits != null) detailBits.push(`${totalUnits} units`);
+  if (yearBuilt) detailBits.push(`built ${yearBuilt}`);
+  if (lastSyncedAt) {
+    const synced = new Date(lastSyncedAt);
+    const days = Math.floor(
+      (Date.now() - synced.getTime()) / (24 * 60 * 60 * 1000),
+    );
+    detailBits.push(
+      days === 0
+        ? "synced today"
+        : days === 1
+          ? "synced yesterday"
+          : days < 7
+            ? `synced ${days}d ago`
+            : `synced ${synced.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
+    );
+  }
+
   return (
     <section className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] gap-5 p-4 md:p-5">
+      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-5 p-4 md:p-5">
+        {/* Hero photo — small thumbnail for quick property
+            recognition. Falls back to nothing (the occupancy ring
+            anchors the row) when no heroImageUrl is set. Bug #28. */}
+        {heroImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={heroImageUrl}
+            alt={name}
+            className="h-20 w-20 md:h-24 md:w-24 rounded-lg object-cover border border-border self-center shrink-0"
+          />
+        ) : null}
+
         {/* Occupancy ring — large, anchored */}
         <div className="flex items-center gap-4 md:gap-5">
           <HeroOccupancyRing
@@ -586,6 +902,14 @@ function PropertyHeroStrip({
               </span>
             ) : null}
           </div>
+          {/* Bug #28 — inline detail bits instead of a buried details
+              card. Capitalize-first-letter applied via class for a
+              clean read. */}
+          {detailBits.length > 0 ? (
+            <p className="text-[11px] text-muted-foreground/80 mb-1.5 first-letter:capitalize tabular-nums">
+              {detailBits.join(" · ")}
+            </p>
+          ) : null}
           <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[560px]">
             {briefing}
           </p>
