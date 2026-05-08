@@ -712,6 +712,27 @@ export async function runAppfolioSync(
   const allPhasesCompleted = phasesCompleted === totalPhases;
   const anyPhaseCompleted = phasesCompleted > 0;
 
+  // Bug #16/#25 — Property.lastSyncedAt was only being updated by the
+  // legacy `syncListingsForOrg` path. The full-sync pipeline above
+  // writes residents/leases/work-orders into properties but never
+  // bumped Property.lastSyncedAt, so the property detail page kept
+  // showing "Last synced: Never" even after a successful sync. Update
+  // every property we touched in this run so the timestamp on the
+  // property card matches the AppFolioIntegration.lastSyncAt below.
+  if (anyPhaseCompleted && propertyByExternalId.size > 0) {
+    try {
+      const touched = Array.from(propertyByExternalId.values());
+      await prisma.property.updateMany({
+        where: { id: { in: touched } },
+        data: { lastSyncedAt: new Date() },
+      });
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      console.warn("[appfolio-sync] property lastSyncedAt update failed:", msg);
+      stats.warnings.push(`property-lastSyncedAt: ${msg}`);
+    }
+  }
+
   // Build the persisted stats payload — same shape as in-memory stats plus
   // a few derived fields so the UI doesn't have to recompute them.
   const persistedStats: Prisma.InputJsonValue = {

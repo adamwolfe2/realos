@@ -122,6 +122,33 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
         </DashboardSection>
         <DashboardSection title="Platforms" eyebrow="By source">
           <SourceDonut data={metrics.sourceBreakdown} />
+          {/* Bug #15/#22 — operators kept asking why "5 Google reviews"
+              showed in the donut while the rating tile showed 49.
+              Honest explanation: the Google Places API hard-caps the
+              individual-reviews response at 5 most-helpful per place.
+              The aggregate rating + count are accurate; the per-review
+              feed is sampled. Surface this so the discrepancy doesn't
+              look like a sync bug. */}
+          {(() => {
+            const googleRow = metrics.sourceBreakdown.find(
+              (r) => r.source === "GOOGLE_REVIEW",
+            );
+            const fetched = googleRow?.count ?? 0;
+            const total = metrics.googleReviewCount ?? 0;
+            if (total > fetched) {
+              return (
+                <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground border-t border-border pt-2">
+                  <span className="font-semibold text-foreground">
+                    {fetched} of {total} Google reviews
+                  </span>{" "}
+                  fetched. Google&apos;s Places API returns the 5 most-helpful
+                  reviews per business — the rating and total count above
+                  reflect every review on the listing.
+                </p>
+              );
+            }
+            return null;
+          })()}
         </DashboardSection>
         {hasTopics ? (
           <DashboardSection title="Top topics" eyebrow="Recurring themes">

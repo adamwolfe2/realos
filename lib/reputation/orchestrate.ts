@@ -302,10 +302,21 @@ export async function* orchestrateScan(
 
   yield { type: "analysis_started", toAnalyze: combined.length };
 
-  // Claude classification.
-  const classifications = await analyzeSentimentAndTopics(
-    combined.map((m) => ({ id: m.hash, mention: m.mention }))
+  // Claude classification. Now returns a status so we can surface
+  // silent-failure modes (Bug #23 — sentiment was always
+  // "unclassified" because ANTHROPIC_API_KEY wasn't set, with no
+  // operator-visible signal that anything was wrong).
+  const analyzeResult = await analyzeSentimentAndTopics(
+    combined.map((m) => ({ id: m.hash, mention: m.mention })),
   );
+  const classifications = analyzeResult.classifications;
+  if (analyzeResult.status !== "ok" && analyzeResult.errorMessage) {
+    yield {
+      type: "analysis_skipped",
+      reason: analyzeResult.status,
+      message: analyzeResult.errorMessage,
+    };
+  }
 
   // Write back classifications to existing rows.
   const existingToUpdate = combined.filter(

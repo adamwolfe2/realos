@@ -61,7 +61,24 @@ export async function ResidentsTab({
   view?: "all" | "active" | "notice" | "past" | "evicted";
 }) {
   try {
-    const [counts, residents] = await Promise.all([
+    // Bug #19 — "Notice given: 80 (KPI) vs 57 (list)" was a take:200
+    // truncation: when view=all and total residents > 200, the
+    // noticeBoard derived from `residents.filter(...)` undercounted.
+    // Fix: query the notice-board AND coverage metrics independently
+    // of the paginated table so KPI numbers match the underlying truth
+    // regardless of pagination state.
+    //
+    // Bug #17 — email/phone coverage was computed against
+    // `visibleActive` (the active rows in the loaded slice), so a
+    // restricted view denominator could be misleading. Now we count
+    // contact coverage across ALL active residents for this property
+    // and the displayed denominator matches the KPI label.
+    const [
+      counts,
+      residents,
+      noticeBoardRows,
+      activeContactStats,
+    ] = await Promise.all([
       prisma.resident.groupBy({
         by: ["status"],
         where: { orgId, propertyId },
@@ -91,6 +108,45 @@ export async function ResidentsTab({
           },
         },
       }),
+      // Notice-board lookup — independent of the paginated list above.
+      // Take 8 (matches the `.slice(0, 8)` cap below) plus the lease
+      // info needed by ResidentTable variant=notice.
+      prisma.resident.findMany({
+        where: {
+          orgId,
+          propertyId,
+          status: ResidentStatus.NOTICE_GIVEN,
+        },
+        orderBy: { lastName: "asc" },
+        take: 8,
+        include: {
+          listing: { select: { id: true, unitNumber: true } },
+          currentLease: {
+            select: {
+              id: true,
+              endDate: true,
+              monthlyRentCents: true,
+              isPastDue: true,
+              currentBalanceCents: true,
+            },
+          },
+        },
+      }),
+      // Coverage metrics — count email/phone presence across ALL active
+      // residents for this property, not just the visible slice. KPI
+      // tile denominator now matches its own label.
+      prisma.resident.aggregate({
+        where: {
+          orgId,
+          propertyId,
+          status: ResidentStatus.ACTIVE,
+        },
+        _count: {
+          _all: true,
+          email: true,
+          phone: true,
+        },
+      }),
     ]);
 
     const countByStatus = Object.fromEntries(
@@ -103,15 +159,11 @@ export async function ResidentsTab({
     const pastCount = countByStatus[ResidentStatus.PAST] ?? 0;
     const evictedCount = countByStatus[ResidentStatus.EVICTED] ?? 0;
 
-    // Coverage metrics computed from the *currently visible* slice so the
-    // KPI tiles reflect the filter selection (matches Twenty's intent —
-    // metrics describe the active view, not the entire universe).
-    const visibleActive = residents.filter(
-      (r) => r.status === ResidentStatus.ACTIVE,
-    );
-    const withEmail = visibleActive.filter((r) => r.email).length;
-    const withPhone = visibleActive.filter((r) => r.phone).length;
-    const denominator = visibleActive.length || activeCount;
+    // Whole-property contact coverage (not slice-bounded). Prisma's
+    // aggregate `_count.email` counts non-null emails; same for phone.
+    const withEmail = activeContactStats._count.email ?? 0;
+    const withPhone = activeContactStats._count.phone ?? 0;
+    const denominator = activeContactStats._count._all ?? activeCount;
 
     if (totalCount === 0) {
       return (
@@ -160,18 +212,22 @@ export async function ResidentsTab({
         : []),
     ];
 
-    const noticeBoard = residents.filter(
-      (r) => r.status === ResidentStatus.NOTICE_GIVEN,
-    );
+    // Notice-board now uses the independent query so it always
+    // matches the noticeCount KPI tile, regardless of the paginated
+    // table's view filter or take=200 cap.
+    const noticeBoard = noticeBoardRows;
 
     return (
       <div className="space-y-5">
         {/* KPI strip — stays at top. Reflects the active view. */}
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiTile
-            label="Active"
+            label="Active residents"
             value={activeCount.toLocaleString()}
-            hint="Currently in residence"
+            /* Bug #18 — explicit "residents" label so it doesn't
+               collide with "Active leases" on the Renewals tab. One
+               resident can be on multiple lease records. */
+            hint="Headcount · Renewals tab shows lease records"
             icon={<CheckCircle2 className="h-3.5 w-3.5" />}
           />
           <KpiTile
@@ -187,7 +243,7 @@ export async function ResidentsTab({
                 ? `${Math.round((withEmail / denominator) * 100)}%`
                 : "—"
             }
-            hint={`${withEmail} of ${denominator} ${view === "all" ? "active" : "shown"}`}
+            hint={`${withEmail} of ${denominator} active`}
             icon={<Mail className="h-3.5 w-3.5" />}
           />
           <KpiTile
@@ -197,7 +253,7 @@ export async function ResidentsTab({
                 ? `${Math.round((withPhone / denominator) * 100)}%`
                 : "—"
             }
-            hint={`${withPhone} of ${denominator} ${view === "all" ? "active" : "shown"}`}
+            hint={`${withPhone} of ${denominator} active`}
             icon={<Phone className="h-3.5 w-3.5" />}
           />
         </section>
@@ -207,13 +263,14 @@ export async function ResidentsTab({
         {noticeBoard.length > 0 && view !== "notice" ? (
           <DashboardSection
             title="Notice given — predictive availability"
-            eyebrow={`${noticeBoard.length}`}
-            description="Units coming open soon. Fire up campaigns ahead of move-out."
+            eyebrow={`${noticeCount}`}
+            description={
+              noticeCount > noticeBoard.length
+                ? `Top ${noticeBoard.length} of ${noticeCount} residents on notice. Fire up campaigns ahead of move-out.`
+                : "Units coming open soon. Fire up campaigns ahead of move-out."
+            }
           >
-            <ResidentTable
-              residents={noticeBoard.slice(0, 8)}
-              variant="notice"
-            />
+            <ResidentTable residents={noticeBoard} variant="notice" />
           </DashboardSection>
         ) : null}
 

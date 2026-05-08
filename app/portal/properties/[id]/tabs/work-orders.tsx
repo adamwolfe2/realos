@@ -221,8 +221,19 @@ export async function WorkOrdersTab({
                             <p className="text-[11px] font-medium text-foreground truncate mt-0.5">
                               {w.title || w.category || "Maintenance"}
                             </p>
+                            {/* Bug #20 — surface the actual maintenance
+                                description so the operator knows what
+                                the ticket is about beyond just ID +
+                                priority + category. AppFolio fills
+                                this from the resident-submitted
+                                request_text or operator notes. */}
+                            {w.description ? (
+                              <p className="text-[10px] text-muted-foreground line-clamp-2 mt-0.5 leading-relaxed">
+                                {w.description}
+                              </p>
+                            ) : null}
                             {w.unitNumber || w.listing?.unitNumber ? (
-                              <p className="text-[10px] text-muted-foreground">
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
                                 Unit {w.unitNumber || w.listing?.unitNumber}
                               </p>
                             ) : null}

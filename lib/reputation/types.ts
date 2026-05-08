@@ -56,6 +56,16 @@ export type ScanProgressEvent =
   | { type: "source_failed"; source: SourceKey; error: string }
   | { type: "analysis_started"; toAnalyze: number }
   | {
+      // Bug #23 — surface silent classifier failures so the operator
+      // sees "ANTHROPIC_API_KEY not configured" or the Claude error
+      // string instead of just watching every mention land as
+      // unclassified. The UI shows this as an inline notice next to
+      // the scan progress.
+      type: "analysis_skipped";
+      reason: "no_api_key" | "error";
+      message: string;
+    }
+  | {
       type: "mention";
       id: string;
       source: MentionSource;

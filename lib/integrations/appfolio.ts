@@ -1003,22 +1003,66 @@ function residentStatusFromRaw(raw: RawRow): MappedResident["status"] {
 // Mapper for `tenant_directory`. Reused for both Resident roster and the
 // existing tenant-signed attribution. The legacy MappedTenant return type
 // is kept; this richer mapper is additive.
+//
+// Bug #17 — 0% email/phone coverage. AppFolio's tenant_directory
+// returns contact fields under several names depending on plan tier:
+// snake_case (email, email_address, phone, phone_number),
+// PascalCase (PrimaryEmail, PrimaryPhone, Email, Phone), and the
+// older numbered shapes (phone1, primary_phone). Original mapper only
+// tried two forms, so any tenant on a different shape landed with
+// null email/phone — which then breaks downstream chatbot, review
+// requests, renewal outreach, and referrals. Expanded fallbacks below.
 export function mapResidentPayload(raw: RawRow): MappedResident | null {
   const externalId = asString(
-    raw.tenant_id ?? raw.occupancy_id ?? raw.id,
+    raw.tenant_id ??
+      raw.occupancy_id ??
+      raw.id ??
+      raw.TenantId ??
+      raw.OccupancyId ??
+      raw.Id,
   );
   if (!externalId) return null;
 
-  const firstName = asString(raw.first_name) ?? null;
-  const lastName = asString(raw.last_name) ?? null;
-  const email = asString(raw.email_address ?? raw.email)?.toLowerCase() ?? null;
-  const phone = asString(raw.phone_number ?? raw.phone) ?? null;
+  const firstName = asString(raw.first_name ?? raw.FirstName) ?? null;
+  const lastName = asString(raw.last_name ?? raw.LastName) ?? null;
+  const email = asString(
+    raw.email_address ??
+      raw.email ??
+      raw.primary_email ??
+      raw.PrimaryEmail ??
+      raw.Email ??
+      raw.EmailAddress,
+  )?.toLowerCase() ?? null;
+  const phone = asString(
+    raw.phone_number ??
+      raw.phone ??
+      raw.phone1 ??
+      raw.primary_phone ??
+      raw.PrimaryPhone ??
+      raw.Phone ??
+      raw.PhoneNumber ??
+      raw.Phone1 ??
+      raw.cell_phone ??
+      raw.mobile_phone ??
+      raw.CellPhone ??
+      raw.MobilePhone,
+  ) ?? null;
 
-  const unitExternalId = asString(raw.unit_id) ?? null;
-  const propertyExternalId = asString(raw.property_id) ?? null;
-  const unitNumber = asString(raw.unit_name) ?? null;
+  const unitExternalId =
+    asString(raw.unit_id ?? raw.UnitId) ?? null;
+  const propertyExternalId =
+    asString(raw.property_id ?? raw.PropertyId) ?? null;
+  const unitNumber =
+    asString(raw.unit_name ?? raw.UnitName ?? raw.unit_number ?? raw.UnitNumber) ??
+    null;
 
-  const monthlyRent = asNumber(raw.rent ?? raw.monthly_rent ?? raw.market_rent);
+  const monthlyRent = asNumber(
+    raw.rent ??
+      raw.monthly_rent ??
+      raw.market_rent ??
+      raw.MonthlyRent ??
+      raw.MarketRent,
+  );
   const monthlyRentCents = monthlyRent != null ? Math.round(monthlyRent * 100) : null;
 
   return {
@@ -1031,9 +1075,20 @@ export function mapResidentPayload(raw: RawRow): MappedResident | null {
     propertyExternalId,
     unitNumber,
     status: residentStatusFromRaw(raw),
-    moveInDate: asDate(raw.move_in ?? raw.move_in_date) ?? null,
-    moveOutDate: asDate(raw.move_out ?? raw.move_out_date) ?? null,
-    noticeGivenDate: asDate(raw.notice_given_date ?? raw.notice_date) ?? null,
+    moveInDate:
+      asDate(raw.move_in ?? raw.move_in_date ?? raw.MoveIn ?? raw.MoveInDate) ??
+      null,
+    moveOutDate:
+      asDate(
+        raw.move_out ?? raw.move_out_date ?? raw.MoveOut ?? raw.MoveOutDate,
+      ) ?? null,
+    noticeGivenDate:
+      asDate(
+        raw.notice_given_date ??
+          raw.notice_date ??
+          raw.NoticeGivenDate ??
+          raw.NoticeDate,
+      ) ?? null,
     monthlyRentCents,
     raw,
   };
@@ -1198,33 +1253,108 @@ function workOrderPriorityFromRaw(raw: RawRow): MappedWorkOrder["priority"] {
 }
 
 // Mapper for `work_order` — maintenance tickets.
+//
+// Bug #20 — work order cards showed only ID + priority + category +
+// optional unit, with no human-readable description. The mapper was
+// pulling description from `raw.description ?? raw.notes` only, but
+// AppFolio's REST shape uses `brief_description` and `details` and
+// `request_text` depending on tier; PascalCase shapes also exist.
+// Expanded fallbacks below + similar treatment for title/category.
 export function mapWorkOrderPayload(raw: RawRow): MappedWorkOrder | null {
   const externalId = asString(
-    raw.work_order_id ?? raw.service_request_id ?? raw.id,
+    raw.work_order_id ??
+      raw.service_request_id ??
+      raw.id ??
+      raw.WorkOrderId ??
+      raw.ServiceRequestId ??
+      raw.Id,
   );
   if (!externalId) return null;
 
-  const estimated = asNumber(raw.estimated_cost ?? raw.estimate);
-  const actual = asNumber(raw.actual_cost ?? raw.cost ?? raw.invoice_total);
+  const estimated = asNumber(
+    raw.estimated_cost ?? raw.estimate ?? raw.EstimatedCost,
+  );
+  const actual = asNumber(
+    raw.actual_cost ??
+      raw.cost ??
+      raw.invoice_total ??
+      raw.ActualCost ??
+      raw.InvoiceTotal,
+  );
 
   return {
     externalId,
-    workOrderNumber: asString(raw.work_order_number ?? raw.number) ?? null,
+    workOrderNumber:
+      asString(
+        raw.work_order_number ?? raw.number ?? raw.WorkOrderNumber ?? raw.Number,
+      ) ?? null,
     status: workOrderStatusFromRaw(raw),
     priority: workOrderPriorityFromRaw(raw),
-    category: asString(raw.category ?? raw.type) ?? null,
-    title: asString(raw.subject ?? raw.title) ?? null,
-    description: asString(raw.description ?? raw.notes) ?? null,
-    unitNumber: asString(raw.unit_name) ?? null,
-    unitExternalId: asString(raw.unit_id) ?? null,
-    propertyExternalId: asString(raw.property_id) ?? null,
+    category: asString(raw.category ?? raw.type ?? raw.Category ?? raw.Type) ?? null,
+    title:
+      asString(
+        raw.subject ?? raw.title ?? raw.Subject ?? raw.Title ?? raw.summary,
+      ) ?? null,
+    // Expanded description fallbacks. AppFolio's variants:
+    //   - description / Description
+    //   - brief_description / BriefDescription
+    //   - details / Details
+    //   - comments / Comments
+    //   - request_text / RequestText (tenant-submitted text)
+    //   - notes / Notes (operator-added notes)
+    //   - work_description / WorkDescription
+    description:
+      asString(
+        raw.description ??
+          raw.Description ??
+          raw.brief_description ??
+          raw.BriefDescription ??
+          raw.details ??
+          raw.Details ??
+          raw.comments ??
+          raw.Comments ??
+          raw.request_text ??
+          raw.RequestText ??
+          raw.notes ??
+          raw.Notes ??
+          raw.work_description ??
+          raw.WorkDescription,
+      ) ?? null,
+    unitNumber:
+      asString(raw.unit_name ?? raw.UnitName ?? raw.unit_number ?? raw.UnitNumber) ??
+      null,
+    unitExternalId: asString(raw.unit_id ?? raw.UnitId) ?? null,
+    propertyExternalId:
+      asString(raw.property_id ?? raw.PropertyId) ?? null,
     residentExternalId:
-      asString(raw.tenant_id ?? raw.requested_by_tenant_id) ?? null,
-    vendorName: asString(raw.vendor_name ?? raw.assigned_to) ?? null,
-    vendorEmail: asString(raw.vendor_email) ?? null,
-    reportedAt: asDate(raw.created_on ?? raw.reported_on ?? raw.date_reported) ?? null,
-    scheduledFor: asDate(raw.scheduled_for ?? raw.scheduled_date) ?? null,
-    completedAt: asDate(raw.completed_on ?? raw.completed_date) ?? null,
+      asString(
+        raw.tenant_id ??
+          raw.requested_by_tenant_id ??
+          raw.TenantId ??
+          raw.RequestedByTenantId,
+      ) ?? null,
+    vendorName:
+      asString(
+        raw.vendor_name ?? raw.assigned_to ?? raw.VendorName ?? raw.AssignedTo,
+      ) ?? null,
+    vendorEmail: asString(raw.vendor_email ?? raw.VendorEmail) ?? null,
+    reportedAt:
+      asDate(
+        raw.created_on ??
+          raw.reported_on ??
+          raw.date_reported ??
+          raw.CreatedOn ??
+          raw.ReportedOn ??
+          raw.DateReported,
+      ) ?? null,
+    scheduledFor:
+      asDate(
+        raw.scheduled_for ?? raw.scheduled_date ?? raw.ScheduledFor ?? raw.ScheduledDate,
+      ) ?? null,
+    completedAt:
+      asDate(
+        raw.completed_on ?? raw.completed_date ?? raw.CompletedOn ?? raw.CompletedDate,
+      ) ?? null,
     estimatedCostCents: estimated != null ? Math.round(estimated * 100) : null,
     actualCostCents: actual != null ? Math.round(actual * 100) : null,
     raw,
@@ -1250,20 +1380,53 @@ export type MappedProperty = {
 // Mapper for `property_directory`. Used to auto-create Property rows when
 // AppFolio reveals new buildings, so the operator doesn't have to add them
 // manually before sync runs.
+//
+// Bug #21 — property name field was being populated with addresses in
+// some tenants (SG Real Estate). AppFolio's REST tier can return
+// PascalCase fields (PropertyName, Address1) instead of the snake_case
+// we originally mapped (name, address_line_1). When PascalCase wins
+// the lookup, snake_case fallback returns undefined and the next
+// alternate gets picked — and on the address row, that alternate
+// happened to be the property's "name" field which AppFolio sets to
+// the street address by default. Expanding the alternate list to
+// include every common AppFolio v2 + REST shape so we always land in
+// the right field.
 export function mapPropertyPayload(raw: RawRow): MappedProperty | null {
-  const externalId = asString(raw.property_id ?? raw.id);
+  const externalId = asString(
+    raw.property_id ?? raw.id ?? raw.PropertyId ?? raw.Id,
+  );
   if (!externalId) return null;
   return {
     externalId,
-    name: asString(raw.name ?? raw.property_name) ?? null,
-    addressLine1: asString(raw.address_line_1 ?? raw.address) ?? null,
-    addressLine2: asString(raw.address_line_2) ?? null,
-    city: asString(raw.city) ?? null,
-    state: asString(raw.state) ?? null,
-    postalCode: asString(raw.postal_code ?? raw.zip) ?? null,
-    country: asString(raw.country) ?? "US",
-    totalUnits: asInt(raw.unit_count ?? raw.total_units) ?? null,
-    yearBuilt: asInt(raw.year_built) ?? null,
+    name: asString(
+      raw.name ??
+        raw.property_name ??
+        raw.PropertyName ??
+        raw.Name ??
+        raw.display_name,
+    ) ?? null,
+    addressLine1: asString(
+      raw.address_line_1 ??
+        raw.address1 ??
+        raw.Address1 ??
+        raw.address ??
+        raw.Address ??
+        raw.street_address ??
+        raw.StreetAddress,
+    ) ?? null,
+    addressLine2: asString(
+      raw.address_line_2 ?? raw.address2 ?? raw.Address2,
+    ) ?? null,
+    city: asString(raw.city ?? raw.City) ?? null,
+    state: asString(raw.state ?? raw.State) ?? null,
+    postalCode: asString(
+      raw.postal_code ?? raw.zip ?? raw.PostalCode ?? raw.Zip,
+    ) ?? null,
+    country: asString(raw.country ?? raw.Country) ?? "US",
+    totalUnits: asInt(
+      raw.unit_count ?? raw.total_units ?? raw.UnitCount ?? raw.TotalUnits,
+    ) ?? null,
+    yearBuilt: asInt(raw.year_built ?? raw.YearBuilt) ?? null,
     raw,
   };
 }

@@ -61,15 +61,30 @@ export const ANALYSIS_COST_CENTS_PER_SCAN = 1;
  * Degrades gracefully: on missing ANTHROPIC_API_KEY or a model error, returns
  * an empty Map and logs to console.error so Vercel logs surface the cause.
  */
+export type AnalyzeResult = {
+  classifications: Map<string, AnalysisItem>;
+  /** Surfaces in the SSE stream + Vercel logs so the silent-failure
+   * mode (Bug #23) becomes visible. "ok" → all good; otherwise an
+   * operator-readable string explaining why classification was skipped. */
+  status: "ok" | "no_api_key" | "error";
+  errorMessage: string | null;
+};
+
 export async function analyzeSentimentAndTopics(
   items: Array<{ id: string; mention: ScannedMention }>
-): Promise<Map<string, AnalysisItem>> {
-  if (items.length === 0) return new Map();
+): Promise<AnalyzeResult> {
+  if (items.length === 0) {
+    return { classifications: new Map(), status: "ok", errorMessage: null };
+  }
   if (!process.env.ANTHROPIC_API_KEY) {
-    console.error(
-      "[reputation.analyze] ANTHROPIC_API_KEY missing — mentions will be unclassified"
-    );
-    return new Map();
+    const msg =
+      "ANTHROPIC_API_KEY missing — mentions will stay unclassified. Set the key in Vercel env vars and re-run a scan.";
+    console.error(`[reputation.analyze] ${msg}`);
+    return {
+      classifications: new Map(),
+      status: "no_api_key",
+      errorMessage: msg,
+    };
   }
 
   const prompt = buildPrompt(items);
@@ -93,14 +108,20 @@ export async function analyzeSentimentAndTopics(
         topics,
       });
     }
-    return map;
+    return { classifications: map, status: "ok", errorMessage: null };
   } catch (err) {
+    const errorMessage =
+      err instanceof Error ? err.message : "Unknown classification error";
     // Log so operators can see why sentiment is missing in Vercel logs.
     console.error(
       "[reputation.analyze] Claude classification failed:",
-      err instanceof Error ? err.message : err
+      errorMessage,
     );
-    return new Map();
+    return {
+      classifications: new Map(),
+      status: "error",
+      errorMessage,
+    };
   }
 }
 

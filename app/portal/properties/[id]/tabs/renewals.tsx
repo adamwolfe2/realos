@@ -116,7 +116,12 @@ export async function RenewalsTab({
         <KpiTile
           label="Active leases"
           value={activeCount.toLocaleString()}
-          hint="Currently in residence"
+          /* Bug #18 — was "Currently in residence" which read like a
+             headcount, but lease records ≠ residents (one resident
+             can hold multiple historical/co-leased records). The
+             Residents tab "Active" KPI is the headcount; this tile
+             counts lease rows. Hint clarifies the relationship. */
+          hint="Lease records · Residents tab shows headcount"
           icon={<CheckCircle2 className="h-3.5 w-3.5" />}
         />
         <KpiTile
