@@ -1,7 +1,9 @@
 import * as React from "react";
 import type {
   AiAnalysis,
+  DataSourceStatus,
   ReportAiVisibility,
+  ReportDataSources,
   ReportOccupancyStats,
   ReportRenewalStats,
   ReportReputationMention,
@@ -77,6 +79,30 @@ export function ReportView({
   const { kpis, kpiDeltas } = snapshot;
   const cb = snapshot.chatbotStatsExtended ?? snapshot.chatbotStats;
 
+  // Data source gates — never render fake numbers for disconnected
+  // integrations. When dataSources is undefined (legacy snapshot),
+  // fall back to "show everything" so older shared reports don't
+  // suddenly hide sections.
+  const ds = snapshot.dataSources;
+  const adsConnected = ds
+    ? ds.googleAds.connected || ds.metaAds.connected
+    : true;
+  const ga4Connected = ds ? ds.ga4.connected : true;
+  const gscConnected = ds ? ds.gsc.connected : true;
+  const appfolioConnected = ds ? ds.appfolio.connected : true;
+  const pixelConnected = ds ? ds.pixel.connected : true;
+  const chatbotConnected = ds ? ds.chatbot.connected : true;
+  // Tours show only when we have tour data anywhere in the snapshot
+  // (operator-tracked tours OR AppFolio mirror). Pure leads-only orgs
+  // shouldn't see a "0 tours" tile that implies a tracking gap.
+  const toursTracked =
+    appfolioConnected || kpis.tours > 0 || (kpiDeltas.toursPct ?? 0) !== 0;
+  const applicationsTracked =
+    appfolioConnected ||
+    kpis.applications > 0 ||
+    (kpiDeltas.applicationsPct ?? 0) !== 0;
+  const showCostPerLead = adsConnected && kpis.adSpendUsd > 0;
+
   return (
     <article className="space-y-4 report-article ls-report">
       {/* Header strip */}
@@ -137,7 +163,10 @@ export function ReportView({
         <AiAnalysisSection analysis={snapshot.aiAnalysis} />
       ) : null}
 
-      {/* KPI strip — 5-up icon-badge tiles with deltas */}
+      {/* KPI strip — only show tiles for sources that are actually
+          connected. Hiding "Tours = 0" when AppFolio isn't connected
+          means a marketing-only operator's report doesn't look like
+          they have a tracking gap they don't know about. */}
       <section
         aria-label="Key metrics"
         className="ls-report-section grid grid-cols-2 md:grid-cols-5 gap-2"
@@ -149,49 +178,65 @@ export function ReportView({
           tone="primary"
           glyph="target"
         />
-        <IconKpi
-          label="Tours"
-          value={kpis.tours.toLocaleString()}
-          deltaPct={kpiDeltas.toursPct}
-          tone="violet"
-          glyph="calendar"
-        />
-        <IconKpi
-          label="Applications"
-          value={kpis.applications.toLocaleString()}
-          deltaPct={kpiDeltas.applicationsPct}
-          tone="emerald"
-          glyph="check"
-        />
-        <IconKpi
-          label="Cost / lead"
-          value={
-            kpis.costPerLead != null ? `$${kpis.costPerLead.toFixed(2)}` : "—"
-          }
-          deltaPct={kpiDeltas.costPerLeadPct}
-          invertDelta
-          tone="indigo"
-          glyph="dollar"
-        />
-        <IconKpi
-          label="Organic sessions"
-          value={kpis.organicSessions.toLocaleString()}
-          deltaPct={kpiDeltas.organicSessionsPct}
-          tone="primary"
-          glyph="globe"
-        />
+        {toursTracked ? (
+          <IconKpi
+            label="Tours"
+            value={kpis.tours.toLocaleString()}
+            deltaPct={kpiDeltas.toursPct}
+            tone="violet"
+            glyph="calendar"
+          />
+        ) : null}
+        {applicationsTracked ? (
+          <IconKpi
+            label="Applications"
+            value={kpis.applications.toLocaleString()}
+            deltaPct={kpiDeltas.applicationsPct}
+            tone="emerald"
+            glyph="check"
+          />
+        ) : null}
+        {showCostPerLead ? (
+          <IconKpi
+            label="Cost / lead"
+            value={
+              kpis.costPerLead != null ? `$${kpis.costPerLead.toFixed(2)}` : "—"
+            }
+            deltaPct={kpiDeltas.costPerLeadPct}
+            invertDelta
+            tone="indigo"
+            glyph="dollar"
+          />
+        ) : null}
+        {ga4Connected ? (
+          <IconKpi
+            label="Organic sessions"
+            value={kpis.organicSessions.toLocaleString()}
+            deltaPct={kpiDeltas.organicSessionsPct}
+            tone="primary"
+            glyph="globe"
+          />
+        ) : null}
       </section>
 
-      {/* Traffic trend — full-width gradient area */}
-      <Section
-        eyebrow="Daily organic sessions"
-        title="Traffic trend"
-        className="ls-report-section"
-      >
-        <TrendChart data={snapshot.trafficTrend} />
-      </Section>
+      {/* Traffic trend — full-width gradient area. Only render when
+          GA4 is connected; otherwise the "0 sessions" line is
+          misleading. */}
+      {ga4Connected && snapshot.trafficTrend.some((v) => v > 0) ? (
+        <Section
+          eyebrow="Daily organic sessions"
+          title="Traffic trend"
+          className="ls-report-section"
+        >
+          <TrendChart data={snapshot.trafficTrend} />
+        </Section>
+      ) : null}
 
-      {/* Funnel + Lead sources side-by-side */}
+      {/* Funnel + Lead sources side-by-side. Funnel stages we don't
+          actually track are hidden so the report doesn't claim a
+          tracking gap. If the operator has no tour data, "Tour
+          scheduled / Toured" rows are dropped; same logic for
+          applications/approvals when AppFolio isn't connected. */}
       {hasFunnelData || hasSourceData ? (
         <div className="ls-report-section grid grid-cols-1 lg:grid-cols-2 gap-3">
           {hasFunnelData ? (
@@ -199,7 +244,25 @@ export function ReportView({
               eyebrow="New lead → signed lease"
               title="Conversion funnel"
             >
-              <FunnelList stages={snapshot.funnel} />
+              <FunnelList
+                stages={snapshot.funnel.filter((s) => {
+                  // Always show "New" so the entry point is visible.
+                  // Drop tour/app/approval stages when their source
+                  // isn't tracked AND their value is 0.
+                  if (s.stage === "New") return true;
+                  const isTourStage =
+                    s.stage === "Tour scheduled" || s.stage === "Toured";
+                  const isAppStage =
+                    s.stage === "Applied" ||
+                    s.stage === "Application sent" ||
+                    s.stage === "Approved";
+                  if (isTourStage && !toursTracked && s.count === 0)
+                    return false;
+                  if (isAppStage && !applicationsTracked && s.count === 0)
+                    return false;
+                  return true;
+                })}
+              />
             </Section>
           ) : null}
           {hasSourceData ? (
@@ -215,8 +278,12 @@ export function ReportView({
         <ReputationSection stats={snapshot.reputationStats} />
       ) : null}
 
-      {/* Occupancy + Renewals row — operations side-by-side */}
-      {snapshot.occupancyStats || snapshot.renewalStats ? (
+      {/* Occupancy + Renewals row — operations side-by-side. Both
+          AppFolio-dependent; gate accordingly so a marketing-only
+          tenant doesn't see "Live · AppFolio" panels with stale
+          numbers. */}
+      {appfolioConnected &&
+      (snapshot.occupancyStats || snapshot.renewalStats) ? (
         <div className="ls-report-section grid grid-cols-1 lg:grid-cols-2 gap-3">
           {snapshot.occupancyStats ? (
             <OccupancySection stats={snapshot.occupancyStats} />
@@ -227,13 +294,17 @@ export function ReportView({
         </div>
       ) : null}
 
-      {/* Visitor identification */}
-      {snapshot.visitorStats ? (
+      {/* Visitor identification — only when the pixel is firing. */}
+      {snapshot.visitorStats && pixelConnected ? (
         <VisitorSection stats={snapshot.visitorStats} />
       ) : null}
 
-      {/* Ad performance */}
-      {snapshot.adPerformance.length > 0 ? (
+      {/* Ad performance — only when at least one ad platform is
+          actively connected AND has spend in the period. The
+          adPerformance.length > 0 check handles legacy snapshots that
+          don't have dataSources; ds gating handles the
+          "AdAccount exists but stale or empty" case. */}
+      {snapshot.adPerformance.length > 0 && adsConnected ? (
         <Section
           className="ls-report-section"
           eyebrow="Per platform"
@@ -274,9 +345,10 @@ export function ReportView({
       ) : null}
 
       {/* Top pages + queries side-by-side */}
-      {snapshot.topPages.length > 0 || snapshot.topQueries.length > 0 ? (
+      {(snapshot.topPages.length > 0 && ga4Connected) ||
+      (snapshot.topQueries.length > 0 && gscConnected) ? (
         <div className="ls-report-section grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {snapshot.topPages.length > 0 ? (
+          {snapshot.topPages.length > 0 && ga4Connected ? (
             <Section eyebrow="Organic sessions" title="Top landing pages">
               <Table
                 columns={["Page", "Sessions"]}
@@ -287,7 +359,7 @@ export function ReportView({
               />
             </Section>
           ) : null}
-          {snapshot.topQueries.length > 0 ? (
+          {snapshot.topQueries.length > 0 && gscConnected ? (
             <Section eyebrow="Clicks and impressions" title="Top search queries">
               <Table
                 columns={["Query", "Clicks", "Impr.", "Pos."]}
@@ -303,8 +375,10 @@ export function ReportView({
         </div>
       ) : null}
 
-      {/* Chatbot — extended if available */}
-      {cb.conversations > 0 ? (
+      {/* Chatbot — extended if available. Gate on the chatbot being
+          enabled in config so a property without a chatbot doesn't
+          show "0 conversations" implying it's broken. */}
+      {chatbotConnected && cb.conversations > 0 ? (
         <Section
           className="ls-report-section"
           eyebrow="Conversations and captured leads"
@@ -395,12 +469,68 @@ export function ReportView({
         </Section>
       ) : null}
 
+      {/* Data sources — small transparency footer so clients know
+          exactly what's flowing into the report. Builds trust:
+          they can see GA4 ✓, Pixel ✓, Google Ads — Not connected,
+          and have a clear read on which integration to wire up
+          next without us having to call it out separately. */}
+      {ds ? <DataSourcesFooter sources={ds} /> : null}
+
       {publicFraming ? (
         <footer className="pt-2 text-center text-[11px] text-muted-foreground">
           Generated by LeaseStack on behalf of {orgName ?? "your operator"}.
         </footer>
       ) : null}
     </article>
+  );
+}
+
+function DataSourcesFooter({ sources }: { sources: ReportDataSources }) {
+  const rows: Array<{ label: string; status: DataSourceStatus }> = [
+    { label: "Google Ads", status: sources.googleAds },
+    { label: "Meta Ads", status: sources.metaAds },
+    { label: "Google Analytics 4", status: sources.ga4 },
+    { label: "Google Search Console", status: sources.gsc },
+    { label: "Cursive Pixel", status: sources.pixel },
+    { label: "AppFolio", status: sources.appfolio },
+    { label: "Chatbot", status: sources.chatbot },
+  ];
+
+  return (
+    <Section
+      className="ls-report-section"
+      eyebrow="Transparency"
+      title="Data sources"
+    >
+      <p className="text-xs text-muted-foreground mb-3">
+        We only show metrics for sources that are actively connected and
+        producing data. Sections you don&apos;t see in this report belong
+        to integrations that aren&apos;t connected yet.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-1.5">
+        {rows.map((r) => (
+          <div
+            key={r.label}
+            className="flex items-center justify-between gap-2 rounded-md border border-border bg-card/60 px-2.5 py-1.5"
+          >
+            <span className="text-[11px] font-medium text-foreground truncate">
+              {r.label}
+            </span>
+            {r.status.connected ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                Connected
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
+                <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" />
+                Not connected
+              </span>
+            )}
+          </div>
+        ))}
+      </div>
+    </Section>
   );
 }
 
@@ -1131,7 +1261,7 @@ function FunnelList({ stages }: { stages: ReportSnapshot["funnel"] }) {
   const max = Math.max(1, ...stages.map((s) => s.count));
   return (
     <ul className="space-y-1.5">
-      {stages.map((s) => {
+      {stages.map((s, i) => {
         const pct = Math.round((s.count / max) * 100);
         return (
           <li key={s.stage} className="flex items-center gap-3">
@@ -1141,7 +1271,15 @@ function FunnelList({ stages }: { stages: ReportSnapshot["funnel"] }) {
             <div className="flex-1 h-3 rounded-full bg-muted overflow-hidden">
               <div
                 className="h-full rounded-full"
-                style={{ width: `${pct}%`, backgroundColor: C.primary }}
+                style={{
+                  width: `${pct}%`,
+                  backgroundColor: C.primary,
+                  transformOrigin: "left center",
+                  transform: "scaleX(0)",
+                  animation:
+                    "ls-grow 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards",
+                  animationDelay: `${200 + i * 90}ms`,
+                }}
               />
             </div>
             <span className="w-10 text-right text-xs font-bold tabular-nums text-foreground">
@@ -1163,7 +1301,7 @@ function SourceList({ sources }: { sources: ReportSnapshot["leadSources"] }) {
   const max = Math.max(1, ...sources.map((s) => s.count));
   return (
     <ul className="space-y-1.5">
-      {sources.map((row) => {
+      {sources.map((row, i) => {
         const pct = Math.round((row.count / max) * 100);
         return (
           <li key={row.source} className="grid grid-cols-[1fr_auto_30px] gap-2 items-center">
@@ -1179,7 +1317,15 @@ function SourceList({ sources }: { sources: ReportSnapshot["leadSources"] }) {
               <div className="h-2 rounded-full bg-muted overflow-hidden">
                 <div
                   className="h-full rounded-full"
-                  style={{ width: `${pct}%`, backgroundColor: C.primary }}
+                  style={{
+                    width: `${pct}%`,
+                    backgroundColor: C.primary,
+                    transformOrigin: "left center",
+                    transform: "scaleX(0)",
+                    animation:
+                      "ls-grow 900ms cubic-bezier(0.16, 1, 0.3, 1) forwards",
+                    animationDelay: `${200 + i * 90}ms`,
+                  }}
                 />
               </div>
             </div>
@@ -1372,7 +1518,16 @@ function TrendChart({
           <stop offset="100%" stopColor={C.primary} stopOpacity={0} />
         </linearGradient>
       </defs>
-      <path d={areaPath} fill={`url(#${gradId})`} />
+      <path
+        d={areaPath}
+        fill={`url(#${gradId})`}
+        // Fade in the gradient fill so the area appears after the
+        // stroke draws.
+        style={{
+          opacity: 0,
+          animation: "ls-fade-in 800ms ease-out 700ms forwards",
+        }}
+      />
       <path
         d={d}
         fill="none"
@@ -1381,6 +1536,15 @@ function TrendChart({
         strokeLinecap="round"
         strokeLinejoin="round"
         vectorEffect="non-scaling-stroke"
+        // Draw the line left-to-right via stroke-dashoffset animation.
+        // Uses ls-draw keyframe added to globals.css for the auth
+        // showcase — same primitive, so adding it here doesn't ship
+        // any new CSS.
+        style={{
+          strokeDasharray: 2400,
+          strokeDashoffset: 2400,
+          animation: "ls-draw 1200ms cubic-bezier(0.16, 1, 0.3, 1) forwards",
+        }}
       />
     </svg>
   );

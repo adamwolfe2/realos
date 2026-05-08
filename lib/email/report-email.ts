@@ -46,16 +46,21 @@ export function buildReportEmail(input: ReportEmailInput): {
   html: string;
   text: string;
 } {
-  const { snapshot, orgName, shareUrl, recipientName, senderName, headline, notes } = input;
+  const { snapshot, orgName, shareUrl, recipientName, headline, notes } = input;
   const kindLabel = KIND_LABELS[snapshot.kind];
   const period = formatPeriod(snapshot.periodStart, snapshot.periodEnd);
+  // senderName is intentionally NOT used in the body. Per the
+  // 2026-05 product call, the email signs off as the LeaseStack
+  // brand only — no agency-team personalization, no "Happy to jump
+  // on a call" boilerplate. Clients should read the data and
+  // self-serve the full report.
+  void input.senderName;
 
   const subject = headline
     ? `${kindLabel}. ${headline}`
     : `${orgName} ${kindLabel.toLowerCase()} — ${period}`;
 
   const greeting = recipientName ? `Hi ${recipientName},` : `Hi,`;
-  const senderLine = senderName ? `${senderName}` : `The ${BRAND_NAME} team`;
 
   const kpiRow = renderKpiRow(snapshot);
   const funnelBlock = renderFunnel(snapshot);
@@ -64,6 +69,7 @@ export function buildReportEmail(input: ReportEmailInput): {
   const attributionBlock = renderAttribution(snapshot);
   const seoBlock = renderSeo(snapshot);
   const reputationBlock = renderReputation(snapshot);
+  const sourcesBlock = renderDataSourcesEmail(snapshot);
 
   const bodyHtml = `
     <p style="margin:0 0 16px;color:${NEAR_BLACK};font-size:14px;line-height:1.55;">${greeting}</p>
@@ -90,17 +96,17 @@ export function buildReportEmail(input: ReportEmailInput): {
     ${attributionBlock}
     ${seoBlock}
     ${reputationBlock}
+    ${sourcesBlock}
 
     <p style="margin:28px 0 8px;color:${OLIVE};font-size:13px;line-height:1.6;">
-      Full report with trend charts and property breakdowns:
+      Need the full breakdown with trend charts and property comparisons?
     </p>
     <p style="margin:0;">
-      <a href="${shareUrl}" style="display:inline-block;color:${ACCENT};font-size:13px;font-weight:600;text-decoration:none;border-bottom:2px solid ${ACCENT};padding-bottom:1px;">Open the full report</a>
+      <a href="${shareUrl}" style="display:inline-block;color:${ACCENT};font-size:13px;font-weight:600;text-decoration:none;border-bottom:2px solid ${ACCENT};padding-bottom:1px;">Open the full report →</a>
     </p>
 
-    <p style="margin:32px 0 0;color:${OLIVE};font-size:13px;line-height:1.6;">
-      Happy to jump on a call if anything stands out.<br/>
-      ${escapeHtml(senderLine)}
+    <p style="margin:32px 0 0;color:${STONE};font-size:11px;line-height:1.6;">
+      ${BRAND_NAME}
     </p>
   `;
 
@@ -126,36 +132,70 @@ export function buildReportEmail(input: ReportEmailInput): {
 }
 
 function renderKpiRow(s: ReportSnapshot): string {
-  const cells = [
-    { label: "Leads", value: s.kpis.leads.toLocaleString(), deltaPct: s.kpiDeltas.leadsPct, good: "up" as const },
-    { label: "Tours", value: s.kpis.tours.toLocaleString(), deltaPct: s.kpiDeltas.toursPct, good: "up" as const },
+  const ds = s.dataSources;
+  const adsConnected = ds
+    ? ds.googleAds.connected || ds.metaAds.connected
+    : true;
+  const ga4Connected = ds ? ds.ga4.connected : true;
+  const appfolioConnected = ds ? ds.appfolio.connected : true;
+  // Match the report-view gating exactly so the email and the share-link
+  // page show the same KPI tiles for any given snapshot.
+  const toursTracked = appfolioConnected || s.kpis.tours > 0;
+  const applicationsTracked = appfolioConnected || s.kpis.applications > 0;
+  const showCostPerLead = adsConnected && s.kpis.adSpendUsd > 0;
+
+  const allCells = [
+    {
+      label: "Leads",
+      value: s.kpis.leads.toLocaleString(),
+      deltaPct: s.kpiDeltas.leadsPct,
+      good: "up" as const,
+      show: true,
+    },
+    {
+      label: "Tours",
+      value: s.kpis.tours.toLocaleString(),
+      deltaPct: s.kpiDeltas.toursPct,
+      good: "up" as const,
+      show: toursTracked,
+    },
     {
       label: "Applications",
       value: s.kpis.applications.toLocaleString(),
       deltaPct: s.kpiDeltas.applicationsPct,
       good: "up" as const,
+      show: applicationsTracked,
     },
     {
       label: "Ad spend",
       value: `$${s.kpis.adSpendUsd.toLocaleString()}`,
       deltaPct: s.kpiDeltas.adSpendUsdPct,
       good: "down" as const,
+      show: adsConnected && s.kpis.adSpendUsd > 0,
     },
     {
       label: "Cost per lead",
       value: s.kpis.costPerLead != null ? `$${s.kpis.costPerLead.toFixed(2)}` : "—",
       deltaPct: s.kpiDeltas.costPerLeadPct,
       good: "down" as const,
+      show: showCostPerLead,
     },
     {
       label: "Organic sessions",
       value: s.kpis.organicSessions.toLocaleString(),
       deltaPct: s.kpiDeltas.organicSessionsPct,
       good: "up" as const,
+      show: ga4Connected && s.kpis.organicSessions > 0,
     },
   ];
 
-  const cellHtml = (c: (typeof cells)[number]) => {
+  // Filter to visible cells, then pad with empty cells to keep the
+  // 3-column grid layout stable (email-safe — table cells don't
+  // collapse cleanly when removed mid-row).
+  const cells = allCells.filter((c) => c.show);
+  type Cell = (typeof allCells)[number];
+
+  const cellHtml = (c: Cell) => {
     const deltaHtml = deltaPill(c.deltaPct, c.good);
     return `
       <td style="width:33.33%;padding:10px 12px;border:1px solid ${BORDER};background-color:${IVORY};vertical-align:top;">
@@ -165,14 +205,26 @@ function renderKpiRow(s: ReportSnapshot): string {
       </td>
     `;
   };
+  const emptyCell = `<td style="width:33.33%;padding:10px 12px;border:1px solid ${BORDER};background-color:${IVORY};"></td>`;
 
-  const row1 = cells.slice(0, 3).map(cellHtml).join("");
-  const row2 = cells.slice(3, 6).map(cellHtml).join("");
+  function paddedRow(row: Cell[]): string {
+    const html = row.map(cellHtml).join("");
+    const padding = "".padEnd(Math.max(0, 3 - row.length), "x")
+      .split("")
+      .map(() => emptyCell)
+      .join("");
+    return html + padding;
+  }
+
+  const rows: string[] = [];
+  for (let i = 0; i < cells.length; i += 3) {
+    rows.push(paddedRow(cells.slice(i, i + 3)));
+  }
+  if (rows.length === 0) rows.push(paddedRow([]));
 
   return `
     <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">
-      <tr>${row1}</tr>
-      <tr>${row2}</tr>
+      ${rows.map((r) => `<tr>${r}</tr>`).join("")}
     </table>
   `;
 }
@@ -245,6 +297,11 @@ function renderInsights(s: ReportSnapshot): string {
 
 function renderAds(s: ReportSnapshot): string {
   if (!s.adPerformance || s.adPerformance.length === 0) return "";
+  // Don't show paid channels block if no ad source is currently
+  // connected. Stale AdMetricDaily rows from a disconnected
+  // integration would otherwise leak into the email.
+  const ds = s.dataSources;
+  if (ds && !(ds.googleAds.connected || ds.metaAds.connected)) return "";
   const rows = s.adPerformance
     .map(
       (a) => `
@@ -305,6 +362,9 @@ function renderAttribution(s: ReportSnapshot): string {
 
 function renderSeo(s: ReportSnapshot): string {
   if (!s.topQueries || s.topQueries.length === 0) return "";
+  // GSC drives top queries; skip the section if it isn't connected.
+  const ds = s.dataSources;
+  if (ds && !ds.gsc.connected) return "";
   const rows = s.topQueries
     .slice(0, 5)
     .map(
@@ -486,8 +546,67 @@ function formatShortDate(iso: string): string {
   });
 }
 
+// Data source transparency block — mirrors DataSourcesFooter on the
+// share-link view. Builds trust by making it explicit which
+// integrations are flowing data into the report and which are still
+// pending. No fake "connected (no data)" claims; if it's not
+// connected, the row says so.
+function renderDataSourcesEmail(s: ReportSnapshot): string {
+  const ds = s.dataSources;
+  if (!ds) return "";
+
+  const rows: Array<{ label: string; connected: boolean }> = [
+    { label: "Google Ads", connected: ds.googleAds.connected },
+    { label: "Meta Ads", connected: ds.metaAds.connected },
+    { label: "Google Analytics 4", connected: ds.ga4.connected },
+    { label: "Google Search Console", connected: ds.gsc.connected },
+    { label: "Cursive Pixel", connected: ds.pixel.connected },
+    { label: "AppFolio", connected: ds.appfolio.connected },
+    { label: "Chatbot", connected: ds.chatbot.connected },
+  ];
+
+  const cellHtml = (r: (typeof rows)[number]) => `
+    <td style="width:33.33%;padding:8px 10px;border:1px solid ${BORDER};background-color:${IVORY};vertical-align:middle;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <span style="color:${NEAR_BLACK};font-size:11px;font-weight:600;">${escapeHtml(r.label)}</span>
+        <span style="color:${r.connected ? "#047857" : STONE};font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;white-space:nowrap;">
+          ${r.connected ? "● Connected" : "○ Not connected"}
+        </span>
+      </div>
+    </td>
+  `;
+  const emptyCell = `<td style="width:33.33%;border:1px solid ${BORDER};background-color:${IVORY};"></td>`;
+
+  function paddedRow(group: typeof rows): string {
+    const html = group.map(cellHtml).join("");
+    const padding = "".padEnd(Math.max(0, 3 - group.length), "x")
+      .split("")
+      .map(() => emptyCell)
+      .join("");
+    return `<tr>${html}${padding}</tr>`;
+  }
+
+  const trs: string[] = [];
+  for (let i = 0; i < rows.length; i += 3) {
+    trs.push(paddedRow(rows.slice(i, i + 3)));
+  }
+
+  return `
+    <h2 style="margin:28px 0 6px;color:${NEAR_BLACK};font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">Data sources</h2>
+    <p style="margin:0 0 10px;color:${OLIVE};font-size:12px;line-height:1.5;">
+      We only show metrics for sources that are actively flowing data.
+      Sections you don&apos;t see in this report belong to integrations
+      that aren&apos;t connected yet.
+    </p>
+    <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;">${trs.join("")}</table>
+  `;
+}
+
 function buildPlainText(input: ReportEmailInput, period: string, kindLabel: string): string {
-  const { snapshot, orgName, shareUrl, headline, notes, senderName } = input;
+  const { snapshot, orgName, shareUrl, headline, notes } = input;
+  // senderName intentionally unused — plain-text mirrors the HTML body
+  // and signs off as the LeaseStack brand only.
+  void input.senderName;
   const lines: string[] = [];
   lines.push(`${kindLabel} — ${orgName}`);
   lines.push(period);
@@ -552,7 +671,7 @@ function buildPlainText(input: ReportEmailInput, period: string, kindLabel: stri
   lines.push("");
   lines.push(`Full report: ${shareUrl}`);
   lines.push("");
-  lines.push(senderName ?? `The ${BRAND_NAME} team`);
+  lines.push(BRAND_NAME);
   return lines.join("\n");
 }
 

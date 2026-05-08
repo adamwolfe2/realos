@@ -128,6 +128,39 @@ export type ReportAiVisibility = {
 };
 
 // ---------------------------------------------------------------------------
+// Data source connection status — drives "show vs hide vs explain" gating
+// across the report. The renderer (and the email) NEVER show metrics for
+// a source that isn't connected — sales credibility hinges on the report
+// showing only real data. When a source is disconnected, we either hide
+// the section entirely or render a small "Connect X to track" notice
+// instead of fake numbers.
+//
+// Freshness rule: a source is considered connected only if (a) the
+// integration row exists with credentials, AND (b) the integration has
+// produced data within FRESHNESS_WINDOW_DAYS. A stale GA4 connection
+// that hasn't synced in 30 days is not a "connected" source for this
+// report — same as never connecting.
+// ---------------------------------------------------------------------------
+
+export type DataSourceStatus = {
+  connected: boolean;
+  // ISO date of last sync / last event; null when never seen
+  lastSyncAt: string | null;
+  // Whether the source produced any data within the report's window
+  hasDataInPeriod: boolean;
+};
+
+export type ReportDataSources = {
+  googleAds: DataSourceStatus;
+  metaAds: DataSourceStatus;
+  ga4: DataSourceStatus;
+  gsc: DataSourceStatus;
+  appfolio: DataSourceStatus;
+  pixel: DataSourceStatus;
+  chatbot: DataSourceStatus;
+};
+
+// ---------------------------------------------------------------------------
 // Reputation, occupancy, renewals, visitor stats — added in the 2026 report
 // upgrade so the monthly client report reflects everything the operator
 // dashboard now tracks. All sections render gracefully when the underlying
@@ -250,6 +283,11 @@ export type ReportSnapshot = {
   renewalStats?: ReportRenewalStats;
   visitorStats?: ReportVisitorStats;
   aiAnalysis?: AiAnalysis;
+  // Optional on legacy snapshots. When present, drives section gating
+  // across the report (and the email) so we never show metrics for a
+  // disconnected integration. Older snapshots without this field show
+  // every section as before — no breakage for already-shared reports.
+  dataSources?: ReportDataSources;
 };
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -1180,6 +1218,16 @@ export async function generateReportSnapshot(
     chatbotStats,
   ).catch(() => undefined);
 
+  // Connection status for every integration — drives section gating in
+  // the renderer + email so we never show fake $X ad spend / 0 tours
+  // numbers for sources the operator hasn't actually connected.
+  const dataSources = await buildDataSources(
+    orgId,
+    scope.propertyId,
+    periodStart,
+    periodEnd,
+  ).catch(() => undefined);
+
   const baseSnapshot: Omit<ReportSnapshot, "aiAnalysis"> = {
     kind,
     scope: {
@@ -1207,6 +1255,7 @@ export async function generateReportSnapshot(
     occupancyStats,
     renewalStats,
     visitorStats,
+    dataSources,
   };
 
   const aiAnalysis = await generateAiAnalysis(baseSnapshot);
@@ -1230,6 +1279,191 @@ const MENTION_SOURCE_LABELS: Record<MentionSource, string> = {
   FACEBOOK_PUBLIC: "Facebook",
   OTHER: "Other",
 };
+
+// Freshness window: a source needs activity within this many days to
+// be considered "connected" for report purposes. Stale connections
+// that haven't synced in a month are treated like disconnected — the
+// operator's clients deserve current data, not ghost numbers from a
+// dead integration.
+const SOURCE_FRESHNESS_DAYS = 30;
+
+async function buildDataSources(
+  orgId: string,
+  propertyId: string | null,
+  periodStart: Date,
+  periodEnd: Date,
+): Promise<ReportDataSources> {
+  const freshThreshold = new Date(
+    Date.now() - SOURCE_FRESHNESS_DAYS * DAY_MS,
+  );
+  const propertyClause = propertyId ? { propertyId } : {};
+
+  const [
+    googleAdAccount,
+    metaAdAccount,
+    ga4Integration,
+    gscIntegration,
+    appfolioIntegration,
+    cursivePixel,
+    chatbotConfig,
+    googleAdSpendInPeriod,
+    metaAdSpendInPeriod,
+    organicSessionsInPeriod,
+    gscClicksInPeriod,
+    chatbotConvosInPeriod,
+    pixelEventsInPeriod,
+  ] = await Promise.all([
+    prisma.adAccount.findFirst({
+      where: {
+        orgId,
+        platform: "GOOGLE_ADS",
+        credentialsEncrypted: { not: null },
+      },
+      select: { lastSyncAt: true },
+      orderBy: { lastSyncAt: "desc" },
+    }),
+    prisma.adAccount.findFirst({
+      where: {
+        orgId,
+        platform: "META",
+        credentialsEncrypted: { not: null },
+      },
+      select: { lastSyncAt: true },
+      orderBy: { lastSyncAt: "desc" },
+    }),
+    prisma.seoIntegration.findFirst({
+      where: {
+        orgId,
+        provider: "GA4",
+        serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
+        ...(propertyId ? { propertyId } : {}),
+      },
+      select: { lastSyncAt: true },
+      orderBy: { lastSyncAt: "desc" },
+    }),
+    prisma.seoIntegration.findFirst({
+      where: {
+        orgId,
+        provider: "GSC",
+        serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
+        ...(propertyId ? { propertyId } : {}),
+      },
+      select: { lastSyncAt: true },
+      orderBy: { lastSyncAt: "desc" },
+    }),
+    prisma.appFolioIntegration.findFirst({
+      where: { orgId },
+      select: { lastSyncAt: true, syncStatus: true },
+    }),
+    prisma.cursiveIntegration.findFirst({
+      where: { orgId, ...(propertyId ? { propertyId } : {}) },
+      select: { lastEventAt: true, cursivePixelId: true },
+      orderBy: { lastEventAt: "desc" },
+    }),
+    prisma.organization.findUnique({
+      where: { id: orgId },
+      select: { tenantSiteConfig: { select: { chatbotEnabled: true } } },
+    }),
+    // Period-window data presence — even if an integration is connected,
+    // the section is meaningful only when there's data in the window.
+    prisma.adMetricDaily.aggregate({
+      where: {
+        orgId,
+        date: { gte: periodStart, lt: periodEnd },
+        adAccount: { platform: "GOOGLE_ADS" },
+      },
+      _sum: { spendCents: true },
+    }),
+    prisma.adMetricDaily.aggregate({
+      where: {
+        orgId,
+        date: { gte: periodStart, lt: periodEnd },
+        adAccount: { platform: "META" },
+      },
+      _sum: { spendCents: true },
+    }),
+    prisma.seoSnapshot.aggregate({
+      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
+      _sum: { organicSessions: true },
+    }),
+    prisma.seoSnapshot.aggregate({
+      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
+      _sum: { totalClicks: true },
+    }),
+    prisma.chatbotConversation.count({
+      where: {
+        orgId,
+        ...propertyClause,
+        createdAt: { gte: periodStart, lt: periodEnd },
+      },
+    }),
+    prisma.visitorEvent.count({
+      where: {
+        orgId,
+        ...propertyClause,
+        createdAt: { gte: periodStart, lt: periodEnd },
+      },
+    }),
+  ]);
+
+  function status(
+    lastAt: Date | null | undefined,
+    hasCredentials: boolean,
+    hasDataInPeriod: boolean,
+  ): DataSourceStatus {
+    const fresh =
+      hasCredentials && lastAt != null && lastAt >= freshThreshold;
+    return {
+      connected: fresh,
+      lastSyncAt: lastAt ? lastAt.toISOString() : null,
+      hasDataInPeriod,
+    };
+  }
+
+  return {
+    googleAds: status(
+      googleAdAccount?.lastSyncAt ?? null,
+      googleAdAccount != null,
+      (googleAdSpendInPeriod?._sum?.spendCents ?? 0) > 0,
+    ),
+    metaAds: status(
+      metaAdAccount?.lastSyncAt ?? null,
+      metaAdAccount != null,
+      (metaAdSpendInPeriod?._sum?.spendCents ?? 0) > 0,
+    ),
+    ga4: status(
+      ga4Integration?.lastSyncAt ?? null,
+      ga4Integration != null,
+      (organicSessionsInPeriod._sum.organicSessions ?? 0) > 0,
+    ),
+    gsc: status(
+      gscIntegration?.lastSyncAt ?? null,
+      gscIntegration != null,
+      (gscClicksInPeriod._sum.totalClicks ?? 0) > 0,
+    ),
+    appfolio: status(
+      appfolioIntegration?.lastSyncAt ?? null,
+      appfolioIntegration != null,
+      // AppFolio has no direct "did we sync data this period" — fall back
+      // to whether we synced *recently*. AppFolio data (residents,
+      // leases, work orders) is point-in-time, not period-bucketed.
+      appfolioIntegration?.lastSyncAt != null &&
+        appfolioIntegration.lastSyncAt >= freshThreshold,
+    ),
+    pixel: status(
+      cursivePixel?.lastEventAt ?? null,
+      cursivePixel?.cursivePixelId != null,
+      pixelEventsInPeriod > 0,
+    ),
+    // Chatbot is config-driven (no "last sync" concept since chats
+    // are ingested directly), so we bypass the freshness check.
+    chatbot: {
+      connected: Boolean(chatbotConfig?.tenantSiteConfig?.chatbotEnabled),
+      lastSyncAt: null,
+      hasDataInPeriod: chatbotConvosInPeriod > 0,
+    },
+  };
+}
 
 async function buildReputationStats(
   orgId: string,

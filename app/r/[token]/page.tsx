@@ -75,6 +75,19 @@ export default async function PublicReportPage({
                 break-inside: avoid;
               }
               a { color: inherit; text-decoration: none; }
+              /* Skip the on-load animations entirely when printing.
+                 PDF exporters render the keyframe START state and end
+                 up with empty bars / undrawn lines if we don't snap
+                 them to their final values here. */
+              .report-article *,
+              .report-article *::before,
+              .report-article *::after {
+                animation: none !important;
+                transition: none !important;
+                opacity: 1 !important;
+                transform: none !important;
+                stroke-dashoffset: 0 !important;
+              }
             }
           `,
         }}

@@ -88,6 +88,19 @@ export default async function ReportDetailPage({
               /* Recharts SVGs and our hand-rolled SVG charts both need to
                  keep their bounding boxes intact when paginated. */
               svg { page-break-inside: avoid; }
+              /* Suppress the on-load animations when printing. PDF
+                 exporters render the keyframe START state otherwise
+                 (empty bars, undrawn polylines). Snap everything to
+                 its final value. */
+              .report-article *,
+              .report-article *::before,
+              .report-article *::after {
+                animation: none !important;
+                transition: none !important;
+                opacity: 1 !important;
+                transform: none !important;
+                stroke-dashoffset: 0 !important;
+              }
               a { color: inherit; text-decoration: none; }
               /* Background-clip:text gradient fallback for renderers that
                  don't honor the clip-path. The gradient ends up covering
