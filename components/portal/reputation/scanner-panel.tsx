@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { formatDistanceToNow } from "date-fns";
-import { Sparkles, Loader2, Filter } from "lucide-react";
+import { Sparkles, Loader2, Filter, AlertTriangle, Wand2 } from "lucide-react";
 import type {
   MentionSource,
   ReputationScanStatus,
@@ -43,6 +43,12 @@ export type ScannerPanelProps = {
   initialScans: InitialScan[];
   initialNextCursor: string | null;
   lastScanAt: string | null;
+  // Bug #37 — Norman's suggestion: trigger a scan in the background
+  // when the operator opens the Reputation tab so it feels live
+  // instead of requiring an explicit click. The server computes the
+  // staleness window and the client kicks off the scan exactly once
+  // per mount.
+  autoScanIfStale?: boolean;
 };
 
 type Filters = {
@@ -62,6 +68,7 @@ export function ScannerPanel({
   initialScans,
   initialNextCursor,
   lastScanAt,
+  autoScanIfStale = false,
 }: ScannerPanelProps) {
   const [mentions, setMentions] = React.useState<MentionView[]>(initialMentions);
   const [cursor, setCursor] = React.useState<string | null>(initialNextCursor);
@@ -72,6 +79,28 @@ export function ScannerPanel({
   const [latestScanAt, setLatestScanAt] = React.useState<string | null>(
     lastScanAt,
   );
+  // Bug #40 — sentiment tracker "still not working" report. Two failure
+  // modes: (a) classifier silently skipped during the most recent scan
+  // (e.g. ANTHROPIC_API_KEY missing) and (b) older mentions ingested
+  // before the analyzer was wired up are still sentiment=null. We
+  // surface both via a banner and a "Classify N unclassified" CTA that
+  // hits the backfill endpoint without forcing a fresh scan.
+  const [analysisSkip, setAnalysisSkip] = React.useState<{
+    reason: "no_api_key" | "error";
+    message: string;
+  } | null>(null);
+  const [backfilling, setBackfilling] = React.useState(false);
+
+  // Count unclassified mentions in the current feed so we know whether to
+  // surface the backfill CTA at all.
+  const unclassifiedCount = React.useMemo(
+    () => mentions.filter((m) => m.sentiment == null).length,
+    [mentions],
+  );
+
+  // Track whether we've already fired the auto-scan so React Strict
+  // Mode's double-mount doesn't trigger two parallel scans.
+  const autoScanFiredRef = React.useRef(false);
 
   const [filters, setFilters] = React.useState<Filters>({
     sentiment: "ALL",
@@ -173,6 +202,7 @@ export function ScannerPanel({
       tavily: { status: "running" },
     });
     setAnalysisCount(null);
+    setAnalysisSkip(null);
 
     try {
       const res = await fetch("/api/tenant/reputation-scan", {
@@ -243,6 +273,29 @@ export function ScannerPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [propertyId, scanning]);
 
+  // Bug #37 — fire the auto-scan exactly once on mount when the
+  // server flagged the most recent scan as stale. Using a ref guard
+  // because the component's useEffect runs twice under React Strict
+  // Mode dev double-render, and we don't want two parallel scans
+  // chewing on the same property.
+  React.useEffect(() => {
+    if (!autoScanIfStale) return;
+    if (autoScanFiredRef.current) return;
+    autoScanFiredRef.current = true;
+    // Small delay so the page paints first and the user sees an
+    // intentional "starting scan" state rather than an abrupt
+    // mid-render flicker.
+    const t = window.setTimeout(() => {
+      startScan().catch(() => {
+        // toast is already raised inside startScan on failure
+      });
+    }, 400);
+    return () => window.clearTimeout(t);
+    // We intentionally exclude startScan from deps — it's a fresh
+    // closure each render and we only want the trigger to fire once.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoScanIfStale]);
+
   function onEvent(name: string, payload: unknown) {
     switch (name) {
       case "source_progress": {
@@ -277,6 +330,20 @@ export function ScannerPanel({
       case "analysis_started": {
         const p = payload as { toAnalyze: number };
         setAnalysisCount(p.toAnalyze);
+        break;
+      }
+      case "analysis_skipped": {
+        // Bug #40 — make silent classifier failures loud. Operators kept
+        // reporting "sentiment tracker not working" while the scan was
+        // succeeding; root cause was always ANTHROPIC_API_KEY missing
+        // or a transient Claude error. Surface it inline so they can
+        // act instead of guessing.
+        const p = payload as {
+          reason: "no_api_key" | "error";
+          message: string;
+        };
+        setAnalysisSkip({ reason: p.reason, message: p.message });
+        setAnalysisCount(null);
         break;
       }
       case "mention": {
@@ -346,6 +413,76 @@ export function ScannerPanel({
       }
     }
   }
+
+  // Backfill sentiment for already-persisted mentions whose sentiment is
+  // null. Pings POST /api/tenant/reputation-mentions/backfill-sentiment which
+  // batches through Claude Haiku 4.5 and writes results back. We update the
+  // local feed optimistically with the returned classifications.
+  const runBackfill = async () => {
+    if (backfilling) return;
+    setBackfilling(true);
+    try {
+      const res = await fetch(
+        "/api/tenant/reputation-mentions/backfill-sentiment",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ propertyId }),
+        },
+      );
+      const body = (await res.json().catch(() => ({}))) as {
+        ok: boolean;
+        classified?: number;
+        total?: number;
+        message?: string;
+        skipReason?: string | null;
+      };
+      if (!res.ok || !body.ok) {
+        toast.error(body.message ?? `Backfill failed (${res.status})`);
+        if (body.skipReason === "no_api_key") {
+          setAnalysisSkip({
+            reason: "no_api_key",
+            message:
+              body.message ??
+              "ANTHROPIC_API_KEY is not set. Add it in Vercel and re-run.",
+          });
+        }
+        return;
+      }
+      toast.success(
+        body.message ??
+          `Classified ${body.classified ?? 0} of ${body.total ?? 0} mentions`,
+      );
+      // Clear any prior skip banner — we just succeeded.
+      setAnalysisSkip(null);
+      // Re-fetch the page slice so we pick up newly-classified rows.
+      try {
+        const url = new URL(
+          "/api/tenant/reputation-mentions",
+          window.location.origin,
+        );
+        url.searchParams.set("propertyId", propertyId);
+        url.searchParams.set("limit", String(Math.max(40, mentions.length)));
+        const refetch = await fetch(url.toString());
+        if (refetch.ok) {
+          const r = (await refetch.json()) as {
+            items: MentionView[];
+            nextCursor: string | null;
+          };
+          setMentions(r.items);
+          setCursor(r.nextCursor);
+        }
+      } catch {
+        // best-effort
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Backfill failed unexpectedly",
+      );
+    } finally {
+      setBackfilling(false);
+    }
+  };
 
   const loadMore = async () => {
     if (!cursor) return;
@@ -431,6 +568,58 @@ export function ScannerPanel({
                 {analysisCount === 1 ? "" : "s"}…
               </p>
             ) : null}
+          </div>
+        ) : null}
+
+        {/* Bug #40 — classifier failure banner. Surfaces the SSE
+            analysis_skipped event so silent failures aren't silent.
+            If the cause is a missing API key we phrase it as a fix
+            step rather than a generic error. */}
+        {analysisSkip ? (
+          <div className="mt-4 rounded-md border border-amber-200 bg-amber-50 p-3 text-[12px] text-amber-900 flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="font-semibold">
+                Sentiment classifier was skipped on this scan.
+              </p>
+              <p className="mt-0.5 leading-snug">{analysisSkip.message}</p>
+              {analysisSkip.reason === "no_api_key" ? (
+                <p className="mt-1 leading-snug">
+                  Set <code className="rounded bg-amber-100 px-1 py-0.5 font-mono text-[11px]">ANTHROPIC_API_KEY</code>{" "}
+                  in your Vercel env vars, redeploy, then click{" "}
+                  <span className="font-semibold">Classify unclassified</span>{" "}
+                  below to backfill existing mentions.
+                </p>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
+        {/* Bug #40 — backfill CTA. Always visible when there are
+            unclassified mentions in the feed so the operator can
+            retroactively classify rows persisted before the analyzer
+            was working, without forcing a full re-scan. */}
+        {unclassifiedCount > 0 && !scanning ? (
+          <div className="mt-3 flex items-center gap-3 flex-wrap text-[11px] text-muted-foreground">
+            <span>
+              {unclassifiedCount} mention{unclassifiedCount === 1 ? "" : "s"}{" "}
+              not yet classified.
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={runBackfill}
+              disabled={backfilling}
+              className="gap-1.5 h-7 px-2.5 text-[11px]"
+            >
+              {backfilling ? (
+                <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" />
+              ) : (
+                <Wand2 className="h-3 w-3" aria-hidden="true" />
+              )}
+              {backfilling ? "Classifying…" : "Classify unclassified"}
+            </Button>
           </div>
         ) : null}
       </section>

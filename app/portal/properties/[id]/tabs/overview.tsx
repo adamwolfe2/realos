@@ -101,6 +101,8 @@ export async function OverviewTab({
     chatbotConfig,
     latestReputationScan,
     chatbotConvos28d,
+    reputationMentionTotal,
+    reputationUnreviewedCount,
   ] = await Promise.all([
     getPropertyOverviewKpis(orgId, propertyId, propertyMeta),
     prisma.property.findFirst({
@@ -184,6 +186,18 @@ export async function OverviewTab({
     prisma.chatbotConversation
       .count({
         where: { orgId, propertyId, createdAt: { gte: since28d } },
+      })
+      .catch(() => 0),
+    // Bug #38 — summary metrics for the right-nav action rail. We
+    // pull the mention total + recent negative count so the
+    // Reputation card surfaces signal (e.g. "35 mentions · 4 needs
+    // response") instead of an empty arrow tile.
+    prisma.propertyMention
+      .count({ where: { orgId, propertyId } })
+      .catch(() => 0),
+    prisma.propertyMention
+      .count({
+        where: { orgId, propertyId, reviewedByUserId: null },
       })
       .catch(() => 0),
   ]);
@@ -330,6 +344,17 @@ export async function OverviewTab({
         }
         yearBuilt={property.yearBuilt}
         lastSyncedAt={property.lastSyncedAt}
+        // Bug #38 — summary metrics for the quick-actions rail.
+        // Each card now shows one number instead of just an arrow.
+        renewalsNext30={buckets[0].count}
+        renewalsNext120={expiringTotal}
+        activeResidents={activeResidents}
+        noticeResidents={noticeResidents}
+        adSpendCents28d={kpis.adSpendCents28d}
+        adLeads28d={kpis.leads28d}
+        reputationMentions={reputationMentionTotal}
+        reputationUnreviewed={reputationUnreviewedCount}
+        reputationLastAt={latestReputationScan?.completedAt ?? null}
       />
 
       {/* AI Insight banner — one most-actionable signal */}
@@ -356,8 +381,7 @@ export async function OverviewTab({
         )}
         googleAdsConnected={Boolean(googleAdCampaign)}
         metaAdsConnected={Boolean(metaAdCampaign)}
-        reputationScanned={Boolean(latestReputationScan?.completedAt)}
-        reputationLastAt={latestReputationScan?.completedAt ?? null}
+        adSpendCents28d={kpis.adSpendCents28d}
       />
 
       {/* Top KPI strip — funnel-shaped (Leads → Tours → Apps → Spend → Organic) */}
@@ -511,20 +535,46 @@ export async function OverviewTab({
               <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
                 Active leases
               </p>
-              <p className="mt-0.5 text-base font-semibold tabular-nums text-foreground">
+              <p
+                className="mt-0.5 text-base font-semibold tabular-nums text-foreground"
+                title="Lease rows in ACTIVE status synced from AppFolio. May trail occupancy when residents are tracked but their lease records haven't synced yet — see the help text under Avg rent / unit."
+              >
                 <AnimatedNumber value={activeResidents} />
               </p>
+              {/* Bug #34 — explicit gap reconciliation. When occupancy
+                  (unit-level) and active-lease count (lease-row level)
+                  disagree by more than a handful, surface the cause
+                  inline so operators don't have to guess at it. */}
+              {leasedUnits != null && Math.abs(leasedUnits - activeResidents) > 5 ? (
+                <p className="text-[10px] text-muted-foreground leading-snug mt-1">
+                  Occupancy ({leasedUnits} leased) reflects unit-level
+                  state; AppFolio sometimes lags on lease-row sync
+                  for new move-ins.
+                </p>
+              ) : null}
             </div>
             <div>
               <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
                 Avg rent / unit
               </p>
-              <p className="mt-0.5 text-base font-semibold tabular-nums text-foreground">
+              <p
+                className="mt-0.5 text-base font-semibold tabular-nums text-foreground"
+                title="Monthly rent roll divided by the number of leased physical units. Uses the unit-level occupancy denominator — not the active-lease row count — so the figure stays stable when AppFolio's lease-row sync lags."
+              >
                 <AnimatedNumber
                   value={
-                    activeResidents > 0
-                      ? Math.round(monthlyRentRoll / activeResidents)
-                      : 0
+                    // Bug #33 — Norman: was dividing rent roll by
+                    // activeResidents (21 lease rows) instead of
+                    // leasedUnits (100 occupied units), yielding
+                    // $4,408 instead of the real ~$925. Fix: divide
+                    // by leasedUnits when known, fall back to
+                    // activeResidents only when no unit count is
+                    // available.
+                    leasedUnits != null && leasedUnits > 0
+                      ? Math.round(monthlyRentRoll / leasedUnits)
+                      : activeResidents > 0
+                        ? Math.round(monthlyRentRoll / activeResidents)
+                        : 0
                   }
                   format="currency"
                 />
@@ -646,8 +696,7 @@ function ActiveFeaturesStrip({
   gscConnected,
   googleAdsConnected,
   metaAdsConnected,
-  reputationScanned,
-  reputationLastAt,
+  adSpendCents28d,
 }: {
   propertyId: string;
   chatbotEnabled: boolean;
@@ -658,8 +707,7 @@ function ActiveFeaturesStrip({
   gscConnected: boolean;
   googleAdsConnected: boolean;
   metaAdsConnected: boolean;
-  reputationScanned: boolean;
-  reputationLastAt: Date | null;
+  adSpendCents28d: number;
 }) {
   const PIXEL_FRESH_DAYS = 14;
   const pixelFiring =
@@ -705,28 +753,41 @@ function ActiveFeaturesStrip({
       detail: gscConnected ? "Connected" : "Not connected",
       href: `/portal/seo?provider=GSC&propertyId=${propertyId}`,
     },
+    // Bug #35 — both ads chips routed to /portal/integrations/ads
+    // which returns 404. The actual ads detail surface lives at
+    // ?tab=ads on the property page, so we redirect there. The
+    // platform query param is preserved so the ads tab can scroll
+    // to the relevant campaign block.
+    // Bug #36 — "Active campaign" label was showing even when the
+    // attributed 28d ad spend was $0. We pass through the spend
+    // figure and downgrade the detail to "No recent spend" when
+    // the campaign is connected but spend is zero.
     {
       label: "Google Ads",
       connected: googleAdsConnected,
-      detail: googleAdsConnected ? "Active campaign" : "Not connected",
-      href: `/portal/integrations/ads?platform=GOOGLE&propertyId=${propertyId}`,
+      detail: googleAdsConnected
+        ? adSpendCents28d > 0
+          ? "Active campaign"
+          : "Connected · $0 recent spend"
+        : "Not connected",
+      href: `/portal/properties/${propertyId}?tab=ads&platform=GOOGLE`,
     },
     {
       label: "Meta Ads",
       connected: metaAdsConnected,
-      detail: metaAdsConnected ? "Active campaign" : "Not connected",
-      href: `/portal/integrations/ads?platform=META&propertyId=${propertyId}`,
+      detail: metaAdsConnected
+        ? adSpendCents28d > 0
+          ? "Active campaign"
+          : "Connected · $0 recent spend"
+        : "Not connected",
+      href: `/portal/properties/${propertyId}?tab=ads&platform=META`,
     },
-    {
-      label: "Reputation",
-      connected: reputationScanned,
-      detail: reputationScanned
-        ? reputationLastAt
-          ? `Last scan ${reputationLastAt.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`
-          : "Connected"
-        : "No scans yet",
-      href: `/portal/properties/${propertyId}?tab=reputation`,
-    },
+    // Bug #37 — Reputation was sitting in the Active Features strip
+    // even though it's a passive monitoring surface, not an active
+    // marketing channel. We've removed it here and trigger a
+    // background scan when the operator visits the reputation tab
+    // instead, so the data feels live without forcing them through
+    // a separate setup state.
   ];
 
   const liveCount = chips.filter((c) => c.connected).length;
@@ -743,7 +804,7 @@ function ActiveFeaturesStrip({
           </p>
         </div>
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-1.5">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
         {chips.map((chip) => (
           <a
             key={chip.label}
@@ -797,6 +858,15 @@ function PropertyHeroStrip({
   propertySubtype,
   yearBuilt,
   lastSyncedAt,
+  renewalsNext30,
+  renewalsNext120,
+  activeResidents,
+  noticeResidents,
+  adSpendCents28d,
+  adLeads28d,
+  reputationMentions,
+  reputationUnreviewed,
+  reputationLastAt,
 }: {
   name: string;
   occupancyPct: number | null;
@@ -811,6 +881,16 @@ function PropertyHeroStrip({
   propertySubtype: ResidentialSubtype | CommercialSubtype | null;
   yearBuilt: number | null;
   lastSyncedAt: Date | null;
+  // Bug #38 — summary metrics for the quick-actions rail.
+  renewalsNext30: number;
+  renewalsNext120: number;
+  activeResidents: number;
+  noticeResidents: number;
+  adSpendCents28d: number;
+  adLeads28d: number;
+  reputationMentions: number;
+  reputationUnreviewed: number;
+  reputationLastAt: Date | null;
 }) {
   const monthlyDisplay =
     monthlyRentRoll > 0
@@ -915,28 +995,80 @@ function PropertyHeroStrip({
           </p>
         </div>
 
-        {/* Quick actions rail */}
+        {/* Quick actions rail. Bug #38 — Norman noted these were
+            empty arrow tiles with no signal. Each card now leads with
+            a metric so the operator gets at-a-glance data density
+            consistent with every other module on the page. */}
         <nav
           aria-label="Quick actions"
-          className="flex flex-row md:flex-col gap-1 md:min-w-[150px] self-center"
+          className="flex flex-row md:flex-col gap-1 md:min-w-[170px] self-center"
         >
-          {[
-            { tab: "renewals", label: "Renewals" },
-            { tab: "residents", label: "Residents" },
-            { tab: "ads", label: "Ad performance" },
-            { tab: "reputation", label: "Reputation" },
-          ].map((a) => (
-            <a
-              key={a.tab}
-              href={`?tab=${a.tab}`}
-              className="inline-flex items-center justify-between gap-2 rounded-md border border-border px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/40 hover:border-primary/40 transition-colors group"
-            >
-              <span>{a.label}</span>
-              <span className="text-muted-foreground group-hover:text-primary transition-colors">
-                →
-              </span>
-            </a>
-          ))}
+          {(() => {
+            const renewalMetric =
+              renewalsNext30 > 0
+                ? `${renewalsNext30} in 30d`
+                : renewalsNext120 > 0
+                  ? `${renewalsNext120} in 120d`
+                  : "Quiet";
+            const residentMetric =
+              noticeResidents > 0
+                ? `${activeResidents} · ${noticeResidents} notice`
+                : `${activeResidents} active`;
+            const spendDollars = Math.round(adSpendCents28d / 100);
+            const adMetric =
+              spendDollars > 0
+                ? adLeads28d > 0
+                  ? `$${spendDollars.toLocaleString()} · ${adLeads28d} leads`
+                  : `$${spendDollars.toLocaleString()} (28d)`
+                : "No spend (28d)";
+            const reputationMetric =
+              reputationMentions > 0
+                ? reputationUnreviewed > 0
+                  ? `${reputationMentions} · ${reputationUnreviewed} to review`
+                  : `${reputationMentions} mentions`
+                : reputationLastAt
+                  ? "No mentions found"
+                  : "Not scanned yet";
+            const cards: Array<{
+              tab: string;
+              label: string;
+              metric: string;
+            }> = [
+              { tab: "renewals", label: "Renewals", metric: renewalMetric },
+              {
+                tab: "residents",
+                label: "Residents",
+                metric: residentMetric,
+              },
+              {
+                tab: "ads",
+                label: "Ad performance",
+                metric: adMetric,
+              },
+              {
+                tab: "reputation",
+                label: "Reputation",
+                metric: reputationMetric,
+              },
+            ];
+            return cards.map((a) => (
+              <a
+                key={a.tab}
+                href={`?tab=${a.tab}`}
+                className="inline-flex items-center justify-between gap-2 rounded-md border border-border px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/40 hover:border-primary/40 transition-colors group"
+              >
+                <span className="flex flex-col min-w-0">
+                  <span className="leading-tight">{a.label}</span>
+                  <span className="text-[10px] text-muted-foreground tabular-nums truncate">
+                    {a.metric}
+                  </span>
+                </span>
+                <span className="text-muted-foreground group-hover:text-primary transition-colors shrink-0">
+                  →
+                </span>
+              </a>
+            ));
+          })()}
         </nav>
       </div>
     </section>
@@ -983,12 +1115,28 @@ function HeroOccupancyRing({
           transform={`rotate(-90 ${size / 2} ${size / 2})`}
         />
       </svg>
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+      {/* Bug #32 — Norman flagged that the sublabel "100/100 leased"
+          was clipping the ring's outer stroke. We tighten the layout:
+          padded inner, narrower text, drop the "leased" suffix from
+          the inline ratio (it's already implied by the ring), and
+          fall back to a smaller font when the ratio width grows past
+          a single line. */}
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
         <span className="text-[18px] font-semibold tracking-tight text-foreground tabular-nums leading-none">
           {label}
         </span>
-        <span className="mt-1 text-[9px] uppercase tracking-widest font-semibold text-muted-foreground">
-          {sublabel}
+        <span
+          className="mt-1 uppercase tracking-wider font-semibold text-muted-foreground leading-tight"
+          style={{
+            // Shrink the secondary line dynamically: 10-char ratios
+            // (e.g. "100/100") fit at 8px; longer strings drop a bit
+            // further. The ring is 96px wide so we have ~64px of safe
+            // text width inside the stroke.
+            fontSize: sublabel.length > 10 ? 7 : 8,
+            letterSpacing: "0.05em",
+          }}
+        >
+          {sublabel.replace(/\s+leased$/i, "")}
         </span>
       </div>
     </div>

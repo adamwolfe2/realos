@@ -80,11 +80,22 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
         <KpiTile
           label="Total mentions"
           value={metrics.totalMentions}
-          hint={
-            metrics.newLast30d > 0
-              ? `+${metrics.newLast30d} in last 30d`
-              : "—"
-          }
+          hint={(() => {
+            // Bug #39 — the "+35 in last 30d" subtitle was equal to
+            // the total because the count was keyed off ingestion
+            // date, not publication date. Now newLast30d reflects
+            // publication-date matches (with createdAt fallback) so
+            // the delta is honest. When the delta equals the total
+            // we render "all within last 30d" instead of "+35"
+            // (avoids implying recent growth from a backfilled
+            // history).
+            if (metrics.totalMentions === 0) return "—";
+            if (metrics.newLast30d <= 0) return "No new in last 30d";
+            if (metrics.newLast30d >= metrics.totalMentions) {
+              return `All within last 30d`;
+            }
+            return `+${metrics.newLast30d} in last 30d`;
+          })()}
           icon={<MessageSquare className="h-4 w-4" />}
         />
         <KpiTile
@@ -136,15 +147,33 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
             const fetched = googleRow?.count ?? 0;
             const total = metrics.googleReviewCount ?? 0;
             if (total > fetched) {
+              const pct =
+                total > 0 ? Math.round((fetched / total) * 100) : 0;
               return (
-                <p className="mt-3 text-[11px] leading-relaxed text-muted-foreground border-t border-border pt-2">
-                  <span className="font-semibold text-foreground">
-                    {fetched} of {total} Google reviews
-                  </span>{" "}
-                  fetched. Google&apos;s Places API returns the 5 most-helpful
-                  reviews per business — the rating and total count above
-                  reflect every review on the listing.
-                </p>
+                <div className="mt-3 text-[11px] leading-relaxed text-muted-foreground border-t border-border pt-2 space-y-1.5">
+                  <p>
+                    <span className="font-semibold text-foreground">
+                      {fetched} of {total} Google reviews
+                    </span>{" "}
+                    fetched ({pct}%). Google&apos;s Places API hard-caps the
+                    individual-reviews response at 5 most-helpful per
+                    business. The {metrics.googleAvgRating?.toFixed(1) ?? "—"}{" "}
+                    star rating and total count reflect every review on the
+                    listing.
+                  </p>
+                  {/* Bug #42 — Norman flagged 10% surface as a deal-
+                      breaker. Disclose the mitigation paths so the
+                      operator knows what they CAN do: GBP API for
+                      verified owners gets all reviews; periodic
+                      re-scan rotates which 5 land. */}
+                  <p className="text-[10px]">
+                    To act on all {total}: claim the listing in Google
+                    Business Profile (returns every review through the
+                    GBP API). Re-scan rotates which 5 surface — recent
+                    scans often pull different reviews as Google updates
+                    its &ldquo;most helpful&rdquo; ranking.
+                  </p>
+                </div>
               );
             }
             return null;

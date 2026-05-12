@@ -132,6 +132,18 @@ export async function ReputationTab({
     newMentionCount: s.newMentionCount,
   }));
 
+  // Bug #37 — when the operator lands on the Reputation tab and we
+  // haven't scanned in the last 7 days (or ever), kick off a
+  // background scan automatically so the surface feels live without
+  // requiring an explicit "Search now" click. The auto-trigger only
+  // fires on mount — subsequent visits within the freshness window
+  // are no-ops.
+  const STALE_DAYS = 7;
+  const completedAt = latestScan?.completedAt ?? null;
+  const isStale =
+    completedAt == null ||
+    Date.now() - completedAt.getTime() > STALE_DAYS * 24 * 60 * 60 * 1000;
+
   return (
     <div className="space-y-6">
       {metrics ? <MetricsPanel metrics={metrics} /> : null}
@@ -143,6 +155,7 @@ export async function ReputationTab({
         initialScans={initialScans}
         initialNextCursor={hasMore ? mentions[mentions.length - 1].id : null}
         lastScanAt={latestScan?.completedAt?.toISOString() ?? null}
+        autoScanIfStale={isStale}
       />
     </div>
   );

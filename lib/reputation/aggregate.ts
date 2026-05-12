@@ -207,8 +207,25 @@ export async function loadReputationMetrics(
     topicRows,
   ] = await Promise.all([
     prisma.propertyMention.count({ where }),
+    // Bug #39 — "+35 in last 30d" was always equal to total. Root
+    // cause: counted by createdAt (ingestion timestamp), so a first
+    // scan that backfilled a year of mentions reported them all as
+    // "new in 30 days." Fix: use publication date when known, fall
+    // back to ingestion only when the source didn't supply one. The
+    // result is capped at total inside the metric body below.
     prisma.propertyMention.count({
-      where: { ...where, createdAt: { gte: last30d } },
+      where: {
+        ...where,
+        OR: [
+          { publishedAt: { gte: last30d } },
+          {
+            AND: [
+              { publishedAt: null },
+              { createdAt: { gte: last30d } },
+            ],
+          },
+        ],
+      },
     }),
     prisma.propertyMention.count({
       where: { ...where, reviewedByUserId: null },
@@ -340,9 +357,21 @@ export async function loadReputationMetrics(
     .sort((a, b) => b.count - a.count)
     .slice(0, 12);
 
+  // Defensive clamp — if every persisted mention happens to have
+  // publishedAt inside the 30d window (small new property), the delta
+  // == total and the KPI subtitle reads weird ("35 mentions · +35 in
+  // last 30d"). Cap so subtitle is "—" when the delta isn't a true
+  // recent uptick. Also enforces newLast30d <= totalMentions.
+  const cappedNewLast30d =
+    totalMentions === 0
+      ? 0
+      : newLast30d >= totalMentions
+        ? Math.max(0, Math.min(newLast30d, totalMentions))
+        : newLast30d;
+
   return {
     totalMentions,
-    newLast30d,
+    newLast30d: cappedNewLast30d,
     negativePct,
     unreviewedCount,
     flaggedCount,

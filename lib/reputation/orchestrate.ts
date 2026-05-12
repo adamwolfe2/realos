@@ -468,9 +468,18 @@ export async function* orchestrateScan(
 async function deleteBadExistingMentions(
   property: PropertySeed
 ): Promise<void> {
+  // Bug #41 — pull title + excerpt too so we can sweep off-topic
+  // news/civic mentions persisted before the OFF_TOPIC_PATTERNS list
+  // was expanded.
   const rows = await prisma.propertyMention.findMany({
     where: { orgId: property.orgId, propertyId: property.id },
-    select: { id: true, sourceUrl: true },
+    select: {
+      id: true,
+      source: true,
+      sourceUrl: true,
+      title: true,
+      excerpt: true,
+    },
   });
   if (rows.length === 0) return;
 
@@ -480,6 +489,18 @@ async function deleteBadExistingMentions(
   const toDelete: string[] = [];
   for (const r of rows) {
     if (shouldDelete(r.sourceUrl, property.name, ownedDomains, ownedSocialPaths)) {
+      toDelete.push(r.id);
+      continue;
+    }
+    // Off-topic sweep against the expanded pattern list + news-host
+    // heuristic. Treat the persisted row as if it just came in fresh.
+    const asScanned: ScannedMention = {
+      source: r.source,
+      sourceUrl: r.sourceUrl,
+      title: r.title,
+      excerpt: r.excerpt,
+    };
+    if (isOffTopicMention(asScanned)) {
       toDelete.push(r.id);
     }
   }
@@ -671,18 +692,69 @@ function estimateCostCents(
 // neighborhood that mention the property only tangentially. They are
 // not user reviews of the property and confuse the reputation feed.
 const OFF_TOPIC_PATTERNS = [
-  /city council/i,
-  /zoning/i,
-  /planning commission/i,
-  /building permit/i,
-  /landmark(?:ed|ing)?/i,
-  /ordinance/i,
-  /appeal(?:s|ed)?.*(rejected|denied|granted)/i,
-  /affordable housing (?:bond|measure|policy)/i,
-  /entitlement(?:s)?/i,
-  /development permit/i,
-  /variance.*approved/i,
+  /city council/i,
+  /zoning/i,
+  /planning commission/i,
+  /building permit/i,
+  /landmark(?:ed|ing)?/i,
+  /ordinance/i,
+  /appeal(?:s|ed)?.*(rejected|denied|granted)/i,
+  /affordable housing (?:bond|measure|policy)/i,
+  /entitlement(?:s)?/i,
+  /development permit/i,
+  /variance.*approved/i,
+  // Bug #41 — Norman flagged news.berkeley.edu "UC Berkeley launches
+  // closure of People's Park construction site" surfacing in the
+  // Telegraph Commons feed. Expand patterns to catch campus /
+  // construction / closure news that sits adjacent to student housing
+  // without being about the property itself.
+  /people'?s park/i,
+  /construction site/i,
+  /campus (?:closure|construction|protest|police)/i,
+  /university (?:police|announces|launches)/i,
+  /(?:closure|closes|reopens)\s+of\s+/i,
+  /press release/i,
+  /city of (?:berkeley|oakland|san francisco|los angeles)/i,
 ];
+
+// News / civic host patterns. The host alone is a strong off-topic
+// signal — we still allow these through when the body reads as a
+// personal review (first-person tells), but otherwise drop them.
+const NEWS_HOST_PATTERNS: RegExp[] = [
+  /^news\./i,
+  /\.news\./i,
+  /berkeley\.edu$/i,
+  /berkeleyside\.com$/i,
+  /sfgate\.com$/i,
+  /sfchronicle\.com$/i,
+  /(^|\.)patch\.com$/i,
+  /\.gov$/i,
+  /citycouncil/i,
+];
+
+function looksLikeNewsHost(url: string): boolean {
+  if (!url) return false;
+  try {
+    const host = new URL(url).host.toLowerCase().replace(/^www\./, "");
+    return NEWS_HOST_PATTERNS.some((re) => re.test(host));
+  } catch {
+    return false;
+  }
+}
+
+const REVIEW_TELLS = [
+  "i lived",
+  "we lived",
+  "i live",
+  "my apartment",
+  "my stay",
+  "would recommend",
+  "do not recommend",
+  "moved in",
+  "moved out",
+  "the staff",
+  "lived here",
+] as const;
 
 export function isOffTopicMention(mention: ScannedMention): boolean {
   const haystacks = [mention.title ?? "", (mention.excerpt ?? "").slice(0, 600)];
@@ -691,6 +763,12 @@ export function isOffTopicMention(mention: ScannedMention): boolean {
     for (const re of OFF_TOPIC_PATTERNS) {
       if (re.test(text)) return true;
     }
+  }
+  // News-host fallback: drop unless the body has personal-review tells.
+  if (mention.sourceUrl && looksLikeNewsHost(mention.sourceUrl)) {
+    const body = (mention.excerpt ?? "").toLowerCase();
+    const hasReviewSignal = REVIEW_TELLS.some((t) => body.includes(t));
+    if (!hasReviewSignal) return true;
   }
   return false;
 }

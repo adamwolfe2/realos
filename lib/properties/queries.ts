@@ -835,17 +835,35 @@ export async function getPropertyOccupancy(
     },
   });
 
-  // Availability source-of-truth resolution. Prefer the AppFolio-mirrored
-  // Property.availableCount because the listings table can hold many more
-  // rows than physical units (one row per unit-bed-bath configuration,
-  // historical / out-of-service rows, etc.). Falling back to
-  // listings.filter(isAvailable).length used to produce nonsense like
-  // "available: 2249 / total: 100 → leased: -2149". Cap defensively in
-  // case AppFolio's denormalized counter ever drifts above totalUnits.
-  const rawAvailable =
-    property.availableCount != null
-      ? property.availableCount
-      : property.listings.filter((l) => l.isAvailable).length;
+  // Availability source-of-truth resolution.
+  //
+  // History:
+  //   - We used to prefer Property.availableCount (AppFolio's
+  //     denormalized counter) because the listings table can hold
+  //     many more rows than physical units (one row per unit-bed-
+  //     bath SKU, historical/out-of-service rows, etc.).
+  //   - Norman flagged Bug #44: the Available KPI showed "0" while
+  //     every row in the per-unit table rendered an "Available" pill.
+  //     Root cause: availableCount=0 (stale from AppFolio) while
+  //     listings.isAvailable=true on ~141 rows.
+  //
+  // New rule (Bug #44 fix): if AppFolio's counter STRONGLY disagrees
+  // with the per-row truth, trust the rows — that's what the operator
+  // sees in the table directly below the KPI. Cap to totalUnits.
+  const listingsAvail = property.listings.filter((l) => l.isAvailable).length;
+  const appfolioAvail = property.availableCount;
+  // Strong disagreement = AppFolio says 0 but >5 rows are flagged
+  // available (or vice versa). In those cases, defer to the row-level
+  // truth so the KPI and the table can never contradict each other.
+  const stronglyDisagree =
+    appfolioAvail != null &&
+    ((appfolioAvail === 0 && listingsAvail > 5) ||
+      (listingsAvail === 0 && appfolioAvail > 5));
+  const rawAvailable = stronglyDisagree
+    ? listingsAvail
+    : appfolioAvail != null
+      ? appfolioAvail
+      : listingsAvail;
   const availableUnits = Math.max(0, Math.min(totalUnits, rawAvailable));
   const leasedUnits = Math.max(0, totalUnits - availableUnits);
   const occupancyPct =

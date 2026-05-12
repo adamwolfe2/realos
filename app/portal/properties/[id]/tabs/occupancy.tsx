@@ -4,10 +4,8 @@ import {
   getPropertyOccupancy,
   centsToUsdShort,
 } from "@/lib/properties/queries";
-import {
-  AddListingForm,
-  ListingRowActions,
-} from "../listings-manager";
+import { AddListingForm } from "../listings-manager";
+import { ListingsTable } from "@/components/portal/occupancy/listings-table";
 
 export async function OccupancyTab({
   orgId,
@@ -38,10 +36,13 @@ export async function OccupancyTab({
     );
   }
 
-  const priceRange =
-    data.priceMinCents || data.priceMaxCents
-      ? `${centsToUsdShort(data.priceMinCents)}${"–"}${centsToUsdShort(data.priceMaxCents)}`
-      : "—";
+  // Bug #45 — listings total can exceed total units when AppFolio
+  // returns one row per unit-bed-bath SKU (e.g. seasonal Spring/Fall
+  // variants of the same physical unit). We disclose the relationship
+  // inline so "141 listings vs 100 units" doesn't read as data
+  // corruption.
+  const totalListings = data.listings.length;
+  const listingsExceedUnits = totalListings > data.totalUnits;
 
   return (
     <div className="space-y-6">
@@ -51,7 +52,15 @@ export async function OccupancyTab({
           value={`${data.occupancyPct}%`}
           hint={`${data.totalUnits - data.availableUnits} of ${data.totalUnits} leased`}
         />
-        <KpiTile label="Available" value={data.availableUnits} />
+        <KpiTile
+          label="Available"
+          value={data.availableUnits}
+          hint={
+            listingsExceedUnits
+              ? `Across ${totalListings} listings`
+              : undefined
+          }
+        />
         <KpiTile label="Total units" value={data.totalUnits} />
         <KpiTile
           label="Active applications"
@@ -60,11 +69,35 @@ export async function OccupancyTab({
         />
       </section>
 
+      {/* Bug #45 — disclose that listings ≠ physical units when the
+          AppFolio sync emits more SKUs than units (very common in
+          student housing with per-room rentals and Spring/Fall
+          configurations). Hides automatically when the counts agree. */}
+      {listingsExceedUnits ? (
+        <p className="text-[11px] text-muted-foreground bg-muted/30 border border-border rounded-md px-3 py-2 leading-snug">
+          <span className="font-semibold text-foreground">
+            {totalListings} listings
+          </span>{" "}
+          across{" "}
+          <span className="font-semibold text-foreground">
+            {data.totalUnits} physical units.
+          </span>{" "}
+          AppFolio returns one row per unit configuration — student-housing
+          properties commonly expose per-bed and per-season SKUs (e.g.,
+          Spring/Fall variants of the same room), which is why listings
+          can exceed the unit count.
+        </p>
+      ) : null}
+
       {data.byBedType.length > 0 ? (
         <DashboardSection
           title="Listings by bedroom"
           eyebrow="Unit configuration"
-          description="Distribution of unit-type rows from AppFolio. The percentage shows the share marked available right now — useful for spotting which bed type has the most open inventory."
+          description={
+            listingsExceedUnits
+              ? `Distribution across all ${totalListings} listing SKUs (one row per AppFolio unit configuration; ${data.totalUnits} physical units total). The percentage shows the share marked available.`
+              : "Distribution of unit-type rows from AppFolio. The percentage shows the share marked available right now — useful for spotting which bed type has the most open inventory."
+          }
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {data.byBedType.map((b) => {
@@ -111,72 +144,11 @@ export async function OccupancyTab({
 
       <DashboardSection title="Listings" eyebrow="Per unit">
         <div className="space-y-4">
-          {data.listings.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No listings yet. Add one below — the chatbot reads from this
-              list to surface live availability and pricing.
-            </p>
-          ) : (
-            <div className="overflow-x-auto -mx-5 px-5">
-              <table className="w-full text-sm">
-                <thead className="text-[10px] tracking-widest uppercase text-muted-foreground">
-                  <tr>
-                    <th className="text-left font-semibold pb-2">Unit</th>
-                    <th className="text-left font-semibold pb-2">Type</th>
-                    <th className="text-right font-semibold pb-2">Beds</th>
-                    <th className="text-right font-semibold pb-2">Baths</th>
-                    <th className="text-right font-semibold pb-2">Price</th>
-                    <th className="text-center font-semibold pb-2">Status</th>
-                    <th className="text-right font-semibold pb-2"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {data.listings.map((l) => (
-                    <tr key={l.id}>
-                      <td className="py-2.5 text-xs text-foreground">
-                        {l.unitNumber ?? "—"}
-                      </td>
-                      <td className="py-2.5 text-xs text-muted-foreground">
-                        {l.unitType ?? "—"}
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums text-xs">
-                        {l.bedrooms ?? "—"}
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums text-xs">
-                        {l.bathrooms ?? "—"}
-                      </td>
-                      <td className="py-2.5 text-right tabular-nums text-xs">
-                        {l.priceCents != null && l.priceCents > 0 ? (
-                          centsToUsdShort(l.priceCents)
-                        ) : (
-                          <span className="text-muted-foreground/70 italic font-normal text-[11px]">
-                            Contact for pricing
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-2.5 text-center">
-                        {l.isAvailable ? (
-                          <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-primary/10 text-primary">
-                            Available
-                          </span>
-                        ) : (
-                          <span className="inline-block px-2 py-0.5 text-[10px] font-semibold rounded bg-muted text-muted-foreground">
-                            Leased
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-2.5">
-                        <ListingRowActions
-                          listingId={l.id}
-                          isAvailable={l.isAvailable}
-                        />
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+          {/* Bug #46-#50 — replaced the inline server-rendered table
+              with a client component that supports sort, filter,
+              column visibility, hover tooltips, and an explicit
+              confirmation modal for destructive actions. */}
+          <ListingsTable listings={data.listings} />
           <AddListingForm propertyId={propertyId} />
         </div>
       </DashboardSection>
