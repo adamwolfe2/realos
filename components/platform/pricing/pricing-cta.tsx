@@ -1,12 +1,7 @@
 import Link from "next/link";
 
-// Bottom CTA — final conversion push.
-//
-// Brand pass: the previous dark/black background broke the cream + blue
-// palette every other surface uses. Now sits on the same parchment as
-// the rest of the page with a thin top border, blue accent CTA, ghost
-// secondary, and a single trust line. The eye lands on the headline +
-// button without a hard color shift to fight through.
+// Bottom CTA. Parchment background, blue accent on the headline, two
+// paths forward. Self-serve framing.
 
 export function PricingCta() {
   return (
@@ -16,7 +11,7 @@ export function PricingCta() {
         borderTop: "1px solid #e8e6dc",
       }}
     >
-      <div className="max-w-[960px] mx-auto px-4 md:px-8 py-20 md:py-28 text-center">
+      <div className="max-w-[960px] mx-auto px-4 md:px-8 py-16 md:py-24 text-center">
         <p className="eyebrow mb-4">Ready when you are</p>
         <h2
           className="heading-section"
@@ -24,10 +19,11 @@ export function PricingCta() {
             color: "#141413",
             maxWidth: "720px",
             margin: "0 auto",
+            fontSize: "clamp(28px, 4vw, 40px)",
           }}
         >
-          Live in 14 days. Pay only when{" "}
-          <span style={{ color: "#2563EB" }}>your site goes live.</span>
+          Sign up in minutes.{" "}
+          <span style={{ color: "#2563EB" }}>Pause or cancel anytime.</span>
         </h2>
         <p
           className="mt-5 mx-auto"
@@ -39,24 +35,24 @@ export function PricingCta() {
             maxWidth: "620px",
           }}
         >
-          Book a 30-minute demo to walk through the platform, the AppFolio
-          sync, and what your dashboard would look like with your real data
-          loaded in.
+          Pick a tier, create your account, and your workspace is live. Connect
+          AppFolio, install the pixel, and configure the chatbot at your own
+          pace inside the product.
         </p>
 
         <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center items-center">
           <Link
-            href="/demo"
+            href="/sign-up"
             className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
             style={{
               backgroundColor: "#2563EB",
               color: "#ffffff",
             }}
           >
-            Book a demo
+            Get started
           </Link>
           <Link
-            href="/onboarding"
+            href="/demo"
             className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
             style={{
               backgroundColor: "transparent",
@@ -64,7 +60,7 @@ export function PricingCta() {
               border: "1px solid #d6d3c8",
             }}
           >
-            Start onboarding
+            Book a demo
           </Link>
         </div>
 
@@ -78,7 +74,7 @@ export function PricingCta() {
             textTransform: "uppercase",
           }}
         >
-          14-day setup · No contracts · 30-day money-back
+          No contracts. No setup fee. 30-day money back.
         </p>
       </div>
     </section>

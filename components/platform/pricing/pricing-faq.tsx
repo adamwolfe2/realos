@@ -3,42 +3,41 @@
 import * as React from "react";
 import { Plus, Minus } from "lucide-react";
 
-// Pricing FAQ — answers the deal-breaker objections only. Eight items max;
-// anything else belongs in the sales conversation. Accordion pattern so the
-// page doesn't grow into a wall of text for the 80% of buyers who skim.
+// Pricing FAQ. Eight items max. Self-serve framing. Answers the
+// deal-breaker objections only. Anything else is faster on a call.
 
 const FAQS: Array<{ q: string; a: string }> = [
   {
-    q: "Is this software or a service?",
-    a: "Both. You get the platform — site, dashboard, chatbot, pixel, integrations — and our team operates it. We launch the marketing site, run the ad accounts, request the creative, write the SEO content, and respond to negative reviews. You get a weekly summary and a dashboard to peek under the hood whenever.",
+    q: "How does signup and onboarding work?",
+    a: "Sign up at /sign-up with an email and password. The onboarding wizard walks you through naming your workspace, adding your first property, choosing a plan, paying through Stripe, and connecting AppFolio (or skipping that step for later). The whole flow takes about 10 minutes and the workspace is usable immediately after checkout. You set everything up yourself from inside the product. No sales calls required.",
   },
   {
     q: "How does per-property pricing work?",
-    a: "Each property gets its own site, listings sync, chatbot, and ad accounts. The first property pays the base tier price; each additional property on the same plan gets a 20% discount. You can mix tiers across properties — a flagship on Scale and a small property on Foundation is fine.",
+    a: "Each property gets its own marketing site, listings sync, AI chatbot, and CRM. The first property pays the base tier price. Each additional property on the same plan gets a 20 percent discount. You can mix tiers across properties by running multiple workspaces, but most operators put their whole portfolio on one plan at the same tier for simplicity.",
   },
   {
-    q: "What does the setup fee cover?",
-    a: "The site build, brand setup, AppFolio connection (or manual listings if you're not on AppFolio), chatbot training on your property's FAQs, domain + SSL configuration, and the first ad account setup if you're on Growth or Scale. It's a one-time charge billed at signing.",
+    q: "Is there a setup fee?",
+    a: "No. The platform is self-serve. You sign up, pay the monthly subscription, connect your data, and start working. No one-time fees, no implementation charges, no required onboarding calls. Custom PMS integrations beyond AppFolio are handled separately through sales contact and quoted on a per-project basis.",
   },
   {
     q: "Are there any contracts?",
-    a: "No. Every plan is month-to-month. You can pause your subscription (we hold your site live with a \"coming soon\" splash) or cancel at any time. Annual prepay is optional — it saves you ~17% but you lose the monthly off-ramp.",
+    a: "No. Every plan is month-to-month. You can pause your subscription (your workspace stays read-only and your data is preserved) or cancel any time from the billing portal. Annual prepay is optional and saves you about 17 percent, but you give up the monthly off-ramp.",
   },
   {
-    q: "What's the money-back guarantee?",
-    a: "30 days. If you don't see real lead volume or attribution by day 30, we refund the subscription fee. The setup fee is non-refundable since the work is already done — but we'll hand you the assets we built so you can take them elsewhere.",
+    q: "What is the money-back guarantee?",
+    a: "30 days. If the platform doesn't work for you for any reason, request a refund from inside the billing portal and we'll return the subscription fee no questions asked. Your data exports are available before, during, and after the refund window.",
   },
   {
-    q: "How does the ad spend markup work?",
-    a: "When we run your Google or Meta ads, we charge a 15% management fee on top of the spend you pay the platforms. So $5,000/mo in ad spend = $750/mo to us. There's no markup if you run your own ads — you only pay for the management when we manage.",
+    q: "Do you run ads for me?",
+    a: "No, you run them yourself using our campaign builder. Growth and Scale tiers unlock the in-product Google and Meta ad campaign builder where you connect your own ad accounts and we provide the UI, attribution, and creative library. We do not manage ad spend or charge a markup on what you spend with Google or Meta.",
   },
   {
-    q: "Do you support PMS systems besides AppFolio?",
-    a: "AppFolio is the only direct integration today. For Yardi, Buildium, Entrata, RealPage, and others, we offer a custom connector build (typically 2-4 weeks, $5K-$15K one-time + $200/mo per source). Manual listings work for any operator.",
+    q: "What PMS systems do you support?",
+    a: "AppFolio is the only direct integration today. If you use Yardi, Buildium, Entrata, RealPage or another PMS, contact sales for a custom connector quote. Manual property and listing entry works on any plan if you don't have a supported PMS.",
   },
   {
-    q: "Can I bring my own website instead?",
-    a: "Yes — you'd lose the site-build portion of the setup fee but the chatbot, pixel, lead capture, ads, reputation, and audiences all work on top of any site. You'd install the pixel + chatbot widget on your existing pages. Pricing stays the same.",
+    q: "Can I bring my own website?",
+    a: "Yes. You can install the chatbot widget and Cursive pixel on any existing site and skip our site builder entirely. Pricing is unchanged. Lead capture, ad campaigns, reputation monitoring, and audiences all work the same way on top of your own site.",
   },
 ];
 
@@ -46,11 +45,19 @@ export function PricingFaq() {
   const [openIdx, setOpenIdx] = React.useState<number | null>(0);
 
   return (
-    <section style={{ backgroundColor: "#f5f4ed", borderTop: "1px solid #f0eee6" }}>
-      <div className="max-w-[920px] mx-auto px-4 md:px-8 py-20 md:py-28">
-        <div className="mb-10 md:mb-12">
-          <p className="eyebrow mb-4">Pricing FAQ</p>
-          <h2 className="heading-section" style={{ color: "#141413" }}>
+    <section
+      style={{
+        backgroundColor: "#f5f4ed",
+        borderTop: "1px solid #f0eee6",
+      }}
+    >
+      <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16 md:py-24">
+        <div className="mb-8 md:mb-10">
+          <p className="eyebrow mb-3">Pricing FAQ</p>
+          <h2
+            className="heading-section"
+            style={{ color: "#141413", fontSize: "clamp(24px, 3vw, 32px)" }}
+          >
             The deal-breaker questions.
           </h2>
           <p
@@ -58,7 +65,7 @@ export function PricingFaq() {
             style={{
               color: "#5e5d59",
               fontFamily: "var(--font-sans)",
-              fontSize: "17px",
+              fontSize: "16px",
               lineHeight: 1.6,
             }}
           >
@@ -105,7 +112,7 @@ export function PricingFaq() {
                       display: "inline-flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      backgroundColor: open ? "#141413" : "#f5f4ed",
+                      backgroundColor: open ? "#2563EB" : "#f5f4ed",
                       color: open ? "#ffffff" : "#5e5d59",
                       transition: "background-color 120ms ease",
                     }}

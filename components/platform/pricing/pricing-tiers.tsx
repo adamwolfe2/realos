@@ -45,86 +45,85 @@ const TIERS: Tier[] = [
     id: "foundation",
     checkoutTierId: "starter",
     name: "Foundation",
-    tagline: "Get your marketing engine online.",
-    monthly: 599,
-    annual: 499,
-    setupFee: 1500,
+    tagline: "The core platform for a single property.",
+    monthly: 499,
+    annual: 419,
+    setupFee: null,
     highlighted: false,
     ctaLabel: "Start with Foundation",
     ctaHref: "/onboarding?plan=foundation",
-    audienceCallout: "Owner-operators with 1–2 properties",
+    audienceCallout: "Owner-operators with 1 to 2 properties",
     features: [
-      { label: "Custom-branded marketing site, managed" },
+      { label: "Marketing site builder, hosted on your domain" },
       { label: "Live AppFolio listings sync" },
-      { label: "AI chatbot — 1,000 conversations/mo" },
-      { label: "Lead capture + multi-property CRM" },
-      { label: "Reputation monitoring (Google, Reddit, web)" },
-      { label: "Standard reports + monthly digest" },
-      { label: "Email support, 48-hour SLA" },
+      { label: "AI leasing chatbot, 1,000 conversations per month" },
+      { label: "Lead capture and tour scheduling" },
+      { label: "Multi-property CRM" },
+      { label: "Reputation monitoring (Google, Reddit, open web)" },
+      { label: "Standard reports and monthly email digest" },
     ],
   },
   {
     id: "growth",
     checkoutTierId: "growth",
     name: "Growth",
-    tagline: "The full marketing flywheel running.",
+    tagline: "Add paid acquisition, attribution, and SEO.",
     monthly: 899,
     annual: 749,
-    setupFee: 2500,
+    setupFee: null,
     highlighted: true,
     ctaLabel: "Start with Growth",
     ctaHref: "/onboarding?plan=growth",
-    audienceCallout: "Mid-market operators ready to scale",
+    audienceCallout: "Mid-market operators running paid campaigns",
     features: [
       { label: "Everything in Foundation, plus:" },
       {
-        label: "Cursive Pixel — identify 5,000 visitors/mo",
+        label: "Cursive visitor pixel, 5,000 identified visitors per month",
         emphasis: true,
       },
       {
-        label: "Google + Meta ad campaign management",
+        label: "Google and Meta ad campaign builder",
         emphasis: true,
       },
-      { label: "Creative studio — 2 ad creatives/mo" },
-      { label: "SEO module (GSC + GA4, monthly recs)" },
-      { label: "Advanced attribution + funnel reports" },
-      { label: "Shared Slack channel, 24-hour SLA" },
+      { label: "AI chatbot bumped to 5,000 conversations per month" },
+      { label: "SEO module with GSC and GA4 integration" },
+      { label: "Creative library and brand kit" },
+      { label: "Multi-touch attribution and funnel reports" },
     ],
   },
   {
     id: "scale",
     checkoutTierId: "scale",
     name: "Scale",
-    tagline: "Push paid + organic + audience at portfolio scale.",
+    tagline: "Audience sync, outbound, and unlimited chatbot.",
     monthly: 1499,
-    annual: 1199,
-    setupFee: 3500,
+    annual: 1249,
+    setupFee: null,
     highlighted: false,
     ctaLabel: "Start with Scale",
     ctaHref: "/onboarding?plan=scale",
-    audienceCallout: "Operators with 5+ properties",
+    audienceCallout: "Portfolio operators with 5 or more properties",
     features: [
       { label: "Everything in Growth, plus:" },
       {
-        label: "Cursive Pixel — identify 25,000 visitors/mo",
+        label: "Cursive pixel bumped to 25,000 identified visitors per month",
         emphasis: true,
       },
-      { label: "Unlimited ad creative requests", emphasis: true },
       {
-        label: "Audience builder + sync (Meta, Google, TikTok)",
+        label: "Audience builder with sync to Meta, Google, and TikTok",
         emphasis: true,
       },
-      { label: "Outbound email — 3,000 sends/mo" },
-      { label: "Referral program" },
-      { label: "Quarterly business review" },
-      { label: "Priority support, 4-hour SLA + CSM" },
+      { label: "Unlimited AI chatbot conversations" },
+      { label: "Outbound email, 3,000 sends per month" },
+      { label: "Resident referral program" },
+      { label: "Scheduled custom reports" },
     ],
   },
   {
     id: "enterprise",
     checkoutTierId: null,
     name: "Enterprise",
-    tagline: "Multi-brand portfolios, white-label, custom integrations.",
+    tagline: "Custom integrations and volume pricing.",
     monthly: null,
     annual: null,
     setupFee: null,
@@ -134,12 +133,12 @@ const TIERS: Tier[] = [
     audienceCallout: "20+ properties or multi-brand operators",
     features: [
       { label: "Everything in Scale, plus:" },
-      { label: "Volume pricing (25–35% off list)" },
-      { label: "White-label tenant portal" },
-      { label: "Custom integrations (non-AppFolio PMS)" },
-      { label: "Named build team + custom SLAs" },
-      { label: "Quarterly strategy + dedicated CSM" },
-      { label: "Annual / multi-year terms available" },
+      { label: "Volume pricing (25 to 35 percent off list)" },
+      { label: "White-label workspace included" },
+      { label: "Custom PMS integrations (non-AppFolio)" },
+      { label: "SSO and SCIM provisioning" },
+      { label: "Custom data retention and exports" },
+      { label: "Annual and multi-year terms available" },
     ],
   },
 ];
@@ -223,10 +222,9 @@ export function PricingTiers() {
             margin: "32px auto 0",
           }}
         >
-          One-time setup fee covers site build, AppFolio sync wiring, chatbot
-          training, and DNS. Ad-spend management billed at a 15% markup on
-          your monthly ad budget — only when you run ads. Additional properties
-          on the same plan get a 20% discount.
+          No setup fees. No annual contracts. Additional properties on the
+          same plan get 20 percent off the per-property rate. Cancel or pause
+          anytime from the billing portal.
         </p>
       </div>
     </section>
@@ -410,18 +408,7 @@ function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
                   fontWeight: 500,
                 }}
               >
-                Billed yearly · saves ${(tier.monthly - tier.annual!) * 12}/yr
-              </p>
-            ) : tier.setupFee != null ? (
-              <p
-                className="mt-1"
-                style={{
-                  color: mutedText,
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "12px",
-                }}
-              >
-                ${tier.setupFee.toLocaleString()} one-time setup
+                Billed yearly · save ${(tier.monthly - tier.annual!) * 12}/yr
               </p>
             ) : null}
           </div>

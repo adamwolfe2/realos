@@ -21,42 +21,35 @@ import { Check, Minus, ChevronDown } from "lucide-react";
 type Cell = boolean | string;
 type Row = { feature: string; foundation: Cell; growth: Cell; scale: Cell };
 
-// The headline rows that drive tier decisions. Keep this list tight —
-// anything that isn't a deal-breaker belongs in the full table behind
-// the disclosure.
+// Headline rows that drive tier decisions. Anything that isn't a deal-
+// breaker belongs in the full table behind the disclosure below.
 const HEADLINE_ROWS: Row[] = [
   {
-    feature: "Identified website visitors / mo",
-    foundation: "—",
+    feature: "Identified visitors per month (Cursive pixel)",
+    foundation: "Not included",
     growth: "5,000",
     scale: "25,000",
   },
   {
-    feature: "AI chatbot conversations / mo",
+    feature: "AI chatbot conversations per month",
     foundation: "1,000",
     growth: "5,000",
     scale: "Unlimited",
   },
   {
-    feature: "Google + Meta ad campaign management",
+    feature: "Google and Meta ad campaign builder",
     foundation: false,
     growth: true,
     scale: true,
   },
   {
-    feature: "Ad creative requests / mo",
-    foundation: false,
-    growth: "2",
-    scale: "Unlimited",
-  },
-  {
-    feature: "SEO module (GSC + GA4)",
+    feature: "SEO module (GSC and GA4)",
     foundation: false,
     growth: true,
     scale: true,
   },
   {
-    feature: "Audience builder + sync (Meta, Google, TikTok)",
+    feature: "Audience builder with sync (Meta, Google, TikTok)",
     foundation: false,
     growth: false,
     scale: true,
@@ -65,54 +58,69 @@ const HEADLINE_ROWS: Row[] = [
     feature: "Outbound email campaigns",
     foundation: false,
     growth: false,
-    scale: "3,000/mo",
+    scale: "3,000 per month",
   },
   {
-    feature: "Support SLA",
-    foundation: "48 hr email",
-    growth: "24 hr Slack",
-    scale: "4 hr + CSM",
+    feature: "Resident referral program",
+    foundation: false,
+    growth: false,
+    scale: true,
+  },
+  {
+    feature: "Support",
+    foundation: "Email",
+    growth: "Email + chat",
+    scale: "Email + chat",
   },
 ];
 
-// Full 40-row matrix — only rendered when the disclosure is open.
+// Full feature matrix. Rendered only when the disclosure opens. Every
+// row is a real platform capability, not a service promise. If you're
+// editing this list, make sure the feature genuinely ships at that
+// tier today.
 const FULL_SECTIONS: Array<{ title: string; rows: Row[] }> = [
   {
-    title: "Marketing site & listings",
+    title: "Marketing site",
     rows: [
-      { feature: "Custom-branded marketing site, managed", foundation: true, growth: true, scale: true },
+      { feature: "In-product site builder", foundation: true, growth: true, scale: true },
       { feature: "Live AppFolio listings sync", foundation: true, growth: true, scale: true },
-      { feature: "Custom domain + SSL", foundation: true, growth: true, scale: true },
-      { feature: "Mobile-first responsive build", foundation: true, growth: true, scale: true },
-      { feature: "Site updates by our team", foundation: "Monthly", growth: "Bi-weekly", scale: "Weekly" },
+      { feature: "Custom domain with SSL", foundation: true, growth: true, scale: true },
+      { feature: "Mobile responsive layouts", foundation: true, growth: true, scale: true },
+      { feature: "White-label branding", foundation: false, growth: false, scale: false },
     ],
   },
   {
-    title: "AI chatbot",
+    title: "AI leasing chatbot",
     rows: [
-      { feature: "AI chatbot trained on the property", foundation: true, growth: true, scale: true },
-      { feature: "Lead capture inside chatbot", foundation: true, growth: true, scale: true },
-      { feature: "Property-specific FAQ training", foundation: true, growth: true, scale: true },
+      { feature: "Property-aware conversation training", foundation: true, growth: true, scale: true },
+      { feature: "Lead capture inside the chatbot widget", foundation: true, growth: true, scale: true },
+      { feature: "Tour scheduling", foundation: true, growth: true, scale: true },
+      { feature: "Embed on third-party sites", foundation: true, growth: true, scale: true },
     ],
   },
   {
     title: "Visitor identification",
     rows: [
-      { feature: "Cursive Pixel installed + maintained", foundation: false, growth: true, scale: true },
+      { feature: "Cursive pixel install and config", foundation: false, growth: true, scale: true },
       { feature: "Visitor stream with identity + page path", foundation: false, growth: true, scale: true },
+      { feature: "Visitor to lead attribution", foundation: false, growth: true, scale: true },
     ],
   },
   {
     title: "Paid advertising",
     rows: [
-      { feature: "Ad spend markup", foundation: "—", growth: "15%", scale: "15%" },
+      { feature: "Google Ads campaign builder UI", foundation: false, growth: true, scale: true },
+      { feature: "Meta Ads campaign builder UI", foundation: false, growth: true, scale: true },
       { feature: "Multi-variant A/B testing", foundation: false, growth: true, scale: true },
+      { feature: "Connect your own ad accounts", foundation: false, growth: true, scale: true },
     ],
   },
   {
-    title: "SEO & content",
+    title: "SEO and content",
     rows: [
-      { feature: "Content recommendations", foundation: false, growth: "Monthly", scale: "Weekly" },
+      { feature: "Google Search Console integration", foundation: false, growth: true, scale: true },
+      { feature: "GA4 integration", foundation: false, growth: true, scale: true },
+      { feature: "In-product content recommendations", foundation: false, growth: true, scale: true },
       { feature: "Programmatic SEO pages", foundation: false, growth: false, scale: true },
     ],
   },
@@ -120,24 +128,36 @@ const FULL_SECTIONS: Array<{ title: string; rows: Row[] }> = [
     title: "Reputation",
     rows: [
       { feature: "Google reviews monitoring", foundation: true, growth: true, scale: true },
-      { feature: "Reddit + open-web monitoring", foundation: true, growth: true, scale: true },
+      { feature: "Reddit and open-web monitoring", foundation: true, growth: true, scale: true },
       { feature: "AI sentiment classification", foundation: true, growth: true, scale: true },
-      { feature: "Multi-source reply drafting", foundation: true, growth: true, scale: true },
+      { feature: "Reply drafting tools", foundation: true, growth: true, scale: true },
     ],
   },
   {
-    title: "Outbound + retention",
+    title: "Audiences and outbound",
     rows: [
-      { feature: "Referral program", foundation: false, growth: false, scale: true },
-      { feature: "Resident renewal pipeline", foundation: true, growth: true, scale: true },
+      { feature: "Audience builder (segments)", foundation: false, growth: false, scale: true },
+      { feature: "Sync to Meta Custom Audiences", foundation: false, growth: false, scale: true },
+      { feature: "Sync to Google Customer Match", foundation: false, growth: false, scale: true },
+      { feature: "Sync to TikTok Custom Audiences", foundation: false, growth: false, scale: true },
+      { feature: "Outbound email campaigns", foundation: false, growth: false, scale: "3,000 per month" },
     ],
   },
   {
-    title: "Reporting & support",
+    title: "Reporting",
     rows: [
-      { feature: "Standard reports", foundation: true, growth: true, scale: true },
-      { feature: "Advanced attribution + funnel", foundation: false, growth: true, scale: true },
-      { feature: "Quarterly business review", foundation: false, growth: false, scale: true },
+      { feature: "Standard reports + monthly email digest", foundation: true, growth: true, scale: true },
+      { feature: "Multi-touch attribution and funnel reports", foundation: false, growth: true, scale: true },
+      { feature: "Scheduled custom reports by email", foundation: false, growth: false, scale: true },
+    ],
+  },
+  {
+    title: "Operations",
+    rows: [
+      { feature: "Multi-property dashboard", foundation: true, growth: true, scale: true },
+      { feature: "Lead CRM with statuses and notes", foundation: true, growth: true, scale: true },
+      { feature: "Resident and renewal pipeline (AppFolio)", foundation: true, growth: true, scale: true },
+      { feature: "Resident referral program", foundation: false, growth: false, scale: true },
     ],
   },
 ];
