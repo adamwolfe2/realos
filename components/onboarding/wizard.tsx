@@ -13,6 +13,7 @@ import type {
 import type { OnboardingStep } from "@/lib/onboarding/steps";
 import { WizardChrome } from "./wizard-chrome";
 import { WelcomeStep } from "./welcome-step";
+import { IntegrationsStep } from "./integrations-step";
 import { PropertyStep } from "./property-step";
 import { PlanStep } from "./plan-step";
 
@@ -64,7 +65,10 @@ export function OnboardingWizard({
   const [submitting, setSubmitting] = React.useState(false);
 
   const advance = React.useCallback(
-    async (action: "workspace" | "property" | "start-trial", body: unknown) => {
+    async (
+      action: "workspace" | "integrations" | "property" | "start-trial",
+      body: unknown,
+    ) => {
       if (submitting) return;
       setSubmitting(true);
       try {
@@ -125,6 +129,13 @@ export function OnboardingWizard({
             commercialSubtype: org.commercialSubtype,
           }}
           onSubmit={(body) => advance("workspace", body)}
+          disabled={submitting}
+        />
+      ) : null}
+
+      {step === "integrations" ? (
+        <IntegrationsStep
+          onSubmit={(body) => advance("integrations", body)}
           disabled={submitting}
         />
       ) : null}

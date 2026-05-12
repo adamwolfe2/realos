@@ -25,7 +25,12 @@
 import Stripe from "stripe";
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { ADDONS, TIERS, type AddOnDefinition } from "../lib/billing/catalog";
+import {
+  ADDONS,
+  PROPERTY_BRACKETS,
+  TIERS,
+  type AddOnDefinition,
+} from "../lib/billing/catalog";
 
 if (!process.env.STRIPE_SECRET_KEY) {
   console.error(
@@ -216,7 +221,7 @@ async function findOrCreatePrice(spec: PriceSpec): Promise<Stripe.Price> {
 function metadataForTierPrice(
   tier: string,
   cycle: "monthly" | "annual",
-  perProperty: "base" | "additional" | "setup",
+  perProperty: "base" | "additional" | "setup" | "graduated",
 ): Record<string, string> {
   return { tier, cycle, per_property: perProperty };
 }
@@ -229,6 +234,86 @@ function metadataForAddon(
     billing_mode: addon.billingMode,
     ...(addon.meteredUnit ? { metered_unit: addon.meteredUnit } : {}),
   };
+}
+
+// Graduated tiered price. Each subscription item with this price has
+// quantity = property count; Stripe computes the bill across brackets:
+//
+//   Property 1            full price (0% off)
+//   Properties 2 to 9     20% off
+//   Properties 10 to 24   30% off
+//   Properties 25 to 99   40% off
+//
+// The brackets come from PROPERTY_BRACKETS in lib/billing/catalog.ts so
+// the discount structure is centrally defined.
+//
+// Stripe `tiers_mode: "graduated"` means each tier is billed at its
+// rate ONLY for the units that fall inside that tier (not all units
+// at the topmost tier's rate). That matches the volume-discount math
+// every operator expects from per-unit SaaS pricing.
+//
+// Stripe requires the top tier to have `up_to: "inf"`. We cap the
+// stepper UI / checkout endpoint at 99 to push 100+ portfolios into
+// an Enterprise sales conversation.
+async function findOrCreateGraduatedPrice(spec: {
+  lookupKey: string;
+  productId: string;
+  baseUnitAmountCents: number;
+  interval: "month" | "year";
+  metadata: Record<string, string>;
+}): Promise<Stripe.Price> {
+  // Same retrieve-by-lookup-key dance as findOrCreatePrice.
+  const existing = await stripe.prices.list({
+    lookup_keys: [spec.lookupKey],
+    limit: 1,
+    active: true,
+  });
+  if (existing.data.length > 0) {
+    const e = existing.data[0];
+    // Tiered prices store their tier config under `tiers`; we don't
+    // attempt diff detection here because Stripe immutability means
+    // even a single-cent change requires archive + recreate. For now,
+    // if the lookup key exists we trust it. To force a refresh, bump
+    // the lookup key version in catalog.ts (e.g. _v1 -> _v2).
+    console.log(`  ✓ graduated price exists: ${spec.lookupKey}`);
+    return e;
+  }
+
+  // Build the tiers array from PROPERTY_BRACKETS. Stripe requires
+  // `unit_amount` in cents; the top tier MUST use up_to: "inf".
+  const tiers: Stripe.PriceCreateParams.Tier[] = [];
+  for (let i = 0; i < PROPERTY_BRACKETS.length; i++) {
+    const bracket = PROPERTY_BRACKETS[i]!;
+    const isLast = i === PROPERTY_BRACKETS.length - 1;
+    const upTo: "inf" | number = isLast
+      ? "inf"
+      : (bracket.upTo ?? "inf");
+    const unitAmount = Math.round(
+      spec.baseUnitAmountCents * (1 - bracket.discountPct),
+    );
+    tiers.push({
+      up_to: upTo,
+      unit_amount: unitAmount,
+    });
+  }
+
+  const created = await stripe.prices.create({
+    currency: "usd",
+    product: spec.productId,
+    lookup_key: spec.lookupKey,
+    billing_scheme: "tiered",
+    tiers_mode: "graduated",
+    tiers,
+    recurring: {
+      interval: spec.interval,
+      usage_type: "licensed",
+    },
+    metadata: spec.metadata,
+  });
+  console.log(
+    `  + graduated price created: ${spec.lookupKey}  (${created.id})`,
+  );
+  return created;
 }
 
 // ---------------------------------------------------------------------------
@@ -249,9 +334,11 @@ async function run() {
       description: tier.productDescription,
     });
 
-    // Self-serve model — no one-time setup fees. Just recurring prices
-    // for the base subscription + additional-property quantity discount.
-    const tierPrices = [
+    // Two flat prices kept for legacy compatibility + display purposes
+    // (used as the "headline" per-property rate on /pricing for a
+    // single-property buyer). The actual checkout uses the graduated
+    // tiered prices below.
+    const flatPrices = [
       {
         ...tier.monthly,
         recurringInterval: "month" as const,
@@ -263,26 +350,40 @@ async function run() {
         metadata: metadataForTierPrice(tier.tier, "annual", "base"),
         unitAmountCents: tier.annual.unitAmountCents * 12,
       },
-      {
-        ...tier.additionalPropertyMonthly,
-        recurringInterval: "month" as const,
-        metadata: metadataForTierPrice(tier.tier, "monthly", "additional"),
-      },
-      {
-        ...tier.additionalPropertyAnnual,
-        recurringInterval: "year" as const,
-        metadata: metadataForTierPrice(tier.tier, "annual", "additional"),
-        unitAmountCents: tier.additionalPropertyAnnual.unitAmountCents * 12,
-      },
     ];
 
-    for (const p of tierPrices) {
+    for (const p of flatPrices) {
       const price = await findOrCreatePrice({
         ...p,
         productId: product.id,
       });
       priceIdMap[p.lookupKey] = price.id;
     }
+
+    // Graduated tiered prices — drive the actual subscription line
+    // item. Single subscription item, quantity = property count.
+    // Stripe computes the bill across the brackets.
+    const graduatedMonthly = await findOrCreateGraduatedPrice({
+      lookupKey: tier.graduatedMonthly.lookupKey,
+      productId: product.id,
+      baseUnitAmountCents: tier.monthly.unitAmountCents,
+      interval: "month",
+      metadata: {
+        ...metadataForTierPrice(tier.tier, "monthly", "graduated"),
+      },
+    });
+    priceIdMap[tier.graduatedMonthly.lookupKey] = graduatedMonthly.id;
+
+    const graduatedAnnual = await findOrCreateGraduatedPrice({
+      lookupKey: tier.graduatedAnnual.lookupKey,
+      productId: product.id,
+      baseUnitAmountCents: tier.annual.unitAmountCents * 12,
+      interval: "year",
+      metadata: {
+        ...metadataForTierPrice(tier.tier, "annual", "graduated"),
+      },
+    });
+    priceIdMap[tier.graduatedAnnual.lookupKey] = graduatedAnnual.id;
   }
 
   console.log("\n[2/3] Add-ons — products + prices");

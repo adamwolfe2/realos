@@ -59,16 +59,14 @@ export type CheckoutPriceSelection = {
 
 export type ResolvedLineItems = Array<
   | {
-      kind: "subscription_base";
+      // Graduated tiered subscription item — single line, quantity = N
+      // properties. Stripe applies the bracket discounts via the
+      // tier's `graduatedMonthly` / `graduatedAnnual` price config.
+      kind: "subscription_tiered";
       priceId: string;
-      quantity: 1;
+      quantity: number;
       tier: TierDefinition;
       cycle: "monthly" | "annual";
-    }
-  | {
-      kind: "subscription_additional_property";
-      priceId: string;
-      quantity: number; // propertyCount - 1
     }
   | {
       kind: "subscription_addon";
@@ -87,32 +85,20 @@ export function resolveLineItems(
 ): ResolvedLineItems {
   const items: ResolvedLineItems = [];
 
-  // Base subscription. Quantity is always 1; additional properties get
-  // their own discounted line item below.
-  const baseLookupKey =
+  // Single graduated subscription item. Quantity = property count.
+  // Stripe handles the bracket math via tiers_mode=graduated; the
+  // ResolvedLineItems consumer just passes `quantity` to Checkout.
+  const graduatedLookupKey =
     selection.cycle === "monthly"
-      ? selection.tier.monthly.lookupKey
-      : selection.tier.annual.lookupKey;
+      ? selection.tier.graduatedMonthly.lookupKey
+      : selection.tier.graduatedAnnual.lookupKey;
   items.push({
-    kind: "subscription_base",
-    priceId: getPriceId(baseLookupKey),
-    quantity: 1,
+    kind: "subscription_tiered",
+    priceId: getPriceId(graduatedLookupKey),
+    quantity: Math.max(1, selection.propertyCount),
     tier: selection.tier,
     cycle: selection.cycle,
   });
-
-  // Additional properties at 20% off.
-  if (selection.propertyCount > 1) {
-    const additionalLookupKey =
-      selection.cycle === "monthly"
-        ? selection.tier.additionalPropertyMonthly.lookupKey
-        : selection.tier.additionalPropertyAnnual.lookupKey;
-    items.push({
-      kind: "subscription_additional_property",
-      priceId: getPriceId(additionalLookupKey),
-      quantity: selection.propertyCount - 1,
-    });
-  }
 
   // Add-ons. Recurring add-ons land as subscription items; metered
   // add-ons land as zero-quantity subscription items and accumulate

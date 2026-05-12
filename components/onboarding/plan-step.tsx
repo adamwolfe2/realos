@@ -97,7 +97,7 @@ export function PlanStep({
           className="eyebrow"
           style={{ color: "#2563EB", letterSpacing: "0.16em" }}
         >
-          Step 3 of 3
+          Step 4 of 4
         </p>
         <h1
           className="mt-2"

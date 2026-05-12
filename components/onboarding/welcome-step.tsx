@@ -111,7 +111,7 @@ export function WelcomeStep({
           className="eyebrow"
           style={{ color: "#2563EB", letterSpacing: "0.16em" }}
         >
-          Step 1 of 3
+          Step 1 of 4
         </p>
         <h1
           className="mt-2"

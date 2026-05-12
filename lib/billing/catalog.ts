@@ -52,22 +52,99 @@ export type TierLimits = {
   outboundEmailSendsPerMonth: number;
 };
 
+// Graduated per-property discount brackets. Stripe applies these as a
+// single `billing_scheme=tiered, tiers_mode=graduated` price, with
+// `quantity` on the subscription item driving the property count. The
+// brackets are expressed as discount percentages off the base
+// per-property monthly rate so a single source of truth (the tier's
+// `monthly.unitAmountCents`) drives everything.
+//
+// Bracket math:
+//   Property 1            -> 0% off (full base rate)
+//   Properties 2 to 9     -> 20% off
+//   Properties 10 to 24   -> 30% off
+//   Properties 25 to 99   -> 40% off
+//   100+                  -> contact sales (not on self-serve checkout)
+export type DiscountBracket = {
+  // Last property number included in this bracket. `null` for the
+  // open-ended top bracket (which we cap externally at 99 for
+  // self-serve; 100+ routes through Enterprise).
+  upTo: number | null;
+  discountPct: number; // 0 to 1
+};
+
+export const PROPERTY_BRACKETS: DiscountBracket[] = [
+  { upTo: 1, discountPct: 0 },
+  { upTo: 9, discountPct: 0.2 },
+  { upTo: 24, discountPct: 0.3 },
+  { upTo: 99, discountPct: 0.4 },
+];
+
+// Hard cap on the self-serve property stepper / checkout.
+// Anything above this routes to Enterprise's "talk to sales" path.
+export const SELF_SERVE_PROPERTY_CAP = 99;
+
 export type TierDefinition = {
   id: Lowercase<Exclude<SubscriptionTier, "CUSTOM">>;
   tier: SubscriptionTier;
   productLookupKey: string;
   productName: string;
   productDescription: string;
-  // Per-property monthly price. `quantity` on the subscription item
-  // drives multi-property scaling, with a discount price for
-  // additional properties at 20% off.
+  // Per-property monthly price for the FIRST property. Additional
+  // properties get the per-bracket discount applied via Stripe's
+  // graduated tiered pricing (see PROPERTY_BRACKETS above).
   monthly: { lookupKey: string; unitAmountCents: number };
   annual: { lookupKey: string; unitAmountCents: number };
-  additionalPropertyMonthly: { lookupKey: string; unitAmountCents: number };
-  additionalPropertyAnnual: { lookupKey: string; unitAmountCents: number };
+  // Lookup keys for the graduated tiered Stripe Prices. One per cycle.
+  // The setup script creates these with `billing_scheme=tiered` so a
+  // single subscription item with quantity=N bills correctly under the
+  // bracket math.
+  graduatedMonthly: { lookupKey: string };
+  graduatedAnnual: { lookupKey: string };
   modules: ModuleFlags;
   limits: TierLimits;
 };
+
+// Compute total monthly cents for a tier + property count using the
+// graduated brackets. Used by the UI to render accurate totals and by
+// scripts/billing-checks to sanity-check Stripe's invoice math.
+export function computeGraduatedMonthlyCents(
+  baseUnitAmountCents: number,
+  propertyCount: number,
+): number {
+  if (propertyCount <= 0) return 0;
+  let total = 0;
+  let counted = 0;
+  for (const bracket of PROPERTY_BRACKETS) {
+    const bracketLastUnit = bracket.upTo ?? Number.MAX_SAFE_INTEGER;
+    if (propertyCount <= counted) break;
+    const unitsInBracket = Math.max(
+      0,
+      Math.min(propertyCount, bracketLastUnit) - counted,
+    );
+    if (unitsInBracket <= 0) continue;
+    const perUnit = Math.round(
+      baseUnitAmountCents * (1 - bracket.discountPct),
+    );
+    total += perUnit * unitsInBracket;
+    counted += unitsInBracket;
+  }
+  return total;
+}
+
+// Effective per-property cents at a given property count. Used to show
+// "you're paying $X per property" in the UI without exposing the full
+// bracket structure.
+export function effectivePerPropertyCents(
+  baseUnitAmountCents: number,
+  propertyCount: number,
+): number {
+  if (propertyCount <= 0) return baseUnitAmountCents;
+  return Math.round(
+    computeGraduatedMonthlyCents(baseUnitAmountCents, propertyCount) /
+      propertyCount,
+  );
+}
 
 // Module sets per tier. Foundation gets the baseline; Growth adds
 // pixel + paid + SEO + creative library; Scale adds outbound +
@@ -116,14 +193,8 @@ export const TIERS: TierDefinition[] = [
       "Core platform: marketing site builder, AppFolio listings sync, AI leasing chatbot, lead capture and tour scheduling, reputation monitoring. Self-serve. Connect your data, launch in a day.",
     monthly: { lookupKey: "ls_foundation_monthly_v1", unitAmountCents: 49900 },
     annual: { lookupKey: "ls_foundation_annual_v1", unitAmountCents: 41900 },
-    additionalPropertyMonthly: {
-      lookupKey: "ls_foundation_addl_monthly_v1",
-      unitAmountCents: 39900,
-    },
-    additionalPropertyAnnual: {
-      lookupKey: "ls_foundation_addl_annual_v1",
-      unitAmountCents: 33500,
-    },
+    graduatedMonthly: { lookupKey: "ls_foundation_graduated_monthly_v1" },
+    graduatedAnnual: { lookupKey: "ls_foundation_graduated_annual_v1" },
     modules: FOUNDATION_MODULES,
     limits: {
       chatbotConversationsPerMonth: 1000,
@@ -140,14 +211,8 @@ export const TIERS: TierDefinition[] = [
       "Everything in Foundation, plus Cursive visitor pixel (5,000 identified visitors per month), Google and Meta ads campaign builder, SEO module with GSC and GA4 integration, multi-touch attribution, creative library and brand kit.",
     monthly: { lookupKey: "ls_growth_monthly_v1", unitAmountCents: 89900 },
     annual: { lookupKey: "ls_growth_annual_v1", unitAmountCents: 74900 },
-    additionalPropertyMonthly: {
-      lookupKey: "ls_growth_addl_monthly_v1",
-      unitAmountCents: 71900,
-    },
-    additionalPropertyAnnual: {
-      lookupKey: "ls_growth_addl_annual_v1",
-      unitAmountCents: 59900,
-    },
+    graduatedMonthly: { lookupKey: "ls_growth_graduated_monthly_v1" },
+    graduatedAnnual: { lookupKey: "ls_growth_graduated_annual_v1" },
     modules: GROWTH_MODULES,
     limits: {
       chatbotConversationsPerMonth: 5000,
@@ -164,14 +229,8 @@ export const TIERS: TierDefinition[] = [
       "Everything in Growth, plus 25,000 identified visitors per month, audience builder with sync to Meta, Google and TikTok, outbound email campaigns (3,000 sends per month), resident referral program, scheduled custom reports, unlimited chatbot conversations.",
     monthly: { lookupKey: "ls_scale_monthly_v1", unitAmountCents: 149900 },
     annual: { lookupKey: "ls_scale_annual_v1", unitAmountCents: 124900 },
-    additionalPropertyMonthly: {
-      lookupKey: "ls_scale_addl_monthly_v1",
-      unitAmountCents: 119900,
-    },
-    additionalPropertyAnnual: {
-      lookupKey: "ls_scale_addl_annual_v1",
-      unitAmountCents: 99900,
-    },
+    graduatedMonthly: { lookupKey: "ls_scale_graduated_monthly_v1" },
+    graduatedAnnual: { lookupKey: "ls_scale_graduated_annual_v1" },
     modules: SCALE_MODULES,
     limits: {
       chatbotConversationsPerMonth: "unlimited",
@@ -284,8 +343,8 @@ export function findTierByLookupKey(
       (t) =>
         t.monthly.lookupKey === lookupKey ||
         t.annual.lookupKey === lookupKey ||
-        t.additionalPropertyMonthly.lookupKey === lookupKey ||
-        t.additionalPropertyAnnual.lookupKey === lookupKey
+        t.graduatedMonthly.lookupKey === lookupKey ||
+        t.graduatedAnnual.lookupKey === lookupKey,
     ) ?? null
   );
 }

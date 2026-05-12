@@ -6,6 +6,7 @@ import { BillingPortalButton } from "./billing-portal-button";
 import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { ADDONS, TIERS } from "@/lib/billing/plans";
 import type Stripe from "stripe";
+import { TrialActivationCard } from "./trial-activation-card";
 
 export const metadata: Metadata = { title: "Billing" };
 export const dynamic = "force-dynamic";
@@ -20,13 +21,26 @@ export default async function BillingPage() {
       subscriptionTier: true,
       subscriptionStatus: true,
       subscriptionStartedAt: true,
+      chosenTier: true,
+      trialStartedAt: true,
+      trialEndsAt: true,
       mrrCents: true,
       buildFeePaidCents: true,
       adSpendMarkupPct: true,
       stripeCustomerId: true,
+      _count: { select: { properties: true } },
     },
   });
   if (!org) return null;
+
+  // Property count drives trial-activation pricing. Match the
+  // dashboard's "marketable" filter so we don't quote a price that
+  // counts excluded sub-records.
+  const marketablePropertyCount = await prisma.property
+    .count({
+      where: { orgId: scope.orgId, lifecycle: { in: ["IMPORTED", "ACTIVE"] } },
+    })
+    .catch(() => 0);
 
   const adCampaigns = await prisma.adCampaign.findMany({
     where: { orgId: scope.orgId, status: "active" },
@@ -80,30 +94,37 @@ export default async function BillingPage() {
           : null;
       const productLookupKey = productMeta?.lookup_key ?? "";
       const isMetered = price.recurring?.usage_type === "metered";
-      // Tier match?
+      // Tier match? Match against the graduated price lookup keys too
+      // since live customers run on those after the catalog refactor.
       const tier = TIERS.find(
         (t) =>
           t.monthly.lookupKey === price.lookup_key ||
           t.annual.lookupKey === price.lookup_key ||
-          t.additionalPropertyMonthly.lookupKey === price.lookup_key ||
-          t.additionalPropertyAnnual.lookupKey === price.lookup_key,
+          t.graduatedMonthly.lookupKey === price.lookup_key ||
+          t.graduatedAnnual.lookupKey === price.lookup_key,
       );
       if (tier) {
-        const isAdditional =
-          price.lookup_key ===
-            tier.additionalPropertyMonthly.lookupKey ||
-          price.lookup_key === tier.additionalPropertyAnnual.lookupKey;
-        const cycleLabel = price.recurring?.interval === "year" ? "annual" : "monthly";
+        const isGraduated =
+          price.lookup_key === tier.graduatedMonthly.lookupKey ||
+          price.lookup_key === tier.graduatedAnnual.lookupKey;
+        const qty = item.quantity ?? 1;
+        const cycleLabel =
+          price.recurring?.interval === "year" ? "annual" : "monthly";
         lineItems.push({
-          label: isAdditional
-            ? `${tier.productName} — additional properties`
+          label: isGraduated
+            ? `${tier.productName} (${qty} ${qty === 1 ? "property" : "properties"})`
             : tier.productName,
-          detail: `${cycleLabel}${isAdditional ? ` · ${item.quantity ?? 1} additional` : ""}`,
+          detail: `${cycleLabel}${isGraduated ? " · graduated pricing" : ""}`,
+          // For tiered prices `price.unit_amount` is null (Stripe
+          // computes from the tiers array). Best-effort show the
+          // headline base rate × quantity here, knowing the real
+          // invoice will reflect bracket discounts. Falls back to 0
+          // for tiered until we fetch the upcoming invoice.
           monthlyCents:
             (price.unit_amount ?? 0) *
-            (item.quantity ?? 1) *
+            qty *
             (price.recurring?.interval === "year" ? 1 / 12 : 1),
-          quantity: item.quantity ?? 1,
+          quantity: qty,
           isAddon: false,
           isMetered: false,
         });
@@ -146,12 +167,42 @@ export default async function BillingPage() {
     !org.subscriptionTier &&
     !org.subscriptionStatus;
 
+  const isTrialing = org.subscriptionStatus === "TRIALING";
+  const trialEndsAt = org.trialEndsAt ?? null;
+  const tierForActivation =
+    (org.chosenTier ?? org.subscriptionTier ?? null) as
+      | "STARTER"
+      | "GROWTH"
+      | "SCALE"
+      | "CUSTOM"
+      | null;
+  const activationTierId =
+    tierForActivation === "STARTER"
+      ? "starter"
+      : tierForActivation === "GROWTH"
+        ? "growth"
+        : tierForActivation === "SCALE"
+          ? "scale"
+          : null;
+
   return (
     <div className="space-y-8 max-w-3xl">
       <PageHeader
         title="Billing"
         description="Subscription tier, monthly recurring modules, ad spend, and Stripe portal access."
       />
+
+      {/* Trial activation card. Renders when subscriptionStatus is
+          TRIALING. Shows the property count, the tier the trial
+          unlocked, and a CTA that creates a Stripe Checkout session
+          for the actual conversion. */}
+      {isTrialing && activationTierId ? (
+        <TrialActivationCard
+          tierId={activationTierId}
+          propertyCount={Math.max(1, marketablePropertyCount)}
+          trialEndsAt={trialEndsAt}
+        />
+      ) : null}
 
       {billingNotConfigured ? (
         <section className="rounded-lg border border-dashed border-border bg-muted/30 p-6">

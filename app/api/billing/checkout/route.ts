@@ -41,7 +41,9 @@ import { captureWithContext } from "@/lib/sentry";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-const PROPERTY_CAP = 50; // anything bigger goes through Enterprise sales
+// Self-serve property cap. Anything above this routes to Enterprise
+// sales contact. Matches SELF_SERVE_PROPERTY_CAP in lib/billing/catalog.ts.
+const PROPERTY_CAP = 99;
 
 const bodySchema = z.object({
   tierId: z.enum(["starter", "growth", "scale"]),
@@ -164,18 +166,17 @@ export async function POST(req: NextRequest) {
   const checkoutLineItems: Stripe.Checkout.SessionCreateParams.LineItem[] =
     [];
   for (const item of lineItems) {
-    if (
-      item.kind === "subscription_base" ||
-      item.kind === "subscription_addon"
-    ) {
-      checkoutLineItems.push({
-        price: item.priceId,
-        quantity: 1,
-      });
-    } else if (item.kind === "subscription_additional_property") {
+    if (item.kind === "subscription_tiered") {
+      // Graduated tiered subscription item — single line, quantity = N
+      // properties. Stripe applies the per-bracket discount math.
       checkoutLineItems.push({
         price: item.priceId,
         quantity: item.quantity,
+      });
+    } else if (item.kind === "subscription_addon") {
+      checkoutLineItems.push({
+        price: item.priceId,
+        quantity: 1,
       });
     } else if (item.kind === "subscription_metered_addon") {
       // Metered prices have no quantity at Checkout. They aggregate

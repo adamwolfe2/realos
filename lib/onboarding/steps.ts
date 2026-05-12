@@ -1,19 +1,24 @@
 // ---------------------------------------------------------------------------
 // LeaseStack onboarding wizard — step definitions and progression.
 //
-// Each new user passes through three steps before landing in the portal:
+// Each new user passes through four steps before landing in the portal:
 //
-//   1. welcome   — workspace name + property type
-//   2. property  — add the first property
-//   3. plan      — pick a tier and start the 14-day trial
+//   1. welcome       workspace name + property type
+//   2. integrations  connect a PMS (AppFolio live; Yardi/Buildium/Entrata/
+//                    RealPage scaffolded for "coming soon" interest
+//                    collection) or pick manual entry
+//   3. property      add the first property (skipped automatically when
+//                    a PMS import populated it)
+//   4. plan          pick a tier and start the 14-day trial
 //
-// State persists on Organization.onboardingStep so the user can close the
-// tab and resume on the right step. The portal middleware redirects any
-// user with `onboardingStep != "done"` back to the wizard.
+// State persists on Organization.onboardingStep so the user can close
+// the tab and resume on the right step. The portal middleware redirects
+// any user with `onboardingStep != "done"` back to the wizard.
 // ---------------------------------------------------------------------------
 
 export const ONBOARDING_STEPS = [
   "welcome",
+  "integrations",
   "property",
   "plan",
   "done",

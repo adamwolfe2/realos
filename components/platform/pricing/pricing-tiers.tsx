@@ -4,6 +4,12 @@ import * as React from "react";
 import Link from "next/link";
 import { Check, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  PROPERTY_BRACKETS,
+  SELF_SERVE_PROPERTY_CAP,
+  computeGraduatedMonthlyCents,
+  effectivePerPropertyCents,
+} from "@/lib/billing/catalog";
 
 // ---------------------------------------------------------------------------
 // PricingTiers — the three published plans (Foundation, Growth, Scale) plus
@@ -143,10 +149,11 @@ const TIERS: Tier[] = [
   },
 ];
 
-// Hard cap on the property-count stepper. Anything bigger goes through
-// the Enterprise tier (which talks to sales) so we don't accidentally
-// quote 200-property Scale plans on a self-serve checkout flow.
-const MAX_PROPERTIES_STEPPER = 25;
+// Hard cap on the property-count stepper. Anything bigger routes to
+// the Enterprise tier (which talks to sales). Matches
+// SELF_SERVE_PROPERTY_CAP in lib/billing/catalog.ts so the UI never
+// quotes a price the checkout endpoint would reject.
+const MAX_PROPERTIES_STEPPER = SELF_SERVE_PROPERTY_CAP;
 
 export function PricingTiers() {
   const [cycle, setCycle] = React.useState<BillingCycle>("monthly");
@@ -229,15 +236,57 @@ export function PricingTiers() {
           </div>
           {propertyCount > 1 ? (
             <p
-              className="mt-2"
+              className="mt-2 text-center"
               style={{
                 color: "#2563EB",
                 fontFamily: "var(--font-sans)",
                 fontSize: "12.5px",
                 fontWeight: 500,
+                maxWidth: "440px",
               }}
             >
-              Additional properties get 20% off the base tier
+              {(() => {
+                // Friendly summary of which bracket they're in. The
+                // discount label always describes where the NEXT
+                // property would land, so adding properties feels
+                // rewarding.
+                const activeBracket =
+                  PROPERTY_BRACKETS.find(
+                    (b) => propertyCount <= (b.upTo ?? Infinity),
+                  ) ?? PROPERTY_BRACKETS[PROPERTY_BRACKETS.length - 1]!;
+                const discountPct = Math.round(
+                  activeBracket.discountPct * 100,
+                );
+                if (discountPct === 0) {
+                  return "Add more properties to unlock graduated discounts up to 40 percent off.";
+                }
+                return `You're saving ${discountPct} percent on properties in this bracket. Add more to unlock the next tier.`;
+              })()}
+            </p>
+          ) : null}
+          {propertyCount >= MAX_PROPERTIES_STEPPER ? (
+            <p
+              className="mt-2 text-center"
+              style={{
+                color: "#88867f",
+                fontFamily: "var(--font-sans)",
+                fontSize: "12px",
+                maxWidth: "440px",
+              }}
+            >
+              Self-serve checkout caps at {MAX_PROPERTIES_STEPPER} properties.
+              For larger portfolios{" "}
+              <Link
+                href="/demo?plan=enterprise"
+                style={{
+                  color: "#2563EB",
+                  textDecoration: "underline",
+                  textUnderlineOffset: "2px",
+                }}
+              >
+                talk to sales
+              </Link>{" "}
+              for volume pricing.
             </p>
           ) : null}
         </div>
@@ -342,16 +391,21 @@ function TierCard({
   const highlighted = tier.highlighted;
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Compute the effective monthly total for the chosen property count.
-  // The first property pays the base price; each additional property
-  // gets a 20% discount (mirrors lib/billing/catalog.ts and the Stripe
-  // prices it provisions). null basePrice (Enterprise) just shows
-  // "Custom" and skips the math.
-  const additionalPrice =
-    basePrice != null ? Math.round(basePrice * 0.8) : null;
+  // Compute the effective monthly total using the graduated brackets.
+  // Mirrors lib/billing/catalog.ts and the Stripe `billing_scheme:
+  // "tiered"` prices created by scripts/stripe-setup.ts. Enterprise
+  // (basePrice null) just shows "Custom".
   const totalMonthly =
-    basePrice != null && additionalPrice != null
-      ? basePrice + additionalPrice * (propertyCount - 1)
+    basePrice != null
+      ? Math.round(
+          computeGraduatedMonthlyCents(basePrice * 100, propertyCount) / 100,
+        )
+      : null;
+  const effectivePerProperty =
+    basePrice != null && propertyCount > 0
+      ? Math.round(
+          effectivePerPropertyCents(basePrice * 100, propertyCount) / 100,
+        )
       : null;
 
   // CTA click handler — Enterprise routes to /demo as a plain link; the
@@ -521,7 +575,7 @@ function TierCard({
                 {propertyCount === 1 ? " · per property" : ""}
               </span>
             </div>
-            {propertyCount > 1 && additionalPrice != null ? (
+            {propertyCount > 1 && effectivePerProperty != null ? (
               <p
                 className="mt-1"
                 style={{
@@ -530,11 +584,11 @@ function TierCard({
                   fontSize: "12px",
                 }}
               >
-                ${basePrice.toLocaleString()} base + {propertyCount - 1} ×
-                ${additionalPrice.toLocaleString()} additional
+                ${effectivePerProperty.toLocaleString()} avg per property ·
+                graduated discounts applied
               </p>
             ) : null}
-            {cycle === "annual" && tier.monthly ? (
+            {cycle === "annual" && tier.monthly && tier.annual != null ? (
               <p
                 className="mt-1"
                 style={{
@@ -545,11 +599,24 @@ function TierCard({
                 }}
               >
                 Billed yearly · save $
-                {(
-                  (tier.monthly - tier.annual!) *
-                  12 *
-                  (1 + 0.8 * (propertyCount - 1))
-                ).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {(() => {
+                  // Yearly savings = (monthly total at this property
+                  // count) minus (annual-equivalent monthly total at
+                  // this property count), multiplied by 12.
+                  const monthlyTotal =
+                    computeGraduatedMonthlyCents(
+                      tier.monthly * 100,
+                      propertyCount,
+                    ) / 100;
+                  const annualMonthlyEquivalent =
+                    computeGraduatedMonthlyCents(
+                      tier.annual * 100,
+                      propertyCount,
+                    ) / 100;
+                  const saved =
+                    (monthlyTotal - annualMonthlyEquivalent) * 12;
+                  return Math.round(saved).toLocaleString();
+                })()}
                 /yr
               </p>
             ) : null}
