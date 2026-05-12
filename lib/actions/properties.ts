@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import {
   requireAgency,
   requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -59,7 +60,12 @@ export async function createProperty(
 ): Promise<CreatePropertyResult> {
   let scope;
   try {
-    scope = await requireScope();
+    // Mutating action — must require a writable workspace so an
+    // expired-trial customer can't keep adding properties (and
+    // bumping the not-yet-paid subscription quantity higher).
+    // Agency users impersonating clients bypass this gate inside
+    // requireWritableWorkspace so support workflows still work.
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;
