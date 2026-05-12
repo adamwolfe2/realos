@@ -7,6 +7,7 @@ import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { ADDONS, TIERS } from "@/lib/billing/plans";
 import type Stripe from "stripe";
 import { TrialActivationCard } from "./trial-activation-card";
+import { WebsiteBuildCard } from "./website-build-card";
 
 export const metadata: Metadata = { title: "Billing" };
 export const dynamic = "force-dynamic";
@@ -328,6 +329,11 @@ export default async function BillingPage() {
           </p>
         </section>
       ) : null}
+
+      {/* Website build CTA — separate paid service, not part of trial.
+          Always visible so customers who decide later they want a
+          custom site can request one without hunting through the UI. */}
+      <WebsiteBuildCard />
 
       <section className="rounded-lg border border-border bg-card p-5 space-y-3">
         <h2 className="text-sm font-semibold">Stripe Customer Portal</h2>

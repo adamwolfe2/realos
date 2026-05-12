@@ -224,6 +224,15 @@ async function handleCheckoutCompleted(
       : session.customer?.id;
   if (!stripeCustomerId) return;
 
+  // Website-build SKUs use mode: "payment" and carry kind="website_build"
+  // metadata. They're handled separately from the subscription flow:
+  // we upsert the WebsiteBuildRequest, stamp the payment refs, and
+  // surface the kickoff-call CTA on the success page.
+  if (session.metadata?.kind === "website_build") {
+    await handleWebsiteBuildCheckoutCompleted(session);
+    return;
+  }
+
   const intent = session.metadata?.intent ?? "";
   const orgIdHint = session.metadata?.org_id ?? null;
   const tierHint = session.metadata?.tier ?? null;
@@ -296,6 +305,70 @@ async function handleCheckoutCompleted(
       },
     });
   }
+}
+
+// Website-build checkout completion. The /api/billing/website-build
+// endpoint pre-created a WebsiteBuildRequest row in `requested` state
+// with the Stripe Checkout session id stamped on it. This webhook
+// updates that row with the payment intent + amount paid + the org's
+// Stripe customer link if not already set.
+async function handleWebsiteBuildCheckoutCompleted(
+  session: Stripe.Checkout.Session,
+): Promise<void> {
+  const orgId = session.metadata?.org_id;
+  const buildId = session.metadata?.build_id;
+  if (!orgId || !buildId) {
+    return;
+  }
+
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null;
+
+  // Look up the pre-created request by session id. If it's missing
+  // (race condition, manual Stripe console payment, etc.) we create
+  // one defensively so fulfillment never loses sight of a paid order.
+  const existing = await prisma.websiteBuildRequest.findUnique({
+    where: { stripeCheckoutSessionId: session.id },
+    select: { id: true },
+  });
+
+  if (existing) {
+    await prisma.websiteBuildRequest.update({
+      where: { id: existing.id },
+      data: {
+        stripePaymentIntentId: paymentIntentId,
+        amountPaidCents: session.amount_total ?? 0,
+        status: "requested",
+      },
+    });
+  } else {
+    await prisma.websiteBuildRequest.create({
+      data: {
+        orgId,
+        stripeCheckoutSessionId: session.id,
+        stripePaymentIntentId: paymentIntentId,
+        amountPaidCents: session.amount_total ?? 0,
+        status: "requested",
+      },
+    });
+  }
+
+  await prisma.auditEvent.create({
+    data: {
+      orgId,
+      action: AuditAction.CREATE,
+      entityType: "WebsiteBuildRequest",
+      entityId: session.id,
+      description: `Website build paid: ${buildId} ($${((session.amount_total ?? 0) / 100).toFixed(2)})`,
+      diff: {
+        sessionId: session.id,
+        buildId,
+        amountTotalCents: session.amount_total ?? 0,
+      },
+    },
+  });
 }
 
 async function handleSubscriptionDeleted(

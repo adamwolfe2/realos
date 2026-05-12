@@ -412,6 +412,7 @@ model Organization {
   residents              Resident[]
   leases                 Lease[]
   workOrders             WorkOrder[]
+  websiteBuildRequests   WebsiteBuildRequest[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -462,6 +463,7 @@ model User {
   auditEvents   AuditEvent[]
   tasksAssigned ProjectTask[]  @relation("TaskAssignee")
   notifications Notification[]
+  websiteBuildsAssigned WebsiteBuildRequest[] @relation("WebsiteBuildAssignee")
 
   // Per-property access grants. ZERO rows = unrestricted (org-wide
   // access — preserves the legacy behavior so existing users aren't
@@ -739,6 +741,7 @@ model Property {
   // independently.
   cursiveIntegrations  CursiveIntegration[]
   seoIntegrations      SeoIntegration[]
+  websiteBuildRequests WebsiteBuildRequest[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1971,6 +1974,62 @@ model Project {
   updatedAt DateTime @updatedAt
 
   @@index([orgId, status])
+}
+
+// Tracks paid custom-website-build requests. NOT part of the trial:
+// the customer pays via Stripe Checkout up front, books a kickoff
+// call on Cal.com, and Adam (or whoever is fulfilling) drives the
+// build inside /admin/website-builds.
+//
+// Status lifecycle:
+//   requested  - paid; awaiting kickoff call booking
+//   scoping    - kickoff call booked; gathering assets + brief
+//   designing  - in design
+//   building   - implementation underway
+//   review     - first review with customer pending
+//   live       - launched to their domain
+//   cancelled  - refund issued (or "decided to bring own site")
+model WebsiteBuildRequest {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  // Stripe references for the payment that kicked this off. We store
+  // the session id (not just the customer/invoice) so we can replay
+  // the original quote during fulfillment without re-deriving it.
+  stripeCheckoutSessionId String? @unique
+  stripeInvoiceId         String?
+  stripePaymentIntentId   String?
+  amountPaidCents         Int     @default(0)
+
+  // Cal.com booking metadata. We capture the booking URL on payment
+  // success (so the success page can deep-link) and the timestamp
+  // once the booking webhook fires (if we wire one).
+  calBookingUrl  String?
+  calBookedAt    DateTime?
+  kickoffCallAt  DateTime?
+
+  status String @default("requested")
+
+  // Free-form intake we capture at checkout time (preferred site
+  // style, references, existing domain). Stored as JSON so we can
+  // evolve the shape without migrations.
+  intakeJson Json?
+
+  // Admin-side fulfillment metadata.
+  assignedToUserId String?
+  assignedTo       User?    @relation("WebsiteBuildAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  launchedAt       DateTime?
+  cancelledAt      DateTime?
+  cancellationReason String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, status])
+  @@index([assignedToUserId, status])
 }
 
 model ProjectTask {

@@ -273,6 +273,100 @@ export type AddOnDefinition = {
   uiLabel: string;
 };
 
+// ---------------------------------------------------------------------------
+// Website build service — separate from the SaaS trial.
+//
+// Customers who don't have a website (or want a new one) pay for a
+// custom build up front. This is NOT part of the trial; the customer
+// pays the full one-time fee, then books a kickoff call with Adam on
+// Cal.com. Fulfillment happens through /admin/website-builds.
+//
+// We expose two SKUs:
+//
+//   Standard build  ($2,500)
+//       Single property, ~10 pages, AppFolio listings integration,
+//       chatbot + pixel install, mobile responsive, custom domain
+//       setup. Delivered in 2 to 3 weeks.
+//
+//   Premium build   ($4,500)
+//       Everything in Standard plus copywriting (we ghost-write the
+//       site copy), photography review, multi-property template
+//       suitable for 2 to 5 buildings on the same workspace.
+//       Delivered in 3 to 4 weeks.
+//
+// Both prices are one-time invoices. Stripe Checkout creates an
+// invoice + payment intent; the webhook upserts a WebsiteBuildRequest
+// row tied to the org, marks it `requested`, and the success page
+// surfaces the Cal.com booking link.
+// ---------------------------------------------------------------------------
+
+export type WebsiteBuildDefinition = {
+  id: "standard" | "premium";
+  productLookupKey: string;
+  productName: string;
+  productDescription: string;
+  priceLookupKey: string;
+  unitAmountCents: number;
+  uiLabel: string;
+  // What the customer gets, surfaced on the website-service pricing
+  // card during the wizard.
+  bullets: string[];
+  // Estimated delivery window, plain text for the marketing card.
+  deliveryWindow: string;
+};
+
+export const WEBSITE_BUILDS: WebsiteBuildDefinition[] = [
+  {
+    id: "standard",
+    productLookupKey: "ls_website_build_standard",
+    productName: "LeaseStack Website Build — Standard",
+    productDescription:
+      "Single-property custom marketing site. Up to 10 pages, AppFolio listings integration, chatbot and pixel install, custom domain setup, mobile responsive. Includes one round of revisions.",
+    priceLookupKey: "ls_website_build_standard_v1",
+    unitAmountCents: 250000,
+    uiLabel: "Standard build",
+    bullets: [
+      "One property, up to 10 pages",
+      "Live AppFolio listings integration",
+      "Chatbot and visitor pixel installed",
+      "Mobile responsive, accessible",
+      "Custom domain and SSL setup",
+      "One revision round",
+    ],
+    deliveryWindow: "2 to 3 weeks",
+  },
+  {
+    id: "premium",
+    productLookupKey: "ls_website_build_premium",
+    productName: "LeaseStack Website Build — Premium",
+    productDescription:
+      "Everything in Standard plus copywriting, photography review, and a multi-property template suitable for two to five buildings on the same workspace.",
+    priceLookupKey: "ls_website_build_premium_v1",
+    unitAmountCents: 450000,
+    uiLabel: "Premium build",
+    bullets: [
+      "Everything in Standard",
+      "Up to 5 properties on one template",
+      "We write the copy (you review)",
+      "Photography review and curation",
+      "Two revision rounds",
+      "Priority kickoff call",
+    ],
+    deliveryWindow: "3 to 4 weeks",
+  },
+];
+
+// Cal.com booking link for the kickoff call. Shown on /billing/success
+// after a website-build payment lands. Kept in the catalog so any UI
+// surface that needs the link reads it from one place.
+export const WEBSITE_BUILD_CAL_LINK = "https://cal.com/adamwolfe/leasestack";
+
+export function getWebsiteBuildById(
+  id: WebsiteBuildDefinition["id"],
+): WebsiteBuildDefinition | null {
+  return WEBSITE_BUILDS.find((w) => w.id === id) ?? null;
+}
+
 export const ADDONS: AddOnDefinition[] = [
   // Capability flips
   {

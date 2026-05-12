@@ -23,6 +23,8 @@ export const STRIPE_PRICE_IDS = {
   "ls_scale_graduated_annual_v1": "price_1TWLZYIDmE4BmF76Hyx8m3ZN",
   "ls_scale_graduated_monthly_v1": "price_1TWLZXIDmE4BmF76I0XyqsCK",
   "ls_scale_monthly_v1": "price_1TWJydIDmE4BmF76i8xWoIm5",
+  "ls_website_build_premium_v1": "price_1TWLqyIDmE4BmF76jfRjGgth",
+  "ls_website_build_standard_v1": "price_1TWLqyIDmE4BmF76xkGNPlUY",
   "ls_white_label_monthly_v1": "price_1TWJygIDmE4BmF76ISWRlzUA",
 } as const;
 

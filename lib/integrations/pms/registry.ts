@@ -45,8 +45,15 @@ export type PmsDefinition = {
   name: string;
   tagline: string;
   status: PmsStatus;
-  // Logo asset path under /public. Null falls back to a text mark.
+  // Logo asset path under /public. Null falls back to a colored
+  // monogram mark derived from `brandColor` + `monogram`.
   logoSrc: string | null;
+  // Brand color (hex) for the fallback monogram tile. Lifted from
+  // each PMS's marketing site / brand guidelines; not a perfect
+  // match but recognizable enough that customers don't squint.
+  brandColor: string;
+  // 1-2 character monogram for the fallback tile.
+  monogram: string;
   // Fields the operator fills in during connection. Empty array means
   // either manual-only OR the platform is OAuth-based and the
   // connection happens elsewhere.
@@ -66,6 +73,8 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Property Manager Core, Plus, and Max.",
     status: "live",
     logoSrc: null,
+    brandColor: "#1B468A",
+    monogram: "AF",
     authFields: [
       {
         key: "subdomain",
@@ -103,6 +112,8 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Voyager 7s, Breeze, and Genesis2.",
     status: "coming_soon",
     logoSrc: null,
+    brandColor: "#9E1B32",
+    monogram: "Y",
     authFields: [
       {
         key: "serverUrl",
@@ -139,6 +150,8 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Property management for SMB operators.",
     status: "coming_soon",
     logoSrc: null,
+    brandColor: "#0073C7",
+    monogram: "B",
     authFields: [
       {
         key: "clientId",
@@ -162,6 +175,8 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Multifamily + student housing operators at scale.",
     status: "coming_soon",
     logoSrc: null,
+    brandColor: "#00A99D",
+    monogram: "E",
     authFields: [
       {
         key: "username",
@@ -185,6 +200,8 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Enterprise multifamily and student housing.",
     status: "coming_soon",
     logoSrc: null,
+    brandColor: "#1B3766",
+    monogram: "RP",
     authFields: [
       {
         key: "tenantId",
@@ -202,12 +219,115 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     helpUrl: "https://www.realpage.com/",
   },
   {
+    platform: "MRI",
+    id: "mri",
+    name: "MRI Software",
+    tagline: "Commercial real estate and large residential portfolios.",
+    status: "coming_soon",
+    logoSrc: null,
+    brandColor: "#003F72",
+    monogram: "MRI",
+    authFields: [
+      {
+        key: "serverUrl",
+        label: "MRI server URL",
+        type: "text",
+        placeholder: "https://yourcompany.mrisoftware.com",
+      },
+      {
+        key: "username",
+        label: "API user",
+        type: "text",
+      },
+      {
+        key: "password",
+        label: "API password",
+        type: "password",
+      },
+    ],
+    contractNote:
+      "MRI integrations require coordination with your MRI admin to provision the API user.",
+    helpUrl: "https://www.mrisoftware.com/",
+  },
+  {
+    platform: "OTHER",
+    id: "resman",
+    name: "ResMan",
+    tagline: "Mid-market multifamily (50 to 10,000 units).",
+    status: "coming_soon",
+    logoSrc: null,
+    brandColor: "#FF6A39",
+    monogram: "RM",
+    authFields: [
+      {
+        key: "accountId",
+        label: "ResMan account ID",
+        type: "text",
+      },
+    ],
+    contractNote:
+      "ResMan integrations route through their Marketplace partner program. We're enrolled; provisioning takes about 5 business days.",
+    helpUrl: "https://www.myresman.com/",
+  },
+  {
+    platform: "PROPERTYWARE",
+    id: "propertyware",
+    name: "Propertyware",
+    tagline: "Single-family rental operators.",
+    status: "coming_soon",
+    logoSrc: null,
+    brandColor: "#2D6A9F",
+    monogram: "PW",
+    authFields: [
+      {
+        key: "apiKey",
+        label: "Propertyware API key",
+        type: "password",
+      },
+    ],
+    contractNote:
+      "Generate an API key from your Propertyware settings and paste it here. Self-serve once we ship the connector.",
+    helpUrl: "https://www.propertyware.com/",
+  },
+  {
+    platform: "RENTMANAGER",
+    id: "rentmanager",
+    name: "Rent Manager",
+    tagline: "Diversified portfolios with mixed residential + commercial.",
+    status: "coming_soon",
+    logoSrc: null,
+    brandColor: "#3E5C76",
+    monogram: "RM2",
+    authFields: [
+      {
+        key: "corporateId",
+        label: "Corporate ID",
+        type: "text",
+      },
+      {
+        key: "username",
+        label: "API username",
+        type: "text",
+      },
+      {
+        key: "password",
+        label: "API password",
+        type: "password",
+      },
+    ],
+    contractNote:
+      "Rent Manager uses session-based API auth. We provision a service user on your behalf.",
+    helpUrl: "https://www.rentmanager.com/",
+  },
+  {
     platform: "MANUAL",
     id: "manual",
     name: "Add properties manually",
     tagline: "Skip the PMS connection. Configure each property by hand.",
     status: "live",
     logoSrc: null,
+    brandColor: "#5e5d59",
+    monogram: "•",
     authFields: [],
     contractNote:
       "Perfect if your portfolio is small or you're not on a supported PMS yet. You can still connect a PMS later from settings.",

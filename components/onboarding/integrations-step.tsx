@@ -326,28 +326,31 @@ function PmsCard({
         style={{ padding: "14px 16px" }}
       >
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p
-              style={{
-                color: "#141413",
-                fontFamily: "var(--font-sans)",
-                fontSize: "15px",
-                fontWeight: 600,
-              }}
-            >
-              {pms.name}
-            </p>
-            <p
-              className="mt-1"
-              style={{
-                color: "#5e5d59",
-                fontFamily: "var(--font-sans)",
-                fontSize: "12.5px",
-                lineHeight: 1.5,
-              }}
-            >
-              {pms.tagline}
-            </p>
+          <div className="flex items-start gap-3 min-w-0">
+            <PmsMonogram pms={pms} size={40} />
+            <div className="min-w-0">
+              <p
+                style={{
+                  color: "#141413",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                }}
+              >
+                {pms.name}
+              </p>
+              <p
+                className="mt-1"
+                style={{
+                  color: "#5e5d59",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "12.5px",
+                  lineHeight: 1.5,
+                }}
+              >
+                {pms.tagline}
+              </p>
+            </div>
           </div>
           <SelectionDot active={selected} />
         </div>
@@ -498,15 +501,34 @@ function PmsCardCompact({
     <button
       type="button"
       onClick={onSelect}
-      className="text-left rounded-xl transition-colors"
+      className="text-left rounded-xl transition-colors relative"
       style={{
         backgroundColor: selected ? "rgba(37,99,235,0.04)" : "#faf9f5",
         border: selected ? "1px solid #2563EB" : "1px solid #e8e6dc",
         padding: "12px 14px",
       }}
     >
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
+      <span
+        className="absolute"
+        style={{
+          top: 8,
+          right: 10,
+          backgroundColor: "rgba(20,20,19,0.06)",
+          color: "#5e5d59",
+          fontFamily: "var(--font-mono)",
+          fontSize: "8.5px",
+          letterSpacing: "0.14em",
+          textTransform: "uppercase",
+          fontWeight: 600,
+          padding: "2px 6px",
+          borderRadius: "10px",
+        }}
+      >
+        Soon
+      </span>
+      <div className="flex items-start gap-2.5">
+        <PmsMonogram pms={pms} size={32} />
+        <div className="min-w-0 pr-10">
           <p
             style={{
               color: "#141413",
@@ -529,9 +551,67 @@ function PmsCardCompact({
             {pms.tagline}
           </p>
         </div>
-        <SelectionDot active={selected} />
       </div>
+      {selected ? (
+        <span
+          className="absolute"
+          style={{ right: 10, bottom: 10 }}
+        >
+          <SelectionDot active />
+        </span>
+      ) : null}
     </button>
+  );
+}
+
+// Logo monogram. Renders the brand color tile with a short text mark
+// when a real SVG logo isn't available. Sized so it slots into both
+// the wide live-PMS card and the compact coming-soon card.
+function PmsMonogram({
+  pms,
+  size,
+}: {
+  pms: PmsDefinition;
+  size: number;
+}) {
+  if (pms.logoSrc) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={pms.logoSrc}
+        alt={`${pms.name} logo`}
+        width={size}
+        height={size}
+        style={{
+          width: size,
+          height: size,
+          borderRadius: 8,
+          objectFit: "contain",
+          backgroundColor: "#ffffff",
+          border: "1px solid #e8e6dc",
+          padding: 4,
+          flexShrink: 0,
+        }}
+      />
+    );
+  }
+  return (
+    <span
+      className="inline-flex items-center justify-center font-bold shrink-0"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: 8,
+        backgroundColor: pms.brandColor,
+        color: "#ffffff",
+        fontFamily: "var(--font-sans)",
+        fontSize: size <= 32 ? 11 : 13,
+        letterSpacing: "-0.02em",
+      }}
+      aria-hidden="true"
+    >
+      {pms.monogram}
+    </span>
   );
 }
 
