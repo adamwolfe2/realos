@@ -278,16 +278,16 @@ function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
     }
   }, [tier.checkoutTierId, cycle, submitting]);
 
-  // Two visual modes: highlighted (Growth) inverts to dark card with
-  // light text + blue accent ring; everything else is a clean white
-  // card with a subtle border.
+  // Brand pass — every card is a clean white surface. Growth gets a
+  // soft blue ring + subtle lift, NOT a dark inversion. Previous black
+  // card broke the cream/blue/white palette of the platform.
   const cardStyle: React.CSSProperties = highlighted
     ? {
-        backgroundColor: "#141413",
-        color: "#ffffff",
-        border: "1px solid #141413",
+        backgroundColor: "#ffffff",
+        color: "#141413",
+        border: "1px solid #2563EB",
         boxShadow:
-          "0 0 0 4px rgba(37,99,235,0.18), 0 12px 32px rgba(20,20,19,0.16)",
+          "0 0 0 4px rgba(37,99,235,0.08), 0 8px 24px rgba(37,99,235,0.10)",
       }
     : {
         backgroundColor: "#ffffff",
@@ -296,9 +296,9 @@ function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
         boxShadow: "0 1px 2px rgba(20,20,19,0.02)",
       };
 
-  const mutedText = highlighted ? "#bdbcb6" : "#88867f";
-  const bodyText = highlighted ? "#e8e6dc" : "#4d4c48";
-  const accentText = highlighted ? "#9ec1ff" : "#2563EB";
+  const mutedText = "#88867f";
+  const bodyText = "#4d4c48";
+  const accentText = "#2563EB";
 
   return (
     <div

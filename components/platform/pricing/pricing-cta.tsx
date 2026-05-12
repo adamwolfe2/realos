@@ -1,37 +1,38 @@
 import Link from "next/link";
 
-// Bottom CTA — last chance to convert. Keeps it simple: two paths
-// (talk to sales vs. start now), social proof line, no marketing fluff.
+// Bottom CTA — final conversion push.
+//
+// Brand pass: the previous dark/black background broke the cream + blue
+// palette every other surface uses. Now sits on the same parchment as
+// the rest of the page with a thin top border, blue accent CTA, ghost
+// secondary, and a single trust line. The eye lands on the headline +
+// button without a hard color shift to fight through.
 
 export function PricingCta() {
   return (
     <section
       style={{
-        backgroundColor: "#141413",
-        color: "#ffffff",
+        backgroundColor: "#f5f4ed",
+        borderTop: "1px solid #e8e6dc",
       }}
     >
-      <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-20 md:py-28 text-center">
-        <p
-          className="eyebrow mb-5"
-          style={{ color: "#bdbcb6" }}
-        >
-          Ready when you are
-        </p>
+      <div className="max-w-[960px] mx-auto px-4 md:px-8 py-20 md:py-28 text-center">
+        <p className="eyebrow mb-4">Ready when you are</p>
         <h2
           className="heading-section"
           style={{
-            color: "#ffffff",
+            color: "#141413",
             maxWidth: "720px",
             margin: "0 auto",
           }}
         >
-          Live in 14 days. Pay only when your site goes live.
+          Live in 14 days. Pay only when{" "}
+          <span style={{ color: "#2563EB" }}>your site goes live.</span>
         </h2>
         <p
           className="mt-5 mx-auto"
           style={{
-            color: "#bdbcb6",
+            color: "#5e5d59",
             fontFamily: "var(--font-sans)",
             fontSize: "17px",
             lineHeight: 1.55,
@@ -43,7 +44,7 @@ export function PricingCta() {
           loaded in.
         </p>
 
-        <div className="mt-10 flex flex-col sm:flex-row gap-3 justify-center items-center">
+        <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center items-center">
           <Link
             href="/demo"
             className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
@@ -59,11 +60,11 @@ export function PricingCta() {
             className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
             style={{
               backgroundColor: "transparent",
-              color: "#ffffff",
-              border: "1px solid #4d4c48",
+              color: "#141413",
+              border: "1px solid #d6d3c8",
             }}
           >
-            Start onboarding now
+            Start onboarding
           </Link>
         </div>
 
@@ -73,7 +74,7 @@ export function PricingCta() {
             color: "#88867f",
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
-            letterSpacing: "0.16em",
+            letterSpacing: "0.14em",
             textTransform: "uppercase",
           }}
         >
