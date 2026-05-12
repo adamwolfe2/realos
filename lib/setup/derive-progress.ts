@@ -20,9 +20,11 @@ import {
 //   current  — the first non-done, non-locked step in timeline order
 //   pending  — everything else
 //
-// daysToLaunch is a coarse signal, not a real date. It drops two days for
-// each Foundation step that's done, clamped to [0, 14]. It's meant for the
-// hero subtitle ("~9 days to launch") — directional, not contractual.
+// (Previously surfaced a `daysToLaunch` estimate. Removed because the
+// platform is self-serve and the figure implied a managed-build promise
+// we don't control. Kept the code change minimal: the field still
+// exists on the SetupProgress shape so any unbuilt code path doesn't
+// crash, but no UI renders it anymore and the value is always 0.)
 // ---------------------------------------------------------------------------
 
 export type SetupStepStatus = "done" | "current" | "pending" | "locked";
@@ -165,7 +167,12 @@ export async function deriveSetupProgress(orgId: string): Promise<SetupProgress 
     return "done";
   })();
 
-  const daysToLaunch = Math.max(0, Math.min(14, 14 - 2 * completedFoundation));
+  // Hardcoded to 0 — surface deprecated per Adam's feedback on
+  // implying a managed launch timeline. Kept on the type for backwards
+  // compatibility with any callers that still destructure it; the
+  // value is never rendered.
+  void completedFoundation;
+  const daysToLaunch = 0;
 
   return {
     steps,
