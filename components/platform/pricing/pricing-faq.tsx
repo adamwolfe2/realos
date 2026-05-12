@@ -8,12 +8,12 @@ import { Plus, Minus } from "lucide-react";
 
 const FAQS: Array<{ q: string; a: string }> = [
   {
-    q: "How does signup and onboarding work?",
-    a: "Sign up at /sign-up with an email and password. The onboarding wizard walks you through naming your workspace, adding your first property, choosing a plan, paying through Stripe, and connecting AppFolio (or skipping that step for later). The whole flow takes about 10 minutes and the workspace is usable immediately after checkout. You set everything up yourself from inside the product. No sales calls required.",
+    q: "How does signup work?",
+    a: "Create your account at /sign-up with an email and password. Pick a plan on the /pricing page and pay through Stripe Checkout. Your workspace is provisioned the moment payment confirms. From inside the portal you connect AppFolio (optional), install the chatbot widget on your site, configure your brand, and add properties. No sales calls required and no one walks you through it; the setup is point and click.",
   },
   {
     q: "How does per-property pricing work?",
-    a: "Each property gets its own marketing site, listings sync, AI chatbot, and CRM. The first property pays the base tier price. Each additional property on the same plan gets a 20 percent discount. You can mix tiers across properties by running multiple workspaces, but most operators put their whole portfolio on one plan at the same tier for simplicity.",
+    a: "Each property under your workspace gets its own marketing site, listings sync, AI chatbot, and lead pool. The first property pays the base tier price. Each additional property on the same plan gets a 20 percent discount applied automatically through the subscription quantity. You bump the property count up or down from your billing settings.",
   },
   {
     q: "Is there a setup fee?",
@@ -21,11 +21,11 @@ const FAQS: Array<{ q: string; a: string }> = [
   },
   {
     q: "Are there any contracts?",
-    a: "No. Every plan is month-to-month. You can pause your subscription (your workspace stays read-only and your data is preserved) or cancel any time from the billing portal. Annual prepay is optional and saves you about 17 percent, but you give up the monthly off-ramp.",
+    a: "No. Every plan is month-to-month. You can cancel any time from the Stripe billing portal linked inside your account settings. Annual prepay is optional and saves you about 17 percent versus paying monthly, but you give up the month-to-month off-ramp until the year is over.",
   },
   {
     q: "What is the money-back guarantee?",
-    a: "30 days. If the platform doesn't work for you for any reason, request a refund from inside the billing portal and we'll return the subscription fee no questions asked. Your data exports are available before, during, and after the refund window.",
+    a: "30 days. If the platform isn't working for you within the first month, email hello@leasestack.co and we'll refund the subscription fee in full, no questions asked. Your data stays accessible during the refund process and you can export your leads, visitors, and reports on the way out.",
   },
   {
     q: "Do you run ads for me?",
@@ -33,11 +33,11 @@ const FAQS: Array<{ q: string; a: string }> = [
   },
   {
     q: "What PMS systems do you support?",
-    a: "AppFolio is the only direct integration today. If you use Yardi, Buildium, Entrata, RealPage or another PMS, contact sales for a custom connector quote. Manual property and listing entry works on any plan if you don't have a supported PMS.",
+    a: "AppFolio is the only direct integration today. If you use Yardi, Buildium, Entrata, RealPage or another PMS, contact sales for a custom connector quote (typically 2 to 4 weeks of build time, priced per project). Manual property and listing entry works on any plan if you don't have a supported PMS or just want to get started without connecting one.",
   },
   {
     q: "Can I bring my own website?",
-    a: "Yes. You can install the chatbot widget and Cursive pixel on any existing site and skip our site builder entirely. Pricing is unchanged. Lead capture, ad campaigns, reputation monitoring, and audiences all work the same way on top of your own site.",
+    a: "Yes. You can install the chatbot widget and Cursive visitor pixel on any existing site by pasting a script tag from your portal settings. Pricing stays the same. Lead capture, ad campaigns, reputation monitoring, and audiences all work the same way on top of your own site as they do on a site built inside our builder.",
   },
 ];
 
