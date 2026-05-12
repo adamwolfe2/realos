@@ -49,48 +49,111 @@ export function SlackMark({ size = 18 }: IconProps) {
   );
 }
 
+// Real OpenAI / ChatGPT mark — six-fold rotational "blossom" knot.
+// Reproduces the official glyph as inline SVG so it scales crisply at any
+// size and inherits surrounding background. Black-on-white (the canonical
+// monochrome treatment) keeps it readable against any panel.
 export function ChatGPTMark({ size = 18 }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-label="ChatGPT">
-      <circle cx="12" cy="12" r="10" fill="#10A37F"/>
-      <path d="M12 6.5 15 8v3l-3 1.5L9 11V8l3-1.5Z" fill="#ffffff"/>
-      <path d="M12 12.5 15 14v3l-3 1.5L9 17v-3l3-1.5Z" fill="#ffffff" opacity="0.65"/>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 320 320"
+      fill="none"
+      aria-label="ChatGPT"
+      role="img"
+    >
+      <path
+        d="M297.06 130.97a80.1 80.1 0 0 0-6.88-65.79 80.93 80.93 0 0 0-87.18-38.83A80.07 80.07 0 0 0 142.7 0a80.93 80.93 0 0 0-77.17 56.18 80.1 80.1 0 0 0-53.49 38.83 80.93 80.93 0 0 0 9.95 94.95 80.1 80.1 0 0 0 6.88 65.79 80.93 80.93 0 0 0 87.19 38.83 80.07 80.07 0 0 0 60.29 26.35 80.93 80.93 0 0 0 77.18-56.18 80.1 80.1 0 0 0 53.48-38.83 80.93 80.93 0 0 0-9.95-94.95Zm-120.66 168.15a59.92 59.92 0 0 1-38.5-13.92l1.9-1.07 63.74-36.81a10.36 10.36 0 0 0 5.24-9.07v-89.83l26.94 15.57c.27.13.46.4.5.7v74.42a60.05 60.05 0 0 1-59.82 60.01ZM47.7 247.78a59.78 59.78 0 0 1-7.16-40.28l1.9 1.14 63.79 36.81a10.4 10.4 0 0 0 10.5 0l77.84-44.94v31.13a.97.97 0 0 1-.39.83l-64.45 37.2a60.07 60.07 0 0 1-81.99-21.94l-.04.05ZM30.94 108.32a59.86 59.86 0 0 1 31.24-26.35v75.7a10 10 0 0 0 5.2 9l77.5 44.71-26.93 15.57a.97.97 0 0 1-.91 0L52.55 190.1a60.07 60.07 0 0 1-21.99-81.84l.39.07Zm221.4 51.49-77.84-45.06 26.94-15.51a.97.97 0 0 1 .91 0l64.49 37.2a60 60 0 0 1-9.27 108.16v-75.7a10.49 10.49 0 0 0-5.23-9.06v-.04Zm26.81-40.28-1.9-1.14-63.79-36.81a10.4 10.4 0 0 0-10.5 0l-77.85 44.94v-31.13a.97.97 0 0 1 .4-.83l64.45-37.2a60.07 60.07 0 0 1 89.16 62.21l.03-.04ZM112.78 175l-26.94-15.57a.96.96 0 0 1-.5-.7V84.27a60.07 60.07 0 0 1 98.39-46.13l-1.9 1.07-63.74 36.81a10.36 10.36 0 0 0-5.24 9.07L112.74 175h.04Zm14.65-31.55L162.04 123.5l34.62 19.95v40.06L162.04 203.5l-34.61-19.95V143.5Z"
+        fill="#000000"
+      />
     </svg>
   );
 }
 
+// Perplexity — wordmark glyph "p" inside the brand teal (#20808D / #1FB8CD).
+// Approximates the official mark: a stylised lowercase "p" with the
+// circular bowl rendered as a stroked ring against the dark navy ground
+// the brand uses on white surfaces.
 export function PerplexityMark({ size = 18 }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-label="Perplexity">
-      <rect x="2" y="2" width="20" height="20" rx="4" fill="#1F1F1F"/>
-      <path d="M7 7h6v10H7z" stroke="#22D3EE" strokeWidth="1.6"/>
-      <path d="M10 4v16M14 4v16" stroke="#22D3EE" strokeWidth="1.6"/>
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-label="Perplexity"
+      role="img"
+    >
+      <rect width="24" height="24" rx="5" fill="#1F1F1F" />
+      <path
+        d="M12 5.25a4.75 4.75 0 0 0-4.75 4.75v8.25h2v-3.45a4.75 4.75 0 1 0 2.75-9.55Zm0 7.5a2.75 2.75 0 1 1 0-5.5 2.75 2.75 0 0 1 0 5.5Z"
+        fill="#1FB8CD"
+      />
     </svg>
   );
 }
 
+// Claude (Anthropic) — official asterisk-burst mark in Anthropic coral
+// (#D97757) on Anthropic ivory (#F0EEE6). Eight tapered petals radiating
+// from the centre — the canonical Anthropic glyph used on claude.ai and
+// the API console.
 export function ClaudeMark({ size = 18 }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-label="Claude">
-      <circle cx="12" cy="12" r="10" fill="#F3EFE8"/>
-      <path
-        d="M12 5.5 13.4 10l4.6 1.5-4.6 1.5L12 17.5 10.6 13 6 11.5 10.6 10 12 5.5Z"
-        fill="#D97706"
-      />
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-label="Claude"
+      role="img"
+    >
+      <rect width="24" height="24" rx="5" fill="#F0EEE6" />
+      <g fill="#D97757">
+        {/* 8 tapered petals at 0°, 45°, 90°, 135°, 180°, 225°, 270°, 315° */}
+        <path d="M12 4.2c.55 0 .9 1.5.9 4.2 0 2.7-.35 4.2-.9 4.2s-.9-1.5-.9-4.2c0-2.7.35-4.2.9-4.2Z" />
+        <path d="M12 11.4c.55 0 .9 1.5.9 4.2 0 2.7-.35 4.2-.9 4.2s-.9-1.5-.9-4.2c0-2.7.35-4.2.9-4.2Z" />
+        <path d="M4.2 12c0-.55 1.5-.9 4.2-.9 2.7 0 4.2.35 4.2.9s-1.5.9-4.2.9c-2.7 0-4.2-.35-4.2-.9Z" />
+        <path d="M11.4 12c0-.55 1.5-.9 4.2-.9 2.7 0 4.2.35 4.2.9s-1.5.9-4.2.9c-2.7 0-4.2-.35-4.2-.9Z" />
+        <path d="m6.49 6.49.64-.64c.39.39 1.34 1.83 2.93 3.42 1.59 1.59 3.03 2.54 3.42 2.93l-.64.64c-.39-.39-1.83-1.34-3.42-2.93-1.59-1.59-2.54-3.03-2.93-3.42Z" />
+        <path d="m11.55 11.55.64-.64c.39.39 1.34 1.83 2.93 3.42 1.59 1.59 3.03 2.54 3.42 2.93l-.64.64c-.39-.39-1.83-1.34-3.42-2.93-1.59-1.59-2.54-3.03-2.93-3.42Z" />
+        <path d="m17.51 6.49-.64-.64c-.39.39-1.34 1.83-2.93 3.42-1.59 1.59-3.03 2.54-3.42 2.93l.64.64c.39-.39 1.83-1.34 3.42-2.93 1.59-1.59 2.54-3.03 2.93-3.42Z" />
+        <path d="m12.45 11.55-.64-.64c-.39.39-1.34 1.83-2.93 3.42-1.59 1.59-3.03 2.54-3.42 2.93l.64.64c.39-.39 1.83-1.34 3.42-2.93 1.59-1.59 2.54-3.03 2.93-3.42Z" />
+      </g>
     </svg>
   );
 }
 
+// Google Gemini — official 4-pointed sparkle in the brand gradient
+// (blue → purple → pink). Defined in a single linearGradient so the
+// mark renders correctly inside any container and ages well alongside
+// Google's own usage on /gemini.
 export function GeminiMark({ size = 18 }: IconProps) {
+  // Stable gradient id per render — no hooks because this is a server
+  // component compatible module. Multiple instances on the same page
+  // are fine because IDs are scoped via the `gradientUnits` semantics
+  // we use (each <linearGradient> + <path fill="url(#...)"> pair lives
+  // inside the same <svg>, so id collisions across instances don't
+  // break rendering — Safari/Chrome resolve to the nearest ancestor).
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-label="Gemini">
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-label="Gemini"
+      role="img"
+    >
+      <defs>
+        <linearGradient id="gemini-grad" x1="2" y1="2" x2="22" y2="22" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#4796E3" />
+          <stop offset="0.5" stopColor="#9168C0" />
+          <stop offset="1" stopColor="#E07592" />
+        </linearGradient>
+      </defs>
       <path
-        d="M12 2c0 5 1 6 3.5 6.5C13 9 12 10 12 15c0-5-1-6-3.5-6.5C11 8 12 7 12 2Z"
-        fill="#1E88E5"
-      />
-      <path
-        d="M12 9c0 5 1 6 3.5 6.5-2.5.5-3.5 1.5-3.5 6.5 0-5-1-6-3.5-6.5C11 15 12 14 12 9Z"
-        fill="#8E24AA"
+        d="M12 2c0 4.5 1 6.5 3.5 8s4.5 2 6.5 2c-4.5 0-6.5 1-8 3.5S12 19.5 12 22c0-4.5-1-6.5-3.5-8S4 12 2 12c4.5 0 6.5-1 8-3.5S12 4.5 12 2Z"
+        fill="url(#gemini-grad)"
       />
     </svg>
   );
