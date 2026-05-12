@@ -1,6 +1,5 @@
 import { PlatformNav } from "@/components/platform/nav";
 import { PlatformFooter } from "@/components/platform/footer";
-import { LiveTicker } from "@/components/platform/live-ticker";
 
 export default function PlatformLayout({
   children,
@@ -12,7 +11,6 @@ export default function PlatformLayout({
       <PlatformNav />
       <main className="flex-1">{children}</main>
       <PlatformFooter />
-      <LiveTicker variant="fixed" />
     </div>
   );
 }
