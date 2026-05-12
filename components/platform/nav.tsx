@@ -82,6 +82,9 @@ export function PlatformNav() {
             items={VERTICAL_LINKS}
             labelColor={labelColor}
           />
+          <NavLink href="/pricing" active={isActive(pathname, "/pricing")}>
+            Pricing
+          </NavLink>
           <NavLink href="/blog" active={isActive(pathname, "/blog")}>
             Blog
           </NavLink>
@@ -236,6 +239,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
   const allLinks = [
     ...PRODUCT_LINKS,
     ...VERTICAL_LINKS,
+    { href: "/pricing", label: "Pricing" },
     { href: "/blog", label: "Blog" },
     { href: "/about", label: "About" },
     { href: "/sign-in", label: "Sign in" },
