@@ -86,11 +86,11 @@ export default function AuthRedirectPage() {
         if (agencyRoles.includes(role) || orgType === 'AGENCY') {
           router.replace('/admin')
         } else if (clientRoles.includes(role) || orgType === 'CLIENT') {
-          // Fresh self-provisioned org → drop them into the setup hub
-          // instead of the empty dashboard. Existing users still go to
-          // the dashboard. /portal/setup gracefully no-ops when setup
-          // is already complete.
-          router.replace(created ? '/portal/setup' : '/portal')
+          // Fresh self-provisioned org → drop them into the marketplace
+          // so they can pick which modules to activate (every module is
+          // free during the trial). Returning users go straight to the
+          // dashboard; the marketplace is always reachable from the nav.
+          router.replace(created ? '/portal/marketplace' : '/portal')
         } else {
           setError('no-role')
         }

@@ -35,6 +35,7 @@ import {
   Home,
   CalendarClock,
   PieChart,
+  ShoppingBag,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -136,6 +137,15 @@ export const NAV_GROUPS: NavGroup[] = [
         show: (o) => !o.setupComplete && !o.onboardingDismissed,
       },
       { href: "/portal", label: "Dashboard", icon: LayoutDashboard, show: ALWAYS },
+      // Marketplace — always visible. Lets clients re-enter the
+      // add-to-cart flow at any time to bolt on additional modules
+      // (free during trial, Stripe Checkout after).
+      {
+        href: "/portal/marketplace",
+        label: "Marketplace",
+        icon: ShoppingBag,
+        show: ALWAYS,
+      },
     ],
   },
   {
