@@ -417,6 +417,23 @@ model Organization {
   // first-login walkthrough renders on /portal.
   onboardingDismissed Boolean @default(false)
 
+  // Self-serve onboarding wizard state. `onboardingStep` advances as the
+  // user clears each step; null means they haven't entered the wizard
+  // yet (legacy orgs created before the trial-first model). `chosenTier`
+  // captures what they picked during the wizard so the trial unlocks
+  // exactly those entitlements (not always Scale; respects what they
+  // intend to pay for at conversion).
+  //
+  // Trial model: at the end of the wizard we set trialStartedAt + 14d
+  // trialEndsAt. No card is collected. On day 14, the workspace gates
+  // to read-only and the activate-subscription flow takes over.
+  // subscriptionStatus becomes TRIALING during this window and flips to
+  // ACTIVE when the customer completes Stripe Checkout for N properties.
+  onboardingStep      String?
+  chosenTier          SubscriptionTier?
+  trialStartedAt      DateTime?
+  trialEndsAt         DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

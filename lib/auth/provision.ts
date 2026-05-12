@@ -123,6 +123,12 @@ export async function provisionUserForClerk(args: {
           primaryContactName:
             [args.firstName, args.lastName].filter(Boolean).join(" ").trim() ||
             null,
+          // Start the new self-serve onboarding wizard from step one.
+          // The portal layout reads this field and bounces the user to
+          // /onboarding until they hit "done". Existing orgs (created
+          // before this column existed) leave it null and skip the
+          // wizard — they already have a working workspace.
+          onboardingStep: "welcome",
           // All product modules default to off — the operator opts in via
           // the setup hub. moduleWebsite stays true (schema default) so
           // the welcome flow can show the marketing-site step.

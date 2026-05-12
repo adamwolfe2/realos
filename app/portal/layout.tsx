@@ -13,6 +13,7 @@ import Link from "next/link";
 import { NotificationBell } from "@/components/portal/notification-bell";
 import { CmdKSearch } from "@/components/portal/search/cmdk-search";
 import { BugReportButton } from "@/components/feedback/bug-report-button";
+import { TrialBanner } from "@/components/portal/trial-banner";
 
 export const metadata: Metadata = {
   title: { template: `%s | ${BRAND_NAME} Portal`, default: `${BRAND_NAME} Portal` },
@@ -57,6 +58,11 @@ export default async function PortalLayout({
         productLine: true,
         logoUrl: true,
         onboardingDismissed: true,
+        onboardingStep: true,
+        chosenTier: true,
+        subscriptionStatus: true,
+        subscriptionTier: true,
+        trialEndsAt: true,
         moduleWebsite: true,
         modulePixel: true,
         moduleChatbot: true,
@@ -107,6 +113,21 @@ export default async function PortalLayout({
   // catalog. Don't bounce them to /admin since they don't have agency UI.
   if (org.orgType !== "CLIENT" && !scope.isAlPartner) {
     redirect(scope.isAgency ? "/admin" : "/sign-in");
+  }
+
+  // Self-serve onboarding gate. If the org is still mid-wizard (set by
+  // lib/auth/provision.ts on signup; advanced by the wizard's own API
+  // endpoints), bounce them back so they can finish setup before the
+  // portal loads with empty state. Existing orgs created before this
+  // column existed leave onboardingStep null and are unaffected.
+  // Agency users impersonating a client skip the gate so they can
+  // support customers mid-wizard.
+  if (
+    !scope.isImpersonating &&
+    org.onboardingStep &&
+    org.onboardingStep !== "done"
+  ) {
+    redirect("/onboarding");
   }
 
   const setupProgress = await deriveSetupProgress(scope.orgId);
@@ -172,6 +193,16 @@ export default async function PortalLayout({
           <UserButton />
         </div>
       </div>
+
+      {/* Trial banner — only when actively trialing. Hidden the moment
+          subscriptionStatus flips to ACTIVE (or CANCELED, etc.). */}
+      {org.subscriptionStatus === "TRIALING" && org.trialEndsAt ? (
+        <TrialBanner
+          trialEndsAt={org.trialEndsAt}
+          propertyCount={propertyCount}
+          tier={org.chosenTier ?? org.subscriptionTier ?? null}
+        />
+      ) : null}
 
       {/* Impersonation banner */}
       {scope.isImpersonating ? (
