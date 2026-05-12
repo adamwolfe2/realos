@@ -2,7 +2,8 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 // ---------------------------------------------------------------------------
 // PricingTiers — the three published plans (Foundation, Growth, Scale) plus
@@ -23,6 +24,10 @@ type BillingCycle = "monthly" | "annual";
 
 type Tier = {
   id: "foundation" | "growth" | "scale" | "enterprise";
+  // `checkoutTierId` is the catalog id (matches `getTierById()` keys on
+  // the server). null means this card goes to /demo instead of starting
+  // a Checkout session.
+  checkoutTierId: "starter" | "growth" | "scale" | null;
   name: string;
   tagline: string;
   monthly: number | null; // null for Enterprise
@@ -38,6 +43,7 @@ type Tier = {
 const TIERS: Tier[] = [
   {
     id: "foundation",
+    checkoutTierId: "starter",
     name: "Foundation",
     tagline: "Get your marketing engine online.",
     monthly: 599,
@@ -59,6 +65,7 @@ const TIERS: Tier[] = [
   },
   {
     id: "growth",
+    checkoutTierId: "growth",
     name: "Growth",
     tagline: "The full marketing flywheel running.",
     monthly: 899,
@@ -86,14 +93,15 @@ const TIERS: Tier[] = [
   },
   {
     id: "scale",
+    checkoutTierId: "scale",
     name: "Scale",
     tagline: "Push paid + organic + audience at portfolio scale.",
     monthly: 1499,
     annual: 1199,
     setupFee: 3500,
     highlighted: false,
-    ctaLabel: "Talk to sales",
-    ctaHref: "/demo?plan=scale",
+    ctaLabel: "Start with Scale",
+    ctaHref: "/onboarding?plan=scale",
     audienceCallout: "Operators with 5+ properties",
     features: [
       { label: "Everything in Growth, plus:" },
@@ -114,6 +122,7 @@ const TIERS: Tier[] = [
   },
   {
     id: "enterprise",
+    checkoutTierId: null,
     name: "Enterprise",
     tagline: "Multi-brand portfolios, white-label, custom integrations.",
     monthly: null,
@@ -227,8 +236,47 @@ export function PricingTiers() {
 function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
   const price =
     cycle === "monthly" ? tier.monthly : tier.annual;
-  const isEnterprise = tier.id === "enterprise";
   const highlighted = tier.highlighted;
+  const [submitting, setSubmitting] = React.useState(false);
+
+  // CTA click handler — Enterprise routes to /demo as a plain link; the
+  // other three tiers post to /api/billing/checkout to mint a Stripe
+  // Checkout session, then window.location to the returned URL. We
+  // default to 1 property for the public-pricing-page flow; the
+  // onboarding flow lets prospects bump the count after.
+  const startCheckout = React.useCallback(async () => {
+    if (!tier.checkoutTierId || submitting) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/billing/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          tierId: tier.checkoutTierId,
+          cycle,
+          propertyCount: 1,
+          source: "pricing_page",
+        }),
+      });
+      const body = await res.json().catch(() => ({}));
+      if (!res.ok || !body?.url) {
+        toast.error(
+          body?.error ??
+            `Couldn't start checkout (HTTP ${res.status}). Try again in a minute or email hello@leasestack.co.`,
+        );
+        setSubmitting(false);
+        return;
+      }
+      window.location.assign(body.url as string);
+    } catch (err) {
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Couldn't reach the checkout service. Try again shortly.",
+      );
+      setSubmitting(false);
+    }
+  }, [tier.checkoutTierId, cycle, submitting]);
 
   // Two visual modes: highlighted (Growth) inverts to dark card with
   // light text + blue accent ring; everything else is a clean white
@@ -394,30 +442,45 @@ function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
         {tier.audienceCallout}
       </p>
 
-      {/* CTA */}
-      <Link
-        href={tier.ctaHref}
-        className="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors"
-        style={
-          highlighted
-            ? {
-                backgroundColor: "#2563EB",
-                color: "#ffffff",
-              }
-            : isEnterprise
-              ? {
-                  backgroundColor: "transparent",
-                  color: "#141413",
-                  border: "1px solid #141413",
-                }
-              : {
-                  backgroundColor: "#141413",
-                  color: "#ffffff",
-                }
-        }
-      >
-        {tier.ctaLabel}
-      </Link>
+      {/* CTA — Enterprise stays a static link to /demo; everything else
+          posts to the Checkout endpoint and forwards to the Stripe-
+          hosted Checkout page. We keep the same visual shell so the
+          three tier buttons feel identical. */}
+      {tier.checkoutTierId ? (
+        <button
+          type="button"
+          onClick={startCheckout}
+          disabled={submitting}
+          className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-70 disabled:cursor-progress"
+          style={
+            highlighted
+              ? { backgroundColor: "#2563EB", color: "#ffffff" }
+              : { backgroundColor: "#141413", color: "#ffffff" }
+          }
+          aria-label={`Start checkout for ${tier.name} (${cycle})`}
+        >
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Starting checkout…
+            </>
+          ) : (
+            tier.ctaLabel
+          )}
+        </button>
+      ) : (
+        <Link
+          href={tier.ctaHref}
+          className="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors"
+          style={{
+            backgroundColor: "transparent",
+            color: "#141413",
+            border: "1px solid #141413",
+          }}
+        >
+          {tier.ctaLabel}
+        </Link>
+      )}
 
       {/* Feature list */}
       <ul className="mt-6 space-y-2.5 flex-1">
