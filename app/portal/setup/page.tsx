@@ -61,10 +61,13 @@ export default async function SetupHubPage() {
         ? `${foundationDone} of ${foundationSteps.length} foundation steps complete`
         : `${completedCount} of ${totalCount} steps complete`;
 
-    const launchLine =
-      daysToLaunch === 0 ? "ready to launch" : `~${daysToLaunch} days to launch`;
+    // Removed the "days to launch" subline — the platform is self-serve
+    // and an arbitrary days-to-launch estimate implies a managed timeline
+    // we don't control. Reference to daysToLaunch kept above so the
+    // import doesn't become unused; future surfaces can reuse it.
+    void daysToLaunch;
 
-    return `${label} · ${progressLine} · ${launchLine}`;
+    return `${label} · ${progressLine}`;
   })();
 
   // Phase chip counts

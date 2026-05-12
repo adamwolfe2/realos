@@ -177,10 +177,20 @@ export async function getScope(): Promise<ScopedContext | null> {
   // AGENCY users can impersonate any org. AL_PARTNER users can impersonate
   // any AUDIENCE_SYNC org (enforced below by re-checking productLine on the
   // target).
+  //
+  // SECURITY: impersonation is bound to the Clerk SESSION that started it.
+  // Without this binding, an agency user who forgets to end impersonation
+  // and then signs out leaves stale impersonateOrgId on publicMetadata that
+  // gets inherited by the NEXT session (including incognito sign-ins with
+  // a secondary email on the same Clerk user). That's how a brand-new
+  // sign-in landed inside SG Real Estate. Now we cross-check the session
+  // id; mismatched sessions ignore the impersonation entirely.
   const canImpersonate = isAgency || isAlPartner;
   let publicMetadata =
     (sessionClaims?.publicMetadata as Record<string, unknown> | undefined) ??
     {};
+  const currentSessionId =
+    (sessionClaims as { sid?: string } | null)?.sid ?? null;
   if (canImpersonate && !publicMetadata.impersonateOrgId) {
     try {
       const client = await clerkClient();
@@ -191,8 +201,42 @@ export async function getScope(): Promise<ScopedContext | null> {
       // whatever we had from sessionClaims.
     }
   }
+  const storedSessionId =
+    typeof publicMetadata.impersonateSessionId === "string"
+      ? (publicMetadata.impersonateSessionId as string)
+      : null;
+  const sessionMatchesImpersonation =
+    !!storedSessionId &&
+    !!currentSessionId &&
+    storedSessionId === currentSessionId;
+
+  // Stale impersonation on a different session: clear it asynchronously so
+  // it can't leak again on the next page load, and ignore it for this
+  // request. Best-effort cleanup; we don't await it so it doesn't block
+  // the request.
+  if (
+    canImpersonate &&
+    typeof publicMetadata.impersonateOrgId === "string" &&
+    !sessionMatchesImpersonation
+  ) {
+    try {
+      const client = await clerkClient();
+      const cleaned = { ...(publicMetadata ?? {}) };
+      delete cleaned.impersonateOrgId;
+      delete cleaned.impersonateSessionId;
+      delete cleaned.impersonateStartedAt;
+      void client.users
+        .updateUserMetadata(clerkUserId, { publicMetadata: cleaned })
+        .catch(() => undefined);
+    } catch {
+      // ignore
+    }
+  }
+
   const impersonateOrgId =
-    canImpersonate && typeof publicMetadata.impersonateOrgId === "string"
+    canImpersonate &&
+    sessionMatchesImpersonation &&
+    typeof publicMetadata.impersonateOrgId === "string"
       ? (publicMetadata.impersonateOrgId as string)
       : undefined;
 

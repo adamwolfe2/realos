@@ -29,10 +29,27 @@ export async function startImpersonation(targetOrgId: string): Promise<{
     throw new Error("Cannot impersonate a non-CLIENT organization");
   }
 
+  // SECURITY: bind impersonation to the CURRENT Clerk session id. Without
+  // this, the impersonateOrgId on publicMetadata survives sign-out (it's
+  // global to the Clerk user) and a subsequent sign-in (including via a
+  // secondary email or a magic link) inherits the impersonation — which
+  // means a brand-new looking account lands inside someone else's tenant
+  // data. Cross-checking the session id in scope.ts ensures stale
+  // impersonations from prior sessions get ignored.
+  //
+  // Also stamp the start time so we can age out impersonations even on
+  // the same session (e.g. 8h cap), preventing forever-impersonations.
+  const { auth } = await import("@clerk/nextjs/server");
+  const a = await auth();
+  const currentSessionId =
+    (a.sessionClaims as { sid?: string } | null)?.sid ?? a.sessionId ?? null;
+
   const client = await clerkClient();
   const current = await client.users.getUser(scope.clerkUserId);
   const publicMetadata = { ...(current.publicMetadata ?? {}) };
   publicMetadata.impersonateOrgId = target.id;
+  publicMetadata.impersonateSessionId = currentSessionId;
+  publicMetadata.impersonateStartedAt = new Date().toISOString();
   await client.users.updateUserMetadata(scope.clerkUserId, {
     publicMetadata,
   });
@@ -60,6 +77,8 @@ export async function endImpersonation(): Promise<{ ok: true }> {
   const publicMetadata = { ...(current.publicMetadata ?? {}) };
   const previousTarget = publicMetadata.impersonateOrgId;
   delete publicMetadata.impersonateOrgId;
+  delete publicMetadata.impersonateSessionId;
+  delete publicMetadata.impersonateStartedAt;
   await client.users.updateUserMetadata(scope.clerkUserId, {
     publicMetadata,
   });

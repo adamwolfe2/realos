@@ -143,12 +143,105 @@ const TIERS: Tier[] = [
   },
 ];
 
+// Hard cap on the property-count stepper. Anything bigger goes through
+// the Enterprise tier (which talks to sales) so we don't accidentally
+// quote 200-property Scale plans on a self-serve checkout flow.
+const MAX_PROPERTIES_STEPPER = 25;
+
 export function PricingTiers() {
   const [cycle, setCycle] = React.useState<BillingCycle>("monthly");
+  const [propertyCount, setPropertyCount] = React.useState<number>(1);
 
   return (
     <section style={{ backgroundColor: "#f5f4ed" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 pb-16 md:pb-20">
+        {/* Property-count stepper. Pricing is per-property so we let the
+            buyer dial in their portfolio size right here; every tier
+            card below updates its monthly total in real time. Additional
+            properties past the first get 20 percent off via the
+            additional-property prices in lib/billing/catalog.ts. */}
+        <div className="flex flex-col items-center mb-6 md:mb-8">
+          <p
+            className="eyebrow mb-3"
+            style={{ letterSpacing: "0.16em", color: "#88867f" }}
+          >
+            How many properties or locations?
+          </p>
+          <div
+            className="inline-flex items-center gap-3 rounded-full"
+            style={{
+              backgroundColor: "#ffffff",
+              border: "1px solid #e8e6dc",
+              padding: "6px 8px",
+            }}
+          >
+            <button
+              type="button"
+              onClick={() =>
+                setPropertyCount((n) => Math.max(1, n - 1))
+              }
+              disabled={propertyCount <= 1}
+              aria-label="Decrease property count"
+              className="inline-flex items-center justify-center rounded-full text-base font-semibold transition-colors disabled:opacity-30"
+              style={{
+                width: 32,
+                height: 32,
+                backgroundColor: "#f5f4ed",
+                color: "#141413",
+              }}
+            >
+              −
+            </button>
+            <div
+              className="text-center tabular-nums"
+              style={{
+                color: "#141413",
+                fontFamily: "var(--font-sans)",
+                fontSize: "16px",
+                fontWeight: 600,
+                minWidth: "120px",
+              }}
+            >
+              {propertyCount}{" "}
+              <span style={{ color: "#88867f", fontWeight: 500 }}>
+                {propertyCount === 1 ? "property" : "properties"}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() =>
+                setPropertyCount((n) =>
+                  Math.min(MAX_PROPERTIES_STEPPER, n + 1),
+                )
+              }
+              disabled={propertyCount >= MAX_PROPERTIES_STEPPER}
+              aria-label="Increase property count"
+              className="inline-flex items-center justify-center rounded-full text-base font-semibold transition-colors disabled:opacity-30"
+              style={{
+                width: 32,
+                height: 32,
+                backgroundColor: "#f5f4ed",
+                color: "#141413",
+              }}
+            >
+              +
+            </button>
+          </div>
+          {propertyCount > 1 ? (
+            <p
+              className="mt-2"
+              style={{
+                color: "#2563EB",
+                fontFamily: "var(--font-sans)",
+                fontSize: "12.5px",
+                fontWeight: 500,
+              }}
+            >
+              Additional properties get 20% off the base tier
+            </p>
+          ) : null}
+        </div>
+
         {/* Billing cycle toggle */}
         <div className="flex items-center justify-center mb-10 md:mb-12">
           <div
@@ -205,7 +298,12 @@ export function PricingTiers() {
             Enterprise sits at the right as a quieter "talk to us" card. */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {TIERS.map((t) => (
-            <TierCard key={t.id} tier={t} cycle={cycle} />
+            <TierCard
+              key={t.id}
+              tier={t}
+              cycle={cycle}
+              propertyCount={propertyCount}
+            />
           ))}
         </div>
 
@@ -231,11 +329,30 @@ export function PricingTiers() {
   );
 }
 
-function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
-  const price =
-    cycle === "monthly" ? tier.monthly : tier.annual;
+function TierCard({
+  tier,
+  cycle,
+  propertyCount,
+}: {
+  tier: Tier;
+  cycle: BillingCycle;
+  propertyCount: number;
+}) {
+  const basePrice = cycle === "monthly" ? tier.monthly : tier.annual;
   const highlighted = tier.highlighted;
   const [submitting, setSubmitting] = React.useState(false);
+
+  // Compute the effective monthly total for the chosen property count.
+  // The first property pays the base price; each additional property
+  // gets a 20% discount (mirrors lib/billing/catalog.ts and the Stripe
+  // prices it provisions). null basePrice (Enterprise) just shows
+  // "Custom" and skips the math.
+  const additionalPrice =
+    basePrice != null ? Math.round(basePrice * 0.8) : null;
+  const totalMonthly =
+    basePrice != null && additionalPrice != null
+      ? basePrice + additionalPrice * (propertyCount - 1)
+      : null;
 
   // CTA click handler — Enterprise routes to /demo as a plain link; the
   // other three tiers post to /api/billing/checkout to mint a Stripe
@@ -252,7 +369,7 @@ function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
         body: JSON.stringify({
           tierId: tier.checkoutTierId,
           cycle,
-          propertyCount: 1,
+          propertyCount,
           source: "pricing_page",
         }),
       });
@@ -274,7 +391,7 @@ function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
       );
       setSubmitting(false);
     }
-  }, [tier.checkoutTierId, cycle, submitting]);
+  }, [tier.checkoutTierId, cycle, propertyCount, submitting]);
 
   // Brand pass — every card is a clean white surface. Growth gets a
   // soft blue ring + subtle lift, NOT a dark inversion. Previous black
@@ -347,9 +464,14 @@ function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
         </p>
       </div>
 
-      {/* Price block */}
+      {/* Price block. Two display modes:
+            Single property → "$X /mo per property"
+            Multi-property  → big number is the TOTAL across the
+                              portfolio; sub-line breaks down base
+                              + discounted additional rate.
+          Custom (Enterprise) keeps its "Custom" copy unchanged. */}
       <div className="mb-2 min-h-[88px]">
-        {price == null ? (
+        {basePrice == null || totalMonthly == null ? (
           <div>
             <div
               style={{
@@ -385,7 +507,7 @@ function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
                   lineHeight: 1,
                 }}
               >
-                ${price.toLocaleString()}
+                ${totalMonthly.toLocaleString()}
               </span>
               <span
                 style={{
@@ -395,9 +517,23 @@ function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
                   fontWeight: 500,
                 }}
               >
-                /mo · per property
+                /mo
+                {propertyCount === 1 ? " · per property" : ""}
               </span>
             </div>
+            {propertyCount > 1 && additionalPrice != null ? (
+              <p
+                className="mt-1"
+                style={{
+                  color: mutedText,
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "12px",
+                }}
+              >
+                ${basePrice.toLocaleString()} base + {propertyCount - 1} ×
+                ${additionalPrice.toLocaleString()} additional
+              </p>
+            ) : null}
             {cycle === "annual" && tier.monthly ? (
               <p
                 className="mt-1"
@@ -408,7 +544,13 @@ function TierCard({ tier, cycle }: { tier: Tier; cycle: BillingCycle }) {
                   fontWeight: 500,
                 }}
               >
-                Billed yearly · save ${(tier.monthly - tier.annual!) * 12}/yr
+                Billed yearly · save $
+                {(
+                  (tier.monthly - tier.annual!) *
+                  12 *
+                  (1 + 0.8 * (propertyCount - 1))
+                ).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                /yr
               </p>
             ) : null}
           </div>
