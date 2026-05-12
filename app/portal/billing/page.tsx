@@ -8,6 +8,7 @@ import { ADDONS, TIERS } from "@/lib/billing/plans";
 import type Stripe from "stripe";
 import { TrialActivationCard } from "./trial-activation-card";
 import { WebsiteBuildCard } from "./website-build-card";
+import { WebsiteBuildTracker } from "./website-build-tracker";
 
 export const metadata: Metadata = { title: "Billing" };
 export const dynamic = "force-dynamic";
@@ -42,6 +43,27 @@ export default async function BillingPage() {
       where: { orgId: scope.orgId, lifecycle: { in: ["IMPORTED", "ACTIVE"] } },
     })
     .catch(() => 0);
+
+  // Active website-build requests for this org. Shown above the
+  // billing details so customers can see fulfillment status at a
+  // glance. Cancelled / live builds drop out of the list once 30
+  // days have passed since the terminal status was reached.
+  const websiteBuilds = await prisma.websiteBuildRequest.findMany({
+    where: { orgId: scope.orgId },
+    orderBy: { createdAt: "desc" },
+    take: 5,
+    select: {
+      id: true,
+      status: true,
+      amountPaidCents: true,
+      calBookingUrl: true,
+      calBookedAt: true,
+      kickoffCallAt: true,
+      launchedAt: true,
+      createdAt: true,
+      property: { select: { name: true } },
+    },
+  });
 
   const adCampaigns = await prisma.adCampaign.findMany({
     where: { orgId: scope.orgId, status: "active" },
@@ -328,6 +350,31 @@ export default async function BillingPage() {
             not included in the recurring subtotal above.
           </p>
         </section>
+      ) : null}
+
+      {/* Customer's live website build queue. Hidden when they
+          haven't purchased one yet. */}
+      {websiteBuilds.length > 0 ? (
+        <WebsiteBuildTracker
+          builds={websiteBuilds.map((b) => ({
+            id: b.id,
+            status: b.status as
+              | "requested"
+              | "scoping"
+              | "designing"
+              | "building"
+              | "review"
+              | "live"
+              | "cancelled",
+            amountPaidCents: b.amountPaidCents,
+            calBookingUrl: b.calBookingUrl,
+            calBookedAt: b.calBookedAt?.toISOString() ?? null,
+            kickoffCallAt: b.kickoffCallAt?.toISOString() ?? null,
+            launchedAt: b.launchedAt?.toISOString() ?? null,
+            createdAt: b.createdAt.toISOString(),
+            propertyName: b.property?.name ?? null,
+          }))}
+        />
       ) : null}
 
       {/* Website build CTA — separate paid service, not part of trial.

@@ -14,6 +14,7 @@ import { NotificationBell } from "@/components/portal/notification-bell";
 import { CmdKSearch } from "@/components/portal/search/cmdk-search";
 import { BugReportButton } from "@/components/feedback/bug-report-button";
 import { TrialBanner } from "@/components/portal/trial-banner";
+import { resolveTrialState } from "@/lib/billing/trial-status";
 
 export const metadata: Metadata = {
   title: { template: `%s | ${BRAND_NAME} Portal`, default: `${BRAND_NAME} Portal` },
@@ -194,15 +195,31 @@ export default async function PortalLayout({
         </div>
       </div>
 
-      {/* Trial banner — only when actively trialing. Hidden the moment
-          subscriptionStatus flips to ACTIVE (or CANCELED, etc.). */}
-      {org.subscriptionStatus === "TRIALING" && org.trialEndsAt ? (
-        <TrialBanner
-          trialEndsAt={org.trialEndsAt}
-          propertyCount={propertyCount}
-          tier={org.chosenTier ?? org.subscriptionTier ?? null}
-        />
-      ) : null}
+      {/* Trial banner — shows during TRIALING (active and expired
+          both). Hidden the moment subscriptionStatus flips to ACTIVE
+          / CANCELED. The banner copy and the activate CTA adapt to
+          the expired vs. active state via the daysLeft computation. */}
+      {(() => {
+        const trialState = resolveTrialState({
+          subscriptionStatus: org.subscriptionStatus,
+          trialStartedAt: null,
+          trialEndsAt: org.trialEndsAt,
+        });
+        if (
+          (trialState === "trial_active" ||
+            trialState === "trial_expired") &&
+          org.trialEndsAt
+        ) {
+          return (
+            <TrialBanner
+              trialEndsAt={org.trialEndsAt}
+              propertyCount={propertyCount}
+              tier={org.chosenTier ?? org.subscriptionTier ?? null}
+            />
+          );
+        }
+        return null;
+      })()}
 
       {/* Impersonation banner */}
       {scope.isImpersonating ? (

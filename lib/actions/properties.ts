@@ -149,6 +149,20 @@ export async function createProperty(
     ),
   });
 
+  // Auto-bump the Stripe subscription quantity for paid orgs so the
+  // operator never has to "remember to upgrade." No-op during TRIALING
+  // (no charge until activation) and during legacy non-Stripe states.
+  // Errors are swallowed inside the helper so a Stripe outage doesn't
+  // fail the user's property create.
+  try {
+    const { syncSubscriptionQuantity } = await import(
+      "@/lib/billing/sync-subscription-quantity"
+    );
+    await syncSubscriptionQuantity(targetOrgId);
+  } catch {
+    // already logged
+  }
+
   revalidatePath(`/portal/properties`);
   if (scope.isAgency) revalidatePath(`/admin/clients/${targetOrgId}`);
   return { ok: true, propertyId: created.id };

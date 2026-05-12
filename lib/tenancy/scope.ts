@@ -342,6 +342,45 @@ export async function requireAudienceSync(): Promise<ScopedContext> {
   return scope;
 }
 
+export class TrialExpiredError extends ForbiddenError {
+  constructor() {
+    super(
+      "Your free trial has ended. Activate your subscription from /portal/billing to continue.",
+    );
+    this.name = "TrialExpiredError";
+    this.status = 402; // Payment Required
+  }
+}
+
+// Gate for mutating actions. Returns the scope on success; throws
+// TrialExpiredError if the org is in trial_expired state. Agency users
+// impersonating a client bypass the gate so support workflows keep
+// working when a customer's trial lapses.
+//
+// Call this from mutating route handlers + server actions instead of
+// requireScope() to enforce the read-only gate. Read-only routes (GET
+// endpoints, dashboard queries) keep using requireScope() so customers
+// can still review and export their data after a trial lapse.
+export async function requireWritableWorkspace(): Promise<ScopedContext> {
+  const scope = await requireScope();
+  if (scope.isImpersonating) return scope;
+  const { isWorkspaceReadOnly } = await import("@/lib/billing/trial-status");
+  const { prisma } = await import("@/lib/db");
+  const org = await prisma.organization.findUnique({
+    where: { id: scope.orgId },
+    select: {
+      subscriptionStatus: true,
+      trialStartedAt: true,
+      trialEndsAt: true,
+    },
+  });
+  if (!org) return scope;
+  if (isWorkspaceReadOnly(org, { isImpersonating: false })) {
+    throw new TrialExpiredError();
+  }
+  return scope;
+}
+
 // ---------------------------------------------------------------------------
 // tenantWhere(scope) — the mandatory filter for every tenant-scoped query.
 // Every Prisma read/write on a model with orgId MUST spread this into its
