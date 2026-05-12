@@ -31,6 +31,17 @@ const isPublicApi = createRouteMatcher([
   "/api/health(.*)",
   "/api/ingest(.*)",
   "/api/subscribe(.*)",
+  // /api/billing/checkout is the entry point from the public /pricing
+  // page. Anonymous prospects POST here to start a Stripe Checkout
+  // session BEFORE they have a Clerk account; the route handler
+  // itself decides whether to require an existing scope or fall
+  // back to the anonymous-Stripe-customer path. Letting middleware
+  // gate it on auth would block the entire self-serve sale.
+  //
+  // Subscription mutation endpoints under /api/billing/* that DO
+  // require auth still call requireScope() / requireWritableWorkspace()
+  // internally — middleware just doesn't pre-empt them with a redirect.
+  "/api/billing(.*)",
 ]);
 
 const TENANT_RENDER_PREFIX = "/tenant-site";
