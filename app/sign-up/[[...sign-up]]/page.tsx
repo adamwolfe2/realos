@@ -1,8 +1,8 @@
 import { SignUp } from "@clerk/nextjs";
 import Link from "next/link";
+import Image from "next/image";
 import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
-import { LeaseStackWordmark } from "@/components/brand/leasestack-wordmark";
 import { PlatformShowcase } from "@/components/auth/platform-showcase";
 
 export const metadata: Metadata = {
@@ -39,19 +39,28 @@ export default async function SignUpPage({
 
   return (
     <div className="min-h-screen bg-white text-foreground flex flex-col lg:flex-row">
-      {/* LEFT: Auth form */}
-      <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] flex flex-col bg-white border-r border-[#EEEEEE]">
+      {/* LEFT: Auth form. Thin brand-blue rail at the top reinforces the
+          LeaseStack accent so the panel doesn't read as a generic stock
+          template. */}
+      <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] flex flex-col bg-white border-r border-[#EEEEEE] border-t-[3px] border-t-[#2563EB]">
         <header className="px-6 lg:px-10 py-5 lg:py-6 flex items-center justify-between">
           <Link
             href="/"
             aria-label={BRAND_NAME}
-            className="inline-flex hover:opacity-80 transition-opacity"
+            className="inline-flex items-center hover:opacity-80 transition-opacity"
           >
-            <LeaseStackWordmark tone="dark" className="text-[18px]" />
+            <Image
+              src="/logos/leasestack-wordmark.png"
+              alt={BRAND_NAME}
+              width={180}
+              height={40}
+              priority
+              className="h-9 w-auto"
+            />
           </Link>
           <Link
             href="/sign-in"
-            className="text-xs font-semibold text-foreground hover:underline underline-offset-4"
+            className="text-xs font-semibold text-[#2563EB] hover:underline underline-offset-4"
           >
             Sign in →
           </Link>
@@ -99,7 +108,11 @@ export default async function SignUpPage({
                   socialButtonsVariant: "blockButton",
                 },
                 variables: {
-                  colorPrimary: "#0A0A0A",
+                  // LeaseStack brand blue (#2563EB) drives Clerk's primary
+                  // accents — Continue button, focus rings, footer links.
+                  // Matches the marketing nav + pricing page so the auth
+                  // surface doesn't look like a stock all-black template.
+                  colorPrimary: "#2563EB",
                   colorText: "#0A0A0A",
                   colorTextSecondary: "#5C5E62",
                   colorBackground: "#FFFFFF",
@@ -124,15 +137,15 @@ export default async function SignUpPage({
                   formFieldLabel:
                     "text-[11px] font-semibold text-[#393C41] mb-1.5 uppercase tracking-wider",
                   formFieldInput:
-                    "border border-[#D4D4D4] bg-white focus:border-[#0A0A0A] focus:ring-2 focus:ring-[#0A0A0A]/10 focus:outline-none rounded-md h-11 text-sm text-foreground placeholder:text-[#8E8E8E] transition-colors",
+                    "border border-[#D4D4D4] bg-white focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/15 focus:outline-none rounded-md h-11 text-sm text-foreground placeholder:text-[#8E8E8E] transition-colors",
                   formButtonPrimary:
-                    "!bg-[#0A0A0A] hover:!bg-[#1f1f1f] !text-white !shadow-none !border-0 rounded-md h-11 text-sm font-semibold transition-colors",
+                    "!bg-[#2563EB] hover:!bg-[#1d4ed8] !text-white !shadow-none !border-0 rounded-md h-11 text-sm font-semibold transition-colors",
                   footerActionLink:
-                    "text-foreground font-semibold hover:underline underline-offset-2",
+                    "!text-[#2563EB] font-semibold hover:underline underline-offset-2",
                   identityPreviewEditButton:
-                    "text-foreground underline underline-offset-2",
+                    "!text-[#2563EB] underline underline-offset-2",
                   otpCodeFieldInput:
-                    "border border-[#D4D4D4] rounded-md text-foreground",
+                    "border border-[#D4D4D4] rounded-md text-foreground focus:border-[#2563EB]",
                   alertText: "text-sm",
                   formFieldErrorText: "text-xs text-[#b53333]",
                 },
@@ -141,11 +154,17 @@ export default async function SignUpPage({
 
             <p className="mt-5 text-center text-[11px] text-muted-foreground">
               By creating an account you agree to our{" "}
-              <Link href="/terms" className="underline hover:text-foreground">
+              <Link
+                href="/terms"
+                className="text-[#2563EB] underline hover:no-underline"
+              >
                 Terms
               </Link>{" "}
               and{" "}
-              <Link href="/privacy" className="underline hover:text-foreground">
+              <Link
+                href="/privacy"
+                className="text-[#2563EB] underline hover:no-underline"
+              >
                 Privacy
               </Link>
               .
