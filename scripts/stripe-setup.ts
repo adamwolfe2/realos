@@ -249,6 +249,8 @@ async function run() {
       description: tier.productDescription,
     });
 
+    // Self-serve model — no one-time setup fees. Just recurring prices
+    // for the base subscription + additional-property quantity discount.
     const tierPrices = [
       {
         ...tier.monthly,
@@ -259,7 +261,7 @@ async function run() {
         ...tier.annual,
         recurringInterval: "year" as const,
         metadata: metadataForTierPrice(tier.tier, "annual", "base"),
-        unitAmountCents: tier.annual.unitAmountCents * 12, // annual prepay billed yearly, surface as monthly-equivalent on the UI
+        unitAmountCents: tier.annual.unitAmountCents * 12,
       },
       {
         ...tier.additionalPropertyMonthly,
@@ -271,10 +273,6 @@ async function run() {
         recurringInterval: "year" as const,
         metadata: metadataForTierPrice(tier.tier, "annual", "additional"),
         unitAmountCents: tier.additionalPropertyAnnual.unitAmountCents * 12,
-      },
-      {
-        ...tier.setupFee,
-        metadata: metadataForTierPrice(tier.tier, "monthly", "setup"),
       },
     ];
 

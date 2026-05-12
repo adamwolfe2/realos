@@ -140,7 +140,6 @@ export async function POST(req: NextRequest) {
       cycle: parsed.cycle,
       propertyCount: parsed.propertyCount,
       addOnLookupKeys: parsed.addOnLookupKeys,
-      includeSetupFee: true,
     });
   } catch (err) {
     return NextResponse.json(
@@ -179,15 +178,10 @@ export async function POST(req: NextRequest) {
         quantity: item.quantity,
       });
     } else if (item.kind === "subscription_metered_addon") {
-      // Metered prices have no quantity at Checkout — they aggregate
-      // usage events reported later via cron.
+      // Metered prices have no quantity at Checkout. They aggregate
+      // usage events reported later via cron in arrears.
       checkoutLineItems.push({
         price: item.priceId,
-      });
-    } else if (item.kind === "one_time") {
-      checkoutLineItems.push({
-        price: item.priceId,
-        quantity: item.quantity,
       });
     }
   }
@@ -225,18 +219,32 @@ export async function POST(req: NextRequest) {
         : parsed.prospectEmail
           ? { customer_email: parsed.prospectEmail }
           : {}),
-      // We always want to create a customer record if one doesn't exist
-      // (anonymous signup path) — Stripe does this automatically when
-      // `customer` is not set and `customer_email` is provided.
+      // When `customer` is provided AND automatic_tax is on, Stripe
+      // needs to know how to source the address used for tax
+      // calculation. Brand-new orgs have no address on the Customer
+      // record yet, so we tell Stripe to save the billing address the
+      // prospect enters at Checkout back to the Customer (auto). Same
+      // for name. This also satisfies the "Automatic tax calculation
+      // in Checkout requires a valid address on the Customer" guard.
+      ...(stripeCustomerId
+        ? {
+            customer_update: {
+              address: "auto",
+              name: "auto",
+            },
+          }
+        : {}),
       success_url: successUrl,
       cancel_url: cancelUrl,
       allow_promotion_codes: true,
-      billing_address_collection: "auto",
-      // Tax handling — turned on if you've configured Stripe Tax in the
-      // dashboard; harmless otherwise.
+      billing_address_collection: "required",
+      // Tax handling — turned on if you've configured Stripe Tax in
+      // the dashboard; harmless otherwise. Combined with the
+      // customer_update[address]=auto above so brand-new customers
+      // capture an address at first Checkout.
       automatic_tax: { enabled: true },
-      // Trial: no free trial (managed service — labor costs hit on day 1).
-      // 30-day money-back guarantee handled out-of-band per FAQ.
+      // Self-serve model: no trial, no setup fee. The 30-day money-
+      // back guarantee is handled out-of-band per the FAQ.
       subscription_data: {
         metadata,
       },

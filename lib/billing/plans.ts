@@ -46,12 +46,15 @@ export function getPriceId(lookupKey: StripeLookupKey | string): string {
 
 // Resolve every Stripe price ID we'd need to build a Checkout Session
 // for a given tier + cycle + property count + optional add-ons.
+//
+// Self-serve model: there are no one-time setup fees. The customer pays
+// the recurring tier price, optionally with metered add-ons that
+// aggregate usage in arrears.
 export type CheckoutPriceSelection = {
   tier: TierDefinition;
   cycle: "monthly" | "annual";
   propertyCount: number; // total properties (must be >= 1)
   addOnLookupKeys?: string[];
-  includeSetupFee: boolean;
 };
 
 export type ResolvedLineItems = Array<
@@ -77,12 +80,6 @@ export type ResolvedLineItems = Array<
       priceId: string;
       addon: AddOnDefinition;
     }
-  | {
-      kind: "one_time";
-      priceId: string;
-      quantity: number;
-      label: string;
-    }
 >;
 
 export function resolveLineItems(
@@ -90,7 +87,7 @@ export function resolveLineItems(
 ): ResolvedLineItems {
   const items: ResolvedLineItems = [];
 
-  // Base subscription — quantity always 1; additional properties get
+  // Base subscription. Quantity is always 1; additional properties get
   // their own discounted line item below.
   const baseLookupKey =
     selection.cycle === "monthly"
@@ -117,19 +114,9 @@ export function resolveLineItems(
     });
   }
 
-  // Setup fee — multiplied by property count (each property gets its
-  // own one-time setup).
-  if (selection.includeSetupFee) {
-    items.push({
-      kind: "one_time",
-      priceId: getPriceId(selection.tier.setupFee.lookupKey),
-      quantity: selection.propertyCount,
-      label: `${selection.tier.productName} setup`,
-    });
-  }
-
-  // Add-ons. Recurring/metered → subscription items. One-time → invoice
-  // line items added separately at Checkout creation time.
+  // Add-ons. Recurring add-ons land as subscription items; metered
+  // add-ons land as zero-quantity subscription items and accumulate
+  // usage in arrears via Billing Meter events.
   for (const addonKey of selection.addOnLookupKeys ?? []) {
     const addon = ADDONS.find((a) => a.priceLookupKey === addonKey);
     if (!addon) continue;
@@ -138,13 +125,6 @@ export function resolveLineItems(
       items.push({ kind: "subscription_addon", priceId, addon });
     } else if (addon.billingMode === "metered") {
       items.push({ kind: "subscription_metered_addon", priceId, addon });
-    } else {
-      items.push({
-        kind: "one_time",
-        priceId,
-        quantity: 1,
-        label: addon.uiLabel,
-      });
     }
   }
 
