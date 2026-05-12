@@ -113,7 +113,21 @@ async function getDemoScope(): Promise<ScopedContext | null> {
 }
 
 export async function getScope(): Promise<ScopedContext | null> {
-  const { userId: clerkUserId, sessionClaims } = await auth();
+  // Defensive: auth() throws if the request didn't pass through
+  // clerkMiddleware (e.g. a route inadvertently added to a bypass list
+  // in middleware.ts). Treat that as "no session" instead of bubbling
+  // a 500 — callers that genuinely need auth use requireScope() and
+  // will surface a 403 from the null result.
+  let clerkUserId: string | null = null;
+  let sessionClaims: Awaited<ReturnType<typeof auth>>["sessionClaims"] = null;
+  try {
+    const session = await auth();
+    clerkUserId = session.userId;
+    sessionClaims = session.sessionClaims;
+  } catch (err) {
+    console.error("[scope] auth() failed; treating as anonymous:", err);
+    return await getDemoScope();
+  }
   if (!clerkUserId) {
     return await getDemoScope();
   }

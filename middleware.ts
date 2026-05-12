@@ -44,6 +44,15 @@ const isPublicApi = createRouteMatcher([
   "/api/billing(.*)",
 ]);
 
+// Routes that Clerk middleware MUST still wrap (so route handlers can
+// call auth() without throwing) but which we don't want gated on auth.
+// Different from isPublicApi — those skip Clerk entirely because the
+// Clerk session handshake itself trips on weird webhook payload shapes
+// (see comment on `handler` below). Billing checkout is a normal JSON
+// POST from the public /pricing page; it needs auth() to be callable
+// so getScope() can detect "anonymous prospect" vs "authed upgrade".
+const isClerkOptionalApi = createRouteMatcher(["/api/billing(.*)"]);
+
 const TENANT_RENDER_PREFIX = "/tenant-site";
 
 // DECISION: Clerk's publishable key must be a real Frontend API URL. If it
@@ -94,7 +103,11 @@ async function coreHandler(
     return h;
   })();
 
-  if (isPublicApi(req)) {
+  // For Clerk-optional APIs we want `auth()` to work in the route handler
+  // without forcing sign-in. coreHandler runs INSIDE clerkMiddleware for
+  // these (handler() below routes them through wrappedHandler), and we
+  // simply pass through here without hitting the admin/portal redirects.
+  if (isPublicApi(req) || isClerkOptionalApi(req)) {
     return NextResponse.next({ request: { headers: sanitizedReqHeaders } });
   }
 
@@ -205,7 +218,16 @@ const wrappedHandler = clerkIsConfigured()
 // these routes get NextResponse.next() with zero auth processing on their
 // way to the route handler, where each one enforces its own auth scheme.
 const handler = async (req: NextRequest, event: NextFetchEvent) => {
-  if (isPublicApi(req)) return NextResponse.next();
+  // Only TRUE webhooks/cron skip Clerk entirely. Routes in
+  // isClerkOptionalApi (e.g. /api/billing/*) still flow through
+  // wrappedHandler so the Clerk context is initialised — otherwise
+  // calls to auth() inside the route throw
+  // "Clerk: auth() was called but Clerk can't detect usage of
+  // clerkMiddleware()", which is what was bricking the public
+  // /pricing → Stripe Checkout flow with HTTP 500s.
+  if (isPublicApi(req) && !isClerkOptionalApi(req)) {
+    return NextResponse.next();
+  }
   return wrappedHandler(req, event);
 };
 
