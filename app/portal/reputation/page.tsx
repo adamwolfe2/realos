@@ -270,32 +270,42 @@ export default async function PortfolioReputationPage({
           eyebrow="Across all mentions"
           description="What people actually feel"
         >
-          <div className="space-y-1.5">
-            <SentimentBar
-              label="Positive"
-              count={positive}
-              total={metrics.totalMentions}
-              tone="bg-primary"
-            />
-            <SentimentBar
-              label="Negative"
-              count={negative}
-              total={metrics.totalMentions}
-              tone="bg-foreground"
-            />
-            <SentimentBar
-              label="Mixed"
-              count={mixed}
-              total={metrics.totalMentions}
-              tone="bg-primary/50"
-            />
-            <SentimentBar
-              label="Neutral"
-              count={neutral}
-              total={metrics.totalMentions}
-              tone="bg-muted-foreground/50"
-            />
-          </div>
+          {metrics.totalMentions === 0 ? (
+            // Per the design audit: when every bar is "0 · 0%" the four
+            // rows just read as noise. Collapse to a single empty hint
+            // until at least one mention has been categorized.
+            <p className="text-xs text-muted-foreground">
+              No sentiment yet — sentiment surfaces once we&apos;ve categorized
+              your first mention.
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              <SentimentBar
+                label="Positive"
+                count={positive}
+                total={metrics.totalMentions}
+                tone="bg-primary"
+              />
+              <SentimentBar
+                label="Negative"
+                count={negative}
+                total={metrics.totalMentions}
+                tone="bg-foreground"
+              />
+              <SentimentBar
+                label="Mixed"
+                count={mixed}
+                total={metrics.totalMentions}
+                tone="bg-primary/50"
+              />
+              <SentimentBar
+                label="Neutral"
+                count={neutral}
+                total={metrics.totalMentions}
+                tone="bg-muted-foreground/50"
+              />
+            </div>
+          )}
         </DashboardSection>
 
         <DashboardSection
@@ -593,20 +603,35 @@ function MonthlyVolume({
     negative: safeNum(d?.negative),
   }));
   const max = Math.max(1, ...safeData.map((d) => d.count));
+
+  // Per the design audit, raw "12, 01, 02, 03, 04, 05" axis labels read
+  // as garbage. Format YYYY-MM month strings as short month names ("Dec,
+  // Jan, …") and prefix the first label of a new year with the year so
+  // the chart self-documents which year the data starts in.
+  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
+                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const labels = safeData.map((d, i) => {
+    const [yearStr, monthStr] = d.month.split("-");
+    const monthIdx = Math.max(0, Math.min(11, Number(monthStr) - 1));
+    const monthName = MONTHS[monthIdx] ?? d.month.slice(5);
+    if (i === 0 || monthIdx === 0) return `${monthName} '${yearStr.slice(2)}`;
+    return monthName;
+  });
+
   return (
     <div className="flex items-end gap-1.5 h-24">
-      {data.map((d) => {
+      {safeData.map((d, i) => {
         const height = (d.count / max) * 100;
         const negPct = d.count > 0 ? (d.negative / d.count) * 100 : 0;
         return (
           <div
             key={d.month}
             className="flex-1 flex flex-col items-center gap-1 group"
-            title={`${d.month}: ${d.count} (${d.negative} negative)`}
+            title={`${labels[i]}: ${d.count} (${d.negative} negative)`}
           >
             <div className="w-full flex-1 flex items-end">
               <div
-                className="w-full bg-slate-200 group-hover:bg-slate-300 rounded-t-sm relative transition-colors"
+                className="w-full bg-muted group-hover:bg-muted-foreground/20 rounded-t-sm relative transition-colors"
                 style={{ height: `${Math.max(height, 4)}%` }}
               >
                 {d.negative > 0 ? (
@@ -618,7 +643,7 @@ function MonthlyVolume({
               </div>
             </div>
             <span className="text-[9px] text-muted-foreground tabular-nums">
-              {d.month.slice(5)}
+              {labels[i]}
             </span>
           </div>
         );

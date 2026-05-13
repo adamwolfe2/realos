@@ -20,6 +20,7 @@ import {
   type ToolbarView,
 } from "@/components/portal/ui/entity-toolbar";
 import { PillCell, NumberCell, EmptyCell } from "@/components/portal/ui/cells";
+import { PropertiesSearch } from "@/components/portal/properties/properties-search";
 
 export const metadata: Metadata = { title: "Properties" };
 export const dynamic = "force-dynamic";
@@ -55,6 +56,7 @@ export default async function PropertiesList({
     view?: string;
     property?: string;
     properties?: string;
+    q?: string;
   }>;
 }) {
   const scope = await requireScope();
@@ -65,6 +67,7 @@ export default async function PropertiesList({
   ).includes(rawView as never)
     ? (rawView as ViewKey)
     : "all";
+  const searchQuery = (sp.q ?? "").trim().toLowerCase();
 
   // Property gate: respect UserPropertyAccess so a property-restricted
   // user (Norman → Telegraph Commons only) cannot see sibling
@@ -124,15 +127,28 @@ export default async function PropertiesList({
     ).length,
   };
 
-  // Apply the active view filter
-  const properties = all.filter((p) => {
-    if (view === "vacant") return (p.availableCount ?? 0) > 0;
-    if (view === "leasing")
-      return p._count.leads > 0 || p._count.listings > 0;
-    if (view === "synced")
-      return p.lastSyncedAt && p.lastSyncedAt > sevenDaysAgo;
-    return true;
-  });
+  // Apply the active view filter, then the text search. Search runs in
+  // memory against the already-fetched set (we always fetch the full
+  // marketable universe so view counts stay accurate) — match against
+  // name, address line 1, city, and state so operators can find a
+  // property by any of the column values they actually see.
+  const properties = all
+    .filter((p) => {
+      if (view === "vacant") return (p.availableCount ?? 0) > 0;
+      if (view === "leasing")
+        return p._count.leads > 0 || p._count.listings > 0;
+      if (view === "synced")
+        return p.lastSyncedAt && p.lastSyncedAt > sevenDaysAgo;
+      return true;
+    })
+    .filter((p) => {
+      if (!searchQuery) return true;
+      const haystack = [p.name, p.addressLine1, p.city, p.state]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+      return haystack.includes(searchQuery);
+    });
 
   // Portfolio-level stats so the header has actual context (always reflects
   // the full universe, not the filtered view — gives the operator the
@@ -217,11 +233,28 @@ export default async function PropertiesList({
         />
       ) : (
         <>
-          <EntityToolbar views={views} />
+          {/* Search row sits above the view tabs so it scopes the visible
+              counts. The component is debounced and URL-bound so
+              shareable links preserve the active query. */}
+          <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <EntityToolbar views={views} />
+            <PropertiesSearch initialValue={searchQuery} />
+          </div>
           {properties.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-xs text-muted-foreground">
-              No properties match this view.
-            </div>
+            <EmptyState
+              icon={<Building2 className="h-4 w-4" />}
+              title={
+                searchQuery
+                  ? `No properties match "${searchQuery}"`
+                  : "No properties match this view."
+              }
+              body={
+                searchQuery
+                  ? "Try a different search term, or clear the search to see all properties in this view."
+                  : undefined
+              }
+              variant="bare"
+            />
           ) : (
             <DataTable<PropertyRow>
               rows={properties as PropertyRow[]}
