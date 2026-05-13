@@ -38,7 +38,12 @@ const ICON_SIZE_CLASSES = {
 type Size = keyof typeof SIZE_CLASSES;
 
 type Props = {
+  /** Hero image — usually heroImageUrl or photoUrls[0]. */
   src?: string | null;
+  /** Optional brand logo. When provided alongside src, renders as a small
+   *  badge over the bottom-right corner of the photo for premium feel. When
+   *  src is null, the logo becomes the primary mark (centered, no badge). */
+  logoSrc?: string | null;
   accent?: string | null;
   size?: Size;
   className?: string;
@@ -46,6 +51,7 @@ type Props = {
 
 export function PropertyAvatar({
   src,
+  logoSrc,
   accent,
   size = "md",
   className,
@@ -57,6 +63,7 @@ export function PropertyAvatar({
     : "hsl(var(--primary) / 0.08)";
   const iconColor = accent ?? "hsl(var(--primary))";
 
+  // Path A: full hero photo + (optional) logo badge.
   if (src) {
     return (
       <div
@@ -79,10 +86,36 @@ export function PropertyAvatar({
           className="relative h-full w-full object-cover"
           loading="lazy"
         />
+        {logoSrc ? <LogoBadge src={logoSrc} size={size} /> : null}
       </div>
     );
   }
 
+  // Path B: no hero, but we have a logo → render the logo centered. This
+  // is the "we found their brand mark but not a photo" middle state and
+  // already feels far more premium than the Building icon alone.
+  if (logoSrc) {
+    return (
+      <div
+        className={cn(
+          "relative shrink-0 grid place-items-center overflow-hidden rounded-lg border border-border",
+          sizeClass,
+          className,
+        )}
+        style={{ backgroundColor: "white" }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={logoSrc}
+          alt=""
+          className="max-h-[70%] max-w-[70%] object-contain"
+          loading="lazy"
+        />
+      </div>
+    );
+  }
+
+  // Path C: nothing — Building icon fallback.
   return (
     <div
       className={cn(
@@ -95,5 +128,31 @@ export function PropertyAvatar({
     >
       <Building2 className={iconClass} style={{ color: iconColor }} />
     </div>
+  );
+}
+
+const BADGE_SIZE: Record<Size, string> = {
+  sm: "h-3.5 w-3.5",
+  md: "h-4 w-4",
+  lg: "h-5 w-5",
+};
+
+function LogoBadge({ src, size }: { src: string; size: Size }) {
+  return (
+    <span
+      className={cn(
+        "absolute bottom-0.5 right-0.5 grid place-items-center rounded-md bg-white shadow-sm ring-1 ring-border overflow-hidden",
+        BADGE_SIZE[size],
+      )}
+      aria-hidden="true"
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt=""
+        className="h-full w-full object-contain"
+        loading="lazy"
+      />
+    </span>
   );
 }

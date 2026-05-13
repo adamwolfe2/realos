@@ -33,6 +33,7 @@ export type PropertyDashboardCardProps = {
   name: string;
   address?: string | null;
   thumbnailUrl?: string | null;
+  logoUrl?: string | null;
   occupancyPct?: number | null;
   totalUnits?: number | null;
   availableCount?: number | null;
@@ -50,6 +51,7 @@ export function PropertyDashboardCard({
   name,
   address,
   thumbnailUrl,
+  logoUrl,
   occupancyPct,
   totalUnits,
   availableCount,
@@ -69,7 +71,12 @@ export function PropertyDashboardCard({
         "hover:bg-muted/40 transition-colors",
       )}
     >
-      <PropertyAvatar src={thumbnailUrl} accent={accent} size="md" />
+      <PropertyAvatar
+        src={thumbnailUrl}
+        logoSrc={logoUrl}
+        accent={accent}
+        size="md"
+      />
 
       {/* Identity column — flexes to fill */}
       <div className="flex-1 min-w-0">

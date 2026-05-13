@@ -59,6 +59,9 @@ export default async function PropertyCuratePage({
           lifecycleSetBy: true,
           lifecycleSetAt: true,
           createdAt: true,
+          heroImageUrl: true,
+          logoUrl: true,
+          websiteUrl: true,
         },
       }),
       prisma.property.count({
@@ -178,6 +181,9 @@ export default async function PropertyCuratePage({
             excludeReason: p.excludeReason,
             lifecycleSetBy: p.lifecycleSetBy,
             createdAt: p.createdAt.toISOString(),
+            heroImageUrl: p.heroImageUrl,
+            logoUrl: p.logoUrl,
+            websiteUrl: p.websiteUrl,
           }))}
           view={view}
         />

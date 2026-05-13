@@ -1,12 +1,41 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Building2, Check, X, RotateCcw, Loader2 } from "lucide-react";
+import { useRef, useState, useTransition } from "react";
+import {
+  Check,
+  X,
+  RotateCcw,
+  Loader2,
+  ImagePlus,
+  Globe,
+  Link2,
+  Upload,
+} from "lucide-react";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
   setPropertyLifecycle,
   setPropertyLifecycleBulk,
 } from "@/lib/actions/properties";
+import {
+  scrapePropertyImagesAction,
+  setPropertyImagesAction,
+} from "@/lib/actions/property-images";
+import { PropertyAvatar } from "@/components/portal/properties/property-avatar";
+
+// ---------------------------------------------------------------------------
+// CurationQueueClient
+//
+// Per-row affordances:
+//   - Activate / Exclude / Restore (lifecycle, existing)
+//   - "Add image" — opens an inline mini panel with three options:
+//       1. Scrape from {hostname} (only if websiteUrl present)
+//       2. Paste hero image URL
+//       3. Upload file → Vercel Blob via /api/tenant/uploads
+//
+// The PropertyAvatar (size="sm") replaces the previous Building2 icon, so
+// the operator gets instant visual feedback once an image is attached.
+// ---------------------------------------------------------------------------
 
 type Item = {
   id: string;
@@ -19,7 +48,20 @@ type Item = {
   excludeReason: string | null;
   lifecycleSetBy: string;
   createdAt: string;
+  heroImageUrl: string | null;
+  logoUrl: string | null;
+  websiteUrl: string | null;
 };
+
+function hostnameOf(url: string | null): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url.startsWith("http") ? url : `https://${url}`);
+    return u.hostname.replace(/^www\./, "");
+  } catch {
+    return null;
+  }
+}
 
 export function CurationQueueClient({
   items,
@@ -31,6 +73,7 @@ export function CurationQueueClient({
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [pending, startTransition] = useTransition();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [openImageRow, setOpenImageRow] = useState<string | null>(null);
 
   function toggle(id: string) {
     setSelected((prev) => {
@@ -145,105 +188,379 @@ export function CurationQueueClient({
             <div
               key={item.id}
               className={cn(
-                "px-4 py-3 flex items-start gap-3 hover:bg-muted/20 transition-colors",
+                "px-4 py-3 hover:bg-muted/20 transition-colors",
                 selected.has(item.id) && "bg-primary/5",
               )}
             >
-              <input
-                type="checkbox"
-                checked={selected.has(item.id)}
-                onChange={() => toggle(item.id)}
-                className="mt-1 h-4 w-4 rounded border-border"
-                aria-label={`Select ${item.name}`}
-              />
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Building2
-                    className="w-3.5 h-3.5 text-muted-foreground shrink-0"
-                    aria-hidden="true"
-                  />
-                  <span className="text-sm font-medium truncate">
-                    {item.name}
-                  </span>
-                  {item.totalUnits ? (
-                    <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40">
-                      {item.totalUnits} units
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  checked={selected.has(item.id)}
+                  onChange={() => toggle(item.id)}
+                  className="mt-1 h-4 w-4 rounded border-border"
+                  aria-label={`Select ${item.name}`}
+                />
+                <PropertyAvatar
+                  src={item.heroImageUrl}
+                  logoSrc={item.logoUrl}
+                  size="sm"
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium truncate">
+                      {item.name}
                     </span>
-                  ) : (
-                    <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40">
-                      no units
-                    </span>
+                    {item.totalUnits ? (
+                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40">
+                        {item.totalUnits} units
+                      </span>
+                    ) : (
+                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40">
+                        no units
+                      </span>
+                    )}
+                    {item.backendPlatform === "APPFOLIO" && (
+                      <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/30">
+                        AppFolio · {item.backendPropertyId}
+                      </span>
+                    )}
+                    {item.lifecycleSetBy === "AUTO_CLASSIFIER" && (
+                      <span className="text-[11px] text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10">
+                        auto-classified
+                      </span>
+                    )}
+                  </div>
+                  {item.address && (
+                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                      {item.address}
+                    </p>
                   )}
-                  {item.backendPlatform === "APPFOLIO" && (
-                    <span className="text-[11px] text-muted-foreground px-1.5 py-0.5 rounded bg-muted/30">
-                      AppFolio · {item.backendPropertyId}
-                    </span>
-                  )}
-                  {item.lifecycleSetBy === "AUTO_CLASSIFIER" && (
-                    <span className="text-[11px] text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10">
-                      auto-classified
-                    </span>
+                  {item.excludeReason && (
+                    <p className="text-[11px] text-muted-foreground/80 mt-1">
+                      Reason: {item.excludeReason}
+                    </p>
                   )}
                 </div>
-                {item.address && (
-                  <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                    {item.address}
-                  </p>
-                )}
-                {item.excludeReason && (
-                  <p className="text-[11px] text-muted-foreground/80 mt-1">
-                    Reason: {item.excludeReason}
-                  </p>
-                )}
-              </div>
-              <div className="flex gap-1.5 shrink-0">
-                {view === "imported" ? (
-                  <>
+                <div className="flex gap-1.5 shrink-0">
+                  {view === "imported" ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOpenImageRow((id) =>
+                            id === item.id ? null : item.id,
+                          )
+                        }
+                        disabled={pending}
+                        className={cn(
+                          "inline-flex items-center gap-1 px-2 py-1 text-xs rounded border transition-colors disabled:opacity-50",
+                          openImageRow === item.id
+                            ? "border-foreground bg-muted/60 text-foreground"
+                            : "border-border text-muted-foreground hover:bg-muted/40",
+                        )}
+                        title="Add hero image — paste URL, upload, or scrape from website"
+                        aria-expanded={openImageRow === item.id}
+                      >
+                        <ImagePlus className="w-3 h-3" aria-hidden="true" />
+                        {item.heroImageUrl ? "Image" : "Add image"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => actSingle(item.id, "activate")}
+                        disabled={pending}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                        title="Activate this property — will count toward your marketable total and billing"
+                      >
+                        {pending ? (
+                          <Loader2
+                            className="w-3 h-3 animate-spin"
+                            aria-hidden="true"
+                          />
+                        ) : (
+                          <Check className="w-3 h-3" aria-hidden="true" />
+                        )}
+                        Activate
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => actSingle(item.id, "exclude")}
+                        disabled={pending}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded border border-border hover:bg-muted/40 disabled:opacity-50"
+                        title="Exclude — keep in AppFolio mirror but do not bill or display"
+                      >
+                        <X className="w-3 h-3" aria-hidden="true" />
+                        Exclude
+                      </button>
+                    </>
+                  ) : (
                     <button
                       type="button"
                       onClick={() => actSingle(item.id, "activate")}
                       disabled={pending}
                       className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
-                      title="Activate this property — will count toward your marketable total and billing"
+                      title="Restore — bring back into active properties"
                     >
                       {pending ? (
-                        <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+                        <Loader2
+                          className="w-3 h-3 animate-spin"
+                          aria-hidden="true"
+                        />
                       ) : (
-                        <Check className="w-3 h-3" aria-hidden="true" />
+                        <RotateCcw className="w-3 h-3" aria-hidden="true" />
                       )}
-                      Activate
+                      Restore
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => actSingle(item.id, "exclude")}
-                      disabled={pending}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded border border-border hover:bg-muted/40 disabled:opacity-50"
-                      title="Exclude — keep in AppFolio mirror but do not bill or display"
-                    >
-                      <X className="w-3 h-3" aria-hidden="true" />
-                      Exclude
-                    </button>
-                  </>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => actSingle(item.id, "activate")}
-                    disabled={pending}
-                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
-                    title="Restore — bring back into active properties"
-                  >
-                    {pending ? (
-                      <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
-                    ) : (
-                      <RotateCcw className="w-3 h-3" aria-hidden="true" />
-                    )}
-                    Restore
-                  </button>
-                )}
+                  )}
+                </div>
               </div>
+
+              {view === "imported" && openImageRow === item.id && (
+                <ImageActionsPanel
+                  property={item}
+                  onDone={() => setOpenImageRow(null)}
+                />
+              )}
             </div>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ImageActionsPanel — inline mini-flow for attaching a hero image.
+// Three actions, none mutually exclusive:
+//   1. Scrape from {hostname}      → scrapePropertyImagesAction
+//   2. Paste URL ___________ Save  → setPropertyImagesAction
+//   3. Upload file                 → POST /api/tenant/uploads → set
+// ---------------------------------------------------------------------------
+
+function ImageActionsPanel({
+  property,
+  onDone,
+}: {
+  property: Item;
+  onDone: () => void;
+}) {
+  const [scraping, setScraping] = useState(false);
+  const [savingUrl, setSavingUrl] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [pastedUrl, setPastedUrl] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const host = hostnameOf(property.websiteUrl);
+
+  async function onScrape() {
+    if (!property.websiteUrl) return;
+    setScraping(true);
+    const toastId = toast.loading(`Scraping ${host ?? "website"}…`);
+    try {
+      const res = await scrapePropertyImagesAction({
+        propertyId: property.id,
+        websiteUrl: property.websiteUrl,
+      });
+      if (!res.ok) {
+        toast.error(`Scrape failed: ${res.error}`, { id: toastId });
+        return;
+      }
+      const { result } = res;
+      if (result.heroSet || result.logoSet) {
+        toast.success(
+          result.heroSet
+            ? "Hero image found and saved"
+            : "Logo found and saved",
+          { id: toastId },
+        );
+        onDone();
+      } else {
+        toast.error(
+          `Scrape returned no image${
+            result.error ? `: ${result.error}` : ""
+          }`,
+          { id: toastId },
+        );
+      }
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Scrape failed",
+        { id: toastId },
+      );
+    } finally {
+      setScraping(false);
+    }
+  }
+
+  async function onSaveUrl() {
+    const trimmed = pastedUrl.trim();
+    if (!trimmed) return;
+    try {
+      // Light client-side validation so we don't fire a server roundtrip
+      // for obviously bad input.
+      new URL(trimmed);
+    } catch {
+      toast.error("Enter a valid image URL (https://…)");
+      return;
+    }
+    setSavingUrl(true);
+    const toastId = toast.loading("Saving image URL…");
+    try {
+      const res = await setPropertyImagesAction({
+        propertyId: property.id,
+        heroImageUrl: trimmed,
+      });
+      if (!res.ok) {
+        toast.error(`Save failed: ${res.error}`, { id: toastId });
+        return;
+      }
+      toast.success("Hero image saved", { id: toastId });
+      setPastedUrl("");
+      onDone();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Save failed",
+        { id: toastId },
+      );
+    } finally {
+      setSavingUrl(false);
+    }
+  }
+
+  async function onUpload(file: File) {
+    setUploading(true);
+    const toastId = toast.loading(`Uploading ${file.name}…`);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const r = await fetch("/api/tenant/uploads", {
+        method: "POST",
+        body: fd,
+      });
+      const json = (await r.json().catch(() => ({}))) as {
+        url?: string;
+        error?: string;
+      };
+      if (!r.ok || !json.url) {
+        toast.error(json.error ?? "Upload failed", { id: toastId });
+        return;
+      }
+      const res = await setPropertyImagesAction({
+        propertyId: property.id,
+        heroImageUrl: json.url,
+      });
+      if (!res.ok) {
+        toast.error(`Save failed: ${res.error}`, { id: toastId });
+        return;
+      }
+      toast.success("Hero image uploaded", { id: toastId });
+      onDone();
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Upload failed",
+        { id: toastId },
+      );
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  const anyBusy = scraping || savingUrl || uploading;
+
+  return (
+    <div className="mt-3 ml-10 rounded-md border border-border bg-muted/20 p-3 space-y-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        {property.websiteUrl ? (
+          <button
+            type="button"
+            onClick={onScrape}
+            disabled={anyBusy}
+            className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded border border-border bg-card hover:bg-muted/40 disabled:opacity-50"
+            title={`Pull og:image / logo from ${property.websiteUrl}`}
+          >
+            {scraping ? (
+              <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+            ) : (
+              <Globe className="w-3 h-3" aria-hidden="true" />
+            )}
+            Scrape from {host ?? "website"}
+          </button>
+        ) : (
+          <span className="text-[11px] text-muted-foreground italic">
+            No website URL set — paste one below or upload a file.
+          </span>
+        )}
+
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            if (f) onUpload(f);
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={anyBusy}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium rounded border border-border bg-card hover:bg-muted/40 disabled:opacity-50"
+          title="Upload an image file (PNG/JPG/WebP, up to 10MB)"
+        >
+          {uploading ? (
+            <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+          ) : (
+            <Upload className="w-3 h-3" aria-hidden="true" />
+          )}
+          Upload file
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1 min-w-0">
+          <Link2
+            className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground"
+            aria-hidden="true"
+          />
+          <input
+            type="url"
+            value={pastedUrl}
+            onChange={(e) => setPastedUrl(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault();
+                onSaveUrl();
+              }
+            }}
+            placeholder="Paste image URL (https://…)"
+            disabled={anyBusy}
+            className="w-full pl-7 pr-2 py-1 text-xs rounded border border-border bg-card focus:outline-none focus:ring-1 focus:ring-foreground disabled:opacity-50"
+            aria-label="Hero image URL"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={onSaveUrl}
+          disabled={anyBusy || !pastedUrl.trim()}
+          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+        >
+          {savingUrl ? (
+            <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
+          ) : (
+            <Check className="w-3 h-3" aria-hidden="true" />
+          )}
+          Save
+        </button>
+        <button
+          type="button"
+          onClick={onDone}
+          disabled={anyBusy}
+          className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded border border-border hover:bg-muted/40 disabled:opacity-50"
+          aria-label="Close image actions"
+        >
+          <X className="w-3 h-3" aria-hidden="true" />
+        </button>
       </div>
     </div>
   );

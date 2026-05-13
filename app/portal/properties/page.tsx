@@ -49,10 +49,12 @@ type PropertyRow = {
   totalUnits: number | null;
   lastSyncedAt: Date | null;
   // Image hierarchy on the avatar — heroImageUrl wins, then first
-  // photoUrls entry, then a Building icon fallback (PropertyAvatar
-  // handles the cascade).
+  // photoUrls entry, then logoUrl alone, then a Building icon fallback
+  // (PropertyAvatar handles the cascade). logoUrl ALSO overlays the
+  // hero as a small badge when both are present.
   heroImageUrl: string | null;
   photoUrls: Prisma.JsonValue;
+  logoUrl: string | null;
 };
 
 type ViewKey = "all" | "vacant" | "leasing" | "synced";
@@ -350,7 +352,13 @@ export default async function PropertiesList({
                       <EntityCell
                         name={p.name}
                         seed={p.id}
-                        avatar={<PropertyAvatar src={avatarSrc} size="sm" />}
+                        avatar={
+                          <PropertyAvatar
+                            src={avatarSrc}
+                            logoSrc={p.logoUrl}
+                            size="sm"
+                          />
+                        }
                         secondary={
                           p.addressLine1 ? (
                             <span className="inline-flex items-center gap-1">

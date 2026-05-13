@@ -687,6 +687,22 @@ model Property {
   launchedAt        DateTime?
 
   // Marketing
+  //
+  // Image hierarchy on the avatar / detail header:
+  //   1. heroImageUrl (operator-curated marketing hero, or scraped og:image)
+  //   2. photoUrls[0]  (AppFolio-synced listing photo)
+  //   3. Building icon fallback (PropertyAvatar renders this)
+  //
+  // websiteUrl + logoUrl + imageScrapeAt were added May 2026 to support
+  // the auto-scrape workflow: if websiteUrl is set, we fetch the page and
+  // extract og:image → heroImageUrl and og:logo / favicon → logoUrl. The
+  // scrape result is cached via imageScrapeAt so we don't hammer the
+  // origin on every page render. NULL imageScrapeAt = never scraped;
+  // operators can also paste a heroImageUrl manually and it wins.
+  websiteUrl           String? // Public marketing URL for this property
+  logoUrl              String? // Property brand mark (scraped or uploaded)
+  imageScrapeAt        DateTime?
+  imageScrapeError     String?
   heroImageUrl         String?
   photoUrls            Json? // Array of URLs
   virtualTourUrl       String?

@@ -257,11 +257,16 @@ export default async function PortalHome({
         city: true,
         state: true,
         // Image hierarchy on the leaderboard avatar:
-        //   1. heroImageUrl (operator-curated marketing hero)
+        //   1. heroImageUrl (operator-curated marketing hero, or scraped og:image)
         //   2. first entry of photoUrls (AppFolio-synced listing photos)
-        //   3. Building icon fallback (rendered by PropertyDashboardCard)
+        //   3. logoUrl alone (scraped brand mark, no hero photo yet)
+        //   4. Building icon fallback (rendered by PropertyAvatar)
+        // The logo also overlays the hero as a small badge when both
+        // are present — feels distinctly premium next to a competitor's
+        // bare letter monogram.
         heroImageUrl: true,
         photoUrls: true,
+        logoUrl: true,
         availableCount: true,
         totalUnits: true,
       },
@@ -819,6 +824,7 @@ export default async function PortalHome({
                           name={p.name}
                           address={address || null}
                           thumbnailUrl={avatarUrl}
+                          logoUrl={p.logoUrl}
                           occupancyPct={occupancyPct}
                           totalUnits={p.totalUnits ?? null}
                           availableCount={p.availableCount ?? null}

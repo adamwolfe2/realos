@@ -5,6 +5,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
+import { PropertyAvatar } from "@/components/portal/properties/property-avatar";
 import { PropertyTabs } from "./property-tabs";
 import { OverviewTab } from "./tabs/overview";
 import { OnboardingTab } from "./tabs/onboarding";
@@ -67,6 +68,8 @@ export default async function PropertyDetail({
       priceMax: true,
       description: true,
       heroImageUrl: true,
+      logoUrl: true,
+      photoUrls: true,
     },
   });
   if (!property) notFound();
@@ -89,10 +92,32 @@ export default async function PropertyDetail({
       ].join("")
     : null;
 
+  // Pick the best available image for the header avatar. Mirrors the
+  // dashboard leaderboard / properties list picker so the same identity
+  // visual follows the property everywhere it surfaces.
+  const photoFallback = (() => {
+    const arr = property.photoUrls;
+    if (Array.isArray(arr) && arr.length > 0) {
+      const first = arr[0];
+      return typeof first === "string" && first.length > 0 ? first : null;
+    }
+    return null;
+  })();
+  const avatarSrc = property.heroImageUrl ?? photoFallback;
+
   return (
     <div className="space-y-6">
       <PageHeader
-        title={property.name}
+        title={
+          <span className="flex items-center gap-3">
+            <PropertyAvatar
+              size="lg"
+              src={avatarSrc}
+              logoSrc={property.logoUrl}
+            />
+            <span className="min-w-0 truncate">{property.name}</span>
+          </span>
+        }
         description={fullAddress ?? undefined}
         breadcrumb={
           <Link
