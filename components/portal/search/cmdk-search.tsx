@@ -11,7 +11,11 @@ import {
   MessageSquare,
   Loader2,
   X,
+  Compass,
+  Settings as SettingsIcon,
+  Sparkles,
 } from "lucide-react";
+import { searchNavRegistry, type NavRegistryItem } from "./nav-registry";
 
 // ---------------------------------------------------------------------------
 // Cmd+K global search modal. Lives in the portal layout so any page can
@@ -73,7 +77,14 @@ type SearchPayload = {
 };
 
 type FlatItem = {
-  group: "leads" | "visitors" | "properties" | "conversations";
+  group:
+    | "pages"
+    | "modules"
+    | "settings"
+    | "leads"
+    | "visitors"
+    | "properties"
+    | "conversations";
   href: string;
   primary: string;
   secondary: string;
@@ -124,7 +135,12 @@ export function CmdKSearch() {
     }
   }, [open]);
 
-  // Debounced fetch
+  // Debounced fetch for tenant data (leads / visitors / properties /
+  // conversations). The /api/tenant/search endpoint requires ≥2 chars,
+  // so we only call it then. Nav registry results are computed
+  // synchronously from a static client-side list and surface from the
+  // first character typed — that's what makes "seo" / "billing" /
+  // "marketplace" jumps work even on a brand-new tenant with zero data.
   React.useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     if (!open || q.trim().length < 2) {
@@ -140,10 +156,10 @@ export function CmdKSearch() {
         if (r.ok) {
           const json = (await r.json()) as SearchPayload;
           setData(json);
-          setHighlight(0);
         }
       } finally {
         setLoading(false);
+        setHighlight(0);
       }
     }, 180);
     return () => {
@@ -151,9 +167,35 @@ export function CmdKSearch() {
     };
   }, [q, open]);
 
+  // Nav registry — synchronous, runs on every keystroke, scoped to the
+  // first 8 best matches so the modal stays compact.
+  const navResults: NavRegistryItem[] = React.useMemo(
+    () => (open ? searchNavRegistry(q, 8) : []),
+    [q, open],
+  );
+
   const flat: FlatItem[] = React.useMemo(() => {
-    if (!data || Array.isArray(data.results)) return [];
     const out: FlatItem[] = [];
+
+    // Pages / Modules / Settings first — these are the routes the user
+    // most likely typed for ("seo", "marketplace", "billing"). Putting
+    // them above data results means a fresh tenant with no leads still
+    // gets useful destinations on screen.
+    for (const n of navResults) {
+      out.push({
+        group:
+          n.group === "Pages"
+            ? "pages"
+            : n.group === "Modules"
+              ? "modules"
+              : "settings",
+        href: n.href,
+        primary: n.label,
+        secondary: n.description,
+      });
+    }
+
+    if (!data || Array.isArray(data.results)) return out;
     for (const l of data.results.leads) {
       const name =
         [l.firstName, l.lastName].filter(Boolean).join(" ") ||
@@ -267,9 +309,9 @@ export function CmdKSearch() {
             </div>
 
             <div className="max-h-[60vh] overflow-y-auto">
-              {q.trim().length < 2 ? (
+              {q.trim().length < 1 ? (
                 <p className="text-xs text-muted-foreground py-6 px-3 text-center">
-                  Type at least two characters to search.
+                  Search pages, leads, properties, conversations…
                 </p>
               ) : flat.length === 0 && !loading ? (
                 <p className="text-xs text-muted-foreground py-6 px-3 text-center">
@@ -369,14 +411,20 @@ function ResultsList({
   );
 }
 
-const GROUP_LABEL = {
+const GROUP_LABEL: Record<FlatItem["group"], string> = {
+  pages: "Pages",
+  modules: "Modules",
+  settings: "Settings",
   leads: "Leads",
   visitors: "Visitors",
   properties: "Properties",
   conversations: "Conversations",
-} as const;
+};
 
 const GROUP_ICON: Record<FlatItem["group"], React.ReactNode> = {
+  pages: <Compass className="h-3 w-3" />,
+  modules: <Sparkles className="h-3 w-3" />,
+  settings: <SettingsIcon className="h-3 w-3" />,
   leads: <Users className="h-3 w-3" />,
   visitors: <Eye className="h-3 w-3" />,
   properties: <Building2 className="h-3 w-3" />,
