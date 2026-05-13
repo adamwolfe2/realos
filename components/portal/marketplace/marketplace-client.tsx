@@ -251,7 +251,7 @@ export function MarketplaceClient({
                 {group.category}
               </SectionLabel>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
                 {group.modules.map((m) => (
                   <ModuleCard
                     key={m.key}
@@ -303,7 +303,7 @@ function ModuleCard({
 
   return (
     <article
-      className="relative flex flex-col rounded-lg p-6 transition-all"
+      className="rounded-lg p-3.5 transition-all"
       style={{
         backgroundColor: isComing
           ? "#FAFAF7"
@@ -312,87 +312,82 @@ function ModuleCard({
             : "#FFFFFF",
         border: `1px solid ${
           isComing
-            ? "#EEEEEE"
+            ? "#E5E5E5"
             : isEnabled || isIncluded
               ? "#DBEAFE"
-              : "#EEEEEE"
+              : "#E5E5E5"
         }`,
         opacity: isComing ? 0.85 : 1,
       }}
     >
-      {/* Status pill — single brand-blue token across every kind */}
-      <StatusPill
-        kind={m.kind}
-        isEnabled={isEnabled}
-        popular={m.popular}
-      />
-
-      {/* Icon — uniform soft-blue tile */}
-      <div
-        className="inline-flex items-center justify-center w-9 h-9 rounded-md mb-5 bg-primary/10 text-primary"
-        style={isComing ? { opacity: 0.6 } : undefined}
-      >
-        <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+      {/* Header row — icon + name/tagline + inline status pill */}
+      <div className="flex items-start gap-2.5">
+        <div
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary/10 text-primary shrink-0"
+          style={isComing ? { opacity: 0.6 } : undefined}
+        >
+          <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-[13px] font-semibold tracking-tight text-[#0A0A0A] truncate">
+              {m.name}
+            </h3>
+            <StatusPill kind={m.kind} isEnabled={isEnabled} popular={m.popular} />
+          </div>
+          <p className="text-[11.5px] leading-snug text-[#5C5E62] truncate">
+            {m.tagline}
+          </p>
+        </div>
       </div>
 
-      {/* Body */}
-      <h3 className="text-[15px] font-semibold mb-2 leading-snug tracking-tight text-[#0A0A0A]">
-        {m.name}
-      </h3>
-      <p className="text-[13px] leading-relaxed mb-5 text-[#5C5E62]">
-        {m.tagline}
-      </p>
-
-      <ul className="space-y-2 mb-6">
-        {m.bullets.map((b) => (
-          <li
-            key={b}
-            className="flex items-start gap-2.5 text-[12.5px] leading-snug text-[#393C41]"
-          >
-            <Check
-              className="w-3.5 h-3.5 mt-0.5 flex-shrink-0 text-primary"
-              strokeWidth={2.25}
-            />
-            <span>{b}</span>
-          </li>
-        ))}
-      </ul>
-
-      {/* Footer: price + CTA */}
-      <div className="mt-auto pt-5 border-t border-[#F4F4F4]">
-        <div className="flex items-baseline justify-between mb-3">
-          <PriceLine
-            kind={m.kind}
-            isEnabled={isEnabled}
-            isTrialing={isTrialing}
-            cents={m.monthlyPriceCents}
-          />
+      {/* Bullets — 2-col compact grid */}
+      <div className="mt-2.5 pt-2.5 border-t border-[#F0F0F0]">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+          {m.bullets.map((b) => (
+            <p
+              key={b}
+              className="flex items-start gap-1.5 text-[11px] leading-snug text-[#393C41]"
+            >
+              <Check className="w-2.5 h-2.5 mt-0.5 shrink-0 text-primary" strokeWidth={2.5} />
+              <span className="truncate">{b}</span>
+            </p>
+          ))}
         </div>
+      </div>
 
-        {/* Setup-effort hint — sets expectations for time-to-value */}
-        {m.setupEffort ? (
-          <p className="flex items-center gap-1.5 text-[11px] text-[#8E8E8E] mb-4">
-            <Clock className="w-3 h-3" />
-            {m.setupEffort}
-          </p>
-        ) : null}
-
-        <CtaRow
+      {/* Footer — price left, setup effort + CTA right */}
+      <div className="mt-2.5 pt-2 border-t border-[#F0F0F0] flex items-center justify-between gap-2">
+        <PriceLine
           kind={m.kind}
           isEnabled={isEnabled}
-          isPending={isPending}
           isTrialing={isTrialing}
-          isNotified={isNotified}
-          setupHref={m.setupHref}
-          name={m.name}
-          isToggle={isToggle}
-          isAddon={isAddon}
-          isIncluded={isIncluded}
-          isComing={isComing}
-          onActivate={onActivate}
-          onDeactivate={onDeactivate}
-          onNotifyMe={onNotifyMe}
+          cents={m.monthlyPriceCents}
         />
+        <div className="flex items-center gap-2 shrink-0">
+          {m.setupEffort ? (
+            <p className="hidden sm:flex items-center gap-1 text-[10px] text-[#8E8E8E]">
+              <Clock className="w-2.5 h-2.5" />
+              {m.setupEffort}
+            </p>
+          ) : null}
+          <CtaRow
+            kind={m.kind}
+            isEnabled={isEnabled}
+            isPending={isPending}
+            isTrialing={isTrialing}
+            isNotified={isNotified}
+            setupHref={m.setupHref}
+            name={m.name}
+            isToggle={isToggle}
+            isAddon={isAddon}
+            isIncluded={isIncluded}
+            isComing={isComing}
+            onActivate={onActivate}
+            onDeactivate={onDeactivate}
+            onNotifyMe={onNotifyMe}
+          />
+        </div>
       </div>
     </article>
   );
@@ -409,37 +404,37 @@ function StatusPill({
 }) {
   if (kind === "included") {
     return (
-      <span className="absolute top-5 right-5 inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
-        <Check className="w-3 h-3" />
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
+        <Check className="w-2.5 h-2.5" />
         Included
       </span>
     );
   }
   if (kind === "coming") {
     return (
-      <span className="absolute top-5 right-5 inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8E8E8E]">
+      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8E8E8E] shrink-0">
         Coming soon
       </span>
     );
   }
   if (kind === "addon") {
     return (
-      <span className="absolute top-5 right-5 inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
+      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
         Pro add-on
       </span>
     );
   }
   if (isEnabled) {
     return (
-      <span className="absolute top-5 right-5 inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary">
-        <Check className="w-3 h-3" />
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
+        <Check className="w-2.5 h-2.5" />
         Active
       </span>
     );
   }
   if (popular) {
     return (
-      <span className="absolute top-5 right-5 inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5C5E62]">
+      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5C5E62] shrink-0">
         Popular
       </span>
     );
@@ -460,38 +455,38 @@ function PriceLine({
 }) {
   if (kind === "included") {
     return (
-      <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-primary">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-primary">
         Included free
       </p>
     );
   }
   if (kind === "coming") {
     return (
-      <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#8E8E8E]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8E8E8E]">
         Coming soon
       </p>
     );
   }
   if (kind === "addon") {
     return (
-      <p className="text-[18px] font-semibold tabular-nums text-[#0A0A0A]">
+      <p className="text-[13px] font-semibold tabular-nums text-[#0A0A0A]">
         +{formatPrice(cents)}
-        <span className="text-[12px] font-normal text-[#8E8E8E]"> /mo</span>
+        <span className="text-[11px] font-normal text-[#8E8E8E]">/mo</span>
       </p>
     );
   }
   // toggle
   if (isTrialing && !isEnabled) {
     return (
-      <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-[#5C5E62]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5C5E62]">
         Free during trial
       </p>
     );
   }
   return (
-    <p className="text-[18px] font-semibold tabular-nums text-[#0A0A0A]">
+    <p className="text-[13px] font-semibold tabular-nums text-[#0A0A0A]">
       {formatPrice(cents)}
-      <span className="text-[12px] font-normal text-[#8E8E8E]"> /mo</span>
+      <span className="text-[11px] font-normal text-[#8E8E8E]">/mo</span>
     </p>
   );
 }
@@ -535,9 +530,9 @@ function CtaRow({
         type="button"
         onClick={onNotifyMe}
         disabled={isNotified}
-        className="w-full inline-flex items-center justify-center h-10 rounded-md border border-[#E5E5E5] bg-white text-[#5C5E62] text-sm font-medium hover:border-primary hover:text-primary disabled:opacity-60 disabled:cursor-default transition-colors"
+        className="inline-flex items-center justify-center h-7 px-3 rounded-md border border-[#E5E5E5] bg-white text-[#5C5E62] text-[12px] font-medium hover:border-primary hover:text-primary disabled:opacity-60 disabled:cursor-default transition-colors"
       >
-        {isNotified ? "We'll notify you" : "Notify me when ready"}
+        {isNotified ? "Notified" : "Notify me"}
       </button>
     );
   }
@@ -546,9 +541,9 @@ function CtaRow({
     return (
       <Link
         href={setupHref}
-        className="w-full inline-flex items-center justify-center gap-1.5 h-10 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition-colors"
+        className="inline-flex items-center gap-1 h-7 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
       >
-        Open <ArrowRight className="w-3.5 h-3.5" />
+        Open <ArrowRight className="w-3 h-3" />
       </Link>
     );
   }
@@ -557,27 +552,27 @@ function CtaRow({
     return (
       <Link
         href={setupHref}
-        className="w-full inline-flex items-center justify-center gap-1.5 h-10 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition-colors"
+        className="inline-flex items-center gap-1 h-7 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
       >
-        Add to plan <ArrowRight className="w-3.5 h-3.5" />
+        Add <ArrowRight className="w-3 h-3" />
       </Link>
     );
   }
   // Toggle, already on — Set up + Remove.
   if (isToggle && isEnabled) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-1.5">
         <Link
           href={setupHref}
-          className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition-colors"
+          className="inline-flex items-center gap-1 h-7 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
         >
-          Set up <ArrowRight className="w-3.5 h-3.5" />
+          Set up <ArrowRight className="w-3 h-3" />
         </Link>
         <button
           type="button"
           onClick={onDeactivate}
           disabled={isPending}
-          className="h-10 px-3 text-xs font-medium text-[#8E8E8E] transition-opacity hover:opacity-60 disabled:opacity-40"
+          className="h-7 px-2 text-[11px] font-medium text-[#8E8E8E] hover:text-foreground disabled:opacity-40 transition-colors"
           aria-label={`Deactivate ${name}`}
         >
           {isPending ? "…" : "Remove"}
@@ -591,9 +586,9 @@ function CtaRow({
       type="button"
       onClick={onActivate}
       disabled={isPending}
-      className="w-full inline-flex items-center justify-center h-10 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark disabled:opacity-40 transition-colors"
+      className="inline-flex items-center justify-center h-7 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark disabled:opacity-40 transition-colors"
     >
-      {isPending ? "Activating…" : isTrialing ? "Activate" : "Unlock"}
+      {isPending ? "…" : isTrialing ? "Activate" : "Unlock"}
     </button>
   );
 }

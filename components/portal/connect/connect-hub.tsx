@@ -317,73 +317,68 @@ function SourceCard({
 
   return (
     <article
-      className="rounded-lg p-5 transition-all"
+      className="rounded-lg p-3.5 transition-all"
       style={{
         backgroundColor: isConnected ? "#EFF6FF" : "#FFFFFF",
-        border: `1px solid ${isConnected ? "#DBEAFE" : "#EEEEEE"}`,
+        border: `1px solid ${isConnected ? "#DBEAFE" : "#E5E5E5"}`,
       }}
     >
-      <div className="flex items-start gap-3 mb-3">
+      {/* Header row */}
+      <div className="flex items-start gap-2.5">
         <div
-          className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-primary/10 text-primary shrink-0"
+          className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary/10 text-primary shrink-0"
           aria-hidden="true"
         >
-          <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
+          <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-[15px] font-semibold text-foreground tracking-tight truncate">
+            <h3 className="text-[13px] font-semibold text-foreground tracking-tight truncate">
               {meta.name}
             </h3>
             {isConnected ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
-                <Check className="w-3 h-3" />
+                <Check className="w-2.5 h-2.5" />
                 Connected
               </span>
             ) : null}
           </div>
-          <p className="text-[12.5px] text-muted-foreground mt-0.5 leading-snug">
+          <p className="text-[11.5px] text-muted-foreground leading-snug truncate">
             {meta.tagline}
+            {isConnected && source.accountLabel ? (
+              <> · <span className="font-mono">{source.accountLabel}</span></>
+            ) : null}
+            {isConnected && source.lastSyncAt ? (
+              <span className="text-muted-foreground/70">
+                {" · last synced "}
+                {new Date(source.lastSyncAt).toLocaleDateString()}
+              </span>
+            ) : null}
           </p>
-          {isConnected && source.accountLabel ? (
-            <p className="text-[11px] text-foreground/70 mt-1.5 font-mono truncate">
-              {source.accountLabel}
-              {source.lastSyncAt ? (
-                <span className="text-muted-foreground">
-                  {" "}
-                  · last synced{" "}
-                  {new Date(source.lastSyncAt).toLocaleDateString()}
-                </span>
-              ) : null}
-            </p>
-          ) : null}
         </div>
       </div>
 
-      {/* Unlocks */}
-      <div className="border-t border-border-soft/40 pt-3 mt-3">
-        <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground mb-2">
-          Unlocks
-        </p>
-        <ul className="space-y-1 mb-4">
+      {/* Unlocks — 2-col compact grid */}
+      <div className="mt-2.5 pt-2.5 border-t border-border/40">
+        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
           {meta.unlocks.map((u) => (
-            <li
+            <p
               key={u}
-              className="flex items-start gap-2 text-[12px] text-foreground/80 leading-snug"
+              className="flex items-start gap-1.5 text-[11px] text-foreground/75 leading-snug"
             >
-              <Check
-                className="w-3 h-3 mt-0.5 flex-shrink-0 text-primary"
-                strokeWidth={2.5}
-              />
-              <span>{u}</span>
-            </li>
+              <Check className="w-2.5 h-2.5 mt-0.5 shrink-0 text-primary" strokeWidth={2.5} />
+              <span className="truncate">{u}</span>
+            </p>
           ))}
-        </ul>
+        </div>
+      </div>
 
+      {/* Footer */}
+      <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-end">
         {isConnected ? (
           <Link
             href={meta.connectUrl ?? "#"}
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline"
+            className="inline-flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline"
           >
             Manage <ArrowRight className="w-3 h-3" />
           </Link>
@@ -392,16 +387,16 @@ function SourceCard({
             type="button"
             onClick={onConnect}
             disabled={isPending}
-            className="w-full inline-flex items-center justify-center gap-1.5 h-10 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark disabled:opacity-40 transition-colors"
+            className="inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark disabled:opacity-40 transition-colors"
           >
             {isPending ? (
               <>
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                <Loader2 className="w-3 h-3 animate-spin" />
                 Connecting…
               </>
             ) : (
               <>
-                {meta.inline ? <Plus className="w-3.5 h-3.5" /> : <ExternalLink className="w-3.5 h-3.5" />}
+                {meta.inline ? <Plus className="w-3 h-3" /> : <ExternalLink className="w-3 h-3" />}
                 Connect
               </>
             )}
