@@ -26,14 +26,14 @@ export function WizardChrome({
 
   return (
     <div
-      style={{ backgroundColor: "#f5f4ed", minHeight: "100vh" }}
+      style={{ backgroundColor: "#FFFFFF", minHeight: "100vh" }}
       className="flex flex-col"
     >
       {/* Top bar */}
       <header
         style={{
-          borderBottom: "1px solid #e8e6dc",
-          backgroundColor: "rgba(245,244,237,0.92)",
+          borderBottom: "1px solid #E2E8F0",
+          backgroundColor: "rgba(255, 255, 255,0.92)",
           backdropFilter: "blur(8px)",
         }}
       >
@@ -42,7 +42,7 @@ export function WizardChrome({
             href="/"
             className="inline-flex items-center gap-2"
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
               fontSize: "15px",
               fontWeight: 600,
@@ -84,8 +84,8 @@ export function WizardChrome({
                       backgroundColor: isDone
                         ? "#2563EB"
                         : isActive
-                          ? "#141413"
-                          : "#e8e6dc",
+                          ? "#1E2A3A"
+                          : "#E2E8F0",
                       color: isDone || isActive ? "#ffffff" : "#88867f",
                       fontFamily: "var(--font-sans)",
                       fontSize: "11px",
@@ -96,7 +96,7 @@ export function WizardChrome({
                   </span>
                   <span
                     style={{
-                      color: isActive ? "#141413" : "#88867f",
+                      color: isActive ? "#1E2A3A" : "#88867f",
                       fontFamily: "var(--font-mono)",
                       fontSize: "10.5px",
                       letterSpacing: "0.16em",
@@ -113,7 +113,7 @@ export function WizardChrome({
                     style={{
                       width: 28,
                       height: 1,
-                      backgroundColor: "#e8e6dc",
+                      backgroundColor: "#E2E8F0",
                     }}
                   />
                 ) : null}
@@ -129,8 +129,8 @@ export function WizardChrome({
           className="relative w-full max-w-[640px] rounded-2xl"
           style={{
             backgroundColor: "#ffffff",
-            border: "1px solid #e8e6dc",
-            boxShadow: "0 1px 2px rgba(20,20,19,0.03)",
+            border: "1px solid #E2E8F0",
+            boxShadow: "0 1px 2px rgba(30, 42, 58,0.03)",
             padding: "32px 28px 32px",
           }}
         >

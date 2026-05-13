@@ -8,12 +8,12 @@ import {
 } from "./brand-logos";
 
 const ACCENT = "#2563EB";
-const INK = "#141413";
-const MUTED = "#87867f";
-const BORDER = "#f0eee6";
-const PARCHMENT = "#faf9f5";
-const SUCCESS = "#1f7a3a";
-const ERROR = "#b53333";
+const INK = "#1E2A3A";
+const MUTED = "#94A3B8";
+const BORDER = "#E2E8F0";
+const PARCHMENT = "#F1F5F9";
+const SUCCESS = "#16A34A";
+const ERROR = "#DC2626";
 
 type Delta = "up" | "down-good" | "down-bad" | "neutral";
 
@@ -137,7 +137,7 @@ export function ConfigTabs() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(20,20,19,0.06)`,
+        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.06)`,
         overflow: "hidden",
       }}
     >
@@ -222,7 +222,7 @@ export function ConfigTabs() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "12.5px",
-                color: "#5e5d59",
+                color: "#64748B",
                 lineHeight: 1.45,
               }}
             >
@@ -285,7 +285,7 @@ export function ConfigTabs() {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "13px",
-                  color: deltaColor(row.delta) ?? "#5e5d59",
+                  color: deltaColor(row.delta) ?? "#64748B",
                   fontWeight: row.delta ? 600 : 400,
                   maxWidth: "52%",
                   textAlign: "right",

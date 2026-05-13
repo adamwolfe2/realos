@@ -4,43 +4,43 @@ import { SplitHero } from "@/components/platform/split-hero";
 import { Reveal } from "@/components/platform/reveal";
 
 export const metadata: Metadata = {
-  title: "Commercial real estate marketing and Audience Sync",
+  title: "Commercial real estate leasing intelligence and Audience Sync",
   description:
-    "Audience Sync is live for commercial owners today. Office, retail, industrial, flex, and medical leasing modules ship next. Get on the design-partner list.",
+    "Audience Sync for commercial is live today: verified office, retail, and industrial intent segments pushed to your ad accounts and CRM. Office, retail, industrial, flex, and medical leasing modules are in a limited design-partner pilot.",
 };
 
 const MODULES = [
-  { key: "audiences",  title: "Audience Sync",           status: "live today",          body: "Verified office, retail, and industrial intent segments. Push to your ad accounts and CRM today. Cross-property targeting with zip and state filters." },
-  { key: "office",     title: "Office leasing",          status: "design partner · Q3", body: "Tenant rep outreach, tour scheduling, sublease mapping, VTS handoff."   },
-  { key: "retail",     title: "Retail & restaurant",     status: "design partner · Q3", body: "Foot-traffic analytics, co-tenant matching, concept pitch collateral." },
-  { key: "industrial", title: "Industrial & flex",       status: "design partner · Q4", body: "Bay specs, dock-door counts, loading specs, 3PL-ready listings."       },
-  { key: "medical",    title: "Medical office",          status: "design partner · Q4", body: "Specialty match, hospital-proximity targeting, HIPAA-safe intake."    },
+  { key: "audiences",  title: "Audience Sync",           status: "live today",          body: "Verified office, retail, and industrial intent segments pushed to your ad accounts and CRM today. Cross-property targeting with zip and state filters." },
+  { key: "office",     title: "Office leasing",          status: "design partner · Q3", body: "Tenant-rep outreach tracked, tour requests captured from spec sheets, sublease mapping surfaced per submarket, VTS handoff in the same workflow."   },
+  { key: "retail",     title: "Retail and restaurant",   status: "design partner · Q3", body: "Foot-traffic analytics tied to the trade area, co-tenant matching for the concept, pitch collateral assembled from the deal you are actually doing." },
+  { key: "industrial", title: "Industrial and flex",     status: "design partner · Q4", body: "Bay specs, dock-door counts, clear height, and loading detail packaged into 3PL-ready listings the broker can forward in one click."       },
+  { key: "medical",    title: "Medical office",          status: "design partner · Q4", body: "Specialty match by submarket, hospital-proximity targeting, HIPAA-safe intake the practice administrator can complete without a callback."    },
 ];
 
 export default function CommercialPage() {
   return (
-    <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <SplitHero
         eyebrow="Commercial real estate"
-        headline="Audience Sync for commercial is live today."
-        headlineAccent="Leasing modules in design-partner pilot."
-        subhead="Audience Sync is live for commercial owners today: push verified office, retail, and industrial intent segments to your ad accounts and CRM. Office, retail, industrial, flex, and medical leasing modules are in a limited design-partner pilot."
+        headline="Your commercial leasing data."
+        headlineAccent="Finally working for you."
+        subhead="Commercial deals run six months. Audience Sync is live for commercial owners today: push verified office, retail, and industrial intent segments to your ad accounts and CRM, and track tour requests from spec sheets all the way to a signed LOI. Office, retail, industrial, flex, and medical leasing modules are in a limited design-partner pilot."
         ctas={[
           { label: "Apply as a design partner", href: "/onboarding" },
           { label: "See the residential platform", href: "/residential", variant: "secondary" },
         ]}
-        caption="Audience Sync live today. Limited design-partner pilot for leasing modules."
+        caption="Attribution that survives a six-month sales process. Audience Sync live today. Limited design-partner pilot for leasing modules."
         artifact={<RoadmapCard />}
       />
 
-      <section style={{ backgroundColor: "#faf9f5" }}>
+      <section style={{ backgroundColor: "#F1F5F9" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <Reveal>
             <div className="text-center mb-14">
               <p
                 className="mb-4"
                 style={{
-                  color: "#87867f",
+                  color: "#94A3B8",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   letterSpacing: "0.18em",
@@ -53,14 +53,14 @@ export default function CommercialPage() {
               <h2
                 className="mx-auto max-w-[720px]"
                 style={{
-                  color: "#141413",
+                  color: "#1E2A3A",
                   fontFamily: "var(--font-display)",
                   fontSize: "clamp(28px, 3.4vw, 40px)",
                   fontWeight: 500,
                   lineHeight: 1.15,
                 }}
               >
-                Five commercial surfaces. Built with partners.
+                Five commercial surfaces. Built with the operators using them.
               </h2>
             </div>
           </Reveal>
@@ -73,7 +73,7 @@ export default function CommercialPage() {
                   style={{
                     backgroundColor: "#ffffff",
                     borderRadius: "16px",
-                    boxShadow: "0 0 0 1px #f0eee6",
+                    boxShadow: "0 0 0 1px #E2E8F0",
                   }}
                 >
                   <p
@@ -91,7 +91,7 @@ export default function CommercialPage() {
                   <h3
                     className="mt-3"
                     style={{
-                      color: "#141413",
+                      color: "#1E2A3A",
                       fontFamily: "var(--font-display)",
                       fontSize: "22px",
                       fontWeight: 500,
@@ -103,7 +103,7 @@ export default function CommercialPage() {
                   <p
                     className="mt-3"
                     style={{
-                      color: "#5e5d59",
+                      color: "#64748B",
                       fontFamily: "var(--font-sans)",
                       fontSize: "14.5px",
                       lineHeight: 1.6,
@@ -118,7 +118,7 @@ export default function CommercialPage() {
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
+      <section style={{ backgroundColor: "#F1F5F9", borderTop: "1px solid #E2E8F0" }}>
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
           <Reveal>
             <p
@@ -139,7 +139,7 @@ export default function CommercialPage() {
             <h2
               className="mx-auto max-w-[780px]"
               style={{
-                color: "#141413",
+                color: "#1E2A3A",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(24px, 3.2vw, 38px)",
                 fontWeight: 500,
@@ -147,7 +147,7 @@ export default function CommercialPage() {
                 letterSpacing: "-0.008em",
               }}
             >
-              Partners shape the spec, lock in below-GA pricing, and ship first. Then the platform opens.
+              Design partners shape the spec, lock in below-GA pricing, and ship first. Then the platform opens.
             </h2>
           </Reveal>
           <Reveal delay={140}>
@@ -180,13 +180,13 @@ function RoadmapCard() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 0 0 1px #f0eee6, 0 20px 60px rgba(20,20,19,0.06)",
+        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 md:px-6 py-4 flex items-center justify-between gap-3"
-        style={{ borderBottom: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
+        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
       >
         <span
           style={{
@@ -194,7 +194,7 @@ function RoadmapCard() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#87867f",
+            color: "#94A3B8",
             fontWeight: 600,
           }}
         >
@@ -218,7 +218,7 @@ function RoadmapCard() {
             key={r.q}
             className="flex items-center gap-3 px-5 md:px-6 py-3.5"
             style={{
-              borderBottom: i < rows.length - 1 ? "1px solid #f0eee6" : "none",
+              borderBottom: i < rows.length - 1 ? "1px solid #E2E8F0" : "none",
             }}
           >
             <StatusDot status={r.status} />
@@ -227,7 +227,7 @@ function RoadmapCard() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "14px",
-                color: "#141413",
+                color: "#1E2A3A",
                 fontWeight: 500,
               }}
             >
@@ -239,7 +239,7 @@ function RoadmapCard() {
                 fontSize: "10px",
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#87867f",
+                color: "#94A3B8",
                 fontWeight: 600,
                 minWidth: "90px",
                 textAlign: "right",
@@ -256,10 +256,10 @@ function RoadmapCard() {
 
 function StatusDot({ status }: { status: string }) {
   const map: Record<string, { bg: string; label: string }> = {
-    live:     { bg: "#3a7d44", label: "live"     },
+    live:     { bg: "#16A34A", label: "live"     },
     opening:  { bg: "#2563EB", label: "opening"  },
-    building: { bg: "#b8860b", label: "building" },
-    planned:  { bg: "#b0aea5", label: "planned"  },
+    building: { bg: "#F59E0B", label: "building" },
+    planned:  { bg: "#94A3B8", label: "planned"  },
   };
   const s = map[status] ?? map.planned;
   return (

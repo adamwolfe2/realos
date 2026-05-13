@@ -8,7 +8,7 @@ type Turn =
   | { role: "event"; text: string };
 
 const SCRIPT: Turn[] = [
-  { role: "bot",   text: "Hi — looking for student housing near campus? Ask me anything about the property." },
+  { role: "bot",   text: "Hi, looking for student housing near campus? Ask me anything about the property." },
   { role: "user",  text: "what's the walk to campus?" },
   { role: "bot",   text: "Three-minute walk, two blocks from the main quad. Walk Score 99. Most residents roll out of bed and are in lecture before their coffee is cold." },
   { role: "user",  text: "is wifi included?" },
@@ -19,10 +19,10 @@ const SCRIPT: Turn[] = [
 ];
 
 const ACCENT = "#2563EB";
-const INK = "#141413";
-const MUTED = "#87867f";
-const BORDER = "#f0eee6";
-const PARCHMENT = "#faf9f5";
+const INK = "#1E2A3A";
+const MUTED = "#94A3B8";
+const BORDER = "#E2E8F0";
+const PARCHMENT = "#F1F5F9";
 
 export function ChatDemo() {
   const [visibleCount, setVisibleCount] = useState(0);
@@ -72,7 +72,7 @@ export function ChatDemo() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(20,20,19,0.06)`,
+        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.06)`,
         overflow: "hidden",
       }}
     >
@@ -128,7 +128,7 @@ export function ChatDemo() {
             width: "8px",
             height: "8px",
             borderRadius: "50%",
-            backgroundColor: "#3a7d44",
+            backgroundColor: "#16A34A",
             animation: "chatDot 1.8s ease-in-out infinite",
           }}
         />

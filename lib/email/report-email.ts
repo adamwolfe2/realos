@@ -32,7 +32,7 @@ const PARCHMENT = "#f3f4f6";
 const IVORY = "#ffffff";
 const BORDER = "#e5e7eb";
 const NEAR_BLACK = "#111111";
-const OLIVE = "#87867f";
+const OLIVE = "#94A3B8";
 const STONE = "#9ca3af";
 
 const KIND_LABELS = {

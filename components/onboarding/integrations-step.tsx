@@ -92,7 +92,7 @@ export function IntegrationsStep({
         <h1
           className="mt-2"
           style={{
-            color: "#141413",
+            color: "#1E2A3A",
             fontFamily: "var(--font-sans)",
             fontSize: "26px",
             fontWeight: 700,
@@ -104,7 +104,7 @@ export function IntegrationsStep({
         <p
           className="mt-2"
           style={{
-            color: "#5e5d59",
+            color: "#64748B",
             fontFamily: "var(--font-sans)",
             fontSize: "14.5px",
             lineHeight: 1.55,
@@ -205,11 +205,11 @@ export function IntegrationsStep({
             backgroundColor:
               selectedPmsId === manualPms.id
                 ? "rgba(37,99,235,0.04)"
-                : "#faf9f5",
+                : "#F1F5F9",
             border:
               selectedPmsId === manualPms.id
                 ? "1px solid #2563EB"
-                : "1px solid #e8e6dc",
+                : "1px solid #E2E8F0",
             padding: "12px 16px",
           }}
         >
@@ -217,7 +217,7 @@ export function IntegrationsStep({
             <div className="min-w-0">
               <p
                 style={{
-                  color: "#141413",
+                  color: "#1E2A3A",
                   fontFamily: "var(--font-sans)",
                   fontSize: "14px",
                   fontWeight: 600,
@@ -228,7 +228,7 @@ export function IntegrationsStep({
               <p
                 className="mt-1"
                 style={{
-                  color: "#5e5d59",
+                  color: "#64748B",
                   fontFamily: "var(--font-sans)",
                   fontSize: "12.5px",
                   lineHeight: 1.5,
@@ -265,7 +265,7 @@ export function IntegrationsStep({
           onClick={() => history.back()}
           className="inline-flex items-center gap-1.5 transition-colors"
           style={{
-            color: "#5e5d59",
+            color: "#64748B",
             fontFamily: "var(--font-sans)",
             fontSize: "13px",
             fontWeight: 500,
@@ -317,8 +317,8 @@ function PmsCard({
     <div
       className="rounded-xl transition-colors"
       style={{
-        backgroundColor: selected ? "rgba(37,99,235,0.04)" : "#faf9f5",
-        border: selected ? "1px solid #2563EB" : "1px solid #e8e6dc",
+        backgroundColor: selected ? "rgba(37,99,235,0.04)" : "#F1F5F9",
+        border: selected ? "1px solid #2563EB" : "1px solid #E2E8F0",
       }}
     >
       <button
@@ -333,7 +333,7 @@ function PmsCard({
             <div className="min-w-0">
               <p
                 style={{
-                  color: "#141413",
+                  color: "#1E2A3A",
                   fontFamily: "var(--font-sans)",
                   fontSize: "15px",
                   fontWeight: 600,
@@ -344,7 +344,7 @@ function PmsCard({
               <p
                 className="mt-1"
                 style={{
-                  color: "#5e5d59",
+                  color: "#64748B",
                   fontFamily: "var(--font-sans)",
                   fontSize: "12.5px",
                   lineHeight: 1.5,
@@ -368,7 +368,7 @@ function PmsCard({
               <label
                 htmlFor={`pms-${pms.id}-${field.key}`}
                 style={{
-                  color: "#141413",
+                  color: "#1E2A3A",
                   fontFamily: "var(--font-sans)",
                   fontSize: "12.5px",
                   fontWeight: 600,
@@ -386,7 +386,7 @@ function PmsCard({
                   className="flex items-stretch overflow-hidden"
                   style={{
                     backgroundColor: "#ffffff",
-                    border: "1px solid #e8e6dc",
+                    border: "1px solid #E2E8F0",
                     borderRadius: "8px",
                   }}
                 >
@@ -401,7 +401,7 @@ function PmsCard({
                       padding: "9px 11px",
                       fontFamily: "var(--font-sans)",
                       fontSize: "13.5px",
-                      color: "#141413",
+                      color: "#1E2A3A",
                       outline: "none",
                       background: "transparent",
                     }}
@@ -409,12 +409,12 @@ function PmsCard({
                   <span
                     className="inline-flex items-center"
                     style={{
-                      backgroundColor: "#f5f4ed",
+                      backgroundColor: "#FFFFFF",
                       color: "#88867f",
                       fontFamily: "var(--font-mono)",
                       fontSize: "12px",
                       padding: "0 12px",
-                      borderLeft: "1px solid #e8e6dc",
+                      borderLeft: "1px solid #E2E8F0",
                     }}
                   >
                     .appfolio.com
@@ -430,11 +430,11 @@ function PmsCard({
                   className="w-full"
                   style={{
                     backgroundColor: "#ffffff",
-                    border: "1px solid #e8e6dc",
+                    border: "1px solid #E2E8F0",
                     padding: "9px 11px",
                     fontFamily: "var(--font-sans)",
                     fontSize: "13.5px",
-                    color: "#141413",
+                    color: "#1E2A3A",
                     outline: "none",
                     borderRadius: "8px",
                   }}
@@ -457,7 +457,7 @@ function PmsCard({
           {pms.contractNote ? (
             <p
               style={{
-                color: "#5e5d59",
+                color: "#64748B",
                 fontFamily: "var(--font-sans)",
                 fontSize: "11.5px",
                 lineHeight: 1.45,
@@ -505,8 +505,8 @@ function PmsCardCompact({
       onClick={onSelect}
       className="text-left rounded-xl transition-colors relative"
       style={{
-        backgroundColor: selected ? "rgba(37,99,235,0.04)" : "#faf9f5",
-        border: selected ? "1px solid #2563EB" : "1px solid #e8e6dc",
+        backgroundColor: selected ? "rgba(37,99,235,0.04)" : "#F1F5F9",
+        border: selected ? "1px solid #2563EB" : "1px solid #E2E8F0",
         padding: "12px 14px",
       }}
     >
@@ -515,8 +515,8 @@ function PmsCardCompact({
         style={{
           top: 8,
           right: 10,
-          backgroundColor: "rgba(20,20,19,0.06)",
-          color: "#5e5d59",
+          backgroundColor: "rgba(30, 42, 58,0.06)",
+          color: "#64748B",
           fontFamily: "var(--font-mono)",
           fontSize: "8.5px",
           letterSpacing: "0.14em",
@@ -533,7 +533,7 @@ function PmsCardCompact({
         <div className="min-w-0 pr-10">
           <p
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
               fontSize: "13.5px",
               fontWeight: 600,
@@ -544,7 +544,7 @@ function PmsCardCompact({
           <p
             className="mt-1"
             style={{
-              color: "#5e5d59",
+              color: "#64748B",
               fontFamily: "var(--font-sans)",
               fontSize: "11.5px",
               lineHeight: 1.45,
@@ -590,7 +590,7 @@ function PmsMonogram({
           borderRadius: 8,
           objectFit: "contain",
           backgroundColor: "#ffffff",
-          border: "1px solid #e8e6dc",
+          border: "1px solid #E2E8F0",
           padding: 4,
           flexShrink: 0,
         }}

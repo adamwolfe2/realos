@@ -50,95 +50,95 @@ const TIERS: Tier[] = [
   {
     id: "foundation",
     checkoutTierId: "starter",
-    name: "Foundation",
-    tagline: "The core platform for a single property.",
-    monthly: 499,
-    annual: 419,
+    name: "Pilot",
+    tagline: "Free. We connect to your stack and show you what we see.",
+    monthly: 0,
+    annual: 0,
     setupFee: null,
     highlighted: false,
-    ctaLabel: "Start with Foundation",
+    ctaLabel: "Start the pilot",
     ctaHref: "/onboarding?plan=foundation",
-    audienceCallout: "Owner-operators with 1 to 2 properties",
+    audienceCallout: "Operators evaluating LeaseStack on a single property",
     features: [
-      { label: "Marketing site builder, hosted on your domain" },
-      { label: "Live AppFolio listings sync" },
-      { label: "AI leasing chatbot, 1,000 conversations per month" },
-      { label: "Lead capture and tour scheduling" },
-      { label: "Multi-property CRM" },
+      { label: "Connect to your existing PMS, ad accounts, and site" },
+      { label: "Full read on what your digital marketing is actually doing" },
+      { label: "Weekly snapshot of pacing, spend, and lead source mix" },
+      { label: "One operator-written recommendation on what to fix first" },
+      { label: "AI leasing chatbot trained on your listings" },
       { label: "Reputation monitoring (Google, Reddit, open web)" },
-      { label: "Standard reports and monthly email digest" },
+      { label: "No commitment, no card, cancel by closing the tab" },
     ],
   },
   {
     id: "growth",
     checkoutTierId: "growth",
-    name: "Growth",
-    tagline: "Add paid acquisition, attribution, and SEO.",
+    name: "Standard",
+    tagline: "Replace your retainer. Month-to-month. Cancel if pacing does not move.",
     monthly: 899,
     annual: 749,
     setupFee: null,
     highlighted: true,
-    ctaLabel: "Start with Growth",
+    ctaLabel: "Start with Standard",
     ctaHref: "/onboarding?plan=growth",
-    audienceCallout: "Mid-market operators running paid campaigns",
+    audienceCallout: "Single-property operators running a paid program today",
     features: [
-      { label: "Everything in Foundation, plus:" },
+      { label: "Everything in Pilot, plus:" },
       {
-        label: "Cursive visitor pixel, 5,000 identified visitors per month",
+        label: "Visitor pixel, 5,000 identified visitors per month",
         emphasis: true,
       },
       {
-        label: "Google and Meta ad campaign builder",
+        label: "Spend and pacing recommendations across Google and Meta",
         emphasis: true,
       },
-      { label: "AI chatbot bumped to 5,000 conversations per month" },
-      { label: "SEO module with GSC and GA4 integration" },
-      { label: "Creative library and brand kit" },
-      { label: "Multi-touch attribution and funnel reports" },
+      { label: "AI chatbot at 5,000 conversations per month" },
+      { label: "Source-to-lease attribution with GSC and GA4" },
+      { label: "Operator-written weekly read on every channel" },
+      { label: "Month-to-month. Cancel if pacing does not move." },
     ],
   },
   {
     id: "scale",
     checkoutTierId: "scale",
-    name: "Scale",
-    tagline: "Audience sync, outbound, and unlimited chatbot.",
+    name: "Portfolio",
+    tagline: "Per-property pricing with a portfolio rollup and operator success.",
     monthly: 1499,
     annual: 1249,
     setupFee: null,
     highlighted: false,
-    ctaLabel: "Start with Scale",
+    ctaLabel: "Start with Portfolio",
     ctaHref: "/onboarding?plan=scale",
-    audienceCallout: "Portfolio operators with 5 or more properties",
+    audienceCallout: "Owners and asset managers running 5 or more properties",
     features: [
-      { label: "Everything in Growth, plus:" },
+      { label: "Everything in Standard, plus:" },
       {
-        label: "Cursive pixel bumped to 25,000 identified visitors per month",
+        label: "Per-property pricing with a portfolio-level rollup",
         emphasis: true,
       },
       {
-        label: "Audience builder with sync to Meta, Google, and TikTok",
+        label: "Dedicated operator success contact, not a CSM",
         emphasis: true,
       },
+      { label: "Visitor pixel at 25,000 identified visitors per month" },
       { label: "Unlimited AI chatbot conversations" },
-      { label: "Outbound email, 3,000 sends per month" },
-      { label: "Resident referral program" },
-      { label: "Scheduled custom reports" },
+      { label: "Audience sync to Meta, Google, and TikTok" },
+      { label: "Scheduled reports formatted for asset reviews" },
     ],
   },
   {
     id: "enterprise",
     checkoutTierId: null,
     name: "Enterprise",
-    tagline: "Custom integrations and volume pricing.",
+    tagline: "Custom integrations and volume pricing for multi-brand owners.",
     monthly: null,
     annual: null,
     setupFee: null,
     highlighted: false,
-    ctaLabel: "Talk to sales",
+    ctaLabel: "Talk to the team",
     ctaHref: "/demo?plan=enterprise",
-    audienceCallout: "20+ properties or multi-brand operators",
+    audienceCallout: "20+ properties or multi-brand owners",
     features: [
-      { label: "Everything in Scale, plus:" },
+      { label: "Everything in Portfolio, plus:" },
       { label: "Volume pricing (25 to 35 percent off list)" },
       { label: "White-label workspace included" },
       { label: "Custom PMS integrations (non-AppFolio)" },
@@ -160,7 +160,7 @@ export function PricingTiers() {
   const [propertyCount, setPropertyCount] = React.useState<number>(1);
 
   return (
-    <section style={{ backgroundColor: "#f5f4ed" }}>
+    <section style={{ backgroundColor: "#FFFFFF" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 pb-16 md:pb-20">
         {/* Property-count stepper. Pricing is per-property so we let the
             buyer dial in their portfolio size right here; every tier
@@ -178,7 +178,7 @@ export function PricingTiers() {
             className="inline-flex items-center gap-3 rounded-full"
             style={{
               backgroundColor: "#ffffff",
-              border: "1px solid #e8e6dc",
+              border: "1px solid #E2E8F0",
               padding: "6px 8px",
             }}
           >
@@ -193,8 +193,8 @@ export function PricingTiers() {
               style={{
                 width: 32,
                 height: 32,
-                backgroundColor: "#f5f4ed",
-                color: "#141413",
+                backgroundColor: "#FFFFFF",
+                color: "#1E2A3A",
               }}
             >
               −
@@ -202,7 +202,7 @@ export function PricingTiers() {
             <div
               className="text-center tabular-nums"
               style={{
-                color: "#141413",
+                color: "#1E2A3A",
                 fontFamily: "var(--font-sans)",
                 fontSize: "16px",
                 fontWeight: 600,
@@ -227,8 +227,8 @@ export function PricingTiers() {
               style={{
                 width: 32,
                 height: 32,
-                backgroundColor: "#f5f4ed",
-                color: "#141413",
+                backgroundColor: "#FFFFFF",
+                color: "#1E2A3A",
               }}
             >
               +
@@ -258,9 +258,9 @@ export function PricingTiers() {
                   activeBracket.discountPct * 100,
                 );
                 if (discountPct === 0) {
-                  return "Add more properties to unlock graduated discounts up to 40 percent off.";
+                  return "Add more properties to see graduated discounts up to 40 percent off.";
                 }
-                return `You're saving ${discountPct} percent on properties in this bracket. Add more to unlock the next tier.`;
+                return `You're saving ${discountPct} percent on properties in this bracket. Add more to reach the next tier.`;
               })()}
             </p>
           ) : null}
@@ -299,7 +299,7 @@ export function PricingTiers() {
             className="inline-flex items-center p-1 rounded-full"
             style={{
               backgroundColor: "#ffffff",
-              border: "1px solid #e8e6dc",
+              border: "1px solid #E2E8F0",
               boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
             }}
           >
@@ -314,8 +314,8 @@ export function PricingTiers() {
                   onClick={() => setCycle(c)}
                   className="relative inline-flex items-center gap-2 px-4 py-1.5 text-sm rounded-full transition-colors"
                   style={{
-                    backgroundColor: active ? "#141413" : "transparent",
-                    color: active ? "#ffffff" : "#5e5d59",
+                    backgroundColor: active ? "#1E2A3A" : "transparent",
+                    color: active ? "#ffffff" : "#64748B",
                     fontWeight: active ? 600 : 500,
                   }}
                 >
@@ -370,8 +370,8 @@ export function PricingTiers() {
           }}
         >
           No setup fees. No annual contracts. Additional properties on the
-          same plan get 20 percent off the per-property rate. Cancel or pause
-          anytime from the billing portal.
+          same plan get 20 percent off the per-property rate. Cancel from the
+          billing portal if pacing does not move.
         </p>
       </div>
     </section>
@@ -453,20 +453,20 @@ function TierCard({
   const cardStyle: React.CSSProperties = highlighted
     ? {
         backgroundColor: "#ffffff",
-        color: "#141413",
+        color: "#1E2A3A",
         border: "1px solid #2563EB",
         boxShadow:
           "0 0 0 4px rgba(37,99,235,0.08), 0 8px 24px rgba(37,99,235,0.10)",
       }
     : {
         backgroundColor: "#ffffff",
-        color: "#141413",
-        border: "1px solid #e8e6dc",
-        boxShadow: "0 1px 2px rgba(20,20,19,0.02)",
+        color: "#1E2A3A",
+        border: "1px solid #E2E8F0",
+        boxShadow: "0 1px 2px rgba(30, 42, 58,0.02)",
       };
 
   const mutedText = "#88867f";
-  const bodyText = "#4d4c48";
+  const bodyText = "#1E2A3A";
   const accentText = "#2563EB";
 
   return (
@@ -525,7 +525,31 @@ function TierCard({
                               + discounted additional rate.
           Custom (Enterprise) keeps its "Custom" copy unchanged. */}
       <div className="mb-2 min-h-[88px]">
-        {basePrice == null || totalMonthly == null ? (
+        {basePrice === 0 ? (
+          <div>
+            <div
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "44px",
+                fontWeight: 700,
+                letterSpacing: "-0.026em",
+                lineHeight: 1,
+              }}
+            >
+              Free
+            </div>
+            <p
+              className="mt-1"
+              style={{
+                color: mutedText,
+                fontFamily: "var(--font-sans)",
+                fontSize: "12px",
+              }}
+            >
+              No card, no commitment
+            </p>
+          </div>
+        ) : basePrice == null || totalMonthly == null ? (
           <div>
             <div
               style={{
@@ -651,7 +675,7 @@ function TierCard({
           style={
             highlighted
               ? { backgroundColor: "#2563EB", color: "#ffffff" }
-              : { backgroundColor: "#141413", color: "#ffffff" }
+              : { backgroundColor: "#1E2A3A", color: "#ffffff" }
           }
           aria-label={`Start checkout for ${tier.name} (${cycle})`}
         >
@@ -670,8 +694,8 @@ function TierCard({
           className="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors"
           style={{
             backgroundColor: "transparent",
-            color: "#141413",
-            border: "1px solid #141413",
+            color: "#1E2A3A",
+            border: "1px solid #1E2A3A",
           }}
         >
           {tier.ctaLabel}

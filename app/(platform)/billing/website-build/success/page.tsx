@@ -22,7 +22,7 @@ export const dynamic = "force-static";
 export default function WebsiteBuildSuccessPage() {
   return (
     <section
-      style={{ backgroundColor: "#f5f4ed", minHeight: "calc(100vh - 80px)" }}
+      style={{ backgroundColor: "#FFFFFF", minHeight: "calc(100vh - 80px)" }}
     >
       <div className="max-w-[720px] mx-auto px-4 md:px-8 py-20 md:py-28 text-center">
         <div className="inline-flex items-center justify-center mb-6">
@@ -45,7 +45,7 @@ export default function WebsiteBuildSuccessPage() {
         <h1
           className="heading-section"
           style={{
-            color: "#141413",
+            color: "#1E2A3A",
             maxWidth: 580,
             margin: "0 auto",
             fontSize: "clamp(28px, 4vw, 40px)",
@@ -56,7 +56,7 @@ export default function WebsiteBuildSuccessPage() {
         <p
           className="mt-4 mx-auto"
           style={{
-            color: "#5e5d59",
+            color: "#64748B",
             fontFamily: "var(--font-sans)",
             fontSize: "17px",
             lineHeight: 1.6,
@@ -86,7 +86,7 @@ export default function WebsiteBuildSuccessPage() {
             className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
             style={{
               backgroundColor: "transparent",
-              color: "#141413",
+              color: "#1E2A3A",
               border: "1px solid #d6d3c8",
             }}
           >
@@ -98,13 +98,13 @@ export default function WebsiteBuildSuccessPage() {
           className="mt-12 mx-auto rounded-xl p-5 text-left"
           style={{
             backgroundColor: "#ffffff",
-            border: "1px solid #e8e6dc",
+            border: "1px solid #E2E8F0",
             maxWidth: 480,
           }}
         >
           <p
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
               fontSize: "13px",
               fontWeight: 600,
@@ -116,7 +116,7 @@ export default function WebsiteBuildSuccessPage() {
           <ol
             className="space-y-1.5"
             style={{
-              color: "#5e5d59",
+              color: "#64748B",
               fontFamily: "var(--font-sans)",
               fontSize: "13px",
               lineHeight: 1.55,

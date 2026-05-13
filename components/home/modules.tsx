@@ -2,17 +2,17 @@ import { MARKETING } from "@/lib/copy/marketing";
 
 export function Modules() {
   return (
-    <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
+    <section style={{ backgroundColor: "#F1F5F9", borderTop: "1px solid #E2E8F0" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32">
         <div className="max-w-3xl mb-14">
           <p className="eyebrow mb-4">Inside the platform</p>
-          <h2 className="heading-section" style={{ color: "#141413" }}>
+          <h2 className="heading-section" style={{ color: "#1E2A3A" }}>
             Every module the operator stack needs, in one login.
           </h2>
           <p
             className="mt-4"
             style={{
-              color: "#5e5d59",
+              color: "#64748B",
               fontFamily: "var(--font-sans)",
               fontSize: "17px",
               lineHeight: 1.6,
@@ -38,16 +38,16 @@ export function Modules() {
                 maxWidth: "320px",
                 backgroundColor: "#ffffff",
                 borderRadius: "16px",
-                boxShadow: "0 0 0 1px #f0eee6",
+                boxShadow: "0 0 0 1px #E2E8F0",
               }}
             >
-              <h3 className="heading-card" style={{ color: "#141413" }}>
+              <h3 className="heading-card" style={{ color: "#1E2A3A" }}>
                 {m.title}
               </h3>
               <p
                 className="mt-3"
                 style={{
-                  color: "#5e5d59",
+                  color: "#64748B",
                   fontFamily: "var(--font-sans)",
                   fontSize: "14px",
                   lineHeight: 1.6,

@@ -3,58 +3,60 @@ import { VerticalLanding } from "@/components/platform/vertical-landing";
 import { PortfolioOccupancy } from "@/components/platform/artifacts/portfolio-occupancy";
 
 export const metadata: Metadata = {
-  title: "Multifamily marketing, measured by signed leases",
+  title: "Multifamily leasing intelligence across the whole portfolio",
   description:
-    "Portfolio-level marketing platform for multifamily operators: managed site, live listings, identity pixel, AI chatbot, fair-housing-safe creative, retargeting.",
+    "LeaseStack rolls up per-property leasing data into one view, attributes signed leases to the channel that produced them, and tells multifamily operators which property is dragging the rollup before the GM does.",
 };
 
 export default function MultifamilyPage() {
   return (
     <VerticalLanding
       eyebrow="Multifamily"
-      headline="Portfolio-grade marketing,"
-      headlineAccent="without portfolio-grade agency fees."
-      subhead="You manage buildings across different cities and demographics. Your marketing stack should speak to each one and roll up into one dashboard."
-      caption="Per-property dashboards · fair-housing-reviewed creative · one login"
+      headline="Your portfolio leasing data."
+      headlineAccent="Finally working for you."
+      subhead="A portfolio is only as healthy as the property pulling the rollup down. LeaseStack is the leasing intelligence platform that gives multifamily operators unit-level attribution across every property and tells you exactly which building, which floor plan, and which channel needs attention this week."
+      caption="Know which property is dragging the portfolio rollup before the GM does. Same dashboard for the GM, the AM, and the operator."
       artifact={<PortfolioOccupancy label="Your whole portfolio, one view" />}
+      painsHeading="What multifamily operators tell us."
+      modulesHeading="What you get the day you turn it on."
       pains={[
         {
-          title: "Agency spend you can't justify",
-          body: "Per-property retainers with unclear ROI, no lease attribution, invoices that look the same whether you leased out or not.",
+          title: "The rollup hides the problem",
+          body: "Portfolio averages look fine until one property has been losing on cost-per-lease for three months. The data was there. Nobody could see it.",
         },
         {
-          title: "Fair-housing compliance headaches",
-          body: "Every creative asset needs a review pass. Most agencies don't know the rules; we do.",
+          title: "Agency invoices that all look the same",
+          body: "Per-property retainers, no signed-lease attribution, the same number every month whether you leased out or not. The check is not the question. The answer is.",
         },
         {
-          title: "No portfolio rollup",
-          body: "You can't tell which property is under-performing without chasing three dashboards and a spreadsheet.",
+          title: "Fair-housing creative at every unit count",
+          body: "Every ad and every landing page needs a compliance pass. At twelve properties it is hard. At forty it is a job nobody on the team actually owns.",
         },
       ]}
       modules={[
         {
-          title: "Portfolio dashboard",
-          body: "Single pane of glass across every property, lease velocity, cost-per-lead, ad spend, chatbot pipeline.",
+          title: "Portfolio rollup with per-property drill-down",
+          body: "One dashboard for every property in the portfolio. Lease velocity, cost-per-lead, cost-per-signed-lease, paid spend, chatbot pipeline. Click any tile, see the property.",
         },
         {
-          title: "Fair-housing-safe creative",
-          body: "Every ad + landing page passes a HUD-compliance review before it goes live.",
+          title: "Unit-level attribution",
+          body: "Know which channel signed which lease at which property. Roll it up to the portfolio. Drill it down to a floor plan. Stop guessing.",
         },
         {
-          title: "Retargeting pools, per property",
-          body: "Identity graph pixel builds audiences by building, so retargeting respects the community, not just the city.",
+          title: "Per-property retargeting pools",
+          body: "Identity pixel builds audience pools by building, not by metro. Retargeting respects the community the lead actually visited, not the city it sits in.",
         },
         {
-          title: "Multi-property SEO + AEO",
-          body: "Per-city, per-neighborhood landing pages. LLM answer engines index every property by name.",
+          title: "Fair-housing-reviewed creative",
+          body: "Every ad and every landing page gets a HUD-compliance pass before it goes live. Reviewed copy, reviewed imagery, documented for your records.",
         },
         {
-          title: "AI chatbot with site-specific knowledge",
-          body: "Trained per building on floor plans, amenities, pricing guidance, and move-in dates.",
+          title: "Per-city and per-neighborhood SEO and AEO",
+          body: "Every property gets its own search and answer-engine footprint, so the lead who searched for your neighborhood lands on the right building.",
         },
         {
-          title: "Managed paid search + social",
-          body: "Google and Meta managed end-to-end, no agency creative markup, studio ships new angles in 48 hours.",
+          title: "AI leasing assistant trained per building",
+          body: "Floor plans, amenities, pricing guidance, and move-in dates loaded per property. The same assistant pattern, the right answers per address.",
         },
       ]}
     />

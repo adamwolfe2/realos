@@ -23,7 +23,7 @@ const ADDONS: AddOn[] = [
     name: "Additional property",
     tag: "Capacity",
     description:
-      "Add a property to your existing plan. Each one carries its own marketing site, listings sync, and chatbot, sharing the visitor pixel and email pools.",
+      "Add a property to your existing plan. Each property gets its own pacing read, chatbot, and lead pool, with one portfolio-level rollup across all of them.",
     price: "20% off",
     priceUnit: "the base tier",
   },
@@ -31,7 +31,7 @@ const ADDONS: AddOn[] = [
     name: "Reputation Pro",
     tag: "Capability",
     description:
-      "Adds commercial real estate and hospitality sources (Tripadvisor, Niche, deeper ApartmentRatings crawl) on top of the standard reputation monitoring.",
+      "Adds commercial real estate and hospitality review sources (Tripadvisor, Niche, deeper ApartmentRatings crawl) on top of the standard reputation monitoring.",
     price: "$99",
     priceUnit: "per month",
   },
@@ -39,7 +39,7 @@ const ADDONS: AddOn[] = [
     name: "White-label workspace",
     tag: "Capability",
     description:
-      "Removes LeaseStack branding from the tenant portal, public marketing site, and outbound emails. For agencies or operators reselling internally.",
+      "Removes LeaseStack branding from the operator dashboard, the tenant portal, and outbound emails. For owners running multiple brands under one entity.",
     price: "$499",
     priceUnit: "per month",
   },
@@ -47,7 +47,7 @@ const ADDONS: AddOn[] = [
     name: "Pixel visitor overage",
     tag: "Capacity",
     description:
-      "Identify visitors beyond your tier cap. Billed monthly against actual identified visitors. Hard-capped at 100x your tier cap as a safety stop.",
+      "Identify visitors beyond your plan cap. Billed monthly against actual identified visitors. Hard-capped at 100x your plan cap as a safety stop.",
     price: "$0.05",
     priceUnit: "per visitor",
   },
@@ -55,7 +55,7 @@ const ADDONS: AddOn[] = [
     name: "Outbound email overage",
     tag: "Capacity",
     description:
-      "Sends beyond Scale's 3,000 per month cap. Includes the same deliverability monitoring, unsubscribe handling, and bounce processing as your base sends.",
+      "Sends beyond the 3,000 per month cap on Portfolio. Includes the same deliverability monitoring, unsubscribe handling, and bounce processing as your base sends.",
     price: "$0.01",
     priceUnit: "per send",
   },
@@ -65,9 +65,9 @@ export function AddonsGrid() {
   return (
     <section
       style={{
-        backgroundColor: "#faf9f5",
-        borderTop: "1px solid #f0eee6",
-        borderBottom: "1px solid #f0eee6",
+        backgroundColor: "#F1F5F9",
+        borderTop: "1px solid #E2E8F0",
+        borderBottom: "1px solid #E2E8F0",
       }}
     >
       <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-16 md:py-20">
@@ -75,22 +75,22 @@ export function AddonsGrid() {
           <p className="eyebrow mb-3">Add-ons</p>
           <h2
             className="heading-section"
-            style={{ color: "#141413", fontSize: "clamp(24px, 3vw, 32px)" }}
+            style={{ color: "#1E2A3A", fontSize: "clamp(24px, 3vw, 32px)" }}
           >
             Tune the plan without changing tiers.
           </h2>
           <p
             className="mt-4"
             style={{
-              color: "#5e5d59",
+              color: "#64748B",
               fontFamily: "var(--font-sans)",
               fontSize: "16px",
               lineHeight: 1.55,
             }}
           >
-            Every add-on works on any tier. Toggle them on inside the in-product
-            billing portal after signup. Capacity add-ons only charge for usage
-            above your plan cap.
+            Every add-on works on any plan. Toggle them on inside the billing
+            portal after signup. Capacity add-ons only charge for usage above
+            your plan cap.
           </p>
         </div>
 
@@ -101,7 +101,7 @@ export function AddonsGrid() {
               className="rounded-xl p-5"
               style={{
                 backgroundColor: "#ffffff",
-                border: "1px solid #e8e6dc",
+                border: "1px solid #E2E8F0",
               }}
             >
               <div className="flex items-baseline justify-between gap-3 mb-2">
@@ -121,7 +121,7 @@ export function AddonsGrid() {
                   </div>
                   <h3
                     style={{
-                      color: "#141413",
+                      color: "#1E2A3A",
                       fontFamily: "var(--font-sans)",
                       fontSize: "15px",
                       fontWeight: 600,
@@ -134,7 +134,7 @@ export function AddonsGrid() {
                 <div className="text-right shrink-0">
                   <div
                     style={{
-                      color: "#141413",
+                      color: "#1E2A3A",
                       fontFamily: "var(--font-sans)",
                       fontSize: "15px",
                       fontWeight: 700,
@@ -155,7 +155,7 @@ export function AddonsGrid() {
               </div>
               <p
                 style={{
-                  color: "#5e5d59",
+                  color: "#64748B",
                   fontFamily: "var(--font-sans)",
                   fontSize: "13px",
                   lineHeight: 1.55,

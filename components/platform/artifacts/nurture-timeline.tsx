@@ -20,10 +20,10 @@ const TOUCHES: Touch[] = [
 ];
 
 const ACCENT = "#2563EB";
-const INK = "#141413";
-const MUTED = "#87867f";
-const BORDER = "#f0eee6";
-const PARCHMENT = "#faf9f5";
+const INK = "#1E2A3A";
+const MUTED = "#94A3B8";
+const BORDER = "#E2E8F0";
+const PARCHMENT = "#F1F5F9";
 
 export function NurtureTimeline() {
   const [revealed, setRevealed] = useState(0);
@@ -41,7 +41,7 @@ export function NurtureTimeline() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(20,20,19,0.06)`,
+        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.06)`,
         overflow: "hidden",
       }}
     >
@@ -82,7 +82,7 @@ export function NurtureTimeline() {
             top: "28px",
             bottom: "28px",
             width: "2px",
-            background: `linear-gradient(to bottom, ${ACCENT}, #f0eee6)`,
+            background: `linear-gradient(to bottom, ${ACCENT}, #E2E8F0)`,
           }}
         />
         {TOUCHES.map((t, i) => {
@@ -141,7 +141,7 @@ export function NurtureTimeline() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "12.5px",
-                    color: "#5e5d59",
+                    color: "#64748B",
                     lineHeight: 1.5,
                   }}
                 >

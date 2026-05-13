@@ -3,21 +3,11 @@ import { MARKETING } from "@/lib/copy/marketing";
 export function Faq() {
   const { faq } = MARKETING.home;
   return (
-    <section style={{ backgroundColor: "#f5f4ed" }}>
+    <section style={{ backgroundColor: "#FFFFFF" }}>
       <div className="max-w-[920px] mx-auto px-4 md:px-8 py-24 md:py-32">
-        <div className="text-center mb-12 md:mb-14">
+        <div className="max-w-3xl mb-12 md:mb-14">
           <p className="eyebrow mb-4">{faq.eyebrow}</p>
-          <h2
-            className="mx-auto max-w-[640px]"
-            style={{
-              color: "#141413",
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(28px, 3.4vw, 42px)",
-              fontWeight: 500,
-              lineHeight: 1.15,
-              letterSpacing: "-0.005em",
-            }}
-          >
+          <h2 className="heading-section" style={{ color: "#1E2A3A" }}>
             {faq.headline}
           </h2>
         </div>
@@ -26,7 +16,7 @@ export function Faq() {
           style={{
             backgroundColor: "#ffffff",
             borderRadius: "16px",
-            boxShadow: "0 0 0 1px #f0eee6",
+            boxShadow: "0 0 0 1px #E2E8F0",
             overflow: "hidden",
           }}
         >
@@ -34,7 +24,7 @@ export function Faq() {
             <li
               key={item.q}
               style={{
-                borderTop: i > 0 ? "1px solid #f0eee6" : "none",
+                borderTop: i > 0 ? "1px solid #E2E8F0" : "none",
               }}
             >
               <details className="group">
@@ -43,9 +33,10 @@ export function Faq() {
                   style={{
                     fontFamily: "var(--font-display)",
                     fontSize: "17px",
-                    fontWeight: 500,
-                    color: "#141413",
+                    fontWeight: 600,
+                    color: "#1E2A3A",
                     lineHeight: 1.35,
+                    letterSpacing: "-0.01em",
                   }}
                 >
                   <span>{item.q}</span>
@@ -55,7 +46,7 @@ export function Faq() {
                     style={{
                       width: "24px",
                       height: "24px",
-                      color: "#87867f",
+                      color: "#94A3B8",
                     }}
                   >
                     <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -74,7 +65,7 @@ export function Faq() {
                     fontFamily: "var(--font-sans)",
                     fontSize: "15px",
                     lineHeight: 1.65,
-                    color: "#5e5d59",
+                    color: "#64748B",
                     maxWidth: "680px",
                   }}
                 >

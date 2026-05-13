@@ -42,7 +42,7 @@ export function SeoTrendChart({ data }: { data: TrendPoint[] }) {
           <CartesianGrid stroke="#e5e2da" strokeDasharray="3 3" vertical={false} />
           <XAxis
             dataKey="date"
-            tick={{ fontSize: 11, fill: "#87867f" }}
+            tick={{ fontSize: 11, fill: "#94A3B8" }}
             tickLine={false}
             axisLine={false}
             tickFormatter={(d: string) =>
@@ -51,7 +51,7 @@ export function SeoTrendChart({ data }: { data: TrendPoint[] }) {
           />
           <YAxis
             yAxisId="left"
-            tick={{ fontSize: 11, fill: "#87867f" }}
+            tick={{ fontSize: 11, fill: "#94A3B8" }}
             tickLine={false}
             axisLine={false}
             width={32}
@@ -59,7 +59,7 @@ export function SeoTrendChart({ data }: { data: TrendPoint[] }) {
           <YAxis
             yAxisId="right"
             orientation="right"
-            tick={{ fontSize: 11, fill: "#87867f" }}
+            tick={{ fontSize: 11, fill: "#94A3B8" }}
             tickLine={false}
             axisLine={false}
             width={48}

@@ -9,36 +9,36 @@ import {
 } from "@/components/platform/artifacts/brand-logos";
 
 export const metadata: Metadata = {
-  title: "AI chatbot with real lead capture, 24/7",
+  title: "An assistant that captures leads at 2am",
   description:
-    "Proactive AI chatbot trained on your property facts, pricing guidance, and application process. Captures leads, routes to your team, never calls itself a bot.",
+    "Trained on your units, pricing rules, and application process. Hot leads land with your team the next morning, with the full thread attached.",
 };
 
 export default function ChatbotFeaturePage() {
   return (
-    <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <SplitHero
-        eyebrow="AI chatbot"
-        headline="The assistant"
-        headlineAccent="that actually fills units."
-        subhead="Most leasing chatbots are glorified FAQs. Ours is trained on your live listings, pricing rules, and application process. It speaks like a leasing associate, captures leads, and hands the conversation to your team when the lead is warm."
+        eyebrow="Leasing assistant"
+        headline="An assistant"
+        headlineAccent="that captures leads at 2am."
+        subhead="Most leasing chatbots are a glorified FAQ. Ours is trained on your live units, pricing rules, and application process. It answers the questions a prospect would ask your leasing team, captures the lead, and lands the full thread in your inbox the next morning."
         ctas={[
           { label: "Book a demo", href: "/onboarding" },
           { label: "See it live", href: "/demo", variant: "secondary" },
         ]}
-        caption="Live 24/7 · trained on your listings · captures leads directly to CRM"
+        caption="Live 24/7 · trained on your units · captures leads to your CRM"
         artifact={<ChatDemo />}
       />
 
       <SplitSection
         eyebrow="What it is"
-        headline="A branded leasing assistant, not a bot."
-        body="A chatbot widget that loads with your persona name, avatar, and brand color. At 5 seconds idle it opens with a branded greeting. Replies are Claude-powered and grounded in your live listing data (pricing, amenities, availability) so it never fabricates."
+        headline="It answers like a leasing associate, not a bot."
+        body="A widget that loads on your property site with your name, avatar, and brand color. After five seconds of idle, it opens with a greeting. Every reply is grounded in your live unit list, your pricing rules, and your application process, so it never invents an answer."
         bullets={[
-          "Per-property system prompt composed from live listing + knowledge base.",
-          "Pricing rules, tour scheduling, lease terms. Answered accurately or escalated.",
-          "Auto-captures name, email, phone. Creates a lead in CRM with the full transcript.",
-          "One-click handoff to your leasing team for hot threads.",
+          "Trained per property on your live unit list and knowledge base.",
+          "Answers pricing, tour scheduling, and lease terms accurately or routes to a human.",
+          "Captures name, email, and phone. Lands in your CRM with the full transcript.",
+          "Pings your leasing team in Slack the moment a thread runs hot.",
         ]}
         side="right"
         artifact={<ChatConfig />}
@@ -46,10 +46,10 @@ export default function ChatbotFeaturePage() {
 
       <SplitSection
         eyebrow="How it works"
-        headline="Prompt to CRM record in four steps."
-        body="Every conversation runs through a grounded system prompt, captures intent progressively, then lands in your CRM with context your leasing team can act on."
+        headline="From first message to CRM record in four steps."
+        body="Every conversation runs on a grounded prompt, captures contact details as the prospect warms up, then lands in your CRM with enough context for your leasing team to pick up mid-thread."
         side="left"
-        background="#f5f4ed"
+        background="#FFFFFF"
         artifact={<ChatPipeline />}
       />
 
@@ -57,13 +57,13 @@ export default function ChatbotFeaturePage() {
         eyebrow="What to expect"
         headline="Every chat is a lead with context attached."
         bullets={[
-          "24/7 response so international students and night-owl parents don't bounce waiting for morning.",
-          "Transcripts sync to the lead record, your team picks up mid-thread, not cold.",
-          "Module flag on the Organization. Disable the widget instantly during staffing changes.",
-          "Weekly summary of chat volume, capture rate, and top intents in the Monday report.",
+          "Covers the after-hours gap so international students and night-shift parents don't bounce waiting for morning.",
+          "Transcripts sync to the lead record. Your team picks up mid-thread, not cold.",
+          "One toggle on your organization disables the widget instantly during staffing changes.",
+          "Weekly chat volume, capture rate, and top intents land in your Monday report.",
         ]}
         side="right"
-        background="#faf9f5"
+        background="#F1F5F9"
         artifact={<ChatMetrics />}
       />
 
@@ -74,7 +74,7 @@ export default function ChatbotFeaturePage() {
 
 function ChatConfig() {
   const rows: Array<{ k: string; v: string; logos?: ReactNode[] }> = [
-    { k: "How it greets",       v: "\"Hi — ask me anything about the property.\"" },
+    { k: "How it greets",       v: "\"Hi, ask me anything about the property.\"" },
     { k: "When it opens",        v: "After 5 seconds, or when they scroll down" },
     { k: "What it knows",       v: "Your live unit list, amenities, and pricing rules" },
     { k: "When pricing is asked", v: "Quotes what you've approved. Never guesses" },
@@ -88,13 +88,13 @@ function ChatConfig() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 0 0 1px #f0eee6, 0 20px 60px rgba(20,20,19,0.06)",
+        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-3 flex items-center gap-2"
-        style={{ borderBottom: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
+        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
       >
         <span
           style={{
@@ -102,7 +102,7 @@ function ChatConfig() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#87867f",
+            color: "#94A3B8",
             fontWeight: 600,
           }}
         >
@@ -114,13 +114,13 @@ function ChatConfig() {
           <li
             key={r.k}
             className="grid grid-cols-[160px_1fr_auto] gap-3 items-center px-3 py-2.5 rounded-lg"
-            style={{ backgroundColor: i % 2 === 0 ? "#faf9f5" : "transparent" }}
+            style={{ backgroundColor: i % 2 === 0 ? "#F1F5F9" : "transparent" }}
           >
             <span
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "11px",
-                color: "#87867f",
+                color: "#94A3B8",
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
                 fontWeight: 600,
@@ -133,7 +133,7 @@ function ChatConfig() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "13.5px",
-                color: "#141413",
+                color: "#1E2A3A",
                 fontWeight: 500,
               }}
             >
@@ -153,10 +153,10 @@ function ChatConfig() {
 
 function ChatPipeline() {
   const stages = [
-    { num: "01", title: "Widget load",    body: "Persona, avatar, and brand color render on your domain. 5s idle triggers a branded greeting." },
-    { num: "02", title: "Grounded reply", body: "Claude-powered reply, grounded in live listings and your knowledge base. Pricing is confirmed, never guessed." },
-    { num: "03", title: "Progressive capture", body: "As intent rises, the bot asks for name, email, and phone. Naturally, never robotically." },
-    { num: "04", title: "CRM + handoff",  body: "A lead is created with the full transcript. Hot threads ping your leasing Slack channel for a human handoff." },
+    { num: "01", title: "Widget loads",    body: "Your persona, avatar, and brand color render on your domain. Five seconds of idle triggers a greeting." },
+    { num: "02", title: "Grounded reply", body: "Replies pull from your live unit list and knowledge base. Pricing is quoted from what you've approved, never invented." },
+    { num: "03", title: "Progressive capture", body: "As the conversation warms, the assistant asks for name, email, and phone. Conversationally, not robotically." },
+    { num: "04", title: "CRM and handoff",  body: "A lead lands in your CRM with the full transcript. Hot threads ping your leasing Slack so a human can step in." },
   ];
   return (
     <div
@@ -164,13 +164,13 @@ function ChatPipeline() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 0 0 1px #f0eee6, 0 20px 60px rgba(20,20,19,0.06)",
+        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-3"
-        style={{ borderBottom: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
+        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
       >
         <span
           style={{
@@ -178,7 +178,7 @@ function ChatPipeline() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#87867f",
+            color: "#94A3B8",
             fontWeight: 600,
           }}
         >
@@ -210,7 +210,7 @@ function ChatPipeline() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "14.5px",
-                    color: "#141413",
+                    color: "#1E2A3A",
                     fontWeight: 600,
                   }}
                 >
@@ -221,7 +221,7 @@ function ChatPipeline() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "13.5px",
-                    color: "#5e5d59",
+                    color: "#64748B",
                     lineHeight: 1.55,
                   }}
                 >
@@ -251,7 +251,7 @@ function ChatMetrics() {
           fontSize: "10px",
           letterSpacing: "0.18em",
           textTransform: "uppercase",
-          color: "#87867f",
+          color: "#94A3B8",
           fontWeight: 500,
           marginBottom: "10px",
         }}
@@ -266,7 +266,7 @@ function ChatMetrics() {
             style={{
               backgroundColor: "#ffffff",
               borderRadius: "14px",
-              boxShadow: "0 0 0 1px #f0eee6",
+              boxShadow: "0 0 0 1px #E2E8F0",
             }}
           >
             <p
@@ -275,7 +275,7 @@ function ChatMetrics() {
                 fontSize: "10px",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "#87867f",
+                color: "#94A3B8",
                 fontWeight: 500,
               }}
             >
@@ -286,7 +286,7 @@ function ChatMetrics() {
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: "32px",
-                color: "#141413",
+                color: "#1E2A3A",
                 fontWeight: 500,
                 lineHeight: 1.05,
               }}
@@ -314,12 +314,12 @@ function ChatMetrics() {
 
 function FinalBand() {
   return (
-    <section style={{ backgroundColor: "#f5f4ed" }}>
+    <section style={{ backgroundColor: "#FFFFFF" }}>
       <div className="max-w-[920px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
         <Reveal>
           <p
             style={{
-              color: "#87867f",
+              color: "#94A3B8",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.18em",
@@ -335,15 +335,14 @@ function FinalBand() {
           <p
             className="mx-auto max-w-[720px]"
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontFamily: "var(--font-display)",
               fontSize: "clamp(22px, 2.4vw, 30px)",
               fontWeight: 500,
               lineHeight: 1.35,
             }}
           >
-            Property marketing sites with organic or paid inbound traffic.
-            Especially powerful for student housing international applicants and senior living family decision makers.
+            Property sites with organic or paid traffic, especially student housing with international applicants and senior living with family decision makers in different time zones.
           </p>
         </Reveal>
         <Reveal delay={140}>

@@ -24,9 +24,9 @@ const EVENTS: Event[] = [
 ];
 
 const ACCENT = "#2563EB";
-const INK = "#141413";
-const MUTED = "#87867f";
-const BORDER = "#f0eee6";
+const INK = "#1E2A3A";
+const MUTED = "#94A3B8";
+const BORDER = "#E2E8F0";
 
 export function LiveTicker({
   variant = "fixed",
@@ -72,7 +72,7 @@ export function LiveTicker({
         style={{
           backgroundColor: "#ffffff",
           borderRadius: "12px",
-          boxShadow: `0 0 0 1px ${BORDER}, 0 20px 40px rgba(20,20,19,0.08)`,
+          boxShadow: `0 0 0 1px ${BORDER}, 0 20px 40px rgba(30, 42, 58,0.08)`,
           padding: "12px 14px 12px 12px",
           minWidth: "280px",
           maxWidth: "360px",

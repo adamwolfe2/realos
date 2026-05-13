@@ -116,7 +116,7 @@ export function WelcomeStep({
         <h1
           className="mt-2"
           style={{
-            color: "#141413",
+            color: "#1E2A3A",
             fontFamily: "var(--font-sans)",
             fontSize: "26px",
             fontWeight: 700,
@@ -128,7 +128,7 @@ export function WelcomeStep({
         <p
           className="mt-2"
           style={{
-            color: "#5e5d59",
+            color: "#64748B",
             fontFamily: "var(--font-sans)",
             fontSize: "14.5px",
             lineHeight: 1.55,
@@ -144,7 +144,7 @@ export function WelcomeStep({
           htmlFor="workspace-name"
           className="block"
           style={{
-            color: "#141413",
+            color: "#1E2A3A",
             fontFamily: "var(--font-sans)",
             fontSize: "13.5px",
             fontWeight: 600,
@@ -161,12 +161,12 @@ export function WelcomeStep({
           maxLength={120}
           className="w-full rounded-lg"
           style={{
-            backgroundColor: "#faf9f5",
-            border: "1px solid #e8e6dc",
+            backgroundColor: "#F1F5F9",
+            border: "1px solid #E2E8F0",
             padding: "12px 14px",
             fontFamily: "var(--font-sans)",
             fontSize: "15px",
-            color: "#141413",
+            color: "#1E2A3A",
             outline: "none",
           }}
           autoFocus
@@ -176,7 +176,7 @@ export function WelcomeStep({
       <div className="space-y-2">
         <p
           style={{
-            color: "#141413",
+            color: "#1E2A3A",
             fontFamily: "var(--font-sans)",
             fontSize: "13.5px",
             fontWeight: 600,
@@ -194,16 +194,16 @@ export function WelcomeStep({
                 onClick={() => setPropertyType(opt.value)}
                 className="rounded-lg text-left transition-colors"
                 style={{
-                  border: active ? "1px solid #2563EB" : "1px solid #e8e6dc",
+                  border: active ? "1px solid #2563EB" : "1px solid #E2E8F0",
                   backgroundColor: active
                     ? "rgba(37,99,235,0.06)"
-                    : "#faf9f5",
+                    : "#F1F5F9",
                   padding: "12px 14px",
                 }}
               >
                 <div
                   style={{
-                    color: active ? "#2563EB" : "#141413",
+                    color: active ? "#2563EB" : "#1E2A3A",
                     fontFamily: "var(--font-sans)",
                     fontSize: "14px",
                     fontWeight: 600,
@@ -214,7 +214,7 @@ export function WelcomeStep({
                 <div
                   className="mt-1"
                   style={{
-                    color: "#5e5d59",
+                    color: "#64748B",
                     fontFamily: "var(--font-sans)",
                     fontSize: "12px",
                     lineHeight: 1.45,
@@ -232,7 +232,7 @@ export function WelcomeStep({
         <div className="space-y-2">
           <p
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
               fontSize: "13.5px",
               fontWeight: 600,
@@ -252,11 +252,11 @@ export function WelcomeStep({
                   style={{
                     border: active
                       ? "1px solid #2563EB"
-                      : "1px solid #e8e6dc",
+                      : "1px solid #E2E8F0",
                     backgroundColor: active
                       ? "rgba(37,99,235,0.08)"
                       : "#ffffff",
-                    color: active ? "#2563EB" : "#5e5d59",
+                    color: active ? "#2563EB" : "#64748B",
                     padding: "6px 12px",
                     fontFamily: "var(--font-sans)",
                     fontSize: "12.5px",
@@ -275,7 +275,7 @@ export function WelcomeStep({
         <div className="space-y-2">
           <p
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
               fontSize: "13.5px",
               fontWeight: 600,
@@ -295,11 +295,11 @@ export function WelcomeStep({
                   style={{
                     border: active
                       ? "1px solid #2563EB"
-                      : "1px solid #e8e6dc",
+                      : "1px solid #E2E8F0",
                     backgroundColor: active
                       ? "rgba(37,99,235,0.08)"
                       : "#ffffff",
-                    color: active ? "#2563EB" : "#5e5d59",
+                    color: active ? "#2563EB" : "#64748B",
                     padding: "6px 12px",
                     fontFamily: "var(--font-sans)",
                     fontSize: "12.5px",

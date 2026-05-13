@@ -3,58 +3,60 @@ import { VerticalLanding } from "@/components/platform/vertical-landing";
 import { NurtureTimeline } from "@/components/platform/artifacts/nurture-timeline";
 
 export const metadata: Metadata = {
-  title: "Senior living marketing that respects the family",
+  title: "Senior living leasing intelligence that respects the family",
   description:
-    "Managed marketing platform for senior living operators: family-first site copy, compliance-aware ads, long-cycle lead nurture, AI chatbot with human handoff.",
+    "LeaseStack gives senior living operators family-first nurture sequences, compliance-aware creative, and a marketing report the executive director and the family can both read.",
 };
 
 export default function SeniorLivingPage() {
   return (
     <VerticalLanding
       eyebrow="Senior living"
-      headline="Respect the family."
-      headlineAccent="Show results."
-      subhead="Senior living prospects research for months, often on behalf of a parent. Your marketing stack needs to be patient, compliant, and always ready to hand a warm lead to a real person."
-      caption="90+ day journeys · compliance-reviewed creative · human handoff on sensitive threads"
+      headline="Your community's marketing data."
+      headlineAccent="Finally working for you."
+      subhead="Senior living decisions take 90 to 180 days, and the adult child is the one researching. LeaseStack is the leasing intelligence platform that runs patient, family-first nurture across that window, keeps creative compliant at every step, and gives the executive director one clear answer to the question the family is asking."
+      caption="The marketing report writes itself in language the executive director and the family can both read."
       artifact={<NurtureTimeline />}
+      painsHeading="What senior living operators tell us."
+      modulesHeading="What you get the day you turn it on."
       pains={[
         {
-          title: "Long, sensitive buying journeys",
-          body: "The average senior living consideration window is 90+ days. Short-cycle marketing tools break down.",
+          title: "90 to 180 day consideration windows",
+          body: "Short-cycle marketing tools assume the lead converts in two weeks. Senior living families come back in month four, on a Sunday, after a hospital visit. The nurture has to be waiting.",
         },
         {
-          title: "Compliance and care copy",
-          body: "Care-level claims, memory care descriptions, and pricing transparency all carry regulatory weight. Template creative won't cut it.",
+          title: "Compliance pressure on every claim",
+          body: "Care-level descriptions, memory-care language, ADA accommodations, Fair Housing in adjacent demographics. Template creative does not survive a regulatory review.",
         },
         {
-          title: "Adult-child decision makers",
-          body: "You're marketing to the family, not the resident. The funnel has two audiences and two message paths.",
+          title: "Two audiences in one funnel",
+          body: "The resident is the customer. The adult child is the researcher and the buyer. The funnel has to speak to both without confusing either.",
         },
       ]}
       modules={[
         {
           title: "Family-first site structure",
-          body: "Separate narratives for residents and their children, with messaging and imagery that honor the decision.",
+          body: "Separate narratives for the resident and the adult child, with messaging and imagery that honor the decision they are making together.",
         },
         {
-          title: "Long-cycle lead nurture",
-          body: "Month-one, quarter-one, year-one touch points keep you top-of-mind when the family is finally ready.",
+          title: "Long-cycle nurture sequences",
+          body: "Month one, quarter one, and year-one touch points keep the community top of mind through the months a family takes to be ready.",
         },
         {
-          title: "Chatbot with human handoff",
-          body: "Answers the practical questions at 2am, hands sensitive conversations to your community liaison by day.",
+          title: "Compliance-aware ad creative",
+          body: "Every ad and landing page passes a Fair Housing and ADA review before it goes live, with the creative library kept current as regulations change.",
         },
         {
-          title: "HIPAA-safe intake form",
-          body: "Capture basics without collecting protected health info until a real person is on the line.",
+          title: "AI assistant with human handoff",
+          body: "Answers practical questions about pricing, care levels, and visiting hours at any hour, and hands sensitive conversations to your community liaison the same morning.",
         },
         {
-          title: "Tour + respite stay booking",
-          body: "Multi-step tour flow for memory care, assisted living, respite. Flexible to your community's ritual.",
+          title: "Reputation and review integration",
+          body: "A Place for Mom, Caring.com, and Google reviews surfaced in one view and responded to from one inbox, so the public story stays consistent.",
         },
         {
-          title: "Reputation + review integration",
-          body: "A Place for Mom, Caring.com, Google reviews, surfaced in one view, responded to from one inbox.",
+          title: "One report for the ED and the family",
+          body: "A monthly report the executive director can hand to ownership and a family-facing summary the adult child can read in five minutes. Same data, two audiences.",
         },
       ]}
     />

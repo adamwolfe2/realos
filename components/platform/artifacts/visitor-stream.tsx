@@ -16,21 +16,21 @@ type Visitor = {
 const POOL: Omit<Visitor, "id" | "ago">[] = [
   { initials: "MR", name: "Marisol Reyes",   org: "UC Berkeley · sophomore", page: "/floor-plans/2-bed",   color: "#2563EB", resolved: true  },
   { initials: "DJ", name: "Derek Johansson",  org: "parent · Illinois",       page: "/parents",              color: "#5B8CE6", resolved: true  },
-  { initials: "—",  name: "Anonymous visitor", org: "Berkeley, CA",             page: "/floor-plans",          color: "#b0aea5", resolved: false },
+  { initials: "?",  name: "Anonymous visitor", org: "Berkeley, CA",             page: "/floor-plans",          color: "#94A3B8", resolved: false },
   { initials: "AL", name: "Aisha Lin",        org: "Cal Housing transfer",    page: "/amenities",            color: "#2563EB", resolved: true  },
   { initials: "TM", name: "Tomás Mendes",     org: "NYU · rising junior",      page: "/floor-plans/3-bed",    color: "#5B8CE6", resolved: true  },
-  { initials: "—",  name: "Anonymous visitor", org: "mobile · Oakland",         page: "/gallery",              color: "#b0aea5", resolved: false },
+  { initials: "?",  name: "Anonymous visitor", org: "mobile · Oakland",         page: "/gallery",              color: "#94A3B8", resolved: false },
   { initials: "SP", name: "Sofia Petrova",    org: "parent · California",      page: "/parents-faq",          color: "#2563EB", resolved: true  },
   { initials: "RK", name: "Ravi Krishnan",    org: "UC Berkeley · junior",     page: "/tour/schedule",        color: "#2563EB", resolved: true  },
-  { initials: "—",  name: "Anonymous visitor", org: "Seattle, WA",              page: "/location",             color: "#b0aea5", resolved: false },
+  { initials: "?",  name: "Anonymous visitor", org: "Seattle, WA",              page: "/location",             color: "#94A3B8", resolved: false },
   { initials: "JW", name: "Jordan Wu",        org: "Stanford · transfer",      page: "/floor-plans/1-bed",    color: "#5B8CE6", resolved: true  },
 ];
 
 const ACCENT = "#2563EB";
-const INK = "#141413";
-const MUTED = "#87867f";
-const BORDER = "#f0eee6";
-const PARCHMENT = "#faf9f5";
+const INK = "#1E2A3A";
+const MUTED = "#94A3B8";
+const BORDER = "#E2E8F0";
+const PARCHMENT = "#F1F5F9";
 
 export function VisitorStream() {
   const [rows, setRows] = useState<Visitor[]>(() =>
@@ -71,7 +71,7 @@ export function VisitorStream() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(20,20,19,0.06)`,
+        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.06)`,
         overflow: "hidden",
       }}
     >
@@ -210,7 +210,7 @@ export function VisitorStream() {
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: "12px",
-                  color: "#5e5d59",
+                  color: "#64748B",
                   marginTop: "2px",
                 }}
               >

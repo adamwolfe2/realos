@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 export default function PlatformHome() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+    <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
       <Hero />
       <WhatYouGet />
       <Comparison />

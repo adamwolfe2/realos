@@ -1,27 +1,32 @@
 const METRICS = [
   {
-    value: "14 days",
-    label: "From intake call to a custom site, chatbot, pixel, and ads live on your domain.",
+    value: "100%",
+    label: "Marketing spend tracked to lease. Google, Meta, referral, PMS, all in one view.",
   },
   {
-    value: "24/7",
-    label: "AI chatbot qualifying and capturing leads while your leasing team sleeps.",
+    value: "4-8 wk",
+    label: "Lead time on pacing alerts. Know your lease-up is falling behind before occupancy slips.",
   },
   {
     value: "48h",
-    label: "Creative turnaround on every ad, email, or landing block — no retainer to unlock it.",
+    label: "Creative refresh on every ad, email, or landing block. No retainer to unlock it.",
   },
   {
-    value: "Monday",
-    label: "Weekly report in your inbox: spend, tours booked, leases signed, cost per lease.",
+    value: "14 days",
+    label: "From intake call to live on your domain. Pixel firing. Chatbot answering. Ads running.",
   },
 ];
 
 export function Numbers() {
   return (
-    <section style={{ backgroundColor: "#f5f4ed" }}>
+    <section style={{ backgroundColor: "#FFFFFF", borderTop: "1px solid #E2E8F0" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
-        <p className="eyebrow mb-10 text-center">By the numbers</p>
+        <div className="max-w-3xl mb-12">
+          <p className="eyebrow mb-4">By the numbers</p>
+          <h2 className="heading-section" style={{ color: "#1E2A3A" }}>
+            The shift, in figures you can hold a vendor to.
+          </h2>
+        </div>
         <div
           className="md:grid md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6 lg:gap-4 flex overflow-x-auto md:overflow-visible pb-3 md:pb-0"
           style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
@@ -30,16 +35,17 @@ export function Numbers() {
             <div
               key={m.value}
               className={`flex-shrink-0 md:flex-shrink px-0 lg:px-6 text-left ${i > 0 ? "lg:border-l" : ""}`}
-              style={{ scrollSnapAlign: "start", width: "72vw", maxWidth: "260px", ...(i > 0 ? { borderColor: "#e8e6dc" } : undefined) }}
+              style={{ scrollSnapAlign: "start", width: "72vw", maxWidth: "280px", ...(i > 0 ? { borderColor: "#E2E8F0" } : undefined) }}
             >
               <p
                 style={{
-                  color: "#141413",
+                  color: "#1E2A3A",
                   fontFamily: "var(--font-display)",
                   fontSize: "clamp(40px, 5.2vw, 56px)",
-                  fontWeight: 500,
-                  lineHeight: 1.05,
-                  letterSpacing: "-0.005em",
+                  fontWeight: 700,
+                  lineHeight: 1.02,
+                  letterSpacing: "-0.025em",
+                  fontVariantNumeric: "tabular-nums",
                 }}
               >
                 {m.value}
@@ -47,7 +53,7 @@ export function Numbers() {
               <p
                 className="mt-4 max-w-[280px]"
                 style={{
-                  color: "#5e5d59",
+                  color: "#64748B",
                   fontFamily: "var(--font-sans)",
                   fontSize: "14px",
                   lineHeight: 1.55,

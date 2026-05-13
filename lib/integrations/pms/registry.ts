@@ -326,7 +326,7 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Skip the PMS connection. Configure each property by hand.",
     status: "live",
     logoSrc: null,
-    brandColor: "#5e5d59",
+    brandColor: "#64748B",
     monogram: "•",
     authFields: [],
     contractNote:

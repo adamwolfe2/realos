@@ -102,7 +102,7 @@ export function PlanStep({
         <h1
           className="mt-2"
           style={{
-            color: "#141413",
+            color: "#1E2A3A",
             fontFamily: "var(--font-sans)",
             fontSize: "26px",
             fontWeight: 700,
@@ -114,7 +114,7 @@ export function PlanStep({
         <p
           className="mt-2"
           style={{
-            color: "#5e5d59",
+            color: "#64748B",
             fontFamily: "var(--font-sans)",
             fontSize: "14.5px",
             lineHeight: 1.55,
@@ -138,8 +138,8 @@ export function PlanStep({
               htmlFor={`tier-${t.id}`}
               className="block cursor-pointer rounded-xl transition-colors"
               style={{
-                backgroundColor: active ? "rgba(37,99,235,0.04)" : "#faf9f5",
-                border: active ? "1px solid #2563EB" : "1px solid #e8e6dc",
+                backgroundColor: active ? "rgba(37,99,235,0.04)" : "#F1F5F9",
+                border: active ? "1px solid #2563EB" : "1px solid #E2E8F0",
                 padding: "14px 16px",
               }}
             >
@@ -157,7 +157,7 @@ export function PlanStep({
                   <div className="flex items-center gap-2 flex-wrap">
                     <span
                       style={{
-                        color: "#141413",
+                        color: "#1E2A3A",
                         fontFamily: "var(--font-sans)",
                         fontSize: "16px",
                         fontWeight: 700,
@@ -188,7 +188,7 @@ export function PlanStep({
                   <p
                     className="mt-1"
                     style={{
-                      color: "#5e5d59",
+                      color: "#64748B",
                       fontFamily: "var(--font-sans)",
                       fontSize: "13px",
                       lineHeight: 1.5,
@@ -202,7 +202,7 @@ export function PlanStep({
                         key={b}
                         className="flex items-start gap-1.5"
                         style={{
-                          color: "#4d4c48",
+                          color: "#1E2A3A",
                           fontFamily: "var(--font-sans)",
                           fontSize: "12.5px",
                           lineHeight: 1.5,
@@ -223,7 +223,7 @@ export function PlanStep({
                 <div className="text-right shrink-0">
                   <div
                     style={{
-                      color: "#141413",
+                      color: "#1E2A3A",
                       fontFamily: "var(--font-sans)",
                       fontSize: "22px",
                       fontWeight: 700,
@@ -289,7 +289,7 @@ export function PlanStep({
           onClick={() => history.back()}
           className="inline-flex items-center gap-1.5 transition-colors"
           style={{
-            color: "#5e5d59",
+            color: "#64748B",
             fontFamily: "var(--font-sans)",
             fontSize: "13px",
             fontWeight: 500,

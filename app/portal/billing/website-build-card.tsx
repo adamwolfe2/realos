@@ -55,7 +55,7 @@ export function WebsiteBuildCard() {
       className="rounded-lg p-5 space-y-4"
       style={{
         backgroundColor: "#ffffff",
-        border: "1px solid #e8e6dc",
+        border: "1px solid #E2E8F0",
       }}
     >
       <div>
@@ -89,8 +89,8 @@ export function WebsiteBuildCard() {
               key={b.id}
               className="rounded-lg p-4 flex flex-col"
               style={{
-                backgroundColor: "#faf9f5",
-                border: "1px solid #e8e6dc",
+                backgroundColor: "#F1F5F9",
+                border: "1px solid #E2E8F0",
               }}
             >
               <div className="flex items-baseline justify-between gap-2 mb-2">

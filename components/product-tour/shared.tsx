@@ -7,12 +7,12 @@ import React from "react";
 // ---------------------------------------------------------------------------
 
 export const TOKENS = {
-  parchment:       "#f5f4ed",
-  ivory:           "#faf9f5",
-  sand:            "#e8e6dc",
+  parchment:       "#FFFFFF",
+  ivory:           "#F1F5F9",
+  sand:            "#E2E8F0",
   white:           "#ffffff",
-  nearBlack:       "#141413",
-  darkSurface:     "#30302e",
+  nearBlack:       "#1E2A3A",
+  darkSurface:     "#1E2A3A",
   // Brand accent is LeaseStack blue (was terracotta in the Claude draft).
   // Token names kept for now to avoid churn across every view file; rename
   // in a follow-up if the tour grows more contributors.
@@ -23,16 +23,16 @@ export const TOKENS = {
   terracotta:      "#2563EB",
   terracottaHover: "#1D4ED8",
   coral:           "#5B8CE6",
-  charcoal:        "#4d4c48",
-  olive:           "#5e5d59",
-  stone:           "#87867f",
-  warmSilver:      "#b0aea5",
-  borderCream:     "#f0eee6",
-  borderWarm:      "#e8e6dc",
-  ring:            "#d1cfc5",
-  success:         "#3a7d44",
-  warning:         "#b8860b",
-  error:           "#b53333",
+  charcoal:        "#1E2A3A",
+  olive:           "#64748B",
+  stone:           "#94A3B8",
+  warmSilver:      "#94A3B8",
+  borderCream:     "#E2E8F0",
+  borderWarm:      "#E2E8F0",
+  ring:            "#CBD5E1",
+  success:         "#16A34A",
+  warning:         "#F59E0B",
+  error:           "#DC2626",
   focusBlue:       "#3898ec",
 } as const;
 
@@ -50,8 +50,8 @@ export function Pill({
   const colors = {
     neutral:    { bg: TOKENS.sand,                       fg: TOKENS.charcoal,  border: TOKENS.ring },
     terracotta: { bg: "rgba(37,99,235,0.12)",           fg: TOKENS.terracotta,border: "rgba(37,99,235,0.3)" },
-    success:    { bg: "rgba(58,125,68,0.12)",            fg: TOKENS.success,   border: "rgba(58,125,68,0.3)" },
-    warning:    { bg: "rgba(184,134,11,0.12)",           fg: TOKENS.warning,   border: "rgba(184,134,11,0.3)" },
+    success:    { bg: "rgba(22, 163, 74,0.12)",            fg: TOKENS.success,   border: "rgba(22, 163, 74,0.3)" },
+    warning:    { bg: "rgba(245, 158, 11,0.12)",           fg: TOKENS.warning,   border: "rgba(245, 158, 11,0.3)" },
     muted:      { bg: TOKENS.borderCream,                fg: TOKENS.stone,     border: TOKENS.borderCream },
   }[tone];
   return (

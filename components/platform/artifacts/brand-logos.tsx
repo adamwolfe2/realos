@@ -95,7 +95,7 @@ export function PerplexityMark({ size = 18 }: IconProps) {
 }
 
 // Claude (Anthropic) — official asterisk-burst mark in Anthropic coral
-// (#D97757) on Anthropic ivory (#F0EEE6). Eight tapered petals radiating
+// (#D97757) on Anthropic ivory (#E2E8F0). Eight tapered petals radiating
 // from the centre — the canonical Anthropic glyph used on claude.ai and
 // the API console.
 export function ClaudeMark({ size = 18 }: IconProps) {
@@ -108,7 +108,7 @@ export function ClaudeMark({ size = 18 }: IconProps) {
       aria-label="Claude"
       role="img"
     >
-      <rect width="24" height="24" rx="5" fill="#F0EEE6" />
+      <rect width="24" height="24" rx="5" fill="#E2E8F0" />
       <g fill="#D97757">
         {/* 8 tapered petals at 0°, 45°, 90°, 135°, 180°, 225°, 270°, 315° */}
         <path d="M12 4.2c.55 0 .9 1.5.9 4.2 0 2.7-.35 4.2-.9 4.2s-.9-1.5-.9-4.2c0-2.7.35-4.2.9-4.2Z" />
@@ -247,11 +247,11 @@ export function BrandPill({
         padding: "3px 9px 3px 6px",
         borderRadius: "999px",
         backgroundColor: "#ffffff",
-        boxShadow: `0 0 0 1px #f0eee6`,
+        boxShadow: `0 0 0 1px #E2E8F0`,
         fontFamily: "var(--font-sans)",
         fontSize: "12px",
         fontWeight: 600,
-        color: "#141413",
+        color: "#1E2A3A",
         lineHeight: 1,
       }}
     >

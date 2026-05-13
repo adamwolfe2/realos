@@ -5,8 +5,8 @@ export function PricingHero() {
   return (
     <section
       style={{
-        backgroundColor: "#f5f4ed",
-        borderBottom: "1px solid #e8e6dc",
+        backgroundColor: "#FFFFFF",
+        borderBottom: "1px solid #E2E8F0",
       }}
     >
       <div className="max-w-[960px] mx-auto px-4 md:px-8 pt-24 md:pt-32 pb-12 md:pb-16 text-center">
@@ -15,14 +15,14 @@ export function PricingHero() {
         <h1
           className="heading-section"
           style={{
-            color: "#141413",
+            color: "#1E2A3A",
             fontSize: "clamp(36px, 5vw, 56px)",
             letterSpacing: "-0.022em",
             lineHeight: 1.08,
             margin: "0 auto",
           }}
         >
-          One platform for every property.
+          Built by operators,
           <span
             style={{
               display: "block",
@@ -30,23 +30,21 @@ export function PricingHero() {
               marginTop: "4px",
             }}
           >
-            Scale with your portfolio.
+            priced for the market.
           </span>
         </h1>
 
         <p
           className="mt-6 mx-auto"
           style={{
-            color: "#5e5d59",
+            color: "#64748B",
             fontFamily: "var(--font-sans)",
             fontSize: "18px",
             lineHeight: 1.55,
             maxWidth: "640px",
           }}
         >
-          Sign up, pick a plan, connect your data, and run your marketing from
-          one workspace. Site builder, AI chatbot, listings sync, visitor
-          pixel, ads, reputation, audiences. Pause anytime.
+          We replace your retainer and give you more data for less money. Connect to your existing stack, see exactly what your digital marketing is doing, and get a clear recommendation on what to do about it. Cancel if pacing does not move.
         </p>
 
         {/* Trust strip. Same four anchors as before but now centered
@@ -54,15 +52,15 @@ export function PricingHero() {
             unit, not a left-justified list. */}
         <div className="mt-10 grid grid-cols-2 md:grid-cols-4 gap-6 max-w-[760px] mx-auto">
           {[
-            { value: "Self-serve", label: "Sign up in minutes" },
-            { value: "No contracts", label: "Month-to-month" },
-            { value: "Pause anytime", label: "Keep your data" },
-            { value: "30-day guarantee", label: "Money back" },
+            { value: "Free pilot", label: "No commitment" },
+            { value: "Month-to-month", label: "Cancel anytime" },
+            { value: "Operator-built", label: "Not a vendor" },
+            { value: "Live property", label: "Telegraph Commons" },
           ].map((t) => (
             <div key={t.label} className="text-center">
               <div
                 style={{
-                  color: "#141413",
+                  color: "#1E2A3A",
                   fontFamily: "var(--font-sans)",
                   fontSize: "18px",
                   fontWeight: 600,

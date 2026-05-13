@@ -1,43 +1,44 @@
 // ---------------------------------------------------------------------------
-// Single source of truth for platform marketing copy. Every string on the
-// public .com lives here so pricing tweaks or product rename stay to one
-// file.
+// Single source of truth for platform marketing copy.
 //
-// Voice: professional, operator-to-operator, product-first. No named
-// competitors. No named reference customers. Specifics and claims stay
-// platform-generic.
+// Voice: operator-credible, data-forward, direct, quietly confident.
+// Outcome-first. Specific over general. Operator-to-operator.
+// No buzzwords (no "leverage", "unlock", "synergy", "revolutionize",
+// "transform", "AI-powered insights"). No em dashes. No named competitors.
+// Never claim to replace property managers or leasing staff. Never position
+// LeaseStack as a digital marketing agency.
 // ---------------------------------------------------------------------------
 
 export const MARKETING = {
   brand: {
-    tagline: "Managed marketing for real estate operators",
+    tagline: "Your leasing data. Finally working for you.",
   },
   home: {
     hero: {
-      eyebrow: "For multifamily and student housing operators",
-      headline: "Your entire leasing funnel, managed for you.",
-      highlight: "managed for you.",
+      eyebrow: "Leasing intelligence platform",
+      headline: "Your leasing data. Finally working for you.",
+      highlight: "Finally working for you.",
       subhead:
-        "Marketing site, chatbot, visitor identification, and Google & Meta ads — one platform on your domain, live in 14 days. You review a weekly report. We do the rest.",
+        "LeaseStack tells real estate operators exactly what their digital marketing is doing, and exactly what to do about it. One platform, every signal, on your domain.",
       primaryCta: "Book a demo",
       primaryHref: "/onboarding",
-      secondaryCta: "See it live",
+      secondaryCta: "See the data",
       secondaryHref: "/demo",
-      microProof: "Built for multifamily, student housing, and senior living.",
+      microProof: "Built for student housing. Tailored for multifamily, senior living, and commercial.",
     },
     whatYouGet: {
       eyebrow: "What you get",
-      headline: "One platform. Seven deliverables. Live in fourteen days.",
+      headline: "Full visibility. Zero extra work.",
       body:
-        "Nothing to wire up. Nothing to log into twice. We own the build, the campaigns, and the reporting.",
+        "Every lead source, every channel, every conversion. Tracked, aggregated, and reported automatically. No spreadsheets. No agency black boxes.",
       items: [
-        "A custom marketing site on your domain",
-        "PMS listing sync, updated hourly",
-        "AI chatbot trained on your properties",
-        "Google and Meta ads, managed weekly",
-        "Names and emails on your anonymous site traffic, with a CRM that nurtures them",
-        "Weekly performance report",
-        "48-hour creative turnaround on every request",
+        "Know which channel drove your last twelve lease signings",
+        "Know who visited your website, not just how many",
+        "Know your lease-up is falling behind before it shows up in occupancy",
+        "Your monthly marketing report writes itself and lands in your inbox",
+        "Turn every current tenant into a leasing agent with one link",
+        "An AI chatbot trained on your units, capturing leads at 2am",
+        "Ads, listings, and pages on your domain, managed for you",
       ],
       timeline: [
         { day: "Day 1",  title: "Intake call",   body: "Thirty minutes. We audit your current marketing stack live." },
@@ -47,9 +48,9 @@ export const MARKETING = {
     },
     comparison: {
       eyebrow: "The shift",
-      headline: "The current marketing stack vs. one that ships.",
+      headline: "The current stack vs. one that tells you what to do next.",
       body:
-        "Most operators are paying for five tools that don't talk to each other, plus a retainer for the people stitching them together. Here's what changes when the stack is a product.",
+        "Most operators are paying for five tools that do not talk to each other, plus a retainer for the people stitching them together. Here is what changes when the stack is a product.",
       leftLabel: "The current stack",
       rightLabel: "With LeaseStack",
       rows: [
@@ -62,68 +63,68 @@ export const MARKETING = {
           new: "Your report shows outcomes: leads, tours booked, leases signed.",
         },
         {
-          old: "Creative turnaround measured in weeks and revision rounds.",
-          new: "Creative ships in 48 hours. No retainer, no change-order form.",
+          old: "You find out the lease-up is behind when occupancy slips.",
+          new: "You get a pacing alert four to eight weeks before it shows up in occupancy.",
         },
         {
           old: "Most of your site traffic stays anonymous forever.",
           new: "Names and emails on a meaningful share of the visitors who land.",
         },
         {
-          old: "The chatbot is a glorified FAQ, or there isn't one at all.",
+          old: "The chatbot is a glorified FAQ, or there is not one at all.",
           new: "An AI chatbot trained on your properties, capturing leads at 2am.",
         },
       ],
     },
     weekly: {
-      eyebrow: "Your week with us",
-      headline: "What operating on the platform actually feels like.",
+      eyebrow: "Operating rhythm",
+      headline: "What operating on LeaseStack actually feels like.",
       body:
-        "No war rooms, no status meetings, no quarterly reviews. A few touchpoints that fit inside the rest of your job.",
+        "No war rooms. No status meetings. No quarterly reviews. A few touchpoints that fit inside the rest of your job.",
       items: [
         {
           day: "Monday",
           time: "7:00 AM",
           title: "Weekly performance report lands in your inbox.",
           body:
-            "Leases attributed to sources, spend summary, anomalies flagged, recommended tests for the week. One page, readable over coffee.",
+            "Leases attributed to source, spend summary, pacing vs. last cycle, anomalies flagged, and the three actions to take this week. One page, readable over coffee.",
         },
         {
           day: "Tuesday",
           time: "Rolling",
-          title: "Tour requests auto-create in the portal from every channel.",
+          title: "Tour requests land in one pipeline, with source attached.",
           body:
-            "Site form, chatbot, pixel-identified visitors, inbound calls, scheduling links, all land in one pipeline with source attribution attached.",
+            "Site form, chatbot, pixel-identified visitors, inbound calls, scheduling links. Every channel funnels into the same view, attribution intact.",
         },
         {
           day: "Thursday",
           time: "By EOD",
           title: "Creative refresh ships.",
           body:
-            "The studio delivers new ad concepts, email subject variants, and landing-block copy within 48 hours of request. No retainer to unlock it.",
+            "New ad concepts, email subject variants, and landing-block copy within 48 hours of request. No retainer to wait on. No change-order form.",
         },
         {
           day: "Ongoing",
           time: "Overnight",
           title: "The AI chatbot works the nightshift.",
           body:
-            "Prospects and families asking questions at 2am get a useful conversation, not a contact form. Hot leads get handed to your team with the thread attached.",
+            "Prospects asking questions at 2am get a useful conversation, not a contact form. Hot leads land with your team the next morning, thread attached.",
         },
       ],
     },
     liveExample: {
-      eyebrow: "In production",
-      headline: "See the platform running in production.",
+      eyebrow: "Live proof of concept",
+      headline: "The platform, running on a real property right now.",
       body:
-        "A resident-facing site on the client's own domain, live listings synced hourly, AI chatbot grounded in property facts, visitor identification firing, leads flowing into the operator portal. Click through both surfaces exactly as a prospective resident or a portfolio operator would.",
+        "A resident-facing site on the operator's own domain. Live listings synced hourly. AI chatbot grounded in property facts. Visitor identification firing. Leads flowing into the operator portal. Click through both surfaces exactly as a prospective resident or a portfolio operator would.",
       siteLabel: "The resident-facing site",
       siteHref: "/demo",
       siteCaption:
-        "A production student-housing deployment rendered on the client's domain, under fourteen days from intake.",
+        "A production student-housing deployment rendered on the client's domain, fourteen days from intake to live.",
       portalLabel: "The operator portal",
       portalHref: "#product-tour",
       portalCaption:
-        "The same operator dashboard we'd build you, populated with live tenant data.",
+        "The same operator dashboard we would build you, populated with live tenant data and real pacing signals.",
     },
     pains: [
       {
@@ -139,33 +140,33 @@ export const MARKETING = {
       {
         title: "Most site visitors never identify themselves.",
         body:
-          "You see the traffic. You can't see who. The prospects you wanted go dark.",
+          "You see the traffic. You cannot see who. The prospects you wanted go dark.",
       },
     ],
     howItWorks: [
       {
         step: "01",
-        title: "Twenty minute demo",
+        title: "Twenty minute call",
         body:
-          "Bring your current marketing setup. We audit it live on the call.",
+          "Bring your current marketing setup. We audit it live and tell you what we would change.",
       },
       {
         step: "02",
-        title: "Fixed scope, fixed fee",
+        title: "Free pilot",
         body:
-          "Proposal within 24 hours. Build fee and monthly retainer, no surprises.",
+          "We connect to your existing stack and show you what we see in your data. No commitment.",
       },
       {
         step: "03",
         title: "Live in two weeks",
         body:
-          "Site, pixel, chatbot, SEO, and ads ship together. Your domain, our stack.",
+          "Site, pixel, chatbot, search, and ads ship together. Your domain, our stack.",
       },
       {
         step: "04",
-        title: "Earn the retainer every month",
+        title: "Earn the seat every month",
         body:
-          "Month to month after launch. If we don't move lease velocity, you cancel.",
+          "Month to month after launch. If pacing does not move, you cancel.",
       },
     ],
     modules: [
@@ -175,50 +176,50 @@ export const MARKETING = {
           "Custom-built on your domain. Fast, search-friendly, updated by live listing sync.",
       },
       {
-        title: "PMS listing sync",
+        title: "Listing sync",
         body:
-          "Every unit on your site matches the source of truth within the hour.",
+          "Every unit on your site matches the source of truth in your PMS within the hour.",
       },
       {
         title: "Visitor identification",
         body:
-          "Names and emails on a significant share of your anonymous site traffic.",
+          "Know who visited your website, not just how many. Names and emails fed into your CRM.",
       },
       {
         title: "AI chatbot",
         body:
-          "Answers in five seconds, captures leads around the clock, hands hot ones to your team.",
+          "Trained on your units, pricing rules, and application process. Captures leads at 2am so your team does not have to.",
       },
       {
-        title: "Google and Meta ads",
+        title: "Managed ads",
         body:
-          "Geo-fenced campaigns, retargeting, creative refreshed weekly.",
+          "Google and Meta. Geo-fenced campaigns, retargeting, creative refreshed weekly, attribution back to lease signings.",
       },
       {
         title: "Search and AI discovery",
         body:
-          "Rank in Google. Get recommended by ChatGPT and Perplexity. Per-location pages.",
+          "Pages written to rank in Google and to be quoted by ChatGPT, Perplexity, and Claude. Per-location.",
       },
       {
-        title: "Creative studio",
+        title: "Creative refresh",
         body:
-          "On-demand ad creative. 48 hour turnaround. No retainers, no templates.",
+          "New ad creative, email variants, and landing copy in 48 hours. No retainer. No templates.",
       },
       {
         title: "Lead capture and CRM",
         body:
-          "Forms, exit intent, chat, all flowing into one pipeline with automated nurture.",
+          "Forms, exit intent, chat, calls. Every channel funnels into one pipeline with source attached.",
       },
       {
         title: "Referral program",
         body:
-          "Native referral tracking for current residents or tenants. Track, pay out, repeat.",
+          "Turn every current tenant into a leasing agent with one link. Track, pay out, repeat.",
       },
     ],
     proof: {
       heading: "A product, not a retainer.",
       body:
-        "Same platform, every client. The brand, the listings, and the playbook are yours. The technology, the operations, and the weekly reporting are ours.",
+        "Same platform, every operator. The brand, the listings, and the playbook are yours. The technology, the operations, and the weekly intelligence are ours.",
     },
     faq: {
       eyebrow: "Common questions",
@@ -226,22 +227,22 @@ export const MARKETING = {
       items: [
         {
           q: "What property management systems do you support?",
-          a: "Every major PMS. We sync units, pricing, and availability through standard APIs, and run a nightly backfill for edge cases. If your PMS is unusual, say so on the intake call and we'll confirm on the spot.",
+          a: "Every major PMS. We sync units, pricing, and availability through standard APIs, and run a nightly backfill for edge cases. If your PMS is unusual, say so on the intake call and we will confirm on the spot.",
         },
         {
           q: "Who owns the site if we part ways?",
-          a: "You do. The domain stays yours throughout. On exit, we hand over a static export of the site plus your full lead history. No hostage data, no transition fee.",
+          a: "You do. The domain stays yours throughout. On exit, we hand over a static export of the site plus your full lead history. No hostage data. No transition fee.",
         },
         {
           q: "Are you fair-housing compliant?",
-          a: "Every creative we ship, ads, landing copy, email, goes through a vertical-specific compliance check before it runs. Student housing, multifamily, and senior living each have their own rules, and we keep audit trails for each.",
+          a: "Every creative we ship (ads, landing copy, email) goes through a vertical-specific compliance check before it runs. Student housing, multifamily, and senior living each have their own rules, and we keep audit trails for each.",
         },
         {
           q: "Do we own our data?",
           a: "Yes. Leads, conversations, visitor records, and site analytics are yours. Export to CSV from the portal at any time.",
         },
         {
-          q: "What's the timeline from intake to live?",
+          q: "What is the timeline from intake to live?",
           a: "Fourteen days. Day 1 is your intake call. Day 7 is a site preview on a staging URL. Day 14 we flip DNS, the pixel starts firing, the chatbot goes live, and ads begin running. No phase-two surprises.",
         },
         {
@@ -250,18 +251,18 @@ export const MARKETING = {
         },
         {
           q: "Do you require a long contract?",
-          a: "No. After launch, engagement is month-to-month. If we're not moving lease velocity, you cancel. The platform stays on your domain through the following cycle.",
+          a: "No. After launch, engagement is month-to-month. If pacing does not move, you cancel. The platform stays on your domain through the following cycle.",
         },
         {
-          q: "What if we already have a site we like?",
-          a: "Bring-your-own-site mode installs the chatbot and visitor identification into your existing site without rebuilding it. You keep the design, we add the intelligence layer.",
+          q: "Does LeaseStack replace our leasing team?",
+          a: "No. LeaseStack removes the manual work that slows your team down (reporting, channel reconciliation, creative production, after-hours lead capture). It does not replace property managers or leasing staff. Your team gets back the hours, not the seat.",
         },
       ],
     },
     final: {
-      heading: "Twenty minutes on a call. Two weeks to live.",
+      heading: "Free pilot. No commitment.",
       body:
-        "We show you exactly what your marketing could look like, on your domain, by the end of the month.",
+        "We connect to your existing stack, show you what we see in your data, and you decide if it is useful. No deck. No feature list. No sales pitch.",
       primaryCta: "Book a demo",
       primaryHref: "/onboarding",
     },

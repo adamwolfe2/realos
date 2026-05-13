@@ -7,37 +7,38 @@ export function PricingCta() {
   return (
     <section
       style={{
-        backgroundColor: "#f5f4ed",
-        borderTop: "1px solid #e8e6dc",
+        backgroundColor: "#FFFFFF",
+        borderTop: "1px solid #E2E8F0",
       }}
     >
       <div className="max-w-[960px] mx-auto px-4 md:px-8 py-16 md:py-24 text-center">
-        <p className="eyebrow mb-4">Ready when you are</p>
+        <p className="eyebrow mb-4">Start with the pilot</p>
         <h2
           className="heading-section"
           style={{
-            color: "#141413",
+            color: "#1E2A3A",
             maxWidth: "720px",
             margin: "0 auto",
             fontSize: "clamp(28px, 4vw, 40px)",
           }}
         >
-          Sign up in minutes.{" "}
-          <span style={{ color: "#2563EB" }}>Pause or cancel anytime.</span>
+          See what your data actually says.{" "}
+          <span style={{ color: "#2563EB" }}>Free. No commitment.</span>
         </h2>
         <p
           className="mt-5 mx-auto"
           style={{
-            color: "#5e5d59",
+            color: "#64748B",
             fontFamily: "var(--font-sans)",
             fontSize: "17px",
             lineHeight: 1.55,
             maxWidth: "620px",
           }}
         >
-          Pick a tier, create your account, and your workspace is live. Connect
-          AppFolio, install the pixel, and configure the chatbot at your own
-          pace inside the product.
+          Connect your existing stack and we will show you exactly what your
+          digital marketing is doing. One weekly snapshot, one operator-written
+          recommendation, no card on file. Upgrade to Standard if you want us
+          to keep going.
         </p>
 
         <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center items-center">
@@ -49,18 +50,18 @@ export function PricingCta() {
               color: "#ffffff",
             }}
           >
-            Get started
+            Start the free pilot
           </Link>
           <Link
             href="/demo"
             className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
             style={{
               backgroundColor: "transparent",
-              color: "#141413",
+              color: "#1E2A3A",
               border: "1px solid #d6d3c8",
             }}
           >
-            Book a demo
+            See it on a live property
           </Link>
         </div>
 
@@ -74,7 +75,7 @@ export function PricingCta() {
             textTransform: "uppercase",
           }}
         >
-          No contracts. No setup fee. 30-day money back.
+          Free pilot. No contracts. Cancel if pacing does not move.
         </p>
       </div>
     </section>

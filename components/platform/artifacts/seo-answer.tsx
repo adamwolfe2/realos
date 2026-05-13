@@ -4,10 +4,10 @@ import React, { useEffect, useState } from "react";
 import { ChatGPTMark, PerplexityMark, ClaudeMark, GeminiMark, GoogleMark } from "./brand-logos";
 
 const ACCENT = "#2563EB";
-const INK = "#141413";
-const MUTED = "#87867f";
-const BORDER = "#f0eee6";
-const PARCHMENT = "#faf9f5";
+const INK = "#1E2A3A";
+const MUTED = "#94A3B8";
+const BORDER = "#E2E8F0";
+const PARCHMENT = "#F1F5F9";
 
 const ANSWER =
   "A private student-housing property two blocks from the main campus quad. Fully furnished units with wifi, fiber ethernet, and daily housekeeping included. Walk Score 99.";
@@ -75,7 +75,7 @@ export function SeoAnswer() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(20,20,19,0.06)`,
+        boxShadow: `0 0 0 1px ${BORDER}, 0 20px 60px rgba(30, 42, 58,0.06)`,
         overflow: "hidden",
       }}
     >

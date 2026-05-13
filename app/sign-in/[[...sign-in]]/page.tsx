@@ -82,7 +82,7 @@ export default function SignInPage() {
                   colorBackground: "#FFFFFF",
                   colorInputBackground: "#FFFFFF",
                   colorInputText: "#0A0A0A",
-                  colorDanger: "#b53333",
+                  colorDanger: "#DC2626",
                   borderRadius: "8px",
                   fontFamily:
                     "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif",
@@ -111,7 +111,7 @@ export default function SignInPage() {
                   otpCodeFieldInput:
                     "border border-[#D4D4D4] rounded-md text-foreground focus:border-[#2563EB]",
                   alertText: "text-sm",
-                  formFieldErrorText: "text-xs text-[#b53333]",
+                  formFieldErrorText: "text-xs text-[#DC2626]",
                 },
               }}
             />

@@ -16,20 +16,20 @@ export function Weekly() {
   return (
     <section
       style={{
-        backgroundColor: "#faf9f5",
-        borderTop: "1px solid #f0eee6",
+        backgroundColor: "#F1F5F9",
+        borderTop: "1px solid #E2E8F0",
       }}
     >
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
         <div className="max-w-3xl mb-12">
           <p className="eyebrow mb-4">{weekly.eyebrow}</p>
-          <h2 className="heading-section" style={{ color: "#141413" }}>
+          <h2 className="heading-section" style={{ color: "#1E2A3A" }}>
             {weekly.headline}
           </h2>
           <p
             className="mt-4 max-w-2xl"
             style={{
-              color: "#5e5d59",
+              color: "#64748B",
               fontFamily: "var(--font-sans)",
               fontSize: "17px",
               lineHeight: 1.6,
@@ -49,7 +49,7 @@ export function Weekly() {
                 style={{
                   backgroundColor: "#ffffff",
                   borderRadius: "16px",
-                  boxShadow: "0 0 0 1px #f0eee6",
+                  boxShadow: "0 0 0 1px #E2E8F0",
                 }}
               >
                 <div className="flex items-center gap-2">
@@ -74,7 +74,7 @@ export function Weekly() {
                 <p
                   className="flex items-center justify-between gap-2"
                   style={{
-                    color: "#87867f",
+                    color: "#94A3B8",
                     fontFamily: "var(--font-mono)",
                     fontSize: "11px",
                     letterSpacing: "0.14em",
@@ -82,23 +82,24 @@ export function Weekly() {
                     fontWeight: 500,
                   }}
                 >
-                  <span style={{ color: "#141413" }}>{item.day}</span>
+                  <span style={{ color: "#1E2A3A" }}>{item.day}</span>
                   <span>{item.time}</span>
                 </p>
                 <h3
                   style={{
-                    color: "#141413",
+                    color: "#1E2A3A",
                     fontFamily: "var(--font-display)",
                     fontSize: "19px",
-                    fontWeight: 500,
+                    fontWeight: 600,
                     lineHeight: 1.3,
+                    letterSpacing: "-0.01em",
                   }}
                 >
                   {item.title}
                 </h3>
                 <p
                   style={{
-                    color: "#5e5d59",
+                    color: "#64748B",
                     fontFamily: "var(--font-sans)",
                     fontSize: "14.5px",
                     lineHeight: 1.6,

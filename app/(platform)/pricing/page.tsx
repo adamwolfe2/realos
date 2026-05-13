@@ -23,18 +23,18 @@ import { PricingCta } from "@/components/platform/pricing/pricing-cta";
 //   5. FAQ         eight deal-breaker objections, accordion pattern
 //   6. CTA         last conversion push (demo or onboarding)
 //
-// Style: matches the platform brand (#f5f4ed parchment, #2563EB accent,
+// Style: matches the platform brand (#FFFFFF parchment, #2563EB accent,
 // alternating section backgrounds, generous negative space).
 // ---------------------------------------------------------------------------
 
 export const metadata: Metadata = {
   title: `Pricing | ${BRAND_NAME}`,
   description:
-    "Self-serve marketing platform for real estate operators. Per-property pricing from $499 per month. Site builder, AppFolio sync, AI chatbot, visitor pixel, ad campaigns, SEO, reputation, audiences. No contracts.",
+    "Built by operators, priced for the market. Leasing intelligence platform that replaces the typical CLX-style retainer at lower cost while delivering more data. Free pilot, month-to-month standard plan, portfolio pricing for owners.",
   openGraph: {
     title: `Pricing | ${BRAND_NAME}`,
     description:
-      "Per-property pricing from $499 per month. Self-serve, no setup fee, no contracts.",
+      "Built by operators, priced for the market. We replace your retainer and give you more data for less money.",
     type: "website",
   },
 };

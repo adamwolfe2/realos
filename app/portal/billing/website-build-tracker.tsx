@@ -107,8 +107,8 @@ export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
                             backgroundColor: done
                               ? "#2563EB"
                               : active
-                                ? "#141413"
-                                : "#e8e6dc",
+                                ? "#1E2A3A"
+                                : "#E2E8F0",
                             color:
                               done || active ? "#ffffff" : "#88867f",
                           }}
@@ -119,7 +119,7 @@ export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
                         <span
                           className="mt-1"
                           style={{
-                            color: active ? "#141413" : "#88867f",
+                            color: active ? "#1E2A3A" : "#88867f",
                             fontFamily: "var(--font-mono)",
                             fontSize: "9.5px",
                             letterSpacing: "0.14em",

@@ -5,19 +5,19 @@ import { Reveal } from "@/components/platform/reveal";
 import { VisitorStream } from "@/components/platform/artifacts/visitor-stream";
 
 export const metadata: Metadata = {
-  title: "Visitor identification, names and emails on your site traffic",
+  title: "Know who visited your website, not just how many",
   description:
-    "Put names and emails on a meaningful share of your anonymous website traffic. Installed and managed end-to-end.",
+    "Names and emails on a meaningful share of your anonymous site traffic. Fed straight into your CRM and ad audiences.",
 };
 
 export default function PixelFeaturePage() {
   return (
-    <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <SplitHero
         eyebrow="Visitor identification"
-        headline="Know who's actually"
-        headlineAccent="on your site."
-        subhead="Most analytics tell you impressions. We tell you which prospect just visited, which unit they looked at, and how to reach them, all before they fill out a form."
+        headline="Know who visited your website,"
+        headlineAccent="not just how many."
+        subhead="Most analytics give you session counts. We give you the name and email behind a meaningful share of those sessions, which floor plan they viewed, and how long they spent on it, all before they fill out a form."
         ctas={[
           { label: "Book a demo", href: "/onboarding" },
           { label: "See it live", href: "/demo", variant: "secondary" },
@@ -29,23 +29,23 @@ export default function PixelFeaturePage() {
       <SplitSection
         eyebrow="What you see"
         headline="Real names on the visits that matter."
-        body="Every time a prospect loads a floor plan, we tell you who they are. Not a vague 'someone from California', but a name, an email, often a phone and a LinkedIn. Your leasing team gets to follow up before the prospect has even filled anything out."
+        body="Every time a prospect loads a floor plan, you find out who they are. Not 'someone from California', but a name, an email, often a phone and a LinkedIn. Your leasing team follows up with a prospect you would have lost otherwise."
         bullets={[
-          "Live feed of identified visitors. Who, where, and what they looked at.",
-          "Every identified visitor enriched with role, organization, and contact info.",
-          "High-intent visitors flagged and emailed to your team within minutes.",
-          "All of it captured with consent. Audit-friendly, compliant, yours to keep.",
+          "Live feed of identified visitors, where they came from, and what they looked at.",
+          "Each visitor enriched with role, organization, and contact info.",
+          "High-intent visits flagged and emailed to your team within minutes.",
+          "Captured with consent. Audit-friendly, compliant, yours to keep.",
         ]}
         side="right"
         artifact={<VisitorProfile />}
       />
 
       <SplitSection
-        eyebrow="How it works for you"
-        headline="Anonymous to named, without you lifting a finger."
-        body="We install it, we run it, we feed the results into your team's workflow. You review the Monday report and the steady drip of named leads throughout the week."
+        eyebrow="How it works"
+        headline="Anonymous to named, with no work on your side."
+        body="We install it, we run it, and we feed the results into your team's workflow. You read the Monday report and the named leads that drop into your CRM throughout the week."
         side="left"
-        background="#f5f4ed"
+        background="#FFFFFF"
         artifact={<PixelPipeline />}
       />
 
@@ -53,13 +53,13 @@ export default function PixelFeaturePage() {
         eyebrow="What you get"
         headline="A steady stream of named visitors, not session counts."
         bullets={[
-          "Monday report: who visited, who's high intent, who converted last week.",
-          "Named leads feed your team's inbox and your leasing software automatically.",
-          "Your Meta, Google, and TikTok audiences rebuilt weekly from the people who actually showed up.",
-          "Clear attribution from ad to tour to lease. No more guessing what's working.",
+          "Monday report: who visited, who was high intent, who converted last week.",
+          "Named leads flow into your team's inbox and your leasing software automatically.",
+          "Meta, Google, and TikTok audiences rebuilt weekly from the prospects who actually showed up.",
+          "Attribution from ad to tour to lease. You stop guessing which channel drove the signing.",
         ]}
         side="right"
-        background="#faf9f5"
+        background="#F1F5F9"
         artifact={<PixelResults />}
       />
 
@@ -84,13 +84,13 @@ function VisitorProfile() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 0 0 1px #f0eee6, 0 20px 60px rgba(20,20,19,0.06)",
+        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-4 flex items-center gap-3"
-        style={{ borderBottom: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
+        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
       >
         <span
           className="inline-flex items-center justify-center"
@@ -112,7 +112,7 @@ function VisitorProfile() {
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: "14px",
-              color: "#141413",
+              color: "#1E2A3A",
               fontWeight: 600,
               lineHeight: 1.2,
             }}
@@ -125,12 +125,12 @@ function VisitorProfile() {
               fontSize: "10px",
               letterSpacing: "0.1em",
               textTransform: "uppercase",
-              color: "#87867f",
+              color: "#94A3B8",
               marginTop: "3px",
               fontWeight: 500,
             }}
           >
-            Here's what we know before she filled anything out
+            What we know before she filled anything out
           </p>
         </div>
       </div>
@@ -139,7 +139,7 @@ function VisitorProfile() {
           <li
             key={f.label}
             className="grid grid-cols-[150px_1fr] gap-3 items-center px-5 py-3"
-            style={{ borderBottom: i < facts.length - 1 ? "1px solid #f0eee6" : "none" }}
+            style={{ borderBottom: i < facts.length - 1 ? "1px solid #E2E8F0" : "none" }}
           >
             <span
               style={{
@@ -147,7 +147,7 @@ function VisitorProfile() {
                 fontSize: "11px",
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
-                color: "#87867f",
+                color: "#94A3B8",
                 fontWeight: 500,
               }}
             >
@@ -158,7 +158,7 @@ function VisitorProfile() {
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "13.5px",
-                color: "#141413",
+                color: "#1E2A3A",
                 fontWeight: 500,
               }}
             >
@@ -169,7 +169,7 @@ function VisitorProfile() {
       </ul>
       <div
         className="px-5 py-3 flex items-center justify-between gap-3"
-        style={{ borderTop: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
+        style={{ borderTop: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
       >
         <span
           style={{
@@ -177,7 +177,7 @@ function VisitorProfile() {
             fontSize: "10px",
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "#87867f",
+            color: "#94A3B8",
             fontWeight: 500,
           }}
         >
@@ -190,10 +190,10 @@ function VisitorProfile() {
 
 function PixelPipeline() {
   const stages = [
-    { num: "01", title: "A prospect visits your site",   body: "Every pageview is captured: which units they looked at, how long they stayed, how they got there." },
-    { num: "02", title: "We match the visit to a person", body: "Consented identity graph returns a real name and email for a meaningful share of your visits." },
-    { num: "03", title: "We add everything we know",      body: "Role, organization, phone, LinkedIn, attached to the visitor so your team can reach out confidently." },
-    { num: "04", title: "It lands where your team works", body: "Your leasing inbox, your CRM, your ad audiences, and your Monday owner report. You don't lift a finger." },
+    { num: "01", title: "A prospect visits your site",   body: "Every pageview is captured. Which units they looked at, how long they stayed, how they got there." },
+    { num: "02", title: "We match the visit to a person", body: "A consented identity graph returns a real name and email for a meaningful share of those visits." },
+    { num: "03", title: "We attach the rest of the profile",      body: "Role, organization, phone, and LinkedIn, attached to the visitor record so your team has context before they reach out." },
+    { num: "04", title: "It lands where your team works", body: "Your leasing inbox, your CRM, your ad audiences, and your Monday owner report. Nothing for you to wire up." },
   ];
   return (
     <div
@@ -201,13 +201,13 @@ function PixelPipeline() {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 0 0 1px #f0eee6, 0 20px 60px rgba(20,20,19,0.06)",
+        boxShadow: "0 0 0 1px #E2E8F0, 0 20px 60px rgba(30, 42, 58,0.06)",
         overflow: "hidden",
       }}
     >
       <div
         className="px-5 py-3"
-        style={{ borderBottom: "1px solid #f0eee6", backgroundColor: "#faf9f5" }}
+        style={{ borderBottom: "1px solid #E2E8F0", backgroundColor: "#F1F5F9" }}
       >
         <span
           style={{
@@ -215,7 +215,7 @@ function PixelPipeline() {
             fontSize: "10px",
             letterSpacing: "0.14em",
             textTransform: "uppercase",
-            color: "#87867f",
+            color: "#94A3B8",
             fontWeight: 600,
           }}
         >
@@ -247,7 +247,7 @@ function PixelPipeline() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "14.5px",
-                    color: "#141413",
+                    color: "#1E2A3A",
                     fontWeight: 600,
                   }}
                 >
@@ -258,7 +258,7 @@ function PixelPipeline() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "13.5px",
-                    color: "#5e5d59",
+                    color: "#64748B",
                     lineHeight: 1.55,
                   }}
                 >
@@ -291,7 +291,7 @@ function PixelResults() {
             style={{
               backgroundColor: "#ffffff",
               borderRadius: "14px",
-              boxShadow: "0 0 0 1px #f0eee6",
+              boxShadow: "0 0 0 1px #E2E8F0",
             }}
           >
             <p
@@ -300,7 +300,7 @@ function PixelResults() {
                 fontSize: "10px",
                 letterSpacing: "0.1em",
                 textTransform: "uppercase",
-                color: "#87867f",
+                color: "#94A3B8",
                 fontWeight: 500,
               }}
             >
@@ -311,7 +311,7 @@ function PixelResults() {
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: "32px",
-                color: "#141413",
+                color: "#1E2A3A",
                 fontWeight: 500,
                 lineHeight: 1.05,
               }}
@@ -338,13 +338,13 @@ function PixelResults() {
 
 function FinalBand() {
   return (
-    <section style={{ backgroundColor: "#f5f4ed" }}>
+    <section style={{ backgroundColor: "#FFFFFF" }}>
       <div className="max-w-[920px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
         <Reveal>
           <p
             className="eyebrow mb-4"
             style={{
-              color: "#87867f",
+              color: "#94A3B8",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.18em",
@@ -359,15 +359,14 @@ function FinalBand() {
           <p
             className="mx-auto max-w-[720px]"
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontFamily: "var(--font-display)",
               fontSize: "clamp(22px, 2.4vw, 30px)",
               fontWeight: 500,
               lineHeight: 1.35,
             }}
           >
-            Operators with a few hundred monthly visitors and no visibility into anonymous traffic.
-            Student housing, multifamily, and senior living benefit most.
+            Operators with a few hundred monthly site visitors and no visibility into who's behind the anonymous traffic. Student housing, multifamily, and senior living see the biggest lift.
           </p>
         </Reveal>
         <Reveal delay={140}>

@@ -2220,7 +2220,7 @@ function WeeklyBarChart() {
                 className="w-full max-w-[34px] flex flex-col rounded-md overflow-hidden"
                 style={{
                   height: `${totalPct}%`,
-                  boxShadow: `0 1px 2px rgba(20,20,19,0.06)`,
+                  boxShadow: `0 1px 2px rgba(30, 42, 58,0.06)`,
                   transition: "height 400ms ease",
                 }}
               >
@@ -2767,8 +2767,8 @@ function BriefingView() {
             h.kind === "watch" ? TOKENS.warning :
             TOKENS.accent;
           const toneBg =
-            h.kind === "win"   ? "rgba(58,125,68,0.12)" :
-            h.kind === "watch" ? "rgba(184,134,11,0.12)" :
+            h.kind === "win"   ? "rgba(22, 163, 74,0.12)" :
+            h.kind === "watch" ? "rgba(245, 158, 11,0.12)" :
             "rgba(37,99,235,0.10)";
           const toneLabel =
             h.kind === "win"   ? "WIN" :

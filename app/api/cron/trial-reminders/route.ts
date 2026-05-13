@@ -224,7 +224,7 @@ function buildHtml(opts: {
     headline,
     bodyHtml: `
       <p>${body}</p>
-      <p style="margin-top:24px;color:#5e5d59;font-size:13px;">
+      <p style="margin-top:24px;color:#64748B;font-size:13px;">
         Questions? Reply to this email or write to ${BRAND_EMAIL}. We respond
         the same business day.
       </p>

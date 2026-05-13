@@ -125,7 +125,7 @@ export function TrialActivationCard({
           </div>
           <h2
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
               fontSize: "18px",
               fontWeight: 700,
@@ -138,7 +138,7 @@ export function TrialActivationCard({
           <p
             className="mt-1"
             style={{
-              color: "#5e5d59",
+              color: "#64748B",
               fontFamily: "var(--font-sans)",
               fontSize: "13px",
               lineHeight: 1.55,
@@ -157,7 +157,7 @@ export function TrialActivationCard({
         >
           <div
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontSize: "26px",
               fontWeight: 700,
               letterSpacing: "-0.018em",
@@ -185,7 +185,7 @@ export function TrialActivationCard({
           onClick={() => router.push("/pricing")}
           className="text-xs underline underline-offset-2 transition-colors"
           style={{
-            color: "#5e5d59",
+            color: "#64748B",
             fontFamily: "var(--font-sans)",
             padding: "4px 8px",
           }}

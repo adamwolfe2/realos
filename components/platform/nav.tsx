@@ -40,7 +40,7 @@ export function PlatformNav() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const labelColor = "#141413";
+  const labelColor = "#1E2A3A";
   const navBtnClass = "btn-nav";
 
   return (
@@ -48,11 +48,11 @@ export function PlatformNav() {
       className="sticky top-0 z-40"
       style={{
         backgroundColor: scrolled
-          ? "rgba(245,244,237,0.85)"
-          : "rgba(245,244,237,0.98)",
+          ? "rgba(255,255,255,0.85)"
+          : "rgba(255,255,255,1)",
         backdropFilter: scrolled ? "blur(18px)" : "none",
         WebkitBackdropFilter: scrolled ? "blur(18px)" : "none",
-        borderBottom: scrolled ? "1px solid #f0eee6" : "1px solid transparent",
+        borderBottom: scrolled ? "1px solid #E2E8F0" : "1px solid transparent",
         transition: "background-color 0.2s ease, border-color 0.2s ease",
       }}
     >
@@ -105,10 +105,10 @@ export function PlatformNav() {
                 minHeight: "36px",
                 padding: "8px 16px",
                 backgroundColor: "#2563EB",
-                color: "#faf9f5",
+                color: "#F1F5F9",
                 fontSize: "14px",
                 fontWeight: 500,
-                borderRadius: "10px",
+                borderRadius: "3px",
                 boxShadow: "0 0 0 1px #2563EB inset",
                 transition: "background-color 0.2s ease",
               }}
@@ -156,12 +156,12 @@ function NavLink({
       style={{
         minHeight: "36px",
         padding: "6px 12px",
-        borderRadius: "10px",
-        color: "#141413",
+        borderRadius: "3px",
+        color: "#1E2A3A",
         fontFamily: "var(--font-sans)",
         fontSize: "15px",
         fontWeight: 500,
-        backgroundColor: active ? "#e8e6dc" : "transparent",
+        backgroundColor: active ? "#E2E8F0" : "transparent",
         transition: "background-color 0.2s ease",
       }}
     >
@@ -205,9 +205,9 @@ function Dropdown({
           <ul
             className="py-2 min-w-[260px]"
             style={{
-              backgroundColor: "#faf9f5",
+              backgroundColor: "#F1F5F9",
               boxShadow:
-                "0 0 0 1px #f0eee6, 0 12px 28px rgba(0,0,0,0.06)",
+                "0 0 0 1px #E2E8F0, 0 12px 28px rgba(0,0,0,0.06)",
               borderRadius: "14px",
             }}
           >
@@ -217,7 +217,7 @@ function Dropdown({
                   href={item.href}
                   className="block px-4 py-2.5"
                   style={{
-                    color: "#141413",
+                    color: "#1E2A3A",
                     fontFamily: "var(--font-sans)",
                     fontSize: "14px",
                     fontWeight: 500,
@@ -249,7 +249,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
     <>
       <div
         className="fixed inset-0 z-50 md:hidden flex flex-col"
-        style={{ backgroundColor: "#faf9f5" }}
+        style={{ backgroundColor: "#F1F5F9" }}
       >
         <style jsx>{`
           @keyframes menuSlideIn {
@@ -283,7 +283,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
               type="button"
               onClick={onClose}
               className="inline-flex items-center justify-center w-10 h-10 rounded-full"
-              style={{ backgroundColor: "#f0eee6", color: "#141413" }}
+              style={{ backgroundColor: "#E2E8F0", color: "#1E2A3A" }}
               aria-label="Close menu"
             >
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -302,8 +302,8 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
                 style={{
                   display: "block",
                   padding: "11px 12px",
-                  borderRadius: "12px",
-                  color: "#141413",
+                  borderRadius: "3px",
+                  color: "#1E2A3A",
                   fontSize: "18px",
                   fontWeight: 500,
                   fontFamily: "var(--font-sans)",
@@ -325,9 +325,9 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
                 alignItems: "center",
                 justifyContent: "center",
                 height: "52px",
-                borderRadius: "12px",
+                borderRadius: "3px",
                 backgroundColor: "#2563EB",
-                color: "#faf9f5",
+                color: "#F1F5F9",
                 fontSize: "16px",
                 fontWeight: 600,
                 fontFamily: "var(--font-sans)",

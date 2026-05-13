@@ -8,36 +8,36 @@ import { Plus, Minus } from "lucide-react";
 
 const FAQS: Array<{ q: string; a: string }> = [
   {
-    q: "How does signup work?",
-    a: "Create your account at /sign-up with an email and password. Pick a plan on the /pricing page and pay through Stripe Checkout. Your workspace is provisioned the moment payment confirms. From inside the portal you connect AppFolio (optional), install the chatbot widget on your site, configure your brand, and add properties. No sales calls required and no one walks you through it; the setup is point and click.",
+    q: "How does this compare to a CLX-style retainer?",
+    a: "A typical residential leasing-marketing retainer runs $3,500 to $8,000 per property per month and gives you a deck of impressions, clicks, and reach. LeaseStack runs $899 per month on Standard for the same single property, and you get a full read on every channel your spend is touching plus a written recommendation on what to do about it. The math is straightforward: we replace your retainer and give you more data for less money.",
   },
   {
-    q: "How does per-property pricing work?",
-    a: "Each property under your workspace gets its own marketing site, listings sync, AI chatbot, and lead pool. The first property pays the base tier price. Each additional property on the same plan gets a 20 percent discount applied automatically through the subscription quantity. You bump the property count up or down from your billing settings.",
+    q: "What is the free pilot, exactly?",
+    a: "Zero dollars. We connect to your existing stack (PMS, Google Ads, Meta, GSC, GA4, your site) and show you what your data actually says. You get a weekly snapshot, the underlying numbers, and one operator-written recommendation on what to fix first. No card on file, no commitment, no calendar pressure. If you like what you see, you upgrade to Standard. If you do not, you close the tab.",
   },
   {
-    q: "Is there a setup fee?",
-    a: "No. The platform is self-serve. You sign up, pay the monthly subscription, connect your data, and start working. No one-time fees, no implementation charges, no required onboarding calls. Custom PMS integrations beyond AppFolio are handled separately through sales contact and quoted on a per-project basis.",
+    q: "What happens if pacing does not move?",
+    a: "You cancel. The Standard plan is month-to-month for exactly this reason. We are operator-built, which means we know that any tool that does not move a number is overhead. Inside 30 days you should see whether the recommendations land. If they do not, the billing portal cancels you in two clicks and your data exports cleanly.",
+  },
+  {
+    q: "What is included in the monthly fee?",
+    a: "On Standard: connections to your existing stack, identified-visitor pixel (5,000 per month), AI leasing chatbot (5,000 conversations per month), source-to-lease attribution across Google and Meta, reputation monitoring, and a weekly operator-written read on every channel. No ad spend markup. No setup fee. No required onboarding call. You bring your own ad accounts, your own site, your own PMS login.",
+  },
+  {
+    q: "Do you replace my property manager or leasing staff?",
+    a: "No. LeaseStack replaces the manual work, not the people. The platform tells your team exactly what the data says and what to do about it. Your leasing agents still tour, your property manager still runs the asset, your in-house marketer (if you have one) still owns the calendar. We just stop the meeting where nobody can answer how many leases the spend produced.",
+  },
+  {
+    q: "What integrates with LeaseStack today?",
+    a: "AppFolio is the direct PMS integration. Google Ads, Meta Ads, Google Search Console, GA4, Google Business Profile, Reddit, and the open web are all read live. If you run Yardi, Buildium, Entrata, or RealPage we have manual entry today and custom connectors quoted per project (typically 2 to 4 weeks). The pilot does not require a PMS connection at all; the marketing and pacing reads work without it.",
+  },
+  {
+    q: "Are you a marketing agency?",
+    a: "No. LeaseStack is a leasing intelligence platform. We do not buy ads on your behalf, we do not write your creative for you, and we do not charge a percent of spend. We tell your existing program (or your agency, if you keep one) what is working, what is not, and what to do next. The product is the data and the recommendation, not the labor.",
   },
   {
     q: "Are there any contracts?",
-    a: "No. Every plan is month-to-month. You can cancel any time from the Stripe billing portal linked inside your account settings. Annual prepay is optional and saves you about 17 percent versus paying monthly, but you give up the month-to-month off-ramp until the year is over.",
-  },
-  {
-    q: "What is the money-back guarantee?",
-    a: "30 days. If the platform isn't working for you within the first month, email hello@leasestack.co and we'll refund the subscription fee in full, no questions asked. Your data stays accessible during the refund process and you can export your leads, visitors, and reports on the way out.",
-  },
-  {
-    q: "Do you run ads for me?",
-    a: "No, you run them yourself using our campaign builder. Growth and Scale tiers unlock the in-product Google and Meta ad campaign builder where you connect your own ad accounts and we provide the UI, attribution, and creative library. We do not manage ad spend or charge a markup on what you spend with Google or Meta.",
-  },
-  {
-    q: "What PMS systems do you support?",
-    a: "AppFolio is the only direct integration today. If you use Yardi, Buildium, Entrata, RealPage or another PMS, contact sales for a custom connector quote (typically 2 to 4 weeks of build time, priced per project). Manual property and listing entry works on any plan if you don't have a supported PMS or just want to get started without connecting one.",
-  },
-  {
-    q: "Can I bring my own website?",
-    a: "Yes. You can install the chatbot widget and Cursive visitor pixel on any existing site by pasting a script tag from your portal settings. Pricing stays the same. Lead capture, ad campaigns, reputation monitoring, and audiences all work the same way on top of your own site as they do on a site built inside our builder.",
+    a: "No long-term contracts. Every plan is month-to-month and cancellable in two clicks from the Stripe billing portal. Annual prepay is optional and saves you about 17 percent. Portfolio and Enterprise plans can opt into annual or multi-year terms if it helps the asset-side accounting, but it is never required.",
   },
 ];
 
@@ -47,8 +47,8 @@ export function PricingFaq() {
   return (
     <section
       style={{
-        backgroundColor: "#f5f4ed",
-        borderTop: "1px solid #f0eee6",
+        backgroundColor: "#FFFFFF",
+        borderTop: "1px solid #E2E8F0",
       }}
     >
       <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16 md:py-24">
@@ -56,21 +56,22 @@ export function PricingFaq() {
           <p className="eyebrow mb-3">Pricing FAQ</p>
           <h2
             className="heading-section"
-            style={{ color: "#141413", fontSize: "clamp(24px, 3vw, 32px)" }}
+            style={{ color: "#1E2A3A", fontSize: "clamp(24px, 3vw, 32px)" }}
           >
-            The deal-breaker questions.
+            The questions operators ask before they sign.
           </h2>
           <p
             className="mt-4"
             style={{
-              color: "#5e5d59",
+              color: "#64748B",
               fontFamily: "var(--font-sans)",
               fontSize: "16px",
               lineHeight: 1.6,
             }}
           >
-            Eight things buyers consistently ask before signing. Everything else
-            is faster on a call.
+            Cost versus retainer, what is included, cancellation, integrations,
+            and what happens if pacing does not move. Everything else is faster
+            on a call.
           </p>
         </div>
 
@@ -83,18 +84,18 @@ export function PricingFaq() {
                 className="rounded-xl overflow-hidden"
                 style={{
                   backgroundColor: "#ffffff",
-                  border: "1px solid #e8e6dc",
+                  border: "1px solid #E2E8F0",
                 }}
               >
                 <button
                   type="button"
                   onClick={() => setOpenIdx(open ? null : idx)}
                   aria-expanded={open}
-                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-[#faf9f5]"
+                  className="w-full flex items-center justify-between gap-4 px-5 py-4 text-left transition-colors hover:bg-[#F1F5F9]"
                 >
                   <span
                     style={{
-                      color: "#141413",
+                      color: "#1E2A3A",
                       fontFamily: "var(--font-sans)",
                       fontSize: "15px",
                       fontWeight: 600,
@@ -112,8 +113,8 @@ export function PricingFaq() {
                       display: "inline-flex",
                       alignItems: "center",
                       justifyContent: "center",
-                      backgroundColor: open ? "#2563EB" : "#f5f4ed",
-                      color: open ? "#ffffff" : "#5e5d59",
+                      backgroundColor: open ? "#2563EB" : "#FFFFFF",
+                      color: open ? "#ffffff" : "#64748B",
                       transition: "background-color 120ms ease",
                     }}
                   >
@@ -128,7 +129,7 @@ export function PricingFaq() {
                   <div
                     className="px-5 pb-5"
                     style={{
-                      color: "#4d4c48",
+                      color: "#1E2A3A",
                       fontFamily: "var(--font-sans)",
                       fontSize: "14.5px",
                       lineHeight: 1.65,

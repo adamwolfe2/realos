@@ -25,8 +25,8 @@ type Row = { feature: string; foundation: Cell; growth: Cell; scale: Cell };
 // breaker belongs in the full table behind the disclosure below.
 const HEADLINE_ROWS: Row[] = [
   {
-    feature: "Identified visitors per month (Cursive pixel)",
-    foundation: "Not included",
+    feature: "Identified visitors per month (visitor pixel)",
+    foundation: "Connected, read-only",
     growth: "5,000",
     scale: "25,000",
   },
@@ -37,40 +37,40 @@ const HEADLINE_ROWS: Row[] = [
     scale: "Unlimited",
   },
   {
-    feature: "Google and Meta ad campaign builder",
-    foundation: false,
+    feature: "Source-to-lease attribution (Google, Meta, GSC, GA4)",
+    foundation: "Read-only snapshot",
     growth: true,
     scale: true,
   },
   {
-    feature: "SEO module (GSC and GA4)",
-    foundation: false,
-    growth: true,
-    scale: true,
+    feature: "Operator-written weekly recommendation",
+    foundation: "One per pilot",
+    growth: "Weekly",
+    scale: "Weekly + portfolio rollup",
   },
   {
-    feature: "Audience builder with sync (Meta, Google, TikTok)",
+    feature: "Audience sync (Meta, Google, TikTok)",
     foundation: false,
     growth: false,
     scale: true,
   },
   {
-    feature: "Outbound email campaigns",
+    feature: "Outbound email",
     foundation: false,
     growth: false,
     scale: "3,000 per month",
   },
   {
-    feature: "Resident referral program",
+    feature: "Dedicated operator success contact",
     foundation: false,
     growth: false,
     scale: true,
   },
   {
-    feature: "Support",
-    foundation: "Email",
-    growth: "Email + chat",
-    scale: "Email + chat",
+    feature: "Commitment",
+    foundation: "Free, no card",
+    growth: "Month-to-month",
+    scale: "Month-to-month",
   },
 ];
 
@@ -140,7 +140,7 @@ const FULL_SECTIONS: Array<{ title: string; rows: Row[] }> = [
       { feature: "Sync to Meta Custom Audiences", foundation: false, growth: false, scale: true },
       { feature: "Sync to Google Customer Match", foundation: false, growth: false, scale: true },
       { feature: "Sync to TikTok Custom Audiences", foundation: false, growth: false, scale: true },
-      { feature: "Outbound email campaigns", foundation: false, growth: false, scale: "3,000 per month" },
+      { feature: "Outbound email", foundation: false, growth: false, scale: "3,000 per month" },
     ],
   },
   {
@@ -186,7 +186,7 @@ function CellContent({ value }: { value: Cell }) {
   return (
     <span
       style={{
-        color: "#141413",
+        color: "#1E2A3A",
         fontFamily: "var(--font-sans)",
         fontSize: "12.5px",
         fontWeight: 500,
@@ -204,8 +204,8 @@ export function ComparisonTable() {
   return (
     <section
       style={{
-        backgroundColor: "#faf9f5",
-        borderTop: "1px solid #f0eee6",
+        backgroundColor: "#F1F5F9",
+        borderTop: "1px solid #E2E8F0",
       }}
     >
       <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-16 md:py-20">
@@ -213,9 +213,9 @@ export function ComparisonTable() {
           <p className="eyebrow mb-3">Compare</p>
           <h2
             className="heading-section"
-            style={{ color: "#141413", fontSize: "clamp(24px, 3vw, 32px)" }}
+            style={{ color: "#1E2A3A", fontSize: "clamp(24px, 3vw, 32px)" }}
           >
-            The eight rows that drive the decision.
+            The rows operators ask about first.
           </h2>
         </div>
 
@@ -224,12 +224,12 @@ export function ComparisonTable() {
           className="rounded-xl overflow-hidden"
           style={{
             backgroundColor: "#ffffff",
-            border: "1px solid #e8e6dc",
+            border: "1px solid #E2E8F0",
           }}
         >
           <table className="w-full" style={{ borderCollapse: "collapse" }}>
             <thead>
-              <tr style={{ borderBottom: "1px solid #e8e6dc" }}>
+              <tr style={{ borderBottom: "1px solid #E2E8F0" }}>
                 <th
                   className="text-left py-3 pl-4 pr-3"
                   style={{
@@ -245,9 +245,9 @@ export function ComparisonTable() {
                   Feature
                 </th>
                 {[
-                  { name: "Foundation", price: "$599" },
-                  { name: "Growth", price: "$899", highlighted: true },
-                  { name: "Scale", price: "$1,499" },
+                  { name: "Pilot", price: "Free" },
+                  { name: "Standard", price: "$899", highlighted: true },
+                  { name: "Portfolio", price: "$1,499" },
                 ].map((t) => (
                   <th
                     key={t.name}
@@ -264,7 +264,7 @@ export function ComparisonTable() {
                         fontFamily: "var(--font-sans)",
                         fontSize: "13.5px",
                         fontWeight: 700,
-                        color: t.highlighted ? "#2563EB" : "#141413",
+                        color: t.highlighted ? "#2563EB" : "#1E2A3A",
                         letterSpacing: "-0.005em",
                       }}
                     >
@@ -293,7 +293,7 @@ export function ComparisonTable() {
                     borderBottom:
                       idx === HEADLINE_ROWS.length - 1
                         ? "none"
-                        : "1px solid #f0eee6",
+                        : "1px solid #E2E8F0",
                   }}
                 >
                   <td
@@ -301,7 +301,7 @@ export function ComparisonTable() {
                     style={{
                       fontFamily: "var(--font-sans)",
                       fontSize: "13px",
-                      color: "#4d4c48",
+                      color: "#1E2A3A",
                       lineHeight: 1.4,
                     }}
                   >
@@ -356,12 +356,12 @@ export function ComparisonTable() {
             className="mt-6 rounded-xl overflow-hidden"
             style={{
               backgroundColor: "#ffffff",
-              border: "1px solid #e8e6dc",
+              border: "1px solid #E2E8F0",
             }}
           >
             <table className="w-full" style={{ borderCollapse: "collapse" }}>
               <thead>
-                <tr style={{ borderBottom: "1px solid #e8e6dc" }}>
+                <tr style={{ borderBottom: "1px solid #E2E8F0" }}>
                   <th className="py-3 pl-4 pr-3" style={{ minWidth: "240px" }}></th>
                   <th
                     className="text-center py-3 px-3"
@@ -369,11 +369,11 @@ export function ComparisonTable() {
                       fontFamily: "var(--font-sans)",
                       fontSize: "12.5px",
                       fontWeight: 700,
-                      color: "#141413",
+                      color: "#1E2A3A",
                       minWidth: "110px",
                     }}
                   >
-                    Foundation
+                    Pilot
                   </th>
                   <th
                     className="text-center py-3 px-3"
@@ -386,7 +386,7 @@ export function ComparisonTable() {
                       minWidth: "110px",
                     }}
                   >
-                    Growth
+                    Standard
                   </th>
                   <th
                     className="text-center py-3 px-3"
@@ -394,18 +394,18 @@ export function ComparisonTable() {
                       fontFamily: "var(--font-sans)",
                       fontSize: "12.5px",
                       fontWeight: 700,
-                      color: "#141413",
+                      color: "#1E2A3A",
                       minWidth: "110px",
                     }}
                   >
-                    Scale
+                    Portfolio
                   </th>
                 </tr>
               </thead>
               <tbody>
                 {FULL_SECTIONS.map((section) => (
                   <React.Fragment key={section.title}>
-                    <tr style={{ backgroundColor: "#f5f4ed" }}>
+                    <tr style={{ backgroundColor: "#FFFFFF" }}>
                       <td
                         colSpan={4}
                         className="py-2.5 px-4"
@@ -424,14 +424,14 @@ export function ComparisonTable() {
                     {section.rows.map((row, idx) => (
                       <tr
                         key={`${section.title}-${idx}`}
-                        style={{ borderBottom: "1px solid #f0eee6" }}
+                        style={{ borderBottom: "1px solid #E2E8F0" }}
                       >
                         <td
                           className="py-2.5 pl-4 pr-3"
                           style={{
                             fontFamily: "var(--font-sans)",
                             fontSize: "12.5px",
-                            color: "#4d4c48",
+                            color: "#1E2A3A",
                             lineHeight: 1.4,
                           }}
                         >

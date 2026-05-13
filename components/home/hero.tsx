@@ -1,37 +1,30 @@
 import { SplitHero } from "@/components/platform/split-hero";
 import { ConfigTabs } from "@/components/platform/artifacts/config-tabs";
-import { RotatingWord } from "@/components/platform/rotating-word";
+import { MARKETING } from "@/lib/copy/marketing";
 
 export function Hero() {
+  const { hero } = MARKETING.home;
+
   return (
     <SplitHero
-      eyebrow="For real estate operators and brokers"
+      eyebrow={hero.eyebrow}
       headline={
         <span style={{ display: "block" }}>
-          <span style={{ display: "block" }}>
-            The <span style={{ color: "#2563EB" }}>#1</span> Real Estate
-          </span>
-          <span style={{ display: "block" }}>
-            Ecosystem for{" "}
-            <RotatingWord
-              words={["Marketing", "Leasing", "Leads", "Conversion", "Ads", "Growth", "Discovery", "Occupancy"]}
-            />
+          <span style={{ display: "block" }}>Your leasing data.</span>
+          <span style={{ display: "block", color: "#2563EB" }}>
+            Finally working for you.
           </span>
         </span>
       }
-      subhead={
-        <>
-          LeaseStack syncs your site, ads, chatbot, online presence, and buyer & seller audience data on one platform, built for real estate operators and brokers who love AI.
-        </>
-      }
+      subhead={<>{hero.subhead}</>}
       ctas={[
-        { label: "Book a demo", href: "/onboarding" },
-        { label: "See it live", href: "/demo", variant: "secondary" },
+        { label: hero.primaryCta, href: hero.primaryHref },
+        { label: hero.secondaryCta, href: hero.secondaryHref, variant: "secondary" },
       ]}
       trust={[
-        { value: "14 days", label: "Call to live" },
-        { value: "One",     label: "One login" },
-        { value: "Zero",    label: "No contracts" },
+        { value: "100%", label: "Spend tracked to lease" },
+        { value: "4-8 wk", label: "Pacing alert lead time" },
+        { value: "$0",    label: "Pilot. No commitment." },
       ]}
       artifact={<ConfigTabs />}
     />

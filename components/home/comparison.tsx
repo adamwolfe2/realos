@@ -5,20 +5,20 @@ export function Comparison() {
   return (
     <section
       style={{
-        backgroundColor: "#f5f4ed",
-        borderTop: "1px solid #f0eee6",
+        backgroundColor: "#FFFFFF",
+        borderTop: "1px solid #E2E8F0",
       }}
     >
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
         <div className="max-w-3xl mb-12">
           <p className="eyebrow mb-4">{comparison.eyebrow}</p>
-          <h2 className="heading-section" style={{ color: "#141413" }}>
+          <h2 className="heading-section" style={{ color: "#1E2A3A" }}>
             {comparison.headline}
           </h2>
           <p
             className="mt-4 max-w-2xl"
             style={{
-              color: "#5e5d59",
+              color: "#64748B",
               fontFamily: "var(--font-sans)",
               fontSize: "17px",
               lineHeight: 1.6,
@@ -38,9 +38,9 @@ export function Comparison() {
               scrollSnapAlign: "start",
               width: "88vw",
               maxWidth: "480px",
-              backgroundColor: "#faf9f5",
+              backgroundColor: "#F1F5F9",
               borderRadius: "16px",
-              boxShadow: "0 0 0 1px #f0eee6",
+              boxShadow: "0 0 0 1px #E2E8F0",
             }}
           >
             <div className="flex items-center gap-3 mb-6">
@@ -50,8 +50,8 @@ export function Comparison() {
                   width: "40px",
                   height: "40px",
                   borderRadius: "12px",
-                  backgroundColor: "#f0eee6",
-                  color: "#87867f",
+                  backgroundColor: "#E2E8F0",
+                  color: "#94A3B8",
                 }}
                 aria-hidden="true"
               >
@@ -65,7 +65,7 @@ export function Comparison() {
               <p
                 className="inline-flex items-center gap-2"
                 style={{
-                  color: "#87867f",
+                  color: "#94A3B8",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   letterSpacing: "0.14em",
@@ -94,11 +94,11 @@ export function Comparison() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "15px",
-                    color: "#5e5d59",
+                    color: "#64748B",
                     lineHeight: 1.55,
                     paddingTop: "14px",
                     paddingBottom: "14px",
-                    borderTop: i > 0 ? "1px solid #f0eee6" : "none",
+                    borderTop: i > 0 ? "1px solid #E2E8F0" : "none",
                   }}
                 >
                   <span
@@ -108,8 +108,8 @@ export function Comparison() {
                       width: "20px",
                       height: "20px",
                       borderRadius: "50%",
-                      backgroundColor: "#f0eee6",
-                      color: "#87867f",
+                      backgroundColor: "#E2E8F0",
+                      color: "#94A3B8",
                       marginTop: "2px",
                     }}
                   >
@@ -136,7 +136,7 @@ export function Comparison() {
               maxWidth: "480px",
               backgroundColor: "#ffffff",
               borderRadius: "16px",
-              boxShadow: "0 0 0 1px #f0eee6",
+              boxShadow: "0 0 0 1px #E2E8F0",
             }}
           >
             <div className="flex items-center gap-3 mb-6">
@@ -190,11 +190,11 @@ export function Comparison() {
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "15px",
-                    color: "#141413",
+                    color: "#1E2A3A",
                     lineHeight: 1.55,
                     paddingTop: "14px",
                     paddingBottom: "14px",
-                    borderTop: i > 0 ? "1px solid #f0eee6" : "none",
+                    borderTop: i > 0 ? "1px solid #E2E8F0" : "none",
                   }}
                 >
                   <span

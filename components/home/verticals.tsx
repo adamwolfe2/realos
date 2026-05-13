@@ -25,13 +25,13 @@ const VERTICALS = [
 
 export function Verticals() {
   return (
-    <section style={{ backgroundColor: "#f5f4ed", borderTop: "1px solid #f0eee6" }}>
+    <section style={{ backgroundColor: "#FFFFFF", borderTop: "1px solid #E2E8F0" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32">
         <div className="max-w-3xl mb-14">
           <p className="eyebrow mb-4">Same platform, tailored</p>
           <h2
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
               fontSize: "clamp(28px, 3.2vw, 42px)",
               fontWeight: 700,
@@ -51,7 +51,7 @@ export function Verticals() {
               style={{
                 backgroundColor: "#ffffff",
                 borderRadius: "16px",
-                boxShadow: "0 0 0 1px #f0eee6",
+                boxShadow: "0 0 0 1px #E2E8F0",
                 transition: "box-shadow 0.2s ease, transform 0.2s ease",
               }}
             >
@@ -59,7 +59,7 @@ export function Verticals() {
                 <div>
                   <h3
                     style={{
-                      color: "#141413",
+                      color: "#1E2A3A",
                       fontFamily: "var(--font-sans)",
                       fontSize: "22px",
                       fontWeight: 600,
@@ -72,7 +72,7 @@ export function Verticals() {
                   <p
                     className="mt-3 max-w-md"
                     style={{
-                      color: "#5e5d59",
+                      color: "#64748B",
                       fontFamily: "var(--font-sans)",
                       fontSize: "15px",
                       lineHeight: 1.6,
@@ -87,8 +87,8 @@ export function Verticals() {
                     width: "36px",
                     height: "36px",
                     borderRadius: "50%",
-                    color: "#5e5d59",
-                    boxShadow: "0 0 0 1px #e8e6dc",
+                    color: "#64748B",
+                    boxShadow: "0 0 0 1px #E2E8F0",
                   }}
                   aria-hidden="true"
                 >

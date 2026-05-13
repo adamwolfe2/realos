@@ -3,58 +3,60 @@ import { VerticalLanding } from "@/components/platform/vertical-landing";
 import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
 
 export const metadata: Metadata = {
-  title: "Student housing marketing that actually fills beds",
+  title: "Student housing leasing intelligence that fills beds on schedule",
   description:
-    "Managed marketing platform for student housing operators: custom site, PMS-synced listings, AI chatbot, identity pixel, Google + Meta ads, international-student instant-approval funnels.",
+    "LeaseStack tells student housing operators which channels are signing leases, when lease-up pacing is slipping, and what to do next. Built by an asset manager who ran the Telegraph Commons lease-up directly.",
 };
 
 export default function StudentHousingPage() {
   return (
     <VerticalLanding
       eyebrow="Student housing"
-      headline="Fill beds the way the national brands do,"
-      headlineAccent="at independent-operator cost."
-      subhead="Student housing leasing runs on a 3-month sprint. Applications cluster in the fall, half your stock is gone by December, and your agency is still writing a creative brief. We replace the whole stack with software that drives leasing velocity and shows you exactly where every dollar went."
-      caption="Leasing velocity tracked live · Black box marketing solved · Monday AM report, no login required"
+      headline="Your lease-up data."
+      headlineAccent="Finally working for you."
+      subhead="Student housing runs on a pre-lease calendar that does not forgive a slow August. LeaseStack is the leasing intelligence platform that tells you which channels signed your last twelve leases, when your pacing is falling behind the academic calendar, and exactly what to do about it."
+      caption="Know your lease-up is falling behind before it shows up in occupancy. Built by an asset manager who managed the Telegraph Commons lease-up directly."
       artifact={<ChatDemo />}
+      painsHeading="What student housing operators tell us."
+      modulesHeading="What you get the day you turn it on."
       pains={[
         {
-          title: "Leasing velocity you can't see",
-          body: "Your current tools give you verbal reports on how market response 'feels.' By the time you know you're underperforming, it's too late to avoid dropping rates.",
+          title: "Pacing slips silently",
+          body: "By the time monthly occupancy reports flag a slow lease-up, the academic calendar is already against you. You needed to see it eight weeks ago.",
         },
         {
-          title: "Digital marketing is a black box",
-          body: "You're writing a check every month and getting a report that doesn't tell you which channel produced which lease. That ends here.",
+          title: "Channel spend with no answer",
+          body: "The agency invoice arrives, the leases get signed, and nobody can tell you which campaign drove which signing. The number you actually need is missing from every report.",
         },
         {
-          title: "Managers reporting in spreadsheets",
-          body: "A Google Sheet with lease-up stats, sent weekly. No trend line, no channel attribution, no early warning. That's not a strategy, that's a guess.",
+          title: "Parent co-signers and international applicants",
+          body: "Two different audiences, two different conversion paths, and a leasing office that handles both on top of resident relations. The tools you have were not built for this.",
         },
       ]}
       modules={[
         {
+          title: "Lease-up pacing built around the academic calendar",
+          body: "Daily pacing against your pre-lease curve. Know if you are ahead, on track, or behind, by floor plan, by bed type, by campus.",
+        },
+        {
+          title: "Channel attribution down to the signed lease",
+          body: "Know which channel drove your last twelve lease signings. Spend, leads, tours, applications, signed leases, all tied to the source that produced them.",
+        },
+        {
+          title: "Campus-proximity targeting",
+          body: "Audience pools built around the campuses your residents actually attend, not metro-area broadcasts. Spend goes where the leases come from.",
+        },
+        {
           title: "Live PMS-synced floor plans",
-          body: "Every unit on your site matches AppFolio within the hour. No stale PDFs, no phone tag with the leasing office.",
+          body: "Every unit on your site matches your PMS within the hour. No stale PDFs, no phone calls to the leasing office to confirm what is still available.",
         },
         {
-          title: "AI chatbot — 24/7 leasing agent",
-          body: "Captures leads at 2am, routes international applicants to the right flow, and hands hot leads to your team with full conversation context.",
+          title: "AI leasing assistant for after-hours inquiries",
+          body: "Answers floor plan, pricing, and pet-policy questions overnight, routes international and parent-co-signer threads into the right intake, and hands warm leads to your team with full context in the morning.",
         },
         {
-          title: "Marketing ROI attribution",
-          body: "Spend, leads, applications, and signed leases per channel. Finally see which campaigns fill beds and which ones burn budget.",
-        },
-        {
-          title: "Leasing velocity early warning",
-          body: "AI detects when your lead-to-tour pipeline starts cooling, weeks before it shows up in occupancy. Enough time to act before you have to drop rates.",
-        },
-        {
-          title: "Monthly AM report, no login required",
-          body: "Your asset manager gets a clean monthly report emailed automatically. Leads, tours, applications, occupancy by bed type. No portal access needed.",
-        },
-        {
-          title: "Student referral program",
-          body: "Every resident gets a unique referral link. They share it with their network. You track who converted, we handle the payouts.",
+          title: "Monday morning report for the AM",
+          body: "A clean leasing report lands in the asset manager's inbox every Monday. Pacing, channel performance, what changed week over week, what to act on this week. No login required.",
         },
       ]}
     />

@@ -345,7 +345,7 @@ export async function sendTeammateInviteEmail(input: {
     <p style="margin:0 0 14px;font-size:13px;line-height:1.6;color:#5b5b5b;">
       ${inviterContact}
     </p>
-    <p style="margin:0 0 12px;font-size:12px;line-height:1.6;color:#87867f;">
+    <p style="margin:0 0 12px;font-size:12px;line-height:1.6;color:#94A3B8;">
       This link expires in ${expires} days. If you weren't expecting this email,
       you can safely ignore it — no account is created until you click through.
     </p>
@@ -396,7 +396,7 @@ export async function sendTeammateInviteEmail(input: {
 function row(label: string, value: string): string {
   return `
     <tr>
-      <td style="padding:6px 12px 6px 0;font-size:12px;color:#87867f;text-transform:uppercase;letter-spacing:0.08em;width:40%;">${escape(
+      <td style="padding:6px 12px 6px 0;font-size:12px;color:#94A3B8;text-transform:uppercase;letter-spacing:0.08em;width:40%;">${escape(
         label
       )}</td>
       <td style="padding:6px 0;font-size:13px;color:#0a0a0a;">${escape(value)}</td>

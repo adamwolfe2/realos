@@ -40,9 +40,9 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: `${BRAND_NAME}, managed marketing for real estate operators`,
+  title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
   description:
-    "Custom marketing stack for real estate operators: website, live listings, AI chatbot, ad pixel, ad creative. Managed by us. Launched in two weeks.",
+    "LeaseStack tells real estate operators exactly what their digital marketing is doing, and exactly what to do about it. One platform, every signal, on your domain.",
   metadataBase: new URL(portalConfig.appUrl),
   icons: {
     icon: [
@@ -53,12 +53,12 @@ export const metadata: Metadata = {
     ],
     apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
     shortcut: "/favicon.svg",
-    other: [{ rel: "mask-icon", url: "/favicon.svg", color: "#2A4DBC" }],
+    other: [{ rel: "mask-icon", url: "/favicon.svg", color: "#2563EB" }],
   },
   openGraph: {
-    title: `${BRAND_NAME}, managed marketing for real estate operators`,
+    title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
     description:
-      "Custom marketing stack for real estate operators. Managed by us. Launched in two weeks.",
+      "Your leasing data. Finally working for you. Every lead source, every channel, every conversion: tracked, aggregated, and acted on.",
     type: "website",
     siteName: BRAND_NAME,
     images: [
@@ -66,15 +66,15 @@ export const metadata: Metadata = {
         url: "/logos/social-background.png",
         width: 1200,
         height: 630,
-        alt: `${BRAND_NAME}, managed marketing for real estate operators`,
+        alt: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${BRAND_NAME}, managed marketing for real estate operators`,
+    title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
     description:
-      "Custom marketing stack for real estate operators. Managed by us.",
+      "Your leasing data. Finally working for you.",
     images: ["/logos/social-background.png"],
   },
 };
@@ -85,7 +85,7 @@ const organizationSchema = {
   name: portalConfig.brandName,
   url: portalConfig.appUrl,
   description:
-    `${portalConfig.brandName} is a managed marketing SaaS platform for real estate operators.`,
+    `${portalConfig.brandName} is a leasing intelligence platform for real estate operators. It tracks every marketing signal, attributes spend to lease signings, and tells operators what to do next.`,
   contactPoint: {
     "@type": "ContactPoint",
     email: portalConfig.contactEmail,

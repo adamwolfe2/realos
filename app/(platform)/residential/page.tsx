@@ -5,9 +5,9 @@ import { Reveal } from "@/components/platform/reveal";
 import { PortfolioOccupancy } from "@/components/platform/artifacts/portfolio-occupancy";
 
 export const metadata: Metadata = {
-  title: "Residential real estate marketing",
+  title: "Residential leasing intelligence",
   description:
-    "Managed marketing platform for residential real estate operators across student housing, multifamily, senior living, co-living, and single-family rental.",
+    "Leasing intelligence platform for residential operators across student housing, multifamily, senior living, build-to-rent, and single-family rental.",
 };
 
 const CARDS = [
@@ -15,7 +15,7 @@ const CARDS = [
     href: "/student-housing",
     title: "Student housing",
     body:
-      "Sprint pricing, international applicants, turn-heavy calendars. Our wedge vertical, live today.",
+      "Sprint pricing, international applicants, turn-heavy calendars. Live today on a real lease-up.",
     tag: "Live",
     accent: "#2563EB",
   },
@@ -23,7 +23,7 @@ const CARDS = [
     href: "/multifamily",
     title: "Multifamily",
     body:
-      "Portfolio-level dashboards, fair-housing compliant creative, per-property retargeting pools.",
+      "Portfolio-level pacing reads, source-to-lease attribution, per-property recommendations.",
     tag: "Live",
     accent: "#2563EB",
   },
@@ -31,15 +31,15 @@ const CARDS = [
     href: "/senior-living",
     title: "Senior living",
     body:
-      "Patient nurture, family-first copy, compliance-aware forms and ads.",
+      "Family-first inquiry handling, longer-cycle pacing models, compliance-aware forms.",
     tag: "Live",
     accent: "#2563EB",
   },
   {
     href: "/audiences",
-    title: "Audience Sync",
+    title: "SFR and build-to-rent",
     body:
-      "Verified buyer and seller segments piped to your ad accounts and CRM. Cross-vertical, live today.",
+      "For single-asset operators and BTR portfolios. Same data engine, scaled to single-asset operators.",
     tag: "Live",
     accent: "#2563EB",
   },
@@ -47,28 +47,28 @@ const CARDS = [
 
 export default function ResidentialHub() {
   return (
-    <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <SplitHero
         eyebrow="Residential real estate"
-        headline="One platform."
-        headlineAccent="Every residential vertical."
-        subhead="The modules are the same. The copy, the funnels, the KPIs, and the compliance guardrails shift per audience. Pick your vertical to see the specifics, or keep scrolling for the rollup."
+        headline="Your leasing data."
+        headlineAccent="Finally working for you."
+        subhead="One data engine across every residential vertical. The pacing models, the source-to-lease read, and the operator-written weekly note are the same. The KPIs and the compliance guardrails shift per audience. Pick your vertical to see the specifics, or keep scrolling for the rollup."
         ctas={[
-          { label: "Book a demo", href: "/onboarding" },
-          { label: "See it live", href: "/demo", variant: "secondary" },
+          { label: "Start the free pilot", href: "/onboarding" },
+          { label: "See it on a live property", href: "/demo", variant: "secondary" },
         ]}
-        caption="Three residential verticals live. Audience Sync shipping today. Commercial later this year."
+        caption="Live today at Telegraph Commons. SFR and build-to-rent on the same engine."
         artifact={<PortfolioOccupancy label="Your residential portfolio" />}
       />
 
-      <section style={{ backgroundColor: "#faf9f5" }}>
+      <section style={{ backgroundColor: "#F1F5F9" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <Reveal>
             <div className="text-center mb-14">
               <p
                 className="mb-4"
                 style={{
-                  color: "#87867f",
+                  color: "#94A3B8",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   letterSpacing: "0.18em",
@@ -81,14 +81,14 @@ export default function ResidentialHub() {
               <h2
                 className="mx-auto max-w-[720px]"
                 style={{
-                  color: "#141413",
+                  color: "#1E2A3A",
                   fontFamily: "var(--font-display)",
                   fontSize: "clamp(28px, 3.4vw, 40px)",
                   fontWeight: 500,
                   lineHeight: 1.15,
                 }}
               >
-                Three playbooks. Same platform underneath.
+                Different playbooks. Same data engine underneath.
               </h2>
             </div>
           </Reveal>
@@ -102,7 +102,7 @@ export default function ResidentialHub() {
                   style={{
                     backgroundColor: "#ffffff",
                     borderRadius: "16px",
-                    boxShadow: "0 0 0 1px #f0eee6",
+                    boxShadow: "0 0 0 1px #E2E8F0",
                     transition: "transform 260ms ease, box-shadow 260ms ease",
                   }}
                 >
@@ -134,7 +134,7 @@ export default function ResidentialHub() {
                   <h3
                     className="mt-5"
                     style={{
-                      color: "#141413",
+                      color: "#1E2A3A",
                       fontFamily: "var(--font-display)",
                       fontSize: "24px",
                       fontWeight: 500,
@@ -146,7 +146,7 @@ export default function ResidentialHub() {
                   <p
                     className="mt-3"
                     style={{
-                      color: "#5e5d59",
+                      color: "#64748B",
                       fontFamily: "var(--font-sans)",
                       fontSize: "14.5px",
                       lineHeight: 1.6,
@@ -161,7 +161,7 @@ export default function ResidentialHub() {
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
+      <section style={{ backgroundColor: "#F1F5F9", borderTop: "1px solid #E2E8F0" }}>
         <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
           <Reveal>
             <p
@@ -182,7 +182,7 @@ export default function ResidentialHub() {
             <h2
               className="mx-auto max-w-[760px]"
               style={{
-                color: "#141413",
+                color: "#1E2A3A",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(26px, 3.6vw, 40px)",
                 fontWeight: 500,
@@ -190,13 +190,13 @@ export default function ResidentialHub() {
                 letterSpacing: "-0.008em",
               }}
             >
-              Same site, same pixel, same chatbot, same ads studio. The playbook changes per vertical. The software doesn't fork.
+              Same channel reads, same pacing models, same operator-written weekly note. The playbook changes per vertical. The data engine does not fork.
             </h2>
           </Reveal>
           <Reveal delay={140}>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
               <Link href="/onboarding" className="btn-primary">
-                Book a demo
+                Start the free pilot
               </Link>
               <Link href="/commercial" className="btn-secondary">
                 Commercial roadmap

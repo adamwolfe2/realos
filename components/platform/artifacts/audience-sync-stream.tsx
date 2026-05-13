@@ -23,10 +23,10 @@ const POOL: Omit<SyncEvent, "id" | "ago">[] = [
 ];
 
 const ACCENT = "#2563EB";
-const INK = "#141413";
-const MUTED = "#87867f";
-const BORDER = "#f0eee6";
-const PARCHMENT = "#faf9f5";
+const INK = "#1E2A3A";
+const MUTED = "#94A3B8";
+const BORDER = "#E2E8F0";
+const PARCHMENT = "#F1F5F9";
 
 export function AudienceSyncStream() {
   const [rows, setRows] = useState<SyncEvent[]>(() =>
@@ -63,7 +63,7 @@ export function AudienceSyncStream() {
       style={{
         backgroundColor: PARCHMENT,
         borderRadius: "12px",
-        boxShadow: "0 0 0 1px " + BORDER + ", 0 24px 60px -30px rgba(20,20,19,0.18)",
+        boxShadow: "0 0 0 1px " + BORDER + ", 0 24px 60px -30px rgba(30, 42, 58,0.18)",
         overflow: "hidden",
       }}
     >

@@ -32,7 +32,7 @@ export function VerticalLanding({
   caption,
 }: VerticalLandingProps) {
   return (
-    <div style={{ backgroundColor: "#f5f4ed", color: "#4d4c48" }}>
+    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <SplitHero
         eyebrow={eyebrow}
         headline={headline}
@@ -40,20 +40,20 @@ export function VerticalLanding({
         subhead={subhead}
         ctas={[
           { label: "Book a demo", href: ctaHref },
-          { label: "See it live", href: "/demo", variant: "secondary" },
+          { label: "See the data", href: "/demo", variant: "secondary" },
         ]}
         caption={caption}
         artifact={artifact}
       />
 
-      <section style={{ backgroundColor: "#faf9f5" }}>
+      <section style={{ backgroundColor: "#F1F5F9" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <Reveal>
             <div className="text-center mb-14">
               <p
                 className="mb-4"
                 style={{
-                  color: "#87867f",
+                  color: "#94A3B8",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   letterSpacing: "0.18em",
@@ -66,7 +66,7 @@ export function VerticalLanding({
               <h2
                 className="mx-auto max-w-[720px]"
                 style={{
-                  color: "#141413",
+                  color: "#1E2A3A",
                   fontFamily: "var(--font-display)",
                   fontSize: "clamp(28px, 3.4vw, 40px)",
                   fontWeight: 500,
@@ -86,7 +86,7 @@ export function VerticalLanding({
                   style={{
                     backgroundColor: "#ffffff",
                     borderRadius: "16px",
-                    boxShadow: "0 0 0 1px #f0eee6",
+                    boxShadow: "0 0 0 1px #E2E8F0",
                     transition: "transform 260ms ease, box-shadow 260ms ease",
                   }}
                 >
@@ -104,7 +104,7 @@ export function VerticalLanding({
                   <h3
                     className="mt-4"
                     style={{
-                      color: "#141413",
+                      color: "#1E2A3A",
                       fontFamily: "var(--font-display)",
                       fontSize: "20px",
                       fontWeight: 500,
@@ -116,7 +116,7 @@ export function VerticalLanding({
                   <p
                     className="mt-3"
                     style={{
-                      color: "#5e5d59",
+                      color: "#64748B",
                       fontFamily: "var(--font-sans)",
                       fontSize: "14.5px",
                       lineHeight: 1.6,
@@ -131,14 +131,14 @@ export function VerticalLanding({
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#f5f4ed" }}>
+      <section style={{ backgroundColor: "#FFFFFF" }}>
         <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
           <Reveal>
             <div className="text-center mb-14">
               <p
                 className="mb-4"
                 style={{
-                  color: "#87867f",
+                  color: "#94A3B8",
                   fontFamily: "var(--font-mono)",
                   fontSize: "11px",
                   letterSpacing: "0.18em",
@@ -151,7 +151,7 @@ export function VerticalLanding({
               <h2
                 className="mx-auto max-w-[720px]"
                 style={{
-                  color: "#141413",
+                  color: "#1E2A3A",
                   fontFamily: "var(--font-display)",
                   fontSize: "clamp(28px, 3.4vw, 40px)",
                   fontWeight: 500,
@@ -169,9 +169,9 @@ export function VerticalLanding({
                 <div
                   className="p-7 h-full flex gap-4"
                   style={{
-                    backgroundColor: "#faf9f5",
+                    backgroundColor: "#F1F5F9",
                     borderRadius: "16px",
-                    boxShadow: "0 0 0 1px #f0eee6",
+                    boxShadow: "0 0 0 1px #E2E8F0",
                   }}
                 >
                   <span
@@ -192,7 +192,7 @@ export function VerticalLanding({
                   <div className="flex-1">
                     <h3
                       style={{
-                        color: "#141413",
+                        color: "#1E2A3A",
                         fontFamily: "var(--font-display)",
                         fontSize: "19px",
                         fontWeight: 500,
@@ -204,7 +204,7 @@ export function VerticalLanding({
                     <p
                       className="mt-2"
                       style={{
-                        color: "#5e5d59",
+                        color: "#64748B",
                         fontFamily: "var(--font-sans)",
                         fontSize: "14.5px",
                         lineHeight: 1.6,
@@ -220,7 +220,7 @@ export function VerticalLanding({
         </div>
       </section>
 
-      <section style={{ backgroundColor: "#faf9f5", borderTop: "1px solid #f0eee6" }}>
+      <section style={{ backgroundColor: "#F1F5F9", borderTop: "1px solid #E2E8F0" }}>
         <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-24 md:py-28 text-center">
           <Reveal>
             <p
@@ -241,7 +241,7 @@ export function VerticalLanding({
             <h2
               className="mx-auto max-w-[760px]"
               style={{
-                color: "#141413",
+                color: "#1E2A3A",
                 fontFamily: "var(--font-display)",
                 fontSize: "clamp(30px, 3.8vw, 44px)",
                 fontWeight: 500,
@@ -256,7 +256,7 @@ export function VerticalLanding({
             <p
               className="mx-auto mt-5 max-w-[620px]"
               style={{
-                color: "#5e5d59",
+                color: "#64748B",
                 fontFamily: "var(--font-sans)",
                 fontSize: "16px",
                 lineHeight: 1.6,
@@ -273,7 +273,7 @@ export function VerticalLanding({
                 Book a demo
               </Link>
               <Link href="/demo" className="btn-secondary">
-                See it live
+                See the data
               </Link>
             </div>
           </Reveal>

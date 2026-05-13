@@ -8,20 +8,20 @@ export function LiveExample() {
     <section
       id="live"
       style={{
-        backgroundColor: "#f5f4ed",
-        borderTop: "1px solid #f0eee6",
+        backgroundColor: "#FFFFFF",
+        borderTop: "1px solid #E2E8F0",
       }}
     >
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
         <div className="max-w-3xl mb-12">
           <p className="eyebrow mb-4">{liveExample.eyebrow}</p>
-          <h2 className="heading-section" style={{ color: "#141413" }}>
+          <h2 className="heading-section" style={{ color: "#1E2A3A" }}>
             {liveExample.headline}
           </h2>
           <p
             className="mt-4 max-w-2xl"
             style={{
-              color: "#5e5d59",
+              color: "#64748B",
               fontFamily: "var(--font-sans)",
               fontSize: "17px",
               lineHeight: 1.6,
@@ -81,7 +81,7 @@ function LiveCard({
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 0 0 1px #f0eee6",
+        boxShadow: "0 0 0 1px #E2E8F0",
         transition: "box-shadow 0.2s ease, transform 0.2s ease",
       }}
     >
@@ -110,7 +110,7 @@ function LiveCard({
           <p
             className="mb-2 inline-flex items-center gap-2"
             style={{
-              color: "#87867f",
+              color: "#94A3B8",
               fontFamily: "var(--font-mono)",
               fontSize: "11px",
               letterSpacing: "0.12em",
@@ -125,18 +125,18 @@ function LiveCard({
                 width: "6px",
                 height: "6px",
                 borderRadius: "50%",
-                backgroundColor: "#3a7d44",
+                backgroundColor: "#16A34A",
               }}
             />
             {badge}
           </p>
-          <h3 className="heading-sub" style={{ color: "#141413" }}>
+          <h3 className="heading-sub" style={{ color: "#1E2A3A" }}>
             {label}
           </h3>
           <p
             className="mt-3 max-w-md"
             style={{
-              color: "#5e5d59",
+              color: "#64748B",
               fontFamily: "var(--font-sans)",
               fontSize: "15px",
               lineHeight: 1.6,
@@ -151,8 +151,8 @@ function LiveCard({
             width: "36px",
             height: "36px",
             borderRadius: "50%",
-            color: "#5e5d59",
-            boxShadow: "0 0 0 1px #e8e6dc",
+            color: "#64748B",
+            boxShadow: "0 0 0 1px #E2E8F0",
           }}
           aria-hidden="true"
         >

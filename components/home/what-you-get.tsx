@@ -2,61 +2,61 @@ import { BrandIcon, DeliverableIcon, type Deliverable } from "./shared-icons";
 
 const DELIVERABLES: Deliverable[] = [
   {
-    key:   "site",
-    title: "Premium marketing site",
-    body:  "Built on your domain, written in your voice, designed to convert prospects into tours.",
-    icon:  "home",
-    logos: [{ brand: "vercel" }, { brand: "figma" }],
+    key:   "report",
+    title: "The report that writes itself",
+    body:  "Every Monday: leases attributed to source, spend summary, pacing vs. last cycle, anomalies flagged, and the three actions to take this week.",
+    icon:  "report",
+    logos: [{ brand: "resend" }],
     big:   true,
   },
   {
-    key:   "ads",
-    title: "Managed ad campaigns",
-    body:  "Meta, Google, and TikTok. Running, pacing, and shipping new creative every 48 hours.",
-    icon:  "ads",
-    logos: [{ brand: "meta" }, { brand: "google" }, { brand: "tiktok" }],
-  },
-  {
-    key:   "chatbot",
-    title: "AI chatbot, 24/7",
-    body:  "Trained on your units, pricing rules, and application process. Captures leads at 2am so your team doesn't have to.",
-    icon:  "chat",
-    logos: [{ brand: "claude" }],
-  },
-  {
     key:   "pixel",
-    title: "Visitor tracking pixel",
-    body:  "Real names and emails on your anonymous traffic. Identified prospects feed your CRM and ad audiences.",
+    title: "Know who visited your site",
+    body:  "Not just how many. Names and emails on a meaningful share of your anonymous traffic, fed straight into your CRM.",
     icon:  "pixel",
     logos: [{ brand: "ga" }, { brand: "linkedin" }],
   },
   {
+    key:   "chatbot",
+    title: "An assistant that captures leads at 2am",
+    body:  "Trained on your units, pricing rules, and application process. Hot leads land with your team the next morning, thread attached.",
+    icon:  "chat",
+    logos: [{ brand: "claude" }],
+  },
+  {
+    key:   "ads",
+    title: "Ads with attribution to the lease",
+    body:  "Google and Meta, geo-fenced and retargeted, creative refreshed weekly. Spend tied back to lease signings, not impressions.",
+    icon:  "ads",
+    logos: [{ brand: "meta" }, { brand: "google" }, { brand: "tiktok" }],
+  },
+  {
+    key:   "site",
+    title: "A site that ranks where prospects look",
+    body:  "Built on your domain. Fast, search-friendly, updated by live listing sync. Designed to convert traffic into tours.",
+    icon:  "home",
+    logos: [{ brand: "vercel" }, { brand: "figma" }],
+  },
+  {
     key:   "seo",
-    title: "AI-search discovery",
-    body:  "Your pages written to be quoted by ChatGPT, Perplexity, Claude, Gemini, and ranked #1 on Google.",
+    title: "Pages quoted by AI search",
+    body:  "Written to rank in Google and to be cited by ChatGPT, Perplexity, Claude, and Gemini. Per-location coverage.",
     icon:  "search",
     logos: [{ brand: "chatgpt" }, { brand: "perplexity" }, { brand: "claude" }, { brand: "gemini" }, { brand: "google" }],
   },
   {
     key:   "tours",
-    title: "Tour booking, inline",
-    body:  "Prospects book tours from any page, any channel. Connected to your leasing team's calendar.",
+    title: "Tour booking, every page",
+    body:  "Prospects book tours from any page, any channel. Connected to your leasing team's calendar, attribution attached.",
     icon:  "cal",
     logos: [{ brand: "cal" }],
   },
   {
     key:   "crm",
-    title: "CRM and lead routing",
-    body:  "Every lead lands in one place. Hot threads ping your leasing team in Slack in under 60 seconds.",
+    title: "One pipeline. Every channel.",
+    body:  "Forms, exit intent, chat, calls, scheduling links. Every lead lands in one place, source attached, routed to your team in Slack.",
     icon:  "mail",
     logos: [{ brand: "resend" }, { brand: "slack" }, { brand: "appfolio" }],
-  },
-  {
-    key:   "report",
-    title: "Monday owner report",
-    body:  "One PDF every Monday. Leads, tours, applications, leases, cost per tour, cost per lease. Delivered to owner and GM.",
-    icon:  "report",
-    logos: [{ brand: "resend" }],
     big:   true,
   },
 ];
@@ -65,50 +65,39 @@ export function WhatYouGet() {
   return (
     <section
       style={{
-        backgroundColor: "#faf9f5",
-        borderTop: "1px solid #f0eee6",
+        backgroundColor: "#F1F5F9",
+        borderTop: "1px solid #E2E8F0",
       }}
     >
       <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-20 md:py-28">
         <div className="max-w-3xl mb-12">
-          <p
-            className="mb-4"
-            style={{
-              color: "#2563EB",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
-              fontWeight: 600,
-            }}
-          >
-            What's in your ecosystem
-          </p>
+          <p className="eyebrow mb-4">What you get</p>
           <h2
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
               fontSize: "clamp(32px, 4.2vw, 52px)",
               fontWeight: 700,
-              lineHeight: 1.08,
-              letterSpacing: "-0.02em",
+              lineHeight: 1.06,
+              letterSpacing: "-0.025em",
             }}
           >
-            Eight surfaces, one platform,
+            Full visibility.
             <br />
-            <span style={{ color: "#2563EB" }}>live in fourteen days.</span>
+            <span style={{ color: "#2563EB" }}>Zero extra work.</span>
           </h2>
           <p
             className="mt-5 max-w-2xl"
             style={{
-              color: "#5e5d59",
+              color: "#64748B",
               fontFamily: "var(--font-sans)",
-              fontSize: "18px",
+              fontSize: "17px",
               lineHeight: 1.6,
             }}
           >
-            Every surface your marketing team would build. Shipped, integrated, and managed for you.
-            You approve. We operate.
+            Every lead source, every channel, every conversion. Tracked,
+            aggregated, and reported automatically. No spreadsheets. No agency
+            black boxes.
           </p>
         </div>
 
@@ -141,7 +130,7 @@ function DeliverableCard({ d }: { d: Deliverable }) {
       style={{
         backgroundColor: "#ffffff",
         borderRadius: "16px",
-        boxShadow: "0 0 0 1px #f0eee6",
+        boxShadow: "0 0 0 1px #E2E8F0",
         transition: "transform 260ms ease, box-shadow 260ms ease",
       }}
     >
@@ -168,18 +157,19 @@ function DeliverableCard({ d }: { d: Deliverable }) {
       </div>
       <h3
         style={{
-          color: "#141413",
+          color: "#1E2A3A",
           fontFamily: "var(--font-display)",
-          fontSize: "20px",
-          fontWeight: 500,
-          lineHeight: 1.2,
+          fontSize: "19px",
+          fontWeight: 600,
+          lineHeight: 1.22,
+          letterSpacing: "-0.01em",
         }}
       >
         {d.title}
       </h3>
       <p
         style={{
-          color: "#5e5d59",
+          color: "#64748B",
           fontFamily: "var(--font-sans)",
           fontSize: "14px",
           lineHeight: 1.55,
@@ -260,15 +250,15 @@ function GrowthTimeline() {
           <h3
             className="mt-2"
             style={{
-              color: "#141413",
+              color: "#1E2A3A",
               fontFamily: "var(--font-display)",
               fontSize: "clamp(26px, 3.2vw, 38px)",
-              fontWeight: 500,
-              lineHeight: 1.15,
-              letterSpacing: "-0.005em",
+              fontWeight: 700,
+              lineHeight: 1.1,
+              letterSpacing: "-0.025em",
             }}
           >
-            Launch on day fourteen. Compound from day one.
+            Live in fourteen days. Compounding from day one.
           </h3>
         </div>
       </div>
@@ -282,7 +272,7 @@ function GrowthTimeline() {
             left: "8%",
             right: "8%",
             height: "2px",
-            background: "linear-gradient(to right, #f0eee6 0%, #2563EB 30%, #2563EB 60%, #f0eee6 100%)",
+            background: "linear-gradient(to right, #E2E8F0 0%, #2563EB 30%, #2563EB 60%, #E2E8F0 100%)",
             opacity: 0.5,
           }}
         />
@@ -295,7 +285,7 @@ function GrowthTimeline() {
               style={{
                 backgroundColor: "#ffffff",
                 borderRadius: "14px",
-                boxShadow: `0 0 0 1px ${isLaunch ? "rgba(37,99,235,0.35)" : "#f0eee6"}`,
+                boxShadow: `0 0 0 1px ${isLaunch ? "rgba(37,99,235,0.35)" : "#E2E8F0"}`,
               }}
             >
               <div className="flex items-center gap-2">
@@ -305,7 +295,7 @@ function GrowthTimeline() {
                     width: "10px",
                     height: "10px",
                     borderRadius: "50%",
-                    backgroundColor: i < 2 ? "#b0aea5" : "#2563EB",
+                    backgroundColor: i < 2 ? "#94A3B8" : "#2563EB",
                     boxShadow: "0 0 0 4px #ffffff",
                     position: "relative",
                     zIndex: 1,
@@ -327,11 +317,12 @@ function GrowthTimeline() {
               <h4
                 className="mt-3"
                 style={{
-                  color: "#141413",
+                  color: "#1E2A3A",
                   fontFamily: "var(--font-display)",
                   fontSize: "18px",
-                  fontWeight: 500,
+                  fontWeight: 600,
                   lineHeight: 1.2,
+                  letterSpacing: "-0.01em",
                 }}
               >
                 {step.title}
@@ -339,7 +330,7 @@ function GrowthTimeline() {
               <p
                 className="mt-2"
                 style={{
-                  color: "#5e5d59",
+                  color: "#64748B",
                   fontFamily: "var(--font-sans)",
                   fontSize: "13px",
                   lineHeight: 1.5,
@@ -351,13 +342,13 @@ function GrowthTimeline() {
                 <p
                   className="mt-3"
                   style={{
-                    color: step.metricTone === "up" ? "#1f7a3a" : "#2563EB",
+                    color: step.metricTone === "up" ? "#16A34A" : "#2563EB",
                     fontFamily: "var(--font-mono)",
                     fontSize: "11px",
                     letterSpacing: "0.06em",
                     fontWeight: 700,
                     padding: "4px 8px",
-                    backgroundColor: step.metricTone === "up" ? "rgba(31,122,58,0.10)" : "rgba(37,99,235,0.10)",
+                    backgroundColor: step.metricTone === "up" ? "rgba(22, 163, 74,0.10)" : "rgba(37,99,235,0.10)",
                     borderRadius: "6px",
                     display: "inline-block",
                   }}

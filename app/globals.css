@@ -101,10 +101,10 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
   --ring-deep:      #9ca3af;
 
   /* ── Status ────────────────────────────────────────────────────────── */
-  --error:          #b53333;
-  --focus-blue:     #3898ec;
-  --success:        #3a7d44;
-  --warning:        #b8860b;
+  --error:          #DC2626;
+  --focus-blue:     #2563EB;
+  --success:        #16A34A;
+  --warning:        #F59E0B;
 
   /* ── Legacy + semantic aliases so older files inherit cleanly ──────── */
   --bg-primary:     var(--parchment);
@@ -271,7 +271,7 @@ body {
   background-color: var(--terracotta);
   color: var(--ivory);
   font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 6px; border: none;
+  border-radius: 3px; border: none;
   box-shadow: 0 0 0 1px var(--terracotta) inset;
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
@@ -287,7 +287,7 @@ body {
   background-color: var(--warm-sand);
   color: var(--charcoal-warm);
   font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 6px; border: none;
+  border-radius: 3px; border: none;
   box-shadow: 0 0 0 1px var(--ring-warm);
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
   cursor: pointer;
@@ -302,7 +302,7 @@ body {
   min-height: 44px; padding: 10px 20px;
   background-color: var(--white); color: var(--near-black);
   font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 6px; border: none;
+  border-radius: 3px; border: none;
   box-shadow: 0 0 0 1px var(--border-cream);
   transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
@@ -313,7 +313,7 @@ body {
   min-height: 44px; padding: 10px 20px;
   background-color: var(--dark-surface); color: var(--ivory);
   font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 6px; border: none;
+  border-radius: 3px; border: none;
   box-shadow: 0 0 0 1px var(--dark-surface);
   transition: background-color 0.2s ease;
 }
@@ -324,7 +324,7 @@ body {
   min-height: 36px; padding: 6px 12px;
   color: var(--near-black);
   font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 6px; border: none; background: transparent;
+  border-radius: 3px; border: none; background: transparent;
   transition: background-color 0.2s ease, color 0.2s ease;
   cursor: pointer;
 }
@@ -333,13 +333,13 @@ body {
 .btn-nav-on-dark:hover { background-color: rgba(255,255,255,0.10); }
 
 /* Back-compat names */
-.btn-accent { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--terracotta); color: var(--ivory); font-family: var(--font-sans); font-size: 15px; font-weight: 500; border-radius: 6px; transition: background-color 0.2s; }
+.btn-accent { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--terracotta); color: var(--ivory); font-family: var(--font-sans); font-size: 15px; font-weight: 500; border-radius: 3px; transition: background-color 0.2s; }
 .btn-accent:hover { background-color: var(--terracotta-hover); }
-.btn-ghost { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--warm-sand); color: var(--charcoal-warm); font-family: var(--font-sans); font-size: 15px; font-weight: 500; border-radius: 6px; box-shadow: 0 0 0 1px var(--ring-warm); }
+.btn-ghost { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--warm-sand); color: var(--charcoal-warm); font-family: var(--font-sans); font-size: 15px; font-weight: 500; border-radius: 3px; box-shadow: 0 0 0 1px var(--ring-warm); }
 .btn-ghost:hover { background-color: var(--border-cream); }
 .btn-blue { composes: btn-accent; }
 .btn-outline { composes: btn-ghost; }
-.btn-outline-white { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border: 1px solid rgba(255,255,255,0.7); color: var(--ivory); background: transparent; font-size: 15px; font-weight: 500; border-radius: 12px; }
+.btn-outline-white { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border: 1px solid rgba(255,255,255,0.7); color: var(--ivory); background: transparent; font-size: 15px; font-weight: 500; border-radius: 3px; }
 .btn-outline-white:hover { background-color: rgba(255,255,255,0.10); }
 
 .link-body { color: var(--charcoal-warm); transition: color 0.2s; }
@@ -361,7 +361,7 @@ body {
 .body-small     { font-family: var(--font-sans); font-size: 15px; line-height: 1.55; font-weight: 400; color: var(--olive-gray); }
 .caption-ui     { font-family: var(--font-sans); font-size: 14px; line-height: 1.43; font-weight: 400; color: var(--olive-gray); }
 .label-mono     { font-family: var(--font-mono); font-size: 11px; line-height: 1.4; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--olive-gray); }
-.eyebrow        { font-family: var(--font-mono); font-size: 11px; line-height: 1.4; font-weight: 500; letter-spacing: 0.18em; text-transform: uppercase; color: var(--olive-gray); }
+.eyebrow        { font-family: var(--font-mono); font-size: 11px; line-height: 1.4; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: #2563EB; }
 
 /* ── Mobile global size reductions (< 768px) ─────────────────────────── */
 @media (max-width: 767px) {
@@ -399,7 +399,7 @@ body {
   display: inline-flex; align-items: center; gap: 0.5rem;
   font-family: var(--font-sans); font-size: 15px; font-weight: 500;
   color: var(--ivory); background-color: var(--terracotta);
-  padding: 10px 20px; border-radius: 12px; text-decoration: none;
+  padding: 10px 20px; border-radius: 3px; text-decoration: none;
   transition: background-color 0.2s;
 }
 .prose .cta-block a:hover { background-color: var(--terracotta-hover); }
