@@ -45,9 +45,9 @@ export function Proof() {
         </p>
 
         <div className="mt-14 flex flex-wrap items-start justify-center gap-x-16 gap-y-8">
-          <BigStat value="One" label="Platform, one login" />
-          <BigStat value="Two" label="Weeks from intake to live" />
-          <BigStat value="Zero" label="Long-term contracts" />
+          <BigStat value="14" label="Days from intake call to live on your domain" />
+          <BigStat value="1" label="Login. Not six vendors, six invoices, six dashboards." />
+          <BigStat value="0" label="Long-term contracts. Month-to-month after launch." />
         </div>
 
         <div className="mt-14 flex flex-col sm:flex-row items-center justify-center gap-3">

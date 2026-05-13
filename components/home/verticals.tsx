@@ -4,27 +4,22 @@ const VERTICALS = [
   {
     href: "/student-housing",
     label: "Student housing",
-    tag: "Pre-lease cycles, parent decision-makers, campus-proximity plays.",
+    tag: "Pre-lease cycles, parent co-signers, campus-proximity targeting. Built around your academic calendar.",
   },
   {
     href: "/multifamily",
     label: "Multifamily",
-    tag: "Portfolio rollups, per-property retargeting, fair-housing-safe creative.",
+    tag: "Portfolio rollups, per-property retargeting, fair-housing-safe creative at every unit count.",
   },
   {
     href: "/senior-living",
     label: "Senior living",
-    tag: "Family-first nurture, patient conversion, compliance-aware forms.",
+    tag: "Family-first nurture sequences, patient conversion timelines, compliance-aware ad creative.",
   },
   {
     href: "/commercial",
     label: "Commercial",
-    tag: "Office, industrial, retail. Broker-aware, spec-sheet driven. Coming soon.",
-  },
-  {
-    href: "/audiences",
-    label: "Audience Sync",
-    tag: "Verified buyer and seller segments. Push live to Meta, Google, and any CRM.",
+    tag: "Office, industrial, and retail. Broker-aware, spec-sheet driven, built for longer decision cycles.",
   },
 ];
 
@@ -44,22 +39,16 @@ export function Verticals() {
               letterSpacing: "-0.02em",
             }}
           >
-            Built for the way your vertical actually operates.
+            Built around how your market actually works.
           </h2>
         </div>
-        <div
-          className="md:grid md:grid-cols-2 gap-3 flex overflow-x-auto md:overflow-visible pb-3 md:pb-0"
-          style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
-        >
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {VERTICALS.map((v) => (
             <Link
               key={v.href}
               href={v.href}
-              className="group flex-shrink-0 md:flex-shrink block p-6 md:p-7"
+              className="group block p-6 md:p-7"
               style={{
-                scrollSnapAlign: "start",
-                width: "82vw",
-                maxWidth: "360px",
                 backgroundColor: "#ffffff",
                 borderRadius: "16px",
                 boxShadow: "0 0 0 1px #f0eee6",
@@ -113,7 +102,7 @@ export function Verticals() {
                   </svg>
                 </span>
               </div>
-            </Link>
+              </Link>
           ))}
         </div>
       </div>

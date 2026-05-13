@@ -1,27 +1,21 @@
 import { SplitHero } from "@/components/platform/split-hero";
 import { ConfigTabs } from "@/components/platform/artifacts/config-tabs";
-import { RotatingWord } from "@/components/platform/rotating-word";
 
 export function Hero() {
   return (
     <SplitHero
-      eyebrow="For real estate operators and brokers"
+      eyebrow="For multifamily and student housing operators"
       headline={
         <span style={{ display: "block" }}>
+          <span style={{ display: "block" }}>Your entire leasing funnel,</span>
           <span style={{ display: "block" }}>
-            The <span style={{ color: "#2563EB" }}>#1</span> Real Estate
-          </span>
-          <span style={{ display: "block" }}>
-            Ecosystem for{" "}
-            <RotatingWord
-              words={["Marketing", "Leasing", "Leads", "Conversion", "Ads", "Growth", "Discovery", "Occupancy"]}
-            />
+            <span style={{ color: "#2563EB" }}>managed</span> for you.
           </span>
         </span>
       }
       subhead={
         <>
-          LeaseStack syncs your site, ads, chatbot, online presence, and buyer & seller audience data on one platform, built for real estate operators and brokers who love AI.
+          Marketing site, chatbot, visitor identification, and Google & Meta ads — one platform on your domain, live in 14 days. You review a weekly report. We do the rest.
         </>
       }
       ctas={[
@@ -29,9 +23,9 @@ export function Hero() {
         { label: "See it live", href: "/demo", variant: "secondary" },
       ]}
       trust={[
-        { value: "14 days", label: "Call to live" },
-        { value: "One",     label: "One login" },
-        { value: "Zero",    label: "No contracts" },
+        { value: "14 days", label: "Intake to live" },
+        { value: "1 login", label: "Not six vendors" },
+        { value: "Month-to-month", label: "No long-term lock" },
       ]}
       artifact={<ConfigTabs />}
     />

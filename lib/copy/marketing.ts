@@ -15,15 +15,15 @@ export const MARKETING = {
   home: {
     hero: {
       eyebrow: "For multifamily and student housing operators",
-      headline: "Fill your units without running five vendors.",
-      highlight: "without running five vendors.",
+      headline: "Your entire leasing funnel, managed for you.",
+      highlight: "managed for you.",
       subhead:
-        "We build your marketing site, ads, chatbot, and CRM into one managed platform, live on your domain in fourteen days. You review a weekly report. We do the rest.",
+        "Marketing site, chatbot, visitor identification, and Google & Meta ads — one platform on your domain, live in 14 days. You review a weekly report. We do the rest.",
       primaryCta: "Book a demo",
       primaryHref: "/onboarding",
       secondaryCta: "See it live",
       secondaryHref: "/demo",
-      microProof: "Built for residential and commercial portfolios.",
+      microProof: "Built for multifamily, student housing, and senior living.",
     },
     whatYouGet: {
       eyebrow: "What you get",
@@ -218,7 +218,7 @@ export const MARKETING = {
     proof: {
       heading: "A product, not a retainer.",
       body:
-        "Every customer logs into the same platform. Same modules, same dashboards, same weekly report. What changes is the brand, the listings, and the playbook.",
+        "Same platform, every client. The brand, the listings, and the playbook are yours. The technology, the operations, and the weekly reporting are ours.",
     },
     faq: {
       eyebrow: "Common questions",

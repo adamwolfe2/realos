@@ -1,19 +1,19 @@
 const METRICS = [
   {
-    value: "One",
-    label: "Platform replaces five-plus vendors: site, chatbot, ads, CRM, creative.",
+    value: "14 days",
+    label: "From intake call to a custom site, chatbot, pixel, and ads live on your domain.",
   },
   {
     value: "24/7",
-    label: "AI chatbot that answers, qualifies, and captures leads after hours.",
+    label: "AI chatbot qualifying and capturing leads while your leasing team sleeps.",
   },
   {
     value: "48h",
-    label: "Turnaround on every managed creative asset: ads, landing blocks, emails.",
+    label: "Creative turnaround on every ad, email, or landing block — no retainer to unlock it.",
   },
   {
-    value: "14 days",
-    label: "From intake call to a custom site live on your domain with full stack.",
+    value: "Monday",
+    label: "Weekly report in your inbox: spend, tours booked, leases signed, cost per lease.",
   },
 ];
 
@@ -21,7 +21,7 @@ export function Numbers() {
   return (
     <section style={{ backgroundColor: "#f5f4ed" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
-        <p className="eyebrow mb-10 text-center">What good looks like</p>
+        <p className="eyebrow mb-10 text-center">By the numbers</p>
         <div
           className="md:grid md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-6 lg:gap-4 flex overflow-x-auto md:overflow-visible pb-3 md:pb-0"
           style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
