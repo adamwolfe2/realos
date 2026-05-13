@@ -23,7 +23,12 @@ const KIND_COLOR: Record<string, string> = {
   tour_scheduled: "bg-primary/15 text-primary",
   chatbot_lead: "bg-muted text-muted-foreground",
   integration_error: "bg-destructive/10 text-destructive",
-  sync_complete: "bg-foreground/10 text-foreground",
+  sync_complete: "bg-muted text-foreground",
+  // Insight notifications — critical uses destructive token (genuine
+  // alert); warning uses brand-blue tinted (actionable but not alarming).
+  critical_insight: "bg-destructive/10 text-destructive",
+  warning_insight: "bg-primary/15 text-primary",
+  report_draft_ready: "bg-primary/15 text-primary",
 };
 
 function kindLabel(kind: string) {
