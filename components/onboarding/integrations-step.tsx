@@ -110,10 +110,12 @@ export function IntegrationsStep({
             lineHeight: 1.55,
           }}
         >
-          We pull listings, residents, leases, renewals, and work orders
-          live from your PMS. If you&apos;re not on a supported PMS yet,
-          you can manage properties manually and connect later from
-          settings.
+          Start with your PMS so we can sync listings, residents, leases,
+          renewals, and work orders live. Right after signup we&apos;ll walk
+          you through connecting the rest — Google Analytics, Search
+          Console, Google + Meta Ads, the Cursive pixel — from a single
+          dashboard. The more data you connect, the more insights you
+          get, but every source is optional and can be added later.
         </p>
       </header>
 
@@ -245,9 +247,9 @@ export function IntegrationsStep({
           role="alert"
           className="rounded-md text-sm"
           style={{
-            backgroundColor: "rgba(217,119,6,0.10)",
-            border: "1px solid rgba(217,119,6,0.30)",
-            color: "#92400e",
+            backgroundColor: "rgba(220,38,38,0.06)",
+            border: "1px solid rgba(220,38,38,0.25)",
+            color: "#7f1d1d",
             padding: "8px 12px",
             fontFamily: "var(--font-sans)",
             fontSize: "13px",
