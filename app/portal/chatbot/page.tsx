@@ -96,11 +96,22 @@ export default async function ChatbotPage() {
       {!org.moduleChatbot ? (
         <div
           role="status"
-          className="border border-amber-300 bg-amber-50 text-amber-900 rounded-md p-4 text-sm"
+          className="rounded-lg border border-primary/20 bg-primary/[0.03] p-4 text-sm text-foreground flex items-start gap-3"
         >
-          Chatbot module isn&apos;t active on your plan. Contact your account
-          manager to turn it on. You can still stage content below — it will
-          activate the moment billing is enabled.
+          <div className="flex-1">
+            <p className="font-semibold">Chatbot module isn&apos;t active yet.</p>
+            <p className="text-muted-foreground text-[13px] mt-0.5 leading-relaxed">
+              You can still stage your persona, greeting, and knowledge
+              base below. The chatbot goes live the moment you activate
+              the module from the marketplace (free during trial).
+            </p>
+          </div>
+          <a
+            href="/portal/marketplace"
+            className="shrink-0 inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 h-8 text-xs font-semibold hover:bg-primary-dark transition-colors"
+          >
+            Activate
+          </a>
         </div>
       ) : null}
 

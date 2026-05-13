@@ -476,9 +476,11 @@ function PixelStalenessBanner({
   const ageLabel = lastEventAt
     ? formatDistanceToNow(lastEventAt, { addSuffix: true })
     : "never";
+  // Brand-aligned tone scale — dormant (>7d) is destructive (real
+  // problem); stale (>24h) is muted neutral (informational).
   const tone = dormant
-    ? "border-amber-300 bg-amber-100 text-amber-900"
-    : "border-amber-200 bg-amber-50 text-amber-900";
+    ? "border-destructive/30 bg-destructive/10 text-destructive"
+    : "border-border bg-muted/40 text-foreground";
   const headline = dormant
     ? "Pixel hasn't fired in 7+ days — feed isn't live."
     : "Pixel hasn't fired in 24+ hours — feed isn't live.";

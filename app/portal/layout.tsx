@@ -221,11 +221,14 @@ export default async function PortalLayout({
         return null;
       })()}
 
-      {/* Impersonation banner */}
+      {/* Impersonation banner — destructive token because this is a
+          security-critical state. Brand-blue would understate the
+          gravity (you're acting as someone else, every change is
+          attributed to YOU in their audit log). */}
       {scope.isImpersonating ? (
         <div
           role="status"
-          className="shrink-0 bg-amber-100 border-b border-amber-300 text-amber-900 text-xs px-4 py-2 flex items-center justify-between gap-3"
+          className="shrink-0 bg-destructive/10 border-b border-destructive/30 text-destructive text-xs px-4 py-2 flex items-center justify-between gap-3"
         >
           <span>
             Impersonating <strong>{org.name}</strong>. Changes are attributed to
@@ -234,7 +237,7 @@ export default async function PortalLayout({
           <form action="/api/admin/impersonate/end" method="post">
             <button
               type="submit"
-              className="underline underline-offset-2 font-medium"
+              className="underline underline-offset-2 font-medium hover:no-underline"
             >
               End impersonation
             </button>

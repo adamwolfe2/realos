@@ -318,7 +318,7 @@ export default async function BriefingPage({
             Daily briefing
           </h1>
         </div>
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           Briefing data could not be loaded. This is usually temporary — try refreshing. If the issue persists, check{" "}
           <a href="/portal/connect" className="underline font-medium">
             Settings → Integrations
@@ -420,21 +420,21 @@ function AgingAlertBanner({
   stale: number;
 }) {
   return (
-    <div className="bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 flex items-start gap-3">
-      <AlertTriangle className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+    <div className="bg-muted/40 border border-border rounded-lg px-4 py-3 flex items-start gap-3">
+      <AlertTriangle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-amber-900">
+        <p className="text-sm font-medium text-foreground">
           {stale} lead{stale === 1 ? "" : "s"} {stale === 1 ? "is" : "are"} 15+ days old — conversion drops sharply after 14 days. Contact today.
         </p>
         {aging > 0 && (
-          <p className="text-xs text-amber-700 mt-0.5">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {aging} more {aging === 1 ? "lead" : "leads"} aging (7-14 days).
           </p>
         )}
       </div>
       <Link
         href="/portal/leads"
-        className="shrink-0 text-xs font-medium text-amber-700 hover:text-amber-900 underline underline-offset-2 transition-colors"
+        className="shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground underline underline-offset-2 transition-colors"
       >
         View all leads
       </Link>
