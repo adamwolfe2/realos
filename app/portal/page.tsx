@@ -594,136 +594,32 @@ export default async function PortalHome({
         </div>
       ) : null}
 
-      {/* Past-due lease alert — surfaces from AppFolio delinquency. Operator
-          should already see this in AppFolio, but the dashboard makes it
-          impossible to miss before they open the other tab. */}
-      {pastDueLeasesCount > 0 ? (
-        <Link
-          href="/portal/renewals"
-          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 hover:bg-muted/60 transition-colors group"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <AlertTriangle className="h-4 w-4 text-primary shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-foreground truncate">
-                {pastDueLeasesCount.toLocaleString()} past-due
-                {" "}
-                {pastDueLeasesCount === 1 ? "lease" : "leases"}
-                {pastDueDisplay ? ` · ${pastDueDisplay} owed` : ""}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                From AppFolio delinquency report. Open Renewals to review.
-              </p>
-            </div>
-          </div>
-          <span className="text-xs font-semibold text-primary whitespace-nowrap">
-            Review →
-          </span>
-        </Link>
-      ) : null}
-
-      {/* Urgent open work-order alert. Don't surface unless we've actually
-          synced any work orders (avoids empty noise on first install). */}
-      {urgentWorkOrdersCount > 0 ? (
-        <Link
-          href="/portal/work-orders"
-          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 hover:bg-muted/60 transition-colors group"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <Wrench className="h-4 w-4 text-primary shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-foreground truncate">
-                {urgentWorkOrdersCount.toLocaleString()} urgent work
-                {" "}
-                {urgentWorkOrdersCount === 1 ? "order" : "orders"} open
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Stop-the-bleed maintenance tickets. Source of truth: AppFolio.
-              </p>
-            </div>
-          </div>
-          <span className="text-xs font-semibold text-primary whitespace-nowrap">
-            Review →
-          </span>
-        </Link>
-      ) : null}
-
-      {/* Unreviewed reputation alert — surfaces buried action items.
-          Reputation Scanner used to be hidden in property detail tabs. This
-          banner makes it impossible to miss when there's something to act on. */}
-      {reputationSummary.unreviewedCount > 0 ? (
-        <Link
-          href="/portal/reputation"
-          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 hover:bg-muted/60 transition-colors group"
-        >
-          <div className="flex items-center gap-2.5 min-w-0">
-            <AlertTriangle className="h-4 w-4 text-primary shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-foreground truncate">
-                {reputationSummary.unreviewedCount.toLocaleString()} unreviewed
-                {" "}
-                {reputationSummary.unreviewedCount === 1 ? "mention" : "mentions"}
-                {reputationSummary.negativeCount > 0
-                  ? ` · ${reputationSummary.negativeCount} negative`
-                  : ""}
-              </p>
-              <p className="text-[11px] text-muted-foreground">
-                Triage Google reviews, Reddit threads, and Yelp posts before they snowball.
-              </p>
-            </div>
-          </div>
-          <span className="text-xs font-semibold text-primary whitespace-nowrap">
-            Review →
-          </span>
-        </Link>
-      ) : null}
-
-      {/* Data sources bar */}
-      {integrationChips.length > 0 ? (
-        <IntegrationHealth chips={integrationChips} />
-      ) : null}
+      {/* Removed three legacy alert banners (past-due leases, urgent work
+          orders, unreviewed reputation) and the IntegrationHealth chip
+          row. Past-due / urgent / unreviewed conditions now surface as
+          ranked insights inside <InsightsHero /> via the new detector
+          library; integration health lives on /portal/connect, pinned
+          to the sidebar Overview group. The dashboard should feel calm,
+          not like a wall of competing CTAs. */}
 
       {/* Quick access — pinned to the top so the demo path is one click
           away. Trimmed to demo-confident modules only. Tiles that depend
           on AppFolio are hidden when the integration is off (the
           "Connect AppFolio" CTA further down handles that case). */}
+      {/* Quick access — trimmed to 5 most-used modules. Anything an
+          operator hits less than weekly belongs in the sidebar nav,
+          not as a pinned tile. Removes ~10 of the previous 10-tile
+          grid (was a wall of competing icons). */}
       <DashboardSection
-        eyebrow="One click away"
+        eyebrow="Jump in"
         title="Quick access"
-        description="Jump straight to any module from the dashboard"
       >
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-1.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
           <QuickAccessTile
             href="/portal/leads"
             label="Leads"
             icon={<Users className="h-4 w-4" />}
             meta={`${leadsNew28d.toLocaleString()} in 28d`}
-          />
-          <QuickAccessTile
-            href="/portal/tours"
-            label="Tours"
-            icon={<CalendarCheck className="h-4 w-4" />}
-            meta={
-              toursScheduled > 0
-                ? `${toursScheduled} scheduled`
-                : "Calendar + pipeline"
-            }
-            badge={toursRequestedCount > 0 ? toursRequestedCount : null}
-            badgeTone={toursRequestedCount > 0 ? "rose" : undefined}
-          />
-          <QuickAccessTile
-            href="/portal/applications"
-            label="Applications"
-            icon={<ClipboardList className="h-4 w-4" />}
-            meta={
-              applicationsSubmitted28d > 0
-                ? `${applicationsSubmitted28d} this month`
-                : "Pipeline"
-            }
-            badge={
-              applicationsAwaitingReview > 0 ? applicationsAwaitingReview : null
-            }
-            badgeTone={applicationsAwaitingReview > 0 ? "rose" : undefined}
           />
           {orgModules?.modulePixel ? (
             <QuickAccessTile
@@ -738,6 +634,16 @@ export default async function PortalHome({
             />
           ) : null}
           <QuickAccessTile
+            href="/portal/tours"
+            label="Tours"
+            icon={<CalendarCheck className="h-4 w-4" />}
+            meta={
+              toursScheduled > 0
+                ? `${toursScheduled} scheduled`
+                : "Calendar"
+            }
+          />
+          <QuickAccessTile
             href="/portal/reputation"
             label="Reputation"
             icon={<Star className="h-4 w-4" />}
@@ -746,69 +652,26 @@ export default async function PortalHome({
                 ? `${reputationSummary.totalMentions} mentions`
                 : "Reviews + mentions"
             }
-            badge={
-              reputationSummary.unreviewedCount > 0
-                ? reputationSummary.unreviewedCount
-                : null
-            }
           />
           {!appfolioOff ? (
-            <>
-              <QuickAccessTile
-                href="/portal/residents"
-                label="Residents"
-                icon={<Home className="h-4 w-4" />}
-                meta={
-                  activeResidentsCount > 0
-                    ? `${activeResidentsCount} active`
-                    : "AppFolio mirror"
-                }
-                badge={noticeGivenCount > 0 ? noticeGivenCount : null}
-              />
-              <QuickAccessTile
-                href="/portal/renewals"
-                label="Renewals"
-                icon={<CalendarClock className="h-4 w-4" />}
-                meta={
-                  leasesExpiring120dCount > 0
-                    ? `${leasesExpiring120dCount} expiring`
-                    : "Lease pipeline"
-                }
-                badge={pastDueLeasesCount > 0 ? pastDueLeasesCount : null}
-                badgeTone={pastDueLeasesCount > 0 ? "rose" : undefined}
-              />
-              <QuickAccessTile
-                href="/portal/work-orders"
-                label="Work orders"
-                icon={<Wrench className="h-4 w-4" />}
-                meta={
-                  openWorkOrdersCount > 0
-                    ? `${openWorkOrdersCount} open`
-                    : "Maintenance"
-                }
-                badge={
-                  urgentWorkOrdersCount > 0 ? urgentWorkOrdersCount : null
-                }
-                badgeTone={urgentWorkOrdersCount > 0 ? "rose" : undefined}
-              />
-            </>
-          ) : null}
-          {orgModules?.moduleChatbot ? (
             <QuickAccessTile
-              href="/portal/conversations"
-              label="Conversations"
-              icon={<MessageSquare className="h-4 w-4" />}
-              meta={`${chatbotSummary.conversations28d} in 28d`}
+              href="/portal/renewals"
+              label="Renewals"
+              icon={<CalendarClock className="h-4 w-4" />}
+              meta={
+                leasesExpiring120dCount > 0
+                  ? `${leasesExpiring120dCount} expiring`
+                  : "Lease pipeline"
+              }
             />
-          ) : null}
-          {orgModules?.moduleGoogleAds || orgModules?.moduleMetaAds ? (
+          ) : (
             <QuickAccessTile
-              href="/portal/campaigns"
-              label="Campaigns"
-              icon={<Megaphone className="h-4 w-4" />}
-              meta={`$${adSpend.spendUsd.toLocaleString()} spend`}
+              href="/portal/connect"
+              label="Connect"
+              icon={<Sparkles className="h-4 w-4" />}
+              meta="More data sources"
             />
-          ) : null}
+          )}
         </div>
       </DashboardSection>
 
@@ -816,385 +679,131 @@ export default async function PortalHome({
           (above the property selector). Removed the duplicated mid-page
           strip so insights have a single, prominent surface. */}
 
-      {/* KPI strip — four tiles per row, two rows at desktop. Labels are
-          readable at this width and values don't overflow. */}
+      {/* At-a-glance KPI strip — TRIMMED to 4 daily-decision metrics.
+          Was 8 tiles + 6-tile AppFolio mirror + 4-tile portfolio summary
+          (= 18 raw numbers competing for attention). Now: leads, ad
+          spend, organic, occupancy. Everything else lives on its
+          subpage where the operator goes when they actually need detail. */}
       <section
-        aria-label="Key metrics"
+        aria-label="At a glance"
         className="grid grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
       >
-            <KpiTile
-              label="Total leads"
-              value={leadsNew28d.toLocaleString()}
-              hint={`${leadsTotal.toLocaleString()} all-time`}
-              spark={totalLeadsSpark}
-              icon={<Users className="h-3.5 w-3.5" />}
-              delta={
-                leadsDeltaPct != null
-                  ? {
-                      value: `${leadsDeltaPct >= 0 ? "+" : ""}${leadsDeltaPct}%`,
-                      trend:
-                        leadsDeltaPct > 0
-                          ? "up"
-                          : leadsDeltaPct < 0
-                            ? "down"
-                            : "flat",
-                    }
-                  : undefined
-              }
-              href="/portal/leads"
-            />
-            <KpiTile
-              label="Hot visitors"
-              value={hotVisitors.count.toLocaleString()}
-              hint="Active in the last 5 minutes"
-              spark={hotVisitors.sparkline}
-              icon={<Flame className="h-3.5 w-3.5" />}
-              live
-              href="/portal/visitors"
-              locked={cursiveOff ? { reason: "Requires pixel", href: "/portal/settings/integrations" } : undefined}
-            />
-            <KpiTile
-              label="Tours"
-              value={toursScheduled.toLocaleString()}
-              hint={`${applicationsSubmitted28d.toLocaleString()} apps in 28d`}
-              icon={<CalendarCheck className="h-3.5 w-3.5" />}
-              delta={
-                toursDeltaPct != null
-                  ? {
-                      value: `${toursDeltaPct >= 0 ? "+" : ""}${toursDeltaPct}%`,
-                      trend:
-                        toursDeltaPct > 0
-                          ? "up"
-                          : toursDeltaPct < 0
-                            ? "down"
-                            : "flat",
-                    }
-                  : undefined
-              }
-              href="/portal/leads"
-            />
-            <KpiTile
-              label="Ad spend"
-              value={`$${adSpend.spendUsd.toLocaleString()}`}
-              hint="Blended Google + Meta (28d)"
-              spark={adSpend.sparkline}
-              icon={<DollarSign className="h-3.5 w-3.5" />}
-              delta={
-                adSpend.deltaPct != null
-                  ? {
-                      value: `${adSpend.deltaPct >= 0 ? "+" : ""}${adSpend.deltaPct}%`,
-                      trend:
-                        adSpend.deltaPct > 0
-                          ? "up"
-                          : adSpend.deltaPct < 0
-                            ? "down"
-                            : "flat",
-                    }
-                  : undefined
-              }
-              href="/portal/campaigns"
-              locked={adsOff ? { reason: "Requires Google Ads or Meta", href: "/portal/settings/integrations" } : undefined}
-            />
-            <KpiTile
-              label="Cost per lead"
-              value={costPerLeadDisplay}
-              hint={
-                costPerLead != null
-                  ? "Blended across all sources"
-                  : "No leads in window"
-              }
-              icon={<Coins className="h-3.5 w-3.5" />}
-              href="/portal/campaigns"
-              locked={adsOff ? { reason: "Requires Google Ads or Meta", href: "/portal/settings/integrations" } : undefined}
-            />
-            <KpiTile
-              label="Organic"
-              value={organic.sessions.toLocaleString()}
-              hint="From GSC + GA4"
-              spark={organic.sparkline}
-              icon={<Search className="h-3.5 w-3.5" />}
-              delta={
-                organic.deltaPct != null
-                  ? {
-                      value: `${organic.deltaPct >= 0 ? "+" : ""}${organic.deltaPct}%`,
-                      trend:
-                        organic.deltaPct > 0
-                          ? "up"
-                          : organic.deltaPct < 0
-                            ? "down"
-                            : "flat",
-                    }
-                  : undefined
-              }
-              href="/portal/seo"
-              locked={organicOff ? { reason: "Requires GSC or GA4", href: "/portal/settings/integrations" } : undefined}
-            />
-            <KpiTile
-              label="Google rating"
-              value={
-                reputationSummary.avgGoogleRating != null
-                  ? reputationSummary.avgGoogleRating.toFixed(1)
-                  : "—"
-              }
-              hint={
-                reputationSummary.googleReviewCount > 0
-                  ? `${reputationSummary.googleReviewCount.toLocaleString()} reviews · ${reputationSummary.newLast30d} new (30d)`
-                  : "No reviews yet"
-              }
-              icon={<Star className="h-3.5 w-3.5" />}
-              href="/portal/reputation"
-              delta={
-                reputationSummary.negativeCount > 0
-                  ? {
-                      value: `${reputationSummary.negativeCount} neg`,
-                      trend: "down",
-                    }
-                  : undefined
-              }
-            />
-            <KpiTile
-              label="Chatbot"
-              value={
-                chatbotSummary.captureRatePct != null
-                  ? `${chatbotSummary.captureRatePct}%`
-                  : "—"
-              }
-              hint={`${chatbotSummary.leadsCaptured28d} leads · ${chatbotSummary.conversations28d} chats (28d)`}
-              icon={<Bot className="h-3.5 w-3.5" />}
-              href="/portal/conversations"
-              locked={
-                !orgModules?.moduleChatbot
-                  ? {
-                      reason: "Chatbot module disabled",
-                      href: "/portal/settings",
-                    }
-                  : undefined
-              }
-              delta={
-                chatbotSummary.deltaPct != null
-                  ? {
-                      value: `${chatbotSummary.deltaPct >= 0 ? "+" : ""}${chatbotSummary.deltaPct}%`,
-                      trend:
-                        chatbotSummary.deltaPct > 0
-                          ? "up"
-                          : chatbotSummary.deltaPct < 0
-                            ? "down"
-                            : "flat",
-                    }
-                  : undefined
-              }
-            />
-          </section>
-
-          {/* Performance row */}
-          <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-            <DashboardSection
-              eyebrow="Where leads come from"
-              title="Lead source breakdown"
-              description="Last 28 days · all properties"
-              href="/portal/leads"
-              className="lg:col-span-2"
-            >
-              <LeadSourceDonut slices={leadSourceSlices} />
-            </DashboardSection>
-
-            <DashboardSection
-              eyebrow="From visit to signed"
-              title="Conversion funnel"
-              description="Drop-off at each stage. Click a stage to drill in."
-              href="/portal/leads"
-              className="lg:col-span-3"
-            >
-              <ConversionFunnel
-                stages={funnelStages.map((s) => ({
-                  label: s.label,
-                  value: s.value,
-                }))}
-              />
-            </DashboardSection>
-          </section>
-
-          {/* Leasing velocity trend */}
-          <DashboardSection
-            eyebrow="Week over week"
-            title="Leasing velocity"
-            description="Leads, tours, and applications for the last 12 weeks. The shape tells you if momentum is building or stalling."
-            href="/portal/leads"
-          >
-            <LeasingVelocityChart data={velocityData} />
-          </DashboardSection>
-
-          {/* Recent identified visitors + reputation pulse */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-            <DashboardSection
-              eyebrow="Pixel resolved"
-              title="Recently identified visitors"
-              description="Real people who hit your site, resolved by name and email"
-              href="/portal/visitors"
-              hrefLabel="See all visitors"
-            >
-              <RecentIdentifiedVisitors visitors={recentIdentified} />
-            </DashboardSection>
-
-            <DashboardSection
-              eyebrow="What people are saying"
-              title="Reputation pulse"
-              description="Latest reviews and mentions across Google, Reddit, Yelp, and the open web"
-              href={
-                reputationPulse[0]
-                  ? `/portal/properties/${reputationPulse[0].propertyId}?tab=reputation`
-                  : "/portal/properties"
-              }
-              hrefLabel="Open reputation"
-            >
-              <ReputationPulse items={reputationPulse} />
-            </DashboardSection>
-          </section>
-
-          {/* AppFolio not-connected hint — the mirror strip below hides
-              itself when there's no data, but that creates a silent
-              absence. This banner explains why the operations metrics are
-              missing and gives a one-click setup CTA. */}
-          {appfolioOff &&
-          rentRollMonthly === 0 &&
-          activeResidentsCount === 0 &&
-          openWorkOrdersCount === 0 ? (
-            <Link
-              href="/portal/settings/integrations"
-              className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-muted/30 px-4 py-3 hover:border-foreground/40 transition-colors group"
-            >
-              <div className="flex items-center gap-2.5 min-w-0">
-                <Building2 className="h-4 w-4 text-muted-foreground shrink-0" />
-                <div className="min-w-0">
-                  <p className="text-xs font-semibold text-foreground">
-                    Connect AppFolio to unlock the operations dashboard
-                  </p>
-                  <p className="text-[11px] text-muted-foreground mt-0.5">
-                    Mirror residents, leases, work orders, and rent roll
-                    here — without leaving AppFolio as your source of
-                    truth.
-                  </p>
-                </div>
-              </div>
-              <span className="text-xs font-medium text-foreground group-hover:underline whitespace-nowrap">
-                Connect →
-              </span>
-            </Link>
-          ) : null}
-
-          {/* AppFolio mirror strip — rent roll, residents, renewals, work
-              orders. AppFolio remains source of truth; we surface the
-              numbers so operators don't have to leave the dashboard. */}
-          {(rentRollMonthly > 0 ||
-            activeResidentsCount > 0 ||
-            openWorkOrdersCount > 0) ? (
-            <section
-              aria-label="AppFolio mirror"
-              className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-2"
-            >
-              <KpiTile
-                label="Monthly rent roll"
-                value={rentRollMonthlyDisplay}
-                hint={`From ${activeResidentsCount.toLocaleString()} active leases`}
-                icon={<DollarSign className="h-3.5 w-3.5" />}
-                href="/portal/renewals"
-              />
-              <KpiTile
-                label="Active residents"
-                value={activeResidentsCount.toLocaleString()}
-                hint="Mirrored from AppFolio"
-                icon={<Home className="h-3.5 w-3.5" />}
-                href="/portal/residents"
-              />
-              <KpiTile
-                label="Notice given"
-                value={noticeGivenCount.toLocaleString()}
-                hint="Coming open soon"
-                icon={<AlertTriangle className="h-3.5 w-3.5" />}
-                href="/portal/residents?status=NOTICE_GIVEN"
-              />
-              <KpiTile
-                label="Expiring (120d)"
-                value={leasesExpiring120dCount.toLocaleString()}
-                hint="Need renewal action"
-                icon={<CalendarClock className="h-3.5 w-3.5" />}
-                href="/portal/renewals"
-              />
-              <KpiTile
-                label="Open work orders"
-                value={openWorkOrdersCount.toLocaleString()}
-                hint={
-                  urgentWorkOrdersCount > 0
-                    ? `${urgentWorkOrdersCount} urgent`
-                    : "Maintenance queue"
+        <KpiTile
+          label="Total leads"
+          value={leadsNew28d.toLocaleString()}
+          hint={`${leadsTotal.toLocaleString()} all-time`}
+          spark={totalLeadsSpark}
+          icon={<Users className="h-3.5 w-3.5" />}
+          delta={
+            leadsDeltaPct != null
+              ? {
+                  value: `${leadsDeltaPct >= 0 ? "+" : ""}${leadsDeltaPct}%`,
+                  trend:
+                    leadsDeltaPct > 0
+                      ? "up"
+                      : leadsDeltaPct < 0
+                        ? "down"
+                        : "flat",
                 }
-                icon={<Wrench className="h-3.5 w-3.5" />}
-                href="/portal/work-orders"
-                delta={
-                  urgentWorkOrdersCount > 0
-                    ? { value: `${urgentWorkOrdersCount} urgent`, trend: "down" }
-                    : undefined
+              : undefined
+          }
+          href="/portal/leads"
+        />
+        <KpiTile
+          label="Ad spend (28d)"
+          value={`$${adSpend.spendUsd.toLocaleString()}`}
+          hint={
+            costPerLeadDisplay !== "—"
+              ? `${costPerLeadDisplay} per lead`
+              : "Blended Google + Meta"
+          }
+          spark={adSpend.sparkline}
+          icon={<DollarSign className="h-3.5 w-3.5" />}
+          delta={
+            adSpend.deltaPct != null
+              ? {
+                  value: `${adSpend.deltaPct >= 0 ? "+" : ""}${adSpend.deltaPct}%`,
+                  trend:
+                    adSpend.deltaPct > 0
+                      ? "up"
+                      : adSpend.deltaPct < 0
+                        ? "down"
+                        : "flat",
                 }
-              />
-              <KpiTile
-                label="Past-due leases"
-                value={pastDueLeasesCount.toLocaleString()}
-                hint={pastDueDisplay ? `${pastDueDisplay} owed` : "All current"}
-                icon={<AlertTriangle className="h-3.5 w-3.5" />}
-                href="/portal/renewals"
-              />
-            </section>
-          ) : null}
+              : undefined
+          }
+          href="/portal/campaigns"
+          locked={
+            adsOff
+              ? {
+                  reason: "Requires Google Ads or Meta",
+                  href: "/portal/connect",
+                }
+              : undefined
+          }
+        />
+        <KpiTile
+          label="Organic"
+          value={organic.sessions.toLocaleString()}
+          hint="From GSC + GA4"
+          spark={organic.sparkline}
+          icon={<Search className="h-3.5 w-3.5" />}
+          delta={
+            organic.deltaPct != null
+              ? {
+                  value: `${organic.deltaPct >= 0 ? "+" : ""}${organic.deltaPct}%`,
+                  trend:
+                    organic.deltaPct > 0
+                      ? "up"
+                      : organic.deltaPct < 0
+                        ? "down"
+                        : "flat",
+                }
+              : undefined
+          }
+          href="/portal/seo"
+          locked={
+            organicOff
+              ? { reason: "Requires GSC or GA4", href: "/portal/connect" }
+              : undefined
+          }
+        />
+        <KpiTile
+          label="Occupancy"
+          value={
+            portfolioOccupancyPct != null
+              ? `${portfolioOccupancyPct}%`
+              : "—"
+          }
+          hint={
+            portfolioTotalUnits > 0
+              ? `${(portfolioTotalUnits - portfolioAvailableUnits).toLocaleString()} of ${portfolioTotalUnits.toLocaleString()} occupied`
+              : "Connect AppFolio"
+          }
+          icon={<Building2 className="h-3.5 w-3.5" />}
+          href="/portal/properties"
+          locked={
+            appfolioOff && portfolioTotalUnits === 0
+              ? { reason: "Requires AppFolio", href: "/portal/connect" }
+              : undefined
+          }
+        />
+      </section>
 
-          {/* Portfolio summary strip — occupancy + total units + active
-              campaigns. Sized between KPIs and property cards so it visually
-              ties them together. */}
-          {portfolioTotalUnits > 0 ? (
-            <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
-              <KpiTile
-                label="Portfolio occupancy"
-                value={
-                  portfolioOccupancyPct != null
-                    ? `${portfolioOccupancyPct}%`
-                    : "—"
-                }
-                hint={`${(portfolioTotalUnits - portfolioAvailableUnits).toLocaleString()} of ${portfolioTotalUnits.toLocaleString()} occupied`}
-                icon={<Building2 className="h-3.5 w-3.5" />}
-                href="/portal/properties"
-              />
-              <KpiTile
-                label="Available units"
-                value={portfolioAvailableUnits.toLocaleString()}
-                hint="Across all properties"
-                icon={<Building2 className="h-3.5 w-3.5" />}
-                href="/portal/properties"
-              />
-              <KpiTile
-                label="Properties"
-                value={propertiesCount.toLocaleString()}
-                hint={`${properties.length === propertiesCount ? "All shown below" : `Showing ${properties.length}`}`}
-                icon={<Building2 className="h-3.5 w-3.5" />}
-                href="/portal/properties"
-              />
-              <KpiTile
-                label="Active campaigns"
-                value={Array.from(propertyMetrics.values())
-                  .reduce((sum, m) => sum + m.activeCampaigns, 0)
-                  .toLocaleString()}
-                hint="Google + Meta combined"
-                icon={<Megaphone className="h-3.5 w-3.5" />}
-                href="/portal/campaigns"
-                locked={
-                  adsOff
-                    ? {
-                        reason: "Requires Google Ads or Meta",
-                        href: "/portal/settings/integrations",
-                      }
-                    : undefined
-                }
-              />
-            </section>
-          ) : null}
+      {/* Removed seven sections that previously rendered between the KPI
+          strip and the properties table:
+            - Performance row (lead source donut + conversion funnel)
+            - Leasing velocity chart
+            - Recent identified visitors
+            - Reputation pulse
+            - AppFolio not-connected hint
+            - AppFolio mirror strip (6 KPIs)
+            - Portfolio summary strip (4 KPIs)
+          Each one duplicates data that lives on its own dedicated
+          subpage (/portal/leads, /portal/visitors, /portal/reputation,
+          /portal/renewals, etc.). The dashboard's job is to show
+          insights + at-a-glance metrics + property table — not to be
+          the catch-all for every chart in the platform. */}
 
           {/* Properties + activity feed */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-2">
