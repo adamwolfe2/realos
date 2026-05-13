@@ -203,16 +203,16 @@ export function DomainsPanel({
                 <span
                   className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded ${
                     d.sslStatus === "active"
-                      ? "bg-emerald-50 text-emerald-700"
+                      ? "bg-primary/5 text-primary"
                       : d.sslStatus === "failed"
-                        ? "bg-rose-50 text-rose-700"
-                        : "bg-amber-50 text-amber-700"
+                        ? "bg-destructive/5 text-destructive"
+                        : "bg-muted/40 text-foreground"
                   }`}
                 >
                   SSL {d.sslStatus ?? "pending"}
                 </span>
                 {!d.dnsConfigured ? (
-                  <span className="text-[10px] uppercase tracking-wide bg-rose-50 text-rose-700 px-1.5 py-0.5 rounded">
+                  <span className="text-[10px] uppercase tracking-wide bg-destructive/5 text-destructive px-1.5 py-0.5 rounded">
                     DNS
                   </span>
                 ) : null}
@@ -251,17 +251,17 @@ export function DomainsPanel({
       )}
 
       {pendingVerification ? (
-        <div className="rounded-md border border-amber-300 bg-amber-50 p-3 space-y-2">
-          <div className="text-xs font-semibold text-amber-900">
+        <div className="rounded-md border border-border bg-muted/40 p-3 space-y-2">
+          <div className="text-xs font-semibold text-foreground">
             Set these DNS records at the registrar for {pendingVerification.hostname}
           </div>
-          <p className="text-[11px] text-amber-900/80">
+          <p className="text-[11px] text-foreground/80">
             Auto re-verifying every 30 seconds for the next 5 minutes. You can
             also click Verify any time.
           </p>
-          <div className="rounded border border-amber-200 bg-card overflow-hidden">
+          <div className="rounded border border-border bg-card overflow-hidden">
             <table className="w-full text-xs">
-              <thead className="bg-amber-50 text-[10px] uppercase tracking-wide">
+              <thead className="bg-muted/40 text-[10px] uppercase tracking-wide">
                 <tr>
                   <th className="px-2 py-1.5 text-left">Type</th>
                   <th className="px-2 py-1.5 text-left">Host</th>

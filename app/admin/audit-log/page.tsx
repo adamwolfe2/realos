@@ -12,14 +12,14 @@ export const dynamic = "force-dynamic";
 const PAGE_SIZE = 100;
 
 const ACTION_TONE: Record<AuditAction, string> = {
-  CREATE: "bg-emerald-50 text-emerald-700",
+  CREATE: "bg-primary/5 text-primary",
   UPDATE: "bg-sky-50 text-sky-700",
-  DELETE: "bg-rose-50 text-rose-700",
-  IMPERSONATE_START: "bg-amber-50 text-amber-700",
-  IMPERSONATE_END: "bg-amber-50 text-amber-700",
+  DELETE: "bg-destructive/5 text-destructive",
+  IMPERSONATE_START: "bg-muted/40 text-foreground",
+  IMPERSONATE_END: "bg-muted/40 text-foreground",
   LOGIN: "bg-foreground/10 text-foreground",
   EXPORT: "bg-violet-50 text-violet-700",
-  SETTING_CHANGE: "bg-indigo-50 text-indigo-700",
+  SETTING_CHANGE: "bg-primary/5 text-primary",
 };
 
 export default async function AuditLogPage({

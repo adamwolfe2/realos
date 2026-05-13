@@ -18,11 +18,11 @@ const PLATFORM_LABEL: Record<AdPlatform, string> = {
 };
 
 const PLATFORM_TONE: Record<AdPlatform, string> = {
-  GOOGLE_ADS: "bg-amber-50 text-amber-700",
+  GOOGLE_ADS: "bg-muted/40 text-foreground",
   META: "bg-sky-50 text-sky-700",
   LINKEDIN: "bg-blue-50 text-blue-700",
-  TIKTOK: "bg-rose-50 text-rose-700",
-  REDDIT: "bg-orange-50 text-orange-700",
+  TIKTOK: "bg-destructive/5 text-destructive",
+  REDDIT: "bg-muted/40 text-foreground",
 };
 
 function formatCents(cents: number | null | undefined): string {

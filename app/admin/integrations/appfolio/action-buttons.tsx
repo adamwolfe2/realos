@@ -58,7 +58,7 @@ export function AppfolioActionButton({
       </button>
       {result ? (
         result.ok ? (
-          <span className="text-[10px] text-emerald-700">
+          <span className="text-[10px] text-primary">
             {variant === "sync"
               ? `${result.stats.listingsUpserted} listings, ${result.stats.leadsUpserted} leads`
               : "Done"}

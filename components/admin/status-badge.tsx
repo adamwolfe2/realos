@@ -6,22 +6,26 @@ import type { BadgeTone } from "@/lib/format";
 // every status across the product reads as the same component, whether it's
 // a tenant lifecycle, a lead stage, a module on/off, or an audit event tone.
 
+// Brand-aligned tone scale. Single LeaseStack accent (#2563EB / primary)
+// signals every state — info/success/warning all use brand blue with
+// different intensity. Danger uses the destructive token because true
+// destructive states warrant alarm. Neutral + muted stay grayscale.
 const TONE_CLASS: Record<BadgeTone, string> = {
-  neutral: "bg-slate-100 text-slate-700",
-  info:    "bg-blue-50 text-blue-700",
-  success: "bg-emerald-50 text-emerald-700",
-  warning: "bg-amber-50 text-amber-800",
-  danger:  "bg-rose-50 text-rose-700",
+  neutral: "bg-muted text-foreground",
+  info:    "bg-primary/10 text-primary",
+  success: "bg-primary/10 text-primary",
+  warning: "bg-primary/15 text-primary",
+  danger:  "bg-destructive/10 text-destructive",
   muted:   "bg-muted text-muted-foreground",
 };
 
 const DOT_CLASS: Record<BadgeTone, string> = {
-  neutral: "bg-slate-400",
-  info:    "bg-blue-500",
-  success: "bg-emerald-500",
-  warning: "bg-amber-500",
-  danger:  "bg-rose-500",
-  muted:   "bg-slate-400",
+  neutral: "bg-muted-foreground",
+  info:    "bg-primary",
+  success: "bg-primary",
+  warning: "bg-primary",
+  danger:  "bg-destructive",
+  muted:   "bg-muted-foreground",
 };
 
 export function StatusBadge({
@@ -55,6 +59,7 @@ export function StatusBadge({
 }
 
 // For module/feature on-off lines: consistent dot + label.
+// Brand-blue when enabled, muted when disabled — no green leak.
 export function ToggleIndicator({
   on,
   className,
@@ -66,7 +71,7 @@ export function ToggleIndicator({
     <span
       className={cn(
         "inline-flex items-center gap-1.5 text-[11px] font-medium whitespace-nowrap",
-        on ? "text-emerald-700" : "text-muted-foreground",
+        on ? "text-primary" : "text-muted-foreground",
         className,
       )}
     >
@@ -74,7 +79,7 @@ export function ToggleIndicator({
         aria-hidden="true"
         className={cn(
           "inline-block h-1.5 w-1.5 rounded-full",
-          on ? "bg-emerald-500" : "bg-slate-300"
+          on ? "bg-primary" : "bg-muted-foreground/40",
         )}
       />
       {on ? "Enabled" : "Disabled"}

@@ -138,12 +138,12 @@ export default async function IntakeList({
                         {humanIntakeStatus(s.status)}
                       </StatusBadge>
                       {s.bookedCallAt ? (
-                        <span className="text-[11px] text-emerald-700">
+                        <span className="text-[11px] text-primary">
                           Call booked
                         </span>
                       ) : null}
                       {s.org ? (
-                        <span className="text-[11px] text-emerald-700">
+                        <span className="text-[11px] text-primary">
                           Converted · {s.org.slug}
                         </span>
                       ) : null}

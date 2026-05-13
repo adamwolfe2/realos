@@ -236,7 +236,7 @@ export function CursivePanel({
       {saveMsg && (
         <p
           className={`text-[11px] ${
-            saveMsg.kind === "ok" ? "text-emerald-700" : "text-destructive"
+            saveMsg.kind === "ok" ? "text-primary" : "text-destructive"
           }`}
         >
           {saveMsg.text}
@@ -245,21 +245,21 @@ export function CursivePanel({
       {syncMsg && (
         <p
           className={`text-[11px] ${
-            syncMsg.kind === "ok" ? "text-emerald-700" : "text-destructive"
+            syncMsg.kind === "ok" ? "text-primary" : "text-destructive"
           }`}
         >
           {syncMsg.text}
         </p>
       )}
       {testMsg && testMsg.kind === "ok" && (
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 p-3 text-[11px] text-emerald-900 space-y-1">
+        <div className="rounded-md border border-primary/30 bg-primary/5 p-3 text-[11px] text-primary space-y-1">
           <p className="font-medium">
             Webhook round-trip succeeded ({testMsg.status}). The pixel binding
             is wired correctly on our side.
           </p>
           <p>
             Test visitor created with email{" "}
-            <code className="font-mono bg-emerald-100 px-1 rounded">
+            <code className="font-mono bg-primary/10 px-1 rounded">
               {testMsg.visitorEmail}
             </code>
             . Delete it from the visitor feed when you&apos;re done.
@@ -277,7 +277,7 @@ export function CursivePanel({
         </div>
       )}
       {testMsg && testMsg.kind === "error" && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 p-3 text-[11px] text-rose-900 space-y-1">
+        <div className="rounded-md border border-destructive/30 bg-destructive/5 p-3 text-[11px] text-destructive space-y-1">
           <p className="font-medium">
             Webhook test failed{testMsg.status ? ` (${testMsg.status})` : ""}.
           </p>

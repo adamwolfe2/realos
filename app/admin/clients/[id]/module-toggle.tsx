@@ -54,7 +54,7 @@ export function ModuleToggle({
           disabled={pending}
           onClick={onToggle}
           className={`relative inline-flex h-5 w-9 shrink-0 items-center rounded-full transition-colors ${
-            enabled ? "bg-emerald-500" : "bg-foreground/20"
+            enabled ? "bg-primary/5" : "bg-foreground/20"
           } disabled:opacity-50`}
         >
           <span

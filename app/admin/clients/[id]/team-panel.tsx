@@ -164,7 +164,7 @@ function MemberRow({
               Agency
             </span>
           ) : isPending ? (
-            <span className="inline-flex items-center rounded-full bg-amber-50 text-amber-900 border border-amber-200 px-1.5 py-0.5 text-[10px] font-medium">
+            <span className="inline-flex items-center rounded-full bg-muted/40 text-foreground border border-border px-1.5 py-0.5 text-[10px] font-medium">
               Pending invite
             </span>
           ) : (

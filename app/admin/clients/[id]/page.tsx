@@ -454,7 +454,7 @@ export default async function ClientDetail({
               </div>
             </dl>
             {org.appfolioIntegration.lastError ? (
-              <p className="mt-3 text-[11px] text-rose-700 rounded-md border border-rose-200 bg-rose-50 p-2 break-words">
+              <p className="mt-3 text-[11px] text-destructive rounded-md border border-destructive/30 bg-destructive/5 p-2 break-words">
                 {org.appfolioIntegration.lastError}
               </p>
             ) : null}

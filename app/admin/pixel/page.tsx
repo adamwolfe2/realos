@@ -143,9 +143,9 @@ export default async function PixelHealthPage() {
 
 function PixelStatusBadge({ status }: { status: "firing" | "stale" | "dark" | "unconfigured" }) {
   const styles: Record<string, string> = {
-    firing: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-    stale: "bg-amber-50 text-amber-700 border border-amber-200",
-    dark: "bg-rose-50 text-rose-700 border border-rose-200",
+    firing: "bg-primary/5 text-primary border border-primary/30",
+    stale: "bg-muted/40 text-foreground border border-border",
+    dark: "bg-destructive/5 text-destructive border border-destructive/30",
     unconfigured: "bg-muted text-muted-foreground border border-border",
   };
   const labels: Record<string, string> = {
@@ -171,9 +171,9 @@ function StatTile({
   tone: "emerald" | "amber" | "rose" | "neutral";
 }) {
   const styles: Record<string, string> = {
-    emerald: "text-emerald-700",
-    amber: "text-amber-700",
-    rose: "text-rose-700",
+    emerald: "text-primary",
+    amber: "text-foreground",
+    rose: "text-destructive",
     neutral: "text-muted-foreground",
   };
   return (
