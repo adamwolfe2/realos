@@ -193,7 +193,7 @@ export default async function PortfolioReputationPage({
         </div>
       ) : null}
       {loadError ? (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           <strong>Reputation data unavailable.</strong> The scanner tables may still be
           initializing — run a reputation scan from any property to seed the data. This
           page will display results once the first scan completes.
@@ -287,19 +287,19 @@ export default async function PortfolioReputationPage({
               label="Negative"
               count={negative}
               total={metrics.totalMentions}
-              tone="bg-muted-foreground"
+              tone="bg-foreground"
             />
             <SentimentBar
               label="Mixed"
               count={mixed}
               total={metrics.totalMentions}
-              tone="bg-amber-500"
+              tone="bg-primary/50"
             />
             <SentimentBar
               label="Neutral"
               count={neutral}
               total={metrics.totalMentions}
-              tone="bg-slate-400"
+              tone="bg-muted-foreground/50"
             />
           </div>
         </DashboardSection>
@@ -387,7 +387,7 @@ export default async function PortfolioReputationPage({
                     <td className="px-2 py-2.5 text-right tabular-nums">
                       {p.googleRating != null && safeNum(p.googleRating) > 0 ? (
                         <span className="inline-flex items-center gap-0.5">
-                          <Star className="h-3 w-3 fill-current text-amber-500" />
+                          <Star className="h-3 w-3 fill-current text-primary" />
                           {fmtRating(p.googleRating)}
                         </span>
                       ) : (
@@ -542,7 +542,7 @@ function ReputationFallback({
           Reputation
         </h1>
       </header>
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
         <p className="font-semibold">Reputation view temporarily unavailable.</p>
         <p className="mt-1 text-xs leading-snug">{message}</p>
         <p className="mt-2 text-xs">

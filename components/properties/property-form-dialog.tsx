@@ -128,7 +128,7 @@ export function PropertyFormDialog({
         {trigger ?? (
           <button
             type="button"
-            className="text-xs px-3 py-1.5 bg-foreground text-background rounded-md"
+            className="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary-dark transition-colors"
           >
             {initial ? "Edit property" : "Add property"}
           </button>
@@ -319,7 +319,7 @@ export function PropertyFormDialog({
                 type="button"
                 onClick={submit}
                 disabled={pending || !data.name.trim() || !data.slug.trim()}
-                className="text-xs px-3 py-1.5 bg-foreground text-background rounded-md disabled:opacity-40"
+                className="inline-flex items-center text-xs font-semibold px-3 py-1.5 bg-primary text-primary-foreground rounded-md hover:bg-primary-dark disabled:opacity-40 transition-colors"
               >
                 {pending
                   ? "Saving..."

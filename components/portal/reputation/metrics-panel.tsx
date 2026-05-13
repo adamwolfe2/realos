@@ -63,7 +63,7 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
               <span className="inline-flex items-baseline gap-1.5">
                 <span>{metrics.googleAvgRating.toFixed(1)}</span>
                 <Star
-                  className="h-4 w-4 text-amber-500 fill-current translate-y-0.5"
+                  className="h-4 w-4 text-primary fill-current translate-y-0.5"
                   aria-hidden="true"
                 />
               </span>

@@ -82,7 +82,7 @@ export function FilterPill({
       className={cn(
         "inline-flex items-center gap-1 rounded px-2 py-1 text-[11px] font-medium whitespace-nowrap transition-colors",
         active
-          ? "bg-foreground text-background"
+          ? "bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
           : "text-muted-foreground hover:bg-muted hover:text-foreground",
       )}
     >

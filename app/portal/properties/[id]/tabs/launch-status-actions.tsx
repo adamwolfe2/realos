@@ -33,7 +33,7 @@ export function LaunchStatusActions({
             type="button"
             onClick={() => act("resume")}
             disabled={pending}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
           >
             {pending ? (
               <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
@@ -57,7 +57,7 @@ export function LaunchStatusActions({
                 className={cn(
                   "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md transition-colors",
                   allRequiredComplete
-                    ? "border border-foreground bg-foreground text-background hover:bg-foreground/90"
+                    ? "border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
                     : "border border-border bg-muted/40 text-muted-foreground cursor-not-allowed",
                   pending && "opacity-50",
                 )}

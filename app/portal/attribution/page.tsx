@@ -205,7 +205,7 @@ export default async function AttributionPage({
         ) : null}
         <button
           type="submit"
-          className="inline-flex items-center justify-center rounded-md bg-foreground text-background px-3 py-1 text-xs font-semibold hover:opacity-90"
+          className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold hover:bg-primary-dark transition-colors"
         >
           Apply
         </button>

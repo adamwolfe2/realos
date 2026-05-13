@@ -373,7 +373,7 @@ function PlanGateBlock({
       <div className="flex flex-wrap items-center gap-2">
         <a
           href={`mailto:hello@leasestack.co?subject=${subject}&body=${body}`}
-          className="inline-flex items-center rounded-md bg-foreground text-background px-3 py-1.5 text-xs font-semibold hover:opacity-90"
+          className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold hover:opacity-90"
         >
           {provisioning ? "Email account team" : "Email account team"}
         </a>

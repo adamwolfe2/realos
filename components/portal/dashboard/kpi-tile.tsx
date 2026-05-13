@@ -41,9 +41,15 @@ function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live, l
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
           {icon ? (
-            <span className="text-muted-foreground shrink-0" aria-hidden="true">
+            // Brand-blue tinted square so KPI tiles read as intentional
+            // product surface, not wireframe placeholders. Uniform across
+            // every dashboard / attribution / property page.
+            <span
+              className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-primary/10 text-primary shrink-0"
+              aria-hidden="true"
+            >
               {icon}
             </span>
           ) : null}

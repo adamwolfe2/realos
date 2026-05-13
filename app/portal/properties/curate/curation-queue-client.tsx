@@ -88,7 +88,7 @@ export function CurationQueueClient({
                   type="button"
                   onClick={() => actBulk("activate")}
                   disabled={pending}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
                 >
                   <Check className="w-3.5 h-3.5" aria-hidden="true" />
                   Mark as active
@@ -109,7 +109,7 @@ export function CurationQueueClient({
                 type="button"
                 onClick={() => actBulk("activate")}
                 disabled={pending}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
               >
                 <Check className="w-3.5 h-3.5" aria-hidden="true" />
                 Restore as active
@@ -201,7 +201,7 @@ export function CurationQueueClient({
                       type="button"
                       onClick={() => actSingle(item.id, "activate")}
                       disabled={pending}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-foreground bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
                       title="Mark as active marketable property"
                     >
                       {pending ? (
@@ -227,7 +227,7 @@ export function CurationQueueClient({
                     type="button"
                     onClick={() => actSingle(item.id, "activate")}
                     disabled={pending}
-                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-foreground bg-foreground text-background hover:bg-foreground/90 disabled:opacity-50"
+                    className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
                     title="Restore — bring back into active properties"
                   >
                     {pending ? (

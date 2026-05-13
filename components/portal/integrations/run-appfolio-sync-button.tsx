@@ -52,7 +52,7 @@ export function RunAppFolioSyncButton({ label = "Run sync now", subtle = false }
 
   const cls = subtle
     ? "inline-flex items-center gap-1.5 rounded-md border border-primary/30 bg-card px-3 py-1.5 text-xs font-medium text-primary hover:bg-primary/10 disabled:opacity-50"
-    : "inline-flex items-center gap-1.5 rounded-md bg-foreground text-background px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-50";
+    : "inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold hover:opacity-90 disabled:opacity-50";
 
   return (
     <div className="flex flex-col items-end gap-1">

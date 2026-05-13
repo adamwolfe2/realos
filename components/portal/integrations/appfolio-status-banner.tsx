@@ -75,7 +75,7 @@ export function AppFolioStatusBanner({
         action={
           <Link
             href="/portal/settings/integrations"
-            className="inline-flex items-center rounded-md bg-foreground text-background px-3 py-1.5 text-xs font-semibold hover:opacity-90"
+            className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold hover:opacity-90"
           >
             Connect AppFolio
           </Link>

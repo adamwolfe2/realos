@@ -221,7 +221,7 @@ function ChecklistRow({ item }: { item: Awaited<ReturnType<typeof getLaunchCheck
       {!item.done && item.actionHref && item.actionLabel ? (
         <Link
           href={item.actionHref}
-          className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md border border-foreground bg-foreground text-background hover:bg-foreground/90 transition-colors shrink-0"
+          className="inline-flex items-center px-2.5 py-1 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors transition-colors shrink-0"
         >
           {item.actionLabel}
         </Link>

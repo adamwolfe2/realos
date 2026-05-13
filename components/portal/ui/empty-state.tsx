@@ -40,7 +40,7 @@ export function EmptyState({
       )}
     >
       {icon ? (
-        <div className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <div className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
           {icon}
         </div>
       ) : null}
@@ -55,7 +55,7 @@ export function EmptyState({
           {action ? (
             <Link
               href={action.href}
-              className="inline-flex items-center rounded-md bg-foreground text-background px-3 py-1.5 text-xs font-semibold hover:opacity-90 transition-opacity"
+              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-semibold hover:bg-primary-dark transition-colors"
             >
               {action.label}
             </Link>
