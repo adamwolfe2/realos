@@ -36,6 +36,7 @@ import {
   CalendarClock,
   PieChart,
   ShoppingBag,
+  Plug,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,15 @@ export const NAV_GROUPS: NavGroup[] = [
         show: (o) => !o.setupComplete && !o.onboardingDismissed,
       },
       { href: "/portal", label: "Dashboard", icon: LayoutDashboard, show: ALWAYS },
+      // Connect — always visible. The unified data-connection hub.
+      // Pinned high so users can come back at any time to plug in more
+      // sources. More sources connected = richer insights.
+      {
+        href: "/portal/connect",
+        label: "Connect",
+        icon: Plug,
+        show: ALWAYS,
+      },
       // Marketplace — always visible. Lets clients re-enter the
       // add-to-cart flow at any time to bolt on additional modules
       // (free during trial, Stripe Checkout after).

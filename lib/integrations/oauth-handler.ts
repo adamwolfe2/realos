@@ -187,6 +187,14 @@ export async function handleOAuthCallback(
     expiresInSec: tokens.expires_in ?? null,
   });
 
+  // On-data-arrival insight pass — runs in the background after the OAuth
+  // row commits so the user lands on the dashboard with insights already
+  // forming. The first sync hasn't fired yet (background cron picks that
+  // up), but historical detectors that don't depend on this provider can
+  // produce results immediately.
+  const { triggerInsightsForOrg } = await import("@/lib/insights/triggers");
+  triggerInsightsForOrg(payload.orgId, `${provider}_oauth_callback`);
+
   // Defense-in-depth: even though signState/verifyState ensures the
   // returnTo came from us, we re-validate before the redirect. Caps any
   // bug in the start-handler that lets a non-/portal returnTo get

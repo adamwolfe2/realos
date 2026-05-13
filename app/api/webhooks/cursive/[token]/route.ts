@@ -114,6 +114,20 @@ export async function POST(
       where: { id: envelope.id },
       data: { status: "processed" },
     });
+
+    // On-data-arrival insight pass — the first Cursive pixel event for an
+    // org is a high-signal moment (their pixel just went live). Detectors
+    // like hot-visitor + traffic-source-by-intent fire immediately so the
+    // user sees insights tied to their just-installed pixel.
+    try {
+      const { triggerInsightsForOrg } = await import(
+        "@/lib/insights/triggers"
+      );
+      triggerInsightsForOrg(integration.orgId, "cursive_event");
+    } catch (err) {
+      console.warn("[cursive] failed to trigger insights", err);
+    }
+
     return NextResponse.json({
       ok: true,
       events: events.length,

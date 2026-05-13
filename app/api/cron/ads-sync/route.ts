@@ -63,6 +63,25 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // On-data-arrival insight pass per affected org. Only fires for orgs
+    // where at least one account synced successfully so we don't spam
+    // detectors when the run was a no-op. De-duped via Set.
+    const successfulOrgIds = new Set(
+      results.filter((r) => r.ok).map((r) => r.orgId),
+    );
+    if (successfulOrgIds.size > 0) {
+      try {
+        const { triggerInsightsForOrg } = await import(
+          "@/lib/insights/triggers"
+        );
+        for (const orgId of successfulOrgIds) {
+          triggerInsightsForOrg(orgId, "ads_sync_complete");
+        }
+      } catch (err) {
+        console.warn("[cron/ads-sync] failed to trigger insights", err);
+      }
+    }
+
     return {
       result: NextResponse.json({
         ok: true,

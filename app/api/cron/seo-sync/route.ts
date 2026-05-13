@@ -49,6 +49,25 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // On-data-arrival insight pass — fire detectors for every org whose
+    // SEO sync just landed fresh GSC / GA4 metrics. Background, non-
+    // blocking; failures are swallowed inside the trigger.
+    const successfulOrgIds = new Set(
+      results.filter((r) => r.ok).map((r) => r.orgId),
+    );
+    if (successfulOrgIds.size > 0) {
+      try {
+        const { triggerInsightsForOrg } = await import(
+          "@/lib/insights/triggers"
+        );
+        for (const orgId of successfulOrgIds) {
+          triggerInsightsForOrg(orgId, "seo_sync_complete");
+        }
+      } catch (err) {
+        console.warn("[cron/seo-sync] failed to trigger insights", err);
+      }
+    }
+
     return {
       result: NextResponse.json({
         ok: true,

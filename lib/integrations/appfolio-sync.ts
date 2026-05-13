@@ -805,6 +805,19 @@ export async function runAppfolioSync(
     console.warn("[appfolio-sync] failed to record completion", err);
   }
 
+  // On-data-arrival insight pass — fires after the sync row commits so
+  // detectors see the just-written properties / leases / residents and
+  // surface insights within minutes of the user clicking "Connect
+  // AppFolio". Non-blocking; errors are caught inside the trigger.
+  if (anyPhaseCompleted) {
+    try {
+      const { triggerInsightsForOrg } = await import("@/lib/insights/triggers");
+      triggerInsightsForOrg(orgId, "appfolio_sync_complete");
+    } catch (err) {
+      console.warn("[appfolio-sync] failed to trigger insights", err);
+    }
+  }
+
   return {
     ok: anyPhaseCompleted,
     stats,
