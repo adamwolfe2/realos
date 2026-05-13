@@ -18,7 +18,10 @@ export type InsightCategory =
   | "ads"
   | "seo"
   | "chatbot"
-  | "occupancy";
+  | "occupancy"
+  | "reputation"
+  | "renewals"
+  | "portfolio";
 
 export type InsightKind =
   | "traffic_drop"
@@ -31,7 +34,14 @@ export type InsightKind =
   | "hot_visitor"
   | "tour_noshow_spike"
   | "chatbot_silence"
-  | "leasing_velocity_drop";
+  | "leasing_velocity_drop"
+  // New detectors (May 2026): take the data the user just connected and
+  // surface the highest-leverage actionable signals immediately.
+  | "negative_review"
+  | "wasted_ad_spend"
+  | "renewal_cliff"
+  | "vacancy_needs_boost"
+  | "portfolio_outlier";
 
 export type InsightEntityType =
   | "lead"
