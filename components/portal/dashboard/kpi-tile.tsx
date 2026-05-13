@@ -66,15 +66,21 @@ function KpiTileInner({ label, value, hint, delta, spark, icon, loading, live, l
       </div>
 
       {locked ? (
-        <div className="mt-2 flex items-baseline gap-2">
-          <span className="text-2xl leading-none font-semibold tracking-tight text-muted-foreground/50">
-            —
-          </span>
+        // Locked = the underlying source isn't connected yet. Previously
+        // rendered as a single "—" + "Connect →" link, which read as a
+        // bug in screenshots. Now shows a one-line invitation with the
+        // reason inline so partial-connect tenants (Telegraph Commons
+        // mid-onboarding, every demo prospect) see a polished surface
+        // instead of a void.
+        <div className="mt-2 space-y-1">
+          <div className="text-[11px] leading-snug text-muted-foreground line-clamp-2">
+            {locked.reason}
+          </div>
           <Link
             href={locked.href}
-            className="text-[11px] font-medium text-primary hover:underline"
+            className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-primary hover:underline"
           >
-            Connect →
+            Connect <span aria-hidden="true">→</span>
           </Link>
         </div>
       ) : (

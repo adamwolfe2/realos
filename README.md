@@ -60,9 +60,35 @@ Sprint summaries append to `BUILD_LOG.md` as each one ships.
 pnpm install
 cp .env.example .env.local        # fill in real secrets
 pnpm db:push                      # requires DATABASE_URL set
-pnpm db:seed                      # seeds Agency org + Telegraph Commons
+pnpm db:seed                      # seeds Agency org + Telegraph Commons (foundation)
 pnpm dev
 ```
+
+### Demo branch — full Telegraph Commons showcase
+
+For the sales-demo deployment (e.g. `leasestack.co/demo`) where every page
+needs to look fully populated for prospects, run the showcase seeders against
+a **throwaway Neon branch** (never production):
+
+```bash
+ALLOW_DEMO_SEED=true \
+  pnpm exec tsx scripts/seed-telegraph-commons.ts            # foundation
+ALLOW_DEMO_SEED=true \
+  pnpm exec tsx scripts/seed-telegraph-commons-showcase.ts   # residents,
+                                                              # leases,
+                                                              # work orders,
+                                                              # visitor sessions,
+                                                              # ad campaigns
+                                                              # + 28d metrics,
+                                                              # SEO snapshots,
+                                                              # reputation,
+                                                              # insights,
+                                                              # reports,
+                                                              # notifications
+```
+
+Both scripts are triple-guarded against running in production (`NODE_ENV`,
+`VERCEL_ENV`, `ALLOW_DEMO_SEED` opt-in, plus a hostname heuristic).
 
 ## Scripts
 
