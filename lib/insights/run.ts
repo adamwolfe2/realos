@@ -12,6 +12,11 @@ import { wastedAdSpendDetector } from "./detectors/wasted-ad-spend";
 import { renewalCliffDetector } from "./detectors/renewal-cliff";
 import { vacancyNeedsBoostDetector } from "./detectors/vacancy-needs-boost";
 import { portfolioOutlierDetector } from "./detectors/portfolio-outlier";
+import { pixelLeadsGapDetector } from "./detectors/pixel-leads-gap";
+import { seoLeadsDisconnectDetector } from "./detectors/seo-leads-disconnect";
+import { chatbotDropoffDetector } from "./detectors/chatbot-dropoff";
+import { audienceExhaustionDetector } from "./detectors/audience-exhaustion";
+import { rentVsPortfolioDetector } from "./detectors/rent-vs-portfolio";
 import { upsertInsights, autoResolveStale } from "./upsert";
 import { polishInsights } from "./llm-polish";
 import type { Detector, DetectorResult } from "./types";
@@ -32,6 +37,17 @@ const DETECTORS: Detector[] = [
   renewalCliffDetector,
   vacancyNeedsBoostDetector,
   portfolioOutlierDetector,
+  // Cross-source detectors (May 2026): combine 2+ data sources to
+  // surface insights no single-source detector can. The pixel↔leads
+  // gap needs visitors + leads; SEO disconnect needs SeoIntegration +
+  // leads; chatbot dropoff needs conversations + capture data;
+  // audience exhaustion needs spend + impressions + clicks; rent-vs-
+  // portfolio needs leases across multiple properties.
+  pixelLeadsGapDetector,
+  seoLeadsDisconnectDetector,
+  chatbotDropoffDetector,
+  audienceExhaustionDetector,
+  rentVsPortfolioDetector,
 ];
 
 // Detectors that produce one-insight-per-entity need their stale siblings
@@ -47,6 +63,8 @@ const AUTORESOLVE_KINDS: Record<string, string[]> = {
   "renewal-cliff": ["renewal_cliff"],
   "vacancy-needs-boost": ["vacancy_needs_boost"],
   "portfolio-outlier": ["portfolio_outlier"],
+  // Cross-source detectors keyed weekly — they self-resolve when the
+  // new week's key appears, so no autoResolve needed.
 };
 
 export interface InsightsRunSummary {

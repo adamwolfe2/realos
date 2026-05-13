@@ -101,20 +101,35 @@ export async function notifyIntegrationError(
 }
 
 /**
- * Fire a notification when a critical insight is detected. Dedupe-safe via
- * entityId + kind so the detector can re-run without stacking notifications.
+ * Fire a notification when a new actionable insight is detected.
+ *
+ * Severity policy:
+ *   - critical → always notify (bell badge + insight kind=critical_insight)
+ *   - warning  → notify (bell badge + kind=warning_insight)
+ *   - info     → no notification (would be too noisy; lives in /portal/insights only)
+ *
+ * Dedupe-safe via entityId match so the detector can re-run without
+ * stacking notifications. Backwards-compat alias `notifyCriticalInsight`
+ * preserved for any caller still expecting the old name.
  */
-export async function notifyCriticalInsight(insight: {
+export async function notifyNewInsight(insight: {
   id: string;
   orgId: string;
+  severity: string;
   title: string;
   body: string;
   href?: string | null;
 }): Promise<void> {
+  if (insight.severity !== "critical" && insight.severity !== "warning") {
+    return;
+  }
+  const kind =
+    insight.severity === "critical" ? "critical_insight" : "warning_insight";
+
   const existing = await prisma.notification.findFirst({
     where: {
       orgId: insight.orgId,
-      kind: "critical_insight",
+      kind,
       entityId: insight.id,
     },
     select: { id: true },
@@ -124,7 +139,7 @@ export async function notifyCriticalInsight(insight: {
   await prisma.notification.create({
     data: {
       orgId: insight.orgId,
-      kind: "critical_insight",
+      kind,
       title: insight.title,
       body: insight.body.slice(0, 300),
       entityType: "Insight",
@@ -132,6 +147,17 @@ export async function notifyCriticalInsight(insight: {
       href: insight.href ?? "/portal/insights",
     },
   });
+}
+
+/** @deprecated — use notifyNewInsight which handles both critical + warning. */
+export async function notifyCriticalInsight(insight: {
+  id: string;
+  orgId: string;
+  title: string;
+  body: string;
+  href?: string | null;
+}): Promise<void> {
+  await notifyNewInsight({ ...insight, severity: "critical" });
 }
 
 /**

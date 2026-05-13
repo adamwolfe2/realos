@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { notifyCriticalInsight } from "@/lib/notifications/create";
+import { notifyNewInsight } from "@/lib/notifications/create";
 import type { DetectedInsight } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -45,19 +45,20 @@ export async function upsertInsights(
       });
       inserted += 1;
 
-      // Fire a notification for new critical insights so the bell lights up.
-      // Dedupe handled inside notifyCriticalInsight via entityId match.
-      if (d.severity === "critical") {
-        notifyCriticalInsight({
-          id: created.id,
-          orgId,
-          title: d.title,
-          body: d.body,
-          href: d.href ?? null,
-        }).catch(() => {
-          // fire-and-forget: we don't want notification failures to break detection
-        });
-      }
+      // Fire a notification for new critical OR warning insights so the
+      // bell lights up. Info-level skipped to avoid noise. Dedupe handled
+      // inside notifyNewInsight via (orgId, kind, entityId) match — same
+      // detector firing twice on the same insight won't stack rows.
+      notifyNewInsight({
+        id: created.id,
+        orgId,
+        severity: d.severity,
+        title: d.title,
+        body: d.body,
+        href: d.href ?? null,
+      }).catch(() => {
+        // fire-and-forget: notification failures must never break detection
+      });
     } else if (existing.status === "open" || existing.status === "acknowledged") {
       await prisma.insight.update({
         where: { id: existing.id },
