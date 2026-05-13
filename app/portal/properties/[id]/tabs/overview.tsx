@@ -18,6 +18,12 @@ import {
 } from "@prisma/client";
 import { Sparkles } from "lucide-react";
 import { AnimatedNumber } from "@/components/portal/ui/animated-number";
+import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
+import {
+  getOpenInsights,
+  getInsightCounts,
+} from "@/lib/insights/queries";
+import type { InsightCardData } from "@/components/portal/insights/insight-card";
 
 type OverviewProperty = {
   propertyType: PropertyType;
@@ -103,6 +109,8 @@ export async function OverviewTab({
     chatbotConvos28d,
     reputationMentionTotal,
     reputationUnreviewedCount,
+    propertyInsights,
+    propertyInsightCounts,
   ] = await Promise.all([
     getPropertyOverviewKpis(orgId, propertyId, propertyMeta),
     prisma.property.findFirst({
@@ -200,6 +208,21 @@ export async function OverviewTab({
         where: { orgId, propertyId, reviewedByUserId: null },
       })
       .catch(() => 0),
+    // Per-property insights — filtered top 3 from the detector library.
+    // Renders in the InsightsHero at the top of this tab so operators
+    // see actionable signals scoped to this property without leaving
+    // the page.
+    getOpenInsights(orgId, { propertyId, limit: 3 }).catch(
+      () => [] as Awaited<ReturnType<typeof getOpenInsights>>,
+    ),
+    getInsightCounts(orgId, { propertyIds: [propertyId] }).catch(() => ({
+      critical: 0,
+      warning: 0,
+      info: 0,
+      open: 0,
+      acknowledged: 0,
+      total: 0,
+    })),
   ]);
 
   const totalUnits = property.totalUnits ?? null;
@@ -357,8 +380,31 @@ export async function OverviewTab({
         reputationLastAt={latestReputationScan?.completedAt ?? null}
       />
 
-      {/* AI Insight banner — one most-actionable signal */}
-      <AiInsightCard insight={aiInsight} />
+      {/* Insights hero — top 3 ranked open insights filtered to THIS
+          property. Replaces the legacy single-card deterministic
+          AiInsightCard with real DB-backed insights from the detector
+          library. Falls back to the rule-based AiInsightCard ONLY when
+          there are zero stored insights (gives a useful signal during
+          the first hour after the user connects data and detectors
+          haven't run yet). */}
+      {propertyInsights.length > 0 ? (
+        <InsightsHero
+          insights={propertyInsights as InsightCardData[]}
+          counts={{
+            critical: propertyInsightCounts.critical,
+            warning: propertyInsightCounts.warning,
+            info: propertyInsightCounts.info,
+            total: propertyInsightCounts.total,
+          }}
+          scope={{
+            kind: "property",
+            propertyId,
+            propertyName: propertyMeta.name,
+          }}
+        />
+      ) : (
+        <AiInsightCard insight={aiInsight} />
+      )}
 
       {/* Bug #27 — "Active features" strip. Pivot the overview's
           headline focus from leasing/occupancy to marketing/website.

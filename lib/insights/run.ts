@@ -13,6 +13,7 @@ import { renewalCliffDetector } from "./detectors/renewal-cliff";
 import { vacancyNeedsBoostDetector } from "./detectors/vacancy-needs-boost";
 import { portfolioOutlierDetector } from "./detectors/portfolio-outlier";
 import { upsertInsights, autoResolveStale } from "./upsert";
+import { polishInsights } from "./llm-polish";
 import type { Detector, DetectorResult } from "./types";
 
 const DETECTORS: Detector[] = [
@@ -69,27 +70,19 @@ export async function runInsightDetectors(
     detectorResults: [],
   };
 
+  // Phase 1: run every detector and collect raw insights. We DON'T
+  // polish per-detector; one batched Claude call across the full pass
+  // is dramatically cheaper than 12 separate ones.
+  const allDetected: Array<{
+    detector: string;
+    insights: Awaited<ReturnType<Detector["run"]>>;
+  }> = [];
+
   for (const detector of DETECTORS) {
     try {
       const detected = await detector.run(orgId);
-      summary.detectorResults.push({
-        detector: detector.name,
-        insights: detected,
-      });
+      allDetected.push({ detector: detector.name, insights: detected });
       summary.totalDetected += detected.length;
-
-      if (detected.length > 0) {
-        const { inserted, updated } = await upsertInsights(orgId, detected);
-        summary.totalInserted += inserted;
-        summary.totalUpdated += updated;
-      }
-
-      const kindsToResolve = AUTORESOLVE_KINDS[detector.name];
-      if (kindsToResolve) {
-        const keys = new Set(detected.map((d) => d.dedupeKey));
-        const resolved = await autoResolveStale(orgId, kindsToResolve, keys);
-        summary.totalResolved += resolved;
-      }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       summary.detectorResults.push({
@@ -97,6 +90,46 @@ export async function runInsightDetectors(
         insights: [],
         error: message,
       });
+    }
+  }
+
+  // Phase 2: polish every detected insight via Claude Haiku in ONE
+  // batched call. Falls back to raw rule copy when no API key or on
+  // any failure (see lib/insights/llm-polish.ts). Cost: ~$0.005 per
+  // run regardless of org size.
+  const flat = allDetected.flatMap((d) => d.insights);
+  const polished =
+    flat.length > 0 ? await polishInsights(flat) : flat;
+
+  // Phase 3: upsert polished insights per detector (so detector
+  // attribution + autoResolve still work correctly per detector).
+  let polishedCursor = 0;
+  for (const { detector, insights: detected } of allDetected) {
+    const polishedSlice = polished.slice(
+      polishedCursor,
+      polishedCursor + detected.length,
+    );
+    polishedCursor += detected.length;
+
+    summary.detectorResults.push({
+      detector,
+      insights: polishedSlice,
+    });
+
+    if (polishedSlice.length > 0) {
+      const { inserted, updated } = await upsertInsights(
+        orgId,
+        polishedSlice,
+      );
+      summary.totalInserted += inserted;
+      summary.totalUpdated += updated;
+    }
+
+    const kindsToResolve = AUTORESOLVE_KINDS[detector];
+    if (kindsToResolve) {
+      const keys = new Set(polishedSlice.map((d) => d.dedupeKey));
+      const resolved = await autoResolveStale(orgId, kindsToResolve, keys);
+      summary.totalResolved += resolved;
     }
   }
 

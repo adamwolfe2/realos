@@ -3,37 +3,77 @@ import { Sparkles, ArrowRight, Plug } from "lucide-react";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 
 // ---------------------------------------------------------------------------
-// InsightsHero — the dashboard centerpiece.
+// InsightsHero — the dashboard centerpiece, also reused on per-property
+// pages for the same insight surface filtered to one property.
 //
-// Renders the top 3 ranked open insights as a hero card. When the org has
-// no insights yet (brand-new tenant, no data connected) it renders an
-// empty-state coaching block that drives users to /portal/connect — the
-// fastest path to first insight.
+// Two scope modes:
+//   - "portfolio" (default) → drives /portal/connect when empty, links to
+//     /portal/insights for view-all.
+//   - { propertyId, propertyName } → empty state stays calm ("no insights
+//     for this property right now"), links to /portal/insights filtered to
+//     this property for view-all.
 //
-// The component is a server component (it accepts props from the page
-// server-component) but the child InsightCard is a client component for
-// the acknowledge / dismiss / snooze / mark-acted actions.
+// Server component — child InsightCard handles the acknowledge / dismiss /
+// snooze / mark-acted client actions.
 // ---------------------------------------------------------------------------
+
+type Scope =
+  | "portfolio"
+  | { kind: "property"; propertyId: string; propertyName: string };
 
 type Props = {
   insights: InsightCardData[];
   counts: { critical: number; warning: number; info: number; total: number };
   /** How many of the 7 data sources the org has connected. Drives the
-      empty-state copy ("Connect your first source" vs "Add 2 more"). */
-  sourcesConnected: number;
-  totalSources: number;
+      empty-state copy on portfolio scope. Ignored when scope is property. */
+  sourcesConnected?: number;
+  totalSources?: number;
+  scope?: Scope;
 };
 
 export function InsightsHero({
   insights,
   counts,
-  sourcesConnected,
-  totalSources,
+  sourcesConnected = 0,
+  totalSources = 7,
+  scope = "portfolio",
 }: Props) {
-  // Empty state — no insights yet. Either the org has no data connected
-  // OR the detectors haven't found anything actionable yet (best-case
-  // scenario for the operator).
+  const isProperty = scope !== "portfolio" && scope.kind === "property";
+  const propertyName = isProperty ? scope.propertyName : null;
+  const propertyId = isProperty ? scope.propertyId : null;
+  const viewAllHref = isProperty
+    ? `/portal/insights?property=${propertyId}`
+    : "/portal/insights";
+
+  // Empty state — tone differs by scope. Portfolio nudges to /portal/connect;
+  // property scope just says "nothing actionable right now."
   if (counts.total === 0) {
+    if (isProperty) {
+      return (
+        <section className="rounded-xl border border-border bg-muted/30 p-4 lg:p-5">
+          <div className="flex items-start gap-3">
+            <div className="inline-flex items-center justify-center w-9 h-9 rounded-md bg-primary/10 text-primary shrink-0">
+              <Sparkles className="w-[18px] h-[18px]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                Insights
+              </p>
+              <h2 className="text-[16px] font-semibold text-foreground mt-0.5">
+                Nothing to action at {propertyName} right now.
+              </h2>
+              <p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
+                We&apos;ll surface insights here as soon as detectors find an
+                actionable pattern in this property&apos;s data — vacancy
+                concentration, ad-spend anomalies, renewal cliffs, negative
+                reviews, and more.
+              </p>
+            </div>
+          </div>
+        </section>
+      );
+    }
+    // Portfolio scope — drive to /portal/connect.
     return (
       <section className="rounded-xl border border-primary/20 bg-primary/[0.03] p-5 lg:p-6">
         <div className="flex items-start gap-4">
@@ -87,7 +127,7 @@ export function InsightsHero({
         <div className="min-w-0">
           <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-primary">
             <Sparkles className="w-3 h-3" />
-            Insights
+            {isProperty ? `Insights for ${propertyName}` : "Insights"}
           </p>
           <h2
             className="text-[18px] lg:text-[20px] font-semibold tracking-tight text-foreground leading-snug mt-1"
@@ -104,7 +144,7 @@ export function InsightsHero({
           </h2>
         </div>
         <Link
-          href="/portal/insights"
+          href={viewAllHref}
           className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline whitespace-nowrap shrink-0"
         >
           View all <ArrowRight className="w-3 h-3" />
