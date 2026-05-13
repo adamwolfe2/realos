@@ -308,7 +308,7 @@ export function DomainsPanel({
         <button
           type="submit"
           disabled={pending || !hostname.trim()}
-          className="text-xs px-3 py-1.5 bg-foreground text-background rounded-md disabled:opacity-40"
+          className="text-xs px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary-dark transition-colors rounded-md disabled:opacity-40"
         >
           {pending ? "Working…" : "Add domain"}
         </button>

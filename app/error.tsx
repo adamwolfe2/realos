@@ -36,7 +36,7 @@ export default function RootError({
       <div className="flex flex-wrap gap-3 justify-center">
         <Button
           onClick={reset}
-          className="bg-foreground text-background hover:bg-foreground/80 rounded-none h-10 px-6"
+          className="bg-primary text-primary-foreground hover:bg-primary-dark transition-colors hover:bg-foreground/80 rounded-none h-10 px-6"
         >
           Try again
         </Button>

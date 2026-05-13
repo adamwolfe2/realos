@@ -242,7 +242,7 @@ function FilterTab({
       href={href}
       className={
         active
-          ? "inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-foreground text-background"
+          ? "inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border bg-primary text-primary-foreground hover:bg-primary-dark transition-colors"
           : "inline-flex items-center gap-2 px-3 py-1.5 rounded-md border border-border hover:bg-muted/40 transition-colors"
       }
       style={{ borderRadius: 6 }}

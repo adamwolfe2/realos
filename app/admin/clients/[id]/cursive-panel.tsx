@@ -226,7 +226,7 @@ export function CursivePanel({
             type="button"
             onClick={onSave}
             disabled={pending}
-            className="text-xs px-3 py-1.5 bg-foreground text-background rounded-md hover:bg-foreground/90 disabled:opacity-40"
+            className="text-xs px-3 py-1.5 bg-primary text-primary-foreground hover:bg-primary-dark transition-colors rounded-md hover:bg-foreground/90 disabled:opacity-40"
           >
             {pending ? "Saving…" : "Save"}
           </button>

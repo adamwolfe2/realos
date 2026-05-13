@@ -112,10 +112,24 @@ export default async function SettingsPage() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <NavCard
+          href="/portal/connect"
+          icon={<Plug className="size-4" aria-hidden="true" />}
+          title="Connect data"
+          description="The unified hub for AppFolio, Google Analytics, Search Console, Google + Meta Ads, the Cursive pixel, and your website. Each connection unlocks new insight categories."
+          stat={`${integrationsActive} connected`}
+        />
+        <NavCard
+          href="/portal/marketplace"
+          icon={<Boxes className="size-4" aria-hidden="true" />}
+          title="Marketplace"
+          description="Activate add-on modules — every module is free to try during your trial."
+          stat={`${onCount} of ${modules.length} active`}
+        />
+        <NavCard
           href="/portal/settings/integrations"
           icon={<Plug className="size-4" aria-hidden="true" />}
-          title="Integrations"
-          description="Connect the visitor pixel, AppFolio, Google Ads, Meta Ads, GA4, and GSC."
+          title="Integration details"
+          description="Per-integration status, sync schedules, credential rotation, and manual disconnection."
           stat={`${integrationsActive} connected`}
         />
         <NavCard
@@ -224,10 +238,10 @@ function NavCard({
   return (
     <Link
       href={href}
-      className="group rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-foreground/20 hover:bg-accent/40"
+      className="group rounded-xl border border-border bg-card p-5 shadow-sm transition-colors hover:border-primary/30 hover:bg-primary/[0.02]"
     >
       <div className="flex items-start gap-3">
-        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-muted-foreground group-hover:bg-foreground group-hover:text-background transition-colors">
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-primary/10 text-primary transition-colors">
           {icon}
         </span>
         <div className="min-w-0 flex-1">

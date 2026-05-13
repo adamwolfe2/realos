@@ -30,7 +30,7 @@ export default function AuthError({
         </button>
         <a
           href="/sign-in"
-          className="font-mono text-sm border border-ink bg-ink text-cream px-5 py-2.5 hover:bg-ink/80 transition-colors"
+          className="font-mono text-sm border border-ink bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-5 py-2.5 hover:bg-ink/80 transition-colors"
         >
           Sign in
         </a>

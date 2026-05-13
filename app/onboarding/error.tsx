@@ -33,7 +33,7 @@ export default function OnboardingError({
         <div className="flex items-center justify-center gap-3 pt-2">
           <button
             onClick={reset}
-            className="inline-flex items-center justify-center rounded-md bg-foreground text-background px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
+            className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-4 py-2 text-sm font-medium hover:opacity-90 transition-opacity"
           >
             Try again
           </button>
