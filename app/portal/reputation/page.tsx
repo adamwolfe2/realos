@@ -41,7 +41,7 @@ const SENTIMENT_TONE: Record<Sentiment, string> = {
   POSITIVE: "bg-primary/10 text-primary border-primary/30",
   NEUTRAL: "bg-muted text-muted-foreground border-border",
   NEGATIVE: "bg-muted text-muted-foreground border-border",
-  MIXED: "bg-amber-50 text-amber-700 border-amber-200",
+  MIXED: "bg-muted/40 text-foreground border-border",
 };
 
 const SENTIMENT_LABEL: Record<Sentiment, string> = {
@@ -682,7 +682,7 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
             <div className="flex items-center gap-2 shrink-0">
               {ratingNum != null && ratingNum > 0 ? (
                 <span className="inline-flex items-center gap-0.5 text-xs text-foreground">
-                  <Star className="h-3 w-3 fill-current text-amber-500" />
+                  <Star className="h-3 w-3 fill-current text-primary" />
                   {ratingNum.toFixed(1)}
                 </span>
               ) : null}
@@ -694,7 +694,7 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
                 </span>
               ) : null}
               {mention.flagged ? (
-                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-amber-700">
+                <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-foreground">
                   <Flag className="h-3 w-3" />
                 </span>
               ) : null}

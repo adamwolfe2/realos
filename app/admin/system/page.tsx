@@ -61,15 +61,15 @@ const CRON_SCHEDULE: Array<{ jobName: string; schedule: string; description: str
 // Tone helpers — semantic colors mirror /admin/audit-log + /admin/tenants.
 // ---------------------------------------------------------------------------
 function toneFor(status: HealthStatus): string {
-  if (status === "ok") return "bg-emerald-50 text-emerald-700 border-emerald-200";
-  if (status === "degraded") return "bg-amber-50 text-amber-700 border-amber-200";
-  return "bg-rose-50 text-rose-700 border-rose-200";
+  if (status === "ok") return "bg-primary/5 text-primary border-primary/30";
+  if (status === "degraded") return "bg-muted/40 text-foreground border-border";
+  return "bg-muted/40 text-destructive border-destructive/30";
 }
 
 function bannerToneFor(status: HealthStatus): string {
-  if (status === "ok") return "bg-emerald-50 border-emerald-200 text-emerald-900";
-  if (status === "degraded") return "bg-amber-50 border-amber-200 text-amber-900";
-  return "bg-rose-50 border-rose-200 text-rose-900";
+  if (status === "ok") return "bg-primary/5 border-primary/30 text-primary";
+  if (status === "degraded") return "bg-muted/40 border-border text-foreground";
+  return "bg-muted/40 border-destructive/30 text-destructive";
 }
 
 function statusLabel(status: HealthStatus): string {
@@ -319,9 +319,9 @@ function CheckCard({
 // ---------------------------------------------------------------------------
 
 const STATE_DOT: Record<CheckState, string> = {
-  pass: "bg-emerald-500",
-  warn: "bg-amber-500",
-  fail: "bg-rose-500",
+  pass: "bg-primary/5",
+  warn: "bg-muted/40",
+  fail: "bg-muted/40",
   skip: "bg-muted-foreground/30",
 };
 
@@ -492,7 +492,7 @@ function CronTable({
                     {!run ? "No data" : run.status}
                   </span>
                   {run?.error ? (
-                    <div className="text-[11px] text-rose-700 mt-1 truncate max-w-[180px]" title={run.error}>
+                    <div className="text-[11px] text-destructive mt-1 truncate max-w-[180px]" title={run.error}>
                       {run.error}
                     </div>
                   ) : null}

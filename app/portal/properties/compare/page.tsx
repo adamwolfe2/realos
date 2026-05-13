@@ -411,7 +411,7 @@ export default async function ComparePropertiesPage({
         if (typeof p?.googleAggRating !== "number") return "—";
         return (
           <span className="inline-flex items-center gap-0.5">
-            <Star className="h-3 w-3 fill-current text-amber-500" />
+            <Star className="h-3 w-3 fill-current text-primary" />
             {p.googleAggRating.toFixed(1)}
             {p.googleAggReviewCount ? (
               <span className="text-muted-foreground text-[10px] ml-1">

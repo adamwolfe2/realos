@@ -511,7 +511,7 @@ function StatusPill({ status }: { status: string }) {
     norm === "ENABLED" || norm === "ACTIVE"
       ? "bg-primary/10 text-primary border-primary/30"
       : norm === "PAUSED"
-        ? "bg-amber-50 text-amber-800 border-amber-200"
+        ? "bg-muted/40 text-foreground border-border"
         : "bg-muted text-muted-foreground border-border";
   return (
     <span

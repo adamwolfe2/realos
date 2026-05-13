@@ -238,7 +238,7 @@ function MetaChip({
 }) {
   const toneClass =
     tone === "warn"
-      ? "bg-amber-50 text-amber-900 ring-amber-200"
+      ? "bg-muted/40 text-foreground ring-border"
       : tone === "muted"
         ? "bg-muted text-muted-foreground ring-border"
         : "bg-card text-foreground ring-border";
@@ -292,13 +292,13 @@ function CaptureOnlyDetails({
   const hasAnyContact = Boolean(capturedName || capturedEmail || capturedPhone);
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
-        <p className="text-sm font-semibold text-amber-900">
+      <div className="rounded-lg border border-border bg-muted/40 px-4 py-3">
+        <p className="text-sm font-semibold text-foreground">
           {hasAnyContact
             ? "Capture-only conversation"
             : "No interaction recorded"}
         </p>
-        <p className="text-xs text-amber-900/80 mt-1 leading-relaxed">
+        <p className="text-xs text-foreground/80 mt-1 leading-relaxed">
           {hasAnyContact
             ? "The visitor submitted their contact info via the chatbot's pre-chat form but didn't continue into a message exchange. They're a real lead — reach out directly using the details below."
             : "The widget loaded but no contact info or messages were captured. Likely a visitor who closed the launcher before engaging."}

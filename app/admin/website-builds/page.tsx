@@ -241,7 +241,7 @@ function StatusBadge({
       : tone === "active"
         ? "bg-blue-50 text-blue-700"
         : tone === "warn"
-          ? "bg-amber-50 text-amber-800"
+          ? "bg-muted/40 text-foreground"
           : "bg-muted text-muted-foreground";
   return (
     <span

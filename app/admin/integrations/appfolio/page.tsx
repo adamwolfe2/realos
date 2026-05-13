@@ -436,7 +436,7 @@ function Stat({
       <div
         className={`mt-1 text-2xl font-semibold tabular-nums ${
           tone === "ok"
-            ? "text-emerald-700"
+            ? "text-primary"
             : tone === "bad"
               ? "text-destructive"
               : "text-foreground"

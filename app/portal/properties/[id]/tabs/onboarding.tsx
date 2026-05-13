@@ -41,7 +41,7 @@ const STATUS_TONE: Record<string, StatusBadgeTone> = {
 
 const TONE_CLASS: Record<StatusBadgeTone, string> = {
   live: "bg-primary/10 text-primary border-primary/30",
-  onboarding: "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-500/10 dark:text-amber-400 dark:border-amber-500/30",
+  onboarding: "bg-muted/40 text-foreground border-border dark:bg-muted/40/10 dark:text-muted-foreground dark:border-primary/30",
   draft: "bg-muted text-muted-foreground border-border",
   paused: "bg-muted text-muted-foreground border-border",
 };
@@ -131,7 +131,7 @@ export async function OnboardingTab({
                 tone === "live"
                   ? "bg-primary"
                   : tone === "onboarding"
-                    ? "bg-amber-500"
+                    ? "bg-muted/40"
                     : "bg-muted-foreground/40",
               )}
               style={{ width: `${requiredPct}%` }}
@@ -203,7 +203,7 @@ function ChecklistRow({ item }: { item: Awaited<ReturnType<typeof getLaunchCheck
             {item.label}
           </span>
           {!item.done && item.required ? (
-            <span className="inline-flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded bg-amber-500/10">
+            <span className="inline-flex items-center gap-1 text-[10px] text-foreground dark:text-muted-foreground px-1.5 py-0.5 rounded bg-muted/40/10">
               <AlertCircle className="w-2.5 h-2.5" aria-hidden="true" />
               required
             </span>

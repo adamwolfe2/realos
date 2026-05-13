@@ -136,8 +136,8 @@ export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
               ) : null}
 
               {!cancelled && b.status === "requested" && b.calBookingUrl ? (
-                <div className="flex items-center justify-between gap-3 rounded-md bg-amber-50 border border-amber-200 px-3 py-2">
-                  <p className="text-xs text-amber-900">
+                <div className="flex items-center justify-between gap-3 rounded-md bg-muted/40 border border-border px-3 py-2">
+                  <p className="text-xs text-foreground">
                     {b.calBookedAt
                       ? `Kickoff call booked for ${new Date(b.calBookedAt).toLocaleDateString()}`
                       : "Next step: book your kickoff call so we can start the build."}

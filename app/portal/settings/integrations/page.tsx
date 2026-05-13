@@ -418,7 +418,7 @@ function PixelRequestPending({
   return (
     <div className="rounded-md border border-border bg-muted/30 p-5 space-y-3">
       <div className="flex items-center gap-2">
-        <span className="inline-block h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+        <span className="inline-block h-2 w-2 rounded-full bg-muted/40 animate-pulse" />
         <h3 className="text-sm font-semibold">Setting up your pixel</h3>
       </div>
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">

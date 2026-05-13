@@ -23,7 +23,7 @@ const STATUS_LABEL: Record<WorkOrderStatus, string> = {
 const STATUS_TONE: Record<WorkOrderStatus, string> = {
   NEW: "bg-primary/10 text-primary border-primary/30",
   SCHEDULED: "bg-muted text-muted-foreground border-border",
-  IN_PROGRESS: "bg-amber-50 text-amber-800 border-amber-200",
+  IN_PROGRESS: "bg-muted/40 text-foreground border-border",
   COMPLETED: "bg-primary/10 text-primary border-primary/30",
   CANCELLED: "bg-muted text-muted-foreground border-border",
   ON_HOLD: "bg-slate-50 text-slate-700 border-slate-200",
@@ -39,8 +39,8 @@ const PRIORITY_LABEL: Record<WorkOrderPriority, string> = {
 const PRIORITY_TONE: Record<WorkOrderPriority, string> = {
   LOW: "text-muted-foreground",
   NORMAL: "text-foreground",
-  HIGH: "text-amber-700 font-semibold",
-  URGENT: "text-amber-700 font-bold",
+  HIGH: "text-foreground font-semibold",
+  URGENT: "text-foreground font-bold",
 };
 
 const OPEN_STATUSES = [
@@ -268,9 +268,9 @@ export async function WorkOrdersTab({
   } catch (err) {
     console.error("[WorkOrdersTab] Failed to load AppFolio work order data:", err);
     return (
-      <div className="rounded-xl border border-amber-200 bg-amber-50 p-6 text-center">
-        <p className="text-sm font-semibold text-amber-900">Work order data unavailable</p>
-        <p className="mt-1 text-xs text-amber-700">
+      <div className="rounded-xl border border-border bg-muted/40 p-6 text-center">
+        <p className="text-sm font-semibold text-foreground">Work order data unavailable</p>
+        <p className="mt-1 text-xs text-foreground">
           AppFolio sync may not be configured for this property. Check{" "}
           <a href="/portal/settings/integrations" className="underline">Settings → Integrations</a>.
         </p>

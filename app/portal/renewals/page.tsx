@@ -343,9 +343,9 @@ export default async function RenewalsPage({
                     : null;
                   const tone =
                     days != null && days <= 30
-                      ? "text-amber-700 font-bold"
+                      ? "text-foreground font-bold"
                       : days != null && days <= 60
-                        ? "text-amber-700 font-semibold"
+                        ? "text-foreground font-semibold"
                         : "text-foreground";
                   return (
                     <tr
