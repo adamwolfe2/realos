@@ -221,11 +221,28 @@ export default async function ConversationsList({
 
       {conversations.length === 0 ? (
         <EmptyState
-          title="No conversations match this view yet."
+          title={
+            qRaw || activeFlag
+              ? "No conversations match this view."
+              : "Your chatbot hasn't logged any conversations yet."
+          }
           body={
             qRaw || activeFlag
-              ? "Try clearing your search or filter."
-              : "When visitors chat with your bot, transcripts land here. Make sure the embed snippet is on the property site."
+              ? "Try clearing your search or the active filter."
+              : "Conversations appear here the moment a visitor chats with your bot. Configure your chatbot persona and install the embed snippet on your site to start capturing leads."
+          }
+          action={
+            qRaw || activeFlag
+              ? undefined
+              : {
+                  label: "Configure chatbot",
+                  href: "/portal/chatbot",
+                }
+          }
+          secondary={
+            qRaw || activeFlag
+              ? undefined
+              : { label: "Install snippet", href: "/portal/connect" }
           }
         />
       ) : (

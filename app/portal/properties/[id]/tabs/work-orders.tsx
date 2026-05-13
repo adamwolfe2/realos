@@ -272,7 +272,7 @@ export async function WorkOrdersTab({
         <p className="text-sm font-semibold text-foreground">Work order data unavailable</p>
         <p className="mt-1 text-xs text-foreground">
           AppFolio sync may not be configured for this property. Check{" "}
-          <a href="/portal/settings/integrations" className="underline">Settings → Integrations</a>.
+          <a href="/portal/connect" className="underline">Settings → Integrations</a>.
         </p>
       </div>
     );

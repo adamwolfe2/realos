@@ -233,7 +233,7 @@ export default async function AdsPage({
             />
             <ExportButton href="/api/tenant/ad-metrics/export?days=90" />
             <Link
-              href="/portal/settings/integrations"
+              href="/portal/connect"
               className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
             >
               Connect an ad account
@@ -311,13 +311,13 @@ function EmptyState() {
       </p>
       <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
         <Link
-          href="/portal/settings/integrations"
+          href="/portal/connect"
           className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
         >
           Connect Google Ads
         </Link>
         <Link
-          href="/portal/settings/integrations"
+          href="/portal/connect"
           className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
         >
           Connect Meta Ads

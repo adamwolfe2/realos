@@ -209,10 +209,10 @@ export default async function PropertiesList({
         <EmptyState
           icon={<Building2 className="h-4 w-4" />}
           title="Add your first property to start tracking everything."
-          body="Properties are the foundation — leads, tours, ad campaigns, chatbot transcripts, reputation scans, and traffic data all map back to a property."
+          body="Properties are the foundation — leads, tours, ad campaigns, chatbot transcripts, reputation scans, and traffic data all map back to a property. The fastest path is to connect AppFolio so we sync your portfolio automatically."
           secondary={{
             label: "Sync from AppFolio",
-            href: "/portal/settings/integrations",
+            href: "/portal/connect",
           }}
         />
       ) : (

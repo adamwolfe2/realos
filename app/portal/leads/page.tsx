@@ -233,7 +233,7 @@ function EmptyLeadsState() {
       body="Leads from chatbot conversations, contact forms, ads, or AppFolio sync land here. Pick a starting point below."
       action={{ label: "Set up lead capture", href: "/portal/site-builder" }}
       secondary={{
-        label: "Connect AppFolio",
+        label: "Connect data sources",
         href: "/portal/settings/integrations",
       }}
     />

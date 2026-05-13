@@ -419,7 +419,7 @@ export default async function ToursPage({
         />
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Tour data could not be loaded. If this error persists, check{" "}
-          <a href="/portal/settings/integrations" className="underline font-medium">
+          <a href="/portal/connect" className="underline font-medium">
             Settings → Integrations
           </a>
           .

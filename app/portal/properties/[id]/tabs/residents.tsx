@@ -291,7 +291,7 @@ export async function ResidentsTab({
         <p className="mt-1 text-xs text-foreground">
           AppFolio sync may not be configured for this property. Check{" "}
           <a
-            href="/portal/settings/integrations"
+            href="/portal/connect"
             className="underline"
           >
             Settings → Integrations

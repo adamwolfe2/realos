@@ -130,7 +130,7 @@ export default async function BriefingPage({
       href: "/portal/properties",
     },
     {
-      label: "Connect AppFolio",
+      label: "Connect data sources",
       done: !!appfolioIntegration?.lastSyncAt,
       href: "/portal/settings/integrations",
     },
@@ -320,7 +320,7 @@ export default async function BriefingPage({
         </div>
         <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
           Briefing data could not be loaded. This is usually temporary — try refreshing. If the issue persists, check{" "}
-          <a href="/portal/settings/integrations" className="underline font-medium">
+          <a href="/portal/connect" className="underline font-medium">
             Settings → Integrations
           </a>
           .

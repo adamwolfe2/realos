@@ -500,7 +500,7 @@ function PixelStalenessBanner({
         </p>
       </div>
       <Link
-        href="/portal/settings/integrations"
+        href="/portal/connect"
         className="shrink-0 inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark transition-colors px-3 py-1.5 text-xs font-semibold hover:opacity-90"
       >
         Verify pixel install
@@ -698,7 +698,7 @@ function EmptyNoPixel() {
         real time \u2014 name, company, job title, and the pages they viewed.
       </p>
       <Link
-        href="/portal/settings/integrations"
+        href="/portal/connect"
         className="inline-block text-xs px-3 py-2 border rounded-md hover:bg-muted"
       >
         Go to integrations
@@ -722,7 +722,7 @@ function EmptyNoVisitors() {
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2">
         <a
-          href="/portal/settings/integrations"
+          href="/portal/connect"
           className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
         >
           Install the pixel

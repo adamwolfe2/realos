@@ -280,7 +280,7 @@ export default async function ApplicationsPage({
         />
         <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           Application data could not be loaded. This usually means AppFolio hasn&apos;t synced yet.{" "}
-          <a href="/portal/settings/integrations" className="underline font-medium">
+          <a href="/portal/connect" className="underline font-medium">
             Go to Settings → Integrations
           </a>
         </div>

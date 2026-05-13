@@ -27,6 +27,10 @@ const CATEGORY_FILTERS = [
   { value: "ads", label: "Ads" },
   { value: "chatbot", label: "Chatbot" },
   { value: "seo", label: "SEO" },
+  { value: "reputation", label: "Reputation" },
+  { value: "renewals", label: "Renewals" },
+  { value: "occupancy", label: "Occupancy" },
+  { value: "portfolio", label: "Portfolio" },
 ];
 
 export default async function InsightsPage({
@@ -164,16 +168,55 @@ export default async function InsightsPage({
       </div>
 
       {rows.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card py-16 text-center">
-          <Sparkles className="mx-auto h-6 w-6 text-muted-foreground" />
-          <h2 className="mt-3 text-base font-semibold text-foreground">
-            No insights match those filters
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-            Try widening the filters. Detectors run every 30 minutes and will
-            surface anomalies as they appear.
-          </p>
-        </div>
+        // Brand-aligned empty state. Two variants depending on whether the
+        // org has ever had insights — if total is 0 across statuses the
+        // user hasn't connected enough data yet; nudge them to /portal/connect.
+        // Otherwise it's a filter mismatch — invite them to widen.
+        counts.total === 0 && resolvedCount === 0 ? (
+          <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-8 lg:p-12 text-center">
+            <div className="inline-flex items-center justify-center w-12 h-12 rounded-md bg-primary/10 text-primary mb-4">
+              <Sparkles className="h-6 w-6" />
+            </div>
+            <h2
+              className="text-lg lg:text-xl font-semibold text-foreground"
+              style={{
+                fontFamily:
+                  "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
+              }}
+            >
+              You don&apos;t have any insights yet.
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
+              Insights surface automatically once your data starts flowing.
+              Connect AppFolio, Google Analytics, your ad accounts, and the
+              Cursive pixel — each unlocks a new family of detectors that run
+              continuously in the background.
+            </p>
+            <Link
+              href="/portal/connect"
+              className="inline-flex items-center gap-1.5 mt-5 h-10 px-5 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition-colors"
+            >
+              Connect your data
+            </Link>
+          </div>
+        ) : (
+          <div className="rounded-xl border border-dashed border-border bg-card py-12 text-center">
+            <Sparkles className="mx-auto h-6 w-6 text-muted-foreground" />
+            <h2 className="mt-3 text-base font-semibold text-foreground">
+              No insights match those filters
+            </h2>
+            <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
+              Try widening the filters. Detectors run continuously plus on
+              every data sync.
+            </p>
+            <Link
+              href="/portal/insights"
+              className="inline-flex items-center mt-3 text-xs font-semibold text-primary hover:underline"
+            >
+              Clear all filters →
+            </Link>
+          </div>
+        )
       ) : (
         <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {casted.map((insight) => (
