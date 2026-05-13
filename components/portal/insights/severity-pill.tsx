@@ -7,6 +7,10 @@ type Props = {
 };
 
 export function SeverityPill({ severity, size = "md" }: Props) {
+  // Brand-aligned severity tones — single primary accent expressed at
+  // different intensities (filled vs tinted vs neutral) instead of a
+  // green / amber / red rainbow. Critical is the destructive token —
+  // reserved for genuinely actionable problems, not category colour.
   const config = {
     critical: {
       label: "Critical",
@@ -16,12 +20,12 @@ export function SeverityPill({ severity, size = "md" }: Props) {
     warning: {
       label: "Warning",
       icon: AlertTriangle,
-      cls: "bg-amber-50 text-amber-800 ring-amber-200/70",
+      cls: "bg-primary/10 text-primary ring-primary/30",
     },
     info: {
       label: "Info",
       icon: Info,
-      cls: "bg-primary/10 text-primary ring-primary/30",
+      cls: "bg-muted text-foreground ring-border",
     },
   }[severity] ?? {
     label: severity,

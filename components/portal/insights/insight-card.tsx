@@ -39,10 +39,14 @@ export function InsightCard({
       className={cn(
         "group relative rounded-xl border bg-card transition-shadow duration-150",
         "hover:shadow-[0_4px_24px_rgba(0,0,0,0.04)]",
+        // Brand-aligned severity scale — single accent (primary) varies
+        // by emphasis instead of hue rotation. Critical = filled accent
+        // border + tinted bg; warning = subtle accent border; info =
+        // neutral.
         insight.severity === "critical"
-          ? "border-destructive/30"
+          ? "border-primary/40 bg-primary/[0.03]"
           : insight.severity === "warning"
-            ? "border-amber-200/70"
+            ? "border-primary/20"
             : "border-border",
         dense ? "p-3" : "p-4",
         pending && "opacity-60",

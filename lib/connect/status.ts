@@ -46,7 +46,7 @@ export async function getConnectStatusForOrg(
         .findFirst({
           where: { orgId },
           select: {
-            subdomain: true,
+            instanceSubdomain: true,
             lastSyncAt: true,
           },
         })
@@ -57,14 +57,14 @@ export async function getConnectStatusForOrg(
           select: {
             provider: true,
             lastSyncAt: true,
-            externalId: true,
+            propertyIdentifier: true,
             propertyId: true,
           },
         })
         .catch(() => [] as Array<{
           provider: string;
           lastSyncAt: Date | null;
-          externalId: string | null;
+          propertyIdentifier: string | null;
           propertyId: string | null;
         }>),
       prisma.adAccount
@@ -95,13 +95,20 @@ export async function getConnectStatusForOrg(
           lastEventAt: Date | null;
           propertyId: string | null;
         }>),
-      prisma.tenantSiteConfig
+      // Website connection = at least one DomainBinding row (custom
+       // hostname attached via Vercel Domain API). The TenantSiteConfig
+       // exists for every org by default, so its presence isn't a
+       // useful "connected" signal — what matters is whether the
+       // operator has bound a real custom domain.
+      prisma.domainBinding
         .findFirst({
           where: { orgId },
           select: {
-            customDomain: true,
+            hostname: true,
             updatedAt: true,
+            isPrimary: true,
           },
+          orderBy: [{ isPrimary: "desc" }, { createdAt: "asc" }],
         })
         .catch(() => null),
     ]);
@@ -117,23 +124,23 @@ export async function getConnectStatusForOrg(
       id: "appfolio",
       connected: !!appfolio,
       lastSyncAt: appfolio?.lastSyncAt ?? null,
-      accountLabel: appfolio?.subdomain
-        ? `${appfolio.subdomain}.appfolio.com`
+      accountLabel: appfolio?.instanceSubdomain
+        ? `${appfolio.instanceSubdomain}.appfolio.com`
         : null,
     },
     {
       id: "ga4",
       connected: !!ga4,
       lastSyncAt: ga4?.lastSyncAt ?? null,
-      accountLabel: ga4?.externalId
-        ? `Property ${ga4.externalId}`
+      accountLabel: ga4?.propertyIdentifier
+        ? `Property ${ga4.propertyIdentifier}`
         : null,
     },
     {
       id: "gsc",
       connected: !!gsc,
       lastSyncAt: gsc?.lastSyncAt ?? null,
-      accountLabel: gsc?.externalId ?? null,
+      accountLabel: gsc?.propertyIdentifier ?? null,
     },
     {
       id: "google_ads",
@@ -174,9 +181,9 @@ export async function getConnectStatusForOrg(
     },
     {
       id: "website",
-      connected: !!website?.customDomain,
+      connected: !!website?.hostname,
       lastSyncAt: website?.updatedAt ?? null,
-      accountLabel: website?.customDomain ?? null,
+      accountLabel: website?.hostname ?? null,
     },
   ];
 }

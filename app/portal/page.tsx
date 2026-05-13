@@ -71,6 +71,8 @@ import { RecentIdentifiedVisitors } from "@/components/portal/dashboard/recent-i
 import { ReputationPulse } from "@/components/portal/dashboard/reputation-pulse";
 import { getOpenInsights, getInsightCounts } from "@/lib/insights/queries";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
+import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
+import { countConnectedSources } from "@/lib/connect/status";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
 
@@ -157,6 +159,7 @@ export default async function PortalHome({
     firstRun,
     openInsights,
     insightCounts,
+    connectStatus,
     velocityData,
     recentIdentified,
     reputationPulse,
@@ -307,6 +310,10 @@ export default async function PortalHome({
       warning: 0,
       info: 0,
       open: 0,
+    })),
+    countConnectedSources(scope.orgId).catch(() => ({
+      connected: 0,
+      total: 7,
     })),
     getLeasingVelocityTrend(scope.orgId).catch(() => []),
     getRecentIdentifiedVisitors(scope.orgId, 6).catch(() => []),
@@ -551,6 +558,22 @@ export default async function PortalHome({
 
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
 
+      {/* Insights hero — the centerpiece. Renders top 3 open insights when
+          the org has data; falls back to a connect-data CTA when the org
+          is brand-new. Pinned above the property selector + KPI strip so
+          it's the first thing the operator sees on every dashboard load. */}
+      <InsightsHero
+        insights={openInsights as InsightCardData[]}
+        counts={{
+          critical: insightCounts.critical,
+          warning: insightCounts.warning,
+          info: insightCounts.info,
+          total: insightCounts.total,
+        }}
+        sourcesConnected={connectStatus.connected}
+        totalSources={connectStatus.total}
+      />
+
       {/* Property selector — David can narrow the portfolio dashboard
           to one or more buildings. Direct-prisma KPI queries (counts,
           rent roll, residents, work orders, leases) honor the
@@ -789,44 +812,9 @@ export default async function PortalHome({
         </div>
       </DashboardSection>
 
-      {/* Insights strip — opens the day with what changed, if anything */}
-      {insightCounts.total > 0 ? (
-        <section className="rounded-lg border border-border bg-card p-3">
-          <div className="flex items-center justify-between gap-2 mb-2">
-            <div className="flex items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 text-xs uppercase tracking-widest font-semibold text-muted-foreground">
-                <Sparkles className="h-3 w-3 text-primary" />
-                Signal
-              </span>
-              <h2 className="text-sm font-semibold tracking-tight text-foreground">
-                {insightCounts.critical > 0
-                  ? `${insightCounts.critical} critical, ${insightCounts.warning} warning`
-                  : insightCounts.warning > 0
-                    ? `${insightCounts.warning} warning, ${insightCounts.info} info`
-                    : `${insightCounts.info} info signals open`}
-              </h2>
-            </div>
-            <Link
-              href="/portal/insights"
-              className="text-xs font-medium text-foreground hover:text-primary"
-            >
-              See all
-            </Link>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-            {(openInsights as InsightCardData[]).map((insight) => (
-              <InsightCard
-                key={insight.id}
-                insight={{
-                  ...insight,
-                  context: (insight.context as Record<string, unknown>) ?? null,
-                }}
-                dense
-              />
-            ))}
-          </div>
-        </section>
-      ) : null}
+      {/* Insights now live in <InsightsHero /> at the top of the dashboard
+          (above the property selector). Removed the duplicated mid-page
+          strip so insights have a single, prominent surface. */}
 
       {/* KPI strip — four tiles per row, two rows at desktop. Labels are
           readable at this width and values don't overflow. */}
