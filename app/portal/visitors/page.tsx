@@ -22,6 +22,8 @@ import {
   VisitorTable,
   type VisitorRow,
 } from "@/components/portal/visitors/visitor-table";
+import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
+import { Radio } from "lucide-react";
 
 export const metadata: Metadata = { title: "Visitor feed" };
 export const dynamic = "force-dynamic";
@@ -691,46 +693,25 @@ function Pager({
 
 function EmptyNoPixel() {
   return (
-    <div className="rounded-lg border border-border bg-card p-8 text-center space-y-3">
-      <div className="text-sm font-semibold">
-        Install the Cursive pixel to see named website visitors here.
-      </div>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto">
-        Once the pixel is live, every resolved visitor appears in this feed in
-        real time \u2014 name, company, job title, and the pages they viewed.
-      </p>
-      <Link
-        href="/portal/connect"
-        className="inline-block text-xs px-3 py-2 border rounded-md hover:bg-muted"
-      >
-        Go to integrations
-      </Link>
-    </div>
+    <DataPlaceholder
+      intent="connect"
+      icon={<Radio className="h-4 w-4" />}
+      title="Install the visitor pixel to see named visitors"
+      body="Once the pixel is live, every resolved visitor appears in this feed in real time \u2014 name, company, job title, and the pages they viewed."
+      action={{ label: "Install the pixel", href: "/portal/connect" }}
+    />
   );
 }
 
 function EmptyNoVisitors() {
   return (
-    <div className="rounded-xl border border-dashed border-border bg-card p-8 md:p-12 text-center">
-      <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-2">
-        No visitors yet
-      </p>
-      <h3 className="text-lg font-semibold text-foreground mb-1.5">
-        Install the pixel to start identifying visitors.
-      </h3>
-      <p className="text-sm text-muted-foreground max-w-md mx-auto mb-5">
-        The Cursive pixel resolves anonymous traffic to real names and emails
-        in real time. Once installed, visitors appear here within seconds.
-      </p>
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <a
-          href="/portal/connect"
-          className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
-        >
-          Install the pixel
-        </a>
-      </div>
-    </div>
+    <DataPlaceholder
+      intent="waiting"
+      icon={<Radio className="h-4 w-4" />}
+      title="Pixel installed \u2014 waiting on first visitor events"
+      body="The Cursive pixel resolves anonymous traffic to real names and emails in real time. Visitors will appear here within seconds of the next site visit."
+      action={{ label: "Verify pixel install", href: "/portal/connect" }}
+    />
   );
 }
 

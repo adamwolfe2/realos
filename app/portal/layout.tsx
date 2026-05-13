@@ -51,6 +51,7 @@ export default async function PortalLayout({
     tourCount,
     applicationCount,
     appfolioStatus,
+    pendingCurationCount,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -112,6 +113,15 @@ export default async function PortalLayout({
     // impersonation strip so users see staleness everywhere, not just on
     // Residents / Renewals.
     getAppFolioStatus(scope.orgId).catch(() => null),
+    // Property curation queue gauge. After every AppFolio sync, new rows
+    // land as IMPORTED and need operator approval before they count toward
+    // billing. We surface a global banner here so the operator can't miss
+    // the queue — addresses the billing-safety concern that AppFolio sync
+    // would otherwise silently bill for properties (parking, storage,
+    // sub-records) the operator never wanted LeaseStack to manage.
+    prisma.property
+      .count({ where: { orgId: scope.orgId, lifecycle: "IMPORTED" } })
+      .catch(() => 0),
   ]);
 
   if (!org) {
@@ -287,6 +297,29 @@ export default async function PortalLayout({
           {staleAgeDays != null
             ? `Last successful sync ${staleAgeDays} day${staleAgeDays === 1 ? "" : "s"} ago. KPIs across the portal reflect the last successful sync.`
             : "KPIs across the portal reflect the last successful sync."}
+        </AlertBanner>
+      ) : null}
+
+      {/* Pending property review — surfaced globally so operators can't
+          accidentally bill for AppFolio sub-records (parking, storage)
+          they never wanted LeaseStack to manage. Disappears the moment
+          the curation queue is empty. */}
+      {pendingCurationCount > 0 ? (
+        <AlertBanner
+          severity="info"
+          flush
+          title={
+            pendingCurationCount === 1
+              ? "1 property is waiting for your review"
+              : `${pendingCurationCount.toLocaleString()} properties are waiting for your review`
+          }
+          action={{
+            label: "Review now",
+            href: "/portal/properties/curate",
+          }}
+        >
+          AppFolio imported new records. Approve only the buildings LeaseStack
+          should market — those are the ones that count toward billing.
         </AlertBanner>
       ) : null}
 

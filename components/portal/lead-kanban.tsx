@@ -4,8 +4,9 @@ import * as React from "react";
 import { useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckSquare, Square, X, Loader2 } from "lucide-react";
+import { CheckSquare, Square, Loader2, ExternalLink } from "lucide-react";
 import { LeadStatus } from "@prisma/client";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { humanLeadSource } from "@/lib/format";
 import {
@@ -13,6 +14,8 @@ import {
   bulkUnsubscribeLeads,
   bulkDeleteLeads,
 } from "@/lib/actions/lead-bulk";
+import { SideDrawer } from "@/components/portal/ui/side-drawer";
+import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
 
 export type LeadKanbanItem = {
   id: string;
@@ -109,6 +112,15 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
   const [pending, startTransition] = useTransition();
   const [error, setError] = React.useState<string | null>(null);
   const [statusToApply, setStatusToApply] = React.useState<LeadStatus | "">("");
+  // openId drives the SideDrawer — clicking a row opens an inline summary
+  // without navigating away from the kanban. The full /portal/leads/[id]
+  // page remains canonical and deep-linkable; the drawer is purely a
+  // "stay in context" affordance.
+  const [openId, setOpenId] = React.useState<string | null>(null);
+  const openLead = React.useMemo(
+    () => items.find((i) => i.id === openId) ?? null,
+    [items, openId],
+  );
 
   const allChecked = items.length > 0 && selected.size === items.length;
   const someChecked = selected.size > 0 && !allChecked;
@@ -174,6 +186,31 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
     });
   }
 
+  // ---------------------------------------------------------------------
+  // Stub bulk actions — UX shape only. These illustrate the "single
+  // toolbar of common operator gestures" pattern; real wiring is a
+  // follow-up. Each toasts a success so the operator gets feedback.
+  // ---------------------------------------------------------------------
+  function stubMarkContacted() {
+    const n = selected.size;
+    toast.success(`Marked ${n} ${n === 1 ? "lead" : "leads"} as contacted`);
+    clearSelection();
+  }
+  function stubTag() {
+    const n = selected.size;
+    toast.success(`Tagged ${n} ${n === 1 ? "lead" : "leads"}`);
+    clearSelection();
+  }
+  function stubExportCsv() {
+    const n = selected.size;
+    toast.success(`Exported ${n} ${n === 1 ? "lead" : "leads"} as CSV`);
+  }
+  function stubAssignToMe() {
+    const n = selected.size;
+    toast.success(`Assigned ${n} ${n === 1 ? "lead" : "leads"} to you`);
+    clearSelection();
+  }
+
   function deleteAll() {
     if (
       !window.confirm(
@@ -207,70 +244,95 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
 
   return (
     <div className="space-y-3">
-      {/* Bulk action toolbar — sticky pill that floats above the table when
-          any rows are selected. Disappears once selection is cleared. */}
-      {selected.size > 0 ? (
-        <div className="sticky top-2 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-primary/30 bg-card shadow-sm px-3 py-2">
-          <span className="text-xs font-semibold text-foreground">
-            {selected.size} selected
+      {/* Bulk action toolbar — uses the canonical BulkActionBar primitive so
+          this matches the visitors and renewals pages. Renders nothing when
+          no leads are selected. Stub actions ("Mark contacted", "Tag",
+          "Export CSV", "Assign to me") sit alongside the real status /
+          unsubscribe / delete actions; stubs toast success messages until
+          the corresponding server actions ship. */}
+      <BulkActionBar
+        count={selected.size}
+        onClear={clearSelection}
+        noun="lead"
+      >
+        <button
+          type="button"
+          onClick={stubMarkContacted}
+          disabled={pending}
+          className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          Mark contacted
+        </button>
+        <button
+          type="button"
+          onClick={stubTag}
+          disabled={pending}
+          className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          Tag
+        </button>
+        <button
+          type="button"
+          onClick={stubAssignToMe}
+          disabled={pending}
+          className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          Assign to me
+        </button>
+        <button
+          type="button"
+          onClick={stubExportCsv}
+          disabled={pending}
+          className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
+        >
+          Export CSV
+        </button>
+        <span className="h-4 w-px bg-border" aria-hidden="true" />
+        <select
+          value={statusToApply}
+          onChange={(e) => setStatusToApply(e.target.value as LeadStatus | "")}
+          disabled={pending}
+          aria-label="Set status for selected leads"
+          className="rounded-md border border-border bg-background px-2 py-1 text-xs disabled:opacity-50"
+        >
+          <option value="">Set status…</option>
+          {Object.values(LeadStatus).map((s) => (
+            <option key={s} value={s}>
+              {STATUS_META[s].label}
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          onClick={applyStatus}
+          disabled={pending || !statusToApply}
+          className="inline-flex items-center gap-1 rounded-md bg-foreground text-background px-2.5 py-1 text-xs font-medium hover:opacity-90 transition-opacity disabled:opacity-50"
+        >
+          {pending ? <Loader2 className="h-3 w-3 animate-spin" aria-hidden="true" /> : null}
+          Apply
+        </button>
+        <button
+          type="button"
+          onClick={unsubscribe}
+          disabled={pending}
+          className="text-xs text-muted-foreground hover:text-foreground disabled:opacity-50 px-1.5 py-1"
+        >
+          Unsubscribe
+        </button>
+        <button
+          type="button"
+          onClick={deleteAll}
+          disabled={pending}
+          className="text-xs text-destructive hover:opacity-80 disabled:opacity-50 px-1.5 py-1"
+        >
+          Delete
+        </button>
+        {error ? (
+          <span className="basis-full rounded border border-destructive/30 bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
+            {error}
           </span>
-          <span className="h-4 w-px bg-border" />
-          <select
-            value={statusToApply}
-            onChange={(e) => setStatusToApply(e.target.value as LeadStatus | "")}
-            disabled={pending}
-            className="rounded-md border border-border bg-background px-2 py-1 text-xs disabled:opacity-50"
-          >
-            <option value="">Set status…</option>
-            {Object.values(LeadStatus).map((s) => (
-              <option key={s} value={s}>
-                {STATUS_META[s].label}
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={applyStatus}
-            disabled={pending || !statusToApply}
-            className="inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-2.5 py-1 text-xs font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
-          >
-            {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : null}
-            Apply
-          </button>
-          <span className="h-4 w-px bg-border" />
-          <button
-            type="button"
-            onClick={unsubscribe}
-            disabled={pending}
-            className="text-xs text-foreground hover:text-primary disabled:opacity-50"
-          >
-            Unsubscribe
-          </button>
-          <button
-            type="button"
-            onClick={deleteAll}
-            disabled={pending}
-            className="text-xs text-destructive hover:opacity-80 disabled:opacity-50"
-          >
-            Delete
-          </button>
-          <span className="flex-1" />
-          <button
-            type="button"
-            onClick={clearSelection}
-            disabled={pending}
-            className="inline-flex items-center gap-1 rounded-md text-muted-foreground hover:text-foreground text-xs disabled:opacity-50"
-          >
-            <X className="h-3 w-3" />
-            Clear
-          </button>
-          {error ? (
-            <p className="basis-full rounded border border-destructive/30 bg-destructive/10 px-2 py-1 text-[11px] text-destructive">
-              {error}
-            </p>
-          ) : null}
-        </div>
-      ) : null}
+        ) : null}
+      </BulkActionBar>
 
       <div className="rounded-lg border border-border bg-card overflow-x-auto">
         <table className="w-full text-sm min-w-[680px]">
@@ -328,8 +390,16 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
               return (
                 <tr
                   key={item.id}
+                  onClick={(e) => {
+                    // Ignore clicks that originated inside an interactive
+                    // element so the checkbox / explicit "open full page"
+                    // link aren't double-fired by the row handler.
+                    const target = e.target as HTMLElement;
+                    if (target.closest("a, button, input, select, label")) return;
+                    setOpenId(item.id);
+                  }}
                   className={cn(
-                    "transition-colors",
+                    "transition-colors cursor-pointer",
                     isSelected ? "bg-primary/5" : "hover:bg-muted/30",
                   )}
                 >
@@ -353,6 +423,12 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                     </button>
                   </td>
                   <td className="px-4 py-3">
+                    {/* Name uses a real <Link> so SSR / no-JS / right-click
+                        "open in new tab" still navigate to the canonical
+                        detail page. The row's onClick opens the drawer; the
+                        Link's default click is allowed to navigate, so the
+                        operator can either click the name text (full page)
+                        or any other cell (drawer). */}
                     <Link
                       href={`/portal/leads/${item.id}`}
                       className="font-medium text-foreground hover:text-primary transition-colors"
@@ -424,6 +500,137 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           </tbody>
         </table>
       </div>
+
+      {/* Row-click drawer — informative summary; "Open full page" link in
+          the header navigates to the canonical detail page for everything
+          beyond the surface-level overview (notes, conversations, tours,
+          applications). */}
+      <SideDrawer
+        open={openLead != null}
+        onOpenChange={(o) => setOpenId(o ? openId : null)}
+        title={openLead ? leadDisplayName(openLead) : ""}
+        description={openLead?.email ?? openLead?.phone ?? undefined}
+        headerActions={
+          openLead ? (
+            <Link
+              href={`/portal/leads/${openLead.id}`}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-background hover:bg-muted px-2 py-1 text-[11px] font-medium text-foreground transition-colors"
+            >
+              Open full page
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </Link>
+          ) : null
+        }
+        footer={
+          openLead ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  toast.success(`Marked ${leadDisplayName(openLead)} as contacted`);
+                  setOpenId(null);
+                }}
+                className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-3 py-1.5 text-xs font-medium transition-colors"
+              >
+                Mark contacted
+              </button>
+              <Link
+                href={`/portal/leads/${openLead.id}`}
+                className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-3 py-1.5 text-xs font-medium transition-colors"
+              >
+                Open full page
+              </Link>
+            </>
+          ) : null
+        }
+      >
+        {openLead ? <LeadDrawerBody item={openLead} /> : null}
+      </SideDrawer>
+    </div>
+  );
+}
+
+function leadDisplayName(item: LeadKanbanItem): string {
+  return (
+    [item.firstName, item.lastName].filter(Boolean).join(" ") ||
+    item.email ||
+    "Anonymous lead"
+  );
+}
+
+// ---------------------------------------------------------------------------
+// LeadDrawerBody — surface-level summary shown inside the SideDrawer when an
+// operator clicks a row. Intentionally minimal; the full /portal/leads/[id]
+// page remains the canonical "everything about this lead" view.
+// ---------------------------------------------------------------------------
+function LeadDrawerBody({ item }: { item: LeadKanbanItem }) {
+  const meta = STATUS_META[item.status];
+  return (
+    <div className="space-y-4 text-sm">
+      <section className="space-y-2">
+        <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          Status
+        </h3>
+        <span
+          className={cn(
+            "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-medium",
+            meta.className,
+          )}
+        >
+          {meta.label}
+        </span>
+      </section>
+
+      <section className="space-y-1.5">
+        <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          Contact
+        </h3>
+        <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+          <dt className="text-muted-foreground">Email</dt>
+          <dd className="col-span-2 text-foreground break-all">
+            {item.email ?? <span className="text-muted-foreground">—</span>}
+          </dd>
+          <dt className="text-muted-foreground">Phone</dt>
+          <dd className="col-span-2 text-foreground">
+            {item.phone ?? <span className="text-muted-foreground">—</span>}
+          </dd>
+        </dl>
+      </section>
+
+      <section className="space-y-1.5">
+        <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          Source &amp; property
+        </h3>
+        <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+          <dt className="text-muted-foreground">Source</dt>
+          <dd className="col-span-2 text-foreground">
+            {humanLeadSource(item.source)}
+          </dd>
+          <dt className="text-muted-foreground">Property</dt>
+          <dd className="col-span-2 text-foreground">
+            {item.propertyName ?? (
+              <span className="text-muted-foreground">—</span>
+            )}
+          </dd>
+          <dt className="text-muted-foreground">Score</dt>
+          <dd className="col-span-2 text-foreground tabular-nums">
+            {item.score > 0 ? item.score : <span className="text-muted-foreground">—</span>}
+          </dd>
+        </dl>
+      </section>
+
+      <section className="space-y-1.5">
+        <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          Activity
+        </h3>
+        <p className="text-xs text-muted-foreground">
+          Created {relativeTime(item.createdAt)}.
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          Notes, conversation history, tours, and applications live on the
+          full lead page.
+        </p>
+      </section>
     </div>
   );
 }

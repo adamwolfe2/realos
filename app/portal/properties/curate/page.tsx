@@ -5,7 +5,9 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { ArrowLeft, Inbox } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import { BillingImpactCallout } from "@/components/portal/properties/billing-impact-callout";
 import { CurationQueueClient } from "./curation-queue-client";
+import type { SubscriptionTier } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Property curation queue" };
 export const dynamic = "force-dynamic";
@@ -38,33 +40,60 @@ export default async function PropertyCuratePage({
 
   const lifecycle = view === "imported" ? "IMPORTED" : "EXCLUDED";
 
-  const [items, importedCount, excludedCount] = await Promise.all([
-    prisma.property.findMany({
-      where: { ...tenantWhere(scope), lifecycle },
-      orderBy: [{ createdAt: "desc" }],
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        addressLine1: true,
-        city: true,
-        state: true,
-        totalUnits: true,
-        backendPlatform: true,
-        backendPropertyId: true,
-        excludeReason: true,
-        lifecycleSetBy: true,
-        lifecycleSetAt: true,
-        createdAt: true,
-      },
-    }),
-    prisma.property.count({
-      where: { ...tenantWhere(scope), lifecycle: "IMPORTED" },
-    }),
-    prisma.property.count({
-      where: { ...tenantWhere(scope), lifecycle: "EXCLUDED" },
-    }),
-  ]);
+  const [items, importedCount, excludedCount, activeCount, org] =
+    await Promise.all([
+      prisma.property.findMany({
+        where: { ...tenantWhere(scope), lifecycle },
+        orderBy: [{ createdAt: "desc" }],
+        select: {
+          id: true,
+          name: true,
+          slug: true,
+          addressLine1: true,
+          city: true,
+          state: true,
+          totalUnits: true,
+          backendPlatform: true,
+          backendPropertyId: true,
+          excludeReason: true,
+          lifecycleSetBy: true,
+          lifecycleSetAt: true,
+          createdAt: true,
+        },
+      }),
+      prisma.property.count({
+        where: { ...tenantWhere(scope), lifecycle: "IMPORTED" },
+      }),
+      prisma.property.count({
+        where: { ...tenantWhere(scope), lifecycle: "EXCLUDED" },
+      }),
+      prisma.property.count({
+        where: { ...tenantWhere(scope), lifecycle: "ACTIVE" },
+      }),
+      // Tier + trial state for the billing-impact callout. Pulled here
+      // (not in the client) so the callout can server-render real numbers.
+      prisma.organization.findUnique({
+        where: { id: scope.orgId },
+        select: {
+          chosenTier: true,
+          subscriptionTier: true,
+          subscriptionStatus: true,
+        },
+      }),
+    ]);
+
+  const tier: SubscriptionTier | null =
+    org?.chosenTier ?? org?.subscriptionTier ?? null;
+  const tierId =
+    tier === "STARTER"
+      ? ("starter" as const)
+      : tier === "GROWTH"
+        ? ("growth" as const)
+        : tier === "SCALE"
+          ? ("scale" as const)
+          : null;
+  const trialing =
+    org?.subscriptionStatus === "TRIALING" || org?.subscriptionStatus == null;
 
   return (
     <div className="space-y-6">
@@ -81,10 +110,18 @@ export default async function PropertyCuratePage({
         title={
           <span className="inline-flex items-center gap-2">
             <Inbox className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
-            Property curation queue
+            Choose which properties LeaseStack manages
           </span>
         }
-        description="AppFolio imports every record in your property directory — including parking lots, storage units, and other sub-records. Review and approve which ones are real buildings so dashboards, counts, and onboarding progress reflect reality."
+        description="AppFolio imports your entire property directory — including parking, storage, and sub-records. Approve only the buildings you want LeaseStack to market: those are the ones that count toward billing, dashboards, and reports."
+      />
+
+      {/* Billing impact — must read this BEFORE bulk-clicking Activate. */}
+      <BillingImpactCallout
+        currentActive={activeCount}
+        pendingCount={importedCount}
+        tierId={tierId}
+        trialing={trialing}
       />
 
       {/* View tabs */}

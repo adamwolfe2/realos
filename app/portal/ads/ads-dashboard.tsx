@@ -6,6 +6,8 @@ import { formatDistanceToNow } from "date-fns";
 import { AdPlatform } from "@prisma/client";
 import { StatCard } from "@/components/admin/stat-card";
 import { cn } from "@/lib/utils";
+import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
+import { Clock } from "lucide-react";
 
 // Lazy-load recharts (~80KB gzipped). The chart only renders when there's
 // data anyway, so deferring it cuts initial bundle for /portal/ads.
@@ -230,11 +232,22 @@ export function AdsDashboard({
           </span>
         </div>
         {sortedCampaigns.length === 0 ? (
-          <div className="p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              No campaigns synced yet for this filter. The first sync runs as
-              soon as you connect an ad account, then nightly after that.
-            </p>
+          <div className="p-5">
+            <DataPlaceholder
+              intent="waiting"
+              icon={<Clock className="h-4 w-4" />}
+              title="No campaigns synced yet for this filter"
+              body="The first sync runs as soon as you connect an ad account, then nightly after that."
+            />
+          </div>
+        ) : totals.spendCents === 0 && totals.clicks === 0 && totals.conversions === 0 ? (
+          <div className="p-5">
+            <DataPlaceholder
+              intent="waiting"
+              icon={<Clock className="h-4 w-4" />}
+              title="Campaigns connected — waiting on first metrics sync"
+              body="Spend, clicks, and conversions will appear here within 24 hours of the first nightly sync."
+            />
           </div>
         ) : (
           <table className="w-full text-sm">

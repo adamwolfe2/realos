@@ -23,7 +23,8 @@ import {
   getSessionsPerSource,
   type AttributionFilters,
 } from "@/lib/attribution/queries";
-import { Users, Eye, MousePointerClick, BarChart3 } from "lucide-react";
+import { Users, Eye, MousePointerClick, BarChart3, Megaphone, Radio } from "lucide-react";
+import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 
 export const metadata: Metadata = { title: "Attribution" };
 export const dynamic = "force-dynamic";
@@ -109,6 +110,8 @@ export default async function AttributionPage({
     deviceTrend,
     moduleTrend,
     touchFreq,
+    adAccountCount,
+    pixelIntegration,
   ] = await Promise.all([
     getAttributionHeadline(filters),
     getSessionsPerSource(filters),
@@ -118,7 +121,19 @@ export default async function AttributionPage({
     getLeadsPerDeviceTrend(filters),
     getLeadsPerModuleTrend(filters),
     getLeadsPerTouchFrequency(filters),
+    // Integration presence — used to decide whether the "no data" surfaces
+    // should be honest empty states or actionable connect-this-source CTAs.
+    prisma.adAccount.count({
+      where: { orgId: scope.orgId, credentialsEncrypted: { not: null } },
+    }),
+    prisma.cursiveIntegration.findFirst({
+      where: { orgId: scope.orgId },
+      select: { cursivePixelId: true, lastEventAt: true },
+    }),
   ]);
+
+  const hasAdAccounts = adAccountCount > 0;
+  const hasPixel = Boolean(pixelIntegration?.cursivePixelId);
 
   // Used in the page header description. When exactly one property is
   // selected we name it; when multiple are selected we just say how many.
@@ -241,28 +256,48 @@ export default async function AttributionPage({
 
       {/* Row 1: traffic sources */}
       <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-        <SourceDonut
-          title="Sessions per source"
-          description="Where the visits came from. UTM tags first, then referrer hostname, then direct."
-          palette="ink"
-          slices={sessionsPerSource.map((s) => ({
-            label: s.source,
-            value: s.count,
-          }))}
-          totalLabel={`${headline.totalSessions.toLocaleString()} sessions`}
-          emptyMessage="No tracked sessions in this window. Verify the visitor pixel is installed."
-        />
-        <SourceDonut
-          title="Leads per source · multi-touch"
-          description="Every channel that touched a lead before they converted. A lead seen by both google-ads and direct counts in both."
-          palette="blue"
-          slices={leadsMultiTouch.map((s) => ({
-            label: s.source,
-            value: s.count,
-          }))}
-          totalLabel={`${headline.totalLeads.toLocaleString()} leads`}
-          emptyMessage="No leads in this window."
-        />
+        {!hasPixel && headline.totalSessions === 0 ? (
+          <DataPlaceholder
+            intent="connect"
+            icon={<Radio className="h-4 w-4" />}
+            title="Install the visitor pixel to see sessions per source"
+            body="Once the pixel is live, this donut breaks down where every visit came from — UTM tags first, then referrer hostname, then direct."
+            action={{ label: "Install the pixel", href: "/portal/connect" }}
+          />
+        ) : (
+          <SourceDonut
+            title="Sessions per source"
+            description="Where the visits came from. UTM tags first, then referrer hostname, then direct."
+            palette="ink"
+            slices={sessionsPerSource.map((s) => ({
+              label: s.source,
+              value: s.count,
+            }))}
+            totalLabel={`${headline.totalSessions.toLocaleString()} sessions`}
+            emptyMessage="No tracked sessions in this window. Verify the visitor pixel is installed."
+          />
+        )}
+        {!hasAdAccounts && leadsMultiTouch.length === 0 ? (
+          <DataPlaceholder
+            intent="connect"
+            icon={<Megaphone className="h-4 w-4" />}
+            title="Connect ad accounts to see paid attribution"
+            body="Once Google Ads or Meta Ads are connected, this surface shows every channel that touched a lead before they converted."
+            action={{ label: "Connect ad accounts", href: "/portal/connect" }}
+          />
+        ) : (
+          <SourceDonut
+            title="Leads per source · multi-touch"
+            description="Every channel that touched a lead before they converted. A lead seen by both google-ads and direct counts in both."
+            palette="blue"
+            slices={leadsMultiTouch.map((s) => ({
+              label: s.source,
+              value: s.count,
+            }))}
+            totalLabel={`${headline.totalLeads.toLocaleString()} leads`}
+            emptyMessage="No leads in this window."
+          />
+        )}
       </section>
 
       {/* Row 2: lead breakdowns */}
@@ -326,17 +361,27 @@ export default async function AttributionPage({
           totalLabel={`${citySplit.reduce((s, c) => s + c.count, 0).toLocaleString()} located`}
           emptyMessage="No city-resolved leads in this window. Pixel enrichment fills this in as visitors are identified."
         />
-        <SourceDonut
-          title="Leads per source · last-touch"
-          description="Just the final attributed channel — what Clarity calls 'last-touch attribution.'"
-          palette="blue"
-          slices={leadsLastTouch.map((m) => ({
-            label: m.label,
-            value: m.count,
-          }))}
-          totalLabel={`${headline.totalLeads.toLocaleString()} leads`}
-          emptyMessage="No leads in this window."
-        />
+        {!hasAdAccounts && leadsLastTouch.length === 0 ? (
+          <DataPlaceholder
+            intent="connect"
+            icon={<Megaphone className="h-4 w-4" />}
+            title="Connect ad accounts to see last-touch attribution"
+            body="Once Google Ads or Meta Ads are connected, this surface shows the final attributed channel for every converted lead."
+            action={{ label: "Connect ad accounts", href: "/portal/connect" }}
+          />
+        ) : (
+          <SourceDonut
+            title="Leads per source · last-touch"
+            description="Just the final attributed channel — what Clarity calls 'last-touch attribution.'"
+            palette="blue"
+            slices={leadsLastTouch.map((m) => ({
+              label: m.label,
+              value: m.count,
+            }))}
+            totalLabel={`${headline.totalLeads.toLocaleString()} leads`}
+            emptyMessage="No leads in this window."
+          />
+        )}
       </section>
 
       {/* Footer note — explicit positioning vs Clarity. */}

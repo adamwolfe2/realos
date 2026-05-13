@@ -89,15 +89,17 @@ export function CurationQueueClient({
                   onClick={() => actBulk("activate")}
                   disabled={pending}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                  title="Activate selected — these will count toward your marketable property total and billing"
                 >
                   <Check className="w-3.5 h-3.5" aria-hidden="true" />
-                  Mark as active
+                  Activate ({selected.size}) · counts toward billing
                 </button>
                 <button
                   type="button"
                   onClick={() => actBulk("exclude")}
                   disabled={pending}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-border bg-card hover:bg-muted/40 disabled:opacity-50"
+                  title="Exclude — keep in AppFolio mirror but do not bill or surface in dashboards"
                 >
                   <X className="w-3.5 h-3.5" aria-hidden="true" />
                   Exclude all
@@ -202,21 +204,21 @@ export function CurationQueueClient({
                       onClick={() => actSingle(item.id, "activate")}
                       disabled={pending}
                       className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
-                      title="Mark as active marketable property"
+                      title="Activate this property — will count toward your marketable total and billing"
                     >
                       {pending ? (
                         <Loader2 className="w-3 h-3 animate-spin" aria-hidden="true" />
                       ) : (
                         <Check className="w-3 h-3" aria-hidden="true" />
                       )}
-                      Active
+                      Activate
                     </button>
                     <button
                       type="button"
                       onClick={() => actSingle(item.id, "exclude")}
                       disabled={pending}
                       className="inline-flex items-center gap-1 px-2 py-1 text-xs text-muted-foreground rounded border border-border hover:bg-muted/40 disabled:opacity-50"
-                      title="Exclude — parking, storage, sub-record, etc."
+                      title="Exclude — keep in AppFolio mirror but do not bill or display"
                     >
                       <X className="w-3 h-3" aria-hidden="true" />
                       Exclude

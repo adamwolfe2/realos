@@ -189,6 +189,33 @@ export function ConnectAppfolioForm() {
         </p>
       </div>
 
+      {/* What happens after Save — billing-safety expectation-setting per
+          the Norman feedback. Operators should know BEFORE connecting that
+          AppFolio imports their entire directory and they choose what to
+          activate, rather than discovering surprise billing line items
+          after the first sync. */}
+      <div className="space-y-1.5 rounded-md border border-primary/20 bg-primary/[0.04] p-4">
+        <p className="text-xs font-semibold text-foreground">
+          What happens after you save
+        </p>
+        <ol className="list-decimal pl-4 space-y-1 text-[11px] text-muted-foreground leading-snug">
+          <li>
+            We sync your AppFolio property directory in the background.
+          </li>
+          <li>
+            New properties land in a <strong>review queue</strong> — including
+            parking lots, storage units, and other sub-records AppFolio
+            inevitably returns alongside real buildings.
+          </li>
+          <li>
+            <strong>You choose</strong> which buildings LeaseStack should
+            market. Only properties you mark <em>Active</em> appear on
+            dashboards and count toward billing — everything else stays
+            hidden until you say otherwise.
+          </li>
+        </ol>
+      </div>
+
       {/* Test connection row */}
       <div className="flex items-center gap-3 flex-wrap pt-1">
         <button

@@ -80,11 +80,12 @@ const SOURCE_META: Record<
     category: "Property data",
     icon: Database,
     connectUrl: "/portal/settings/integrations#appfolio",
-    payoff: "Live occupancy + rent roll across every property",
+    payoff: "Live occupancy + rent roll for the buildings you choose to market",
     unlocks: [
       "Renewal cliff alerts",
       "Vacancy needs-boost insights",
       "Pricing recommendations",
+      "Choose which properties LeaseStack manages — billing reflects only the buildings you mark Active",
     ],
   },
   ga4: {

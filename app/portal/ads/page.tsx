@@ -9,7 +9,8 @@ import {
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
-import { EmptyState } from "@/components/portal/ui/empty-state";
+import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
+import { Megaphone } from "lucide-react";
 import { ExportButton } from "@/components/ui/export-button";
 import { AdPlatform, LeadSource, LeadStatus } from "@prisma/client";
 import { AdsDashboard } from "./ads-dashboard";
@@ -244,11 +245,12 @@ export default async function AdsPage({
       />
 
       {accounts.length === 0 ? (
-        <EmptyState
-          title="No ad accounts connected yet"
+        <DataPlaceholder
+          intent="connect"
+          icon={<Megaphone className="h-4 w-4" />}
+          title="Connect an ad account to see spend"
           body="Connect Google Ads or Meta Ads to start pulling daily spend, clicks, and conversions into your dashboard. Read-only for now — no campaign edits."
-          action={{ label: "Connect Google Ads", href: "/portal/connect" }}
-          secondary={{ label: "Connect Meta Ads", href: "/portal/connect" }}
+          action={{ label: "Connect ad accounts", href: "/portal/connect" }}
         />
       ) : (
         <AdsDashboard

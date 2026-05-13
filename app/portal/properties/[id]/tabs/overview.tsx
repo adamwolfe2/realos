@@ -16,7 +16,8 @@ import {
   type LeadSource,
   type ResidentStatus,
 } from "@prisma/client";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Cable, MessageSquare, Code, ListPlus } from "lucide-react";
+import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 import { AnimatedNumber } from "@/components/portal/ui/animated-number";
 import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
 import {
@@ -342,6 +343,19 @@ export async function OverviewTab({
     activeResidents: activeResidents,
   });
 
+  // Bug #41 — Empty-property detection: no listings, no leads, zero
+  // integrations. Collapses the dense KPI grid + active-features strip
+  // into a single "3 steps" panel until real data lands.
+  const appfolioConnected =
+    property.backendPlatform != null && property.backendPlatform !== "NONE";
+  const isEmpty =
+    (listingCounts?._count.listings ?? 0) === 0 &&
+    (listingCounts?._count.leads ?? 0) === 0 &&
+    !cursiveIntegration?.cursivePixelId &&
+    !googleAdCampaign &&
+    !metaAdCampaign &&
+    (seoIntegrations?.length ?? 0) === 0;
+
   return (
     <div className="space-y-3 ls-page-fade">
       {/* Hero strip — property identity at a glance with the headline metric
@@ -380,6 +394,73 @@ export async function OverviewTab({
         reputationLastAt={latestReputationScan?.completedAt ?? null}
       />
 
+      {isEmpty ? (
+        // Bug #41 — Single onboarding panel for brand-new properties.
+        // All supporting surfaces re-appear the moment any data lands.
+        <section className="rounded-xl border border-border bg-card p-4 md:p-6">
+          <div className="mb-4">
+            <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+              Get this property reporting
+            </p>
+            <h2 className="mt-1 text-base font-semibold text-foreground">
+              Three steps to bring {propertyMeta.name} online
+            </h2>
+            <p className="mt-1 text-[12px] text-muted-foreground leading-snug max-w-xl">
+              Reporting, leads, and ad attribution start flowing the
+              moment these pieces are in place. Pick one to get going —
+              the dashboard fills in automatically.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <DataPlaceholder
+              intent="connect"
+              icon={
+                appfolioConnected ? (
+                  <ListPlus className="h-4 w-4" />
+                ) : (
+                  <Cable className="h-4 w-4" />
+                )
+              }
+              title={
+                appfolioConnected
+                  ? "1. Add a listing"
+                  : "1. Connect AppFolio"
+              }
+              body={
+                appfolioConnected
+                  ? "AppFolio is wired up — add a listing manually so leads have somewhere to land."
+                  : "Sync units, occupancy, and rent roll automatically from your property management system."
+              }
+              action={
+                appfolioConnected
+                  ? {
+                      label: "Add a listing",
+                      href: `/portal/properties/${propertyId}?tab=onboarding`,
+                    }
+                  : { label: "Connect AppFolio", href: "/portal/connect" }
+              }
+            />
+            <DataPlaceholder
+              intent="connect"
+              icon={<MessageSquare className="h-4 w-4" />}
+              title="2. Enable the chatbot"
+              body="Capture renter questions 24/7 and convert them into qualified leads in your inbox."
+              action={{ label: "Enable chatbot", href: "/portal/chatbot" }}
+            />
+            <DataPlaceholder
+              intent="connect"
+              icon={<Code className="h-4 w-4" />}
+              title="3. Install the visitor pixel"
+              body="Drop one snippet on the listing site to unlock attribution, audiences, and traffic insights."
+              action={{
+                label: "Install pixel",
+                href: `/portal/properties/${propertyId}?tab=onboarding`,
+              }}
+            />
+          </div>
+        </section>
+      ) : (
+        <>
       {/* Insights hero — top 3 ranked open insights filtered to THIS
           property. Replaces the legacy single-card deterministic
           AiInsightCard with real DB-backed insights from the detector
@@ -730,6 +811,8 @@ export async function OverviewTab({
           ) : null}
         </DashboardSection>
       </div>
+        </>
+      )}
     </div>
   );
 }

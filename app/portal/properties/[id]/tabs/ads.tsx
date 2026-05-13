@@ -10,6 +10,8 @@ import {
   AdLibraryPanel,
   type AdLibraryAdvertiserView,
 } from "@/components/portal/ad-library/ad-library-panel";
+import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
+import { Megaphone } from "lucide-react";
 
 export async function AdsTab({
   orgId,
@@ -78,22 +80,13 @@ export async function AdsTab({
   if (data.campaigns.length === 0) {
     return (
       <div className="space-y-3">
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <KpiTile label="Spend (28d)" value="—" />
-          <KpiTile label="Leads (28d)" value="—" />
-          <KpiTile label="Campaigns" value={0} />
-          <KpiTile label="CPL" value="—" />
-        </section>
-        <div className="rounded-lg border border-dashed border-border bg-secondary/30 px-4 py-5">
-          <p className="text-sm font-semibold text-foreground">
-            No campaigns linked to this property
-          </p>
-          <p className="mt-1 text-[11px] text-muted-foreground leading-snug max-w-md">
-            Connect Google Ads or Meta Ads to see spend, CPL, and
-            attribution. Until then, the Ad Library tracker below shows
-            what&apos;s already running publicly.
-          </p>
-        </div>
+        <DataPlaceholder
+          intent="connect"
+          icon={<Megaphone className="h-4 w-4" />}
+          title="No campaigns linked to this property"
+          body="Connect Google Ads or Meta Ads to see spend, CPL, and attribution. Until then, the Ad Library tracker below shows what's already running publicly."
+          action={{ label: "Connect ad accounts", href: "/portal/connect" }}
+        />
         {adLibrarySection}
       </div>
     );

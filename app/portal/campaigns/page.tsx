@@ -10,6 +10,8 @@ import {
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
+import { Megaphone, Clock } from "lucide-react";
 
 export const metadata: Metadata = { title: "Campaigns" };
 export const dynamic = "force-dynamic";
@@ -172,7 +174,14 @@ export default async function CampaignsPage({
       />
 
       {/* Summary tiles */}
-      {campaigns.length > 0 && (
+      {campaigns.length > 0 && totalSpend === 0 && totalClicks === 0 && totalConv === 0 ? (
+        <DataPlaceholder
+          intent="waiting"
+          icon={<Clock className="h-4 w-4" />}
+          title="Campaigns connected — waiting on first metrics sync"
+          body="Spend, clicks, and conversions for the last 28 days will appear here within 24 hours of the first nightly sync."
+        />
+      ) : campaigns.length > 0 ? (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: "Active campaigns", value: activeCampaigns },
@@ -193,7 +202,7 @@ export default async function CampaignsPage({
             </div>
           ))}
         </div>
-      )}
+      ) : null}
 
       {properties.length === 0 ? (
         <EmptyState
@@ -201,10 +210,12 @@ export default async function CampaignsPage({
           body="Add a property, then your account manager will set up campaigns here."
         />
       ) : campaigns.length === 0 ? (
-        <EmptyState
+        <DataPlaceholder
+          intent="connect"
+          icon={<Megaphone className="h-4 w-4" />}
           title="No campaigns yet"
           body="Once your Google Ads or Meta ad accounts are connected and creative is approved, campaigns will appear here with live performance data."
-          action={{ label: "Connect ad accounts", href: "/portal/settings" }}
+          action={{ label: "Connect ad accounts", href: "/portal/connect" }}
         />
       ) : (
         <div className="rounded-lg border border-border bg-card overflow-x-auto">

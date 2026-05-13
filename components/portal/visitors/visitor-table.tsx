@@ -3,7 +3,10 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
-import { Download, MapPin } from "lucide-react";
+import { Download, MapPin, ExternalLink } from "lucide-react";
+import { toast } from "sonner";
+import { SideDrawer } from "@/components/portal/ui/side-drawer";
+import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
 
 // ---------------------------------------------------------------------------
 // VisitorTable
@@ -39,6 +42,14 @@ type Props = {
 
 export function VisitorTable({ rows }: Props) {
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  // openId drives the SideDrawer — surface a quick-look summary without
+  // navigating away from the feed. The full /portal/visitors/[id] page
+  // remains canonical and deep-linkable.
+  const [openId, setOpenId] = useState<string | null>(null);
+  const openVisitor = useMemo(
+    () => rows.find((r) => r.id === openId) ?? null,
+    [rows, openId],
+  );
 
   const allSelected = rows.length > 0 && selected.size === rows.length;
   const someSelected = selected.size > 0 && selected.size < rows.length;
@@ -77,36 +88,56 @@ export function VisitorTable({ rows }: Props) {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    toast.success(`Exported ${targets.length} visitor${targets.length === 1 ? "" : "s"} as CSV`);
+  };
+
+  // Stub bulk actions — UX shape only until the corresponding pipelines
+  // (Cursive custom audience push, ad-platform sync) are wired.
+  const stubPushToAudience = () => {
+    const n = selected.size;
+    toast.success(`Pushed ${n} visitor${n === 1 ? "" : "s"} to audience`);
+    setSelected(new Set());
+  };
+  const stubSendToAds = () => {
+    const n = selected.size;
+    toast.success(`Sent ${n} visitor${n === 1 ? "" : "s"} to ads`);
+    setSelected(new Set());
   };
 
   return (
     <div className="space-y-2">
-      {/* Bulk action bar — only renders when rows are selected, doesn't
-          shift layout when empty because it sits above the table. */}
-      {selected.size > 0 ? (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 flex items-center justify-between gap-3">
-          <span className="text-xs font-semibold text-blue-900">
-            {selected.size} of {rows.length} selected
-          </span>
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setSelected(new Set())}
-              className="text-[11px] font-medium text-blue-900/70 hover:text-blue-900"
-            >
-              Clear
-            </button>
-            <button
-              type="button"
-              onClick={handleExport}
-              className="inline-flex items-center gap-1.5 rounded-md bg-blue-600 text-white px-3 py-1.5 text-[11px] font-semibold hover:bg-blue-700 transition-colors"
-            >
-              <Download className="h-3 w-3" />
-              Export {selected.size} as CSV
-            </button>
-          </div>
-        </div>
-      ) : null}
+      {/* Bulk action bar — uses the canonical BulkActionBar primitive so
+          the toolbar shape matches Leads / Renewals. Renders nothing when
+          no rows are selected. Push-to-audience and Send-to-ads are stubs
+          that toast success until the corresponding pipelines ship. */}
+      <BulkActionBar
+        count={selected.size}
+        onClear={() => setSelected(new Set())}
+        noun="visitor"
+      >
+        <button
+          type="button"
+          onClick={handleExport}
+          className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-2.5 py-1 text-xs font-medium transition-colors"
+        >
+          <Download className="h-3 w-3" aria-hidden="true" />
+          Export CSV
+        </button>
+        <button
+          type="button"
+          onClick={stubPushToAudience}
+          className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors"
+        >
+          Push to audience
+        </button>
+        <button
+          type="button"
+          onClick={stubSendToAds}
+          className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors"
+        >
+          Send to ads
+        </button>
+      </BulkActionBar>
 
       <div className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
@@ -139,8 +170,16 @@ export function VisitorTable({ rows }: Props) {
                 return (
                   <tr
                     key={r.id}
+                    onClick={(e) => {
+                      // Skip when the click came from an interactive element
+                      // (checkbox, link) so we don't double-fire.
+                      const target = e.target as HTMLElement;
+                      if (target.closest("a, button, input, select, label"))
+                        return;
+                      setOpenId(r.id);
+                    }}
                     className={
-                      "border-b border-border last:border-0 transition-colors group " +
+                      "border-b border-border last:border-0 transition-colors group cursor-pointer " +
                       (isSelected ? "bg-blue-50/40 " : "hover:bg-muted/40")
                     }
                   >
@@ -225,6 +264,112 @@ export function VisitorTable({ rows }: Props) {
           </table>
         </div>
       </div>
+
+      <SideDrawer
+        open={openVisitor != null}
+        onOpenChange={(o) => setOpenId(o ? openId : null)}
+        title={openVisitor?.displayName ?? ""}
+        description={openVisitor?.email ?? openVisitor?.location ?? undefined}
+        headerActions={
+          openVisitor ? (
+            <Link
+              href={`/portal/visitors/${openVisitor.id}`}
+              className="inline-flex items-center gap-1 rounded-md border border-border bg-background hover:bg-muted px-2 py-1 text-[11px] font-medium text-foreground transition-colors"
+            >
+              Open full page
+              <ExternalLink className="h-3 w-3" aria-hidden="true" />
+            </Link>
+          ) : null
+        }
+        footer={
+          openVisitor ? (
+            <Link
+              href={`/portal/visitors/${openVisitor.id}`}
+              className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-3 py-1.5 text-xs font-medium transition-colors"
+            >
+              Open full page
+            </Link>
+          ) : null
+        }
+      >
+        {openVisitor ? <VisitorDrawerBody row={openVisitor} /> : null}
+      </SideDrawer>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// VisitorDrawerBody — surface-level summary surfaced when an operator
+// clicks a row. Intentionally minimal; the canonical
+// /portal/visitors/[id] page holds the full identification + page history.
+// ---------------------------------------------------------------------------
+function VisitorDrawerBody({ row }: { row: VisitorRow }) {
+  return (
+    <div className="space-y-4 text-sm">
+      <section className="space-y-1.5">
+        <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          Identity
+        </h3>
+        <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+          <dt className="text-muted-foreground">Name</dt>
+          <dd className="col-span-2 text-foreground">
+            {row.firstName || row.lastName
+              ? [row.firstName, row.lastName].filter(Boolean).join(" ")
+              : <span className="text-muted-foreground">—</span>}
+          </dd>
+          <dt className="text-muted-foreground">Email</dt>
+          <dd className="col-span-2 text-foreground break-all">
+            {row.email ?? <span className="text-muted-foreground">—</span>}
+          </dd>
+          <dt className="text-muted-foreground">Location</dt>
+          <dd className="col-span-2 text-foreground">
+            {row.location ?? <span className="text-muted-foreground">—</span>}
+          </dd>
+        </dl>
+      </section>
+
+      <section className="space-y-1.5">
+        <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          Activity
+        </h3>
+        <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+          <dt className="text-muted-foreground">Last seen</dt>
+          <dd className="col-span-2 text-foreground">
+            {formatDistanceToNow(new Date(row.lastSeenAtIso), { addSuffix: true })}
+          </dd>
+          <dt className="text-muted-foreground">Sessions</dt>
+          <dd className="col-span-2 text-foreground tabular-nums">
+            {row.sessions}
+          </dd>
+          <dt className="text-muted-foreground">Last page</dt>
+          <dd className="col-span-2 text-foreground">
+            {row.lastPageUrl ? (
+              <a
+                href={row.lastPageUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary hover:underline break-all"
+              >
+                {row.lastPage ?? row.lastPageUrl}
+              </a>
+            ) : row.lastPage ? (
+              <span>{row.lastPage}</span>
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )}
+          </dd>
+        </dl>
+      </section>
+
+      {row.liveChat ? (
+        <section className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px] text-emerald-800">
+          This visitor is in a live chat right now.
+        </section>
+      ) : null}
+
+      <p className="text-[11px] text-muted-foreground">
+        Top pages and intent-score history live on the full visitor page.
+      </p>
     </div>
   );
 }

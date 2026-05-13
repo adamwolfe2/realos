@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
-import { format, formatDistanceToNow, differenceInDays } from "date-fns";
+import { differenceInDays } from "date-fns";
 import {
   Calendar,
   AlertTriangle,
@@ -20,10 +19,13 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
-import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { tenantNameFromRaw } from "@/lib/integrations/appfolio-display";
 import { LeaseStatus } from "@prisma/client";
+import {
+  RenewalsClient,
+  type RenewalLease,
+  type RenewalBucket,
+} from "./renewals-client";
 
 export const metadata: Metadata = { title: "Renewals" };
 export const dynamic = "force-dynamic";
@@ -142,20 +144,42 @@ export default async function RenewalsPage({
     }),
   ]);
 
+  // Project the Prisma row shape into a flat, JSON-safe RenewalLease so
+  // we can hand it to a client component without dragging Prisma's Date
+  // and JsonValue types across the boundary. tenantNameFromRaw stays on
+  // the server because it reads the AppFolio raw blob.
+  const upcomingRows: RenewalLease[] = upcoming.map((l) => {
+    const residentName =
+      [l.resident?.firstName, l.resident?.lastName].filter(Boolean).join(" ") ||
+      tenantNameFromRaw(l.raw) ||
+      l.resident?.email ||
+      "Resident";
+    return {
+      id: l.id,
+      endDateIso: l.endDate ? l.endDate.toISOString() : null,
+      monthlyRentCents: l.monthlyRentCents,
+      propertyId: l.property.id,
+      propertyName: l.property.name,
+      unitNumber: l.listing?.unitNumber ?? null,
+      residentName,
+      residentEmail: l.resident?.email ?? null,
+      residentPhone: l.resident?.phone ?? null,
+    };
+  });
+
   // Bucket leases by days-until-expiration
-  type LeaseRow = (typeof upcoming)[number];
-  const buckets: Array<{
-    label: string;
-    tone: StatusTone;
-    items: LeaseRow[];
-  }> = BUCKETS.map((b) => ({ label: b.label, tone: b.tone, items: [] }));
-  for (const l of upcoming) {
-    if (!l.endDate) continue;
-    const days = differenceInDays(l.endDate, now);
+  const buckets: RenewalBucket[] = BUCKETS.map((b) => ({
+    label: b.label,
+    tone: b.tone,
+    items: [] as RenewalLease[],
+  }));
+  for (const row of upcomingRows) {
+    if (!row.endDateIso) continue;
+    const days = differenceInDays(new Date(row.endDateIso), now);
     for (let i = 0; i < BUCKETS.length; i++) {
       const b = BUCKETS[i];
       if (days >= b.min && days <= b.max) {
-        buckets[i].items.push(l);
+        buckets[i].items.push(row);
         break;
       }
     }
@@ -216,171 +240,7 @@ export default async function RenewalsPage({
         />
       </section>
 
-      {/* Bucketed renewal pipeline */}
-      <DashboardSection
-        title="Renewal pipeline"
-        eyebrow="Next 120 days"
-        description="Leases grouped by days-until-expiration. Closest first."
-      >
-        {upcoming.length === 0 ? (
-          <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center">
-            <p className="text-sm text-muted-foreground">
-              No leases expiring in the next 120 days.
-            </p>
-          </div>
-        ) : (
-          <div className="overflow-x-auto -mx-4 md:mx-0">
-            <div className="grid grid-cols-4 gap-3 min-w-[900px] md:min-w-0">
-              {buckets.map((b) => (
-                <div
-                  key={b.label}
-                  className="rounded-lg border border-border bg-card p-2.5"
-                >
-                  <div className="flex items-center justify-between gap-2 mb-2 px-1">
-                    <StatusPill label={b.label} tone={b.tone} />
-                    <span className="text-xs font-semibold tabular-nums text-foreground">
-                      {b.items.length}
-                    </span>
-                  </div>
-                  {b.items.length === 0 ? (
-                    <p className="text-[10px] text-muted-foreground italic px-1 py-2">
-                      None
-                    </p>
-                  ) : (
-                    <ul className="space-y-1.5 max-h-[480px] overflow-y-auto">
-                      {b.items.slice(0, 50).map((l) => {
-                        const name =
-                          [l.resident?.firstName, l.resident?.lastName]
-                            .filter(Boolean)
-                            .join(" ") ||
-                          tenantNameFromRaw(l.raw) ||
-                          l.resident?.email ||
-                          "Resident";
-                        return (
-                          <li key={l.id}>
-                            <Link
-                              href={`/portal/properties/${l.property.id}`}
-                              className="block rounded-md border border-border bg-card hover:border-primary/40 px-2 py-1.5"
-                            >
-                              <p className="text-[11px] font-medium text-foreground truncate">
-                                {name}
-                              </p>
-                              <p className="text-[10px] text-muted-foreground truncate">
-                                {l.property.name}
-                                {l.listing?.unitNumber
-                                  ? ` · Unit ${l.listing.unitNumber}`
-                                  : ""}
-                              </p>
-                              <div className="mt-0.5 flex items-center justify-between text-[10px] text-muted-foreground tabular-nums">
-                                <span>
-                                  {l.endDate
-                                    ? format(l.endDate, "MMM d")
-                                    : "—"}
-                                </span>
-                                <span>
-                                  {fmtMoney(l.monthlyRentCents)}
-                                </span>
-                              </div>
-                            </Link>
-                          </li>
-                        );
-                      })}
-                      {b.items.length > 50 ? (
-                        <li className="px-1 text-[10px] text-muted-foreground text-center">
-                          +{b.items.length - 50} more
-                        </li>
-                      ) : null}
-                    </ul>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </DashboardSection>
-
-      {/* Detailed table */}
-      <DashboardSection
-        title="All upcoming renewals"
-        eyebrow="Actionable list"
-        description="Sorted by lease end date, soonest first"
-      >
-        {upcoming.length === 0 ? null : (
-          <div className="overflow-x-auto -mx-4 md:mx-0">
-            <table className="w-full text-xs min-w-[720px]">
-              <thead className="text-left text-[10px] tracking-widest uppercase text-muted-foreground">
-                <tr className="border-b border-border">
-                  <th className="px-4 md:px-2 py-2 font-medium">Resident</th>
-                  <th className="px-2 py-2 font-medium">Property</th>
-                  <th className="px-2 py-2 font-medium">Unit</th>
-                  <th className="px-2 py-2 font-medium text-right">Rent</th>
-                  <th className="px-2 py-2 font-medium">End date</th>
-                  <th className="px-2 py-2 font-medium text-right">Days left</th>
-                  <th className="px-2 py-2 font-medium" />
-                </tr>
-              </thead>
-              <tbody>
-                {upcoming.map((l) => {
-                  const name =
-                    [l.resident?.firstName, l.resident?.lastName]
-                      .filter(Boolean)
-                      .join(" ") ||
-                    tenantNameFromRaw(l.raw) ||
-                    l.resident?.email ||
-                    "Resident";
-                  const days = l.endDate
-                    ? differenceInDays(l.endDate, now)
-                    : null;
-                  const tone =
-                    days != null && days <= 30
-                      ? "text-foreground font-bold"
-                      : days != null && days <= 60
-                        ? "text-foreground font-semibold"
-                        : "text-foreground";
-                  return (
-                    <tr
-                      key={l.id}
-                      className="border-b border-border last:border-0 hover:bg-muted/40"
-                    >
-                      <td className="px-4 md:px-2 py-2 text-foreground">
-                        {name}
-                        {l.resident?.email ? (
-                          <p className="text-[10px] text-muted-foreground">
-                            {l.resident.email}
-                          </p>
-                        ) : null}
-                      </td>
-                      <td className="px-2 py-2 text-foreground">
-                        {l.property.name}
-                      </td>
-                      <td className="px-2 py-2 text-muted-foreground">
-                        {l.listing?.unitNumber ?? "—"}
-                      </td>
-                      <td className="px-2 py-2 text-right tabular-nums">
-                        {fmtMoney(l.monthlyRentCents)}
-                      </td>
-                      <td className="px-2 py-2 tabular-nums">
-                        {l.endDate ? format(l.endDate, "MMM d, yyyy") : "—"}
-                      </td>
-                      <td className={`px-2 py-2 text-right tabular-nums ${tone}`}>
-                        {days != null ? `${days}d` : "—"}
-                      </td>
-                      <td className="px-2 py-2 text-right">
-                        <Link
-                          href={`/portal/properties/${l.property.id}`}
-                          className="text-[11px] font-medium text-foreground hover:text-primary"
-                        >
-                          Open →
-                        </Link>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </DashboardSection>
+      <RenewalsClient buckets={buckets} upcoming={upcomingRows} />
     </div>
   );
   } catch (err) {
@@ -399,3 +259,4 @@ export default async function RenewalsPage({
     );
   }
 }
+
