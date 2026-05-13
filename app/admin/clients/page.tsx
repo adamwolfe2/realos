@@ -48,14 +48,48 @@ export default async function ClientsList({
 
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const leadCountsByOrg = new Map<string, number>();
+  // Per-client insight counts — surfaces "this client has 3 critical
+  // insights" inline on the table so the agency can triage without
+  // clicking into each one. Uses the same 14-day window as
+  // /admin/insights so the numbers match.
+  const insightWindow = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
+  const insightCountsByOrg = new Map<
+    string,
+    { critical: number; warning: number }
+  >();
   if (clients.length > 0) {
-    const leadGroups = await prisma.lead.groupBy({
-      by: ["orgId"],
-      where: { createdAt: { gte: since }, orgId: { in: clients.map((c) => c.id) } },
-      _count: { _all: true },
-    });
+    const [leadGroups, insightGroups] = await Promise.all([
+      prisma.lead.groupBy({
+        by: ["orgId"],
+        where: {
+          createdAt: { gte: since },
+          orgId: { in: clients.map((c) => c.id) },
+        },
+        _count: { _all: true },
+      }),
+      prisma.insight.groupBy({
+        by: ["orgId", "severity"],
+        where: {
+          orgId: { in: clients.map((c) => c.id) },
+          status: { in: ["open", "acknowledged"] },
+          createdAt: { gte: insightWindow },
+          severity: { in: ["critical", "warning"] },
+          OR: [{ snoozeUntil: null }, { snoozeUntil: { lt: new Date() } }],
+        },
+        _count: { _all: true },
+      }),
+    ]);
     for (const g of leadGroups) {
       leadCountsByOrg.set(g.orgId, g._count._all);
+    }
+    for (const g of insightGroups) {
+      const existing = insightCountsByOrg.get(g.orgId) ?? {
+        critical: 0,
+        warning: 0,
+      };
+      if (g.severity === "critical") existing.critical += g._count._all;
+      if (g.severity === "warning") existing.warning += g._count._all;
+      insightCountsByOrg.set(g.orgId, existing);
     }
   }
 
@@ -153,6 +187,9 @@ export default async function ClientsList({
                     Leads&nbsp;30d
                   </th>
                   <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+                    Insights&nbsp;14d
+                  </th>
+                  <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
                     MRR
                   </th>
                   <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
@@ -197,6 +234,17 @@ export default async function ClientsList({
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
                         {leadCountsByOrg.get(c.id) ?? 0}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <InsightCountCell
+                          counts={
+                            insightCountsByOrg.get(c.id) ?? {
+                              critical: 0,
+                              warning: 0,
+                            }
+                          }
+                          orgId={c.id}
+                        />
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
                         {c.mrrCents != null && c.mrrCents > 0
@@ -246,6 +294,36 @@ function StatusLink({
       )}
     >
       {label}
+    </Link>
+  );
+}
+
+function InsightCountCell({
+  counts,
+  orgId,
+}: {
+  counts: { critical: number; warning: number };
+  orgId: string;
+}) {
+  const total = counts.critical + counts.warning;
+  if (total === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return (
+    <Link
+      href={`/admin/insights?org=${orgId}`}
+      className="inline-flex items-center gap-1.5 hover:underline"
+    >
+      {counts.critical > 0 ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
+          {counts.critical} crit
+        </span>
+      ) : null}
+      {counts.warning > 0 ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+          {counts.warning} warn
+        </span>
+      ) : null}
     </Link>
   );
 }
