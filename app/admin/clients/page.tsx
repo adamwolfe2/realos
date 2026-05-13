@@ -104,10 +104,32 @@ export default async function ClientsList({
       </nav>
 
       {clients.length === 0 ? (
-        <div className="border border-border bg-card rounded-lg p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            No clients match this filter.
+        <div className="border border-border bg-muted/20 rounded-xl p-10 text-center space-y-2">
+          <p className="text-sm font-semibold text-foreground">
+            {status || type || q
+              ? "No clients match these filters."
+              : "No client organizations yet."}
           </p>
+          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
+            {status || type || q
+              ? "Try clearing the filter or widening the search."
+              : "Approve an intake submission from the queue to provision the first client org. Or hand-create one from /admin/clients/new."}
+          </p>
+          {status || type || q ? (
+            <Link
+              href="/admin/clients"
+              className="inline-flex items-center mt-2 text-xs font-semibold text-primary hover:underline"
+            >
+              Clear filters →
+            </Link>
+          ) : (
+            <Link
+              href="/admin/intakes"
+              className="inline-flex items-center mt-2 text-xs font-semibold text-primary hover:underline"
+            >
+              Open intake queue →
+            </Link>
+          )}
         </div>
       ) : (
         <div className="border border-border bg-card rounded-lg overflow-hidden">

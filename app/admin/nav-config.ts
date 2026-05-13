@@ -13,6 +13,7 @@ import {
   Radio,
   Plug,
   Inbox,
+  Sparkles,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -44,7 +45,13 @@ export interface NavGroup {
 export const adminNavGroups: NavGroup[] = [
   {
     label: "Overview",
-    items: [{ href: "/admin", label: "Dashboard", icon: LayoutDashboard }],
+    items: [
+      { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+      // Cross-portfolio insight triage. Aggregates every actionable
+      // insight across every CLIENT org so the agency can get ahead
+      // of fires before clients notice them.
+      { href: "/admin/insights", label: "Insights", icon: Sparkles },
+    ],
   },
   {
     label: "Growth",
