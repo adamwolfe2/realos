@@ -9,6 +9,7 @@ import {
   Users2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PropertyAvatar } from "@/components/portal/properties/property-avatar";
 
 // ---------------------------------------------------------------------------
 // PropertyDashboardCard — dense single-row layout used by the
@@ -68,11 +69,7 @@ export function PropertyDashboardCard({
         "hover:bg-muted/40 transition-colors",
       )}
     >
-      <Thumbnail
-        src={thumbnailUrl}
-        fallbackLetter={name.slice(0, 1)}
-        accent={accent}
-      />
+      <PropertyAvatar src={thumbnailUrl} accent={accent} size="md" />
 
       {/* Identity column — flexes to fill */}
       <div className="flex-1 min-w-0">
@@ -165,45 +162,9 @@ export function PropertyDashboardCard({
 
 // ---------------------------------------------------------------------------
 
-function Thumbnail({
-  src,
-  fallbackLetter,
-  accent,
-}: {
-  src?: string | null;
-  fallbackLetter: string;
-  accent?: string;
-}) {
-  if (src) {
-    return (
-      <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-border">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={src}
-          alt=""
-          className="h-full w-full object-cover"
-          loading="lazy"
-        />
-      </div>
-    );
-  }
-  return (
-    <div
-      className="relative h-10 w-10 shrink-0 grid place-items-center rounded-md border border-border"
-      style={{
-        backgroundColor: accent ? `${accent}14` : "hsl(var(--muted))",
-      }}
-      aria-hidden="true"
-    >
-      <span
-        className="text-sm font-semibold tracking-tight"
-        style={{ color: accent ?? "hsl(var(--foreground))" }}
-      >
-        {fallbackLetter.toUpperCase()}
-      </span>
-    </div>
-  );
-}
+// Thumbnail moved to components/portal/properties/property-avatar.tsx so
+// the same visual is shared with the properties list table and the
+// property-detail header. No local component here any more.
 
 // Mini stat — labelled column used inline. Falls back to em-dash on null
 // so absent data doesn't visually skip a slot.

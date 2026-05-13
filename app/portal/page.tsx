@@ -256,7 +256,12 @@ export default async function PortalHome({
         addressLine1: true,
         city: true,
         state: true,
+        // Image hierarchy on the leaderboard avatar:
+        //   1. heroImageUrl (operator-curated marketing hero)
+        //   2. first entry of photoUrls (AppFolio-synced listing photos)
+        //   3. Building icon fallback (rendered by PropertyDashboardCard)
         heroImageUrl: true,
+        photoUrls: true,
         availableCount: true,
         totalUnits: true,
       },
@@ -793,13 +798,27 @@ export default async function PortalHome({
                               100,
                           )
                         : null;
+                      // Pick the best available image for the avatar.
+                      // photoUrls is a Json column (array of strings); coerce
+                      // safely so a malformed row never crashes the row map.
+                      const photoFallback = (() => {
+                        const arr = p.photoUrls;
+                        if (Array.isArray(arr) && arr.length > 0) {
+                          const first = arr[0];
+                          return typeof first === "string" && first.length > 0
+                            ? first
+                            : null;
+                        }
+                        return null;
+                      })();
+                      const avatarUrl = p.heroImageUrl ?? photoFallback;
                       return (
                         <PropertyDashboardCard
                           key={p.id}
                           id={p.id}
                           name={p.name}
                           address={address || null}
-                          thumbnailUrl={p.heroImageUrl}
+                          thumbnailUrl={avatarUrl}
                           occupancyPct={occupancyPct}
                           totalUnits={p.totalUnits ?? null}
                           availableCount={p.availableCount ?? null}

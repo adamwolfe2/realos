@@ -22,6 +22,7 @@ import {
 } from "@/components/portal/ui/entity-toolbar";
 import { PillCell, NumberCell, EmptyCell } from "@/components/portal/ui/cells";
 import { PropertiesSearch } from "@/components/portal/properties/properties-search";
+import { PropertyAvatar } from "@/components/portal/properties/property-avatar";
 
 export const metadata: Metadata = { title: "Properties" };
 export const dynamic = "force-dynamic";
@@ -47,6 +48,11 @@ type PropertyRow = {
   availableCount: number | null;
   totalUnits: number | null;
   lastSyncedAt: Date | null;
+  // Image hierarchy on the avatar — heroImageUrl wins, then first
+  // photoUrls entry, then a Building icon fallback (PropertyAvatar
+  // handles the cascade).
+  heroImageUrl: string | null;
+  photoUrls: Prisma.JsonValue;
 };
 
 type ViewKey = "all" | "vacant" | "leasing" | "synced";
@@ -325,25 +331,42 @@ export default async function PropertiesList({
                 {
                   key: "name",
                   header: "Property",
-                  accessor: (p) => (
-                    <EntityCell
-                      name={p.name}
-                      seed={p.id}
-                      secondary={
-                        p.addressLine1 ? (
-                          <span className="inline-flex items-center gap-1">
-                            <MapPin
-                              className="h-2.5 w-2.5 opacity-60"
-                              aria-hidden="true"
-                            />
-                            {[p.addressLine1, p.city]
-                              .filter(Boolean)
-                              .join(", ")}
-                          </span>
-                        ) : null
+                  accessor: (p) => {
+                    // Pick the best-available image. photoUrls is a JSON
+                    // column (string[] from AppFolio sync) — coerce safely
+                    // so a malformed row never crashes the row map.
+                    const photoFallback = (() => {
+                      const arr = p.photoUrls;
+                      if (Array.isArray(arr) && arr.length > 0) {
+                        const first = arr[0];
+                        return typeof first === "string" && first.length > 0
+                          ? first
+                          : null;
                       }
-                    />
-                  ),
+                      return null;
+                    })();
+                    const avatarSrc = p.heroImageUrl ?? photoFallback;
+                    return (
+                      <EntityCell
+                        name={p.name}
+                        seed={p.id}
+                        avatar={<PropertyAvatar src={avatarSrc} size="sm" />}
+                        secondary={
+                          p.addressLine1 ? (
+                            <span className="inline-flex items-center gap-1">
+                              <MapPin
+                                className="h-2.5 w-2.5 opacity-60"
+                                aria-hidden="true"
+                              />
+                              {[p.addressLine1, p.city]
+                                .filter(Boolean)
+                                .join(", ")}
+                            </span>
+                          ) : null
+                        }
+                      />
+                    );
+                  },
                 },
                 {
                   key: "location",
