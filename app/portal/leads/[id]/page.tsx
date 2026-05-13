@@ -28,9 +28,35 @@ import { LeadSmsComposer } from "@/components/portal/leads/sms-composer";
 import { isSmsConfigured } from "@/lib/sms/twilio";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 import { MarkLostButton } from "./mark-lost-button";
+import {
+  LeadConversationPanel,
+  type LeadConversationMessage,
+} from "@/components/portal/leads/lead-conversation-panel";
+import type { Prisma } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Lead detail" };
 export const dynamic = "force-dynamic";
+
+// Defensive parser for the ChatbotConversation.messages JSON column. The
+// shape is {role, content, ts?} per message, but stored as Prisma.JsonValue
+// so we coerce safely — a malformed row should NOT crash the lead detail.
+function parseConversationMessages(
+  raw: Prisma.JsonValue,
+): LeadConversationMessage[] {
+  if (!Array.isArray(raw)) return [];
+  const out: LeadConversationMessage[] = [];
+  for (const item of raw) {
+    if (item && typeof item === "object" && !Array.isArray(item)) {
+      const rec = item as Record<string, unknown>;
+      const role = typeof rec.role === "string" ? rec.role : "assistant";
+      const content = typeof rec.content === "string" ? rec.content : "";
+      if (!content) continue;
+      const ts = typeof rec.ts === "string" ? rec.ts : undefined;
+      out.push({ role, content, ts });
+    }
+  }
+  return out;
+}
 
 // ---------------------------------------------------------------------------
 // Lead detail — "the Loom money shot".
@@ -81,6 +107,38 @@ export default async function LeadDetailPage({
     orderBy: { createdAt: "desc" },
     take: 30,
   });
+
+  // Conversation discovery — primary path is lead.conversations (the
+  // FK relation set during chatbot capture). For historical leads from
+  // before the FK was always written, OR for leads imported from forms
+  // that match a chatbot conversation by email later, also pull any
+  // ChatbotConversation where capturedEmail matches and leadId is null.
+  // Result is unioned + de-duped so the lead detail surface stays
+  // complete even when the back-end link wasn't established.
+  const orphanedConversations =
+    lead.email && lead.conversations.length === 0
+      ? await prisma.chatbotConversation.findMany({
+          where: {
+            orgId: scope.orgId,
+            leadId: null,
+            capturedEmail: { equals: lead.email, mode: "insensitive" },
+          },
+          orderBy: { lastMessageAt: "desc" },
+          take: 5,
+          select: {
+            id: true,
+            status: true,
+            messages: true,
+            messageCount: true,
+            lastMessageAt: true,
+            createdAt: true,
+            capturedEmail: true,
+            capturedName: true,
+            pageUrl: true,
+          },
+        })
+      : [];
+  const allConversations = [...lead.conversations, ...orphanedConversations];
 
   // Insights flagged for this specific lead (pipeline_stall, hot_visitor, etc.)
   // Also include org-wide insights with no entity binding that are still open,
@@ -338,6 +396,29 @@ export default async function LeadDetailPage({
       <section className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Timeline (2 cols on desktop) */}
         <div className="lg:col-span-2 space-y-4">
+          {/* Chatbot conversation — surfaced inline so operators don't
+              have to navigate to /portal/conversations to see what the
+              prospect actually asked. The component handles the
+              "multiple conversations per lead" case by inlining the most
+              recent and deep-linking the earlier ones. Includes orphaned
+              matches (capturedEmail == lead.email but leadId never set
+              on the conversation row — historical data resilience). */}
+          {allConversations.length > 0 ? (
+            <LeadConversationPanel
+              conversations={allConversations.map((c) => ({
+                id: c.id,
+                status: c.status,
+                messageCount: c.messageCount,
+                lastMessageAt: c.lastMessageAt,
+                createdAt: c.createdAt,
+                pageUrl: c.pageUrl,
+                capturedEmail: c.capturedEmail,
+                capturedName: c.capturedName,
+                messages: parseConversationMessages(c.messages),
+              }))}
+            />
+          ) : null}
+
           <div className="flex items-baseline justify-between">
             <h2 className="text-xl font-semibold tracking-tight text-foreground">
               Activity

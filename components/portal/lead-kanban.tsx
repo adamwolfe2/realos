@@ -4,7 +4,7 @@ import * as React from "react";
 import { useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckSquare, Square, Loader2, ExternalLink } from "lucide-react";
+import { CheckSquare, Square, Loader2, ExternalLink, Bot } from "lucide-react";
 import { LeadStatus } from "@prisma/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -753,6 +753,31 @@ function LeadDrawerBody({ item }: { item: LeadKanbanItem }) {
         </dl>
       </section>
 
+      {/* Chatbot conversation hint — if the lead came from the chatbot,
+          surface a deep link to the inline transcript on the full lead
+          page (we don't pre-fetch the messages here to keep the kanban
+          query light). */}
+      {item.source === "CHATBOT" ? (
+        <section className="space-y-1.5 rounded-md border border-primary/20 bg-primary/5 px-3 py-2.5">
+          <div className="flex items-center gap-1.5">
+            <Bot className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
+            <h3 className="text-[10px] tracking-widest uppercase font-semibold text-primary">
+              Chatbot lead
+            </h3>
+          </div>
+          <p className="text-xs text-foreground leading-snug">
+            This lead was captured during a chatbot conversation. Read what
+            they actually asked before calling.
+          </p>
+          <Link
+            href={`/portal/leads/${item.id}#conversation`}
+            className="inline-flex items-center gap-1 text-[11px] font-semibold text-primary hover:underline"
+          >
+            View conversation →
+          </Link>
+        </section>
+      ) : null}
+
       <section className="space-y-1.5">
         <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Activity
@@ -761,8 +786,7 @@ function LeadDrawerBody({ item }: { item: LeadKanbanItem }) {
           Created {relativeTime(item.createdAt)}.
         </p>
         <p className="text-[11px] text-muted-foreground">
-          Notes, conversation history, tours, and applications live on the
-          full lead page.
+          Notes, tours, and applications live on the full lead page.
         </p>
       </section>
     </div>
