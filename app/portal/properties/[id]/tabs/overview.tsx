@@ -537,22 +537,50 @@ export async function OverviewTab({
               </p>
               <p
                 className="mt-0.5 text-base font-semibold tabular-nums text-foreground"
-                title="Lease rows in ACTIVE status synced from AppFolio. May trail occupancy when residents are tracked but their lease records haven't synced yet — see the help text under Avg rent / unit."
+                title="Lease rows in ACTIVE status synced from AppFolio. May trail occupancy when residents are tracked but their lease records haven't synced yet — see the reconciliation note below."
               >
                 <AnimatedNumber value={activeResidents} />
               </p>
-              {/* Bug #34 — explicit gap reconciliation. When occupancy
-                  (unit-level) and active-lease count (lease-row level)
-                  disagree by more than a handful, surface the cause
-                  inline so operators don't have to guess at it. */}
-              {leasedUnits != null && Math.abs(leasedUnits - activeResidents) > 5 ? (
-                <p className="text-[10px] text-muted-foreground leading-snug mt-1">
-                  Occupancy ({leasedUnits} leased) reflects unit-level
-                  state; AppFolio sometimes lags on lease-row sync
-                  for new move-ins.
-                </p>
-              ) : null}
             </div>
+            {/* Bug #34 — explicit, always-visible reconciliation when
+                occupancy (unit-level state) and active-lease count
+                (lease-row level) disagree. Norman's complaint was that
+                operators see "100 of 100 leased" + "21 active leases"
+                and have no in-product explanation of the gap. Earlier
+                fix only surfaced a tiny grey hint when the delta was
+                >5; that's still confusing on a 100-vs-21 split. We
+                now render a plain-English explainer block whenever
+                the two diverge, with a deep link to the Residents
+                tab where operators can see the underlying records. */}
+            {leasedUnits != null && Math.abs(leasedUnits - activeResidents) >= 1 ? (
+              <div className="rounded-md border border-amber-200 bg-amber-50/60 px-2.5 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-800">
+                  Why these numbers differ
+                </p>
+                <p className="text-[11px] text-amber-900/90 leading-snug mt-1">
+                  <span className="font-semibold tabular-nums">
+                    {leasedUnits} units
+                  </span>{" "}
+                  show as occupied (the physical-unit roll-up from
+                  AppFolio), but only{" "}
+                  <span className="font-semibold tabular-nums">
+                    {activeResidents} lease records
+                  </span>{" "}
+                  have synced as ACTIVE. The rest are residents whose
+                  lease rows haven&apos;t propagated yet (new move-ins,
+                  pending renewals, or month-to-month rolls AppFolio
+                  hasn&apos;t reissued). Avg rent is calculated against
+                  the {leasedUnits}-unit denominator so it stays
+                  stable while sync catches up.
+                </p>
+                <a
+                  href="?tab=residents"
+                  className="inline-block mt-1.5 text-[10px] font-semibold text-amber-900 underline underline-offset-2 hover:no-underline"
+                >
+                  Open Residents tab →
+                </a>
+              </div>
+            ) : null}
             <div>
               <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
                 Avg rent / unit
