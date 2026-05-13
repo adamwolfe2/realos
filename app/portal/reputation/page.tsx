@@ -20,6 +20,7 @@ import {
 } from "@/lib/reputation/portfolio";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
+import { PageHeader } from "@/components/admin/page-header";
 import { SourceLogo } from "@/components/portal/reputation/source-logo";
 import { sourceLabel } from "@/components/portal/reputation/source-label";
 import type { MentionSource, Sentiment } from "@prisma/client";
@@ -187,11 +188,6 @@ export default async function PortfolioReputationPage({
     return (
     <div className="space-y-4">
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
-      {properties.length > 1 ? (
-        <div className="flex justify-end">
-          <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
-        </div>
-      ) : null}
       {loadError ? (
         <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           <strong>Reputation data unavailable.</strong> The scanner tables may still be
@@ -200,27 +196,25 @@ export default async function PortfolioReputationPage({
         </div>
       ) : null}
 
-      {/* Page heading */}
-      <header className="flex items-end justify-between gap-3 flex-wrap">
-        <div>
-          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-            Brand health
-          </p>
-          <h1 className="text-xl font-semibold tracking-tight text-foreground">
-            Reputation
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Reviews and mentions across Google, Reddit, Yelp, and the open web —
-            rolled up across every property.
-          </p>
-        </div>
-        <Link
-          href="/portal/properties"
-          className="text-xs font-medium text-foreground hover:text-primary"
-        >
-          Manage properties →
-        </Link>
-      </header>
+      <PageHeader
+        eyebrow="Brand health"
+        title="Reputation"
+        description="Reviews and mentions across Google, Reddit, Yelp, and the open web — rolled up across every property."
+        actions={
+          <>
+            {properties.length > 1 ? (
+              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+            ) : null}
+            <Link
+              href="/portal/properties"
+              className="text-xs font-medium text-foreground hover:text-primary"
+            >
+              Manage properties →
+            </Link>
+          </>
+        }
+      />
+
 
       {/* Top KPIs */}
       <section
@@ -534,14 +528,7 @@ function ReputationFallback({
 }) {
   return (
     <div className="space-y-4">
-      <header>
-        <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-          Brand health
-        </p>
-        <h1 className="text-xl font-semibold tracking-tight text-foreground">
-          Reputation
-        </h1>
-      </header>
+      <PageHeader eyebrow="Brand health" title="Reputation" />
       <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
         <p className="font-semibold">Reputation view temporarily unavailable.</p>
         <p className="mt-1 text-xs leading-snug">{message}</p>

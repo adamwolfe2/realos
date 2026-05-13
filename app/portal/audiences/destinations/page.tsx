@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProductLine } from "@prisma/client";
 import { getScope } from "@/lib/tenancy/scope";
+import { PageHeader } from "@/components/admin/page-header";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { ArrowLeft } from "lucide-react";
 import { DestinationsManager } from "@/components/audiences/destinations-manager";
@@ -48,26 +49,19 @@ export default async function DestinationsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <Link
-          href="/portal/audiences"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          Back to segments
-        </Link>
-      </div>
-
-      <header>
-        <h1 className="text-xl font-semibold tracking-tight">
-          Sync destinations
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Where your audience segments get sent. CSV and webhooks are live
-          today; Meta Custom Audiences and Google Customer Match light up once
-          OAuth is wired.
-        </p>
-      </header>
+      <PageHeader
+        breadcrumb={
+          <Link
+            href="/portal/audiences"
+            className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Back to segments
+          </Link>
+        }
+        title="Sync destinations"
+        description="Where your audience segments get sent. CSV and webhooks are live today; Meta Custom Audiences and Google Customer Match light up once OAuth is wired."
+      />
 
       <DashboardSection
         eyebrow="Connected"

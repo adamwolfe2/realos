@@ -6,6 +6,7 @@ import { CreativeRequestStatus } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { StatCard } from "@/components/admin/stat-card";
 import { PageHeader } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { StatusBadge } from "@/components/admin/status-badge";
 import { humanCreativeStatus } from "@/lib/format";
 
@@ -71,12 +72,11 @@ export default async function CreativePage() {
       </section>
 
       {requests.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            No creative requests yet. Start one from the button above, the
-            studio takes it from there.
-          </p>
-        </div>
+        <EmptyState
+          title="No creative requests yet"
+          body="Start one from the button above — the studio takes it from there."
+          action={{ label: "New request", href: "/portal/creative/new" }}
+        />
       ) : (
         <ul className="space-y-2">
           {requests.map((r) => (

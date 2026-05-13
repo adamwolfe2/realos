@@ -22,8 +22,6 @@ import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-ba
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
-import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
-import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { DataTable, EntityCell } from "@/components/portal/ui/data-table";
 import { EmptyState } from "@/components/portal/ui/empty-state";
@@ -103,7 +101,6 @@ export default async function ResidentsPage({
   };
 
   const [
-    appfolioStatus,
     activeCount,
     noticeCount,
     pastCount,
@@ -113,7 +110,6 @@ export default async function ResidentsPage({
     properties,
     noticeBoard,
   ] = await Promise.all([
-    getAppFolioStatus(scope.orgId),
     prisma.resident.count({ where: { ...where, status: ResidentStatus.ACTIVE } }),
     prisma.resident.count({
       where: { ...where, status: ResidentStatus.NOTICE_GIVEN },
@@ -185,12 +181,6 @@ export default async function ResidentsPage({
       {isAccessDenied(scope, propertyIds) ? (
         <PropertyAccessDeniedBanner pathname="/portal/residents" />
       ) : null}
-
-      <AppFolioStatusBanner
-        status={appfolioStatus}
-        resourceLabel="residents"
-        orgId={scope.orgId}
-      />
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <KpiTile
@@ -342,10 +332,7 @@ export default async function ResidentsPage({
             <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
               {residents.length} of all matching
             </p>
-            <h2
-              className="text-[15px] font-medium tracking-tight text-foreground"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
+            <h2 className="text-[15px] font-medium tracking-tight text-foreground">
               Roster
             </h2>
           </div>
@@ -468,19 +455,10 @@ export default async function ResidentsPage({
           title="Residents"
           description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
         />
-        <AppFolioStatusBanner
-          status={{
-            state: "failed",
-            lastSyncAt: null,
-            syncStartedAt: null,
-            lastError:
-              err instanceof Error ? err.message : "Resident data could not be loaded.",
-            subdomain: null,
-            stale: false,
-            stats: null,
-          }}
-          resourceLabel="residents"
-        />
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Resident data could not be loaded.{" "}
+          {err instanceof Error ? err.message : ""}
+        </div>
       </div>
     );
   }

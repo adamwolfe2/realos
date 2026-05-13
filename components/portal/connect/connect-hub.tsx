@@ -17,6 +17,7 @@ import {
   ExternalLink,
   type LucideIcon,
 } from "lucide-react";
+import { PageHeader } from "@/components/admin/page-header";
 
 // ---------------------------------------------------------------------------
 // ConnectHub — the unified data-connection screen.
@@ -219,25 +220,13 @@ export function ConnectHub({
   return (
     <div className="space-y-8">
       {variant === "page" ? (
-        <header className="space-y-3">
-          <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-primary">
-            Connect your data
-          </p>
-          <h1 className="text-[32px] leading-tight font-semibold tracking-tight text-foreground"
-            style={{
-              fontFamily:
-                "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
-            }}
-          >
-            Plug in once. Insights flow within minutes.
-          </h1>
-          <p className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
-            Each source you connect unlocks a new family of automated insights.
-            We sync immediately and run our analysis the moment your first
-            data lands — no waiting overnight, no scheduled reports. Connect
-            in any order; skip what you don&apos;t use yet and come back later.
-          </p>
-        </header>
+        // Canonical PageHeader — no more serif marketing voice. The detail
+        // about "we sync immediately" lives below the progress card so the
+        // top of the page stays scannable.
+        <PageHeader
+          title="Data sources"
+          description="Connect property, analytics, ads, and search sources. Each new connection unlocks a family of automated insights, synced and analyzed the moment your first data lands."
+        />
       ) : null}
 
       {/* Progress bar */}

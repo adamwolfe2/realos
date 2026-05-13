@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { ProductLine } from "@prisma/client";
 import { getScope } from "@/lib/tenancy/scope";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { TopLocations } from "@/components/audiences/top-locations";
@@ -84,33 +85,26 @@ export default async function SegmentDetailPage({
 
   return (
     <div className="space-y-5">
-      <div>
-        <Link
-          href="/portal/audiences"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          All segments
-        </Link>
-      </div>
-
-      <header className="flex items-end justify-between gap-4 flex-wrap">
-        <div className="min-w-0">
-          <h1 className="text-xl font-semibold tracking-tight">
-            {segment.name}
-          </h1>
-          {segment.description ? (
-            <p className="mt-0.5 text-sm text-muted-foreground max-w-2xl">
-              {segment.description}
-            </p>
-          ) : null}
-          <p className="mt-1 text-[11px] text-muted-foreground">
+      <PageHeader
+        breadcrumb={
+          <Link
+            href="/portal/audiences"
+            className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            All segments
+          </Link>
+        }
+        title={segment.name}
+        description={segment.description ?? undefined}
+        meta={
+          <>
             AL id <span className="font-mono">{segment.alSegmentId}</span> •
             Synced {timeAgo(segment.lastFetchedAt)}
-          </p>
-        </div>
-        <RefreshInsightsButton segmentId={segment.id} />
-      </header>
+          </>
+        }
+        actions={<RefreshInsightsButton segmentId={segment.id} />}
+      />
 
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile

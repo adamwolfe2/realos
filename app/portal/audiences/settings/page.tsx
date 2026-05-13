@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { ProductLine } from "@prisma/client";
 import { ArrowLeft } from "lucide-react";
 import { getScope } from "@/lib/tenancy/scope";
+import { PageHeader } from "@/components/admin/page-header";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { ApiKeySettings } from "@/components/audiences/api-key-settings";
 import { getOrgAlApiKeyStatus } from "@/lib/actions/audiences";
@@ -21,25 +22,19 @@ export default async function AudienceSyncSettingsPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <Link
-          href="/portal/audiences"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          Back to segments
-        </Link>
-      </div>
-
-      <header>
-        <h1 className="text-xl font-semibold tracking-tight">
-          Audience Sync settings
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Connection details for this workspace. Set a personal AudienceLab key
-          to override the platform default.
-        </p>
-      </header>
+      <PageHeader
+        breadcrumb={
+          <Link
+            href="/portal/audiences"
+            className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Back to segments
+          </Link>
+        }
+        title="Audience Sync settings"
+        description="Connection details for this workspace. Set a personal AudienceLab key to override the platform default."
+      />
 
       <DashboardSection
         eyebrow="AudienceLab connection"

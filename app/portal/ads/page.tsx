@@ -9,6 +9,7 @@ import {
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { ExportButton } from "@/components/ui/export-button";
 import { AdPlatform, LeadSource, LeadStatus } from "@prisma/client";
 import { AdsDashboard } from "./ads-dashboard";
@@ -243,7 +244,12 @@ export default async function AdsPage({
       />
 
       {accounts.length === 0 ? (
-        <EmptyState />
+        <EmptyState
+          title="No ad accounts connected yet"
+          body="Connect Google Ads or Meta Ads to start pulling daily spend, clicks, and conversions into your dashboard. Read-only for now — no campaign edits."
+          action={{ label: "Connect Google Ads", href: "/portal/connect" }}
+          secondary={{ label: "Connect Meta Ads", href: "/portal/connect" }}
+        />
       ) : (
         <AdsDashboard
           accounts={accounts.map((a) => ({
@@ -294,35 +300,6 @@ export default async function AdsPage({
       >
         <MarketingRoiTable rows={roiRows} />
       </DashboardSection>
-    </div>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="rounded-lg border border-border bg-card p-10 text-center">
-      <h2 className="text-base font-semibold text-foreground">
-        No ad accounts connected yet
-      </h2>
-      <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-        Connect Google Ads or Meta Ads to start pulling daily spend, clicks,
-        and conversions into your dashboard. We do this read-only for now,
-        no campaign edits.
-      </p>
-      <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
-        <Link
-          href="/portal/connect"
-          className="rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary-dark transition-colors"
-        >
-          Connect Google Ads
-        </Link>
-        <Link
-          href="/portal/connect"
-          className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50 transition-colors"
-        >
-          Connect Meta Ads
-        </Link>
-      </div>
     </div>
   );
 }

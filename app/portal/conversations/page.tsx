@@ -186,6 +186,10 @@ export default async function ConversationsList({
     },
   });
 
+  // TODO(design-audit): Per the portal-wide audit, this page should
+  // become a 2-pane inbox (list left, transcript right) instead of a
+  // list-only view that requires drill-in. Out of scope for the chrome
+  // sweep — only the PageHeader + EmptyState swap landed here.
   return (
     <div className="space-y-3">
       <PageHeader

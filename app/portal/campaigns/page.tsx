@@ -9,6 +9,7 @@ import {
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 
 export const metadata: Metadata = { title: "Campaigns" };
 export const dynamic = "force-dynamic";
@@ -195,24 +196,16 @@ export default async function CampaignsPage({
       )}
 
       {properties.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-10 text-center">
-          <p className="text-sm text-muted-foreground">
-            Add a property first, then your account manager will set up campaigns here.
-          </p>
-        </div>
+        <EmptyState
+          title="Add a property first"
+          body="Add a property, then your account manager will set up campaigns here."
+        />
       ) : campaigns.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-10 text-center">
-          <p className="text-sm font-medium text-foreground mb-1">No campaigns yet</p>
-          <p className="text-xs text-muted-foreground max-w-sm mx-auto">
-            Once your Google Ads or Meta ad accounts are connected and creative is approved, campaigns will appear here with live performance data.
-          </p>
-          <Link
-            href="/portal/settings"
-            className="mt-4 inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            Connect ad accounts
-          </Link>
-        </div>
+        <EmptyState
+          title="No campaigns yet"
+          body="Once your Google Ads or Meta ad accounts are connected and creative is approved, campaigns will appear here with live performance data."
+          action={{ label: "Connect ad accounts", href: "/portal/settings" }}
+        />
       ) : (
         <div className="rounded-lg border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm">

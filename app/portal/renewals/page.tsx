@@ -21,8 +21,6 @@ import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-ba
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
-import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
-import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { tenantNameFromRaw } from "@/lib/integrations/appfolio-display";
 import { LeaseStatus } from "@prisma/client";
@@ -82,7 +80,6 @@ export default async function RenewalsPage({
   const next120 = new Date(now.getTime() + 120 * 24 * 60 * 60 * 1000);
 
   const [
-    appfolioStatus,
     activeCount,
     expiringCount,
     expiredCount,
@@ -91,7 +88,6 @@ export default async function RenewalsPage({
     upcoming,
     rentRollTotal,
   ] = await Promise.all([
-    getAppFolioStatus(scope.orgId),
     prisma.lease.count({ where: { ...where, status: LeaseStatus.ACTIVE } }),
     prisma.lease.count({
       where: {
@@ -178,12 +174,6 @@ export default async function RenewalsPage({
       {isAccessDenied(scope, propertyIds) ? (
         <PropertyAccessDeniedBanner pathname="/portal/renewals" />
       ) : null}
-
-      <AppFolioStatusBanner
-        status={appfolioStatus}
-        resourceLabel="leases"
-        orgId={scope.orgId}
-      />
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <KpiTile
@@ -401,19 +391,10 @@ export default async function RenewalsPage({
           title="Renewals"
           description="Lease expirations from AppFolio. Act on renewals 120 days out so resignation deadlines never slip."
         />
-        <AppFolioStatusBanner
-          status={{
-            state: "failed",
-            lastSyncAt: null,
-            syncStartedAt: null,
-            lastError:
-              err instanceof Error ? err.message : "Renewal data could not be loaded.",
-            subdomain: null,
-            stale: false,
-            stats: null,
-          }}
-          resourceLabel="leases"
-        />
+        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Renewal data could not be loaded.{" "}
+          {err instanceof Error ? err.message : ""}
+        </div>
       </div>
     );
   }

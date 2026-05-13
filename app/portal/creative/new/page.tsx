@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { PageHeader } from "@/components/admin/page-header";
 import { CreativeRequestForm } from "@/components/creative-request/new-form";
 
 export const metadata: Metadata = { title: "New creative request" };
@@ -16,21 +17,18 @@ export default async function NewCreativeRequestPage() {
   });
   return (
     <div className="max-w-2xl space-y-6">
-      <header>
-        <Link
-          href="/portal/creative"
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ← Creative studio
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight mt-2">
-          New creative request
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Share the brief, the reference images, and any brand assets. We'll
-          come back with a first draft within the target date.
-        </p>
-      </header>
+      <PageHeader
+        breadcrumb={
+          <Link
+            href="/portal/creative"
+            className="hover:text-foreground transition-colors"
+          >
+            ← Creative studio
+          </Link>
+        }
+        title="New creative request"
+        description="Share the brief, the reference images, and any brand assets. We'll come back with a first draft within the target date."
+      />
       <CreativeRequestForm properties={properties} />
     </div>
   );

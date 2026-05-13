@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { ProductLine } from "@prisma/client";
 import { getScope } from "@/lib/tenancy/scope";
 import { Button } from "@/components/ui/button";
+import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { RefreshSegmentsButton } from "@/components/audiences/refresh-button";
@@ -241,17 +242,12 @@ export default async function AudiencesPage() {
         destinations={failureSummaries}
       />
 
-      <header className="flex items-end justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            Audience segments
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Live segments from your AudienceLab catalog. Push to ad accounts,
-            CRMs, or download as CSV.
-          </p>
-          {usingCustomKey ? (
-            <p className="text-xs text-muted-foreground mt-1">
+      <PageHeader
+        title="Audience segments"
+        description="Live segments from your AudienceLab catalog. Push to ad accounts, CRMs, or download as CSV."
+        meta={
+          usingCustomKey ? (
+            <>
               Using a custom AudienceLab key.{" "}
               <Link
                 href="/portal/audiences/settings"
@@ -259,20 +255,22 @@ export default async function AudiencesPage() {
               >
                 Manage
               </Link>
-            </p>
-          ) : null}
-        </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <Button asChild variant="outline" size="sm" className="rounded-md">
-            <Link href="/portal/audiences/destinations">
-              <Send />
-              Destinations
-            </Link>
-          </Button>
-          <RefreshSegmentsButton variant="outline" />
-          <AddSegmentButton />
-        </div>
-      </header>
+            </>
+          ) : null
+        }
+        actions={
+          <>
+            <Button asChild variant="outline" size="sm" className="rounded-md">
+              <Link href="/portal/audiences/destinations">
+                <Send />
+                Destinations
+              </Link>
+            </Button>
+            <RefreshSegmentsButton variant="outline" />
+            <AddSegmentButton />
+          </>
+        }
+      />
 
       <section
         aria-label="Audience metrics"

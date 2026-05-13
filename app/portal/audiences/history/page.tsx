@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProductLine } from "@prisma/client";
 import { getScope } from "@/lib/tenancy/scope";
+import { PageHeader } from "@/components/admin/page-header";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { ArrowLeft, FileDown, Webhook, Facebook, BarChart3, Send } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -29,22 +30,19 @@ export default async function HistoryPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <Link
-          href="/portal/audiences"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          Back to segments
-        </Link>
-      </div>
-
-      <header>
-        <h1 className="text-xl font-semibold tracking-tight">Sync history</h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Every push, manual or scheduled. Member counts and errors logged.
-        </p>
-      </header>
+      <PageHeader
+        breadcrumb={
+          <Link
+            href="/portal/audiences"
+            className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Back to segments
+          </Link>
+        }
+        title="Sync history"
+        description="Every push, manual or scheduled. Member counts and errors logged."
+      />
 
       <DashboardSection
         eyebrow="Activity log"

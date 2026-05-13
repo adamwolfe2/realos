@@ -15,6 +15,8 @@ import { CmdKSearch } from "@/components/portal/search/cmdk-search";
 import { BugReportButton } from "@/components/feedback/bug-report-button";
 import { TrialBanner } from "@/components/portal/trial-banner";
 import { resolveTrialState } from "@/lib/billing/trial-status";
+import { AlertBanner } from "@/components/portal/ui/alert-banner";
+import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 
 export const metadata: Metadata = {
   title: { template: `%s | ${BRAND_NAME} Portal`, default: `${BRAND_NAME} Portal` },
@@ -48,6 +50,7 @@ export default async function PortalLayout({
     propertyCount,
     tourCount,
     applicationCount,
+    appfolioStatus,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -105,6 +108,10 @@ export default async function PortalLayout({
     prisma.application
       .count({ where: { lead: { orgId: scope.orgId } } })
       .catch(() => 0),
+    // Portfolio-wide health probe — surfaced as a single banner below the
+    // impersonation strip so users see staleness everywhere, not just on
+    // Residents / Renewals.
+    getAppFolioStatus(scope.orgId).catch(() => null),
   ]);
 
   if (!org) {
@@ -172,6 +179,25 @@ export default async function PortalLayout({
     hasApplications: applicationCount > 0,
   };
 
+  // Portfolio-wide stale-data banner inputs. Surfacing this once at the
+  // layout level lets us delete the per-page red banners on Residents and
+  // Renewals (and prevents the user from missing the issue when landing
+  // anywhere else first).
+  const showStaleBanner =
+    !!appfolioStatus &&
+    (appfolioStatus.state === "failed" || appfolioStatus.stale) &&
+    Boolean(appfolioIntegration?.instanceSubdomain);
+  const staleAgeDays =
+    showStaleBanner && appfolioStatus?.lastSyncAt
+      ? Math.max(
+          0,
+          Math.floor(
+            (Date.now() - new Date(appfolioStatus.lastSyncAt).getTime()) /
+              (24 * 60 * 60 * 1000),
+          ),
+        )
+      : null;
+
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       {/* Mobile top bar */}
@@ -221,28 +247,47 @@ export default async function PortalLayout({
         return null;
       })()}
 
-      {/* Impersonation banner — destructive token because this is a
-          security-critical state. Brand-blue would understate the
-          gravity (you're acting as someone else, every change is
-          attributed to YOU in their audit log). */}
+      {/* Impersonation strip — slim (28px) so it reads as page chrome
+          rather than competing with content. Still uses the destructive
+          token because impersonation is a security-critical state, but
+          the visual weight is dialed back per the design audit. */}
       {scope.isImpersonating ? (
         <div
           role="status"
-          className="shrink-0 bg-destructive/10 border-b border-destructive/30 text-destructive text-xs px-4 py-2 flex items-center justify-between gap-3"
+          className="shrink-0 h-7 bg-destructive/10 border-b border-destructive/30 text-destructive text-[11px] px-4 flex items-center justify-between gap-3"
         >
-          <span>
-            Impersonating <strong>{org.name}</strong>. Changes are attributed to
-            you in the audit log.
+          <span className="truncate">
+            Impersonating <strong>{org.name}</strong>. Changes attributed to you.
           </span>
           <form action="/api/admin/impersonate/end" method="post">
             <button
               type="submit"
-              className="underline underline-offset-2 font-medium hover:no-underline"
+              className="underline underline-offset-2 font-semibold hover:no-underline whitespace-nowrap"
             >
               End impersonation
             </button>
           </form>
         </div>
+      ) : null}
+
+      {/* Portfolio-wide data-health banner. One banner, every page. Replaces
+          the per-page AppFolioStatusBanner that previously only appeared on
+          Residents / Renewals. */}
+      {showStaleBanner ? (
+        <AlertBanner
+          severity={appfolioStatus.state === "failed" ? "critical" : "warning"}
+          flush
+          title={
+            appfolioStatus.state === "failed"
+              ? "AppFolio sync failed"
+              : "AppFolio data is stale"
+          }
+          action={{ label: "Open integration", href: "/portal/connect" }}
+        >
+          {staleAgeDays != null
+            ? `Last successful sync ${staleAgeDays} day${staleAgeDays === 1 ? "" : "s"} ago. KPIs across the portal reflect the last successful sync.`
+            : "KPIs across the portal reflect the last successful sync."}
+        </AlertBanner>
       ) : null}
 
       {/* Main flex row — takes remaining height */}

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { PageHeader } from "@/components/admin/page-header";
 import { HandoffButton } from "./handoff-button";
 import { ConversationSidebar } from "./conversation-sidebar";
 import { humanChatbotStatus } from "@/lib/format";
@@ -77,28 +78,27 @@ export default async function ConversationDetail({
 
   return (
     <div className="space-y-6">
-      {/* Top bar */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div className="min-w-0">
+      <PageHeader
+        breadcrumb={
           <Link
             href="/portal/conversations"
-            className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className="hover:text-foreground transition-colors"
           >
             {"\u2190"} All conversations
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground mt-2">
-            {convo.capturedName ?? "Anonymous visitor"}
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {convo.capturedEmail ?? "No email captured"}
-            {convo.capturedPhone ? ` \u00b7 ${convo.capturedPhone}` : ""}
-          </p>
-        </div>
-        <HandoffButton
-          conversationId={convo.id}
-          disabled={handoffDisabled}
-        />
-      </div>
+        }
+        title={convo.capturedName ?? "Anonymous visitor"}
+        description={
+          (convo.capturedEmail ?? "No email captured") +
+          (convo.capturedPhone ? ` \u00b7 ${convo.capturedPhone}` : "")
+        }
+        actions={
+          <HandoffButton
+            conversationId={convo.id}
+            disabled={handoffDisabled}
+          />
+        }
+      />
 
       {/* Metadata chips row */}
       <div className="flex flex-wrap items-center gap-1.5">

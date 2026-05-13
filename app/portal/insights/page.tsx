@@ -16,6 +16,8 @@ import { getInsightCounts, getOpenInsights } from "@/lib/insights/queries";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 import { RunDetectorsButton } from "@/components/portal/insights/run-detectors-button";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 
 export const metadata: Metadata = { title: "Insights" };
 export const dynamic = "force-dynamic";
@@ -112,32 +114,23 @@ export default async function InsightsPage({
   return (
     <div className="space-y-5">
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-            <Sparkles className="h-3 w-3" />
-            Signal
-          </div>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-            Insights
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1 max-w-xl">
-            What your platform flagged this week. Each insight is something we
-            detected in your data that a human would otherwise miss. Acknowledge
-            what you have seen, snooze the noise, and open the ones worth a call.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          {properties.length > 1 ? (
-            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
-          ) : null}
-          <StatBlock label="Critical" value={counts.critical} tone="critical" />
-          <StatBlock label="Warning" value={counts.warning} tone="warning" />
-          <StatBlock label="Info" value={counts.info} tone="info" />
-          <StatBlock label="Resolved" value={resolvedCount} tone="muted" />
-          <RunDetectorsButton />
-        </div>
-      </header>
+      <PageHeader
+        eyebrow="Signal"
+        title="Insights"
+        description="What your platform flagged this week. Each insight is something we detected in your data that a human would otherwise miss. Acknowledge what you've seen, snooze the noise, and open the ones worth a call."
+        actions={
+          <>
+            {properties.length > 1 ? (
+              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+            ) : null}
+            <StatBlock label="Critical" value={counts.critical} tone="critical" />
+            <StatBlock label="Warning" value={counts.warning} tone="warning" />
+            <StatBlock label="Info" value={counts.info} tone="info" />
+            <StatBlock label="Resolved" value={resolvedCount} tone="muted" />
+            <RunDetectorsButton />
+          </>
+        }
+      />
 
       <div className="flex flex-wrap items-center gap-2">
         <FilterGroup label="Category" param="category" value={category} options={CATEGORY_FILTERS} current={params} />
@@ -168,54 +161,20 @@ export default async function InsightsPage({
       </div>
 
       {rows.length === 0 ? (
-        // Brand-aligned empty state. Two variants depending on whether the
-        // org has ever had insights — if total is 0 across statuses the
-        // user hasn't connected enough data yet; nudge them to /portal/connect.
-        // Otherwise it's a filter mismatch — invite them to widen.
         counts.total === 0 && resolvedCount === 0 ? (
-          <div className="rounded-xl border border-primary/20 bg-primary/[0.03] p-8 lg:p-12 text-center">
-            <div className="inline-flex items-center justify-center w-12 h-12 rounded-md bg-primary/10 text-primary mb-4">
-              <Sparkles className="h-6 w-6" />
-            </div>
-            <h2
-              className="text-lg lg:text-xl font-semibold text-foreground"
-              style={{
-                fontFamily:
-                  "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
-              }}
-            >
-              You don&apos;t have any insights yet.
-            </h2>
-            <p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto leading-relaxed">
-              Insights surface automatically once your data starts flowing.
-              Connect AppFolio, Google Analytics, your ad accounts, and the
-              Cursive pixel — each unlocks a new family of detectors that run
-              continuously in the background.
-            </p>
-            <Link
-              href="/portal/connect"
-              className="inline-flex items-center gap-1.5 mt-5 h-10 px-5 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark transition-colors"
-            >
-              Connect your data
-            </Link>
-          </div>
+          <EmptyState
+            icon={<Sparkles className="h-5 w-5" />}
+            title="You don't have any insights yet"
+            body="Insights surface automatically once your data starts flowing. Connect AppFolio, Google Analytics, your ad accounts, and the pixel — each unlocks a new family of detectors that run continuously in the background."
+            action={{ label: "Connect your data", href: "/portal/connect" }}
+          />
         ) : (
-          <div className="rounded-xl border border-dashed border-border bg-card py-12 text-center">
-            <Sparkles className="mx-auto h-6 w-6 text-muted-foreground" />
-            <h2 className="mt-3 text-base font-semibold text-foreground">
-              No insights match those filters
-            </h2>
-            <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-              Try widening the filters. Detectors run continuously plus on
-              every data sync.
-            </p>
-            <Link
-              href="/portal/insights"
-              className="inline-flex items-center mt-3 text-xs font-semibold text-primary hover:underline"
-            >
-              Clear all filters →
-            </Link>
-          </div>
+          <EmptyState
+            icon={<Sparkles className="h-5 w-5" />}
+            title="No insights match those filters"
+            body="Try widening the filters. Detectors run continuously plus on every data sync."
+            action={{ label: "Clear filters", href: "/portal/insights" }}
+          />
         )
       ) : (
         <section className="grid grid-cols-1 md:grid-cols-2 gap-3">

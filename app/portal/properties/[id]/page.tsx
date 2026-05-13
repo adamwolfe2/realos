@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { PageHeader } from "@/components/admin/page-header";
 import { PropertyTabs } from "./property-tabs";
 import { OverviewTab } from "./tabs/overview";
 import { OnboardingTab } from "./tabs/onboarding";
@@ -79,29 +80,30 @@ export default async function PropertyDetail({
   // else. NO MORE FAKE DATA IN PRODUCTION.
   const showOccupancyTab = (property.totalUnits ?? 0) > 0;
 
+  const fullAddress = property.addressLine1
+    ? [
+        property.addressLine1,
+        property.city ? `, ${property.city}` : "",
+        property.state ? `, ${property.state}` : "",
+        property.postalCode ? ` ${property.postalCode}` : "",
+      ].join("")
+    : null;
+
   return (
     <div className="space-y-6">
-      <header className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
+      <PageHeader
+        title={property.name}
+        description={fullAddress ?? undefined}
+        breadcrumb={
           <Link
             href="/portal/properties"
-            className="text-xs text-muted-foreground hover:text-foreground"
+            className="hover:text-foreground transition-colors"
           >
             All properties
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight mt-2 text-foreground">
-            {property.name}
-          </h1>
-          {property.addressLine1 ? (
-            <p className="text-sm text-muted-foreground mt-1">
-              {property.addressLine1}
-              {property.city ? `, ${property.city}` : ""}
-              {property.state ? `, ${property.state}` : ""}
-              {property.postalCode ? ` ${property.postalCode}` : ""}
-            </p>
-          ) : null}
-        </div>
-      </header>
+        }
+        bordered={false}
+      />
 
       <Suspense fallback={<PropertyTabsSkeleton />}>
       <PropertyTabs

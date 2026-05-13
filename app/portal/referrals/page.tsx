@@ -3,6 +3,8 @@ import { Share2 } from "lucide-react";
 import QRCode from "qrcode";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { PageHeader } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import {
   ReferralLinkCard,
   type ReferralPropertyStat,
@@ -35,25 +37,15 @@ export default async function ReferralsPage() {
   if (!org.moduleReferrals) {
     return (
       <div className="space-y-5">
-        <PageTitle />
-        <div className="rounded-xl border border-dashed border-border bg-card py-16 text-center px-6">
-          <Share2 className="mx-auto h-7 w-7 text-muted-foreground" />
-          <h2 className="mt-3 text-lg font-semibold text-foreground">
-            Referrals module not active
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-            The resident referral program lets current residents share a unique
-            link that tags incoming leads as referrals, so you can track which
-            residents drive new leases. Contact your account manager to activate
-            this module.
-          </p>
-          <a
-            href="mailto:hello@leasestack.co?subject=Activate%20Referrals%20module"
-            className="mt-5 inline-flex items-center rounded-md bg-primary text-primary-foreground px-4 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            Contact account manager
-          </a>
-        </div>
+        <PageHeader
+          eyebrow="Resident program"
+          title="Referrals"
+        />
+        <EmptyState
+          icon={<Share2 className="h-4 w-4" />}
+          title="Referrals module not active"
+          body="The resident referral program lets current residents share a unique link that tags incoming leads as referrals, so you can track which residents drive new leases. Contact your account manager to activate this module."
+        />
       </div>
     );
   }
@@ -178,38 +170,28 @@ export default async function ReferralsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <PageTitle />
-          <p className="text-sm text-muted-foreground mt-1 max-w-xl">
-            Per-property referral links for current residents to share with
-            their network. Every lead that arrives via a referral link is tagged
-            automatically so you can track which residents drive new leases.
-          </p>
-        </div>
-
-        {/* Summary stat chips */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <Chip label="Total referral leads" value={totalLeads} />
-          <Chip label="Last 30 days" value={totalLeads30d} accent />
-          <Chip label="Applications" value={totalApps} />
-          <Chip label="Signed" value={totalSigned} />
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Resident program"
+        title="Referrals"
+        description="Per-property referral links for current residents to share with their network. Every lead that arrives via a referral link is tagged automatically so you can track which residents drive new leases."
+        actions={
+          <div className="flex items-center gap-2 flex-wrap">
+            <Chip label="Total referral leads" value={totalLeads} />
+            <Chip label="Last 30 days" value={totalLeads30d} accent />
+            <Chip label="Applications" value={totalApps} />
+            <Chip label="Signed" value={totalSigned} />
+          </div>
+        }
+      />
 
       {/* Per-property cards */}
       {stats.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card py-16 text-center">
-          <Share2 className="mx-auto h-6 w-6 text-muted-foreground" />
-          <h2 className="mt-3 text-base font-semibold text-foreground">
-            No properties set up yet
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-            Add a property under the Properties tab first. Each property gets
-            its own referral link once it is set up.
-          </p>
-        </div>
+        <EmptyState
+          icon={<Share2 className="h-4 w-4" />}
+          title="No properties set up yet"
+          body="Add a property under the Properties tab first. Each property gets its own referral link once it is set up."
+          action={{ label: "Add a property", href: "/portal/properties" }}
+        />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {stats.map((s) => (
@@ -242,20 +224,6 @@ export default async function ReferralsPage() {
           </li>
         </ol>
       </div>
-    </div>
-  );
-}
-
-function PageTitle() {
-  return (
-    <div>
-      <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-        <Share2 className="h-3 w-3" />
-        Resident program
-      </div>
-      <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-        Referrals
-      </h1>
     </div>
   );
 }

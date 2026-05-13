@@ -75,6 +75,7 @@ import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
 import { countConnectedSources } from "@/lib/connect/status";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
+import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -602,78 +603,12 @@ export default async function PortalHome({
           to the sidebar Overview group. The dashboard should feel calm,
           not like a wall of competing CTAs. */}
 
-      {/* Quick access — pinned to the top so the demo path is one click
-          away. Trimmed to demo-confident modules only. Tiles that depend
-          on AppFolio are hidden when the integration is off (the
-          "Connect AppFolio" CTA further down handles that case). */}
-      {/* Quick access — trimmed to 5 most-used modules. Anything an
-          operator hits less than weekly belongs in the sidebar nav,
-          not as a pinned tile. Removes ~10 of the previous 10-tile
-          grid (was a wall of competing icons). */}
-      <DashboardSection
-        eyebrow="Jump in"
-        title="Quick access"
-      >
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
-          <QuickAccessTile
-            href="/portal/leads"
-            label="Leads"
-            icon={<Users className="h-4 w-4" />}
-            meta={`${leadsNew28d.toLocaleString()} in 28d`}
-          />
-          {orgModules?.modulePixel ? (
-            <QuickAccessTile
-              href="/portal/visitors"
-              label="Visitors"
-              icon={<Flame className="h-4 w-4" />}
-              meta={
-                hotVisitors.count > 0
-                  ? `${hotVisitors.count} hot now`
-                  : "Pixel feed"
-              }
-            />
-          ) : null}
-          <QuickAccessTile
-            href="/portal/tours"
-            label="Tours"
-            icon={<CalendarCheck className="h-4 w-4" />}
-            meta={
-              toursScheduled > 0
-                ? `${toursScheduled} scheduled`
-                : "Calendar"
-            }
-          />
-          <QuickAccessTile
-            href="/portal/reputation"
-            label="Reputation"
-            icon={<Star className="h-4 w-4" />}
-            meta={
-              reputationSummary.totalMentions > 0
-                ? `${reputationSummary.totalMentions} mentions`
-                : "Reviews + mentions"
-            }
-          />
-          {!appfolioOff ? (
-            <QuickAccessTile
-              href="/portal/renewals"
-              label="Renewals"
-              icon={<CalendarClock className="h-4 w-4" />}
-              meta={
-                leasesExpiring120dCount > 0
-                  ? `${leasesExpiring120dCount} expiring`
-                  : "Lease pipeline"
-              }
-            />
-          ) : (
-            <QuickAccessTile
-              href="/portal/connect"
-              label="Connect"
-              icon={<Sparkles className="h-4 w-4" />}
-              meta="More data sources"
-            />
-          )}
-        </div>
-      </DashboardSection>
+      {/* Removed the "Quick access — Jump in" tile section. Per design
+          audit, those tiles duplicated entries already in the left nav
+          and added a wall of competing CTAs above the KPI strip. The
+          QuickAccessTile component remains in this file (used nowhere
+          else now) but is left in place rather than ripped out so the
+          rollback is a one-liner. */}
 
       {/* Insights now live in <InsightsHero /> at the top of the dashboard
           (above the property selector). Removed the duplicated mid-page
@@ -901,11 +836,7 @@ export default async function PortalHome({
     console.error("[PortalHome] Failed to load dashboard data:", err);
     return (
       <div className="space-y-4">
-        <div>
-          <h1 className="text-[28px] leading-tight font-semibold tracking-tight text-foreground">
-            Dashboard
-          </h1>
-        </div>
+        <PageHeader title="Dashboard" />
         <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           Dashboard data could not be loaded. This is usually temporary — try refreshing. If the issue persists, check{" "}
           <a href="/portal/settings/integrations" className="underline font-medium text-primary">

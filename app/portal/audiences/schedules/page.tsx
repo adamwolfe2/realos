@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ProductLine } from "@prisma/client";
 import { getScope } from "@/lib/tenancy/scope";
+import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import {
@@ -76,25 +77,19 @@ export default async function SchedulesPage({
 
   return (
     <div className="space-y-5">
-      <div>
-        <Link
-          href="/portal/audiences"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowLeft className="h-3 w-3" />
-          Back to segments
-        </Link>
-      </div>
-
-      <header>
-        <h1 className="text-xl font-semibold tracking-tight">
-          Scheduled syncs
-        </h1>
-        <p className="text-sm text-muted-foreground mt-0.5">
-          Push a segment to a destination on a daily or weekly cadence. The
-          system handles the runs while you focus on the campaign.
-        </p>
-      </header>
+      <PageHeader
+        breadcrumb={
+          <Link
+            href="/portal/audiences"
+            className="inline-flex items-center gap-1.5 hover:text-foreground transition-colors"
+          >
+            <ArrowLeft className="h-3 w-3" />
+            Back to segments
+          </Link>
+        }
+        title="Scheduled syncs"
+        description="Push a segment to a destination on a daily or weekly cadence. The system handles the runs while you focus on the campaign."
+      />
 
       <section
         aria-label="Schedule metrics"

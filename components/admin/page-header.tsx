@@ -1,46 +1,81 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-// Unified page header for /admin and /portal. Sans-serif, tight tracking,
-// sentence-case title. Optional eyebrow (back link), description, actions row.
+// ---------------------------------------------------------------------------
+// PageHeader — the canonical "page chrome" used at the top of every admin /
+// portal page. Replaces the assortment of hand-rolled headers (text-xl /
+// text-2xl / text-[28px] / serif "Welcome, …" marketing voice) so every
+// page reads as the same product.
+//
+// Anatomy:
+//   [optional breadcrumb]
+//   [optional eyebrow]
+//   <h1>Title</h1>            — sans semibold ~24px, tight tracking
+//   [optional one-line description] [optional "as of" meta]
+//                                                 [right-aligned actions]
+// ---------------------------------------------------------------------------
 export function PageHeader({
   title,
   description,
   eyebrow,
+  meta,
+  breadcrumb,
   actions,
+  bordered = true,
   className,
 }: {
   title: React.ReactNode;
   description?: React.ReactNode;
   eyebrow?: React.ReactNode;
+  /** "as of timestamp" / data freshness slot, sits next to description. */
+  meta?: React.ReactNode;
+  /** Optional breadcrumb / back-link slot rendered above the eyebrow. */
+  breadcrumb?: React.ReactNode;
   actions?: React.ReactNode;
+  /** Bottom border + bottom margin so page content sits 24px below. Default
+   *  on. Pass `bordered={false}` for nested or compact headers. */
+  bordered?: boolean;
   className?: string;
 }) {
   return (
     <header
       className={cn(
         "flex flex-col md:flex-row md:items-start md:justify-between gap-3",
+        bordered ? "border-b border-border pb-4 mb-6" : "",
         className,
       )}
     >
-      <div className="min-w-0">
-        {eyebrow ? (
-          <div className="text-[11px] text-muted-foreground mb-1">{eyebrow}</div>
+      <div className="min-w-0 flex-1">
+        {breadcrumb ? (
+          <div className="mb-2 text-xs text-muted-foreground">{breadcrumb}</div>
         ) : null}
-        <h1
-          className="text-xl md:text-2xl font-medium tracking-tight text-foreground"
-          style={{ fontFamily: "var(--font-display)" }}
-        >
+        {eyebrow ? (
+          <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+            {eyebrow}
+          </div>
+        ) : null}
+        <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-foreground leading-tight">
           {title}
         </h1>
-        {description ? (
-          <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl leading-snug">
-            {description}
-          </p>
+        {description || meta ? (
+          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 max-w-3xl">
+            {description ? (
+              <p className="text-sm text-muted-foreground leading-snug">
+                {description}
+              </p>
+            ) : null}
+            {meta ? (
+              <span className="text-[11px] text-muted-foreground/80 tabular-nums">
+                {meta}
+              </span>
+            ) : null}
+          </div>
         ) : null}
       </div>
       {actions ? (
-        <div className="flex items-center gap-2 flex-wrap">{actions}</div>
+        <div className="flex shrink-0 items-center gap-2 flex-wrap md:justify-end">
+          {actions}
+        </div>
       ) : null}
     </header>
   );

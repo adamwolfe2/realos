@@ -3,6 +3,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { ArrowLeft, Inbox } from "lucide-react";
+import { PageHeader } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { CurationQueueClient } from "./curation-queue-client";
 
 export const metadata: Metadata = { title: "Property curation queue" };
@@ -66,25 +68,24 @@ export default async function PropertyCuratePage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <Link
-          href="/portal/properties"
-          className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
-          Back to properties
-        </Link>
-        <h1 className="text-2xl font-semibold tracking-tight mt-2 text-foreground flex items-center gap-2">
-          <Inbox className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
-          Property curation queue
-        </h1>
-        <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          AppFolio imports every record in your property directory — including
-          parking lots, storage units, and other sub-records. Review and approve
-          which ones are real buildings so dashboards, counts, and onboarding
-          progress reflect reality.
-        </p>
-      </div>
+      <PageHeader
+        breadcrumb={
+          <Link
+            href="/portal/properties"
+            className="inline-flex items-center gap-1.5 hover:text-foreground"
+          >
+            <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+            Back to properties
+          </Link>
+        }
+        title={
+          <span className="inline-flex items-center gap-2">
+            <Inbox className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
+            Property curation queue
+          </span>
+        }
+        description="AppFolio imports every record in your property directory — including parking lots, storage units, and other sub-records. Review and approve which ones are real buildings so dashboards, counts, and onboarding progress reflect reality."
+      />
 
       {/* View tabs */}
       <div className="flex gap-2 flex-wrap border-b border-border pb-0">
@@ -117,11 +118,14 @@ export default async function PropertyCuratePage({
       </div>
 
       {items.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card px-4 py-16 text-center text-sm text-muted-foreground">
-          {view === "imported"
-            ? "Nothing pending review. New AppFolio imports will land here."
-            : "No excluded properties. Auto-classifier hasn't flagged any sub-records."}
-        </div>
+        <EmptyState
+          title={view === "imported" ? "Nothing pending review" : "No excluded properties"}
+          body={
+            view === "imported"
+              ? "New AppFolio imports will land here."
+              : "Auto-classifier hasn't flagged any sub-records."
+          }
+        />
       ) : (
         <CurationQueueClient
           items={items.map((p) => ({

@@ -21,6 +21,8 @@ import {
   Clock,
   type LucideIcon,
 } from "lucide-react";
+import { PageHeader } from "@/components/admin/page-header";
+import { SectionLabel } from "@/components/portal/ui/section-label";
 
 // ---------------------------------------------------------------------------
 // Marketplace — premium, brand-consistent, honest about what's shipped.
@@ -192,98 +194,62 @@ export function MarketplaceClient({
   }, [allToggleableKeys, enabled]);
 
   return (
-    <div className="min-h-screen bg-[#FAFAF7]">
-      {/* Hero */}
-      <section className="border-b border-[#EEEEEE] bg-white">
-        <div className="max-w-[1200px] mx-auto px-6 py-12 lg:px-10 lg:py-16">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
-            <div className="max-w-2xl">
-              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-primary mb-4">
-                {isTrialing ? "Free during your trial" : "Marketplace"}
-              </p>
-              <h1
-                className="text-[34px] lg:text-[42px] leading-[1.05] tracking-tight font-semibold text-[#0A0A0A]"
-                style={{
-                  fontFamily:
-                    "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
-                }}
-              >
-                Welcome to {orgName}.
-                <br />
-                Build your stack.
-              </h1>
-              <p className="mt-5 text-[15px] leading-relaxed text-[#5C5E62]">
-                {isTrialing
-                  ? `Activate any module free for the next ${trialDaysLeft ?? 14} days. Each one ships with its own setup — most take 1–10 minutes to get value from.`
-                  : "Bolt on additional modules whenever you're ready. Each is a standalone subscription you can start, pause, or cancel from billing."}
-              </p>
-              <div className="mt-7 flex flex-wrap items-center gap-4">
-                <button
-                  type="button"
-                  onClick={activateAll}
-                  disabled={bulkPending || enabledCount === totalToggleable}
-                  className="inline-flex items-center gap-2 h-11 px-6 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  {bulkPending ? "Activating…" : "Unlock everything free"}
-                </button>
-                <Link
-                  href="/portal"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-[#0A0A0A] transition-opacity hover:opacity-60"
-                >
-                  Skip for now <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-              </div>
+    <div className="min-h-screen">
+      {/* Header — canonical PageHeader. The marketing voice (serif "Welcome
+          to ___. Build your stack.") moved to the marketing site; here the
+          header reads as operator chrome. Activation progress sits in a
+          right-aligned slot so it stays visible without competing. */}
+      <PageHeader
+        title="Modules"
+        description={
+          isTrialing
+            ? `Activate any module free for the next ${trialDaysLeft ?? 14} days. Each ships with its own setup — most take 1–10 minutes.`
+            : "Bolt on modules whenever you're ready. Each is a standalone subscription you can start, pause, or cancel from billing."
+        }
+        actions={
+          <div className="flex items-center gap-3">
+            <div className="hidden md:flex items-center gap-2 rounded-md border border-border bg-card px-3 py-1.5">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                Active
+              </span>
+              <span className="text-sm font-semibold tabular-nums text-foreground">
+                {enabledCount}
+                <span className="text-muted-foreground"> / {totalToggleable}</span>
+              </span>
             </div>
-
-            <div className="lg:min-w-[280px] rounded-lg border border-[#EEEEEE] bg-[#FAFAF7] p-5">
-              <div className="flex items-baseline justify-between mb-3">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#5C5E62]">
-                  Modules active
-                </p>
-                <p className="text-sm font-semibold tabular-nums text-[#0A0A0A]">
-                  {enabledCount}
-                  <span className="text-[#8E8E8E]"> / {totalToggleable}</span>
-                </p>
-              </div>
-              <div className="h-1.5 rounded-full bg-[#EEEEEE] overflow-hidden">
-                <div
-                  className="h-full bg-primary transition-all duration-500"
-                  style={{
-                    width: `${Math.round((enabledCount / Math.max(1, totalToggleable)) * 100)}%`,
-                  }}
-                />
-              </div>
-            </div>
+            <button
+              type="button"
+              onClick={activateAll}
+              disabled={bulkPending || enabledCount === totalToggleable}
+              className="inline-flex items-center gap-2 h-9 px-4 rounded-md bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {bulkPending
+                ? "Activating…"
+                : isTrialing
+                  ? "Unlock everything free"
+                  : "Activate all"}
+            </button>
           </div>
+        }
+      />
 
-          {error ? (
-            <div className="mt-6 rounded-md border border-[#E5E5E5] bg-[#FAFAF7] px-4 py-3 text-sm text-[#0A0A0A]">
-              {error}
-            </div>
-          ) : null}
+      {error ? (
+        <div className="mb-6 rounded-md border border-destructive/30 bg-destructive/10 px-4 py-2.5 text-sm text-destructive">
+          {error}
         </div>
-      </section>
+      ) : null}
 
-      {/* Categories */}
-      <section className="max-w-[1200px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
+      {/* Categories — each group anchored by a SectionLabel for cohesion
+          with the rest of the portal (no more serif inline H2s). */}
+      <section className="space-y-10">
         {grouped.map((group) =>
           group.modules.length === 0 ? null : (
-            <div key={group.category} className="mb-14 last:mb-0">
-              <div className="flex items-baseline justify-between mb-6">
-                <h2
-                  className="text-[22px] tracking-tight font-semibold text-[#0A0A0A]"
-                  style={{
-                    fontFamily:
-                      "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
-                  }}
-                >
-                  {group.category}
-                </h2>
-                <span className="text-[10px] uppercase tracking-[0.15em] font-medium text-[#8E8E8E]">
-                  {group.modules.length} module
-                  {group.modules.length === 1 ? "" : "s"}
-                </span>
-              </div>
+            <div key={group.category}>
+              <SectionLabel
+                trailing={`${group.modules.length} module${group.modules.length === 1 ? "" : "s"}`}
+              >
+                {group.category}
+              </SectionLabel>
 
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {group.modules.map((m) => (

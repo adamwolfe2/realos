@@ -7,6 +7,7 @@ import {
 } from "@/lib/setup/derive-progress";
 import { PHASE_LABELS, PHASE_ORDER } from "@/lib/setup/steps";
 import { SetupStepCard } from "@/components/portal/setup/setup-step-card";
+import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Setup" };
 export const dynamic = "force-dynamic";
@@ -77,19 +78,26 @@ export default async function SetupHubPage() {
     return { phase: p, done, total: inPhase.length };
   });
 
-  return (
-    <div className="space-y-10">
-      {/* ── Hero ────────────────────────────────────────────────────────── */}
-      <section className="space-y-5">
-        <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
-            Welcome, {org.name}.
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {phaseSubtitle}
-          </p>
-        </div>
+  // Celebrate the moment everything is done with a slightly larger,
+  // greeting-style title; otherwise use the canonical PageHeader so
+  // Setup reads as the same chrome as every other page.
+  const isComplete = phase === "done";
 
+  return (
+    <div className="space-y-8">
+      {/* ── Header ──────────────────────────────────────────────────────── */}
+      {isComplete ? (
+        <section className="space-y-2 border-b border-border pb-4">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+            All set, {org.name}.
+          </h1>
+          <p className="text-sm text-muted-foreground">{phaseSubtitle}</p>
+        </section>
+      ) : (
+        <PageHeader title="Setup" description={phaseSubtitle} />
+      )}
+
+      <section className="space-y-5">
         <div className="space-y-3">
           <div
             className="h-1.5 w-full rounded-full bg-muted overflow-hidden"

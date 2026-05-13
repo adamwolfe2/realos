@@ -8,6 +8,8 @@ import {
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
+import { PageHeader } from "@/components/admin/page-header";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { createReport } from "@/lib/actions/reports";
 import { Prisma } from "@prisma/client";
 
@@ -71,67 +73,58 @@ export default async function ReportsListPage({
 
   return (
     <div className="space-y-6">
-      {/* Page header */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-            Client reports
-          </div>
-          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-foreground">
-            Weekly and monthly reviews
-          </h1>
-          <p className="mt-1 text-sm text-muted-foreground max-w-xl">
-            Generate a frozen snapshot of the numbers, add a personal note,
-            then share a clean link with your client. Nothing auto-sends. You
-            review every report before it leaves the building.
-          </p>
-        </div>
-        <form
-          action={generateReport}
-          className="flex flex-wrap items-end gap-2 rounded-xl border border-border bg-card p-3"
-        >
-          {properties.length > 1 ? (
+      <PageHeader
+        eyebrow="Client reports"
+        title="Weekly and monthly reviews"
+        description="Generate a frozen snapshot of the numbers, add a personal note, then share a clean link with your client. Nothing auto-sends. You review every report before it leaves the building."
+        actions={
+          <form
+            action={generateReport}
+            className="flex flex-wrap items-end gap-2"
+          >
+            {properties.length > 1 ? (
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                  Scope
+                </span>
+                <select
+                  name="propertyId"
+                  defaultValue=""
+                  className="rounded-md border border-border bg-background px-3 py-2 text-sm min-w-[200px]"
+                  aria-label="Property scope"
+                >
+                  <option value="">Whole portfolio · all properties</option>
+                  {properties.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
             <label className="flex flex-col gap-1">
               <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-                Scope
+                Period
               </span>
               <select
-                name="propertyId"
-                defaultValue=""
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm min-w-[200px]"
-                aria-label="Property scope"
+                name="kind"
+                defaultValue="monthly"
+                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                aria-label="Report period"
               >
-                <option value="">Whole portfolio · all properties</option>
-                {properties.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name}
-                  </option>
-                ))}
+                <option value="weekly">Weekly (7d)</option>
+                <option value="monthly">Monthly (28d)</option>
               </select>
             </label>
-          ) : null}
-          <label className="flex flex-col gap-1">
-            <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-              Period
-            </span>
-            <select
-              name="kind"
-              defaultValue="monthly"
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm"
-              aria-label="Report period"
+            <button
+              type="submit"
+              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
             >
-              <option value="weekly">Weekly (7d)</option>
-              <option value="monthly">Monthly (28d)</option>
-            </select>
-          </label>
-          <button
-            type="submit"
-            className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-sm font-medium hover:bg-primary/90 transition-colors"
-          >
-            Generate report
-          </button>
-        </form>
-      </div>
+              Generate report
+            </button>
+          </form>
+        }
+      />
 
       {/* Filters: property scope sits beside the kind/status filters so
           the operator picks "which properties" + "which kinds of reports"
@@ -202,19 +195,10 @@ export default async function ReportsListPage({
 
       {/* List */}
       {reports.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-card p-10 text-center">
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-            No reports yet
-          </div>
-          <h2 className="mt-1 text-lg font-semibold text-foreground">
-            Start with a weekly snapshot
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-            Generate your first report to capture this week&apos;s leads, tours,
-            ad spend, and organic traffic as a frozen snapshot. Add a personal
-            note, then copy a shareable link for your client.
-          </p>
-        </div>
+        <EmptyState
+          title="Start with a weekly snapshot"
+          body="Generate your first report to capture this week's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a personal note, then copy a shareable link for your client."
+        />
       ) : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="divide-y divide-border">

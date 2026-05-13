@@ -3,10 +3,11 @@
 import { useState, useEffect, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Bell, CheckCheck } from "lucide-react";
+import { CheckCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { markAllRead, markNotificationRead } from "@/lib/actions/notifications";
 import { formatDistanceToNow } from "date-fns";
+import { PageHeader } from "@/components/admin/page-header";
 
 type Notification = {
   id: string;
@@ -24,6 +25,17 @@ const KIND_COLOR: Record<string, string> = {
   chatbot_lead: "bg-muted text-muted-foreground",
   integration_error: "bg-destructive/10 text-destructive",
   sync_complete: "bg-muted text-muted-foreground",
+};
+
+// Severity-coded left border. Mirrors AlertBanner's palette so rows visually
+// rank from the page (red = critical, amber = warning, blue = info). Anything
+// not classified gets no border so the feed stays calm.
+const KIND_BORDER: Record<string, string> = {
+  integration_error: "border-l-2 border-l-destructive",
+  lead_created: "border-l-2 border-l-primary",
+  tour_scheduled: "border-l-2 border-l-primary",
+  chatbot_lead: "border-l-2 border-l-primary",
+  sync_complete: "",
 };
 
 type Filter = "all" | "unread" | "today" | "week";
@@ -119,29 +131,22 @@ export default function NotificationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4 flex-wrap">
-        <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2">
-            <Bell className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
-            Notifications
-          </h1>
-          {unreadCount > 0 && (
-            <p className="text-sm text-muted-foreground mt-0.5">
-              {unreadCount} unread
-            </p>
-          )}
-        </div>
-        {unreadCount > 0 && (
-          <button
-            type="button"
-            onClick={handleMarkAll}
-            className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground underline underline-offset-2"
-          >
-            <CheckCheck className="w-4 h-4" aria-hidden="true" />
-            Mark all read
-          </button>
-        )}
-      </div>
+      <PageHeader
+        title="Notifications"
+        description={unreadCount > 0 ? `${unreadCount} unread` : undefined}
+        actions={
+          unreadCount > 0 ? (
+            <button
+              type="button"
+              onClick={handleMarkAll}
+              className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground underline underline-offset-2"
+            >
+              <CheckCheck className="w-4 h-4" aria-hidden="true" />
+              Mark all read
+            </button>
+          ) : null
+        }
+      />
 
       {/* Filter chips */}
       <div className="flex gap-2 flex-wrap">
@@ -191,6 +196,7 @@ export default function NotificationsPage() {
                 onClick={() => handleRowClick(item)}
                 className={cn(
                   "w-full text-left px-4 py-4 hover:bg-muted/40 transition-colors flex items-start gap-3",
+                  KIND_BORDER[item.kind] ?? "",
                   !item.readAt && "bg-primary/5"
                 )}
               >

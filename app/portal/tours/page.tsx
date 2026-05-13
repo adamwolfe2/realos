@@ -16,6 +16,7 @@ import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { TourStatus } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Tours" };
@@ -204,6 +205,41 @@ export default async function ToursPage({
     orderBy: { name: "asc" },
   });
   const properties = visibleProperties(scope, allProperties);
+
+  // No-tours short-circuit. Replaces six zero-tiles + five "None" pipeline
+  // columns (which read as broken software) with a single explanatory
+  // EmptyState pointing the operator at the booking flow.
+  const hasAnyTours =
+    pipeline.length > 0 ||
+    upcoming.length > 0 ||
+    requestedCount > 0 ||
+    scheduledThisWeekCount > 0 ||
+    completedCount > 0 ||
+    noShowCount > 0 ||
+    cancelledCount > 0;
+
+  if (!hasAnyTours) {
+    return (
+      <div className="space-y-4">
+        {accessDenied ? <PropertyAccessDeniedBanner /> : null}
+        <PageHeader
+          title="Tours"
+          description="Calendar, pipeline, and outcomes for every property tour."
+          actions={
+            properties.length > 1 ? (
+              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+            ) : null
+          }
+        />
+        <EmptyState
+          icon={<Calendar className="h-4 w-4" />}
+          title="No tours scheduled."
+          body="Tours booked via the chatbot or your web form will appear here. Test the booking flow to confirm everything routes back to this view."
+          action={{ label: "Test the booking flow", href: "/portal/chatbot" }}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">

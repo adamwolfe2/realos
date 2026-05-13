@@ -25,6 +25,7 @@ import {
   getTranscriptsWorthReading,
 } from "@/lib/briefing/queries";
 import { getRecentInsightsForBriefing } from "@/lib/insights/queries";
+import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Briefing" };
 export const dynamic = "force-dynamic";
@@ -169,36 +170,27 @@ export default async function BriefingPage({
   const greeting = "Daily briefing";
 
   return (
-    <div className="space-y-3 ls-page-fade min-w-0">
-      <header className="flex items-start justify-between gap-4 flex-wrap min-w-0">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-            <Gauge className="h-3 w-3" />
-            {org?.name ?? "Workspace"}
-            {activeProperty ? (
-              <>
-                <span className="h-0.5 w-0.5 rounded-full bg-muted-foreground" />
-                <span className="text-primary">{activeProperty.name}</span>
-              </>
-            ) : null}
-          </div>
-          <h1 className="mt-0.5 text-xl leading-tight font-semibold tracking-tight text-foreground">
-            {greeting}
-          </h1>
-          <p className="text-xs text-muted-foreground mt-0.5 max-w-2xl leading-snug">
-            Everything that moved since you last looked. Triage the call sheet,
-            read the transcripts, and act on the insights before your next client touch.
-          </p>
-        </div>
-        <PropertyMultiSelect
-          properties={visibleProperties(scope, properties)}
-          orgId={scope.orgId}
-        />
-        {/* Replaced the single-pick PropertyFilter with the shared
-            PropertyMultiSelect so the briefing scopes the same way as
-            every other portal page. The component renders nothing when
-            the org only has one property. */}
-      </header>
+    <div className="space-y-4 ls-page-fade min-w-0">
+      {/* Canonical PageHeader — same chrome as every other page. The
+          property scope picker sits in the right-aligned actions slot so
+          the briefing reads as a real product surface, not a denser
+          one-off layout. Per the audit, base font on this page is bumped
+          from 12px to 14px so it matches the rest of the platform. */}
+      <PageHeader
+        eyebrow={
+          activeProperty
+            ? `${org?.name ?? "Workspace"} · ${activeProperty.name}`
+            : (org?.name ?? "Workspace")
+        }
+        title={greeting}
+        description="Everything that moved since you last looked. Triage the call sheet, read the transcripts, and act on the insights before your next client touch."
+        actions={
+          <PropertyMultiSelect
+            properties={visibleProperties(scope, properties)}
+            orgId={scope.orgId}
+          />
+        }
+      />
 
       <SinceBanner lastViewedAt={user?.lastBriefingViewedAt ?? null} delta={delta} />
 
@@ -309,17 +301,13 @@ export default async function BriefingPage({
     console.error("[BriefingPage] Failed to load briefing data:", err);
     return (
       <div className="space-y-4">
-        <div>
-          <div className="flex items-center gap-2 text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-            <Gauge className="h-3 w-3" />
-            Daily briefing
-          </div>
-          <h1 className="mt-1 text-[28px] leading-tight font-semibold tracking-tight text-foreground">
-            Daily briefing
-          </h1>
-        </div>
+        <PageHeader
+          eyebrow="Daily briefing"
+          title="Briefing temporarily unavailable"
+          description="Briefing data could not be loaded. This is usually temporary — try refreshing."
+        />
         <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
-          Briefing data could not be loaded. This is usually temporary — try refreshing. If the issue persists, check{" "}
+          If the issue persists, check{" "}
           <a href="/portal/connect" className="underline font-medium">
             Settings → Integrations
           </a>
