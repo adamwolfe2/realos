@@ -112,6 +112,77 @@ export async function bulkUnsubscribeLeads(input: unknown): Promise<Result> {
   return { ok: true, count: result.count };
 }
 
+// ---------------------------------------------------------------------------
+// bulkAssignLeads — sets Lead.assignedToUserId on a batch of leads. When
+// `userId` is omitted, the caller is assigned to themselves ("Assign to
+// me"). When `userId === null`, the assignment is cleared.
+// Tenant-scoped (only matches leads in the caller's org); when the userId
+// is provided we additionally verify that user belongs to the same org so
+// agency operators can't reassign leads to outsiders.
+// ---------------------------------------------------------------------------
+
+const assignInput = z.object({
+  leadIds: z.array(z.string().min(1)).min(1).max(500),
+  // null  -> clear assignment
+  // undef -> assign to caller (scope.userId)
+  userId: z.string().min(1).nullable().optional(),
+});
+
+export async function bulkAssignLeads(input: unknown): Promise<Result> {
+  let scope;
+  try {
+    scope = await requireScope();
+  } catch (err) {
+    if (err instanceof ForbiddenError) return { ok: false, error: err.message };
+    throw err;
+  }
+
+  const parsed = assignInput.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Invalid input" };
+  const { leadIds, userId } = parsed.data;
+
+  let assigneeId: string | null;
+  if (userId === null) {
+    assigneeId = null;
+  } else if (userId === undefined) {
+    assigneeId = scope.userId;
+  } else {
+    // Verify the target user is in the same effective org so agency
+    // operators can't reassign to users outside the tenant boundary.
+    const target = await prisma.user.findFirst({
+      where: { id: userId, orgId: scope.orgId },
+      select: { id: true },
+    });
+    if (!target) return { ok: false, error: "Assignee not found in this org" };
+    assigneeId = target.id;
+  }
+
+  const result = await prisma.lead.updateMany({
+    where: { id: { in: leadIds }, orgId: scope.orgId },
+    data: { assignedToUserId: assigneeId, lastActivityAt: new Date() },
+  });
+
+  if (result.count > 0) {
+    await prisma.auditEvent.create({
+      data: auditPayload(scope as ScopedContext, {
+        action: AuditAction.UPDATE,
+        entityType: "Lead",
+        description: assigneeId
+          ? `Assigned ${result.count} ${result.count === 1 ? "lead" : "leads"} to user ${assigneeId}`
+          : `Unassigned ${result.count} ${result.count === 1 ? "lead" : "leads"}`,
+        diff: {
+          assignedToUserId: assigneeId,
+          count: result.count,
+          ids: leadIds.slice(0, 50),
+        } as Prisma.InputJsonValue,
+      }),
+    });
+  }
+
+  revalidatePath("/portal/leads");
+  return { ok: true, count: result.count };
+}
+
 export async function bulkDeleteLeads(input: unknown): Promise<Result> {
   let scope;
   try {

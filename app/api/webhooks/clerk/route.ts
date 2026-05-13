@@ -142,10 +142,10 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      // Invite flow: an explicit orgId on public_metadata pre-binds the
-      // user to that org with the supplied role. Used by the agency
-      // "Invite client" flow which sets metadata before the user signs
-      // up. Falls through to the eager-provision path when missing.
+      // Invite flow: an explicit orgId / organizationId on public_metadata
+      // pre-binds the user to that org with the supplied role. Used by the
+      // agency "Invite client" flow which sets metadata before the user
+      // signs up. Falls through to the eager-provision path when missing.
       const rawRole = public_metadata?.role;
       const role: UserRole = isValidRole(rawRole)
         ? rawRole
@@ -153,7 +153,9 @@ export async function POST(req: NextRequest) {
       const metaOrgId =
         typeof public_metadata?.orgId === "string"
           ? public_metadata.orgId
-          : undefined;
+          : typeof public_metadata?.organizationId === "string"
+            ? (public_metadata.organizationId as string)
+            : undefined;
       const orgExists = metaOrgId
         ? !!(await prisma.organization.findUnique({ where: { id: metaOrgId } }))
         : false;
@@ -181,27 +183,78 @@ export async function POST(req: NextRequest) {
           },
         });
       } else {
-        // Self-signup or update with no metadata override: delegate to
-        // the shared provisioner so the webhook stays in sync with
-        // /api/auth/role and the portal layout's self-heal. Brand-new
-        // users get a CLIENT org of their own (NOT dropped into the
-        // agency org as a viewer — the previous behavior was the source
-        // of the dead-end).
-        try {
-          const { provisionUserForClerk } = await import(
-            "@/lib/auth/provision"
-          );
-          await provisionUserForClerk({
-            clerkUserId: id,
-            email,
-            firstName: first_name ?? null,
-            lastName: last_name ?? null,
+        // No metadata override. On user.updated, if the user already has
+        // an org assignment, do NOT overwrite it — the membership lives in
+        // its own row and email-domain matching could re-home them
+        // incorrectly.
+        const existing = await prisma.user.findUnique({
+          where: { clerkUserId: id },
+          select: { id: true, orgId: true },
+        });
+        if (event.type === "user.updated" && existing && existing.orgId) {
+          await prisma.user.update({
+            where: { clerkUserId: id },
+            data: {
+              email,
+              firstName: first_name ?? null,
+              lastName: last_name ?? null,
+              lastLoginAt: new Date(),
+            },
           });
-        } catch (err) {
-          console.error(
-            `[clerk webhook] provision failed for ${id}/${email}:`,
-            err,
-          );
+          console.info(`User ${id} already linked to org ${existing.orgId}`);
+        } else {
+          // Try the legacy email-domain auto-link first: if an existing
+          // organization was seeded with this user's email as its primary
+          // contact (intake flow), claim that org so they don't end up
+          // with a duplicate workspace.
+          const domainMatch = await prisma.organization.findFirst({
+            where: { primaryContactEmail: email.toLowerCase() },
+            select: { id: true },
+          });
+          if (domainMatch) {
+            await prisma.user.upsert({
+              where: { clerkUserId: id },
+              create: {
+                clerkUserId: id,
+                email,
+                firstName: first_name ?? null,
+                lastName: last_name ?? null,
+                role,
+                org: { connect: { id: domainMatch.id } },
+              },
+              update: {
+                email,
+                firstName: first_name ?? null,
+                lastName: last_name ?? null,
+                lastLoginAt:
+                  event.type === "user.updated" ? new Date() : undefined,
+              },
+            });
+            console.info(
+              `User ${id} auto-linked to org ${domainMatch.id} via email match`
+            );
+          } else {
+            // Greenfield self-signup: delegate to the shared provisioner
+            // so the webhook stays in sync with /api/auth/role and the
+            // portal layout's self-heal. Brand-new users get a CLIENT org
+            // of their own.
+            try {
+              const { provisionUserForClerk } = await import(
+                "@/lib/auth/provision"
+              );
+              await provisionUserForClerk({
+                clerkUserId: id,
+                email,
+                firstName: first_name ?? null,
+                lastName: last_name ?? null,
+              });
+            } catch (err) {
+              console.error(
+                `[clerk webhook] provision failed for ${id}/${email}:`,
+                err,
+              );
+            }
+          }
         }
       }
 
@@ -212,7 +265,46 @@ export async function POST(req: NextRequest) {
     case "user.deleted": {
       const userId = (event.data as UserEventData).id;
       if (userId) {
-        await prisma.user.deleteMany({ where: { clerkUserId: userId } });
+        // Resolve the LeaseStack User row first so we can clean up
+        // related rows that don't FK-cascade (ClientNote.authorUserId is
+        // a plain String, not a relation, so deleting the User does NOT
+        // null those notes out — we have to do it explicitly inside a
+        // transaction so a partial failure rolls back).
+        const user = await prisma.user.findUnique({
+          where: { clerkUserId: userId },
+          select: { id: true, orgId: true },
+        });
+
+        if (!user) {
+          console.info(
+            `User ${userId} not in DB, nothing to delete via Clerk webhook`
+          );
+          break;
+        }
+
+        await prisma.$transaction(async (tx) => {
+          // Notes authored by this user — keep the body but the author
+          // pointer is meaningless once the user is gone, so drop them.
+          await tx.clientNote.deleteMany({
+            where: { authorUserId: user.id },
+          });
+
+          await tx.user.delete({ where: { id: user.id } });
+        });
+
+        // After the user is gone, check whether their org has any
+        // remaining members. If not, log a warning so an operator can
+        // decide whether to archive the now-empty workspace.
+        const remainingMembers = await prisma.user.count({
+          where: { orgId: user.orgId },
+        });
+        if (remainingMembers === 0) {
+          console.warn(
+            `User ${userId} deleted: org is now orphaned ` +
+              `(orgId=${user.orgId}, remainingMembers=${remainingMembers})`
+          );
+        }
+
         console.info(`User ${userId} deleted from DB via Clerk webhook`);
       }
       break;

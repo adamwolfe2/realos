@@ -97,16 +97,12 @@ describe("Clerk webhook — app/api/webhooks/clerk/route.ts", () => {
     expect(content).toContain("tx.clientNote.deleteMany");
   });
 
-  it("cleans up repTask records on user deletion", () => {
-    const content = readRoute();
-    expect(content).toContain("tx.repTask.deleteMany");
-  });
-
-  it("nullifies quote repId on user deletion", () => {
-    const content = readRoute();
-    expect(content).toContain("tx.quote.updateMany");
-    expect(content).toContain("repId: null");
-  });
+  // NOTE: prior assertions for `tx.repTask.deleteMany` and
+  // `tx.quote.updateMany ... repId: null` were removed. The RepTask and
+  // Quote models were e-commerce-fork leftovers and have been retired
+  // from prisma/schema.prisma — there is nothing to clean up. Adding
+  // calls for non-existent models would break `tsc`. Real cascade is
+  // covered by `cleans up clientNote records on user deletion`.
 
   it("handles organization linking from public_metadata.organizationId", () => {
     const content = readRoute();
@@ -140,8 +136,12 @@ describe("Clerk webhook — app/api/webhooks/clerk/route.ts", () => {
     const content = readRoute();
     expect(content).toContain("VALID_ROLES");
     expect(content).toContain("isValidRole");
-    // Falls back to CLIENT if role is invalid
-    expect(content).toMatch(/isValidRole\(rawRole\)\s*\?\s*rawRole\s*:\s*["']CLIENT["']/);
+    // Falls back to a valid CLIENT_* role if metadata role is invalid
+    // (the schema's UserRole enum has no plain "CLIENT" — uses
+    // CLIENT_OWNER / CLIENT_ADMIN / CLIENT_VIEWER).
+    expect(content).toMatch(
+      /isValidRole\(rawRole\)\s*\?\s*rawRole\s*:\s*UserRole\.CLIENT_[A-Z]+/
+    );
   });
 
   it("returns 200 with { received: true } on success", () => {

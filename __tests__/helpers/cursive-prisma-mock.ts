@@ -139,6 +139,24 @@ export function createCursivePrismaMock() {
           return store.cursiveIntegrations[idx];
         }
       ),
+      updateMany: vi.fn(
+        async (args: {
+          where: Record<string, unknown>;
+          data: Record<string, unknown>;
+        }) => {
+          let count = 0;
+          for (let i = 0; i < store.cursiveIntegrations.length; i += 1) {
+            if (matchesWhere(store.cursiveIntegrations[i], args.where)) {
+              store.cursiveIntegrations[i] = applyUpdate(
+                store.cursiveIntegrations[i],
+                args.data
+              );
+              count += 1;
+            }
+          }
+          return { count };
+        }
+      ),
     },
     visitor: {
       findFirst: vi.fn(async (args: { where: Record<string, unknown> }) => {

@@ -749,6 +749,12 @@ model Property {
   @@unique([orgId, slug])
   @@index([orgId])
   @@index([orgId, lifecycle])
+  // Properties list page — supports the dominant query pattern after
+  // the May 2026 pagination refactor: WHERE orgId + lifecycle ORDER BY
+  // updatedAt DESC LIMIT/OFFSET. Without this Postgres has to sort the
+  // (orgId,lifecycle)-filtered set at query time, which becomes the
+  // bottleneck on portfolios approaching low thousands of properties.
+  @@index([orgId, lifecycle, updatedAt(sort: Desc)])
   @@index([orgId, launchStatus])
   @@index([backendPlatform, backendPropertyId])
 }

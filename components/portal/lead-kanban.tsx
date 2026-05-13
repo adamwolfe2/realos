@@ -13,6 +13,7 @@ import {
   bulkUpdateLeadStatus,
   bulkUnsubscribeLeads,
   bulkDeleteLeads,
+  bulkAssignLeads,
 } from "@/lib/actions/lead-bulk";
 import { SideDrawer } from "@/components/portal/ui/side-drawer";
 import { BulkActionBar } from "@/components/portal/ui/bulk-action-bar";
@@ -215,19 +216,59 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
       }
     });
   }
+  // Tag is intentionally still a stub: the Lead model has no `tags` column
+  // today (see prisma/schema.prisma model Lead), and the task explicitly
+  // asks us to skip the migration. Surface that honestly in the toast so
+  // operators know it's coming, not a silent no-op.
   function stubTag() {
-    const n = selected.size;
-    toast.success(`Tagged ${n} ${n === 1 ? "lead" : "leads"}`);
+    toast.message("Tagging is coming soon", {
+      description: "Track this on the roadmap at /portal/insights.",
+    });
     clearSelection();
   }
-  function stubExportCsv() {
-    const n = selected.size;
-    toast.success(`Exported ${n} ${n === 1 ? "lead" : "leads"} as CSV`);
+  // Real CSV export — pure client side, no server round-trip needed.
+  // Columns chosen to match what's actually useful for downstream CRMs:
+  // id, name, email, phone, status, source, score, createdAt.
+  function exportCsv() {
+    const ids = selected;
+    const rows =
+      ids.size > 0 ? items.filter((i) => ids.has(i.id)) : items;
+    if (rows.length === 0) {
+      toast.error("No leads to export");
+      return;
+    }
+    const csv = buildLeadsCsv(rows);
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `leads-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast.success(
+      `Exported ${rows.length} ${rows.length === 1 ? "lead" : "leads"} as CSV`,
+    );
   }
-  function stubAssignToMe() {
-    const n = selected.size;
-    toast.success(`Assigned ${n} ${n === 1 ? "lead" : "leads"} to you`);
-    clearSelection();
+  function assignToMe() {
+    if (selected.size === 0) return;
+    setError(null);
+    const ids = Array.from(selected);
+    const n = ids.length;
+    startTransition(async () => {
+      const r = await bulkAssignLeads({ leadIds: ids });
+      if (r.ok) {
+        toast.success(
+          `Assigned ${r.count} ${r.count === 1 ? "lead" : "leads"} to you`,
+        );
+        clearSelection();
+        router.refresh();
+      } else {
+        setError(r.error);
+        toast.error(`Couldn't assign ${n} ${n === 1 ? "lead" : "leads"}: ${r.error}`);
+      }
+    });
   }
 
   function deleteAll() {
@@ -295,7 +336,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
         </button>
         <button
           type="button"
-          onClick={stubAssignToMe}
+          onClick={assignToMe}
           disabled={pending}
           className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
         >
@@ -303,7 +344,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
         </button>
         <button
           type="button"
-          onClick={stubExportCsv}
+          onClick={exportCsv}
           disabled={pending}
           className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
         >
@@ -589,6 +630,58 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
       </SideDrawer>
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// CSV builder — RFC 4180-ish: comma separator, double-quote escaping,
+// CRLF line endings. Matches the visitor table's serializer so Excel +
+// Google Sheets handle it correctly.
+// ---------------------------------------------------------------------------
+function buildLeadsCsv(rows: LeadKanbanItem[]): string {
+  const headers = [
+    "ID",
+    "First name",
+    "Last name",
+    "Email",
+    "Phone",
+    "Status",
+    "Source",
+    "Score",
+    "Property",
+    "Created at",
+  ];
+  const lines = [headers.map(csvEscape).join(",")];
+  for (const r of rows) {
+    lines.push(
+      [
+        r.id,
+        r.firstName ?? "",
+        r.lastName ?? "",
+        r.email ?? "",
+        r.phone ?? "",
+        r.status,
+        r.source,
+        String(r.score ?? 0),
+        r.propertyName ?? "",
+        r.createdAt,
+      ]
+        .map(csvEscape)
+        .join(","),
+    );
+  }
+  return lines.join("\r\n");
+}
+
+function csvEscape(value: string): string {
+  if (
+    value.includes('"') ||
+    value.includes(",") ||
+    value.includes("\n") ||
+    value.includes("\r")
+  ) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
 }
 
 function leadDisplayName(item: LeadKanbanItem): string {

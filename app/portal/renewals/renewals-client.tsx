@@ -83,21 +83,23 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
     setSelected(new Set());
   }
 
-  // Stub bulk actions — the renewal-offer pipeline isn't wired yet, so
-  // these toast a success and clear selection so the operator sees the
-  // intended UX shape without any backend writes.
+  // Stub bulk actions. Both kept as stubs because:
+  //  - "Send renewal offer" requires a renewal-email template + Resend
+  //    integration that doesn't exist yet (no template under lib/email/).
+  //  - "Mark contacted" requires a Resident.lastContactedAt column that
+  //    isn't in the Prisma schema today.
+  // The toast copy makes that explicit so operators don't think the bulk
+  // action silently committed.
   function stubSendRenewalOffer() {
-    const n = selected.size;
-    toast.success(
-      `Renewal offer sent to ${n} ${n === 1 ? "resident" : "residents"}`,
-    );
+    toast.message("Renewal offer template coming", {
+      description: "Track this on the roadmap at /portal/insights.",
+    });
     clearSelection();
   }
   function stubMarkContacted() {
-    const n = selected.size;
-    toast.success(
-      `Marked ${n} ${n === 1 ? "resident" : "residents"} as contacted`,
-    );
+    toast.message("Resident contact tracking coming", {
+      description: "Track this on the roadmap at /portal/insights.",
+    });
     clearSelection();
   }
 
@@ -363,9 +365,10 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
               <button
                 type="button"
                 onClick={() => {
-                  toast.success(
-                    `Marked ${openLease.residentName} as contacted`,
-                  );
+                  toast.message("Resident contact tracking coming", {
+                    description:
+                      "Track this on the roadmap at /portal/insights.",
+                  });
                   setOpenId(null);
                 }}
                 className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-3 py-1.5 text-xs font-medium transition-colors"
@@ -375,9 +378,10 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
               <button
                 type="button"
                 onClick={() => {
-                  toast.success(
-                    `Renewal offer sent to ${openLease.residentName}`,
-                  );
+                  toast.message("Renewal offer template coming", {
+                    description:
+                      "Track this on the roadmap at /portal/insights.",
+                  });
                   setOpenId(null);
                 }}
                 className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-3 py-1.5 text-xs font-medium transition-colors"

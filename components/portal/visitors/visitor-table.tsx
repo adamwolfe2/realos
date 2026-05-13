@@ -91,16 +91,24 @@ export function VisitorTable({ rows }: Props) {
     toast.success(`Exported ${targets.length} visitor${targets.length === 1 ? "" : "s"} as CSV`);
   };
 
-  // Stub bulk actions — UX shape only until the corresponding pipelines
-  // (Cursive custom audience push, ad-platform sync) are wired.
+  // Stub bulk actions. Both kept as stubs because the current
+  // /portal/audiences pipeline is one-way (AudienceLab segments are
+  // pulled from AL — there's no org-controlled "push these visitors to
+  // an audience" model). Send-to-ads depends on the same sync
+  // infrastructure (push to Meta / Google / TikTok via AL destinations).
+  // Toast copy makes the stub status explicit.
   const stubPushToAudience = () => {
-    const n = selected.size;
-    toast.success(`Pushed ${n} visitor${n === 1 ? "" : "s"} to audience`);
+    toast.message("Pushing visitors to audiences is coming soon", {
+      description:
+        "Audiences today are pulled from AudienceLab. Track outbound push at /portal/insights.",
+    });
     setSelected(new Set());
   };
   const stubSendToAds = () => {
-    const n = selected.size;
-    toast.success(`Sent ${n} visitor${n === 1 ? "" : "s"} to ads`);
+    toast.message("Sending visitors to ads is coming soon", {
+      description:
+        "Requires the audience-sync pipeline. Track this at /portal/insights.",
+    });
     setSelected(new Set());
   };
 
