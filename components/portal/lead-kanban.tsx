@@ -187,14 +187,33 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
   }
 
   // ---------------------------------------------------------------------
-  // Stub bulk actions — UX shape only. These illustrate the "single
-  // toolbar of common operator gestures" pattern; real wiring is a
-  // follow-up. Each toasts a success so the operator gets feedback.
+  // Bulk actions. "Mark contacted" is wired to the real
+  // bulkUpdateLeadStatus action (CONTACTED is the only status the button
+  // sets — picking other statuses uses the "Set status… / Apply" pair).
+  // The remaining stubs (Tag / Export CSV / Assign to me) toast success
+  // and clear selection until their server actions ship.
   // ---------------------------------------------------------------------
-  function stubMarkContacted() {
-    const n = selected.size;
-    toast.success(`Marked ${n} ${n === 1 ? "lead" : "leads"} as contacted`);
-    clearSelection();
+  function markContacted() {
+    if (selected.size === 0) return;
+    setError(null);
+    const ids = Array.from(selected);
+    const n = ids.length;
+    startTransition(async () => {
+      const r = await bulkUpdateLeadStatus({
+        leadIds: ids,
+        status: LeadStatus.CONTACTED,
+      });
+      if (r.ok) {
+        toast.success(
+          `Marked ${r.count} ${r.count === 1 ? "lead" : "leads"} as contacted`,
+        );
+        clearSelection();
+        router.refresh();
+      } else {
+        setError(r.error);
+        toast.error(`Couldn't mark ${n} ${n === 1 ? "lead" : "leads"}: ${r.error}`);
+      }
+    });
   }
   function stubTag() {
     const n = selected.size;
@@ -257,10 +276,13 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
       >
         <button
           type="button"
-          onClick={stubMarkContacted}
+          onClick={markContacted}
           disabled={pending}
           className="inline-flex items-center rounded-md bg-primary text-primary-foreground hover:bg-primary-dark px-2.5 py-1 text-xs font-medium transition-colors disabled:opacity-50"
         >
+          {pending ? (
+            <Loader2 className="h-3 w-3 animate-spin mr-1" aria-hidden="true" />
+          ) : null}
           Mark contacted
         </button>
         <button
@@ -526,12 +548,31 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
             <>
               <button
                 type="button"
+                disabled={pending}
                 onClick={() => {
-                  toast.success(`Marked ${leadDisplayName(openLead)} as contacted`);
-                  setOpenId(null);
+                  const lead = openLead;
+                  if (!lead) return;
+                  startTransition(async () => {
+                    const r = await bulkUpdateLeadStatus({
+                      leadIds: [lead.id],
+                      status: LeadStatus.CONTACTED,
+                    });
+                    if (r.ok) {
+                      toast.success(
+                        `Marked ${leadDisplayName(lead)} as contacted`,
+                      );
+                      setOpenId(null);
+                      router.refresh();
+                    } else {
+                      toast.error(r.error);
+                    }
+                  });
                 }}
-                className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-3 py-1.5 text-xs font-medium transition-colors"
+                className="inline-flex items-center rounded-md border border-border bg-background hover:bg-muted px-3 py-1.5 text-xs font-medium transition-colors disabled:opacity-50"
               >
+                {pending ? (
+                  <Loader2 className="h-3 w-3 animate-spin mr-1" aria-hidden="true" />
+                ) : null}
                 Mark contacted
               </button>
               <Link

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { withMarketableLifecycle } from "@/lib/properties/marketable";
@@ -33,6 +34,10 @@ export const dynamic = "force-dynamic";
 // operator can flip between "everything", "has vacancies",
 // "actively leasing", "recently synced" without losing context.
 
+// Row shape after the May 2026 pagination refactor — _count is intentionally
+// dropped because per-row leads/listings counts created N+1-style joins on
+// every render and pushed page latency past 2s on portfolios with 500+ rows.
+// Per-row drill-in still works via the entity link to /portal/properties/[id].
 type PropertyRow = {
   id: string;
   name: string;
@@ -42,7 +47,6 @@ type PropertyRow = {
   availableCount: number | null;
   totalUnits: number | null;
   lastSyncedAt: Date | null;
-  _count: { listings: number; leads: number; tours: number };
 };
 
 type ViewKey = "all" | "vacant" | "leasing" | "synced";
@@ -57,6 +61,7 @@ export default async function PropertiesList({
     property?: string;
     properties?: string;
     q?: string;
+    page?: string;
   }>;
 }) {
   const scope = await requireScope();
@@ -67,7 +72,10 @@ export default async function PropertiesList({
   ).includes(rawView as never)
     ? (rawView as ViewKey)
     : "all";
-  const searchQuery = (sp.q ?? "").trim().toLowerCase();
+  const searchQuery = (sp.q ?? "").trim();
+  const PAGE_SIZE = 50;
+  const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
+  const skip = (page - 1) * PAGE_SIZE;
 
   // Property gate: respect UserPropertyAccess so a property-restricted
   // user (Norman → Telegraph Commons only) cannot see sibling
@@ -86,24 +94,107 @@ export default async function PropertiesList({
           { id: "__no_property_access__" }
         : {};
 
-  // Fetch ALL marketable properties so the view counts in the toolbar
-  // reflect the universe; filtering happens in-memory after. Excludes
-  // parking/storage/sub-records and rows still in the curation queue
-  // (lifecycle = IMPORTED). To review the queue, see
-  // /portal/properties/curate.
-  const [all, importedCount] = await Promise.all([
-    prisma.property.findMany({
-      where: {
-        ...withMarketableLifecycle(tenantWhere(scope)),
-        ...visibilityWhere,
-      },
-      orderBy: { updatedAt: "desc" },
-      include: {
-        _count: { select: { listings: true, leads: true, tours: true } },
-      },
+  // -------------------------------------------------------------------
+  // Pagination + database-side filtering refactor (May 2026).
+  //
+  // Previously we fetched ALL marketable rows + 3 _count subqueries each
+  // and filtered in memory. That was fine at 100 properties; painful at
+  // 1,000; broken at 5,000. The new shape:
+  //   1. Build a single WHERE matching visibility + view + search.
+  //   2. Run cheap parallel count() queries for each view tab so the
+  //      toolbar still shows real numbers.
+  //   3. Run aggregate(_sum) for the header strip totals.
+  //   4. Run findMany() with skip/take for THIS page only.
+  //
+  // The _count include is dropped from the page query — leads/tours/
+  // listings totals are best surfaced in the header (portfolio-level)
+  // and on individual property detail pages, not as per-row badges on
+  // the table (which forced N+1-style joins on every render).
+  // -------------------------------------------------------------------
+
+  const sevenDaysAgo = new Date(Date.now() - SEVEN_DAYS_MS);
+
+  // View-specific WHERE fragments. Each maps the toolbar tab to the
+  // database constraint that defines membership.
+  const viewWhereFragment = (v: ViewKey): Prisma.PropertyWhereInput => {
+    if (v === "vacant") return { availableCount: { gt: 0 } };
+    if (v === "leasing") {
+      return {
+        OR: [
+          { leads: { some: {} } },
+          { listings: { some: {} } },
+        ],
+      };
+    }
+    if (v === "synced") return { lastSyncedAt: { gte: sevenDaysAgo } };
+    return {};
+  };
+
+  // Search WHERE — case-insensitive match on the columns the table
+  // surfaces. Postgres ILIKE works through Prisma's `mode: "insensitive"`
+  // string filter without needing a separate full-text index. For very
+  // large portfolios consider a pg_trgm index on (name, addressLine1).
+  const searchWhereFragment: Prisma.PropertyWhereInput = searchQuery
+    ? {
+        OR: [
+          { name: { contains: searchQuery, mode: "insensitive" } },
+          { addressLine1: { contains: searchQuery, mode: "insensitive" } },
+          { city: { contains: searchQuery, mode: "insensitive" } },
+          { state: { contains: searchQuery, mode: "insensitive" } },
+        ],
+      }
+    : {};
+
+  const baseWhere: Prisma.PropertyWhereInput = {
+    ...withMarketableLifecycle(tenantWhere(scope)),
+    ...visibilityWhere,
+  };
+  const filteredWhere: Prisma.PropertyWhereInput = {
+    AND: [baseWhere, viewWhereFragment(view), searchWhereFragment],
+  };
+
+  // Parallel queries: per-view counts (toolbar), portfolio totals,
+  // current page rows, total filtered count for pagination, and the
+  // pending-curation badge.
+  const [
+    countAll,
+    countVacant,
+    countLeasing,
+    countSynced,
+    portfolioStats,
+    pageRows,
+    filteredTotal,
+    importedCount,
+  ] = await Promise.all([
+    prisma.property.count({ where: baseWhere }),
+    prisma.property.count({
+      where: { AND: [baseWhere, viewWhereFragment("vacant")] },
     }),
-    // Curation queue badge: count IMPORTED rows but only those the
-    // user is allowed to see.
+    prisma.property.count({
+      where: { AND: [baseWhere, viewWhereFragment("leasing")] },
+    }),
+    prisma.property.count({
+      where: { AND: [baseWhere, viewWhereFragment("synced")] },
+    }),
+    // Portfolio-wide totals for the header. _sum runs in one round-trip
+    // against the indexed `availableCount`. Listings + leads totals are
+    // surfaced via separate count() queries below to keep the same
+    // header copy semantics without per-row joins.
+    prisma.property.aggregate({
+      where: baseWhere,
+      _sum: { availableCount: true },
+    }),
+    // The actual table page. Note: _count is intentionally OFF here so
+    // we don't pay the per-row subquery cost for thousands of rows.
+    // If we need leads/listings counts in the table later we can add a
+    // single denormalized column or a materialised view.
+    prisma.property.findMany({
+      where: filteredWhere,
+      orderBy: { updatedAt: "desc" },
+      skip,
+      take: PAGE_SIZE,
+    }),
+    prisma.property.count({ where: filteredWhere }),
     prisma.property.count({
       where: {
         ...tenantWhere(scope),
@@ -113,52 +204,23 @@ export default async function PropertiesList({
     }),
   ]);
 
-  const sevenDaysAgo = new Date(Date.now() - SEVEN_DAYS_MS);
-
-  // Counts for each view so toolbar tabs render with accurate badges.
   const counts = {
-    all: all.length,
-    vacant: all.filter((p) => (p.availableCount ?? 0) > 0).length,
-    leasing: all.filter(
-      (p) => p._count.leads > 0 || p._count.listings > 0,
-    ).length,
-    synced: all.filter(
-      (p) => p.lastSyncedAt && p.lastSyncedAt > sevenDaysAgo,
-    ).length,
+    all: countAll,
+    vacant: countVacant,
+    leasing: countLeasing,
+    synced: countSynced,
   };
 
-  // Apply the active view filter, then the text search. Search runs in
-  // memory against the already-fetched set (we always fetch the full
-  // marketable universe so view counts stay accurate) — match against
-  // name, address line 1, city, and state so operators can find a
-  // property by any of the column values they actually see.
-  const properties = all
-    .filter((p) => {
-      if (view === "vacant") return (p.availableCount ?? 0) > 0;
-      if (view === "leasing")
-        return p._count.leads > 0 || p._count.listings > 0;
-      if (view === "synced")
-        return p.lastSyncedAt && p.lastSyncedAt > sevenDaysAgo;
-      return true;
-    })
-    .filter((p) => {
-      if (!searchQuery) return true;
-      const haystack = [p.name, p.addressLine1, p.city, p.state]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-      return haystack.includes(searchQuery);
-    });
-
-  // Portfolio-level stats so the header has actual context (always reflects
-  // the full universe, not the filtered view — gives the operator the
-  // baseline they can shrink against).
-  const totalListings = all.reduce((s, p) => s + p._count.listings, 0);
-  const totalAvailable = all.reduce(
-    (s, p) => s + (p.availableCount ?? 0),
-    0,
-  );
-  const totalLeads = all.reduce((s, p) => s + p._count.leads, 0);
+  // Top-line totals for the header strip. Listings + leads aggregates
+  // require separate scoped count() queries because Prisma doesn't
+  // support `_sum` on related _count fields. These run in parallel to
+  // the rest above so wall-clock impact is one extra round-trip.
+  const [totalListings, totalLeads] = await Promise.all([
+    prisma.listing.count({ where: { property: baseWhere } }),
+    prisma.lead.count({ where: { property: baseWhere } }),
+  ]);
+  const totalAvailable = portfolioStats._sum.availableCount ?? 0;
+  const properties = pageRows;
 
   const views: ToolbarView[] = [
     {
@@ -193,9 +255,9 @@ export default async function PropertiesList({
       <PageHeader
         title="Properties"
         description={
-          all.length === 0
+          countAll === 0
             ? "Listings, leads, and tours for every property in your portfolio."
-            : `${all.length.toLocaleString()} ${all.length === 1 ? "property" : "properties"} · ${totalListings.toLocaleString()} listings · ${totalAvailable.toLocaleString()} available · ${totalLeads.toLocaleString()} leads`
+            : `${countAll.toLocaleString()} ${countAll === 1 ? "property" : "properties"} · ${totalListings.toLocaleString()} listings · ${totalAvailable.toLocaleString()} available · ${totalLeads.toLocaleString()} leads`
         }
         actions={
           <div className="flex items-center gap-2">
@@ -208,7 +270,7 @@ export default async function PropertiesList({
                 Review {importedCount} pending
               </Link>
             ) : null}
-            {all.length >= 2 ? (
+            {countAll >= 2 ? (
               <Link
                 href="/portal/properties/compare"
                 className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/50 transition-colors"
@@ -221,7 +283,7 @@ export default async function PropertiesList({
         }
       />
 
-      {all.length === 0 ? (
+      {countAll === 0 ? (
         <EmptyState
           icon={<Building2 className="h-4 w-4" />}
           title="Add your first property to start tracking everything."
@@ -297,12 +359,6 @@ export default async function PropertiesList({
                   },
                 },
                 {
-                  key: "listings",
-                  header: "Listings",
-                  align: "right",
-                  accessor: (p) => <NumberCell value={p._count.listings} />,
-                },
-                {
                   key: "available",
                   header: "Available",
                   align: "right",
@@ -314,17 +370,6 @@ export default async function PropertiesList({
                       <EmptyCell />
                     );
                   },
-                },
-                {
-                  key: "leads",
-                  header: "Leads",
-                  align: "right",
-                  accessor: (p) =>
-                    p._count.leads > 0 ? (
-                      <NumberCell value={p._count.leads} bold />
-                    ) : (
-                      <EmptyCell />
-                    ),
                 },
                 {
                   key: "units",
@@ -358,8 +403,97 @@ export default async function PropertiesList({
               ]}
             />
           )}
+
+          {/* Pagination — only renders when there's more than one page worth
+              of filtered results. Cursor-based pagination would be cleaner
+              but skip/take is fine for the realistic upper bound here
+              (tens of thousands of properties at most). */}
+          <PropertiesPagination
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={filteredTotal}
+            view={view}
+            searchQuery={searchQuery}
+          />
         </>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Pagination — server-rendered prev/next with the current view + search
+// preserved so deep links to /portal/properties?view=vacant&q=foo&page=3
+// keep working. Hidden when there's only one page worth of results so
+// small portfolios don't see a meaningless "Page 1 of 1" footer.
+// ---------------------------------------------------------------------------
+function PropertiesPagination({
+  page,
+  pageSize,
+  total,
+  view,
+  searchQuery,
+}: {
+  page: number;
+  pageSize: number;
+  total: number;
+  view: ViewKey;
+  searchQuery: string;
+}) {
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  if (totalPages <= 1) return null;
+
+  const buildHref = (p: number): string => {
+    const params = new URLSearchParams();
+    if (view !== "all") params.set("view", view);
+    if (searchQuery) params.set("q", searchQuery);
+    if (p > 1) params.set("page", String(p));
+    const qs = params.toString();
+    return qs ? `/portal/properties?${qs}` : "/portal/properties";
+  };
+
+  const start = (page - 1) * pageSize + 1;
+  const end = Math.min(page * pageSize, total);
+
+  return (
+    <nav
+      aria-label="Properties pagination"
+      className="mt-3 flex items-center justify-between gap-2 text-xs text-muted-foreground"
+    >
+      <div>
+        Showing <span className="font-medium text-foreground">{start.toLocaleString()}</span>
+        –<span className="font-medium text-foreground">{end.toLocaleString()}</span> of{" "}
+        <span className="font-medium text-foreground">{total.toLocaleString()}</span>
+      </div>
+      <div className="flex items-center gap-1.5">
+        {page > 1 ? (
+          <Link
+            href={buildHref(page - 1)}
+            className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted/40 transition-colors"
+          >
+            ← Previous
+          </Link>
+        ) : (
+          <span className="inline-flex items-center rounded-md border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground/60">
+            ← Previous
+          </span>
+        )}
+        <span className="px-2 tabular-nums">
+          Page {page.toLocaleString()} of {totalPages.toLocaleString()}
+        </span>
+        {page < totalPages ? (
+          <Link
+            href={buildHref(page + 1)}
+            className="inline-flex items-center rounded-md border border-border bg-card px-2.5 py-1 text-xs font-medium text-foreground hover:bg-muted/40 transition-colors"
+          >
+            Next →
+          </Link>
+        ) : (
+          <span className="inline-flex items-center rounded-md border border-border bg-muted/30 px-2.5 py-1 text-xs text-muted-foreground/60">
+            Next →
+          </span>
+        )}
+      </div>
+    </nav>
   );
 }

@@ -37,6 +37,10 @@ export function PropertiesSearch({ initialValue = "", className }: Props) {
       } else {
         next.delete("q");
       }
+      // Reset pagination on every search change — sticking to page 5
+      // while changing the query produces an empty table for the new
+      // result set.
+      next.delete("page");
       const qs = next.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     }, 250);

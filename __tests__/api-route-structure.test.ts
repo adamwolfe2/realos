@@ -31,16 +31,35 @@ describe("API route structure", () => {
   describe("admin routes require auth", () => {
     const adminRoutes = findRoutes("admin/**/route.ts");
 
+    // Recognised auth patterns. The auth model is layered:
+    //   requireAdmin > requireAdminOrRep > requireAgency > requireScope+inline
+    // and impersonate routes delegate to a helper that calls requireAgency()
+    // internally. Bootstrap is the one route that runs before any admin
+    // exists; it's protected by BOOTSTRAP_SECRET.
+    const AUTH_PATTERNS = [
+      "requireAdmin",
+      "requireAdminOrRep",
+      "requireAgency",
+      "startImpersonation",
+      "endImpersonation",
+      "auth()",
+      "BOOTSTRAP_SECRET",
+    ];
+
     for (const route of adminRoutes) {
       const relative = path.relative(API_DIR, route);
       it(`${relative} has auth protection`, () => {
         const content = readRoute(route);
-        const hasAuth =
-          content.includes("requireAdmin") ||
-          content.includes("requireAdminOrRep") ||
-          content.includes("auth()") ||
-          content.includes("BOOTSTRAP_SECRET");
-        expect(hasAuth).toBe(true);
+        const hasNamed = AUTH_PATTERNS.some((p) => content.includes(p));
+        // requireScope() (auth) + inline isAgency/orgType check (authz) is
+        // the explicit-inline equivalent of using the requireAgency helper.
+        const hasInline =
+          content.includes("requireScope") &&
+          (content.includes("isAgency") ||
+            content.includes("scope.orgType") ||
+            content.includes("callerIsAgency") ||
+            content.includes("AGENCY_ROLES"));
+        expect(hasNamed || hasInline).toBe(true);
       });
     }
   });
@@ -48,11 +67,17 @@ describe("API route structure", () => {
   describe("cron routes check CRON_SECRET", () => {
     const cronRoutes = findRoutes("cron/**/route.ts");
 
+    // Cron auth is enforced by either an inline CRON_SECRET check or the
+    // shared verifyCronAuth() helper (lib/cron/auth.ts) which validates
+    // the Bearer CRON_SECRET header in constant time.
     for (const route of cronRoutes) {
       const relative = path.relative(API_DIR, route);
-      it(`${relative} checks CRON_SECRET`, () => {
+      it(`${relative} validates cron auth`, () => {
         const content = readRoute(route);
-        expect(content).toContain("CRON_SECRET");
+        const hasAuth =
+          content.includes("CRON_SECRET") ||
+          content.includes("verifyCronAuth");
+        expect(hasAuth).toBe(true);
       });
     }
   });
@@ -88,13 +113,25 @@ describe("API route structure", () => {
       const relative = path.relative(API_DIR, route);
       it(`${relative} — has error logging or handling`, () => {
         const content = readRoute(route);
-        // Route should have at least one form of error handling
+        // Recognised error-handling patterns. Beyond raw console logging
+        // we also accept:
+        //   - in-memory accumulators (`errors.push(...)`) where a cron
+        //     reports per-iteration failures via the response body
+        //   - delegation to recordCronRun() / withCronRun() / Sentry, all
+        //     of which capture and surface errors centrally
+        //   - explicit ForbiddenError / 401/403 returns
         const hasErrorHandling =
           content.includes("console.error") ||
           content.includes("console.warn") ||
           content.includes("status: 500") ||
           content.includes("status: 400") ||
-          // Some routes only do simple operations with no try/catch needed
+          content.includes("status: 401") ||
+          content.includes("status: 403") ||
+          content.includes("errors.push") ||
+          content.includes("recordCronRun") ||
+          content.includes("withCronRun") ||
+          content.includes("Sentry.captureException") ||
+          // Routes with no try/catch presumably don't need error handling.
           !content.includes("try {");
         expect(hasErrorHandling).toBe(true);
       });
