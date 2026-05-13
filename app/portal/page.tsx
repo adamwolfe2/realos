@@ -577,23 +577,23 @@ export default async function PortalHome({
       {pastDueLeasesCount > 0 ? (
         <Link
           href="/portal/renewals"
-          className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 hover:bg-amber-100 transition-colors group"
+          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 hover:bg-muted/60 transition-colors group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0" />
+            <AlertTriangle className="h-4 w-4 text-primary shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-amber-900 truncate">
+              <p className="text-xs font-semibold text-foreground truncate">
                 {pastDueLeasesCount.toLocaleString()} past-due
                 {" "}
                 {pastDueLeasesCount === 1 ? "lease" : "leases"}
                 {pastDueDisplay ? ` · ${pastDueDisplay} owed` : ""}
               </p>
-              <p className="text-[11px] text-amber-800">
+              <p className="text-[11px] text-muted-foreground">
                 From AppFolio delinquency report. Open Renewals to review.
               </p>
             </div>
           </div>
-          <span className="text-xs font-medium text-amber-900 group-hover:text-amber-950 whitespace-nowrap">
+          <span className="text-xs font-semibold text-primary whitespace-nowrap">
             Review →
           </span>
         </Link>
@@ -604,22 +604,22 @@ export default async function PortalHome({
       {urgentWorkOrdersCount > 0 ? (
         <Link
           href="/portal/work-orders"
-          className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 hover:bg-amber-100 transition-colors group"
+          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 hover:bg-muted/60 transition-colors group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <Wrench className="h-4 w-4 text-amber-700 shrink-0" />
+            <Wrench className="h-4 w-4 text-primary shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-amber-900 truncate">
+              <p className="text-xs font-semibold text-foreground truncate">
                 {urgentWorkOrdersCount.toLocaleString()} urgent work
                 {" "}
                 {urgentWorkOrdersCount === 1 ? "order" : "orders"} open
               </p>
-              <p className="text-[11px] text-amber-800">
+              <p className="text-[11px] text-muted-foreground">
                 Stop-the-bleed maintenance tickets. Source of truth: AppFolio.
               </p>
             </div>
           </div>
-          <span className="text-xs font-medium text-amber-900 group-hover:text-amber-950 whitespace-nowrap">
+          <span className="text-xs font-semibold text-primary whitespace-nowrap">
             Review →
           </span>
         </Link>
@@ -631,12 +631,12 @@ export default async function PortalHome({
       {reputationSummary.unreviewedCount > 0 ? (
         <Link
           href="/portal/reputation"
-          className="flex items-center justify-between gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-1.5 hover:bg-amber-100 transition-colors group"
+          className="flex items-center justify-between gap-2 rounded-lg border border-border bg-muted/40 px-3 py-1.5 hover:bg-muted/60 transition-colors group"
         >
           <div className="flex items-center gap-2.5 min-w-0">
-            <AlertTriangle className="h-4 w-4 text-amber-700 shrink-0" />
+            <AlertTriangle className="h-4 w-4 text-primary shrink-0" />
             <div className="min-w-0">
-              <p className="text-xs font-semibold text-amber-900 truncate">
+              <p className="text-xs font-semibold text-foreground truncate">
                 {reputationSummary.unreviewedCount.toLocaleString()} unreviewed
                 {" "}
                 {reputationSummary.unreviewedCount === 1 ? "mention" : "mentions"}
@@ -644,12 +644,12 @@ export default async function PortalHome({
                   ? ` · ${reputationSummary.negativeCount} negative`
                   : ""}
               </p>
-              <p className="text-[11px] text-amber-800">
+              <p className="text-[11px] text-muted-foreground">
                 Triage Google reviews, Reddit threads, and Yelp posts before they snowball.
               </p>
             </div>
           </div>
-          <span className="text-xs font-medium text-amber-900 group-hover:text-amber-950 whitespace-nowrap">
+          <span className="text-xs font-semibold text-primary whitespace-nowrap">
             Review →
           </span>
         </Link>
@@ -1309,9 +1309,9 @@ export default async function PortalHome({
             Dashboard
           </h1>
         </div>
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           Dashboard data could not be loaded. This is usually temporary — try refreshing. If the issue persists, check{" "}
-          <a href="/portal/settings/integrations" className="underline font-medium">
+          <a href="/portal/settings/integrations" className="underline font-medium text-primary">
             Settings → Integrations
           </a>
           .
@@ -1338,10 +1338,11 @@ function QuickAccessTile({
   badge?: number | null;
   badgeTone?: "rose";
 }) {
-  const badgeClass =
-    badgeTone === "rose"
-      ? "bg-amber-100 text-amber-700"
-      : "bg-primary/10 text-primary";
+  // Badge tone is intentionally a single brand-blue treatment now —
+  // the old "rose" amber variant fragmented the dashboard with a
+  // second status colour.
+  const badgeClass = "bg-primary/10 text-primary";
+  void badgeTone;
   return (
     <Link
       href={href}

@@ -15,11 +15,21 @@ import {
   Mail,
   Sparkles,
   Check,
-  ShoppingCart,
-  Lock,
   ArrowRight,
   type LucideIcon,
 } from "lucide-react";
+
+// ---------------------------------------------------------------------------
+// Marketplace — premium, brand-consistent.
+//
+// Design system locked to LeaseStack's monochrome + single-accent palette.
+// No greens, ambers, magentas, per-module colours — every accent uses
+// the brand blue #2563EB. Activated state is a subtle blue-tinted card,
+// not a green border. Buttons are either solid brand-blue (primary
+// action) or ghost-bordered foreground (secondary). Card iconography
+// is rendered in a uniform soft-blue square so the shelf reads as a
+// single product surface, not a scrapbook of integrations.
+// ---------------------------------------------------------------------------
 
 // Match the strings emitted by app/portal/marketplace/page.tsx → iconNameFor().
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -35,6 +45,24 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Sparkles,
 };
 
+// Single source of truth for accent. Anywhere you'd reach for a colour,
+// reach for one of these tokens instead.
+const BRAND = {
+  blue: "#2563EB",
+  blueHover: "#1D4ED8",
+  blueTint: "#EFF6FF",
+  blueTintBorder: "#DBEAFE",
+  ink: "#0A0A0A",
+  inkSoft: "#393C41",
+  muted: "#5C5E62",
+  mutedSoft: "#8E8E8E",
+  border: "#E5E5E5",
+  borderSoft: "#EEEEEE",
+  borderHair: "#F4F4F4",
+  surface: "#FFFFFF",
+  canvas: "#FAFAF7",
+} as const;
+
 type MarketplaceModuleVM = {
   key: string;
   slug: string;
@@ -43,7 +71,6 @@ type MarketplaceModuleVM = {
   bullets: string[];
   monthlyPriceCents: number;
   setupHref: string;
-  accentColor: string;
   popular: boolean;
   iconName: string;
 };
@@ -77,10 +104,6 @@ export function MarketplaceClient({
 }: Props) {
   const router = useRouter();
   const [enabled, setEnabled] = useState<Record<string, boolean>>(initialEnabled);
-  // Cart = modules the user has clicked "Add to plan" on but hasn't yet
-  // confirmed via "Activate selected". During trial we autoflip on click,
-  // so the cart is mostly a UX affordance for the bulk activation flow.
-  const [cart, setCart] = useState<Set<string>>(new Set());
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [bulkPending, setBulkPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,22 +129,12 @@ export function MarketplaceClient({
           throw new Error(json?.error ?? `HTTP ${res.status}`);
         }
         if (json.requiresPayment) {
-          // After-trial activation — kick the user to billing so they can
-          // pay for the add-on. The webhook flips the flag on success.
           router.push(
             `/portal/billing?addon=${encodeURIComponent(moduleKey)}`,
           );
           return;
         }
         setEnabled((prev) => ({ ...prev, [moduleKey]: nextEnabled }));
-        // Auto-clear from cart once activated.
-        if (nextEnabled) {
-          setCart((c) => {
-            const next = new Set(c);
-            next.delete(moduleKey);
-            return next;
-          });
-        }
       } catch (err) {
         const message =
           err instanceof Error ? err.message : "Failed to update module";
@@ -137,21 +150,6 @@ export function MarketplaceClient({
     [router],
   );
 
-  const addToCart = useCallback((moduleKey: string) => {
-    setCart((c) => new Set(c).add(moduleKey));
-  }, []);
-
-  const removeFromCart = useCallback((moduleKey: string) => {
-    setCart((c) => {
-      const next = new Set(c);
-      next.delete(moduleKey);
-      return next;
-    });
-  }, []);
-
-  // "Activate everything" — flip every disabled module on in parallel.
-  // Bounded concurrency would be safer at scale, but with <15 modules we
-  // can fan out and let Postgres serialise the writes.
   const activateAll = useCallback(async () => {
     setError(null);
     setBulkPending(true);
@@ -170,7 +168,6 @@ export function MarketplaceClient({
           }),
         ),
       );
-      // Mirror server state for everything that succeeded without payment.
       setEnabled((prev) => {
         const next = { ...prev };
         for (const r of results) {
@@ -180,7 +177,6 @@ export function MarketplaceClient({
         }
         return next;
       });
-      setCart(new Set());
       const failed = results.filter((r) => r.status === "rejected").length;
       if (failed > 0) {
         setError(`${failed} module${failed === 1 ? "" : "s"} couldn't activate. Try again.`);
@@ -190,31 +186,29 @@ export function MarketplaceClient({
     }
   }, [allModuleKeys, enabled]);
 
-  // Activate just what's in the cart.
-  const activateCart = useCallback(async () => {
-    if (cart.size === 0) return;
-    setBulkPending(true);
-    try {
-      const targets = Array.from(cart);
-      await Promise.allSettled(targets.map((k) => toggleModule(k, true)));
-    } finally {
-      setBulkPending(false);
-    }
-  }, [cart, toggleModule]);
-
   return (
-    <div className="min-h-screen bg-[#FAFAF7]">
+    <div className="min-h-screen" style={{ backgroundColor: BRAND.canvas }}>
       {/* Hero */}
-      <section className="border-b border-[#EEEEEE] bg-white">
-        <div className="max-w-[1200px] mx-auto px-6 py-10 lg:px-10 lg:py-14">
-          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6">
+      <section
+        className="border-b"
+        style={{
+          backgroundColor: BRAND.surface,
+          borderColor: BRAND.borderSoft,
+        }}
+      >
+        <div className="max-w-[1200px] mx-auto px-6 py-12 lg:px-10 lg:py-16">
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
             <div className="max-w-2xl">
-              <p className="text-[11px] font-semibold tracking-[0.18em] uppercase text-[#2563EB] mb-3">
+              <p
+                className="text-[11px] font-semibold tracking-[0.18em] uppercase mb-4"
+                style={{ color: BRAND.blue }}
+              >
                 {isTrialing ? "Free during your trial" : "Marketplace"}
               </p>
               <h1
-                className="text-[34px] lg:text-[40px] leading-[1.1] tracking-tight text-[#0A0A0A] font-semibold"
+                className="text-[34px] lg:text-[42px] leading-[1.05] tracking-tight font-semibold"
                 style={{
+                  color: BRAND.ink,
                   fontFamily:
                     "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
                 }}
@@ -223,71 +217,94 @@ export function MarketplaceClient({
                 <br />
                 Build your stack.
               </h1>
-              <p className="mt-4 text-[15px] leading-relaxed text-[#4d4c48]">
+              <p
+                className="mt-5 text-[15px] leading-relaxed"
+                style={{ color: BRAND.muted }}
+              >
                 {isTrialing
-                  ? `Activate every module free for the next ${trialDaysLeft ?? 14} days. Each one ships with its own setup wizard — turn on what you want, skip what you don't.`
-                  : "Bolt on additional modules whenever you're ready. Each one is a standalone subscription you can start, pause, or cancel from the billing portal."}
+                  ? `Activate any module free for the next ${trialDaysLeft ?? 14} days. Each one ships with its own setup — turn on what you need, skip what you don't.`
+                  : "Bolt on additional modules whenever you're ready. Each one is a standalone subscription you can start, pause, or cancel from billing."}
               </p>
-              <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div className="mt-7 flex flex-wrap items-center gap-4">
                 <button
                   type="button"
                   onClick={activateAll}
                   disabled={bulkPending || enabledCount === totalCount}
-                  className="inline-flex items-center gap-2 h-11 px-5 rounded-md bg-[#2563EB] text-white text-sm font-semibold hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  className="inline-flex items-center gap-2 h-11 px-6 rounded-md text-white text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  style={{
+                    backgroundColor: BRAND.blue,
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!e.currentTarget.disabled) {
+                      e.currentTarget.style.backgroundColor = BRAND.blueHover;
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = BRAND.blue;
+                  }}
                 >
                   {bulkPending ? "Activating…" : "Unlock everything"}
-                  <Sparkles className="w-4 h-4" />
                 </button>
                 <Link
                   href="/portal"
-                  className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0A0A0A] hover:text-[#2563EB] transition-colors"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium transition-opacity hover:opacity-60"
+                  style={{ color: BRAND.ink }}
                 >
                   Skip for now <ArrowRight className="w-3.5 h-3.5" />
                 </Link>
               </div>
             </div>
 
-            {/* Progress + cart summary */}
-            <div className="lg:min-w-[300px] rounded-xl border border-[#EEEEEE] bg-[#FAFAF7] p-5">
-              <div className="flex items-baseline justify-between mb-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#5C5E62]">
-                  Modules activated
+            {/* Progress */}
+            <div
+              className="lg:min-w-[280px] rounded-lg p-5"
+              style={{
+                backgroundColor: BRAND.canvas,
+                border: `1px solid ${BRAND.borderSoft}`,
+              }}
+            >
+              <div className="flex items-baseline justify-between mb-3">
+                <p
+                  className="text-[10px] font-semibold uppercase tracking-[0.15em]"
+                  style={{ color: BRAND.muted }}
+                >
+                  Modules active
                 </p>
-                <p className="text-sm font-semibold text-[#0A0A0A]">
-                  {enabledCount} <span className="text-[#5C5E62]">/ {totalCount}</span>
+                <p
+                  className="text-sm font-semibold tabular-nums"
+                  style={{ color: BRAND.ink }}
+                >
+                  {enabledCount}
+                  <span style={{ color: BRAND.mutedSoft }}>
+                    {" "}
+                    / {totalCount}
+                  </span>
                 </p>
               </div>
-              <div className="h-2 rounded-full bg-[#EEEEEE] overflow-hidden">
+              <div
+                className="h-1.5 rounded-full overflow-hidden"
+                style={{ backgroundColor: BRAND.borderSoft }}
+              >
                 <div
-                  className="h-full bg-[#2563EB] transition-all duration-500"
+                  className="h-full transition-all duration-500"
                   style={{
                     width: `${Math.round((enabledCount / totalCount) * 100)}%`,
+                    backgroundColor: BRAND.blue,
                   }}
                 />
               </div>
-              {cart.size > 0 ? (
-                <div className="mt-4 pt-4 border-t border-[#EEEEEE]">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-[#0A0A0A]">
-                      <ShoppingCart className="w-3.5 h-3.5" />
-                      {cart.size} in cart
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={activateCart}
-                    disabled={bulkPending}
-                    className="w-full h-9 rounded-md bg-[#0A0A0A] text-white text-xs font-semibold hover:bg-[#1f1f1f] disabled:opacity-50 transition-colors"
-                  >
-                    Activate selected
-                  </button>
-                </div>
-              ) : null}
             </div>
           </div>
 
           {error ? (
-            <div className="mt-5 rounded-md border border-[#fecaca] bg-[#fef2f2] px-4 py-3 text-sm text-[#b53333]">
+            <div
+              className="mt-6 rounded-md px-4 py-3 text-sm"
+              style={{
+                color: BRAND.ink,
+                backgroundColor: BRAND.canvas,
+                border: `1px solid ${BRAND.border}`,
+              }}
+            >
               {error}
             </div>
           ) : null}
@@ -295,37 +312,38 @@ export function MarketplaceClient({
       </section>
 
       {/* Categories */}
-      <section className="max-w-[1200px] mx-auto px-6 lg:px-10 py-10 lg:py-14">
+      <section className="max-w-[1200px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
         {grouped.map((group) =>
           group.modules.length === 0 ? null : (
-            <div key={group.category} className="mb-12 last:mb-0">
-              <div className="flex items-baseline justify-between mb-5">
+            <div key={group.category} className="mb-14 last:mb-0">
+              <div className="flex items-baseline justify-between mb-6">
                 <h2
-                  className="text-[20px] tracking-tight text-[#0A0A0A] font-semibold"
+                  className="text-[22px] tracking-tight font-semibold"
                   style={{
+                    color: BRAND.ink,
                     fontFamily:
                       "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
                   }}
                 >
                   {group.category}
                 </h2>
-                <span className="text-[11px] uppercase tracking-wider text-[#8E8E8E]">
+                <span
+                  className="text-[10px] uppercase tracking-[0.15em] font-medium"
+                  style={{ color: BRAND.mutedSoft }}
+                >
                   {group.modules.length} module
                   {group.modules.length === 1 ? "" : "s"}
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {group.modules.map((m) => (
                   <ModuleCard
                     key={m.key}
                     module={m}
                     isEnabled={!!enabled[m.key]}
-                    isInCart={cart.has(m.key)}
                     isPending={pending.has(m.key)}
                     isTrialing={isTrialing}
-                    onAddToCart={() => addToCart(m.key)}
-                    onRemoveFromCart={() => removeFromCart(m.key)}
                     onActivate={() => toggleModule(m.key, true)}
                     onDeactivate={() => toggleModule(m.key, false)}
                   />
@@ -342,21 +360,15 @@ export function MarketplaceClient({
 function ModuleCard({
   module: m,
   isEnabled,
-  isInCart,
   isPending,
   isTrialing,
-  onAddToCart,
-  onRemoveFromCart,
   onActivate,
   onDeactivate,
 }: {
   module: MarketplaceModuleVM;
   isEnabled: boolean;
-  isInCart: boolean;
   isPending: boolean;
   isTrialing: boolean;
-  onAddToCart: () => void;
-  onRemoveFromCart: () => void;
   onActivate: () => void;
   onDeactivate: () => void;
 }) {
@@ -364,82 +376,116 @@ function ModuleCard({
 
   return (
     <article
-      className="relative flex flex-col rounded-xl border bg-white p-6 transition-all hover:shadow-[0_4px_24px_rgba(0,0,0,0.06)]"
+      className="relative flex flex-col rounded-lg p-6 transition-all"
       style={{
-        borderColor: isEnabled ? "#16A34A" : "#EEEEEE",
-        borderWidth: isEnabled ? 1.5 : 1,
+        backgroundColor: isEnabled ? BRAND.blueTint : BRAND.surface,
+        border: `1px solid ${isEnabled ? BRAND.blueTintBorder : BRAND.borderSoft}`,
       }}
     >
-      {/* Status pill */}
+      {/* Status pill — single brand-blue token whether activated or popular */}
       {isEnabled ? (
-        <span className="absolute top-4 right-4 inline-flex items-center gap-1 rounded-full bg-[#dcfce7] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#15803d]">
+        <span
+          className="absolute top-5 right-5 inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
+          style={{
+            color: BRAND.blue,
+          }}
+        >
           <Check className="w-3 h-3" />
-          Activated
+          Active
         </span>
       ) : m.popular ? (
-        <span className="absolute top-4 right-4 inline-flex items-center rounded-full bg-[#dbeafe] px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#1d4ed8]">
+        <span
+          className="absolute top-5 right-5 inline-flex items-center px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.12em]"
+          style={{ color: BRAND.muted }}
+        >
           Popular
         </span>
       ) : null}
 
-      {/* Icon */}
+      {/* Icon — uniform soft-blue tile so the grid reads as a single product surface */}
       <div
-        className="inline-flex items-center justify-center w-10 h-10 rounded-lg mb-4"
+        className="inline-flex items-center justify-center w-9 h-9 rounded-md mb-5"
         style={{
-          backgroundColor: `${m.accentColor}1A`,
-          color: m.accentColor,
+          backgroundColor: BRAND.blueTint,
+          color: BRAND.blue,
         }}
       >
-        <Icon className="w-5 h-5" />
+        <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
       </div>
 
       {/* Body */}
-      <h3 className="text-[16px] font-semibold text-[#0A0A0A] mb-1.5 leading-snug">
+      <h3
+        className="text-[15px] font-semibold mb-2 leading-snug tracking-tight"
+        style={{ color: BRAND.ink }}
+      >
         {m.name}
       </h3>
-      <p className="text-[13px] leading-relaxed text-[#5C5E62] mb-4">
+      <p
+        className="text-[13px] leading-relaxed mb-5"
+        style={{ color: BRAND.muted }}
+      >
         {m.tagline}
       </p>
 
-      <ul className="space-y-1.5 mb-5">
+      <ul className="space-y-2 mb-6">
         {m.bullets.map((b) => (
           <li
             key={b}
-            className="flex items-start gap-2 text-[12.5px] text-[#393C41] leading-snug"
+            className="flex items-start gap-2.5 text-[12.5px] leading-snug"
+            style={{ color: BRAND.inkSoft }}
           >
             <Check
               className="w-3.5 h-3.5 mt-0.5 flex-shrink-0"
-              style={{ color: m.accentColor }}
+              style={{ color: BRAND.blue }}
+              strokeWidth={2.25}
             />
             <span>{b}</span>
           </li>
         ))}
       </ul>
 
-      {/* Price */}
-      <div className="mt-auto pt-4 border-t border-[#F4F4F4]">
-        <div className="flex items-baseline justify-between mb-3">
-          <div>
-            {isTrialing && !isEnabled ? (
-              <p className="text-[12px] font-semibold text-[#15803d] uppercase tracking-wider">
-                Free during trial
-              </p>
-            ) : (
-              <p className="text-[18px] font-semibold text-[#0A0A0A]">
-                {formatPrice(m.monthlyPriceCents)}
-                <span className="text-[12px] font-normal text-[#8E8E8E]">
-                  /mo
-                </span>
-              </p>
-            )}
-          </div>
+      {/* Footer: price + CTA */}
+      <div
+        className="mt-auto pt-5"
+        style={{ borderTop: `1px solid ${BRAND.borderHair}` }}
+      >
+        <div className="flex items-baseline justify-between mb-4">
+          {isTrialing && !isEnabled ? (
+            <p
+              className="text-[11px] font-semibold uppercase tracking-[0.12em]"
+              style={{ color: BRAND.muted }}
+            >
+              Free during trial
+            </p>
+          ) : (
+            <p
+              className="text-[18px] font-semibold tabular-nums"
+              style={{ color: BRAND.ink }}
+            >
+              {formatPrice(m.monthlyPriceCents)}
+              <span
+                className="text-[12px] font-normal"
+                style={{ color: BRAND.mutedSoft }}
+              >
+                {" "}
+                /mo
+              </span>
+            </p>
+          )}
         </div>
 
         {isEnabled ? (
           <div className="flex items-center gap-2">
             <Link
               href={m.setupHref}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-md border border-[#16A34A] text-[#15803d] text-sm font-semibold hover:bg-[#dcfce7] transition-colors"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-md text-white text-sm font-semibold transition-colors"
+              style={{ backgroundColor: BRAND.blue }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.backgroundColor = BRAND.blueHover;
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.backgroundColor = BRAND.blue;
+              }}
             >
               Set up <ArrowRight className="w-3.5 h-3.5" />
             </Link>
@@ -447,59 +493,35 @@ function ModuleCard({
               type="button"
               onClick={onDeactivate}
               disabled={isPending}
-              className="h-10 px-3 rounded-md text-[#8E8E8E] text-xs font-medium hover:text-[#b53333] disabled:opacity-50 transition-colors"
+              className="h-10 px-3 text-xs font-medium transition-opacity hover:opacity-60 disabled:opacity-40"
+              style={{ color: BRAND.mutedSoft }}
               aria-label={`Deactivate ${m.name}`}
             >
               {isPending ? "…" : "Remove"}
             </button>
           </div>
-        ) : isInCart ? (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onActivate}
-              disabled={isPending}
-              className="flex-1 inline-flex items-center justify-center h-10 rounded-md bg-[#0A0A0A] text-white text-sm font-semibold hover:bg-[#1f1f1f] disabled:opacity-50 transition-colors"
-            >
-              {isPending ? "Activating…" : "Activate now"}
-            </button>
-            <button
-              type="button"
-              onClick={onRemoveFromCart}
-              className="h-10 px-3 rounded-md text-[#8E8E8E] text-xs font-medium hover:text-[#0A0A0A] transition-colors"
-            >
-              Remove
-            </button>
-          </div>
         ) : (
-          <div className="flex items-center gap-2">
-            <button
-              type="button"
-              onClick={onActivate}
-              disabled={isPending}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 h-10 rounded-md bg-[#2563EB] text-white text-sm font-semibold hover:bg-[#1d4ed8] disabled:opacity-50 transition-colors"
-            >
-              {isPending ? (
-                "Activating…"
-              ) : isTrialing ? (
-                <>
-                  Add to plan <ArrowRight className="w-3.5 h-3.5" />
-                </>
-              ) : (
-                <>
-                  <Lock className="w-3.5 h-3.5" /> Unlock
-                </>
-              )}
-            </button>
-            <button
-              type="button"
-              onClick={onAddToCart}
-              className="inline-flex items-center justify-center h-10 w-10 rounded-md border border-[#E5E5E5] text-[#5C5E62] hover:text-[#0A0A0A] hover:border-[#0A0A0A] transition-colors"
-              aria-label={`Add ${m.name} to cart`}
-            >
-              <ShoppingCart className="w-4 h-4" />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={onActivate}
+            disabled={isPending}
+            className="w-full inline-flex items-center justify-center gap-1.5 h-10 rounded-md text-white text-sm font-semibold disabled:opacity-40 transition-colors"
+            style={{ backgroundColor: BRAND.blue }}
+            onMouseEnter={(e) => {
+              if (!e.currentTarget.disabled) {
+                e.currentTarget.style.backgroundColor = BRAND.blueHover;
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.backgroundColor = BRAND.blue;
+            }}
+          >
+            {isPending
+              ? "Activating…"
+              : isTrialing
+                ? "Activate"
+                : "Unlock"}
+          </button>
         )}
       </div>
     </article>

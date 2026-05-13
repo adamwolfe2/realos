@@ -542,40 +542,35 @@ export async function OverviewTab({
                 <AnimatedNumber value={activeResidents} />
               </p>
             </div>
-            {/* Bug #34 — explicit, always-visible reconciliation when
-                occupancy (unit-level state) and active-lease count
-                (lease-row level) disagree. Norman's complaint was that
-                operators see "100 of 100 leased" + "21 active leases"
-                and have no in-product explanation of the gap. Earlier
-                fix only surfaced a tiny grey hint when the delta was
-                >5; that's still confusing on a 100-vs-21 split. We
-                now render a plain-English explainer block whenever
-                the two diverge, with a deep link to the Residents
-                tab where operators can see the underlying records. */}
+            {/* Bug #34 — always-visible reconciliation when occupancy
+                (unit-level) and active-lease count (lease-row level)
+                disagree. Brand-aligned treatment: subtle muted card,
+                no amber/red signalling — this is informational, not a
+                warning. */}
             {leasedUnits != null && Math.abs(leasedUnits - activeResidents) >= 1 ? (
-              <div className="rounded-md border border-amber-200 bg-amber-50/60 px-2.5 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-800">
+              <div className="rounded-md border border-border bg-muted/30 px-2.5 py-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                   Why these numbers differ
                 </p>
-                <p className="text-[11px] text-amber-900/90 leading-snug mt-1">
-                  <span className="font-semibold tabular-nums">
+                <p className="text-[11px] text-foreground/80 leading-snug mt-1">
+                  <span className="font-semibold tabular-nums text-foreground">
                     {leasedUnits} units
                   </span>{" "}
                   show as occupied (the physical-unit roll-up from
                   AppFolio), but only{" "}
-                  <span className="font-semibold tabular-nums">
+                  <span className="font-semibold tabular-nums text-foreground">
                     {activeResidents} lease records
                   </span>{" "}
                   have synced as ACTIVE. The rest are residents whose
                   lease rows haven&apos;t propagated yet (new move-ins,
                   pending renewals, or month-to-month rolls AppFolio
                   hasn&apos;t reissued). Avg rent is calculated against
-                  the {leasedUnits}-unit denominator so it stays
-                  stable while sync catches up.
+                  the {leasedUnits}-unit denominator so it stays stable
+                  while sync catches up.
                 </p>
                 <a
                   href="?tab=residents"
-                  className="inline-block mt-1.5 text-[10px] font-semibold text-amber-900 underline underline-offset-2 hover:no-underline"
+                  className="inline-block mt-1.5 text-[10px] font-semibold text-primary underline underline-offset-2 hover:no-underline"
                 >
                   Open Residents tab →
                 </a>
@@ -832,6 +827,10 @@ function ActiveFeaturesStrip({
           </p>
         </div>
       </div>
+      {/* Brand-aligned chip treatment. Connected = subtle blue tint +
+          brand-blue dot; not connected = neutral muted. No green/amber
+          status colours so the strip reads as a single product surface
+          consistent with the rest of the LeaseStack canvas. */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
         {chips.map((chip) => (
           <a
@@ -839,7 +838,7 @@ function ActiveFeaturesStrip({
             href={chip.href}
             className={`group rounded-lg border px-2.5 py-2 transition-colors ${
               chip.connected
-                ? "border-emerald-200 bg-emerald-50/40 hover:bg-emerald-50"
+                ? "border-primary/20 bg-primary/5 hover:bg-primary/10"
                 : "border-border bg-muted/30 hover:bg-muted/50"
             }`}
           >
@@ -847,9 +846,7 @@ function ActiveFeaturesStrip({
               <span
                 aria-hidden="true"
                 className={`h-1.5 w-1.5 rounded-full ${
-                  chip.connected
-                    ? "bg-emerald-500"
-                    : "bg-muted-foreground/40"
+                  chip.connected ? "bg-primary" : "bg-muted-foreground/40"
                 }`}
               />
               <span className="text-[11px] font-semibold text-foreground truncate">
@@ -858,9 +855,7 @@ function ActiveFeaturesStrip({
             </div>
             <p
               className={`text-[10px] mt-0.5 truncate ${
-                chip.connected
-                  ? "text-emerald-700"
-                  : "text-muted-foreground"
+                chip.connected ? "text-primary" : "text-muted-foreground"
               }`}
             >
               {chip.detail}
@@ -1005,7 +1000,7 @@ function PropertyHeroStrip({
               {monthlyDisplay}
             </span>
             {availableUnits > 0 ? (
-              <span className="text-[11px] text-amber-700 font-medium tabular-nums">
+              <span className="text-[11px] text-foreground font-medium tabular-nums">
                 · {availableUnits} open
               </span>
             ) : null}
@@ -1354,13 +1349,17 @@ function buildAiInsight(args: {
 }
 
 function AiInsightCard({ insight }: { insight: AiInsightShape }) {
+  // Brand-aligned tone scale. Severity is signalled by emphasis (border
+  // weight, accent fill) inside a single brand-blue palette — no green,
+  // amber, red. The destructive token is reserved for actual destructive
+  // confirmations (delete modals), not informational alerts.
   const tone =
     insight.severity === "alert"
-      ? "border-destructive/30 bg-destructive/10 text-destructive"
+      ? "border-primary/40 bg-primary/10 text-primary"
       : insight.severity === "warn"
-        ? "border-amber-200 bg-amber-50 text-amber-900"
+        ? "border-primary/25 bg-primary/5 text-foreground"
         : insight.severity === "ok"
-          ? "border-primary/30 bg-primary/10 text-primary"
+          ? "border-primary/25 bg-primary/5 text-primary"
           : "border-border bg-muted/30 text-foreground";
   return (
     <div

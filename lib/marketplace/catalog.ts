@@ -74,8 +74,6 @@ export type CatalogModule = {
   setupHref: string;
   /** Brand icon. */
   icon: LucideIcon;
-  /** Color used for the card accent (hex). Light backgrounds. */
-  accentColor: string;
   /** Logical grouping for the marketplace shelf. */
   category: CatalogCategory;
   /** Marks the most-clicked / conversion-leading items. */
@@ -102,7 +100,6 @@ export const MARKETPLACE_MODULES: CatalogModule[] = [
     stripeLookupKey: "ls_addon_pixel_v1",
     setupHref: "/portal/setup",
     icon: Eye,
-    accentColor: "#2563EB",
     category: "Acquisition",
     popular: true,
   },
@@ -122,7 +119,6 @@ export const MARKETPLACE_MODULES: CatalogModule[] = [
     stripeLookupKey: "ls_addon_chatbot_v1",
     setupHref: "/portal/chatbot",
     icon: Bot,
-    accentColor: "#7C3AED",
     category: "Engagement",
     popular: true,
   },
@@ -142,7 +138,6 @@ export const MARKETPLACE_MODULES: CatalogModule[] = [
     stripeLookupKey: "ls_addon_seo_v1",
     setupHref: "/portal/seo",
     icon: TrendingUp,
-    accentColor: "#0EA5E9",
     category: "Discovery",
     popular: true,
   },
@@ -162,7 +157,6 @@ export const MARKETPLACE_MODULES: CatalogModule[] = [
     stripeLookupKey: "ls_addon_google_ads_v1",
     setupHref: "/portal/ads",
     icon: BarChart3,
-    accentColor: "#16A34A",
     category: "Acquisition",
   },
   {
@@ -181,7 +175,6 @@ export const MARKETPLACE_MODULES: CatalogModule[] = [
     stripeLookupKey: "ls_addon_meta_ads_v1",
     setupHref: "/portal/ads",
     icon: BarChart3,
-    accentColor: "#1877F2",
     category: "Acquisition",
   },
   {
@@ -200,7 +193,6 @@ export const MARKETPLACE_MODULES: CatalogModule[] = [
     stripeLookupKey: "ls_addon_email_v1",
     setupHref: "/portal/conversations",
     icon: Mail,
-    accentColor: "#F59E0B",
     category: "Engagement",
   },
   {
@@ -219,7 +211,6 @@ export const MARKETPLACE_MODULES: CatalogModule[] = [
     stripeLookupKey: "ls_addon_outbound_email_v1",
     setupHref: "/portal/conversations",
     icon: Send,
-    accentColor: "#DB2777",
     category: "Acquisition",
   },
   {
@@ -238,7 +229,6 @@ export const MARKETPLACE_MODULES: CatalogModule[] = [
     stripeLookupKey: "ls_addon_creative_v1",
     setupHref: "/portal/creative",
     icon: Brush,
-    accentColor: "#EC4899",
     category: "Engagement",
   },
   {
@@ -257,7 +247,6 @@ export const MARKETPLACE_MODULES: CatalogModule[] = [
     stripeLookupKey: "ls_addon_referrals_v1",
     setupHref: "/portal/referrals",
     icon: Share2,
-    accentColor: "#059669",
     category: "Operations",
   },
   {
@@ -276,7 +265,6 @@ export const MARKETPLACE_MODULES: CatalogModule[] = [
     stripeLookupKey: "ls_addon_website_v1",
     setupHref: "/portal/setup",
     icon: Globe,
-    accentColor: "#0891B2",
     category: "Discovery",
   },
 ];

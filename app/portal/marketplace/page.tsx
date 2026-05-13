@@ -96,7 +96,6 @@ export default async function MarketplacePage() {
           bullets: m.bullets,
           monthlyPriceCents: m.monthlyPriceCents,
           setupHref: m.setupHref,
-          accentColor: m.accentColor,
           popular: m.popular ?? false,
           // We can't pass icons across the server/client boundary directly,
           // so map to the lucide string name and let the client resolve.
