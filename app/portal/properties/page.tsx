@@ -272,10 +272,10 @@ export default async function PropertiesList({
             {importedCount > 0 ? (
               <Link
                 href="/portal/properties/curate"
-                className="inline-flex items-center gap-1.5 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-1.5 text-xs font-medium text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition-colors"
-                title="Review AppFolio-imported rows that haven't been classified yet"
+                className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                title="View your full AppFolio portfolio and add properties to LeaseStack"
               >
-                Review {importedCount} pending
+                + {importedCount} more in AppFolio
               </Link>
             ) : null}
             {countAll >= 2 ? (

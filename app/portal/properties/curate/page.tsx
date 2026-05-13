@@ -113,10 +113,10 @@ export default async function PropertyCuratePage({
         title={
           <span className="inline-flex items-center gap-2">
             <Inbox className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
-            Choose which properties LeaseStack manages
+            Your full AppFolio portfolio
           </span>
         }
-        description="AppFolio imports your entire property directory — including parking, storage, and sub-records. Approve only the buildings you want LeaseStack to market: those are the ones that count toward billing, dashboards, and reports."
+        description="These are all the properties LeaseStack found in your AppFolio account. Add the buildings you want LeaseStack to actively manage — those count toward dashboards, leads, and billing. Exclude anything that's a parking lot, storage unit, or sub-record."
       />
 
       {/* Billing impact — must read this BEFORE bulk-clicking Activate. */}
@@ -137,7 +137,7 @@ export default async function PropertyCuratePage({
               : "px-3 py-1.5 text-sm text-muted-foreground hover:text-foreground"
           }
         >
-          Pending review
+          Available to add
           <span className="ml-1.5 text-xs text-muted-foreground">
             {importedCount}
           </span>
@@ -159,11 +159,11 @@ export default async function PropertyCuratePage({
 
       {items.length === 0 ? (
         <EmptyState
-          title={view === "imported" ? "Nothing pending review" : "No excluded properties"}
+          title={view === "imported" ? "All properties accounted for" : "No excluded properties"}
           body={
             view === "imported"
-              ? "New AppFolio imports will land here."
-              : "Auto-classifier hasn't flagged any sub-records."
+              ? "Every property in your AppFolio portfolio has been added or excluded. New syncs will appear here automatically."
+              : "Nothing excluded yet. Auto-classifier flags parking lots and sub-records automatically."
           }
         />
       ) : (
