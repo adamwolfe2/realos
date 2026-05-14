@@ -364,11 +364,19 @@ export default async function ResidentsPage({
                     [r.firstName, r.lastName].filter(Boolean).join(" ") ||
                     r.email ||
                     "Resident";
+                  // Avatars hidden on this roster: AppFolio's resident
+                  // sync writes the LLC / client name as firstName for
+                  // most rows ("SG Client: 1044 C STREET, LLC"), which
+                  // collapses every monogram to the same "S" with
+                  // randomized blue backgrounds — pure visual noise. The
+                  // leads CRM keeps its avatars because lead names are
+                  // real human first/last names with variety.
                   return (
                     <EntityCell
                       name={name}
                       seed={r.id}
                       secondary={r.email ?? r.phone ?? null}
+                      hideAvatar
                     />
                   );
                 },

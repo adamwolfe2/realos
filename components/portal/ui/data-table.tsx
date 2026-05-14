@@ -352,16 +352,23 @@ export function EntityCell({
   secondary,
   seed,
   avatar,
+  hideAvatar,
 }: {
   name: string;
   secondary?: React.ReactNode;
   seed?: string;
-  /** Optional override for the avatar — pass a custom node to skip the monogram. */
+  /** Optional override for the avatar — pass a custom node to swap the monogram. */
   avatar?: React.ReactNode;
+  /** Skip the avatar entirely. Use on tables where the data lacks varied
+   *  first letters (e.g. AppFolio residents whose firstName comes back as
+   *  "SG Client: …" — every row collapses to the same "S" monogram with
+   *  noisy randomized backgrounds, which adds visual weight without
+   *  signal). */
+  hideAvatar?: boolean;
 }) {
   return (
     <div className="flex items-center gap-2 min-w-0">
-      {avatar ?? <Avatar name={name} seed={seed} />}
+      {hideAvatar ? null : avatar ?? <Avatar name={name} seed={seed} />}
       <div className="min-w-0">
         <p className="text-xs font-semibold text-foreground truncate leading-tight">
           {name}
