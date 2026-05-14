@@ -19,28 +19,28 @@ export function Comparison() {
         borderTop: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-24 md:py-32">
-        <div className="max-w-3xl mb-16">
-          <p className="eyebrow mb-4">{comparison.eyebrow}</p>
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-16 md:py-24">
+        <div className="max-w-3xl mb-10 md:mb-12">
+          <p className="eyebrow mb-3">{comparison.eyebrow}</p>
           <h2
             style={{
               color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
-              fontSize: "clamp(34px, 4.8vw, 56px)",
+              fontSize: "clamp(28px, 3.6vw, 40px)",
               fontWeight: 700,
-              lineHeight: 1.05,
+              lineHeight: 1.1,
               letterSpacing: "-0.025em",
             }}
           >
             {comparison.headline}
           </h2>
           <p
-            className="mt-6 max-w-2xl"
+            className="mt-4 max-w-2xl"
             style={{
               color: "#64748B",
               fontFamily: "var(--font-sans)",
-              fontSize: "17px",
-              lineHeight: 1.6,
+              fontSize: "16px",
+              lineHeight: 1.55,
             }}
           >
             {comparison.body}
@@ -83,7 +83,7 @@ export function Comparison() {
           {comparison.rows.map((row, i) => (
             <li
               key={row.new}
-              className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-12 py-7 md:py-9"
+              className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-12 py-5 md:py-6"
               style={{
                 borderTop: i === 0 ? "none" : "1px solid #E2E8F0",
               }}
@@ -92,9 +92,9 @@ export function Comparison() {
                 style={{
                   color: "#94A3B8",
                   fontFamily: "var(--font-sans)",
-                  fontSize: "17px",
+                  fontSize: "15px",
                   lineHeight: 1.5,
-                  letterSpacing: "-0.01em",
+                  letterSpacing: "-0.005em",
                   fontWeight: 400,
                 }}
               >
@@ -104,9 +104,9 @@ export function Comparison() {
                 style={{
                   color: "#1E2A3A",
                   fontFamily: "var(--font-sans)",
-                  fontSize: "19px",
+                  fontSize: "16.5px",
                   lineHeight: 1.4,
-                  letterSpacing: "-0.015em",
+                  letterSpacing: "-0.01em",
                   fontWeight: 600,
                 }}
               >
