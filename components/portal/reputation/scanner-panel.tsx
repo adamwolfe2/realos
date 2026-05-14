@@ -438,14 +438,29 @@ export function ScannerPanel({
         skipReason?: string | null;
       };
       if (!res.ok || !body.ok) {
-        toast.error(body.message ?? `Backfill failed (${res.status})`);
+        // Surface a clean, operator-readable error. The raw API string
+        // can include backend / schema details that look alarming
+        // (e.g. "output_format.schema: For 'array' type, property
+        // 'maxItems' is not supported"). Log the raw cause for ops
+        // and show the operator a one-line summary they can act on.
         if (body.skipReason === "no_api_key") {
+          toast.error(
+            "Sentiment classification is paused. Contact support to enable it.",
+          );
           setAnalysisSkip({
             reason: "no_api_key",
             message:
               body.message ??
               "ANTHROPIC_API_KEY is not set. Add it in Vercel and re-run.",
           });
+        } else {
+          console.error(
+            "[reputation.backfill] Classification failed:",
+            body.message ?? res.statusText,
+          );
+          toast.error(
+            "Could not classify mentions right now. We'll retry on the next scan.",
+          );
         }
         return;
       }

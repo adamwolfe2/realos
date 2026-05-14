@@ -114,7 +114,36 @@ export function InsightsHero({
     );
   }
 
-  // Active state — render the top 3 insights as the centerpiece.
+  // Active state. If there's only info-level chatter (no critical or
+  // warning), collapse to a single-line strip rather than three cards.
+  // The 3-card layout is reserved for genuinely actionable signal so the
+  // page reads premium instead of like a worklist.
+  const hasActionable = counts.critical > 0 || counts.warning > 0;
+
+  if (!hasActionable) {
+    return (
+      <section className="rounded-lg border border-border bg-card px-4 py-2.5">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <Sparkles className="w-3 h-3 text-primary" />
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+              {isProperty ? `Insights for ${propertyName}` : "Insights"}
+            </p>
+            <span className="text-[11.5px] tabular-nums text-muted-foreground">
+              {counts.info} info {counts.info === 1 ? "signal" : "signals"} &middot; nothing urgent
+            </span>
+          </div>
+          <Link
+            href={viewAllHref}
+            className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-primary hover:underline whitespace-nowrap shrink-0"
+          >
+            View all <ArrowRight className="w-3 h-3" />
+          </Link>
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section className="rounded-xl border border-border bg-card p-4 lg:p-5">
       <header className="flex items-center justify-between gap-3 mb-3">
@@ -142,16 +171,21 @@ export function InsightsHero({
       </header>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-        {insights.slice(0, 3).map((insight) => (
-          <InsightCard
-            key={insight.id}
-            insight={{
-              ...insight,
-              context: (insight.context as Record<string, unknown>) ?? null,
-            }}
-            dense
-          />
-        ))}
+        {insights
+          // Only surface actionable cards at the top. Info-level insights
+          // are accessible via the View-all link.
+          .filter((i) => i.severity === "critical" || i.severity === "warning")
+          .slice(0, 3)
+          .map((insight) => (
+            <InsightCard
+              key={insight.id}
+              insight={{
+                ...insight,
+                context: (insight.context as Record<string, unknown>) ?? null,
+              }}
+              dense
+            />
+          ))}
       </div>
     </section>
   );

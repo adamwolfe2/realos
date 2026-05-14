@@ -87,6 +87,12 @@ export type PortalNavOrg = {
    * sync ships or a public application form is wired.
    */
   hasApplications?: boolean;
+  /**
+   * Number of AppFolio records pending curation. Surfaces as a badge on
+   * the Properties nav item so the signal is visible without eating a
+   * full-width chrome banner on every page.
+   */
+  pendingCurationCount?: number;
 };
 
 export type NavItem = {
@@ -94,6 +100,8 @@ export type NavItem = {
   label: string;
   icon: LucideIcon;
   show: (org: PortalNavOrg) => boolean;
+  /** Optional inline count badge. Returns null/0 to hide. */
+  badge?: (org: PortalNavOrg) => number | null;
 };
 
 export type NavGroup = {
@@ -199,7 +207,13 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Audience",
     items: [
-      { href: "/portal/properties", label: "Properties", icon: Building2, show: ALWAYS },
+      {
+        href: "/portal/properties",
+        label: "Properties",
+        icon: Building2,
+        show: ALWAYS,
+        badge: (o) => o.pendingCurationCount && o.pendingCurationCount > 0 ? o.pendingCurationCount : null,
+      },
       { href: "/portal/leads", label: "Leads", icon: Users, show: ALWAYS },
       // Tours: gated on at least one tour existing. Source is the public
       // booking form or the API-key ingest endpoint — NOT AppFolio.
@@ -400,7 +414,21 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
                     >
                       <item.icon className="h-4 w-4 shrink-0" />
                       {!collapsed && (
-                        <span className="flex-1 truncate">{item.label}</span>
+                        <>
+                          <span className="flex-1 truncate">{item.label}</span>
+                          {(() => {
+                            const count = item.badge?.(org);
+                            if (!count) return null;
+                            return (
+                              <span
+                                className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold tabular-nums bg-primary/12 text-primary"
+                                aria-label={`${count} pending`}
+                              >
+                                {count > 99 ? "99+" : count}
+                              </span>
+                            );
+                          })()}
+                        </>
                       )}
                     </Link>
                   );

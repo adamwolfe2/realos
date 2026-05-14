@@ -214,7 +214,6 @@ export function MentionCard({
 
   const label = sourceLabel(mention.source, mention.sourceUrl);
   const host = getHost(mention.sourceUrl);
-  const urlShort = shortUrl(mention.sourceUrl);
   const responseTarget = getResponseTarget(mention.source, mention.sourceUrl);
   const when = mention.publishedAt
     ? formatDistanceToNow(new Date(mention.publishedAt), { addSuffix: true })
@@ -358,35 +357,15 @@ export function MentionCard({
         ))}
       </div>
 
-      {/* URL preview — shows the operator exactly where the mention lives
-          before they click. Helps answer "is this the real post or a
-          scraper aggregator?" at a glance. */}
-      <a
-        href={mention.sourceUrl}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="mt-3 inline-flex items-center gap-1.5 text-[11px] text-muted-foreground hover:text-foreground truncate max-w-full"
-        title={mention.sourceUrl}
-      >
-        <Link2 className="h-3 w-3 shrink-0" aria-hidden="true" />
-        <span className="truncate">{urlShort}</span>
-      </a>
-
-      <footer className="mt-3 flex items-center gap-2 flex-wrap">
-        {/* Primary CTA — Bug #43. Three modes:
-            - reply / comment: open the source URL in a new tab, where
-              the platform's own reply UX takes over (Google Business,
-              Yelp, Facebook page reply, Reddit comment).
-            - draft: open the in-app response-draft modal because the
-              source has no public reply API (ApartmentRatings, Niche,
-              news outlets, OCH portals). The operator can copy the
-              draft into an email or paste into a manual response form. */}
+      <footer className="mt-4 flex items-center justify-between gap-2 flex-wrap">
+        {/* Primary CTA — the operator's main job on this card is to
+            respond. Everything else lives in a quiet secondary row. */}
         {responseTarget.mode === "draft" ? (
           <Button
             size="sm"
             onClick={openDraft}
             className="gap-1.5"
-            title={`No public reply API for ${responseTarget.platform} — open a templated draft you can copy + adapt.`}
+            title={`No public reply API for ${responseTarget.platform}. Open a templated draft you can copy and adapt.`}
           >
             <MessageSquareReply className="h-3.5 w-3.5" aria-hidden="true" />
             {responseTarget.cta}
@@ -405,42 +384,55 @@ export function MentionCard({
             </a>
           </Button>
         )}
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={copyLink}
-          className="gap-1.5"
-          title="Copy link for Slack / email / handoff"
-        >
-          <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
-          Copy link
-        </Button>
-        <Button
-          variant={reviewed ? "secondary" : "outline"}
-          size="sm"
-          disabled={pending}
-          onClick={() =>
-            patch({ reviewed: !reviewed }, { reviewed: !reviewed })
-          }
-          className="gap-1.5"
-        >
-          {reviewed ? (
-            <CircleCheck className="h-3.5 w-3.5" aria-hidden="true" />
-          ) : (
-            <Check className="h-3.5 w-3.5" aria-hidden="true" />
-          )}
-          {reviewed ? "Reviewed" : "Mark reviewed"}
-        </Button>
-        <Button
-          variant={flagged ? "destructive" : "outline"}
-          size="sm"
-          disabled={pending}
-          onClick={() => patch({ flagged: !flagged }, { flagged: !flagged })}
-          className="gap-1.5"
-        >
-          <Flag className="h-3.5 w-3.5" aria-hidden="true" />
-          {flagged ? "Flagged" : "Flag"}
-        </Button>
+
+        {/* Secondary actions reduced to icon-only buttons with tooltips.
+            Was: three labeled buttons (Copy link / Mark reviewed / Flag).
+            Cards now read as a content list, not a worklist. */}
+        <div className="flex items-center gap-0.5">
+          <button
+            type="button"
+            onClick={copyLink}
+            className="inline-flex items-center justify-center w-7 h-7 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            title="Copy link"
+            aria-label="Copy link"
+          >
+            <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() =>
+              patch({ reviewed: !reviewed }, { reviewed: !reviewed })
+            }
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+              reviewed
+                ? "text-primary bg-primary/10"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+            title={reviewed ? "Reviewed" : "Mark reviewed"}
+            aria-label={reviewed ? "Reviewed" : "Mark reviewed"}
+          >
+            {reviewed ? (
+              <CircleCheck className="h-3.5 w-3.5" aria-hidden="true" />
+            ) : (
+              <Check className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+          </button>
+          <button
+            type="button"
+            disabled={pending}
+            onClick={() => patch({ flagged: !flagged }, { flagged: !flagged })}
+            className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
+              flagged
+                ? "text-[#DC2626] bg-[#FEF2F2]"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+            title={flagged ? "Flagged" : "Flag"}
+            aria-label={flagged ? "Flagged" : "Flag"}
+          >
+            <Flag className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        </div>
       </footer>
 
       {/* Bug #43 — response-draft modal for sources without a native

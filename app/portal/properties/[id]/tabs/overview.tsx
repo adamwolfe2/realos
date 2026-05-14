@@ -669,39 +669,23 @@ export async function OverviewTab({
                 <AnimatedNumber value={activeResidents} />
               </p>
             </div>
-            {/* Bug #34 — always-visible reconciliation when occupancy
-                (unit-level) and active-lease count (lease-row level)
-                disagree. Brand-aligned treatment: subtle muted card,
-                no amber/red signalling — this is informational, not a
-                warning. */}
+            {/* Compact reconciliation line. The full explainer is now in
+                a hover/title tooltip so the rent-roll card stays scannable
+                instead of carrying a paragraph of AppFolio sync trivia. */}
             {leasedUnits != null && Math.abs(leasedUnits - activeResidents) >= 1 ? (
-              <div className="rounded-md border border-border bg-muted/30 px-2.5 py-2">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                  Why these numbers differ
-                </p>
-                <p className="text-[11px] text-foreground/80 leading-snug mt-1">
-                  <span className="font-semibold tabular-nums text-foreground">
-                    {leasedUnits} units
-                  </span>{" "}
-                  show as occupied (the physical-unit roll-up from
-                  AppFolio), but only{" "}
-                  <span className="font-semibold tabular-nums text-foreground">
-                    {activeResidents} lease records
-                  </span>{" "}
-                  have synced as ACTIVE. The rest are residents whose
-                  lease rows haven&apos;t propagated yet (new move-ins,
-                  pending renewals, or month-to-month rolls AppFolio
-                  hasn&apos;t reissued). Avg rent is calculated against
-                  the {leasedUnits}-unit denominator so it stays stable
-                  while sync catches up.
-                </p>
+              <p
+                className="text-[10.5px] text-muted-foreground leading-snug"
+                title={`${leasedUnits} units occupied (AppFolio unit roll-up), ${activeResidents} lease rows synced as ACTIVE. The gap is residents whose lease rows haven't propagated yet (new move-ins, pending renewals, month-to-month rolls AppFolio hasn't reissued). Avg rent stays stable because it divides by the unit denominator, not the lease-row count.`}
+              >
+                <span className="tabular-nums">{leasedUnits}</span> units occupied,{" "}
+                <span className="tabular-nums">{activeResidents}</span> lease rows synced.{" "}
                 <a
                   href="?tab=residents"
-                  className="inline-block mt-1.5 text-[10px] font-semibold text-primary underline underline-offset-2 hover:no-underline"
+                  className="text-primary underline underline-offset-2 hover:no-underline"
                 >
-                  Open Residents tab →
+                  Open Residents →
                 </a>
-              </div>
+              </p>
             ) : null}
             <div>
               <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
@@ -1642,81 +1626,55 @@ function SourceMix({
 }: {
   slices: Array<{ label: string; value: number }>;
 }) {
+  // Senior-design rewrite: replaced the second donut on this row (which
+  // rendered 100% with a single-channel segment when traffic was
+  // concentrated, providing no information) with a clean horizontal bar
+  // list. The page now has exactly one donut (occupancy) and a single
+  // bar visual language for the funnel + source breakdown.
   const total = slices.reduce((s, x) => s + x.value, 0);
-  const size = 120;
-  const stroke = 20;
-  const radius = (size - stroke) / 2;
-  const center = size / 2;
-  const circ = 2 * Math.PI * radius;
-  let cumulative = 0;
-  const arcs = slices.map((s, i) => {
-    const frac = s.value / total;
-    const offset = -cumulative * circ;
-    cumulative += frac;
-    return {
-      ...s,
-      color: CHART_COLORS[i % CHART_COLORS.length],
-      dasharray: `${frac * circ} ${circ}`,
-      offset,
-    };
-  });
-  const dominant = slices[0];
-  const dominantPct = Math.round((dominant.value / total) * 100);
+  const max = slices.reduce((m, s) => Math.max(m, s.value), 0) || 1;
+  const rows = slices.slice(0, 6).map((s, i) => ({
+    ...s,
+    color: CHART_COLORS[i % CHART_COLORS.length],
+    pct: Math.round((s.value / total) * 100),
+    barPct: Math.max(2, (s.value / max) * 100),
+  }));
+
   return (
-    <div className="grid grid-cols-[auto,1fr] gap-3 items-center">
-      <div className="relative shrink-0" style={{ width: size, height: size }}>
-        <svg
-          width={size}
-          height={size}
-          viewBox={`0 0 ${size} ${size}`}
-          style={{ transform: "rotate(-90deg)" }}
-        >
-          {arcs.map((arc, i) => (
-            <circle
-              key={i}
-              cx={center}
-              cy={center}
-              r={radius}
-              fill="none"
-              stroke={arc.color}
-              strokeWidth={stroke}
-              strokeDasharray={arc.dasharray}
-              strokeDashoffset={arc.offset}
+    <ul className="space-y-2.5">
+      {rows.map((row) => (
+        <li key={row.label} className="space-y-1">
+          <div className="flex items-center justify-between gap-2 text-[12px] min-w-0">
+            <span className="flex items-center gap-1.5 min-w-0">
+              <span
+                className="h-1.5 w-1.5 rounded-full shrink-0"
+                style={{ backgroundColor: row.color }}
+              />
+              <span className="truncate font-medium text-foreground">
+                {row.label}
+              </span>
+            </span>
+            <span className="tabular-nums text-muted-foreground shrink-0 text-[11.5px]">
+              <span className="font-semibold text-foreground">{row.value}</span>
+              <span className="ml-1">&middot; {row.pct}%</span>
+            </span>
+          </div>
+          <div
+            className="h-1.5 rounded-full overflow-hidden"
+            style={{ backgroundColor: "rgba(37,99,235,0.08)" }}
+          >
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${row.barPct}%`,
+                backgroundColor: row.color,
+                transition: "width 600ms cubic-bezier(.2,.7,.2,1)",
+              }}
             />
-          ))}
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <p className="text-base font-semibold leading-none tabular-nums">
-            {dominantPct}%
-          </p>
-          <p className="text-[9px] uppercase tracking-widest text-muted-foreground mt-1 px-2">
-            {dominant.label}
-          </p>
-        </div>
-      </div>
-      <ul className="space-y-1 min-w-0">
-        {arcs.slice(0, 5).map((arc) => {
-          const pct = Math.round((arc.value / total) * 100);
-          return (
-            <li
-              key={arc.label}
-              className="flex items-center justify-between gap-2 text-[11px] min-w-0"
-            >
-              <span className="flex items-center gap-1.5 min-w-0">
-                <span
-                  className="h-2 w-2 rounded-full shrink-0"
-                  style={{ backgroundColor: arc.color }}
-                />
-                <span className="truncate text-foreground">{arc.label}</span>
-              </span>
-              <span className="tabular-nums text-muted-foreground shrink-0">
-                {pct}%
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
+          </div>
+        </li>
+      ))}
+    </ul>
   );
 }
 

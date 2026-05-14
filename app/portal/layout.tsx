@@ -187,6 +187,9 @@ export default async function PortalLayout({
     // matches what's actually wired.
     hasTours: tourCount > 0,
     hasApplications: applicationCount > 0,
+    // Surface AppFolio curation queue as a count badge on the Properties
+    // nav item rather than a full chrome banner on every page.
+    pendingCurationCount,
   };
 
   // Portfolio-wide stale-data banner inputs. Surfacing this once at the
@@ -300,26 +303,11 @@ export default async function PortalLayout({
         </AlertBanner>
       ) : null}
 
-      {/* Pending property review — surfaced globally so operators can't
-          accidentally bill for AppFolio sub-records (parking, storage)
-          they never wanted LeaseStack to manage. */}
-      {pendingCurationCount > 0 ? (
-        <AlertBanner
-          severity="info"
-          flush
-          title={
-            pendingCurationCount === 1
-              ? `1 new AppFolio record pending review.`
-              : `${pendingCurationCount.toLocaleString()} new AppFolio records pending review.`
-          }
-          action={{
-            label: "Review now",
-            href: "/portal/properties/curate",
-          }}
-        >
-          Approve only the buildings you want marketed. Only approved properties count toward billing.
-        </AlertBanner>
-      ) : null}
+      {/* Pending curation banner deliberately removed from global layout —
+          it's only relevant on the properties surface. Surfaced there via
+          a count badge on the Properties nav item + the full banner on
+          /portal/properties itself. Removing this strip drops the chrome
+          stack from 3 to 1-2 banners on every other portal page. */}
 
       {/* Main flex row — takes remaining height */}
       <div className="flex flex-1 min-h-0">

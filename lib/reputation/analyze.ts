@@ -32,14 +32,15 @@ export type TopicTag = (typeof TOPIC_TAGS)[number];
 
 const TOPIC_SET = new Set<string>(TOPIC_TAGS);
 
+// Anthropic's structured-output rejects JSON Schema `maxItems` constraints
+// ("output_format.schema: For 'array' type, property 'maxItems' is not
+// supported"). Keep the array open here and slice in post-processing.
 const analysisSchema = z.object({
   mentions: z.array(
     z.object({
       id: z.string(),
       sentiment: z.enum(["POSITIVE", "NEGATIVE", "NEUTRAL", "MIXED"]),
-      // Permissive: accept any strings, cap at 5. We filter to valid tags
-      // downstream so one rogue string can't fail the whole batch.
-      topics: z.array(z.string()).max(5).default([]),
+      topics: z.array(z.string()).default([]),
     })
   ),
 });
@@ -99,9 +100,13 @@ export async function analyzeSentimentAndTopics(
 
     const map = new Map<string, AnalysisItem>();
     for (const row of object.mentions) {
+      // Filter to known tags AND cap at 5 here (was schema-enforced, now
+      // enforced post-Anthropic so the structured-output call doesn't
+      // reject the schema).
       const topics = row.topics
         .map((t) => t.toLowerCase())
-        .filter((t): t is TopicTag => TOPIC_SET.has(t));
+        .filter((t): t is TopicTag => TOPIC_SET.has(t))
+        .slice(0, 5);
       map.set(row.id, {
         id: row.id,
         sentiment: row.sentiment as Sentiment,
