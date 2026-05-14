@@ -886,10 +886,18 @@ function ActiveFeaturesStrip({
     {
       label: "Cursive Pixel",
       connected: pixelFiring,
+      // When stale, surface the actual age of the last event ("Last event
+      // 16d ago") so the operator knows whether to chase a broken pixel
+      // install or just no traffic. Previously the generic "no recent
+      // events" left them guessing — and the Sync action on /visitors
+      // wasn't updating this surface even when it pulled fresh visitors
+      // from AudienceLab (now fixed in runCursiveSegmentSync).
       detail: pixelFiring
         ? "Firing"
         : pixelInstalled
-          ? "Installed but no recent events"
+          ? pixelLastEventAt
+            ? `Installed · last event ${formatPixelAge(pixelLastEventAt)}`
+            : "Installed · no events yet"
           : "Not installed",
       href: `/portal/properties/${propertyId}?tab=onboarding`,
     },
@@ -1876,4 +1884,20 @@ function Row({ k, v }: { k: string; v: string }) {
       </dd>
     </div>
   );
+}
+
+// Compact relative-age formatter for the Cursive Pixel "last event" chip.
+// Reads as "2h ago", "3d ago", "16d ago" — operator-scannable without
+// the verbose "about 16 days ago" formatDistanceToNow output.
+function formatPixelAge(date: Date): string {
+  const ms = Date.now() - date.getTime();
+  const minutes = Math.floor(ms / 60000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h ago`;
+  const days = Math.floor(hours / 24);
+  if (days < 30) return `${days}d ago`;
+  const months = Math.floor(days / 30);
+  return `${months}mo ago`;
 }

@@ -332,9 +332,27 @@ export async function runCursiveSegmentSync(
     if (items.length < PAGE_SIZE) break;
   }
 
+  // Always advance the segment-sync timestamp so the throttle and the
+  // "last pull from AudienceLab" surface reflect this run.
+  //
+  // CRITICAL: also advance lastEventAt when the pull discovered NEW
+  // visitors. Previously this was only bumped by direct webhook events
+  // hitting /api/webhooks/cursive — so when an operator clicked "Sync now"
+  // on /portal/visitors and pulled 12 fresh visitors from the AL segment,
+  // the integration card kept showing "Last event 16d ago" even though
+  // we just proved the pixel was firing. AudienceLab only adds a visitor
+  // to a segment AFTER the pixel sees them, so `created > 0` is direct
+  // evidence the pixel fired recently — we just learned about it via the
+  // pull endpoint instead of the webhook. Updates alone aren't enough
+  // (AL may re-enrich an existing visitor's profile without a new event).
+  const now = new Date();
+  const eventBump = created > 0 ? { lastEventAt: now } : {};
   await prisma.cursiveIntegration.updateMany({
     where: { orgId, propertyId: null },
-    data: { lastSegmentSyncAt: new Date() },
+    data: {
+      lastSegmentSyncAt: now,
+      ...eventBump,
+    },
   });
 
   return { ok: true, pulled, created, updated };
