@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
   parsePropertyFilter,
@@ -140,10 +141,10 @@ export default async function ResidentsPage({
       },
     }),
     prisma.property.findMany({
-      // Always fetch the org's full property list; we narrow to the
-      // user's allowed set below via visibleProperties() so the
-      // dropdown never shows properties they can't access.
-      where: { orgId: scope.orgId },
+      // Marketable filter: only ACTIVE properties (no IMPORTED curation
+      // queue, no EXCLUDED sub-records). Layered with visibleProperties()
+      // below for per-user access gating.
+      where: marketablePropertyWhere(scope.orgId),
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),

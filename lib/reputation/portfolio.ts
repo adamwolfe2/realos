@@ -1,6 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { propertyIdsToWhere } from "@/lib/tenancy/property-filter";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import type { MentionSource, Sentiment } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -54,9 +54,37 @@ export async function loadPortfolioReputationMetrics(
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
   sixMonthsAgo.setDate(1);
 
-  // Property gate: if a restricted user (UserPropertyAccess) or a URL
-  // multi-select narrows the view, propagate it through every count.
-  const propertyClause = propertyIdsToWhere(options.propertyIds ?? null);
+  // Property gate, two layers:
+  //   1. Marketable lifecycle filter — drops IMPORTED (curation queue),
+  //      EXCLUDED (parking lots, storage, etc.), and ARCHIVED rows.
+  //      Without this, SG Real Estate's 127 AppFolio rows ALL surfaced
+  //      on the Reputation page even though only ACTIVE ones were
+  //      operator-approved. Resolves the bug where the property-health
+  //      table showed every imported sub-record with "—" Google rating
+  //      and zeroed mention counts.
+  //   2. If a restricted user (UserPropertyAccess) or a URL multi-select
+  //      narrows the view further, propagate it through every count.
+  //
+  // We resolve the eligible property ids ONCE up top, then scope every
+  // mention count + property findMany to that set. This means a mention
+  // belonging to an IMPORTED property is excluded from the totals too —
+  // those properties shouldn't contribute to brand-health KPIs until the
+  // operator approves them.
+  const eligibleProperties = await prisma.property.findMany({
+    where: marketablePropertyWhere(orgId),
+    select: { id: true },
+  });
+  let eligibleIds = eligibleProperties.map((p) => p.id);
+  if (options.propertyIds && options.propertyIds.length > 0) {
+    const filter = new Set(options.propertyIds);
+    eligibleIds = eligibleIds.filter((id) => filter.has(id));
+  }
+  // Defense: a fresh org with zero marketable properties shouldn't crash
+  // the query. Use a sentinel that matches nothing.
+  const propertyClause =
+    eligibleIds.length > 0
+      ? { propertyId: { in: eligibleIds } }
+      : { propertyId: "__no_marketable_properties__" };
   const where = { orgId, ...propertyClause };
 
   const [
@@ -91,13 +119,13 @@ export async function loadPortfolioReputationMetrics(
       _count: { _all: true },
     }),
     prisma.property.findMany({
-      // Property findMany also gates on the propertyIds filter so the
-      // weighted Google rating reflects only the visible scope.
+      // Property findMany now respects both the marketable lifecycle gate
+      // (so we never list IMPORTED / EXCLUDED / ARCHIVED rows in the
+      // property-health table) AND any optional propertyIds narrowing.
+      // The eligibleIds set above already encodes both, so we just use it.
       where: {
         orgId,
-        ...(options.propertyIds && options.propertyIds.length > 0
-          ? { id: { in: options.propertyIds } }
-          : {}),
+        id: { in: eligibleIds.length > 0 ? eligibleIds : ["__none__"] },
       },
       select: {
         id: true,
@@ -258,8 +286,22 @@ export async function loadPortfolioReputationFeed(
   limit = 30,
   options: { propertyIds?: string[] | null } = {}
 ): Promise<PortfolioReputationFeedItem[]> {
+  // Same lifecycle gate as loadPortfolioReputationMetrics: skip mentions
+  // attached to non-marketable properties so the feed doesn't surface
+  // reviews for a property the operator hasn't approved yet.
+  const eligibleProperties = await prisma.property.findMany({
+    where: marketablePropertyWhere(orgId),
+    select: { id: true },
+  });
+  let eligibleIds = eligibleProperties.map((p) => p.id);
+  if (options.propertyIds && options.propertyIds.length > 0) {
+    const filter = new Set(options.propertyIds);
+    eligibleIds = eligibleIds.filter((id) => filter.has(id));
+  }
+  if (eligibleIds.length === 0) return [];
+
   const rows = await prisma.propertyMention.findMany({
-    where: { orgId, ...propertyIdsToWhere(options.propertyIds ?? null) },
+    where: { orgId, propertyId: { in: eligibleIds } },
     orderBy: [{ publishedAt: "desc" }, { lastSeenAt: "desc" }, { id: "desc" }],
     take: limit,
     select: {

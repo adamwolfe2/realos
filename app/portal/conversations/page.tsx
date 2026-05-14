@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
   parsePropertyFilter,
@@ -76,7 +77,7 @@ export default async function ConversationsList({
   const propertyIds = parsePropertyFilter(sp);
 
   const allProperties = await prisma.property.findMany({
-    where: { orgId: scope.orgId },
+    where: marketablePropertyWhere(scope.orgId),
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

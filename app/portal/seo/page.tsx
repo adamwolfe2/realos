@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   effectivePropertyIds,
   isAccessDenied,
@@ -224,7 +225,7 @@ export default async function SeoPage({
 
   // Property list for the selector dropdown, gated to user's allowed set.
   const allProperties = await prisma.property.findMany({
-    where: tenantWhere(scope),
+    where: marketablePropertyWhere(scope.orgId),
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

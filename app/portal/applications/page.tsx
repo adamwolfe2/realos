@@ -4,6 +4,7 @@ import { FileText, CheckCircle2, X, Clock, Inbox } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
   parsePropertyFilter,
@@ -139,7 +140,7 @@ export default async function ApplicationsPage({
   for (const app of apps) byStatus.get(app.status)!.push(app);
 
   const allProperties = await prisma.property.findMany({
-    where: tenantWhere(scope),
+    where: marketablePropertyWhere(scope.orgId),
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

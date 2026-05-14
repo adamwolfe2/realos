@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   effectivePropertyIds,
   isAccessDenied,
@@ -98,7 +99,9 @@ export default async function InsightsPage({
       where: { orgId: scope.orgId, status: "acted", ...propertyClause },
     }),
     prisma.property.findMany({
-      where: { orgId: scope.orgId },
+      // Marketable filter — only ACTIVE properties surface in the
+      // dropdown, no IMPORTED / EXCLUDED rows.
+      where: marketablePropertyWhere(scope.orgId),
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),

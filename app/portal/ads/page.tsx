@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   parsePropertyFilter,
   propertyWhereFragment,
@@ -40,7 +41,7 @@ export default async function AdsPage({
   // Google Ads account often runs campaigns for multiple properties),
   // so we keep the accounts list unfiltered.
   const allProperties = await prisma.property.findMany({
-    where: { orgId: scope.orgId },
+    where: marketablePropertyWhere(scope.orgId),
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

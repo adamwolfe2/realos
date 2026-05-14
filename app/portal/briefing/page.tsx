@@ -5,6 +5,7 @@ import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, AlertTriangle, Arrow
 // component used them.
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   effectivePropertyIds,
   parsePropertyFilter,
@@ -46,18 +47,11 @@ export default async function BriefingPage({
   });
 
   const properties = await prisma.property.findMany({
-    where: {
-      orgId: scope.orgId,
-      // Hide placeholder properties from the focus dropdown — same
-      // filter as /portal/properties so the briefing list doesn't have
-      // 100+ "Property 1352" entries the operator has to scroll past.
-      NOT: {
-        OR: [
-          { name: { contains: "do not use", mode: "insensitive" } },
-          { name: { startsWith: "Property ", mode: "insensitive" } },
-        ],
-      },
-    },
+    // Replaced the ad-hoc name-pattern NOT clause with the canonical
+    // marketable filter, which already excludes the same placeholder
+    // names (via the auto-classifier on import) AND drops every other
+    // IMPORTED / EXCLUDED row the operator hasn't approved.
+    where: marketablePropertyWhere(scope.orgId),
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });

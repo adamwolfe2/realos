@@ -20,6 +20,7 @@ import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-ba
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { tenantNameFromRaw } from "@/lib/integrations/appfolio-display";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { LeaseStatus } from "@prisma/client";
 import {
   RenewalsClient,
@@ -66,8 +67,12 @@ export default async function RenewalsPage({
   // Fetch all properties for the org, then narrow to the ones this user
   // is allowed to see (via UserPropertyAccess). The dropdown should
   // never show options the user can't pick.
+  // Marketable filter: dropdown lists ACTIVE properties only (no IMPORTED
+  // curation-queue rows, no EXCLUDED parking lots / storage / placeholders).
+  // Without this, SG Real Estate's 127 AppFolio rows surfaced in every
+  // filter dropdown including this one.
   const allProperties = await prisma.property.findMany({
-    where: { orgId: scope.orgId },
+    where: marketablePropertyWhere(scope.orgId),
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });

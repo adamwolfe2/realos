@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
   parsePropertyFilter,
@@ -200,7 +201,9 @@ export default async function WorkOrdersPage({
   for (const w of pipelineRows) byStatus.get(w.status)?.push(w);
 
   const allProperties = await prisma.property.findMany({
-    where: tenantWhere(scope),
+    // Marketable filter — only ACTIVE properties surface in the
+    // dropdown, no IMPORTED / EXCLUDED rows.
+    where: marketablePropertyWhere(scope.orgId),
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

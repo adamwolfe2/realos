@@ -4,6 +4,7 @@ import { Calendar, MapPin, User, Clock, CheckCircle2, X } from "lucide-react";
 import { format, formatDistanceToNow, startOfWeek, addDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
   parsePropertyFilter,
@@ -197,10 +198,11 @@ export default async function ToursPage({
         )
       : null;
 
-  // Load property list for the multi-select dropdown, gated to the
-  // user's allowed set (Norman only sees Telegraph Commons here).
+  // Load property list for the multi-select dropdown. Marketable filter
+  // first (ACTIVE only, no IMPORTED curation rows), then layered with
+  // visibleProperties() for per-user access gating.
   const allProperties = await prisma.property.findMany({
-    where: tenantWhere(scope),
+    where: marketablePropertyWhere(scope.orgId),
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

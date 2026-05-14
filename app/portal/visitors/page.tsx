@@ -3,6 +3,7 @@ import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   parsePropertyFilter,
   propertyWhereFragment,
@@ -132,7 +133,7 @@ export default async function VisitorsPage({
   const propertyIds = parsePropertyFilter(params);
 
   const allProperties = await prisma.property.findMany({
-    where: { orgId: scope.orgId },
+    where: marketablePropertyWhere(scope.orgId),
     select: { id: true, name: true },
     orderBy: { name: "asc" },
   });

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   effectivePropertyIds,
   parsePropertyFilter,
@@ -63,7 +64,7 @@ export default async function AttributionPage({
   const requestedIds = parsePropertyFilter(params);
 
   const allProperties = await prisma.property.findMany({
-    where: { orgId: scope.orgId },
+    where: marketablePropertyWhere(scope.orgId),
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });

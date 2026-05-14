@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   parsePropertyFilter,
   propertyWhereFragment,
@@ -98,7 +99,7 @@ export default async function CampaignsPage({
       },
     }),
     prisma.property.findMany({
-      where: tenantWhere(scope),
+      where: marketablePropertyWhere(scope.orgId),
       select: { id: true, name: true },
     }),
     prisma.adMetricDaily.groupBy({

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
   parsePropertyFilter,
@@ -74,7 +75,7 @@ export default async function LeadsKanbanPage({
     }),
     prisma.lead.count({ where }),
     prisma.property.findMany({
-      where: tenantWhere(scope),
+      where: marketablePropertyWhere(scope.orgId),
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),

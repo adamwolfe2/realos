@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   parsePropertyFilter,
   propertyWhereFragment,
@@ -47,7 +48,7 @@ export default async function ReportsListPage({
   // property (single-asset tenants don't need to choose). Narrowed to
   // the user's allowed set via UserPropertyAccess.
   const allProperties = await prisma.property.findMany({
-    where: { orgId: scope.orgId },
+    where: marketablePropertyWhere(scope.orgId),
     orderBy: { name: "asc" },
     select: { id: true, name: true },
   });
