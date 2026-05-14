@@ -22,10 +22,13 @@ import {
   isFlagType,
   type FlagType,
 } from "@/components/portal/conversations/flag-pill";
+import { MessageSquare } from "lucide-react";
 import {
   TranscriptSearch,
   type SortOption,
 } from "./transcript-search";
+import { InlineTranscript } from "./inline-transcript";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Chatbot conversations" };
 export const dynamic = "force-dynamic";
@@ -43,9 +46,16 @@ function isSort(v: string | undefined): v is SortValue {
 }
 
 // ---------------------------------------------------------------------------
-// Server component. Reads URL params, builds the Prisma where clause, and
-// returns the filtered list plus per-chip counts. Heavy-lifting query stays
-// here so the TranscriptSearch client only handles inputs / URL state.
+// 2-pane inbox layout.
+//
+// LEFT  — Scrollable conversation list with search, filter chips, sort.
+// RIGHT — Selected conversation transcript (via ?c=<id> URL param).
+//
+// All filter state still lives in URL params so views are bookmarkable.
+// The selected conversation also lives in `?c=` so a refresh keeps the
+// transcript in view. The legacy /portal/conversations/[id] page is
+// preserved for direct deep-links and full flag/notes/handoff tooling
+// (link from the inline transcript header).
 // ---------------------------------------------------------------------------
 
 export default async function ConversationsList({
@@ -58,14 +68,13 @@ export default async function ConversationsList({
     status?: string;
     property?: string;
     properties?: string;
+    c?: string;
   }>;
 }) {
   const scope = await requireScope();
   const sp = await searchParams;
   const propertyIds = parsePropertyFilter(sp);
 
-  // Property list for the dropdown. Fetch the org's full set, then
-  // narrow to what the current user is allowed to see.
   const allProperties = await prisma.property.findMany({
     where: { orgId: scope.orgId },
     select: { id: true, name: true },
@@ -79,11 +88,8 @@ export default async function ConversationsList({
   const statusParam = sp.status && sp.status in ChatbotConversationStatus
     ? (sp.status as ChatbotConversationStatus)
     : undefined;
+  const selectedId = (sp.c ?? "").trim() || null;
 
-  // If the operator typed a query, find matching conversation IDs via raw
-  // SQL over the JSON messages column. ILIKE keeps the search case-insensitive
-  // and `::text` coerces the jsonb to a searchable string. Capped to 500 rows
-  // so a broad query can't punish the page.
   let messageMatchIds: Set<string> | null = null;
   if (qRaw.length >= 2) {
     const like = `%${qRaw.replace(/[%_]/g, "\\$&")}%`;
@@ -97,10 +103,6 @@ export default async function ConversationsList({
     messageMatchIds = new Set(rows.map((r) => r.id));
   }
 
-  // Chip counts: one query that groups by flag type. "All" is the total
-  // conversation count; flag-specific chips count conversations that have at
-  // least one matching flag row. "Missed handoffs" currently maps to the
-  // `handoff_missed` flag since that's the operator's explicit annotation.
   const [totalConversations, flagCounts, qualityBadCount] = await Promise.all([
     prisma.chatbotConversation.count({ where: { ...tenantWhere(scope) } }),
     prisma.conversationFlag.groupBy({
@@ -108,8 +110,6 @@ export default async function ConversationsList({
       where: { orgId: scope.orgId },
       _count: { conversationId: true },
     }),
-    // quality_bad is listed separately so the chip reads as "Flagged bad
-    // quality" even though it's the same flag type column internally.
     prisma.conversationFlag.count({
       where: { orgId: scope.orgId, flag: "quality_bad" },
     }),
@@ -144,10 +144,6 @@ export default async function ConversationsList({
     },
   ];
 
-  // Build the main list query. The filter chip lines up one-to-one with a
-  // flag type; we use a `some` relation filter so rows with the flag are
-  // included and nothing else is. Message search is applied by filtering to
-  // the IDs we pulled in the raw query above.
   const activeFlag: FlagType | null =
     flagParam && isFlagType(flagParam) ? flagParam : null;
 
@@ -159,7 +155,6 @@ export default async function ConversationsList({
   if (activeFlag) where.flags = { some: { flag: activeFlag } };
   if (messageMatchIds) {
     if (messageMatchIds.size === 0) {
-      // No matches — short-circuit with an ID that won't exist.
       where.id = "__no_match__";
     } else {
       where.id = { in: Array.from(messageMatchIds) };
@@ -186,15 +181,29 @@ export default async function ConversationsList({
     },
   });
 
-  // TODO(design-audit): Per the portal-wide audit, this page should
-  // become a 2-pane inbox (list left, transcript right) instead of a
-  // list-only view that requires drill-in. Out of scope for the chrome
-  // sweep — only the PageHeader + EmptyState swap landed here.
+  // Build base query string so list-item links preserve filters when
+  // setting ?c=<id>. Only string params carry; we drop `c` then re-set it
+  // per row.
+  const baseParams = new URLSearchParams();
+  for (const [k, v] of Object.entries(sp)) {
+    if (k === "c") continue;
+    if (typeof v === "string" && v !== "") baseParams.set(k, v);
+  }
+  const baseQs = baseParams.toString();
+
+  // If selectedId isn't in the visible list (e.g. operator switched the
+  // filter to a chip that excludes it), still render the transcript pane
+  // — it gives them a way to act on the conversation they intentionally
+  // bookmarked. The InlineTranscript component does its own auth+tenant
+  // check before returning data.
+  const validSelectedId =
+    selectedId && /^[a-zA-Z0-9_-]+$/.test(selectedId) ? selectedId : null;
+
   return (
-    <div className="space-y-3">
+    <div className="flex flex-col h-[calc(100vh-8rem)]">
       <PageHeader
         title="Chatbot conversations"
-        description="Read every transcript, flag patterns to tune the system prompt, and find the leads worth chasing. Filters are URL-driven so you can bookmark or share a view."
+        description="Read transcripts inline, flag patterns to tune the system prompt, and find leads worth chasing. Filters are URL-driven."
         actions={
           <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
         }
@@ -204,138 +213,181 @@ export default async function ConversationsList({
         <PropertyAccessDeniedBanner pathname="/portal/conversations" />
       ) : null}
 
-      <Suspense>
-        <TranscriptSearch
-          filters={filterChips}
-          initialQuery={qRaw}
-          initialFilter={flagParam}
-          initialSort={sort}
-        />
-      </Suspense>
+      {/* 2-pane container */}
+      <div className="flex-1 min-h-0 mt-3 grid grid-cols-1 lg:grid-cols-[minmax(340px,400px)_minmax(0,1fr)] gap-3 lg:gap-0">
+        {/* LEFT: list pane */}
+        <div className="flex flex-col min-h-0 lg:border lg:border-border lg:border-r-0 lg:rounded-l-lg overflow-hidden bg-card">
+          <div className="px-3 py-3 border-b border-border bg-card shrink-0">
+            <Suspense>
+              <TranscriptSearch
+                filters={filterChips}
+                initialQuery={qRaw}
+                initialFilter={flagParam}
+                initialSort={sort}
+              />
+            </Suspense>
+            <p className="mt-2 text-[10.5px] text-muted-foreground">
+              Showing {conversations.length} of {totalConversations}
+              {qRaw ? (
+                <>
+                  {" "}matching{" "}
+                  <span className="font-semibold text-foreground">{qRaw}</span>
+                </>
+              ) : null}
+            </p>
+          </div>
 
-      <p className="text-xs text-muted-foreground">
-        Showing {conversations.length} of {totalConversations} conversations
-        {qRaw ? (
-          <>
-            {" "}matching <span className="font-semibold text-foreground">{qRaw}</span>
-          </>
-        ) : null}
-        .
-      </p>
-
-      {conversations.length === 0 ? (
-        <EmptyState
-          title={
-            qRaw || activeFlag
-              ? "No conversations match this view."
-              : "Your chatbot hasn't logged any conversations yet."
-          }
-          body={
-            qRaw || activeFlag
-              ? "Try clearing your search or the active filter."
-              : "Conversations appear here the moment a visitor chats with your bot. Configure your chatbot persona and install the embed snippet on your site to start capturing leads."
-          }
-          action={
-            qRaw || activeFlag
-              ? undefined
-              : {
-                  label: "Configure chatbot",
-                  href: "/portal/chatbot",
-                }
-          }
-          secondary={
-            qRaw || activeFlag
-              ? undefined
-              : { label: "Install snippet", href: "/portal/connect" }
-          }
-        />
-      ) : (
-        <ul className="rounded-lg border border-border bg-card divide-y divide-border overflow-hidden">
-          {conversations.map((c) => {
-            const firstMessage = firstUserMessage(c.messages);
-            const uniqueFlags = dedupeFlags(c.flags.map((f) => f.flag));
-            return (
-              <li key={c.id}>
-                <Link
-                  href={`/portal/conversations/${c.id}`}
-                  className="group block px-4 py-3 hover:bg-muted/60 transition-colors"
-                >
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-foreground truncate">
-                          {c.capturedName ?? "Anonymous visitor"}
-                        </span>
-                        {c.capturedEmail ? (
-                          <span className="text-xs text-muted-foreground truncate">
-                            {c.capturedEmail}
+          {/* Scrollable list */}
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            {conversations.length === 0 ? (
+              <div className="p-4">
+                <EmptyState
+                  title={
+                    qRaw || activeFlag
+                      ? "No conversations match this view."
+                      : "No conversations yet."
+                  }
+                  body={
+                    qRaw || activeFlag
+                      ? "Try clearing your search or filter."
+                      : "Conversations appear here the moment a visitor chats with your bot."
+                  }
+                  action={
+                    qRaw || activeFlag
+                      ? undefined
+                      : { label: "Configure chatbot", href: "/portal/chatbot" }
+                  }
+                  secondary={
+                    qRaw || activeFlag
+                      ? undefined
+                      : { label: "Install snippet", href: "/portal/connect" }
+                  }
+                />
+              </div>
+            ) : (
+              <ul className="divide-y divide-border">
+                {conversations.map((c) => {
+                  const firstMessage = firstUserMessage(c.messages);
+                  const uniqueFlags = dedupeFlags(c.flags.map((f) => f.flag));
+                  const isSelected = validSelectedId === c.id;
+                  const href = baseQs
+                    ? `/portal/conversations?${baseQs}&c=${c.id}`
+                    : `/portal/conversations?c=${c.id}`;
+                  return (
+                    <li key={c.id}>
+                      <Link
+                        href={href}
+                        className={cn(
+                          "block px-3.5 py-3 transition-colors border-l-2",
+                          isSelected
+                            ? "bg-primary/5 border-primary"
+                            : "border-transparent hover:bg-muted/50",
+                        )}
+                        aria-current={isSelected ? "true" : undefined}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-[13px] font-semibold text-foreground truncate min-w-0 flex-1">
+                            {c.capturedName ?? "Anonymous visitor"}
                           </span>
+                          <span className="text-[10.5px] text-muted-foreground whitespace-nowrap tabular-nums shrink-0">
+                            {formatDistanceToNow(c.lastMessageAt, {
+                              addSuffix: false,
+                            })}
+                          </span>
+                        </div>
+                        {c.capturedEmail ? (
+                          <p className="text-[11px] text-muted-foreground truncate mt-0.5">
+                            {c.capturedEmail}
+                          </p>
                         ) : null}
-                        <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                          {humanChatbotStatus(c.status)}
-                        </span>
-                      </div>
-                      {firstMessage ? (
-                        <p className="text-xs text-muted-foreground mt-1 line-clamp-1">
-                          {truncate(firstMessage, 80)}
-                        </p>
-                      ) : c.capturedName || c.capturedEmail ? (
-                        // Bug #31 — "Captured Lead Details": when a
-                        // visitor submitted name/email via PRE_CHAT
-                        // capture but never sent a message, the row
-                        // showed "0 msgs / no details" with no
-                        // explanation. Now surfaces the capture mode
-                        // so operators know this is a real lead, not
-                        // a stub. Click-through to detail page shows
-                        // the full metadata.
-                        <p className="text-xs text-muted-foreground mt-1 italic">
-                          Pre-chat capture · contact info on file, no
-                          message exchange
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground mt-1 italic">
-                          No user messages yet.
-                        </p>
-                      )}
-                      {uniqueFlags.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {uniqueFlags.slice(0, 4).map((f) => (
-                            <FlagPill key={f} flag={f} />
-                          ))}
-                          {uniqueFlags.length > 4 ? (
-                            <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-widest self-center">
-                              +{uniqueFlags.length - 4}
+                        {firstMessage ? (
+                          <p className="text-[11.5px] text-foreground/80 mt-1 line-clamp-2 leading-snug">
+                            {firstMessage}
+                          </p>
+                        ) : c.capturedName || c.capturedEmail ? (
+                          <p className="text-[11.5px] text-muted-foreground mt-1 italic line-clamp-1">
+                            Pre-chat capture · no message exchange
+                          </p>
+                        ) : (
+                          <p className="text-[11.5px] text-muted-foreground mt-1 italic">
+                            No messages
+                          </p>
+                        )}
+                        <div className="mt-1.5 flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-1 flex-wrap min-w-0">
+                            <span className="text-[9.5px] uppercase tracking-widest font-semibold text-muted-foreground">
+                              {humanChatbotStatus(c.status)}
                             </span>
+                            <span className="text-[9.5px] text-muted-foreground">
+                              · {c.messageCount} msg
+                            </span>
+                          </div>
+                          {uniqueFlags.length > 0 ? (
+                            <div className="flex items-center gap-1 shrink-0">
+                              {uniqueFlags.slice(0, 2).map((f) => (
+                                <FlagPill key={f} flag={f} />
+                              ))}
+                              {uniqueFlags.length > 2 ? (
+                                <span className="text-[9px] text-muted-foreground font-semibold uppercase tracking-widest">
+                                  +{uniqueFlags.length - 2}
+                                </span>
+                              ) : null}
+                            </div>
                           ) : null}
                         </div>
-                      ) : null}
-                    </div>
-                    <div className="text-right shrink-0">
-                      <div className="text-sm font-semibold tabular-nums text-foreground">
-                        {c.messageCount}
-                        <span className="text-[10px] text-muted-foreground ml-1 font-normal">
-                          msgs
-                        </span>
-                      </div>
-                      <div className="text-[11px] text-muted-foreground whitespace-nowrap mt-0.5">
-                        {formatDistanceToNow(c.lastMessageAt, {
-                          addSuffix: true,
-                        })}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </li>
-            );
-          })}
-        </ul>
-      )}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT: transcript pane. On mobile, only renders when a row is
+            selected (no point showing a "Select a conversation" panel
+            below the list — the operator's intent is the list itself).
+            On desktop, always visible so empty state can prompt action. */}
+        <div className={cn(
+          "flex-col min-h-0 border border-border lg:rounded-r-lg overflow-hidden bg-card",
+          validSelectedId
+            ? "flex rounded-lg mt-3 lg:mt-0"
+            : "hidden lg:flex",
+        )}>
+          {validSelectedId ? (
+            <Suspense
+              fallback={
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+                </div>
+              }
+            >
+              <InlineTranscript conversationId={validSelectedId} />
+            </Suspense>
+          ) : (
+            <div className="flex-1 flex flex-col items-center justify-center p-10 text-center bg-secondary/20">
+              <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+                <MessageSquare className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <p className="text-sm font-semibold text-foreground">
+                {conversations.length > 0
+                  ? "Select a conversation"
+                  : "No conversations to review"}
+              </p>
+              <p className="text-xs text-muted-foreground mt-1 max-w-xs">
+                {conversations.length > 0
+                  ? "Click any row on the left to read the full transcript right here. Bookmark this URL to share the exact view."
+                  : "Once visitors start chatting, transcripts will appear here for review."}
+              </p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
 
-// Returns the first user message's content or null. Messages JSON is untyped,
-// so we guard every lookup.
+// Returns the first user message's content or null.
 function firstUserMessage(raw: Prisma.JsonValue): string | null {
   if (!Array.isArray(raw)) return null;
   for (const m of raw as SerializedMessage[]) {
@@ -346,16 +398,10 @@ function firstUserMessage(raw: Prisma.JsonValue): string | null {
   return null;
 }
 
-function truncate(s: string, max: number): string {
-  if (s.length <= max) return s;
-  return s.slice(0, max - 1).trimEnd() + "\u2026";
-}
-
 function dedupeFlags(flags: string[]): FlagType[] {
   const seen = new Set<FlagType>();
   for (const f of flags) {
     if (isFlagType(f)) seen.add(f);
   }
-  // Preserve canonical order so pill lineups look stable.
   return FLAG_TYPES.filter((f) => seen.has(f));
 }

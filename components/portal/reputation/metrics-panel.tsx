@@ -7,10 +7,6 @@ import {
   Cell,
   ResponsiveContainer,
   Tooltip,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
 } from "recharts";
 import { Star, AlertCircle, MessageSquare, Flag } from "lucide-react";
 import type { MentionSource, Sentiment } from "@prisma/client";
@@ -18,6 +14,7 @@ import type { ReputationMetrics } from "@/lib/reputation/aggregate";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { SourceLogo, sourceLabel } from "./source-logo";
+import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
 // Metrics panel — all numbers are real, computed server-side from the
@@ -449,7 +446,15 @@ function TopicBars({
 }
 
 // ---------------------------------------------------------------------------
-// Monthly volume chart — count + negative slice stacked.
+// Monthly volume chart — inline SVG bar chart.
+//
+// Replaced the recharts BarChart because it rendered sparse with axis
+// chrome and tooltip styling that fought the rest of the editorial
+// palette. The new chart is custom SVG: 12 vertical bars with negative
+// share rendered as a darker stack atop the neutral mass, a dashed
+// 12-month average line drawn across, the most recent month rendered
+// at full brand-blue saturation, and inline labels beneath each bar.
+// Title attributes provide hover details without recharts overhead.
 // ---------------------------------------------------------------------------
 
 function MonthlyVolumeChart({
@@ -460,65 +465,215 @@ function MonthlyVolumeChart({
   const hasAny = data.some((d) => d.count > 0);
   if (!hasAny) return <EmptyChart />;
 
-  const formatted = data.map((d) => {
+  const formatted = data.map((d, i) => {
     const [year, month] = d.month.split("-");
-    const label = new Date(Number(year), Number(month) - 1, 1).toLocaleString(
-      "en-US",
-      { month: "short" },
-    );
+    const date = new Date(Number(year), Number(month) - 1, 1);
     return {
-      month: label,
-      total: d.count - d.negative,
-      negative: d.negative,
+      monthLabel: date.toLocaleString("en-US", { month: "short" }),
+      yearLabel: date.toLocaleString("en-US", { year: "numeric" }),
+      neutral: Math.max(0, d.count - d.negative),
+      negative: Math.max(0, d.negative),
+      total: d.count,
+      isMostRecent: i === data.length - 1,
     };
   });
 
+  const maxTotal = Math.max(...formatted.map((d) => d.total), 1);
+  const avg =
+    formatted.reduce((s, d) => s + d.total, 0) / formatted.length;
+  // Avg as a fraction of maxTotal for placement on the chart canvas.
+  const avgPct = avg / maxTotal;
+
+  // Total + negative aggregate for header annotation
+  const totalAll = formatted.reduce((s, d) => s + d.total, 0);
+  const negAll = formatted.reduce((s, d) => s + d.negative, 0);
+  const negPct = totalAll > 0 ? Math.round((negAll / totalAll) * 100) : 0;
+
+  // Chart canvas: 100% wide, 140px high. Each bar takes equal share
+  // with a small gap. Bars grow from the baseline; negative renders on
+  // top of neutral as a stacked segment.
+  const CHART_H = 140;
+  const BAR_GAP_PCT = 18; // % of bar width that's gap
+  const slot = 100 / formatted.length;
+  const barWidth = slot * (1 - BAR_GAP_PCT / 100);
+  const slotPad = (slot - barWidth) / 2;
+
   return (
-    <div className="h-[160px]">
-      <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={formatted} margin={{ top: 4, right: 8, bottom: 4, left: -20 }}>
-          <XAxis
-            dataKey="month"
-            stroke="#94a3b8"
-            fontSize={11}
-            tickLine={false}
-            axisLine={false}
+    <div className="space-y-3">
+      {/* Mini context strip — total, negative %, avg/month */}
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1 text-[11px] text-muted-foreground">
+        <span>
+          <span className="font-semibold text-foreground tabular-nums">
+            {totalAll}
+          </span>{" "}
+          total mentions
+        </span>
+        {negAll > 0 ? (
+          <span>
+            <span className="font-semibold text-foreground tabular-nums">
+              {negPct}%
+            </span>{" "}
+            negative
+          </span>
+        ) : null}
+        <span>
+          <span className="font-semibold text-foreground tabular-nums">
+            {avg.toFixed(1)}
+          </span>{" "}
+          avg / month
+        </span>
+      </div>
+
+      {/* SVG chart */}
+      <div className="relative" style={{ height: CHART_H + 22 }}>
+        <svg
+          width="100%"
+          height={CHART_H}
+          viewBox={`0 0 100 ${CHART_H}`}
+          preserveAspectRatio="none"
+          role="img"
+          aria-label="Mentions over time, last 12 months"
+        >
+          {/* Hairline baseline */}
+          <line
+            x1="0"
+            y1={CHART_H - 0.5}
+            x2="100"
+            y2={CHART_H - 0.5}
+            stroke="#E2E8F0"
+            strokeWidth="0.5"
+            vectorEffect="non-scaling-stroke"
           />
-          <YAxis
-            stroke="#94a3b8"
-            fontSize={11}
-            tickLine={false}
-            axisLine={false}
-            allowDecimals={false}
+          {/* Average reference line — only renders when avg > 0 */}
+          {avg > 0 ? (
+            <line
+              x1="0"
+              y1={CHART_H - avgPct * (CHART_H - 8)}
+              x2="100"
+              y2={CHART_H - avgPct * (CHART_H - 8)}
+              stroke="#94A3B8"
+              strokeWidth="0.5"
+              strokeDasharray="1.5 1.5"
+              vectorEffect="non-scaling-stroke"
+            />
+          ) : null}
+
+          {/* Bars */}
+          {formatted.map((d, i) => {
+            const x = i * slot + slotPad;
+            const neutralH =
+              d.total > 0 ? (d.neutral / maxTotal) * (CHART_H - 8) : 0;
+            const negativeH =
+              d.total > 0 ? (d.negative / maxTotal) * (CHART_H - 8) : 0;
+            const yBase = CHART_H;
+            const yNeutralTop = yBase - neutralH;
+            const yNegativeTop = yNeutralTop - negativeH;
+
+            // Most recent month rendered at full brand blue. Older
+            // months rendered at a slightly muted tone so the eye lands
+            // on the latest reading first.
+            const neutralFill = d.isMostRecent ? "#2563EB" : "#3B82F6";
+            const neutralOpacity = d.isMostRecent ? 1 : 0.55;
+
+            return (
+              <g key={d.monthLabel + i}>
+                <title>
+                  {`${d.monthLabel}: ${d.total} mention${d.total === 1 ? "" : "s"}${d.negative > 0 ? `, ${d.negative} negative` : ""}`}
+                </title>
+                {neutralH > 0 ? (
+                  <rect
+                    x={x}
+                    y={yNeutralTop}
+                    width={barWidth}
+                    height={neutralH}
+                    fill={neutralFill}
+                    fillOpacity={neutralOpacity}
+                    rx="0.4"
+                  />
+                ) : null}
+                {negativeH > 0 ? (
+                  <rect
+                    x={x}
+                    y={yNegativeTop}
+                    width={barWidth}
+                    height={negativeH}
+                    fill="#DC2626"
+                    fillOpacity={d.isMostRecent ? 1 : 0.7}
+                    rx="0.4"
+                  />
+                ) : null}
+                {/* Tiny dot above empty months so the row reads as
+                    intentional, not broken */}
+                {d.total === 0 ? (
+                  <circle
+                    cx={x + barWidth / 2}
+                    cy={CHART_H - 1.5}
+                    r="0.6"
+                    fill="#CBD5E1"
+                  />
+                ) : null}
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* X-axis labels */}
+        <div className="absolute left-0 right-0 -bottom-1 flex">
+          {formatted.map((d, i) => (
+            <div
+              key={`label-${i}`}
+              className="text-center"
+              style={{ width: `${slot}%` }}
+            >
+              <span
+                className={cn(
+                  "text-[10px] tabular-nums",
+                  d.isMostRecent
+                    ? "text-foreground font-semibold"
+                    : "text-muted-foreground",
+                )}
+              >
+                {d.monthLabel}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Legend */}
+      <div className="flex items-center gap-3 text-[10.5px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5">
+          <span
+            aria-hidden="true"
+            className="h-2 w-2 rounded-sm"
+            style={{ backgroundColor: "#2563EB" }}
           />
-          <Tooltip
-            cursor={{ fill: "#f3f4f6" }}
-            contentStyle={{
-              fontSize: 12,
-              background: "white",
-              border: "1px solid #e5e7eb",
-              borderRadius: 8,
-              boxShadow: "0 4px 24px rgba(0,0,0,0.05)",
-            }}
-            formatter={(v: number, n: string) => [
-              v,
-              n === "negative" ? "Negative" : "Other",
-            ]}
-          />
-          <Bar
-            dataKey="negative"
-            stackId="a"
-            fill="#ef4444"
-            radius={[0, 0, 0, 0]}
-          />
-          <Bar
-            dataKey="total"
-            stackId="a"
-            fill="#2563EB"
-            radius={[4, 4, 0, 0]}
-          />
-        </BarChart>
-      </ResponsiveContainer>
+          Neutral / positive
+        </span>
+        {negAll > 0 ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className="h-2 w-2 rounded-sm"
+              style={{ backgroundColor: "#DC2626" }}
+            />
+            Negative
+          </span>
+        ) : null}
+        {avg > 0 ? (
+          <span className="inline-flex items-center gap-1.5">
+            <span
+              aria-hidden="true"
+              className="h-0.5 w-3"
+              style={{
+                background:
+                  "repeating-linear-gradient(to right, #94A3B8 0 2px, transparent 2px 4px)",
+              }}
+            />
+            12-month avg
+          </span>
+        ) : null}
+      </div>
     </div>
   );
 }

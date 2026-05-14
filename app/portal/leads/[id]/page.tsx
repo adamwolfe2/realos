@@ -381,13 +381,8 @@ export default async function LeadDetailPage({
               />
             </div>
           </Tile>
-          <Tile label="Cost to acquire">
-            <p className="text-xl font-semibold tabular-nums text-foreground">
-              &mdash;
-            </p>
-            <p className="mt-1 text-[11px] text-muted-foreground">
-              Link an ad account to attribute
-            </p>
+          <Tile label="Channel cost">
+            <ChannelCostBlock source={lead.source} propertyId={lead.propertyId} />
           </Tile>
         </div>
       </section>
@@ -591,6 +586,85 @@ function MissingFieldsChip({ missing }: { missing: string[] }) {
       </span>
       <span className="truncate max-w-[14rem]">{summary}</span>
     </span>
+  );
+}
+
+// ChannelCostBlock — replaces the dead "Cost to acquire — / Link an
+// ad account to attribute" placeholder. Reads the lead's source and
+// shows a meaningful classification without needing live ad-spend
+// data: paid channels deep-link to the property's ad report (where
+// CPL is computed), organic / direct / chatbot show "$0 channel
+// cost — earned" so operators see the value of free channels
+// instead of an empty tile.
+function ChannelCostBlock({
+  source,
+  propertyId,
+}: {
+  source: string;
+  propertyId: string | null;
+}) {
+  const paid = source === "GOOGLE_ADS" || source === "META_ADS";
+  if (paid) {
+    return (
+      <>
+        <p className="text-xl font-semibold tabular-nums text-foreground">
+          Paid
+        </p>
+        <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+          {source === "GOOGLE_ADS" ? "Google Ads" : "Meta Ads"}{" "}
+          attribution.{" "}
+          {propertyId ? (
+            <Link
+              href={`/portal/properties/${propertyId}?tab=ads`}
+              className="text-foreground underline underline-offset-2 hover:no-underline"
+            >
+              See property CPL →
+            </Link>
+          ) : (
+            <span>Set property to attribute</span>
+          )}
+        </p>
+      </>
+    );
+  }
+  const earned =
+    source === "ORGANIC" ||
+    source === "REFERRAL" ||
+    source === "DIRECT" ||
+    source === "CHATBOT" ||
+    source === "FORM" ||
+    source === "PIXEL_OUTREACH";
+  if (earned) {
+    return (
+      <>
+        <p className="text-xl font-semibold tabular-nums text-foreground">
+          $0
+        </p>
+        <p className="mt-1 text-[11px] text-muted-foreground">
+          {source === "CHATBOT"
+            ? "Earned · chatbot capture"
+            : source === "FORM"
+              ? "Earned · web form"
+              : source === "REFERRAL"
+                ? "Earned · referral"
+                : source === "PIXEL_OUTREACH"
+                  ? "Earned · pixel outreach"
+                  : source === "DIRECT"
+                    ? "Earned · direct"
+                    : "Earned · organic"}
+        </p>
+      </>
+    );
+  }
+  return (
+    <>
+      <p className="text-xl font-semibold tabular-nums text-foreground">
+        &mdash;
+      </p>
+      <p className="mt-1 text-[11px] text-muted-foreground">
+        No channel attribution
+      </p>
+    </>
   );
 }
 

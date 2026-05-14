@@ -196,8 +196,8 @@ export default async function ReportsListPage({
       {/* List */}
       {reports.length === 0 ? (
         <EmptyState
-          title="Start with a weekly snapshot"
-          body="Generate your first report to capture this week's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a personal note, then copy a shareable link for your client."
+          title="Generate your first report"
+          body="Use the Generate report button up top to capture this period's leads, tours, ad spend, and organic traffic as a frozen snapshot. Add a personal note, then copy a shareable link for your client. Nothing auto-sends."
         />
       ) : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">

@@ -25,6 +25,7 @@ import {
   getInsightCounts,
 } from "@/lib/insights/queries";
 import type { InsightCardData } from "@/components/portal/insights/insight-card";
+import { cn } from "@/lib/utils";
 
 type OverviewProperty = {
   propertyType: PropertyType;
@@ -511,44 +512,59 @@ export async function OverviewTab({
         adSpendCents28d={kpis.adSpendCents28d}
       />
 
-      {/* Top KPI strip — funnel-shaped (Leads → Tours → Apps → Spend → Organic) */}
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-2">
-        <KpiTile
-          label="Leads (28d)"
-          value={kpis.leads28d}
+      {/* Top KPI strip — hero metric (Leads) anchors the row at 1.6x
+          weight, with the rest of the funnel (Tours, Apps, Spend,
+          Organic) rendered as secondary tiles in a 2x2 alongside.
+          Replaces the previous 5-equal-weight strip that flattened the
+          most important signal into the same visual rank as everything
+          else. Hierarchy mirrors the operator's mental model: leads is
+          the leading indicator, the others are downstream context. */}
+      <section className="grid grid-cols-1 lg:grid-cols-[1.6fr_2fr] gap-2">
+        <HeroLeadsTile
+          leads={kpis.leads28d}
           delta={leadsDelta}
           spark={kpis.leadsSparkline}
+          tours={kpis.tours28d}
+          applications={kpis.applications28d}
+          tourRate={tourRate}
+          appRate={appRate}
         />
-        <KpiTile
-          label="Tours (28d)"
-          value={kpis.tours28d}
-          hint={kpis.leads28d > 0 ? `${tourRate}% of leads` : "No leads yet"}
-        />
-        <KpiTile
-          label="Applications (28d)"
-          value={kpis.applications28d}
-          hint={kpis.tours28d > 0 ? `${appRate}% of tours` : "—"}
-        />
-        <KpiTile
-          label="Ad spend (28d)"
-          value={centsToUsdShort(kpis.adSpendCents28d)}
-          hint="Attributed to this property"
-        />
-        <KpiTile
-          label="Organic (28d)"
-          value={
-            kpis.organicMapped
-              ? kpis.organicSessions28d == null
-                ? "—"
-                : kpis.organicSessions28d.toLocaleString()
-              : "—"
-          }
-          hint={
-            kpis.organicMapped
-              ? "Sessions on matching URLs"
-              : "No URL mapping"
-          }
-        />
+        <div className="grid grid-cols-2 gap-2">
+          <KpiTile
+            label="Tours (28d)"
+            value={kpis.tours28d}
+            hint={kpis.leads28d > 0 ? `${tourRate}% of leads` : "No leads yet"}
+          />
+          <KpiTile
+            label="Applications (28d)"
+            value={kpis.applications28d}
+            hint={kpis.tours28d > 0 ? `${appRate}% of tours` : "—"}
+          />
+          <KpiTile
+            label="Ad spend (28d)"
+            value={centsToUsdShort(kpis.adSpendCents28d)}
+            hint={
+              kpis.adSpendCents28d > 0 && kpis.leads28d > 0
+                ? `$${Math.round(kpis.adSpendCents28d / 100 / kpis.leads28d).toLocaleString()}/lead`
+                : "Attributed to this property"
+            }
+          />
+          <KpiTile
+            label="Organic (28d)"
+            value={
+              kpis.organicMapped
+                ? kpis.organicSessions28d == null
+                  ? "—"
+                  : kpis.organicSessions28d.toLocaleString()
+                : "—"
+            }
+            hint={
+              kpis.organicMapped
+                ? "Sessions on matching URLs"
+                : "No URL mapping"
+            }
+          />
+        </div>
       </section>
 
       {/* Visualization row 1 — Occupancy donut + Lead funnel + Lead source */}
@@ -963,6 +979,132 @@ function ActiveFeaturesStrip({
         </div>
       </div>
     </section>
+  );
+}
+
+// HeroLeadsTile — anchors the property KPI strip. Big numeric display
+// (32-40px), prominent delta, taller sparkline, and a funnel-rate
+// micro-summary so the operator sees "where did the leads go" without
+// scanning the secondary tiles. Renders inside the same grid as the
+// 2x2 secondary KpiTile grid; matches that visual language but reads
+// as the dominant signal.
+function HeroLeadsTile({
+  leads,
+  delta,
+  spark,
+  tours,
+  applications,
+  tourRate,
+  appRate,
+}: {
+  leads: number;
+  delta?: { value: string; trend: "up" | "down" | "flat" };
+  spark: number[] | null | undefined;
+  tours: number;
+  applications: number;
+  tourRate: number;
+  appRate: number;
+}) {
+  const showSpark = Array.isArray(spark) && spark.length > 1;
+  return (
+    <div className="relative h-full rounded-lg border border-border bg-card p-4 flex flex-col gap-3 ls-hover-lift">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+          Leads · 28 days
+        </span>
+        {delta ? (
+          <span
+            className={cn(
+              "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold tabular-nums",
+              delta.trend === "up"
+                ? "text-primary bg-primary/10"
+                : delta.trend === "down"
+                  ? "text-destructive bg-destructive/10"
+                  : "text-muted-foreground bg-muted",
+            )}
+          >
+            {delta.value}
+          </span>
+        ) : null}
+      </div>
+
+      <div className="flex items-end justify-between gap-3 min-w-0">
+        <div className="text-[40px] leading-none font-semibold tracking-tight tabular-nums text-foreground">
+          {leads.toLocaleString()}
+        </div>
+        {/* Funnel breakdown — micro horizontal bar showing tour & app
+            conversion as a fraction of leads. Bar widths come from the
+            absolute counts, so the visualization scales correctly even
+            when both rates are equal (e.g. 100% tour + 100% app =
+            equal bars, not stacked). */}
+        <div className="text-right shrink-0">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+            Funnel
+          </p>
+          <p className="text-[12px] text-foreground mt-0.5 tabular-nums">
+            {tours} tours
+            {tourRate > 0 ? (
+              <span className="text-muted-foreground"> · {tourRate}%</span>
+            ) : null}
+          </p>
+          <p className="text-[12px] text-foreground tabular-nums">
+            {applications} apps
+            {appRate > 0 ? (
+              <span className="text-muted-foreground"> · {appRate}%</span>
+            ) : null}
+          </p>
+        </div>
+      </div>
+
+      {showSpark ? (
+        <div className="-mx-1 -mb-1 mt-auto">
+          <HeroSparkline data={spark as number[]} />
+        </div>
+      ) : (
+        <div className="mt-auto h-12 rounded-md bg-secondary/40 flex items-center justify-center text-[10px] uppercase tracking-widest text-muted-foreground">
+          Sparkline appears once 7+ days of data exists
+        </div>
+      )}
+    </div>
+  );
+}
+
+// Taller sparkline variant for the hero tile — 56px high vs the
+// secondary KpiTile's 28px. Same brand-blue palette so the row reads
+// as a unified system, not a one-off chart.
+function HeroSparkline({ data }: { data: number[] }) {
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  const w = 100;
+  const h = 56;
+  const stepX = w / (data.length - 1);
+  const points = data
+    .map((v, i) => {
+      const x = i * stepX;
+      const y = h - ((v - min) / range) * (h - 6) - 3;
+      return `${x.toFixed(2)},${y.toFixed(2)}`;
+    })
+    .join(" ");
+  const areaPath = `M0,${h} L${points.split(" ").join(" L")} L${w},${h} Z`;
+  return (
+    <svg
+      viewBox={`0 0 ${w} ${h}`}
+      preserveAspectRatio="none"
+      className="w-full h-12 overflow-visible"
+      aria-hidden="true"
+    >
+      <path d={areaPath} fill="#2563EB" opacity="0.1" />
+      <polyline
+        points={points}
+        fill="none"
+        stroke="#2563EB"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        vectorEffect="non-scaling-stroke"
+      />
+    </svg>
   );
 }
 
