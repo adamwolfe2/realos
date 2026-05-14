@@ -23,23 +23,68 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { SectionLabel } from "@/components/portal/ui/section-label";
+import {
+  MetaMark,
+  GoogleMark,
+  TikTokMark,
+  SlackMark,
+  CalcomMark,
+  ResendMark,
+  GA4Mark,
+  AppFolioMark,
+  ChatGPTMark,
+  PerplexityMark,
+  ClaudeMark,
+  GeminiMark,
+  LinkedInMark,
+  VercelMark,
+  FigmaMark,
+} from "@/components/platform/artifacts/brand-logos";
+
+// Maps the catalog's brandLogoKeys strings to the actual SVG components.
+// Keeps the catalog server-safe (no React imports) while letting the
+// marketplace render real brand marks per module — no more generic lucide
+// icons standing in for "Google" or "Meta".
+const LOGO_MAP: Record<string, (props: { size?: number }) => React.JSX.Element> = {
+  google: GoogleMark,
+  meta: MetaMark,
+  tiktok: TikTokMark,
+  linkedin: LinkedInMark,
+  slack: SlackMark,
+  claude: ClaudeMark,
+  chatgpt: ChatGPTMark,
+  perplexity: PerplexityMark,
+  gemini: GeminiMark,
+  appfolio: AppFolioMark,
+  ga4: GA4Mark,
+  vercel: VercelMark,
+  figma: FigmaMark,
+  cal: CalcomMark,
+  resend: ResendMark,
+};
 
 // ---------------------------------------------------------------------------
 // Marketplace — premium, brand-consistent, honest about what's shipped.
 //
-// Four card kinds:
-//   toggle   — flippable Boolean (Pixel, Chatbot, SEO, Ads, Website,
-//              Creative, Referrals). Free during trial; routes to billing
-//              post-trial.
-//   included — always-on (Lead Capture, Reputation Monitoring). Pill +
-//              "Use it" deep-link, no toggle.
-//   addon    — paid Stripe SKU (Reputation Pro, White-label). Routes to
-//              billing for checkout regardless of trial state.
-//   coming   — coming soon (Email Nurture, Outbound Email). Greyed,
-//              "Notify me", non-activatable. Honest > overpromise.
+// Five card kinds:
+//   toggle    — true self-serve flippable Boolean (Pixel, Chatbot,
+//               Referrals). Free during trial; routes to billing post-trial.
+//   included  — always-on (Lead Capture, Reputation Monitoring). Pill +
+//               "Use it" deep-link, no toggle.
+//   concierge — managed service our team delivers (Google Ads, Meta Ads,
+//               Creative Studio, Hosted Site, SEO/AEO, White-label). No
+//               toggle — clicks "Request setup" and we get on a call.
+//               Honest framing of what's not self-serve today.
+//   addon     — paid Stripe SKU (Reputation Pro). Routes to billing for
+//               checkout regardless of trial state.
+//   coming    — coming soon (Email Nurture, Outbound Email). Greyed,
+//               "Notify me", non-activatable. Honest > overpromise.
 //
 // Single LeaseStack accent (#2563EB / theme.primary) is the only colour
-// that ever signals state. No greens, ambers, per-module rainbows.
+// that ever signals state. No greens, ambers, per-module rainbows. Each
+// card renders the actual brand logos for the tools it integrates with
+// (Google, Meta, Claude, AppFolio, etc.) so operators see the stack at
+// a glance instead of a lucide silhouette.
 // ---------------------------------------------------------------------------
 
 const ICON_MAP: Record<string, LucideIcon> = {
@@ -57,7 +102,12 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Sparkles,
 };
 
-type CatalogEntryKind = "toggle" | "included" | "addon" | "coming";
+type CatalogEntryKind =
+  | "toggle"
+  | "included"
+  | "concierge"
+  | "addon"
+  | "coming";
 
 type MarketplaceEntryVM = {
   key: string;
@@ -71,6 +121,7 @@ type MarketplaceEntryVM = {
   popular: boolean;
   setupEffort: string | null;
   iconName: string;
+  brandLogoKeys: string[];
 };
 
 type GroupVM = {
@@ -300,6 +351,7 @@ function ModuleCard({
   const isIncluded = m.kind === "included";
   const isAddon = m.kind === "addon";
   const isToggle = m.kind === "toggle";
+  const isConcierge = m.kind === "concierge";
 
   return (
     <article
@@ -307,15 +359,19 @@ function ModuleCard({
       style={{
         backgroundColor: isComing
           ? "#FAFAF7"
-          : isEnabled || isIncluded
-            ? "#EFF6FF"
-            : "#FFFFFF",
+          : isConcierge
+            ? "#FFFFFF"
+            : isEnabled || isIncluded
+              ? "#EFF6FF"
+              : "#FFFFFF",
         border: `1px solid ${
           isComing
             ? "#E5E5E5"
-            : isEnabled || isIncluded
-              ? "#DBEAFE"
-              : "#E5E5E5"
+            : isConcierge
+              ? "#E2E8F0"
+              : isEnabled || isIncluded
+                ? "#DBEAFE"
+                : "#E5E5E5"
         }`,
         opacity: isComing ? 0.85 : 1,
       }}
@@ -355,6 +411,31 @@ function ModuleCard({
           ))}
         </div>
       </div>
+
+      {/* Brand-logo strip — real marks for the tools this module integrates
+          with (Google, Meta, Claude, etc.). Communicates stack at a glance. */}
+      {m.brandLogoKeys && m.brandLogoKeys.length > 0 ? (
+        <div className="mt-2.5 pt-2 border-t border-[#F0F0F0] flex items-center gap-2">
+          <span className="text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#8E8E8E]">
+            Integrates with
+          </span>
+          <div className="flex items-center gap-1.5">
+            {m.brandLogoKeys.map((k) => {
+              const Logo = LOGO_MAP[k];
+              if (!Logo) return null;
+              return (
+                <span
+                  key={k}
+                  className="inline-flex items-center justify-center"
+                  title={k}
+                >
+                  <Logo size={14} />
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
 
       {/* Footer — price left, setup effort + CTA right */}
       <div className="mt-2.5 pt-2 border-t border-[#F0F0F0] flex items-center justify-between gap-2">
@@ -424,6 +505,14 @@ function StatusPill({
       </span>
     );
   }
+  if (kind === "concierge") {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5C5E62] shrink-0">
+        <Sparkles className="w-2.5 h-2.5" />
+        Concierge
+      </span>
+    );
+  }
   if (isEnabled) {
     return (
       <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
@@ -471,6 +560,14 @@ function PriceLine({
     return (
       <p className="text-[13px] font-semibold tabular-nums text-[#0A0A0A]">
         +{formatPrice(cents)}
+        <span className="text-[11px] font-normal text-[#8E8E8E]">/mo</span>
+      </p>
+    );
+  }
+  if (kind === "concierge") {
+    return (
+      <p className="text-[13px] font-semibold tabular-nums text-[#0A0A0A]">
+        from {formatPrice(cents)}
         <span className="text-[11px] font-normal text-[#8E8E8E]">/mo</span>
       </p>
     );
@@ -555,6 +652,19 @@ function CtaRow({
         className="inline-flex items-center gap-1 h-7 px-3 rounded-md bg-primary text-primary-foreground text-[12px] font-semibold hover:bg-primary-dark transition-colors"
       >
         Add <ArrowRight className="w-3 h-3" />
+      </Link>
+    );
+  }
+  // Concierge — managed service, no toggle. "Request setup" routes to the
+  // marketplace with a request= query param the operator can post about.
+  // Honest UX: this is NOT instant, our team has to wire it up.
+  if (kind === "concierge") {
+    return (
+      <Link
+        href={setupHref}
+        className="inline-flex items-center gap-1 h-7 px-3 rounded-md border border-primary text-primary text-[12px] font-semibold hover:bg-primary hover:text-primary-foreground transition-colors"
+      >
+        Request setup <ArrowRight className="w-3 h-3" />
       </Link>
     );
   }

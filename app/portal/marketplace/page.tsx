@@ -113,6 +113,7 @@ export default async function MarketplacePage() {
           // We can't pass icons across the server/client boundary directly,
           // so map to a lucide string name and let the client resolve.
           iconName: iconNameFor(m.key),
+          brandLogoKeys: m.brandLogoKeys ?? [],
         })),
       }))}
       allToggleableKeys={toggleableKeys}

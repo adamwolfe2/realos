@@ -69,15 +69,48 @@ export type CatalogCategory =
 /**
  * How this entry behaves in the marketplace UI.
  *
- *   "toggle"   — flippable per-org Boolean (modulePixel, moduleChatbot, …).
- *                Free during trial, Stripe Checkout post-trial.
- *   "included" — always-on for every plan. Renders with an "Included" pill
- *                and a "Use it" deep-link instead of an Activate button.
- *   "addon"    — Stripe-billed add-on (Reputation Pro, White-label). Has
- *                no module<X> flag — activation always routes to billing.
- *   "coming"   — Coming soon. Greyed out, "Notify me" CTA, never activates.
+ *   "toggle"    — true self-serve flippable per-org Boolean. Real backend
+ *                 + setup is one click. Free during trial, Stripe Checkout
+ *                 post-trial.
+ *   "included"  — always-on for every plan. Renders with an "Included" pill
+ *                 and a "Use it" deep-link instead of an Activate button.
+ *   "concierge" — operator-built managed service. Requires our team to set
+ *                 up (OAuth we don't have automated yet, ad campaigns we
+ *                 run for you, creative we produce). NOT a toggle — clicks
+ *                 "Request setup" and we get on a call. Honest framing of
+ *                 what is and isn't self-serve today.
+ *   "addon"     — Stripe-billed add-on (Reputation Pro, White-label). Has
+ *                 no module<X> flag — activation routes to billing.
+ *   "coming"    — Coming soon. Greyed out, "Notify me" CTA, never activates.
  */
-export type CatalogEntryKind = "toggle" | "included" | "addon" | "coming";
+export type CatalogEntryKind =
+  | "toggle"
+  | "included"
+  | "concierge"
+  | "addon"
+  | "coming";
+
+/**
+ * Brand logo identifiers rendered on the card. Maps to BrandLogo components
+ * in components/platform/artifacts/brand-logos.tsx via LOGO_MAP in the
+ * marketplace client.
+ */
+export type BrandLogoKey =
+  | "google"
+  | "meta"
+  | "tiktok"
+  | "linkedin"
+  | "slack"
+  | "claude"
+  | "chatgpt"
+  | "perplexity"
+  | "gemini"
+  | "appfolio"
+  | "ga4"
+  | "vercel"
+  | "figma"
+  | "cal"
+  | "resend";
 
 export type CatalogEntry = {
   /** Stable id used by the toggle API + analytics. For toggles this is the
@@ -105,6 +138,9 @@ export type CatalogEntry = {
       "Connect Google account", "We handle setup", etc.). Helps users gauge
       time-to-value. */
   setupEffort?: string;
+  /** Real brand logos rendered on the card. Communicates the integration
+      stack at a glance and prevents the "what tools is this?" question. */
+  brandLogoKeys?: BrandLogoKey[];
 };
 
 // ---------------------------------------------------------------------------
@@ -119,10 +155,10 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     slug: "visitor-pixel",
     name: "Visitor Identification Pixel",
     tagline:
-      "Identify anonymous prospects on your site — name, email, employer — without an opt-in form.",
+      "Identify anonymous prospects on your site (name, email, employer) without an opt-in form.",
     bullets: [
       "5,000 identified visitors / month",
-      "Intent score per visitor (0–100)",
+      "Intent score per visitor (0 to 100)",
       "Auto-syncs to your CRM as warm leads",
       "Drop-in JS snippet",
     ],
@@ -133,6 +169,7 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     category: "Acquisition",
     popular: true,
     setupEffort: "Drop-in snippet · 5 min",
+    brandLogoKeys: ["ga4", "linkedin"],
   },
   {
     key: "moduleLeadCapture",
@@ -152,46 +189,47 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     icon: Users,
     category: "Acquisition",
     setupEffort: "Already on",
+    brandLogoKeys: ["appfolio", "resend"],
   },
   {
     key: "moduleGoogleAds",
-    kind: "toggle",
+    kind: "concierge",
     slug: "google-ads",
-    name: "Google Ads Manager",
+    name: "Google Ads (Managed)",
     tagline:
-      "Connect Google Ads, surface spend / CPL / conversions next to leasing data, and let our team run campaigns.",
+      "We build, launch, and run your Google Search and Performance Max campaigns. Concierge service, not a self-serve toggle.",
     bullets: [
-      "Live spend + ROAS dashboards",
-      "Lead → tour → lease attribution",
-      "Auto-pause underperforming creatives",
-      "DFY campaign builds (Search + PMax)",
+      "Campaigns built and launched by our team",
+      "Live spend + ROAS reporting back to your portal",
+      "Lead to tour to lease attribution",
+      "Weekly creative refresh + bid optimization",
     ],
     monthlyPriceCents: 19900,
-    stripeLookupKey: "ls_addon_google_ads_v1",
-    setupHref: "/portal/ads",
+    setupHref: "/portal/marketplace?request=google-ads",
     icon: BarChart3,
     category: "Acquisition",
-    setupEffort: "Connect Google Ads · OAuth",
+    setupEffort: "Kickoff call · we set up campaigns",
+    brandLogoKeys: ["google"],
   },
   {
     key: "moduleMetaAds",
-    kind: "toggle",
+    kind: "concierge",
     slug: "meta-ads",
-    name: "Meta Ads Manager",
+    name: "Meta Ads (Managed)",
     tagline:
-      "Facebook + Instagram ads with first-party-pixel retargeting and unified attribution.",
+      "We build, launch, and run your Facebook and Instagram ads with first-party pixel retargeting. Concierge service.",
     bullets: [
+      "Campaigns built and launched by our team",
       "Cursive pixel powers Custom Audiences",
-      "Lead → tour → lease attribution",
-      "Auto-pause / scale rules",
-      "AI-drafted creative variants weekly",
+      "Lead to tour to lease attribution",
+      "Weekly creative refresh + scale rules",
     ],
     monthlyPriceCents: 19900,
-    stripeLookupKey: "ls_addon_meta_ads_v1",
-    setupHref: "/portal/ads",
+    setupHref: "/portal/marketplace?request=meta-ads",
     icon: BarChart3,
     category: "Acquisition",
-    setupEffort: "Connect Meta · OAuth",
+    setupEffort: "Kickoff call · we set up campaigns",
+    brandLogoKeys: ["meta"],
   },
 
   // ============== Engagement ==============
@@ -201,7 +239,7 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     slug: "ai-chatbot",
     name: "AI Leasing Chatbot",
     tagline:
-      "24/7 trained chatbot that answers prospect questions, books tours, and captures leads while you sleep.",
+      "24/7 chatbot trained on your property data. Answers prospect questions, books tours, captures leads while you sleep.",
     bullets: [
       "Trained on your property KB + amenities",
       "Books tours straight into your calendar",
@@ -215,69 +253,70 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     category: "Engagement",
     popular: true,
     setupEffort: "Configure persona · 10 min",
+    brandLogoKeys: ["claude", "cal", "resend"],
   },
   {
     key: "moduleCreativeStudio",
-    kind: "toggle",
+    kind: "concierge",
     slug: "creative-studio",
-    name: "Creative Studio",
+    name: "Creative Studio (Managed)",
     tagline:
-      "On-demand brand-consistent creative for ads, social, and email — designed and shipped in 48 hours.",
+      "On-demand brand-consistent creative for ads, social, and email. Designed and shipped by our team in 48 hours.",
     bullets: [
-      "Static + motion ad creative",
-      "Brand kit + creative library included",
-      "Unlimited revisions",
-      "48-hour turnaround guarantee",
+      "Static + motion ad creative produced by our designers",
+      "Brand kit + creative library kept in sync",
+      "Unlimited revisions per request",
+      "48-hour turnaround on every brief",
     ],
     monthlyPriceCents: 49900,
-    stripeLookupKey: "ls_addon_creative_v1",
     setupHref: "/portal/creative",
     icon: Brush,
     category: "Engagement",
-    setupEffort: "Submit your first request",
+    setupEffort: "Submit a brief · we produce",
+    brandLogoKeys: ["figma"],
   },
 
   // ============== Discovery ==============
   {
     key: "moduleSEO",
-    kind: "toggle",
+    kind: "concierge",
     slug: "seo-aeo",
-    name: "Search + AI Discovery (SEO/AEO)",
+    name: "Search + AI Discovery (Managed)",
     tagline:
-      "Per-neighborhood landing pages built to rank in Google AND get cited by ChatGPT, Perplexity, Claude, Gemini.",
+      "Per-neighborhood landing pages built to rank in Google AND get cited by ChatGPT, Perplexity, Claude, and Gemini. Our team builds and maintains the pages.",
     bullets: [
-      "Per-neighborhood + per-unit-type pages",
+      "Per-neighborhood + per-unit-type pages built for you",
       "Schema markup + sitemap automation",
-      "Monthly AI-citation audit (5 engines)",
-      "GSC + GA4 connected for live SERP data",
+      "Monthly AI-citation audit across 5 engines",
+      "Search Console + GA4 reporting wired in",
     ],
     monthlyPriceCents: 24900,
-    stripeLookupKey: "ls_addon_seo_v1",
-    setupHref: "/portal/seo",
+    setupHref: "/portal/marketplace?request=seo-aeo",
     icon: TrendingUp,
     category: "Discovery",
     popular: true,
-    setupEffort: "Connect GSC + GA4 · OAuth",
+    setupEffort: "Kickoff call · we build pages",
+    brandLogoKeys: ["google", "chatgpt", "perplexity", "claude", "gemini"],
   },
   {
     key: "moduleWebsite",
-    kind: "toggle",
+    kind: "concierge",
     slug: "marketing-site",
-    name: "Hosted Marketing Site",
+    name: "Hosted Marketing Site (Managed)",
     tagline:
-      "Per-property marketing site, hosted on your domain, with built-in lead capture, tour booking, and CRM sync.",
+      "Per-property marketing site we design and host on your domain. Lead capture, tour booking, and CRM sync built in.",
     bullets: [
+      "Our team designs and builds the site",
       "Hosted on your domain (we handle DNS)",
-      "Lead capture + tour booking built-in",
-      "Mobile-first, ranks in Google",
-      "Live AppFolio listing sync",
+      "Lead capture + tour booking wired into the CRM",
+      "Live AppFolio listing sync where available",
     ],
     monthlyPriceCents: 9900,
-    stripeLookupKey: "ls_addon_website_v1",
-    setupHref: "/portal/site-builder",
+    setupHref: "/portal/marketplace?request=hosted-site",
     icon: Globe,
     category: "Discovery",
-    setupEffort: "Configure site · ~30 min",
+    setupEffort: "Kickoff call · we build the site",
+    brandLogoKeys: ["vercel", "appfolio", "figma"],
   },
 
   // ============== Operations ==============
@@ -299,6 +338,7 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     icon: Star,
     category: "Operations",
     setupEffort: "Already on",
+    brandLogoKeys: ["google"],
   },
   {
     key: "moduleReferrals",
@@ -318,6 +358,7 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     icon: Share2,
     category: "Operations",
     setupEffort: "Generate link · 1 min",
+    brandLogoKeys: ["slack"],
   },
 
   // ============== Pro Add-ons (paid Stripe SKUs, not free during trial) ==============
@@ -340,14 +381,15 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     icon: Sparkles,
     category: "Pro Add-ons",
     setupEffort: "Stripe checkout · instant",
+    brandLogoKeys: ["google"],
   },
   {
     key: "ls_addon_white_label",
-    kind: "addon",
+    kind: "concierge",
     slug: "white-label",
     name: "White-label Workspace",
     tagline:
-      "Removes LeaseStack branding from the tenant portal, public marketing site, and outbound emails.",
+      "Removes LeaseStack branding from the tenant portal, public marketing site, and outbound emails. Our team configures the brand kit.",
     bullets: [
       "Your logo + brand on the portal",
       "Tenant sites carry no LeaseStack mark",
@@ -355,11 +397,11 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
       "Useful for agencies + private-label resellers",
     ],
     monthlyPriceCents: 49900,
-    stripeLookupKey: "ls_white_label_monthly_v1",
-    setupHref: "/portal/billing?addon=white-label",
+    setupHref: "/portal/marketplace?request=white-label",
     icon: Sparkles,
     category: "Pro Add-ons",
-    setupEffort: "Stripe checkout + brand kit",
+    setupEffort: "Kickoff call · we set up branding",
+    brandLogoKeys: ["figma"],
   },
 
   // ============== Coming soon (honest about what's not built yet) ==============
