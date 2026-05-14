@@ -14,6 +14,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { buildSystemPrompt, type ChatbotTenant } from "@/lib/chatbot/build-system-prompt";
+import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 
@@ -108,7 +109,10 @@ export async function POST(req: NextRequest) {
           orgId,
           sessionId,
           messages,
-          replyText: text,
+          // Strip markdown server-side so the inbox transcript matches
+          // what the visitor saw rendered in the widget. See
+          // lib/chatbot/strip-markdown.ts for the rules.
+          replyText: stripChatbotMarkdown(text),
           pageUrl,
           userAgent,
           ipAddress: ip,

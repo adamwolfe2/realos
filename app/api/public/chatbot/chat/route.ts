@@ -15,6 +15,7 @@ import {
 } from "@/lib/chatbot/build-system-prompt";
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
 import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
+import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import {
   publicApiLimiter,
@@ -133,11 +134,15 @@ export async function POST(req: NextRequest) {
     messages,
     onFinish: async ({ text }) => {
       try {
+        // Same markdown stripper the client renderer uses, so the
+        // persisted transcript matches what the visitor actually saw on
+        // screen. Without this, the conversation inbox shows raw "**foo**"
+        // while the live chat showed "foo".
         await persistConversation({
           orgId,
           sessionId,
           messages,
-          replyText: text,
+          replyText: stripChatbotMarkdown(text),
           pageUrl,
           userAgent,
           ipAddress: ip,

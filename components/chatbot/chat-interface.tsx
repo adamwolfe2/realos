@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { ChatQuickReplies } from "./chat-quick-replies";
 import { trackChatbotLeadCaptured } from "@/lib/chatbot/analytics";
+import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 
 export type ChatMessage = { role: "user" | "assistant"; content: string };
 
@@ -182,11 +183,18 @@ export function ChatInterface({
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
         assistantText += chunk;
+        // Strip any markdown the model slipped in (asterisks, em dashes,
+        // bullet markers, headers). Defense-in-depth — the system prompt
+        // forbids these, but Claude occasionally reaches for them anyway,
+        // and the widget renders plain text via whitespace-pre-wrap so
+        // any raw markdown would show literally as "**Premium:**". Run
+        // on every chunk so the visitor never even momentarily sees raw
+        // markup mid-stream.
         setMessages((prev) => {
           const next = [...prev];
           next[next.length - 1] = {
             role: "assistant",
-            content: assistantText,
+            content: stripChatbotMarkdown(assistantText),
           };
           return next;
         });
