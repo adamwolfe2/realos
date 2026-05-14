@@ -18,7 +18,6 @@ import {
   Sparkles,
   Check,
   ArrowRight,
-  Clock,
   type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
@@ -353,122 +352,103 @@ function ModuleCard({
   const isToggle = m.kind === "toggle";
   const isConcierge = m.kind === "concierge";
 
+  // Drastically simplified card. Was: icon + title + tagline + 4 bullets
+  // + integrates-with row + price + setup-effort + CTA. Read as a feature
+  // brochure stacked 11 times. Now: icon + title + status, 1-line
+  // tagline, footer row with logos + price + CTA. The bullets and
+  // integration list moved to the module detail page (clicked into via
+  // CTA). Less work to scan, more visual presence per card.
   return (
     <article
-      className="rounded-lg p-3.5 transition-all"
+      className="rounded-lg p-4 transition-all hover:border-primary/40"
       style={{
         backgroundColor: isComing
-          ? "#FAFAF7"
-          : isConcierge
-            ? "#FFFFFF"
-            : isEnabled || isIncluded
-              ? "#EFF6FF"
-              : "#FFFFFF",
+          ? "#FAFAFA"
+          : isEnabled || isIncluded
+            ? "#F8FBFF"
+            : "#FFFFFF",
         border: `1px solid ${
           isComing
-            ? "#E5E5E5"
-            : isConcierge
-              ? "#E2E8F0"
-              : isEnabled || isIncluded
-                ? "#DBEAFE"
-                : "#E5E5E5"
+            ? "#EAEAEA"
+            : isEnabled || isIncluded
+              ? "#DBEAFE"
+              : "#EAEAEA"
         }`,
         opacity: isComing ? 0.85 : 1,
+        minHeight: 132,
+        display: "flex",
+        flexDirection: "column",
       }}
     >
-      {/* Header row — icon + name/tagline + inline status pill */}
+      {/* Header — icon + title + status pill */}
       <div className="flex items-start gap-2.5">
         <div
-          className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary/10 text-primary shrink-0"
+          className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary shrink-0"
           style={isComing ? { opacity: 0.6 } : undefined}
         >
-          <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
+          <Icon className="w-4 h-4" strokeWidth={1.75} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-[13px] font-semibold tracking-tight text-[#0A0A0A] truncate">
+            <h3 className="text-[14px] font-semibold tracking-tight text-[#0A0A0A] truncate">
               {m.name}
             </h3>
             <StatusPill kind={m.kind} isEnabled={isEnabled} popular={m.popular} />
           </div>
-          <p className="text-[11.5px] leading-snug text-[#5C5E62] truncate">
+          <p className="mt-0.5 text-[12px] leading-snug text-[#64748B] line-clamp-2">
             {m.tagline}
           </p>
         </div>
       </div>
 
-      {/* Bullets — 2-col compact grid */}
-      <div className="mt-2.5 pt-2.5 border-t border-[#F0F0F0]">
-        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
-          {m.bullets.map((b) => (
-            <p
-              key={b}
-              className="flex items-start gap-1.5 text-[11px] leading-snug text-[#393C41]"
-            >
-              <Check className="w-2.5 h-2.5 mt-0.5 shrink-0 text-primary" strokeWidth={2.5} />
-              <span className="truncate">{b}</span>
-            </p>
-          ))}
-        </div>
-      </div>
-
-      {/* Brand-logo strip — real marks for the tools this module integrates
-          with (Google, Meta, Claude, etc.). Communicates stack at a glance. */}
-      {m.brandLogoKeys && m.brandLogoKeys.length > 0 ? (
-        <div className="mt-2.5 pt-2 border-t border-[#F0F0F0] flex items-center gap-2">
-          <span className="text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#8E8E8E]">
-            Integrates with
-          </span>
-          <div className="flex items-center gap-1.5">
-            {m.brandLogoKeys.map((k) => {
-              const Logo = LOGO_MAP[k];
-              if (!Logo) return null;
-              return (
-                <span
-                  key={k}
-                  className="inline-flex items-center justify-center"
-                  title={k}
-                >
-                  <Logo size={14} />
-                </span>
-              );
-            })}
-          </div>
-        </div>
-      ) : null}
-
-      {/* Footer — price left, setup effort + CTA right */}
-      <div className="mt-2.5 pt-2 border-t border-[#F0F0F0] flex items-center justify-between gap-2">
-        <PriceLine
-          kind={m.kind}
-          isEnabled={isEnabled}
-          isTrialing={isTrialing}
-          cents={m.monthlyPriceCents}
-        />
-        <div className="flex items-center gap-2 shrink-0">
-          {m.setupEffort ? (
-            <p className="hidden sm:flex items-center gap-1 text-[10px] text-[#8E8E8E]">
-              <Clock className="w-2.5 h-2.5" />
-              {m.setupEffort}
-            </p>
+      {/* Footer — flex-end aligned. Logos + price on the left, CTA on the
+          right. No bullets, no separators, no "INTEGRATES WITH" label —
+          the logos speak for themselves at this size. */}
+      <div className="mt-auto pt-4 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0">
+          {m.brandLogoKeys && m.brandLogoKeys.length > 0 ? (
+            <div className="flex items-center gap-1 shrink-0">
+              {m.brandLogoKeys.slice(0, 4).map((k) => {
+                const Logo = LOGO_MAP[k];
+                if (!Logo) return null;
+                return (
+                  <span
+                    key={k}
+                    className="inline-flex items-center justify-center opacity-80"
+                    title={k}
+                  >
+                    <Logo size={13} />
+                  </span>
+                );
+              })}
+            </div>
           ) : null}
-          <CtaRow
+          {m.brandLogoKeys && m.brandLogoKeys.length > 0 ? (
+            <span aria-hidden="true" className="text-[#CBD5E1]">·</span>
+          ) : null}
+          <PriceLine
             kind={m.kind}
             isEnabled={isEnabled}
-            isPending={isPending}
             isTrialing={isTrialing}
-            isNotified={isNotified}
-            setupHref={m.setupHref}
-            name={m.name}
-            isToggle={isToggle}
-            isAddon={isAddon}
-            isIncluded={isIncluded}
-            isComing={isComing}
-            onActivate={onActivate}
-            onDeactivate={onDeactivate}
-            onNotifyMe={onNotifyMe}
+            cents={m.monthlyPriceCents}
           />
         </div>
+        <CtaRow
+          kind={m.kind}
+          isEnabled={isEnabled}
+          isPending={isPending}
+          isTrialing={isTrialing}
+          isNotified={isNotified}
+          setupHref={m.setupHref}
+          name={m.name}
+          isToggle={isToggle}
+          isAddon={isAddon}
+          isIncluded={isIncluded}
+          isComing={isComing}
+          onActivate={onActivate}
+          onDeactivate={onDeactivate}
+          onNotifyMe={onNotifyMe}
+        />
       </div>
     </article>
   );
