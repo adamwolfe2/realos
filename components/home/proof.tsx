@@ -1,127 +1,94 @@
 import Link from "next/link";
 import { MARKETING } from "@/lib/copy/marketing";
 
+// ---------------------------------------------------------------------------
+// Proof — final CTA section.
+//
+// Previous version split the section into two competing surfaces: a giant
+// 14/1/0 stat strip stealing the visual weight, with the actual offer
+// ("Free pilot. No commitment.") buried at the bottom. The CTA buttons
+// ended up as an afterthought.
+//
+// Rewrite leads with the OFFER as the headline, puts the action right
+// next to it, and demotes the trust numbers to a compact inline proof
+// strip below. One unified message, one decision point.
+// ---------------------------------------------------------------------------
+
 export function Proof() {
-  const { proof, final } = MARKETING.home;
+  const { final } = MARKETING.home;
 
   return (
     <section style={{ backgroundColor: "#1E2A3A", color: "#FFFFFF" }}>
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-24 md:py-32">
-        <div className="max-w-3xl">
-          <p
-            style={{
-              color: "#60A5FA",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
-              fontWeight: 600,
-            }}
-          >
-            The platform
-          </p>
-          <h2
-            className="mt-4"
-            style={{
-              color: "#FFFFFF",
-              fontFamily: "var(--font-sans)",
-              fontSize: "clamp(36px, 5vw, 60px)",
-              fontWeight: 700,
-              lineHeight: 1.02,
-              letterSpacing: "-0.025em",
-            }}
-          >
-            {proof.heading}
-          </h2>
-          <p
-            className="mt-5 max-w-[640px]"
-            style={{
-              color: "rgba(255,255,255,0.7)",
-              fontFamily: "var(--font-sans)",
-              fontSize: "18px",
-              lineHeight: 1.6,
-            }}
-          >
-            {proof.body}
-          </p>
-        </div>
-
-        <div
-          className="mt-16 grid grid-cols-1 md:grid-cols-3"
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
+        {/* Eyebrow — urgency cue */}
+        <p
           style={{
-            borderTop: "1px solid rgba(255,255,255,0.12)",
-            borderBottom: "1px solid rgba(255,255,255,0.12)",
+            color: "#F59E0B",
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            letterSpacing: "0.22em",
+            textTransform: "uppercase",
+            fontWeight: 700,
           }}
         >
-          <StatCell
-            value="14"
-            label="Days from intake call to live on your domain."
-            divider
+          <span
+            aria-hidden="true"
+            style={{
+              display: "inline-block",
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              backgroundColor: "#F59E0B",
+              marginRight: 8,
+              verticalAlign: "middle",
+            }}
           />
-          <StatCell
-            value="1"
-            label="Login. Not six vendors, six invoices, six dashboards."
-            divider
-          />
-          <StatCell
-            value="0"
-            label="Long-term contracts. Month-to-month after launch."
-          />
-        </div>
+          Pilot cohort &middot; open now
+        </p>
 
-        <div className="mt-12 md:mt-14 flex flex-col md:flex-row md:items-end md:justify-between gap-8">
-          <div className="max-w-[560px]">
-            <p
-              style={{
-                color: "#F59E0B",
-                fontFamily: "var(--font-mono)",
-                fontSize: "11px",
-                letterSpacing: "0.22em",
-                textTransform: "uppercase",
-                fontWeight: 700,
-              }}
-            >
-              Pilot cohort &middot; open now
-            </p>
-            <h3
-              className="mt-3"
+        {/* Hero row — offer on the left, action on the right */}
+        <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 lg:gap-12 items-end">
+          <div>
+            <h2
               style={{
                 color: "#FFFFFF",
                 fontFamily: "var(--font-sans)",
-                fontSize: "clamp(22px, 2.4vw, 28px)",
+                fontSize: "clamp(36px, 5.4vw, 64px)",
                 fontWeight: 700,
-                lineHeight: 1.2,
-                letterSpacing: "-0.015em",
+                lineHeight: 1.02,
+                letterSpacing: "-0.03em",
               }}
             >
-              {final.heading}
-            </h3>
+              Free pilot.
+              <br />
+              <span style={{ color: "#60A5FA" }}>No commitment.</span>
+            </h2>
             <p
-              className="mt-3"
+              className="mt-5 max-w-[560px]"
               style={{
-                color: "rgba(255,255,255,0.65)",
+                color: "rgba(255,255,255,0.72)",
                 fontFamily: "var(--font-sans)",
-                fontSize: "15.5px",
-                lineHeight: 1.6,
+                fontSize: "17px",
+                lineHeight: 1.55,
               }}
             >
               {final.body}
             </p>
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 flex-shrink-0">
+          <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0 lg:min-w-[220px]">
             <Link
               href={final.primaryHref}
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                minHeight: "48px",
-                padding: "12px 24px",
+                minHeight: "50px",
+                padding: "14px 28px",
                 backgroundColor: "#2563EB",
                 color: "#FFFFFF",
                 fontFamily: "var(--font-sans)",
-                fontSize: "15px",
+                fontSize: "15.5px",
                 fontWeight: 600,
                 borderRadius: "3px",
                 textDecoration: "none",
@@ -130,24 +97,39 @@ export function Proof() {
               }}
             >
               {final.primaryCta}
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 14 14"
+                fill="none"
+                style={{ marginLeft: 8 }}
+              >
+                <path
+                  d="M3 7h8m0 0L7.5 3.5M11 7l-3.5 3.5"
+                  stroke="currentColor"
+                  strokeWidth="1.6"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </Link>
             <Link
-              href="/demo"
+              href="#live"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                minHeight: "48px",
-                padding: "12px 24px",
+                minHeight: "50px",
+                padding: "14px 28px",
                 backgroundColor: "transparent",
                 color: "#FFFFFF",
                 fontFamily: "var(--font-sans)",
-                fontSize: "15px",
+                fontSize: "15.5px",
                 fontWeight: 600,
                 borderRadius: "3px",
                 textDecoration: "none",
                 letterSpacing: "-0.005em",
-                border: "1px solid rgba(255,255,255,0.3)",
+                border: "1px solid rgba(255,255,255,0.30)",
                 transition: "background-color 0.2s ease",
               }}
             >
@@ -155,50 +137,94 @@ export function Proof() {
             </Link>
           </div>
         </div>
+
+        {/* Trust strip — inline horizontal proof points, not a giant grid */}
+        <div
+          className="mt-12 md:mt-14 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0"
+          style={{
+            borderTop: "1px solid rgba(255,255,255,0.12)",
+            paddingTop: 28,
+          }}
+        >
+          <TrustPoint
+            label="Time to live"
+            value="14 days"
+            body="From intake call to your domain firing."
+            divider
+          />
+          <TrustPoint
+            label="What you log into"
+            value="1 portal"
+            body="Not six vendors, six invoices, six dashboards."
+            divider
+          />
+          <TrustPoint
+            label="Lock-in"
+            value="Month-to-month"
+            body="No long-term contracts. Leave anytime."
+          />
+        </div>
       </div>
     </section>
   );
 }
 
-function StatCell({
-  value,
+function TrustPoint({
   label,
+  value,
+  body,
   divider,
 }: {
-  value: string;
   label: string;
+  value: string;
+  body: string;
   divider?: boolean;
 }) {
   return (
     <div
-      className="py-10 md:py-12 md:px-8"
+      className="md:px-8 md:first:pl-0 md:last:pr-0"
       style={{
-        borderRight: divider ? "1px solid rgba(255,255,255,0.12)" : "none",
+        borderRight: divider
+          ? "1px solid rgba(255,255,255,0.12)"
+          : "none",
       }}
     >
       <p
         style={{
+          color: "rgba(255,255,255,0.5)",
+          fontFamily: "var(--font-mono)",
+          fontSize: "10px",
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          fontWeight: 600,
+        }}
+      >
+        {label}
+      </p>
+      <p
+        className="mt-2"
+        style={{
           color: "#FFFFFF",
           fontFamily: "var(--font-sans)",
-          fontSize: "clamp(56px, 7vw, 88px)",
+          fontSize: "clamp(24px, 2.4vw, 28px)",
           fontWeight: 700,
-          lineHeight: 0.95,
-          letterSpacing: "-0.035em",
+          letterSpacing: "-0.02em",
+          lineHeight: 1.1,
           fontVariantNumeric: "tabular-nums",
         }}
       >
         {value}
       </p>
       <p
-        className="mt-4 max-w-[240px]"
+        className="mt-2 max-w-[260px]"
         style={{
-          color: "rgba(255,255,255,0.65)",
+          color: "rgba(255,255,255,0.6)",
           fontFamily: "var(--font-sans)",
-          fontSize: "14px",
+          fontSize: "13.5px",
           lineHeight: 1.5,
         }}
       >
-        {label}
+        {body}
       </p>
     </div>
   );
