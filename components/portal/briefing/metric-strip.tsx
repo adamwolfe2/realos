@@ -59,11 +59,12 @@ export function MetricStrip({
     },
   ];
 
-  // 2-column grid — stacks the six metrics into 3 rows of 2 instead of
-  // 6 rows of 1, halving the vertical footprint while keeping each row
-  // easy to scan.
+  // Premium-pass: 3-column grid on md+, 2-column on small. Each metric
+  // now renders with bigger typography + a delta chip below the value
+  // so the morning briefing feels like a real KPI surface rather than
+  // a "label · value · pct" inline row.
   return (
-    <div className="grid grid-cols-2 gap-x-4 gap-y-1.5">
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-3">
       {rows.map((r) => (
         <MetricRow key={r.label} metric={r} />
       ))}
@@ -83,17 +84,17 @@ function MetricRow({ metric }: { metric: Metric }) {
           : Minus;
 
   return (
-    <div className="flex items-baseline justify-between gap-2 min-w-0">
-      <div className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground truncate">
+    <div className="min-w-0">
+      <div className="text-[10px] uppercase tracking-[0.14em] font-semibold text-muted-foreground truncate">
         {metric.label}
       </div>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <span className="text-xs font-semibold tabular-nums text-foreground">
+      <div className="flex items-baseline justify-between gap-2 mt-1">
+        <span className="text-xl font-semibold tabular-nums tracking-tight text-foreground leading-none">
           {metric.value}
         </span>
         <span
           className={cn(
-            "inline-flex items-center gap-0.5 rounded px-1 py-0.5 text-[9px] font-semibold tabular-nums",
+            "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0",
             deltaTone,
           )}
         >

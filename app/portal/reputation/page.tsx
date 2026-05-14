@@ -23,6 +23,7 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { PageHeader } from "@/components/admin/page-header";
 import { SourceLogo } from "@/components/portal/reputation/source-logo";
 import { sourceLabel } from "@/components/portal/reputation/source-label";
+import { SourceBars } from "@/components/portal/dashboard/source-bars";
 import type { MentionSource, Sentiment } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Reputation" };
@@ -313,37 +314,27 @@ export default async function PortfolioReputationPage({
           eyebrow="Where the chatter lives"
           description="Volume by platform"
         >
-          {(metrics.sourceBreakdown ?? []).length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No mentions yet. Run a scan from any property.
-            </p>
-          ) : (
-            <ul className="space-y-1.5">
-              {(metrics.sourceBreakdown ?? [])
-                .slice()
-                .sort((a, b) => safeNum(b.count) - safeNum(a.count))
-                .map((row) => (
-                  <li
-                    key={String(row.source)}
-                    className="flex items-center justify-between gap-2 py-1"
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <SourceLogo
-                        source={row.source as MentionSource}
-                        url=""
-                        className="h-4 w-4 shrink-0"
-                      />
-                      <span className="text-xs font-medium text-foreground truncate">
-                        {sourceLabel(row.source as MentionSource, "")}
-                      </span>
-                    </span>
-                    <span className="text-xs font-semibold tabular-nums text-foreground">
-                      {fmtInt(row.count)}
-                    </span>
-                  </li>
-                ))}
-            </ul>
-          )}
+          {/* Pre-Premium-pass this was a flat <ul> with "Reddit · 10" rows
+              — three sources, all the same visual weight. New SourceBars
+              component renders horizontal proportional bars so the eye
+              picks up rank + share in one pass. Visual ranking matches the
+              Mindall CRM / AeroStore inspiration set. */}
+          <SourceBars
+            emptyMessage="No mentions yet. Run a scan from any property."
+            limit={6}
+            rows={(metrics.sourceBreakdown ?? []).map((row) => ({
+              id: String(row.source),
+              label: sourceLabel(row.source as MentionSource, ""),
+              value: safeNum(row.count),
+              leading: (
+                <SourceLogo
+                  source={row.source as MentionSource}
+                  url=""
+                  className="h-4 w-4"
+                />
+              ),
+            }))}
+          />
         </DashboardSection>
 
         <DashboardSection
@@ -511,14 +502,18 @@ function SentimentBar({
   const pct = total > 0 ? Math.round((count / total) * 100) : 0;
   return (
     <div>
-      <div className="flex items-center justify-between text-xs mb-0.5">
-        <span className="text-foreground">{label}</span>
-        <span className="text-muted-foreground tabular-nums">
-          {count.toLocaleString()} · {pct}%
+      <div className="flex items-center justify-between text-xs mb-1">
+        <span className="text-foreground font-medium">{label}</span>
+        <span className="tabular-nums">
+          <span className="font-semibold text-foreground">{count.toLocaleString()}</span>
+          <span className="ml-1.5 text-muted-foreground">{pct}%</span>
         </span>
       </div>
       <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-        <div className={`h-full ${tone}`} style={{ width: `${pct}%` }} />
+        <div
+          className={`h-full ${tone} transition-[width] duration-300`}
+          style={{ width: `${Math.max(2, pct)}%` }}
+        />
       </div>
     </div>
   );

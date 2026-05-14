@@ -593,9 +593,18 @@ export default async function PortalHome({
           properties" caption flags those tiles. */}
       {selectorProperties.length > 1 ? (
         <div className="flex items-center justify-between gap-3 flex-wrap pt-1">
-          <div className="text-xs text-muted-foreground">
+          {/* Caption pre-fix read as flat muted text; the new treatment
+              uses a small dot + tracking so it reads as intentional page
+              chrome rather than a system message. */}
+          <div className="inline-flex items-center gap-1.5 text-[11px] tracking-wide text-muted-foreground">
+            <span
+              aria-hidden="true"
+              className={`inline-block h-1.5 w-1.5 rounded-full ${
+                isFiltered ? "bg-primary" : "bg-muted-foreground/40"
+              }`}
+            />
             {isFiltered
-              ? `Filtered to ${effectiveIds!.length} ${effectiveIds!.length === 1 ? "property" : "properties"}`
+              ? `Filtered to ${effectiveIds!.length} of ${selectorProperties.length} ${effectiveIds!.length === 1 ? "property" : "properties"}`
               : `Showing all ${selectorProperties.length} properties`}
           </div>
           <PropertyMultiSelect
@@ -638,6 +647,7 @@ export default async function PortalHome({
           value={leadsNew28d.toLocaleString()}
           hint={`${leadsTotal.toLocaleString()} all-time`}
           spark={totalLeadsSpark}
+          chart="bars"
           icon={<Users className="h-3.5 w-3.5" />}
           delta={
             leadsDeltaPct != null
@@ -724,6 +734,11 @@ export default async function PortalHome({
             portfolioTotalUnits > 0
               ? `${(portfolioTotalUnits - portfolioAvailableUnits).toLocaleString()} of ${portfolioTotalUnits.toLocaleString()} occupied`
               : "Connect AppFolio"
+          }
+          gaugeValue={
+            portfolioOccupancyPct != null
+              ? portfolioOccupancyPct / 100
+              : undefined
           }
           icon={<Building2 className="h-3.5 w-3.5" />}
           href="/portal/properties"

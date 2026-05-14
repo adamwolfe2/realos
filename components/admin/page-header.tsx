@@ -50,17 +50,21 @@ export function PageHeader({
           <div className="mb-2 text-xs text-muted-foreground">{breadcrumb}</div>
         ) : null}
         {eyebrow ? (
-          <div className="mb-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+          <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
             {eyebrow}
           </div>
         ) : null}
-        <h1 className="text-xl md:text-2xl font-semibold tracking-tight text-foreground leading-tight">
+        {/* Bumped title from text-xl/2xl → text-2xl/3xl so the page actually
+            announces itself. Pre-fix the title sat at ~20px which made
+            every page header feel like a section label, not the surface's
+            primary identity. */}
+        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground leading-tight">
           {title}
         </h1>
         {description || meta ? (
-          <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 max-w-3xl">
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 max-w-3xl">
             {description ? (
-              <p className="text-sm text-muted-foreground leading-snug">
+              <p className="text-[13px] text-muted-foreground leading-snug">
                 {description}
               </p>
             ) : null}

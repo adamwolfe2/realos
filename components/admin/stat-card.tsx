@@ -29,19 +29,22 @@ export function StatCard({
   return (
     <div
       className={cn(
-        "rounded-lg border p-3 transition-shadow duration-150 hover:shadow-sm",
+        // Premium-pass: rounded-xl + softer hover shadow + bumped padding
+        // (p-3 → p-4) to match the dashboard KpiTile so the SEO and
+        // Attribution stat strips read as the same product surface.
+        "rounded-xl border p-4 transition-all hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)]",
         toneClass,
         className,
       )}
     >
-      <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+      <div className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground">
         {label}
       </div>
-      <div className="text-xl font-semibold tracking-tight mt-1.5 tabular-nums text-foreground leading-none">
+      <div className="text-3xl font-semibold tracking-tight mt-2 tabular-nums text-foreground leading-none">
         {value}
       </div>
       {hint ? (
-        <div className="text-[10px] text-muted-foreground mt-1">{hint}</div>
+        <div className="text-[11px] text-muted-foreground mt-1.5">{hint}</div>
       ) : null}
     </div>
   );

@@ -27,25 +27,29 @@ export function DashboardSection({
   return (
     <section
       className={cn(
-        "rounded-lg border border-border bg-card flex flex-col ls-hover-lift",
+        // Premium card chrome: rounded-xl (was rounded-lg), softer hover
+        // shadow so the surfaces float instead of sitting in flat-border
+        // grids. Matches the AeroStore / Emura inspiration set.
+        "rounded-xl border border-border bg-card flex flex-col transition-all",
+        "hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)]",
         className,
       )}
     >
-      <header className="flex items-start justify-between gap-3 px-4 pt-3">
+      <header className="flex items-start justify-between gap-3 px-5 pt-4">
         <div className="min-w-0">
           {eyebrow ? (
-            <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-0.5">
+            <div className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground mb-0.5">
               {eyebrow}
             </div>
           ) : null}
           <h2
-            className="text-[15px] font-medium tracking-tight text-foreground leading-tight"
+            className="text-[15px] font-semibold tracking-tight text-foreground leading-tight"
             style={{ fontFamily: "var(--font-display)" }}
           >
             {title}
           </h2>
           {description ? (
-            <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
+            <p className="mt-0.5 text-[11.5px] text-muted-foreground leading-snug">
               {description}
             </p>
           ) : null}
@@ -55,7 +59,7 @@ export function DashboardSection({
           {href ? (
             <Link
               href={href}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"
+              className="inline-flex items-center gap-1 text-[11.5px] font-medium text-muted-foreground hover:text-primary transition-colors"
             >
               {hrefLabel}
               <ArrowRight className="h-3 w-3" aria-hidden="true" />
@@ -63,7 +67,7 @@ export function DashboardSection({
           ) : null}
         </div>
       </header>
-      <div className={cn("px-4 pb-3 pt-3 flex-1", contentClassName)}>{children}</div>
+      <div className={cn("px-5 pb-4 pt-3.5 flex-1", contentClassName)}>{children}</div>
     </section>
   );
 }

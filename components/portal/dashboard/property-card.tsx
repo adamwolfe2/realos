@@ -67,7 +67,10 @@ export function PropertyDashboardCard({
     <Link
       href={`/portal/properties/${id}`}
       className={cn(
-        "group flex items-center gap-3 px-3 py-2.5",
+        // Premium-pass: bumped padding (was px-3 py-2.5) so the row breathes
+        // like the Mindall CRM / AeroStore reference set. Subtle hover bg
+        // tells the eye the whole row is the click target.
+        "group flex items-center gap-3 px-4 py-3.5",
         "hover:bg-muted/40 transition-colors",
       )}
     >
@@ -146,13 +149,15 @@ export function PropertyDashboardCard({
         icon={<Star className="h-3 w-3" />}
       />
 
-      {/* Leads + sparkline */}
-      <div className="flex flex-col items-end gap-1 w-[72px] shrink-0">
-        <div className="flex items-center gap-1.5">
-          <span className="text-[9px] tracking-widest uppercase font-semibold text-muted-foreground leading-none">
+      {/* Leads + sparkline — bumped from w-[72px] / h-4 spark to a
+          slightly wider column with a larger spark so the leads trend is
+          visible at a glance instead of feeling like a column filler. */}
+      <div className="flex flex-col items-end gap-1.5 w-[88px] shrink-0">
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[9px] tracking-[0.15em] uppercase font-semibold text-muted-foreground leading-none">
             Leads
           </span>
-          <span className="text-[13px] font-semibold tabular-nums text-foreground leading-none">
+          <span className="text-[15px] font-semibold tabular-nums text-foreground leading-none">
             {leads28d}
           </span>
         </div>
@@ -249,21 +254,21 @@ function OccupancyBar({ pct }: { pct: number | null | undefined }) {
 }
 
 function MiniSpark({ data, accent }: { data: number[]; accent?: string }) {
+  // Bumped from 56x16 → 72x22 so the property row's lead-trend reads at a
+  // glance instead of being an afterthought decoration.
   if (data.length < 2 || data.every((v) => v === 0)) {
-    // Render a flat baseline so the column doesn't collapse and rows
-    // stay visually aligned. Subtle + monochrome — implies "no signal yet".
     return (
       <svg
-        viewBox="0 0 56 16"
-        className="h-4 w-14"
+        viewBox="0 0 72 22"
+        className="h-[22px] w-[72px]"
         preserveAspectRatio="none"
         aria-hidden="true"
       >
         <line
           x1="0"
-          y1="14"
-          x2="56"
-          y2="14"
+          y1="20"
+          x2="72"
+          y2="20"
           stroke="hsl(var(--border))"
           strokeWidth="1"
           strokeDasharray="2 2"
@@ -275,8 +280,8 @@ function MiniSpark({ data, accent }: { data: number[]; accent?: string }) {
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
-  const w = 56;
-  const h = 16;
+  const w = 72;
+  const h = 22;
   const stepX = w / (data.length - 1);
   const points = data
     .map(
@@ -290,7 +295,7 @@ function MiniSpark({ data, accent }: { data: number[]; accent?: string }) {
   return (
     <svg
       viewBox={`0 0 ${w} ${h}`}
-      className="h-4 w-14"
+      className="h-[22px] w-[72px]"
       preserveAspectRatio="none"
       aria-hidden="true"
     >
