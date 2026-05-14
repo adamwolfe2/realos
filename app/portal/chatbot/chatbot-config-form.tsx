@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
+import { useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { ChatbotCaptureMode } from "@prisma/client";
 import { saveChatbotConfig } from "@/lib/actions/chatbot-config";
+import { Upload, Trash2, Loader2, AlertTriangle } from "lucide-react";
 
 type FormState = {
   chatbotEnabled: boolean;
@@ -107,7 +108,7 @@ export function ChatbotConfigForm({
       {/* Persona */}
       <section className="rounded-lg border border-border bg-card p-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Persona</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 items-start">
           <Field
             label="Persona name"
             name="chatbotPersonaName"
@@ -116,15 +117,20 @@ export function ChatbotConfigForm({
             placeholder="Leasing, Maya, etc."
             maxLength={100}
           />
-          <Field
-            label="Avatar URL"
-            name="chatbotAvatarUrl"
-            type="url"
+          <AvatarPicker
             value={state.chatbotAvatarUrl}
+            personaName={state.chatbotPersonaName}
             onChange={(v) => update("chatbotAvatarUrl", v)}
-            placeholder="https://..."
           />
         </div>
+        {/* Persisted via the upload endpoint AND included in the form save
+            so existing TenantSiteConfig rows that already store the URL
+            stay in sync when the operator hits Save chatbot config. */}
+        <input
+          type="hidden"
+          name="chatbotAvatarUrl"
+          value={state.chatbotAvatarUrl}
+        />
         <TextArea
           label="Greeting (message 1)"
           name="chatbotGreeting"
@@ -486,5 +492,197 @@ function TextArea({
         <span className="text-[11px] text-muted-foreground">{hint}</span>
       ) : null}
     </label>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AvatarPicker
+//
+// Replaces the bare "paste a URL" input with a real upload UX:
+//   - 64x64 preview circle (uploaded image, or persona initial fallback)
+//   - "Upload image" button that opens a file picker
+//   - "Remove" button when an avatar is set
+//   - Disclosure for advanced "paste a URL instead" so the legacy path
+//     stays available (some agencies host their own avatars on a CDN)
+//   - Inline error message + loading spinner during upload
+//
+// The endpoint persists the URL on TenantSiteConfig.chatbotAvatarUrl
+// immediately on successful upload, so the avatar goes live even before
+// the operator clicks Save on the full config form. The form's hidden
+// input still carries the value through to saveChatbotConfig so a
+// subsequent Save isn't destructive.
+// ---------------------------------------------------------------------------
+function AvatarPicker({
+  value,
+  personaName,
+  onChange,
+}: {
+  value: string;
+  personaName: string;
+  onChange: (v: string) => void;
+}) {
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showUrlField, setShowUrlField] = useState(false);
+
+  const initial =
+    (personaName?.trim()[0] ?? "L").toUpperCase();
+
+  async function handleFile(file: File) {
+    setError(null);
+    // Client-side validation mirrors the server route so we fail fast
+    // instead of paying for an upload that the server would reject.
+    if (file.size > 2 * 1024 * 1024) {
+      setError("Image too large. Max 2 MB.");
+      return;
+    }
+    if (
+      !["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)
+    ) {
+      setError("Use a JPEG, PNG, WebP, or GIF.");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/portal/chatbot/avatar", {
+        method: "POST",
+        body: fd,
+      });
+      const json = (await res.json()) as { ok?: boolean; url?: string; error?: string };
+      if (!res.ok || !json.ok || !json.url) {
+        throw new Error(json.error ?? `Upload failed (${res.status})`);
+      }
+      onChange(json.url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  async function handleRemove() {
+    if (uploading) return;
+    setError(null);
+    setUploading(true);
+    try {
+      const res = await fetch("/api/portal/chatbot/avatar", {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const j = await res.json().catch(() => ({}));
+        throw new Error(j.error ?? "Remove failed");
+      }
+      onChange("");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Remove failed");
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-2">
+      <span className={LABEL_CLASS}>Avatar</span>
+      <div className="flex items-start gap-3">
+        {/* Preview */}
+        <div
+          className="relative h-16 w-16 rounded-full overflow-hidden bg-muted flex items-center justify-center shrink-0"
+          style={{
+            border: "1px solid var(--border)",
+          }}
+        >
+          {value ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={value}
+              alt="Chatbot avatar"
+              className="h-full w-full object-cover"
+              onError={() => setError("Image failed to load. Try re-uploading.")}
+            />
+          ) : (
+            <span
+              className="text-foreground/70 font-semibold"
+              style={{ fontSize: 22 }}
+              aria-hidden="true"
+            >
+              {initial}
+            </span>
+          )}
+          {uploading ? (
+            <div className="absolute inset-0 bg-background/70 flex items-center justify-center">
+              <Loader2 className="h-5 w-5 animate-spin text-primary" />
+            </div>
+          ) : null}
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col gap-1.5 min-w-[160px]">
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            className="hidden"
+            onChange={(e) => {
+              const f = e.target.files?.[0];
+              if (f) void handleFile(f);
+              // Reset so re-selecting the same file re-fires onChange.
+              e.target.value = "";
+            }}
+          />
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-semibold hover:bg-muted/50 disabled:opacity-50 transition-colors"
+          >
+            <Upload className="h-3 w-3" />
+            {value ? "Replace image" : "Upload image"}
+          </button>
+          {value ? (
+            <button
+              type="button"
+              onClick={handleRemove}
+              disabled={uploading}
+              className="inline-flex items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-destructive disabled:opacity-50 transition-colors"
+            >
+              <Trash2 className="h-3 w-3" />
+              Remove
+            </button>
+          ) : null}
+          <button
+            type="button"
+            onClick={() => setShowUrlField((v) => !v)}
+            className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 self-start"
+          >
+            {showUrlField ? "Hide URL field" : "Or paste a URL"}
+          </button>
+        </div>
+      </div>
+
+      {showUrlField ? (
+        <input
+          type="url"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder="https://cdn.example.com/avatar.png"
+          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+      ) : null}
+
+      {error ? (
+        <p className="inline-flex items-center gap-1 text-[11px] text-destructive">
+          <AlertTriangle className="h-3 w-3 shrink-0" />
+          {error}
+        </p>
+      ) : (
+        <p className="text-[10.5px] text-muted-foreground leading-snug">
+          PNG, JPEG, WebP, or GIF. Max 2 MB. Square images look best.
+        </p>
+      )}
+    </div>
   );
 }
