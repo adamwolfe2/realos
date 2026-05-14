@@ -51,7 +51,7 @@ export default function ResidentialHub() {
       <SplitHero
         eyebrow="Residential real estate"
         headline="Your leasing data."
-        headlineAccent="Finally working for you."
+        headlineAccent="Working for you."
         subhead="One data engine across every residential vertical. The pacing models, the source-to-lease read, and the operator-written weekly note are the same. The KPIs and the compliance guardrails shift per audience. Pick your vertical to see the specifics, or keep scrolling for the rollup."
         ctas={[
           { label: "Start the free pilot", href: "/onboarding" },

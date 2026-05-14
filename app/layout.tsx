@@ -58,7 +58,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
     description:
-      "Your leasing data. Finally working for you. Every lead source, every channel, every conversion: tracked, aggregated, and acted on.",
+      "Your leasing data. Working for you. Every lead source, every channel, every conversion: tracked, aggregated, and acted on.",
     type: "website",
     siteName: BRAND_NAME,
     images: [
@@ -74,7 +74,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
     description:
-      "Your leasing data. Finally working for you.",
+      "Your leasing data. Working for you.",
     images: ["/logos/social-background.png"],
   },
 };

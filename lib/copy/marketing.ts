@@ -11,13 +11,13 @@
 
 export const MARKETING = {
   brand: {
-    tagline: "Your leasing data. Finally working for you.",
+    tagline: "Your leasing data. Working for you.",
   },
   home: {
     hero: {
       eyebrow: "Leasing intelligence platform",
-      headline: "Your leasing data. Finally working for you.",
-      highlight: "Finally working for you.",
+      headline: "Your leasing data. Working for you.",
+      highlight: "Working for you.",
       subhead:
         "LeaseStack tells real estate operators exactly what their digital marketing is doing, and exactly what to do about it. One platform, every signal, on your domain.",
       primaryCta: "Book a demo",

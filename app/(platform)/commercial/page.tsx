@@ -23,7 +23,7 @@ export default function CommercialPage() {
       <SplitHero
         eyebrow="Commercial real estate"
         headline="Your commercial leasing data."
-        headlineAccent="Finally working for you."
+        headlineAccent="Working for you."
         subhead="Commercial deals run six months. Audience Sync is live for commercial owners today: push verified office, retail, and industrial intent segments to your ad accounts and CRM, and track tour requests from spec sheets all the way to a signed LOI. Office, retail, industrial, flex, and medical leasing modules are in a limited design-partner pilot."
         ctas={[
           { label: "Apply as a design partner", href: "/onboarding" },

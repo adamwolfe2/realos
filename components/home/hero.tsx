@@ -12,7 +12,7 @@ export function Hero() {
         <span style={{ display: "block" }}>
           <span style={{ display: "block" }}>Your leasing data.</span>
           <span style={{ display: "block", color: "#2563EB" }}>
-            Finally working for you.
+            Working for you.
           </span>
         </span>
       }

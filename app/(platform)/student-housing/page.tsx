@@ -13,7 +13,7 @@ export default function StudentHousingPage() {
     <VerticalLanding
       eyebrow="Student housing"
       headline="Your lease-up data."
-      headlineAccent="Finally working for you."
+      headlineAccent="Working for you."
       subhead="Student housing runs on a pre-lease calendar that does not forgive a slow August. LeaseStack is the leasing intelligence platform that tells you which channels signed your last twelve leases, when your pacing is falling behind the academic calendar, and exactly what to do about it."
       caption="Know your lease-up is falling behind before it shows up in occupancy. Built by an asset manager who managed the Telegraph Commons lease-up directly."
       artifact={<ChatDemo />}

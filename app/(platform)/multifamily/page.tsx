@@ -13,7 +13,7 @@ export default function MultifamilyPage() {
     <VerticalLanding
       eyebrow="Multifamily"
       headline="Your portfolio leasing data."
-      headlineAccent="Finally working for you."
+      headlineAccent="Working for you."
       subhead="A portfolio is only as healthy as the property pulling the rollup down. LeaseStack is the leasing intelligence platform that gives multifamily operators unit-level attribution across every property and tells you exactly which building, which floor plan, and which channel needs attention this week."
       caption="Know which property is dragging the portfolio rollup before the GM does. Same dashboard for the GM, the AM, and the operator."
       artifact={<PortfolioOccupancy label="Your whole portfolio, one view" />}

@@ -13,7 +13,7 @@ export default function SeniorLivingPage() {
     <VerticalLanding
       eyebrow="Senior living"
       headline="Your community's marketing data."
-      headlineAccent="Finally working for you."
+      headlineAccent="Working for you."
       subhead="Senior living decisions take 90 to 180 days, and the adult child is the one researching. LeaseStack is the leasing intelligence platform that runs patient, family-first nurture across that window, keeps creative compliant at every step, and gives the executive director one clear answer to the question the family is asking."
       caption="The marketing report writes itself in language the executive director and the family can both read."
       artifact={<NurtureTimeline />}

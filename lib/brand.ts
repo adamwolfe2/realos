@@ -7,7 +7,7 @@
 export const BRAND = {
   name: "LeaseStack",
   shortName: "leasestack",
-  tagline: "Your leasing data. Finally working for you.",
+  tagline: "Your leasing data. Working for you.",
   email: "hello@leasestack.co",
   supportEmail: "support@leasestack.co",
   url: "https://www.leasestack.co",
