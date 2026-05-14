@@ -17,6 +17,7 @@ import { TrialBanner } from "@/components/portal/trial-banner";
 import { resolveTrialState } from "@/lib/billing/trial-status";
 import { AlertBanner } from "@/components/portal/ui/alert-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
+import { DismissibleStrip } from "@/components/portal/dismissible-strip";
 
 export const metadata: Metadata = {
   title: { template: `%s | ${BRAND_NAME} Portal`, default: `${BRAND_NAME} Portal` },
@@ -263,44 +264,79 @@ export default async function PortalLayout({
       {/* Impersonation strip — slim (28px) so it reads as page chrome
           rather than competing with content. Still uses the destructive
           token because impersonation is a security-critical state, but
-          the visual weight is dialed back per the design audit. */}
+          the visual weight is dialed back per the design audit.
+          Dismissible per-session: signing out and back in re-surfaces
+          the strip so the operator is re-confirmed they're acting in
+          someone else's context every session. */}
       {scope.isImpersonating ? (
-        <div
-          role="status"
-          className="shrink-0 h-7 bg-destructive/10 border-b border-destructive/30 text-destructive text-[11px] px-4 flex items-center justify-between gap-3"
-        >
-          <span className="truncate">
-            Impersonating <strong>{org.name}</strong>. Changes attributed to you.
-          </span>
-          <form action="/api/admin/impersonate/end" method="post">
-            <button
-              type="submit"
-              className="underline underline-offset-2 font-semibold hover:no-underline whitespace-nowrap"
-            >
-              End impersonation
-            </button>
-          </form>
-        </div>
+        <DismissibleStrip storageKey={`leasestack:impersonating:${org.id}`}>
+          <div
+            role="status"
+            className="shrink-0 h-7 bg-destructive/10 border-b border-destructive/30 text-destructive text-[11px] px-4 pr-9 flex items-center justify-between gap-3"
+          >
+            <span className="truncate">
+              Impersonating <strong>{org.name}</strong>. Changes attributed to you.
+            </span>
+            <form action="/api/admin/impersonate/end" method="post">
+              <button
+                type="submit"
+                className="underline underline-offset-2 font-semibold hover:no-underline whitespace-nowrap"
+              >
+                End impersonation
+              </button>
+            </form>
+          </div>
+        </DismissibleStrip>
       ) : null}
 
       {/* Portfolio-wide data-health banner. Slim 28px chrome strip so it
           coexists with the impersonation + curation banners without
-          eating 150px of vertical space. */}
+          eating 150px of vertical space. Dismissible — the key includes
+          the sync timestamp so a NEW failure (different lastSyncAt)
+          re-surfaces the banner even if the user dismissed an earlier
+          one this session.
+
+          When the sync has FAILED (not just stale), we now surface the
+          actual lastError snippet inline so the operator can self-diagnose
+          why — typically one of: credentials revoked, AppFolio Core plan
+          (no REST access), rate limit, network. Previously the banner
+          just said "AppFolio sync failed. Last sync 16d ago." with no
+          actionable reason, which is what left operators staring at it
+          for weeks. */}
       {showStaleBanner ? (
-        <AlertBanner
-          severity="warning"
-          flush
-          title={
-            appfolioStatus.state === "failed"
-              ? "AppFolio sync failed."
-              : "AppFolio data is stale."
-          }
-          action={{ label: "Open integration", href: "/portal/connect" }}
+        <DismissibleStrip
+          storageKey={`leasestack:appfolio-stale:${org.id}:${appfolioStatus.lastSyncAt?.getTime() ?? "none"}`}
         >
-          {staleAgeDays != null
-            ? `Last sync ${staleAgeDays}d ago. KPIs reflect that sync.`
-            : "KPIs reflect the last successful sync."}
-        </AlertBanner>
+          <AlertBanner
+            severity={appfolioStatus.state === "failed" ? "critical" : "warning"}
+            flush
+            title={
+              appfolioStatus.state === "failed"
+                ? "AppFolio sync failed."
+                : "AppFolio data is stale."
+            }
+            action={{
+              label:
+                appfolioStatus.state === "failed"
+                  ? "Fix integration"
+                  : "Open integration",
+              href: "/portal/connect?provider=appfolio",
+            }}
+          >
+            {appfolioStatus.state === "failed" && appfolioStatus.lastError ? (
+              <>
+                {summarizeAppfolioError(appfolioStatus.lastError)}
+                {staleAgeDays != null
+                  ? ` Last attempt ${staleAgeDays}d ago.`
+                  : null}
+              </>
+            ) : staleAgeDays != null ? (
+              `Last sync ${staleAgeDays}d ago. KPIs reflect that sync.`
+            ) : (
+              "KPIs reflect the last successful sync."
+            )}
+          </AlertBanner>
+        </DismissibleStrip>
       ) : null}
 
       {/* Pending curation banner deliberately removed from global layout —
@@ -330,4 +366,65 @@ export default async function PortalLayout({
       <BugReportButton />
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// summarizeAppfolioError — turns the raw lastError string into a short,
+// operator-readable diagnosis. The previous banner just said "AppFolio sync
+// failed" with no reason, which left operators (like SG Real Estate) staring
+// at a stale-data warning for weeks with no idea what to do. This classifier
+// reads the common AppFolio failure modes and renders a one-liner the
+// operator can act on.
+// ---------------------------------------------------------------------------
+function summarizeAppfolioError(raw: string): string {
+  const lower = raw.toLowerCase();
+  // Credentials revoked / wrong / expired
+  if (
+    lower.includes("401") ||
+    lower.includes("unauthorized") ||
+    lower.includes("invalid_client") ||
+    lower.includes("invalid credentials") ||
+    lower.includes("auth")
+  ) {
+    return "Credentials rejected by AppFolio. Re-enter your client ID and secret.";
+  }
+  // AppFolio Core plan — REST not available
+  if (
+    lower.includes("403") ||
+    lower.includes("forbidden") ||
+    lower.includes("not entitled") ||
+    lower.includes("plan does not include") ||
+    lower.includes("upgrade")
+  ) {
+    return "Your AppFolio plan doesn't include REST API access. Talk to AppFolio about upgrading, or use the embed fallback.";
+  }
+  // Network / timeouts
+  if (
+    lower.includes("timeout") ||
+    lower.includes("etimedout") ||
+    lower.includes("network") ||
+    lower.includes("econnrefused") ||
+    lower.includes("fetch failed")
+  ) {
+    return "Network timeout reaching AppFolio. Will retry automatically — if it persists, AppFolio may be down.";
+  }
+  // Rate limiting
+  if (
+    lower.includes("429") ||
+    lower.includes("rate limit") ||
+    lower.includes("too many requests")
+  ) {
+    return "AppFolio rate-limited the sync. Will back off and retry.";
+  }
+  // Missing subdomain or config
+  if (
+    lower.includes("subdomain") ||
+    lower.includes("missing") ||
+    lower.includes("not configured")
+  ) {
+    return "Integration partially configured. Open the integration to finish setup.";
+  }
+  // Unknown — surface the raw error truncated.
+  const trimmed = raw.replace(/\s+/g, " ").trim();
+  return trimmed.length > 140 ? `${trimmed.slice(0, 137)}…` : trimmed;
 }

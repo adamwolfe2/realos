@@ -184,7 +184,13 @@ export function PropertyMultiSelect({
       {open ? (
         <div
           role="listbox"
-          className="absolute right-0 z-30 mt-1 w-72 rounded-md border border-border bg-background shadow-lg"
+          // Anchor LEFT-aligned so the panel always extends rightward from
+          // the trigger. Was right-0, which works for top-bar usage where
+          // the trigger sits at the page's right edge — but on filter
+          // forms like /portal/reports the trigger is on the left, and
+          // right-0 caused the 288px panel to extend leftward off-screen
+          // (clipped by the sidebar). Left-anchored is the safer default.
+          className="absolute left-0 z-30 mt-1 w-72 rounded-md border border-border bg-background shadow-lg"
         >
           <div className="border-b border-border p-2">
             <div className="relative">
