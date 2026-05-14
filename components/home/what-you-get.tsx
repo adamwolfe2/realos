@@ -1,63 +1,88 @@
-import { BrandIcon, DeliverableIcon, type Deliverable } from "./shared-icons";
+import {
+  MetaMark,
+  GoogleMark,
+  TikTokMark,
+  SlackMark,
+  CalcomMark,
+  ResendMark,
+  GA4Mark,
+  AppFolioMark,
+  ChatGPTMark,
+  PerplexityMark,
+  ClaudeMark,
+  GeminiMark,
+  LinkedInMark,
+  VercelMark,
+  FigmaMark,
+} from "@/components/platform/artifacts/brand-logos";
 
-const DELIVERABLES: Deliverable[] = [
+// ---------------------------------------------------------------------------
+// WhatYouGet — editorial rewrite (drastic structural change).
+//
+// Was: 8 generic icon-card grid + random colored timeline pills.
+// Now: three-pillar editorial block at the top → integrated module strip
+//      with real brand logos → clean horizontal launch track at the bottom.
+//
+// Single column of typographic rhythm, not a grid of disconnected cards.
+// ---------------------------------------------------------------------------
+
+const PILLARS = [
   {
-    key:   "report",
-    title: "The report that writes itself",
-    body:  "Every Monday: leases attributed to source, spend summary, pacing vs. last cycle, anomalies flagged, and the three actions to take this week.",
-    icon:  "report",
-    logos: [{ brand: "resend" }],
-    big:   true,
+    num: "01",
+    headline: "Full visibility.",
+    body: "Every lead source, every channel, every conversion tracked, aggregated, and reported automatically. No spreadsheets. No agency black boxes.",
+    proof: "100% spend tracked to lease",
   },
   {
-    key:   "pixel",
+    num: "02",
+    headline: "Recommendations, not just reports.",
+    body: "LeaseStack does not just show you what happened. It tells you what to do next, prioritized by impact, ready for your Monday morning.",
+    proof: "3 next actions delivered weekly",
+  },
+  {
+    num: "03",
+    headline: "Operator-built, priced for the market.",
+    body: "Not a generic SaaS retrofitted to housing. Not an agency with a reporting layer bolted on. A purpose-built platform from someone who managed the lease-up.",
+    proof: "Replaces the typical agency retainer",
+  },
+];
+
+type Module = {
+  title: string;
+  body: string;
+  logos: React.ReactNode[];
+};
+
+const MODULES: Module[] = [
+  {
+    title: "Your weekly report writes itself",
+    body: "Leases attributed to source, pacing vs. last cycle, anomalies flagged, and the three actions to take this week. One page, readable over coffee.",
+    logos: [<ResendMark key="r" size={16} />, <SlackMark key="s" size={16} />],
+  },
+  {
     title: "Know who visited your site",
-    body:  "Not just how many. Names and emails on a meaningful share of your anonymous traffic, fed straight into your CRM.",
-    icon:  "pixel",
-    logos: [{ brand: "ga" }, { brand: "linkedin" }],
+    body: "Not just how many. Names and emails on a meaningful share of your anonymous traffic, fed straight into your CRM.",
+    logos: [<GA4Mark key="ga" size={16} />, <LinkedInMark key="li" size={16} />],
   },
   {
-    key:   "chatbot",
     title: "An assistant that captures leads at 2am",
-    body:  "Trained on your units, pricing rules, and application process. Hot leads land with your team the next morning, thread attached.",
-    icon:  "chat",
-    logos: [{ brand: "claude" }],
+    body: "Trained on your units, pricing rules, and application process. Hot leads land with your team the next morning, thread attached.",
+    logos: [<ClaudeMark key="cl" size={16} />, <CalcomMark key="c" size={16} />],
   },
   {
-    key:   "ads",
     title: "Ads with attribution to the lease",
-    body:  "Google and Meta, geo-fenced and retargeted, creative refreshed weekly. Spend tied back to lease signings, not impressions.",
-    icon:  "ads",
-    logos: [{ brand: "meta" }, { brand: "google" }, { brand: "tiktok" }],
+    body: "Google and Meta, geo-fenced and retargeted, creative refreshed weekly. Spend tied back to lease signings, not impressions.",
+    logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g" size={16} />, <TikTokMark key="t" size={16} />],
   },
   {
-    key:   "site",
-    title: "A site that ranks where prospects look",
-    body:  "Built on your domain. Fast, search-friendly, updated by live listing sync. Designed to convert traffic into tours.",
-    icon:  "home",
-    logos: [{ brand: "vercel" }, { brand: "figma" }],
-  },
-  {
-    key:   "seo",
     title: "Pages quoted by AI search",
-    body:  "Written to rank in Google and to be cited by ChatGPT, Perplexity, Claude, and Gemini. Per-location coverage.",
-    icon:  "search",
-    logos: [{ brand: "chatgpt" }, { brand: "perplexity" }, { brand: "claude" }, { brand: "gemini" }, { brand: "google" }],
+    body: "Written to rank in Google and to be cited by ChatGPT, Perplexity, Claude, and Gemini. Per-location coverage.",
+    logos: [<ChatGPTMark key="c" size={16} />, <PerplexityMark key="p" size={16} />, <ClaudeMark key="cl" size={16} />, <GeminiMark key="gem" size={16} />, <GoogleMark key="g" size={16} />],
   },
   {
-    key:   "tours",
-    title: "Tour booking, every page",
-    body:  "Prospects book tours from any page, any channel. Connected to your leasing team's calendar, attribution attached.",
-    icon:  "cal",
-    logos: [{ brand: "cal" }],
-  },
-  {
-    key:   "crm",
     title: "One pipeline. Every channel.",
-    body:  "Forms, exit intent, chat, calls, scheduling links. Every lead lands in one place, source attached, routed to your team in Slack.",
-    icon:  "mail",
-    logos: [{ brand: "resend" }, { brand: "slack" }, { brand: "appfolio" }],
-    big:   true,
+    body: "Forms, exit intent, chat, calls, scheduling links. Every lead lands in one place, source attached, routed to your team.",
+    logos: [<AppFolioMark key="af" size={16} />, <VercelMark key="v" size={16} />, <FigmaMark key="f" size={16} />],
   },
 ];
 
@@ -69,297 +94,359 @@ export function WhatYouGet() {
         borderTop: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-20 md:py-28">
-        <div className="max-w-3xl mb-12">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-24 md:py-32">
+        {/* Section header */}
+        <div className="max-w-3xl mb-20">
           <p className="eyebrow mb-4">What you get</p>
           <h2
             style={{
               color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
-              fontSize: "clamp(32px, 4.2vw, 52px)",
+              fontSize: "clamp(36px, 5.2vw, 64px)",
               fontWeight: 700,
-              lineHeight: 1.06,
-              letterSpacing: "-0.025em",
+              lineHeight: 1.02,
+              letterSpacing: "-0.03em",
             }}
           >
-            Full visibility.
+            The intelligence layer
             <br />
-            <span style={{ color: "#2563EB" }}>Zero extra work.</span>
+            <span style={{ color: "#2563EB" }}>your stack is missing.</span>
           </h2>
           <p
-            className="mt-5 max-w-2xl"
+            className="mt-6 max-w-2xl"
             style={{
               color: "#64748B",
               fontFamily: "var(--font-sans)",
-              fontSize: "17px",
+              fontSize: "18px",
               lineHeight: 1.6,
             }}
           >
-            Every lead source, every channel, every conversion. Tracked,
-            aggregated, and reported automatically. No spreadsheets. No agency
-            black boxes.
+            LeaseStack connects to what you already run and turns it into
+            one weekly read. Visibility, recommendations, and the work done
+            for you.
           </p>
         </div>
 
-        {/* Mobile: horizontal snap carousel. Desktop: grid */}
-        <div
-          className="md:grid md:grid-cols-3 lg:grid-cols-4 gap-3 mb-20 flex overflow-x-auto md:overflow-visible pb-3 md:pb-0"
-          style={{ scrollSnapType: "x mandatory", WebkitOverflowScrolling: "touch" }}
-        >
-          {DELIVERABLES.map((d) => (
-            <div
-              key={d.key}
-              className={`flex-shrink-0 w-[82vw] max-w-[320px] md:w-auto md:max-w-none md:col-span-1 ${d.big ? "md:col-span-2" : ""}`}
-              style={{ scrollSnapAlign: "start" }}
-            >
-              <DeliverableCard d={d} />
-            </div>
+        {/* Three pillars — editorial, not card-grid */}
+        <ol className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-12 mb-24 md:mb-32">
+          {PILLARS.map((p) => (
+            <li key={p.num}>
+              <p
+                style={{
+                  color: "#2563EB",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "12px",
+                  letterSpacing: "0.2em",
+                  fontWeight: 700,
+                }}
+              >
+                {p.num}
+              </p>
+              <h3
+                className="mt-3"
+                style={{
+                  color: "#1E2A3A",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "clamp(22px, 2.4vw, 28px)",
+                  fontWeight: 700,
+                  lineHeight: 1.18,
+                  letterSpacing: "-0.02em",
+                }}
+              >
+                {p.headline}
+              </h3>
+              <p
+                className="mt-4"
+                style={{
+                  color: "#64748B",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "15.5px",
+                  lineHeight: 1.6,
+                }}
+              >
+                {p.body}
+              </p>
+              <p
+                className="mt-5 pt-4"
+                style={{
+                  borderTop: "1px solid #E2E8F0",
+                  color: "#1E2A3A",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11.5px",
+                  letterSpacing: "0.06em",
+                  fontWeight: 600,
+                }}
+              >
+                <span style={{ color: "#16A34A" }}>●</span>&nbsp;&nbsp;{p.proof}
+              </p>
+            </li>
           ))}
+        </ol>
+
+        {/* Module strip — replaces the 8-card grid. Two-column list, each
+            row a clean editorial line with real brand logos on the right. */}
+        <div className="mb-24 md:mb-32">
+          <div className="flex items-end justify-between gap-6 mb-10 flex-wrap">
+            <h3
+              style={{
+                color: "#1E2A3A",
+                fontFamily: "var(--font-sans)",
+                fontSize: "clamp(24px, 2.8vw, 32px)",
+                fontWeight: 700,
+                lineHeight: 1.15,
+                letterSpacing: "-0.02em",
+                maxWidth: "560px",
+              }}
+            >
+              Inside the platform.
+            </h3>
+            <p
+              style={{
+                color: "#64748B",
+                fontFamily: "var(--font-sans)",
+                fontSize: "15px",
+                lineHeight: 1.55,
+                maxWidth: "420px",
+              }}
+            >
+              Six modules, one login. We run them. You review the weekly
+              report.
+            </p>
+          </div>
+
+          <ul
+            style={{
+              backgroundColor: "#FFFFFF",
+              border: "1px solid #E2E8F0",
+              borderRadius: 4,
+              overflow: "hidden",
+            }}
+          >
+            {MODULES.map((m, i) => (
+              <li
+                key={m.title}
+                className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 md:gap-10 px-6 md:px-8 py-6 md:py-7"
+                style={{
+                  borderTop: i === 0 ? "none" : "1px solid #E2E8F0",
+                  alignItems: "center",
+                }}
+              >
+                <div>
+                  <h4
+                    style={{
+                      color: "#1E2A3A",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "19px",
+                      fontWeight: 600,
+                      lineHeight: 1.3,
+                      letterSpacing: "-0.01em",
+                    }}
+                  >
+                    {m.title}
+                  </h4>
+                  <p
+                    className="mt-2 max-w-2xl"
+                    style={{
+                      color: "#64748B",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "14.5px",
+                      lineHeight: 1.55,
+                    }}
+                  >
+                    {m.body}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 md:justify-end opacity-80">
+                  {m.logos}
+                </div>
+              </li>
+            ))}
+          </ul>
         </div>
 
-        <GrowthTimeline />
+        <LaunchTrack />
       </div>
     </section>
   );
 }
 
-function DeliverableCard({ d }: { d: Deliverable }) {
-  return (
-    <div
-      className="p-6 h-full flex flex-col gap-3"
-      style={{
-        backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: "0 0 0 1px #E2E8F0",
-        transition: "transform 260ms ease, box-shadow 260ms ease",
-      }}
-    >
-      <div className="flex items-center gap-2">
-        <span
-          className="inline-flex items-center justify-center flex-shrink-0"
-          style={{
-            width: "34px",
-            height: "34px",
-            borderRadius: "10px",
-            backgroundColor: "rgba(37,99,235,0.12)",
-            color: "#2563EB",
-          }}
-        >
-          <DeliverableIcon kind={d.icon} />
-        </span>
-        {d.logos && d.logos.length > 0 ? (
-          <span className="ml-auto inline-flex items-center gap-1">
-            {d.logos.map((l, i) => (
-              <BrandIcon key={`${d.key}-${l.brand}-${i}`} brand={l.brand} />
-            ))}
-          </span>
-        ) : null}
-      </div>
-      <h3
-        style={{
-          color: "#1E2A3A",
-          fontFamily: "var(--font-display)",
-          fontSize: "19px",
-          fontWeight: 600,
-          lineHeight: 1.22,
-          letterSpacing: "-0.01em",
-        }}
-      >
-        {d.title}
-      </h3>
-      <p
-        style={{
-          color: "#64748B",
-          fontFamily: "var(--font-sans)",
-          fontSize: "14px",
-          lineHeight: 1.55,
-        }}
-      >
-        {d.body}
-      </p>
-    </div>
-  );
-}
+// ---------------------------------------------------------------------------
+// LaunchTrack — clean horizontal narrative, killed the colored pills.
+// ---------------------------------------------------------------------------
 
-type TimelineStep = {
+type LaunchStep = {
   when: string;
   title: string;
   body: string;
-  metric?: string;
-  metricTone?: "neutral" | "up";
+  marker: "before" | "launch" | "after";
 };
 
-const TIMELINE: TimelineStep[] = [
+const LAUNCH_STEPS: LaunchStep[] = [
   {
-    when:  "Day 1",
+    when: "Day 1",
     title: "Intake call",
-    body:  "Thirty minutes. We audit your current marketing stack and lock the build plan.",
+    body: "Thirty minutes. We audit your stack live and lock the build plan.",
+    marker: "before",
   },
   {
-    when:  "Day 7",
+    when: "Day 7",
     title: "Site preview",
-    body:  "Your custom site on a staging link. You comment, we iterate, you approve.",
+    body: "Your custom site on a staging URL. You comment, we iterate.",
+    marker: "before",
   },
   {
-    when:  "Day 14",
+    when: "Day 14",
     title: "Live on your domain",
-    body:  "DNS flipped. Pixel firing. Chatbot answering. Ads running.",
-    metric: "Launch",
-    metricTone: "neutral",
+    body: "DNS flipped. Pixel firing. Chatbot answering. Ads running.",
+    marker: "launch",
   },
   {
-    when:  "Day 30",
+    when: "Day 30",
     title: "First leases attributed",
-    body:  "AI chatbot capturing leads 24/7. Visitor pixel identifying traffic. First tour bookings flow in.",
-    metric: "Leads",
-    metricTone: "up",
+    body: "Visitor pixel naming traffic. Tours booking. AI insights flowing.",
+    marker: "after",
   },
   {
-    when:  "Day 60",
+    when: "Day 60",
     title: "Cost curves drop",
-    body:  "Ads optimized. Creative shipping weekly. AI answer engines starting to cite your pages.",
-    metric: "Cost per tour",
-    metricTone: "up",
+    body: "Ads optimized. Creative refreshing weekly. AI search citing your pages.",
+    marker: "after",
   },
   {
-    when:  "Day 90",
+    when: "Day 90",
     title: "Compounding",
-    body:  "Portfolio-wide visibility. Identified visitors flowing to CRM. Monday report shows real growth.",
-    metric: "Growth",
-    metricTone: "up",
+    body: "Portfolio-wide visibility. Identified visitors in CRM. Real growth.",
+    marker: "after",
   },
 ];
 
-function GrowthTimeline() {
+function LaunchTrack() {
   return (
     <div>
-      <div className="flex items-end justify-between gap-4 mb-8 flex-wrap">
+      <div className="mb-10 flex items-end justify-between gap-6 flex-wrap">
         <div>
-          <p
-            style={{
-              color: "#2563EB",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              letterSpacing: "0.22em",
-              textTransform: "uppercase",
-              fontWeight: 600,
-            }}
-          >
-            Your first 90 days
-          </p>
+          <p className="eyebrow mb-3">Your first 90 days</p>
           <h3
-            className="mt-2"
             style={{
               color: "#1E2A3A",
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(26px, 3.2vw, 38px)",
+              fontFamily: "var(--font-sans)",
+              fontSize: "clamp(24px, 2.8vw, 34px)",
               fontWeight: 700,
-              lineHeight: 1.1,
-              letterSpacing: "-0.025em",
+              lineHeight: 1.15,
+              letterSpacing: "-0.02em",
             }}
           >
             Live in fourteen days. Compounding from day one.
           </h3>
         </div>
+        <p
+          style={{
+            color: "#94A3B8",
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            letterSpacing: "0.18em",
+            textTransform: "uppercase",
+            fontWeight: 600,
+          }}
+        >
+          Day 14 = Launch
+        </p>
       </div>
 
-      <ol className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-3 relative">
+      {/* Horizontal track with a continuous baseline so the timeline reads
+          as one connected story instead of six floating cards. */}
+      <div className="relative">
         <div
           aria-hidden
-          className="hidden lg:block absolute"
+          className="hidden md:block absolute"
           style={{
-            top: "18px",
-            left: "8%",
-            right: "8%",
-            height: "2px",
-            background: "linear-gradient(to right, #E2E8F0 0%, #2563EB 30%, #2563EB 60%, #E2E8F0 100%)",
-            opacity: 0.5,
+            top: 13,
+            left: "5%",
+            right: "5%",
+            height: 1,
+            backgroundColor: "#E2E8F0",
+            zIndex: 0,
           }}
         />
-        {TIMELINE.map((step, i) => {
-          const isLaunch = step.when === "Day 14";
-          return (
-            <li
-              key={step.when}
-              className="relative p-5"
-              style={{
-                backgroundColor: "#ffffff",
-                borderRadius: "14px",
-                boxShadow: `0 0 0 1px ${isLaunch ? "rgba(37,99,235,0.35)" : "#E2E8F0"}`,
-              }}
-            >
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block"
-                  style={{
-                    width: "10px",
-                    height: "10px",
-                    borderRadius: "50%",
-                    backgroundColor: i < 2 ? "#94A3B8" : "#2563EB",
-                    boxShadow: "0 0 0 4px #ffffff",
-                    position: "relative",
-                    zIndex: 1,
-                  }}
-                />
+        <div
+          aria-hidden
+          className="hidden md:block absolute"
+          style={{
+            top: 11,
+            left: "5%",
+            width: "calc(35% - 5%)",
+            height: 5,
+            backgroundColor: "#2563EB",
+            borderRadius: 1,
+            zIndex: 0,
+          }}
+        />
+
+        <ol className="relative grid grid-cols-2 md:grid-cols-6 gap-x-3 gap-y-8 z-10">
+          {LAUNCH_STEPS.map((s) => {
+            const isLaunch = s.marker === "launch";
+            const isBefore = s.marker === "before";
+            return (
+              <li key={s.when} className="relative">
+                <div className="flex items-center gap-2 mb-3">
+                  <span
+                    aria-hidden
+                    style={{
+                      width: isLaunch ? 16 : 10,
+                      height: isLaunch ? 16 : 10,
+                      borderRadius: "50%",
+                      backgroundColor: isLaunch
+                        ? "#2563EB"
+                        : isBefore
+                          ? "#2563EB"
+                          : "#CBD5E1",
+                      boxShadow: isLaunch
+                        ? "0 0 0 4px rgba(37,99,235,0.15)"
+                        : "none",
+                      transition: "all 200ms ease",
+                    }}
+                  />
+                  <span
+                    style={{
+                      color: isLaunch ? "#2563EB" : "#64748B",
+                      fontFamily: "var(--font-mono)",
+                      fontSize: "10.5px",
+                      letterSpacing: "0.16em",
+                      fontWeight: 700,
+                      textTransform: "uppercase",
+                    }}
+                  >
+                    {s.when}
+                  </span>
+                </div>
                 <p
                   style={{
-                    color: "#2563EB",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "10px",
-                    letterSpacing: "0.18em",
-                    textTransform: "uppercase",
-                    fontWeight: 700,
+                    color: "#1E2A3A",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "16px",
+                    fontWeight: 600,
+                    letterSpacing: "-0.01em",
+                    lineHeight: 1.3,
                   }}
                 >
-                  {step.when}
+                  {s.title}
                 </p>
-              </div>
-              <h4
-                className="mt-3"
-                style={{
-                  color: "#1E2A3A",
-                  fontFamily: "var(--font-display)",
-                  fontSize: "18px",
-                  fontWeight: 600,
-                  lineHeight: 1.2,
-                  letterSpacing: "-0.01em",
-                }}
-              >
-                {step.title}
-              </h4>
-              <p
-                className="mt-2"
-                style={{
-                  color: "#64748B",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "13px",
-                  lineHeight: 1.5,
-                }}
-              >
-                {step.body}
-              </p>
-              {step.metric ? (
                 <p
-                  className="mt-3"
+                  className="mt-1.5"
                   style={{
-                    color: step.metricTone === "up" ? "#16A34A" : "#2563EB",
-                    fontFamily: "var(--font-mono)",
-                    fontSize: "11px",
-                    letterSpacing: "0.06em",
-                    fontWeight: 700,
-                    padding: "4px 8px",
-                    backgroundColor: step.metricTone === "up" ? "rgba(22, 163, 74,0.10)" : "rgba(37,99,235,0.10)",
-                    borderRadius: "6px",
-                    display: "inline-block",
+                    color: "#64748B",
+                    fontFamily: "var(--font-sans)",
+                    fontSize: "13px",
+                    lineHeight: 1.5,
                   }}
                 >
-                  {step.metric}
+                  {s.body}
                 </p>
-              ) : null}
-            </li>
-          );
-        })}
-      </ol>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
     </div>
   );
 }
