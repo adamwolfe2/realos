@@ -15,6 +15,15 @@ import {
   VercelMark,
   FigmaMark,
 } from "@/components/platform/artifacts/brand-logos";
+import {
+  Phone,
+  Eye,
+  Rocket,
+  TrendingDown,
+  LineChart,
+  Layers,
+  type LucideIcon,
+} from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // WhatYouGet — editorial rewrite (drastic structural change).
@@ -279,7 +288,7 @@ type LaunchStep = {
   title: string;
   body: string;
   marker: "before" | "launch" | "after";
-  artifact: "intake" | "preview" | "launch" | "pipeline" | "optimize" | "compound";
+  icon: LucideIcon;
 };
 
 const LAUNCH_STEPS: LaunchStep[] = [
@@ -288,42 +297,42 @@ const LAUNCH_STEPS: LaunchStep[] = [
     title: "Intake call",
     body: "Thirty minutes. We audit your stack live and lock the build plan.",
     marker: "before",
-    artifact: "intake",
+    icon: Phone,
   },
   {
     when: "Day 7",
     title: "Site preview",
     body: "Your custom site on a staging URL. You comment, we iterate.",
     marker: "before",
-    artifact: "preview",
+    icon: Eye,
   },
   {
     when: "Day 14",
     title: "Live on your domain",
     body: "DNS flipped. Pixel firing. Chatbot answering. Ads running.",
     marker: "launch",
-    artifact: "launch",
+    icon: Rocket,
   },
   {
     when: "Day 30",
     title: "First leases attributed",
     body: "Visitor pixel naming traffic. Tours booking. AI insights flowing.",
     marker: "after",
-    artifact: "pipeline",
+    icon: LineChart,
   },
   {
     when: "Day 60",
     title: "Cost curves drop",
     body: "Ads optimized. Creative refreshing weekly. AI search citing your pages.",
     marker: "after",
-    artifact: "optimize",
+    icon: TrendingDown,
   },
   {
     when: "Day 90",
     title: "Compounding",
     body: "Portfolio-wide visibility. Identified visitors in CRM. Real growth.",
     marker: "after",
-    artifact: "compound",
+    icon: Layers,
   },
 ];
 
@@ -389,13 +398,16 @@ function LaunchTrack() {
           }}
         />
 
-        <ol className="relative grid grid-cols-2 md:grid-cols-6 gap-x-3 gap-y-8 z-10">
+        <ol className="relative grid grid-cols-2 md:grid-cols-6 gap-x-4 gap-y-10 z-10">
           {LAUNCH_STEPS.map((s) => {
             const isLaunch = s.marker === "launch";
             const isBefore = s.marker === "before";
+            const Icon = s.icon;
+            const isActive = isLaunch || isBefore;
             return (
               <li key={s.when} className="relative">
-                <div className="flex items-center gap-2 mb-3">
+                {/* Dot + Day label sit on the timeline baseline */}
+                <div className="flex items-center gap-2 mb-5">
                   <span
                     aria-hidden
                     style={{
@@ -426,11 +438,27 @@ function LaunchTrack() {
                     {s.when}
                   </span>
                 </div>
-                {/* Mini artifact per step so the timeline reads as a product
-                    journey, not a row of text labels under disconnected dots. */}
-                <LaunchArtifact kind={s.artifact} highlighted={isLaunch} />
+                {/* Single icon chip per step — consistent across all 6,
+                    scannable at a glance. Replaced the busy faux-UI mockups
+                    that read as noise at this scale. */}
+                <div
+                  className="inline-flex items-center justify-center mb-4"
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 4,
+                    backgroundColor: isActive
+                      ? "rgba(37,99,235,0.10)"
+                      : "#F1F5F9",
+                    color: isActive ? "#2563EB" : "#94A3B8",
+                    border: isLaunch
+                      ? "1px solid rgba(37,99,235,0.25)"
+                      : "1px solid transparent",
+                  }}
+                >
+                  <Icon className="w-5 h-5" strokeWidth={1.6} />
+                </div>
                 <p
-                  className="mt-3"
                   style={{
                     color: "#1E2A3A",
                     fontFamily: "var(--font-sans)",
@@ -462,298 +490,8 @@ function LaunchTrack() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// LaunchArtifact — tiny product mockup rendered under each timeline step.
-// Each kind is a CSS-only mini surface so the 90-day track reads as an
-// actual product journey, not a row of dots and text labels.
-// ---------------------------------------------------------------------------
-function LaunchArtifact({
-  kind,
-  highlighted,
-}: {
-  kind: "intake" | "preview" | "launch" | "pipeline" | "optimize" | "compound";
-  highlighted: boolean;
-}) {
-  const ringColor = highlighted ? "#2563EB" : "#E2E8F0";
-  const baseStyle: React.CSSProperties = {
-    border: `1px solid ${ringColor}`,
-    borderRadius: 3,
-    backgroundColor: "#FFFFFF",
-    padding: 7,
-    height: 56,
-    overflow: "hidden",
-    boxShadow: highlighted ? "0 0 0 3px rgba(37,99,235,0.10)" : "none",
-  };
-
-  if (kind === "intake") {
-    return (
-      <div style={baseStyle}>
-        <p
-          style={{
-            color: "#2563EB",
-            fontFamily: "var(--font-mono)",
-            fontSize: "8px",
-            letterSpacing: "0.14em",
-            fontWeight: 700,
-            textTransform: "uppercase",
-          }}
-        >
-          Call · 30 min
-        </p>
-        <div className="mt-1.5 flex items-center gap-1">
-          <span
-            style={{
-              width: 16,
-              height: 16,
-              borderRadius: "50%",
-              backgroundColor: "#2563EB",
-              color: "#FFFFFF",
-              fontFamily: "var(--font-sans)",
-              fontSize: "8px",
-              fontWeight: 700,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-            aria-hidden="true"
-          >
-            N
-          </span>
-          <span
-            style={{
-              width: 16,
-              height: 16,
-              borderRadius: "50%",
-              backgroundColor: "#1E2A3A",
-              color: "#FFFFFF",
-              fontFamily: "var(--font-sans)",
-              fontSize: "8px",
-              fontWeight: 700,
-              display: "inline-flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginLeft: -4,
-            }}
-            aria-hidden="true"
-          >
-            A
-          </span>
-          <span
-            style={{
-              color: "#64748B",
-              fontFamily: "var(--font-mono)",
-              fontSize: "8.5px",
-              marginLeft: 4,
-            }}
-          >
-            zoom.us
-          </span>
-        </div>
-      </div>
-    );
-  }
-  if (kind === "preview") {
-    return (
-      <div style={{ ...baseStyle, padding: 5 }}>
-        <div className="flex gap-1 mb-1">
-          <span style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#E2E8F0" }} />
-          <span style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#E2E8F0" }} />
-          <span style={{ width: 4, height: 4, borderRadius: "50%", backgroundColor: "#E2E8F0" }} />
-        </div>
-        <div
-          style={{
-            height: 36,
-            background: "linear-gradient(135deg, #1E2A3A 0%, #2563EB 100%)",
-            borderRadius: 2,
-            padding: 4,
-          }}
-        >
-          <div
-            style={{
-              width: "50%",
-              height: 3,
-              backgroundColor: "rgba(255,255,255,0.8)",
-              borderRadius: 1,
-            }}
-          />
-          <div
-            style={{
-              width: "70%",
-              height: 2,
-              backgroundColor: "rgba(255,255,255,0.5)",
-              borderRadius: 1,
-              marginTop: 3,
-            }}
-          />
-          <div
-            style={{
-              width: "30%",
-              height: 6,
-              backgroundColor: "#FFFFFF",
-              borderRadius: 1,
-              marginTop: 6,
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
-  if (kind === "launch") {
-    return (
-      <div style={baseStyle}>
-        <div className="flex items-center justify-between">
-          <span
-            style={{
-              color: "#16A34A",
-              fontFamily: "var(--font-mono)",
-              fontSize: "8px",
-              letterSpacing: "0.12em",
-              fontWeight: 700,
-              textTransform: "uppercase",
-            }}
-          >
-            ● LIVE
-          </span>
-          <span
-            style={{
-              color: "#64748B",
-              fontFamily: "var(--font-mono)",
-              fontSize: "8px",
-              letterSpacing: "0.04em",
-            }}
-          >
-            yourdomain.com
-          </span>
-        </div>
-        <div className="mt-1.5 flex gap-1">
-          {["DNS", "Pixel", "Bot", "Ads"].map((tag) => (
-            <span
-              key={tag}
-              style={{
-                padding: "2px 4px",
-                backgroundColor: "rgba(22,163,74,0.10)",
-                color: "#16A34A",
-                fontFamily: "var(--font-mono)",
-                fontSize: "7.5px",
-                fontWeight: 700,
-                letterSpacing: "0.08em",
-                borderRadius: 1,
-              }}
-            >
-              {tag} ✓
-            </span>
-          ))}
-        </div>
-      </div>
-    );
-  }
-  if (kind === "pipeline") {
-    return (
-      <div style={baseStyle}>
-        <p
-          style={{
-            color: "#64748B",
-            fontFamily: "var(--font-mono)",
-            fontSize: "8px",
-            letterSpacing: "0.12em",
-            fontWeight: 700,
-            textTransform: "uppercase",
-          }}
-        >
-          Funnel · 28d
-        </p>
-        <div className="mt-1.5 flex items-end gap-1 h-6">
-          {[20, 16, 12, 6].map((h, i) => (
-            <div
-              key={i}
-              style={{
-                flex: 1,
-                height: h,
-                backgroundColor: "#2563EB",
-                opacity: 1 - i * 0.18,
-                borderRadius: 1,
-              }}
-            />
-          ))}
-        </div>
-        <p
-          className="mt-1"
-          style={{
-            color: "#1E2A3A",
-            fontFamily: "var(--font-mono)",
-            fontSize: "7.5px",
-            fontWeight: 700,
-            letterSpacing: "0.04em",
-          }}
-        >
-          142→38→11→3
-        </p>
-      </div>
-    );
-  }
-  if (kind === "optimize") {
-    return (
-      <div style={baseStyle}>
-        <p
-          style={{
-            color: "#64748B",
-            fontFamily: "var(--font-mono)",
-            fontSize: "8px",
-            letterSpacing: "0.12em",
-            fontWeight: 700,
-            textTransform: "uppercase",
-          }}
-        >
-          CPL · trending
-        </p>
-        <svg
-          viewBox="0 0 60 18"
-          preserveAspectRatio="none"
-          style={{ width: "100%", height: 22, marginTop: 2 }}
-          aria-hidden="true"
-        >
-          <polyline
-            points="0,4 10,5 20,7 30,9 40,11 50,13 60,15"
-            fill="none"
-            stroke="#2563EB"
-            strokeWidth="1.4"
-            strokeLinecap="round"
-            vectorEffect="non-scaling-stroke"
-          />
-        </svg>
-        <p
-          className="mt-1"
-          style={{
-            color: "#16A34A",
-            fontFamily: "var(--font-mono)",
-            fontSize: "8px",
-            fontWeight: 700,
-          }}
-        >
-          −34% in 30 days
-        </p>
-      </div>
-    );
-  }
-  // compound — portfolio rollup tiles
-  return (
-    <div style={baseStyle}>
-      <div className="grid grid-cols-3 gap-0.5 h-full">
-        {Array.from({ length: 9 }).map((_, i) => (
-          <div
-            key={i}
-            style={{
-              backgroundColor:
-                i % 5 === 0
-                  ? "#2563EB"
-                  : i % 3 === 0
-                    ? "rgba(37,99,235,0.45)"
-                    : "rgba(37,99,235,0.15)",
-              borderRadius: 1,
-            }}
-          />
-        ))}
-      </div>
-    </div>
-  );
-}
+// Removed LaunchArtifact: faux-UI mini mockups under each timeline step
+// (Zoom card, gradient hero, DNS/Pixel chips, funnel bars, sparkline,
+// 3x3 grid). At 56px height they read as visual noise, not product
+// surfaces. Replaced with a single consistent lucide icon chip per step
+// above — Phone / Eye / Rocket / LineChart / TrendingDown / Layers.
