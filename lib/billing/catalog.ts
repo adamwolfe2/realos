@@ -308,11 +308,19 @@ export type WebsiteBuildDefinition = {
   priceLookupKey: string;
   unitAmountCents: number;
   uiLabel: string;
+  // Short marketing tagline used as the card subtitle. Premium gets a
+  // sharper "what you actually get" line to differentiate.
+  tagline: string;
   // What the customer gets, surfaced on the website-service pricing
   // card during the wizard.
   bullets: string[];
   // Estimated delivery window, plain text for the marketing card.
   deliveryWindow: string;
+  // Premium-only: a bundled-value line shown beneath the price so the
+  // operator sees that the higher tier includes extras worth $X on top
+  // of the headline features (90 days of Reputation Pro + analytics
+  // setup + post-launch tuning). Null on Standard.
+  bonusValue: string | null;
 };
 
 export const WEBSITE_BUILDS: WebsiteBuildDefinition[] = [
@@ -325,6 +333,7 @@ export const WEBSITE_BUILDS: WebsiteBuildDefinition[] = [
     priceLookupKey: "ls_website_build_standard_v1",
     unitAmountCents: 250000,
     uiLabel: "Standard build",
+    tagline: "One property, launch in two weeks.",
     bullets: [
       "One property, up to 10 pages",
       "Live AppFolio listings integration",
@@ -334,25 +343,31 @@ export const WEBSITE_BUILDS: WebsiteBuildDefinition[] = [
       "One revision round",
     ],
     deliveryWindow: "2 to 3 weeks",
+    bonusValue: null,
   },
   {
     id: "premium",
     productLookupKey: "ls_website_build_premium",
     productName: "LeaseStack Website Build — Premium",
     productDescription:
-      "Everything in Standard plus copywriting, photography review, and a multi-property template suitable for two to five buildings on the same workspace.",
+      "Everything in Standard plus copywriting, photography review, multi-property template, SEO foundation, analytics setup, 30-day post-launch tuning, and a complimentary 90 days of Reputation Pro.",
     priceLookupKey: "ls_website_build_premium_v1",
     unitAmountCents: 450000,
     uiLabel: "Premium build",
+    tagline: "Multi-property, copy-written, launch-optimized.",
     bullets: [
       "Everything in Standard",
       "Up to 5 properties on one template",
-      "We write the copy (you review)",
-      "Photography review and curation",
-      "Two revision rounds",
-      "Priority kickoff call",
+      "Pro copywriter drafts every page (you review)",
+      "Photography curation + retouching",
+      "SEO foundation: schema, sitemap, AI-search ready",
+      "Conversion tracking + analytics goals pre-wired",
+      "30-day post-launch tuning + A/B test setup",
+      "White-glove training session with your team",
+      "Two revision rounds + priority kickoff",
     ],
     deliveryWindow: "3 to 4 weeks",
+    bonusValue: "Includes 90 days of Reputation Pro (worth $297)",
   },
 ];
 
