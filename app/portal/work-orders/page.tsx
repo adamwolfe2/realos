@@ -23,6 +23,11 @@ import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
+import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
+import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
+import { RunAppFolioSyncButton } from "@/components/portal/integrations/run-appfolio-sync-button";
+import { StaleOnLoadTrigger } from "@/components/portal/sync/stale-on-load-trigger";
+import { classifyFreshness } from "@/lib/sync/freshness";
 import { WorkOrderStatus, WorkOrderPriority } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Work orders" };
@@ -209,18 +214,61 @@ export default async function WorkOrdersPage({
   });
   const properties = visibleProperties(scope, allProperties);
 
+  const appfolioStatus = await getAppFolioStatus(scope.orgId).catch(() => null);
+  const freshness = appfolioStatus
+    ? classifyFreshness("appfolio", appfolioStatus.lastSyncAt, {
+        syncInProgress: appfolioStatus.state === "syncing",
+        hasError: appfolioStatus.state === "failed",
+      })
+    : null;
+  const shouldAutoSync =
+    appfolioStatus &&
+    (appfolioStatus.state === "synced" ||
+      appfolioStatus.state === "never_synced") &&
+    (freshness?.shouldAutoTrigger ?? false);
+  const lastSyncLabel = appfolioStatus?.lastSyncAt
+    ? `Synced ${formatDistanceToNow(appfolioStatus.lastSyncAt, { addSuffix: true })}`
+    : appfolioStatus?.state === "syncing"
+      ? "Sync in progress"
+      : appfolioStatus?.state === "failed"
+        ? "Sync failed — see banner below"
+        : "Never synced";
+
   return (
     <div className="space-y-4">
+      {shouldAutoSync ? (
+        <StaleOnLoadTrigger
+          endpoint="/api/tenant/appfolio/sync"
+          dedupeKey={`appfolio:work-orders:${scope.orgId}`}
+        />
+      ) : null}
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
       <PageHeader
         title="Work orders"
         description="Maintenance pipeline mirrored from AppFolio. Operator fulfillment happens in AppFolio; this view keeps you ahead of property issues."
         actions={
-          properties.length > 1 ? (
-            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
-          ) : null
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            <span className="text-[11px] text-muted-foreground hidden md:inline-block">
+              {lastSyncLabel}
+            </span>
+            <RunAppFolioSyncButton label="Sync now" subtle />
+            {properties.length > 1 ? (
+              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+            ) : null}
+          </div>
         }
       />
+
+      {appfolioStatus &&
+      (appfolioStatus.state !== "synced" ||
+        appfolioStatus.stale ||
+        (appfolioStatus.stats?.warnings?.length ?? 0) > 0) ? (
+        <AppFolioStatusBanner
+          status={appfolioStatus}
+          resourceLabel="work orders"
+          orgId={scope.orgId}
+        />
+      ) : null}
 
       <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
         <KpiTile

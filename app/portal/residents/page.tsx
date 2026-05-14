@@ -26,6 +26,11 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { DataTable, EntityCell } from "@/components/portal/ui/data-table";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
+import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
+import { RunAppFolioSyncButton } from "@/components/portal/integrations/run-appfolio-sync-button";
+import { StaleOnLoadTrigger } from "@/components/portal/sync/stale-on-load-trigger";
+import { classifyFreshness } from "@/lib/sync/freshness";
 import { ResidentStatus } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Residents" };
@@ -110,6 +115,7 @@ export default async function ResidentsPage({
     residents,
     properties,
     noticeBoard,
+    appfolioStatus,
   ] = await Promise.all([
     prisma.resident.count({ where: { ...where, status: ResidentStatus.ACTIVE } }),
     prisma.resident.count({
@@ -160,24 +166,71 @@ export default async function ResidentsPage({
         listing: { select: { unitNumber: true } },
       },
     }),
+    getAppFolioStatus(scope.orgId).catch(() => null),
   ]);
+
+  const freshness = appfolioStatus
+    ? classifyFreshness("appfolio", appfolioStatus.lastSyncAt, {
+        syncInProgress: appfolioStatus.state === "syncing",
+        hasError: appfolioStatus.state === "failed",
+      })
+    : null;
+  const shouldAutoSync =
+    appfolioStatus &&
+    (appfolioStatus.state === "synced" ||
+      appfolioStatus.state === "never_synced") &&
+    (freshness?.shouldAutoTrigger ?? false);
 
   const reachableActive = withEmailCount + withPhoneCount > 0 ? activeCount : 0;
   const emailCoveragePct =
     activeCount > 0 ? Math.round((withEmailCount / activeCount) * 100) : null;
 
+  const lastSyncLabel = appfolioStatus?.lastSyncAt
+    ? `Synced ${formatDistanceToNow(appfolioStatus.lastSyncAt, { addSuffix: true })}`
+    : appfolioStatus?.state === "syncing"
+      ? "Sync in progress"
+      : appfolioStatus?.state === "failed"
+        ? "Sync failed — see banner below"
+        : "Never synced";
+
   return (
     <div className="space-y-4">
+      {/* Auto-sync stale data on page mount — operators expect the
+          resident roster to reflect the latest move-ins / move-outs. */}
+      {shouldAutoSync ? (
+        <StaleOnLoadTrigger
+          endpoint="/api/tenant/appfolio/sync"
+          dedupeKey={`appfolio:residents:${scope.orgId}`}
+        />
+      ) : null}
+
       <PageHeader
         title="Residents"
         description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
         actions={
-          <PropertyMultiSelect
-            properties={visibleProperties(scope, properties)}
-            orgId={scope.orgId}
-          />
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            <span className="text-[11px] text-muted-foreground hidden md:inline-block">
+              {lastSyncLabel}
+            </span>
+            <RunAppFolioSyncButton label="Sync now" subtle />
+            <PropertyMultiSelect
+              properties={visibleProperties(scope, properties)}
+              orgId={scope.orgId}
+            />
+          </div>
         }
       />
+
+      {appfolioStatus &&
+      (appfolioStatus.state !== "synced" ||
+        appfolioStatus.stale ||
+        (appfolioStatus.stats?.warnings?.length ?? 0) > 0) ? (
+        <AppFolioStatusBanner
+          status={appfolioStatus}
+          resourceLabel="residents"
+          orgId={scope.orgId}
+        />
+      ) : null}
 
       {isAccessDenied(scope, propertyIds) ? (
         <PropertyAccessDeniedBanner pathname="/portal/residents" />

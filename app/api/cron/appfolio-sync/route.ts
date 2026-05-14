@@ -73,7 +73,12 @@ export async function GET(req: NextRequest) {
     async function processOne(
       integration: (typeof integrations)[number]
     ): Promise<SyncResult> {
-      const minutes = integration.syncFrequencyMinutes ?? 60;
+      // Default cadence dropped from 60 min to 30 min in line with the
+      // tightened Vercel cron schedule (*/30 * * * *). Lease renewals are
+      // contractually time-bound — operators on /portal/renewals expect
+      // data fresher than the hourly default. Integrations with a
+      // custom syncFrequencyMinutes still honor their explicit value.
+      const minutes = integration.syncFrequencyMinutes ?? 30;
       const cutoff = Date.now() - minutes * 60 * 1000;
       if (integration.lastSyncAt && integration.lastSyncAt.getTime() > cutoff) {
         return { orgId: integration.orgId, ok: true, skipped: true };

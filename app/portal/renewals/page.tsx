@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { differenceInDays } from "date-fns";
+import { differenceInDays, formatDistanceToNow as fdtn } from "date-fns";
 import {
   Calendar,
   AlertTriangle,
@@ -21,6 +21,11 @@ import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { tenantNameFromRaw } from "@/lib/integrations/appfolio-display";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
+import { AppFolioStatusBanner } from "@/components/portal/integrations/appfolio-status-banner";
+import { RunAppFolioSyncButton } from "@/components/portal/integrations/run-appfolio-sync-button";
+import { StaleOnLoadTrigger } from "@/components/portal/sync/stale-on-load-trigger";
+import { classifyFreshness } from "@/lib/sync/freshness";
 import { LeaseStatus } from "@prisma/client";
 import {
   RenewalsClient,
@@ -94,6 +99,7 @@ export default async function RenewalsPage({
     pastDueBalance,
     upcoming,
     rentRollTotal,
+    appfolioStatus,
   ] = await Promise.all([
     prisma.lease.count({ where: { ...where, status: LeaseStatus.ACTIVE } }),
     prisma.lease.count({
@@ -147,7 +153,25 @@ export default async function RenewalsPage({
       where: { ...where, status: LeaseStatus.ACTIVE },
       _sum: { monthlyRentCents: true },
     }),
+    getAppFolioStatus(scope.orgId).catch(() => null),
   ]);
+
+  // Freshness classification — tells us whether to auto-trigger a sync on
+  // page load. AppFolio's budget is already 1h stale / 24h very_stale
+  // (see lib/sync/freshness.ts), which is the right cadence for lease
+  // data — operators expect anything older than the hourly cron to
+  // self-heal on view.
+  const freshness = appfolioStatus
+    ? classifyFreshness("appfolio", appfolioStatus.lastSyncAt, {
+        syncInProgress: appfolioStatus.state === "syncing",
+        hasError: appfolioStatus.state === "failed",
+      })
+    : null;
+  const shouldAutoSync =
+    appfolioStatus &&
+    (appfolioStatus.state === "synced" ||
+      appfolioStatus.state === "never_synced") &&
+    (freshness?.shouldAutoTrigger ?? false);
 
   // Project the Prisma row shape into a flat, JSON-safe RenewalLease so
   // we can hand it to a client component without dragging Prisma's Date
@@ -190,15 +214,60 @@ export default async function RenewalsPage({
     }
   }
 
+  // Concise freshness line for the page header — operators see exactly how
+  // current the leases are without having to mentally translate the global
+  // chrome strip's "16d ago" into "should I trust this page".
+  const lastSyncLabel = appfolioStatus?.lastSyncAt
+    ? `Synced ${fdtn(appfolioStatus.lastSyncAt, { addSuffix: true })}`
+    : appfolioStatus?.state === "syncing"
+      ? "Sync in progress"
+      : appfolioStatus?.state === "failed"
+        ? "Sync failed — see banner below"
+        : "Never synced";
+
   return (
     <div className="space-y-4">
+      {/* Auto-trigger an AppFolio sync if data is stale when the page
+          mounts. Operators visiting Renewals expect fresh lease data;
+          this short-circuits the wait for the next hourly cron. The
+          sessionStorage dedupe key prevents two tabs / two banners on
+          the same load from firing redundant syncs. */}
+      {shouldAutoSync ? (
+        <StaleOnLoadTrigger
+          endpoint="/api/tenant/appfolio/sync"
+          dedupeKey={`appfolio:renewals:${scope.orgId}`}
+        />
+      ) : null}
+
       <PageHeader
         title="Renewals"
         description="Lease expirations from AppFolio. Act on renewals 120 days out so resignation deadlines never slip."
         actions={
-          <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          <div className="flex items-center gap-3 flex-wrap justify-end">
+            <span className="text-[11px] text-muted-foreground hidden md:inline-block">
+              {lastSyncLabel}
+            </span>
+            <RunAppFolioSyncButton label="Sync now" subtle />
+            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          </div>
         }
       />
+
+      {/* Per-page AppFolio status banner. Visible only when state is NOT
+          a clean "synced + fresh" — i.e. surfaces actively when the
+          operator needs to know data isn't current. The banner covers
+          syncing / never_synced / failed / stale states with appropriate
+          actions (retry, connect, dismiss). */}
+      {appfolioStatus &&
+      (appfolioStatus.state !== "synced" ||
+        appfolioStatus.stale ||
+        (appfolioStatus.stats?.warnings?.length ?? 0) > 0) ? (
+        <AppFolioStatusBanner
+          status={appfolioStatus}
+          resourceLabel="leases"
+          orgId={scope.orgId}
+        />
+      ) : null}
 
       {isAccessDenied(scope, propertyIds) ? (
         <PropertyAccessDeniedBanner pathname="/portal/renewals" />
