@@ -945,52 +945,38 @@ function ActiveFeaturesStrip({
   const liveCount = chips.filter((c) => c.connected).length;
 
   return (
-    <section className="rounded-xl border border-border bg-card p-3 md:p-4">
-      <div className="flex items-center justify-between mb-2 flex-wrap gap-2">
-        <div>
-          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-            Active features
-          </p>
-          <p className="text-xs text-foreground/70 mt-0.5">
-            {liveCount} of {chips.length} marketing channels live
-          </p>
-        </div>
-      </div>
-      {/* Brand-aligned chip treatment. Connected = subtle blue tint +
-          brand-blue dot; not connected = neutral muted. No green/amber
-          status colours so the strip reads as a single product surface
-          consistent with the rest of the LeaseStack canvas. */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
-        {chips.map((chip) => (
-          <a
-            key={chip.label}
-            href={chip.href}
-            className={`group rounded-lg border px-2.5 py-2 transition-colors ${
-              chip.connected
-                ? "border-primary/20 bg-primary/5 hover:bg-primary/10"
-                : "border-border bg-muted/30 hover:bg-muted/50"
-            }`}
-          >
-            <div className="flex items-center gap-1.5">
+    <section className="rounded-lg border border-border bg-card px-3 py-2.5">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <p className="text-[11px] tracking-widest uppercase font-semibold text-muted-foreground shrink-0">
+          Channels &middot;{" "}
+          <span className="text-foreground tabular-nums">
+            {liveCount}/{chips.length} live
+          </span>
+        </p>
+        <div className="flex items-center gap-1 flex-wrap min-w-0">
+          {chips.map((chip) => (
+            <a
+              key={chip.label}
+              href={chip.href}
+              title={chip.detail}
+              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 transition-colors ${
+                chip.connected
+                  ? "border-primary/25 bg-primary/[0.06] hover:bg-primary/10"
+                  : "border-border bg-muted/30 hover:bg-muted/50"
+              }`}
+            >
               <span
                 aria-hidden="true"
                 className={`h-1.5 w-1.5 rounded-full ${
                   chip.connected ? "bg-primary" : "bg-muted-foreground/40"
                 }`}
               />
-              <span className="text-[11px] font-semibold text-foreground truncate">
+              <span className="text-[11px] font-semibold text-foreground">
                 {chip.label}
               </span>
-            </div>
-            <p
-              className={`text-[10px] mt-0.5 truncate ${
-                chip.connected ? "text-primary" : "text-muted-foreground"
-              }`}
-            >
-              {chip.detail}
-            </p>
-          </a>
-        ))}
+            </a>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -1321,7 +1307,7 @@ function buildPropertyBriefing(args: {
   if (args.occupancyPct != null) {
     if (args.occupancyPct >= 95) {
       parts.push(
-        `Sitting at ${args.occupancyPct}% occupancy — effectively full.`,
+        `Sitting at ${args.occupancyPct}% occupancy. Effectively full.`,
       );
     } else if (args.occupancyPct >= 85) {
       parts.push(
@@ -1329,7 +1315,7 @@ function buildPropertyBriefing(args: {
       );
     } else {
       parts.push(
-        `Occupancy is ${args.occupancyPct}% — ${args.availableUnits} unit${args.availableUnits === 1 ? "" : "s"} sitting and worth attention.`,
+        `Occupancy is ${args.occupancyPct}%. ${args.availableUnits} unit${args.availableUnits === 1 ? "" : "s"} sitting, worth attention.`,
       );
     }
   } else if (args.totalUnits != null) {
@@ -1344,7 +1330,7 @@ function buildPropertyBriefing(args: {
 
   if (args.noticeGiven > 0) {
     parts.push(
-      `${args.noticeGiven} resident${args.noticeGiven === 1 ? " has" : "s have"} given notice — campaigns should already be live.`,
+      `${args.noticeGiven} resident${args.noticeGiven === 1 ? " has" : "s have"} given notice. Renewal campaigns should already be live.`,
     );
   }
 
@@ -1399,7 +1385,7 @@ function buildAiInsight(args: {
   ) {
     candidates.push({
       severity: "alert",
-      headline: `Occupancy at ${args.occupancyPct}% — ${args.availableUnits} units sitting`,
+      headline: `Occupancy at ${args.occupancyPct}%. ${args.availableUnits} units sitting.`,
       body: `${args.propertyName} is below the 90% target. Push paid spend here, accelerate scheduled tours, and check listing photos on Available units.`,
     });
   }

@@ -34,6 +34,63 @@ export function InsightCard({
   const fresh = Date.now() - insight.createdAt.getTime() < 6 * 60 * 60 * 1000;
   const acked = insight.status === "acknowledged";
 
+  // Dense mode is the compact card used on dashboards. It strips the four
+  // lifecycle action buttons (Acknowledge / Snooze / Dismiss / Mark resolved)
+  // because bulk triage belongs on /portal/insights, not inline. Only the
+  // primary "Open" deep-link remains so the dashboard reads as scannable
+  // signals, not a worklist.
+  if (dense) {
+    return (
+      <article
+        className={cn(
+          "group relative rounded-lg border bg-card p-3 transition-shadow duration-150 hover:shadow-[0_2px_12px_rgba(0,0,0,0.03)]",
+          insight.severity === "critical"
+            ? "border-primary/40 bg-primary/[0.03]"
+            : insight.severity === "warning"
+              ? "border-primary/20"
+              : "border-border",
+          pending && "opacity-60",
+        )}
+      >
+        <header className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <SeverityPill severity={insight.severity} size="sm" />
+            {insight.property ? (
+              <span className="text-[10px] font-medium text-muted-foreground truncate">
+                {insight.property.name}
+              </span>
+            ) : null}
+          </div>
+          <time
+            className="shrink-0 text-[10px] tabular-nums text-muted-foreground"
+            dateTime={insight.createdAt.toISOString()}
+            title={insight.createdAt.toLocaleString()}
+          >
+            {relativeTime(insight.createdAt)}
+          </time>
+        </header>
+
+        <h3 className="mt-2 text-[13.5px] font-semibold tracking-tight text-foreground leading-snug">
+          {insight.title}
+        </h3>
+
+        <p className="mt-1 text-[12.5px] leading-snug text-muted-foreground line-clamp-2">
+          {insight.body}
+        </p>
+
+        {insight.href ? (
+          <Link
+            href={insight.href}
+            className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-semibold text-primary hover:underline"
+          >
+            Open
+            <ArrowRight className="h-3 w-3" />
+          </Link>
+        ) : null}
+      </article>
+    );
+  }
+
   return (
     <article
       className={cn(
@@ -48,13 +105,13 @@ export function InsightCard({
           : insight.severity === "warning"
             ? "border-primary/20"
             : "border-border",
-        dense ? "p-3" : "p-4",
+        "p-4",
         pending && "opacity-60",
       )}
     >
       <header className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-          <SeverityPill severity={insight.severity} size={dense ? "sm" : "md"} />
+          <SeverityPill severity={insight.severity} size="md" />
           <CategoryBadge category={insight.category} />
           {insight.property ? (
             <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
@@ -83,20 +140,13 @@ export function InsightCard({
         </time>
       </header>
 
-      <h3
-        className={cn(
-          "mt-2 font-semibold tracking-tight text-foreground",
-          dense ? "text-sm" : "text-[15px] leading-snug",
-        )}
-      >
+      <h3 className="mt-2 font-semibold tracking-tight text-foreground text-[15px] leading-snug">
         {insight.title}
       </h3>
 
-      {!dense || insight.body.length < 180 ? (
-        <p className="mt-1 text-[13px] leading-relaxed text-foreground">
-          {insight.body}
-        </p>
-      ) : null}
+      <p className="mt-1 text-[13px] leading-relaxed text-foreground">
+        {insight.body}
+      </p>
 
       {hasSparkline(insight.context) ? (
         <div className="mt-3">
@@ -107,7 +157,7 @@ export function InsightCard({
         </div>
       ) : null}
 
-      {insight.suggestedAction && !dense ? (
+      {insight.suggestedAction ? (
         <p className="mt-2 rounded-lg border border-border bg-card px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
           <span className="font-semibold text-foreground">Suggested. </span>
           {insight.suggestedAction}

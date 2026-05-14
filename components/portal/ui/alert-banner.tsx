@@ -31,27 +31,27 @@ const SEVERITY_TOKENS: Record<
 > = {
   info: {
     icon: Info,
-    container: "bg-blue-50 border-blue-200 text-blue-900",
-    iconClass: "text-blue-600",
-    actionClass: "text-blue-700 hover:text-blue-900",
+    container: "bg-[#EFF6FF] border-[#DBEAFE] text-[#1E3A8A]",
+    iconClass: "text-[#2563EB]",
+    actionClass: "text-[#2563EB] hover:text-[#1D4ED8]",
   },
   success: {
     icon: CheckCircle2,
-    container: "bg-emerald-50 border-emerald-200 text-emerald-900",
-    iconClass: "text-emerald-600",
-    actionClass: "text-emerald-700 hover:text-emerald-900",
+    container: "bg-[#F0FDF4] border-[#DCFCE7] text-[#14532D]",
+    iconClass: "text-[#16A34A]",
+    actionClass: "text-[#15803D] hover:text-[#14532D]",
   },
   warning: {
     icon: AlertTriangle,
-    container: "bg-amber-50 border-amber-200 text-amber-900",
-    iconClass: "text-amber-600",
-    actionClass: "text-amber-800 hover:text-amber-950",
+    container: "bg-[#FFFBEB] border-[#FEF3C7] text-[#78350F]",
+    iconClass: "text-[#F59E0B]",
+    actionClass: "text-[#B45309] hover:text-[#78350F]",
   },
   critical: {
     icon: AlertCircle,
-    container: "bg-red-50 border-red-200 text-red-900",
-    iconClass: "text-red-600",
-    actionClass: "text-red-700 hover:text-red-900",
+    container: "bg-[#FEF2F2] border-[#FEE2E2] text-[#7F1D1D]",
+    iconClass: "text-[#DC2626]",
+    actionClass: "text-[#B91C1C] hover:text-[#7F1D1D]",
   },
 };
 
@@ -85,23 +85,45 @@ export function AlertBanner({
   const tokens = SEVERITY_TOKENS[severity];
   const Icon = tokens.icon;
 
+  // When rendered flush (full-bleed page chrome), use a slim 28px strip
+  // matching the impersonation banner. Inline (non-flush) usage keeps the
+  // taller card treatment for in-page callouts.
   return (
     <div
       role={severity === "critical" ? "alert" : "status"}
       className={cn(
-        "border px-4 py-2.5 text-sm flex items-center gap-3",
+        flush
+          ? "shrink-0 border-b text-[11.5px] px-4 h-7 flex items-center gap-2 leading-none"
+          : "border px-4 py-2.5 text-sm flex items-center gap-3 rounded-md",
         tokens.container,
-        flush ? "border-x-0" : "rounded-md",
         className,
       )}
     >
-      <Icon className={cn("h-4 w-4 shrink-0", tokens.iconClass)} aria-hidden="true" />
-      <div className="flex-1 min-w-0 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+      <Icon
+        className={cn(
+          flush ? "h-3.5 w-3.5 shrink-0" : "h-4 w-4 shrink-0",
+          tokens.iconClass,
+        )}
+        aria-hidden="true"
+      />
+      <div
+        className={cn(
+          "flex-1 min-w-0 flex items-baseline gap-x-2 gap-y-0.5",
+          flush ? "flex-nowrap truncate" : "flex-wrap",
+        )}
+      >
         {title ? (
-          <span className="font-semibold leading-snug">{title}</span>
+          <span className="font-semibold leading-snug truncate">{title}</span>
         ) : null}
         {children ? (
-          <span className="text-[13px] opacity-90 leading-snug">{children}</span>
+          <span
+            className={cn(
+              "opacity-90 leading-snug truncate",
+              flush ? "text-[11.5px]" : "text-[13px]",
+            )}
+          >
+            {children}
+          </span>
         ) : null}
       </div>
       {action ? (
@@ -109,7 +131,8 @@ export function AlertBanner({
           <Link
             href={action.href}
             className={cn(
-              "shrink-0 text-xs font-semibold underline underline-offset-2 hover:no-underline",
+              "shrink-0 font-semibold underline underline-offset-2 hover:no-underline whitespace-nowrap",
+              flush ? "text-[11.5px]" : "text-xs",
               tokens.actionClass,
             )}
           >
@@ -120,7 +143,8 @@ export function AlertBanner({
             type="button"
             onClick={action.onClick}
             className={cn(
-              "shrink-0 text-xs font-semibold underline underline-offset-2 hover:no-underline",
+              "shrink-0 font-semibold underline underline-offset-2 hover:no-underline whitespace-nowrap",
+              flush ? "text-[11.5px]" : "text-xs",
               tokens.actionClass,
             )}
           >

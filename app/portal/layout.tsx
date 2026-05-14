@@ -280,46 +280,44 @@ export default async function PortalLayout({
         </div>
       ) : null}
 
-      {/* Portfolio-wide data-health banner. One banner, every page. Replaces
-          the per-page AppFolioStatusBanner that previously only appeared on
-          Residents / Renewals. */}
+      {/* Portfolio-wide data-health banner. Slim 28px chrome strip so it
+          coexists with the impersonation + curation banners without
+          eating 150px of vertical space. */}
       {showStaleBanner ? (
         <AlertBanner
-          severity={appfolioStatus.state === "failed" ? "critical" : "warning"}
+          severity="warning"
           flush
           title={
             appfolioStatus.state === "failed"
-              ? "AppFolio sync failed"
-              : "AppFolio data is stale"
+              ? "AppFolio sync failed."
+              : "AppFolio data is stale."
           }
           action={{ label: "Open integration", href: "/portal/connect" }}
         >
           {staleAgeDays != null
-            ? `Last successful sync ${staleAgeDays} day${staleAgeDays === 1 ? "" : "s"} ago. KPIs across the portal reflect the last successful sync.`
-            : "KPIs across the portal reflect the last successful sync."}
+            ? `Last sync ${staleAgeDays}d ago. KPIs reflect that sync.`
+            : "KPIs reflect the last successful sync."}
         </AlertBanner>
       ) : null}
 
       {/* Pending property review — surfaced globally so operators can't
           accidentally bill for AppFolio sub-records (parking, storage)
-          they never wanted LeaseStack to manage. Disappears the moment
-          the curation queue is empty. */}
+          they never wanted LeaseStack to manage. */}
       {pendingCurationCount > 0 ? (
         <AlertBanner
           severity="info"
           flush
           title={
             pendingCurationCount === 1
-              ? "1 property is waiting for your review"
-              : `${pendingCurationCount.toLocaleString()} properties are waiting for your review`
+              ? `1 new AppFolio record pending review.`
+              : `${pendingCurationCount.toLocaleString()} new AppFolio records pending review.`
           }
           action={{
             label: "Review now",
             href: "/portal/properties/curate",
           }}
         >
-          AppFolio imported new records. Approve only the buildings LeaseStack
-          should market — those are the ones that count toward billing.
+          Approve only the buildings you want marketed. Only approved properties count toward billing.
         </AlertBanner>
       ) : null}
 

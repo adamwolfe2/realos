@@ -64,7 +64,7 @@ export function InsightsHero({
               </h2>
               <p className="text-[12.5px] text-muted-foreground mt-1 leading-relaxed">
                 We&apos;ll surface insights here as soon as detectors find an
-                actionable pattern in this property&apos;s data — vacancy
+                actionable pattern in this property&apos;s data. Vacancy
                 concentration, ad-spend anomalies, renewal cliffs, negative
                 reviews, and more.
               </p>
@@ -84,13 +84,7 @@ export function InsightsHero({
             <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-primary mb-1">
               Insights
             </p>
-            <h2
-              className="text-[20px] lg:text-[22px] font-semibold tracking-tight text-foreground leading-snug"
-              style={{
-                fontFamily:
-                  "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
-              }}
-            >
+            <h2 className="text-[20px] lg:text-[22px] font-semibold tracking-tight text-foreground leading-snug">
               {sourcesConnected === 0
                 ? "Connect your first data source to start receiving insights."
                 : sourcesConnected < totalSources
@@ -123,29 +117,25 @@ export function InsightsHero({
   // Active state — render the top 3 insights as the centerpiece.
   return (
     <section className="rounded-xl border border-border bg-card p-4 lg:p-5">
-      <header className="flex items-center justify-between gap-3 mb-4">
-        <div className="min-w-0">
-          <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.15em] text-primary">
+      <header className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <p className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
             <Sparkles className="w-3 h-3" />
             {isProperty ? `Insights for ${propertyName}` : "Insights"}
           </p>
-          <h2
-            className="text-[18px] lg:text-[20px] font-semibold tracking-tight text-foreground leading-snug mt-1"
-            style={{
-              fontFamily:
-                "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
-            }}
-          >
-            {counts.critical > 0
-              ? `${counts.critical} critical · ${counts.warning} warning · ${counts.info} info`
-              : counts.warning > 0
-                ? `${counts.warning} warning · ${counts.info} info`
-                : `${counts.info} insight${counts.info === 1 ? "" : "s"} from your data`}
-          </h2>
+          <span className="text-[11px] tabular-nums text-muted-foreground">
+            {[
+              counts.critical > 0 ? `${counts.critical} critical` : null,
+              counts.warning > 0 ? `${counts.warning} warning` : null,
+              counts.info > 0 ? `${counts.info} info` : null,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </span>
         </div>
         <Link
           href={viewAllHref}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline whitespace-nowrap shrink-0"
+          className="inline-flex items-center gap-1 text-[11.5px] font-semibold text-primary hover:underline whitespace-nowrap shrink-0"
         >
           View all <ArrowRight className="w-3 h-3" />
         </Link>
