@@ -1,6 +1,16 @@
 import Link from "next/link";
 import { MARKETING } from "@/lib/copy/marketing";
-import { BrandIcon, DeliverableIcon, type DeliverableIconKind, type DeliverableBrand } from "./shared-icons";
+
+// ---------------------------------------------------------------------------
+// LiveExample — editorial rewrite (matches new home rhythm).
+//
+// Was: 2 bordered card tiles with icon + brand-pill + "Live deployment" /
+// "Operator portal" green-dot badges.
+// Now: split editorial section. Header + body on the top, two large
+// destination blocks below — each block is a label + headline + caption +
+// arrow link, no card chrome. Reads as "here are two surfaces, click in,"
+// not "look at these two cards."
+// ---------------------------------------------------------------------------
 
 export function LiveExample() {
   const { liveExample } = MARKETING.home;
@@ -12,14 +22,23 @@ export function LiveExample() {
         borderTop: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
-        <div className="max-w-3xl mb-12">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-24 md:py-32">
+        <div className="max-w-3xl mb-16">
           <p className="eyebrow mb-4">{liveExample.eyebrow}</p>
-          <h2 className="heading-section" style={{ color: "#1E2A3A" }}>
+          <h2
+            style={{
+              color: "#1E2A3A",
+              fontFamily: "var(--font-sans)",
+              fontSize: "clamp(34px, 4.8vw, 56px)",
+              fontWeight: 700,
+              lineHeight: 1.05,
+              letterSpacing: "-0.025em",
+            }}
+          >
             {liveExample.headline}
           </h2>
           <p
-            className="mt-4 max-w-2xl"
+            className="mt-6 max-w-2xl"
             style={{
               color: "#64748B",
               fontFamily: "var(--font-sans)",
@@ -31,23 +50,24 @@ export function LiveExample() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <LiveCard
+        {/* Two destinations — clean editorial blocks, hairline rule between. */}
+        <div
+          className="grid grid-cols-1 md:grid-cols-2"
+          style={{ borderTop: "1px solid #E2E8F0" }}
+        >
+          <LiveBlock
             href={liveExample.siteHref}
-            label={liveExample.siteLabel}
+            kicker="Resident-facing"
+            title={liveExample.siteLabel}
             caption={liveExample.siteCaption}
-            badge="Live deployment"
-            icon="home"
-            brands={["vercel", "cal"]}
             external
           />
-          <LiveCard
+          <LiveBlock
             href={liveExample.portalHref}
-            label={liveExample.portalLabel}
+            kicker="Operator portal"
+            title={liveExample.portalLabel}
             caption={liveExample.portalCaption}
-            badge="Operator portal"
-            icon="report"
-            brands={["slack", "resend", "appfolio"]}
+            withDivider
           />
         </div>
       </div>
@@ -55,122 +75,103 @@ export function LiveExample() {
   );
 }
 
-function LiveCard({
+function LiveBlock({
   href,
-  label,
+  kicker,
+  title,
   caption,
-  badge,
-  icon,
-  brands,
   external = false,
+  withDivider = false,
 }: {
   href: string;
-  label: string;
+  kicker: string;
+  title: string;
   caption: string;
-  badge: string;
-  icon: DeliverableIconKind;
-  brands: DeliverableBrand[];
   external?: boolean;
+  withDivider?: boolean;
 }) {
   return (
     <Link
       href={href}
       target={external ? "_blank" : undefined}
       rel={external ? "noopener" : undefined}
-      className="group block p-7"
+      className="group block py-10 md:py-12 md:px-10"
       style={{
-        backgroundColor: "#ffffff",
-        borderRadius: "16px",
-        boxShadow: "0 0 0 1px #E2E8F0",
-        transition: "box-shadow 0.2s ease, transform 0.2s ease",
+        borderLeft: withDivider ? "1px solid #E2E8F0" : "none",
       }}
     >
-      <div className="flex items-center gap-2 mb-5">
+      <p
+        style={{
+          color: "#2563EB",
+          fontFamily: "var(--font-mono)",
+          fontSize: "11px",
+          letterSpacing: "0.22em",
+          textTransform: "uppercase",
+          fontWeight: 700,
+        }}
+      >
         <span
-          className="inline-flex items-center justify-center flex-shrink-0"
+          aria-hidden
+          className="inline-block mr-2"
           style={{
-            width: "34px",
-            height: "34px",
-            borderRadius: "10px",
-            backgroundColor: "rgba(37,99,235,0.12)",
-            color: "#2563EB",
-          }}
-        >
-          <DeliverableIcon kind={icon} />
-        </span>
-        <span className="ml-auto inline-flex items-center gap-1">
-          {brands.map((b, idx) => (
-            <BrandIcon key={`${label}-${b}-${idx}`} brand={b} />
-          ))}
-        </span>
-      </div>
-
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0">
-          <p
-            className="mb-2 inline-flex items-center gap-2"
-            style={{
-              color: "#94A3B8",
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              fontWeight: 500,
-            }}
-          >
-            <span
-              aria-hidden="true"
-              style={{
-                display: "inline-block",
-                width: "6px",
-                height: "6px",
-                borderRadius: "50%",
-                backgroundColor: "#16A34A",
-              }}
-            />
-            {badge}
-          </p>
-          <h3 className="heading-sub" style={{ color: "#1E2A3A" }}>
-            {label}
-          </h3>
-          <p
-            className="mt-3 max-w-md"
-            style={{
-              color: "#64748B",
-              fontFamily: "var(--font-sans)",
-              fontSize: "15px",
-              lineHeight: 1.6,
-            }}
-          >
-            {caption}
-          </p>
-        </div>
-        <span
-          className="inline-flex items-center justify-center flex-shrink-0"
-          style={{
-            width: "36px",
-            height: "36px",
+            width: 8,
+            height: 8,
             borderRadius: "50%",
-            color: "#64748B",
-            boxShadow: "0 0 0 1px #E2E8F0",
+            backgroundColor: "#16A34A",
+            verticalAlign: "middle",
           }}
-          aria-hidden="true"
-        >
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-            <path
-              d={
-                external
-                  ? "M5 9L9 5M9 5H5.5M9 5V8.5"
-                  : "M3 7h8m0 0L7.5 3.5M11 7l-3.5 3.5"
-              }
-              stroke="currentColor"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </span>
-      </div>
+        />
+        {kicker} · live
+      </p>
+      <h3
+        className="mt-3"
+        style={{
+          color: "#1E2A3A",
+          fontFamily: "var(--font-sans)",
+          fontSize: "clamp(26px, 3vw, 36px)",
+          fontWeight: 700,
+          letterSpacing: "-0.02em",
+          lineHeight: 1.15,
+        }}
+      >
+        {title}
+      </h3>
+      <p
+        className="mt-4 max-w-md"
+        style={{
+          color: "#64748B",
+          fontFamily: "var(--font-sans)",
+          fontSize: "16px",
+          lineHeight: 1.6,
+        }}
+      >
+        {caption}
+      </p>
+      <p
+        className="mt-6 inline-flex items-center gap-2 transition-transform group-hover:translate-x-1"
+        style={{
+          color: "#1E2A3A",
+          fontFamily: "var(--font-sans)",
+          fontSize: "14px",
+          fontWeight: 600,
+          letterSpacing: "-0.005em",
+        }}
+      >
+        {external ? "Open the live site" : "Click through the portal"}
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <path
+            d={
+              external
+                ? "M5 9L9 5M9 5H5.5M9 5V8.5"
+                : "M3 7h8m0 0L7.5 3.5M11 7l-3.5 3.5"
+            }
+            stroke="currentColor"
+            strokeWidth="1.4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
+      </p>
     </Link>
   );
 }
