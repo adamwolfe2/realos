@@ -69,16 +69,40 @@ export default async function SignUpPage({
         <div className="flex-1 flex flex-col items-center justify-center px-6 lg:px-10 py-10">
           <div className="w-full max-w-[420px]">
             <div className="mb-7">
-              <h1
-                className="text-[32px] leading-tight font-semibold tracking-tight text-foreground mb-2"
+              <p
+                className="mb-3 inline-flex items-center gap-1.5"
                 style={{
-                  fontFamily:
-                    "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
+                  color: "#2563EB",
+                  fontFamily: "var(--font-mono)",
+                  fontSize: "11px",
+                  letterSpacing: "0.22em",
+                  textTransform: "uppercase",
+                  fontWeight: 700,
                 }}
               >
-                Create your account
+                Create account
+              </p>
+              <h1
+                style={{
+                  color: "#1E2A3A",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "clamp(28px, 3.4vw, 36px)",
+                  fontWeight: 700,
+                  letterSpacing: "-0.025em",
+                  lineHeight: 1.08,
+                }}
+              >
+                Start the pilot.
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p
+                className="mt-2"
+                style={{
+                  color: "#64748B",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "14.5px",
+                  lineHeight: 1.5,
+                }}
+              >
                 Set up your {BRAND_NAME} operator portal in under a minute.
               </p>
             </div>

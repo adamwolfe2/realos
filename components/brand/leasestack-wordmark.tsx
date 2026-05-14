@@ -42,12 +42,13 @@ export function LeaseStackWordmark({
       {!wordOnly ? <BuildingMark /> : null}
       {!iconOnly ? (
         <span
-          className="font-semibold tracking-[-0.02em] text-[1.05em]"
-          // Match the email Georgia headline so the brand reads the same
-          // across surfaces. Falls back to Inter if Fraunces hasn't loaded.
+          className="font-bold tracking-[-0.025em] text-[1.05em]"
+          // The Fraunces serif was removed from the brand. Wordmark now
+          // uses Inter (the canonical brand sans) so it matches the
+          // marketing nav, pricing page, and portal chrome.
           style={{
             fontFamily:
-              "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
+              "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
           }}
         >
           LeaseStack

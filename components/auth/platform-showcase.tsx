@@ -34,18 +34,23 @@ const NUMBER_FONT = {
   fontVariantNumeric: "tabular-nums",
 } as const;
 
+// The Fraunces serif was removed from the brand; this token now resolves
+// to Inter via the CSS variable alias in globals.css. Local fallback is
+// also Inter so we never accidentally drop to a system serif on first
+// paint.
 const SERIF = {
-  fontFamily: "var(--font-fraunces, Georgia, 'Times New Roman', serif)",
+  fontFamily:
+    "var(--font-inter), -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
 } as const;
 
 export function PlatformShowcase() {
   return (
-    <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-[#FAFAF6] via-[#F5F4EE] to-[#EFEEE7]">
-      {/* Decorative background — subtle cream gradient + grid + soft glow */}
+    <div className="relative h-full w-full overflow-hidden bg-gradient-to-br from-white via-[#F8FAFC] to-[#F1F5F9]">
+      {/* Decorative background — subtle slate gradient + grid + cobalt glow */}
       <div className="absolute inset-0 opacity-[0.025] bg-[linear-gradient(to_right,#000_1px,transparent_1px),linear-gradient(to_bottom,#000_1px,transparent_1px)] bg-[size:48px_48px]" />
       <div
         aria-hidden="true"
-        className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-amber-100/30 blur-3xl"
+        className="absolute -top-40 -right-40 h-96 w-96 rounded-full bg-[rgba(37,99,235,0.10)] blur-3xl"
       />
       <div
         aria-hidden="true"
