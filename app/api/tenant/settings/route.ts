@@ -6,7 +6,19 @@ import {
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
-import { AuditAction, Prisma } from "@prisma/client";
+import { AuditAction, Prisma, UserRole } from "@prisma/client";
+
+// Roles allowed to PATCH the organization settings (name, brand colors,
+// logo, primary contact). Restricted client roles must not be able to
+// change the lead-notification inbox or rebrand the tenant on behalf of
+// an admin. Agency callers (including impersonators) are always allowed.
+const ALLOWED_SETTINGS_ROLES: ReadonlySet<UserRole> = new Set<UserRole>([
+  UserRole.CLIENT_OWNER,
+  UserRole.CLIENT_ADMIN,
+  UserRole.AGENCY_OWNER,
+  UserRole.AGENCY_ADMIN,
+  UserRole.AGENCY_OPERATOR,
+]);
 
 // Per-tenant company + brand settings. The client team can change their own
 // contact + brand tokens; agency-only fields (subscription tier, module
@@ -39,6 +51,21 @@ const patchSchema = z.object({
 export async function PATCH(req: NextRequest) {
   try {
     const scope = await requireScope();
+
+    // Role gate — CLIENT_VIEWER / LEASING_AGENT / AL_PARTNER cannot
+    // change brand or primary-contact settings. Lead notifications fan
+    // out via primaryContactEmail; a low-trust user re-pointing that
+    // email could exfiltrate every new lead the org receives.
+    if (!ALLOWED_SETTINGS_ROLES.has(scope.role)) {
+      return NextResponse.json(
+        {
+          error:
+            "Only org owners and admins can change organization settings.",
+        },
+        { status: 403 },
+      );
+    }
+
     const parsed = patchSchema.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return NextResponse.json(

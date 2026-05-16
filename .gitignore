@@ -19,3 +19,11 @@ e2e/.cache/
 
 # clerk configuration (can include secrets)
 /.clerk/
+
+# Experimental marketing graphics + local AI-generated assets — large
+# binary blobs that don't belong in source control. ~233MB of PNGs +
+# base64 dumps from local image-gen experiments.
+/marketing-assets/
+
+# One-off local design tooling that isn't part of the production build.
+scripts/_design-screenshot.mjs

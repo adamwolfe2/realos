@@ -3,7 +3,19 @@ import { z } from "zod";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { isValidModuleKey, getModuleByKey } from "@/lib/marketplace/catalog";
-import { Prisma, AuditAction } from "@prisma/client";
+import { Prisma, AuditAction, UserRole } from "@prisma/client";
+
+// Roles allowed to flip module flags. Module toggles activate paid
+// features and change the org's monthly bill, so a CLIENT_VIEWER or
+// LEASING_AGENT must not be able to enable them — only the org's
+// owner / admin (or any AGENCY role, including impersonators).
+const ALLOWED_TOGGLE_ROLES: ReadonlySet<UserRole> = new Set<UserRole>([
+  UserRole.CLIENT_OWNER,
+  UserRole.CLIENT_ADMIN,
+  UserRole.AGENCY_OWNER,
+  UserRole.AGENCY_ADMIN,
+  UserRole.AGENCY_OPERATOR,
+]);
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -30,6 +42,20 @@ const bodySchema = z.object({
 export async function POST(req: NextRequest) {
   try {
     const scope = await requireScope();
+
+    // Role gate — module toggles change billing posture and feature
+    // surface; restricted roles (CLIENT_VIEWER, LEASING_AGENT, AL_PARTNER)
+    // must not be able to enable paid modules behind an admin's back.
+    if (!ALLOWED_TOGGLE_ROLES.has(scope.role)) {
+      return NextResponse.json(
+        {
+          ok: false,
+          error:
+            "Only org owners and admins can change module subscriptions.",
+        },
+        { status: 403 },
+      );
+    }
 
     let parsed;
     try {

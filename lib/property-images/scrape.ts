@@ -1,4 +1,13 @@
 import "server-only";
+import { isAllowedUrlWithDns } from "@/lib/utils/ssrf-protection";
+
+// Defense-in-depth body cap. CDNs reasonably stay under a few MB for the
+// marketing-page HTML we actually want. Anything larger is almost certainly
+// not a property site and could DoS our memory; we abort the stream early.
+const MAX_BODY_BYTES = 4 * 1024 * 1024; // 4 MB
+// Max redirects we'll re-validate against the SSRF allowlist before giving
+// up. Three is enough for marketing-site `www → bare → https` chains.
+const MAX_REDIRECTS = 3;
 
 // ---------------------------------------------------------------------------
 // Property image scraper — pulls og:image (→ heroImageUrl) and the best
@@ -104,23 +113,66 @@ export async function scrapePropertyImages(
     throw new Error("Invalid URL");
   }
 
+  // SSRF defense — the operator controls this URL. Without DNS-resolved
+  // private-IP blocking, a malicious operator could point the scraper at
+  // AWS instance metadata (169.254.169.254), an internal RFC1918 range,
+  // localhost services, or link-local addresses, exfiltrating data via
+  // the page title we store back in the DB. `isAllowedUrlWithDns` runs
+  // the sync structural check (protocol, hostname format, port allowlist)
+  // first and then resolves DNS to reject any answer that lands on a
+  // private / loopback / link-local IP family. Reject before any fetch.
+  if (!(await isAllowedUrlWithDns(normalised))) {
+    throw new Error(
+      "URL points to a private, loopback, or otherwise disallowed host",
+    );
+  }
+
+  // Manual redirect handling — fetch with `redirect: "follow"` is unsafe
+  // here because a public origin can 302 to `http://127.0.0.1:5432` or
+  // `http://169.254.169.254/...` and our initial allowlist check never
+  // sees the final target. We follow up to MAX_REDIRECTS hops manually,
+  // running the SSRF gate against each Location before stepping.
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), SCRAPE_TIMEOUT_MS);
 
   let response: Response;
+  let currentUrl = normalised;
   try {
-    response = await fetch(normalised, {
-      method: "GET",
-      headers: {
-        "User-Agent": USER_AGENT,
-        Accept: "text/html,application/xhtml+xml",
-        // Respect operator privacy — we don't follow tracking redirects
-        // that try to set cookies.
-        "Accept-Language": "en-US,en;q=0.9",
-      },
-      redirect: "follow",
-      signal: controller.signal,
-    });
+    for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
+      response = await fetch(currentUrl, {
+        method: "GET",
+        headers: {
+          "User-Agent": USER_AGENT,
+          Accept: "text/html,application/xhtml+xml",
+          // Respect operator privacy — we don't follow tracking
+          // redirects that try to set cookies.
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+        redirect: "manual",
+        signal: controller.signal,
+      });
+
+      // 3xx → re-validate Location against the SSRF allowlist before
+      // stepping. Same-origin redirects are still subject to the full
+      // DNS-resolved check (a self-host could move the A record between
+      // hops to a private range).
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get("location");
+        if (!location) break; // Malformed 3xx — bail with current response.
+        const next = new URL(location, currentUrl).toString();
+        if (!(await isAllowedUrlWithDns(next))) {
+          throw new Error(
+            `Redirect target ${next} points to a disallowed host`,
+          );
+        }
+        currentUrl = next;
+        continue;
+      }
+      break;
+    }
+    // The inner loop always assigns to `response` before break/continue,
+    // so by the time we reach here `response!` is defined.
+    response = response!;
   } catch (err) {
     clearTimeout(timeout);
     const message =
@@ -132,6 +184,18 @@ export async function scrapePropertyImages(
     throw new Error(message);
   }
   clearTimeout(timeout);
+
+  // Content-type guard — only fetch+parse HTML bodies. PDFs, images, and
+  // other types waste memory and aren't useful to this scraper.
+  const contentType = response.headers.get("content-type") ?? "";
+  if (
+    !contentType.includes("text/html") &&
+    !contentType.includes("application/xhtml")
+  ) {
+    throw new Error(
+      `Unexpected content-type "${contentType}" — expected HTML`,
+    );
+  }
 
   if (!response.ok) {
     throw new Error(`HTTP ${response.status}`);

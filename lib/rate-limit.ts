@@ -83,16 +83,44 @@ export const chatbotConfigLimiter = createLimiter(redis, 30, '1 m')
 // this catches misconfigured senders or port-scan probes.
 export const webhookLimiter = createLimiter(redis, 1000, '1 m')
 
-/** Returns true if the request should be allowed; false if rate-limited. Skips gracefully if limiter is null (env vars not set). */
+/**
+ * Returns true if the request should be allowed; false if rate-limited.
+ *
+ * Fail-mode policy:
+ *  - DEVELOPMENT (NODE_ENV !== "production"): fail OPEN with a one-time
+ *    console warning. Local dev rarely provisions Upstash, and we don't
+ *    want every dev session to 429 on the first chatbot call.
+ *  - PRODUCTION (NODE_ENV === "production"): fail CLOSED. A prod deploy
+ *    missing UPSTASH_REDIS_REST_URL/_TOKEN is a misconfiguration that
+ *    must not silently disable rate limiting on auth, public chatbot,
+ *    intake submit, password reset, etc. Returning `allowed:false` here
+ *    surfaces the broken deploy immediately (every request 429s) rather
+ *    than letting attackers enumerate the moment Redis isn't there.
+ *
+ * To audit a misconfigured prod deploy: check Vercel logs for the
+ * "rate-limit fail-closed: limiter is null" error or run `instrumentation`
+ * boot-time assertion (added separately).
+ */
 export async function checkRateLimit(
   limiter: Ratelimit | null,
   identifier: string
 ): Promise<{ allowed: boolean; limit: number; remaining: number; reset: number }> {
   if (!limiter) {
-    // Fail OPEN: rate limiting is disabled when Redis is not provisioned.
-    // A one-time console.error fires at module load (see createRedis) so
-    // Vercel logs surface the misconfiguration without blocking every request.
-    return { allowed: true, limit: 0, remaining: 0, reset: 0 }
+    if (process.env.NODE_ENV === "production") {
+      console.error(
+        `rate-limit fail-closed: limiter is null (identifier=${identifier}). Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN.`,
+      );
+      // 60s reset gives the deploy operator a chance to fix env vars
+      // and the client gets a sensible Retry-After header.
+      return {
+        allowed: false,
+        limit: 0,
+        remaining: 0,
+        reset: Date.now() + 60_000,
+      };
+    }
+    // Development: fail open.
+    return { allowed: true, limit: 0, remaining: 0, reset: 0 };
   }
   const result = await limiter.limit(identifier)
   return {
