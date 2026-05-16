@@ -1,5 +1,7 @@
+import * as React from "react";
 import type { Metadata } from "next";
 import { formatDistanceToNow } from "date-fns";
+import { Search, TrendingUp, BarChart3, MousePointerClick, Target } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
@@ -245,36 +247,88 @@ export default async function SeoPage({
       />
 
       {!hasAny ? (
-        <SectionCard
-          label="Connect a data source"
-          description="Pull organic search performance into the portal. Both providers use the same paste-the-JSON flow and never require OAuth."
-        >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
-              <div className="flex items-baseline justify-between gap-3">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Google Search Console
-                </h3>
-                <span className="text-[11px] text-muted-foreground">
-                  Queries, impressions, CTR, position
-                </span>
+        <div className="space-y-3">
+          {/* ── Hero empty state ──────────────────────────────────────── */}
+          <div className="rounded-xl border border-border bg-card overflow-hidden">
+            {/* Gradient hero band */}
+            <div className="px-6 py-9 flex flex-col items-center text-center border-b border-border bg-gradient-to-b from-primary/[0.04] to-transparent">
+              <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+                <Search className="h-6 w-6" />
               </div>
-              <ConnectSeoForm provider="GSC" />
+              <h2 className="text-xl font-semibold text-foreground tracking-tight">
+                Your SEO command center
+              </h2>
+              <p className="mt-2 text-[13px] text-muted-foreground max-w-sm leading-relaxed">
+                Connect Google Search Console and Analytics 4. See exactly which
+                queries bring renters to your site — the same data agencies
+                charge thousands a month to report.
+              </p>
             </div>
-            <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
-              <div className="flex items-baseline justify-between gap-3">
-                <h3 className="text-sm font-semibold text-foreground">
-                  Google Analytics 4
-                </h3>
-                <span className="text-[11px] text-muted-foreground">
-                  Organic sessions, users, top pages
-                </span>
-              </div>
-              <ConnectSeoForm provider="GA4" />
+
+            {/* Value-prop strip — 3 columns, each previewing a metric category */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
+              <SeoValueProp
+                icon={<MousePointerClick className="h-4 w-4" />}
+                label="Clicks & impressions"
+                description="28 days of search performance at a glance — daily trends and period-over-period deltas."
+              />
+              <SeoValueProp
+                icon={<Search className="h-4 w-4" />}
+                label="Top organic queries"
+                description="See the exact terms driving visits. Sort by clicks, impressions, or CTR to find quick wins."
+              />
+              <SeoValueProp
+                icon={<Target className="h-4 w-4" />}
+                label="Position tracking"
+                description="Know where you rank and which page-1 fringe queries are one push away from more clicks."
+              />
             </div>
           </div>
-          <SetupHelp />
-        </SectionCard>
+
+          {/* ── Connect forms ─────────────────────────────────────────── */}
+          <SectionCard
+            label="Connect your data sources"
+            description="Both providers use the same paste-the-JSON flow and never require OAuth. Setup takes under 5 minutes."
+          >
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Google Search Console
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Queries · Impressions · CTR · Position
+                    </p>
+                  </div>
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                    <TrendingUp className="h-2.5 w-2.5" />
+                    Recommended
+                  </span>
+                </div>
+                <ConnectSeoForm provider="GSC" />
+              </div>
+              <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground">
+                      Google Analytics 4
+                    </h3>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      Organic sessions · Users · Top pages
+                    </p>
+                  </div>
+                  <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                    <BarChart3 className="h-2.5 w-2.5" />
+                    Optional
+                  </span>
+                </div>
+                <ConnectSeoForm provider="GA4" />
+              </div>
+            </div>
+            <SetupHelp />
+          </SectionCard>
+        </div>
       ) : isRestricted ? (
         // Property-restricted user. We can show their per-property
         // integrations (above) but the org-aggregate trend data
@@ -538,7 +592,7 @@ function ProviderManageCard({
   status: string | null;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-muted/20 p-4 space-y-3">
+    <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
       <div className="flex items-baseline justify-between gap-3">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         <span
@@ -611,9 +665,39 @@ function Detail({
   );
 }
 
+// ---------------------------------------------------------------------------
+// SeoValueProp — one column in the hero empty-state's 3-up feature strip.
+// Icon + label + short description. Pure display component.
+// ---------------------------------------------------------------------------
+function SeoValueProp({
+  icon,
+  label,
+  description,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  description: string;
+}) {
+  return (
+    <div className="flex items-start gap-3 px-5 py-4">
+      <div className="shrink-0 mt-0.5 inline-flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary">
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <div className="text-[12.5px] font-semibold text-foreground leading-tight">
+          {label}
+        </div>
+        <div className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
+          {description}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function SetupHelp() {
   return (
-    <div className="mt-5 rounded-lg border border-border bg-muted/20 p-4 text-xs leading-relaxed text-muted-foreground space-y-2">
+    <div className="mt-5 rounded-xl border border-border bg-muted/20 p-4 text-xs leading-relaxed text-muted-foreground space-y-2">
       <p className="font-semibold text-foreground">
         How to create a Google service account
       </p>

@@ -51,7 +51,7 @@ export function BulkActionBar({
       role="toolbar"
       aria-label={`${count} ${noun}${count === 1 ? "" : "s"} selected — bulk actions`}
       className={cn(
-        "z-30 flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 shadow-md",
+        "z-30 flex items-center gap-2 rounded-xl border border-border bg-card px-3 py-2 shadow-md",
         floating
           ? "fixed left-1/2 -translate-x-1/2 bottom-6 max-w-[min(92vw,720px)]"
           : "sticky top-2",

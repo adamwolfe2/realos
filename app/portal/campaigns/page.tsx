@@ -193,7 +193,7 @@ export default async function CampaignsPage({
             { label: "Total clicks", value: totalClicks.toLocaleString() },
             { label: "Conversions", value: totalConv.toLocaleString() },
           ].map((s) => (
-            <div key={s.label} className="rounded-lg border border-border bg-card px-4 py-3">
+            <div key={s.label} className="rounded-xl border border-border bg-card px-4 py-3 hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all">
               <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
                 {s.label}
               </div>
@@ -219,7 +219,7 @@ export default async function CampaignsPage({
           action={{ label: "Connect ad accounts", href: "/portal/connect" }}
         />
       ) : (
-        <div className="rounded-lg border border-border bg-card overflow-x-auto">
+        <div className="rounded-xl border border-border bg-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-border">

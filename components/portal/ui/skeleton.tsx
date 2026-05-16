@@ -50,7 +50,7 @@ export function SkeletonText({
 // doesn't jump when data lands.
 export function SkeletonKpi() {
   return (
-    <div className="rounded-lg border border-border bg-card p-3 space-y-2">
+    <div className="rounded-xl border border-border bg-card p-3 space-y-2">
       <Skeleton className="h-2.5 w-20" />
       <Skeleton className="h-6 w-16" />
       <Skeleton className="h-2 w-24" />

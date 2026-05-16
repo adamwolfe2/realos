@@ -355,7 +355,7 @@ export default async function WorkOrdersPage({
                 return (
                   <div
                     key={status}
-                    className="rounded-lg border border-border bg-muted/30 p-2.5"
+                    className="rounded-xl border border-border bg-muted/30 p-2.5"
                   >
                     <div className="flex items-center justify-between gap-2 mb-2 px-1">
                       <StatusPill
@@ -434,7 +434,7 @@ export default async function WorkOrdersPage({
           title="Work orders"
           description="Maintenance pipeline mirrored from AppFolio. Operator fulfillment happens in AppFolio; this view keeps you ahead of property issues."
         />
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           Work order data could not be loaded.{" "}
           {err instanceof Error ? err.message : ""}
         </div>

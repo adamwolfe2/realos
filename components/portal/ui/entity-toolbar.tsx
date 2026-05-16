@@ -87,7 +87,7 @@ export function EntityToolbar({
   return (
     <div
       className={cn(
-        "rounded-lg border border-border bg-card overflow-hidden",
+        "rounded-xl border border-border bg-card overflow-hidden",
         className,
       )}
     >

@@ -219,7 +219,7 @@ export default async function VisitorDetailPage({
 
       {/* Engage button (live only) */}
       {isLive && liveSession ? (
-        <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+        <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
           <div className="text-sm font-medium text-primary mb-3">
             This visitor is active right now. Send them a message and it will
             appear in the chatbot widget within seconds.
@@ -395,7 +395,7 @@ export default async function VisitorDetailPage({
               at "0% max scroll" on a 70-intent visitor would assume the
               data is broken when it's actually just unavailable. */}
           {usingAggregateFallback ? (
-            <div className="rounded-lg border border-border bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
+            <div className="rounded-xl border border-border bg-muted/30 px-4 py-2.5 text-xs text-muted-foreground">
               <span className="font-semibold text-foreground">
                 Engagement detail limited.
               </span>{" "}
@@ -407,7 +407,7 @@ export default async function VisitorDetailPage({
           ) : null}
 
           {/* Intent score */}
-          <div className="flex items-center gap-3 rounded-lg border border-border bg-card px-5 py-4">
+          <div className="flex items-center gap-3 rounded-xl border border-border bg-card px-5 py-4">
             <div
               className={cn(
                 "text-4xl font-semibold tabular-nums",

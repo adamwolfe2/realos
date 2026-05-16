@@ -167,7 +167,7 @@ export default function NotificationsPage() {
         ))}
       </div>
 
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         {loading ? (
           <div className="animate-pulse divide-y divide-border">
             {Array.from({ length: 5 }).map((_, i) => (

@@ -259,7 +259,7 @@ function PropertyTabsSkeleton() {
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-lg border border-border bg-card p-4 space-y-2"
+            className="rounded-xl border border-border bg-card p-4 space-y-2"
           >
             <div className="h-3 w-20 bg-muted/60 rounded" />
             <div className="h-7 w-16 bg-muted rounded" />

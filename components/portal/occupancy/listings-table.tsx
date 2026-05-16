@@ -620,7 +620,7 @@ function ConfirmModal({
         if (e.target === e.currentTarget) onCancel();
       }}
     >
-      <div className="w-full max-w-sm rounded-lg border border-border bg-card shadow-lg">
+      <div className="w-full max-w-sm rounded-xl border border-border bg-card shadow-lg">
         <header className="flex items-start justify-between border-b border-border px-4 py-3">
           <div className="min-w-0">
             <p className="text-sm font-semibold text-foreground">{title}</p>

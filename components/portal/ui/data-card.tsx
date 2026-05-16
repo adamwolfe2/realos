@@ -40,28 +40,28 @@ export function DataCard({
   return (
     <section
       className={cn(
-        "rounded-lg border border-border bg-card flex flex-col ls-hover-lift",
+        // Premium primitive — ls-card gives us layered depth + inner highlight
+        // + hover lift baked into the design system.
+        "ls-card flex flex-col",
         className,
       )}
     >
       {hasHeader ? (
-        <header className="flex items-start justify-between gap-3 px-4 pt-3 pb-2">
+        <header className="flex items-start justify-between gap-3 px-5 pt-4 pb-3 border-b border-[var(--hair)]">
           <div className="min-w-0">
             {eyebrow ? (
-              <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-0.5">
-                {eyebrow}
-              </div>
+              <div className="ls-eyebrow mb-1">{eyebrow}</div>
             ) : null}
             {title ? (
               <h2
-                className="text-[15px] font-medium tracking-tight text-foreground leading-tight"
+                className="text-[15px] font-semibold tracking-tight text-foreground leading-tight"
                 style={{ fontFamily: "var(--font-display)" }}
               >
                 {title}
               </h2>
             ) : null}
             {description ? (
-              <p className="mt-0.5 text-[11px] text-muted-foreground leading-snug">
+              <p className="mt-1 text-[12px] text-muted-foreground leading-snug">
                 {description}
               </p>
             ) : null}
@@ -71,16 +71,16 @@ export function DataCard({
             {href ? (
               <Link
                 href={href}
-                className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"
+                className="inline-flex items-center gap-1 text-[12px] font-semibold text-muted-foreground hover:text-primary transition-colors"
               >
                 {hrefLabel}
-                <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                <ArrowRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             ) : null}
           </div>
         </header>
       ) : null}
-      <div className={cn(flush ? "" : "px-4 pb-3 pt-1", "flex-1")}>
+      <div className={cn(flush ? "" : "px-5 pb-4 pt-3", "flex-1")}>
         {children}
       </div>
     </section>

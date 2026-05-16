@@ -144,7 +144,7 @@ export async function LeadsTab({
               <Link
                 key={p.status}
                 href={`/portal/leads?status=${p.status}&property=${propertyId}`}
-                className={`rounded-lg border px-3 py-2.5 transition-colors ${
+                className={`rounded-xl border px-3 py-2.5 transition-colors ${
                   p.count > 0
                     ? "border-border bg-card hover:bg-muted/40"
                     : "border-border bg-muted/20"

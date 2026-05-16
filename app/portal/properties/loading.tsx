@@ -15,7 +15,7 @@ export default function PropertiesLoading() {
           <Skeleton className="h-7 w-28" />
         </div>
       </div>
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         {/* Sticky header echo */}
         <div className="flex items-center gap-3 border-b border-border bg-secondary/40 px-3 py-2">
           {Array.from({ length: 6 }).map((_, i) => (

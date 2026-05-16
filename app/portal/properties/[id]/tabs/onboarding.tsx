@@ -56,7 +56,7 @@ export async function OnboardingTab({
   const checklist = await getLaunchChecklist(orgId, propertyId);
   if (!checklist) {
     return (
-      <div className="rounded-lg border border-border bg-card px-6 py-12 text-center text-sm text-muted-foreground">
+      <div className="rounded-xl border border-border bg-card px-6 py-12 text-center text-sm text-muted-foreground">
         Property not found.
       </div>
     );

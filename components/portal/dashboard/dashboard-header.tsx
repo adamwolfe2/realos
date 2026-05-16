@@ -17,7 +17,7 @@ export function DashboardHeader({
   const initial = workspaceName.slice(0, 1).toUpperCase();
 
   return (
-    <header className="rounded-lg border border-border bg-card overflow-hidden">
+    <header className="rounded-xl border border-border bg-card overflow-hidden hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all">
       {accent ? (
         <div aria-hidden="true" className="h-1 w-full" style={{ backgroundColor: accent }} />
       ) : null}

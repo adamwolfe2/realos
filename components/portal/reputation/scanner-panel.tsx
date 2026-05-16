@@ -527,7 +527,7 @@ export function ScannerPanel({
   return (
     <div className="space-y-6">
       {/* Scan controls */}
-      <section className="rounded-lg border border-border bg-card p-5">
+      <section className="rounded-xl border border-border bg-card p-5">
         <div className="flex items-start justify-between gap-4 flex-wrap">
           <div className="min-w-0">
             <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
@@ -706,7 +706,7 @@ export function ScannerPanel({
 
       {/* Mention feed */}
       {filtered.length === 0 ? (
-        <section className="rounded-lg border border-dashed border-border bg-card/40 p-8 text-center">
+        <section className="rounded-xl border border-dashed border-border bg-card/40 p-8 text-center">
           {!hasAnyMentions ? (
             <p className="text-sm text-muted-foreground">
               No mentions yet. Click Search now to query Google Reviews,
@@ -757,7 +757,7 @@ export function ScannerPanel({
 
       {/* Previous scans */}
       {scans.length > 0 ? (
-        <section className="rounded-lg border border-border bg-card p-5">
+        <section className="rounded-xl border border-border bg-card p-5">
           <h3 className="text-sm font-semibold tracking-tight text-foreground mb-3">
             Previous scans
           </h3>

@@ -127,7 +127,7 @@ export function RenewalsClient({ buckets, upcoming }: Props) {
               {buckets.map((b) => (
                 <div
                   key={b.label}
-                  className="rounded-lg border border-border bg-card p-2.5"
+                  className="rounded-xl border border-border bg-card p-2.5"
                 >
                   <div className="flex items-center justify-between gap-2 mb-2 px-1">
                     <StatusPill label={b.label} tone={b.tone} />

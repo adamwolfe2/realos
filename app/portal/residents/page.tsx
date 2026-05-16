@@ -276,7 +276,7 @@ export default async function ResidentsPage({
       {/* Filters */}
       <form
         action="/portal/residents"
-        className="rounded-lg border border-border bg-card p-3 grid grid-cols-1 md:grid-cols-4 gap-3"
+        className="rounded-xl border border-border bg-card p-3 grid grid-cols-1 md:grid-cols-4 gap-3"
       >
         <select
           name="status"
@@ -517,7 +517,7 @@ export default async function ResidentsPage({
           title="Residents"
           description="Active roster mirrored from AppFolio. Source of truth for resident records remains AppFolio; this view is read-only."
         />
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           Resident data could not be loaded.{" "}
           {err instanceof Error ? err.message : ""}
         </div>

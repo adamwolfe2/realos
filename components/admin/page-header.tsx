@@ -40,8 +40,8 @@ export function PageHeader({
   return (
     <header
       className={cn(
-        "flex flex-col md:flex-row md:items-start md:justify-between gap-3",
-        bordered ? "border-b border-border pb-4 mb-6" : "",
+        "relative flex flex-col md:flex-row md:items-start md:justify-between gap-3",
+        bordered ? "pb-5 mb-6 border-b border-[var(--hair)]" : "",
         className,
       )}
     >
@@ -50,26 +50,28 @@ export function PageHeader({
           <div className="mb-2 text-xs text-muted-foreground">{breadcrumb}</div>
         ) : null}
         {eyebrow ? (
-          <div className="mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">
+          <div className="ls-eyebrow mb-2" style={{ color: "var(--terracotta)" }}>
             {eyebrow}
           </div>
         ) : null}
-        {/* Bumped title from text-xl/2xl → text-2xl/3xl so the page actually
-            announces itself. Pre-fix the title sat at ~20px which made
-            every page header feel like a section label, not the surface's
-            primary identity. */}
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground leading-tight">
+        {/* Premium 2026 redesign: page title is now the visual anchor of the
+            page. Bumped to text-[28px] / md:text-[34px], tighter tracking,
+            and the description below is restrained so the title dominates. */}
+        <h1
+          className="text-[28px] md:text-[34px] font-semibold tracking-[-0.022em] text-foreground leading-[1.08]"
+          style={{ fontFamily: "var(--font-display)" }}
+        >
           {title}
         </h1>
         {description || meta ? (
-          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 max-w-3xl">
+          <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 max-w-3xl">
             {description ? (
-              <p className="text-[13px] text-muted-foreground leading-snug">
+              <p className="text-[13.5px] text-muted-foreground leading-relaxed">
                 {description}
               </p>
             ) : null}
             {meta ? (
-              <span className="text-[11px] text-muted-foreground/80 tabular-nums">
+              <span className="text-[11px] font-medium tabular-nums px-2 py-0.5 rounded-full" style={{ background: "var(--color-elevated)", color: "var(--olive-gray)", fontFamily: "var(--font-mono)" }}>
                 {meta}
               </span>
             ) : null}
@@ -77,7 +79,7 @@ export function PageHeader({
         ) : null}
       </div>
       {actions ? (
-        <div className="flex shrink-0 items-center gap-2 flex-wrap md:justify-end">
+        <div className="flex shrink-0 items-center gap-2 flex-wrap md:justify-end pt-1">
           {actions}
         </div>
       ) : null}
@@ -105,16 +107,21 @@ export function SectionCard({
   return (
     <section
       className={cn(
-        "rounded-lg border border-border bg-card",
-        padded ? "p-3" : "",
+        "ls-card",
+        padded ? "p-5" : "",
         className,
       )}
     >
-      <div className="flex items-baseline justify-between gap-3 mb-2">
+      <div className="flex items-baseline justify-between gap-3 mb-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold text-foreground">{label}</h2>
+          <h2
+            className="text-[14px] font-semibold tracking-tight text-foreground leading-tight"
+            style={{ fontFamily: "var(--font-display)" }}
+          >
+            {label}
+          </h2>
           {description ? (
-            <p className="text-[11px] text-muted-foreground mt-0.5 leading-snug">
+            <p className="text-[11.5px] text-muted-foreground mt-1 leading-snug">
               {description}
             </p>
           ) : null}

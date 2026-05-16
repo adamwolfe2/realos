@@ -300,7 +300,7 @@ export default async function BriefingPage({
           title="Briefing temporarily unavailable"
           description="Briefing data could not be loaded. This is usually temporary — try refreshing."
         />
-        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           If the issue persists, check{" "}
           <a href="/portal/connect" className="underline font-medium">
             Settings → Integrations
@@ -348,7 +348,7 @@ function SetupCard({
 }) {
   const remaining = steps.filter((s) => !s.done);
   return (
-    <div className="rounded-lg border border-border bg-card p-5">
+    <div className="rounded-xl border border-border bg-card p-5">
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground mb-1">
@@ -402,7 +402,7 @@ function AgingAlertBanner({
   stale: number;
 }) {
   return (
-    <div className="bg-muted/40 border border-border rounded-lg px-4 py-3 flex items-start gap-3">
+    <div className="bg-muted/40 border border-border rounded-xl px-4 py-3 flex items-start gap-3">
       <AlertTriangle className="h-4 w-4 text-primary mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-foreground">

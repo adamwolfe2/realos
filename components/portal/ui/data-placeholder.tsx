@@ -86,7 +86,7 @@ export function DataPlaceholder({
   return (
     <div
       className={cn(
-        "rounded-lg border bg-card/40 px-4 py-6 text-center flex flex-col items-center gap-2",
+        "rounded-xl border bg-card/40 px-4 py-6 text-center flex flex-col items-center gap-2",
         INTENT_BORDER[intent],
         className,
       )}

@@ -4,7 +4,7 @@ import Link from "next/link";
 
 export default function ConversationError() {
   return (
-    <div className="rounded-lg border border-border bg-card p-8 text-center space-y-3 max-w-md mx-auto mt-8">
+    <div className="rounded-xl border border-border bg-card p-8 text-center space-y-3 max-w-md mx-auto mt-8">
       <p className="text-sm font-semibold">Could not load conversation</p>
       <p className="text-xs text-muted-foreground">
         The conversation may have been deleted or you may not have access.

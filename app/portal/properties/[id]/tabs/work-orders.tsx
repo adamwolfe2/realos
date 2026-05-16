@@ -187,7 +187,7 @@ export async function WorkOrdersTab({
               return (
                 <div
                   key={status}
-                  className="rounded-lg border border-border bg-muted/30 p-2"
+                  className="rounded-xl border border-border bg-muted/30 p-2"
                 >
                   <div className="flex items-center justify-between gap-1 mb-2 px-0.5">
                     <span

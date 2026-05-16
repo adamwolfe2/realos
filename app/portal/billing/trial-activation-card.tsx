@@ -97,7 +97,7 @@ export function TrialActivationCard({
 
   return (
     <section
-      className="rounded-lg p-5 space-y-4"
+      className="rounded-xl p-5 space-y-4"
       style={{
         backgroundColor: expired
           ? "rgba(217,119,6,0.08)"

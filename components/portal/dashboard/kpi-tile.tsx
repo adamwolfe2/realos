@@ -3,6 +3,11 @@ import { ArrowUpRight, ArrowDownRight, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import Link from "next/link";
 
+// Premium 2026 redesign: KPI tiles now feel like primary data anchors, not
+// sidebar metrics. Mono numerics, optional brand-accent glow on the hero
+// tile (variant="accent"), softer hairline borders, lift on hover with a
+// real shadow. Sparklines + bars + gauge variants preserved.
+
 export type Trend = "up" | "down" | "flat";
 
 // Visual variant for the embedded micro-chart slot. Per the Premium
@@ -27,6 +32,8 @@ export type KpiTileProps = {
   href?: string;
   live?: boolean;
   locked?: { reason: string; href: string };
+  /** "accent" gives the tile the brand glow (used for the hero KPI). */
+  variant?: "default" | "accent";
 };
 
 export function KpiTile(props: KpiTileProps) {
@@ -56,37 +63,42 @@ function KpiTileInner({
   loading,
   live,
   locked,
+  variant = "default",
 }: KpiTileProps) {
   // Pick the chart variant. Explicit `chart` prop wins; otherwise default
   // to sparkline whenever a spark array is supplied. A `gaugeValue` 0..1
   // automatically routes to the gauge dial even without an explicit prop.
-  const variant: KpiChartVariant =
+  const chartVariant: KpiChartVariant =
     chart ?? (gaugeValue != null ? "gauge" : "sparkline");
 
   return (
     <div
       className={cn(
-        // Premium tile: white card, soft hairline border + tiny shadow on
-        // hover so the surface reads as something floating instead of a
-        // hairline-bordered box. Generous internal padding (p-4) per the
-        // Mori / Emura / AeroStore inspiration set.
-        "group relative h-full rounded-xl border border-border bg-card p-4 transition-all",
-        "hover:border-primary/30 hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)]",
+        // Premium tile: floating white card with stacked depth shadow + inner
+        // highlight. Hover lifts 1px and deepens the shadow. The hero tile
+        // (variant="accent") adds the brand glow in the top-right corner so
+        // the eye lands on the headline metric first.
+        "ls-card group relative h-full p-5",
+        variant === "accent" && "ls-card-accent",
       )}
     >
-      <div className="flex items-center justify-between gap-2">
+      <div className="relative z-[1] flex items-center justify-between gap-2">
         <div className="flex items-center gap-2 min-w-0">
           {icon ? (
             <span
-              className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-primary/8 text-primary shrink-0"
+              className="inline-flex items-center justify-center h-7 w-7 rounded-lg shrink-0 ring-1 ring-inset"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(37,99,235,0.10), rgba(37,99,235,0.04))",
+                color: "var(--terracotta)",
+                boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset",
+              }}
               aria-hidden="true"
             >
               {icon}
             </span>
           ) : null}
-          <div className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground truncate">
-            {label}
-          </div>
+          <div className="ls-eyebrow truncate">{label}</div>
         </div>
         {live && !locked ? (
           <span className="relative inline-flex h-2 w-2 shrink-0" aria-label="Live">
@@ -97,26 +109,26 @@ function KpiTileInner({
       </div>
 
       {locked ? (
-        <div className="mt-3 space-y-1.5">
-          <div className="text-[11px] leading-snug text-muted-foreground line-clamp-2">
+        <div className="relative z-[1] mt-4 space-y-1.5">
+          <div className="text-[12px] leading-snug text-muted-foreground line-clamp-2">
             {locked.reason}
           </div>
           <Link
             href={locked.href}
-            className="inline-flex items-center gap-0.5 text-[11px] font-semibold text-primary hover:underline"
+            className="inline-flex items-center gap-0.5 text-[12px] font-semibold text-primary hover:underline"
           >
             Connect <span aria-hidden="true">→</span>
           </Link>
         </div>
       ) : (
         <>
-          {/* Premium hierarchy: number is the hero (text-3xl ≈ 30px),
-              delta pill sits to the right, hint sits below. Was text-xl
-              which made every KPI feel like a sidebar metric. */}
-          <div className="mt-3 flex items-baseline justify-between gap-2 min-w-0">
+          {/* Hero number: mono tabular figures, large, tightly tracked.
+              Reads as a single anchored metric — the look of Linear /
+              Vercel insights tiles. */}
+          <div className="relative z-[1] mt-4 flex items-baseline justify-between gap-2 min-w-0">
             <div
               className={cn(
-                "text-3xl leading-none font-semibold tracking-tight tabular-nums text-foreground min-w-0 truncate",
+                "ls-metric ls-metric-lg min-w-0 truncate",
                 loading && "text-transparent bg-muted rounded animate-pulse",
               )}
             >
@@ -126,16 +138,16 @@ function KpiTileInner({
           </div>
 
           {hint ? (
-            <div className="mt-1 text-[11px] text-muted-foreground truncate">
+            <div className="relative z-[1] mt-1.5 text-[11px] text-muted-foreground truncate">
               {hint}
             </div>
           ) : null}
 
           {!loading ? (
-            <div className="mt-3">
-              {variant === "gauge" && gaugeValue != null ? (
+            <div className="relative z-[1] mt-4">
+              {chartVariant === "gauge" && gaugeValue != null ? (
                 <Gauge value={gaugeValue} />
-              ) : variant === "bars" && spark && spark.length > 1 ? (
+              ) : chartVariant === "bars" && spark && spark.length > 1 ? (
                 <BarMini data={spark} />
               ) : spark && spark.length > 1 ? (
                 <Sparkline data={spark} />
@@ -149,20 +161,13 @@ function KpiTileInner({
 }
 
 function DeltaPill({ value, trend }: { value: string; trend: Trend }) {
-  const tone =
-    trend === "up"
-      ? "text-primary bg-primary/10"
-      : trend === "down"
-        ? "text-destructive bg-destructive/10"
-        : "text-muted-foreground bg-muted";
+  const klass =
+    trend === "up" ? "ls-delta ls-delta-up"
+    : trend === "down" ? "ls-delta ls-delta-down"
+    : "ls-delta ls-delta-flat";
   const Icon = trend === "up" ? ArrowUpRight : trend === "down" ? ArrowDownRight : Minus;
   return (
-    <span
-      className={cn(
-        "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-semibold tabular-nums shrink-0",
-        tone,
-      )}
-    >
+    <span className={cn("shrink-0", klass)}>
       <Icon className="h-3 w-3" aria-hidden="true" />
       {value}
     </span>

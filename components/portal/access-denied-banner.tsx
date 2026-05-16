@@ -34,16 +34,16 @@ export function PropertyAccessDeniedBanner({
 }) {
   const resetHref = pathname ?? "/portal";
   return (
-    <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 flex items-start gap-3">
+    <div className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 flex items-start gap-3">
       <ShieldAlert
-        className="h-4 w-4 text-amber-700 mt-0.5 shrink-0"
+        className="h-4 w-4 text-destructive mt-0.5 shrink-0"
         aria-hidden="true"
       />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-amber-900 leading-tight">
+        <p className="text-sm font-semibold text-destructive leading-tight">
           You don&apos;t have access to that property.
         </p>
-        <p className="text-xs text-amber-800 mt-0.5 leading-snug">
+        <p className="text-xs text-destructive/80 mt-0.5 leading-snug">
           Your account is restricted to a subset of properties for this
           organization. Contact your account owner if you believe this is
           a mistake.{" "}

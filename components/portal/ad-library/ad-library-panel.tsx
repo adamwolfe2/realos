@@ -95,7 +95,7 @@ export function AdLibraryPanel({
 
 function NotConfiguredCard() {
   return (
-    <div className="rounded-lg border border-dashed border-border bg-secondary/30 px-4 py-6 text-center">
+    <div className="rounded-xl border border-dashed border-border bg-secondary/30 px-4 py-6 text-center">
       <p className="text-sm font-semibold text-foreground">
         Meta Ad Library not configured
       </p>
@@ -136,7 +136,7 @@ function TrackForm({ propertyId }: { propertyId: string | null }) {
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-lg border border-border bg-card px-3 py-2 flex flex-wrap items-center gap-2"
+      className="rounded-xl border border-border bg-card px-3 py-2 flex flex-wrap items-center gap-2"
     >
       <Search
         className="h-3.5 w-3.5 text-muted-foreground shrink-0"
@@ -219,7 +219,7 @@ function AdvertiserCard({
   }
 
   return (
-    <section className="rounded-lg border border-border bg-card overflow-hidden">
+    <section className="rounded-xl border border-border bg-card overflow-hidden">
       <header className="flex items-start justify-between gap-2 px-3 py-2 border-b border-border">
         <div className="min-w-0">
           <div className="flex items-center gap-2 text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">

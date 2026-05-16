@@ -57,7 +57,7 @@ export function SegmentedControl({
       role={isLink ? undefined : "tablist"}
       aria-label={ariaLabel}
       className={cn(
-        "inline-flex items-center gap-0.5 rounded-lg border border-border bg-muted/40 p-0.5",
+        "inline-flex items-center gap-0.5 rounded-xl border border-border bg-muted/40 p-0.5",
         className,
       )}
     >

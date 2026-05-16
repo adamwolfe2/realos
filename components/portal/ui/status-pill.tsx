@@ -25,18 +25,17 @@ export type StatusTone =
   | "warning" // attention — notice given, expiring, past-due
   | "danger"; // negative outcome — no-show, evicted, failed
 
-// Status dots used to span emerald / blue / amber / rose. Collapsed to a
-// minimal palette: neutral grays for "no action needed" states, brand blue
-// for in-flight + success, and a single red for genuine alarm. Warning still
-// uses amber because demoting expiring/past-due to gray loses real signal —
-// but we now only reach for it on truly time-sensitive states.
-const DOT_TONE: Record<StatusTone, string> = {
-  neutral: "bg-muted-foreground/40",
-  info: "bg-muted-foreground/70",
-  active: "bg-primary",
-  success: "bg-primary",
-  warning: "bg-amber-500",
-  danger: "bg-destructive",
+// Premium 2026 redesign: pills now carry their own tinted background AND a
+// matching glowing dot. The tone is still semantic (intent, not color), but
+// the visual signal is stronger so a quick scan picks "warning" vs "success"
+// vs "danger" without rainbow-itis. Maps to .ls-pill-* in globals.css.
+const TONE_CLASS: Record<StatusTone, string> = {
+  neutral: "ls-pill-neutral",
+  info:    "ls-pill-info",
+  active:  "ls-pill-active",
+  success: "ls-pill-success",
+  warning: "ls-pill-warning",
+  danger:  "ls-pill-danger",
 };
 
 type Props = {
@@ -55,19 +54,17 @@ export function StatusPill({
   hideDot,
   className,
 }: Props) {
+  // .ls-pill already includes the leading dot via ::before. When the caller
+  // opts out of the dot we strip the class so the badge reads as a plain tag.
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-2 py-0.5 text-[10px] font-medium text-foreground whitespace-nowrap",
+        hideDot ? "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap" : "ls-pill",
+        TONE_CLASS[tone],
         className,
       )}
+      style={hideDot ? { boxShadow: "none" } : undefined}
     >
-      {hideDot ? null : (
-        <span
-          aria-hidden="true"
-          className={cn("h-1.5 w-1.5 rounded-full shrink-0", DOT_TONE[tone])}
-        />
-      )}
       {label}
     </span>
   );

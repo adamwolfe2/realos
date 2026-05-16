@@ -231,7 +231,7 @@ export function ConnectHub({
       ) : null}
 
       {/* Progress bar */}
-      <div className="rounded-lg border border-border bg-card p-4">
+      <div className="rounded-xl border border-border bg-card p-4 hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all">
         <div className="flex items-baseline justify-between mb-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
             Sources connected
@@ -317,11 +317,11 @@ function SourceCard({
 
   return (
     <article
-      className="rounded-lg p-3.5 transition-all"
-      style={{
-        backgroundColor: isConnected ? "#EFF6FF" : "#FFFFFF",
-        border: `1px solid ${isConnected ? "#DBEAFE" : "#E5E5E5"}`,
-      }}
+      className={`rounded-xl p-4 transition-all hover:shadow-[0_2px_8px_rgba(15,23,42,0.05)] ${
+        isConnected
+          ? "border border-primary/25 bg-primary/[0.03]"
+          : "border border-border bg-card"
+      }`}
     >
       {/* Header row */}
       <div className="flex items-start gap-2.5">

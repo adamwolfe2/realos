@@ -47,7 +47,7 @@ function stageIndex(status: BuildStatus): number {
 
 export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
   return (
-    <section className="rounded-lg border border-border bg-card p-5 space-y-4">
+    <section className="rounded-xl border border-border bg-card p-5 space-y-4">
       <div>
         <h2 className="text-sm font-semibold">Your custom website builds</h2>
         <p className="text-xs text-muted-foreground mt-1">
@@ -63,7 +63,7 @@ export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
           return (
             <li
               key={b.id}
-              className="rounded-lg border border-border bg-background p-4 space-y-3"
+              className="rounded-xl border border-border bg-background p-4 space-y-3"
             >
               <div className="flex items-start justify-between gap-3 flex-wrap">
                 <div className="min-w-0">

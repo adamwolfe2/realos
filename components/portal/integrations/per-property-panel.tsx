@@ -73,7 +73,7 @@ export function PerPropertyIntegrationsPanel({
   const hasAnyLegacy = ga4Legacy || gscLegacy || cursiveLegacy;
 
   return (
-    <section className="rounded-lg border border-border bg-card p-4 space-y-3">
+    <section className="rounded-xl border border-border bg-card p-4 space-y-3">
       <header className="flex items-baseline justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-sm font-semibold text-foreground">

@@ -185,47 +185,78 @@ export default async function AttributionPage({
         }
       />
 
-      {/* Filter bar — compact inline row. Form-driven so the URL stays
-          bookmarkable and the page is fully SSR. */}
-      <form
-        action="/portal/attribution"
-        className="rounded-lg border border-border bg-card p-2 flex flex-wrap items-center gap-2"
-      >
-        <label className="flex items-center gap-1.5">
-          <span className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground">
-            From
-          </span>
-          <input
-            type="date"
-            name="from"
-            defaultValue={fromIso}
-            className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-          />
-        </label>
-        <label className="flex items-center gap-1.5">
-          <span className="text-[10px] font-semibold tracking-wider uppercase text-muted-foreground">
-            To
-          </span>
-          <input
-            type="date"
-            name="to"
-            defaultValue={toIso}
-            className="rounded-md border border-border bg-background px-2 py-1 text-xs"
-          />
-        </label>
-        {/* Property selection lives in the page-header PropertyMultiSelect.
-            Forwarding the URL value through the form so submitting the
-            date range preserves the selection. */}
-        {params.properties ? (
-          <input type="hidden" name="properties" value={params.properties} />
-        ) : null}
-        <button
-          type="submit"
-          className="inline-flex items-center justify-center rounded-md bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold hover:bg-primary-dark transition-colors"
+      {/* Filter bar — preset quick ranges + custom date input. Upgraded from
+          two bare <input type="date"> fields to a pill-based preset row that
+          matches the visitors page window filter. Custom dates stay available
+          for operators who need non-standard windows. */}
+      <div className="rounded-xl border border-border bg-card p-2.5 flex flex-wrap items-center gap-3">
+        {/* Preset range pills */}
+        <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/30 p-0.5">
+          {[
+            { days: 7, label: "7d" },
+            { days: 30, label: "30d" },
+            { days: 60, label: "60d" },
+            { days: 90, label: "90d" },
+          ].map((preset) => {
+            const active = dayCount === preset.days;
+            const href = presetRangeHref(preset.days, params.properties);
+            return (
+              <Link
+                key={preset.days}
+                href={href}
+                className={`inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  active
+                    ? "bg-card shadow-sm text-foreground"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {preset.label}
+              </Link>
+            );
+          })}
+        </div>
+
+        {/* Divider */}
+        <span aria-hidden="true" className="h-4 w-px bg-border" />
+
+        {/* Custom date form — for non-standard windows */}
+        <form
+          action="/portal/attribution"
+          className="flex flex-wrap items-center gap-2"
         >
-          Apply
-        </button>
-      </form>
+          {params.properties ? (
+            <input type="hidden" name="properties" value={params.properties} />
+          ) : null}
+          <label className="flex items-center gap-1.5">
+            <span className="text-[9px] font-semibold tracking-widest uppercase text-muted-foreground shrink-0">
+              From
+            </span>
+            <input
+              type="date"
+              name="from"
+              defaultValue={fromIso}
+              className="rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+            />
+          </label>
+          <label className="flex items-center gap-1.5">
+            <span className="text-[9px] font-semibold tracking-widest uppercase text-muted-foreground shrink-0">
+              To
+            </span>
+            <input
+              type="date"
+              name="to"
+              defaultValue={toIso}
+              className="rounded-lg border border-border bg-background px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary/50 transition-colors"
+            />
+          </label>
+          <button
+            type="submit"
+            className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground px-3 py-1 text-xs font-semibold hover:bg-primary/90 transition-colors"
+          >
+            Apply
+          </button>
+        </form>
+      </div>
 
       {/* Headline KPIs */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
@@ -386,7 +417,7 @@ export default async function AttributionPage({
       </section>
 
       {/* Footer note — explicit positioning vs Clarity. */}
-      <section className="rounded-lg border border-dashed border-border bg-muted/20 px-3 py-2.5">
+      <section className="rounded-xl border border-dashed border-border bg-muted/20 px-3 py-2.5">
         <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           What you get with LeaseStack that Clarity can&apos;t deliver
         </p>
@@ -520,4 +551,16 @@ function toIsoDay(d: Date): string {
   const month = String(d.getUTCMonth() + 1).padStart(2, "0");
   const day = String(d.getUTCDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+/** Build an attribution page href for a "last N days" preset. */
+function presetRangeHref(days: number, properties?: string): string {
+  const today = new Date();
+  const toDay = toIsoDay(today);
+  const fromDay = toIsoDay(
+    new Date(today.getTime() - days * 24 * 60 * 60 * 1000),
+  );
+  const p = new URLSearchParams({ from: fromDay, to: toDay });
+  if (properties) p.set("properties", properties);
+  return `/portal/attribution?${p.toString()}`;
 }

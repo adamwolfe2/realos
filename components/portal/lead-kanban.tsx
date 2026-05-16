@@ -293,7 +293,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
 
   if (items.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-card p-12 text-center">
+      <div className="rounded-xl border border-dashed border-border bg-card p-12 text-center">
         <p className="text-sm font-medium text-foreground">No leads yet</p>
         <p className="text-xs text-muted-foreground mt-1">
           Leads appear here when visitors submit forms, chat, or get captured by the pixel.
@@ -397,7 +397,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
         ) : null}
       </BulkActionBar>
 
-      <div className="rounded-lg border border-border bg-card overflow-x-auto">
+      <div className="rounded-xl border border-border bg-card overflow-x-auto">
         <table className="w-full text-sm min-w-[680px]">
           <thead>
             <tr className="border-b border-border bg-muted/40">

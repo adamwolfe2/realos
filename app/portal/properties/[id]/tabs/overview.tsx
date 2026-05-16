@@ -953,7 +953,7 @@ function ActiveFeaturesStrip({
   const liveCount = chips.filter((c) => c.connected).length;
 
   return (
-    <section className="rounded-lg border border-border bg-card px-3 py-2.5">
+    <section className="rounded-xl border border-border bg-card px-3 py-2.5">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <p className="text-[11px] tracking-widest uppercase font-semibold text-muted-foreground shrink-0">
           Channels &middot;{" "}
@@ -1015,7 +1015,7 @@ function HeroLeadsTile({
 }) {
   const showSpark = Array.isArray(spark) && spark.length > 1;
   return (
-    <div className="relative h-full rounded-lg border border-border bg-card p-4 flex flex-col gap-3 ls-hover-lift">
+    <div className="relative h-full rounded-xl border border-border bg-card p-4 flex flex-col gap-3 ls-hover-lift">
       <div className="flex items-center justify-between gap-2">
         <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Leads · 28 days
@@ -1612,7 +1612,7 @@ function AiInsightCard({ insight }: { insight: AiInsightShape }) {
           : "border-border bg-muted/30 text-foreground";
   return (
     <div
-      className={`rounded-lg border px-3 py-2 flex items-start gap-2.5 ${tone}`}
+      className={`rounded-xl border px-3 py-2 flex items-start gap-2.5 ${tone}`}
     >
       <Sparkles className="h-4 w-4 shrink-0 mt-0.5 opacity-80" aria-hidden="true" />
       <div className="min-w-0 flex-1">

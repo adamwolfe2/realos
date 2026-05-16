@@ -80,7 +80,7 @@ export function IntegrationTile({
       onClick={() => !disabled && onOpen(def.slug)}
       disabled={disabled}
       className={cn(
-        "group text-left rounded-lg border border-border bg-card p-4 transition-all",
+        "group text-left rounded-xl border border-border bg-card p-4 transition-all",
         "flex flex-col gap-3 min-h-[150px]",
         !disabled && "hover:border-foreground/20 hover:bg-accent/30 cursor-pointer",
         disabled && "opacity-60 cursor-not-allowed",

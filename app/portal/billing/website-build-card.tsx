@@ -137,11 +137,7 @@ function StandardCard({
 }) {
   return (
     <div
-      className="rounded-lg p-5 flex flex-col"
-      style={{
-        backgroundColor: "#F8FAFC",
-        border: "1px solid #E2E8F0",
-      }}
+      className="rounded-xl border border-border bg-card p-5 flex flex-col"
     >
       <div className="flex items-baseline justify-between gap-2 mb-1">
         <h3 className="text-base font-semibold text-foreground">{build.uiLabel}</h3>
@@ -225,7 +221,7 @@ function PremiumCard({
 }) {
   return (
     <div
-      className="relative rounded-lg p-5 flex flex-col overflow-hidden"
+      className="relative rounded-xl p-5 flex flex-col overflow-hidden"
       style={{
         backgroundColor: "#1E2A3A",
         border: "1px solid #1E2A3A",

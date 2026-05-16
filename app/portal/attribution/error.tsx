@@ -24,7 +24,7 @@ export default function AttributionError({
           Attribution
         </h1>
       </div>
-      <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+      <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
         <p className="font-semibold">
           Attribution view temporarily unavailable.
         </p>

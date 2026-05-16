@@ -24,34 +24,41 @@ const SEVERITY_TOKENS: Record<
   AlertSeverity,
   {
     icon: React.ComponentType<{ className?: string }>;
+    /** Used for the flush (slim chrome strip) variant. */
     container: string;
     iconClass: string;
     actionClass: string;
+    /** Used for the inline (card-shaped) variant — pairs with `.ls-alert`. */
+    cardClass: string;
   }
 > = {
   info: {
     icon: Info,
-    container: "bg-[#EFF6FF] border-[#DBEAFE] text-[#1E3A8A]",
-    iconClass: "text-[#2563EB]",
-    actionClass: "text-[#2563EB] hover:text-[#1D4ED8]",
+    container: "bg-blue-50 border-blue-200 text-blue-900",
+    iconClass: "text-blue-600",
+    actionClass: "text-blue-600 hover:text-blue-700",
+    cardClass: "ls-alert ls-alert-info text-slate-800",
   },
   success: {
     icon: CheckCircle2,
-    container: "bg-[#F0FDF4] border-[#DCFCE7] text-[#14532D]",
-    iconClass: "text-[#16A34A]",
-    actionClass: "text-[#15803D] hover:text-[#14532D]",
+    container: "bg-green-50 border-green-200 text-green-900",
+    iconClass: "text-green-600",
+    actionClass: "text-green-700 hover:text-green-900",
+    cardClass: "ls-alert ls-alert-success text-slate-800",
   },
   warning: {
     icon: AlertTriangle,
-    container: "bg-[#FFFBEB] border-[#FEF3C7] text-[#78350F]",
-    iconClass: "text-[#F59E0B]",
-    actionClass: "text-[#B45309] hover:text-[#78350F]",
+    container: "bg-amber-50 border-amber-200 text-amber-900",
+    iconClass: "text-amber-500",
+    actionClass: "text-amber-700 hover:text-amber-900",
+    cardClass: "ls-alert ls-alert-warning text-slate-800",
   },
   critical: {
     icon: AlertCircle,
-    container: "bg-[#FEF2F2] border-[#FEE2E2] text-[#7F1D1D]",
-    iconClass: "text-[#DC2626]",
-    actionClass: "text-[#B91C1C] hover:text-[#7F1D1D]",
+    container: "bg-red-50 border-red-200 text-red-900",
+    iconClass: "text-red-600",
+    actionClass: "text-red-700 hover:text-red-900",
+    cardClass: "ls-alert ls-alert-critical text-slate-800",
   },
 };
 
@@ -93,9 +100,14 @@ export function AlertBanner({
       role={severity === "critical" ? "alert" : "status"}
       className={cn(
         flush
-          ? "shrink-0 border-b text-[11.5px] px-4 h-7 flex items-center gap-2 leading-none"
-          : "border px-4 py-2.5 text-sm flex items-center gap-3 rounded-md",
-        tokens.container,
+          ? cn(
+              "shrink-0 border-b text-[11.5px] px-4 h-7 flex items-center gap-2 leading-none",
+              tokens.container,
+            )
+          : cn(
+              "text-sm flex items-center gap-3",
+              tokens.cardClass,
+            ),
         className,
       )}
     >

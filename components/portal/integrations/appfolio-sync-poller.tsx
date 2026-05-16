@@ -202,7 +202,7 @@ export function AppFolioSyncPoller({
     const summary = stats ? formatStatsSummary(stats) : null;
     const warnings = stats?.warnings ?? [];
     return (
-      <div className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-primary">
+      <div className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-primary">
         <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold leading-tight">
@@ -235,7 +235,7 @@ export function AppFolioSyncPoller({
 
   if (done === "error") {
     return (
-      <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
+      <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
         <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold leading-tight">
@@ -282,7 +282,7 @@ export function AppFolioSyncPoller({
       }
     }
     return (
-      <div className="flex items-start gap-3 rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
+      <div className="flex items-start gap-3 rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-destructive">
         <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
         <div className="min-w-0 flex-1">
           <p className="text-sm font-semibold leading-tight">
@@ -317,7 +317,7 @@ export function AppFolioSyncPoller({
     <div
       role="status"
       aria-live="polite"
-      className="flex items-start gap-3 rounded-lg border border-primary/30 bg-primary/10 px-4 py-3 text-primary"
+      className="flex items-start gap-3 rounded-xl border border-primary/30 bg-primary/10 px-4 py-3 text-primary"
     >
       <Clock className="h-4 w-4 mt-0.5 shrink-0 animate-pulse" />
       <div className="min-w-0 flex-1">

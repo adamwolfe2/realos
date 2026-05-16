@@ -12,7 +12,7 @@ export default function NotificationsLoading() {
           <div key={i} className="h-8 w-20 bg-muted rounded-md" />
         ))}
       </div>
-      <div className="rounded-lg border border-border bg-card overflow-hidden divide-y divide-border">
+      <div className="rounded-xl border border-border bg-card overflow-hidden divide-y divide-border">
         {Array.from({ length: 6 }).map((_, i) => (
           <div key={i} className="px-5 py-4 flex items-start gap-3">
             <div className="h-2 w-2 rounded-full bg-muted/60 mt-2 shrink-0" />

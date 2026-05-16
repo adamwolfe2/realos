@@ -341,14 +341,14 @@ function ResidentTable({
 }) {
   if (residents.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-border bg-card p-8 text-center text-xs text-muted-foreground">
+      <div className="rounded-xl border border-dashed border-border bg-card p-8 text-center text-xs text-muted-foreground">
         No residents in this view.
       </div>
     );
   }
 
   return (
-    <div className="rounded-lg border border-border bg-card overflow-hidden">
+    <div className="rounded-xl border border-border bg-card overflow-hidden">
       {/* Header strip */}
       <div
         className={

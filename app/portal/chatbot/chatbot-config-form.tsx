@@ -106,7 +106,7 @@ export function ChatbotConfigForm({
       />
 
       {/* Persona */}
-      <section className="rounded-lg border border-border bg-card p-5 space-y-4">
+      <section className="rounded-xl border border-border bg-card p-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Persona</h2>
         <div className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-5 items-start">
           <Field
@@ -175,7 +175,7 @@ export function ChatbotConfigForm({
       </section>
 
       {/* Appearance */}
-      <section className="rounded-lg border border-border bg-card p-5 space-y-4">
+      <section className="rounded-xl border border-border bg-card p-5 space-y-4">
         <h2 className="text-sm font-semibold text-foreground">Appearance</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <label className="flex flex-col gap-1.5">
@@ -224,7 +224,7 @@ export function ChatbotConfigForm({
       </section>
 
       {/* Lead capture */}
-      <section className="rounded-lg border border-border bg-card p-5 space-y-3">
+      <section className="rounded-xl border border-border bg-card p-5 space-y-3">
         <h2 className="text-sm font-semibold text-foreground">Lead capture</h2>
         <p className="text-xs text-muted-foreground">
           Choose when the bot asks for a visitor&apos;s name and email.
@@ -260,7 +260,7 @@ export function ChatbotConfigForm({
       </section>
 
       {/* Site analytics */}
-      <section className="rounded-lg border border-border bg-card p-5 space-y-4">
+      <section className="rounded-xl border border-border bg-card p-5 space-y-4">
         <div>
           <h2 className="text-sm font-semibold text-foreground">
             Site analytics
@@ -296,7 +296,7 @@ export function ChatbotConfigForm({
       </section>
 
       {/* Knowledge base */}
-      <section className="rounded-lg border border-border bg-card p-5 space-y-3">
+      <section className="rounded-xl border border-border bg-card p-5 space-y-3">
         <h2 className="text-sm font-semibold text-foreground">Knowledge base</h2>
         <p className="text-xs text-muted-foreground">
           Plain-text facts, amenities, and policies injected into the system prompt. Write like
@@ -352,7 +352,7 @@ export function ChatbotConfigForm({
 
         {/* Right column — sticky preview */}
         <div className="w-96 shrink-0 hidden lg:block">
-          <div className="sticky top-6 rounded-lg border border-border bg-card p-5 space-y-4">
+          <div className="sticky top-6 rounded-xl border border-border bg-card p-5 space-y-4">
             <div>
               <h2 className="text-sm font-semibold text-foreground">Preview</h2>
               <p className="text-xs text-muted-foreground mt-1">

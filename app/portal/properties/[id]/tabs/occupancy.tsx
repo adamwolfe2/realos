@@ -106,7 +106,7 @@ export async function OccupancyTab({
               return (
                 <div
                   key={b.label}
-                  className="rounded-lg border border-border bg-card p-3 space-y-2"
+                  className="rounded-xl border border-border bg-card p-3 space-y-2"
                 >
                   <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
                     {b.label}

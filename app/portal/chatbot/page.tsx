@@ -96,7 +96,7 @@ export default async function ChatbotPage() {
       {!org.moduleChatbot ? (
         <div
           role="status"
-          className="rounded-lg border border-primary/20 bg-primary/[0.03] p-4 text-sm text-foreground flex items-start gap-3"
+          className="rounded-xl border border-primary/20 bg-primary/[0.03] p-4 text-sm text-foreground flex items-start gap-3"
         >
           <div className="flex-1">
             <p className="font-semibold">Chatbot module isn&apos;t active yet.</p>

@@ -314,7 +314,7 @@ export default async function ToursPage({
               return (
                 <div
                   key={key}
-                  className={`rounded-lg border ${isToday ? "border-primary/40 bg-primary/5" : "border-border bg-card"} p-2.5 min-h-[120px]`}
+                  className={`rounded-xl border ${isToday ? "border-primary/40 bg-primary/[0.04]" : "border-border bg-card"} p-2.5 min-h-[120px] transition-all`}
                 >
                   <div className="flex items-baseline justify-between gap-2 mb-2">
                     <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
@@ -332,7 +332,7 @@ export default async function ToursPage({
                     <ul className="space-y-1.5">
                       {items.map((t) => (
                         <li key={t.id}>
-                          <div className="rounded-md border border-border bg-card hover:border-primary/40 hover:bg-muted/40 transition-colors">
+                          <div className="rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-muted/40 hover:shadow-sm transition-all">
                             <Link
                               href={`/portal/leads/${t.lead.id}`}
                               className="block px-2 pt-1.5 pb-1"
@@ -391,7 +391,7 @@ export default async function ToursPage({
               return (
                 <div
                   key={status}
-                  className="rounded-lg border border-border bg-muted/30 p-2.5"
+                  className="rounded-xl border border-border bg-muted/30 p-2.5"
                 >
                   <div className="flex items-center justify-between gap-2 mb-2 px-1">
                     <StatusPill
@@ -412,7 +412,7 @@ export default async function ToursPage({
                         <li key={t.id}>
                           <Link
                             href={`/portal/leads/${t.lead.id}`}
-                            className="block rounded-md border border-border bg-card hover:border-primary/40 px-2 py-1.5"
+                            className="block rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-sm px-2 py-1.5 transition-all"
                           >
                             <p className="text-[11px] font-medium text-foreground truncate">
                               {[t.lead.firstName, t.lead.lastName]
@@ -455,7 +455,7 @@ export default async function ToursPage({
           title="Tours"
           description="Calendar, pipeline, and outcomes for every property tour."
         />
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           Tour data could not be loaded. If this error persists, check{" "}
           <a href="/portal/connect" className="underline font-medium">
             Settings → Integrations

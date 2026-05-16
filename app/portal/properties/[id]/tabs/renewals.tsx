@@ -152,7 +152,7 @@ export async function RenewalsTab({
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {buckets.map((b) => (
-              <div key={b.label} className={`rounded-lg border ${b.tone} p-2.5`}>
+              <div key={b.label} className={`rounded-xl border ${b.tone} p-2.5`}>
                 <div className="flex items-center justify-between gap-2 mb-2 px-1">
                   <span className="text-[10px] tracking-widest uppercase font-semibold">
                     {b.label}

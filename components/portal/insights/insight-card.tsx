@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTransition } from "react";
-import { ArrowRight, Check, CircleDashed, Clock3, X } from "lucide-react";
+import { ArrowRight, Check, CircleDashed, Clock3, Lightbulb, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SeverityPill, CategoryBadge } from "./severity-pill";
 import { acknowledgeInsight, dismissInsight, snoozeInsight, markActed } from "@/app/portal/insights/actions";
@@ -43,7 +43,7 @@ export function InsightCard({
     return (
       <article
         className={cn(
-          "group relative rounded-lg border bg-card p-3 transition-shadow duration-150 hover:shadow-[0_2px_12px_rgba(0,0,0,0.03)]",
+          "group relative rounded-xl border bg-card p-3 transition-shadow duration-150 hover:shadow-[0_2px_12px_rgba(0,0,0,0.03)]",
           insight.severity === "critical"
             ? "border-primary/40 bg-primary/[0.03]"
             : insight.severity === "warning"
@@ -158,10 +158,16 @@ export function InsightCard({
       ) : null}
 
       {insight.suggestedAction ? (
-        <p className="mt-2 rounded-lg border border-border bg-card px-3 py-2 text-[12px] leading-relaxed text-muted-foreground">
-          <span className="font-semibold text-foreground">Suggested. </span>
-          {insight.suggestedAction}
-        </p>
+        // Upgraded from a plain bordered box to a primary-tinted "recommendation
+        // chip" — the Lightbulb icon + blue wash makes it read instantly as an
+        // AI-generated suggestion rather than a continuation of body copy.
+        <div className="mt-2.5 flex items-start gap-2 rounded-xl border border-primary/25 bg-primary/[0.04] px-3 py-2.5">
+          <Lightbulb className="h-3.5 w-3.5 text-primary shrink-0 mt-0.5" aria-hidden="true" />
+          <p className="text-[12px] leading-relaxed text-foreground/80">
+            <span className="font-semibold text-foreground">Next step. </span>
+            {insight.suggestedAction}
+          </p>
+        </div>
       ) : null}
 
       <footer className="mt-3 flex items-center justify-between gap-2">

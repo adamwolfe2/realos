@@ -217,7 +217,7 @@ export default async function ConversationsList({
       {/* 2-pane container */}
       <div className="flex-1 min-h-0 mt-3 grid grid-cols-1 lg:grid-cols-[minmax(340px,400px)_minmax(0,1fr)] gap-3 lg:gap-0">
         {/* LEFT: list pane */}
-        <div className="flex flex-col min-h-0 lg:border lg:border-border lg:border-r-0 lg:rounded-l-lg overflow-hidden bg-card">
+        <div className="flex flex-col min-h-0 lg:border lg:border-border lg:border-r-0 lg:rounded-l-xl overflow-hidden bg-card">
           <div className="px-3 py-3 border-b border-border bg-card shrink-0">
             <Suspense>
               <TranscriptSearch
@@ -350,9 +350,9 @@ export default async function ConversationsList({
             below the list — the operator's intent is the list itself).
             On desktop, always visible so empty state can prompt action. */}
         <div className={cn(
-          "flex-col min-h-0 border border-border lg:rounded-r-lg overflow-hidden bg-card",
+          "flex-col min-h-0 border border-border lg:rounded-r-xl overflow-hidden bg-card",
           validSelectedId
-            ? "flex rounded-lg mt-3 lg:mt-0"
+            ? "flex rounded-xl mt-3 lg:mt-0"
             : "hidden lg:flex",
         )}>
           {validSelectedId ? (

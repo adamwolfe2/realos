@@ -14,7 +14,7 @@ export default function ConnectLoading() {
       </div>
 
       {/* Progress bar skeleton */}
-      <div className="rounded-lg border border-border bg-card p-4">
+      <div className="rounded-xl border border-border bg-card p-4">
         <div className="flex items-baseline justify-between mb-3">
           <div className="h-3 w-24 bg-muted rounded" />
           <div className="h-3 w-12 bg-muted rounded" />
@@ -30,7 +30,7 @@ export default function ConnectLoading() {
             {[0, 1].map((card) => (
               <div
                 key={card}
-                className="rounded-lg border border-border bg-card p-5 space-y-3"
+                className="rounded-xl border border-border bg-card p-5 space-y-3"
               >
                 <div className="flex items-start gap-3">
                   <div className="w-9 h-9 rounded-md bg-primary/10 shrink-0" />

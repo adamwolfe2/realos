@@ -42,11 +42,11 @@ export function RequestActivationButton({
 
   if (submitted) {
     return (
-      <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-        <p className="text-sm font-medium text-amber-900">
+      <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
+        <p className="text-sm font-medium text-primary">
           Activation requested.
         </p>
-        <p className="text-xs text-amber-800 mt-1">
+        <p className="text-xs text-primary/80 mt-1">
           Your account team has been notified. We'll email you when {name} is
           live in your portal.
         </p>

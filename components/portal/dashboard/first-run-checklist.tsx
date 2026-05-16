@@ -55,7 +55,7 @@ export function FirstRunChecklist({ items }: { items: ChecklistItem[] }) {
   const completed = items.filter((i) => i.done).length;
   const pct = Math.round((completed / items.length) * 100);
   return (
-    <section className="rounded-lg border border-border bg-card p-6">
+    <section className="rounded-xl border border-border bg-card p-6">
       <div className="flex items-baseline justify-between gap-4">
         <div>
           <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
@@ -94,7 +94,7 @@ export function FirstRunChecklist({ items }: { items: ChecklistItem[] }) {
               <Link
                 href={it.href}
                 className={cn(
-                  "group flex items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 transition-colors",
+                  "group flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3 transition-colors",
                   "hover:border-primary/30 hover:bg-muted/30",
                 )}
               >

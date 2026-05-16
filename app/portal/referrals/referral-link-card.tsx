@@ -171,7 +171,7 @@ function StatTile({
   value: number;
 }) {
   return (
-    <div className="rounded-lg border border-border bg-background px-3 py-2.5">
+    <div className="rounded-xl border border-border bg-background px-3 py-2.5">
       <div className="flex items-center gap-1.5 text-muted-foreground">
         {icon}
         <span className="text-[9px] uppercase tracking-widest font-semibold">

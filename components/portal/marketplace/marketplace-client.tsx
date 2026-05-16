@@ -358,44 +358,58 @@ function ModuleCard({
   // tagline, footer row with logos + price + CTA. The bullets and
   // integration list moved to the module detail page (clicked into via
   // CTA). Less work to scan, more visual presence per card.
+  // Premium 2026 redesign: tier-coded top stripe (active=green, included=blue,
+  // concierge=amber, coming=muted), layered card depth via .ls-card, slightly
+  // larger icon chip with gradient.
+  const stripeColor =
+    isComing
+      ? "transparent"
+      : isConcierge
+        ? "linear-gradient(90deg, #f59e0b, #fbbf24)"
+        : isEnabled
+          ? "linear-gradient(90deg, #16a34a, #4ade80)"
+          : isIncluded
+            ? "linear-gradient(90deg, #2563EB, #60A5FA)"
+            : isAddon
+              ? "linear-gradient(90deg, #7c3aed, #a78bfa)"
+              : "transparent";
+
   return (
     <article
-      className="rounded-lg p-4 transition-all hover:border-primary/40"
-      style={{
-        backgroundColor: isComing
-          ? "#FAFAFA"
-          : isEnabled || isIncluded
-            ? "#F8FBFF"
-            : "#FFFFFF",
-        border: `1px solid ${
-          isComing
-            ? "#EAEAEA"
-            : isEnabled || isIncluded
-              ? "#DBEAFE"
-              : "#EAEAEA"
-        }`,
-        opacity: isComing ? 0.85 : 1,
-        minHeight: 132,
-        display: "flex",
-        flexDirection: "column",
-      }}
+      className={[
+        "ls-card relative p-5 flex flex-col overflow-hidden",
+        isComing ? "opacity-80" : "",
+      ].join(" ")}
+      style={{ minHeight: 144 }}
     >
+      {/* Top accent stripe — pure CSS so it survives hover and never shifts. */}
+      <span
+        aria-hidden="true"
+        className="absolute top-0 left-0 right-0 h-[2px]"
+        style={{ background: stripeColor }}
+      />
       {/* Header — icon + title + status pill */}
-      <div className="flex items-start gap-2.5">
+      <div className="flex items-start gap-3">
         <div
-          className="inline-flex items-center justify-center w-8 h-8 rounded-md bg-primary/10 text-primary shrink-0"
-          style={isComing ? { opacity: 0.6 } : undefined}
+          className="inline-flex items-center justify-center w-9 h-9 rounded-lg shrink-0 ring-1 ring-inset"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(37,99,235,0.10), rgba(37,99,235,0.04))",
+            color: "var(--terracotta)",
+            boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset",
+            opacity: isComing ? 0.6 : 1,
+          }}
         >
-          <Icon className="w-4 h-4" strokeWidth={1.75} />
+          <Icon className="w-[18px] h-[18px]" strokeWidth={1.75} />
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="text-[14px] font-semibold tracking-tight text-[#0A0A0A] truncate">
+            <h3 className="text-[14px] font-semibold tracking-tight text-foreground truncate">
               {m.name}
             </h3>
             <StatusPill kind={m.kind} isEnabled={isEnabled} popular={m.popular} />
           </div>
-          <p className="mt-0.5 text-[12px] leading-snug text-[#64748B] line-clamp-2">
+          <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground line-clamp-2">
             {m.tagline}
           </p>
         </div>
@@ -424,7 +438,7 @@ function ModuleCard({
             </div>
           ) : null}
           {m.brandLogoKeys && m.brandLogoKeys.length > 0 ? (
-            <span aria-hidden="true" className="text-[#CBD5E1]">·</span>
+            <span aria-hidden="true" className="text-border">·</span>
           ) : null}
           <PriceLine
             kind={m.kind}
@@ -473,7 +487,7 @@ function StatusPill({
   }
   if (kind === "coming") {
     return (
-      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#8E8E8E] shrink-0">
+      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
         Coming soon
       </span>
     );
@@ -487,7 +501,7 @@ function StatusPill({
   }
   if (kind === "concierge") {
     return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5C5E62] shrink-0">
+      <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
         <Sparkles className="w-2.5 h-2.5" />
         Concierge
       </span>
@@ -503,7 +517,7 @@ function StatusPill({
   }
   if (popular) {
     return (
-      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-[#5C5E62] shrink-0">
+      <span className="inline-flex items-center text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
         Popular
       </span>
     );
@@ -531,39 +545,39 @@ function PriceLine({
   }
   if (kind === "coming") {
     return (
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8E8E8E]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         Coming soon
       </p>
     );
   }
   if (kind === "addon") {
     return (
-      <p className="text-[13px] font-semibold tabular-nums text-[#0A0A0A]">
+      <p className="text-[13px] font-semibold tabular-nums text-foreground">
         +{formatPrice(cents)}
-        <span className="text-[11px] font-normal text-[#8E8E8E]">/mo</span>
+        <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
       </p>
     );
   }
   if (kind === "concierge") {
     return (
-      <p className="text-[13px] font-semibold tabular-nums text-[#0A0A0A]">
+      <p className="text-[13px] font-semibold tabular-nums text-foreground">
         from {formatPrice(cents)}
-        <span className="text-[11px] font-normal text-[#8E8E8E]">/mo</span>
+        <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
       </p>
     );
   }
   // toggle
   if (isTrialing && !isEnabled) {
     return (
-      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5C5E62]">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
         Free during trial
       </p>
     );
   }
   return (
-    <p className="text-[13px] font-semibold tabular-nums text-[#0A0A0A]">
+    <p className="text-[13px] font-semibold tabular-nums text-foreground">
       {formatPrice(cents)}
-      <span className="text-[11px] font-normal text-[#8E8E8E]">/mo</span>
+      <span className="text-[11px] font-normal text-muted-foreground">/mo</span>
     </p>
   );
 }
@@ -607,7 +621,7 @@ function CtaRow({
         type="button"
         onClick={onNotifyMe}
         disabled={isNotified}
-        className="inline-flex items-center justify-center h-7 px-3 rounded-md border border-[#E5E5E5] bg-white text-[#5C5E62] text-[12px] font-medium hover:border-primary hover:text-primary disabled:opacity-60 disabled:cursor-default transition-colors"
+        className="inline-flex items-center justify-center h-7 px-3 rounded-md border border-border bg-card text-muted-foreground text-[12px] font-medium hover:border-primary hover:text-primary disabled:opacity-60 disabled:cursor-default transition-colors"
       >
         {isNotified ? "Notified" : "Notify me"}
       </button>
@@ -662,7 +676,7 @@ function CtaRow({
           type="button"
           onClick={onDeactivate}
           disabled={isPending}
-          className="h-7 px-2 text-[11px] font-medium text-[#8E8E8E] hover:text-foreground disabled:opacity-40 transition-colors"
+          className="h-7 px-2 text-[11px] font-medium text-muted-foreground hover:text-foreground disabled:opacity-40 transition-colors"
           aria-label={`Deactivate ${name}`}
         >
           {isPending ? "…" : "Remove"}

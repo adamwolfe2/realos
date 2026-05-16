@@ -105,7 +105,7 @@ export function IntegrationMarketplace({
           />
         ))}
         {filtered.length === 0 ? (
-          <div className="col-span-full rounded-lg border border-border bg-card p-8 text-center">
+          <div className="col-span-full rounded-xl border border-border bg-card p-8 text-center">
             <p className="text-sm text-muted-foreground">
               No integrations match this filter.
             </p>
@@ -198,7 +198,7 @@ function IntegrationDrawerBody({
           {def.description}
         </p>
 
-        <div className="rounded-lg border border-border bg-muted/30 p-4">
+        <div className="rounded-xl border border-border bg-muted/30 p-4">
           <h4 className="text-xs font-semibold text-foreground mb-2">
             What lands in your portal
           </h4>
@@ -232,7 +232,7 @@ function DrawerAction({
   if (state === "connected") {
     if (manageSlot) return <div className="space-y-3">{manageSlot}</div>;
     return (
-      <div className="rounded-lg border border-primary/30 bg-primary/10 p-4">
+      <div className="rounded-xl border border-primary/30 bg-primary/10 p-4">
         <p className="text-sm font-medium text-primary">
           {def.name} is connected and live.
         </p>
@@ -357,7 +357,7 @@ function PlanGateBlock({
         accent: "text-foreground",
       };
   return (
-    <div className={`rounded-lg border p-4 space-y-3 ${tone.bg}`}>
+    <div className={`rounded-xl border p-4 space-y-3 ${tone.bg}`}>
       <div>
         <p className={`text-sm font-semibold ${tone.accent}`}>
           {provisioning

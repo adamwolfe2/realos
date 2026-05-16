@@ -206,7 +206,7 @@ function StatBlock({
     muted: "text-muted-foreground",
   };
   return (
-    <div className="min-w-16 rounded-lg border border-border bg-card px-3 py-2">
+    <div className="min-w-16 rounded-xl border border-border bg-card px-3 py-2 hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all">
       <div className="text-[9px] uppercase tracking-widest font-semibold text-muted-foreground">
         {label}
       </div>
@@ -231,7 +231,7 @@ function FilterGroup({
   current: Record<string, string | undefined>;
 }) {
   return (
-    <div className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1">
+    <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-card p-1">
       <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground px-2">
         {label}
       </span>

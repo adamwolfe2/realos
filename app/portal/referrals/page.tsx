@@ -240,7 +240,7 @@ function Chip({
   return (
     <div
       className={
-        "min-w-16 rounded-lg border px-3 py-2 " +
+        "min-w-16 rounded-xl border px-3 py-2 " +
         (accent
           ? "border-primary bg-primary/5"
           : "border-border bg-card")

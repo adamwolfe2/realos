@@ -228,7 +228,7 @@ export default async function BillingPage() {
       ) : null}
 
       {billingNotConfigured ? (
-        <section className="rounded-lg border border-dashed border-border bg-muted/30 p-6">
+        <section className="rounded-xl border border-dashed border-border bg-muted/30 p-6">
           <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Onboarding
           </p>
@@ -312,7 +312,7 @@ export default async function BillingPage() {
           (tier, additional properties, add-ons) so the operator never
           has to dig into Stripe to see what they're paying for. */}
       {lineItems.length > 0 ? (
-        <section className="rounded-lg border border-border bg-card p-5 space-y-3">
+        <section className="rounded-xl border border-border bg-card p-5 space-y-3">
           <div className="flex items-baseline justify-between">
             <h2 className="text-sm font-semibold">Subscription line items</h2>
             <p className="text-xs text-muted-foreground">
@@ -382,7 +382,7 @@ export default async function BillingPage() {
           custom site can request one without hunting through the UI. */}
       <WebsiteBuildCard />
 
-      <section className="rounded-lg border border-border bg-card p-5 space-y-3">
+      <section className="rounded-xl border border-border bg-card p-5 space-y-3">
         <h2 className="text-sm font-semibold">Stripe Customer Portal</h2>
         <p className="text-sm text-muted-foreground">
           Update payment method, download invoices, and view upcoming charges.
@@ -410,7 +410,7 @@ function Mini({
         ? "text-amber-700"
         : "text-foreground";
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-xl border border-border bg-card p-4 hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all">
       <div className="text-xs tracking-widest uppercase text-muted-foreground">
         {label}
       </div>

@@ -325,7 +325,7 @@ export default async function RenewalsPage({
           title="Renewals"
           description="Lease expirations from AppFolio. Act on renewals 120 days out so resignation deadlines never slip."
         />
-        <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           Renewal data could not be loaded.{" "}
           {err instanceof Error ? err.message : ""}
         </div>

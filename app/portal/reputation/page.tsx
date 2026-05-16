@@ -190,7 +190,7 @@ export default async function PortfolioReputationPage({
     <div className="space-y-4">
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
       {loadError ? (
-        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           <strong>Reputation data unavailable.</strong> The scanner tables may still be
           initializing — run a reputation scan from any property to seed the data. This
           page will display results once the first scan completes.
@@ -534,7 +534,7 @@ function ReputationFallback({
   return (
     <div className="space-y-4">
       <PageHeader eyebrow="Brand health" title="Reputation" />
-      <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+      <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
         <p className="font-semibold">Reputation view temporarily unavailable.</p>
         <p className="mt-1 text-xs leading-snug">{message}</p>
         <p className="mt-2 text-xs">
@@ -555,7 +555,7 @@ function ReputationFallback({
       {diagnostic ? (
         <details
           open
-          className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive"
+          className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive"
         >
           <summary className="cursor-pointer font-semibold">
             Diagnostic — share with engineering
@@ -626,12 +626,12 @@ function MonthlyVolume({
           >
             <div className="w-full flex-1 flex items-end">
               <div
-                className="w-full bg-muted group-hover:bg-muted-foreground/20 rounded-t-sm relative transition-colors"
+                className="w-full bg-primary/25 group-hover:bg-primary/40 rounded-sm relative transition-colors"
                 style={{ height: `${Math.max(height, 4)}%` }}
               >
                 {d.negative > 0 ? (
                   <div
-                    className="absolute bottom-0 left-0 right-0 bg-muted-foreground/70 rounded-t-sm"
+                    className="absolute bottom-0 left-0 right-0 bg-foreground/25 rounded-sm"
                     style={{ height: `${negPct}%` }}
                   />
                 ) : null}

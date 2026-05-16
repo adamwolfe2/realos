@@ -83,7 +83,7 @@ export default async function CreativePage() {
             <li key={r.id}>
               <Link
                 href={`/portal/creative/${r.id}`}
-                className="block rounded-lg border border-border bg-card p-4 hover:border-foreground/20 hover:bg-accent/30 transition-colors"
+                className="block rounded-xl border border-border bg-card p-4 hover:border-foreground/20 hover:bg-accent/30 transition-colors"
               >
                 <div className="flex items-baseline justify-between gap-3">
                   <div className="min-w-0">

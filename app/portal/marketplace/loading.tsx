@@ -4,9 +4,9 @@
 
 export default function MarketplaceLoading() {
   return (
-    <div className="min-h-screen bg-[#FAFAF7] animate-pulse">
+    <div className="min-h-screen bg-background animate-pulse">
       {/* Hero skeleton */}
-      <section className="border-b border-[#EEEEEE] bg-white">
+      <section className="border-b border-border bg-card">
         <div className="max-w-[1200px] mx-auto px-6 py-12 lg:px-10 lg:py-16">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
             <div className="space-y-4 max-w-2xl flex-1">
@@ -24,7 +24,7 @@ export default function MarketplaceLoading() {
                 <div className="h-11 w-24 bg-muted rounded-md" />
               </div>
             </div>
-            <div className="lg:min-w-[280px] rounded-lg border border-[#EEEEEE] bg-[#FAFAF7] p-5 space-y-3">
+            <div className="lg:min-w-[280px] rounded-xl border border-border bg-muted/30 p-5 space-y-3">
               <div className="flex items-baseline justify-between">
                 <div className="h-3 w-24 bg-muted rounded" />
                 <div className="h-4 w-12 bg-muted rounded" />
@@ -47,7 +47,7 @@ export default function MarketplaceLoading() {
               {[0, 1, 2].map((card) => (
                 <div
                   key={card}
-                  className="rounded-lg border border-[#EEEEEE] bg-white p-6 space-y-4"
+                  className="rounded-xl border border-border bg-card p-6 space-y-4"
                 >
                   <div className="w-9 h-9 rounded-md bg-primary/10" />
                   <div className="space-y-2">
@@ -63,7 +63,7 @@ export default function MarketplaceLoading() {
                       />
                     ))}
                   </div>
-                  <div className="border-t border-[#F4F4F4] pt-5 space-y-3">
+                  <div className="border-t border-border pt-5 space-y-3">
                     <div className="h-4 w-20 bg-muted rounded" />
                     <div className="h-10 bg-primary/10 rounded-md" />
                   </div>

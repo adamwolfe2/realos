@@ -13,7 +13,7 @@ export default function VisitorsLoading() {
         <Skeleton className="h-6 w-28" />
         <Skeleton className="h-3 w-72 mt-1" />
       </div>
-      <div className="rounded-lg border border-border bg-card px-3 py-2 flex gap-4">
+      <div className="rounded-xl border border-border bg-card px-3 py-2 flex gap-4">
         <Skeleton className="h-5 w-40" />
         <Skeleton className="h-5 w-48" />
         <Skeleton className="h-5 w-36" />
@@ -23,7 +23,7 @@ export default function VisitorsLoading() {
           <SkeletonKpi key={i} />
         ))}
       </div>
-      <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
         <div className="flex items-center gap-3 border-b border-border bg-secondary/40 px-3 py-2">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton

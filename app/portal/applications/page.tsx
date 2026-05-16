@@ -211,7 +211,7 @@ export default async function ApplicationsPage({
                 return (
                   <div
                     key={status}
-                    className="rounded-lg border border-border bg-muted/30 p-2.5"
+                    className="rounded-xl border border-border bg-muted/30 p-2.5"
                   >
                     <div className="flex items-center justify-between gap-2 mb-2 px-1">
                       <StatusPill
@@ -239,7 +239,7 @@ export default async function ApplicationsPage({
                             <li key={a.id}>
                               <Link
                                 href={`/portal/leads/${a.lead.id}`}
-                                className="block rounded-md border border-border bg-card hover:border-primary/40 px-2 py-1.5"
+                                className="block rounded-lg border border-border bg-card hover:border-primary/40 hover:shadow-sm px-2 py-1.5 transition-all"
                               >
                                 <p className="text-[11px] font-medium text-foreground truncate">
                                   {name}
@@ -279,7 +279,7 @@ export default async function ApplicationsPage({
           title="Applications"
           description="Every lease application from started through decision."
         />
-        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           Application data could not be loaded. This usually means AppFolio hasn&apos;t synced yet.{" "}
           <a href="/portal/connect" className="underline font-medium">
             Go to Settings → Integrations

@@ -286,7 +286,7 @@ export function MentionCard({
   return (
     <article
       className={cn(
-        "rounded-lg border bg-card p-4",
+        "rounded-xl border bg-card p-4",
         reviewed
           ? "border-border/70 opacity-70"
           : mention.sentiment === "NEGATIVE"
@@ -424,7 +424,7 @@ export function MentionCard({
             onClick={() => patch({ flagged: !flagged }, { flagged: !flagged })}
             className={`inline-flex items-center justify-center w-7 h-7 rounded-md transition-colors ${
               flagged
-                ? "text-[#DC2626] bg-[#FEF2F2]"
+                ? "text-destructive bg-destructive/10"
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
             title={flagged ? "Flagged" : "Flag"}
@@ -450,7 +450,7 @@ export function MentionCard({
             if (e.target === e.currentTarget) setDraftOpen(false);
           }}
         >
-          <div className="w-full max-w-lg rounded-lg border border-border bg-card shadow-lg">
+          <div className="w-full max-w-lg rounded-xl border border-border bg-card shadow-lg">
             <header className="flex items-center justify-between border-b border-border px-4 py-3">
               <div>
                 <p className="text-sm font-semibold text-foreground">

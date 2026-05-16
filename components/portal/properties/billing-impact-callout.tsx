@@ -68,7 +68,7 @@ export function BillingImpactCallout({
       : null;
 
   return (
-    <div className="rounded-lg border border-border bg-card p-4">
+    <div className="rounded-xl border border-border bg-card p-4">
       <div className="flex items-start gap-3">
         <span
           aria-hidden="true"

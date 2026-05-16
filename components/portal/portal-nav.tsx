@@ -231,18 +231,15 @@ export const NAV_GROUPS: NavGroup[] = [
       { href: "/portal/reputation", label: "Reputation", icon: Star, show: ALWAYS },
     ],
   },
-  {
-    label: "Operations",
-    items: [
-      { href: "/portal/residents", label: "Residents", icon: Home, show: (o) => Boolean(o.appFolioConnected) },
-      { href: "/portal/renewals", label: "Renewals", icon: CalendarClock, show: (o) => Boolean(o.appFolioConnected) },
-      // Work orders intentionally removed from nav per product decision —
-      // operators don't want maintenance tickets surfaced in LeaseStack.
-      // Page kept on disk for now (URL still resolves) so any inbound
-      // links from earlier sessions don't 404, but it's no longer a
-      // featured surface.
-    ],
-  },
+  // Operations group (Residents / Renewals / Work orders) intentionally
+  // pulled from the nav. LeaseStack is positioned as a marketing
+  // intelligence platform — surfacing rent rolls, renewal notices, and
+  // rental-income tiles before the AppFolio integration is bulletproof
+  // makes the product feel like a half-built PMS competitor. The pages
+  // still resolve on disk (so old bookmarks don't 404) but they're
+  // unreachable from the sidebar. A "coming soon" teaser card on the
+  // dashboard collects interest. Re-enable once AppFolio sync hardening
+  // ships and we add `enableOperations` to PortalNavOrg.
   {
     label: "Engage",
     items: [
@@ -337,8 +334,8 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
   return (
     <aside
       className={cn(
-        "relative hidden md:flex flex-col border-r border-border bg-card transition-all duration-200 shrink-0",
-        collapsed ? "w-14" : "w-56"
+        "ls-sidebar relative hidden md:flex flex-col transition-all duration-200 shrink-0",
+        collapsed ? "w-14" : "w-60"
       )}
     >
       {/* Brand */}
@@ -388,14 +385,9 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
           return (
             <div key={group.label} className="mb-3">
               {!collapsed && (
-                <div className="flex items-center gap-2 px-4 mb-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    {group.label}
-                  </span>
-                  <div className="flex-1 h-px bg-border" />
-                </div>
+                <div className="ls-sidebar-section-label">{group.label}</div>
               )}
-              <div className="px-2 space-y-0.5">
+              <div className="px-2 space-y-[2px]">
                 {visible.map((item) => {
                   const active =
                     pathname === item.href ||
@@ -406,13 +398,12 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
                       href={item.href}
                       title={collapsed ? item.label : undefined}
                       className={cn(
-                        "flex items-center gap-3 rounded-lg py-2 text-sm font-medium transition-all duration-150",
-                        active
-                          ? "border-l-2 border-primary pl-[10px] pr-3 bg-accent text-primary"
-                          : "border-l-2 border-transparent pl-[10px] pr-3 text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                        "ls-sidebar-item",
+                        active && "is-active",
+                        collapsed && "justify-center"
                       )}
                     >
-                      <item.icon className="h-4 w-4 shrink-0" />
+                      <item.icon className="h-[15px] w-[15px] shrink-0" />
                       {!collapsed && (
                         <>
                           <span className="flex-1 truncate">{item.label}</span>
@@ -421,7 +412,11 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
                             if (!count) return null;
                             return (
                               <span
-                                className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold tabular-nums bg-primary/12 text-primary"
+                                className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 rounded-full text-[10px] font-semibold tabular-nums"
+                                style={{
+                                  background: "var(--brand-soft)",
+                                  color: "var(--terracotta)",
+                                }}
                                 aria-label={`${count} pending`}
                               >
                                 {count > 99 ? "99+" : count}

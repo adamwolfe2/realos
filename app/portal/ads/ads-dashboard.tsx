@@ -206,7 +206,7 @@ export function AdsDashboard({
         />
       </div>
 
-      <section className="rounded-lg border border-border bg-card p-5">
+      <section className="rounded-xl border border-border bg-card p-5">
         <div className="flex items-baseline justify-between mb-4">
           <h2 className="text-sm font-semibold text-foreground">
             Daily spend vs conversions
@@ -224,7 +224,7 @@ export function AdsDashboard({
         )}
       </section>
 
-      <section className="rounded-lg border border-border bg-card overflow-x-auto">
+      <section className="rounded-xl border border-border bg-card overflow-x-auto">
         <div className="px-5 py-4 border-b border-border flex items-baseline justify-between">
           <h2 className="text-sm font-semibold text-foreground">Campaigns</h2>
           <span className="text-[11px] text-muted-foreground">
@@ -366,7 +366,7 @@ export function AdsDashboard({
         )}
       </section>
 
-      <section className="rounded-lg border border-border bg-card p-5">
+      <section className="rounded-xl border border-border bg-card p-5">
         <h2 className="text-sm font-semibold text-foreground mb-3">
           Connected accounts
         </h2>
