@@ -47,7 +47,7 @@ const STEPS: Step[] = [
     rows: [
       { label: "Your brand",           value: "Colors, voice, logos locked in",            icon: "brand",     logos: [<FigmaMark key="fig" size={16} />] },
       { label: "Your properties",      value: "4 buildings, 612 units",                     icon: "home",      logos: [<AppFolioMark key="af" size={16} />] },
-      { label: "Your markets",         value: "Berkeley, Austin, NYU",                      icon: "home" },
+      { label: "Your markets",         value: "Austin, NYU, Boulder",                       icon: "home" },
       { label: "Your leasing system",  value: "We connect to what's already running",       icon: "handshake", logos: [<AppFolioMark key="af2" size={16} />] },
       { label: "Your channels",        value: "Where your traffic comes from",              icon: "ads",       logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g" size={16} />, <TikTokMark key="t" size={16} />] },
       { label: "Your team",            value: "Who gets the hot-lead ping",                 icon: "phone",     logos: [<SlackMark key="s" size={16} />, <ResendMark key="r" size={16} />] },

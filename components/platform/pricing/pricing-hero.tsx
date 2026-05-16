@@ -59,7 +59,7 @@ export function PricingHero() {
             { value: "Free pilot", label: "No commitment" },
             { value: "Month-to-month", label: "Cancel anytime" },
             { value: "Operator-built", label: "Not a vendor" },
-            { value: "Live property", label: "Telegraph Commons" },
+            { value: "Production pilot", label: "Live operator" },
           ].map((t, i) => (
             <div
               key={t.label}

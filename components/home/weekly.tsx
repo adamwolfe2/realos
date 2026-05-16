@@ -183,7 +183,7 @@ function WeeklyArtifact({ kind }: { kind: "report" | "pipeline" | "creative" | "
             letterSpacing: "-0.01em",
           }}
         >
-          Telegraph Commons · Wk 18
+          Your Portfolio · Wk 18
         </p>
         <div className="mt-2 grid grid-cols-3 gap-1.5">
           {[

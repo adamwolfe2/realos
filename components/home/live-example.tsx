@@ -55,7 +55,7 @@ export function LiveExample() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 lg:gap-6">
           <PreviewCard
             href={liveExample.siteHref}
-            host="telegraphcommons.com"
+            host="your-property.com"
             kicker="Resident-facing · live"
             title={liveExample.siteLabel}
             caption={liveExample.siteCaption}
@@ -293,7 +293,7 @@ function ResidentSitePreview() {
             letterSpacing: "-0.01em",
           }}
         >
-          Telegraph Commons
+          Your Property
         </span>
         <div className="flex gap-3">
           {["Floor plans", "Tours", "Apply"].map((t) => (
@@ -517,7 +517,7 @@ function OperatorPortalPreview() {
               letterSpacing: "-0.01em",
             }}
           >
-            Telegraph Commons · Overview
+            Portfolio · Overview
           </span>
         </div>
         <span

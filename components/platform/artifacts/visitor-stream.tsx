@@ -14,14 +14,14 @@ type Visitor = {
 };
 
 const POOL: Omit<Visitor, "id" | "ago">[] = [
-  { initials: "MR", name: "Marisol Reyes",   org: "UC Berkeley · sophomore", page: "/floor-plans/2-bed",   color: "#2563EB", resolved: true  },
+  { initials: "MR", name: "Marisol Reyes",   org: "rising sophomore",         page: "/floor-plans/2-bed",   color: "#2563EB", resolved: true  },
   { initials: "DJ", name: "Derek Johansson",  org: "parent · Illinois",       page: "/parents",              color: "#5B8CE6", resolved: true  },
-  { initials: "?",  name: "Anonymous visitor", org: "Berkeley, CA",             page: "/floor-plans",          color: "#94A3B8", resolved: false },
-  { initials: "AL", name: "Aisha Lin",        org: "Cal Housing transfer",    page: "/amenities",            color: "#2563EB", resolved: true  },
+  { initials: "?",  name: "Anonymous visitor", org: "mobile · west coast",      page: "/floor-plans",          color: "#94A3B8", resolved: false },
+  { initials: "AL", name: "Aisha Lin",        org: "campus transfer",          page: "/amenities",            color: "#2563EB", resolved: true  },
   { initials: "TM", name: "Tomás Mendes",     org: "NYU · rising junior",      page: "/floor-plans/3-bed",    color: "#5B8CE6", resolved: true  },
   { initials: "?",  name: "Anonymous visitor", org: "mobile · Oakland",         page: "/gallery",              color: "#94A3B8", resolved: false },
   { initials: "SP", name: "Sofia Petrova",    org: "parent · California",      page: "/parents-faq",          color: "#2563EB", resolved: true  },
-  { initials: "RK", name: "Ravi Krishnan",    org: "UC Berkeley · junior",     page: "/tour/schedule",        color: "#2563EB", resolved: true  },
+  { initials: "RK", name: "Ravi Krishnan",    org: "rising junior",            page: "/tour/schedule",        color: "#2563EB", resolved: true  },
   { initials: "?",  name: "Anonymous visitor", org: "Seattle, WA",              page: "/location",             color: "#94A3B8", resolved: false },
   { initials: "JW", name: "Jordan Wu",        org: "Stanford · transfer",      page: "/floor-plans/1-bed",    color: "#5B8CE6", resolved: true  },
 ];

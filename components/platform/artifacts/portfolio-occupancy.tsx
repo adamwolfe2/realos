@@ -18,7 +18,7 @@ type Props = {
 };
 
 const DEFAULT_PROPERTIES: PortfolioProperty[] = [
-  { name: "Westbrook Heights",  location: "Berkeley, CA",   units: 612, leased: 548, trend: "up",   tag: "Flagship" },
+  { name: "Westbrook Heights",  location: "Boulder, CO",    units: 612, leased: 548, trend: "up",   tag: "Flagship" },
   { name: "Park & Pearl",       location: "Austin, TX",     units: 284, leased: 229, trend: "up"    },
   { name: "Sage at Greenpoint", location: "Brooklyn, NY",   units: 164, leased: 152, trend: "flat"  },
   { name: "The Rhodes",         location: "Nashville, TN",  units: 212, leased: 168, trend: "up"    },
