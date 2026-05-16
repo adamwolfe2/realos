@@ -215,7 +215,10 @@ export default async function PortalLayout({
   return (
     <div className="flex flex-col h-screen bg-background text-foreground">
       {/* Mobile top bar */}
-      <div className="md:hidden shrink-0 flex items-center justify-between h-14 px-4 bg-card border-b border-border z-40">
+      <div
+        data-no-print
+        className="md:hidden shrink-0 flex items-center justify-between h-14 px-4 bg-card border-b border-border z-40"
+      >
         <div className="flex items-center gap-2">
           <MobileNavDrawer org={navOrg} />
           <Link href="/portal" aria-label={`${BRAND_NAME} portal home`}>
@@ -271,6 +274,7 @@ export default async function PortalLayout({
       {scope.isImpersonating ? (
         <DismissibleStrip storageKey={`leasestack:impersonating:${org.id}`}>
           <div
+            data-no-print
             role="status"
             className="shrink-0 h-7 bg-destructive/10 border-b border-destructive/30 text-destructive text-[11px] px-4 pr-9 flex items-center justify-between gap-3"
           >
@@ -304,6 +308,7 @@ export default async function PortalLayout({
           actionable reason, which is what left operators staring at it
           for weeks. */}
       {showStaleBanner ? (
+        <div data-no-print>
         <DismissibleStrip
           storageKey={`leasestack:appfolio-stale:${org.id}:${appfolioStatus.lastSyncAt?.getTime() ?? "none"}`}
         >
@@ -337,6 +342,7 @@ export default async function PortalLayout({
             )}
           </AlertBanner>
         </DismissibleStrip>
+        </div>
       ) : null}
 
       {/* Pending curation banner deliberately removed from global layout —
@@ -346,24 +352,31 @@ export default async function PortalLayout({
           stack from 3 to 1-2 banners on every other portal page. */}
 
       {/* Main flex row — takes remaining height */}
-      <div className="flex flex-1 min-h-0">
-        <PortalNav org={navOrg} />
+      <div className="flex flex-1 min-h-0 portal-shell">
+        <div data-no-print className="contents">
+          <PortalNav org={navOrg} />
+        </div>
         <main
           id="main-content"
-          className="flex-1 overflow-y-auto bg-background flex flex-col"
+          className="flex-1 overflow-y-auto bg-background flex flex-col portal-main"
         >
           {/* Desktop top utility bar — search + notifications. Search button
               hidden on mobile (Cmd+K still works); mobile already has its
               own top bar above. */}
-          <div className="hidden md:flex shrink-0 h-12 items-center justify-end gap-2 px-6 border-b border-border bg-card/40">
+          <div
+            data-no-print
+            className="ls-topbar hidden md:flex shrink-0 h-12 items-center justify-end gap-2 px-6 sticky top-0 z-30"
+          >
             <CmdKSearch />
             <NotificationBell />
           </div>
-          <div className="flex-1 p-4 pb-20 md:p-6 md:pb-10">{children}</div>
+          <div className="ls-page-enter flex-1 p-4 pb-20 md:p-6 md:pb-10">{children}</div>
         </main>
       </div>
 
-      <BugReportButton />
+      <div data-no-print>
+        <BugReportButton />
+      </div>
     </div>
   );
 }

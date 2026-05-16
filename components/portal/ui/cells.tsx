@@ -233,14 +233,17 @@ export function BooleanCell({
 // UserCell — avatar + name pill, used for owner / assignee fields.
 // ---------------------------------------------------------------------------
 
+// All-blue user avatar palette. Removed the three neutral-gray entries
+// (#1F2937, #6B7280, #9CA3AF) which previously rendered ~40% of
+// owner/assignee chips in shades of gray on a blue-branded product.
 const USER_PALETTE = [
+  { bg: "#1E3A8A", fg: "#FFFFFF" },
   { bg: "#1D4ED8", fg: "#FFFFFF" },
   { bg: "#2563EB", fg: "#FFFFFF" },
   { bg: "#3B82F6", fg: "#FFFFFF" },
   { bg: "#60A5FA", fg: "#0F172A" },
-  { bg: "#1F2937", fg: "#FFFFFF" },
-  { bg: "#6B7280", fg: "#FFFFFF" },
-  { bg: "#9CA3AF", fg: "#FFFFFF" },
+  { bg: "#93C5FD", fg: "#0F172A" },
+  { bg: "#BFDBFE", fg: "#0F172A" },
 ];
 
 function hashToIndex(s: string, modulo: number): number {

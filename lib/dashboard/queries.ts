@@ -1157,3 +1157,200 @@ export async function getChatbotSummary(
     deltaPct,
   };
 }
+
+// ---------------------------------------------------------------------------
+// Performance over time — daily leads-created bucket for the requested
+// window, plus an aligned prior-period series for the comparison
+// overlay. Mirrors the AeroStore "Sales Performance Over Time" pattern
+// where the operator can read "we're ahead / behind vs the previous
+// cycle" at a glance.
+//
+// Returns one row per day in chronological order. `comparison` is the
+// leads count from the equivalent offset in the prior window of the
+// same length (so day 0 of current ↔ day 0 of prior, etc).
+// ---------------------------------------------------------------------------
+
+export type PerformancePoint = {
+  date: string;
+  label: string;
+  current: number;
+  comparison: number | null;
+};
+
+export async function getPerformanceOverTime(
+  orgId: string,
+  rangeDays: number,
+  includeComparison: boolean,
+): Promise<PerformancePoint[]> {
+  // Clamp to a sane window so a hand-crafted URL can't ask for a 10-year
+  // chart and stall the page.
+  const days = Math.max(1, Math.min(rangeDays, 365));
+  const now = new Date();
+  const currentStart = new Date(now.getTime() - days * DAY_MS);
+  const priorStart = new Date(now.getTime() - 2 * days * DAY_MS);
+  const priorEnd = currentStart;
+
+  const [currentLeads, priorLeads] = await Promise.all([
+    prisma.lead.findMany({
+      where: { orgId, createdAt: { gte: currentStart } },
+      select: { createdAt: true },
+    }),
+    includeComparison
+      ? prisma.lead.findMany({
+          where: {
+            orgId,
+            createdAt: { gte: priorStart, lt: priorEnd },
+          },
+          select: { createdAt: true },
+        })
+      : Promise.resolve([]),
+  ]);
+
+  // Bucket each lead into its day index relative to the window start.
+  const currentBuckets = new Array<number>(days).fill(0);
+  const priorBuckets = new Array<number>(days).fill(0);
+
+  for (const lead of currentLeads) {
+    const idx = Math.floor(
+      (lead.createdAt.getTime() - currentStart.getTime()) / DAY_MS,
+    );
+    if (idx >= 0 && idx < days) currentBuckets[idx] += 1;
+  }
+  if (includeComparison) {
+    for (const lead of priorLeads) {
+      const idx = Math.floor(
+        (lead.createdAt.getTime() - priorStart.getTime()) / DAY_MS,
+      );
+      if (idx >= 0 && idx < days) priorBuckets[idx] += 1;
+    }
+  }
+
+  // Label every day with a short MMM-DD style so the x-axis can pick a
+  // sparse subset without losing context.
+  const points: PerformancePoint[] = [];
+  for (let i = 0; i < days; i += 1) {
+    const date = new Date(currentStart.getTime() + i * DAY_MS);
+    points.push({
+      date: date.toISOString(),
+      label: date.toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+      }),
+      current: currentBuckets[i],
+      comparison: includeComparison ? priorBuckets[i] : null,
+    });
+  }
+  return points;
+}
+
+// ---------------------------------------------------------------------------
+// Top properties leaderboard — ranks properties by lead count in the
+// current window. Drives the URBN-style "Realtor efficiency" panel on
+// /portal home. Includes the prior-period count per property so the
+// row can render a delta arrow without a second round-trip.
+// ---------------------------------------------------------------------------
+
+export type LeaderboardPropertyRow = {
+  id: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+  heroImageUrl: string | null;
+  logoUrl: string | null;
+  leadsCurrent: number;
+  leadsPrior: number;
+};
+
+export async function getTopPropertiesByLeads(
+  orgId: string,
+  rangeDays: number,
+  limit = 5,
+  propertyIds?: string[] | null,
+): Promise<LeaderboardPropertyRow[]> {
+  const days = Math.max(1, Math.min(rangeDays, 365));
+  const currentStart = new Date(Date.now() - days * DAY_MS);
+  const priorStart = new Date(Date.now() - 2 * days * DAY_MS);
+  const priorEnd = currentStart;
+
+  // Pull marketable properties only — skip parking lots, sub-records,
+  // and rows still pending operator curation. Honors the property
+  // filter from the page-level multi-select so the leaderboard moves
+  // with the rest of the dashboard.
+  const properties = await prisma.property.findMany({
+    where: {
+      ...marketablePropertyWhere(orgId),
+      ...(propertyIds && propertyIds.length > 0
+        ? { id: { in: propertyIds } }
+        : {}),
+    },
+    select: {
+      id: true,
+      name: true,
+      city: true,
+      state: true,
+      heroImageUrl: true,
+      photoUrls: true,
+      logoUrl: true,
+    },
+  });
+  if (properties.length === 0) return [];
+
+  const ids = properties.map((p) => p.id);
+
+  const [currentGroups, priorGroups] = await Promise.all([
+    prisma.lead.groupBy({
+      by: ["propertyId"],
+      where: {
+        orgId,
+        propertyId: { in: ids },
+        createdAt: { gte: currentStart },
+      },
+      _count: { _all: true },
+    }),
+    prisma.lead.groupBy({
+      by: ["propertyId"],
+      where: {
+        orgId,
+        propertyId: { in: ids },
+        createdAt: { gte: priorStart, lt: priorEnd },
+      },
+      _count: { _all: true },
+    }),
+  ]);
+
+  const currentMap = new Map<string, number>();
+  const priorMap = new Map<string, number>();
+  for (const g of currentGroups) {
+    if (g.propertyId) currentMap.set(g.propertyId, g._count._all);
+  }
+  for (const g of priorGroups) {
+    if (g.propertyId) priorMap.set(g.propertyId, g._count._all);
+  }
+
+  return properties
+    .map<LeaderboardPropertyRow>((p) => {
+      // Fallback chain: heroImageUrl -> first photoUrls entry -> null.
+      const photoFallback = (() => {
+        const arr = p.photoUrls;
+        if (Array.isArray(arr) && arr.length > 0) {
+          const first = arr[0];
+          return typeof first === "string" && first.length > 0
+            ? first
+            : null;
+        }
+        return null;
+      })();
+      return {
+        id: p.id,
+        name: p.name,
+        city: p.city,
+        state: p.state,
+        heroImageUrl: p.heroImageUrl ?? photoFallback,
+        logoUrl: p.logoUrl,
+        leadsCurrent: currentMap.get(p.id) ?? 0,
+        leadsPrior: priorMap.get(p.id) ?? 0,
+      };
+    })
+    .sort((a, b) => b.leadsCurrent - a.leadsCurrent || b.leadsPrior - a.leadsPrior)
+    .slice(0, limit);
+}

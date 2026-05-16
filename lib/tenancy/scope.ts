@@ -85,8 +85,25 @@ async function getDemoScope(): Promise<ScopedContext | null> {
     .findFirst({ where: { orgType: OrgType.CLIENT } })
     .catch(() => null);
 
-  const target = clientOrg ?? agencyOrg;
+  // DEMO_TARGET=client forces the demo to render the client-side /portal
+  // surface (with all module pages) instead of bouncing to /admin. Useful
+  // for design QA and customer demos where you want to see the operator
+  // experience, not the agency overview. Default behavior preserved when
+  // the flag is unset: prefer agency context when one exists.
+  const demoTarget = process.env.DEMO_TARGET ?? process.env.NEXT_PUBLIC_DEMO_TARGET;
+  const forceClient = demoTarget === "client";
+
+  const target = forceClient ? (clientOrg ?? agencyOrg) : (agencyOrg ?? clientOrg);
   if (!target) return null;
+
+  // When DEMO_TARGET=client, treat the resolved scope as a pure client
+  // session — no agency context bleed, no /admin redirect. When unset (or
+  // any other value), keep the original behavior: a partner viewing the
+  // first client through agency lenses.
+  const isAgencyScope = forceClient
+    ? false
+    : (agencyOrg?.orgType ?? target.orgType) === OrgType.AGENCY;
+  const actualOrg = forceClient ? target : (agencyOrg ?? target);
 
   // Synthesise a user-shaped scope. We don't touch Clerk or the User table;
   // audit writes are guarded elsewhere by isDemoMode() where relevant.
@@ -94,15 +111,13 @@ async function getDemoScope(): Promise<ScopedContext | null> {
     userId: "demo-user",
     clerkUserId: "demo-user",
     orgId: target.id,
-    actualOrgId: agencyOrg?.id ?? target.id,
+    actualOrgId: actualOrg.id,
     orgType: target.orgType,
-    actualOrgType: agencyOrg?.orgType ?? target.orgType,
+    actualOrgType: actualOrg.orgType,
     productLine: target.productLine ?? ProductLine.STUDENT_HOUSING,
-    role: (agencyOrg?.orgType ?? target.orgType) === OrgType.AGENCY
-      ? UserRole.AGENCY_OWNER
-      : UserRole.CLIENT_OWNER,
+    role: isAgencyScope ? UserRole.AGENCY_OWNER : UserRole.CLIENT_OWNER,
     email: "demo@leasestack.co",
-    isAgency: (agencyOrg?.orgType ?? target.orgType) === OrgType.AGENCY,
+    isAgency: isAgencyScope,
     isAlPartner: false,
     isImpersonating: false,
     // Demo scope is always unrestricted. The whole point of demo mode is

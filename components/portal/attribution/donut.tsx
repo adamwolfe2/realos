@@ -30,14 +30,18 @@ type Props = {
 };
 
 // Monochrome blue palettes. Variants are named for backwards-compat with
-// existing call sites; every palette stays inside a blue + gray scale so
-// the page reads as one coherent visualization, not a rainbow.
+// existing call sites; every palette now leads with the brand primary
+// (#2563EB) — the previous "ink" palette had near-black (#0F172A) at the
+// top of the stack, which made the dominant slice render BLACK against
+// a blue-branded product. That regression is what motivated the
+// platform-wide blue audit; the palette below is the single source of
+// truth for attribution charts.
 const PALETTES: Record<NonNullable<Props["palette"]>, string[]> = {
-  ink:     ["#0F172A", "#2563EB", "#3B82F6", "#60A5FA", "#93C5FD", "#9CA3AF", "#D1D5DB", "#E5E7EB"],
-  blue:    ["#1D4ED8", "#2563EB", "#3B82F6", "#60A5FA", "#93C5FD", "#9CA3AF", "#D1D5DB", "#E5E7EB"],
-  emerald: ["#2563EB", "#3B82F6", "#60A5FA", "#93C5FD", "#9CA3AF", "#D1D5DB", "#E5E7EB", "#F3F4F6"],
-  amber:   ["#3B82F6", "#2563EB", "#1D4ED8", "#60A5FA", "#93C5FD", "#9CA3AF", "#D1D5DB", "#E5E7EB"],
-  violet:  ["#60A5FA", "#3B82F6", "#2563EB", "#1D4ED8", "#93C5FD", "#9CA3AF", "#D1D5DB", "#E5E7EB"],
+  ink:     ["#2563EB", "#3B82F6", "#60A5FA", "#1D4ED8", "#1E3A8A", "#93C5FD", "#BFDBFE", "#DBEAFE"],
+  blue:    ["#2563EB", "#3B82F6", "#60A5FA", "#1D4ED8", "#1E3A8A", "#93C5FD", "#BFDBFE", "#DBEAFE"],
+  emerald: ["#2563EB", "#3B82F6", "#60A5FA", "#93C5FD", "#1D4ED8", "#BFDBFE", "#DBEAFE", "#EFF6FF"],
+  amber:   ["#3B82F6", "#2563EB", "#1D4ED8", "#60A5FA", "#1E3A8A", "#93C5FD", "#BFDBFE", "#DBEAFE"],
+  violet:  ["#60A5FA", "#3B82F6", "#2563EB", "#1D4ED8", "#1E3A8A", "#93C5FD", "#BFDBFE", "#DBEAFE"],
 };
 
 export function SourceDonut({

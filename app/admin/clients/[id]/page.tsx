@@ -29,6 +29,8 @@ import {
   humanAuditAction,
 } from "@/lib/format";
 import { formatDistanceToNow } from "date-fns";
+import { getClientActionItems } from "@/lib/admin/insights";
+import { AlertOctagon, AlertTriangle, Info } from "lucide-react";
 
 export const metadata: Metadata = { title: "Client detail" };
 export const dynamic = "force-dynamic";
@@ -165,6 +167,12 @@ export default async function ClientDetail({
     take: 10,
   });
 
+  // "Needs attention" — agency-level integration + lifecycle alerts
+  // scoped to this client. Surfaces concrete issues (AppFolio 404, stale
+  // build, silent pixel) at the top of the page so the admin doesn't
+  // have to scroll to find what's broken.
+  const actionItems = await getClientActionItems(org.id).catch(() => []);
+
   const propertyTypeLabel = [
     humanPropertyType(org.propertyType),
     org.residentialSubtype
@@ -234,6 +242,60 @@ export default async function ClientDetail({
         <StatCard label="Ad campaigns" value={org._count.adCampaigns} />
         <StatCard label="Domains" value={org._count.domains} />
       </section>
+
+      {/* Needs attention — concrete, ranked action items derived from
+          integration state + lifecycle staleness. Critical issues
+          (AppFolio errors, at-risk flag) render with a destructive band;
+          warnings (stale syncs, unverified domains) render amber. */}
+      {actionItems.length > 0 ? (
+        <SectionCard
+          label="Needs attention"
+          description={`${actionItems.length} issue${actionItems.length === 1 ? "" : "s"} to resolve on this client.`}
+        >
+          <ul className="space-y-1.5">
+            {actionItems.map((item) => {
+              const SeverityGlyph =
+                item.severity === "critical"
+                  ? AlertOctagon
+                  : item.severity === "warning"
+                    ? AlertTriangle
+                    : Info;
+              const tone =
+                item.severity === "critical"
+                  ? "bg-destructive/10 text-destructive border-destructive/30"
+                  : item.severity === "warning"
+                    ? "bg-amber-50 text-amber-700 border-amber-200"
+                    : "bg-primary/10 text-primary border-primary/30";
+              return (
+                <li
+                  key={item.id}
+                  className={`flex items-start gap-3 rounded-md border px-3 py-2 ${tone}`}
+                >
+                  <SeverityGlyph
+                    className="h-4 w-4 mt-0.5 shrink-0"
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold leading-snug text-foreground">
+                      {item.title.replace(`${org.name}: `, "")}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 leading-snug">
+                      {item.detail}
+                    </p>
+                  </div>
+                  {item.occurredAt ? (
+                    <span className="text-[10px] text-muted-foreground tabular-nums shrink-0 whitespace-nowrap">
+                      {formatDistanceToNow(new Date(item.occurredAt), {
+                        addSuffix: true,
+                      })}
+                    </span>
+                  ) : null}
+                </li>
+              );
+            })}
+          </ul>
+        </SectionCard>
+      ) : null}
 
       <LaunchReadiness
         items={[

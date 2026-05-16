@@ -15,7 +15,7 @@ import { extractIdentity } from "@/lib/visitors/enrichment";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
 import { ExportButton } from "@/components/ui/export-button";
-import { StatCard } from "@/components/admin/stat-card";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { EngageComposer } from "./engage-composer";
 import { AutoRefresh } from "@/components/portal/sync/auto-refresh";
 import { PixelSyncButton } from "@/components/portal/sync/pixel-sync-button";
@@ -24,7 +24,7 @@ import {
   type VisitorRow,
 } from "@/components/portal/visitors/visitor-table";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
-import { Radio } from "lucide-react";
+import { Radio, UserCheck, Mail, Users } from "lucide-react";
 
 export const metadata: Metadata = { title: "Visitor feed" };
 export const dynamic = "force-dynamic";
@@ -360,7 +360,7 @@ export default async function VisitorsPage({
       {/* Filter controls — single inline row. Window / Status / Sort sit
           side-by-side instead of stacking, with each group flowing to the
           next line only when the viewport actually runs out of width. */}
-      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-lg border border-border bg-card px-3 py-2">
+      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 rounded-xl border border-border bg-card px-3 py-2.5">
         <TabGroup
           legend="Window"
           items={WINDOWS.map((w) => ({
@@ -390,22 +390,48 @@ export default async function VisitorsPage({
         />
       </div>
 
-      {/* Summary strip */}
-      <section className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <StatCard
-          label="Identified visitors"
-          value={summary.identified}
-          hint={windowDef.label === "All" ? "All time" : `Last ${windowDef.label}`}
+      {/* Summary strip — promoted from the legacy 3-column StatCard
+          layout to the 4-tile KpiTile pattern that anchors every other
+          surface (dashboard, leads). Adds a "Total visits" baseline tile
+          so the identification ratio reads at a glance: total -> identified
+          -> with email -> matched. Each KpiTile gets the brand-blue chip
+          icon, sparkline-ready shape, and unified empty-state behavior so
+          the page stops feeling like a sidebar metric column. */}
+      <section
+        aria-label="Visitor pipeline at a glance"
+        className="grid grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
+      >
+        <KpiTile
+          label="Total visits"
+          value={totalInView.toLocaleString()}
+          hint={
+            windowDef.label === "All"
+              ? "All time"
+              : `Last ${windowDef.label}`
+          }
+          icon={<Radio className="h-3.5 w-3.5" />}
         />
-        <StatCard
+        <KpiTile
+          label="Identified"
+          value={summary.identified.toLocaleString()}
+          hint={
+            totalInView > 0
+              ? `${Math.round((summary.identified / totalInView) * 100)}% of visits`
+              : "Pixel firing"
+          }
+          icon={<UserCheck className="h-3.5 w-3.5" />}
+        />
+        <KpiTile
           label="With email"
-          value={summary.withEmail}
+          value={summary.withEmail.toLocaleString()}
           hint="Captured or resolved"
+          icon={<Mail className="h-3.5 w-3.5" />}
         />
-        <StatCard
+        <KpiTile
           label="Matched to a lead"
-          value={summary.withLead}
+          value={summary.withLead.toLocaleString()}
           hint="In your pipeline"
+          icon={<Users className="h-3.5 w-3.5" />}
         />
       </section>
 
@@ -425,7 +451,7 @@ export default async function VisitorsPage({
       ) : noVisitorsAtAll ? (
         <EmptyNoVisitors />
       ) : visitors.length === 0 ? (
-        <div className="rounded-lg border border-border bg-card p-8 text-sm text-muted-foreground text-center">
+        <div className="rounded-xl border border-border bg-card p-8 text-sm text-muted-foreground text-center">
           No visitors match these filters. Try widening the time window or the
           status filter.
         </div>
@@ -490,7 +516,7 @@ function PixelStalenessBanner({
   return (
     <div
       role="status"
-      className={`rounded-lg border px-3 py-2 flex items-start justify-between gap-3 flex-wrap ${tone}`}
+      className={`rounded-xl border px-3 py-2 flex items-start justify-between gap-3 flex-wrap ${tone}`}
     >
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold leading-tight">{headline}</p>
@@ -533,11 +559,15 @@ function LiveChatsPanel({
   }>;
 }) {
   return (
-    <section className="rounded-lg border border-border bg-card p-4 space-y-3">
+    <section className="rounded-xl border border-primary/30 bg-primary/[0.03] p-4 space-y-3">
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Live</span>
+          </div>
           <h2 className="text-sm font-semibold tracking-tight">
-            Live chats right now
+            Active conversations
           </h2>
           <p className="text-xs text-muted-foreground">
             Active in the last 5 minutes. Send a contextual message and it will
@@ -625,17 +655,17 @@ function TabGroup({
       <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground shrink-0">
         {legend}
       </span>
-      <div className="inline-flex items-center rounded-md border border-border bg-background p-0.5">
+      <div className="inline-flex items-center rounded-lg border border-border bg-muted/30 p-0.5">
         {items.map((item) => (
           <Link
             key={item.key}
             href={item.href || "?"}
             scroll={false}
             className={cn(
-              "text-[11px] px-2.5 py-1 rounded transition-colors whitespace-nowrap font-medium",
+              "text-[11px] px-2.5 py-1 rounded-md transition-colors whitespace-nowrap font-medium",
               item.active
-                ? "bg-blue-600 text-white shadow-sm"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? "bg-card shadow-sm text-foreground"
+                : "text-muted-foreground hover:text-foreground",
             )}
           >
             {item.label}

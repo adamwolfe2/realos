@@ -87,14 +87,16 @@ export function DataTable<T extends { id?: string }>({
   return (
     <div
       className={cn(
-        "rounded-lg border border-border bg-card overflow-hidden",
+        // ls-card gives us the layered floating surface; overflow-hidden keeps
+        // the table corners clipped inside the rounded border.
+        "ls-card overflow-hidden",
         className,
       )}
     >
       <div className="overflow-x-auto">
-        <table className="w-full text-xs border-collapse">
+        <table className="ls-table w-full text-xs border-collapse">
           <thead>
-            <tr className="border-b border-border bg-secondary/40 sticky top-0">
+            <tr className="sticky top-0 z-[1]" style={{ background: "rgba(255,255,255,0.96)", backdropFilter: "saturate(180%) blur(6px)" }}>
               {columns.map((col) => {
                 const sortable = sort && col.sortable;
                 const isSorted = sortable && sort?.by === col.key;
@@ -106,8 +108,8 @@ export function DataTable<T extends { id?: string }>({
                 const headerInner = (
                   <span
                     className={cn(
-                      "inline-flex items-center gap-1 text-[10px] tracking-widest uppercase font-semibold",
-                      isSorted ? "text-foreground" : "text-muted-foreground",
+                      "inline-flex items-center gap-1.5 text-[10px] tracking-[0.10em] uppercase font-semibold",
+                      isSorted ? "text-foreground" : "text-[var(--silver-fog)]",
                       sortable && "hover:text-foreground transition-colors",
                     )}
                   >
@@ -116,7 +118,7 @@ export function DataTable<T extends { id?: string }>({
                       <Indicator
                         className={cn(
                           "h-2.5 w-2.5 shrink-0",
-                          isSorted ? "opacity-100" : "opacity-50",
+                          isSorted ? "opacity-100 text-primary" : "opacity-50",
                         )}
                         aria-hidden="true"
                       />
@@ -130,7 +132,7 @@ export function DataTable<T extends { id?: string }>({
                     style={col.width ? { width: col.width } : undefined}
                     className={cn(
                       cellPad,
-                      "py-2 text-left font-normal whitespace-nowrap",
+                      "py-2.5 text-left font-normal whitespace-nowrap",
                       col.align === "right" && "text-right",
                       col.align === "center" && "text-center",
                       col.hideOnMobile && "hidden md:table-cell",
@@ -218,8 +220,8 @@ function DataTableRow({
   return (
     <tr
       className={cn(
-        "border-b border-border last:border-0 transition-colors group",
-        href && "cursor-pointer hover:bg-muted/40",
+        "transition-colors group",
+        href && "cursor-pointer hover:bg-[var(--color-elevated)]",
         isLast && "border-b-0",
       )}
       // Server components can't have onClick handlers without breaking; we
@@ -287,15 +289,20 @@ function RowLinkInjector({
 // same chip) but they're all variations of brand blue and gray rather
 // than a rainbow. The result reads as one cohesive directory rather than
 // a Jira / GitHub label cloud.
+// Avatar palette — every entry is a tint of brand blue. The previous
+// version included neutral grays (#1F2937, #6B7280, #9CA3AF) which made
+// roughly 40% of avatars render as near-black/gray chips on a blue
+// product. All-blue here so the directory reads as a coherent
+// LeaseStack surface.
 const AVATAR_PALETTE = [
+  { bg: "#1E3A8A", fg: "#FFFFFF" },
   { bg: "#1D4ED8", fg: "#FFFFFF" },
   { bg: "#2563EB", fg: "#FFFFFF" },
   { bg: "#3B82F6", fg: "#FFFFFF" },
   { bg: "#60A5FA", fg: "#0F172A" },
   { bg: "#93C5FD", fg: "#0F172A" },
-  { bg: "#1F2937", fg: "#FFFFFF" },
-  { bg: "#6B7280", fg: "#FFFFFF" },
-  { bg: "#9CA3AF", fg: "#FFFFFF" },
+  { bg: "#BFDBFE", fg: "#0F172A" },
+  { bg: "#DBEAFE", fg: "#1D4ED8" },
 ];
 
 function hashStringToIndex(s: string, modulo: number): number {

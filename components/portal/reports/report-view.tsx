@@ -35,6 +35,9 @@ type Props = {
 };
 
 // Single source of truth for chart palette so PDFs are predictable.
+// Ink (previously near-black #0F172A) retargets to brand blue so any
+// future caller pulling C.ink renders blue-on-white, not black-on-white.
+// Keep `text` as the only "actually dark" token for body copy in PDFs.
 const C = {
   primary: "#1D4ED8",
   primaryMid: "#2563EB",
@@ -42,7 +45,8 @@ const C = {
   primaryFaint: "#93C5FD",
   primaryGhost: "#DBEAFE",
   indigo: "#4F46E5",
-  ink: "#0F172A",
+  ink: "#2563EB",
+  text: "#0F172A",
   muted: "#94A3B8",
   border: "#E5E7EB",
   positive: "#10B981",
@@ -105,6 +109,112 @@ export function ReportView({
 
   return (
     <article className="space-y-4 report-article ls-report">
+      {/* Print-only branded header. Hidden on screen via the
+          `print-only-header` class (CSS in [id]/page.tsx). In print this
+          renders as the first thing on page 1 — wordmark + org name +
+          report kind + period — so the PDF opens with a clear,
+          self-contained title block instead of jumping straight into
+          the metric tiles. */}
+      <header
+        className="print-only-header"
+        style={{
+          display: "none",
+          paddingBottom: "12pt",
+          marginBottom: "10pt",
+          borderBottom: "1pt solid #E5E7EB",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: "16pt",
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: "9pt",
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                color: "#2563EB",
+                fontWeight: 700,
+                marginBottom: "4pt",
+              }}
+            >
+              LeaseStack · {kindLabel}
+            </div>
+            <h1
+              style={{
+                fontSize: "22pt",
+                fontWeight: 700,
+                color: "#0F172A",
+                lineHeight: 1.1,
+                margin: 0,
+              }}
+            >
+              {orgName ?? "Performance review"}
+            </h1>
+            <p
+              style={{
+                fontSize: "10.5pt",
+                color: "#4B5563",
+                marginTop: "4pt",
+                marginBottom: 0,
+              }}
+            >
+              {snapshot.scope?.propertyName
+                ? `${snapshot.scope.propertyName} · ${periodLabel}`
+                : `Portfolio · all properties · ${periodLabel}`}
+            </p>
+          </div>
+          {orgLogoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={orgLogoUrl}
+              alt={orgName ?? "Logo"}
+              style={{ height: "42pt", width: "auto", objectFit: "contain" }}
+            />
+          ) : null}
+        </div>
+        {headline || notes ? (
+          <div
+            style={{
+              marginTop: "10pt",
+              paddingTop: "8pt",
+              borderTop: "1pt solid #E5E7EB",
+            }}
+          >
+            {headline ? (
+              <p
+                style={{
+                  fontSize: "11.5pt",
+                  fontWeight: 600,
+                  color: "#0F172A",
+                  margin: "0 0 4pt",
+                }}
+              >
+                {headline}
+              </p>
+            ) : null}
+            {notes ? (
+              <p
+                style={{
+                  fontSize: "10pt",
+                  color: "#4B5563",
+                  margin: 0,
+                  whiteSpace: "pre-wrap",
+                  lineHeight: 1.5,
+                }}
+              >
+                {notes}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </header>
+
       {/* Header strip */}
       <header className="ls-report-section rounded-2xl border border-border bg-card px-5 py-4">
         <div className="flex items-center justify-between gap-3 flex-wrap">

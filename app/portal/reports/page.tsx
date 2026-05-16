@@ -216,8 +216,8 @@ export default async function ReportsListPage({
                     </span>
                     <StatusPill status={r.status} />
                     {r.property ? (
-                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded">
-                        <span className="h-1.5 w-1.5 rounded-full bg-blue-600" />
+                      <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded">
+                        <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                         {r.property.name}
                       </span>
                     ) : (

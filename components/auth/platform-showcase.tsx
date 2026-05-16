@@ -13,6 +13,13 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import {
+  BRAND_BLUE,
+  BLUE_DONUT_PALETTE,
+  OTHER_SLICE,
+  TRACK_FILL,
+  FUNNEL_STAGE_FILLS,
+} from "@/lib/charts/palette";
 
 // ---------------------------------------------------------------------------
 // PlatformShowcase
@@ -24,9 +31,10 @@ import { cn } from "@/lib/utils";
 //
 // Pure CSS animations + setInterval-driven state ticks so it feels
 // alive without React-spring or framer-motion. All numbers are
-// fictional but realistic for a student-housing operator like
-// Telegraph Commons. Uses brand fonts (Fraunces + Inter) and the
-// near-black palette so it reads as the actual platform.
+// fictional but realistic for a mid-sized student-housing operator.
+// No named properties or cities appear on this surface — pilot
+// customers must approve being a public reference before we put a
+// portfolio name in marketing.
 // ---------------------------------------------------------------------------
 
 const NUMBER_FONT = {
@@ -66,11 +74,12 @@ export function PlatformShowcase() {
           className="mt-4 text-[40px] leading-[1.05] font-semibold tracking-tight text-foreground max-w-lg"
           style={SERIF}
         >
-          Marketing, leasing, and operations in a single dashboard.
+          Digital marketing and leasing intelligence in a single dashboard.
         </h2>
         <p className="mt-3 text-sm text-foreground/65 max-w-md leading-relaxed">
           Live data from AppFolio, GA4, Google Search Console, your
-          pixel, and Google &amp; Meta Ads — unified per property.
+          pixel, and Google &amp; Meta Ads — in one view, per property
+          or portfolio.
         </p>
       </div>
 
@@ -85,13 +94,14 @@ export function PlatformShowcase() {
             <LeadSourceDonut />
           </div>
         </div>
-        <div className="grid grid-cols-5 gap-3">
-          <div className="col-span-2">
-            <PropertyCard />
-          </div>
-          <div className="col-span-3">
-            <ActivityFeed />
-          </div>
+        {/* Activity feed now spans the full grid. The Telegraph Commons
+            property card that previously occupied col-span-2 was pulled
+            out per pilot-customer request — public marketing surfaces
+            must not name SG's property or city until they sign off on
+            being a public reference. The feed reads better full-width
+            and gives the animation more room to breathe. */}
+        <div>
+          <ActivityFeed />
         </div>
       </div>
 
@@ -178,9 +188,18 @@ function KpiTile({
   const value = useCountUp(kpi.target, 1400 + idx * 200, kpi.decimal ?? 0);
 
   return (
-    <div className="rounded-lg border border-black/[0.04] bg-[#FAFAF7] p-2.5 relative overflow-hidden">
+    <div className="rounded-lg border border-[#DBEAFE] bg-[#F8FAFF] p-2.5 relative overflow-hidden">
       <div className="flex items-center gap-1.5 mb-1.5">
-        <Icon className="w-3 h-3 text-muted-foreground/70" aria-hidden="true" />
+        <span
+          className="inline-flex items-center justify-center w-4 h-4 rounded"
+          style={{ backgroundColor: "rgba(37,99,235,0.10)" }}
+        >
+          <Icon
+            className="w-2.5 h-2.5"
+            style={{ color: BRAND_BLUE }}
+            aria-hidden="true"
+          />
+        </span>
         <span className="text-[9px] font-semibold tracking-wider uppercase text-muted-foreground/80">
           {kpi.label}
         </span>
@@ -188,8 +207,8 @@ function KpiTile({
       <div className="flex items-end justify-between gap-2">
         <div>
           <div
-            className={cn("text-xl font-semibold leading-none", kpi.accent)}
-            style={NUMBER_FONT}
+            className="text-xl font-semibold leading-none"
+            style={{ ...NUMBER_FONT, color: "#0F172A" }}
           >
             {kpi.prefix ?? ""}
             {kpi.decimal ? value.toFixed(kpi.decimal) : Math.round(value).toLocaleString()}
@@ -223,11 +242,10 @@ function Sparkline({ data }: { data: number[] }) {
       <polyline
         points={points}
         fill="none"
-        stroke="currentColor"
-        strokeWidth="1.25"
+        stroke={BRAND_BLUE}
+        strokeWidth="1.5"
         strokeLinejoin="round"
         strokeLinecap="round"
-        className="text-foreground/70"
         style={{
           strokeDasharray: 200,
           strokeDashoffset: 200,
@@ -277,11 +295,18 @@ function FunnelCard() {
             <span className="text-[10px] font-medium text-muted-foreground w-14 shrink-0">
               {stage.label}
             </span>
-            <div className="flex-1 h-5 rounded bg-[#F4F3ED] relative overflow-hidden">
+            <div
+              className="flex-1 h-5 rounded relative overflow-hidden"
+              style={{ backgroundColor: TRACK_FILL }}
+            >
               <div
-                className="absolute inset-y-0 left-0 bg-foreground rounded"
+                className="absolute inset-y-0 left-0 rounded"
                 style={{
                   width: `${stage.pct}%`,
+                  backgroundColor:
+                    FUNNEL_STAGE_FILLS[
+                      Math.min(idx, FUNNEL_STAGE_FILLS.length - 1)
+                    ],
                   animation: `ls-grow 1.4s cubic-bezier(0.16, 1, 0.3, 1) forwards`,
                   animationDelay: `${0.2 + idx * 0.12}s`,
                   transformOrigin: "left center",
@@ -306,12 +331,15 @@ function FunnelCard() {
 // Lead source donut — circular slices animate in
 // ---------------------------------------------------------------------------
 
+// Lead source mix — primary blue + descending tints. "Other" gets the
+// neutral slate so it visually recedes behind the blue family rather
+// than competing with it.
 const SOURCES = [
-  { label: "Google", pct: 38, color: "#0A0A0A" },
-  { label: "Direct", pct: 24, color: "#3F3F46" },
-  { label: "Meta", pct: 18, color: "#71717A" },
-  { label: "Reddit", pct: 12, color: "#A1A1AA" },
-  { label: "Other", pct: 8, color: "#D4D4D8" },
+  { label: "Google", pct: 38, color: BLUE_DONUT_PALETTE[0] },
+  { label: "Direct", pct: 24, color: BLUE_DONUT_PALETTE[1] },
+  { label: "Meta", pct: 18, color: BLUE_DONUT_PALETTE[2] },
+  { label: "Reddit", pct: 12, color: BLUE_DONUT_PALETTE[3] },
+  { label: "Other", pct: 8, color: OTHER_SLICE },
 ];
 
 function LeadSourceDonut() {
@@ -347,13 +375,14 @@ function LeadSourceDonut() {
       </div>
       <div className="flex items-center gap-3">
         <svg width="120" height="120" viewBox="0 0 120 120" className="shrink-0">
-          {/* Track */}
+          {/* Track — cool blue-tinted gray so it sits behind the blue slices
+              rather than reading as a separate neutral ring. */}
           <circle
             cx={cx}
             cy={cy}
             r={radius}
             fill="none"
-            stroke="#F4F3ED"
+            stroke={TRACK_FILL}
             strokeWidth={strokeWidth}
           />
           {segments.map((s) => (
@@ -379,8 +408,12 @@ function LeadSourceDonut() {
             x={cx}
             y={cy - 2}
             textAnchor="middle"
-            className="fill-foreground"
-            style={{ ...NUMBER_FONT, fontSize: "16px", fontWeight: 600 }}
+            style={{
+              ...NUMBER_FONT,
+              fontSize: "16px",
+              fontWeight: 700,
+              fill: BRAND_BLUE,
+            }}
           >
             247
           </text>
@@ -416,69 +449,11 @@ function LeadSourceDonut() {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Property card — Telegraph Commons style hero
-// ---------------------------------------------------------------------------
-
-function PropertyCard() {
-  return (
-    <div className="rounded-xl border border-black/[0.06] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.04),0_8px_24px_rgba(0,0,0,0.04)] overflow-hidden">
-      {/* Hero — gradient placeholder for the property photo */}
-      <div className="h-20 bg-gradient-to-br from-amber-200/60 via-amber-100/50 to-stone-200 relative overflow-hidden">
-        <div
-          aria-hidden="true"
-          className="absolute inset-0 bg-[linear-gradient(110deg,transparent_30%,rgba(255,255,255,0.5)_50%,transparent_70%)] bg-[length:200%_100%]"
-          style={{ animation: "ls-shimmer 4s linear infinite" }}
-        />
-        <div className="absolute top-2 right-2 inline-flex items-center gap-1 rounded-full bg-emerald-600 text-white px-1.5 py-0.5 text-[9px] font-semibold">
-          <span className="h-1 w-1 rounded-full bg-white animate-pulse" />
-          LIVE
-        </div>
-        <Building2
-          className="absolute bottom-2 left-2.5 w-4 h-4 text-foreground/60"
-          aria-hidden="true"
-        />
-      </div>
-      <div className="p-3">
-        <div className="flex items-baseline justify-between gap-2">
-          <h3 className="text-sm font-semibold text-foreground truncate">
-            Telegraph Commons
-          </h3>
-          <span
-            className="text-[10px] font-semibold text-foreground tabular-nums"
-            style={NUMBER_FONT}
-          >
-            96%
-          </span>
-        </div>
-        <p className="text-[10px] text-muted-foreground truncate">
-          Berkeley, CA · 100 units
-        </p>
-        <div className="mt-2 flex items-center gap-1.5">
-          <div className="flex items-center gap-0.5">
-            {[1, 2, 3, 4, 5].map((i) => (
-              <Star
-                key={i}
-                className={cn(
-                  "w-2.5 h-2.5",
-                  i <= 4 ? "fill-amber-500 text-amber-500" : "text-muted-foreground/30",
-                )}
-              />
-            ))}
-          </div>
-          <span
-            className="text-[10px] text-muted-foreground tabular-nums"
-            style={NUMBER_FONT}
-          >
-            4.6
-          </span>
-          <span className="text-[10px] text-muted-foreground">·</span>
-          <span className="text-[10px] text-muted-foreground">49 reviews</span>
-        </div>
-      </div>
-    </div>
-  );
-}
+// PropertyCard removed — the named property + city callout (previously
+// "Telegraph Commons · Berkeley, CA · 100 units") cannot appear on
+// public marketing surfaces until pilot customers approve being a
+// public reference. Layout was reflowed: the activity feed now spans
+// the full row in its place.
 
 // ---------------------------------------------------------------------------
 // Activity feed — items appear at intervals
@@ -557,9 +532,16 @@ function ActivityFeed() {
                   : "opacity-0 translate-y-2",
               )}
             >
-              <div className="mt-0.5 h-5 w-5 rounded-full bg-[#FAFAF7] border border-black/[0.04] flex items-center justify-center shrink-0">
+              <div
+                className="mt-0.5 h-5 w-5 rounded-full flex items-center justify-center shrink-0"
+                style={{
+                  backgroundColor: "rgba(37,99,235,0.10)",
+                  border: "1px solid rgba(37,99,235,0.20)",
+                }}
+              >
                 <Icon
-                  className={cn("w-2.5 h-2.5", item.accent)}
+                  className="w-2.5 h-2.5"
+                  style={{ color: BRAND_BLUE }}
                   aria-hidden="true"
                 />
               </div>
@@ -582,7 +564,10 @@ function ActivityFeed() {
         <span className="text-[10px] text-muted-foreground">
           {ACTIVITY_ITEMS.length} new events
         </span>
-        <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-foreground">
+        <span
+          className="inline-flex items-center gap-0.5 text-[10px] font-semibold"
+          style={{ color: BRAND_BLUE }}
+        >
           View all <ArrowRight className="w-2.5 h-2.5" aria-hidden="true" />
         </span>
       </div>

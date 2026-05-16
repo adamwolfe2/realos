@@ -32,12 +32,8 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import {
   ApplicationStatus,
-  LeaseStatus,
   ProductLine,
-  ResidentStatus,
   TourStatus,
-  WorkOrderStatus,
-  WorkOrderPriority,
 } from "@prisma/client";
 import { SetupBanner } from "@/components/portal/setup/setup-banner";
 import { SetupWizardGate } from "@/components/portal/onboarding/setup-wizard-gate";
@@ -48,6 +44,7 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { LeadSourceDonut } from "@/components/portal/dashboard/lead-source-donut";
 import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funnel";
 import { PropertyDashboardCard } from "@/components/portal/dashboard/property-card";
+import { PropertyGridCard } from "@/components/portal/dashboard/property-grid-card";
 import { ActivityFeed } from "@/components/portal/dashboard/activity-feed";
 import { IntegrationHealth } from "@/components/portal/dashboard/integration-health";
 import {
@@ -60,12 +57,23 @@ import {
   getLeadSourceBreakdown,
   getLeasingVelocityTrend,
   getOrganicSessionsKpi,
+  getPerformanceOverTime,
   getPropertyMetrics,
   getRecentIdentifiedVisitors,
   getReputationPulse,
   getReputationSummary,
   getChatbotSummary,
+  getTopPropertiesByLeads,
+  type PerformancePoint,
+  type LeaderboardPropertyRow,
 } from "@/lib/dashboard/queries";
+import {
+  DashboardGreeting,
+  parseRange,
+  rangeDays,
+} from "@/components/portal/dashboard/dashboard-greeting";
+import { PerformanceOverTime } from "@/components/portal/dashboard/performance-over-time";
+import { TopPropertiesLeaderboard } from "@/components/portal/dashboard/top-properties-leaderboard";
 import { LeasingVelocityChart } from "@/components/portal/dashboard/leasing-velocity-chart";
 import { RecentIdentifiedVisitors } from "@/components/portal/dashboard/recent-identified-visitors";
 import { ReputationPulse } from "@/components/portal/dashboard/reputation-pulse";
@@ -97,6 +105,8 @@ export default async function PortalHome({
     showSetup?: string;
     property?: string;
     properties?: string;
+    range?: string;
+    compare?: string;
   }>;
 }) {
   const scope = await requireScope();
@@ -122,6 +132,15 @@ export default async function PortalHome({
   const sp = await searchParams;
   const { showSetup } = sp;
   const forceShowSetup = showSetup === "1";
+
+  // Greeting + chart controls. Range pills (7d / 28d / 90d) and the
+  // comparison toggle live in URL params so deep links and back/forward
+  // nav work without any client state. parseRange clamps a bad value
+  // to the default 28d instead of throwing.
+  const range = parseRange(sp.range);
+  const compare = sp.compare === "1";
+  const rangeDaysCount = rangeDays(range);
+  const asOf = new Date().toISOString();
 
   // Property selector (Phase 4): unrestricted users (David, agency)
   // can narrow the dashboard to one or more properties via the
@@ -167,14 +186,9 @@ export default async function PortalHome({
     reputationSummary,
     chatbotSummary,
     orgModules,
-    rentRollSum,
-    activeResidentsCount,
-    noticeGivenCount,
-    leasesExpiring120dCount,
-    pastDueLeasesCount,
-    pastDueBalance,
-    openWorkOrdersCount,
-    urgentWorkOrdersCount,
+    currentUser,
+    performancePoints,
+    topPropertiesByLeads,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -360,71 +374,35 @@ export default async function PortalHome({
         },
       })
       .catch(() => null),
-    // AppFolio mirror metrics — each defaults to a zero-shape on
-    // failure so the rent-roll / occupancy strip renders empty rather
-    // than crashing the dashboard.
-    prisma.lease
-      .aggregate({
-        where: { ...where, ...propertyClause, status: LeaseStatus.ACTIVE },
-        _sum: { monthlyRentCents: true },
+    // AppFolio mirror metrics (rent roll, residents, leases, work
+    // orders) intentionally removed from the dashboard. LeaseStack is
+    // positioned as a marketing intelligence platform, not a PMS
+    // competitor. The 9 dead queries that lived here pulled from
+    // AppFolio endpoints that fail independently (guest_cards 404,
+    // residents permission errors, etc.) and produced noise the
+    // dashboard no longer rendered anyway. When the Operations module
+    // ships as a hardened, opt-in feature, these queries move into a
+    // dedicated helper guarded by `enableOperations`.
+    // Current user — drives the personalized greeting in the header.
+    prisma.user
+      .findUnique({
+        where: { id: scope.userId },
+        select: { firstName: true, lastName: true, email: true },
       })
-      .catch(() => ({ _sum: { monthlyRentCents: 0 } })),
-    prisma.resident
-      .count({ where: { ...where, ...propertyClause, status: ResidentStatus.ACTIVE } })
-      .catch(() => 0),
-    prisma.resident
-      .count({
-        where: { ...where, ...propertyClause, status: ResidentStatus.NOTICE_GIVEN },
-      })
-      .catch(() => 0),
-    prisma.lease
-      .count({
-        where: {
-          ...where,
-          ...propertyClause,
-          status: { in: [LeaseStatus.ACTIVE, LeaseStatus.EXPIRING] },
-          endDate: {
-            gte: new Date(),
-            lte: new Date(Date.now() + 120 * DAY),
-          },
-        },
-      })
-      .catch(() => 0),
-    prisma.lease
-      .count({ where: { ...where, ...propertyClause, isPastDue: true } })
-      .catch(() => 0),
-    prisma.lease
-      .aggregate({
-        where: { ...where, ...propertyClause, isPastDue: true },
-        _sum: { currentBalanceCents: true },
-      })
-      .catch(() => ({ _sum: { currentBalanceCents: 0 } })),
-    prisma.workOrder
-      .count({
-        where: {
-          ...where,
-          ...propertyClause,
-          status: {
-            in: [
-              WorkOrderStatus.NEW,
-              WorkOrderStatus.SCHEDULED,
-              WorkOrderStatus.IN_PROGRESS,
-              WorkOrderStatus.ON_HOLD,
-            ],
-          },
-        },
-      })
-      .catch(() => 0),
-    prisma.workOrder
-      .count({
-        where: {
-          ...where,
-          ...propertyClause,
-          priority: WorkOrderPriority.URGENT,
-          status: { not: WorkOrderStatus.COMPLETED },
-        },
-      })
-      .catch(() => 0),
+      .catch(() => null),
+    // Lead velocity over the selected window with optional prior-period
+    // overlay. Powers the headline interactive chart.
+    getPerformanceOverTime(scope.orgId, rangeDaysCount, compare).catch(
+      () => [] as PerformancePoint[],
+    ),
+    // Top 5 properties by lead count in the selected window. Drives the
+    // URBN-style leaderboard panel.
+    getTopPropertiesByLeads(
+      scope.orgId,
+      rangeDaysCount,
+      5,
+      isFiltered ? effectiveIds : null,
+    ).catch(() => [] as LeaderboardPropertyRow[]),
   ]);
 
   // 28d leads + active campaigns + sparkline per property.
@@ -458,17 +436,6 @@ export default async function PortalHome({
       totalLeadsSpark[i] += m.leadsSpark[i];
     }
   }
-
-  // Format helper for AppFolio rent roll display
-  const rentRollMonthly = rentRollSum._sum.monthlyRentCents ?? 0;
-  const rentRollMonthlyDisplay =
-    rentRollMonthly > 0
-      ? `$${(rentRollMonthly / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-      : "—";
-  const pastDueDisplay =
-    (pastDueBalance._sum.currentBalanceCents ?? 0) > 0
-      ? `$${((pastDueBalance._sum.currentBalanceCents ?? 0) / 100).toLocaleString(undefined, { maximumFractionDigits: 0 })}`
-      : null;
 
   // Portfolio occupancy: weighted by units. Some properties may not have
   // unit-count metadata yet, so we filter to those that do for accuracy.
@@ -569,6 +536,18 @@ export default async function PortalHome({
 
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
 
+      {/* Personalized greeting with range pills + comparison toggle.
+          Sits above InsightsHero so the operator sees their name + the
+          active window the moment the page loads — every reference
+          dashboard (AeroStore, URBN, Emura, Mori) opens this way. */}
+      <DashboardGreeting
+        firstName={currentUser?.firstName ?? null}
+        orgName={org?.name ?? "operator"}
+        range={range}
+        compare={compare}
+        asOf={asOf}
+      />
+
       {/* Insights hero — the centerpiece. Renders top 3 open insights when
           the org has data; falls back to a connect-data CTA when the org
           is brand-new. Pinned above the property selector + KPI strip so
@@ -643,6 +622,7 @@ export default async function PortalHome({
         className="grid grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
       >
         <KpiTile
+          variant="accent"
           label="Total leads"
           value={leadsNew28d.toLocaleString()}
           hint={`${leadsTotal.toLocaleString()} all-time`}
@@ -750,20 +730,81 @@ export default async function PortalHome({
         />
       </section>
 
-      {/* Removed seven sections that previously rendered between the KPI
-          strip and the properties table:
-            - Performance row (lead source donut + conversion funnel)
-            - Leasing velocity chart
-            - Recent identified visitors
-            - Reputation pulse
-            - AppFolio not-connected hint
-            - AppFolio mirror strip (6 KPIs)
-            - Portfolio summary strip (4 KPIs)
-          Each one duplicates data that lives on its own dedicated
-          subpage (/portal/leads, /portal/visitors, /portal/reputation,
-          /portal/renewals, etc.). The dashboard's job is to show
-          insights + at-a-glance metrics + property table — not to be
-          the catch-all for every chart in the platform. */}
+      {/* Headline interactive chart + top-properties leaderboard. The
+          chart is the centerpiece — soft blue area chart with optional
+          prior-period overlay (matches the AeroStore reference pattern)
+          — and the leaderboard ranks properties by lead volume in the
+          same window so the operator can drill from "are we trending
+          up" to "which buildings are carrying the trend." Both react
+          to the range pills + compare toggle in the header. */}
+      <section className="grid grid-cols-1 lg:grid-cols-5 gap-2">
+        <DashboardSection
+          eyebrow={
+            compare ? "Current vs prior period" : "Daily volume"
+          }
+          title="Lead performance over time"
+          description={`Leads created per day, last ${rangeDaysCount} days. Hover any point for the exact count.`}
+          href="/portal/leads"
+          hrefLabel="Open leads"
+          className="lg:col-span-3"
+        >
+          <PerformanceOverTime
+            points={performancePoints}
+            compare={compare}
+          />
+        </DashboardSection>
+        <DashboardSection
+          eyebrow="Portfolio leaderboard"
+          title="Top properties"
+          description={`Ranked by leads in the last ${rangeDaysCount} days.`}
+          href="/portal/properties"
+          hrefLabel="See all"
+          className="lg:col-span-2"
+        >
+          <TopPropertiesLeaderboard rows={topPropertiesByLeads} />
+        </DashboardSection>
+      </section>
+
+      {/* Performance row — Restored after operator feedback that the
+          portal lacked the same at-a-glance visualization shown on the
+          /sign-in marketing showcase. The conversion funnel + lead
+          source donut deliver the "marketing → leasing" story in one
+          glance, and both pull from queries we were already running
+          (getFunnel, getLeadSourceBreakdown). Detailed drill-downs
+          still live on /portal/leads, /portal/visitors, etc.; this
+          surface is the summary header that motivates the click. */}
+      {(funnelStages.length > 0 || leadSourceSlices.length > 0) ? (
+        <section className="grid grid-cols-1 lg:grid-cols-5 gap-2">
+          <DashboardSection
+            eyebrow="Last 28 days"
+            title="Conversion funnel"
+            description="Visitors → leads → tours → applications → leases."
+            href="/portal/leads"
+            hrefLabel="Open leads"
+            className="lg:col-span-3"
+          >
+            {funnelStages.length > 0 ? (
+              <ConversionFunnel stages={funnelStages} />
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Funnel fills out as visitors, leads, tours, and applications
+                accumulate. Install the pixel and connect AppFolio to start
+                tracking end-to-end.
+              </p>
+            )}
+          </DashboardSection>
+          <DashboardSection
+            eyebrow="Channel mix"
+            title="Lead source"
+            description="Where this month's leads are coming from."
+            href="/portal/attribution"
+            hrefLabel="Open attribution"
+            className="lg:col-span-2"
+          >
+            <LeadSourceDonut slices={leadSourceSlices} />
+          </DashboardSection>
+        </section>
+      ) : null}
 
           {/* Properties + activity feed */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-2">
@@ -780,26 +821,16 @@ export default async function PortalHome({
                   occupancy here.
                 </p>
               ) : (
-                <div className="rounded-lg border border-border bg-card overflow-hidden">
-                  {/* Header strip — small caps, only visible on lg where
-                      every column actually renders. Mobile collapses to
-                      avatar/name/address/leads automatically. */}
-                  <div className="hidden lg:flex items-center gap-3 px-3 py-1.5 border-b border-border bg-muted/30 text-[9px] tracking-widest uppercase font-semibold text-muted-foreground">
-                    <div className="w-10 shrink-0" aria-hidden="true" />
-                    <div className="flex-1 min-w-0">Property</div>
-                    <div className="w-[120px] shrink-0 text-right">
-                      Occupancy
-                    </div>
-                    <div className="w-[68px] shrink-0 text-right">Units</div>
-                    <div className="w-[68px] shrink-0 text-right">Ads</div>
-                    <div className="w-[68px] shrink-0 text-right">Reviews</div>
-                    <div className="w-[72px] shrink-0 text-right">
-                      Leads (28d)
-                    </div>
-                    <div className="w-4 shrink-0" aria-hidden="true" />
-                  </div>
-                  <div className="divide-y divide-border">
-                    {properties.map((p) => {
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Replaced the dense Linear-style table rows with
+                      AeroStore-style image-led grid cards. Each property
+                      is immediately identifiable by its hero photo —
+                      critical for operators managing 4-8 buildings where
+                      "Sunset Commons" and "Maple Ridge" are visually
+                      indistinguishable in a plain text list. */}
+                  {/* Placeholder div — column header was here in list mode;
+                      grid cards carry their own labels so this is gone. */}
+                  {properties.map((p) => {
                       const metrics = propertyMetrics.get(p.id) ?? {
                         leads28d: 0,
                         leadsSpark: new Array<number>(28).fill(0),
@@ -818,9 +849,6 @@ export default async function PortalHome({
                               100,
                           )
                         : null;
-                      // Pick the best available image for the avatar.
-                      // photoUrls is a Json column (array of strings); coerce
-                      // safely so a malformed row never crashes the row map.
                       const photoFallback = (() => {
                         const arr = p.photoUrls;
                         if (Array.isArray(arr) && arr.length > 0) {
@@ -833,13 +861,12 @@ export default async function PortalHome({
                       })();
                       const avatarUrl = p.heroImageUrl ?? photoFallback;
                       return (
-                        <PropertyDashboardCard
+                        <PropertyGridCard
                           key={p.id}
                           id={p.id}
                           name={p.name}
                           address={address || null}
                           thumbnailUrl={avatarUrl}
-                          logoUrl={p.logoUrl}
                           occupancyPct={occupancyPct}
                           totalUnits={p.totalUnits ?? null}
                           availableCount={p.availableCount ?? null}
@@ -848,12 +875,10 @@ export default async function PortalHome({
                           activeCampaigns={metrics.activeCampaigns}
                           accent={org?.primaryColor ?? undefined}
                           reputationMentionCount={metrics.reputationMentionCount}
-                          reputationNegativeCount={metrics.reputationNegativeCount}
                           reputationUnreviewedCount={metrics.reputationUnreviewedCount}
                         />
                       );
                     })}
-                  </div>
                 </div>
               )}
             </DashboardSection>
@@ -870,6 +895,49 @@ export default async function PortalHome({
             </DashboardSection>
           </section>
 
+          {/* Operations module teaser — collects interest from operators
+              who want rent roll, renewal notices, and rental income
+              reconciliation. Currently a "coming soon" card rather than
+              a live module: the AppFolio integration is not yet
+              hardened enough (per-endpoint failures, no stale-data UX,
+              no retry/backoff) to render those numbers reliably on a
+              tenant-facing surface. When `enableOperations` ships on
+              Organization, this card flips into the full Operations
+              section. */}
+          <section className="rounded-2xl border border-border bg-gradient-to-br from-card to-primary/[0.03] p-5">
+            <div className="flex items-start justify-between gap-4 flex-wrap">
+              <div className="min-w-0 flex-1">
+                <div className="inline-flex items-center gap-2 mb-2">
+                  <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]">
+                    Coming soon
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Operations module
+                  </span>
+                </div>
+                <h2 className="text-lg font-semibold tracking-tight text-foreground leading-tight">
+                  Rent roll, renewals, and rental income in one place.
+                </h2>
+                <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed max-w-2xl">
+                  We&apos;re hardening the AppFolio sync to surface live rent
+                  rolls, renewal pacing, resident notices, and payment
+                  reconciliation alongside your marketing data. Connect
+                  AppFolio today and you&apos;ll be first in line when it
+                  ships.
+                </p>
+              </div>
+              <div className="shrink-0">
+                <Link
+                  href="/portal/connect"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-xs font-semibold hover:bg-primary-dark transition-colors"
+                >
+                  Connect AppFolio
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </div>
+          </section>
+
     </div>
   );
   } catch (err) {
@@ -877,7 +945,7 @@ export default async function PortalHome({
     return (
       <div className="space-y-4">
         <PageHeader title="Dashboard" />
-        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
           Dashboard data could not be loaded. This is usually temporary — try refreshing. If the issue persists, check{" "}
           <a href="/portal/settings/integrations" className="underline font-medium text-primary">
             Settings → Integrations
@@ -914,7 +982,7 @@ function QuickAccessTile({
   return (
     <Link
       href={href}
-      className="group relative flex items-center gap-2.5 rounded-lg border border-border bg-card hover:bg-muted/40 hover:border-primary/40 transition-all px-3 py-2.5 min-w-0"
+      className="group relative flex items-center gap-2.5 rounded-xl border border-border bg-card hover:bg-muted/40 hover:border-primary/40 hover:shadow-[0_2px_8px_rgba(15,23,42,0.05)] transition-all px-3 py-2.5 min-w-0"
     >
       <span className="shrink-0 inline-flex items-center justify-center h-7 w-7 rounded-md bg-muted text-foreground group-hover:bg-primary/10 group-hover:text-primary transition-colors">
         {icon}

@@ -8,11 +8,11 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
 }
 
 /* =============================================================================
-   LeaseStack design system — clean white canvas, blue accent, cool grays.
-   Inter everywhere. No serif display font. Borders + chrome are neutral
-   gray; the only colored signal is the brand blue (#2563EB). Charts use a
-   monochrome blue scale; status reds and ambers are reserved for genuine
-   errors / warnings.
+   LeaseStack design system — Premium edition.
+   Clean white canvas, single brand blue, cool gray chrome — with layered
+   depth, refined typography, and motion. Inspired by Linear, Vercel, Attio,
+   Stripe Dashboard, Raycast. Tokens drive every surface so the look stays
+   coherent as new pages ship.
    ============================================================================= */
 
 @theme {
@@ -54,14 +54,18 @@ body { padding-left: env(safe-area-inset-left); padding-right: env(safe-area-ins
   --color-destructive: #DC2626;
   --color-destructive-foreground: #FFFFFF;
 
-  /* Borders + rings — neutral gray */
-  --color-border: #E5E7EB;
+  /* Borders + rings — neutral gray, softer hairlines for layered surfaces */
+  --color-border: #EAECEF;
   --color-input: #E5E7EB;
   --color-ring: #2563EB;
 
   /* Section surfaces */
   --color-deep: #FFFFFF;
   --color-surface: #F9FAFB;
+
+  /* Layered depth surfaces — used by sidebar + dropdowns + hover layers */
+  --color-elevated: #F4F6F8;
+  --color-overlay:  #EDF0F4;
 
   /* Legacy aliases — kept so older files don't break, retargeted to the
      new neutral palette. */
@@ -265,48 +269,61 @@ body {
 }
 
 /* ── Buttons ───────────────────────────────────────────────────────────── */
+/* Premium 2026 redesign: brand-gradient primary with inner highlight + soft
+   colored shadow, lifts on hover. Radius pushed from 3px → 8px so it matches
+   the rest of the design language (cards 14px, inputs 8px, badges 6px). */
 .btn-primary {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 44px; padding: 10px 20px;
-  background-color: var(--terracotta);
+  background: linear-gradient(180deg, #3B82F6, #2563EB);
   color: var(--ivory);
-  font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 3px; border: none;
-  box-shadow: 0 0 0 1px var(--terracotta) inset;
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.2;
+  letter-spacing: 0.005em;
+  border-radius: 8px; border: 1px solid #2563EB;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.25) inset,
+    0 1px 2px rgba(37,99,235,0.30),
+    0 0 0 0 rgba(37,99,235,0);
+  transition: transform 140ms cubic-bezier(0.2,0.8,0.2,1), box-shadow 160ms ease, background 160ms ease;
   cursor: pointer;
 }
 .btn-primary:hover {
-  background-color: var(--terracotta-hover);
-  box-shadow: 0 0 0 1px var(--terracotta-hover) inset, 0 4px 14px rgba(37,99,235,0.18);
+  background: linear-gradient(180deg, #4f8bff, #1D4ED8);
+  transform: translateY(-1px);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.30) inset,
+    0 4px 14px rgba(37,99,235,0.32);
 }
+.btn-primary:active { transform: translateY(0); }
 
 .btn-secondary {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 44px; padding: 10px 20px;
-  background-color: var(--warm-sand);
-  color: var(--charcoal-warm);
-  font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 3px; border: none;
-  box-shadow: 0 0 0 1px var(--ring-warm);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  background-color: var(--white);
+  color: var(--near-black);
+  font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.2;
+  border-radius: 8px; border: 1px solid #DEE2E8;
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.03);
+  transition: transform 140ms cubic-bezier(0.2,0.8,0.2,1), background 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
   cursor: pointer;
 }
 .btn-secondary:hover {
-  background-color: var(--border-cream);
-  box-shadow: 0 0 0 1px var(--ring-deep);
+  background-color: #F4F6F8;
+  border-color: var(--silver-fog);
+  transform: translateY(-0.5px);
 }
+.btn-secondary:active { transform: translateY(0); }
 
 .btn-white {
   display: inline-flex; align-items: center; justify-content: center;
   min-height: 44px; padding: 10px 20px;
   background-color: var(--white); color: var(--near-black);
-  font-family: var(--font-sans); font-size: 15px; font-weight: 500; line-height: 1.2;
-  border-radius: 3px; border: none;
-  box-shadow: 0 0 0 1px var(--border-cream);
-  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+  font-family: var(--font-sans); font-size: 14px; font-weight: 600; line-height: 1.2;
+  border-radius: 8px; border: 1px solid #DEE2E8;
+  box-shadow: 0 1px 1px rgba(15, 23, 42, 0.03);
+  transition: transform 140ms cubic-bezier(0.2,0.8,0.2,1), background 160ms ease, border-color 160ms ease;
 }
-.btn-white:hover { background-color: var(--ivory); box-shadow: 0 0 0 1px var(--ring-warm); }
+.btn-white:hover { background-color: #F4F6F8; border-color: var(--silver-fog); transform: translateY(-0.5px); }
 
 .btn-secondary-dark {
   display: inline-flex; align-items: center; justify-content: center;
@@ -332,11 +349,31 @@ body {
 .btn-nav-on-dark { color: var(--ivory); }
 .btn-nav-on-dark:hover { background-color: rgba(255,255,255,0.10); }
 
-/* Back-compat names */
-.btn-accent { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--terracotta); color: var(--ivory); font-family: var(--font-sans); font-size: 15px; font-weight: 500; border-radius: 3px; transition: background-color 0.2s; }
-.btn-accent:hover { background-color: var(--terracotta-hover); }
-.btn-ghost { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; background-color: var(--warm-sand); color: var(--charcoal-warm); font-family: var(--font-sans); font-size: 15px; font-weight: 500; border-radius: 3px; box-shadow: 0 0 0 1px var(--ring-warm); }
-.btn-ghost:hover { background-color: var(--border-cream); }
+/* Back-compat names — route through the premium gradient look */
+.btn-accent {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 10px 20px; color: var(--ivory);
+  background: linear-gradient(180deg, #3B82F6, #2563EB);
+  border: 1px solid #2563EB;
+  font-family: var(--font-sans); font-size: 14px; font-weight: 600;
+  border-radius: 8px;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 1px 2px rgba(37,99,235,0.30);
+  transition: transform 140ms cubic-bezier(0.2,0.8,0.2,1), background 160ms ease, box-shadow 160ms ease;
+}
+.btn-accent:hover {
+  background: linear-gradient(180deg, #4f8bff, #1D4ED8);
+  transform: translateY(-1px);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.30) inset, 0 4px 14px rgba(37,99,235,0.32);
+}
+.btn-ghost {
+  display: inline-flex; align-items: center; justify-content: center;
+  padding: 10px 20px; background-color: var(--white); color: var(--near-black);
+  font-family: var(--font-sans); font-size: 14px; font-weight: 600;
+  border-radius: 8px; border: 1px solid #DEE2E8;
+  box-shadow: 0 1px 1px rgba(15,23,42,0.03);
+  transition: transform 140ms cubic-bezier(0.2,0.8,0.2,1), background 160ms ease, border-color 160ms ease;
+}
+.btn-ghost:hover { background-color: #F4F6F8; border-color: var(--silver-fog); transform: translateY(-0.5px); }
 .btn-blue { composes: btn-accent; }
 .btn-outline { composes: btn-ghost; }
 .btn-outline-white { display: inline-flex; align-items: center; justify-content: center; padding: 10px 20px; border: 1px solid rgba(255,255,255,0.7); color: var(--ivory); background: transparent; font-size: 15px; font-weight: 500; border-radius: 3px; }
@@ -403,3 +440,403 @@ body {
   transition: background-color 0.2s;
 }
 .prose .cta-block a:hover { background-color: var(--terracotta-hover); }
+
+/* =============================================================================
+   PREMIUM POLISH LAYER (2026 redesign)
+   Layered surfaces, refined depth, motion. Scoped to portal/admin chrome via
+   .portal-shell or applied via utility classes. Marketing pages untouched.
+   ============================================================================= */
+
+:root {
+  /* Depth scale — used everywhere a card needs to feel "floating" instead of
+     hairline-bordered. Stacked shadows render as a single soft 3D layer. */
+  --shadow-xs: 0 1px 1px rgba(15, 23, 42, 0.03);
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04), 0 1px 1px rgba(15, 23, 42, 0.02);
+  --shadow-md: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.05);
+  --shadow-lg: 0 2px 4px rgba(15, 23, 42, 0.05), 0 12px 28px rgba(15, 23, 42, 0.08);
+  --shadow-hover: 0 1px 2px rgba(15, 23, 42, 0.05), 0 8px 22px rgba(15, 23, 42, 0.08);
+
+  /* Inner highlight — gives white cards a subtle top edge so they read as
+     surfaced rather than flat. Pairs with --shadow-* on the outside. */
+  --inner-hi: inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
+  /* Brand depth — a soft blue glow + wash for hover and primary tiles. */
+  --brand-soft:  rgba(37, 99, 235, 0.08);
+  --brand-wash:  rgba(37, 99, 235, 0.04);
+  --brand-glow:  rgba(37, 99, 235, 0.18);
+  --brand-strong: rgba(37, 99, 235, 0.28);
+
+  /* Border tones — three steps so we can stack surfaces without "double border". */
+  --hair: #EEF0F3;        /* default hairline on white */
+  --hair-strong: #DEE2E8; /* card-on-card boundary */
+  --hair-active: rgba(37, 99, 235, 0.32);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* ── Premium card primitive ────────────────────────────────────────────────
+   Use `.ls-card` on any panel that should read as a floating surface. Pairs
+   with the existing `.ls-hover-lift` for interactive cards. Replaces the
+   "hairline border, no depth" treatment from the original audit.
+   ───────────────────────────────────────────────────────────────────────── */
+.ls-card {
+  background: var(--white);
+  border: 1px solid var(--hair);
+  border-radius: 14px;
+  box-shadow: var(--shadow-sm), var(--inner-hi);
+  transition:
+    transform 180ms var(--ease-out),
+    box-shadow 200ms var(--ease-out),
+    border-color 180ms ease;
+}
+.ls-card:hover {
+  border-color: var(--hair-strong);
+  box-shadow: var(--shadow-hover), var(--inner-hi);
+}
+.ls-card-flush { padding: 0; }
+.ls-card-pad   { padding: 20px; }
+
+/* Soft brand accent — used on the dashboard's hero KPI tile or any card we
+   want to anchor visual hierarchy on. The radial glow sits in the top-right
+   corner so it never competes with content. */
+.ls-card-accent {
+  position: relative;
+  overflow: hidden;
+}
+.ls-card-accent::after {
+  content: "";
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 180px;
+  height: 180px;
+  background: radial-gradient(circle, var(--brand-glow) 0%, transparent 65%);
+  pointer-events: none;
+  opacity: 0.75;
+}
+
+/* ── Metric numeric — monospace tabular figures for big numbers ─────────── */
+.ls-metric {
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1, "lnum" 1;
+  font-weight: 500;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--near-black);
+}
+.ls-metric-xl { font-size: 2.5rem; }
+.ls-metric-lg { font-size: 2rem; }
+.ls-metric-md { font-size: 1.5rem; }
+
+/* Tiny tracked-out label used to anchor a metric or section. */
+.ls-eyebrow {
+  font-family: var(--font-sans);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--stone-gray);
+}
+
+/* ── Delta pill (KPI trend indicator) ──────────────────────────────────── */
+.ls-delta {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-family: var(--font-mono);
+  font-feature-settings: "tnum" 1;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 999px;
+  letter-spacing: 0.005em;
+  line-height: 1;
+}
+.ls-delta-up   { background: rgba(22, 163, 74, 0.10); color: #15803d; }
+.ls-delta-down { background: rgba(220, 38, 38, 0.10); color: #b91c1c; }
+.ls-delta-flat { background: var(--warm-sand); color: var(--olive-gray); }
+
+/* ── Sidebar premium polish ────────────────────────────────────────────── */
+.ls-sidebar {
+  background:
+    radial-gradient(ellipse at 0% 0%, var(--brand-wash) 0%, transparent 55%),
+    var(--white);
+  border-right: 1px solid var(--hair);
+}
+.ls-sidebar-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--silver-fog);
+  padding: 14px 14px 4px;
+}
+.ls-sidebar-item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--olive-gray);
+  transition: background 120ms ease, color 120ms ease;
+}
+.ls-sidebar-item:hover {
+  background: var(--color-elevated);
+  color: var(--near-black);
+}
+.ls-sidebar-item.is-active {
+  background: var(--brand-soft);
+  color: var(--terracotta);
+}
+.ls-sidebar-item.is-active::before {
+  content: "";
+  position: absolute;
+  left: -2px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 18px;
+  background: var(--terracotta);
+  border-radius: 0 2px 2px 0;
+  box-shadow: 0 0 8px var(--brand-glow);
+}
+
+/* ── Status pill polish ────────────────────────────────────────────────── */
+.ls-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.01em;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+.ls-pill::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  box-shadow: 0 0 6px currentColor;
+}
+.ls-pill-neutral { background: var(--warm-sand); color: var(--olive-gray); }
+.ls-pill-info    { background: rgba(37, 99, 235, 0.10); color: #1d4ed8; }
+.ls-pill-active  { background: rgba(37, 99, 235, 0.12); color: #1d4ed8; }
+.ls-pill-success { background: rgba(22, 163, 74, 0.10); color: #15803d; }
+.ls-pill-warning { background: rgba(245, 158, 11, 0.12); color: #b45309; }
+.ls-pill-danger  { background: rgba(220, 38, 38, 0.10); color: #b91c1c; }
+
+/* ── Premium alert / insight cards ─────────────────────────────────────── */
+.ls-alert {
+  position: relative;
+  border: 1px solid var(--hair);
+  border-radius: 12px;
+  padding: 12px 16px 12px 18px;
+  background: var(--white);
+  box-shadow: var(--shadow-sm), var(--inner-hi);
+  overflow: hidden;
+}
+.ls-alert::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 8px;
+  bottom: 8px;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+}
+.ls-alert-info    { background: linear-gradient(180deg, var(--brand-wash), var(--white)); border-color: rgba(37,99,235,0.20); }
+.ls-alert-info::before    { background: var(--terracotta); }
+.ls-alert-warning { background: linear-gradient(180deg, rgba(245,158,11,0.05), var(--white)); border-color: rgba(245,158,11,0.30); }
+.ls-alert-warning::before { background: var(--warning); }
+.ls-alert-success { background: linear-gradient(180deg, rgba(22,163,74,0.04), var(--white)); border-color: rgba(22,163,74,0.25); }
+.ls-alert-success::before { background: var(--success); }
+.ls-alert-critical{ background: linear-gradient(180deg, rgba(220,38,38,0.04), var(--white)); border-color: rgba(220,38,38,0.30); }
+.ls-alert-critical::before{ background: var(--error); }
+
+/* ── Data-table row animation + premium hover ──────────────────────────── */
+.ls-table thead th {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  color: var(--silver-fog);
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--hair);
+  text-align: left;
+  background: var(--white);
+}
+.ls-table tbody td {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: var(--charcoal-warm);
+  border-bottom: 1px solid var(--hair);
+  vertical-align: middle;
+}
+.ls-table tbody tr {
+  transition: background 120ms ease;
+}
+.ls-table tbody tr:hover {
+  background: var(--color-elevated);
+}
+
+/* Subtle row stagger — use sparingly, only on lists < 20 rows */
+.ls-row-stagger > * {
+  animation: ls-fade-in-stagger 320ms var(--ease-out) both;
+}
+.ls-row-stagger > *:nth-child(1) { animation-delay: 20ms; }
+.ls-row-stagger > *:nth-child(2) { animation-delay: 50ms; }
+.ls-row-stagger > *:nth-child(3) { animation-delay: 80ms; }
+.ls-row-stagger > *:nth-child(4) { animation-delay: 110ms; }
+.ls-row-stagger > *:nth-child(5) { animation-delay: 140ms; }
+.ls-row-stagger > *:nth-child(6) { animation-delay: 170ms; }
+.ls-row-stagger > *:nth-child(7) { animation-delay: 200ms; }
+.ls-row-stagger > *:nth-child(8) { animation-delay: 230ms; }
+
+/* ── Occupancy / progress bar ──────────────────────────────────────────── */
+.ls-progress {
+  height: 6px;
+  background: var(--color-elevated);
+  border-radius: 999px;
+  overflow: hidden;
+  position: relative;
+}
+.ls-progress > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--terracotta), var(--coral));
+  transition: width 800ms var(--ease-spring);
+}
+.ls-progress.is-high > span   { background: linear-gradient(90deg, #16a34a, #4ade80); }
+.ls-progress.is-warn > span   { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+.ls-progress.is-danger > span { background: linear-gradient(90deg, #dc2626, #f87171); }
+
+/* ── Refined buttons (additive — leaves existing .btn-* classes intact) ─ */
+.ls-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 14px;
+  font-family: var(--font-sans);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 120ms var(--ease-out), background 140ms ease, box-shadow 140ms ease, border-color 140ms ease;
+}
+.ls-btn:active { transform: translateY(0.5px); }
+
+.ls-btn-primary {
+  background: linear-gradient(180deg, #3b82f6, var(--terracotta));
+  color: var(--ivory);
+  border-color: var(--terracotta);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 1px 2px rgba(37,99,235,0.30), 0 0 0 0 var(--brand-glow);
+}
+.ls-btn-primary:hover {
+  box-shadow: 0 1px 0 rgba(255,255,255,0.25) inset, 0 4px 14px var(--brand-strong);
+  transform: translateY(-0.5px);
+}
+
+.ls-btn-secondary {
+  background: var(--white);
+  color: var(--near-black);
+  border-color: var(--hair-strong);
+  box-shadow: var(--shadow-xs);
+}
+.ls-btn-secondary:hover {
+  background: var(--color-elevated);
+  border-color: var(--silver-fog);
+}
+
+/* Copy-button "copied" flash */
+.ls-copied {
+  background: rgba(22,163,74,0.12) !important;
+  color: #15803d !important;
+  animation: ls-copy-flash 280ms var(--ease-out);
+}
+@keyframes ls-copy-flash {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(0.96); }
+  100% { transform: scale(1); }
+}
+
+/* ── Tooltip ───────────────────────────────────────────────────────────── */
+[data-ls-tooltip] {
+  position: relative;
+}
+[data-ls-tooltip]::after {
+  content: attr(data-ls-tooltip);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: var(--near-black);
+  color: var(--ivory);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 5px 9px;
+  border-radius: 6px;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 140ms ease, transform 140ms ease;
+  z-index: 100;
+  box-shadow: var(--shadow-md);
+}
+[data-ls-tooltip]:hover::after {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Refined scrollbar (portal-only — narrower than the global one) ────── */
+.portal-shell ::-webkit-scrollbar { width: 6px; height: 6px; }
+.portal-shell ::-webkit-scrollbar-track { background: transparent; }
+.portal-shell ::-webkit-scrollbar-thumb {
+  background: var(--warm-silver);
+  border-radius: 999px;
+  border: none;
+}
+.portal-shell ::-webkit-scrollbar-thumb:hover { background: var(--stone-gray); }
+
+/* ── Page entry — used by portal pages for a soft fade on navigation ───── */
+.ls-page-enter {
+  animation: ls-page-enter 240ms var(--ease-out) both;
+}
+@keyframes ls-page-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Top utility bar refinement (search + notifications) ──────────────── */
+.ls-topbar {
+  background: rgba(255, 255, 255, 0.70);
+  backdrop-filter: saturate(180%) blur(8px);
+  -webkit-backdrop-filter: saturate(180%) blur(8px);
+  border-bottom: 1px solid var(--hair);
+}
+
+/* Respect reduced-motion across everything we just added */
+@media (prefers-reduced-motion: reduce) {
+  .ls-card,
+  .ls-sidebar-item,
+  .ls-progress > span,
+  .ls-btn,
+  .ls-page-enter,
+  .ls-row-stagger > * {
+    animation: none !important;
+    transition: none !important;
+  }
+}

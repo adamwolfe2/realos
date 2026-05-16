@@ -60,38 +60,113 @@ export default async function ReportDetailPage({
       <style
         dangerouslySetInnerHTML={{
           __html: `
-            /* Print + PDF rules. Each .ls-report-section is a logical block
-               that must not be sliced across pages, otherwise the PDF
-               output breaks mid-chart. The gradient hero number uses
-               -webkit-background-clip:text which most print pipelines
-               (including Vercel's @vercel/og + Chromium PDF) support, but
-               we add a black fallback in case the gradient is dropped. */
+            /* ============================================================
+               PRINT + PDF RULES
+               ------------------------------------------------------------
+               Every .ls-report-section is a logical content block that
+               must not be sliced across pages. The previous version of
+               this stylesheet broke in two ways: (1) it left the portal
+               sidebar / banners / top utility bar rendering in print
+               which ate the entire first page before the report could
+               start flowing, and (2) the parent <main> kept its
+               overflow-y:auto which clipped report content to a single
+               viewport-height paged region. Both are fixed below.
+               ============================================================ */
             @media print {
-              [data-no-print] { display: none !important; }
-              body { background: #ffffff !important; }
-              .report-page { padding: 0 !important; }
-              .ls-report { gap: 12px !important; }
-              .ls-report-section {
-                box-shadow: none !important;
-                break-inside: avoid;
-                page-break-inside: avoid;
+              /* PAGE GEOMETRY — US Letter, half-inch margins all sides.
+                 Half-inch is enough room for a generous typography pass
+                 without wasting print real estate. */
+              @page { size: letter; margin: 0.5in; }
+
+              /* Force a clean white print canvas. Override any cool
+                 slate background from the app shell. */
+              html, body {
+                background: #ffffff !important;
+                color: #0F172A !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
               }
-              .ls-report-section + .ls-report-section {
-                margin-top: 12px;
+
+              /* Hide everything explicitly tagged data-no-print, OR
+                 known portal chrome that wasn't tagged yet. Broad
+                 selectors here serve as belt-and-suspenders so a
+                 newly-added banner that forgot the attribute still
+                 disappears in print. */
+              [data-no-print],
+              .portal-shell > [data-no-print],
+              [data-portal-nav],
+              [data-impersonation],
+              [data-trial-banner],
+              header[data-portal-header] {
+                display: none !important;
               }
+
+              /* RESET PARENT CONSTRAINTS so the report can flow across
+                 as many pages as the content needs. The portal layout
+                 wraps the main content in a flex column with
+                 overflow-y:auto + min-h-0, which clips content to one
+                 viewport-tall scroll region. In print we want natural
+                 document flow. */
+              .portal-shell,
+              .portal-main,
+              .report-page,
+              .report-page > *,
+              article.report-article {
+                display: block !important;
+                overflow: visible !important;
+                height: auto !important;
+                max-height: none !important;
+                min-height: 0 !important;
+              }
+              .portal-main { padding: 0 !important; }
+              .report-page {
+                padding: 0 !important;
+                margin: 0 !important;
+              }
+
+              /* PRINT-ONLY BRANDED HEADER — shown at the top of page 1.
+                 Hidden in the on-screen view (set in the report-view
+                 component's tailwind class). */
+              .print-only-header { display: block !important; }
+
+              /* SECTION TYPOGRAPHY for print. Slightly tighter than
+                 screen so we get more density per page without sacrificing
+                 legibility. */
+              article.report-article { font-size: 11.5pt; line-height: 1.45; }
+              article.report-article h1 { font-size: 22pt; margin: 0 0 4pt; }
+              article.report-article h2 { font-size: 15pt; margin: 14pt 0 6pt; }
+              article.report-article h3 { font-size: 12pt; margin: 8pt 0 4pt; }
+
+              /* SECTIONS — every report block keeps integrity, but the
+                 article itself flows naturally. Strip borders + shadows
+                 since they print as fuzzy outlines on most printers. */
+              .ls-report { gap: 10px !important; }
+              .ls-report-section,
               article.report-article header,
               article.report-article section {
                 box-shadow: none !important;
+                border: 1px solid #E5E7EB !important;
+                border-radius: 6pt !important;
+                padding: 10pt 12pt !important;
                 break-inside: avoid;
                 page-break-inside: avoid;
               }
-              /* Recharts SVGs and our hand-rolled SVG charts both need to
-                 keep their bounding boxes intact when paginated. */
+              /* Specifically push a NEW page before the largest sections
+                 so they always start at the top of a fresh page. Reduces
+                 the number of mid-page orphans on long reports. */
+              .ls-report-section[data-print-break-before="always"] {
+                break-before: page;
+                page-break-before: always;
+              }
+
+              /* Recharts + hand-rolled SVG charts keep their bounding
+                 boxes intact when paginated. */
               svg { page-break-inside: avoid; }
-              /* Suppress the on-load animations when printing. PDF
-                 exporters render the keyframe START state otherwise
-                 (empty bars, undrawn polylines). Snap everything to
-                 its final value. */
+
+              /* Suppress on-load animations when printing. Chromium's
+                 PDF pipeline otherwise renders the keyframe START state
+                 (empty bars, undrawn polylines, opacity:0 fades). Snap
+                 everything to its final state. */
               .report-article *,
               .report-article *::before,
               .report-article *::after {
@@ -102,9 +177,9 @@ export default async function ReportDetailPage({
                 stroke-dashoffset: 0 !important;
               }
               a { color: inherit; text-decoration: none; }
-              /* Background-clip:text gradient fallback for renderers that
-                 don't honor the clip-path. The gradient ends up covering
-                 the text (not transparent), so we restore plain blue. */
+
+              /* Background-clip:text gradient fallback for renderers
+                 that don't honor the clip-path. */
               @supports not (-webkit-background-clip: text) {
                 .ls-report [style*="WebkitBackgroundClip"],
                 .ls-report [style*="-webkit-background-clip"] {
@@ -112,7 +187,17 @@ export default async function ReportDetailPage({
                   color: #1D4ED8 !important;
                 }
               }
+
+              /* Force tables to repeat their headers on each page so a
+                 multi-page "Top landing pages" or "Top search queries"
+                 table is still readable. */
+              thead { display: table-header-group; }
+              tr, td, th { page-break-inside: avoid; }
             }
+
+            /* The print-only header is HIDDEN on screen and only revealed
+               by the @media print rule above. */
+            .print-only-header { display: none; }
           `,
         }}
       />
@@ -143,21 +228,25 @@ export default async function ReportDetailPage({
         </div>
       </div>
 
-      <ReportEditorControls
-        reportId={report.id}
-        initialHeadline={report.headline ?? ""}
-        initialNotes={report.notes ?? ""}
-        status={status}
-        shareUrl={shareUrl}
-      />
+      <div data-no-print>
+        <ReportEditorControls
+          reportId={report.id}
+          initialHeadline={report.headline ?? ""}
+          initialNotes={report.notes ?? ""}
+          status={status}
+          shareUrl={shareUrl}
+        />
+      </div>
 
       {status !== "archived" ? (
-        <SendEmailPanel
-          reportId={report.id}
-          defaultRecipient={report.org?.primaryContactEmail ?? null}
-          defaultRecipientName={report.org?.primaryContactName ?? null}
-          canSend={(report.headline?.length ?? 0) > 0 || (report.notes?.length ?? 0) > 0}
-        />
+        <div data-no-print>
+          <SendEmailPanel
+            reportId={report.id}
+            defaultRecipient={report.org?.primaryContactEmail ?? null}
+            defaultRecipientName={report.org?.primaryContactName ?? null}
+            canSend={(report.headline?.length ?? 0) > 0 || (report.notes?.length ?? 0) > 0}
+          />
+        </div>
       ) : null}
 
       {status === "shared" && report.viewCount > 0 ? (
