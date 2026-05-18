@@ -1,16 +1,32 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere, ForbiddenError } from "@/lib/tenancy/scope";
+import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
 
 // GET /api/tenant/visitors/export
 // Downloads a CSV of visitors with hashed emails for manual upload to
 // Google Ads + Meta Custom Audiences. SHA-256 hashing is done at the
 // webhook-ingest step, so this is a straight read of the Visitor rows.
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
     const scope = await requireScope();
+    // Property-RBAC gate. Same logic as /api/tenant/leads/export:
+    // pre-fix any restricted user could pull the full org-wide list
+    // of identified visitors (incl. hashedEmails) as a permanent CSV.
+    const url = new URL(req.url);
+    const propertyIds = parsePropertyFilter({
+      properties: url.searchParams.get("properties") ?? undefined,
+      property: url.searchParams.get("property") ?? undefined,
+    });
     const visitors = await prisma.visitor.findMany({
-      where: { ...tenantWhere(scope), hashedEmail: { not: null } },
+      where: {
+        ...tenantWhere(scope),
+        ...propertyWhereFragment(scope, propertyIds),
+        hashedEmail: { not: null },
+      },
       select: {
         hashedEmail: true,
         firstName: true,

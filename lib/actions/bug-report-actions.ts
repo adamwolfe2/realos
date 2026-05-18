@@ -55,44 +55,57 @@ export async function setBugReportStatus(
   resolutionNote?: string,
 ): Promise<ActionResult> {
   const scope = await requireAgency();
-  const current = await prisma.bugReport.findUnique({
-    where: { id },
-    select: { status: true, title: true },
-  });
-  if (!current) return { ok: false, error: "Bug report not found." };
-  if (current.status === next) {
-    return { ok: false, error: `Report is already ${next}.` };
-  }
 
-  // APPROVED / REJECTED are terminal-ish. We don't hard-block re-opens
-  // (an admin can move APPROVED → IN_PROGRESS if a regression appears)
-  // but the audit trail captures every transition.
+  // Read status + title + current timeline in ONE round-trip. Pre-fix
+  // we did two findUnique calls (one for status/title, then a second
+  // inside appendTimeline → getTimeline) plus an update — three
+  // round-trips and a real read-modify-write race where concurrent
+  // triage clicks could lose timeline entries. Folding the read into
+  // a single transaction with the update closes the race and saves
+  // a hop.
   const trimmedNote = resolutionNote?.trim() ?? null;
   const now = new Date();
 
-  await prisma.bugReport.update({
-    where: { id },
-    data: {
-      status: next,
-      resolutionNote: trimmedNote || undefined,
-      approvedAt: next === BugReportStatus.APPROVED ? now : undefined,
-      approvedBy: next === BugReportStatus.APPROVED ? scope.userId : undefined,
-      rejectedAt: next === BugReportStatus.REJECTED ? now : undefined,
-      rejectedBy: next === BugReportStatus.REJECTED ? scope.userId : undefined,
-      timeline: appendTimeline(
-        await getTimeline(id),
-        {
-          at: now.toISOString(),
-          by: scope.userId,
-          byEmail: scope.email,
-          kind: "status",
-          from: current.status,
-          to: next,
-          text: trimmedNote ?? undefined,
-        },
-      ) as unknown as Prisma.InputJsonValue,
-    },
+  const result = await prisma.$transaction(async (tx) => {
+    const current = await tx.bugReport.findUnique({
+      where: { id },
+      select: { status: true, title: true, timeline: true },
+    });
+    if (!current) return { found: false as const };
+    if (current.status === next) {
+      return { found: true as const, alreadyAt: next, title: current.title };
+    }
+    const nextTimeline = appendTimeline(current.timeline, {
+      at: now.toISOString(),
+      by: scope.userId,
+      byEmail: scope.email,
+      kind: "status",
+      from: current.status,
+      to: next,
+      text: trimmedNote ?? undefined,
+    });
+    await tx.bugReport.update({
+      where: { id },
+      data: {
+        status: next,
+        resolutionNote: trimmedNote || undefined,
+        approvedAt: next === BugReportStatus.APPROVED ? now : undefined,
+        approvedBy:
+          next === BugReportStatus.APPROVED ? scope.userId : undefined,
+        rejectedAt: next === BugReportStatus.REJECTED ? now : undefined,
+        rejectedBy:
+          next === BugReportStatus.REJECTED ? scope.userId : undefined,
+        timeline: nextTimeline as Prisma.InputJsonValue,
+      },
+    });
+    return { found: true as const, fromStatus: current.status, title: current.title };
   });
+
+  if (!result.found) return { ok: false, error: "Bug report not found." };
+  if ("alreadyAt" in result) {
+    return { ok: false, error: `Report is already ${result.alreadyAt}.` };
+  }
+  const current = { status: result.fromStatus, title: result.title };
 
   await prisma.auditEvent.create({
     data: auditPayload(scope, {
@@ -120,39 +133,36 @@ export async function addBugReportNote(
       error: parsed.error.issues[0]?.message ?? "Note required.",
     };
   }
-  const exists = await prisma.bugReport.findUnique({
-    where: { id },
-    select: { id: true },
-  });
-  if (!exists) return { ok: false, error: "Bug report not found." };
 
   const now = new Date();
-  await prisma.bugReport.update({
-    where: { id },
-    data: {
-      timeline: appendTimeline(
-        await getTimeline(id),
-        {
-          at: now.toISOString(),
-          by: scope.userId,
-          byEmail: scope.email,
-          kind: "note",
-          text: parsed.data.text,
-        },
-      ) as unknown as Prisma.InputJsonValue,
-    },
+
+  // Same race-closing pattern as setBugReportStatus — read the existing
+  // timeline and write the appended entry inside one transaction so
+  // concurrent note + status edits don't clobber each other's entries.
+  const found = await prisma.$transaction(async (tx) => {
+    const current = await tx.bugReport.findUnique({
+      where: { id },
+      select: { timeline: true },
+    });
+    if (!current) return false;
+    const nextTimeline = appendTimeline(current.timeline, {
+      at: now.toISOString(),
+      by: scope.userId,
+      byEmail: scope.email,
+      kind: "note",
+      text: parsed.data.text,
+    });
+    await tx.bugReport.update({
+      where: { id },
+      data: { timeline: nextTimeline as Prisma.InputJsonValue },
+    });
+    return true;
   });
+
+  if (!found) return { ok: false, error: "Bug report not found." };
 
   revalidatePath(`/admin/bug-reports/${id}`);
   return { ok: true };
-}
-
-async function getTimeline(id: string): Promise<Prisma.JsonValue> {
-  const row = await prisma.bugReport.findUnique({
-    where: { id },
-    select: { timeline: true },
-  });
-  return row?.timeline ?? [];
 }
 
 /** Thin wrappers so a server-component <form action={...}> can call us. */

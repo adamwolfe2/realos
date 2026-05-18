@@ -83,6 +83,20 @@ export const chatbotConfigLimiter = createLimiter(redis, 30, '1 m')
 // this catches misconfigured senders or port-scan probes.
 export const webhookLimiter = createLimiter(redis, 1000, '1 m')
 
+// 30 bug report submissions per userId per hour. Cap protects Vercel Blob
+// storage quota + cost: a malicious authenticated user could otherwise
+// script thousands of multipart uploads (up to 5×8MB = 40MB per request).
+// 30/hour is generous for legitimate use (even Norman bashing through QA
+// rarely exceeds 10) and stops a runaway script flat.
+export const bugReportLimiter = createLimiter(redis, 30, '1 h')
+
+// 60 popup-embed events per IP per minute. Protects denormalized counter
+// integrity (shownCount / convertedCount on PopupCampaign) from drive-by
+// inflation by a competitor scraping the popupId from a victim's site and
+// hammering CONVERTED. Combined with the sessionId+type dedupe in the
+// route handler, this should make poisoning impractical.
+export const popupEventLimiter = createLimiter(redis, 60, '1 m')
+
 /**
  * Returns true if the request should be allowed; false if rate-limited.
  *

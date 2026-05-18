@@ -32,6 +32,55 @@ export type ActionResult<T = Record<string, never>> =
 
 const HEX_COLOR = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
+// Scheme allow-list for any URL field the embed will assign to
+// `location.href`. Pre-fix this schema accepted ANY z.string() for
+// ctaUrl which meant an operator (or compromised operator account)
+// could publish `javascript:fetch(...)` and execute arbitrary JS on
+// every third-party site running the popup embed — full XSS on the
+// embedding domain. Same shape applied to heroImageUrl so a `data:
+// text/html` URI can't render in the popup's hero `<img>`.
+const SAFE_CTA_SCHEMES = ["http:", "https:", "mailto:", "tel:"] as const;
+const SAFE_IMG_SCHEMES = ["http:", "https:"] as const;
+
+function makeSchemeGate(allowed: readonly string[]) {
+  return (raw: string) => {
+    const trimmed = raw.trim();
+    // Same-origin / relative URLs ("/apply", "#contact", "?utm=…")
+    // are safe — the browser resolves them against the embedding
+    // site's origin, not the operator's. Allow these unchanged.
+    if (trimmed === "" || trimmed === "#") return true;
+    if (trimmed.startsWith("/") || trimmed.startsWith("#") || trimmed.startsWith("?"))
+      return true;
+    try {
+      const u = new URL(trimmed);
+      return allowed.includes(u.protocol);
+    } catch {
+      return false;
+    }
+  };
+}
+
+const ctaUrlSchema = z
+  .string()
+  .trim()
+  .max(500)
+  .refine(makeSchemeGate(SAFE_CTA_SCHEMES), {
+    message:
+      "CTA URL must use http://, https://, mailto:, tel:, or be a relative path like /apply",
+  })
+  .default("#");
+
+const heroImageUrlSchema = z
+  .string()
+  .trim()
+  .url("Hero image must be a valid URL")
+  .refine(makeSchemeGate(SAFE_IMG_SCHEMES), {
+    message: "Hero image must use http:// or https://",
+  })
+  .nullable()
+  .optional()
+  .or(z.literal("").transform(() => null));
+
 // Zod schema mirrors the PopupCampaign model. Anything optional in the
 // schema must be optional here AND in the action signature; we use
 // `nullable()` where the DB column is nullable (NOT `optional()`) so
@@ -42,7 +91,7 @@ const upsertSchema = z.object({
   headline: z.string().trim().min(1, "Headline is required").max(120),
   body: z.string().trim().min(1, "Body is required").max(600),
   ctaText: z.string().trim().min(1, "CTA text is required").max(40),
-  ctaUrl: z.string().trim().max(500).default("#"),
+  ctaUrl: ctaUrlSchema,
   offerCode: z.string().trim().max(40).nullable().optional(),
   secondaryText: z.string().trim().max(40).nullable().optional(),
   trigger: z.nativeEnum(PopupTrigger).default(PopupTrigger.EXIT_INTENT),
@@ -53,7 +102,7 @@ const upsertSchema = z.object({
   primaryColor: z.string().regex(HEX_COLOR).default("#2563EB"),
   textColor: z.string().regex(HEX_COLOR).default("#0F172A"),
   backgroundColor: z.string().regex(HEX_COLOR).default("#FFFFFF"),
-  heroImageUrl: z.string().trim().url().nullable().optional().or(z.literal("").transform(() => null)),
+  heroImageUrl: heroImageUrlSchema,
   captureEmail: z.boolean().default(true),
   capturePhone: z.boolean().default(false),
   propertyId: z.string().min(1).nullable().optional(),

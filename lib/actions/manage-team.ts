@@ -65,13 +65,75 @@ export async function updateUserRoleAsAgency(
 
   const user = await prisma.user.findUnique({
     where: { id: parsed.data.userId },
-    select: { id: true, orgId: true, email: true, role: true },
+    select: {
+      id: true,
+      orgId: true,
+      email: true,
+      role: true,
+      org: { select: { orgType: true } },
+    },
   });
   if (!user) return { ok: false, error: "User not found." };
 
+  const nextRole = parsed.data.role;
+  const targetIsAgency = user.org.orgType === OrgType.AGENCY;
+  const nextIsAgency = AGENCY_ROLES.has(nextRole);
+  const nextIsClient = CLIENT_ROLES.has(nextRole);
+
+  // Defense-in-depth: an AGENCY-side caller must NEVER be able to
+  // grant a cross-cohort role. Pre-fix the function blindly trusted
+  // the role enum — meaning an agency operator could promote a
+  // CLIENT_OWNER to AGENCY_OWNER (full platform takeover) or promote
+  // an AGENCY_OWNER on a different agency org (we only have one
+  // agency today but the schema allows multiple). Lock both axes:
+  //   1. The role must match the target org's type (agency-role on
+  //      agency org, client-role on client org).
+  //   2. AGENCY_OPERATOR can only grant CLIENT_* roles to client-org
+  //      users and CANNOT grant any AGENCY_* role. Only AGENCY_OWNER
+  //      / AGENCY_ADMIN can grant agency-side roles.
+  if (targetIsAgency && !nextIsAgency) {
+    return {
+      ok: false,
+      error: "Agency-org users can only hold AGENCY_* roles.",
+    };
+  }
+  if (!targetIsAgency && !nextIsClient) {
+    return {
+      ok: false,
+      error: "Client-org users can only hold CLIENT_* / LEASING_AGENT roles.",
+    };
+  }
+  if (
+    scope.role === UserRole.AGENCY_OPERATOR &&
+    (nextIsAgency || AGENCY_ROLES.has(user.role))
+  ) {
+    return {
+      ok: false,
+      error:
+        "Agency operators cannot change agency-side roles. Ask an agency owner or admin.",
+    };
+  }
+  // Block the last-owner foot-gun: if we're demoting the only
+  // remaining AGENCY_OWNER, refuse — otherwise the agency tenant
+  // would have nobody who can manage roles, billing, etc.
+  if (
+    user.role === UserRole.AGENCY_OWNER &&
+    nextRole !== UserRole.AGENCY_OWNER
+  ) {
+    const ownerCount = await prisma.user.count({
+      where: { orgId: user.orgId, role: UserRole.AGENCY_OWNER },
+    });
+    if (ownerCount <= 1) {
+      return {
+        ok: false,
+        error: "Cannot demote the last remaining AGENCY_OWNER.",
+      };
+    }
+  }
+
   await prisma.user.update({
     where: { id: user.id },
-    data: { role: parsed.data.role },
+    data: { role: nextRole },
   });
 
   await prisma.auditEvent.create({
@@ -81,7 +143,7 @@ export async function updateUserRoleAsAgency(
         action: AuditAction.UPDATE,
         entityType: "User",
         entityId: user.id,
-        description: `Role changed from ${user.role} to ${parsed.data.role} (${user.email})`,
+        description: `Role changed from ${user.role} to ${nextRole} (${user.email})`,
       }
     ),
   });

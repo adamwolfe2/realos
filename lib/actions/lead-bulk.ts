@@ -22,6 +22,28 @@ import { AuditAction, LeadStatus, Prisma } from "@prisma/client";
 
 const STATUS_VALUES = Object.values(LeadStatus) as [LeadStatus, ...LeadStatus[]];
 
+// Property-RBAC gate. Returns the Prisma fragment to AND into a Lead
+// where-clause so a restricted user can't mutate leads on properties
+// they don't have access to. Pre-fix the bulk endpoints accepted any
+// leadIds array and only checked orgId — meaning a leasing agent with
+// access to Bldg A could pass leadIds for leads on Bldg B (visible to
+// them via /api/tenant/leads before that was gated, or just by trying
+// raw ids) and unsubscribe/delete/reassign them.
+//
+// A null gate (unrestricted scope) returns {} so the bulk op runs
+// portfolio-wide.
+function bulkLeadPropertyGate(
+  scope: { allowedPropertyIds: string[] | null },
+): Record<string, unknown> {
+  if (!scope.allowedPropertyIds) return {};
+  // Synthetic id mirror of propertyWhereFragment — empty allowed list
+  // matches nothing, never the full org.
+  if (scope.allowedPropertyIds.length === 0) {
+    return { propertyId: "__no_property_access__" };
+  }
+  return { propertyId: { in: scope.allowedPropertyIds } };
+}
+
 const updateStatusInput = z.object({
   leadIds: z.array(z.string().min(1)).min(1).max(500),
   status: z.enum(STATUS_VALUES),
@@ -48,10 +70,15 @@ export async function bulkUpdateLeadStatus(input: unknown): Promise<Result> {
   if (!parsed.success) return { ok: false, error: "Invalid input" };
   const { leadIds, status } = parsed.data;
 
-  // Tenant scope: only update leads we own. updateMany silently filters,
-  // so we count the actual updates after.
+  // Tenant scope + property-RBAC: only update leads we own AND that
+  // live on a property the caller has access to. updateMany silently
+  // filters, so we count the actual updates after.
   const result = await prisma.lead.updateMany({
-    where: { id: { in: leadIds }, orgId: scope.orgId },
+    where: {
+      id: { in: leadIds },
+      orgId: scope.orgId,
+      ...bulkLeadPropertyGate(scope),
+    },
     data: { status, lastActivityAt: new Date() },
   });
 
@@ -89,7 +116,11 @@ export async function bulkUnsubscribeLeads(input: unknown): Promise<Result> {
 
   const now = new Date();
   const result = await prisma.lead.updateMany({
-    where: { id: { in: leadIds }, orgId: scope.orgId },
+    where: {
+      id: { in: leadIds },
+      orgId: scope.orgId,
+      ...bulkLeadPropertyGate(scope),
+    },
     data: {
       unsubscribedFromEmails: true,
       unsubscribedAt: now,
@@ -158,7 +189,11 @@ export async function bulkAssignLeads(input: unknown): Promise<Result> {
   }
 
   const result = await prisma.lead.updateMany({
-    where: { id: { in: leadIds }, orgId: scope.orgId },
+    where: {
+      id: { in: leadIds },
+      orgId: scope.orgId,
+      ...bulkLeadPropertyGate(scope),
+    },
     data: { assignedToUserId: assigneeId, lastActivityAt: new Date() },
   });
 
@@ -197,7 +232,11 @@ export async function bulkDeleteLeads(input: unknown): Promise<Result> {
   const { leadIds } = parsed.data;
 
   const result = await prisma.lead.deleteMany({
-    where: { id: { in: leadIds }, orgId: scope.orgId },
+    where: {
+      id: { in: leadIds },
+      orgId: scope.orgId,
+      ...bulkLeadPropertyGate(scope),
+    },
   });
 
   if (result.count > 0) {

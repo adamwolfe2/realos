@@ -15,6 +15,25 @@ export const dynamic = "force-dynamic";
 export async function POST(req: NextRequest) {
   try {
     const scope = await requireScope();
+
+    // Reports are org-wide snapshots — generateReportSnapshot rolls
+    // up the entire portfolio (every property's leads, spend, tours,
+    // etc.) and freezes it into a shareable artifact. A restricted
+    // user (UserPropertyAccess scoped to 1-of-N buildings) MUST NOT
+    // be able to generate one: the snapshot would include numbers
+    // from properties they're not allowed to see, and the shareToken
+    // makes that snapshot world-readable for anyone with the link.
+    // Listing existing reports is similarly restricted in GET below.
+    if (scope.allowedPropertyIds) {
+      return NextResponse.json(
+        {
+          error:
+            "Report generation requires portfolio-wide access. Ask an admin to remove the property restriction on your account.",
+        },
+        { status: 403 },
+      );
+    }
+
     const body = await req.json().catch(() => null);
     const kind = body?.kind as ReportKind | undefined;
 
@@ -65,6 +84,14 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const scope = await requireScope();
+
+    // Mirror the POST gate: a restricted user can't enumerate
+    // existing snapshots either, because each snapshot contains
+    // org-wide aggregates they're not authorized to see.
+    if (scope.allowedPropertyIds) {
+      return NextResponse.json({ reports: [] });
+    }
+
     const url = new URL(req.url);
     const kind = url.searchParams.get("kind");
     const status = url.searchParams.get("status");

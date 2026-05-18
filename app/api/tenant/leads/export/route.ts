@@ -6,6 +6,10 @@ import {
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
+import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
 import { AuditAction, LeadStatus, LeadSource } from "@prisma/client";
 import { buildCsv, csvFileResponse } from "@/lib/csv";
 
@@ -30,7 +34,18 @@ export async function GET(req: Request) {
   const source = url.searchParams.get("source");
   const sinceDays = parseInt(url.searchParams.get("sinceDays") ?? "0", 10);
 
-  const where: Record<string, unknown> = { ...tenantWhere(scope) };
+  // Property-RBAC gate — same fix as /api/tenant/leads GET. A CSV
+  // export is arguably worse to leak than a JSON page: it leaves the
+  // platform as a file the attacker keeps forever. Always intersect
+  // the URL selection with scope.allowedPropertyIds.
+  const propertyIds = parsePropertyFilter({
+    properties: url.searchParams.get("properties") ?? undefined,
+    property: url.searchParams.get("property") ?? undefined,
+  });
+  const where: Record<string, unknown> = {
+    ...tenantWhere(scope),
+    ...propertyWhereFragment(scope, propertyIds),
+  };
   if (status && status in LeadStatus) where.status = status as LeadStatus;
   if (source && source in LeadSource) where.source = source as LeadSource;
   if (sinceDays > 0) {

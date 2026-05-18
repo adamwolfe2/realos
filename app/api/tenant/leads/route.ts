@@ -8,6 +8,10 @@ import {
   auditPayload,
 } from "@/lib/tenancy/scope";
 import {
+  parsePropertyFilter,
+  propertyWhereFragment,
+} from "@/lib/tenancy/property-filter";
+import {
   AuditAction,
   LeadSource,
   LeadStatus,
@@ -37,7 +41,21 @@ export async function GET(req: NextRequest) {
     const source = url.searchParams.get("source") as LeadSource | null;
     const q = url.searchParams.get("q");
 
-    const where: Prisma.LeadWhereInput = { ...tenantWhere(scope) };
+    // Apply property-level RBAC. The page UIs route every query through
+    // propertyWhereFragment so a leasing agent with access to only Bldg
+    // A can't see Bldg B leads in the table. Pre-fix the JSON API for
+    // the same data was wide open: any tenant user could `fetch(/api/
+    // tenant/leads)` and get the full org-wide list, bypassing the gate
+    // the portal UI carefully applied. Now the API enforces the same
+    // intersection (URL ?properties=… ∩ scope.allowedPropertyIds).
+    const propertyIds = parsePropertyFilter({
+      properties: url.searchParams.get("properties") ?? undefined,
+      property: url.searchParams.get("property") ?? undefined,
+    });
+    const where: Prisma.LeadWhereInput = {
+      ...tenantWhere(scope),
+      ...propertyWhereFragment(scope, propertyIds),
+    };
     if (status && status in LeadStatus) where.status = status;
     if (source && source in LeadSource) where.source = source;
     if (q) {
@@ -77,7 +95,12 @@ export async function POST(req: NextRequest) {
     }
     const data = parsed.data;
 
-    // If propertyId is passed, confirm it belongs to the tenant.
+    // If propertyId is passed, confirm it belongs to the tenant AND
+    // that the caller has property-level access. Without the second
+    // check a leasing agent restricted to one building could still
+    // create leads scoped to a building they shouldn't see — and the
+    // resulting Lead row would then surface back to them via the same
+    // gate, but only after polluting the other property's pipeline.
     if (data.propertyId) {
       const owned = await prisma.property.findFirst({
         where: { id: data.propertyId, ...tenantWhere(scope) },
@@ -86,6 +109,15 @@ export async function POST(req: NextRequest) {
       if (!owned) {
         return NextResponse.json(
           { error: "Property does not belong to this tenant" },
+          { status: 403 }
+        );
+      }
+      if (
+        scope.allowedPropertyIds &&
+        !scope.allowedPropertyIds.includes(data.propertyId)
+      ) {
+        return NextResponse.json(
+          { error: "You do not have access to that property" },
           { status: 403 }
         );
       }

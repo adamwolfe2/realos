@@ -424,6 +424,18 @@ export async function setPropertyLifecycleBulk(
     scope.role === "AGENCY_OPERATOR";
   const orgFilter = isAgency ? {} : { orgId: scope.orgId };
 
+  // Property-RBAC gate. A restricted operator (e.g. a leasing manager
+  // with access to 2 of 30 buildings) could otherwise pass the other
+  // 28 ids and silently flip them ACTIVE/EXCLUDED/ARCHIVED — a
+  // lifecycle change that the auto-recompute logic deliberately
+  // refuses to override once `lifecycleSetBy=OPERATOR`. Agency
+  // operators are unrestricted (no UserPropertyAccess rows) so this
+  // is a no-op for them.
+  const propertyAccessGate =
+    !isAgency && scope.allowedPropertyIds
+      ? { id: { in: scope.allowedPropertyIds.filter((id) => propertyIds.includes(id)) } }
+      : {};
+
   const lifecycleMap = {
     activate: "ACTIVE",
     exclude: "EXCLUDED",
@@ -432,7 +444,7 @@ export async function setPropertyLifecycleBulk(
   const next = lifecycleMap[action];
 
   const result = await prisma.property.updateMany({
-    where: { id: { in: propertyIds }, ...orgFilter },
+    where: { id: { in: propertyIds }, ...orgFilter, ...propertyAccessGate },
     data: {
       lifecycle: next,
       lifecycleSetBy: "OPERATOR",

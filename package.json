@@ -92,6 +92,9 @@
       "esbuild",
       "sharp",
       "@clerk/shared"
-    ]
+    ],
+    "overrides": {
+      "protobufjs": ">=7.5.6"
+    }
   }
 }

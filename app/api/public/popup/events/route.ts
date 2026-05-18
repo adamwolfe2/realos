@@ -3,6 +3,12 @@ import { z } from "zod";
 import { PopupEventType, PopupStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { recordPopupEvent } from "@/lib/popups/queries";
+import {
+  popupEventLimiter,
+  checkRateLimit,
+  rateLimited,
+  getIp,
+} from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -48,6 +54,22 @@ const bodySchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
+  // Per-IP rate limit. Without this a competitor who scrapes the
+  // victim's site once and learns the popupId can permanently inflate
+  // the campaign's shownCount / convertedCount counters by hammering
+  // the endpoint, ruining the operator's CTR/conversion attribution.
+  // 60/min/IP is generous for legitimate embed traffic (a popup fires
+  // at most once per pageview).
+  const ip = getIp(req);
+  const rl = await checkRateLimit(popupEventLimiter, ip);
+  if (!rl.allowed) {
+    const retryAfterSec = Math.max(
+      1,
+      Math.ceil((rl.reset - Date.now()) / 1000),
+    );
+    return rateLimited("Too many events", retryAfterSec, CORS_HEADERS);
+  }
+
   let parsed;
   try {
     parsed = bodySchema.safeParse(await req.json());
@@ -87,6 +109,37 @@ export async function POST(req: NextRequest) {
       { ok: true, recorded: false },
       { status: 200, headers: CORS_HEADERS },
     );
+  }
+
+  // Per-session dedupe for SHOWN/DISMISSED events. The embed already
+  // marks the popup with a frequency cap after a SHOWN event, but a
+  // malicious caller can replay events from outside the embed. If the
+  // same sessionId already has an event of the same non-CTA type
+  // within the last 24 hours, treat it as a duplicate and quietly
+  // accept without bumping counters. CTA_CLICKED + CONVERTED stay
+  // unfiltered because legitimate users CAN click + convert multiple
+  // times on a flow that re-shows the popup.
+  if (
+    parsed.data.sessionId &&
+    (parsed.data.type === PopupEventType.SHOWN ||
+      parsed.data.type === PopupEventType.DISMISSED)
+  ) {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const existing = await prisma.popupEvent.findFirst({
+      where: {
+        campaignId: popup.id,
+        sessionId: parsed.data.sessionId,
+        type: parsed.data.type,
+        occurredAt: { gte: since },
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      return NextResponse.json(
+        { ok: true, recorded: false, dedup: true },
+        { status: 200, headers: CORS_HEADERS },
+      );
+    }
   }
 
   await recordPopupEvent({

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { put } from "@vercel/blob";
-import { BugReportSeverity, BugReportStatus } from "@prisma/client";
+import { BugReportSeverity, BugReportStatus, Prisma } from "@prisma/client";
 import { getScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { getResend } from "@/lib/email/shared";
 import { BRAND_NAME } from "@/lib/brand";
+import {
+  bugReportLimiter,
+  checkRateLimit,
+  rateLimited,
+} from "@/lib/rate-limit";
 
 // ---------------------------------------------------------------------------
 // POST /api/bug-report
@@ -75,6 +80,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { ok: false, error: "Not authenticated" },
       { status: 401 },
+    );
+  }
+
+  // Rate-limit BEFORE parsing the multipart body — `req.formData()`
+  // streams up to 5×8 MB into memory and pays the storage cost, so a
+  // malicious authenticated user could otherwise script `for i in
+  // $(seq 1 10000)` and burn through Vercel Blob quota. 30/hour per
+  // user is generous for legitimate QA while stopping a runaway loop
+  // flat.
+  const rl = await checkRateLimit(bugReportLimiter, scope.userId);
+  if (!rl.allowed) {
+    const retryAfterSec = Math.max(
+      1,
+      Math.ceil((rl.reset - Date.now()) / 1000),
+    );
+    return rateLimited(
+      "Too many bug reports — try again in a few minutes.",
+      retryAfterSec,
     );
   }
 
@@ -206,13 +229,27 @@ export async function POST(req: NextRequest) {
   });
 
   // 2. Upload screenshots in parallel under bug-reports/<reportId>/.
-  // Vercel Blob handles content-type + size validation but we already
-  // gated above; this just stores.
+  // We pre-validate content-type + size above; Vercel Blob just
+  // stores. addRandomSuffix:true ensures collisions never happen
+  // across re-uploads of files with the same name.
   const attachments: Attachment[] = [];
   if (imageFiles.length > 0) {
     const uploads = await Promise.allSettled(
       imageFiles.map(async (f) => {
-        const safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100);
+        // Sanitize the filename used in the blob path:
+        //   - Replace any non-[A-Za-z0-9._-] with _
+        //   - Strip leading dots/underscores to defeat hidden-file
+        //     conventions + naive ".." traversal segments
+        //   - Default to "upload" if the result is empty (e.g. ".....")
+        //   - Cap at 100 chars
+        // The prefix `bug-reports/${report.id}/` is fixed and `put`
+        // doesn't honor `..` segments, so real path traversal is
+        // already impossible, but tighten defensively.
+        const safeName =
+          f.name
+            .replace(/[^a-zA-Z0-9._-]/g, "_")
+            .replace(/^[._]+/, "")
+            .slice(0, 100) || "upload";
         const blob = await put(
           `bug-reports/${report.id}/${safeName}`,
           f,
@@ -238,7 +275,7 @@ export async function POST(req: NextRequest) {
     if (attachments.length > 0) {
       await prisma.bugReport.update({
         where: { id: report.id },
-        data: { attachments: attachments as unknown as never },
+        data: { attachments: attachments as Prisma.InputJsonValue },
       });
     }
   }

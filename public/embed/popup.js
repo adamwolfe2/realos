@@ -27,7 +27,12 @@
   if (window.__leasestackPopupLoaded) return;
   window.__leasestackPopupLoaded = true;
 
-  var script = document.currentScript;
+  // document.currentScript is reliable during synchronous parsing
+  // but null when an async script executes after parse on some
+  // browsers (Firefox/Safari edge). Fall back to a selector lookup.
+  var script =
+    document.currentScript ||
+    document.querySelector('script[src*="/embed/popup.js"]');
   var TENANT = script && script.getAttribute("data-tenant");
   var PROPERTY = script && script.getAttribute("data-property");
   if (!TENANT) {
@@ -201,6 +206,38 @@
       .replace(/'/g, "&#39;");
   }
 
+  // safeNavTarget — defense-in-depth XSS guard for popup CTA navigation.
+  // The server-side schema already gates schemes to http/https/mailto/
+  // tel/relative, but the embed MUST NOT trust a value pulled from the
+  // network at runtime. A javascript: URI assigned to location.href
+  // executes arbitrary JS in the host site's origin — that's a full
+  // cross-site script on every domain running our embed. Returns the
+  // URL if safe, null otherwise.
+  var SAFE_NAV_SCHEMES = ["http:", "https:", "mailto:", "tel:"];
+  function safeNavTarget(raw) {
+    if (!raw || raw === "#") return null;
+    var trimmed = String(raw).trim();
+    if (!trimmed || trimmed === "#") return null;
+    // Same-origin / relative — the browser resolves against the host
+    // site, no scheme risk.
+    if (
+      trimmed.charAt(0) === "/" ||
+      trimmed.charAt(0) === "#" ||
+      trimmed.charAt(0) === "?"
+    ) {
+      return trimmed;
+    }
+    try {
+      // new URL with the host site's location as base — same resolution
+      // the browser would do for an anchor href.
+      var u = new URL(trimmed, window.location.href);
+      if (SAFE_NAV_SCHEMES.indexOf(u.protocol) === -1) return null;
+      return u.toString();
+    } catch (_) {
+      return null;
+    }
+  }
+
   var STYLE_TAG_ID = "leasestack-popup-style";
   function ensureStyles() {
     if (document.getElementById(STYLE_TAG_ID)) return;
@@ -362,7 +399,7 @@
 
     function onCta() {
       recordEvent(popup.id, "CTA_CLICKED");
-      var url = popup.ctaUrl && popup.ctaUrl !== "#" ? popup.ctaUrl : null;
+      var url = safeNavTarget(popup.ctaUrl);
       teardown();
       if (url) window.location.href = url;
     }
@@ -376,7 +413,7 @@
             var label = btn.querySelector("span");
             if (label) {
               var prev = label.textContent;
-              label.textContent = "Copied ✓";
+              label.textContent = "Copied";
               setTimeout(function () {
                 label.textContent = prev;
               }, 1500);
@@ -406,10 +443,10 @@
       var leadId = result && result.leadId;
       recordEvent(popup.id, "CONVERTED", leadId);
 
-      if (btn) btn.textContent = "Thanks! ✓";
+      if (btn) btn.textContent = "Thanks!";
       setTimeout(function () {
         teardown();
-        var url = popup.ctaUrl && popup.ctaUrl !== "#" ? popup.ctaUrl : null;
+        var url = safeNavTarget(popup.ctaUrl);
         if (url) window.location.href = url;
       }, 900);
     }
@@ -496,36 +533,45 @@
     }
 
     if (popup.trigger === "SCROLL_DEPTH") {
-      var pct = Math.max(1, Math.min(100, Number(popup.triggerThreshold) || 50));
-      var fired = false;
-      function onScroll() {
-        if (fired) return;
-        var scrolled =
-          (window.scrollY || document.documentElement.scrollTop || 0) +
-          window.innerHeight;
-        var height =
-          document.documentElement.scrollHeight || document.body.scrollHeight;
-        if (height > 0 && (scrolled / height) * 100 >= pct) {
-          fired = true;
-          window.removeEventListener("scroll", onScroll);
-          if (shouldShow(popup)) render(popup);
+      // Wrap in IIFE so each popup gets its own `fired` flag — pre-fix
+      // both SCROLL_DEPTH + EXIT_INTENT declared `var fired` in the
+      // outer wireTrigger scope, which hoisted into a SHARED variable
+      // when an org had multiple popups with different triggers. The
+      // first one to fire would prevent the others from ever showing.
+      (function () {
+        var pct = Math.max(1, Math.min(100, Number(popup.triggerThreshold) || 50));
+        var fired = false;
+        function onScroll() {
+          if (fired) return;
+          var scrolled =
+            (window.scrollY || document.documentElement.scrollTop || 0) +
+            window.innerHeight;
+          var height =
+            document.documentElement.scrollHeight || document.body.scrollHeight;
+          if (height > 0 && (scrolled / height) * 100 >= pct) {
+            fired = true;
+            window.removeEventListener("scroll", onScroll);
+            if (shouldShow(popup)) render(popup);
+          }
         }
-      }
-      window.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("scroll", onScroll, { passive: true });
+      })();
       return;
     }
 
-    // EXIT_INTENT (default)
-    var fired = false;
-    function onLeave(e) {
-      if (fired) return;
-      if (e.clientY != null && e.clientY < 10) {
-        fired = true;
-        document.removeEventListener("mouseleave", onLeave);
-        if (shouldShow(popup)) render(popup);
+    // EXIT_INTENT (default) — same IIFE pattern to scope `fired`
+    (function () {
+      var fired = false;
+      function onLeave(e) {
+        if (fired) return;
+        if (e.clientY != null && e.clientY < 10) {
+          fired = true;
+          document.removeEventListener("mouseleave", onLeave);
+          if (shouldShow(popup)) render(popup);
+        }
       }
-    }
-    document.addEventListener("mouseleave", onLeave);
+      document.addEventListener("mouseleave", onLeave);
+    })();
   }
 
   // ──────────────────────────────────────────────────────────────────
