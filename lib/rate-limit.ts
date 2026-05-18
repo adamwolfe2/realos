@@ -97,6 +97,13 @@ export const bugReportLimiter = createLimiter(redis, 30, '1 h')
 // route handler, this should make poisoning impractical.
 export const popupEventLimiter = createLimiter(redis, 60, '1 m')
 
+// 10 credential reveals per userId per minute. Defends against a
+// compromised session scraping the whole vault — at 10/min an attacker
+// would need ~17 min to drain a 200-credential vault, plenty of time
+// for the audit log + (Phase 2) 2FA-on-reveal to catch them. Legitimate
+// operators rarely reveal more than 2-3 credentials in a row.
+export const vaultRevealLimiter = createLimiter(redis, 10, '1 m')
+
 /**
  * Returns true if the request should be allowed; false if rate-limited.
  *

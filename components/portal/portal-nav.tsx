@@ -37,6 +37,7 @@ import {
   PieChart,
   ShoppingBag,
   Plug,
+  KeyRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -55,6 +56,7 @@ export type PortalNavOrg = {
   moduleSEO: boolean;
   moduleReferrals: boolean;
   modulePopups: boolean;
+  moduleVault: boolean;
   bringYourOwnSite: boolean;
   onboardingDismissed: boolean;
   setupComplete: boolean;
@@ -307,6 +309,12 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Account",
     items: [
       { href: "/portal/notifications", label: "Notifications", icon: Bell, show: ALWAYS },
+      {
+        href: "/portal/vault",
+        label: "Vault",
+        icon: KeyRound,
+        show: (o) => o.moduleVault,
+      },
       { href: "/portal/billing", label: "Billing", icon: CreditCard, show: ALWAYS },
       { href: "/portal/settings", label: "Settings", icon: Settings, show: ALWAYS },
     ],

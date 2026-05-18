@@ -364,6 +364,21 @@ model Organization {
   // discount popups in /portal/popups and paste a one-line script tag
   // on any external site. Same architecture as moduleChatbot.
   modulePopups         Boolean @default(false)
+  // Credentials vault. Paid add-on. Stores per-property and org-wide
+  // passwords for external platforms (GA4, Meta Ads, AppFolio, etc.)
+  // using envelope encryption — per-org DEK wrapped by a master KEK
+  // in env. See docs/PRD-CREDENTIALS-VAULT.md.
+  moduleVault          Boolean @default(false)
+
+  // Wrapped data-encryption key for this org's credential vault.
+  // 32-byte AES-256-GCM key, generated on first vault row creation,
+  // wrapped with the master KEK from VAULT_MASTER_KEK_B64 env var.
+  // Null until the operator creates their first credential. Rotating
+  // the master KEK re-wraps these (cheap); rotating an org's DEK
+  // requires re-encrypting that org's credentials (still scriptable).
+  vaultDekWrapped      Bytes?
+  vaultDekNonce        Bytes?  // 12-byte GCM nonce used to wrap the DEK
+  vaultEnabledAt       DateTime?
 
   // Site hosting mode
   bringYourOwnSite Boolean @default(false)
@@ -419,6 +434,8 @@ model Organization {
   websiteBuildRequests   WebsiteBuildRequest[]
   popupCampaigns         PopupCampaign[]
   popupEvents            PopupEvent[]
+  credentialEntries      CredentialEntry[]
+  credentialAccessLogs   CredentialAccessLog[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -756,6 +773,7 @@ model Property {
   workOrders           WorkOrder[]
   clientReports        ClientReport[]
   popupCampaigns       PopupCampaign[]
+  credentialEntries    CredentialEntry[]
   // Reverse relation for property-level RBAC. See UserPropertyAccess.
   userAccess           UserPropertyAccess[]
   // Per-property integration connections. NULL on these rows means
@@ -2974,4 +2992,86 @@ model BugReport {
   @@index([severity, status])
   @@index([reporterOrgId])
   @@index([userId])
+}
+
+// ============================================================================
+// CREDENTIALS VAULT
+// ----------------------------------------------------------------------------
+// Encrypted-at-rest password vault for external-platform credentials
+// (GA4, Meta Ads, AppFolio, bank logins, etc.). Each credential's secret
+// is encrypted with AES-256-GCM using the owning Organization's DEK; the
+// DEK is wrapped with a master KEK held in the VAULT_MASTER_KEK_B64 env
+// var. DB dump alone yields nothing — attacker needs both DB + env.
+//
+// See docs/PRD-CREDENTIALS-VAULT.md for the full design + threat model.
+// ============================================================================
+
+model CredentialEntry {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // NULL = org-wide. Non-NULL = scoped to one property; property-level
+  // RBAC (UserPropertyAccess) gates access via propertyWhereFragment.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  // Clear-text metadata. The operator sees these in the list view —
+  // the secret stays masked until they click reveal.
+  name        String  // "Google Analytics 4 — Telegraph Commons"
+  platform    String? // free-text label: google-ads | meta-ads | appfolio | bank | ...
+  websiteUrl  String?
+  username    String?
+  notes       String? @db.Text
+  tags        String[] @default([])
+
+  // Encrypted secret payload. AES-256-GCM with the org's DEK. All
+  // values are base64-encoded so the DB column type stays portable.
+  // secretCiphertext: variable-length ciphertext
+  // secretIv: 12-byte random nonce
+  // secretAuthTag: 16-byte GCM auth tag
+  secretCiphertext String @db.Text
+  secretIv         String
+  secretAuthTag    String
+
+  // Lifecycle metadata.
+  createdById    String?
+  lastRevealedAt DateTime?
+  lastRotatedAt  DateTime?
+  expiresAt      DateTime? // operator-set rotation reminder
+
+  // Soft-delete so audit log references remain queryable.
+  deletedAt   DateTime?
+  deletedById String?
+
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  accessLogs  CredentialAccessLog[]
+
+  @@index([orgId, propertyId])
+  @@index([orgId, platform])
+  @@index([orgId, deletedAt])
+}
+
+model CredentialAccessLog {
+  id           String          @id @default(cuid())
+  credentialId String
+  credential   CredentialEntry @relation(fields: [credentialId], references: [id], onDelete: Cascade)
+
+  // Denormalized scope info so the log row survives the credential's
+  // soft-delete (the relation is preserved, but the audit query
+  // doesn't need to join just to display the actor + org).
+  orgId            String
+  org              Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId           String?
+  userEmail        String
+  asImpersonatorId String?      // agency staff impersonating a tenant
+
+  action     String   // "reveal" | "copy" | "edit" | "delete"
+  ipAddress  String?
+  userAgent  String?
+  occurredAt DateTime @default(now())
+
+  @@index([credentialId, occurredAt(sort: Desc)])
+  @@index([orgId, occurredAt(sort: Desc)])
 }
