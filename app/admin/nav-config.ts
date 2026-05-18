@@ -14,6 +14,7 @@ import {
   Plug,
   Inbox,
   Sparkles,
+  Bug,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -27,7 +28,8 @@ export interface NavItem {
     | "unreadMessages"
     | "openCreative"
     | "atRiskTenants"
-    | "pendingPixelRequests";
+    | "pendingPixelRequests"
+    | "openBugReports";
 }
 
 export interface NavGroup {
@@ -103,6 +105,12 @@ export const adminNavGroups: NavGroup[] = [
       { href: "/admin/system", label: "System health", icon: HeartPulse },
       { href: "/admin/audit-log", label: "Audit log", icon: History },
       { href: "/admin/chat", label: "Support", icon: MessageSquare },
+      {
+        href: "/admin/bug-reports",
+        label: "Bug reports",
+        icon: Bug,
+        badgeKey: "openBugReports",
+      },
     ],
   },
 ];

@@ -1,23 +1,44 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { put } from "@vercel/blob";
+import { BugReportSeverity, BugReportStatus } from "@prisma/client";
 import { getScope } from "@/lib/tenancy/scope";
+import { prisma } from "@/lib/db";
 import { getResend } from "@/lib/email/shared";
 import { BRAND_NAME } from "@/lib/brand";
 
 // ---------------------------------------------------------------------------
 // POST /api/bug-report
 //
-// Captures bug reports from the in-app floating button. Files an issue on
-// GitHub (when GITHUB_TOKEN + GITHUB_BUG_REPORT_REPO are set) and emails the
-// ops inbox so Adam gets paged immediately during audits / demos.
+// Captures bug reports from the in-app floating button. Three side
+// effects in parallel:
+//   1. Persists a BugReport row to our own DB so /admin/bug-reports
+//      has a triage queue + approval workflow
+//   2. Files a GitHub issue (when GITHUB_TOKEN + GITHUB_BUG_REPORT_REPO
+//      are set) so engineering has it in their standard tracker
+//   3. Emails the ops inbox so Adam gets paged immediately
 //
-// Auth: any signed-in user. We attach their email + org so the report has
-// enough context to reproduce. Anonymous reports are rejected to avoid spam.
+// Body: multipart/form-data OR application/json
+//   - When multipart: fields + optional `images` (1-5 files, ≤8MB each)
+//     uploaded to Vercel Blob under bug-reports/<reportId>/
+//   - When JSON: same fields, no images
+//
+// Auth: any signed-in user. We attach their email + org so the report
+// has enough context to reproduce. Anonymous reports are rejected to
+// avoid spam.
 // ---------------------------------------------------------------------------
 
 const SEVERITIES = ["low", "medium", "high", "blocker"] as const;
+const MAX_IMAGES = 5;
+const MAX_IMAGE_BYTES = 8 * 1024 * 1024; // 8 MB per image
+const ALLOWED_IMAGE_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
 
-const body = z.object({
+const inputSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().min(5).max(8000),
   severity: z.enum(SEVERITIES).default("medium"),
@@ -27,32 +48,200 @@ const body = z.object({
   viewport: z.string().max(64).optional(),
 });
 
+type Attachment = {
+  url: string;
+  pathname: string;
+  contentType: string;
+  sizeBytes: number;
+  uploadedAt: string;
+};
+
+function severityEnum(value: string): BugReportSeverity {
+  switch (value) {
+    case "low":
+      return BugReportSeverity.LOW;
+    case "high":
+      return BugReportSeverity.HIGH;
+    case "blocker":
+      return BugReportSeverity.BLOCKER;
+    default:
+      return BugReportSeverity.MEDIUM;
+  }
+}
+
 export async function POST(req: NextRequest) {
   const scope = await getScope();
   if (!scope) {
     return NextResponse.json(
       { ok: false, error: "Not authenticated" },
-      { status: 401 }
+      { status: 401 },
     );
   }
 
-  let parsed;
-  try {
-    parsed = body.parse(await req.json());
-  } catch (err) {
-    if (err instanceof z.ZodError) {
+  // Branch on content-type: multipart for image uploads, JSON for the
+  // legacy path. Both end up at the same persistence + side-effects
+  // pipeline below.
+  const contentType = req.headers.get("content-type") ?? "";
+  let parsed: z.infer<typeof inputSchema>;
+  let imageFiles: File[] = [];
+
+  if (contentType.startsWith("multipart/form-data")) {
+    let form: FormData;
+    try {
+      form = await req.formData();
+    } catch {
       return NextResponse.json(
-        { ok: false, error: "Invalid body", details: err.issues },
-        { status: 400 }
+        { ok: false, error: "Invalid form body" },
+        { status: 400 },
       );
     }
-    throw err;
+    const raw = {
+      title: String(form.get("title") ?? ""),
+      description: String(form.get("description") ?? ""),
+      severity: String(form.get("severity") ?? "medium"),
+      pageUrl: form.get("pageUrl") ? String(form.get("pageUrl")) : undefined,
+      pagePath: form.get("pagePath") ? String(form.get("pagePath")) : undefined,
+      userAgent: form.get("userAgent") ? String(form.get("userAgent")) : undefined,
+      viewport: form.get("viewport") ? String(form.get("viewport")) : undefined,
+    };
+    const validate = inputSchema.safeParse(raw);
+    if (!validate.success) {
+      return NextResponse.json(
+        { ok: false, error: "Invalid body", details: validate.error.issues },
+        { status: 400 },
+      );
+    }
+    parsed = validate.data;
+
+    const rawFiles = form.getAll("images");
+    for (const f of rawFiles) {
+      if (!(f instanceof File)) continue;
+      // Skip phantom blob inputs that fire on Safari with no real file
+      if (f.size === 0) continue;
+      imageFiles.push(f);
+    }
+    if (imageFiles.length > MAX_IMAGES) {
+      return NextResponse.json(
+        { ok: false, error: `Maximum ${MAX_IMAGES} screenshots per report.` },
+        { status: 413 },
+      );
+    }
+    for (const f of imageFiles) {
+      if (f.size > MAX_IMAGE_BYTES) {
+        return NextResponse.json(
+          { ok: false, error: `${f.name} exceeds 8 MB limit.` },
+          { status: 413 },
+        );
+      }
+      if (!ALLOWED_IMAGE_TYPES.has(f.type)) {
+        return NextResponse.json(
+          { ok: false, error: `${f.name}: unsupported file type (${f.type}).` },
+          { status: 415 },
+        );
+      }
+    }
+  } else {
+    try {
+      const json = await req.json();
+      const validate = inputSchema.safeParse(json);
+      if (!validate.success) {
+        return NextResponse.json(
+          { ok: false, error: "Invalid body", details: validate.error.issues },
+          { status: 400 },
+        );
+      }
+      parsed = validate.data;
+    } catch {
+      return NextResponse.json(
+        { ok: false, error: "Invalid JSON body" },
+        { status: 400 },
+      );
+    }
   }
 
   const reporterLabel = `${scope.email} (${
     scope.isAgency ? "agency" : "client"
   } / ${scope.role})`;
   const reporterPublicLabel = `${scope.isAgency ? "agency" : "client"} / ${scope.role}`;
+
+  // Get the reporter's org name once for the BugReport row. Best-effort
+  // — never let a slow DB call fail the report submission.
+  const reporterOrgName = await prisma.organization
+    .findUnique({
+      where: { id: scope.orgId },
+      select: { name: true },
+    })
+    .then((o) => o?.name ?? null)
+    .catch(() => null);
+
+  // 1. Insert the BugReport row immediately so we have an id to scope
+  // image uploads under. Status PENDING, no attachments yet.
+  const report = await prisma.bugReport.create({
+    data: {
+      userId: scope.userId,
+      reporterEmail: scope.email,
+      reporterRole: String(scope.role),
+      reporterOrgId: scope.orgId,
+      reporterOrgName,
+      title: parsed.title,
+      description: parsed.description,
+      severity: severityEnum(parsed.severity),
+      status: BugReportStatus.PENDING,
+      pageUrl: parsed.pageUrl,
+      pagePath: parsed.pagePath,
+      userAgent: parsed.userAgent,
+      viewport: parsed.viewport,
+      attachments: [],
+      timeline: [
+        {
+          at: new Date().toISOString(),
+          by: scope.userId,
+          byEmail: scope.email,
+          kind: "status",
+          to: BugReportStatus.PENDING,
+          text: "Report submitted",
+        },
+      ],
+    },
+  });
+
+  // 2. Upload screenshots in parallel under bug-reports/<reportId>/.
+  // Vercel Blob handles content-type + size validation but we already
+  // gated above; this just stores.
+  const attachments: Attachment[] = [];
+  if (imageFiles.length > 0) {
+    const uploads = await Promise.allSettled(
+      imageFiles.map(async (f) => {
+        const safeName = f.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 100);
+        const blob = await put(
+          `bug-reports/${report.id}/${safeName}`,
+          f,
+          { access: "public", addRandomSuffix: true, contentType: f.type },
+        );
+        return {
+          url: blob.url,
+          pathname: blob.pathname,
+          contentType: f.type,
+          sizeBytes: f.size,
+          uploadedAt: new Date().toISOString(),
+        };
+      }),
+    );
+    for (const result of uploads) {
+      if (result.status === "fulfilled") attachments.push(result.value);
+      else {
+        // A failed upload should not kill the whole report. Log and
+        // surface in the response so the UI can re-prompt.
+        console.error("[bug-report] image upload failed:", result.reason);
+      }
+    }
+    if (attachments.length > 0) {
+      await prisma.bugReport.update({
+        where: { id: report.id },
+        data: { attachments: attachments as unknown as never },
+      });
+    }
+  }
 
   const issueTitle = `[Bug] ${parsed.title}`;
   // GitHub body — repo may be public, so omit reporter email and orgId.
@@ -66,6 +255,8 @@ export async function POST(req: NextRequest) {
     pagePath: parsed.pagePath,
     userAgent: parsed.userAgent,
     viewport: parsed.viewport,
+    attachments,
+    adminUrl: null,
   });
   const emailBody = renderIssueBody({
     description: parsed.description,
@@ -76,6 +267,8 @@ export async function POST(req: NextRequest) {
     pagePath: parsed.pagePath,
     userAgent: parsed.userAgent,
     viewport: parsed.viewport,
+    attachments,
+    adminUrl: `/admin/bug-reports/${report.id}`,
   });
 
   const [github, email] = await Promise.all([
@@ -92,23 +285,40 @@ export async function POST(req: NextRequest) {
     }),
   ]);
 
-  if (!github.ok && !email.ok) {
-    return NextResponse.json(
-      {
-        ok: false,
-        error: "Failed to file bug report",
-        github: github.error,
-        email: email.error,
+  // 3. Update the row with side-effect outcomes (don't block the
+  // response on these — the row already exists either way).
+  await prisma.bugReport
+    .update({
+      where: { id: report.id },
+      data: {
+        githubIssueNumber: github.ok ? github.number ?? null : null,
+        githubIssueUrl: github.ok ? github.url ?? null : null,
+        emailSent: email.ok,
       },
-      { status: 502 }
-    );
+    })
+    .catch(() => {
+      /* non-fatal */
+    });
+
+  if (!github.ok && !email.ok) {
+    // Both side effects failed but we DID persist the row. Surface a
+    // soft warning rather than a hard error so the user knows their
+    // report was received but ops weren't paged.
+    return NextResponse.json({
+      ok: true,
+      reportId: report.id,
+      warning: "Report saved, but notification side-effects failed.",
+      attachmentCount: attachments.length,
+    });
   }
 
   return NextResponse.json({
     ok: true,
+    reportId: report.id,
     githubUrl: github.ok ? github.url ?? null : null,
     githubIssueNumber: github.ok ? github.number ?? null : null,
     emailSent: email.ok,
+    attachmentCount: attachments.length,
   });
 }
 
@@ -121,11 +331,14 @@ function renderIssueBody(input: {
   pagePath?: string;
   userAgent?: string;
   viewport?: string;
+  attachments: Attachment[];
+  adminUrl: string | null;
 }): string {
   const lines = [
     `**Severity:** ${input.severity}`,
     `**Reporter:** ${input.reporter}`,
     input.orgId ? `**Org ID:** \`${input.orgId}\`` : null,
+    input.adminUrl ? `**Admin link:** ${input.adminUrl}` : null,
     input.pageUrl ? `**URL:** ${input.pageUrl}` : null,
     input.pagePath ? `**Path:** \`${input.pagePath}\`` : null,
     input.viewport ? `**Viewport:** ${input.viewport}` : null,
@@ -134,6 +347,12 @@ function renderIssueBody(input: {
     "---",
     "",
     input.description,
+    "",
+    input.attachments.length > 0 ? "---" : null,
+    input.attachments.length > 0
+      ? `**Screenshots (${input.attachments.length}):**`
+      : null,
+    ...input.attachments.map((a) => `- ${a.url}`),
     "",
     "---",
     `_Filed via in-app bug-report button at ${new Date().toISOString()}_`,
@@ -176,7 +395,10 @@ async function fileGithubIssue(input: {
     });
     if (!res.ok) {
       const errText = await res.text().catch(() => "");
-      return { ok: false, error: `GitHub ${res.status}: ${errText.slice(0, 300)}` };
+      return {
+        ok: false,
+        error: `GitHub ${res.status}: ${errText.slice(0, 300)}`,
+      };
     }
     const json = (await res.json()) as { html_url?: string; number?: number };
     return { ok: true, url: json.html_url, number: json.number };
@@ -208,12 +430,10 @@ async function sendEmailNotification(input: {
 
   const html = `
     <div style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:14px;color:#0a0a0a;">
-      <p style="margin:0 0 12px;"><strong>Severity:</strong> ${escapeHtml(
-        input.severity
-      )}</p>
+      <p style="margin:0 0 12px;"><strong>Severity:</strong> ${escapeHtml(input.severity)}</p>
       <p style="margin:0 0 12px;"><strong>From:</strong> ${escapeHtml(input.reporter)}</p>
       <pre style="white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;background:#f6f3ee;padding:12px;border:1px solid #e5e1db;">${escapeHtml(
-        input.body
+        input.body,
       )}</pre>
     </div>
   `;
@@ -224,10 +444,6 @@ async function sendEmailNotification(input: {
       subject: `[${input.severity.toUpperCase()}] ${input.title}`,
       html,
       headers: {
-        // Bug-report emails go to internal addresses (BRAND_EMAIL),
-        // never to customers — but we still ship the deliverability
-        // headers so they don't get treated like a stripped-down
-        // bot send by Gmail's filters.
         "List-Unsubscribe": `<mailto:${process.env.UNSUBSCRIBE_EMAIL?.trim() ?? "unsubscribe@leasestack.co"}>`,
         "X-Entity-Ref-ID": `bug-report-${Date.now().toString(36)}`,
       },

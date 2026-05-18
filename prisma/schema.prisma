@@ -476,6 +476,7 @@ model User {
   // affected by the property-RBAC rollout). ONE OR MORE rows = the
   // user can ONLY see those properties' data on every portal page.
   propertyAccess UserPropertyAccess[]
+  bugReports     BugReport[]
 
   // Command Center: last time this operator opened the briefing view. Used to
   // compute "what's new since you last looked" deltas on /portal/briefing.
@@ -2883,4 +2884,94 @@ model PopupEvent {
 
   @@index([orgId, occurredAt])
   @@index([campaignId, type, occurredAt])
+}
+
+// ============================================================================
+// BUG REPORTS
+// ----------------------------------------------------------------------------
+// In-app bug reports filed via the floating "Report bug" button on every
+// portal/admin page. Persisted to our own DB so Adam has an admin
+// triage queue + approval workflow on top of the existing GitHub
+// issue + email side effects.
+//
+// Lifecycle:
+//   1. User clicks the floating button, fills the form, attaches
+//      screenshots → POST /api/bug-report
+//   2. We write a BugReport row (status=PENDING), file a GitHub issue,
+//      and email the ops inbox (parallel side effects)
+//   3. Adam reviews at /admin/bug-reports, transitions through
+//      IN_PROGRESS → FIXED → APPROVED (or REJECTED with a note)
+//   4. Notes accumulate as JSON timeline on the row so the whole
+//      conversation lives in one place
+// ============================================================================
+
+enum BugReportSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  BLOCKER
+}
+
+enum BugReportStatus {
+  PENDING // newly received, awaiting triage
+  IN_PROGRESS // assigned, work started
+  FIXED // engineering claims it's done — awaiting reporter / Adam approval
+  APPROVED // verified fixed in production
+  REJECTED // closed without fix (out of scope, wontfix, duplicate, etc.)
+}
+
+model BugReport {
+  id String @id @default(cuid())
+
+  // Reporter context — captured at submit time. We deliberately denormalize
+  // the email + role so a future user deletion doesn't blank the history.
+  // userId stays NULL when the user record is deleted.
+  userId         String?
+  user           User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reporterEmail  String
+  reporterRole   String? // UserRole at submit time
+  reporterOrgId  String? // Org at submit time
+  reporterOrgName String?
+
+  title       String
+  description String            @db.Text
+  severity    BugReportSeverity @default(MEDIUM)
+  status      BugReportStatus   @default(PENDING)
+
+  // Page context — automatically captured by the floating button
+  pageUrl   String?
+  pagePath  String?
+  userAgent String?
+  viewport  String?
+
+  // Screenshots / attachments — array of {url, pathname, contentType,
+  // sizeBytes}. JSON because we expect 0-5 per report and don't need
+  // join-by-image. Vercel Blob URLs.
+  attachments Json @default("[]")
+
+  // Side-effect refs from initial submission
+  githubIssueNumber Int?
+  githubIssueUrl    String?
+  emailSent         Boolean @default(false)
+
+  // Triage / approval state
+  assignedToUserId String?
+  resolutionNote   String? @db.Text // why it was approved or rejected
+  approvedAt       DateTime?
+  approvedBy       String? // userId
+  rejectedAt       DateTime?
+  rejectedBy       String?
+
+  // Append-only timeline of status changes + notes. Each entry:
+  // { at: ISO, by: userId, byEmail: str, kind: "status"|"note"|"comment",
+  //   from?: BugReportStatus, to?: BugReportStatus, text?: str }
+  timeline Json @default("[]")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([severity, status])
+  @@index([reporterOrgId])
+  @@index([userId])
 }

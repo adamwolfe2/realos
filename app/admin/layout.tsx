@@ -9,7 +9,12 @@ import { BugReportButton } from "@/components/feedback/bug-report-button";
 import { BRAND_NAME } from "@/lib/brand";
 import { getScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
-import { CreativeRequestStatus, OrgType, TenantStatus } from "@prisma/client";
+import {
+  BugReportStatus,
+  CreativeRequestStatus,
+  OrgType,
+  TenantStatus,
+} from "@prisma/client";
 
 import type { Metadata } from "next";
 
@@ -27,12 +32,19 @@ export const metadata: Metadata = {
 // admin page load.
 const getAdminNavBadges = unstable_cache(
   async () => {
-    const [pendingIntakes, activeBuilds, openCreative, atRiskTenants, pendingPixelRequests] =
-      await Promise.all([
-        prisma.intakeSubmission.count({
-          where: { reviewedAt: null, convertedAt: null },
-        }).catch(() => 0),
-        prisma.organization.count({
+    const [
+      pendingIntakes,
+      activeBuilds,
+      openCreative,
+      atRiskTenants,
+      pendingPixelRequests,
+      openBugReports,
+    ] = await Promise.all([
+      prisma.intakeSubmission
+        .count({ where: { reviewedAt: null, convertedAt: null } })
+        .catch(() => 0),
+      prisma.organization
+        .count({
           where: {
             orgType: OrgType.CLIENT,
             status: {
@@ -43,8 +55,10 @@ const getAdminNavBadges = unstable_cache(
               ],
             },
           },
-        }).catch(() => 0),
-        prisma.creativeRequest.count({
+        })
+        .catch(() => 0),
+      prisma.creativeRequest
+        .count({
           where: {
             status: {
               in: [
@@ -54,20 +68,40 @@ const getAdminNavBadges = unstable_cache(
               ],
             },
           },
-        }).catch(() => 0),
-        prisma.organization.count({
+        })
+        .catch(() => 0),
+      prisma.organization
+        .count({
           where: { orgType: OrgType.CLIENT, status: TenantStatus.AT_RISK },
-        }).catch(() => 0),
-        prisma.pixelProvisionRequest.count({
-          where: { status: "PENDING" },
-        }).catch(() => 0),
-      ]);
+        })
+        .catch(() => 0),
+      prisma.pixelProvisionRequest
+        .count({ where: { status: "PENDING" } })
+        .catch(() => 0),
+      // Open bug reports = anything not APPROVED or REJECTED. The badge
+      // surfaces in the admin sidebar so Norman / James / Adam can see
+      // the inbox at a glance without clicking in.
+      prisma.bugReport
+        .count({
+          where: {
+            status: {
+              in: [
+                BugReportStatus.PENDING,
+                BugReportStatus.IN_PROGRESS,
+                BugReportStatus.FIXED,
+              ],
+            },
+          },
+        })
+        .catch(() => 0),
+    ]);
     return {
       pendingIntakes,
       activeBuilds,
       openCreative,
       atRiskTenants,
       pendingPixelRequests,
+      openBugReports,
       unreadMessages: 0,
     } as Record<string, number>;
   },
