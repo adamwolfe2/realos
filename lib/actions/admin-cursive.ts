@@ -152,10 +152,53 @@ export async function saveCursiveSettings(
 
   // Auto-fulfillment: if this save just introduced a pixel_id where there
   // wasn't one before, mark any pending PixelProvisionRequest fulfilled and
-  // email the customer their install snippet.
+  // email the customer their install snippet — but FIRST verify the
+  // webhook URL we're about to hand the customer actually round-trips.
+  //
+  // Pre-fix the fulfillment email fired the moment ops saved a pixel_id,
+  // BEFORE the ops engineer had pasted the tenant webhook URL into the
+  // AudienceLab pixel UI. Customers installed the snippet, AL fired
+  // events, and those events vanished into the void because AL didn't
+  // know where to send them. The platform fell back to the 30-min cron
+  // and the per-page manual sync button — exactly the "I keep pressing
+  // sync, it's not real time" complaint.
+  //
+  // testCursiveWebhook posts a synthetic event with the platform's own
+  // CURSIVE_WEBHOOK_SECRET, so a 200 there only proves the receiver is
+  // healthy — it does NOT prove AL is sending us anything. We log the
+  // probe result either way and use it to (a) block the fulfillment
+  // email when the receiver itself is broken (very rare but possible
+  // during deploys), and (b) annotate the audit event with a green/red
+  // signal so ops can see at-a-glance whether to chase up the AL-side
+  // wiring.
   const transitionedToFulfilled =
     !!cursivePixelId && !previous?.cursivePixelId;
   if (transitionedToFulfilled) {
+    const probe = await testCursiveWebhook(orgId).catch((err) => ({
+      ok: false as const,
+      error: err instanceof Error ? err.message : "Webhook probe threw",
+    }));
+    await prisma.auditEvent.create({
+      data: auditPayload(
+        { ...scope, orgId },
+        {
+          action: AuditAction.SETTING_CHANGE,
+          entityType: "CursiveIntegration",
+          entityId: orgId,
+          description: probe.ok
+            ? `Webhook receiver verified after pixel ${cursivePixelId} bound`
+            : `Webhook receiver probe failed: ${probe.error ?? "unknown"} — fix server config before AL events arrive`,
+        },
+      ),
+    });
+    if (!probe.ok) {
+      revalidatePath(`/admin/clients/${orgId}`);
+      revalidatePath("/admin/pixel-requests");
+      return {
+        ok: false,
+        error: `Pixel saved, but the LeaseStack webhook receiver failed its own self-test (${probe.error ?? "unknown error"}). Fulfillment email was NOT sent. Fix the server-side wiring (CURSIVE_WEBHOOK_SECRET / NEXT_PUBLIC_APP_URL) and click Save again.`,
+      };
+    }
     await fulfillPendingRequests({
       orgId,
       pixelId: cursivePixelId,

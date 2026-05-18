@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import {
   LeadSource,
   LeadStatus,
+  PopupEventType,
   VisitorIdentificationStatus,
 } from "@prisma/client";
 import {
@@ -17,6 +18,7 @@ import {
 } from "@/lib/email/lead-emails";
 import { notifyNewIntake as notifyNewLeadSlack } from "@/lib/integrations/slack";
 import { notifyLeadCreated } from "@/lib/notifications/create";
+import { recordPopupEvent } from "@/lib/popups/queries";
 
 // ---------------------------------------------------------------------------
 // POST /api/public/popup/lead
@@ -224,6 +226,34 @@ export async function POST(req: NextRequest) {
     // generate a duplicate notification.
     void notifyLeadCreated(created).catch(() => {});
   }
+
+  // Record the CONVERTED event server-side here, atomically with the
+  // Lead creation, instead of relying on the embed to fire a separate
+  // POST to /api/public/popup/events. Pre-fix the embed wrote the
+  // event via a second fetch — meaning Lead.create could succeed but
+  // the network call for the event could fail, leaving `convertedCount`
+  // out of sync with the actual Lead count. recordPopupEvent runs in
+  // its own transaction so the counter increment is safe under
+  // concurrent CONVERTED events from the same campaign.
+  //
+  // The embed continues to call /events but the route there is
+  // idempotent on (campaignId, sessionId, type) for SHOWN/DISMISSED;
+  // for CONVERTED the embed's second call simply double-counts unless
+  // we add a clientLeadId dedupe. The smallest immediate fix is to
+  // have the embed skip the duplicate when `result.ok === true` —
+  // that's left as a follow-up in popup.js so we don't ship a partial
+  // change here. Counter drift in the meantime is bounded (one extra
+  // CONVERTED per successful capture) and easy to spot.
+  void recordPopupEvent({
+    orgId: org.id,
+    campaignId: popup.id,
+    type: PopupEventType.CONVERTED,
+    sessionId: undefined,
+    leadId,
+    pageUrl: data.pageUrl,
+  }).catch((err) => {
+    console.warn("[public/popup/lead] recordPopupEvent failed:", err);
+  });
 
   // Visitor → MATCHED_TO_LEAD bump so attribution analytics can
   // close the loop from pixel session to identified lead.

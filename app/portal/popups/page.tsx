@@ -180,6 +180,8 @@ function formatTrigger(t: string): string {
       return "Scroll depth";
     case "TIME_ON_PAGE":
       return "Time on page";
+    case "IDLE_TIME":
+      return "Idle time";
     case "IMMEDIATE":
       return "Immediate";
     default:

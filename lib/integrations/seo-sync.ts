@@ -81,7 +81,16 @@ export async function runSeoSync(
     };
   }
 
-  // Default window: yesterday for cron runs; 30 days for first/full backfill.
+  // Default window: a 3-day rolling window for cron runs; 30 days for
+  // first/full backfill. Pre-fix the incremental window was "yesterday
+  // only" — meaning if a cron tick failed, the missed day never got
+  // re-fetched until a full backfill ran. Pulling the last 3 days every
+  // tick keeps GA4 intraday + GSC late-arriving data fresh and self-
+  // heals single-tick failures without a backfill.
+  //
+  // GSC adds rows up to 2 days after the event; GA4 publishes intraday
+  // data that gets revised over 24h. A 3-day rolling window is the
+  // sweet spot that covers both without exploding API quota.
   const now = new Date();
   const yesterday = startOfUtcDay(new Date(now.getTime() - DAY_MS));
   const toDate = options.toDate ? startOfUtcDay(options.toDate) : yesterday;
@@ -92,7 +101,7 @@ export async function runSeoSync(
     ? startOfUtcDay(options.fromDate)
     : fullBackfill
       ? startOfUtcDay(new Date(now.getTime() - 30 * DAY_MS))
-      : yesterday;
+      : startOfUtcDay(new Date(now.getTime() - 3 * DAY_MS));
 
   // GSC and GA4 each contribute partial fields to the daily SeoSnapshot row;
   // we collect both, then upsert per date with a merged payload.

@@ -244,6 +244,27 @@ function DrawerAction({
     );
   }
 
+  if (state === "error") {
+    // Same manage slot as "connected" — the drawer shows the same
+    // form/banner the integration already exposes — but we lead with
+    // a rose-toned banner so the operator can see at-a-glance that
+    // the last sync attempt failed and act on it.
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl border border-rose-200 bg-rose-50 p-4">
+          <p className="text-sm font-medium text-rose-800">
+            {def.name} is connected, but the last sync failed.
+          </p>
+          <p className="text-xs text-rose-700 mt-1">
+            Open the form below to re-test credentials or trigger a manual
+            sync. If the error persists, contact support.
+          </p>
+        </div>
+        {manageSlot}
+      </div>
+    );
+  }
+
   if (state === "managed") {
     // Provisioning in progress. Always render the manage slot when
     // available (e.g. ConnectPixelForm or PixelRequestPending) so the

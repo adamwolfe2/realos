@@ -22,6 +22,7 @@ import {
   DisconnectSeoForm,
   SyncSeoButton,
 } from "./seo-connect-forms";
+import { StaleOnLoadTrigger } from "@/components/portal/sync/stale-on-load-trigger";
 
 export const metadata: Metadata = { title: "SEO" };
 export const dynamic = "force-dynamic";
@@ -117,6 +118,18 @@ export default async function SeoPage({
   const gscIntegration = integrations.find((i) => i.provider === SeoProvider.GSC);
   const ga4Integration = integrations.find((i) => i.provider === SeoProvider.GA4);
   const hasAny = integrations.length > 0;
+
+  // Drive an on-load sync when the freshest integration is older than
+  // 30 minutes (matches the cron cadence). The StaleOnLoadTrigger
+  // dedupes per-tab + cools down 60s, so a user clicking around the
+  // SEO page won't flood the worker. Skip entirely when nothing is
+  // connected — there'd be nothing to refresh.
+  const newestSyncAt = integrations
+    .map((i) => i.lastSyncAt?.getTime() ?? 0)
+    .reduce((a, b) => Math.max(a, b), 0);
+  const STALE_AFTER_MS = 30 * 60 * 1000;
+  const shouldAutoRefresh =
+    hasAny && Date.now() - newestSyncAt > STALE_AFTER_MS;
 
   // Date windows: last 28 days (current) and prior 28 days (comparison).
   const now = new Date();
@@ -236,6 +249,14 @@ export default async function SeoPage({
   return (
     <div className="space-y-3">
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
+      {shouldAutoRefresh ? (
+        <StaleOnLoadTrigger
+          endpoint="/api/tenant/seo/sync"
+          dedupeKey={`seo:${scope.orgId}`}
+          cooldownMs={60_000}
+          refreshAfterMs={3000}
+        />
+      ) : null}
       <PageHeader
         title="SEO"
         description="Organic search performance from Google Search Console and Google Analytics 4. Last 28 days vs. the prior 28 days."

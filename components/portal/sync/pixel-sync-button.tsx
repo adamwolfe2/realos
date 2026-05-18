@@ -35,7 +35,13 @@ type Props = {
 export function PixelSyncButton({
   lastEventAt,
   hasSegment,
-  staleThresholdMs = 15 * 60 * 1000,
+  // Pre-fix this was 15 min — combined with the 30-min cron, an
+  // operator who refreshed /portal/visitors could go ~45 min between
+  // seeing fresh data even when the pixel was firing in real time.
+  // Drop to 2 min so the on-mount sync covers the gap when the
+  // primary webhook path is unconfigured (the operator's #1 complaint
+  // was "I keep pressing the sync button").
+  staleThresholdMs = 2 * 60 * 1000,
 }: Props) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();

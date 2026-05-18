@@ -333,7 +333,43 @@ export default async function VisitorsPage({
               orgId={scope.orgId}
             />
             {hasPixel ? (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
+                {/* Real-time freshness dot — green when an event landed in
+                    the last 5 minutes (webhook path is healthy), amber
+                    5-30 min (probably segment-cron only), rose when
+                    stale > 30 min OR never (webhook URL likely not
+                    pasted into the AL pixel config). Lets the operator
+                    see at-a-glance whether to chase up wiring. */}
+                {(() => {
+                  const last = integration?.lastEventAt
+                    ? new Date(integration.lastEventAt).getTime()
+                    : 0;
+                  const ageMin = last ? (Date.now() - last) / 60_000 : Infinity;
+                  const tone =
+                    ageMin <= 5
+                      ? "bg-emerald-500"
+                      : ageMin <= 30
+                        ? "bg-amber-500"
+                        : "bg-rose-500";
+                  const label =
+                    ageMin <= 5
+                      ? "Webhook live"
+                      : ageMin <= 30
+                        ? "Cron only"
+                        : "Stale";
+                  return (
+                    <span
+                      className={`inline-block h-1.5 w-1.5 rounded-full ${tone}`}
+                      title={`${label} — last event ${
+                        integration?.lastEventAt
+                          ? formatDistanceToNow(integration.lastEventAt, {
+                              addSuffix: true,
+                            })
+                          : "never"
+                      }`}
+                    />
+                  );
+                })()}
                 Pixel on{" "}
                 <span className="font-medium text-foreground">
                   {integration?.installedOnDomain ?? "unknown host"}

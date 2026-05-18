@@ -24,6 +24,17 @@ const STATE_STYLES: Record<IntegrationState, StateStyle> = {
     cta: "Manage",
     ctaClass: "text-foreground hover:text-primary",
   },
+  error: {
+    // Connected, but the last sync attempt failed. Pre-fix this state
+    // didn't exist — broken integrations rendered as green
+    // "Connected" forever, and operators only discovered the failure
+    // by clicking into the drawer (or noticing zero data on
+    // dependent pages). Now the badge tells the truth.
+    badgeLabel: "Sync error",
+    badgeClass: "bg-rose-50 text-rose-700",
+    cta: "Fix sync",
+    ctaClass: "text-rose-700 hover:underline underline-offset-2",
+  },
   managed: {
     // 'managed' = on plan, awaiting agency provisioning. Was previously
     // labelled "Active" which lied — the integration wasn't actually

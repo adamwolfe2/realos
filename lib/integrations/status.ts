@@ -16,6 +16,7 @@ import { INTEGRATIONS, type IntegrationDefinition } from "./catalog";
 
 export type IntegrationState =
   | "connected"
+  | "error" // connected but last sync failed — honest signal vs lying green
   | "available"
   | "requested"
   | "managed"
@@ -74,6 +75,11 @@ export async function resolveIntegrationStatuses(
           apiKeyEncrypted: true,
           useEmbedFallback: true,
           lastSyncAt: true,
+          // Surface sync error state so the marketplace pill can flip
+          // to "error" instead of falsely showing "connected" when
+          // every recent cron run has failed.
+          syncStatus: true,
+          lastError: true,
         },
       })
       .catch(() => null),
@@ -86,13 +92,27 @@ export async function resolveIntegrationStatuses(
           orgId,
           serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
         },
-        select: { provider: true, lastSyncAt: true },
+        // Pull status + lastSyncError so the pill can degrade from
+        // "connected" to "error" honestly. Pre-fix the marketplace
+        // showed green "Connected" any time a row existed, even
+        // after 10 failed syncs in a row — operators had no signal
+        // that something was wrong until they opened the SEO page.
+        select: {
+          provider: true,
+          lastSyncAt: true,
+          status: true,
+          lastSyncError: true,
+        },
       })
       .catch(() => []),
     prisma.adAccount
       .findMany({
         where: { orgId, credentialsEncrypted: { not: null } },
-        select: { platform: true, lastSyncAt: true },
+        select: {
+          platform: true,
+          lastSyncAt: true,
+          lastSyncError: true,
+        },
       })
       .catch(() => []),
     prisma.integrationRequest
@@ -126,20 +146,33 @@ export async function resolveIntegrationStatuses(
 
   const seoBySlug = new Map<
     string,
-    { lastSyncAt: Date | null }
+    { lastSyncAt: Date | null; hasError: boolean }
   >();
   for (const s of seoIntegrations) {
     const slug = s.provider === "GSC" ? "gsc" : "ga4";
-    seoBySlug.set(slug, { lastSyncAt: s.lastSyncAt ?? null });
+    // ERROR status from the sync worker OR a non-null lastSyncError
+    // means the last attempted run failed. Collapse both into a
+    // single boolean the pill can read. We deliberately do NOT
+    // require lastSyncAt to be present — a freshly-connected
+    // integration with no successful sync yet should still show
+    // "Connected (no data)" not "Error".
+    const hasError = s.status === "ERROR" || !!s.lastSyncError;
+    seoBySlug.set(slug, { lastSyncAt: s.lastSyncAt ?? null, hasError });
   }
 
-  const adsBySlug = new Map<string, { lastSyncAt: Date | null }>();
+  const adsBySlug = new Map<
+    string,
+    { lastSyncAt: Date | null; hasError: boolean }
+  >();
   for (const a of adAccounts) {
     const slug = a.platform === AdPlatform.GOOGLE_ADS ? "google-ads" : a.platform === AdPlatform.META ? "meta-ads" : null;
     if (!slug) continue;
     // First account wins for badge purposes; the manage drawer renders all of them.
     if (!adsBySlug.has(slug)) {
-      adsBySlug.set(slug, { lastSyncAt: a.lastSyncAt ?? null });
+      adsBySlug.set(slug, {
+        lastSyncAt: a.lastSyncAt ?? null,
+        hasError: !!a.lastSyncError,
+      });
     }
   }
 
@@ -171,9 +204,11 @@ function resolveOne(
       apiKeyEncrypted: string | null;
       useEmbedFallback: boolean;
       lastSyncAt: Date | null;
+      syncStatus: string | null;
+      lastError: string | null;
     } | null;
-    seoBySlug: Map<string, { lastSyncAt: Date | null }>;
-    adsBySlug: Map<string, { lastSyncAt: Date | null }>;
+    seoBySlug: Map<string, { lastSyncAt: Date | null; hasError: boolean }>;
+    adsBySlug: Map<string, { lastSyncAt: Date | null; hasError: boolean }>;
     pendingBySlug: Map<string, string>;
     resolvedSlugs: Set<string>;
   }
@@ -208,28 +243,36 @@ function resolveOne(
     const connected =
       !!ctx.appfolio?.instanceSubdomain &&
       (!!ctx.appfolio?.clientIdEncrypted || !!ctx.appfolio?.apiKeyEncrypted || !!ctx.appfolio?.useEmbedFallback);
+    if (!connected) return { slug: def.slug, state: "available" };
+    // Same honesty as SEO/Ads: surface "error" when the last sync
+    // failed instead of showing green and forcing operators to open
+    // the integration drawer to discover the failure.
+    const hasError =
+      ctx.appfolio?.syncStatus === "error" || !!ctx.appfolio?.lastError;
     return {
       slug: def.slug,
-      state: connected ? "connected" : "available",
+      state: hasError ? "error" : "connected",
       lastEventAt: ctx.appfolio?.lastSyncAt ?? null,
     };
   }
 
   if (def.slug === "gsc" || def.slug === "ga4") {
     const seo = ctx.seoBySlug.get(def.slug);
+    if (!seo) return { slug: def.slug, state: "available" };
     return {
       slug: def.slug,
-      state: seo ? "connected" : "available",
-      lastEventAt: seo?.lastSyncAt ?? null,
+      state: seo.hasError ? "error" : "connected",
+      lastEventAt: seo.lastSyncAt,
     };
   }
 
   if (def.slug === "google-ads" || def.slug === "meta-ads") {
     const ads = ctx.adsBySlug.get(def.slug);
+    if (!ads) return { slug: def.slug, state: "available" };
     return {
       slug: def.slug,
-      state: ads ? "connected" : "available",
-      lastEventAt: ads?.lastSyncAt ?? null,
+      state: ads.hasError ? "error" : "connected",
+      lastEventAt: ads.lastSyncAt,
     };
   }
 
@@ -260,6 +303,8 @@ export function stateLabel(state: IntegrationState): string {
   switch (state) {
     case "connected":
       return "Connected";
+    case "error":
+      return "Sync error";
     case "managed":
       return "Managed by agency";
     case "requested":

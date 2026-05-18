@@ -22,23 +22,35 @@ export async function GET(req: NextRequest) {
 
   return recordCronRun("appfolio-sync", async () => {
     // Self-heal stuck rows BEFORE pulling the queue. A row left in
-    // syncStatus='syncing' with a syncStartedAt > 10 min ago is a
-    // killed-mid-flight Vercel function that never wrote its cleanup.
-    // The runAppfolioSync concurrency guard already steamrolls these,
-    // but flipping them to 'error' here surfaces the failed state in
-    // the UI in the meantime instead of leaving operators staring at
-    // a perpetual spinner.
+    // syncStatus='syncing' with a syncStartedAt older than the Vercel
+    // function timeout (5 min) PLUS a generous safety margin is a
+    // genuinely killed-mid-flight job that never wrote its cleanup.
+    //
+    // Pre-fix the threshold was 10 min flat. This was too aggressive:
+    // large tenants (Telegraph Commons + SG Real Estate both have
+    // >500 residents) routinely have legitimate runs that span 7-9
+    // minutes when AppFolio's reports endpoint is slow. The cron
+    // would flip those in-flight runs to 'error' with a generic
+    // "Sync timed out" message — exactly the false-positive banner
+    // operators were seeing.
+    //
+    // Now: 8 min threshold (5 min timeout + 3 min safety margin), and
+    // we only flag rows where syncStartedAt actually predates the
+    // Vercel function limit. If a run is still going at 7 min, leave
+    // it alone — it will either complete cleanly or be killed by
+    // Vercel and caught on the next cron tick.
+    const STUCK_THRESHOLD_MS = 8 * 60 * 1000;
     await prisma.appFolioIntegration
       .updateMany({
         where: {
           syncStatus: "syncing",
-          syncStartedAt: { lt: new Date(Date.now() - 10 * 60 * 1000) },
+          syncStartedAt: { lt: new Date(Date.now() - STUCK_THRESHOLD_MS) },
         },
         data: {
           syncStatus: "error",
           syncStartedAt: null,
           lastError:
-            "Sync timed out — function killed before completion. Cron auto-cleared the wedged row; this run will retry.",
+            "Sync exceeded Vercel function timeout (5 min). Reduce backfill window or contact support — this run will retry on the next cron tick.",
         },
       })
       .catch((err) => {

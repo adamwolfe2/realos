@@ -53,7 +53,15 @@ import { classifyProperty } from "@/lib/properties/marketable";
 // ---------------------------------------------------------------------------
 
 const EXTERNAL_SYSTEM = "appfolio";
-const DEFAULT_BACKFILL_DAYS = 90;
+// Window for the initial full-backfill on a fresh connection. Pre-fix
+// this was 90 days, which routinely exceeded Vercel's 5-min function
+// timeout for tenants with >500 residents (8 report endpoints × 90
+// days = a lot of pages). Dropping to 30 days fits comfortably in
+// the budget while still giving every dashboard meaningful historical
+// data. Operators who want deeper history can re-run a manual sync
+// with an explicit `since` later; the incremental sync (default code
+// path) only walks the most-recent window anyway.
+const DEFAULT_BACKFILL_DAYS = 30;
 
 export type AppfolioSyncStats = {
   leadsUpserted: number;

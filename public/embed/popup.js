@@ -465,7 +465,15 @@
 
       var result = await submitLead(popup, { email: email, phone: phone });
       var leadId = result && result.leadId;
-      recordEvent(popup.id, "CONVERTED", leadId);
+      // CONVERTED is now written server-side inside the lead route
+      // (atomically with Lead.create) so we only fall back to the
+      // client-fired event when the lead capture itself didn't return
+      // ok — that way a network blip on the lead POST still increments
+      // the campaign counter so dashboards aren't misleading. When the
+      // server confirmed the capture, skip to avoid double-counting.
+      if (!result || result.ok !== true) {
+        recordEvent(popup.id, "CONVERTED", leadId);
+      }
 
       if (btn) btn.textContent = "Thanks!";
       setTimeout(function () {
