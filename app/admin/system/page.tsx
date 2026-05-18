@@ -4,6 +4,7 @@ import { formatDistanceToNow } from "date-fns";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/admin/page-header";
+import { HealthBadge } from "@/components/admin/status-badge";
 import {
   runSystemHealthDeep,
   type CheckResult,
@@ -290,11 +291,15 @@ function CheckCard({
             {label}
           </div>
         </div>
-        <span
-          className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${toneFor(check.status)}`}
-        >
-          {statusLabel(check.status)}
-        </span>
+        <HealthBadge
+          state={
+            check.status === "ok"
+              ? "OPERATIONAL"
+              : check.status === "degraded"
+                ? "DEGRADED"
+                : "DOWN"
+          }
+        />
       </div>
       <div className="mt-3 flex items-center justify-between text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1">
@@ -486,13 +491,26 @@ function CronTable({
                     : "Never recorded"}
                 </td>
                 <td className="px-4 py-3">
-                  <span
-                    className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded border ${toneFor(status)}`}
-                  >
-                    {!run ? "No data" : run.status}
-                  </span>
+                  {!run ? (
+                    <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                      No data
+                    </span>
+                  ) : (
+                    <HealthBadge
+                      state={
+                        status === "ok"
+                          ? "OPERATIONAL"
+                          : status === "degraded"
+                            ? "DEGRADED"
+                            : "DOWN"
+                      }
+                    />
+                  )}
                   {run?.error ? (
-                    <div className="text-[11px] text-destructive mt-1 truncate max-w-[180px]" title={run.error}>
+                    <div
+                      className="text-[11px] text-destructive mt-1 truncate max-w-[180px]"
+                      title={run.error}
+                    >
                       {run.error}
                     </div>
                   ) : null}

@@ -1,7 +1,7 @@
 /**
  * scripts/seed-neutral-demo.ts
  *
- * Provisions a single, fully isolated demo org ("Riverstone Residential")
+ * Provisions a single, fully isolated demo org ("Telegraph Commons")
  * with synthetic but realistic data so Norman can run sales-call demos
  * without ever touching SG Real Estate / Telegraph Commons production
  * data.
@@ -11,7 +11,7 @@
  * ──────────────────────────────────────────────────────────────────────
  *
  *  1. Hard slug ALLOWLIST: the target org slug must match the literal
- *     constant DEMO_ORG_SLUG ("riverstone-residential"). The script
+ *     constant DEMO_ORG_SLUG ("telegraph-commons-demo"). The script
  *     does NOT accept --slug or env-var overrides. There is no path to
  *     write into any other org.
  *
@@ -23,7 +23,7 @@
  *     accepted slug.
  *
  *  3. EXISTENCE CHECK: if an org with the demo slug already exists, the
- *     script verifies its `name === "Riverstone Residential"` AND
+ *     script verifies its `name === "Telegraph Commons"` AND
  *     `orgType === CLIENT` AND its primaryContactEmail starts with
  *     "demo+". If any of those don't match (e.g. someone manually
  *     created a different org under our slug), abort. The script will
@@ -643,7 +643,7 @@ async function seed(): Promise<void> {
       orgId: org.id,
       platform: AdPlatform.GOOGLE_ADS,
       externalAccountId: "8472310594",
-      displayName: "Riverstone — Search & Performance Max",
+      displayName: "Telegraph Commons — Search & Performance Max",
       currency: "USD",
       accessStatus: "active",
       credentialsEncrypted: "demo-placeholder", // marks as "real" for the agent guard
@@ -656,7 +656,7 @@ async function seed(): Promise<void> {
       orgId: org.id,
       platform: AdPlatform.META,
       externalAccountId: "5193027461",
-      displayName: "Riverstone — Meta Lead Gen",
+      displayName: "Telegraph Commons — Meta Lead Gen",
       currency: "USD",
       accessStatus: "active",
       credentialsEncrypted: "demo-placeholder",

@@ -5,7 +5,7 @@ import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { OrgType } from "@prisma/client";
 import { PageHeader } from "@/components/admin/page-header";
-import { StatusBadge } from "@/components/admin/status-badge";
+import { SeverityBadge } from "@/components/admin/status-badge";
 import { formatDistanceToNow } from "date-fns";
 
 export const metadata: Metadata = { title: "Cross-portfolio insights" };
@@ -218,17 +218,7 @@ export default async function AdminInsightsPage({
               <li key={i.id}>
                 <div className="flex flex-wrap lg:flex-nowrap items-start lg:items-center gap-3 px-4 py-3 hover:bg-muted/20 transition-colors">
                   <div className="w-20 shrink-0">
-                    <StatusBadge
-                      tone={
-                        i.severity === "critical"
-                          ? "danger"
-                          : i.severity === "warning"
-                            ? "warning"
-                            : "info"
-                      }
-                    >
-                      {i.severity}
-                    </StatusBadge>
+                    <SeverityBadge severity={i.severity} />
                   </div>
                   <div className="w-full lg:w-40 shrink-0 min-w-0">
                     <Link

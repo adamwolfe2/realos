@@ -3,8 +3,13 @@ import Link from "next/link";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { AdPlatform } from "@prisma/client";
-import { formatDistanceToNow } from "date-fns";
 import { PageHeader } from "@/components/admin/page-header";
+import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import {
+  PlatformBadge,
+  StatusBadge,
+} from "@/components/admin/status-badge";
+import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Ad campaigns" };
 export const dynamic = "force-dynamic";
@@ -17,13 +22,16 @@ const PLATFORM_LABEL: Record<AdPlatform, string> = {
   REDDIT: "Reddit",
 };
 
-const PLATFORM_TONE: Record<AdPlatform, string> = {
-  GOOGLE_ADS: "bg-muted/40 text-foreground",
-  META: "bg-sky-50 text-sky-700",
-  LINKEDIN: "bg-blue-50 text-blue-700",
-  TIKTOK: "bg-destructive/5 text-destructive",
-  REDDIT: "bg-muted/40 text-foreground",
-};
+// Status tone mapping matches the shared StatusBadge tones. ENABLED /
+// ACTIVE = success; PAUSED = warning; the rest = muted. Prevents the
+// previous pattern where status rendered as plain text "ENABLED" with
+// no visual signal.
+function statusTone(status: string | null): "success" | "warning" | "muted" {
+  const s = (status ?? "").toUpperCase();
+  if (s === "ENABLED" || s === "ACTIVE") return "success";
+  if (s === "PAUSED") return "warning";
+  return "muted";
+}
 
 function formatCents(cents: number | null | undefined): string {
   if (cents == null) return "—";
@@ -101,18 +109,23 @@ export default async function CampaignsPage({
         description="Cross-tenant view of every paid campaign on Google Ads and Meta. Read-only until OAuth lands."
       />
 
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        <Stat label="Active campaigns" value={activeCount.toString()} />
-        <Stat label="Spend (28d)" value={formatCents(totalSpend)} />
-        <Stat
+      {/* KPI strip — uses the shared KpiTile so the geometry, typography,
+          and color tokens match every other admin + portal surface. */}
+      <section
+        aria-label="Ad campaigns at a glance"
+        className="grid grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
+      >
+        <KpiTile label="Active campaigns" value={activeCount.toLocaleString()} />
+        <KpiTile label="Spend (28d)" value={formatCents(totalSpend)} />
+        <KpiTile
           label="Clicks (28d)"
           value={totalClicks.toLocaleString("en-US")}
         />
-        <Stat
+        <KpiTile
           label="Conversions (28d)"
           value={totalConversions.toFixed(0)}
         />
-      </div>
+      </section>
 
       <div className="flex items-center gap-2 text-sm">
         <span className="text-muted-foreground">Filter:</span>
@@ -183,14 +196,16 @@ export default async function CampaignsPage({
                       </div>
                     </td>
                     <td className="px-4 py-3">
-                      <span
-                        className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded ${PLATFORM_TONE[c.platform]}`}
-                      >
-                        {PLATFORM_LABEL[c.platform]}
-                      </span>
+                      <PlatformBadge platform={PLATFORM_LABEL[c.platform]} />
                     </td>
-                    <td className="px-4 py-3 text-xs">
-                      {c.status ?? "—"}
+                    <td className="px-4 py-3">
+                      {c.status ? (
+                        <StatusBadge tone={statusTone(c.status)}>
+                          {c.status.toLowerCase()}
+                        </StatusBadge>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
                       {formatCents(spend)}
@@ -225,17 +240,6 @@ export default async function CampaignsPage({
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="rounded-lg border border-border bg-card p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">
-        {label}
-      </div>
-      <div className="text-2xl font-semibold mt-1 tabular-nums">{value}</div>
-    </div>
-  );
-}
-
 function FilterChip({
   href,
   active,
@@ -245,14 +249,18 @@ function FilterChip({
   active: boolean;
   children: React.ReactNode;
 }) {
+  // Active state uses brand primary, NOT bg-foreground (which is the
+  // near-black slate token and breaks the blue-only chart + chip
+  // palette). Matches the filter chip pattern on /portal/leads.
   return (
     <Link
       href={href}
-      className={`text-xs px-2.5 py-1 rounded-md border transition-colors ${
+      className={cn(
+        "text-xs px-2.5 py-1 rounded-md border transition-colors",
         active
-          ? "border-foreground bg-foreground text-background"
-          : "border-border bg-card hover:bg-muted/30"
-      }`}
+          ? "bg-primary text-primary-foreground border-primary"
+          : "border-border bg-card text-foreground hover:bg-muted/30",
+      )}
     >
       {children}
     </Link>
