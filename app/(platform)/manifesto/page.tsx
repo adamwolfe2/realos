@@ -125,7 +125,7 @@ function FounderCard() {
   const facts = [
     { k: "Written",    v: "April 2026" },
     { k: "Read time",  v: "6 minutes" },
-    { k: "Stage",      v: "Live at Telegraph Commons, Berkeley" },
+    { k: "Stage",      v: "Live on a real lease-up" },
     { k: "Partners",   v: "Operators in the room as we ship" },
     { k: "Pricing",    v: "Free pilot. Month-to-month after." },
   ];
@@ -277,12 +277,11 @@ function Body() {
             that matters, which is whether the spend produced a lease.
           </p>
           <p>
-            We have lived this from the asset-management seat. Norman ran the
-            Telegraph Commons lease-up by hand and wanted to know, on a Monday
-            morning, what every channel of spend was doing. The answer was
-            never available. It was a deck a week later, with the wrong
-            attribution, presented by someone who had never set foot in the
-            building.
+            We have lived this from the asset-management seat. One of us ran a
+            real lease-up by hand and wanted to know, on a Monday morning,
+            what every channel of spend was doing. The answer was never
+            available. It was a deck a week later, with the wrong attribution,
+            presented by someone who had never set foot in the building.
           </p>
 
           <Heading>The promise</Heading>
@@ -341,8 +340,8 @@ function Body() {
             With operators, on a live property, in public.
           </p>
           <p>
-            LeaseStack is running today at Telegraph Commons in Berkeley, on
-            a real lease-up with real pacing. We did not build a demo and
+            LeaseStack is running today on a real lease-up with real pacing.
+            We did not build a demo and
             then sell it to someone. We built the version we wanted on our
             own asset, and we are opening it to other operators one at a
             time. The pilot is free for that exact reason: we want operators

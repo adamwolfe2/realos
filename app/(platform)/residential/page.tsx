@@ -57,7 +57,7 @@ export default function ResidentialHub() {
           { label: "Start the free pilot", href: "/onboarding" },
           { label: "See it on a live property", href: "/demo", variant: "secondary" },
         ]}
-        caption="Live today at Telegraph Commons. SFR and build-to-rent on the same engine."
+        caption="Live today on a real lease-up. SFR and build-to-rent on the same engine."
         artifact={<PortfolioOccupancy label="Your residential portfolio" />}
       />
 

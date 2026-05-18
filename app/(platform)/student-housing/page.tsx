@@ -5,7 +5,7 @@ import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
 export const metadata: Metadata = {
   title: "Student housing leasing intelligence that fills beds on schedule",
   description:
-    "LeaseStack tells student housing operators which channels are signing leases, when lease-up pacing is slipping, and what to do next. Built by an asset manager who ran the Telegraph Commons lease-up directly.",
+    "LeaseStack tells student housing operators which channels are signing leases, when lease-up pacing is slipping, and what to do next. Built by an asset manager who ran a real student housing lease-up directly.",
 };
 
 export default function StudentHousingPage() {
@@ -15,7 +15,7 @@ export default function StudentHousingPage() {
       headline="Your lease-up data."
       headlineAccent="Working for you."
       subhead="Student housing runs on a pre-lease calendar that does not forgive a slow August. LeaseStack is the leasing intelligence platform that tells you which channels signed your last twelve leases, when your pacing is falling behind the academic calendar, and exactly what to do about it."
-      caption="Know your lease-up is falling behind before it shows up in occupancy. Built by an asset manager who managed the Telegraph Commons lease-up directly."
+      caption="Know your lease-up is falling behind before it shows up in occupancy. Built by an asset manager who managed a real student housing lease-up directly."
       artifact={<ChatDemo />}
       painsHeading="What student housing operators tell us."
       modulesHeading="What you get the day you turn it on."

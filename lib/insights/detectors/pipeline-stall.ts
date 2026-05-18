@@ -47,10 +47,19 @@ export const pipelineStallDetector: Detector = {
       const daysStalled = Math.floor(
         (Date.now() - lead.lastActivityAt.getTime()) / DAY,
       );
-      const name =
-        [lead.firstName, lead.lastName].filter(Boolean).join(" ").trim() ||
-        lead.email ||
-        "Unknown lead";
+      const fullName = [lead.firstName, lead.lastName].filter(Boolean).join(" ").trim();
+      const name = fullName || lead.email || "Unknown lead";
+      // Reporter feedback (jsoc@uoregon.edu): the insight names a
+      // specific person and overdue action but the CTA was a generic
+      // "Open →". Tailor the label so the action language matches the
+      // signal — "Contact Sage →" for a named lead, fallback to
+      // "Open lead →" when we only have an email.
+      const firstName = lead.firstName?.trim();
+      const actionLabel = firstName
+        ? `Contact ${firstName} →`
+        : lead.email
+          ? "Open lead →"
+          : "Open →";
       const severity: "info" | "warning" | "critical" =
         daysStalled >= 14 ? "critical" : daysStalled >= 9 ? "warning" : "info";
 
@@ -74,6 +83,11 @@ export const pipelineStallDetector: Detector = {
           source: lead.source,
           score: lead.score,
           lastActivityAt: lead.lastActivityAt.toISOString(),
+          // actionLabel lives in context (untyped JSON) instead of
+          // requiring a new schema column. The InsightCard renderer
+          // reads context.actionLabel and falls back to "Open" when
+          // the detector didn't set one.
+          actionLabel,
         },
       };
     });

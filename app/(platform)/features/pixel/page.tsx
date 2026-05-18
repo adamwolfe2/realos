@@ -71,8 +71,8 @@ export default function PixelFeaturePage() {
 function VisitorProfile() {
   const facts = [
     { label: "Name",          value: "Marisol Reyes" },
-    { label: "Email",         value: "marisol.reyes@berkeley.edu" },
-    { label: "Who she is",    value: "UC Berkeley · sophomore" },
+    { label: "Email",         value: "marisol.reyes@example.edu" },
+    { label: "Who she is",    value: "University student · sophomore" },
     { label: "Where she's from", value: "Sacramento, CA" },
     { label: "What she looked at", value: "2-bed floor plan · pricing · tours" },
     { label: "Time on site",  value: "4m 38s across 3 visits" },

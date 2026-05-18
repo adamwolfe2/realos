@@ -34,6 +34,21 @@ export function InsightCard({
   const fresh = Date.now() - insight.createdAt.getTime() < 6 * 60 * 60 * 1000;
   const acked = insight.status === "acknowledged";
 
+  // Per-insight CTA label. Detectors put `actionLabel` in context when
+  // a generic "Open →" doesn't match the specificity of the signal.
+  // Example: pipeline-stall puts "Contact Sage →" so the CTA names
+  // the same person the title named. Reporter feedback (jsoc@…) was
+  // that a generic "Open" felt mismatched against an insight that
+  // had already named the specific lead.
+  const ctaLabelRaw = (insight.context as Record<string, unknown> | null | undefined)?.actionLabel;
+  const ctaLabel = typeof ctaLabelRaw === "string" && ctaLabelRaw.length > 0 && ctaLabelRaw.length <= 60
+    ? ctaLabelRaw
+    : "Open";
+  // The trailing arrow is part of the label when actionLabel is set
+  // (e.g. "Contact Sage →"); the fallback "Open" leaves room for the
+  // ArrowRight icon component to render alongside it.
+  const ctaHasOwnArrow = ctaLabel !== "Open";
+
   // Dense mode is the compact card used on dashboards. It strips the four
   // lifecycle action buttons (Acknowledge / Snooze / Dismiss / Mark resolved)
   // because bulk triage belongs on /portal/insights, not inline. Only the
@@ -83,8 +98,8 @@ export function InsightCard({
             href={insight.href}
             className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-semibold text-primary hover:underline"
           >
-            Open
-            <ArrowRight className="h-3 w-3" />
+            {ctaLabel}
+            {ctaHasOwnArrow ? null : <ArrowRight className="h-3 w-3" />}
           </Link>
         ) : null}
       </article>
@@ -201,8 +216,8 @@ export function InsightCard({
             href={insight.href}
             className="inline-flex items-center gap-1 text-[12px] font-medium text-foreground hover:text-primary transition-colors"
           >
-            Open
-            <ArrowRight className="h-3 w-3" />
+            {ctaLabel}
+            {ctaHasOwnArrow ? null : <ArrowRight className="h-3 w-3" />}
           </Link>
         ) : null}
       </footer>

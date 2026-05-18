@@ -16,19 +16,19 @@ export default function AboutPage() {
         eyebrow={`About ${BRAND_NAME}`}
         headline="Built by operators,"
         headlineAccent="not by vendors."
-        subhead={`${BRAND_NAME} is the leasing intelligence platform that tells real estate operators exactly what their digital marketing is doing, and exactly what to do about it. Live today on a real property, in Berkeley.`}
+        subhead={`${BRAND_NAME} is the leasing intelligence platform that tells real estate operators exactly what their digital marketing is doing, and exactly what to do about it. Live today on a real lease-up.`}
         ctas={[
           { label: "Start the free pilot", href: "/onboarding" },
           { label: "Read the manifesto", href: "/manifesto", variant: "secondary" },
         ]}
-        caption="Live at Telegraph Commons, Berkeley · built operator-to-operator"
+        caption="Live on a real lease-up · built operator-to-operator"
         artifact={<StackCard />}
       />
 
       <SplitSection
         eyebrow="Why we built it"
         headline="It started as a tool we wished existed during our own lease-ups."
-        body="Norman Bujang spent his Monday mornings as an asset manager at Greenwich Street Capital running the Telegraph Commons lease-up by hand. Every feature in LeaseStack is the answer to a question he asked himself on a Monday morning and could not find the data for. Adam Wolfe is the engineering side, out of AM Collective."
+        body="One of us spent Monday mornings as an asset manager running a real lease-up by hand. Every feature in LeaseStack is the answer to a question he asked himself on a Monday morning and could not find the data for. The other half is engineering, out of AM Collective."
         bullets={[
           "Every dollar spent, every lead captured, every signal: none of it was visible, analyzed, or acted on.",
           "Most operators are running a multi-billion-dollar industry on a patchwork of disconnected tools.",
@@ -42,7 +42,7 @@ export default function AboutPage() {
       <SplitSection
         eyebrow="How we are building it"
         headline="In the open, on a live property, with other operators in the room."
-        body="LeaseStack is running today at Telegraph Commons in Berkeley, on a real lease-up with real pacing. We are building it operator-to-operator, with the people who will actually use it sitting in the room as we ship. That is why every recommendation reads like it came from someone who has done the job, because it did."
+        body="LeaseStack is running today on a real lease-up with real pacing. We are building it operator-to-operator, with the people who will actually use it sitting in the room as we ship. That is why every recommendation reads like it came from someone who has done the job, because it did."
         side="left"
         background="#FFFFFF"
         artifact={<OperatorWeek />}
@@ -141,7 +141,7 @@ function StackCard() {
             fontWeight: 600,
           }}
         >
-          Live at Telegraph Commons
+          Live on a real lease-up
         </span>
       </div>
       <ul>
