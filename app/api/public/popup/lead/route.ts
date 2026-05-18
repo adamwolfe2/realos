@@ -223,37 +223,36 @@ export async function POST(req: NextRequest) {
 
     // In-app notification (the bell in /portal). Only for net-new
     // leads — bumping lastActivityAt on an existing lead shouldn't
-    // generate a duplicate notification.
-    void notifyLeadCreated(created).catch(() => {});
+    // generate a duplicate notification. AWAIT this — a fire-and-forget
+    // promise on a Vercel serverless function gets dropped the moment
+    // the route returns (the lambda is suspended/recycled before
+    // unawaited work completes). Pre-fix this was lost on every
+    // popup conversion in prod, silently breaking the bell badge.
+    try {
+      await notifyLeadCreated(created);
+    } catch (err) {
+      console.warn("[public/popup/lead] notifyLeadCreated failed:", err);
+    }
   }
 
   // Record the CONVERTED event server-side here, atomically with the
   // Lead creation, instead of relying on the embed to fire a separate
-  // POST to /api/public/popup/events. Pre-fix the embed wrote the
-  // event via a second fetch — meaning Lead.create could succeed but
-  // the network call for the event could fail, leaving `convertedCount`
-  // out of sync with the actual Lead count. recordPopupEvent runs in
+  // POST to /api/public/popup/events. We AWAIT this — same serverless
+  // reasoning as notifyLeadCreated above. recordPopupEvent runs in
   // its own transaction so the counter increment is safe under
   // concurrent CONVERTED events from the same campaign.
-  //
-  // The embed continues to call /events but the route there is
-  // idempotent on (campaignId, sessionId, type) for SHOWN/DISMISSED;
-  // for CONVERTED the embed's second call simply double-counts unless
-  // we add a clientLeadId dedupe. The smallest immediate fix is to
-  // have the embed skip the duplicate when `result.ok === true` —
-  // that's left as a follow-up in popup.js so we don't ship a partial
-  // change here. Counter drift in the meantime is bounded (one extra
-  // CONVERTED per successful capture) and easy to spot.
-  void recordPopupEvent({
-    orgId: org.id,
-    campaignId: popup.id,
-    type: PopupEventType.CONVERTED,
-    sessionId: undefined,
-    leadId,
-    pageUrl: data.pageUrl,
-  }).catch((err) => {
+  try {
+    await recordPopupEvent({
+      orgId: org.id,
+      campaignId: popup.id,
+      type: PopupEventType.CONVERTED,
+      sessionId: undefined,
+      leadId,
+      pageUrl: data.pageUrl,
+    });
+  } catch (err) {
     console.warn("[public/popup/lead] recordPopupEvent failed:", err);
-  });
+  }
 
   // Visitor → MATCHED_TO_LEAD bump so attribution analytics can
   // close the loop from pixel session to identified lead.
@@ -271,8 +270,15 @@ export async function POST(req: NextRequest) {
   // Resend hiccup never breaks the lead capture. Slack message uses
   // the same notifyNewIntake shape as /api/public/leads so the
   // operator's inbox stays consistent across surfaces.
+  //
+  // AWAIT the fan-out instead of void-ing it. Vercel serverless drops
+  // unawaited promises the moment the function returns, so the
+  // pre-fix Slack/Resend notifications were silently lost on every
+  // conversion. The fan-out adds ~200-400ms to the response, which
+  // is acceptable for a one-shot conversion form (operator submits
+  // and waits for the success state anyway).
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-  void Promise.allSettled([
+  const notifyResults = await Promise.allSettled([
     notifyNewLeadSlack({
       companyName: org.name,
       contactName: data.email ?? data.phone ?? "Anonymous",
@@ -306,13 +312,12 @@ export async function POST(req: NextRequest) {
           appUrl,
         })
       : Promise.resolve(null),
-  ]).then((results) => {
-    for (const r of results) {
-      if (r.status === "rejected") {
-        console.warn("[public/popup/lead] notification error:", r.reason);
-      }
+  ]);
+  for (const r of notifyResults) {
+    if (r.status === "rejected") {
+      console.warn("[public/popup/lead] notification error:", r.reason);
     }
-  });
+  }
 
   return NextResponse.json(
     { ok: true, leadId },

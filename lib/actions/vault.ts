@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import {
   auditPayload,
   requireScope,
+  tenantWhere,
   ForbiddenError,
   type ScopedContext,
 } from "@/lib/tenancy/scope";
@@ -132,11 +133,15 @@ async function ensurePropertyOwned(
 function buildPropertyGate(scope: ScopedContext): Record<string, unknown> {
   if (!scope.allowedPropertyIds) return {};
   if (scope.allowedPropertyIds.length === 0) {
-    // Restricted user with zero allowed properties sees only org-wide
-    // credentials (propertyId IS NULL). Returning a synthetic id that
-    // matches no rows is the wrong default here — vault scope falls
-    // back to org-wide entries on purpose.
-    return { propertyId: null };
+    // Restricted user with an empty allow-list sees NOTHING. Pre-fix
+    // we exposed all org-wide credentials (`propertyId: null`) here,
+    // which was wrong on both threat-model and provisioning-glitch
+    // axes: a CLIENT_ADMIN whose every UserPropertyAccess row got
+    // revoked (deleted property, mid-onboarding state) would silently
+    // get every banking + GA4 + root-domain credential in the org.
+    // Match the synthetic-id pattern used in lead-bulk.ts so the
+    // gate is consistent across the codebase.
+    return { id: "__no_property_access__" };
   }
   return {
     OR: [
@@ -144,6 +149,52 @@ function buildPropertyGate(scope: ScopedContext): Record<string, unknown> {
       { propertyId: { in: scope.allowedPropertyIds } },
     ],
   };
+}
+
+/**
+ * Validate a propertyId assignment on create/update. Returns null if
+ * the value is fine, or an error string otherwise.
+ *
+ * - null/undefined = org-wide → only unrestricted users may set this.
+ *   A restricted operator (allowedPropertyIds non-null) cannot scope a
+ *   credential org-wide; that would promote it out of their visibility
+ *   into every other admin's table.
+ * - non-null propertyId → must belong to the org AND be in the
+ *   caller's allowed set.
+ */
+async function validatePropertyAssignment(
+  scope: ScopedContext,
+  propertyId: string | null,
+): Promise<string | null> {
+  if (propertyId === null) {
+    if (scope.allowedPropertyIds) {
+      return "Restricted users cannot create or promote credentials to org-wide scope. Ask an admin.";
+    }
+    return null;
+  }
+  const ok = await ensurePropertyOwned(scope, propertyId);
+  if (!ok) {
+    return "Property does not belong to this org or your access scope";
+  }
+  return null;
+}
+
+/**
+ * Ensure the caller's org has the vault module enabled. Module gating
+ * happens at the page level for UX (pitch screen vs blank), but every
+ * server action must also enforce — the actions are callable directly
+ * from any authenticated session and a tenant whose moduleVault is
+ * toggled OFF must not retain access to anything still in the table.
+ */
+async function requireModuleEnabled(scope: ScopedContext): Promise<string | null> {
+  const org = await prisma.organization.findUnique({
+    where: { id: scope.orgId },
+    select: { moduleVault: true },
+  });
+  if (!org?.moduleVault) {
+    return "Credentials vault is not enabled on this org.";
+  }
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -161,6 +212,9 @@ export async function createCredential(
     throw err;
   }
 
+  const moduleErr = await requireModuleEnabled(scope);
+  if (moduleErr) return { ok: false, error: moduleErr };
+
   const parsed = createSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -170,15 +224,13 @@ export async function createCredential(
   }
   const data = parsed.data;
 
-  if (data.propertyId) {
-    const ok = await ensurePropertyOwned(scope, data.propertyId);
-    if (!ok) {
-      return {
-        ok: false,
-        error: "Property does not belong to this org or your access scope",
-      };
-    }
-  }
+  // Property assignment is validated centrally — also blocks
+  // restricted users from creating org-wide credentials.
+  const propertyErr = await validatePropertyAssignment(
+    scope,
+    data.propertyId ?? null,
+  );
+  if (propertyErr) return { ok: false, error: propertyErr };
 
   const encrypted = await encryptForOrg(scope.orgId, data.password);
 
@@ -227,6 +279,9 @@ export async function updateCredential(
     throw err;
   }
 
+  const moduleErr = await requireModuleEnabled(scope);
+  if (moduleErr) return { ok: false, error: moduleErr };
+
   const parsed = updateSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -241,7 +296,7 @@ export async function updateCredential(
   const existing = await prisma.credentialEntry.findFirst({
     where: {
       id,
-      orgId: scope.orgId,
+      ...tenantWhere(scope),
       deletedAt: null,
       ...buildPropertyGate(scope),
     },
@@ -251,14 +306,15 @@ export async function updateCredential(
     return { ok: false, error: "Credential not found or out of scope" };
   }
 
-  if (data.propertyId !== undefined && data.propertyId !== null) {
-    const ok = await ensurePropertyOwned(scope, data.propertyId);
-    if (!ok) {
-      return {
-        ok: false,
-        error: "Property does not belong to this org or your access scope",
-      };
-    }
+  // When the operator is changing the propertyId, validate the new
+  // value the same way create does — including the block on
+  // restricted users promoting credentials to org-wide.
+  if (data.propertyId !== undefined) {
+    const propertyErr = await validatePropertyAssignment(
+      scope,
+      data.propertyId ?? null,
+    );
+    if (propertyErr) return { ok: false, error: propertyErr };
   }
 
   // If a password was supplied, re-encrypt + advance lastRotatedAt.
@@ -322,10 +378,13 @@ export async function deleteCredential(
     throw err;
   }
 
+  const moduleErr = await requireModuleEnabled(scope);
+  if (moduleErr) return { ok: false, error: moduleErr };
+
   const existing = await prisma.credentialEntry.findFirst({
     where: {
       id,
-      orgId: scope.orgId,
+      ...tenantWhere(scope),
       deletedAt: null,
       ...buildPropertyGate(scope),
     },
@@ -371,10 +430,12 @@ export async function revealCredential(
     throw err;
   }
 
+  const moduleErr = await requireModuleEnabled(scope);
+  if (moduleErr) return { ok: false, error: moduleErr };
+
   // Per-user rate limit — defends against a compromised session
-  // draining the whole vault. 10/min is comfortable for any legitimate
-  // operator workflow and slow enough that audit alerting can catch
-  // anomalous patterns.
+  // draining the whole vault. 30/min/userId; the audit log captures
+  // every reveal for anomaly detection.
   const rl = await checkRateLimit(vaultRevealLimiter, scope.userId);
   if (!rl.allowed) {
     return {
@@ -386,7 +447,7 @@ export async function revealCredential(
   const cred = await prisma.credentialEntry.findFirst({
     where: {
       id,
-      orgId: scope.orgId,
+      ...tenantWhere(scope),
       deletedAt: null,
       ...buildPropertyGate(scope),
     },
@@ -403,48 +464,78 @@ export async function revealCredential(
     return { ok: false, error: "Credential not found or out of scope" };
   }
 
+  // Decrypt FIRST, then write the audit row. Pre-fix the audit + access
+  // log + lastRevealedAt were written inside a transaction, and then
+  // decrypt ran outside. If decrypt threw (corrupt ciphertext, KEK
+  // rotation gap, schema drift), the audit log would record a
+  // successful reveal that didn't actually happen — flooding the
+  // anomaly-detection signal with false positives. Order swapped:
+  // decrypt is cheap, has no DB side effects, and a failure here
+  // returns a clean error without polluting the audit trail.
+  let password: string;
+  try {
+    password = await decryptForOrg(scope.orgId, {
+      secretCiphertext: cred.secretCiphertext,
+      secretIv: cred.secretIv,
+      secretAuthTag: cred.secretAuthTag,
+    });
+  } catch (err) {
+    console.warn("[vault] reveal decrypt failed for credentialId=" + id, err);
+    return {
+      ok: false,
+      error:
+        "Could not decrypt this credential. Either the master key was rotated or the row is corrupt — contact support.",
+    };
+  }
+
   const { ip, userAgent } = await actorContext();
 
-  // Write the audit + access log BEFORE returning plaintext. A server
-  // crash between decrypt and audit-write would otherwise drop the
-  // trail of a successful reveal — the worst-case failure mode for
-  // a credentials vault.
-  await prisma.$transaction([
-    prisma.credentialAccessLog.create({
-      data: {
-        credentialId: id,
-        orgId: scope.orgId,
-        userId: scope.userId,
-        userEmail: scope.email,
-        // When an agency user impersonates a tenant, actualOrgId differs
-        // from orgId — we tag the access log so the tenant's audit view
-        // shows "Adam (impersonating) revealed this" instead of just
-        // "Adam revealed this" from inside SG Real Estate's portal.
-        asImpersonatorId: scope.isImpersonating ? scope.userId : null,
-        action: "reveal",
-        ipAddress: ip,
-        userAgent: userAgent ? userAgent.slice(0, 500) : null,
-      },
-    }),
-    prisma.credentialEntry.update({
-      where: { id },
-      data: { lastRevealedAt: new Date() },
-    }),
-    prisma.auditEvent.create({
-      data: auditPayload(scope, {
-        action: AuditAction.EXPORT,
-        entityType: "CredentialEntry",
-        entityId: id,
-        description: `Revealed vault credential "${cred.name}"`,
+  // Audit + access log + lastRevealedAt bump — all inside one
+  // transaction so partial state on a DB hiccup is impossible. We
+  // don't await the audit BEFORE returning plaintext (decrypt already
+  // succeeded), but we await it BEFORE returning so the response only
+  // includes the password if the audit row also persisted. If the
+  // transaction throws AFTER decrypt, we discard the in-memory
+  // plaintext and surface a clean error to the operator.
+  try {
+    await prisma.$transaction([
+      prisma.credentialAccessLog.create({
+        data: {
+          credentialId: id,
+          orgId: scope.orgId,
+          userId: scope.userId,
+          userEmail: scope.email,
+          // When an agency user impersonates a tenant, actualOrgId differs
+          // from orgId — we tag the access log so the tenant's audit view
+          // shows "Adam (impersonating) revealed this".
+          asImpersonatorId: scope.isImpersonating ? scope.userId : null,
+          action: "reveal",
+          ipAddress: ip,
+          userAgent: userAgent ? userAgent.slice(0, 500) : null,
+        },
       }),
-    }),
-  ]);
-
-  const password = await decryptForOrg(scope.orgId, {
-    secretCiphertext: cred.secretCiphertext,
-    secretIv: cred.secretIv,
-    secretAuthTag: cred.secretAuthTag,
-  });
+      prisma.credentialEntry.update({
+        where: { id },
+        data: { lastRevealedAt: new Date() },
+      }),
+      prisma.auditEvent.create({
+        data: auditPayload(scope, {
+          action: AuditAction.EXPORT,
+          entityType: "CredentialEntry",
+          entityId: id,
+          description: `Revealed vault credential "${cred.name}"`,
+        }),
+      }),
+    ]);
+  } catch (err) {
+    console.warn("[vault] reveal audit write failed for credentialId=" + id, err);
+    // Audit failed → refuse to return plaintext. We deliberately do
+    // NOT return a successful reveal without an audit trail.
+    return {
+      ok: false,
+      error: "Could not record the reveal in the audit log. Try again.",
+    };
+  }
 
   return {
     ok: true,
@@ -529,6 +620,9 @@ export async function importCredentialsFromCsv(
     throw err;
   }
 
+  const moduleErr = await requireModuleEnabled(scope);
+  if (moduleErr) return { ok: false, error: moduleErr };
+
   const parsed = importSchema.safeParse(input);
   if (!parsed.success) {
     return {
@@ -539,13 +633,22 @@ export async function importCredentialsFromCsv(
   const { csvText, defaultPropertyId } = parsed.data;
 
   if (defaultPropertyId) {
-    const ok = await ensurePropertyOwned(scope, defaultPropertyId);
-    if (!ok) {
+    const propertyErr = await validatePropertyAssignment(scope, defaultPropertyId);
+    if (propertyErr) {
       return {
         ok: false,
-        error: "Default property does not belong to this org or your access scope",
+        error: "Default property: " + propertyErr,
       };
     }
+  } else if (scope.allowedPropertyIds) {
+    // Restricted users must pick a default property or set property_slug
+    // on every row. Org-wide imports are blocked the same way org-wide
+    // creates are.
+    return {
+      ok: false,
+      error:
+        "Restricted users must select a default property. Org-wide imports are not allowed for your role.",
+    };
   }
 
   const rows = parseCsv(csvText);
@@ -592,14 +695,70 @@ export async function importCredentialsFromCsv(
     }
   }
 
+  // Strip C0 control characters (except tab/newline, which CSV doesn't
+  // carry into a cell anyway because the parser handles them). CSV
+  // cells can pick up null bytes, zero-width chars, and terminal-
+  // escape sequences from copy/paste — none of which belong in a
+  // credential field. Render surfaces (reveal modal, audit log) trust
+  // the contents.
+  //
+  // Build the regex from char codes to avoid the editor mangling
+  // literal control chars in source.
+  const C0_PATTERN = new RegExp(
+    "[" +
+      String.fromCharCode(0x00) + "-" + String.fromCharCode(0x08) +
+      String.fromCharCode(0x0b) +
+      String.fromCharCode(0x0c) +
+      String.fromCharCode(0x0e) + "-" + String.fromCharCode(0x1f) +
+      String.fromCharCode(0x7f) +
+      "]",
+    "g",
+  );
+  function sanitize(s: string | undefined, max: number): string | null {
+    if (!s) return null;
+    const cleaned = s.replace(C0_PATTERN, "").trim();
+    if (cleaned === "") return null;
+    return cleaned.slice(0, max);
+  }
+
   const errors: string[] = [];
   let created = 0;
   let skipped = 0;
 
+  // Cap the per-row count cheaply before doing any encryption.
+  // 5000 rows × ~3KB ciphertext = ~15MB DB writes — generous, but
+  // bounded. Above that, ask the operator to chunk their CSV.
+  const MAX_ROWS = 5000;
+  if (rows.length - 1 > MAX_ROWS) {
+    return {
+      ok: false,
+      error: `CSV has ${rows.length - 1} data rows; cap is ${MAX_ROWS} per import. Split into chunks.`,
+    };
+  }
+
+  // First pass: validate every row and stage the encrypted payloads
+  // in-memory. Pre-fix this was a sequential loop of fetch-DEK +
+  // create-row, each round-tripping to the DB twice per row. For
+  // 2000 rows that's 4000 DB hits and any halfway failure left a
+  // partial vault in place. New approach: encrypt-all-then-bulk-
+  // create lets us share a single DEK fetch via encryptForOrg's
+  // internal cache and atomically commit the batch.
+  type StagedRow = {
+    rowNumber: number;
+    propertyId: string | null;
+    payload: Prisma.CredentialEntryCreateManyInput;
+  };
+  const staged: StagedRow[] = [];
+
   for (let r = 1; r < rows.length; r++) {
     const row = rows[r];
-    const name = row[iName]?.trim();
-    const password = row[iPassword] ?? "";
+    const name = sanitize(row[iName], 120);
+    const passwordRaw = row[iPassword] ?? "";
+    // Don't sanitize the password — control chars in the secret are
+    // the operator's problem and stripping them would corrupt the
+    // value silently. We DO cap length though so a 2MB CSV cell
+    // can't blow up the GCM auth-tag computation.
+    const password = passwordRaw.slice(0, 4000);
     if (!name || !password) {
       errors.push(`Row ${r + 1}: missing name or password`);
       skipped += 1;
@@ -626,15 +785,17 @@ export async function importCredentialsFromCsv(
 
     try {
       const encrypted = await encryptForOrg(scope.orgId, password);
-      await prisma.credentialEntry.create({
-        data: {
+      staged.push({
+        rowNumber: r + 1,
+        propertyId,
+        payload: {
           orgId: scope.orgId,
           propertyId,
-          name: name.slice(0, 120),
-          platform: iPlatform !== -1 ? row[iPlatform]?.trim().slice(0, 40) || null : null,
-          websiteUrl: iUrl !== -1 ? row[iUrl]?.trim().slice(0, 500) || null : null,
-          username: iUsername !== -1 ? row[iUsername]?.trim().slice(0, 200) || null : null,
-          notes: iNotes !== -1 ? row[iNotes]?.trim().slice(0, 4000) || null : null,
+          name,
+          platform: iPlatform !== -1 ? sanitize(row[iPlatform], 40) : null,
+          websiteUrl: iUrl !== -1 ? sanitize(row[iUrl], 500) : null,
+          username: iUsername !== -1 ? sanitize(row[iUsername], 200) : null,
+          notes: iNotes !== -1 ? sanitize(row[iNotes], 4000) : null,
           tags: [],
           secretCiphertext: encrypted.secretCiphertext,
           secretIv: encrypted.secretIv,
@@ -643,11 +804,35 @@ export async function importCredentialsFromCsv(
           lastRotatedAt: new Date(),
         },
       });
-      created += 1;
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Unknown error";
       errors.push(`Row ${r + 1}: ${msg}`);
       skipped += 1;
+    }
+  }
+
+  // Second pass: commit all staged rows in a single transaction so a
+  // mid-batch DB error doesn't leave the vault half-loaded. Chunk by
+  // 500 inside the transaction to keep individual statements small.
+  if (staged.length > 0) {
+    try {
+      await prisma.$transaction(async (tx) => {
+        const CHUNK = 500;
+        for (let i = 0; i < staged.length; i += CHUNK) {
+          const slice = staged.slice(i, i + CHUNK);
+          await tx.credentialEntry.createMany({
+            data: slice.map((s) => s.payload),
+          });
+        }
+      });
+      created = staged.length;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Unknown error";
+      // Whole batch rolled back. Move every staged row to the
+      // skipped/error bucket and let the operator retry.
+      errors.push(`Transaction failed, no rows imported: ${msg}`);
+      skipped += staged.length;
+      created = 0;
     }
   }
 

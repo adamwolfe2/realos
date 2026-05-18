@@ -144,20 +144,33 @@ export async function resolveIntegrationStatuses(
   for (const r of pendingRequests) pendingBySlug.set(r.integrationSlug, r.id);
   const resolvedSlugs = new Set(resolvedRequests.map((r) => r.integrationSlug));
 
+  // SEO can have multiple integrations per provider (one GSC/GA4 row
+  // per property for multi-property tenants). The pill needs to OR
+  // hasError across all of them and report the freshest lastSyncAt
+  // — pre-fix the Map.set call overwrote previous rows, so iteration
+  // order determined whether the pill showed "Connected" or "Sync
+  // error" for a tenant with one healthy + one broken row.
   const seoBySlug = new Map<
     string,
     { lastSyncAt: Date | null; hasError: boolean }
   >();
   for (const s of seoIntegrations) {
     const slug = s.provider === "GSC" ? "gsc" : "ga4";
-    // ERROR status from the sync worker OR a non-null lastSyncError
-    // means the last attempted run failed. Collapse both into a
-    // single boolean the pill can read. We deliberately do NOT
-    // require lastSyncAt to be present — a freshly-connected
-    // integration with no successful sync yet should still show
-    // "Connected (no data)" not "Error".
-    const hasError = s.status === "ERROR" || !!s.lastSyncError;
-    seoBySlug.set(slug, { lastSyncAt: s.lastSyncAt ?? null, hasError });
+    const rowHasError = s.status === "ERROR" || !!s.lastSyncError;
+    const existing = seoBySlug.get(slug);
+    if (!existing) {
+      seoBySlug.set(slug, { lastSyncAt: s.lastSyncAt ?? null, hasError: rowHasError });
+    } else {
+      seoBySlug.set(slug, {
+        // Surface the most-recent successful sync across all rows.
+        lastSyncAt:
+          existing.lastSyncAt && s.lastSyncAt
+            ? (existing.lastSyncAt > s.lastSyncAt ? existing.lastSyncAt : s.lastSyncAt)
+            : (existing.lastSyncAt ?? s.lastSyncAt ?? null),
+        // ANY row erroring flips the pill to "Sync error".
+        hasError: existing.hasError || rowHasError,
+      });
+    }
   }
 
   const adsBySlug = new Map<
@@ -167,11 +180,24 @@ export async function resolveIntegrationStatuses(
   for (const a of adAccounts) {
     const slug = a.platform === AdPlatform.GOOGLE_ADS ? "google-ads" : a.platform === AdPlatform.META ? "meta-ads" : null;
     if (!slug) continue;
-    // First account wins for badge purposes; the manage drawer renders all of them.
-    if (!adsBySlug.has(slug)) {
+    // Same OR-across-accounts logic as SEO above. A tenant with two
+    // Google Ads accounts where one is broken must surface the error
+    // — silently hiding it behind a green pill on the working account
+    // is exactly the "lying status" failure the audit caught.
+    const rowHasError = !!a.lastSyncError;
+    const existing = adsBySlug.get(slug);
+    if (!existing) {
       adsBySlug.set(slug, {
         lastSyncAt: a.lastSyncAt ?? null,
-        hasError: !!a.lastSyncError,
+        hasError: rowHasError,
+      });
+    } else {
+      adsBySlug.set(slug, {
+        lastSyncAt:
+          existing.lastSyncAt && a.lastSyncAt
+            ? (existing.lastSyncAt > a.lastSyncAt ? existing.lastSyncAt : a.lastSyncAt)
+            : (existing.lastSyncAt ?? a.lastSyncAt ?? null),
+        hasError: existing.hasError || rowHasError,
       });
     }
   }

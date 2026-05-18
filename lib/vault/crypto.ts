@@ -87,26 +87,40 @@ function decryptGcm(
   } catch (err) {
     // Don't leak the underlying openssl error to callers — that can
     // reveal whether the ciphertext was the right shape vs the wrong
-    // key. Just say "decrypt failed".
-    throw new VaultCryptoError(
-      `Vault decrypt failed (auth tag mismatch). ${err instanceof Error ? err.message : ""}`,
-    );
+    // key (oracle attack). Log server-side for ops debugging; return
+    // a generic public message. Pre-fix the err.message was concat'd
+    // into the thrown error and surfaced all the way to the reveal
+    // modal, which is exactly the leak the comment claimed to avoid.
+    if (err instanceof Error) {
+      console.warn("[vault] decryptGcm failed:", err.message);
+    }
+    throw new VaultCryptoError("Vault decrypt failed");
   }
 }
 
 /**
  * Lazy-provision the per-org DEK. Called from every encrypt/decrypt
- * path; idempotent and concurrency-safe because we only WRITE the
- * wrapped DEK on the first call per org. After that we re-read it.
+ * path; idempotent and concurrency-safe.
  *
- * Concurrency: two parallel "first credential created" actions could
- * each generate a fresh DEK and race to write it. We resolve the race
- * by always re-reading post-write and using the persisted value. The
- * loser's in-memory DEK is silently discarded. Worst case: a
- * credential created in the losing transaction is encrypted with the
- * wrong DEK and unreadable — to defend against this, the encrypt
- * helper opens a single transaction that does the read + decrypt
- * inside the same tx.
+ * Concurrency-safety (the real story): two parallel "first credential
+ * created" actions could both observe `vaultDekWrapped: null` and
+ * each generate a fresh DEK. Without the conditional-update guard
+ * below, the second writer would clobber the first writer's DEK —
+ * meaning the credential the first writer ALREADY encrypted with its
+ * (now-discarded) DEK is permanently unreadable.
+ *
+ * Fix: `updateMany` with `where: { id, vaultDekWrapped: null }` is
+ * atomic at the SQL level — only ONE writer can win (Postgres row
+ * lock). The loser sees `count === 0`, knows its DEK was discarded,
+ * and re-reads + decrypts the winner's DEK so subsequent encrypts in
+ * this request use the persisted key.
+ *
+ * Open caveat (Phase 2): if the encrypt+credential-create flow spans
+ * two server actions (rare today; the create action does both inline),
+ * a loser could still write a credential against a discarded DEK
+ * BETWEEN its DEK-mint failure and the next call. The encryptForOrg
+ * helper now re-reads the persisted DEK after `updateMany` returns
+ * count=0, which closes the window for the inline create path.
  */
 async function getOrgDek(orgId: string): Promise<Buffer> {
   const kek = getMasterKek();
@@ -123,39 +137,24 @@ async function getOrgDek(orgId: string): Promise<Buffer> {
   }
 
   if (org.vaultDekWrapped && org.vaultDekNonce) {
-    // Unwrap the existing DEK.
-    const wrapped = Buffer.from(org.vaultDekWrapped);
-    if (wrapped.length < GCM_TAG_LEN) {
-      throw new VaultCryptoError("Wrapped DEK is shorter than the GCM tag");
-    }
-    const nonce = Buffer.from(org.vaultDekNonce);
-    if (nonce.length !== GCM_NONCE_LEN) {
-      throw new VaultCryptoError(
-        `Wrapped DEK nonce length unexpected: ${nonce.length}`,
-      );
-    }
-    // Layout: ciphertext || tag (last 16 bytes)
-    const tag = wrapped.subarray(wrapped.length - GCM_TAG_LEN);
-    const ct = wrapped.subarray(0, wrapped.length - GCM_TAG_LEN);
-    return decryptGcm(ct, kek, nonce, tag);
+    return unwrapDek(Buffer.from(org.vaultDekWrapped), Buffer.from(org.vaultDekNonce), kek);
   }
 
-  // Mint a fresh DEK and persist it wrapped.
-  const dek = randomBytes(DEK_LEN);
-  const { ciphertext, iv, tag } = encryptGcm(dek, kek);
+  // Mint a candidate DEK and try to win the race via conditional UPDATE.
+  const candidateDek = randomBytes(DEK_LEN);
+  const { ciphertext, iv, tag } = encryptGcm(candidateDek, kek);
   const wrapped = Buffer.concat([ciphertext, tag]);
-
-  // Prisma's Bytes column type wants Uint8Array<ArrayBuffer>; Node's
-  // Buffer extends Uint8Array<ArrayBufferLike>. The narrowing fails on
-  // strict mode. Copy into a fresh ArrayBuffer-backed view so the type
-  // matches; the copy is a one-time 60-byte allocation per org, which
-  // is fine for a write path that only runs once per org lifetime.
   const wrappedAb = new Uint8Array(new ArrayBuffer(wrapped.length));
   wrappedAb.set(wrapped);
   const ivAb = new Uint8Array(new ArrayBuffer(iv.length));
   ivAb.set(iv);
-  await prisma.organization.update({
-    where: { id: orgId },
+
+  // updateMany on (id, vaultDekWrapped: null) is atomic — Postgres
+  // row-locks the Organization row, so only ONE concurrent writer
+  // gets count === 1. The losers get count === 0 and fall through
+  // to the re-read below.
+  const winResult = await prisma.organization.updateMany({
+    where: { id: orgId, vaultDekWrapped: null },
     data: {
       vaultDekWrapped: wrappedAb,
       vaultDekNonce: ivAb,
@@ -163,8 +162,16 @@ async function getOrgDek(orgId: string): Promise<Buffer> {
     },
   });
 
-  // Re-read to resolve any race — losing writer's in-memory DEK is
-  // discarded in favor of whatever made it to disk.
+  if (winResult.count === 1) {
+    // We won. Return our in-memory DEK; the persisted copy matches.
+    return candidateDek;
+  }
+
+  // Lost the race. The candidateDek we minted is now garbage — it was
+  // never persisted, no credential should ever be encrypted with it.
+  // Zero it out aggressively and re-read the winner's DEK.
+  candidateDek.fill(0);
+
   const after = await prisma.organization.findUnique({
     where: { id: orgId },
     select: { vaultDekWrapped: true, vaultDekNonce: true },
@@ -172,11 +179,21 @@ async function getOrgDek(orgId: string): Promise<Buffer> {
   if (!after?.vaultDekWrapped || !after.vaultDekNonce) {
     throw new VaultCryptoError("Org DEK write failed");
   }
-  const persisted = Buffer.from(after.vaultDekWrapped);
-  const persistedNonce = Buffer.from(after.vaultDekNonce);
-  const persistedTag = persisted.subarray(persisted.length - GCM_TAG_LEN);
-  const persistedCt = persisted.subarray(0, persisted.length - GCM_TAG_LEN);
-  return decryptGcm(persistedCt, kek, persistedNonce, persistedTag);
+  return unwrapDek(Buffer.from(after.vaultDekWrapped), Buffer.from(after.vaultDekNonce), kek);
+}
+
+/** Shared helper for unwrapping a stored DEK with the master KEK. */
+function unwrapDek(wrapped: Buffer, nonce: Buffer, kek: Buffer): Buffer {
+  if (wrapped.length < GCM_TAG_LEN) {
+    throw new VaultCryptoError("Wrapped DEK is shorter than the GCM tag");
+  }
+  if (nonce.length !== GCM_NONCE_LEN) {
+    throw new VaultCryptoError(`Wrapped DEK nonce length unexpected: ${nonce.length}`);
+  }
+  // Layout: ciphertext || tag (last 16 bytes)
+  const tag = wrapped.subarray(wrapped.length - GCM_TAG_LEN);
+  const ct = wrapped.subarray(0, wrapped.length - GCM_TAG_LEN);
+  return decryptGcm(ct, kek, nonce, tag);
 }
 
 export type EncryptedSecret = {

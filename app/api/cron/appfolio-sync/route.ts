@@ -100,9 +100,37 @@ export async function GET(req: NextRequest) {
         !!integration.clientIdEncrypted &&
         (!!integration.clientSecretEncrypted || !!integration.apiKeyEncrypted);
 
+      // Weekly auto-retry of skipped phases. Pre-fix a phase that auto-
+      // skipped after 3 consecutive failures stayed skipped forever
+      // unless the operator manually clicked "Retry skipped phases".
+      // That meant a transient AppFolio outage from 30 days ago could
+      // permanently disable a phase that's working today. Now: if ANY
+      // skipped phase hasn't been retried in the last 7 days, the cron
+      // fires this run with `retrySkipped:true` so the skipped phases
+      // get one fresh attempt. They'll either succeed (and the skip
+      // flag clears) or fail and re-arm the skip flag.
+      const WEEKLY_MS = 7 * 24 * 60 * 60 * 1000;
+      const phaseFailures = (integration.lastSyncStats as Record<string, unknown> | null)
+        ?.phaseFailures as Record<string, { skipped?: boolean; lastRetryAttemptAt?: string }> | undefined;
+      let shouldRetrySkipped = false;
+      if (phaseFailures) {
+        for (const entry of Object.values(phaseFailures)) {
+          if (!entry?.skipped) continue;
+          const lastAttempt = entry.lastRetryAttemptAt
+            ? new Date(entry.lastRetryAttemptAt).getTime()
+            : 0;
+          if (Date.now() - lastAttempt > WEEKLY_MS) {
+            shouldRetrySkipped = true;
+            break;
+          }
+        }
+      }
+
       if (hasRestCreds) {
         try {
-          const r = await runAppfolioSync(integration.orgId);
+          const r = await runAppfolioSync(integration.orgId, {
+            retrySkipped: shouldRetrySkipped,
+          });
           if (!r.ok && r.error) {
             await prisma.appFolioIntegration
               .update({

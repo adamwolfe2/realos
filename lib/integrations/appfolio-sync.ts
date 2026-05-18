@@ -247,38 +247,68 @@ export async function runAppfolioSync(
   // partial failure doesn't shrink the failed phase's window forever on
   // subsequent incremental syncs.
   let phasesCompleted = 0;
+  // Skipped phases are tracked separately from completed so we never
+  // lie about health. Pre-fix the auto-skipped branch did
+  // `phasesCompleted += 1` which made the writer think 8/8 phases ran
+  // — masking persistent failures (SG Real Estate's leads phase had
+  // been "all phases completed" for 20 days while guest_cards 404'd).
+  let phasesSkipped = 0;
   const totalPhases = 8;
 
   // Persistent per-phase failure tracking. Stored in lastSyncStats as a
-  // map of { phaseName: { consecutiveFailures, firstFailedAt, lastError } }.
-  // After 3 consecutive failures we mark the phase as "skipped" and the
-  // next sync skips it entirely instead of repeatedly hitting AppFolio
-  // with a request we know will 404. The operator can re-enable via a
-  // manual "Retry skipped phases" action (UI sends `retrySkipped: true`
-  // in the sync options).
+  // map of { phaseName: { consecutiveFailures, firstFailedAt, lastError,
+  // skipped, lastRetryAttemptAt } }. After 3 consecutive failures we
+  // mark the phase as "skipped" and the next sync skips it entirely
+  // instead of repeatedly hitting AppFolio with a request we know will
+  // 404. Auto-retry is attempted weekly via the cron (see
+  // app/api/cron/appfolio-sync/route.ts) so a transient AppFolio
+  // outage doesn't pin a phase as broken forever.
   const PHASE_SKIP_THRESHOLD = 3;
   type PhaseFailureState = {
     consecutiveFailures: number;
     firstFailedAt: string;
     lastError: string;
     skipped?: boolean;
+    lastRetryAttemptAt?: string;
   };
+  // Defensive parsing — a malformed prior payload (manual DB edit,
+  // schema drift) could give us NaN or undefined values that bypass
+  // the skip threshold forever. Zod-validate the shape, default to
+  // empty on any parse failure.
   const priorStatsRaw = (integration.lastSyncStats as unknown as {
-    phaseFailures?: Record<string, PhaseFailureState>;
+    phaseFailures?: Record<string, unknown>;
   } | null) ?? null;
-  const priorFailures: Record<string, PhaseFailureState> =
-    priorStatsRaw?.phaseFailures && typeof priorStatsRaw.phaseFailures === "object"
-      ? { ...priorStatsRaw.phaseFailures }
-      : {};
-  // When the operator explicitly retries skipped phases, clear the
-  // skipped flags so they get one fresh attempt this run.
+  const priorFailures: Record<string, PhaseFailureState> = {};
+  if (priorStatsRaw?.phaseFailures && typeof priorStatsRaw.phaseFailures === "object") {
+    for (const [k, v] of Object.entries(priorStatsRaw.phaseFailures)) {
+      if (v && typeof v === "object") {
+        const e = v as Record<string, unknown>;
+        const cf = typeof e.consecutiveFailures === "number" && Number.isFinite(e.consecutiveFailures)
+          ? Math.max(0, Math.floor(e.consecutiveFailures))
+          : 0;
+        priorFailures[k] = {
+          consecutiveFailures: cf,
+          firstFailedAt: typeof e.firstFailedAt === "string" ? e.firstFailedAt : new Date().toISOString(),
+          lastError: typeof e.lastError === "string" ? e.lastError : "unknown",
+          skipped: e.skipped === true,
+          lastRetryAttemptAt: typeof e.lastRetryAttemptAt === "string" ? e.lastRetryAttemptAt : undefined,
+        };
+      }
+    }
+  }
+  // When the operator explicitly retries skipped phases (manual button)
+  // OR the cron's weekly auto-retry fires, clear the skipped flags so
+  // those phases get one fresh attempt this run. Track the attempt
+  // timestamp so the cron doesn't auto-retry more than once per week.
   if (options.retrySkipped) {
+    const nowIso = new Date().toISOString();
     for (const k of Object.keys(priorFailures)) {
       if (priorFailures[k]?.skipped) {
         priorFailures[k] = {
           ...priorFailures[k],
           skipped: false,
           consecutiveFailures: 0,
+          lastRetryAttemptAt: nowIso,
         };
       }
     }
@@ -481,12 +511,13 @@ export async function runAppfolioSync(
     // Auto-skipped after 3 consecutive failures. Almost always indicates
     // the tenant's AppFolio plan doesn't include the guest_cards report
     // (Core plan vs. Plus/Max), or AppFolio's pagination is consistently
-    // 404ing for this account. We count this phase as completed for
-    // status purposes so it doesn't poison the success state.
+    // 404ing for this account. We DELIBERATELY DO NOT increment
+    // phasesCompleted — skipped phases are tracked separately so the
+    // writer (and the UI) can honestly say "7 of 8 ran, 1 was skipped".
     stats.warnings.push(
       `leads: phase auto-skipped after ${PHASE_SKIP_THRESHOLD} consecutive failures (last: ${phaseFailures.leads?.lastError ?? "unknown"}). Use Retry skipped phases to re-attempt.`
     );
-    phasesCompleted += 1;
+    phasesSkipped += 1;
   } else {
     try {
       const rows = await fetchAllPages(client, "guest_cards", { fromDate, toDate });
@@ -787,11 +818,16 @@ export async function runAppfolioSync(
   }
 
   // Connector is "healthy" if at least one phase completed (even with 0
-  // rows) — the integration goes back to idle. But lastSyncAt only
-  // advances when *every* phase completed; partial syncs preserve the
-  // existing lastSyncAt so the failed phase's window doesn't shrink and
-  // lose unsynced data.
-  const allPhasesCompleted = phasesCompleted === totalPhases;
+  // rows) — the integration goes back to idle. lastSyncAt advances on
+  // any successful phase; warnings persist in lastSyncStats.
+  //
+  // `allPhasesCompleted` now treats SKIPPED phases as "ran cleanly for
+  // this tenant" — the operator either acknowledged the skip with
+  // retrySkipped:true (which clears the skip flag) or the cron will
+  // auto-retry on a weekly schedule. Either way, a tenant whose plan
+  // genuinely doesn't include guest_cards can have a steady-state of
+  // "phasesCompleted: 7, phasesSkipped: 1" without false-alarm UI.
+  const allPhasesCompleted = phasesCompleted + phasesSkipped === totalPhases;
   const anyPhaseCompleted = phasesCompleted > 0;
 
   // Bug #16/#25 — Property.lastSyncedAt was only being updated by the
@@ -832,6 +868,7 @@ export async function runAppfolioSync(
     delinquenciesUpdated: stats.delinquenciesUpdated,
     warnings: stats.warnings.slice(0, 50), // cap to avoid runaway JSON
     phasesCompleted,
+    phasesSkipped,
     totalPhases,
     completedAt: new Date().toISOString(),
     fullBackfill: !!options.fullBackfill,

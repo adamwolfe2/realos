@@ -70,8 +70,18 @@ export async function runSeoSync(
     warnings: [],
   };
 
+  // Filter out demo-seeded rows that store the literal "DEMO_SEED"
+  // placeholder as ciphertext. The status helper + portal/seo page
+  // already filter these, but the sync worker did NOT — meaning every
+  // cron tick was trying to decrypt "DEMO_SEED", throwing, and
+  // setting status=ERROR on the integration row. That cascaded into
+  // the marketplace pill flipping to rose "Sync error" and the
+  // StaleOnLoadTrigger firing pointlessly.
   const integrations = await prisma.seoIntegration.findMany({
-    where: { orgId },
+    where: {
+      orgId,
+      serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
+    },
   });
   if (integrations.length === 0) {
     return {

@@ -398,37 +398,23 @@ export function appfolioRestClient(
           `AppFolio ${reportName} pagination protocol not allowed: ${absoluteUrl.protocol}`
         );
       }
-      // Try GET first (current behavior). Some AppFolio tenants serve
-      // pagination via GET on next_page_url; others require POST because
-      // the initial request was POST and AppFolio expects method
-      // consistency. SG Real Estate's guest_cards endpoint has been
-      // returning 404 on GET for 20 days even though the initial POST
-      // succeeded and minted a valid next_page_url — strongly suggests
-      // that account's REST tier wants POST for pagination. We try GET
-      // first to preserve the existing behavior for working tenants,
-      // then fall back to POST on a 404. Anything else (401, 5xx) we
-      // surface immediately so transient errors aren't masked.
-      const tryFetch = async (method: "GET" | "POST"): Promise<Response> => {
-        const init: RequestInit = {
-          method,
-          cache: "no-store",
-          headers: {
-            Authorization: `Basic ${basic}`,
-            Accept: "application/json",
-            "User-Agent": USER_AGENT,
-            ...(method === "POST" ? { "Content-Type": "application/json" } : {}),
-          },
-          // AppFolio's pagination tokens carry all the state in the URL
-          // (metadata_id, page, filters), so an empty POST body is fine.
-          ...(method === "POST" ? { body: "{}" } : {}),
-        };
-        return fetch(absoluteUrl.toString(), init);
-      };
-
-      let response = await tryFetch("GET");
-      if (response.status === 404) {
-        response = await tryFetch("POST");
-      }
+      // AppFolio v2 pagination: follow next_page_url with GET. The
+      // earlier POST-fallback experiment turned out to be a dead-end —
+      // re-POSTing the cursor URL with {} doesn't mint a fresh cursor,
+      // and AppFolio doesn't honor `paginate_results: true` against
+      // the cursor URL anyway. The real recovery for a 404 cursor is
+      // the whole-report retry in fetchAllPages (CURSOR_EXPIRED_PATTERNS
+      // matches "page returned 404" and restarts from page 1, which
+      // mints a new cursor via the initial POST).
+      const response = await fetch(absoluteUrl.toString(), {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          Authorization: `Basic ${basic}`,
+          Accept: "application/json",
+          "User-Agent": USER_AGENT,
+        },
+      });
       if (!response.ok) {
         const text = await response.text().catch(() => "");
         throw new Error(
