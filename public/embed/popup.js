@@ -115,18 +115,26 @@
   }
 
   function submitLead(popup, data) {
-    return fetch(API_ORIGIN + "/api/public/leads", {
+    // Dedicated popup endpoint resolves tenantSlug + propertySlug
+    // server-side and writes through the same notification side-effects
+    // a chatbot capture does. Pre-fix this hit /api/public/leads,
+    // whose schema demands `orgId` + a LeadSource enum — the embed
+    // sends neither, so every popup conversion silently 400'd.
+    return fetch(API_ORIGIN + "/api/public/popup/lead", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "omit",
       body: JSON.stringify({
         tenantSlug: TENANT,
         propertySlug: PROPERTY || undefined,
+        popupId: popup.id,
         email: data.email,
         phone: data.phone,
-        source: "popup",
-        sourceDetail: "popup:" + popup.id,
         pageUrl: window.location.href,
+        // Visitor identity for pixel attribution. Best-effort — the
+        // pixel sets this cookie on tenant marketing sites; the popup
+        // may run on other sites where the cookie won't be present.
+        visitorHash: readCookie("ls_vid"),
       }),
     })
       .then(function (r) {
@@ -137,6 +145,22 @@
       .catch(function () {
         return { ok: false };
       });
+  }
+
+  function readCookie(name) {
+    try {
+      var pairs = document.cookie ? document.cookie.split(";") : [];
+      for (var i = 0; i < pairs.length; i++) {
+        var idx = pairs[i].indexOf("=");
+        var k = idx === -1 ? pairs[i].trim() : pairs[i].slice(0, idx).trim();
+        if (k === name) {
+          return idx === -1 ? "" : decodeURIComponent(pairs[i].slice(idx + 1));
+        }
+      }
+    } catch (_) {
+      /* ignore */
+    }
+    return undefined;
   }
 
   // ──────────────────────────────────────────────────────────────────
