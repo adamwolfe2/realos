@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { Sun, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // ---------------------------------------------------------------------------
@@ -64,39 +63,20 @@ export function DashboardGreeting({
   // haven't synced a user profile yet (new tenants, first session) so
   // the greeting still feels addressed to someone.
   const subject = firstName?.trim().length ? firstName : orgName;
-  const asOfDate = new Date(asOf);
-  const asOfLabel = asOfDate.toLocaleString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
+  // `asOf` is still accepted on the props interface so callers can keep
+  // passing it without breaking, but the headline no longer renders a
+  // date/time + range subtitle next to the greeting. Per design pass:
+  // the sun icon + "Mon, May 18, 2:25 AM · Showing last 28 days" read
+  // as visual noise next to the user name. The active range is already
+  // communicated by the pill group on the right side of the header.
+  void asOf;
 
   return (
-    <header className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div className="min-w-0">
-        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground leading-tight inline-flex items-baseline gap-2">
+        <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground leading-tight">
           {greeting}, <span className="text-primary">{subject}</span>
-          <Sun
-            className="inline-block h-5 w-5 text-amber-500 ml-0.5 -mb-0.5"
-            aria-hidden="true"
-          />
         </h1>
-        <p className="text-sm text-muted-foreground mt-1 inline-flex items-center gap-1.5">
-          <Calendar className="h-3 w-3" aria-hidden="true" />
-          {asOfLabel}
-          <span aria-hidden="true" className="text-muted-foreground/40">
-            ·
-          </span>
-          <span>
-            Showing{" "}
-            <span className="font-semibold text-foreground">
-              last {rangeDays(range)} days
-            </span>
-            {compare ? " vs previous period" : ""}
-          </span>
-        </p>
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
