@@ -54,6 +54,7 @@ export type PortalNavOrg = {
   moduleCreativeStudio: boolean;
   moduleSEO: boolean;
   moduleReferrals: boolean;
+  modulePopups: boolean;
   bringYourOwnSite: boolean;
   onboardingDismissed: boolean;
   setupComplete: boolean;
@@ -254,6 +255,12 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Chatbot",
         icon: Bot,
         show: (o) => o.moduleChatbot,
+      },
+      {
+        href: "/portal/popups",
+        label: "Popups",
+        icon: Sparkles,
+        show: (o) => o.modulePopups,
       },
     ],
   },

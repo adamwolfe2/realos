@@ -360,6 +360,10 @@ model Organization {
   moduleReferrals      Boolean @default(false)
   moduleCreativeStudio Boolean @default(false)
   moduleLeadCapture    Boolean @default(true)
+  // Embeddable popup module — operators design promo / referral /
+  // discount popups in /portal/popups and paste a one-line script tag
+  // on any external site. Same architecture as moduleChatbot.
+  modulePopups         Boolean @default(false)
 
   // Site hosting mode
   bringYourOwnSite Boolean @default(false)
@@ -413,6 +417,8 @@ model Organization {
   leases                 Lease[]
   workOrders             WorkOrder[]
   websiteBuildRequests   WebsiteBuildRequest[]
+  popupCampaigns         PopupCampaign[]
+  popupEvents            PopupEvent[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -748,6 +754,7 @@ model Property {
   leases               Lease[]
   workOrders           WorkOrder[]
   clientReports        ClientReport[]
+  popupCampaigns       PopupCampaign[]
   // Reverse relation for property-level RBAC. See UserPropertyAccess.
   userAccess           UserPropertyAccess[]
   // Per-property integration connections. NULL on these rows means
@@ -2732,4 +2739,147 @@ model EmailSuppression {
   unsubscribedAt DateTime @default(now())
 
   @@index([email])
+}
+
+// ============================================================================
+// EMBEDDABLE POPUPS
+// ----------------------------------------------------------------------------
+// Operator-designed promo / referral / discount popups that get embedded
+// on any external website via a single <script> tag (mirrors the chatbot
+// embed architecture in public/embed/chatbot.js).
+//
+// Lifecycle:
+//   1. Operator creates a PopupCampaign in /portal/popups with headline,
+//      body, CTA, offer code, trigger config, and brand colors.
+//   2. They paste a <script src="https://leasestack.co/embed/popup.js"
+//      data-tenant="..."></script> tag in the <head> of their site.
+//   3. The embed pulls config from /api/public/popup/config/[slug] and
+//      renders the popup when the trigger fires (exit intent / scroll
+//      depth / time on page).
+//   4. Every render / dismiss / click / conversion writes a PopupEvent
+//      row so the operator sees real conversion analytics in the portal.
+// ============================================================================
+
+enum PopupStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  ARCHIVED
+}
+
+enum PopupTrigger {
+  EXIT_INTENT // mouse leaves the viewport top
+  SCROLL_DEPTH // user has scrolled past N% of page height
+  TIME_ON_PAGE // user has been on page for N seconds
+  IMMEDIATE // shown immediately on page load (use sparingly)
+}
+
+enum PopupPosition {
+  CENTER // dimmed backdrop, centered modal
+  BOTTOM_RIGHT // slide-in toast, non-blocking
+  BOTTOM_LEFT
+  TOP_BANNER // full-width banner stuck to top of viewport
+}
+
+enum PopupEventType {
+  SHOWN
+  DISMISSED
+  CTA_CLICKED
+  CONVERTED // lead form was submitted from inside the popup
+}
+
+model PopupCampaign {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Optional property scope. NULL = applies to every site this org has
+  // installed the embed on; SET = only fires on pages where data-property
+  // attribute matches this property's slug.
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  // Operator-facing label (not shown to visitors)
+  name String
+
+  // Lifecycle. Drafts never render. Paused respects analytics history
+  // but stops new shows. Archived hides from the list.
+  status PopupStatus @default(DRAFT)
+
+  // ─── Copy (what the visitor sees) ─────────────────────────────────
+  headline String // ≤ 80 chars in UI but enforced as text in DB
+  body     String @db.Text
+  ctaText  String // "Claim offer", "Apply now", etc.
+  ctaUrl   String // where the CTA points; "#" or null-equivalent allowed
+  // Optional promo / referral code shown in a copy-to-clipboard pill
+  offerCode String?
+  // Optional secondary action — e.g. "Maybe later" dismiss copy override
+  secondaryText String?
+
+  // ─── Targeting + triggers ─────────────────────────────────────────
+  trigger          PopupTrigger @default(EXIT_INTENT)
+  triggerThreshold Int          @default(0) // seconds for TIME_ON_PAGE, percent for SCROLL_DEPTH
+
+  // Allowlist of URL substrings the popup is allowed to fire on. Empty
+  // array = every page. Examples: ["/floor-plans", "/apply"].
+  targetUrlPatterns Json?
+
+  // Show frequency — once per session (default) prevents popup fatigue.
+  // "session" | "always" | "once_per_day"
+  frequency String @default("session")
+
+  // ─── Visual ───────────────────────────────────────────────────────
+  position       PopupPosition @default(CENTER)
+  primaryColor   String        @default("#2563EB") // brand blue
+  textColor      String        @default("#0F172A") // near-black
+  backgroundColor String       @default("#FFFFFF")
+
+  // Optional hero image URL (full-bleed at top of popup)
+  heroImageUrl String?
+
+  // ─── Form capture (optional) ──────────────────────────────────────
+  // When true, the popup includes an email + (optional) phone capture
+  // form and posts to /api/public/leads with sourceDetail=popup:<id>.
+  captureEmail Boolean @default(true)
+  capturePhone Boolean @default(false)
+
+  // ─── Analytics rollups (denormalized, refreshed on every event) ──
+  shownCount     Int @default(0)
+  dismissedCount Int @default(0)
+  ctaClickCount  Int @default(0)
+  convertedCount Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  events PopupEvent[]
+
+  @@index([orgId, status])
+  @@index([orgId, propertyId])
+  @@index([propertyId])
+}
+
+model PopupEvent {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  campaignId String
+  campaign   PopupCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  type PopupEventType
+
+  // Visitor identifiers (matched against Visitor when possible)
+  sessionId   String? // popup-embed-issued session id
+  anonymousId String? // browser cookie id from pixel if installed
+  leadId      String? // populated on CONVERTED events
+
+  // Source page where the event occurred
+  pageUrl  String?
+  referrer String?
+
+  occurredAt DateTime @default(now())
+
+  @@index([orgId, occurredAt])
+  @@index([campaignId, type, occurredAt])
 }

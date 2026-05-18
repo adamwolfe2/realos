@@ -57,7 +57,8 @@ export type ModuleKey =
   | "moduleReferrals"
   | "moduleCreativeStudio"
   | "moduleWebsite"
-  | "moduleLeadCapture";
+  | "moduleLeadCapture"
+  | "modulePopups";
 
 export type CatalogCategory =
   | "Acquisition"
@@ -254,6 +255,27 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     popular: true,
     setupEffort: "Configure persona · 10 min",
     brandLogoKeys: ["claude", "cal", "resend"],
+  },
+  {
+    key: "modulePopups",
+    kind: "toggle",
+    slug: "embeddable-popups",
+    name: "Embeddable Popups",
+    tagline:
+      "Design promo, referral, and discount popups in 90 seconds. Paste a single script tag on any external site. Every conversion attributes back to your lead pipeline.",
+    bullets: [
+      "Exit intent, scroll depth, time on page, immediate triggers",
+      "Center modal, slide-in toast, or top banner positions",
+      "Click-to-copy offer codes + optional email/phone capture",
+      "Once-per-session frequency cap to prevent popup fatigue",
+      "Conversions write back to /portal/leads with attribution",
+    ],
+    monthlyPriceCents: 4900,
+    stripeLookupKey: "ls_addon_popups_v1",
+    setupHref: "/portal/popups",
+    icon: Sparkles,
+    category: "Engagement",
+    setupEffort: "Design + embed · 5 min",
   },
   {
     key: "moduleCreativeStudio",

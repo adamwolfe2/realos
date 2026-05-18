@@ -403,6 +403,7 @@ async function seed(): Promise<void> {
       moduleLeadCapture: true,
       moduleCreativeStudio: true,
       moduleReferrals: true,
+      modulePopups: true,
       onboardingDismissed: true,
     },
     update: {
@@ -416,6 +417,8 @@ async function seed(): Promise<void> {
   // ─── Wipe prior demo data org-scoped (idempotent reset) ──────────────
   // Order matters: rows with foreign keys to others must go first.
   console.log("[seed] wiping prior demo rows (org-scoped)...");
+  await prisma.popupEvent.deleteMany({ where: { orgId: org.id } });
+  await prisma.popupCampaign.deleteMany({ where: { orgId: org.id } });
   await prisma.seoIntegration.deleteMany({ where: { orgId: org.id } });
   await prisma.cursiveIntegration.deleteMany({ where: { orgId: org.id } });
   await prisma.appFolioIntegration.deleteMany({ where: { orgId: org.id } });
@@ -1482,6 +1485,107 @@ async function seed(): Promise<void> {
     },
   });
   console.log(`[seed] inserted SEO integrations (GA4 + GSC, both connected)`);
+
+  // ─── Demo popup campaigns ────────────────────────────────────────────
+  // Two opinionated examples Norman can show on calls:
+  //   1. Exit-intent center modal with $300-off promo (high-impact)
+  //   2. Bottom-right toast referral program (always-on, non-blocking)
+  // Both ACTIVE so the /portal/popups list lights up immediately and
+  // the analytics tiles read non-zero.
+  const popup1 = await prisma.popupCampaign.create({
+    data: {
+      orgId: org.id,
+      name: "Fall lease-up — first month free",
+      status: "ACTIVE",
+      headline: "First month free if you tour this week.",
+      body: "Three units left in our most-requested floor plan. Book a 15-minute tour before Friday and we'll waive your first month's rent.",
+      ctaText: "Book a tour",
+      ctaUrl: "/tour",
+      offerCode: "TOUR1FREE",
+      secondaryText: "No thanks",
+      trigger: "EXIT_INTENT",
+      triggerThreshold: 0,
+      targetUrlPatterns: ["/floor-plans", "/amenities"],
+      frequency: "session",
+      position: "CENTER",
+      primaryColor: "#2563EB",
+      textColor: "#0F172A",
+      backgroundColor: "#FFFFFF",
+      heroImageUrl:
+        "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=1200&q=80&auto=format&fit=crop",
+      captureEmail: true,
+      capturePhone: false,
+      // Pre-seed realistic analytics so the list shows non-zero KPIs.
+      shownCount: 412,
+      dismissedCount: 287,
+      ctaClickCount: 89,
+      convertedCount: 36,
+    },
+  });
+  const popup2 = await prisma.popupCampaign.create({
+    data: {
+      orgId: org.id,
+      name: "Resident referral — $300 off",
+      status: "ACTIVE",
+      headline: "Refer a roommate. Get $300 off your next month.",
+      body: "Send them this link. When they sign, the discount lands on your next statement.",
+      ctaText: "Get my referral link",
+      ctaUrl: "/referrals",
+      offerCode: "REFER300",
+      secondaryText: null,
+      trigger: "TIME_ON_PAGE",
+      triggerThreshold: 25,
+      targetUrlPatterns: [],
+      frequency: "once_per_day",
+      position: "BOTTOM_RIGHT",
+      primaryColor: "#16A34A",
+      textColor: "#0F172A",
+      backgroundColor: "#FFFFFF",
+      heroImageUrl: null,
+      captureEmail: false,
+      capturePhone: false,
+      shownCount: 1280,
+      dismissedCount: 1041,
+      ctaClickCount: 196,
+      convertedCount: 43,
+    },
+  });
+  // Seed a handful of PopupEvent rows so the per-campaign daily chart
+  // (when we ship it) has data, and so the global summary tile shows
+  // non-zero "Shown (28d)" / "Conversions (28d)".
+  const NOW_MS = Date.now();
+  const popupEvents: Prisma.PopupEventCreateManyInput[] = [];
+  for (let d = 27; d >= 0; d -= 1) {
+    const day = new Date(NOW_MS - d * 24 * 60 * 60 * 1000);
+    for (let s = 0; s < rand(4, 18); s += 1) {
+      popupEvents.push({
+        orgId: org.id,
+        campaignId: popup1.id,
+        type: "SHOWN",
+        occurredAt: new Date(day.getTime() + rand(0, 86_400_000)),
+      });
+    }
+    for (let c = 0; c < rand(0, 3); c += 1) {
+      popupEvents.push({
+        orgId: org.id,
+        campaignId: popup1.id,
+        type: "CONVERTED",
+        occurredAt: new Date(day.getTime() + rand(0, 86_400_000)),
+      });
+    }
+    for (let s = 0; s < rand(20, 60); s += 1) {
+      popupEvents.push({
+        orgId: org.id,
+        campaignId: popup2.id,
+        type: "SHOWN",
+        occurredAt: new Date(day.getTime() + rand(0, 86_400_000)),
+      });
+    }
+  }
+  await prisma.popupEvent.createMany({ data: popupEvents });
+  console.log(
+    `[seed] inserted 2 popup campaigns + ${popupEvents.length} popup events`,
+  );
 
   console.log(`\n[seed] done. Demo org ready:`);
   console.log(`  - orgId:   ${org.id}`);

@@ -48,6 +48,7 @@ export default async function MarketplacePage() {
       moduleReferrals: true,
       moduleCreativeStudio: true,
       moduleLeadCapture: true,
+      modulePopups: true,
     },
   });
 
@@ -82,6 +83,7 @@ export default async function MarketplacePage() {
     moduleReferrals: org.moduleReferrals,
     moduleCreativeStudio: org.moduleCreativeStudio,
     moduleLeadCapture: org.moduleLeadCapture,
+    modulePopups: org.modulePopups,
   };
 
   const grouped = groupModulesByCategory();
