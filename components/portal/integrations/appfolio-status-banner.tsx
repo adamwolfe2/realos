@@ -121,6 +121,34 @@ export function AppFolioStatusBanner({
     );
   }
 
+  if (status.state === "partial") {
+    // Partial-success state. Some phases pulled data, some failed. Don't
+    // render the apocalyptic red "sync failed" banner — that misleads the
+    // operator into thinking the whole integration is broken when in
+    // reality 5 of 6 surfaces are current. Show an amber heads-up with
+    // the specific phase that failed and a retry button.
+    return (
+      <Banner
+        tone="warn"
+        icon={<AlertTriangle className="h-4 w-4" />}
+        title="AppFolio sync completed with warnings."
+        body={`${status.stats?.phasesCompleted ?? 0} of ${status.stats?.totalPhases ?? 8} report phases pulled data. ${
+          status.stats?.warnings?.[0]
+            ? `First warning: ${truncate(status.stats.warnings[0], 200)}`
+            : ""
+        } If this keeps happening on the same phase, the report may not be available on your AppFolio plan — use "Retry skipped phases" after upgrading.`}
+        meta={
+          status.lastSyncAt
+            ? `Last sync ${formatDistanceToNow(status.lastSyncAt, {
+                addSuffix: true,
+              })}.`
+            : undefined
+        }
+        action={<RunAppFolioSyncButton label="Retry sync" />}
+      />
+    );
+  }
+
   if (status.state === "failed") {
     // Honest disclosure of the safe-fallback behavior: when a sync
     // fails we keep rendering whatever was last persisted to the DB

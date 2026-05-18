@@ -21,6 +21,7 @@ export type AppFolioConnectionState =
   | "never_synced"
   | "syncing"
   | "synced"
+  | "partial" // sync ran, some phases pulled data, some phases failed
   | "failed";
 
 export type AppFolioStatus = {
@@ -212,6 +213,28 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
 
   const ageMs = Date.now() - integ.lastSyncAt.getTime();
   const stale = ageMs > 24 * 60 * 60 * 1000;
+
+  // Partial-success detection. The sync writer no longer sets
+  // lastError when at least one phase completed, but the stats payload
+  // still records which phases failed. Surface "partial" so the UI can
+  // tell the operator "leads aren't syncing, everything else is fine"
+  // instead of either lying with green "Synced" or screaming red
+  // "Failed" for a 5/6-successful run.
+  const hasPhaseFailures =
+    !!stats &&
+    stats.phasesCompleted < stats.totalPhases &&
+    stats.warnings.length > 0;
+  if (hasPhaseFailures) {
+    return {
+      state: "partial",
+      lastSyncAt: integ.lastSyncAt,
+      syncStartedAt,
+      lastError: stats.warnings[0] ?? null,
+      subdomain: integ.instanceSubdomain ?? null,
+      stale,
+      stats,
+    };
+  }
 
   return {
     state: "synced",

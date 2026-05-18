@@ -85,7 +85,7 @@ export type AppfolioSyncResult = {
 
 export async function runAppfolioSync(
   orgId: string,
-  options: { fullBackfill?: boolean } = {}
+  options: { fullBackfill?: boolean; retrySkipped?: boolean } = {}
 ): Promise<AppfolioSyncResult> {
   const stats: AppfolioSyncStats = {
     leadsUpserted: 0,
@@ -248,6 +248,64 @@ export async function runAppfolioSync(
   // subsequent incremental syncs.
   let phasesCompleted = 0;
   const totalPhases = 8;
+
+  // Persistent per-phase failure tracking. Stored in lastSyncStats as a
+  // map of { phaseName: { consecutiveFailures, firstFailedAt, lastError } }.
+  // After 3 consecutive failures we mark the phase as "skipped" and the
+  // next sync skips it entirely instead of repeatedly hitting AppFolio
+  // with a request we know will 404. The operator can re-enable via a
+  // manual "Retry skipped phases" action (UI sends `retrySkipped: true`
+  // in the sync options).
+  const PHASE_SKIP_THRESHOLD = 3;
+  type PhaseFailureState = {
+    consecutiveFailures: number;
+    firstFailedAt: string;
+    lastError: string;
+    skipped?: boolean;
+  };
+  const priorStatsRaw = (integration.lastSyncStats as unknown as {
+    phaseFailures?: Record<string, PhaseFailureState>;
+  } | null) ?? null;
+  const priorFailures: Record<string, PhaseFailureState> =
+    priorStatsRaw?.phaseFailures && typeof priorStatsRaw.phaseFailures === "object"
+      ? { ...priorStatsRaw.phaseFailures }
+      : {};
+  // When the operator explicitly retries skipped phases, clear the
+  // skipped flags so they get one fresh attempt this run.
+  if (options.retrySkipped) {
+    for (const k of Object.keys(priorFailures)) {
+      if (priorFailures[k]?.skipped) {
+        priorFailures[k] = {
+          ...priorFailures[k],
+          skipped: false,
+          consecutiveFailures: 0,
+        };
+      }
+    }
+  }
+  const phaseFailures: Record<string, PhaseFailureState> = { ...priorFailures };
+
+  function isPhaseSkipped(phase: string): boolean {
+    const entry = phaseFailures[phase];
+    return !!entry?.skipped;
+  }
+
+  function recordPhaseSuccess(phase: string): void {
+    // Successful run clears the consecutive-failure counter so a flaky
+    // endpoint that recovers doesn't stay marked.
+    if (phaseFailures[phase]) delete phaseFailures[phase];
+  }
+
+  function recordPhaseFailure(phase: string, error: string): void {
+    const prior = phaseFailures[phase];
+    const consecutiveFailures = (prior?.consecutiveFailures ?? 0) + 1;
+    phaseFailures[phase] = {
+      consecutiveFailures,
+      firstFailedAt: prior?.firstFailedAt ?? new Date().toISOString(),
+      lastError: error,
+      skipped: consecutiveFailures >= PHASE_SKIP_THRESHOLD,
+    };
+  }
 
   // 0. PROPERTIES — must run BEFORE leads/listings/residents so those
   // phases can attribute to a real Property row on the first sync. Was
@@ -419,19 +477,35 @@ export async function runAppfolioSync(
   }
 
   // 1. LEADS — AppFolio v2 report: guest_cards
-  try {
-    const rows = await fetchAllPages(client, "guest_cards", { fromDate, toDate });
-    for (const row of rows) {
-      const mapped = mapLeadPayload(row);
-      if (!mapped) continue;
-      await upsertAppfolioLead(orgId, mapped, resolvePropertyId(mapped.propertyIds));
-      stats.leadsUpserted += 1;
-    }
+  if (isPhaseSkipped("leads")) {
+    // Auto-skipped after 3 consecutive failures. Almost always indicates
+    // the tenant's AppFolio plan doesn't include the guest_cards report
+    // (Core plan vs. Plus/Max), or AppFolio's pagination is consistently
+    // 404ing for this account. We count this phase as completed for
+    // status purposes so it doesn't poison the success state.
+    stats.warnings.push(
+      `leads: phase auto-skipped after ${PHASE_SKIP_THRESHOLD} consecutive failures (last: ${phaseFailures.leads?.lastError ?? "unknown"}). Use Retry skipped phases to re-attempt.`
+    );
     phasesCompleted += 1;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : "Unknown error";
-    stats.warnings.push(`leads: ${message}`);
-    topLevelError = topLevelError ?? `leads: ${message}`;
+  } else {
+    try {
+      const rows = await fetchAllPages(client, "guest_cards", { fromDate, toDate });
+      for (const row of rows) {
+        const mapped = mapLeadPayload(row);
+        if (!mapped) continue;
+        await upsertAppfolioLead(orgId, mapped, resolvePropertyId(mapped.propertyIds));
+        stats.leadsUpserted += 1;
+      }
+      phasesCompleted += 1;
+      recordPhaseSuccess("leads");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      stats.warnings.push(`leads: ${message}`);
+      // No longer pollutes topLevelError — partial-success state is
+      // signalled via stats.warnings + phaseFailures only. The whole-
+      // sync "failed" banner now only fires when zero phases complete.
+      recordPhaseFailure("leads", message);
+    }
   }
 
   // (Tours intentionally skipped: showings is a v1 CRUD entity, not a v2
@@ -742,7 +816,10 @@ export async function runAppfolioSync(
   }
 
   // Build the persisted stats payload — same shape as in-memory stats plus
-  // a few derived fields so the UI doesn't have to recompute them.
+  // a few derived fields so the UI doesn't have to recompute them. The
+  // phaseFailures map is persisted so the next run can decide whether to
+  // skip a phase that's failed 3+ times in a row (e.g. guest_cards on
+  // a Core-plan tenant that doesn't expose that report).
   const persistedStats: Prisma.InputJsonValue = {
     leadsUpserted: stats.leadsUpserted,
     toursUpserted: stats.toursUpserted,
@@ -758,27 +835,37 @@ export async function runAppfolioSync(
     totalPhases,
     completedAt: new Date().toISOString(),
     fullBackfill: !!options.fullBackfill,
+    phaseFailures,
   };
 
+  // Partial vs hard-failure distinction. Pre-fix any phase failure set
+  // lastError, which flipped the integration status to "failed" and
+  // surfaced a rose "AppFolio sync failed" banner on every portal
+  // page — even when 5 of 6 phases pulled data successfully. This is
+  // what left SG Real Estate staring at a 20-day-old red banner.
+  //
+  // Now:
+  //   - Zero phases completed   → hard failure: set lastError, hold
+  //     lastSyncAt at the prior value so the freshness window doesn't
+  //     advance over data we don't have.
+  //   - Some phases completed   → partial success: clear lastError,
+  //     advance lastSyncAt to NOW. Warnings live in lastSyncStats.
+  //     Status pill shows "Partial sync" amber, not rose "failed".
+  //   - All phases completed    → clean: advance lastSyncAt, clear
+  //     lastError.
   try {
     await prisma.appFolioIntegration.update({
       where: { orgId },
       data: {
         syncStatus: anyPhaseCompleted ? "idle" : "error",
-        // Always clear the start-time marker on completion. Stuck-sync
-        // detection in the status helper only fires while syncStartedAt
-        // is set + syncStatus === "syncing" — leaving it set here would
-        // false-positive the next page load.
         syncStartedAt: null,
-        lastSyncAt: allPhasesCompleted
-          ? new Date()
-          : integration.lastSyncAt,
-        lastError:
-          anyPhaseCompleted && !allPhasesCompleted
-            ? topLevelError
-            : !anyPhaseCompleted
-              ? topLevelError
-              : null,
+        // Advance lastSyncAt whenever ANY phase wrote data. The freshness
+        // banner ("AppFolio data is stale, last sync 20d ago") was
+        // misleading operators into thinking nothing was syncing —
+        // when in reality, properties/residents/leases ARE current and
+        // only one phase (leads/guest_cards) was broken.
+        lastSyncAt: anyPhaseCompleted ? new Date() : integration.lastSyncAt,
+        lastError: !anyPhaseCompleted ? topLevelError : null,
         lastSyncStats: persistedStats,
       },
     });

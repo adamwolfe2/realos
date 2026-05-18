@@ -201,7 +201,9 @@ export default async function PortalLayout({
   // anywhere else first).
   const showStaleBanner =
     !!appfolioStatus &&
-    (appfolioStatus.state === "failed" || appfolioStatus.stale) &&
+    (appfolioStatus.state === "failed" ||
+      appfolioStatus.state === "partial" ||
+      appfolioStatus.stale) &&
     Boolean(appfolioIntegration?.instanceSubdomain);
   const staleAgeDays =
     showStaleBanner && appfolioStatus?.lastSyncAt
@@ -315,12 +317,18 @@ export default async function PortalLayout({
           storageKey={`leasestack:appfolio-stale:${org.id}:${appfolioStatus.lastSyncAt?.getTime() ?? "none"}`}
         >
           <AlertBanner
-            severity={appfolioStatus.state === "failed" ? "critical" : "warning"}
+            severity={
+              appfolioStatus.state === "failed"
+                ? "critical"
+                : "warning" // partial-success and stale both render amber
+            }
             flush
             title={
               appfolioStatus.state === "failed"
                 ? "AppFolio sync failed."
-                : "AppFolio data is stale."
+                : appfolioStatus.state === "partial"
+                  ? "AppFolio sync completed with warnings."
+                  : "AppFolio data is stale."
             }
             action={{
               label:
@@ -336,6 +344,14 @@ export default async function PortalLayout({
                 {staleAgeDays != null
                   ? ` Last attempt ${staleAgeDays}d ago.`
                   : null}
+              </>
+            ) : appfolioStatus.state === "partial" ? (
+              <>
+                {appfolioStatus.stats?.phasesCompleted ?? 0} of{" "}
+                {appfolioStatus.stats?.totalPhases ?? 8} phases pulled data.
+                {appfolioStatus.stats?.warnings?.[0]
+                  ? ` First warning: ${summarizeAppfolioError(appfolioStatus.stats.warnings[0])}`
+                  : ""}
               </>
             ) : staleAgeDays != null ? (
               `Last sync ${staleAgeDays}d ago. KPIs reflect that sync.`

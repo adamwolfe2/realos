@@ -244,9 +244,10 @@ function resolveOne(
       !!ctx.appfolio?.instanceSubdomain &&
       (!!ctx.appfolio?.clientIdEncrypted || !!ctx.appfolio?.apiKeyEncrypted || !!ctx.appfolio?.useEmbedFallback);
     if (!connected) return { slug: def.slug, state: "available" };
-    // Same honesty as SEO/Ads: surface "error" when the last sync
-    // failed instead of showing green and forcing operators to open
-    // the integration drawer to discover the failure.
+    // hard failure (no phases completed): rose "Sync error"
+    // partial success (some phases failed): handled via the layout
+    //   banner — pill stays green so operators see what actually works
+    //   and the drawer banner tells them which phase is broken
     const hasError =
       ctx.appfolio?.syncStatus === "error" || !!ctx.appfolio?.lastError;
     return {
