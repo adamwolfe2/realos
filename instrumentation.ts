@@ -3,21 +3,27 @@ export async function register() {
   const { validateEnv } = await import("@/lib/env");
   validateEnv();
 
-  // Vault master KEK check — warn at boot if it's missing/malformed
-  // rather than fail-fast, because the vault is opt-in (moduleVault).
-  // Orgs without the vault enabled don't need the KEK, so blocking
-  // boot on a missing KEK would punish every tenant for a feature
-  // most don't use. The crypto module itself throws clearly on first
-  // encrypt/decrypt if the KEK is bad, so the error surface is still
-  // honest — we just don't punish unrelated traffic.
-  try {
-    const { assertVaultKekConfigured } = await import("@/lib/vault/crypto");
-    assertVaultKekConfigured();
-    console.log("[instrumentation] vault master KEK configured ok");
-  } catch (err) {
-    console.warn(
-      "[instrumentation] vault master KEK NOT configured — set VAULT_MASTER_KEK_B64 in env before enabling moduleVault on any org. Generate with: openssl rand -base64 32",
-      err instanceof Error ? err.message : err,
-    );
+  // Vault master KEK check — Node runtime ONLY. The vault crypto
+  // module imports `node:crypto`, which Edge runtime forbids. The
+  // first iteration of this file dynamic-imported the module
+  // unconditionally; Next.js then pulled it into the Edge middleware
+  // bundle and the build failed with NOW_SANDBOX_WORKER_EDGE_FUNCTION
+  // _UNSUPPORTED_MODULES. Gate via NEXT_RUNTIME so this only runs in
+  // the Node boot path.
+  //
+  // Vault is opt-in (moduleVault flag), so a missing KEK should warn,
+  // not fail-fast — orgs without the vault don't need it. The crypto
+  // module itself throws clearly on first use if the KEK is bad.
+  if (process.env.NEXT_RUNTIME === "nodejs") {
+    try {
+      const { assertVaultKekConfigured } = await import("@/lib/vault/crypto");
+      assertVaultKekConfigured();
+      console.log("[instrumentation] vault master KEK configured ok");
+    } catch (err) {
+      console.warn(
+        "[instrumentation] vault master KEK NOT configured — set VAULT_MASTER_KEK_B64 in env before enabling moduleVault on any org. Generate with: openssl rand -base64 32",
+        err instanceof Error ? err.message : err,
+      );
+    }
   }
 }
