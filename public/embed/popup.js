@@ -463,6 +463,38 @@
       return;
     }
 
+    if (popup.trigger === "IDLE_TIME") {
+      // Fires after N seconds of no scroll/click/keypress/mousemove.
+      // Implemented as a resettable timer driven by activity events.
+      // Captures bored visitors who landed but never engaged — usually
+      // a better signal than "time on page" because someone actively
+      // reading shouldn't get interrupted by a popup.
+      var idleSeconds = Math.max(1, Number(popup.triggerThreshold) || 30);
+      var idleTimer = null;
+      function resetIdle() {
+        if (idleTimer) clearTimeout(idleTimer);
+        idleTimer = setTimeout(function () {
+          unwireIdle();
+          if (shouldShow(popup)) render(popup);
+        }, idleSeconds * 1000);
+      }
+      function unwireIdle() {
+        if (idleTimer) clearTimeout(idleTimer);
+        window.removeEventListener("scroll", resetIdle);
+        window.removeEventListener("mousemove", resetIdle);
+        window.removeEventListener("keydown", resetIdle);
+        window.removeEventListener("click", resetIdle);
+        window.removeEventListener("touchstart", resetIdle);
+      }
+      window.addEventListener("scroll", resetIdle, { passive: true });
+      window.addEventListener("mousemove", resetIdle, { passive: true });
+      window.addEventListener("keydown", resetIdle, { passive: true });
+      window.addEventListener("click", resetIdle, { passive: true });
+      window.addEventListener("touchstart", resetIdle, { passive: true });
+      resetIdle();
+      return;
+    }
+
     if (popup.trigger === "SCROLL_DEPTH") {
       var pct = Math.max(1, Math.min(100, Number(popup.triggerThreshold) || 50));
       var fired = false;

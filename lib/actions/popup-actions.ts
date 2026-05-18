@@ -163,6 +163,27 @@ export async function setPopupStatus(
   status: PopupStatus,
 ): Promise<ActionResult> {
   const scope = await requireScope();
+
+  // State-machine guard. DRAFT is a pre-publish state; you cannot
+  // un-publish back to it once a campaign has been live. Use PAUSED
+  // to temporarily stop a live campaign, or ARCHIVED to retire it
+  // for good. This prevents a UI mishap (clicking the wrong status
+  // pill) from silently hiding a live popup and wrecking attribution.
+  if (status === PopupStatus.DRAFT) {
+    const current = await prisma.popupCampaign.findFirst({
+      where: { id, orgId: scope.orgId },
+      select: { status: true },
+    });
+    if (!current) return { ok: false, error: "Popup not found." };
+    if (current.status !== PopupStatus.DRAFT) {
+      return {
+        ok: false,
+        error:
+          "A popup that's been published can't go back to Draft. Use Pause to stop it or Archive to retire it.",
+      };
+    }
+  }
+
   const updated = await prisma.popupCampaign.updateMany({
     where: { id, orgId: scope.orgId },
     data: { status },

@@ -331,16 +331,20 @@ export function PopupEditor({
                   <option value="EXIT_INTENT">Exit intent (mouse leaves top)</option>
                   <option value="SCROLL_DEPTH">Scroll depth (% of page)</option>
                   <option value="TIME_ON_PAGE">Time on page (seconds)</option>
+                  <option value="IDLE_TIME">Idle time (no scroll/click for N seconds)</option>
                   <option value="IMMEDIATE">Immediate</option>
                 </select>
               </Field>
               {state.trigger === "SCROLL_DEPTH" ||
-              state.trigger === "TIME_ON_PAGE" ? (
+              state.trigger === "TIME_ON_PAGE" ||
+              state.trigger === "IDLE_TIME" ? (
                 <Field
                   label={
                     state.trigger === "SCROLL_DEPTH"
                       ? "Scroll threshold (%)"
-                      : "Time threshold (seconds)"
+                      : state.trigger === "TIME_ON_PAGE"
+                        ? "Time threshold (seconds)"
+                        : "Idle threshold (seconds)"
                   }
                 >
                   <input

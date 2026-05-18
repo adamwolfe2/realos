@@ -407,9 +407,23 @@ async function seed(): Promise<void> {
       onboardingDismissed: true,
     },
     update: {
-      // No-op on re-run; we just need the row to exist. The cascading
-      // deletes below clear out child rows before we re-insert.
+      // We re-assert the demo's module flags on every run so a new
+      // module added to the schema since the last seed (e.g. modulePopups)
+      // actually lands on the existing demo org instead of silently
+      // staying at its Prisma default of false. Pre-fix the first add of
+      // modulePopups silently left the demo org with the feature off
+      // and the embed returned `popups: []`.
       name: DEMO_ORG_NAME,
+      moduleWebsite: true,
+      modulePixel: true,
+      moduleChatbot: true,
+      moduleGoogleAds: true,
+      moduleMetaAds: true,
+      moduleSEO: true,
+      moduleLeadCapture: true,
+      moduleCreativeStudio: true,
+      moduleReferrals: true,
+      modulePopups: true,
     },
   });
   console.log(`[seed] org ready: ${org.id} (${org.slug})`);

@@ -2771,6 +2771,7 @@ enum PopupTrigger {
   EXIT_INTENT // mouse leaves the viewport top
   SCROLL_DEPTH // user has scrolled past N% of page height
   TIME_ON_PAGE // user has been on page for N seconds
+  IDLE_TIME // user has been idle (no scroll/click/key) for N seconds
   IMMEDIATE // shown immediately on page load (use sparingly)
 }
 
