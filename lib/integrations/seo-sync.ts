@@ -91,19 +91,25 @@ export async function runSeoSync(
     };
   }
 
-  // Default window: a 3-day rolling window for cron runs; 30 days for
-  // first/full backfill. Pre-fix the incremental window was "yesterday
-  // only" — meaning if a cron tick failed, the missed day never got
-  // re-fetched until a full backfill ran. Pulling the last 3 days every
-  // tick keeps GA4 intraday + GSC late-arriving data fresh and self-
-  // heals single-tick failures without a backfill.
+  // Default window: a 2-day rolling window for cron runs (today + yesterday)
+  // so GA4's intraday data refreshes every 30 min. 30 days on first/full
+  // backfill. Pre-fix the incremental window was "yesterday only" —
+  // meaning if a cron tick failed, the missed day never got re-fetched
+  // until a full backfill ran. Pulling the last 2 days every tick keeps
+  // GA4 intraday + GSC late-arriving data fresh and self-heals single-
+  // tick failures without a backfill.
   //
-  // GSC adds rows up to 2 days after the event; GA4 publishes intraday
-  // data that gets revised over 24h. A 3-day rolling window is the
-  // sweet spot that covers both without exploding API quota.
+  // Window rationale:
+  //   - toDate: today (UTC), so GA4 returns the partial intraday row
+  //     for the current day. GA4 revises this row over ~24h; pulling
+  //     it on the 30-min cron keeps the live dashboard reasonably
+  //     current.
+  //   - fromDate: yesterday (UTC). Covers GSC's late-arriving rows
+  //     (GSC publishes with a 1–2 day lag) without exploding quota.
   const now = new Date();
+  const today = startOfUtcDay(now);
   const yesterday = startOfUtcDay(new Date(now.getTime() - DAY_MS));
-  const toDate = options.toDate ? startOfUtcDay(options.toDate) : yesterday;
+  const toDate = options.toDate ? startOfUtcDay(options.toDate) : today;
   const fullBackfill =
     options.fullBackfill ||
     integrations.every((i) => i.lastSyncAt == null);
@@ -111,7 +117,7 @@ export async function runSeoSync(
     ? startOfUtcDay(options.fromDate)
     : fullBackfill
       ? startOfUtcDay(new Date(now.getTime() - 30 * DAY_MS))
-      : startOfUtcDay(new Date(now.getTime() - 3 * DAY_MS));
+      : yesterday;
 
   // GSC and GA4 each contribute partial fields to the daily SeoSnapshot row;
   // we collect both, then upsert per date with a merged payload.

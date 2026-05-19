@@ -37,9 +37,14 @@ describe("SEO module — structure", () => {
     };
     const found = vercel.crons.find((c) => c.path === "/api/cron/seo-sync");
     expect(found).toBeDefined();
-    // Schedule cadence is a product decision (currently every 6h). We just
-    // make sure a valid cron expression is present so the cron is wired.
+    // Schedule cadence is a product decision (currently every 30 min so
+    // GA4 intraday + GSC late-arriving data stays fresh on the portal).
+    // We just make sure a valid cron expression is present so the cron
+    // is wired.
     expect(found?.schedule).toMatch(/^[\d*/,\- ]+$/);
+    // Tighter assertion: must run at least 4x per day (i.e. NOT a 6h
+    // schedule). Catches regressions that re-introduce the slow cadence.
+    expect(found?.schedule).toMatch(/^\*\/(?:5|10|15|20|30)/);
   });
 
   it("portal page exists at /portal/seo and uses requireScope", () => {

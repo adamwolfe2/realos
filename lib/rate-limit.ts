@@ -49,6 +49,12 @@ export const csvImportLimiter = createLimiter(redis, 3, '1 m')
 // 60 public API read requests per IP per minute (generous, read-only endpoints)
 export const publicApiLimiter = createLimiter(redis, 60, '1 m')
 
+// 1 SEO (GA4/GSC) on-demand sync per org per minute. Debounces the
+// stale-on-load trigger + the manual "Run sync" button so an operator
+// clicking rapidly or two tabs racing don't fan out into N concurrent
+// GA4/GSC report runs. The cron still runs every 30 min regardless.
+export const seoSyncLimiter = createLimiter(redis, 1, '1 m')
+
 // 10 public alert/notification signups per IP per hour
 export const publicAlertLimiter = createLimiter(redis, 10, '1 h')
 

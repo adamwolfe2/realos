@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { runSeoSync } from "@/lib/integrations/seo-sync";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, rateLimited, seoSyncLimiter } from "@/lib/rate-limit";
 
 // Vercel default for on-demand HTTP routes is 60s on Pro; runSeoSync
 // touches GSC + GA4 (each 4 fetch passes) and chunked upserts. Bump
@@ -19,12 +20,29 @@ export const maxDuration = 120;
 // from the dashboard at all — meaning if an operator wanted fresh GSC
 // data right now they had to wait up to 6h for the next cron tick.
 // Now this endpoint runs the same sync the cron does, scoped to the
-// caller's org, and bounded by the 60s StaleOnLoadTrigger cooldown.
+// caller's org, debounced 60s per org via Upstash so a rapid-clicker
+// or two tabs racing don't fan out into concurrent GA4 quota burns.
 // ---------------------------------------------------------------------------
 
 export async function POST() {
   try {
     const scope = await requireScope();
+
+    // Per-org debounce (60s). Keyed by orgId so two tabs in the same
+    // browser / two operators on the same tenant don't each kick off
+    // a parallel GSC + GA4 run. The cron continues independent of
+    // this limiter — operators always get fresh data within 30 min
+    // regardless of whether the limiter fires.
+    const { allowed } = await checkRateLimit(
+      seoSyncLimiter,
+      `seo-sync:${scope.orgId}`,
+    );
+    if (!allowed) {
+      return rateLimited(
+        "SEO sync was just triggered for this org. Try again in a minute.",
+        60,
+      );
+    }
 
     // Ensure at least one SeoIntegration exists for this org before
     // spinning up the worker. Avoids a 409 from the lib with a more
