@@ -70,7 +70,15 @@ export const FRESHNESS_BUDGET: Record<
   meta_ads: { staleAfterMs: 30 * MIN, veryStaleAfterMs: 6 * HOUR },
   ga4: { staleAfterMs: 6 * HOUR, veryStaleAfterMs: 2 * DAY },
   gsc: { staleAfterMs: 1 * DAY, veryStaleAfterMs: 3 * DAY },
-  cursive_pixel: { staleAfterMs: 24 * HOUR, veryStaleAfterMs: 7 * DAY },
+  // Cursive is push-driven (AL webhooks → /api/webhooks/cursive[/token])
+  // and reconciled by the 5-min /api/cron/pixel-segment-sync pull. A
+  // healthy pixel produces events constantly during business hours, so
+  // 2 min is the right "we should be hearing from this thing" budget —
+  // anything older and the stale-on-load trigger fires a segment pull
+  // to catch up rather than letting the integration card show a stale
+  // 'last event' time. veryStaleAfterMs at 24h flags pixels that have
+  // genuinely gone dark (snippet was removed, AL workflow broken).
+  cursive_pixel: { staleAfterMs: 2 * MIN, veryStaleAfterMs: 24 * HOUR },
   reputation: { staleAfterMs: 24 * HOUR, veryStaleAfterMs: 7 * DAY },
 };
 
