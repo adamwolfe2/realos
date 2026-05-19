@@ -24,7 +24,10 @@ import { PageHeader } from "@/components/admin/page-header";
 import { SourceLogo } from "@/components/portal/reputation/source-logo";
 import { sourceLabel } from "@/components/portal/reputation/source-label";
 import { SourceBars } from "@/components/portal/dashboard/source-bars";
-import type { MentionSource, Sentiment } from "@prisma/client";
+import { ReputationFilters } from "@/components/portal/reputation/reputation-filters";
+import { ReputationScanButton } from "@/components/portal/reputation/reputation-scan-button";
+import { SentimentSparkline } from "@/components/portal/reputation/sentiment-sparkline";
+import { MentionSource, Sentiment } from "@prisma/client";
 
 export const metadata: Metadata = { title: "Reputation" };
 export const dynamic = "force-dynamic";
@@ -88,6 +91,7 @@ function fmtRating(v: unknown): string {
 const EMPTY_METRICS: PortfolioReputationMetrics = {
   totalMentions: 0,
   newLast30d: 0,
+  newPrior30d: 0,
   negativePct: null,
   unreviewedCount: 0,
   flaggedCount: 0,
@@ -97,12 +101,44 @@ const EMPTY_METRICS: PortfolioReputationMetrics = {
   sentimentBreakdown: [],
   propertyHealth: [],
   monthlyVolume: [],
+  weeklySentiment: [],
 };
+
+// Whitelisted enum parsers — we never trust raw searchParams. Returning
+// null for an unrecognized value means "treat as all".
+function parseSourceFilter(v: string | undefined): MentionSource | null {
+  if (!v || v === "all") return null;
+  const allowed: MentionSource[] = [
+    MentionSource.GOOGLE_REVIEW,
+    MentionSource.REDDIT,
+    MentionSource.YELP,
+    MentionSource.TAVILY_WEB,
+    MentionSource.FACEBOOK_PUBLIC,
+    MentionSource.OTHER,
+  ];
+  return (allowed as string[]).includes(v) ? (v as MentionSource) : null;
+}
+
+function parseSentimentFilter(v: string | undefined): Sentiment | null {
+  if (!v || v === "all") return null;
+  const allowed: Sentiment[] = [
+    Sentiment.POSITIVE,
+    Sentiment.NEUTRAL,
+    Sentiment.NEGATIVE,
+    Sentiment.MIXED,
+  ];
+  return (allowed as string[]).includes(v) ? (v as Sentiment) : null;
+}
 
 export default async function PortfolioReputationPage({
   searchParams,
 }: {
-  searchParams: Promise<{ property?: string; properties?: string }>;
+  searchParams: Promise<{
+    property?: string;
+    properties?: string;
+    source?: string;
+    sentiment?: string;
+  }>;
 }) {
   let scope;
   try {
@@ -119,6 +155,8 @@ export default async function PortfolioReputationPage({
   const requestedIds = parsePropertyFilter(sp);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
+  const sourceFilter = parseSourceFilter(sp.source);
+  const sentimentFilter = parseSentimentFilter(sp.sentiment);
 
   let metrics: PortfolioReputationMetrics = EMPTY_METRICS;
   let feed: PortfolioReputationFeedItem[] = [];
@@ -139,8 +177,10 @@ export default async function PortfolioReputationPage({
         metricsFailed = true;
         return EMPTY_METRICS;
       }),
-      loadPortfolioReputationFeed(scope.orgId, 30, {
+      loadPortfolioReputationFeed(scope.orgId, 50, {
         propertyIds: effectiveIds,
+        source: sourceFilter,
+        sentiment: sentimentFilter,
       }).catch((err) => {
         console.error("[reputation] feed load failed:", err);
         feedFailed = true;
@@ -206,6 +246,7 @@ export default async function PortfolioReputationPage({
             {properties.length > 1 ? (
               <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
             ) : null}
+            <ReputationScanButton />
             <Link
               href="/portal/properties"
               className="text-xs font-medium text-foreground hover:text-primary"
@@ -215,6 +256,22 @@ export default async function PortfolioReputationPage({
           </>
         }
       />
+
+      {/* Unified inbox filter rail. Source + sentiment chips drive the
+          server-side feed query via URL params, so views are bookmarkable
+          (e.g. /portal/reputation?source=REDDIT&sentiment=NEGATIVE). */}
+      <section className="rounded-xl border border-border bg-muted/20 px-4 py-3">
+        <ReputationFilters
+          sourceCounts={Object.fromEntries(
+            (metrics.sourceBreakdown ?? []).map((s) => [s.source, s.count]),
+          )}
+          sentimentCounts={Object.fromEntries(
+            (metrics.sentimentBreakdown ?? [])
+              .filter((s) => s.sentiment !== "UNCLASSIFIED")
+              .map((s) => [s.sentiment as Sentiment, s.count]),
+          )}
+        />
+      </section>
 
 
       {/* Top KPIs */}
@@ -235,7 +292,7 @@ export default async function PortfolioReputationPage({
         <KpiTile
           label="Total mentions"
           value={fmtInt(metrics.totalMentions)}
-          hint={`${fmtInt(metrics.newLast30d)} new in 30d`}
+          hint={mentionsTrendHint(metrics)}
           icon={<MessageCircle className="h-3.5 w-3.5" />}
         />
         <KpiTile
@@ -263,6 +320,17 @@ export default async function PortfolioReputationPage({
           icon={<Star className="h-3.5 w-3.5" />}
         />
       </section>
+
+      {/* 12-week sentiment trend sparkline. Lives just below the KPI strip
+          so it's the second thing the operator sees — answers the "is it
+          getting better or worse?" question at a glance. */}
+      <DashboardSection
+        title="Sentiment over time"
+        eyebrow="Last 12 weeks"
+        description="Stacked weekly breakdown — positive, neutral/mixed, negative"
+      >
+        <SentimentSparkline weeks={metrics.weeklySentiment ?? []} />
+      </DashboardSection>
 
       {/* Sentiment + sources + monthly volume */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -587,6 +655,26 @@ function ReputationFallback({
   );
 }
 
+// String-form hint for the "Total mentions" KPI. We render a 30-day count
+// and (when there's a baseline) a percentage delta vs the prior 30 days.
+// The arrow glyph is intentionally unicode rather than a Lucide icon —
+// KpiTile.hint is typed as plain string.
+function mentionsTrendHint(metrics: PortfolioReputationMetrics): string {
+  const current = safeNum(metrics.newLast30d);
+  const prior = safeNum(metrics.newPrior30d);
+  const base = `${current.toLocaleString()} new in 30d`;
+  let delta: number | null = null;
+  if (prior > 0) {
+    delta = Math.round(((current - prior) / prior) * 100);
+  } else if (current > 0) {
+    return `${base} · new (no prior data)`;
+  }
+  if (delta == null || delta === 0) return base;
+  const arrow = delta > 0 ? "↑" : "↓";
+  const sign = delta > 0 ? "+" : "";
+  return `${base} · ${arrow} ${sign}${delta}% vs prior 30d`;
+}
+
 function MonthlyVolume({
   data,
 }: {
@@ -659,6 +747,12 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
   const sentimentLabel = sentiment ? SENTIMENT_LABEL[sentiment] : "";
   const ratingNum = mention.rating != null ? safeNum(mention.rating) : null;
   const when = mention.publishedAt instanceof Date ? mention.publishedAt : null;
+  // Fade low-confidence sentiment pills. Threshold = 0.6 — below that
+  // we still show the label so the operator can review, but render at
+  // 60% opacity to communicate "this is a guess".
+  const lowConfidence =
+    mention.sentimentConfidence != null && mention.sentimentConfidence < 0.6;
+  const themes = Array.isArray(mention.themes) ? mention.themes.slice(0, 3) : [];
 
   return (
     <li className="py-3">
@@ -695,9 +789,15 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
               ) : null}
               {sentiment && sentimentTone ? (
                 <span
-                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border ${sentimentTone}`}
+                  className={`inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold border ${sentimentTone} ${lowConfidence ? "opacity-60" : ""}`}
+                  title={
+                    mention.sentimentConfidence != null
+                      ? `Confidence ${Math.round(mention.sentimentConfidence * 100)}%`
+                      : undefined
+                  }
                 >
                   {sentimentLabel}
+                  {lowConfidence ? "?" : ""}
                 </span>
               ) : null}
               {mention.flagged ? (
@@ -721,6 +821,18 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
           <p className="text-xs text-muted-foreground leading-relaxed whitespace-pre-line line-clamp-6">
             {String(mention.excerpt ?? "")}
           </p>
+          {themes.length > 0 ? (
+            <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+              {themes.map((t) => (
+                <span
+                  key={t}
+                  className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
+                >
+                  {t}
+                </span>
+              ))}
+            </div>
+          ) : null}
           <div className="mt-1 flex items-center gap-1.5 text-[10px] text-muted-foreground">
             {mention.authorName ? (
               <>

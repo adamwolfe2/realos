@@ -1,7 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
-import type { MentionSource, Sentiment } from "@prisma/client";
+import type { MentionSource, Prisma, Sentiment } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
 // Portfolio-level reputation aggregates. Mirrors lib/reputation/aggregate.ts
@@ -16,6 +16,9 @@ import type { MentionSource, Sentiment } from "@prisma/client";
 export type PortfolioReputationMetrics = {
   totalMentions: number;
   newLast30d: number;
+  // Prior-period new-mention count (days 30-60 ago) so the dashboard can
+  // render a "vs prior 30d" delta arrow next to newLast30d.
+  newPrior30d: number;
   negativePct: number | null;
   unreviewedCount: number;
   flaggedCount: number;
@@ -42,6 +45,16 @@ export type PortfolioReputationMetrics = {
 
   // 6-month monthly volume across the whole portfolio.
   monthlyVolume: Array<{ month: string; count: number; negative: number }>;
+
+  // 12-week sentiment trend, oldest → newest. Powers the
+  // <SentimentSparkline /> in the unified inbox header.
+  weeklySentiment: Array<{
+    weekStart: string; // ISO date (Monday)
+    positive: number;
+    neutral: number;
+    negative: number;
+    mixed: number;
+  }>;
 };
 
 export async function loadPortfolioReputationMetrics(
@@ -50,9 +63,14 @@ export async function loadPortfolioReputationMetrics(
 ): Promise<PortfolioReputationMetrics> {
   const now = new Date();
   const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const prior30dStart = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
   const sixMonthsAgo = new Date(now);
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
   sixMonthsAgo.setDate(1);
+  // 12-week trend window, anchored to the most recent Monday so the bars
+  // line up to "this week" on the right.
+  const twelveWeeksAgo = new Date(now);
+  twelveWeeksAgo.setDate(twelveWeeksAgo.getDate() - 12 * 7);
 
   // Property gate, two layers:
   //   1. Marketable lifecycle filter — drops IMPORTED (curation queue),
@@ -90,6 +108,7 @@ export async function loadPortfolioReputationMetrics(
   const [
     totalMentions,
     newLast30d,
+    newPrior30d,
     unreviewedCount,
     flaggedCount,
     sentimentRows,
@@ -97,10 +116,17 @@ export async function loadPortfolioReputationMetrics(
     properties,
     propertyMentions,
     monthlyRaw,
+    weeklyRaw,
   ] = await Promise.all([
     prisma.propertyMention.count({ where }),
     prisma.propertyMention.count({
       where: { ...where, createdAt: { gte: last30d } },
+    }),
+    prisma.propertyMention.count({
+      where: {
+        ...where,
+        createdAt: { gte: prior30dStart, lt: last30d },
+      },
     }),
     prisma.propertyMention.count({
       where: { ...where, reviewedByUserId: null },
@@ -146,6 +172,18 @@ export async function loadPortfolioReputationMetrics(
         OR: [
           { publishedAt: { gte: sixMonthsAgo } },
           { publishedAt: null, createdAt: { gte: sixMonthsAgo } },
+        ],
+      },
+      select: { publishedAt: true, createdAt: true, sentiment: true },
+    }),
+    // Sentiment trend — last 12 weeks. We pull the same shape as
+    // monthlyRaw but with a tighter window so we can bucket by week.
+    prisma.propertyMention.findMany({
+      where: {
+        ...where,
+        OR: [
+          { publishedAt: { gte: twelveWeeksAgo } },
+          { publishedAt: null, createdAt: { gte: twelveWeeksAgo } },
         ],
       },
       select: { publishedAt: true, createdAt: true, sentiment: true },
@@ -250,9 +288,42 @@ export async function loadPortfolioReputationMetrics(
     negative: monthMap.get(k)?.negative ?? 0,
   }));
 
+  // Weekly sentiment trend — anchor 12 bars on the most recent Monday so
+  // "this week" sits flush right. We bucket on publishedAt when known,
+  // otherwise createdAt (matches the monthly volume logic above for
+  // consistency).
+  const weeklyBuckets = build12WeekBuckets(now);
+  for (const r of weeklyRaw) {
+    const d = r.publishedAt ?? r.createdAt;
+    const key = mondayKey(d);
+    const bucket = weeklyBuckets.get(key);
+    if (!bucket) continue;
+    switch (r.sentiment) {
+      case "POSITIVE":
+        bucket.positive++;
+        break;
+      case "NEGATIVE":
+        bucket.negative++;
+        break;
+      case "MIXED":
+        bucket.mixed++;
+        break;
+      case "NEUTRAL":
+      default:
+        // Unclassified rows (sentiment === null) get bucketed as neutral
+        // for the visual — the inbox already exposes them by source.
+        bucket.neutral++;
+        break;
+    }
+  }
+  const weeklySentiment = Array.from(weeklyBuckets.entries()).map(
+    ([weekStart, b]) => ({ weekStart, ...b }),
+  );
+
   return {
     totalMentions,
     newLast30d,
+    newPrior30d,
     negativePct,
     unreviewedCount,
     flaggedCount,
@@ -262,7 +333,52 @@ export async function loadPortfolioReputationMetrics(
     sentimentBreakdown,
     propertyHealth,
     monthlyVolume,
+    weeklySentiment,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Weekly bucket helpers.
+// ---------------------------------------------------------------------------
+
+function mondayKey(date: Date): string {
+  // Convert any Date into the ISO date (YYYY-MM-DD) of the Monday of that
+  // week. JS getDay returns 0 for Sunday, 1 for Monday, …, 6 for Saturday.
+  const d = new Date(date);
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1; // shift Sunday to be 6 days after Monday
+  d.setDate(d.getDate() - diff);
+  d.setHours(0, 0, 0, 0);
+  // ISO date — drop time + tz so the key is stable across timezones.
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const dd = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${dd}`;
+}
+
+function build12WeekBuckets(
+  now: Date,
+): Map<string, { positive: number; neutral: number; negative: number; mixed: number }> {
+  const buckets = new Map<
+    string,
+    { positive: number; neutral: number; negative: number; mixed: number }
+  >();
+  // Walk 12 Mondays backwards from the current week's Monday.
+  const cursor = new Date(now);
+  const day = cursor.getDay();
+  cursor.setDate(cursor.getDate() - (day === 0 ? 6 : day - 1));
+  cursor.setHours(0, 0, 0, 0);
+  const keys: string[] = [];
+  for (let i = 0; i < 12; i++) {
+    keys.push(mondayKey(cursor));
+    cursor.setDate(cursor.getDate() - 7);
+  }
+  // Reverse so oldest is first, newest last (matches the sparkline order).
+  keys.reverse();
+  for (const k of keys) {
+    buckets.set(k, { positive: 0, neutral: 0, negative: 0, mixed: 0 });
+  }
+  return buckets;
 }
 
 export type PortfolioReputationFeedItem = {
@@ -275,6 +391,8 @@ export type PortfolioReputationFeedItem = {
   authorName: string | null;
   publishedAt: Date | null;
   sentiment: Sentiment | null;
+  sentimentConfidence: number | null;
+  themes: string[]; // PropertyMention.topics surfaced for the UI
   rating: number | null;
   sourceUrl: string;
   flagged: boolean;
@@ -284,7 +402,11 @@ export type PortfolioReputationFeedItem = {
 export async function loadPortfolioReputationFeed(
   orgId: string,
   limit = 30,
-  options: { propertyIds?: string[] | null } = {}
+  options: {
+    propertyIds?: string[] | null;
+    source?: MentionSource | null;
+    sentiment?: Sentiment | null;
+  } = {}
 ): Promise<PortfolioReputationFeedItem[]> {
   // Same lifecycle gate as loadPortfolioReputationMetrics: skip mentions
   // attached to non-marketable properties so the feed doesn't surface
@@ -300,8 +422,15 @@ export async function loadPortfolioReputationFeed(
   }
   if (eligibleIds.length === 0) return [];
 
+  const where: Prisma.PropertyMentionWhereInput = {
+    orgId,
+    propertyId: { in: eligibleIds },
+  };
+  if (options.source) where.source = options.source;
+  if (options.sentiment) where.sentiment = options.sentiment;
+
   const rows = await prisma.propertyMention.findMany({
-    where: { orgId, propertyId: { in: eligibleIds } },
+    where,
     orderBy: [{ publishedAt: "desc" }, { lastSeenAt: "desc" }, { id: "desc" }],
     take: limit,
     select: {
@@ -315,6 +444,8 @@ export async function loadPortfolioReputationFeed(
       publishedAt: true,
       rating: true,
       sentiment: true,
+      sentimentConfidence: true,
+      topics: true,
       flagged: true,
       reviewedByUserId: true,
       property: { select: { name: true } },
@@ -332,8 +463,21 @@ export async function loadPortfolioReputationFeed(
     authorName: r.authorName,
     publishedAt: r.publishedAt,
     sentiment: r.sentiment,
+    sentimentConfidence: r.sentimentConfidence,
+    themes: normalizeThemes(r.topics),
     rating: r.rating,
     flagged: r.flagged,
     reviewed: r.reviewedByUserId !== null,
   }));
+}
+
+// PropertyMention.topics is Json — at runtime it's always a string[] (set
+// that way by lib/reputation/analyze.ts), but Prisma types it as JsonValue.
+// This helper centralizes the narrowing + defensive caps so the dashboard
+// never tries to render { foo: 'bar' } as a theme chip.
+function normalizeThemes(topics: unknown): string[] {
+  if (!Array.isArray(topics)) return [];
+  return topics
+    .filter((t): t is string => typeof t === "string" && t.trim().length > 0)
+    .slice(0, 5);
 }
