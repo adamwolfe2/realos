@@ -38,6 +38,7 @@ import {
   ShoppingBag,
   Plug,
   KeyRound,
+  Calculator,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -314,6 +315,22 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Referrals",
         icon: Share2,
         show: (o) => o.moduleReferrals,
+      },
+    ],
+  },
+  {
+    label: "Tools",
+    items: [
+      // Zillow report — paste a Zillow URL, get a one-page investor
+      // report (cash down, P&I, cap rate, cash-on-cash). Always-on:
+      // it's a stateless utility that doesn't depend on any module
+      // entitlement, and operators consistently ask for "give me a
+      // quick read on this property" tooling.
+      {
+        href: "/portal/tools/zillow",
+        label: "Zillow report",
+        icon: Calculator,
+        show: ALWAYS,
       },
     ],
   },
