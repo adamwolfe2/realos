@@ -1,45 +1,42 @@
 import type { Metadata } from "next";
+import { MARKETING } from "@/lib/copy/marketing";
 import { BRAND_NAME } from "@/lib/brand";
-import { LandingHero } from "@/components/landing/hero";
-import { LandingPain } from "@/components/landing/pain";
-import { LandingSolution } from "@/components/landing/solution";
+import { Hero } from "@/components/home/hero";
+import { WhatYouGet } from "@/components/home/what-you-get";
+import { Comparison } from "@/components/home/comparison";
+import { Weekly } from "@/components/home/weekly";
+import { LiveExample } from "@/components/home/live-example";
+import { ProductTourSection } from "@/components/home/product-tour-section";
+import { Numbers } from "@/components/home/numbers";
+import { Verticals } from "@/components/home/verticals";
+import { Proof } from "@/components/home/proof";
+import { Faq } from "@/components/home/faq";
 import { LandingModules } from "@/components/landing/modules";
-import { LandingPricingTeaser } from "@/components/landing/pricing-teaser";
-import { LandingFinalCta } from "@/components/landing/final-cta";
 
-// ---------------------------------------------------------------------------
-// Homepage — Apple-clean composition.
-//
-// Structure (intentionally tight):
-//
-//   1. HERO            single bold value prop + one CTA
-//   2. PAIN            three problems operators feel
-//   3. SOLUTION        three pillars of the platform
-//   4. MODULES         visual grid of every module
-//   5. PRICING TEASER  three tier cards + link to /pricing
-//   6. FINAL CTA       single action
-//
-// We deliberately dropped the live-example, weekly, numbers, verticals,
-// proof, and faq sections. They're still available at /features, /demo
-// and /pricing. The homepage's job is to land the value prop and route
-// people to the right next page.
-// ---------------------------------------------------------------------------
+// Original homepage layout restored. The one carry-over from the May 19
+// rewrite is the "Every module you can turn on" grid — slotted between
+// Numbers and Verticals so readers see the full module roster mid-scroll.
+// Light-mode treatment (no dark slab).
 
 export const metadata: Metadata = {
-  title: `${BRAND_NAME} — Every leasing channel. One source of truth.`,
-  description:
-    "The marketing stack for real estate operators. Site, chatbot, ads, attribution, and reputation — built to work together, priced to replace your retainer.",
+  title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
+  description: MARKETING.home.hero.subhead,
 };
 
 export default function PlatformHome() {
   return (
-    <div style={{ backgroundColor: "#FFFFFF", color: "#0B1220" }}>
-      <LandingHero />
-      <LandingPain />
-      <LandingSolution />
+    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+      <Hero />
+      <WhatYouGet />
+      <Comparison />
+      <Weekly />
+      <LiveExample />
+      <ProductTourSection />
+      <Numbers />
       <LandingModules />
-      <LandingPricingTeaser />
-      <LandingFinalCta />
+      <Verticals />
+      <Faq />
+      <Proof />
     </div>
   );
 }

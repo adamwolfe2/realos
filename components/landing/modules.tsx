@@ -15,11 +15,11 @@ import {
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
-// Modules — visual grid of every module the user could turn on.
+// Modules — visual grid of every module the user can turn on.
 //
-// We deliberately keep this static + dependency-free (no marketplace
-// catalog import) because the homepage is a tight overview, not a
-// marketplace browser. Detail lives at /pricing and /portal/marketplace.
+// Light-mode version. Lives on the homepage between the operator-feedback
+// and pricing sections to give an at-a-glance view of every capability
+// without forcing readers into /pricing or /portal/marketplace first.
 // ---------------------------------------------------------------------------
 
 type ModuleCard = {
@@ -108,21 +108,21 @@ export function LandingModules() {
   return (
     <section
       style={{
-        backgroundColor: "#0B1220",
-        color: "#FFFFFF",
+        backgroundColor: "#FFFFFF",
+        color: "#1E2A3A",
       }}
     >
       <div className="max-w-[1200px] mx-auto px-6 md:px-8 py-24 md:py-32">
         <div className="max-w-2xl mb-16 md:mb-20">
           <p
             className="eyebrow mb-4"
-            style={{ color: "#60A5FA" }}
+            style={{ color: "#2563EB" }}
           >
             Inside the platform
           </p>
           <h2
             style={{
-              color: "#FFFFFF",
+              color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
               fontSize: "clamp(32px, 4.5vw, 48px)",
               fontWeight: 700,
@@ -135,7 +135,7 @@ export function LandingModules() {
           <p
             className="mt-5"
             style={{
-              color: "#94A3B8",
+              color: "#5B6878",
               fontFamily: "var(--font-sans)",
               fontSize: "17px",
               lineHeight: 1.55,
@@ -146,10 +146,13 @@ export function LandingModules() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px"
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px"
           style={{
-            backgroundColor: "rgba(255,255,255,0.08)",
-            border: "1px solid rgba(255,255,255,0.08)",
+            backgroundColor: "#E5E7EB",
+            border: "1px solid #E5E7EB",
+            borderRadius: 8,
+            overflow: "hidden",
           }}
         >
           {MODULES.map((m) => {
@@ -158,7 +161,7 @@ export function LandingModules() {
               <div
                 key={m.name}
                 style={{
-                  backgroundColor: "#0B1220",
+                  backgroundColor: "#FFFFFF",
                   padding: "28px 28px 28px",
                 }}
               >
@@ -168,15 +171,15 @@ export function LandingModules() {
                     style={{
                       width: 36,
                       height: 36,
-                      backgroundColor: "rgba(96,165,250,0.12)",
-                      color: "#60A5FA",
+                      backgroundColor: "rgba(37,99,235,0.08)",
+                      color: "#2563EB",
                     }}
                   >
                     <Icon size={18} strokeWidth={1.8} aria-hidden="true" />
                   </div>
                   <span
                     style={{
-                      color: "#94A3B8",
+                      color: "#8A95A3",
                       fontFamily: "var(--font-mono)",
                       fontSize: "10px",
                       letterSpacing: "0.16em",
@@ -190,7 +193,7 @@ export function LandingModules() {
                 <h3
                   className="mt-5"
                   style={{
-                    color: "#FFFFFF",
+                    color: "#1E2A3A",
                     fontFamily: "var(--font-sans)",
                     fontSize: "17px",
                     fontWeight: 600,
@@ -203,7 +206,7 @@ export function LandingModules() {
                 <p
                   className="mt-2"
                   style={{
-                    color: "#94A3B8",
+                    color: "#5B6878",
                     fontFamily: "var(--font-sans)",
                     fontSize: "14px",
                     lineHeight: 1.55,
