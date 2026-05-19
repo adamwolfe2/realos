@@ -454,6 +454,8 @@ model Organization {
   credentialEntries      CredentialEntry[]
   credentialAccessLogs   CredentialAccessLog[]
   zillowReports          ZillowReport[]
+  aeoChecks              AeoCitationCheck[]
+  neighborhoodPages      NeighborhoodPage[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -802,6 +804,8 @@ model Property {
   cursiveIntegrations  CursiveIntegration[]
   seoIntegrations      SeoIntegration[]
   websiteBuildRequests WebsiteBuildRequest[]
+  aeoChecks            AeoCitationCheck[]
+  neighborhoodPages    NeighborhoodPage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3115,4 +3119,101 @@ model ZillowReport {
   org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@index([orgId, createdAt])
+}
+
+// ---------------------------------------------------------------------------
+// AEO (AI Engine Optimization) citation tracking.
+//
+// Periodically queries ChatGPT / Perplexity / Claude / Gemini with realistic
+// renter prompts ("best apartments in {neighborhood}, {city}") and records
+// whether each tenant's property is cited in the AI assistant's response.
+//
+// Surfaces "AI search visibility" as a leading-indicator metric — the same
+// way SEO surfaces "Google ranking visibility." Most operators have zero
+// instrumentation here today; this becomes the first signal of whether
+// they're showing up when prospective renters ask AI for recommendations.
+//
+// Touched by:
+//   * lib/aeo/orchestrate.ts        (scan fan-out across engines × prompts)
+//   * lib/aeo/engines/*.ts          (per-engine clients)
+//   * lib/aeo/parse.ts              (cited / not-cited / competitor parser)
+//   * app/api/cron/aeo-scan         (weekly cron, Mondays 02:00 UTC)
+//   * app/api/portal/seo/aeo/scan   (on-demand "Scan now")
+//   * app/portal/seo/aeo            (dashboard panel)
+// ---------------------------------------------------------------------------
+enum AeoEngine {
+  CHATGPT
+  PERPLEXITY
+  CLAUDE
+  GEMINI
+}
+
+enum AeoCitationStatus {
+  CITED
+  NOT_CITED
+  COMPETITOR_CITED
+}
+
+model AeoCitationCheck {
+  id               String            @id @default(cuid())
+  orgId            String
+  propertyId       String?
+  engine           AeoEngine
+  prompt           String            @db.Text
+  queryRunAt       DateTime          @default(now())
+  status           AeoCitationStatus
+  responseText     String            @db.Text
+  citedUrl         String?
+  competitorsCited String[]
+  metadata         Json?
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property Property?    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, queryRunAt])
+  @@index([propertyId, queryRunAt])
+  @@index([engine, queryRunAt])
+}
+
+// ---------------------------------------------------------------------------
+// NeighborhoodPage — operator-generated per-neighborhood landing pages
+// rendered on the tenant marketing site at /n/<slug>. Built with two
+// audiences in mind: Google (classic SEO ranking) AND the AI engines
+// (ChatGPT, Perplexity, Claude, Gemini) that increasingly cite real-estate
+// pages when prospects ask "where should I rent in <neighborhood>?". The
+// `aiCitations` JSON column tracks the talking-points / "facts" the page
+// is intended to be cited for so the AEO module can later verify whether
+// the engines actually surface them. See lib/neighborhood/generate.ts for
+// the Claude prompt used to draft the page.
+// ---------------------------------------------------------------------------
+model NeighborhoodPage {
+  id              String                 @id @default(cuid())
+  orgId           String
+  propertyId      String? // optional anchor property
+  city            String
+  state           String?
+  neighborhood    String
+  slug            String // url-safe, unique per (orgId)
+  title           String // SEO + page title
+  metaDescription String // SEO meta
+  intro           String                 @db.Text
+  sections        Json // [{ heading, body }]
+  faqs            Json // [{ question, answer }] — schema.org FAQPage
+  aiCitations     Json? // metadata used by AEO module to verify citations later
+  status          NeighborhoodPageStatus @default(DRAFT)
+  publishedAt     DateTime?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@unique([orgId, slug])
+  @@index([orgId, status])
+}
+
+enum NeighborhoodPageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
 }
