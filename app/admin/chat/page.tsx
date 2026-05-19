@@ -10,11 +10,11 @@ export const metadata: Metadata = { title: "Support" };
 export const dynamic = "force-dynamic";
 
 const STATUS_TONE: Record<ChatbotConversationStatus, string> = {
-  ACTIVE: "bg-primary/5 text-primary",
-  LEAD_CAPTURED: "bg-sky-50 text-sky-700",
-  ABANDONED: "bg-foreground/10 text-foreground",
-  HANDED_OFF: "bg-muted/40 text-foreground",
-  CLOSED: "bg-foreground/10 text-foreground",
+  ACTIVE: "bg-primary/10 text-primary",
+  LEAD_CAPTURED: "bg-emerald-50 text-emerald-700",
+  ABANDONED: "bg-muted text-muted-foreground",
+  HANDED_OFF: "bg-amber-50 text-amber-700",
+  CLOSED: "bg-muted text-muted-foreground",
 };
 
 export default async function SupportPage() {
@@ -89,7 +89,7 @@ export default async function SupportPage() {
           ) : (
             <ul className="divide-y divide-border">
               {liveConversations.map((c) => (
-                <li key={c.id} className="px-4 py-3 hover:bg-muted/20">
+                <li key={c.id} className="px-4 py-3 hover:bg-muted/20 transition-colors">
                   <Link
                     href={`/admin/clients/${c.org.id}`}
                     className="flex items-start justify-between gap-3"

@@ -11,15 +11,18 @@ export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 100;
 
+// Action tones — keep destructive=red, primary blue for writes/setting changes.
+// Sky+violet retained for UPDATE / EXPORT since the audit page is the canonical
+// place to distinguish these at a glance (matches bug-reports status palette).
 const ACTION_TONE: Record<AuditAction, string> = {
-  CREATE: "bg-primary/5 text-primary",
+  CREATE: "bg-primary/10 text-primary",
   UPDATE: "bg-sky-50 text-sky-700",
-  DELETE: "bg-destructive/5 text-destructive",
-  IMPERSONATE_START: "bg-muted/40 text-foreground",
-  IMPERSONATE_END: "bg-muted/40 text-foreground",
-  LOGIN: "bg-foreground/10 text-foreground",
+  DELETE: "bg-destructive/10 text-destructive",
+  IMPERSONATE_START: "bg-amber-50 text-amber-700",
+  IMPERSONATE_END: "bg-muted text-muted-foreground",
+  LOGIN: "bg-muted text-muted-foreground",
   EXPORT: "bg-violet-50 text-violet-700",
-  SETTING_CHANGE: "bg-primary/5 text-primary",
+  SETTING_CHANGE: "bg-primary/10 text-primary",
 };
 
 export default async function AuditLogPage({
@@ -65,11 +68,16 @@ export default async function AuditLogPage({
         {Object.values(AuditAction).map((a) => {
           const count =
             actionCounts.find((c) => c.action === a)?._count._all ?? 0;
+          const active = action === a;
           return (
             <Link
               key={a}
               href={`/admin/audit-log?action=${a}`}
-              className="rounded-lg border border-border bg-card p-3 hover:bg-muted/30"
+              className={`rounded-lg border bg-card p-3 transition-colors ${
+                active
+                  ? "border-primary/40 ring-1 ring-primary/20"
+                  : "border-border hover:bg-muted/20"
+              }`}
             >
               <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
                 {a.toLowerCase().replace(/_/g, " ")}
@@ -84,15 +92,18 @@ export default async function AuditLogPage({
       </div>
 
       {(action || orgId) && (
-        <div className="text-sm">
-          Filtered by{" "}
+        <div className="flex items-center gap-2 text-sm">
+          <span className="text-muted-foreground">Filtered by</span>
           {action && (
             <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
               {action}
             </span>
-          )}{" "}
-          <Link href="/admin/audit-log" className="text-xs underline ml-2">
-            Clear
+          )}
+          <Link
+            href="/admin/audit-log"
+            className="text-xs font-semibold text-primary hover:underline"
+          >
+            Clear →
           </Link>
         </div>
       )}

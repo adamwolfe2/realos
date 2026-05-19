@@ -6,6 +6,8 @@ import { OrgType, TenantStatus, PropertyType, Prisma } from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatusBadge } from "@/components/admin/status-badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   humanTenantStatus,
   tenantStatusTone,
@@ -100,27 +102,25 @@ export default async function ClientsList({
         description="Every client organization. Click in for full detail and impersonation."
       />
 
-      <form action="/admin/clients" className="flex flex-wrap items-center gap-3">
+      <form action="/admin/clients" className="flex flex-wrap items-center gap-2">
         {status ? <input type="hidden" name="status" value={status} /> : null}
-        <input
+        <Input
           name="q"
           defaultValue={q ?? ""}
           placeholder="Search by name"
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 w-56"
+          className="w-56"
         />
-        <button
-          type="submit"
-          className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-sm font-medium hover:bg-primary-dark transition-colors"
-        >
+        <Button type="submit" size="sm">
           Search
-        </button>
+        </Button>
         {q ? (
-          <Link
-            href={status ? `/admin/clients?status=${status}` : "/admin/clients"}
-            className="text-xs text-muted-foreground hover:text-foreground"
-          >
-            Clear
-          </Link>
+          <Button asChild variant="ghost" size="sm">
+            <Link
+              href={status ? `/admin/clients?status=${status}` : "/admin/clients"}
+            >
+              Clear
+            </Link>
+          </Button>
         ) : null}
       </form>
 
@@ -138,7 +138,7 @@ export default async function ClientsList({
       </nav>
 
       {clients.length === 0 ? (
-        <div className="border border-border bg-muted/20 rounded-xl p-10 text-center space-y-2">
+        <div className="rounded-lg border border-border bg-card p-10 text-center space-y-2">
           <p className="text-sm font-semibold text-foreground">
             {status || type || q
               ? "No clients match these filters."
@@ -166,35 +166,25 @@ export default async function ClientsList({
           )}
         </div>
       ) : (
-        <div className="border border-border bg-card rounded-lg overflow-hidden">
+        <div className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
-                    Client
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
-                    Type
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
-                    Status
-                  </th>
-                  <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+            <table className="w-full text-sm min-w-[720px]">
+              <thead className="bg-muted/40 text-xs uppercase tracking-wide text-muted-foreground">
+                <tr>
+                  <th className="px-4 py-3 text-left font-medium">Client</th>
+                  <th className="px-4 py-3 text-left font-medium">Type</th>
+                  <th className="px-4 py-3 text-left font-medium">Status</th>
+                  <th className="px-4 py-3 text-right font-medium">
                     Properties
                   </th>
-                  <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+                  <th className="px-4 py-3 text-right font-medium">
                     Leads&nbsp;30d
                   </th>
-                  <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
+                  <th className="px-4 py-3 text-right font-medium">
                     Insights&nbsp;14d
                   </th>
-                  <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
-                    MRR
-                  </th>
-                  <th className="text-right px-4 py-2.5 text-[11px] font-medium text-muted-foreground">
-                    Updated
-                  </th>
+                  <th className="px-4 py-3 text-right font-medium">MRR</th>
+                  <th className="px-4 py-3 text-right font-medium">Updated</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -207,7 +197,7 @@ export default async function ClientsList({
                   return (
                     <tr
                       key={c.id}
-                      className="hover:bg-muted/30 transition-colors"
+                      className="hover:bg-muted/20 transition-colors"
                     >
                       <td className="px-4 py-3">
                         <Link

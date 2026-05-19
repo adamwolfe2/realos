@@ -77,7 +77,7 @@ export default async function PipelinePage({
       {/* Compact summary strip — replaces the floating "3 total · 1 active"
           caption with a real KPI row so the operator sees money + risk
           before scanning the board. */}
-      <div className="rounded-xl border border-border bg-card p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="rounded-lg border border-border bg-card p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
         <PipelineKpi label="Total tenants" value={orgs.length.toString()} />
         <PipelineKpi label="Live" value={activeCount.toString()} tone="positive" />
         <PipelineKpi
@@ -94,7 +94,7 @@ export default async function PipelinePage({
       </div>
 
       {visibleColumns.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-border bg-muted/10 p-10 text-center">
+        <div className="rounded-lg border border-dashed border-border bg-muted/10 p-10 text-center">
           <p className="text-sm font-semibold text-foreground">
             Pipeline is empty.
           </p>
@@ -196,7 +196,7 @@ function PipelineColumn({
   };
 }) {
   return (
-    <section className="min-w-0 flex flex-col gap-2 rounded-xl border border-border bg-muted/20 p-2.5">
+    <section className="min-w-0 flex flex-col gap-2 rounded-lg border border-border bg-muted/20 p-2.5">
       <header className="flex items-baseline justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-[12px] font-semibold tracking-tight text-foreground">

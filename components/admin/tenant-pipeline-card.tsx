@@ -74,7 +74,7 @@ export function TenantPipelineCard({ item }: { item: TenantPipelineItem }) {
   });
 
   return (
-    <article className="rounded-lg border border-border bg-card p-3 space-y-1.5 hover:border-foreground/20 transition-colors">
+    <article className="rounded-lg border border-border bg-card p-3 space-y-1.5 shadow-sm hover:border-primary/40 hover:shadow-md transition-all">
       <Link
         href={`/admin/clients/${item.id}`}
         className="font-medium text-sm text-foreground hover:text-primary transition-colors block truncate"

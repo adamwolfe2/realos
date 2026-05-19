@@ -337,7 +337,7 @@ export default async function AdminHome() {
                 <li key={s.id}>
                   <Link
                     href={`/admin/intakes/${s.id}`}
-                    className="flex items-center gap-3 py-2.5 px-1 -mx-1 rounded-md hover:bg-muted/40 transition-colors"
+                    className="flex items-center gap-3 py-2.5 px-1 -mx-1 rounded-md hover:bg-muted/20 transition-colors"
                   >
                     <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold flex-shrink-0">
                       {initial}
@@ -390,7 +390,7 @@ function MoneyTile({
   tone?: "positive" | "warn";
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div className="rounded-lg border border-border bg-card p-4">
       <div className="flex items-center gap-2 mb-2">
         <span
           className={
@@ -546,7 +546,7 @@ function OpsRow({
     <li>
       <Link
         href={href}
-        className="flex items-center gap-2.5 py-1.5 px-2 -mx-1 rounded-md hover:bg-muted/40 transition-colors group"
+        className="flex items-center gap-2.5 py-1.5 px-2 -mx-1 rounded-md hover:bg-muted/20 transition-colors group"
       >
         <span className="text-muted-foreground group-hover:text-primary transition-colors shrink-0">
           {icon}
@@ -562,7 +562,7 @@ function OpsRow({
         {count != null ? (
           <span
             className={
-              "text-sm tabular-nums tabular-nums shrink-0 " +
+              "text-sm tabular-nums shrink-0 " +
               (count > 0 ? "font-semibold text-foreground" : "text-muted-foreground/50")
             }
           >

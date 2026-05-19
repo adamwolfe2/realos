@@ -103,7 +103,7 @@ export default async function IntakeList({
               <li key={s.id}>
                 <Link
                   href={`/admin/intakes/${s.id}`}
-                  className="block rounded-lg border border-border bg-card p-4 hover:bg-muted/40 transition-colors"
+                  className="block rounded-lg border border-border bg-card p-4 hover:bg-muted/20 transition-colors"
                 >
                   <div className="flex items-baseline justify-between gap-3">
                     <div className="min-w-0">
