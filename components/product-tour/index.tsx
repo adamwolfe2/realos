@@ -85,18 +85,18 @@ export function ProductTour() {
     >
       <Topbar />
       <MobileTabBar active={view} onSelect={setView} />
+      {/* All tabs render in a fixed-height viewport so switching views
+          doesn't jump the page. Each view is sized to fit inside this
+          window without internal scroll — Dashboard was compressed
+          (single-row KPIs, Properties row dropped) so it earns its
+          place at the same height as Leads/Visitors/Creative/etc. */}
       <div
         className="flex"
-        style={{ backgroundColor: TOKENS.ivory, minHeight: 620 }}
+        style={{ backgroundColor: TOKENS.ivory, height: 640 }}
       >
         <Sidebar active={view} onSelect={setView} />
-        {/* Content panel grows with its view rather than scrolling inside a
-            fixed viewport. The dashboard (and every other tab) renders at
-            full natural height. min-height keeps the chrome from looking
-            cramped on shorter views; tall views just push the whole card
-            taller. */}
         <div
-          className="flex-1 min-w-0"
+          className="flex-1 min-w-0 overflow-hidden"
           style={{ backgroundColor: TOKENS.parchment }}
         >
           <Contents view={view} />
@@ -579,32 +579,35 @@ function Dashboard() {
         <PeriodSwitcher value={period} onChange={setPeriod} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      {/* KPIs — single row of 4 on desktop (was 2×2) so the dashboard
+          fits within the fixed 640px viewport. Mobile keeps the 2×2
+          stack since it has the vertical room. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {kpis.map((k) => (
           <div
             key={k.label}
             style={{
               backgroundColor: TOKENS.white,
               borderRadius: "14px",
-              padding: "16px 18px",
+              padding: "14px 16px",
               boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
             }}
           >
             <p
               style={{
                 fontFamily: "var(--font-sans)",
-                fontSize: "12px",
+                fontSize: "11.5px",
                 color: TOKENS.stone,
-                lineHeight: 1.4,
+                lineHeight: 1.3,
               }}
             >
               {k.label}
             </p>
-            <div className="mt-2 flex items-baseline gap-2">
+            <div className="mt-1.5 flex items-baseline gap-1.5">
               <span
                 style={{
                   fontFamily: "var(--font-display)",
-                  fontSize: "clamp(18px, 4vw, 28px)",
+                  fontSize: "clamp(18px, 3.4vw, 24px)",
                   fontWeight: 500,
                   color: TOKENS.nearBlack,
                   lineHeight: 1.1,
@@ -615,7 +618,7 @@ function Dashboard() {
               <span
                 style={{
                   fontFamily: "var(--font-mono)",
-                  fontSize: "11px",
+                  fontSize: "10.5px",
                   color: k.delta.startsWith("-") ? TOKENS.error : TOKENS.success,
                   fontWeight: 500,
                 }}
@@ -627,7 +630,7 @@ function Dashboard() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
         <div>
           <SectionHeader title="Leads by source (last 7 days)" />
           <Tile>
@@ -718,74 +721,12 @@ function Dashboard() {
         </div>
       </div>
 
-      <div className="mt-6">
-        <SectionHeader
-          title="Properties"
-          right={
-            <button
-              type="button"
-              className="btn-secondary"
-              style={{ minHeight: "32px", padding: "4px 12px", fontSize: "12px", borderRadius: "8px" }}
-            >
-              View all
-            </button>
-          }
-        />
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          {PROPERTIES.slice(0, 3).map((p) => {
-            const dotColor =
-              p.occupancyPct >= 90 ? TOKENS.success :
-              p.occupancyPct >= 80 ? TOKENS.warning :
-              TOKENS.accent;
-            return (
-              <div
-                key={p.id}
-                style={{
-                  backgroundColor: TOKENS.white,
-                  borderRadius: "14px",
-                  padding: "14px 16px",
-                  boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
-                }}
-              >
-                <div className="flex items-center gap-2">
-                  <span
-                    className="inline-block rounded-full flex-shrink-0"
-                    style={{ width: "8px", height: "8px", backgroundColor: dotColor }}
-                  />
-                  <span
-                    className="truncate"
-                    style={{
-                      fontFamily: "var(--font-display)",
-                      fontSize: "16px",
-                      fontWeight: 500,
-                      color: TOKENS.nearBlack,
-                    }}
-                  >
-                    {p.name}
-                  </span>
-                </div>
-                <p
-                  className="mt-0.5 truncate"
-                  style={{
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "11.5px",
-                    color: TOKENS.stone,
-                  }}
-                >
-                  {p.location}
-                </p>
-                <div className="mt-3 grid grid-cols-3 gap-2">
-                  <MiniPropStat label="Occ" value={p.occupancyPct > 0 ? `${p.occupancyPct}%` : "—"} />
-                  <MiniPropStat label="Leads/wk" value={String(p.leadsThisWeek)} />
-                  <MiniPropStat label="Revenue" value={p.revenue} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
+      {/* Properties row removed from the dashboard — Properties has
+          its own dedicated tab in the sidebar, so duplicating the
+          three-card row here just made the dashboard overflow the
+          fixed viewport. Operators reach Properties via the sidebar. */}
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
         <div className="lg:col-span-2">
           <SectionHeader
             title="Activity"
@@ -793,7 +734,7 @@ function Dashboard() {
               <button
                 type="button"
                 className="btn-secondary"
-                style={{ minHeight: "32px", padding: "4px 12px", fontSize: "12px", borderRadius: "8px" }}
+                style={{ minHeight: "28px", padding: "3px 10px", fontSize: "11.5px", borderRadius: "8px" }}
               >
                 View all
               </button>
@@ -801,13 +742,13 @@ function Dashboard() {
           />
           <Tile>
             <ul>
-              {ACTIVITY.map((a, i) => (
+              {ACTIVITY.slice(0, 4).map((a, i, arr) => (
                 <li
                   key={i}
-                  className="flex items-center gap-3 px-5 py-3"
+                  className="flex items-center gap-3 px-5 py-2.5"
                   style={{
                     borderBottom:
-                      i < ACTIVITY.length - 1 ? `1px solid ${TOKENS.borderCream}` : "none",
+                      i < arr.length - 1 ? `1px solid ${TOKENS.borderCream}` : "none",
                   }}
                 >
                   <ActivityDot kind={a.kind} />
@@ -815,9 +756,9 @@ function Dashboard() {
                     className="flex-1"
                     style={{
                       fontFamily: "var(--font-sans)",
-                      fontSize: "13.5px",
+                      fontSize: "13px",
                       color: TOKENS.charcoal,
-                      lineHeight: 1.45,
+                      lineHeight: 1.4,
                     }}
                   >
                     {a.text}
@@ -839,15 +780,11 @@ function Dashboard() {
 
         <div>
           <SectionHeader title="Quick actions" />
-          <div className="space-y-2.5">
+          <div className="space-y-2">
             <QuickAction
               label="Submit creative request"
               hint="New ad concepts in 48 hours"
               terracotta
-            />
-            <QuickAction
-              label="Add a property"
-              hint="Start intake for your next asset"
             />
             <QuickAction
               label="Download weekly report"
