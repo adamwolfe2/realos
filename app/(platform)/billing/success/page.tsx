@@ -160,7 +160,7 @@ export default async function CheckoutSuccessPage() {
             textTransform: "uppercase",
           }}
         >
-          Questions? hello@leasestack.co
+          Questions? team@leasestack.co
         </p>
       </div>
     </section>

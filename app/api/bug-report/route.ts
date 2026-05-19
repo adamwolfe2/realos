@@ -461,9 +461,13 @@ async function sendEmailNotification(input: {
   const to =
     process.env.BUG_REPORT_EMAIL ??
     process.env.ADMIN_EMAIL ??
-    "adam@leasestack.co";
+    "team@leasestack.co";
   const from =
-    process.env.RESEND_FROM_EMAIL ?? `${BRAND_NAME} <hello@leasestack.co>`;
+    process.env.RESEND_FROM_EMAIL ?? `${BRAND_NAME} <team@leasestack.co>`;
+  // Always cc the canonical ops inbox so triage isn't dependent on a
+  // single forwarder. Skip if `to` already routes there.
+  const TEAM_INBOX = "team@leasestack.co";
+  const cc = to.includes(TEAM_INBOX) ? undefined : TEAM_INBOX;
 
   const html = `
     <div style="font-family:-apple-system,Helvetica,Arial,sans-serif;font-size:14px;color:#0a0a0a;">
@@ -478,6 +482,7 @@ async function sendEmailNotification(input: {
     await resend.emails.send({
       from,
       to,
+      ...(cc ? { cc } : {}),
       subject: `[${input.severity.toUpperCase()}] ${input.title}`,
       html,
       headers: {

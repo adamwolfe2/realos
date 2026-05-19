@@ -431,7 +431,7 @@ function TierCard({
       if (!res.ok || !body?.url) {
         toast.error(
           body?.error ??
-            `Couldn't start checkout (HTTP ${res.status}). Try again in a minute or email hello@leasestack.co.`,
+            `Couldn't start checkout (HTTP ${res.status}). Try again in a minute or email team@leasestack.co.`,
         );
         setSubmitting(false);
         return;

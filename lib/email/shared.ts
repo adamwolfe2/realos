@@ -12,12 +12,14 @@ import { getSiteUrl, BRAND_NAME, BRAND_LOCATION, BRAND_COLOR } from "@/lib/brand
 
 // Some Vercel env vars are stored with a trailing \n — trim defensively.
 export const FROM_EMAIL = (
-  process.env.RESEND_FROM_EMAIL ?? `${BRAND_NAME} <hello@leasestack.co>`
+  process.env.RESEND_FROM_EMAIL ?? `${BRAND_NAME} <team@leasestack.co>`
 ).trim();
 export const APP_URL = getSiteUrl();
 export const OPS_NAME = process.env.OPS_NAME ?? `${BRAND_NAME} Team`;
 export { BRAND_NAME, BRAND_LOCATION, BRAND_COLOR };
-export const BRAND_EMAIL = process.env.ADMIN_EMAIL ?? "hello@leasestack.co";
+export const BRAND_EMAIL = process.env.ADMIN_EMAIL ?? "team@leasestack.co";
+export const AGENCY_ADMIN_EMAIL =
+  process.env.AGENCY_ADMIN_EMAIL ?? "team@leasestack.co";
 
 // ---------------------------------------------------------------------------
 // Resend client
@@ -293,7 +295,7 @@ export function buildBaseHtml({
   // Support contact line for the footer. Reads from BRAND_EMAIL env (or
   // the default). Always rendered so the recipient never wonders where to
   // ask a question — required for trust, and a soft CAN-SPAM hygiene win.
-  const supportEmail = process.env.ADMIN_EMAIL?.trim() || "hello@leasestack.co";
+  const supportEmail = process.env.ADMIN_EMAIL?.trim() || "team@leasestack.co";
   const tagline = "Real estate operator portal";
 
   // Preheader (inbox preview text). Hidden in the rendered body via

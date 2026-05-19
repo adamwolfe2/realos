@@ -603,7 +603,7 @@ function InviteForm({
           </span>
         ) : (
           <span className="text-[11px] text-muted-foreground">
-            They&apos;ll receive a branded email from hello@leasestack.co with
+            They&apos;ll receive a branded email from team@leasestack.co with
             a sign-up link.
           </span>
         )}

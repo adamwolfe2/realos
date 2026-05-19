@@ -26,6 +26,7 @@ type SendResult = { ok: boolean; id?: string; error?: string };
 // keep working while still getting the deliverability headers.
 async function safeSend(opts: {
   to: string;
+  cc?: string | string[];
   subject: string;
   html: string;
   text?: string;
@@ -44,6 +45,7 @@ async function safeSend(opts: {
     const r = await resend.emails.send({
       from: FROM_EMAIL,
       to: opts.to,
+      ...(opts.cc ? { cc: opts.cc } : {}),
       subject: sanitizeSubject(opts.subject),
       html: opts.html,
       ...(opts.text ? { text: opts.text } : {}),
@@ -193,8 +195,15 @@ export async function notifyAgencyOfIntake(input: {
     `${APP_URL}/admin/intakes/${input.intakeId}`,
   ].join("\n");
 
+  // Always cc the canonical ops inbox so triage isn't dependent on the
+  // AGENCY_ADMIN_EMAIL forwarder being healthy. Skip if `to` already
+  // routes there to avoid a duplicate copy.
+  const TEAM_INBOX = "team@leasestack.co";
+  const cc = input.to.toLowerCase() === TEAM_INBOX ? undefined : TEAM_INBOX;
+
   return safeSend({
     to: input.to,
+    cc,
     subject: `New intake, ${input.companyName}`,
     html,
     text,

@@ -43,14 +43,14 @@ export function Faq() {
               Direct answers to the questions operators ask before they sign.
               Anything we missed?{" "}
               <a
-                href="mailto:hello@leasestack.co"
+                href="mailto:team@leasestack.co"
                 style={{
                   color: "#2563EB",
                   textDecoration: "underline",
                   textUnderlineOffset: "2px",
                 }}
               >
-                hello@leasestack.co
+                team@leasestack.co
               </a>
               .
             </p>

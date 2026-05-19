@@ -333,10 +333,29 @@ function resolveRestCreds(integration: AppFolioIntegration): {
   return { clientId, clientSecret };
 }
 
+// Retry policy for AppFolio HTTP calls:
+//   - 429 (rate-limited): 1 retry after 2s (same as before)
+//   - 5xx (server error): 1 retry after 2s — AppFolio's REST gateway
+//     occasionally returns 502/503 mid-sync; a quick retry recovers
+//     more than half of them without surfacing as a hard phase failure
+//   - 404: DO NOT retry. 404s typically mean "this report doesn't exist
+//     on the tenant's AppFolio plan" (Core can't access REST reports)
+//     and retrying just adds noise. The caller logs once and skips
+//     the phase silently — see per-phase try/catch in appfolio-sync.ts.
+//   - everything else: returned as-is for the caller to decide
+const RETRY_DELAY_MS = 2000;
+
+function shouldRetryStatus(status: number): boolean {
+  if (status === 429) return true;
+  if (status >= 500 && status < 600) return true;
+  return false;
+}
+
 async function doAppFolioPost(
   url: string,
   basic: string,
-  body: Record<string, unknown>
+  body: Record<string, unknown>,
+  reportName?: string
 ): Promise<Response> {
   const opts: RequestInit = {
     method: "POST",
@@ -350,10 +369,54 @@ async function doAppFolioPost(
     body: JSON.stringify(body),
   };
   let response = await fetch(url, opts);
-  // Single retry on 429
-  if (response.status === 429) {
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+  if (shouldRetryStatus(response.status)) {
+    console.warn(
+      `[appfolio] POST ${reportName ?? "report"} returned ${response.status}, retrying once in ${RETRY_DELAY_MS}ms`
+    );
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
     response = await fetch(url, opts);
+  } else if (response.status === 404) {
+    // Skip silently — caller wraps this in a per-phase try/catch that
+    // logs the warning. Don't retry, don't escalate, don't pollute the
+    // logs with retry attempts. Common when a tenant's AppFolio plan
+    // doesn't include the report.
+    console.info(
+      `[appfolio] POST ${reportName ?? "report"} returned 404 (skip, no retry)`
+    );
+  }
+  return response;
+}
+
+async function doAppFolioGet(
+  url: string,
+  basic: string,
+  reportName?: string
+): Promise<Response> {
+  const opts: RequestInit = {
+    method: "GET",
+    cache: "no-store",
+    headers: {
+      Authorization: `Basic ${basic}`,
+      Accept: "application/json",
+      "User-Agent": USER_AGENT,
+    },
+  };
+  let response = await fetch(url, opts);
+  if (shouldRetryStatus(response.status)) {
+    console.warn(
+      `[appfolio] GET ${reportName ?? "page"} returned ${response.status}, retrying once in ${RETRY_DELAY_MS}ms`
+    );
+    await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+    response = await fetch(url, opts);
+  } else if (response.status === 404) {
+    // Pagination cursor 404s are common when AppFolio's metadata_id TTL
+    // expires between pages. fetchAllPages already restarts the full
+    // report once on this signal (CURSOR_EXPIRED_PATTERNS), so retrying
+    // the same expired cursor here would just produce a second 404.
+    // Log once and let the caller's recovery path handle it.
+    console.info(
+      `[appfolio] GET ${reportName ?? "page"} returned 404 (skip, no retry — caller handles cursor recovery)`
+    );
   }
   return response;
 }
@@ -406,15 +469,7 @@ export function appfolioRestClient(
       // the whole-report retry in fetchAllPages (CURSOR_EXPIRED_PATTERNS
       // matches "page returned 404" and restarts from page 1, which
       // mints a new cursor via the initial POST).
-      const response = await fetch(absoluteUrl.toString(), {
-        method: "GET",
-        cache: "no-store",
-        headers: {
-          Authorization: `Basic ${basic}`,
-          Accept: "application/json",
-          "User-Agent": USER_AGENT,
-        },
-      });
+      const response = await doAppFolioGet(absoluteUrl.toString(), basic, reportName);
       if (!response.ok) {
         const text = await response.text().catch(() => "");
         throw new Error(

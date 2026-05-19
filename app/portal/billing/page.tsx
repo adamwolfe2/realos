@@ -244,10 +244,10 @@ export default async function BillingPage() {
           <p className="text-xs text-muted-foreground mt-3">
             Questions?{" "}
             <a
-              href="mailto:hello@leasestack.co"
+              href="mailto:team@leasestack.co"
               className="font-semibold text-foreground underline underline-offset-2 hover:no-underline"
             >
-              hello@leasestack.co
+              team@leasestack.co
             </a>
           </p>
         </section>

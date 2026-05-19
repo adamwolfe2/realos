@@ -163,7 +163,7 @@ export default function WebsiteBuildSuccessPage() {
             textTransform: "uppercase",
           }}
         >
-          Questions? hello@leasestack.co
+          Questions? team@leasestack.co
         </p>
       </div>
     </section>

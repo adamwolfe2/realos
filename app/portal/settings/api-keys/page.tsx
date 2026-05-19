@@ -222,7 +222,7 @@ export default async function ApiKeysPage() {
             429 with exponential backoff (1s → 2s → 4s → 8s, max 5
             attempts). Sustained higher volume?{" "}
             <a
-              href="mailto:hello@leasestack.co?subject=API rate limit increase"
+              href="mailto:team@leasestack.co?subject=API rate limit increase"
               className="font-semibold text-foreground underline underline-offset-2"
             >
               Email us

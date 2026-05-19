@@ -8,8 +8,8 @@ export const BRAND = {
   name: "LeaseStack",
   shortName: "leasestack",
   tagline: "Your leasing data. Working for you.",
-  email: "hello@leasestack.co",
-  supportEmail: "support@leasestack.co",
+  email: "team@leasestack.co",
+  supportEmail: "team@leasestack.co",
   url: "https://www.leasestack.co",
   agencySlug: process.env.AGENCY_ORG_SLUG ?? "leasestack-agency",
 } as const;

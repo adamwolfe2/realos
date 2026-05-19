@@ -77,7 +77,7 @@ export function TrialActivationCard({
       if (!res.ok || !json?.url) {
         toast.error(
           json?.error ??
-            `Couldn't start checkout (HTTP ${res.status}). Try again in a minute or email hello@leasestack.co.`,
+            `Couldn't start checkout (HTTP ${res.status}). Try again in a minute or email team@leasestack.co.`,
         );
         setSubmitting(false);
         return;
