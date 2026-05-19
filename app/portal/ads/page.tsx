@@ -126,7 +126,16 @@ export default async function AdsPage({
         conversions: true,
       },
     }),
-    prisma.adMetricDaily.findMany({
+    // Prior-window totals are only used by AdsDashboard to compute the
+    // per-account delta arrows on the spend / clicks / conversions stat
+    // cards. The chart only renders the current window, so the prior
+    // window doesn't need daily granularity — replace the flat findMany
+    // (which previously shipped one row per account per day, ~28x what
+    // the page actually consumed) with a groupBy + _sum that returns a
+    // single pre-aggregated row per adAccount. The dashboard's
+    // aggregatePrior(...) then sums those rows after filter intersection.
+    prisma.adMetricDaily.groupBy({
+      by: ["adAccountId"],
       where: {
         ...tenantWhere(scope),
         date: { gte: priorStart, lt: priorEnd },
@@ -138,8 +147,7 @@ export default async function AdsPage({
           ? { campaign: propertyFilter }
           : {}),
       },
-      select: {
-        adAccountId: true,
+      _sum: {
         spendCents: true,
         clicks: true,
         conversions: true,
@@ -289,9 +297,9 @@ export default async function AdsPage({
           }))}
           priorMetrics={priorMetrics.map((m) => ({
             adAccountId: m.adAccountId,
-            spendCents: m.spendCents,
-            clicks: m.clicks,
-            conversions: m.conversions,
+            spendCents: m._sum.spendCents ?? 0,
+            clicks: m._sum.clicks ?? 0,
+            conversions: m._sum.conversions ?? 0,
           }))}
         />
       )}
