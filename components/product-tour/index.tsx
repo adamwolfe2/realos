@@ -86,12 +86,17 @@ export function ProductTour() {
       <Topbar />
       <MobileTabBar active={view} onSelect={setView} />
       <div
-        className="flex h-[620px] md:h-[720px]"
-        style={{ backgroundColor: TOKENS.ivory }}
+        className="flex"
+        style={{ backgroundColor: TOKENS.ivory, minHeight: 620 }}
       >
         <Sidebar active={view} onSelect={setView} />
+        {/* Content panel grows with its view rather than scrolling inside a
+            fixed viewport. The dashboard (and every other tab) renders at
+            full natural height. min-height keeps the chrome from looking
+            cramped on shorter views; tall views just push the whole card
+            taller. */}
         <div
-          className="flex-1 min-w-0 overflow-y-auto scrollbar-hide"
+          className="flex-1 min-w-0"
           style={{ backgroundColor: TOKENS.parchment }}
         >
           <Contents view={view} />
