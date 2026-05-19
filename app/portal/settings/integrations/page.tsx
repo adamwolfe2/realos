@@ -7,11 +7,9 @@ import { IntegrationMarketplace } from "@/components/portal/integrations/integra
 import { PerPropertyIntegrationsPanel } from "@/components/portal/integrations/per-property-panel";
 import { resolveIntegrationStatuses } from "@/lib/integrations/status";
 import { CopySnippetButton } from "./copy-snippet";
-import {
-  ConnectPixelForm,
-  DisconnectPixelForm,
-} from "./integration-forms";
+import { DisconnectPixelForm } from "./integration-forms";
 import { CursiveWebhookBadge } from "@/components/portal/integrations/cursive-webhook-badge";
+import { CursiveSetupWizard } from "@/components/portal/integrations/cursive-setup-wizard";
 import { PixelRequestStatus } from "@prisma/client";
 import {
   ConnectAppfolioForm,
@@ -57,6 +55,7 @@ export default async function IntegrationsPage() {
         provisionedAt: true,
         lastEventAt: true,
         totalEventsCount: true,
+        webhookToken: true,
       },
     }),
     prisma.appFolioIntegration.findUnique({
@@ -116,6 +115,12 @@ export default async function IntegrationsPage() {
 
   if (!org) return null;
 
+  // pendingPixelRequest remains for the legacy ops-fulfillment queue.
+  // The new one-flow setup does not enqueue an ops request — webhook
+  // URL is minted client-side and pixel_id auto-binds from the first
+  // event. We still surface a pending request here if one exists from
+  // before the one-flow rollout so customers in that state see the
+  // expected "awaiting ops" copy until they re-run the connect step.
   const pendingPixelRequest = await prisma.pixelProvisionRequest.findFirst({
     where: { orgId: scope.orgId, status: PixelRequestStatus.PENDING },
     orderBy: { requestedAt: "desc" },
@@ -127,6 +132,17 @@ export default async function IntegrationsPage() {
     ? `<script src="https://cdn.idpixel.app/v1/idp-analytics-${pixel.cursivePixelId}.min.js" defer></script>`
     : null;
   const pixelEligible = org.modulePixel || org.moduleChatbot;
+  // The setup wizard is mid-flow when we minted a webhook token but
+  // haven't yet captured a pixel_id from a real AL event. Pre-fill the
+  // wizard so a refresh / re-open doesn't lose state.
+  const pixelSetupInFlight =
+    !pixelProvisioned && Boolean(pixel?.webhookToken);
+  const pixelWebhookUrlInFlight = pixelSetupInFlight && pixel?.webhookToken
+    ? `${
+        process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") ??
+        "https://www.leasestack.co"
+      }/api/webhooks/cursive/${pixel.webhookToken}`
+    : null;
 
   const appfolioConnected =
     !!appfolio &&
@@ -143,6 +159,16 @@ export default async function IntegrationsPage() {
         totalEventsCount={pixel!.totalEventsCount ?? 0}
         installSnippet={pixelInstallSnippet}
       />
+    ) : pixelSetupInFlight ? (
+      <CursiveSetupWizard
+        defaultWebsiteUrl={
+          pixel?.installedOnDomain ? `https://${pixel.installedOnDomain}` : ""
+        }
+        properties={properties}
+        initialWebhookUrl={pixelWebhookUrlInFlight}
+        initialLastEventAt={pixel?.lastEventAt?.toISOString() ?? null}
+        initialPixelId={pixel?.cursivePixelId ?? null}
+      />
     ) : pendingPixelRequest ? (
       <PixelRequestPending
         websiteName={pendingPixelRequest.websiteName}
@@ -150,8 +176,8 @@ export default async function IntegrationsPage() {
         requestedAt={pendingPixelRequest.requestedAt}
       />
     ) : pixelEligible ? (
-      <ConnectPixelForm
-        defaultWebsiteName={org.name}
+      <CursiveSetupWizard
+        defaultWebsiteUrl=""
         properties={properties}
       />
     ) : (

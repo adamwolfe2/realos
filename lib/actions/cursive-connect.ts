@@ -1,5 +1,6 @@
 "use server";
 
+import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
@@ -216,6 +217,205 @@ export async function connectPixel(
 
   revalidatePath(PORTAL_PATH);
   return { ok: true, queued: true };
+}
+
+// ---------------------------------------------------------------------------
+// One-flow setup. Replaces the multi-step copy-paste between LeaseStack and
+// the Cursive (AudienceLab) dashboard. Customer clicks Connect, we mint a
+// per-tenant webhook token + return the URL to paste into the AL pixel UI.
+// The first event arriving on that URL auto-binds pixel_id (handled in
+// lib/webhooks/cursive-process.ts) — no manual Pixel ID / Segment ID entry.
+// ---------------------------------------------------------------------------
+
+const setupSchema = z.object({
+  websiteUrl: z.string().trim().min(1, "Website URL is required").max(500),
+  leasestackPropertyId: z.string().trim().max(60).optional().nullable(),
+});
+
+export type StartSetupResult =
+  | {
+      ok: true;
+      webhookUrl: string;
+      verified: boolean;
+      pixelId: string | null;
+      lastEventAt: string | null;
+    }
+  | { ok: false; error: string };
+
+function generateWebhookToken(): string {
+  // 16 random bytes → 32 lowercase hex chars (128 bits of entropy). The
+  // /api/webhooks/cursive/[token] route validates against /^[a-f0-9]{32}$/.
+  return crypto.randomBytes(16).toString("hex");
+}
+
+function buildWebhookUrl(token: string): string {
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") ??
+    "https://www.leasestack.co";
+  return `${base}/api/webhooks/cursive/${token}`;
+}
+
+export async function startCursiveSetup(
+  formData: FormData,
+): Promise<StartSetupResult> {
+  let scope;
+  try {
+    scope = await requireClientScope();
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Not authorized",
+    };
+  }
+
+  const parsed = setupSchema.safeParse({
+    websiteUrl: formData.get("websiteUrl")?.toString() ?? "",
+    leasestackPropertyId:
+      formData.get("leasestackPropertyId")?.toString() || null,
+  });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Invalid input",
+    };
+  }
+
+  let websiteUrl: URL;
+  try {
+    websiteUrl = normalizeUrl(parsed.data.websiteUrl);
+  } catch {
+    return { ok: false, error: "Please enter a valid website URL." };
+  }
+  if (websiteUrl.protocol !== "https:" && websiteUrl.protocol !== "http:") {
+    return { ok: false, error: "Website URL must be http or https." };
+  }
+
+  // Validate property scope against the caller's org. A bogus id silently
+  // downgrades to NULL (legacy org-wide row) rather than failing.
+  const requestedPropertyId =
+    parsed.data.leasestackPropertyId &&
+    parsed.data.leasestackPropertyId.length > 0
+      ? parsed.data.leasestackPropertyId
+      : null;
+  let scopePropertyId: string | null = null;
+  if (requestedPropertyId) {
+    const found = await prisma.property.findFirst({
+      where: { id: requestedPropertyId, orgId: scope.orgId },
+      select: { id: true },
+    });
+    if (found) scopePropertyId = found.id;
+  }
+
+  const org = await prisma.organization.findUnique({
+    where: { id: scope.orgId },
+    select: {
+      id: true,
+      modulePixel: true,
+      moduleChatbot: true,
+    },
+  });
+  if (!org) return { ok: false, error: "Organization not found" };
+  if (!org.modulePixel && !org.moduleChatbot) {
+    return {
+      ok: false,
+      error:
+        "Pixel module is not enabled for your workspace. Contact your account manager.",
+    };
+  }
+
+  // Manual find-then-update-or-create instead of upsert: Prisma's
+  // compound unique key doesn't accept NULL on the propertyId leg.
+  const existing = await prisma.cursiveIntegration.findFirst({
+    where: { orgId: org.id, propertyId: scopePropertyId },
+    select: {
+      id: true,
+      webhookToken: true,
+      cursivePixelId: true,
+      lastEventAt: true,
+    },
+  });
+
+  let row;
+  if (existing) {
+    // Reuse the existing token if present so a webhook URL we've already
+    // handed to the customer (or to AL) keeps working across re-opens of
+    // the wizard. Only mint a fresh one when there's nothing on file.
+    const token = existing.webhookToken ?? generateWebhookToken();
+    await prisma.cursiveIntegration.update({
+      where: { id: existing.id },
+      data: {
+        webhookToken: token,
+        installedOnDomain: websiteUrl.hostname,
+      },
+    });
+    row = {
+      id: existing.id,
+      webhookToken: token,
+      cursivePixelId: existing.cursivePixelId,
+      lastEventAt: existing.lastEventAt,
+    };
+  } else {
+    const token = generateWebhookToken();
+    const created = await prisma.cursiveIntegration.create({
+      data: {
+        orgId: org.id,
+        propertyId: scopePropertyId,
+        installedOnDomain: websiteUrl.hostname,
+        webhookToken: token,
+      },
+      select: {
+        id: true,
+        webhookToken: true,
+        cursivePixelId: true,
+        lastEventAt: true,
+      },
+    });
+    row = created;
+  }
+
+  revalidatePath(PORTAL_PATH);
+  return {
+    ok: true,
+    webhookUrl: buildWebhookUrl(row.webhookToken as string),
+    verified: Boolean(row.lastEventAt),
+    pixelId: row.cursivePixelId,
+    lastEventAt: row.lastEventAt ? row.lastEventAt.toISOString() : null,
+  };
+}
+
+// Polled by the setup wizard so the UI can flip from "waiting" to
+// "verified" the moment the first webhook event lands. Read-only —
+// cheap to call every few seconds during install.
+export async function getCursiveSetupStatus(
+  propertyId: string | null,
+): Promise<StartSetupResult> {
+  let scope;
+  try {
+    scope = await requireClientScope();
+  } catch (err) {
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Not authorized",
+    };
+  }
+  const row = await prisma.cursiveIntegration.findFirst({
+    where: { orgId: scope.orgId, propertyId },
+    select: {
+      webhookToken: true,
+      cursivePixelId: true,
+      lastEventAt: true,
+    },
+  });
+  if (!row?.webhookToken) {
+    return { ok: false, error: "Setup has not been started." };
+  }
+  return {
+    ok: true,
+    webhookUrl: buildWebhookUrl(row.webhookToken),
+    verified: Boolean(row.lastEventAt),
+    pixelId: row.cursivePixelId,
+    lastEventAt: row.lastEventAt ? row.lastEventAt.toISOString() : null,
+  };
 }
 
 export async function disconnectPixel(): Promise<ConnectPixelResult> {

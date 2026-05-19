@@ -56,7 +56,9 @@ export async function POST(
   const integration = await prisma.cursiveIntegration.findUnique({
     where: { webhookToken: token },
     select: {
+      id: true,
       orgId: true,
+      propertyId: true,
       cursivePixelId: true,
       installedOnDomain: true,
     },

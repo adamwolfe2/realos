@@ -40,6 +40,13 @@ export type ResolvedIntegration = {
   orgId: string;
   cursivePixelId: string | null;
   installedOnDomain: string | null;
+  // Optional: surfaced when the integration row was located via the
+  // path-token route. Used by the auto-bind path that captures pixel_id
+  // from the FIRST event of a one-flow setup, so we know which row to
+  // write to without re-querying. propertyId is part of the composite
+  // identity (orgId, propertyId) and may be null for legacy org-wide rows.
+  id?: string;
+  propertyId?: string | null;
 };
 
 export type CursiveProcessResult = {
@@ -67,6 +74,52 @@ export async function processCursiveEvent(
       pixelId !== integrationOverride.cursivePixelId
     ) {
       return { visitorId: null, leadId: null, skipped: "pixel_id mismatch" };
+    }
+    // One-flow setup: the integration was created with a webhook token
+    // but no cursivePixelId — the customer pasted the token URL into AL,
+    // and this is the first event arriving on that URL. Auto-bind the
+    // pixel_id (and accountId, when AL includes it) so the operator
+    // never had to copy-paste those out of the AL dashboard. After this
+    // write the row is fully wired and subsequent events flow through
+    // the normal path. Race-safe: updateMany scoped to
+    // {id, cursivePixelId: null} ensures only one of two concurrent
+    // first-events wins the bind; the loser observes a now-populated
+    // pixelId via the mismatch guard above.
+    if (
+      pixelId &&
+      !integrationOverride.cursivePixelId &&
+      integrationOverride.id
+    ) {
+      const accountId = pickString(
+        flat,
+        "account_id",
+        "cursive_account_id",
+        "resolution.account_id",
+      );
+      try {
+        await prisma.cursiveIntegration.updateMany({
+          where: { id: integrationOverride.id, cursivePixelId: null },
+          data: {
+            cursivePixelId: pixelId,
+            cursiveAccountId: accountId ?? undefined,
+            provisionedAt: new Date(),
+          },
+        });
+        // Reflect the bind locally so downstream code (fingerprint,
+        // updateMany at the end of this function) uses the captured ID.
+        integrationOverride = {
+          ...integrationOverride,
+          cursivePixelId: pixelId,
+        };
+      } catch (err) {
+        // Non-fatal: log and proceed. Visitor processing still works
+        // for this event because we already have the integration's
+        // orgId; the bind will retry on the next event.
+        console.warn(
+          "[cursive] auto-bind pixel_id failed; will retry on next event",
+          err,
+        );
+      }
     }
     integration = integrationOverride;
   } else {
