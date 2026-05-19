@@ -135,6 +135,32 @@ export function tierFromStripePriceId(
   return findTierByLookupKey(lookupKey)?.tier ?? null;
 }
 
+// Given a Stripe price ID (from a webhook payload), figure out which
+// add-on (if any) it belongs to. Returns the catalog AddOnDefinition so
+// callers can route to the right activation path (white-label flip,
+// reputation-pro enable, metered overage attach).
+export function addonFromStripePriceId(
+  priceId: string,
+): AddOnDefinition | null {
+  const lookupKey = Object.entries(STRIPE_PRICE_IDS).find(
+    ([, id]) => id === priceId,
+  )?.[0];
+  if (!lookupKey) return null;
+  return ADDONS.find((a) => a.priceLookupKey === lookupKey) ?? null;
+}
+
+// True when the subscription carries the white-label add-on. Used by
+// the Stripe webhook to flip Organization.whiteLabel on/off in lockstep
+// with the subscription items so the brand surfaces re-render the
+// moment activation lands (or downgrades).
+export function subscriptionHasWhiteLabel(priceIds: string[]): boolean {
+  for (const id of priceIds) {
+    const addon = addonFromStripePriceId(id);
+    if (addon?.productLookupKey === "ls_addon_white_label") return true;
+  }
+  return false;
+}
+
 // Compute module flags from an active subscription. Pass the array of
 // price IDs on the subscription's `items.data[]`. Tier wins if any of
 // the items match a tier price; otherwise default-off across the board.

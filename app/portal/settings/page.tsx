@@ -7,6 +7,7 @@ import {
   Plug,
   Users,
   Check,
+  Palette,
 } from "lucide-react";
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
@@ -138,6 +139,13 @@ export default async function SettingsPage() {
           title="API keys"
           description="Generate scoped keys so Zapier, Typeform, and bespoke systems can push leads, visitors, tours, and chatbot events into your CRM."
           stat={`${apiKeyCount} active`}
+        />
+        <NavCard
+          href="/portal/settings/white-label"
+          icon={<Palette className="size-4" aria-hidden="true" />}
+          title="White-label"
+          description="Swap LeaseStack branding for your own across the portal, public tenant site, and outbound emails. Requires the $499/mo add-on."
+          stat={org.whiteLabel ? "Active" : "Off"}
         />
       </div>
 

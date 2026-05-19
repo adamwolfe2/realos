@@ -14,6 +14,7 @@ import {
 import {
   computeMrrCents,
   modulesFromSubscriptionPriceIds,
+  subscriptionHasWhiteLabel,
   tierFromStripePriceId,
 } from "@/lib/billing/plans";
 
@@ -90,6 +91,9 @@ async function handleSubscriptionUpserted(
       subscriptionStatus: true,
       subscriptionTier: true,
       mrrCents: true,
+      // Pre-image of the white-label flag so we can diff for the audit
+      // trail and skip a no-op write when activation state is unchanged.
+      whiteLabel: true,
     },
   });
 
@@ -152,6 +156,20 @@ async function handleSubscriptionUpserted(
     Object.assign(updateData, modules);
   }
 
+  // White-label add-on activation. Capability flip — present on the
+  // subscription items → flag on; absent → flag off. The brand override
+  // fields (whiteLabelBrandName / Logo / PrimaryColor) are left intact
+  // on deactivation so re-activating the add-on doesn't force the
+  // operator to re-upload their kit. See lib/brand/effective.ts for
+  // the consumer.
+  const hasWhiteLabel = subscriptionHasWhiteLabel(priceIds);
+  // Only write when the state actually changes. Avoids audit-spam on
+  // every customer.subscription.updated event Stripe fires (which is a
+  // LOT for active customers).
+  if (hasWhiteLabel !== org.whiteLabel) {
+    updateData.whiteLabel = hasWhiteLabel;
+  }
+
   // If the subscription is canceled or unpaid, do NOT downgrade module
   // flags here — `handleSubscriptionDeleted` and the past_due flow
   // (billing-reminders cron) handle the lifecycle separately. Flipping
@@ -176,6 +194,12 @@ async function handleSubscriptionUpserted(
     );
   }
 
+  if (updateData.whiteLabel !== undefined) {
+    descParts.push(
+      `white-label: ${org.whiteLabel ? "on" : "off"} → ${hasWhiteLabel ? "on" : "off"}`,
+    );
+  }
+
   await prisma.auditEvent.create({
     data: {
       orgId: org.id,
@@ -191,6 +215,10 @@ async function handleSubscriptionUpserted(
         mrrCents:
           updateData.mrrCents !== undefined
             ? { from: org.mrrCents, to: newMrrCents }
+            : undefined,
+        whiteLabel:
+          updateData.whiteLabel !== undefined
+            ? { from: org.whiteLabel, to: hasWhiteLabel }
             : undefined,
       },
     },
@@ -404,6 +432,10 @@ async function handleSubscriptionDeleted(
       moduleOutboundEmail: false,
       moduleReferrals: false,
       moduleCreativeStudio: false,
+      // Cancellation also revokes the white-label add-on. We keep the
+      // override fields (logo/name/color) on the row so re-subscribing
+      // restores the operator's brand without a re-upload.
+      whiteLabel: false,
     },
   });
 
