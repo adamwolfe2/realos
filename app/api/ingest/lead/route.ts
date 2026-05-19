@@ -145,6 +145,16 @@ export async function POST(req: NextRequest) {
     void notifyLeadCaptured({ orgId, leadId }).catch((err) => {
       console.warn("[ingest/lead] notify error", err);
     });
+
+    // Self-serve onboarding ratchet — VERIFY_LEAD_CAPTURE flips on the
+    // first lead row. Fire-and-forget so the ingest path stays fast.
+    // Onboarding sync is a short Promise.all of count() queries — fine to
+    // run per-new-lead, especially because state-machine.ts short-circuits
+    // once a step is COMPLETED.
+    const { syncOnboardingProgressInBackground } = await import(
+      "@/lib/onboarding/step-detectors"
+    );
+    syncOnboardingProgressInBackground(orgId);
   }
 
   return NextResponse.json(

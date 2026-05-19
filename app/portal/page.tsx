@@ -32,6 +32,7 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import {
   ApplicationStatus,
+  OnboardingPhase,
   ProductLine,
   TourStatus,
 } from "@prisma/client";
@@ -86,6 +87,8 @@ import Link from "next/link";
 import { PageHeader } from "@/components/admin/page-header";
 import { getFirstRunSignal } from "@/lib/portal/first-run";
 import { WelcomeLanding } from "@/components/portal/welcome-landing";
+import { syncOnboardingProgress } from "@/lib/onboarding/step-detectors";
+import { OnboardingChecklist } from "@/components/portal/onboarding/onboarding-checklist";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -140,6 +143,22 @@ export default async function PortalHome({
   const { showSetup } = sp;
   const forceShowSetup = showSetup === "1";
   const forceDashboard = sp.dashboard === "1";
+
+  // Self-serve onboarding sync — lazily initialize progress on the first
+  // /portal landing and re-run any detectors that are still PENDING. Skipped
+  // once the operator has cleared POLISH (currentPhase=COMPLETED) so a long-
+  // term operator never pays for the detector queries. Detectors are
+  // wrapped to never throw — a failure here renders the dashboard with the
+  // checklist absent rather than 500ing the whole page.
+  const onboardingProgress = await syncOnboardingProgress(scope.orgId).catch(
+    (err) => {
+      console.warn("[portal/page] onboarding sync failed:", err);
+      return null;
+    },
+  );
+  const showChecklist =
+    !!onboardingProgress &&
+    onboardingProgress.currentPhase !== OnboardingPhase.COMPLETED;
 
   // First-run gate. Brand-new orgs with zero modules activated, zero leads,
   // and zero connected data sources see a Marketplace landing instead of
@@ -578,6 +597,13 @@ export default async function PortalHome({
           server-component Prisma queries against existing data the cron
           jobs and on-demand syncs keep fresh. No integration API calls. */}
       <AutoRefresh intervalMs={45_000} />
+
+      {/* Self-serve onboarding checklist — visible above all other dashboard
+          content while the operator is in FOUNDATION, GROWTH, or POLISH.
+          Hides automatically once currentPhase advances to COMPLETED. */}
+      {showChecklist && onboardingProgress ? (
+        <OnboardingChecklist progress={onboardingProgress} />
+      ) : null}
 
       {/* Setup wizard overlay — floats above dashboard, dismissed via localStorage */}
       <SetupWizardGate shouldShow={showFirstRun} steps={wizardSteps} />

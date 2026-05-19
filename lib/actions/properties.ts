@@ -171,6 +171,15 @@ export async function createProperty(
 
   revalidatePath(`/portal/properties`);
   if (scope.isAgency) revalidatePath(`/admin/clients/${targetOrgId}`);
+
+  // Self-serve onboarding ratchet — flip ADD_PROPERTY (and re-evaluate
+  // any other detectors that may now pass). Fire-and-forget so a slow
+  // detector or transient DB hiccup can't fail the user's create.
+  const { syncOnboardingProgressInBackground } = await import(
+    "@/lib/onboarding/step-detectors"
+  );
+  syncOnboardingProgressInBackground(targetOrgId);
+
   return { ok: true, propertyId: created.id };
 }
 

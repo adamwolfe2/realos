@@ -205,6 +205,13 @@ export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> 
   revalidatePath(PORTAL_PATH);
   revalidatePath(PORTAL_HOME);
 
+  // Self-serve onboarding ratchet — CONNECT_DATA_SOURCE detector counts
+  // SeoIntegration rows (GA4 / GSC). Fire-and-forget.
+  const { syncOnboardingProgressInBackground } = await import(
+    "@/lib/onboarding/step-detectors"
+  );
+  syncOnboardingProgressInBackground(scope.orgId);
+
   return {
     ok: true,
     provider,

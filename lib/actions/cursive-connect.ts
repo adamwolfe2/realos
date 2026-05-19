@@ -216,6 +216,15 @@ export async function connectPixel(
   }
 
   revalidatePath(PORTAL_PATH);
+
+  // Self-serve onboarding ratchet — CONNECT_DATA_SOURCE detector counts
+  // CursiveIntegration rows. INSTALL_PIXEL flips when the first webhook
+  // event lands (lastEventAt); that happens via the webhook handler.
+  const { syncOnboardingProgressInBackground } = await import(
+    "@/lib/onboarding/step-detectors"
+  );
+  syncOnboardingProgressInBackground(org.id);
+
   return { ok: true, queued: true };
 }
 

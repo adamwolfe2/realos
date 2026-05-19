@@ -202,6 +202,15 @@ export async function connectAppfolio(
 
   revalidatePath(PORTAL_PATH);
   revalidatePath(PORTAL_HOME);
+
+  // Self-serve onboarding ratchet — CONNECT_DATA_SOURCE detector counts
+  // AppFolio integrations. Fire-and-forget so a slow detector can't fail
+  // the user's connect action.
+  const { syncOnboardingProgressInBackground } = await import(
+    "@/lib/onboarding/step-detectors"
+  );
+  syncOnboardingProgressInBackground(scope.orgId);
+
   return { ok: true, mode: isEmbed ? "embed" : "rest", listingsFound };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unexpected error";
