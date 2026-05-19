@@ -383,6 +383,23 @@ model Organization {
   // Site hosting mode
   bringYourOwnSite Boolean @default(false)
 
+  // White-label workspace ($499/mo add-on, ls_addon_white_label).
+  // When `whiteLabel` is true and the override fields are populated, every
+  // operator-facing brand surface (portal layout, tenant marketing site,
+  // outbound email display name + footer) swaps the LeaseStack default
+  // for the operator's own brand. The actual sending address stays as
+  // team@leasestack.co so DMARC/DKIM alignment is preserved — only the
+  // display name and visible footer change.
+  //
+  // Activation: lib/billing/catalog.ts → ADDONS entry. Stripe webhook
+  // flips whiteLabel=true when ls_white_label_monthly_v1 lands on the
+  // subscription. Deactivation flips it back to false on cancel.
+  // See lib/brand/effective.ts for the resolver consumed by every surface.
+  whiteLabel             Boolean @default(false)
+  whiteLabelBrandName    String?
+  whiteLabelLogoUrl      String?
+  whiteLabelPrimaryColor String?
+
   // Relationships
   users                  User[]
   properties             Property[]
