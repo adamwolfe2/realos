@@ -42,25 +42,35 @@ export async function POST(req: NextRequest) {
   }
 
   for (const to of recipients) {
-    const lead = await prisma.lead.findFirst({
+    // findMany, not findFirst. The same email address can be a Lead at
+    // more than one tenant (e.g. a renter shopping multiple LeaseStack
+    // properties) — picking only the first match silently dropped the
+    // bounce/open update for every other tenant. Worse, the choice was
+    // ordering-dependent: which tenant got the engagement update was a
+    // coin flip per webhook, breaking attribution analytics in both
+    // directions. Updating every matching lead is the multi-tenant
+    // correct behavior.
+    const leads = await prisma.lead.findMany({
       where: { email: to },
       select: { id: true, orgId: true },
     });
-    if (!lead) continue;
+    if (leads.length === 0) continue;
+
+    const leadIds = leads.map((l) => l.id);
 
     if (
       type === "email.opened" ||
       type === "email.clicked" ||
       type === "email.delivered"
     ) {
-      await prisma.lead.update({
-        where: { id: lead.id },
+      await prisma.lead.updateMany({
+        where: { id: { in: leadIds } },
         data: { lastActivityAt: new Date() },
       });
     }
     if (type === "email.bounced" || type === "email.complained") {
-      await prisma.lead.update({
-        where: { id: lead.id },
+      await prisma.lead.updateMany({
+        where: { id: { in: leadIds } },
         data: {
           unsubscribedFromEmails: true,
           unsubscribedAt: new Date(),
@@ -68,16 +78,21 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    await prisma.auditEvent.create({
-      data: {
-        orgId: lead.orgId,
-        action: AuditAction.UPDATE,
-        entityType: "EmailEvent",
-        entityId: lead.id,
-        description: `${type}, ${to}`,
-        diff: payload as unknown as Prisma.InputJsonValue,
-      },
-    });
+    // Per-tenant audit rows so each org sees the engagement event for
+    // their own lead — not a single audit attributed to whichever org
+    // happened to match first.
+    for (const lead of leads) {
+      await prisma.auditEvent.create({
+        data: {
+          orgId: lead.orgId,
+          action: AuditAction.UPDATE,
+          entityType: "EmailEvent",
+          entityId: lead.id,
+          description: `${type}, ${to}`,
+          diff: payload as unknown as Prisma.InputJsonValue,
+        },
+      });
+    }
   }
 
   return NextResponse.json({ ok: true });
@@ -112,6 +127,16 @@ function verifySignature(body: string, headers: Headers): boolean {
   const svixTimestamp = headers.get("svix-timestamp");
   const svixSignature = headers.get("svix-signature");
   if (!svixId || !svixTimestamp || !svixSignature) return false;
+
+  // Replay-attack guard. The Svix scheme covers integrity (the body
+  // hashes the timestamp into the signature) but not freshness — once
+  // an attacker captures a valid (id, timestamp, signature, body) tuple
+  // they can replay it indefinitely. Reject anything older than the
+  // standard 5-minute Svix tolerance window.
+  const tsSeconds = Number(svixTimestamp);
+  if (!Number.isFinite(tsSeconds)) return false;
+  const ageMs = Math.abs(Date.now() - tsSeconds * 1000);
+  if (ageMs > 5 * 60 * 1000) return false;
 
   const toSign = `${svixId}.${svixTimestamp}.${body}`;
   const expected = crypto
