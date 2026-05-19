@@ -5,6 +5,7 @@ import { Hero } from "@/components/home/hero";
 import { CapabilitiesRail } from "@/components/home/capabilities-rail";
 import { Comparison } from "@/components/home/comparison";
 import { Weekly } from "@/components/home/weekly";
+import { LaunchJourney } from "@/components/home/launch-journey";
 import { LiveExample } from "@/components/home/live-example";
 import { ProductTourSection } from "@/components/home/product-tour-section";
 import { Verticals } from "@/components/home/verticals";
@@ -16,6 +17,7 @@ import { Faq } from "@/components/home/faq";
 //   CapabilitiesRail          ← scrollytelling, 6 surfaces, sticky artifact
 //   Comparison                ← the shift / current stack vs. LeaseStack
 //   Weekly                    ← operating rhythm
+//   LaunchJourney             ← scroll-pinned 90-day unlock animation
 //   LiveExample               ← links to /demo + #product-tour
 //   ProductTourSection        ← interactive operator portal embed
 //   Verticals                 ← markets we cover
@@ -40,6 +42,7 @@ export default function PlatformHome() {
       <CapabilitiesRail />
       <Comparison />
       <Weekly />
+      <LaunchJourney />
       <LiveExample />
       <ProductTourSection />
       <Verticals />
