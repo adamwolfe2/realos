@@ -111,6 +111,14 @@ export const bugReportLimiter = createLimiter(redis, 30, '1 h')
 // route handler, this should make poisoning impractical.
 export const popupEventLimiter = createLimiter(redis, 60, '1 m')
 
+// 1 ads historical export per org per hour. The export streams full
+// AdMetricDaily + AdMetricMonthly history (up to several years) so it's
+// IO-heavy enough that we'd rather throttle than serve five copies in a
+// row to a tab-spamming operator. Org-scoped so multi-user workspaces
+// share the budget — the rate-limited operator can ask a teammate to
+// download instead.
+export const adsExportLimiter = createLimiter(redis, 1, '1 h')
+
 // 30 credential reveals per userId per minute. Pre-fix this was 10/min
 // which felt safe in theory but was too tight in practice — legitimate
 // operator behavior during initial vault exploration (revealing each

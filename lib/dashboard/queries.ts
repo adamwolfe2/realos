@@ -84,7 +84,7 @@ export async function getAdSpendKpi(orgId: string) {
   // when the tenant hasn't actually connected an ad account.
   const realAccount = { adAccount: { credentialsEncrypted: { not: null } } };
 
-  const [current, previous, dailyRows] = await Promise.all([
+  const [current, previousDaily, previousMonthly, dailyRows] = await Promise.all([
     prisma.adMetricDaily.aggregate({
       where: { orgId, date: { gte: since28d }, ...realAccount },
       _sum: { spendCents: true },
@@ -93,6 +93,12 @@ export async function getAdSpendKpi(orgId: string) {
       where: { orgId, date: { gte: since56d, lt: since28d }, ...realAccount },
       _sum: { spendCents: true },
     }),
+    // Stitch in any rolled-up monthly buckets that overlap the prior
+    // window. For Foundation tier the daily retention is 28 days, so
+    // the prior window may have been purged from AdMetricDaily and only
+    // survive as monthly aggregates. Without this union the delta-arrow
+    // on the dashboard would silently collapse to "+∞%".
+    sumAdMonthlyOverlap(orgId, since56d, since28d),
     prisma.adMetricDaily.groupBy({
       by: ["date"],
       where: { orgId, date: { gte: since28d }, ...realAccount },
@@ -102,7 +108,7 @@ export async function getAdSpendKpi(orgId: string) {
   ]);
 
   const currentCents = current._sum.spendCents ?? 0;
-  const previousCents = previous._sum.spendCents ?? 0;
+  const previousCents = (previousDaily._sum.spendCents ?? 0) + previousMonthly;
 
   const sparkline = bucketDailyTotals(
     dailyRows.map((r) => ({
@@ -1363,4 +1369,142 @@ export async function getTopPropertiesByLeads(
     })
     .sort((a, b) => b.leadsCurrent - a.leadsCurrent || b.leadsPrior - a.leadsPrior)
     .slice(0, limit);
+}
+
+// ---------------------------------------------------------------------------
+// Historical ad-metrics stitching (daily + monthly union)
+//
+// The retention cron rolls AdMetricDaily rows older than the org's tier
+// window into AdMetricMonthly buckets, then deletes the dailies. Anything
+// that wants a window crossing the boundary must union the two tables so
+// the chart / KPI / export sees continuous data.
+//
+// Monthly buckets are anchored on the first of each month (UTC). A bucket
+// counts toward a [from, to) window if `firstOfMonth >= from` AND
+// `firstOfMonth < to` — partial overlap at the edges is acceptable here
+// because the alternative (pro-rating bucket totals) would invent
+// per-day numbers we no longer have. Callers that need exact day-level
+// math should narrow their window to inside the daily retention zone.
+// ---------------------------------------------------------------------------
+
+export type AdHistoryPoint = {
+  /**
+   * ISO date string. For daily rows this is the actual metric date.
+   * For monthly buckets it's the first of the month (YYYY-MM-01).
+   */
+  date: string;
+  granularity: "daily" | "monthly";
+  spendCents: number;
+  clicks: number;
+  impressions: number;
+  conversions: number;
+};
+
+/**
+ * Sum of monthly bucket spendCents that anchor inside [from, to).
+ * Used by KPI tiles where only spend matters; the full-row union below
+ * powers the CSV export.
+ */
+export async function sumAdMonthlyOverlap(
+  orgId: string,
+  from: Date,
+  to: Date,
+): Promise<number> {
+  // (year * 12 + month) is monotone, so we can express the date range as
+  // an inclusive (year, month) span without DATE arithmetic on Int cols.
+  const fromIdx = from.getUTCFullYear() * 12 + from.getUTCMonth();
+  const toIdx = to.getUTCFullYear() * 12 + to.getUTCMonth();
+  // We want anchors strictly less than `to`. Since we compare by the
+  // monthly anchor (first of month), a row at year=Y month=M has anchor
+  // index Y*12 + (M-1). The half-open boundary on `to` translates to
+  // anchorIdx < toIdx.
+  const rows = await prisma.adMetricMonthly.findMany({
+    where: { orgId },
+    select: { year: true, month: true, spendCents: true },
+  });
+  let total = 0;
+  for (const r of rows) {
+    const anchorIdx = r.year * 12 + (r.month - 1);
+    if (anchorIdx >= fromIdx && anchorIdx < toIdx) {
+      total += r.spendCents;
+    }
+  }
+  return total;
+}
+
+/**
+ * Unified daily + monthly history for an org, sorted by anchor date asc.
+ * Daily rows pass through unchanged. Monthly rows are emitted as one
+ * point per (adAccount, year-month) anchored at the first of the month.
+ *
+ * `daysOrMonths` selects either the day count (when small enough to live
+ * inside the daily window) or the equivalent in months. Callers like the
+ * CSV export pass the full requested range and let the stitching decide
+ * what's daily vs monthly.
+ */
+export async function getAdHistoryUnion(
+  orgId: string,
+  from: Date,
+  to: Date = new Date(),
+): Promise<AdHistoryPoint[]> {
+  const [daily, monthly] = await Promise.all([
+    prisma.adMetricDaily.findMany({
+      where: {
+        orgId,
+        date: { gte: from, lt: to },
+        adAccount: { credentialsEncrypted: { not: null } },
+      },
+      select: {
+        date: true,
+        spendCents: true,
+        clicks: true,
+        impressions: true,
+        conversions: true,
+      },
+    }),
+    prisma.adMetricMonthly.findMany({
+      where: { orgId },
+      select: {
+        year: true,
+        month: true,
+        spendCents: true,
+        clicks: true,
+        impressions: true,
+        conversions: true,
+      },
+    }),
+  ]);
+
+  const fromIdx = from.getUTCFullYear() * 12 + from.getUTCMonth();
+  const toIdx = to.getUTCFullYear() * 12 + to.getUTCMonth();
+
+  const points: AdHistoryPoint[] = [];
+
+  for (const r of daily) {
+    points.push({
+      date: r.date.toISOString().slice(0, 10),
+      granularity: "daily",
+      spendCents: r.spendCents,
+      clicks: r.clicks,
+      impressions: r.impressions,
+      conversions: r.conversions,
+    });
+  }
+
+  for (const r of monthly) {
+    const anchorIdx = r.year * 12 + (r.month - 1);
+    if (anchorIdx < fromIdx || anchorIdx >= toIdx) continue;
+    const anchor = new Date(Date.UTC(r.year, r.month - 1, 1));
+    points.push({
+      date: anchor.toISOString().slice(0, 10),
+      granularity: "monthly",
+      spendCents: r.spendCents,
+      clicks: r.clicks,
+      impressions: r.impressions,
+      conversions: r.conversions,
+    });
+  }
+
+  points.sort((a, b) => a.date.localeCompare(b.date));
+  return points;
 }

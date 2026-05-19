@@ -13,10 +13,24 @@ import { PageHeader } from "@/components/admin/page-header";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 import { Megaphone } from "lucide-react";
 import { ExportButton } from "@/components/ui/export-button";
-import { AdPlatform, LeadSource, LeadStatus } from "@prisma/client";
+import { AdPlatform, LeadSource, LeadStatus, UserRole } from "@prisma/client";
 import { AdsDashboard } from "./ads-dashboard";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { MarketingRoiTable, type RoiRow } from "./marketing-roi-table";
+import {
+  describeAdRetentionPolicy,
+  getAdRetentionPolicy,
+} from "@/lib/billing/retention";
+import { AdRetentionPanel } from "@/components/portal/ads/retention-panel";
+
+// Roles that can edit the per-org retention override (Scale / Enterprise).
+const RETENTION_EDIT_ROLES: ReadonlySet<UserRole> = new Set([
+  UserRole.AGENCY_OWNER,
+  UserRole.AGENCY_ADMIN,
+  UserRole.AGENCY_OPERATOR,
+  UserRole.CLIENT_OWNER,
+  UserRole.CLIENT_ADMIN,
+]);
 
 export const metadata: Metadata = { title: "Ads" };
 export const dynamic = "force-dynamic";
@@ -68,7 +82,17 @@ export default async function AdsPage({
     credentialsEncrypted: { not: null },
   };
 
-  const [accounts, campaigns, currentMetrics, priorMetrics, leadsBySource, appsByLeadSource, signedBySource] = await Promise.all([
+  // Tier-based retention policy fuels the sidebar panel. Cheap one-row
+  // fetch, parallel with the rest of the page so it's free on the wire.
+  const orgRetentionPromise = prisma.organization.findUnique({
+    where: { id: scope.orgId },
+    select: {
+      subscriptionTier: true,
+      adDataRetentionMonths: true,
+    },
+  });
+
+  const [accounts, campaigns, currentMetrics, priorMetrics, leadsBySource, appsByLeadSource, signedBySource, orgRetention] = await Promise.all([
     prisma.adAccount.findMany({
       where: realAccountWhere,
       orderBy: [{ platform: "asc" }, { createdAt: "asc" }],
@@ -182,7 +206,15 @@ export default async function AdsPage({
       },
       _count: { _all: true },
     }),
+    orgRetentionPromise,
   ]);
+
+  const retentionPolicy = getAdRetentionPolicy({
+    tier: orgRetention?.subscriptionTier ?? null,
+    adDataRetentionMonths: orgRetention?.adDataRetentionMonths ?? null,
+  });
+  const retentionSummary = describeAdRetentionPolicy(retentionPolicy);
+  const canEditRetention = RETENTION_EDIT_ROLES.has(scope.role);
 
   // Build spend-per-LeadSource from the 28-day daily metrics + account platform.
   const accountPlatformMap = new Map(accounts.map((a) => [a.id, a.platform]));
@@ -311,6 +343,19 @@ export default async function AdsPage({
       >
         <MarketingRoiTable rows={roiRows} />
       </DashboardSection>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <div className="md:col-span-1">
+          <AdRetentionPanel
+            tier={retentionPolicy.tier}
+            dailyWindowMonths={retentionPolicy.dailyWindowMonths}
+            monthlyEnabled={retentionPolicy.monthlyEnabled}
+            customOverride={retentionPolicy.customOverride}
+            canEdit={canEditRetention}
+            summary={retentionSummary}
+          />
+        </div>
+      </div>
     </div>
   );
 }
