@@ -71,42 +71,74 @@ export default async function LeadDetailPage({
   const scope = await requireScope();
   const { id } = await params;
 
-  const lead = await prisma.lead.findFirst({
-    where: { id, ...tenantWhere(scope) },
-    include: {
-      property: {
-        select: { id: true, name: true, googleReviewUrl: true },
-      },
-      tours: { orderBy: { scheduledAt: "desc" } },
-      applications: { orderBy: { createdAt: "desc" } },
-      conversations: {
-        orderBy: { lastMessageAt: "desc" },
-        select: {
-          id: true,
-          status: true,
-          messages: true,
-          messageCount: true,
-          lastMessageAt: true,
-          createdAt: true,
-          capturedEmail: true,
-          capturedName: true,
-          pageUrl: true,
+  // Lead + notes + lead-scoped insights run in parallel: notes and the
+  // insight feed key off lead.id, but lead.id is identical to the URL
+  // param, so we can fan them out without waiting for the lead row to
+  // resolve first. Saves two sequential round-trips on the lead detail
+  // page that operators hit dozens of times per session.
+  const [lead, notes, leadInsights] = await Promise.all([
+    prisma.lead.findFirst({
+      where: { id, ...tenantWhere(scope) },
+      include: {
+        property: {
+          select: { id: true, name: true, googleReviewUrl: true },
         },
+        tours: { orderBy: { scheduledAt: "desc" } },
+        applications: { orderBy: { createdAt: "desc" } },
+        conversations: {
+          orderBy: { lastMessageAt: "desc" },
+          select: {
+            id: true,
+            status: true,
+            messages: true,
+            messageCount: true,
+            lastMessageAt: true,
+            createdAt: true,
+            capturedEmail: true,
+            capturedName: true,
+            pageUrl: true,
+          },
+        },
+        visitor: true,
       },
-      visitor: true,
-    },
-  });
+    }),
+    prisma.clientNote.findMany({
+      where: {
+        orgId: scope.orgId,
+        noteType: "LEAD_INTERACTION",
+        body: { startsWith: `[lead:${id}]` },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 30,
+    }),
+    // Insights flagged for this specific lead (pipeline_stall, hot_visitor,
+    // etc.) Also include org-wide insights with no entity binding that are
+    // still open, but only if they could be the reason we're on this page.
+    prisma.insight.findMany({
+      where: {
+        orgId: scope.orgId,
+        entityType: "lead",
+        entityId: id,
+        status: { in: ["open", "acknowledged"] },
+      },
+      orderBy: [{ severity: "desc" }, { createdAt: "desc" }],
+      select: {
+        id: true,
+        kind: true,
+        category: true,
+        severity: true,
+        status: true,
+        title: true,
+        body: true,
+        suggestedAction: true,
+        href: true,
+        context: true,
+        createdAt: true,
+        property: { select: { id: true, name: true } },
+      },
+    }),
+  ]);
   if (!lead) notFound();
-
-  const notes = await prisma.clientNote.findMany({
-    where: {
-      orgId: scope.orgId,
-      noteType: "LEAD_INTERACTION",
-      body: { startsWith: `[lead:${lead.id}]` },
-    },
-    orderBy: { createdAt: "desc" },
-    take: 30,
-  });
 
   // Conversation discovery — primary path is lead.conversations (the
   // FK relation set during chatbot capture). For historical leads from
@@ -140,32 +172,6 @@ export default async function LeadDetailPage({
       : [];
   const allConversations = [...lead.conversations, ...orphanedConversations];
 
-  // Insights flagged for this specific lead (pipeline_stall, hot_visitor, etc.)
-  // Also include org-wide insights with no entity binding that are still open,
-  // but only if they could be the reason we're on this page (capped to 3).
-  const leadInsights = await prisma.insight.findMany({
-    where: {
-      orgId: scope.orgId,
-      entityType: "lead",
-      entityId: lead.id,
-      status: { in: ["open", "acknowledged"] },
-    },
-    orderBy: [{ severity: "desc" }, { createdAt: "desc" }],
-    select: {
-      id: true,
-      kind: true,
-      category: true,
-      severity: true,
-      status: true,
-      title: true,
-      body: true,
-      suggestedAction: true,
-      href: true,
-      context: true,
-      createdAt: true,
-      property: { select: { id: true, name: true } },
-    },
-  });
   const leadInsightCards: InsightCardData[] = leadInsights.map((i) => ({
     ...i,
     context: (i.context as Record<string, unknown>) ?? null,

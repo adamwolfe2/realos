@@ -179,7 +179,11 @@ export default async function VisitorsPage({
       ? [{ intentScore: "desc" }, { lastSeenAt: "desc" }]
       : [{ lastSeenAt: "desc" }];
 
-  const [visitors, totalInView, integration, summary] = await Promise.all([
+  // Live-chat windows. Live window = "active in last 5 minutes".
+  const LIVE_WINDOW_MS = 5 * 60 * 1000;
+  const liveSince = new Date(Date.now() - LIVE_WINDOW_MS);
+
+  const [visitors, totalInView, integration, summary, liveChats, totalEverCount] = await Promise.all([
     prisma.visitor.findMany({
       where,
       orderBy,
@@ -238,16 +242,37 @@ export default async function VisitorsPage({
       ]);
       return { identified, withEmail, withLead };
     })(),
+    // Live chats — any chatbot conversation with activity in the last 5
+    // minutes. Hoisted into the main Promise.all so it runs in parallel
+    // with the visitor list query instead of a sequential await below.
+    prisma.chatbotConversation
+      .findMany({
+        where: {
+          ...tenant,
+          lastMessageAt: { gte: liveSince },
+        },
+        orderBy: { lastMessageAt: "desc" },
+        take: 8,
+        select: {
+          id: true,
+          sessionId: true,
+          capturedName: true,
+          capturedEmail: true,
+          pageUrl: true,
+          messageCount: true,
+          lastMessageAt: true,
+        },
+      })
+      .catch(() => [] as never[]),
+    // Cheap "do we have ANY visitors ever?" count — drives empty state
+    // selection. Hoisted into the parallel fan-out; we only use the
+    // value when totalInView === 0 so the count is effectively a no-op
+    // for the common case.
+    prisma.visitor.count({ where: tenant as Prisma.VisitorWhereInput }),
   ]);
 
   const hasPixel = Boolean(integration?.cursivePixelId);
-  const noVisitorsAtAll = await (async () => {
-    if (totalInView > 0) return false;
-    return (
-      (await prisma.visitor.count({ where: tenant as Prisma.VisitorWhereInput })) ===
-      0
-    );
-  })();
+  const noVisitorsAtAll = totalInView === 0 && totalEverCount === 0;
 
   // Pixel freshness — operators have been burned by silent pixel failures
   // (CSP regressions, ad blockers, removed snippet). Surface staleness any
@@ -263,33 +288,11 @@ export default async function VisitorsPage({
   const pixelDormant =
     hasPixel && (pixelAgeMs == null || pixelAgeMs > 7 * 24 * 60 * 60 * 1000);
 
-  // Live chats — any chatbot conversation with activity in the last 5 minutes.
-  // We engage at the conversation level because that's where the sessionId
-  // lives. The widget polls /api/public/chatbot/inbox keyed by sessionId.
-  const LIVE_WINDOW_MS = 5 * 60 * 1000;
-  const liveChats = await prisma.chatbotConversation
-    .findMany({
-      where: {
-        ...tenant,
-        lastMessageAt: { gte: new Date(Date.now() - LIVE_WINDOW_MS) },
-      },
-      orderBy: { lastMessageAt: "desc" },
-      take: 8,
-      select: {
-        id: true,
-        sessionId: true,
-        capturedName: true,
-        capturedEmail: true,
-        pageUrl: true,
-        messageCount: true,
-        lastMessageAt: true,
-      },
-    })
-    .catch(() => [] as never[]);
-
-  // Most-recent chatbot conversation per visitor lookup. Lets each visitor row
-  // surface an Engage button if that visitor (matched by visitorHash) has had
-  // a chat in the live window.
+  // Most-recent chatbot conversation per visitor lookup. Lets each visitor
+  // row surface an Engage button if that visitor (matched by visitorHash) has
+  // had a chat in the live window. We can only run this AFTER the visitor
+  // page query above resolves because we need their IDs, but the heavy main
+  // queries (live chats, summary, etc.) are already done in parallel.
   const visitorIds = visitors.map((v) => v.id).filter(Boolean);
   const visitorChatMap = new Map<
     string,
@@ -301,7 +304,7 @@ export default async function VisitorsPage({
         where: {
           ...tenant,
           visitorHash: { in: visitorIds },
-          lastMessageAt: { gte: new Date(Date.now() - LIVE_WINDOW_MS) },
+          lastMessageAt: { gte: liveSince },
         },
         orderBy: { lastMessageAt: "desc" },
         select: { visitorHash: true, sessionId: true, lastMessageAt: true },

@@ -37,7 +37,17 @@ export const dynamic = "force-dynamic";
 
 export default async function IntegrationsPage() {
   const scope = await requireScope();
-  const [org, pixel, appfolio, seoIntegrations, adAccounts, statuses, properties] = await Promise.all([
+  const [
+    org,
+    pixel,
+    appfolio,
+    seoIntegrations,
+    adAccounts,
+    statuses,
+    properties,
+    pendingPixelRequest,
+    allCursiveRows,
+  ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
       select: { name: true, modulePixel: true, moduleChatbot: true },
@@ -111,21 +121,28 @@ export default async function IntegrationsPage() {
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
+    // pendingPixelRequest remains for the legacy ops-fulfillment queue.
+    // The new one-flow setup does not enqueue an ops request — webhook
+    // URL is minted client-side and pixel_id auto-binds from the first
+    // event. We still surface a pending request here if one exists from
+    // before the one-flow rollout so customers in that state see the
+    // expected "awaiting ops" copy until they re-run the connect step.
+    prisma.pixelProvisionRequest.findFirst({
+      where: { orgId: scope.orgId, status: PixelRequestStatus.PENDING },
+      orderBy: { requestedAt: "desc" },
+      select: { id: true, websiteName: true, websiteUrl: true, requestedAt: true },
+    }),
+    // Per-property panel pulls in every cursive integration row (so it can
+    // render both the legacy NULL row and any per-property rows in its
+    // matrix). Hoisted into the main fan-out so it parallelizes with the
+    // rest instead of running serially after the page already loaded.
+    prisma.cursiveIntegration.findMany({
+      where: { orgId: scope.orgId },
+      select: { propertyId: true, cursivePixelId: true },
+    }),
   ]);
 
   if (!org) return null;
-
-  // pendingPixelRequest remains for the legacy ops-fulfillment queue.
-  // The new one-flow setup does not enqueue an ops request — webhook
-  // URL is minted client-side and pixel_id auto-binds from the first
-  // event. We still surface a pending request here if one exists from
-  // before the one-flow rollout so customers in that state see the
-  // expected "awaiting ops" copy until they re-run the connect step.
-  const pendingPixelRequest = await prisma.pixelProvisionRequest.findFirst({
-    where: { orgId: scope.orgId, status: PixelRequestStatus.PENDING },
-    orderBy: { requestedAt: "desc" },
-    select: { id: true, websiteName: true, websiteUrl: true, requestedAt: true },
-  });
 
   const pixelProvisioned = Boolean(pixel?.cursivePixelId);
   const pixelInstallSnippet = pixel?.cursivePixelId
@@ -321,14 +338,6 @@ export default async function IntegrationsPage() {
       );
     })(),
   };
-
-  // Per-property panel pulls in every cursive integration row (so it
-  // can render both the legacy NULL row and any per-property rows in
-  // its matrix). Cheap query — we already have the org list above.
-  const allCursiveRows = await prisma.cursiveIntegration.findMany({
-    where: { orgId: scope.orgId },
-    select: { propertyId: true, cursivePixelId: true },
-  });
 
   return (
     <div className="space-y-6">
