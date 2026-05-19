@@ -121,7 +121,7 @@ export function PropertyStep({
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Telegraph Commons"
+              placeholder="Your property name"
               maxLength={120}
               required
               className="w-full"
@@ -138,7 +138,7 @@ export function PropertyStep({
               type="text"
               value={addressLine1}
               onChange={(e) => setAddressLine1(e.target.value)}
-              placeholder="2563 Telegraph Ave"
+              placeholder="123 Main St"
               maxLength={200}
               className="w-full"
               style={inputStyle}
