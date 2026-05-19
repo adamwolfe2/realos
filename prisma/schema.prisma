@@ -453,6 +453,7 @@ model Organization {
   popupEvents            PopupEvent[]
   credentialEntries      CredentialEntry[]
   credentialAccessLogs   CredentialAccessLog[]
+  zillowReports          ZillowReport[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -2451,8 +2452,9 @@ model PropertyMention {
   publishedAt DateTime?
   rating      Float? // 1-5 when available (Google, Yelp)
 
-  sentiment Sentiment?
-  topics    Json? // Array of strings, e.g. ["maintenance", "noise"]
+  sentiment           Sentiment?
+  sentimentConfidence Float? // 0..1, populated by Claude in lib/reputation/analyze.ts
+  topics              Json? // Array of strings, e.g. ["maintenance", "noise"]. Surfaced as "themes" in the UI.
 
   reviewedByUserId String?
   flagged          Boolean @default(false)
@@ -3091,4 +3093,26 @@ model CredentialAccessLog {
 
   @@index([credentialId, occurredAt(sort: Desc)])
   @@index([orgId, occurredAt(sort: Desc)])
+}
+
+// ---------------------------------------------------------------------------
+// ZillowReport — operator-pasted Zillow listing parsed into a frozen
+// snapshot (payload) plus pre-computed investor math (calculations).
+// Stored so operators can revisit a report without re-fetching Zillow
+// (which both costs us a bot-risk hit and may have changed since the
+// initial parse). Keyed by org so each tenant only sees their own.
+// ---------------------------------------------------------------------------
+model ZillowReport {
+  id           String   @id @default(cuid())
+  orgId        String
+  userId       String?
+  zillowUrl    String
+  zpid         String
+  payload      Json     // parsed listing data (address, price, beds, etc.)
+  calculations Json     // computed investor math snapshot
+  createdAt    DateTime @default(now())
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, createdAt])
 }

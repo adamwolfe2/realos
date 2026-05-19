@@ -23,11 +23,20 @@ export type ScannedMention = {
   topics?: string[] | null;
 };
 
-// Active sources for Phase 1. Reddit + Yelp were cut in favor of Tavily's
-// unified web coverage (which already indexes Reddit + Facebook + review
-// aggregators). MentionSource on a persisted row can still be REDDIT, YELP,
-// FACEBOOK_PUBLIC etc. — we classify by the hostname of the Tavily result.
-export type SourceKey = "google" | "tavily";
+// Active sources for the unified reputation inbox.
+//
+// History note: Phase 1 cut Reddit + Yelp in favor of Tavily's unified web
+// coverage. Phase 2 (the unified reputation dashboard) reintroduces them as
+// dedicated connectors:
+//   * Reddit's public JSON endpoint surfaces fresh posts/comments that
+//     Tavily's index hasn't picked up yet (lag of hours-to-days).
+//   * Yelp's biz page is now scraped directly when a property has a
+//     `yelpBusinessId` configured — Fusion's review endpoint has been
+//     gutted, so the public page is the pragmatic source of truth.
+// MentionSource on a persisted row keys off the actual origin, so
+// REDDIT rows coming from Tavily and REDDIT rows coming from the direct
+// connector look identical to the UI.
+export type SourceKey = "google" | "tavily" | "reddit" | "yelp";
 
 export type ScanSourceResult = {
   source: SourceKey;

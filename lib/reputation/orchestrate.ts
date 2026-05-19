@@ -23,6 +23,8 @@ import {
   searchGooglePlaces,
   GOOGLE_PLACES_COST_CENTS_PER_CALL,
 } from "./google-places";
+import { searchReddit } from "./reddit";
+import { searchYelp } from "./yelp";
 import {
   analyzeSentimentAndTopics,
   ANALYSIS_COST_CENTS_PER_SCAN,
@@ -46,7 +48,12 @@ import type {
 // ---------------------------------------------------------------------------
 
 const MAX_MENTIONS_TO_ANALYZE = 80;
-const ALL_SOURCES: SourceKey[] = ["google", "tavily"];
+// Phase 2 — unified reputation inbox. Reddit + Yelp are now first-class
+// dedicated connectors (lib/reputation/reddit.ts, lib/reputation/yelp.ts)
+// in addition to whatever Tavily indexes. They surface fresh content the
+// Tavily index hasn't yet picked up, and Yelp specifically only runs when
+// the operator has set property.yelpBusinessId.
+const ALL_SOURCES: SourceKey[] = ["google", "tavily", "reddit", "yelp"];
 
 export type OrchestrateArgs = {
   property: PropertySeed;
@@ -100,6 +107,8 @@ export async function* orchestrateScan(
   > = {
     google: searchGooglePlaces(property),
     tavily: searchTavily(property),
+    reddit: searchReddit(property),
+    yelp: searchYelp(property),
   };
 
   // Track results so we can dedupe + analyze after all return.
@@ -330,6 +339,7 @@ export async function* orchestrateScan(
         where: { id: row.id },
         data: {
           sentiment: analysis.sentiment,
+          sentimentConfidence: analysis.confidence,
           topics: analysis.topics as Prisma.InputJsonValue,
         },
       });
@@ -346,14 +356,16 @@ export async function* orchestrateScan(
     hash: string;
     mention: ScannedMention;
     sentiment: Sentiment | null;
+    sentimentConfidence: number | null;
     topics: string[];
   }> = [];
 
   for (const { hash, mention } of newMentions) {
     const analysis = classifications.get(hash);
     const sentiment = analysis?.sentiment ?? null;
+    const sentimentConfidence = analysis?.confidence ?? null;
     const topics = analysis?.topics ?? [];
-    streamedMentions.push({ hash, mention, sentiment, topics });
+    streamedMentions.push({ hash, mention, sentiment, sentimentConfidence, topics });
     insertOps.push(
       createMention({
         orgId: property.orgId,
@@ -362,6 +374,7 @@ export async function* orchestrateScan(
         hash,
         mention,
         sentiment,
+        sentimentConfidence,
         topics,
       })
     );
@@ -435,6 +448,8 @@ export async function* orchestrateScan(
       sources: {
         google: summarizeSource(sourceResults.google),
         tavily: summarizeSource(sourceResults.tavily),
+        reddit: summarizeSource(sourceResults.reddit),
+        yelp: summarizeSource(sourceResults.yelp),
       } as Prisma.InputJsonValue,
     },
   });
@@ -615,9 +630,19 @@ async function createMention(args: {
   hash: string;
   mention: ScannedMention;
   sentiment: Sentiment | null;
+  sentimentConfidence: number | null;
   topics: string[];
 }): Promise<{ id: string } | null> {
-  const { orgId, propertyId, scanId, hash, mention, sentiment, topics } = args;
+  const {
+    orgId,
+    propertyId,
+    scanId,
+    hash,
+    mention,
+    sentiment,
+    sentimentConfidence,
+    topics,
+  } = args;
   try {
     const row = await prisma.propertyMention.create({
       data: {
@@ -632,6 +657,7 @@ async function createMention(args: {
         publishedAt: mention.publishedAt ?? null,
         rating: mention.rating ?? null,
         sentiment,
+        sentimentConfidence,
         topics: topics as Prisma.InputJsonValue,
         firstSeenScanId: scanId,
       },

@@ -40,6 +40,11 @@ const analysisSchema = z.object({
     z.object({
       id: z.string(),
       sentiment: z.enum(["POSITIVE", "NEGATIVE", "NEUTRAL", "MIXED"]),
+      // 0..1 self-reported confidence. Lets the UI fade low-confidence
+      // pills and gate negative-mention alerts on confidence ≥ 0.7.
+      // Default 0.5 keeps backward-compat with prompt versions that
+      // forgot to emit the field (rare but Claude is non-deterministic).
+      confidence: z.number().min(0).max(1).default(0.5),
       topics: z.array(z.string()).default([]),
     })
   ),
@@ -48,6 +53,7 @@ const analysisSchema = z.object({
 type AnalysisItem = {
   id: string;
   sentiment: Sentiment;
+  confidence: number;
   topics: TopicTag[];
 };
 
@@ -110,6 +116,7 @@ export async function analyzeSentimentAndTopics(
       map.set(row.id, {
         id: row.id,
         sentiment: row.sentiment as Sentiment,
+        confidence: row.confidence,
         topics,
       });
     }
@@ -144,6 +151,9 @@ function buildPrompt(
 
 For each item, return:
   - sentiment: POSITIVE | NEGATIVE | NEUTRAL | MIXED
+  - confidence: a 0..1 score reflecting how sure you are of the sentiment label.
+                Use 0.9+ only when the text is unambiguous. Use 0.5–0.7 for
+                short/sparse content. Use < 0.5 when you genuinely can't tell.
   - topics: 0 to 3 tags from [${TOPIC_TAGS.join(", ")}]. If nothing fits, return an empty array.
 
 Guidance:
@@ -151,6 +161,8 @@ Guidance:
 - Use MIXED only when positive and negative signals are clearly both present.
 - Use NEUTRAL for factual questions or generic mentions with no clear sentiment ("anyone live at X?").
 - Prefer specific topics (maintenance, staff, noise) over "general" when possible.
+- Be honest about uncertainty — a low confidence on a borderline sentiment is
+  more useful than overclaiming.
 
 Return exactly one classification per input id.
 
