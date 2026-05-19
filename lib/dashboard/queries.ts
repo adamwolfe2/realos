@@ -224,17 +224,23 @@ export async function getFunnel(orgId: string) {
   const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
 
   const [
-    visitorRows,
+    visitorDistinctRows,
     engagedCount,
     leadsCount,
     toursCount,
     applicationsCount,
   ] = await Promise.all([
-    prisma.visitorSession.findMany({
-      where: { orgId, startedAt: { gte: since28d } },
-      select: { anonymousId: true },
-      distinct: ["anonymousId"],
-    }),
+    // COUNT(DISTINCT) in SQL — Postgres counts unique anonymousIds
+    // without materializing one row per distinct value the way
+    // `findMany({ distinct: [...] })` did. Same semantics (count of
+    // distinct anonymousId values for the org in the 28d window) at a
+    // fraction of the bytes transferred and the planner cost.
+    prisma.$queryRaw<{ count: bigint }[]>`
+      SELECT COUNT(DISTINCT "anonymousId")::bigint AS count
+      FROM "VisitorSession"
+      WHERE "orgId" = ${orgId}
+        AND "startedAt" >= ${since28d}
+    `,
     prisma.visitorSession.count({
       where: {
         orgId,
@@ -265,8 +271,12 @@ export async function getFunnel(orgId: string) {
     }),
   ]);
 
+  // $queryRaw returns COUNT as bigint — Number() is safe here because a
+  // single-org 28d distinct-visitor count won't exceed 2^53.
+  const visitorsCount = Number(visitorDistinctRows[0]?.count ?? BigInt(0));
+
   return [
-    { label: "Visitors", value: visitorRows.length },
+    { label: "Visitors", value: visitorsCount },
     { label: "Engaged", value: engagedCount },
     { label: "Leads", value: leadsCount },
     { label: "Tours", value: toursCount },
