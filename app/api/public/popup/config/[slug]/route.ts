@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getActivePopupsForEmbed } from "@/lib/popups/queries";
+import {
+  chatbotConfigLimiter,
+  checkRateLimit,
+  getIp,
+} from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -16,8 +21,10 @@ export const dynamic = "force-dynamic";
 // the config. Returns ONLY public-safe fields — no propertyId, no
 // orgId, no analytics counters, no audit trail.
 //
-// Rate limit: handled at the edge by Vercel. No tenant-level guard
-// here because the response is fully public anyway.
+// Rate limit: chatbotConfigLimiter (30/min/IP) as defense-in-depth on
+// top of Vercel's edge firewall. The embed polls infrequently (cached
+// 60s), so a single user shouldn't approach 30/min from one IP under
+// normal use. A scraper enumerating tenant slugs would trip this.
 // ---------------------------------------------------------------------------
 
 const CORS_HEADERS = {
@@ -35,6 +42,25 @@ export async function GET(
   req: NextRequest,
   ctx: { params: Promise<{ slug: string }> },
 ) {
+  // Defense-in-depth rate-limit (Vercel firewall handles the floor).
+  // Keyed by IP so one shared scraper IP can't enumerate tenant slugs
+  // without tripping after 30 hits in a minute.
+  const ip = getIp(req);
+  const rl = await checkRateLimit(chatbotConfigLimiter, ip);
+  if (!rl.allowed) {
+    const retryAfterSec = Math.max(
+      1,
+      Math.ceil((rl.reset - Date.now()) / 1000),
+    );
+    return NextResponse.json(
+      { ok: false, error: "Too many requests" },
+      {
+        status: 429,
+        headers: { ...CORS_HEADERS, "Retry-After": String(retryAfterSec) },
+      },
+    );
+  }
+
   const { slug } = await ctx.params;
   if (!slug || typeof slug !== "string" || slug.length > 100) {
     return NextResponse.json(
