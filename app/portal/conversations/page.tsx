@@ -201,7 +201,7 @@ export default async function ConversationsList({
     selectedId && /^[a-zA-Z0-9_-]+$/.test(selectedId) ? selectedId : null;
 
   return (
-    <div className="flex flex-col h-[calc(100vh-8rem)]">
+    <div className="flex flex-col min-h-[calc(100vh-8rem)] lg:h-[calc(100vh-8rem)]">
       <PageHeader
         title="Chatbot conversations"
         description="Read transcripts inline, flag patterns to tune the system prompt, and find leads worth chasing. Filters are URL-driven."

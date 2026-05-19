@@ -229,7 +229,7 @@ export default async function AdsPage({
         title="Paid ads"
         description="Spend, clicks, and conversions from every connected ad platform. Refreshes daily."
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <PropertyMultiSelect
               properties={properties}
               orgId={scope.orgId}

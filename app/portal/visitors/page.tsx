@@ -330,7 +330,7 @@ export default async function VisitorsPage({
         title="Visitor feed"
         description="Real people visiting your site, identified by the pixel. Auto-refreshes every 15 seconds."
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <PropertyMultiSelect
               properties={properties}
               orgId={scope.orgId}

@@ -182,7 +182,7 @@ export default async function LeadsKanbanPage({
         title="Leads"
         description="Click any lead to see full detail, conversation history, tours, and applications."
         actions={
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <PropertyMultiSelect
               properties={visibleProperties(scope, properties)}
               orgId={scope.orgId}
