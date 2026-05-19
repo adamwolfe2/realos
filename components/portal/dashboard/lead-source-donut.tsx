@@ -1,13 +1,21 @@
 "use client";
 
 import * as React from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+import dynamic from "next/dynamic";
+import type { LeadSourceDonutChartDatum } from "./lead-source-donut-chart";
+
+// Defer the recharts-bearing inner chart so the dashboard initial bundle
+// doesn't ship recharts. The legend below the chart renders immediately
+// in HTML; only the SVG donut waits for the chunk.
+const LeadSourceDonutChart = dynamic(
+  () => import("./lead-source-donut-chart"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-full w-full rounded-full border border-dashed border-border" aria-hidden="true" />
+    ),
+  },
+);
 
 export type LeadSourceSlice = {
   source: string;
@@ -43,35 +51,7 @@ export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-[160px_1fr] items-center gap-5">
       <div className="relative h-[160px] w-[160px] mx-auto">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Tooltip
-              cursor={false}
-              contentStyle={{
-                fontSize: 12,
-                background: "white",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: 8,
-                boxShadow: "0 4px 24px rgba(0,0,0,0.05)",
-              }}
-              formatter={(v: number, n: string) => [v, n]}
-            />
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              innerRadius={50}
-              outerRadius={75}
-              stroke="white"
-              strokeWidth={2}
-              paddingAngle={1.5}
-            >
-              {data.map((d) => (
-                <Cell key={d.name} fill={d.color} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
+        <LeadSourceDonutChart data={data as LeadSourceDonutChartDatum[]} />
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Total
