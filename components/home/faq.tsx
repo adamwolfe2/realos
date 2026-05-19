@@ -13,7 +13,7 @@ export function Faq() {
   const { faq } = MARKETING.home;
   return (
     <section style={{ backgroundColor: "#FFFFFF", borderTop: "1px solid #E2E8F0" }}>
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-16 md:py-24">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-12 md:py-16">
         <div className="grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-10 lg:gap-16 items-start">
           {/* Left rail — header, sticky on desktop so it stays with the
               questions as you scroll. */}

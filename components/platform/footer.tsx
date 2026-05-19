@@ -23,8 +23,8 @@ export function PlatformFooter() {
   return (
     <footer
       style={{
-        backgroundColor: "#F4F4F4",
-        borderTop: "1px solid #EEEEEE",
+        backgroundColor: "#FFFFFF",
+        borderTop: "1px solid #E2E8F0",
       }}
     >
       <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-10 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -41,11 +41,11 @@ export function PlatformFooter() {
               key={l.href}
               href={l.href}
               style={{
-                color: "#5C5E62",
+                color: "#64748B",
                 fontFamily: "var(--font-sans)",
-                fontSize: "12px",
+                fontSize: "13px",
                 fontWeight: 400,
-                transition: "color 0.33s",
+                transition: "color 0.2s",
               }}
             >
               {l.label}
@@ -54,7 +54,7 @@ export function PlatformFooter() {
         </nav>
         <p
           style={{
-            color: "#8E8E8E",
+            color: "#94A3B8",
             fontFamily: "var(--font-sans)",
             fontSize: "12px",
             fontWeight: 400,

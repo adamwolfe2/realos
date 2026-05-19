@@ -19,7 +19,7 @@ export function Comparison() {
         borderTop: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-16 md:py-24">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-12 md:py-16">
         <div className="max-w-3xl mb-10 md:mb-12">
           <p className="eyebrow mb-3">{comparison.eyebrow}</p>
           <h2
