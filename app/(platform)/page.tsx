@@ -2,21 +2,31 @@ import type { Metadata } from "next";
 import { MARKETING } from "@/lib/copy/marketing";
 import { BRAND_NAME } from "@/lib/brand";
 import { Hero } from "@/components/home/hero";
-import { WhatYouGet } from "@/components/home/what-you-get";
+import { CapabilitiesRail } from "@/components/home/capabilities-rail";
 import { Comparison } from "@/components/home/comparison";
 import { Weekly } from "@/components/home/weekly";
 import { LiveExample } from "@/components/home/live-example";
 import { ProductTourSection } from "@/components/home/product-tour-section";
-import { Numbers } from "@/components/home/numbers";
 import { Verticals } from "@/components/home/verticals";
 import { Proof } from "@/components/home/proof";
 import { Faq } from "@/components/home/faq";
-import { LandingModules } from "@/components/landing/modules";
 
-// Original homepage layout restored. The one carry-over from the May 19
-// rewrite is the "Every module you can turn on" grid — slotted between
-// Numbers and Verticals so readers see the full module roster mid-scroll.
-// Light-mode treatment (no dark slab).
+// Homepage structure (post-CapabilitiesRail rewrite):
+//   Hero
+//   CapabilitiesRail          ← scrollytelling, 6 surfaces, sticky artifact
+//   Comparison                ← the shift / current stack vs. LeaseStack
+//   Weekly                    ← operating rhythm
+//   LiveExample               ← links to /demo + #product-tour
+//   ProductTourSection        ← interactive operator portal embed
+//   Verticals                 ← markets we cover
+//   Faq
+//   Proof                     ← final CTA
+//
+// Replaced sections: WhatYouGet, LandingModules, Numbers. The Capabilities
+// Rail subsumes all three — six live product surfaces in a sticky-artifact
+// scrollytelling layout, each with a "see it live" link to the matching
+// /features page. See components/home/capabilities-rail.tsx for the design
+// note explaining why this replaces three grids in a row.
 
 export const metadata: Metadata = {
   title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
@@ -27,13 +37,11 @@ export default function PlatformHome() {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <Hero />
-      <WhatYouGet />
+      <CapabilitiesRail />
       <Comparison />
       <Weekly />
       <LiveExample />
       <ProductTourSection />
-      <Numbers />
-      <LandingModules />
       <Verticals />
       <Faq />
       <Proof />
