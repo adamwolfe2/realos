@@ -3155,24 +3155,30 @@ enum AeoCitationStatus {
 }
 
 model AeoCitationCheck {
-  id               String            @id @default(cuid())
-  orgId            String
-  propertyId       String?
-  engine           AeoEngine
-  prompt           String            @db.Text
-  queryRunAt       DateTime          @default(now())
-  status           AeoCitationStatus
-  responseText     String            @db.Text
-  citedUrl         String?
-  competitorsCited String[]
-  metadata         Json?
+  id                 String            @id @default(cuid())
+  orgId              String
+  propertyId         String?
+  neighborhoodPageId String?
+  /// Raw declarative claim (from NeighborhoodPage.aiCitations) the prompt
+  /// was derived from. Null for property-level scans.
+  claim              String?           @db.Text
+  engine             AeoEngine
+  prompt             String            @db.Text
+  queryRunAt         DateTime          @default(now())
+  status             AeoCitationStatus
+  responseText       String            @db.Text
+  citedUrl           String?
+  competitorsCited   String[]
+  metadata           Json?
 
-  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  property Property?    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  org              Organization      @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property         Property?         @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  neighborhoodPage NeighborhoodPage? @relation(fields: [neighborhoodPageId], references: [id], onDelete: SetNull)
 
   @@index([orgId, queryRunAt])
   @@index([propertyId, queryRunAt])
   @@index([engine, queryRunAt])
+  @@index([neighborhoodPageId, queryRunAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -3205,8 +3211,9 @@ model NeighborhoodPage {
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 
-  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  property Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  org       Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property  Property?           @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  aeoChecks AeoCitationCheck[]
 
   @@unique([orgId, slug])
   @@index([orgId, status])
