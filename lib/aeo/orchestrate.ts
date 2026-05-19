@@ -22,6 +22,12 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { generatePrompts } from "./prompts";
+import {
+  parseClaimSets,
+  rewriteAllClaims,
+  NEIGHBORHOOD_PROMPT_LIMITS,
+  type ClaimPromptSet,
+} from "./prompts-neighborhood";
 import { parseCitation } from "./parse";
 import { getEnabledEngines, type EngineModule } from "./engines";
 import type { AeoEngine, Prisma } from "@prisma/client";
@@ -29,6 +35,8 @@ import type { AeoEngine, Prisma } from "@prisma/client";
 const PROMPTS_PER_PROPERTY = 3;
 const PER_ENGINE_DELAY_MS = 3000;
 const PROJECTED_QUERIES_WARN = 100;
+const NEIGHBORHOOD_PROMPTS_PER_CLAIM_CAP = 3;
+const NEIGHBORHOOD_PROJECTED_QUERIES_WARN = 50;
 
 export interface ScanOptions {
   orgId: string;
@@ -217,4 +225,246 @@ function deriveNeighborhood(p: PropertyRow): string | null {
   // For now we don't have a structured neighborhood field. Returning null
   // is safe — the prompt generator handles city-only seeds.
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// runNeighborhoodScan — claim-level visibility check for one NeighborhoodPage
+//
+// For each `aiCitations[]` claim on the page we ask Claude to rewrite the
+// claim into 2-3 natural search prompts (cached back on the page so future
+// scans skip the rewrite). We then fan those prompts × engines and write
+// one AeoCitationCheck per (claim, prompt, engine) tuple tagged with
+// neighborhoodPageId + the raw claim.
+//
+// CITED if the page's slug, public URL, OR the anchor property's name
+// comes back. COMPETITOR_CITED if another building gets named. Else
+// NOT_CITED.
+// ---------------------------------------------------------------------------
+
+export interface NeighborhoodScanOptions {
+  orgId: string;
+  pageId: string;
+  engines?: EngineModule[];
+  /** Cap on claims processed this run. Defaults to all (up to 20). */
+  maxClaims?: number;
+  /** Cap on prompts per claim (1-3). Defaults to 3 — cron uses 2. */
+  promptsPerClaim?: number;
+}
+
+export interface NeighborhoodScanResult {
+  pageId: string;
+  orgId: string;
+  enginesUsed: AeoEngine[];
+  claimsScanned: number;
+  promptsRun: number;
+  queriesRun: number;
+  citedCount: number;
+  rowsWritten: number;
+  skipped: number;
+  errors: number;
+  durationMs: number;
+}
+
+export async function runNeighborhoodScan(
+  opts: NeighborhoodScanOptions,
+): Promise<NeighborhoodScanResult> {
+  const start = Date.now();
+  const engines = opts.engines ?? getEnabledEngines();
+  const engineNames: AeoEngine[] = engines.map((e) => e.engine as AeoEngine);
+
+  const page = await prisma.neighborhoodPage.findFirst({
+    where: { id: opts.pageId, orgId: opts.orgId },
+    select: {
+      id: true,
+      orgId: true,
+      city: true,
+      state: true,
+      neighborhood: true,
+      slug: true,
+      aiCitations: true,
+      propertyId: true,
+      property: {
+        select: { id: true, name: true, websiteUrl: true },
+      },
+      org: {
+        select: {
+          slug: true,
+          // Primary custom domain (if any) — used to derive the canonical
+          // public URL for CITED detection.
+          domains: {
+            where: { isPrimary: true },
+            select: { hostname: true },
+            take: 1,
+          },
+        },
+      },
+    },
+  });
+
+  if (!page) {
+    throw new Error(`NeighborhoodPage ${opts.pageId} not found in org ${opts.orgId}`);
+  }
+
+  const rawClaims = parseClaimSets(page.aiCitations);
+  const claims = rawClaims.slice(
+    0,
+    opts.maxClaims ?? NEIGHBORHOOD_PROMPT_LIMITS.MAX_CLAIMS,
+  );
+
+  if (claims.length === 0) {
+    return {
+      pageId: page.id,
+      orgId: page.orgId,
+      enginesUsed: engineNames,
+      claimsScanned: 0,
+      promptsRun: 0,
+      queriesRun: 0,
+      citedCount: 0,
+      rowsWritten: 0,
+      skipped: 0,
+      errors: 0,
+      durationMs: Date.now() - start,
+    };
+  }
+
+  // Rewrite (and cache) prompts for each claim. parseClaimSets already
+  // turns legacy string[] entries into { claim, prompts: [] } so the
+  // rewriter fills any missing prompts in-place.
+  const enriched = await rewriteAllClaims(claims, {
+    city: page.city,
+    state: page.state,
+    neighborhood: page.neighborhood,
+    propertyName: page.property?.name ?? null,
+  });
+
+  // Persist the enriched aiCitations back on the page so future scans skip
+  // the Claude rewrite step.
+  await persistEnrichedClaims(page.id, enriched);
+
+  const promptsPerClaim = Math.min(
+    Math.max(opts.promptsPerClaim ?? NEIGHBORHOOD_PROMPTS_PER_CLAIM_CAP, 1),
+    NEIGHBORHOOD_PROMPTS_PER_CLAIM_CAP,
+  );
+
+  const projected = enriched.reduce(
+    (n, c) => n + Math.min(c.prompts.length, promptsPerClaim),
+    0,
+  ) * engines.length;
+  if (projected > NEIGHBORHOOD_PROJECTED_QUERIES_WARN) {
+    console.warn(
+      `[aeo.orchestrate] high neighborhood-scan projection: ${projected} queries (` +
+        `${enriched.length} claims × ${engines.length} engines × <=${promptsPerClaim} prompts) for page ${page.id}`,
+    );
+  }
+
+  // Build the citation target for the parser. We want CITED to match on:
+  //  - the anchor property's name (if any)
+  //  - the page's own /n/<slug> URL on the org's marketing domain
+  //  - the property's websiteUrl
+  const primaryHost = page.org.domains[0]?.hostname ?? null;
+  const pageSlugUrl = primaryHost
+    ? `https://${primaryHost}/n/${page.slug}`
+    : null;
+  const target = {
+    name: page.property?.name ?? `${page.neighborhood} guide`,
+    websiteUrl: page.property?.websiteUrl ?? pageSlugUrl,
+    aliases: [
+      page.property?.name ?? "",
+      // Match path-only references like "/n/the-mission-sf"
+      `/n/${page.slug}`,
+      pageSlugUrl ?? "",
+    ].filter(Boolean) as string[],
+  };
+
+  let rowsWritten = 0;
+  let citedCount = 0;
+  let skipped = 0;
+  let errors = 0;
+  let promptsRun = 0;
+  let queriesRun = 0;
+
+  const engineNextAllowedAt = new Map<string, number>();
+
+  for (const entry of enriched) {
+    const prompts = entry.prompts.slice(0, promptsPerClaim);
+    if (prompts.length === 0) continue;
+
+    for (const prompt of prompts) {
+      promptsRun += 1;
+      for (const engine of engines) {
+        await throttleEngine(engineNextAllowedAt, engine.engine);
+        queriesRun += 1;
+        const result = await engine.runPrompt(prompt);
+        if ("skipped" in result && result.skipped) {
+          skipped += 1;
+          continue;
+        }
+        try {
+          const parsed = parseCitation(result.responseText, target);
+          if (parsed.status === "CITED") citedCount += 1;
+          await prisma.aeoCitationCheck.create({
+            data: {
+              orgId: page.orgId,
+              propertyId: page.propertyId ?? null,
+              neighborhoodPageId: page.id,
+              claim: entry.claim,
+              engine: engine.engine as AeoEngine,
+              prompt,
+              status: parsed.status,
+              responseText: result.responseText.slice(0, 8000),
+              citedUrl: parsed.citedUrl ?? null,
+              competitorsCited: parsed.competitorsCited,
+              metadata: {
+                engineMetadata: result.metadata ?? {},
+                citedUrls: result.citedUrls.slice(0, 20),
+                source: "neighborhood",
+              } as Prisma.InputJsonValue,
+            },
+          });
+          rowsWritten += 1;
+        } catch (err) {
+          errors += 1;
+          console.error(
+            `[aeo.orchestrate] persist failed for page ${page.id} / claim "${entry.claim.slice(0, 40)}" / ${engine.engine}:`,
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
+    }
+  }
+
+  return {
+    pageId: page.id,
+    orgId: page.orgId,
+    enginesUsed: engineNames,
+    claimsScanned: enriched.length,
+    promptsRun,
+    queriesRun,
+    citedCount,
+    rowsWritten,
+    skipped,
+    errors,
+    durationMs: Date.now() - start,
+  };
+}
+
+async function persistEnrichedClaims(
+  pageId: string,
+  enriched: ClaimPromptSet[],
+): Promise<void> {
+  try {
+    await prisma.neighborhoodPage.update({
+      where: { id: pageId },
+      data: {
+        aiCitations: enriched as unknown as Prisma.InputJsonValue,
+      },
+    });
+  } catch (err) {
+    // Non-fatal — the scan can proceed using in-memory prompts even if
+    // the cache write fails.
+    console.error(
+      `[aeo.orchestrate] failed to persist enriched aiCitations for page ${pageId}:`,
+      err instanceof Error ? err.message : err,
+    );
+  }
 }
