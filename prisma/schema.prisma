@@ -348,6 +348,13 @@ model Organization {
   buildFeePaidCents     Int?                @default(0)
   adSpendMarkupPct      Float?              @default(0.15) // 15% default
 
+
+  // Optional override for the historical ad-metric retention window
+  // (months of AdMetricDaily granularity kept before rollup into
+  // AdMetricMonthly). NULL = use tier default from
+  // `lib/billing/retention.ts`. Only honored on SCALE / CUSTOM tiers;
+  // Foundation + Growth ignore overrides.
+  adDataRetentionMonths Int?
   // Selected modules (a la carte flags)
   moduleWebsite        Boolean @default(true)
   modulePixel          Boolean @default(false)
@@ -3223,4 +3230,54 @@ enum NeighborhoodPageStatus {
   DRAFT
   PUBLISHED
   ARCHIVED
+}
+
+// ============================================================================
+// AD METRICS — historical retention (monthly rollups)
+//
+// Tier-based retention policy lives in `lib/billing/retention.ts`:
+//   Foundation  -> 1 month daily, no monthly aggregates
+//   Growth      -> 12 months daily, then aggregate to AdMetricMonthly
+//   Scale/CUSTOM-> 24 months daily, then aggregate (CUSTOM may override
+//                  via Organization.adDataRetentionMonths)
+//
+// Daily rollup cron (`/api/cron/ad-retention`, 03:30 UTC) reads each org's
+// policy, rolls AdMetricDaily rows older than `dailyWindowMonths` into
+// per-(org, adAccount, year, month) buckets, then deletes the daily rows.
+//
+// The dashboard reads stitch AdMetricDaily (recent) with AdMetricMonthly
+// (older) so charts stay continuous across the boundary — see
+// `lib/dashboard/queries.ts::getAdSpendKpi` and `app/portal/ads/page.tsx`.
+// ============================================================================
+
+model AdMetricMonthly {
+  id          String @id @default(cuid())
+  orgId       String
+  adAccountId String
+
+  // Calendar bucket, UTC. (year, month=1..12) is the dedup key alongside
+  // (orgId, adAccountId). We store both as plain Int columns so range
+  // filters stay index-friendly without date math at the DB layer.
+  year  Int
+  month Int
+
+  impressions          Int   @default(0)
+  clicks               Int   @default(0)
+  spendCents           Int   @default(0)
+  conversions          Float @default(0)
+  conversionValueCents Int   @default(0)
+
+  // Snapshot of how many daily rows were folded into this bucket. Useful
+  // for audit + for a partial-month bucket the cron may keep refreshing
+  // if it's still inside the daily window on the org's policy.
+  daysAggregated Int @default(0)
+
+  // Provenance: when did the aggregation job last write this row.
+  aggregatedAt DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([orgId, adAccountId, year, month])
+  @@index([orgId, year, month])
+  @@index([adAccountId, year, month])
 }
