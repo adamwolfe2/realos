@@ -189,13 +189,23 @@ export default async function VisitorsPage({
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      // No explicit select here — extractIdentity (in
-      // lib/visitors/enrichment.ts) reads enrichedData + pagesViewed
-      // among others, so a partial shape would break it. The
-      // optimization opportunity is real (those JSON columns can be
-      // 10-50KB per row) but needs to flow through extractIdentity's
-      // signature first. Tracked as a follow-up; not safe to ship
-      // overnight without the corresponding refactor.
+      // Explicit narrow select — drops `enrichedData` and `pagesViewed`
+      // (each 10-50KB of JSON) which the list view does NOT render and
+      // which dwarfed the per-row payload (~2MB / 50 rows pre-fix).
+      // extractIdentity (lib/visitors/enrichment.ts) now accepts a
+      // narrowed `VisitorIdentitySource` and returns nulls for
+      // JSON-derived fields when those columns aren't selected, so the
+      // "location" / "last page" columns gracefully render "—" here and
+      // the rich enrichment continues to load on the detail page where
+      // the full Visitor row is still fetched.
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        sessionCount: true,
+        lastSeenAt: true,
+      },
     }),
     prisma.visitor.count({ where }),
     // The visitor feed page header surfaces the "where is the pixel

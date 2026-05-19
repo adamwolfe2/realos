@@ -1,5 +1,25 @@
 import type { Visitor } from "@prisma/client";
 
+// Narrowed input shape so list-view callers (e.g. /portal/visitors) can
+// omit the fat JSON columns (`enrichedData` ~10-50KB, `pagesViewed`
+// similar) from their prisma `select` and still pass the row through
+// extractIdentity. When `enrichedData` / `pagesViewed` are undefined the
+// JSON-derived fields (companyName, jobTitle, location, lastPagePath,
+// lastPageUrl, logoUrl) come back as null — the list table renders "—"
+// for those columns and the detail page (which still fetches the full
+// row) gets the rich identity.
+//
+// Required fields are the ones extractIdentity touches off of top-level
+// columns. Optional fields mirror the JSON payloads — when omitted we
+// just treat them as absent.
+export type VisitorIdentitySource = Pick<
+  Visitor,
+  "firstName" | "lastName" | "email"
+> & {
+  enrichedData?: Visitor["enrichedData"];
+  pagesViewed?: Visitor["pagesViewed"];
+};
+
 // ---------------------------------------------------------------------------
 // Visitor enrichment helpers.
 //
@@ -104,8 +124,14 @@ export function avatarPaletteFor(seed: string): string {
   return AVATAR_PALETTE[hash % AVATAR_PALETTE.length];
 }
 
-export function extractIdentity(visitor: Visitor): VisitorIdentity {
-  const enriched = asRecord(visitor.enrichedData as Json);
+export function extractIdentity(
+  visitor: VisitorIdentitySource,
+): VisitorIdentity {
+  // When the caller's prisma `select` omits `enrichedData` /
+  // `pagesViewed` the values are simply absent on the object — treat
+  // that identically to a present-but-empty JSON column.
+  const enriched =
+    "enrichedData" in visitor ? asRecord(visitor.enrichedData as Json) : null;
 
   const firstName =
     visitor.firstName ?? readString(enriched, "FIRST_NAME", "first_name");
@@ -129,9 +155,10 @@ export function extractIdentity(visitor: Visitor): VisitorIdentity {
 
   const location = [city, state].filter(Boolean).join(", ") || null;
 
-  const { path: lastPagePath, url: lastPageUrl } = readPagePath(
-    visitor.pagesViewed as Json
-  );
+  const { path: lastPagePath, url: lastPageUrl } =
+    "pagesViewed" in visitor
+      ? readPagePath(visitor.pagesViewed as Json)
+      : { path: null, url: null };
 
   const displayName =
     [firstName, lastName].filter(Boolean).join(" ").trim() ||
