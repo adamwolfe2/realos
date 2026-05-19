@@ -7,14 +7,31 @@ import {
   probeEmbedScrape,
 } from "@/lib/integrations/appfolio";
 
+// AppFolio subdomain shape: RFC 1035 label (lowercase ASCII, digits,
+// hyphens, no leading/trailing hyphen, ≤63 chars). This is the FIRST
+// LINE OF DEFENSE for SSRF: probeEmbedScrape interpolates this value
+// straight into `https://${subdomain}.appfolio.com/listings`. Without
+// the regex, an attacker passing "evil.com#" gets the URL parser to
+// resolve host=evil.com (because `#` terminates the host segment),
+// turning this authed probe into an arbitrary outbound fetcher
+// against internal services / metadata endpoints / etc.
+const subdomainSchema = z
+  .string()
+  .min(1)
+  .max(63)
+  .regex(
+    /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/,
+    "Subdomain must be lowercase letters, digits, or hyphens (no dots)",
+  );
+
 const bodySchema = z.discriminatedUnion("mode", [
   z.object({
     mode: z.literal("embed"),
-    subdomain: z.string().min(1).max(200),
+    subdomain: subdomainSchema,
   }),
   z.object({
     mode: z.literal("rest"),
-    subdomain: z.string().min(1).max(200),
+    subdomain: subdomainSchema,
     clientId: z.string().min(1).max(500),
     clientSecret: z.string().min(1).max(500),
   }),

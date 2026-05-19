@@ -9,8 +9,22 @@ import {
 import { maybeEncrypt } from "@/lib/crypto";
 import { AuditAction, BackendPlatform } from "@prisma/client";
 
+// Hostname-label regex. The value flows into outbound URLs as
+// `https://${instanceSubdomain}.appfolio.com/...` — without this gate
+// a fragment / colon / slash in the value lets the URL parser
+// re-anchor to a different host. Same SSRF posture as the /test
+// probe.
+const subdomainSchema = z
+  .string()
+  .min(1)
+  .max(63)
+  .regex(
+    /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/,
+    "Subdomain must be lowercase letters, digits, or hyphens (no dots)",
+  );
+
 const patch = z.object({
-  instanceSubdomain: z.string().min(1).max(200).optional(),
+  instanceSubdomain: subdomainSchema.optional(),
   propertyGroupFilter: z.string().max(200).optional().nullable(),
   apiKey: z.string().min(4).max(500).optional(),
   useEmbedFallback: z.boolean().optional(),
