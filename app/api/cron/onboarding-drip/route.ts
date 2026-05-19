@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { OrgType, TenantStatus } from "@prisma/client";
+import {
+  OnboardingPhase,
+  OrgType,
+  TenantStatus,
+} from "@prisma/client";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
@@ -12,6 +16,12 @@ import {
   BRAND_NAME,
   BRAND_EMAIL,
 } from "@/lib/email/shared";
+import { isEmailSuppressed } from "@/lib/email/suppression";
+import { syncOnboardingProgress } from "@/lib/onboarding/step-detectors";
+import {
+  buildOnboardingAutomationEmail,
+  type OnboardingAutomationStep,
+} from "@/lib/email/onboarding-automation";
 
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
 
@@ -61,7 +71,13 @@ export async function GET(req: NextRequest) {
           (now.getTime() - org.createdAt.getTime()) / (24 * 60 * 60 * 1000)
         );
 
-        // Determine which step is due.
+        // Phase-aware drip runs every pass regardless of legacy window
+        // (it has its own dedup). The new system understands FOUNDATION
+        // vs GROWTH and short-circuits once the phase completes, so
+        // sending it for every org is cheap.
+        await sendPhaseAwareDrip({ org, daysSince, portalBase, results });
+
+        // Determine which legacy step is due.
         type StepKey = "add_property" | "add_integration" | "setup_checklist";
         let targetStep: StepKey | null = null;
         if (daysSince >= 2 && daysSince <= 4) targetStep = "add_property";
@@ -293,4 +309,168 @@ function htmlEscape(s: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+// ---------------------------------------------------------------------------
+// Phase-aware drip (FOUNDATION / GROWTH automation).
+//
+// Day-window matrix:
+//   2  → foundation_day2_add_property      (sent only if Foundation still active)
+//   4  → foundation_day4_connect_data      (still in Foundation)
+//   7  → foundation_day7_stuck             (still in Foundation, with steps remaining)
+//   9  → growth_day9_verify_leads          (advanced to Growth)
+//   14 → growth_day14_stuck                (still in Growth, with steps remaining)
+//
+// Dedup uses the same AuditEvent table (entityType = "onboarding_drip",
+// description = the step key) so a retried cron pass never sends twice.
+// Suppression: every send checks `isEmailSuppressed` first.
+// ---------------------------------------------------------------------------
+
+type DripOrg = {
+  id: string;
+  name: string;
+  primaryContactEmail: string | null;
+  primaryContactName: string | null;
+};
+
+async function sendPhaseAwareDrip(opts: {
+  org: DripOrg;
+  daysSince: number;
+  portalBase: string;
+  results: Array<{ orgId: string; action: string; error?: string }>;
+}): Promise<void> {
+  const { org, daysSince, portalBase, results } = opts;
+
+  // Pick the target step for this day-window. We only fire at exact
+  // boundaries; otherwise the cron repeats too often for the same org.
+  const step: OnboardingAutomationStep | null =
+    daysSince === 2
+      ? "foundation_day2_add_property"
+      : daysSince === 4
+        ? "foundation_day4_connect_data"
+        : daysSince === 7
+          ? "foundation_day7_stuck"
+          : daysSince === 9
+            ? "growth_day9_verify_leads"
+            : daysSince === 14
+              ? "growth_day14_stuck"
+              : null;
+  if (!step) return;
+
+  if (!isValidEmail(org.primaryContactEmail)) return;
+
+  // Sync the onboarding progress so the gate checks the freshest state.
+  // Cheap — short-circuits if the org has cleared POLISH.
+  const progress = await syncOnboardingProgress(org.id).catch(() => null);
+  if (!progress) return;
+
+  // Phase gate — only send a nudge whose target phase matches where the
+  // operator actually is. Skip the Foundation nudges once they've moved
+  // to Growth, etc.
+  const expectedPhase: OnboardingPhase | null = step.startsWith("foundation")
+    ? OnboardingPhase.FOUNDATION
+    : step.startsWith("growth")
+      ? OnboardingPhase.GROWTH
+      : null;
+  if (!expectedPhase) return;
+  if (progress.currentPhase !== expectedPhase) return;
+
+  // The "stuck" nudges should only fire if there are real outstanding
+  // steps. If the operator happens to have cleared everything but the
+  // phase hasn't advanced yet (race), suppress the nag.
+  if (step === "foundation_day7_stuck" || step === "growth_day14_stuck") {
+    const outstanding = progress.steps.filter(
+      (s) =>
+        s.phase === expectedPhase &&
+        s.status !== "COMPLETED" &&
+        s.status !== "SKIPPED",
+    );
+    if (outstanding.length === 0) return;
+  }
+
+  const dedupKey = `phase_${step}`;
+  const alreadySent = await prisma.auditEvent.findFirst({
+    where: {
+      orgId: org.id,
+      entityType: "onboarding_drip",
+      description: dedupKey,
+    },
+  });
+  if (alreadySent) {
+    results.push({ orgId: org.id, action: `phase_already_sent:${step}` });
+    return;
+  }
+
+  const recipient = org.primaryContactEmail as string;
+  const suppressed = await isEmailSuppressed(recipient).catch(() => false);
+  if (suppressed) {
+    results.push({ orgId: org.id, action: `phase_skip_suppressed:${step}` });
+    return;
+  }
+
+  const resend = getResend();
+  if (!resend) {
+    results.push({ orgId: org.id, action: `phase_skip_resend_missing:${step}` });
+    return;
+  }
+
+  const firstName =
+    (org.primaryContactName ?? "there").split(" ")[0] ?? "there";
+  const callBookingUrl =
+    process.env.LEASESTACK_BOOKING_URL?.trim() ||
+    "https://cal.com/leasestack/intro";
+
+  const { subject, bodyHtml, ctaText, ctaUrl } =
+    buildOnboardingAutomationEmail(step, {
+      firstName,
+      orgName: org.name,
+      portalBase,
+      callBookingUrl,
+    });
+
+  const html = buildBaseHtml({
+    headline: subject,
+    bodyHtml,
+    ctaText,
+    ctaUrl,
+  });
+
+  const unsubMailbox =
+    process.env.UNSUBSCRIBE_EMAIL?.trim() || "unsubscribe@leasestack.co";
+  const r = await resend.emails.send({
+    from: FROM_EMAIL,
+    to: recipient,
+    subject,
+    html,
+    replyTo: BRAND_EMAIL,
+    headers: {
+      "List-Unsubscribe": `<mailto:${unsubMailbox}>`,
+      "X-Entity-Ref-ID": `onboarding-drip-${org.id}-${dedupKey}`,
+    },
+    tags: [
+      { name: "template", value: `onboarding-${step}` },
+      { name: "category", value: "broadcast" },
+    ],
+  });
+
+  if (r.error) {
+    results.push({
+      orgId: org.id,
+      action: `phase_email_error:${step}`,
+      error: r.error.message,
+    });
+    return;
+  }
+
+  await prisma.auditEvent.create({
+    data: {
+      orgId: org.id,
+      action: "UPDATE",
+      entityType: "onboarding_drip",
+      entityId: org.id,
+      description: dedupKey,
+    },
+  });
+
+  results.push({ orgId: org.id, action: `sent_phase_${step}` });
 }
