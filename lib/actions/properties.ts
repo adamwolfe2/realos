@@ -347,14 +347,27 @@ export async function setPropertyLifecycle(
 
   // Tenant gate: agency can act on any client's properties; clients
   // can only act on their own.
-  if (
-    scope.role !== "AGENCY_OWNER" &&
-    scope.role !== "AGENCY_ADMIN" &&
-    scope.role !== "AGENCY_OPERATOR"
-  ) {
+  const isAgency =
+    scope.role === "AGENCY_OWNER" ||
+    scope.role === "AGENCY_ADMIN" ||
+    scope.role === "AGENCY_OPERATOR";
+  if (!isAgency) {
     if (property.orgId !== scope.orgId) {
       return { ok: false, error: "Not authorized to modify this property." };
     }
+  }
+  // Property-RBAC gate (UPA). A restricted operator (e.g. a leasing
+  // manager scoped to 2 of 30 buildings) was previously able to flip
+  // any property in their org via this server action — the bulk
+  // variant gates on `scope.allowedPropertyIds` but the singular path
+  // did not. Mirrors the BACKFILL property-RBAC sweep so lifecycle
+  // changes can't be the back door into restricted buildings.
+  if (
+    !isAgency &&
+    scope.allowedPropertyIds &&
+    !scope.allowedPropertyIds.includes(propertyId)
+  ) {
+    return { ok: false, error: "Not authorized to modify this property." };
   }
 
   const lifecycleMap = {

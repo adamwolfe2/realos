@@ -17,6 +17,8 @@ import { buildSystemPrompt, type ChatbotTenant } from "@/lib/chatbot/build-syste
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
+import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
+import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
 
 export const maxDuration = 30;
 export const dynamic = "force-dynamic";
@@ -205,5 +207,30 @@ async function persistConversation(args: {
       where: { id: conversation.id },
       data: { leadId: lead.id },
     });
+
+    // Operator notifications. Mirrors the PRE_CHAT path in
+    // /api/public/chatbot/lead — without this, mid-conversation lead
+    // capture silently created Lead rows but never lit up the in-app
+    // bell, Slack, or Resend operator email. We AWAIT inside onFinish:
+    // the stream is already closed by the SDK so the user-perceived
+    // latency is unaffected, but the lambda stays alive long enough
+    // for these to complete.
+    const fullName =
+      [extracted.firstName, extracted.lastName].filter(Boolean).join(" ") ||
+      null;
+    try {
+      await Promise.allSettled([
+        notifyLeadCaptured({ orgId: args.orgId, leadId: lead.id }),
+        notifyChatbotLeadCaptured({
+          id: args.sessionId,
+          orgId: args.orgId,
+          capturedName: fullName,
+          capturedEmail: extracted.email,
+          leadId: lead.id,
+        }),
+      ]);
+    } catch (err) {
+      console.warn("[chatbot] lead notification fanout failed:", err);
+    }
   }
 }
