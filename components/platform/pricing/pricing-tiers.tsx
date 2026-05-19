@@ -50,7 +50,7 @@ const TIERS: Tier[] = [
   {
     id: "foundation",
     checkoutTierId: "starter",
-    name: "Pilot",
+    name: "Foundation",
     tagline: "Free. We connect to your stack and show you what we see.",
     monthly: 0,
     annual: 0,
@@ -72,17 +72,17 @@ const TIERS: Tier[] = [
   {
     id: "growth",
     checkoutTierId: "growth",
-    name: "Standard",
+    name: "Growth",
     tagline: "Replace your retainer. Month-to-month. Cancel if pacing does not move.",
     monthly: 899,
     annual: 749,
     setupFee: null,
     highlighted: true,
-    ctaLabel: "Start with Standard",
+    ctaLabel: "Start with Growth",
     ctaHref: "/onboarding?plan=growth",
     audienceCallout: "Single-property operators running a paid program today",
     features: [
-      { label: "Everything in Pilot, plus:" },
+      { label: "Everything in Foundation, plus:" },
       {
         label: "Visitor pixel, 5,000 identified visitors per month",
         emphasis: true,
@@ -100,17 +100,17 @@ const TIERS: Tier[] = [
   {
     id: "scale",
     checkoutTierId: "scale",
-    name: "Portfolio",
+    name: "Scale",
     tagline: "Per-property pricing with a portfolio rollup and operator success.",
     monthly: 1499,
     annual: 1249,
     setupFee: null,
     highlighted: false,
-    ctaLabel: "Start with Portfolio",
+    ctaLabel: "Start with Scale",
     ctaHref: "/onboarding?plan=scale",
     audienceCallout: "Owners and asset managers running 5 or more properties",
     features: [
-      { label: "Everything in Standard, plus:" },
+      { label: "Everything in Growth, plus:" },
       {
         label: "Per-property pricing with a portfolio-level rollup",
         emphasis: true,
@@ -138,7 +138,7 @@ const TIERS: Tier[] = [
     ctaHref: "/demo?plan=enterprise",
     audienceCallout: "20+ properties or multi-brand owners",
     features: [
-      { label: "Everything in Portfolio, plus:" },
+      { label: "Everything in Scale, plus:" },
       { label: "Volume pricing (25 to 35 percent off list)" },
       { label: "White-label workspace included" },
       { label: "Custom PMS integrations (non-AppFolio)" },
