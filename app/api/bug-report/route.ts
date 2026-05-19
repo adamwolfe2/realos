@@ -43,11 +43,34 @@ const ALLOWED_IMAGE_TYPES = new Set([
   "image/gif",
 ]);
 
+// Block dangerous URL schemes that would otherwise survive z.string().url()
+// — namely `javascript:` and `data:` (and the rarer `vbscript:`). The admin
+// triage UI renders pageUrl as an <a href> and attachments as <a href> too,
+// so a malicious submission could trigger XSS when an operator clicks
+// through. Zod's `.url()` validator parses with `new URL()`, which happily
+// accepts `javascript:alert(1)`. Refine to enforce http/https only.
+const SAFE_URL_PROTOCOLS = new Set(["http:", "https:"]);
+const isSafeUrl = (val: string): boolean => {
+  try {
+    const parsed = new URL(val);
+    return SAFE_URL_PROTOCOLS.has(parsed.protocol.toLowerCase());
+  } catch {
+    return false;
+  }
+};
+const safeUrl = z
+  .string()
+  .url()
+  .max(2048)
+  .refine(isSafeUrl, {
+    message: "URL must use http or https scheme",
+  });
+
 const inputSchema = z.object({
   title: z.string().min(3).max(200),
   description: z.string().min(5).max(8000),
   severity: z.enum(SEVERITIES).default("medium"),
-  pageUrl: z.string().url().max(2048).optional(),
+  pageUrl: safeUrl.optional(),
   pagePath: z.string().max(512).optional(),
   userAgent: z.string().max(512).optional(),
   viewport: z.string().max(64).optional(),
