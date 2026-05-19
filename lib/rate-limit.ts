@@ -70,10 +70,13 @@ export const clientWriteLimiter = createLimiter(redis, 20, '1 m')
 // 5 enrich/scrape requests per userId per minute
 export const enrichLimiter = createLimiter(redis, 5, '1 m')
 
-// 3 Zillow report generations per org per minute. Tight cap to keep us
-// off Zillow's bot radar — they aggressively rate-limit scrapers and a
-// 403 wall affects every operator on the tenant, not just the abuser.
-export const zillowReportLimiter = createLimiter(redis, 3, '1 m')
+// 10 Zillow report generations per org per minute. Tight enough to keep
+// us off Zillow's bot radar (they aggressively rate-limit scrapers and a
+// 403 wall affects every operator on the tenant, not just the abuser)
+// while still letting a sales demo or evaluation session click through
+// multiple listings in a row. The route consumes a token only AFTER URL
+// validation passes so typos don't burn the budget.
+export const zillowReportLimiter = createLimiter(redis, 10, '1 m')
 
 // 3 reputation scans per userId per hour. On-demand and relatively expensive
 // (external API fan-out + Claude classification) so we cap per-user pressure.

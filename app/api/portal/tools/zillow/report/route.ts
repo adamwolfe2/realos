@@ -57,20 +57,6 @@ export async function POST(req: NextRequest) {
     throw err;
   }
 
-  // Tight per-org rate limit. 3/min keeps a curious operator (or a
-  // browser tab they left auto-clicking) from punching us through Zillow's
-  // bot wall.
-  const rl = await checkRateLimit(
-    zillowReportLimiter,
-    `zillow-report:${scope.orgId}`,
-  );
-  if (!rl.allowed) {
-    return rateLimited(
-      "Too many Zillow reports in the last minute. Try again shortly.",
-      Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000)),
-    );
-  }
-
   // Parse body.
   let body: z.infer<typeof bodySchema>;
   try {
@@ -97,6 +83,22 @@ export async function POST(req: NextRequest) {
           "URL must be an https Zillow detail page with a numeric zpid (e.g. /homedetails/.../12345_zpid/).",
       },
       { status: 400 },
+    );
+  }
+
+  // Per-org rate limit. 10/min keeps a curious operator (or a browser
+  // tab they left auto-clicking) from punching us through Zillow's bot
+  // wall, while still letting a sales demo click through several
+  // listings in a row. Runs AFTER URL validation so typos/invalid URLs
+  // don't burn tokens — only real outbound scrapes count.
+  const rl = await checkRateLimit(
+    zillowReportLimiter,
+    `zillow-report:${scope.orgId}`,
+  );
+  if (!rl.allowed) {
+    return rateLimited(
+      "Too many Zillow reports in the last minute. Try again shortly.",
+      Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000)),
     );
   }
 
