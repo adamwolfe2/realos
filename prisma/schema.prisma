@@ -348,13 +348,13 @@ model Organization {
   buildFeePaidCents     Int?                @default(0)
   adSpendMarkupPct      Float?              @default(0.15) // 15% default
 
-
   // Optional override for the historical ad-metric retention window
   // (months of AdMetricDaily granularity kept before rollup into
   // AdMetricMonthly). NULL = use tier default from
   // `lib/billing/retention.ts`. Only honored on SCALE / CUSTOM tiers;
   // Foundation + Growth ignore overrides.
   adDataRetentionMonths Int?
+
   // Selected modules (a la carte flags)
   moduleWebsite        Boolean @default(true)
   modulePixel          Boolean @default(false)
@@ -463,6 +463,7 @@ model Organization {
   zillowReports          ZillowReport[]
   aeoChecks              AeoCitationCheck[]
   neighborhoodPages      NeighborhoodPage[]
+  onboardingProgress     OnboardingProgress?
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -3281,3 +3282,102 @@ model AdMetricMonthly {
   @@index([orgId, year, month])
   @@index([adAccountId, year, month])
 }
+
+// ============================================================================
+// SELF-SERVE ONBOARDING AUTOMATION (three phases)
+// ----------------------------------------------------------------------------
+// Wraps the post-intake operator setup in a state machine with detectors,
+// nudges, and a visible checklist on /portal. Three phases:
+//
+//   FOUNDATION  (week 1)  — platform working state
+//   GROWTH      (week 2)  — first lead captured state
+//   POLISH      (anytime) — optional enhancements (NOT auto-completed)
+//
+// State is lazy-initialized on first /portal landing via
+// `getOrInitOnboardingProgress(orgId)`. Detectors in
+// `lib/onboarding/step-detectors.ts` translate platform state into step
+// completion. Phase advancement happens whenever every non-skipped step
+// in the active phase flips COMPLETED.
+// ============================================================================
+
+enum OnboardingPhase {
+  FOUNDATION
+  GROWTH
+  POLISH
+  COMPLETED
+}
+
+enum OnboardingStepKey {
+  // Foundation
+  ADD_PROPERTY
+  CONNECT_DATA_SOURCE
+  CONFIRM_CONTACT_PREFS
+  APPROVE_CHATBOT_PERSONA
+  INSTALL_PIXEL
+  // Growth
+  VERIFY_LEAD_CAPTURE
+  CONNECT_ADS
+  REVIEW_FIRST_REPORT
+  SET_REPUTATION_QUERIES
+  // Polish
+  CUSTOM_DOMAIN
+  WHITE_LABEL
+  GENERATE_NEIGHBORHOOD_PAGE
+  CUSTOM_REPORT_PREFS
+  INVITE_TEAMMATE
+}
+
+enum OnboardingStepStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+}
+
+model OnboardingProgress {
+  id    String       @id @default(cuid())
+  orgId String       @unique
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  currentPhase          OnboardingPhase @default(FOUNDATION)
+  foundationStartedAt   DateTime?
+  foundationCompletedAt DateTime?
+  growthStartedAt       DateTime?
+  growthCompletedAt     DateTime?
+  polishStartedAt       DateTime?
+  completedAt           DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  steps OnboardingStepProgress[]
+
+  @@index([currentPhase])
+}
+
+model OnboardingStepProgress {
+  id         String             @id @default(cuid())
+  progressId String
+  progress   OnboardingProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+
+  phase   OnboardingPhase
+  stepKey OnboardingStepKey
+
+  status        OnboardingStepStatus @default(PENDING)
+  completedAt   DateTime?
+  skippedAt     DateTime?
+  skippedReason String?
+
+  // Free-form provenance — e.g. which property triggered ADD_PROPERTY, which
+  // integration completed CONNECT_DATA_SOURCE. Useful for the checklist UI
+  // ("Done — Telegraph Commons") and for replay/debug.
+  metadata Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([progressId, stepKey])
+  @@index([progressId, phase])
+  @@index([progressId, status])
+}
+
