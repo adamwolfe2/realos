@@ -156,6 +156,10 @@ export function OnboardingWizard({
           disabled={submitting}
         />
       ) : null}
+      {/* PlanStep now posts { tierId, selectedModules: string[] } to
+          /api/onboarding/wizard/start-trial. The server validates the
+          module keys against the catalog allowlist and flips them ON
+          alongside the tier defaults. */}
     </WizardChrome>
   );
 }

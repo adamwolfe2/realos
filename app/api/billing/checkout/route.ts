@@ -50,6 +50,12 @@ const bodySchema = z.object({
   cycle: z.enum(["monthly", "annual"]).default("monthly"),
   propertyCount: z.number().int().min(1).max(PROPERTY_CAP).default(1),
   addOnLookupKeys: z.array(z.string().max(80)).max(10).optional(),
+  // Module keys the operator picked during onboarding. We translate the
+  // ones that have a real Stripe add-on SKU into add-on lookup keys and
+  // merge them with `addOnLookupKeys` below. Modules that are tier-gated
+  // (no standalone SKU) are silently dropped — the tier choice is what
+  // gates those entitlements.
+  selectedModuleKeys: z.array(z.string().max(64)).max(20).optional(),
   // Only used for anonymous (scope-less) signups so we can prefill the
   // Checkout email field and the customer email after creation.
   prospectEmail: z.string().email().max(254).optional(),
@@ -57,6 +63,17 @@ const bodySchema = z.object({
   // we can attribute conversions back to landing pages.
   source: z.string().max(64).optional(),
 });
+
+// Module key → Stripe add-on lookup key. Only modules that have a real
+// recurring add-on SKU are listed; everything else is tier-gated and
+// chosen via the `tierId` param. Keep this map in sync with the picker
+// in components/onboarding/plan-step.tsx and the ADDONS catalog.
+const MODULE_KEY_TO_ADDON_LOOKUP: Record<string, string> = {
+  // Currently only two non-metered self-serve add-ons exist. The rest of
+  // the picker's modules ride on the tier price.
+  reputation_pro: "ls_reputation_pro_monthly_v1",
+  white_label: "ls_white_label_monthly_v1",
+};
 
 export async function POST(req: NextRequest) {
   if (!isStripeConfigured()) {
@@ -134,6 +151,16 @@ export async function POST(req: NextRequest) {
     }
   }
 
+  // Translate selectedModuleKeys → Stripe add-on lookup keys and merge
+  // with any explicit addOnLookupKeys the caller passed. De-dupe so a
+  // caller that passes both representations doesn't double-bill.
+  const moduleDerivedAddons = (parsed.selectedModuleKeys ?? [])
+    .map((k) => MODULE_KEY_TO_ADDON_LOOKUP[k])
+    .filter((v): v is string => typeof v === "string");
+  const mergedAddOnKeys = Array.from(
+    new Set([...(parsed.addOnLookupKeys ?? []), ...moduleDerivedAddons]),
+  );
+
   // Build the Checkout line items.
   let lineItems;
   try {
@@ -141,7 +168,7 @@ export async function POST(req: NextRequest) {
       tier,
       cycle: parsed.cycle,
       propertyCount: parsed.propertyCount,
-      addOnLookupKeys: parsed.addOnLookupKeys,
+      addOnLookupKeys: mergedAddOnKeys,
     });
   } catch (err) {
     return NextResponse.json(
@@ -203,8 +230,8 @@ export async function POST(req: NextRequest) {
     intent: scope ? "upgrade_or_add" : "signup",
     ...(orgIdMetadata ? { org_id: orgIdMetadata } : {}),
     ...(parsed.source ? { source: parsed.source } : {}),
-    ...(parsed.addOnLookupKeys && parsed.addOnLookupKeys.length > 0
-      ? { addons: parsed.addOnLookupKeys.join(",") }
+    ...(mergedAddOnKeys.length > 0
+      ? { addons: mergedAddOnKeys.join(",") }
       : {}),
   };
 
