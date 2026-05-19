@@ -84,6 +84,8 @@ import { countConnectedSources } from "@/lib/connect/status";
 import { Sparkles } from "lucide-react";
 import Link from "next/link";
 import { PageHeader } from "@/components/admin/page-header";
+import { getFirstRunSignal } from "@/lib/portal/first-run";
+import { WelcomeLanding } from "@/components/portal/welcome-landing";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -107,6 +109,11 @@ export default async function PortalHome({
     properties?: string;
     range?: string;
     compare?: string;
+    /** Escape hatch — pass ?dashboard=1 to force the operator dashboard
+     *  even when the org would otherwise hit the first-run welcome
+     *  landing. Useful for screenshots, demos, and the "I want to peek
+     *  at the empty state" case. */
+    dashboard?: string;
   }>;
 }) {
   const scope = await requireScope();
@@ -132,6 +139,49 @@ export default async function PortalHome({
   const sp = await searchParams;
   const { showSetup } = sp;
   const forceShowSetup = showSetup === "1";
+  const forceDashboard = sp.dashboard === "1";
+
+  // First-run gate. Brand-new orgs with zero modules activated, zero leads,
+  // and zero connected data sources see a Marketplace landing instead of
+  // the empty dashboard. As soon as ANY of those signals flips non-zero,
+  // they fall through to the normal dashboard automatically — no separate
+  // "onboarded" flag to drift out of sync. Agency users impersonating a
+  // brand-new client hit the same surface because scope.orgId already
+  // resolves to the impersonated org.
+  if (!forceDashboard) {
+    const firstRun = await getFirstRunSignal(scope.orgId).catch(() => null);
+    if (firstRun?.isFirstRun) {
+      const org = await prisma.organization
+        .findUnique({
+          where: { id: scope.orgId },
+          select: {
+            name: true,
+            subscriptionStatus: true,
+            trialEndsAt: true,
+          },
+        })
+        .catch(() => null);
+      const isTrialing =
+        !org?.subscriptionStatus || org.subscriptionStatus === "TRIALING";
+      const trialDaysLeft = org?.trialEndsAt
+        ? Math.max(
+            0,
+            Math.ceil(
+              (new Date(org.trialEndsAt).getTime() - Date.now()) /
+                (1000 * 60 * 60 * 24),
+            ),
+          )
+        : null;
+      return (
+        <WelcomeLanding
+          orgName={org?.name ?? "your workspace"}
+          isTrialing={isTrialing}
+          trialDaysLeft={trialDaysLeft}
+          isImpersonating={scope.isImpersonating}
+        />
+      );
+    }
+  }
 
   // Greeting + chart controls. Range pills (7d / 28d / 90d) and the
   // comparison toggle live in URL params so deep links and back/forward
