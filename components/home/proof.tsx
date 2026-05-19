@@ -4,26 +4,28 @@ import { MARKETING } from "@/lib/copy/marketing";
 // ---------------------------------------------------------------------------
 // Proof — final CTA section.
 //
-// Previous version split the section into two competing surfaces: a giant
-// 14/1/0 stat strip stealing the visual weight, with the actual offer
-// ("Free pilot. No commitment.") buried at the bottom. The CTA buttons
-// ended up as an afterthought.
-//
-// Rewrite leads with the OFFER as the headline, puts the action right
-// next to it, and demotes the trust numbers to a compact inline proof
-// strip below. One unified message, one decision point.
+// Light-mode treatment matching the rest of the homepage. Was a dark navy
+// slab with white text; that visual break dropped out of the page rhythm
+// at the very bottom. Now: same content, white background, dark text,
+// blue + amber accents preserved.
 // ---------------------------------------------------------------------------
 
 export function Proof() {
   const { final } = MARKETING.home;
 
   return (
-    <section style={{ backgroundColor: "#1E2A3A", color: "#FFFFFF" }}>
+    <section
+      style={{
+        backgroundColor: "#FFFFFF",
+        color: "#1E2A3A",
+        borderTop: "1px solid #E2E8F0",
+      }}
+    >
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
         {/* Eyebrow — urgency cue */}
         <p
           style={{
-            color: "#F59E0B",
+            color: "#B45309",
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
             letterSpacing: "0.22em",
@@ -51,7 +53,7 @@ export function Proof() {
           <div>
             <h2
               style={{
-                color: "#FFFFFF",
+                color: "#1E2A3A",
                 fontFamily: "var(--font-sans)",
                 fontSize: "clamp(36px, 5.4vw, 64px)",
                 fontWeight: 700,
@@ -61,12 +63,12 @@ export function Proof() {
             >
               Free pilot.
               <br />
-              <span style={{ color: "#60A5FA" }}>No commitment.</span>
+              <span style={{ color: "#2563EB" }}>No commitment.</span>
             </h2>
             <p
               className="mt-5 max-w-[560px]"
               style={{
-                color: "rgba(255,255,255,0.72)",
+                color: "#64748B",
                 fontFamily: "var(--font-sans)",
                 fontSize: "17px",
                 lineHeight: 1.55,
@@ -121,15 +123,15 @@ export function Proof() {
                 justifyContent: "center",
                 minHeight: "50px",
                 padding: "14px 28px",
-                backgroundColor: "transparent",
-                color: "#FFFFFF",
+                backgroundColor: "#FFFFFF",
+                color: "#1E2A3A",
                 fontFamily: "var(--font-sans)",
                 fontSize: "15.5px",
                 fontWeight: 600,
                 borderRadius: "3px",
                 textDecoration: "none",
                 letterSpacing: "-0.005em",
-                border: "1px solid rgba(255,255,255,0.30)",
+                border: "1px solid #CBD5E1",
                 transition: "background-color 0.2s ease",
               }}
             >
@@ -142,7 +144,7 @@ export function Proof() {
         <div
           className="mt-12 md:mt-14 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0"
           style={{
-            borderTop: "1px solid rgba(255,255,255,0.12)",
+            borderTop: "1px solid #E2E8F0",
             paddingTop: 28,
           }}
         >
@@ -184,14 +186,12 @@ function TrustPoint({
     <div
       className="md:px-8 md:first:pl-0 md:last:pr-0"
       style={{
-        borderRight: divider
-          ? "1px solid rgba(255,255,255,0.12)"
-          : "none",
+        borderRight: divider ? "1px solid #E2E8F0" : "none",
       }}
     >
       <p
         style={{
-          color: "rgba(255,255,255,0.5)",
+          color: "#94A3B8",
           fontFamily: "var(--font-mono)",
           fontSize: "10px",
           letterSpacing: "0.18em",
@@ -204,7 +204,7 @@ function TrustPoint({
       <p
         className="mt-2"
         style={{
-          color: "#FFFFFF",
+          color: "#1E2A3A",
           fontFamily: "var(--font-sans)",
           fontSize: "clamp(24px, 2.4vw, 28px)",
           fontWeight: 700,
@@ -218,7 +218,7 @@ function TrustPoint({
       <p
         className="mt-2 max-w-[260px]"
         style={{
-          color: "rgba(255,255,255,0.6)",
+          color: "#64748B",
           fontFamily: "var(--font-sans)",
           fontSize: "13.5px",
           lineHeight: 1.5,
