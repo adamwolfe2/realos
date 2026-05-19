@@ -337,123 +337,106 @@ const LAUNCH_STEPS: LaunchStep[] = [
 ];
 
 function LaunchTrack() {
+  // Rewritten as a single connected flex row. Each step is a flex-1
+  // column with a centered dot at the top; the connecting line is a
+  // segmented hairline drawn between adjacent dots (so it always lines
+  // up regardless of viewport width — no fragile absolute %s). The
+  // "Day 14 = Launch" floating label is gone (it was visually
+  // disconnected from the actual Day 14 column); emphasis now lives on
+  // the Day 14 dot + label themselves.
+
   return (
     <div>
-      <div className="mb-10 flex items-end justify-between gap-6 flex-wrap">
-        <div>
-          <p className="eyebrow mb-3">Your first 90 days</p>
-          <h3
-            style={{
-              color: "#1E2A3A",
-              fontFamily: "var(--font-sans)",
-              fontSize: "clamp(24px, 2.8vw, 34px)",
-              fontWeight: 700,
-              lineHeight: 1.15,
-              letterSpacing: "-0.02em",
-            }}
-          >
-            Live in fourteen days. Compounding from day one.
-          </h3>
-        </div>
-        <p
+      <div className="mb-12">
+        <p className="eyebrow mb-3">Your first 90 days</p>
+        <h3
           style={{
-            color: "#94A3B8",
-            fontFamily: "var(--font-mono)",
-            fontSize: "11px",
-            letterSpacing: "0.18em",
-            textTransform: "uppercase",
-            fontWeight: 600,
+            color: "#1E2A3A",
+            fontFamily: "var(--font-sans)",
+            fontSize: "clamp(24px, 2.8vw, 34px)",
+            fontWeight: 700,
+            lineHeight: 1.15,
+            letterSpacing: "-0.02em",
+            maxWidth: "780px",
           }}
         >
-          Day 14 = Launch
-        </p>
+          Live in fourteen days. Compounding from day one.
+        </h3>
       </div>
 
-      {/* Horizontal track with a continuous baseline so the timeline reads
-          as one connected story instead of six floating cards. */}
-      <div className="relative">
-        <div
-          aria-hidden
-          className="hidden md:block absolute"
-          style={{
-            top: 13,
-            left: "5%",
-            right: "5%",
-            height: 1,
-            backgroundColor: "#E2E8F0",
-            zIndex: 0,
-          }}
-        />
-        <div
-          aria-hidden
-          className="hidden md:block absolute"
-          style={{
-            top: 11,
-            left: "5%",
-            width: "calc(35% - 5%)",
-            height: 5,
-            backgroundColor: "#2563EB",
-            borderRadius: 1,
-            zIndex: 0,
-          }}
-        />
+      {/* Desktop: one connected flex row. Mobile: 2-col grid, no line. */}
+      <ol className="hidden md:flex items-start">
+        {LAUNCH_STEPS.map((s, idx) => {
+          const isLaunch = s.marker === "launch";
+          const isBefore = s.marker === "before";
+          const isActive = isLaunch || isBefore;
+          const Icon = s.icon;
+          // Segment connecting this dot to the next one. Coloured
+          // through the "launch" step (idx <= 2), gray after.
+          const segmentColor = idx < 2 ? "#2563EB" : "#E2E8F0";
+          return (
+            <li key={s.when} className="flex-1 relative min-w-0">
+              {/* Connecting line — sits at dot vertical center, spans
+                  from this column's center to the next column's center.
+                  Skip on the last item. */}
+              {idx < LAUNCH_STEPS.length - 1 && (
+                <span
+                  aria-hidden
+                  className="absolute"
+                  style={{
+                    top: 5,
+                    left: "50%",
+                    right: "-50%",
+                    height: 2,
+                    backgroundColor: segmentColor,
+                  }}
+                />
+              )}
 
-        <ol className="relative grid grid-cols-2 md:grid-cols-6 gap-x-4 gap-y-10 z-10">
-          {LAUNCH_STEPS.map((s) => {
-            const isLaunch = s.marker === "launch";
-            const isBefore = s.marker === "before";
-            const Icon = s.icon;
-            const isActive = isLaunch || isBefore;
-            return (
-              <li key={s.when} className="relative">
-                {/* Dot + Day label sit on the timeline baseline */}
-                <div className="flex items-center gap-2 mb-5">
-                  <span
-                    aria-hidden
-                    style={{
-                      width: isLaunch ? 16 : 10,
-                      height: isLaunch ? 16 : 10,
-                      borderRadius: "50%",
-                      backgroundColor: isLaunch
-                        ? "#2563EB"
-                        : isBefore
-                          ? "#2563EB"
-                          : "#CBD5E1",
-                      boxShadow: isLaunch
-                        ? "0 0 0 4px rgba(37,99,235,0.15)"
-                        : "none",
-                      transition: "all 200ms ease",
-                    }}
-                  />
-                  <span
-                    style={{
-                      color: isLaunch ? "#2563EB" : "#64748B",
-                      fontFamily: "var(--font-mono)",
-                      fontSize: "10.5px",
-                      letterSpacing: "0.16em",
-                      fontWeight: 700,
-                      textTransform: "uppercase",
-                    }}
-                  >
-                    {s.when}
-                  </span>
-                </div>
-                {/* Single icon chip per step — consistent across all 6,
-                    scannable at a glance. Replaced the busy faux-UI mockups
-                    that read as noise at this scale. */}
+              {/* Dot — centered in its column. */}
+              <div className="flex justify-center">
+                <span
+                  aria-hidden
+                  style={{
+                    width: isLaunch ? 12 : 10,
+                    height: isLaunch ? 12 : 10,
+                    marginTop: isLaunch ? 0 : 1,
+                    borderRadius: "50%",
+                    backgroundColor: isActive ? "#2563EB" : "#CBD5E1",
+                    boxShadow: isLaunch
+                      ? "0 0 0 4px rgba(37,99,235,0.18)"
+                      : "none",
+                    position: "relative",
+                    zIndex: 1,
+                  }}
+                />
+              </div>
+
+              {/* Content block — centered under the dot. */}
+              <div className="mt-5 flex flex-col items-center text-center px-3">
+                <span
+                  style={{
+                    color: isLaunch ? "#2563EB" : "#64748B",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "10.5px",
+                    letterSpacing: "0.16em",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {s.when}
+                  {isLaunch ? " — Launch" : ""}
+                </span>
                 <div
-                  className="inline-flex items-center justify-center mb-4"
+                  className="inline-flex items-center justify-center mt-3 mb-4"
                   style={{
                     width: 40,
                     height: 40,
-                    borderRadius: 4,
+                    borderRadius: 6,
                     backgroundColor: isActive
                       ? "rgba(37,99,235,0.10)"
                       : "#F1F5F9",
                     color: isActive ? "#2563EB" : "#94A3B8",
-                    border: isLaunch
-                      ? "1px solid rgba(37,99,235,0.25)"
-                      : "1px solid transparent",
                   }}
                 >
                   <Icon className="w-5 h-5" strokeWidth={1.6} />
@@ -477,15 +460,94 @@ function LaunchTrack() {
                     fontFamily: "var(--font-sans)",
                     fontSize: "12.5px",
                     lineHeight: 1.5,
+                    maxWidth: "180px",
                   }}
                 >
                   {s.body}
                 </p>
-              </li>
-            );
-          })}
-        </ol>
-      </div>
+              </div>
+            </li>
+          );
+        })}
+      </ol>
+
+      {/* Mobile fallback — same content, simpler 2-col grid, no line. */}
+      <ol className="md:hidden grid grid-cols-2 gap-x-4 gap-y-10">
+        {LAUNCH_STEPS.map((s) => {
+          const isLaunch = s.marker === "launch";
+          const isBefore = s.marker === "before";
+          const isActive = isLaunch || isBefore;
+          const Icon = s.icon;
+          return (
+            <li key={s.when}>
+              <div className="flex items-center gap-2 mb-4">
+                <span
+                  aria-hidden
+                  style={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    backgroundColor: isActive ? "#2563EB" : "#CBD5E1",
+                    boxShadow: isLaunch
+                      ? "0 0 0 3px rgba(37,99,235,0.18)"
+                      : "none",
+                  }}
+                />
+                <span
+                  style={{
+                    color: isLaunch ? "#2563EB" : "#64748B",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "10.5px",
+                    letterSpacing: "0.16em",
+                    fontWeight: 700,
+                    textTransform: "uppercase",
+                  }}
+                >
+                  {s.when}
+                  {isLaunch ? " — Launch" : ""}
+                </span>
+              </div>
+              <div
+                className="inline-flex items-center justify-center mb-3"
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 6,
+                  backgroundColor: isActive
+                    ? "rgba(37,99,235,0.10)"
+                    : "#F1F5F9",
+                  color: isActive ? "#2563EB" : "#94A3B8",
+                }}
+              >
+                <Icon className="w-5 h-5" strokeWidth={1.6} />
+              </div>
+              <p
+                style={{
+                  color: "#1E2A3A",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "15px",
+                  fontWeight: 600,
+                  letterSpacing: "-0.01em",
+                  lineHeight: 1.3,
+                }}
+              >
+                {s.title}
+              </p>
+              <p
+                className="mt-1.5"
+                style={{
+                  color: "#64748B",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "12.5px",
+                  lineHeight: 1.5,
+                }}
+              >
+                {s.body}
+              </p>
+            </li>
+          );
+        })}
+      </ol>
     </div>
   );
 }
