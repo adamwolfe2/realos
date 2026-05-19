@@ -13,6 +13,10 @@ import {
   updateNeighborhoodPage,
   type StoredNeighborhoodPage,
 } from "@/lib/actions/neighborhood-pages";
+import {
+  CitationHealthPanel,
+  type CitationHealthData,
+} from "@/components/portal/seo/citation-health-panel";
 
 type Property = { id: string; name: string };
 
@@ -22,9 +26,11 @@ type Tab = (typeof TABS)[number];
 export function EditorClient({
   page,
   properties,
+  citationHealth,
 }: {
   page: StoredNeighborhoodPage;
   properties: Property[];
+  citationHealth: CitationHealthData;
 }) {
   const router = useRouter();
   const [tab, setTab] = useState<Tab>("Overview");
@@ -328,40 +334,45 @@ export function EditorClient({
       ) : null}
 
       {tab === "AI citations" ? (
-        <div className="ls-card p-5 space-y-3">
-          <p className="text-[12px] text-muted-foreground">
-            Short factual statements this page should be cited for by AI
-            answer engines. The AEO module uses these to verify whether
-            ChatGPT / Perplexity / Claude / Gemini actually surface them.
-          </p>
-          {aiCitations.map((c, idx) => (
-            <div key={idx} className="flex gap-2">
-              <Input
-                value={c}
-                onChange={(e) => {
-                  const next = [...aiCitations];
-                  next[idx] = e.target.value;
-                  setAiCitations(next);
-                }}
-              />
-              <button
-                type="button"
-                onClick={() =>
-                  setAiCitations(aiCitations.filter((_, i) => i !== idx))
-                }
-                className="text-[11px] text-muted-foreground hover:text-destructive shrink-0 px-2"
-              >
-                Remove
-              </button>
-            </div>
-          ))}
-          <button
-            type="button"
-            onClick={() => setAiCitations([...aiCitations, ""])}
-            className="text-[12px] text-muted-foreground hover:text-foreground"
-          >
-            + Add citation target
-          </button>
+        <div className="space-y-5">
+          <div className="ls-card p-5 space-y-3">
+            <p className="text-[12px] text-muted-foreground">
+              Short factual statements this page should be cited for by AI
+              answer engines. The AEO module uses these to verify whether
+              ChatGPT / Perplexity / Claude / Gemini actually surface them.
+              After saving, run a scan in the panel below to see which
+              claims are working vs. missing.
+            </p>
+            {aiCitations.map((c, idx) => (
+              <div key={idx} className="flex gap-2">
+                <Input
+                  value={c}
+                  onChange={(e) => {
+                    const next = [...aiCitations];
+                    next[idx] = e.target.value;
+                    setAiCitations(next);
+                  }}
+                />
+                <button
+                  type="button"
+                  onClick={() =>
+                    setAiCitations(aiCitations.filter((_, i) => i !== idx))
+                  }
+                  className="text-[11px] text-muted-foreground hover:text-destructive shrink-0 px-2"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setAiCitations([...aiCitations, ""])}
+              className="text-[12px] text-muted-foreground hover:text-foreground"
+            >
+              + Add citation target
+            </button>
+          </div>
+          <CitationHealthPanel data={citationHealth} />
         </div>
       ) : null}
     </div>
