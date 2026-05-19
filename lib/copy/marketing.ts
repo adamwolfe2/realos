@@ -88,6 +88,7 @@ export const MARKETING = {
           title: "Weekly performance report lands in your inbox.",
           body:
             "Leases attributed to source, spend summary, pacing vs. last cycle, anomalies flagged, and the three actions to take this week. One page, readable over coffee.",
+          outcome: "3 prioritized actions, every Monday",
         },
         {
           day: "Tuesday",
@@ -95,6 +96,7 @@ export const MARKETING = {
           title: "Tour requests land in one pipeline, with source attached.",
           body:
             "Site form, chatbot, pixel-identified visitors, inbound calls, scheduling links. Every channel funnels into the same view, attribution intact.",
+          outcome: "100% of tours sourced to channel",
         },
         {
           day: "Thursday",
@@ -102,6 +104,7 @@ export const MARKETING = {
           title: "Creative refresh ships.",
           body:
             "New ad concepts, email subject variants, and landing-block copy within 48 hours of request. No retainer to wait on. No change-order form.",
+          outcome: "48-hour turnaround, no exceptions",
         },
         {
           day: "Ongoing",
@@ -109,6 +112,7 @@ export const MARKETING = {
           title: "The AI chatbot works the nightshift.",
           body:
             "Prospects asking questions at 2am get a useful conversation, not a contact form. Hot leads land with your team the next morning, thread attached.",
+          outcome: "1 in 4 leads captured after hours",
         },
       ],
     },
