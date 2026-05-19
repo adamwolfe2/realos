@@ -64,6 +64,18 @@ export type PortalNavOrg = {
   /** True when an AppFolio integration record exists — gates Operations nav group */
   appFolioConnected?: boolean;
   /**
+   * White-label brand surface for the sidebar logo. When the white-label
+   * add-on is active and the operator has uploaded their logo, the
+   * sidebar wordmark + portal aria-labels swap from LeaseStack to the
+   * operator's brand. Falls back to LeaseStack defaults when undefined
+   * or `isWhiteLabeled` is false. See lib/brand/effective.ts.
+   */
+  brand?: {
+    name: string;
+    logoUrl: string | null;
+    isWhiteLabeled: boolean;
+  };
+  /**
    * Soft-gating flags for Analytics-tier nav items. Hide pages that have
    * zero data (Briefing, Insights, Reports) so empty tabs don't bloat the
    * sidebar before the tenant has anything to look at. Set true once the
@@ -353,22 +365,50 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
         collapsed ? "w-14" : "w-60"
       )}
     >
-      {/* Brand */}
+      {/* Brand. White-label-aware: when the operator has the add-on active
+          and uploaded a logo, the sidebar wordmark renders THEIR brand.
+          Collapsed mode falls back to the brand initial (or LeaseStack
+          icon) because we don't have a square favicon for every tenant. */}
       <div className="flex h-14 items-center px-4 border-b border-border">
         <Link
           href="/portal"
           className="flex items-center min-w-0"
-          aria-label={`${BRAND_NAME} portal home`}
+          aria-label={`${org.brand?.name ?? BRAND_NAME} portal home`}
         >
           {collapsed ? (
-            <Image
-              src="/icon-32x32.png"
-              alt={BRAND_NAME}
-              width={28}
-              height={28}
-              className="w-7 h-7 shrink-0"
-              priority
+            org.brand?.isWhiteLabeled ? (
+              // No square favicon for white-labeled tenants yet — render
+              // the brand initial in a chip. Custom favicon support is a
+              // follow-up product call (see report-back notes).
+              <span
+                className="w-7 h-7 shrink-0 flex items-center justify-center rounded text-[12px] font-semibold bg-foreground text-background"
+                aria-hidden
+              >
+                {(org.brand.name[0] ?? "?").toUpperCase()}
+              </span>
+            ) : (
+              <Image
+                src="/icon-32x32.png"
+                alt={BRAND_NAME}
+                width={28}
+                height={28}
+                className="w-7 h-7 shrink-0"
+                priority
+              />
+            )
+          ) : org.brand?.isWhiteLabeled && org.brand.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={org.brand.logoUrl}
+              alt={org.brand.name}
+              className="h-8 w-auto max-w-[140px] object-contain shrink-0"
             />
+          ) : org.brand?.isWhiteLabeled ? (
+            // White-label on but logo missing — render text wordmark so
+            // the chrome reads as a real product instead of empty space.
+            <span className="text-[15px] font-semibold tracking-tight truncate max-w-[160px]">
+              {org.brand.name}
+            </span>
           ) : (
             <Image
               src="/logos/leasestack-wordmark.png"

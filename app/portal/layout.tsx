@@ -5,6 +5,7 @@ import { getScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { BRAND_NAME } from "@/lib/brand";
+import { getEffectiveBrand } from "@/lib/brand/effective";
 import { PortalNav } from "@/components/portal/portal-nav";
 import { MobileNavDrawer } from "@/components/portal/mobile-nav-drawer";
 import { deriveSetupProgress } from "@/lib/setup/derive-progress";
@@ -63,6 +64,13 @@ export default async function PortalLayout({
         orgType: true,
         productLine: true,
         logoUrl: true,
+        // White-label add-on. Resolved via getEffectiveBrand below to
+        // swap the portal chrome (mobile top bar logo, sidebar logo,
+        // page <title>) when the operator has enabled the add-on.
+        whiteLabel: true,
+        whiteLabelBrandName: true,
+        whiteLabelLogoUrl: true,
+        whiteLabelPrimaryColor: true,
         onboardingDismissed: true,
         onboardingStep: true,
         chosenTier: true,
@@ -158,6 +166,13 @@ export default async function PortalLayout({
 
   const isAudienceSync = org.productLine === "AUDIENCE_SYNC";
 
+  // Resolve the brand surface for this org. When the white-label add-on
+  // is active and the override fields are populated, every visible brand
+  // surface in the portal (mobile top bar, sidebar logo, footer
+  // attribution) renders the operator's brand instead of LeaseStack's.
+  // Falls back to LeaseStack defaults when the add-on isn't active.
+  const brand = getEffectiveBrand(org);
+
   const navOrg = {
     name: org.name,
     productLine: org.productLine,
@@ -178,6 +193,14 @@ export default async function PortalLayout({
     // Show Operations (residents / renewals / work orders) only when AppFolio
     // is configured — the pages show empty states otherwise and confuse users.
     appFolioConnected: Boolean(appfolioIntegration?.instanceSubdomain),
+    // Brand surface for the sidebar logo + portal aria-labels. Resolved
+    // once at the layout so PortalNav + MobileNavDrawer render the same
+    // wordmark/initial without each recomputing the white-label state.
+    brand: {
+      name: brand.name,
+      logoUrl: brand.logoUrl,
+      isWhiteLabeled: brand.isWhiteLabeled,
+    },
     // Soft-gate Analytics-tier nav so brand-new tenants don't see five
     // empty pages they have to ignore. Items appear in the sidebar the
     // moment their underlying tables have at least one row.
@@ -227,15 +250,30 @@ export default async function PortalLayout({
       >
         <div className="flex items-center gap-2">
           <MobileNavDrawer org={navOrg} />
-          <Link href="/portal" aria-label={`${BRAND_NAME} portal home`}>
-            <Image
-              src="/logos/leasestack-wordmark.png"
-              alt={BRAND_NAME}
-              width={110}
-              height={20}
-              className="h-5 w-auto"
-              priority
-            />
+          <Link href="/portal" aria-label={`${brand.name} portal home`}>
+            {brand.isWhiteLabeled && brand.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={brand.logoUrl}
+                alt={brand.name}
+                className="h-5 w-auto max-w-[140px] object-contain"
+              />
+            ) : brand.isWhiteLabeled ? (
+              // White-label active but no logo uploaded yet — render the
+              // brand name as a text wordmark so the chrome isn't blank.
+              <span className="text-sm font-semibold tracking-tight truncate max-w-[140px]">
+                {brand.name}
+              </span>
+            ) : (
+              <Image
+                src="/logos/leasestack-wordmark.png"
+                alt={BRAND_NAME}
+                width={110}
+                height={20}
+                className="h-5 w-auto"
+                priority
+              />
+            )}
           </Link>
         </div>
         <div className="flex items-center gap-3">

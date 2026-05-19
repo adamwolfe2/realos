@@ -5,6 +5,10 @@
 // ---------------------------------------------------------------------------
 import { Resend } from "resend";
 import { getSiteUrl, BRAND_NAME, BRAND_LOCATION, BRAND_COLOR } from "@/lib/brand";
+import {
+  effectiveBrandForOrg,
+  type EffectiveBrand,
+} from "@/lib/brand/effective";
 
 // ---------------------------------------------------------------------------
 // Brand constants (used by every domain email module)
@@ -14,6 +18,28 @@ import { getSiteUrl, BRAND_NAME, BRAND_LOCATION, BRAND_COLOR } from "@/lib/brand
 export const FROM_EMAIL = (
   process.env.RESEND_FROM_EMAIL ?? `${BRAND_NAME} <team@leasestack.co>`
 ).trim();
+
+// Canonical sending mailbox. Display name in front of this address is
+// the only thing that swaps under white-label — the mailbox itself
+// stays as ours so DMARC/DKIM alignment is preserved (we'd need to
+// onboard the operator as a Resend custom domain to send from their
+// address, which is a custom-domain conversation, not the $499/mo flip).
+const SENDING_MAILBOX = "team@leasestack.co";
+
+// Parse `Name <addr>` into the parts we need to splice a new display
+// name in front of the existing mailbox. Falls back to the literal
+// FROM_EMAIL when the parse fails so we never blow up sending.
+function parseFromAddress(raw: string): { name: string; mailbox: string } {
+  const trimmed = raw.trim();
+  const m = trimmed.match(/^([^<]*)<([^>]+)>$/);
+  if (m) {
+    return {
+      name: m[1].trim().replace(/^"|"$/g, ""),
+      mailbox: m[2].trim(),
+    };
+  }
+  return { name: BRAND_NAME, mailbox: trimmed || SENDING_MAILBOX };
+}
 export const APP_URL = getSiteUrl();
 export const OPS_NAME = process.env.OPS_NAME ?? `${BRAND_NAME} Team`;
 export { BRAND_NAME, BRAND_LOCATION, BRAND_COLOR };
@@ -85,6 +111,15 @@ type BrandedSendInput = {
   unsubscribeUrl?: string;
   /** Extra tags for Resend filtering. Merged with the default { template, category } tags. */
   tags?: Array<{ name: string; value: string }>;
+  /**
+   * Org sending the email. When set AND the org has the white-label
+   * add-on active, the From display name + visible footer in the email
+   * body swap to the operator's brand. The sending mailbox stays as
+   * team@leasestack.co so DKIM/DMARC alignment is preserved. Leave
+   * undefined for platform-wide emails (signup confirmations, billing
+   * receipts) that should always read as LeaseStack.
+   */
+  orgId?: string | null;
 };
 
 export type BrandedSendResult =
@@ -93,6 +128,17 @@ export type BrandedSendResult =
 
 const UNSUBSCRIBE_MAILBOX =
   process.env.UNSUBSCRIBE_EMAIL?.trim() || "unsubscribe@leasestack.co";
+
+// Resolve the effective brand for an outbound email send. Returns the
+// LeaseStack default when orgId is null, the org isn't found, or the
+// org isn't white-labeled. Exported so callers that build their own
+// HTML body (instead of going through buildBaseHtml) can still render
+// the right brand in their custom markup.
+export async function effectiveBrandForEmail(
+  orgId: string | null | undefined,
+): Promise<EffectiveBrand> {
+  return effectiveBrandForOrg(orgId ?? null);
+}
 
 export async function sendBrandedEmail(
   opts: BrandedSendInput,
@@ -163,9 +209,27 @@ export async function sendBrandedEmail(
     ...(opts.tags ?? []),
   ];
 
+  // Resolve white-label brand if the caller passed an orgId. The actual
+  // mailbox in the From header NEVER changes (DMARC/DKIM alignment) —
+  // only the display name in front of it swaps. The reply-to follows
+  // the brand's support email so threaded replies land where the
+  // operator expects.
+  const brand = opts.orgId
+    ? await effectiveBrandForEmail(opts.orgId)
+    : null;
+  let from = FROM_EMAIL;
+  if (brand?.isWhiteLabeled) {
+    const { mailbox } = parseFromAddress(FROM_EMAIL);
+    // Strip characters that would break the RFC 5322 display-name
+    // syntax. Display names with double quotes / angle brackets fail
+    // Resend validation and silently drop sends.
+    const safeName = brand.name.replace(/["<>\r\n]/g, "").trim();
+    from = safeName ? `${safeName} <${mailbox}>` : FROM_EMAIL;
+  }
+
   try {
     const r = await resend.emails.send({
-      from: FROM_EMAIL,
+      from,
       to: opts.to,
       subject: sanitizeSubject(opts.subject),
       html: opts.html,
@@ -248,6 +312,14 @@ export interface BaseHtmlOptions {
     headlineColor?: string;
     border?: string;
   };
+  /**
+   * Optional white-label brand override. When set, the header wordmark,
+   * footer "brand" text, and the support email shown in the footer all
+   * swap from LeaseStack defaults to the operator's brand. Pass the
+   * result of `effectiveBrandForEmail(orgId)` (or `null` for the
+   * defaults). When not provided, defaults apply.
+   */
+  brand?: EffectiveBrand | null;
 }
 
 export function buildBaseHtml({
@@ -262,10 +334,28 @@ export function buildBaseHtml({
   title,
   ctaCase = "sentence",
   theme,
+  brand,
 }: BaseHtmlOptions): string {
+  // White-label aware. When the caller passes a resolved EffectiveBrand
+  // for an org that has the add-on active, the header wordmark, footer
+  // attribution, and primary accent all swap to the operator's brand.
+  // Otherwise we render LeaseStack defaults.
+  const isWhiteLabeled = brand?.isWhiteLabeled ?? false;
+  const displayBrandName = brand?.name ?? BRAND_NAME;
+  const displaySupportEmail =
+    brand?.supportEmail ??
+    (process.env.ADMIN_EMAIL?.trim() || "team@leasestack.co");
+  const displayPrimaryColor = brand?.primaryColor ?? BRAND_COLOR;
+  const displayUrl = brand?.url ?? APP_URL;
+  // White-label optional logo URL — used as a header wordmark <img> when
+  // present. Falls back to the text wordmark we already render so an
+  // operator who hasn't uploaded a logo still gets their name.
+  const whiteLabelLogoUrl =
+    brand?.isWhiteLabeled && brand.logoUrl ? brand.logoUrl : null;
+
   const outerBg = theme?.outerBg ?? "#F9F7F4";
   const innerBg = theme?.innerBg ?? "#FFFFFF";
-  const headerBg = theme?.headerBg ?? BRAND_COLOR;
+  const headerBg = theme?.headerBg ?? displayPrimaryColor;
   const headerText = theme?.headerText ?? "#FFFFFF";
   const footerBg = theme?.footerBg ?? "#F9F7F4";
   const footerText = theme?.footerText ?? "#0A0A0A";
@@ -282,7 +372,7 @@ export function buildBaseHtml({
   const ctaBlock =
     ctaText && ctaUrl
       ? `<tr><td style="padding:8px 32px 32px;">
-          <a href="${ctaUrl}" style="display:inline-block;background-color:${BRAND_COLOR};color:#FFFFFF;font-size:14px;font-weight:600;text-decoration:none;padding:14px 28px;letter-spacing:${ctaLetterSpacing};text-transform:${ctaTransform};border-radius:6px;">${ctaText}</a>
+          <a href="${ctaUrl}" style="display:inline-block;background-color:${displayPrimaryColor};color:#FFFFFF;font-size:14px;font-weight:600;text-decoration:none;padding:14px 28px;letter-spacing:${ctaLetterSpacing};text-transform:${ctaTransform};border-radius:6px;">${ctaText}</a>
         </td></tr>`
       : "";
 
@@ -292,11 +382,15 @@ export function buildBaseHtml({
       </td></tr>`
     : "";
 
-  // Support contact line for the footer. Reads from BRAND_EMAIL env (or
-  // the default). Always rendered so the recipient never wonders where to
-  // ask a question — required for trust, and a soft CAN-SPAM hygiene win.
-  const supportEmail = process.env.ADMIN_EMAIL?.trim() || "team@leasestack.co";
-  const tagline = "Real estate operator portal";
+  // Support contact line for the footer. Always rendered so the recipient
+  // never wonders where to ask a question — required for trust, and a soft
+  // CAN-SPAM hygiene win. Under white-label we keep the actual mailbox the
+  // same (LeaseStack routes the message) but display it as the operator's
+  // support touch-point.
+  const supportEmail = displaySupportEmail;
+  // Footer tagline. Suppressed under white-label to keep the operator's
+  // brand surface from carrying any LeaseStack-coded chrome.
+  const tagline = isWhiteLabeled ? "" : "Real estate operator portal";
 
   // Preheader (inbox preview text). Hidden in the rendered body via
   // a combination of styles + the &zwnj; trick so Gmail/Apple Mail/
@@ -327,8 +421,12 @@ export function buildBaseHtml({
     <tr><td align="center">
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background-color:${innerBg};border:1px solid ${border};">
         <tr><td style="background-color:${headerBg};padding:22px 32px 20px;">
-          <p style="margin:0;color:${headerText};font-size:12px;letter-spacing:0.18em;text-transform:uppercase;font-weight:700;">${BRAND_NAME}</p>
-          <p style="margin:4px 0 0;color:${headerText};opacity:0.65;font-size:11px;letter-spacing:0.04em;">${tagline}</p>
+          ${
+            whiteLabelLogoUrl
+              ? `<img src="${whiteLabelLogoUrl}" alt="${escapeHtml(displayBrandName)}" style="max-height:24px;width:auto;display:block;"/>`
+              : `<p style="margin:0;color:${headerText};font-size:12px;letter-spacing:0.18em;text-transform:uppercase;font-weight:700;">${escapeHtml(displayBrandName)}</p>`
+          }
+          ${tagline ? `<p style="margin:4px 0 0;color:${headerText};opacity:0.65;font-size:11px;letter-spacing:0.04em;">${tagline}</p>` : ""}
         </td></tr>
         ${alertBlock}
         <tr><td style="padding:32px 32px 24px;">
@@ -340,10 +438,10 @@ export function buildBaseHtml({
           <table width="100%" cellpadding="0" cellspacing="0">
             <tr>
               <td style="vertical-align:top;">
-                <p style="margin:0;color:${footerText};font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">${BRAND_NAME}</p>
+                <p style="margin:0;color:${footerText};font-size:11px;letter-spacing:0.12em;text-transform:uppercase;font-weight:700;">${escapeHtml(displayBrandName)}</p>
                 <p style="margin:6px 0 0;color:${footerSubText};font-size:12px;line-height:1.5;">
-                  <a href="${APP_URL}" style="color:${footerSubText};text-decoration:none;">${APP_URL.replace(/^https?:\/\//, "")}</a>
-                  ${BRAND_LOCATION ? `<br/>${BRAND_LOCATION}` : ""}
+                  <a href="${displayUrl}" style="color:${footerSubText};text-decoration:none;">${displayUrl.replace(/^https?:\/\//, "")}</a>
+                  ${!isWhiteLabeled && BRAND_LOCATION ? `<br/>${BRAND_LOCATION}` : ""}
                 </p>
               </td>
               <td style="vertical-align:top;text-align:right;">

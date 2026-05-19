@@ -6,6 +6,7 @@ import { TenantFooter } from "@/components/tenant-site/footer";
 import { ExitIntentPopup } from "@/components/tenant-site/exit-intent-popup";
 import { ChatbotLoaderFor } from "@/components/chatbot/chatbot-loader";
 import { CursivePixelLoader } from "@/components/pixel/cursive-pixel-loader";
+import { getEffectiveBrand } from "@/lib/brand/effective";
 import {
   TenantAnalytics,
   readGtmContainerId,
@@ -17,6 +18,19 @@ export async function generateMetadata(): Promise<Metadata> {
   const config = tenant.tenantSiteConfig;
   const title = config?.metaTitle ?? config?.siteTitle ?? tenant.name;
   const description = config?.metaDescription ?? null;
+
+  // White-label aware: strip the LeaseStack favicon + mask icon from the
+  // tenant-facing marketing site when the parent org has the add-on
+  // active. Without an override we point at the tenant's logoUrl (if
+  // any) so the browser tab carries the building's brand, not ours.
+  // Falls through to the root layout's icons[] when the org isn't
+  // white-labeled (existing behaviour).
+  const brand = getEffectiveBrand(tenant);
+  const tenantIcon =
+    brand.isWhiteLabeled && (brand.logoUrl ?? tenant.logoUrl)
+      ? (brand.logoUrl ?? tenant.logoUrl) || undefined
+      : undefined;
+
   return {
     title,
     description: description ?? undefined,
@@ -26,6 +40,17 @@ export async function generateMetadata(): Promise<Metadata> {
       ...(config?.ogImageUrl ? { images: [config.ogImageUrl] } : {}),
       siteName: tenant.name,
     },
+    ...(tenantIcon
+      ? {
+          icons: {
+            icon: tenantIcon,
+            shortcut: tenantIcon,
+            apple: tenantIcon,
+            // Drop the LeaseStack mask-icon entirely when white-labeled.
+            other: [],
+          },
+        }
+      : {}),
   };
 }
 
