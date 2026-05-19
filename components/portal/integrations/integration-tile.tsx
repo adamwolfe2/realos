@@ -35,6 +35,17 @@ const STATE_STYLES: Record<IntegrationState, StateStyle> = {
     cta: "Fix sync",
     ctaClass: "text-rose-700 hover:underline underline-offset-2",
   },
+  stale: {
+    // Connected with no errors, but the last successful sync is past the
+    // freshness budget. Amber pill so operators see "data isn't current"
+    // without being alarmed into thinking the integration is broken
+    // (which is what a rose "Sync error" pill implies). Clicking the
+    // tile lets them trigger a manual sync.
+    badgeLabel: "Stale",
+    badgeClass: "bg-amber-50 text-amber-800",
+    cta: "Refresh",
+    ctaClass: "text-amber-700 hover:underline underline-offset-2",
+  },
   managed: {
     // 'managed' = on plan, awaiting agency provisioning. Was previously
     // labelled "Active" which lied — the integration wasn't actually

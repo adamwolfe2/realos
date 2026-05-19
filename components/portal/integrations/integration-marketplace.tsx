@@ -50,17 +50,22 @@ export function IntegrationMarketplace({
   const filtered = React.useMemo(() => {
     if (filter === "all") return LIVE;
     if (filter === "installed") {
-      // Only true 'connected' integrations count as installed. 'managed'
-      // means provisioning-in-progress and 'plan_locked' means upgrade
-      // required — neither is actually installed.
-      return LIVE.filter((i) => byStatus.get(i.slug) === "connected");
+      // 'connected', 'stale', and 'error' all mean credentials are wired —
+      // the integration IS installed, just in different health states.
+      // 'managed' means provisioning-in-progress and 'plan_locked' means
+      // upgrade required — neither is actually installed.
+      return LIVE.filter((i) => {
+        const s = byStatus.get(i.slug);
+        return s === "connected" || s === "stale" || s === "error";
+      });
     }
     return LIVE.filter((i) => i.category === filter);
   }, [filter, byStatus, LIVE]);
 
-  const installedCount = LIVE.filter(
-    (i) => byStatus.get(i.slug) === "connected"
-  ).length;
+  const installedCount = LIVE.filter((i) => {
+    const s = byStatus.get(i.slug);
+    return s === "connected" || s === "stale" || s === "error";
+  }).length;
 
   const openDef = openSlug ? LIVE.find((i) => i.slug === openSlug) : null;
   const openState = openDef ? byStatus.get(openDef.slug) ?? "available" : null;
@@ -240,6 +245,28 @@ function DrawerAction({
           Your agency team manages this integration. Contact support to change
           how it&apos;s configured.
         </p>
+      </div>
+    );
+  }
+
+  if (state === "stale") {
+    // Connected, no errors, but past the freshness budget. Amber banner
+    // tells the operator data isn't current and points them at the
+    // manage slot to trigger a refresh. Distinct from "error" so we
+    // don't mis-signal a healthy-but-quiet integration as broken.
+    return (
+      <div className="space-y-3">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm font-medium text-amber-900">
+            {def.name} is connected, but data is stale.
+          </p>
+          <p className="text-xs text-amber-800 mt-1">
+            The last successful sync is older than the freshness budget.
+            Use the form below to trigger a manual refresh — credentials
+            still appear valid.
+          </p>
+        </div>
+        {manageSlot}
       </div>
     );
   }

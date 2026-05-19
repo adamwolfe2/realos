@@ -2,6 +2,7 @@ import "server-only";
 import { prisma } from "@/lib/db";
 import { AdPlatform, IntegrationRequestStatus } from "@prisma/client";
 import { INTEGRATIONS, type IntegrationDefinition } from "./catalog";
+import { FRESHNESS_BUDGET, type IntegrationKey } from "@/lib/sync/freshness";
 
 // ---------------------------------------------------------------------------
 // Tenant-scoped integration status.
@@ -16,12 +17,42 @@ import { INTEGRATIONS, type IntegrationDefinition } from "./catalog";
 
 export type IntegrationState =
   | "connected"
+  | "stale" // connected, no errors, but last sync is past the staleness budget
   | "error" // connected but last sync failed — honest signal vs lying green
   | "available"
   | "requested"
   | "managed"
   | "plan_locked"
   | "coming_soon";
+
+// Internal helper: given a freshness budget key + lastSyncAt + error flag,
+// classify into the three honest states the pill needs:
+//   - error  → RED (auth/quota failure, credentials invalid, or sync errored)
+//   - stale  → YELLOW (no errors but last sync is older than the budget)
+//   - connected → GREEN (fresh + no errors + credentials valid)
+//
+// Pre-fix the pill flipped to green any time an integration row existed —
+// even if the last 10 cron ticks errored or hadn't run in days. Operators
+// only learned the integration was broken by opening the page and noticing
+// no fresh data. This helper unifies the three signals so every connected
+// integration goes through the same RED/YELLOW/GREEN gate.
+function classifyHealth(
+  key: IntegrationKey,
+  lastSyncAt: Date | null,
+  hasError: boolean,
+): "connected" | "stale" | "error" {
+  if (hasError) return "error";
+  if (lastSyncAt == null) {
+    // No successful sync ever, but no recorded error either. Surfacing
+    // this as "stale" is more honest than "connected" — the operator
+    // shouldn't trust green when there's literally no data yet.
+    return "stale";
+  }
+  const budget = FRESHNESS_BUDGET[key];
+  const ageMs = Date.now() - lastSyncAt.getTime();
+  if (ageMs > budget.staleAfterMs) return "stale";
+  return "connected";
+}
 
 export type IntegrationStatus = {
   slug: string;
@@ -286,9 +317,18 @@ function resolveOne(
   if (def.slug === "gsc" || def.slug === "ga4") {
     const seo = ctx.seoBySlug.get(def.slug);
     if (!seo) return { slug: def.slug, state: "available" };
+    // Honest 3-way classifier (audit BUG: "lying pill"):
+    //   GREEN   = last sync ≤ stale budget AND no errors
+    //   YELLOW  = stale but no errors
+    //   RED     = ANY recent error / invalid creds / disconnected
+    // Same logic applied to BOTH GA4 and GSC.
     return {
       slug: def.slug,
-      state: seo.hasError ? "error" : "connected",
+      state: classifyHealth(
+        def.slug === "gsc" ? "gsc" : "ga4",
+        seo.lastSyncAt,
+        seo.hasError,
+      ),
       lastEventAt: seo.lastSyncAt,
     };
   }
@@ -330,6 +370,8 @@ export function stateLabel(state: IntegrationState): string {
   switch (state) {
     case "connected":
       return "Connected";
+    case "stale":
+      return "Stale";
     case "error":
       return "Sync error";
     case "managed":
