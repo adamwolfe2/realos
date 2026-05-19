@@ -2,7 +2,16 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { recordCronRun } from "@/lib/health/cron-run";
-import { runAeoScan } from "@/lib/aeo/orchestrate";
+import { runAeoScan, runNeighborhoodScan } from "@/lib/aeo/orchestrate";
+
+// Skip per-page sampling if scanned within this window. The weekly cron
+// runs Mondays — 6 days keeps us re-scanning every Monday without ever
+// missing a week, while letting on-demand scans inside the window
+// override the cron.
+const NEIGHBORHOOD_SCAN_SKIP_WINDOW_MS = 6 * 24 * 60 * 60 * 1000;
+// Cron cost guard: sample 2 claims × 2 prompts × N engines per page.
+const CRON_MAX_CLAIMS_PER_PAGE = 2;
+const CRON_PROMPTS_PER_CLAIM = 2;
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -43,6 +52,8 @@ export async function GET(req: NextRequest) {
     }> = [];
 
     let totalRows = 0;
+    let neighborhoodPagesScanned = 0;
+    let neighborhoodPagesSkipped = 0;
 
     for (const org of orgs) {
       try {
@@ -68,10 +79,66 @@ export async function GET(req: NextRequest) {
           error: message,
         });
       }
+
+      // Sample published neighborhood pages too. We scan each page lightly
+      // (2 claims × 2 prompts × M engines) so the weekly cron stays cheap
+      // even if a tenant publishes 50 neighborhood pages.
+      try {
+        const pages = await prisma.neighborhoodPage.findMany({
+          where: { orgId: org.id, status: "PUBLISHED" },
+          select: { id: true },
+          orderBy: { updatedAt: "desc" },
+          take: 100,
+        });
+
+        const cutoff = new Date(
+          Date.now() - NEIGHBORHOOD_SCAN_SKIP_WINDOW_MS,
+        );
+
+        for (const page of pages) {
+          const recent = await prisma.aeoCitationCheck.count({
+            where: {
+              orgId: org.id,
+              neighborhoodPageId: page.id,
+              queryRunAt: { gte: cutoff },
+            },
+          });
+          if (recent > 0) {
+            neighborhoodPagesSkipped += 1;
+            continue;
+          }
+          try {
+            const r = await runNeighborhoodScan({
+              orgId: org.id,
+              pageId: page.id,
+              maxClaims: CRON_MAX_CLAIMS_PER_PAGE,
+              promptsPerClaim: CRON_PROMPTS_PER_CLAIM,
+            });
+            totalRows += r.rowsWritten;
+            neighborhoodPagesScanned += 1;
+          } catch (err) {
+            console.error(
+              `[cron/aeo-scan] neighborhood scan failed for page ${page.id}:`,
+              err instanceof Error ? err.message : err,
+            );
+          }
+        }
+      } catch (err) {
+        console.error(
+          `[cron/aeo-scan] neighborhood iteration failed for org ${org.id}:`,
+          err instanceof Error ? err.message : err,
+        );
+      }
     }
 
     return {
-      result: NextResponse.json({ ok: true, totalRows, orgs: summary }),
+      result: NextResponse.json({
+        ok: true,
+        totalRows,
+        neighborhoodPagesScanned,
+        neighborhoodPagesSkipped,
+        orgs: summary,
+      }),
       recordsProcessed: totalRows,
     };
   });
