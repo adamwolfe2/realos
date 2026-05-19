@@ -11,6 +11,7 @@ import {
   ConnectPixelForm,
   DisconnectPixelForm,
 } from "./integration-forms";
+import { CursiveWebhookBadge } from "@/components/portal/integrations/cursive-webhook-badge";
 import { PixelRequestStatus } from "@prisma/client";
 import {
   ConnectAppfolioForm,
@@ -343,8 +344,22 @@ function PixelManage({
   totalEventsCount: number;
   installSnippet: string | null;
 }) {
+  const verified = Boolean(lastEventAt);
   return (
     <div className="space-y-5">
+      {/* Pending → Connected transition. Operators install the snippet and
+          immediately want to know if events are flowing — the badge ticks
+          every 15s and flips from amber "Pending verification" to a green
+          "Last event Xs ago" the moment the first webhook lands. */}
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <CursiveWebhookBadge
+          lastEventAtIso={lastEventAt ? lastEventAt.toISOString() : null}
+          totalEventsCount={totalEventsCount}
+        />
+        <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
+          {verified ? "Connected" : "Pending verification"}
+        </span>
+      </div>
       <dl className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
         <DetailRow label="Pixel ID" value={pixelId} mono />
         <DetailRow

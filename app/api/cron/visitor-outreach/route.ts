@@ -17,8 +17,39 @@ export async function GET(req: NextRequest) {
   return recordCronRun("visitor-outreach", async () => {
   const sinceWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
+  // Cursive verification gate. Outreach only fires for visitors whose
+  // org has at least one CursiveIntegration with lastEventAt set —
+  // proof that the pixel actually fired events at LeaseStack, not just
+  // that ops typed a pixel ID into the admin panel. Prior to this gate,
+  // a misconfigured AL webhook (URL never pasted into the AL pixel UI)
+  // would silently never produce visitor rows for outreach, but if the
+  // segment pull happened to create visitors via /api/cron/pixel-segment-sync
+  // we'd email people for an "integration" the operator hadn't actually
+  // finished wiring up. Once at least one real webhook event lands the
+  // gate opens for that org and stays open.
+  const verifiedOrgIds = await prisma.cursiveIntegration
+    .findMany({
+      where: { lastEventAt: { not: null } },
+      select: { orgId: true },
+      distinct: ["orgId"],
+    })
+    .then((rows) => rows.map((r) => r.orgId));
+
+  if (verifiedOrgIds.length === 0) {
+    return {
+      result: NextResponse.json({
+        sent: 0,
+        scanned: 0,
+        skipped:
+          "no cursive integrations have received a webhook event yet",
+      } as Record<string, unknown>),
+      recordsProcessed: 0,
+    };
+  }
+
   const candidates = await prisma.visitor.findMany({
     where: {
+      orgId: { in: verifiedOrgIds },
       status: {
         in: [
           VisitorIdentificationStatus.IDENTIFIED,
