@@ -103,17 +103,17 @@ export function WhatYouGet() {
         borderTop: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-16 md:py-24">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-12 md:py-16">
         {/* Section header */}
-        <div className="max-w-3xl mb-20">
-          <p className="eyebrow mb-4">What you get</p>
+        <div className="max-w-3xl mb-10 md:mb-12">
+          <p className="eyebrow mb-3">What you get</p>
           <h2
             style={{
               color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
-              fontSize: "clamp(36px, 5.2vw, 64px)",
+              fontSize: "clamp(32px, 4.4vw, 52px)",
               fontWeight: 700,
-              lineHeight: 1.02,
+              lineHeight: 1.05,
               letterSpacing: "-0.03em",
             }}
           >
@@ -122,12 +122,12 @@ export function WhatYouGet() {
             <span style={{ color: "#2563EB" }}>your stack is missing.</span>
           </h2>
           <p
-            className="mt-6 max-w-2xl"
+            className="mt-4 max-w-2xl"
             style={{
               color: "#64748B",
               fontFamily: "var(--font-sans)",
-              fontSize: "18px",
-              lineHeight: 1.6,
+              fontSize: "16px",
+              lineHeight: 1.55,
             }}
           >
             LeaseStack connects to what you already run and turns it into
@@ -137,7 +137,7 @@ export function WhatYouGet() {
         </div>
 
         {/* Three pillars — editorial, not card-grid */}
-        <ol className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-12 mb-24 md:mb-32">
+        <ol className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-8 mb-14 md:mb-16">
           {PILLARS.map((p) => (
             <li key={p.num}>
               <p
@@ -152,11 +152,11 @@ export function WhatYouGet() {
                 {p.num}
               </p>
               <h3
-                className="mt-3"
+                className="mt-2"
                 style={{
                   color: "#1E2A3A",
                   fontFamily: "var(--font-sans)",
-                  fontSize: "clamp(22px, 2.4vw, 28px)",
+                  fontSize: "clamp(20px, 2vw, 24px)",
                   fontWeight: 700,
                   lineHeight: 1.18,
                   letterSpacing: "-0.02em",
@@ -165,23 +165,23 @@ export function WhatYouGet() {
                 {p.headline}
               </h3>
               <p
-                className="mt-4"
+                className="mt-3"
                 style={{
                   color: "#64748B",
                   fontFamily: "var(--font-sans)",
-                  fontSize: "15.5px",
-                  lineHeight: 1.6,
+                  fontSize: "14.5px",
+                  lineHeight: 1.55,
                 }}
               >
                 {p.body}
               </p>
               <p
-                className="mt-5 pt-4"
+                className="mt-4 pt-3"
                 style={{
                   borderTop: "1px solid #E2E8F0",
                   color: "#1E2A3A",
                   fontFamily: "var(--font-mono)",
-                  fontSize: "11.5px",
+                  fontSize: "11px",
                   letterSpacing: "0.06em",
                   fontWeight: 600,
                 }}
@@ -194,13 +194,13 @@ export function WhatYouGet() {
 
         {/* Module strip — replaces the 8-card grid. Two-column list, each
             row a clean editorial line with real brand logos on the right. */}
-        <div className="mb-24 md:mb-32">
-          <div className="flex items-end justify-between gap-6 mb-10 flex-wrap">
+        <div className="mb-14 md:mb-16">
+          <div className="flex items-end justify-between gap-6 mb-6 flex-wrap">
             <h3
               style={{
                 color: "#1E2A3A",
                 fontFamily: "var(--font-sans)",
-                fontSize: "clamp(24px, 2.8vw, 32px)",
+                fontSize: "clamp(22px, 2.4vw, 28px)",
                 fontWeight: 700,
                 lineHeight: 1.15,
                 letterSpacing: "-0.02em",
@@ -213,7 +213,7 @@ export function WhatYouGet() {
               style={{
                 color: "#64748B",
                 fontFamily: "var(--font-sans)",
-                fontSize: "15px",
+                fontSize: "14.5px",
                 lineHeight: 1.55,
                 maxWidth: "420px",
               }}
@@ -234,7 +234,7 @@ export function WhatYouGet() {
             {MODULES.map((m, i) => (
               <li
                 key={m.title}
-                className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 md:gap-10 px-6 md:px-8 py-6 md:py-7"
+                className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-3 md:gap-10 px-5 md:px-7 py-4 md:py-5"
                 style={{
                   borderTop: i === 0 ? "none" : "1px solid #E2E8F0",
                   alignItems: "center",
@@ -245,7 +245,7 @@ export function WhatYouGet() {
                     style={{
                       color: "#1E2A3A",
                       fontFamily: "var(--font-sans)",
-                      fontSize: "19px",
+                      fontSize: "17px",
                       fontWeight: 600,
                       lineHeight: 1.3,
                       letterSpacing: "-0.01em",
@@ -254,12 +254,12 @@ export function WhatYouGet() {
                     {m.title}
                   </h4>
                   <p
-                    className="mt-2 max-w-2xl"
+                    className="mt-1.5 max-w-2xl"
                     style={{
                       color: "#64748B",
                       fontFamily: "var(--font-sans)",
-                      fontSize: "14.5px",
-                      lineHeight: 1.55,
+                      fontSize: "13.5px",
+                      lineHeight: 1.5,
                     }}
                   >
                     {m.body}
@@ -347,13 +347,13 @@ function LaunchTrack() {
 
   return (
     <div>
-      <div className="mb-12">
+      <div className="mb-8">
         <p className="eyebrow mb-3">Your first 90 days</p>
         <h3
           style={{
             color: "#1E2A3A",
             fontFamily: "var(--font-sans)",
-            fontSize: "clamp(24px, 2.8vw, 34px)",
+            fontSize: "clamp(22px, 2.4vw, 28px)",
             fontWeight: 700,
             lineHeight: 1.15,
             letterSpacing: "-0.02em",
