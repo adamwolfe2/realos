@@ -100,17 +100,31 @@ export default async function ClientDetail({
     org.cursiveIntegrations.find((c) => c.propertyId === null) ?? null;
 
   const moduleRows: Array<[ToggleableModule, string, boolean]> = [
+    // Acquisition + on-site
     ["moduleWebsite", "Website", org.moduleWebsite],
     ["moduleLeadCapture", "Lead capture", org.moduleLeadCapture],
     ["modulePixel", "Visitor pixel", org.modulePixel],
     ["moduleChatbot", "AI chatbot", org.moduleChatbot],
+    ["moduleConversations", "Conversations", org.moduleConversations],
+    ["modulePopups", "Popups", org.modulePopups],
+    // Paid + organic
     ["moduleGoogleAds", "Google Ads", org.moduleGoogleAds],
     ["moduleMetaAds", "Meta Ads", org.moduleMetaAds],
     ["moduleSEO", "SEO", org.moduleSEO],
+    ["moduleCreativeStudio", "Creative studio", org.moduleCreativeStudio],
+    // Lifecycle email
     ["moduleEmail", "Email nurture", org.moduleEmail],
     ["moduleOutboundEmail", "Outbound email", org.moduleOutboundEmail],
     ["moduleReferrals", "Referrals", org.moduleReferrals],
-    ["moduleCreativeStudio", "Creative studio", org.moduleCreativeStudio],
+    // Intelligence
+    ["moduleAttribution", "Attribution", org.moduleAttribution],
+    ["moduleInsights", "Insights (AEO + briefing + reports)", org.moduleInsights],
+    ["moduleReputation", "Reputation", org.moduleReputation],
+    // Operations (AppFolio-backed) + tours
+    ["moduleTours", "Tours", org.moduleTours],
+    ["moduleResidents", "Resident operations (residents / renewals / work orders / applications)", org.moduleResidents],
+    // Add-ons
+    ["moduleVault", "Vault", org.moduleVault],
   ];
 
   const recentLeads = await prisma.lead.findMany({

@@ -22,7 +22,15 @@ import { RefreshCcw, CheckCircle2, AlertCircle } from "lucide-react";
 type ScanState =
   | { kind: "idle" }
   | { kind: "busy" }
-  | { kind: "done"; scanned: number; backfilled: number }
+  | {
+      kind: "done";
+      scanned: number;
+      backfilled: number;
+      /** Per-source failures, e.g. ["yelp: rate limit (429)"]. Surface
+       * these instead of swallowing so operators don't see "Scanned 1
+       * property" while Yelp / Tavily silently failed. */
+      sourceErrors: string[];
+    }
   | { kind: "error"; message: string };
 
 export function ReputationScanButton() {
@@ -54,6 +62,12 @@ export function ReputationScanButton() {
         error?: string;
         scanned?: number;
         backfilled?: number;
+        results?: Array<{
+          propertyId: string;
+          status: string;
+          error?: string;
+          sourceErrors?: Array<{ source: string; error: string }>;
+        }>;
       };
       if (!res.ok) {
         setState({
@@ -66,10 +80,19 @@ export function ReputationScanButton() {
         });
         return;
       }
+      // Collapse per-property sourceErrors into a compact list. The
+      // server-side limit of 5 properties keeps this bounded.
+      const sourceErrors: string[] = [];
+      for (const r of data.results ?? []) {
+        for (const se of r.sourceErrors ?? []) {
+          sourceErrors.push(`${se.source}: ${se.error}`);
+        }
+      }
       setState({
         kind: "done",
         scanned: data.scanned ?? 0,
         backfilled: data.backfilled ?? 0,
+        sourceErrors,
       });
       // Re-fetch server data so the inbox + KPIs reflect the new rows.
       router.refresh();
@@ -102,9 +125,21 @@ export function ReputationScanButton() {
       </button>
       {state.kind === "done" ? (
         <span className="inline-flex items-center gap-1 text-xs text-foreground">
-          <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
-          Scanned {state.scanned} {state.scanned === 1 ? "property" : "properties"}
+          {state.sourceErrors.length === 0 ? (
+            <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+          ) : (
+            <AlertCircle className="h-3.5 w-3.5 text-foreground" />
+          )}
+          Scanned {state.scanned}{" "}
+          {state.scanned === 1 ? "property" : "properties"}
           {state.backfilled > 0 ? ` · classified ${state.backfilled}` : ""}
+          {state.sourceErrors.length > 0
+            ? ` · ${state.sourceErrors.length} source ${state.sourceErrors.length === 1 ? "failure" : "failures"} (${[
+                ...new Set(
+                  state.sourceErrors.map((e) => e.split(":")[0]),
+                ),
+              ].join(", ")})`
+            : ""}
         </span>
       ) : null}
       {state.kind === "error" ? (

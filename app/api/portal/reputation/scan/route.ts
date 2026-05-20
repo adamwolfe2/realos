@@ -143,9 +143,16 @@ export async function POST(req: NextRequest) {
   // Run each scan to completion. We deliberately serialize across
   // properties — Tavily's free tier rate-limits concurrent calls, and a
   // parallel fan-out could trigger 429s mid-batch.
-  const results: Array<{ propertyId: string; status: string; error?: string }> =
-    [];
+  const results: Array<{
+    propertyId: string;
+    status: string;
+    error?: string;
+    /** Per-source failures the orchestrator yielded — populated so the
+     * UI can surface "Yelp rate-limited" instead of swallowing it. */
+    sourceErrors?: Array<{ source: string; error: string }>;
+  }> = [];
   for (const property of propertyTargets) {
+    const sourceErrors: Array<{ source: string; error: string }> = [];
     try {
       // Drive the async generator to completion. We only care about the
       // final "done" event for the response payload.
@@ -156,14 +163,25 @@ export async function POST(req: NextRequest) {
       })) {
         if (evt.type === "done") finalStatus = evt.status;
         if (evt.type === "error") finalStatus = "FAILED";
+        if (evt.type === "source_failed") {
+          // Capture per-source failures (e.g. Tavily quota, Yelp 429) so
+          // the operator can see why a scan returned thin results
+          // instead of assuming everything was fine.
+          sourceErrors.push({ source: evt.source, error: evt.error });
+        }
       }
-      results.push({ propertyId: property.id, status: finalStatus });
+      results.push({
+        propertyId: property.id,
+        status: finalStatus,
+        ...(sourceErrors.length > 0 ? { sourceErrors } : {}),
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       results.push({
         propertyId: property.id,
         status: "FAILED",
         error: message,
+        ...(sourceErrors.length > 0 ? { sourceErrors } : {}),
       });
     }
   }

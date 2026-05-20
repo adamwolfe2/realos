@@ -6,6 +6,7 @@ import {
   tenantWhere,
 } from "@/lib/tenancy/scope";
 import { runAeoScan } from "@/lib/aeo/orchestrate";
+import { getEnabledEngines } from "@/lib/aeo/engines";
 
 // ---------------------------------------------------------------------------
 // POST /api/portal/seo/aeo/scan
@@ -59,8 +60,25 @@ export async function POST(_req: NextRequest) {
     );
   }
 
+  // Fail fast when no engine has a configured API key on the server.
+  // Pre-fix the orchestrator would happily iterate 0 engines and return
+  // rowsWritten=0, which surfaced in the UI as a "scan succeeded" green
+  // checkmark with zero new data — indistinguishable from a clean run
+  // where nothing changed. Surface this as a 503 so operators see the
+  // real cause.
+  const engines = getEnabledEngines();
+  if (engines.length === 0) {
+    return NextResponse.json(
+      {
+        error:
+          "No AI engines are configured on the server. Set at least ANTHROPIC_API_KEY (Claude), and optionally OPENAI_API_KEY / PERPLEXITY_API_KEY / GOOGLE_GEMINI_API_KEY.",
+      },
+      { status: 503 },
+    );
+  }
+
   try {
-    const result = await runAeoScan({ orgId: scope.orgId });
+    const result = await runAeoScan({ orgId: scope.orgId, engines });
     return NextResponse.json({ ok: true, ...result });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);

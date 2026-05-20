@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { requireModule } from "@/lib/portal/module-gate";
 import {
   isAccessDenied,
   parsePropertyFilter,
@@ -65,6 +66,9 @@ export default async function RenewalsPage({
 }: {
   searchParams: Promise<{ properties?: string; property?: string }>;
 }) {
+  const gate = await requireModule("moduleResidents");
+  if (gate) return gate;
+
   const scope = await requireScope();
   try {
   const sp = await searchParams;

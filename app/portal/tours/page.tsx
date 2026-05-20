@@ -4,6 +4,7 @@ import { Calendar, MapPin, User, Clock, CheckCircle2, X } from "lucide-react";
 import { format, formatDistanceToNow, startOfWeek, addDays } from "date-fns";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
@@ -56,6 +57,9 @@ export default async function ToursPage({
 }: {
   searchParams: Promise<{ property?: string; properties?: string }>;
 }) {
+  const gate = await requireModule("moduleTours");
+  if (gate) return gate;
+
   const scope = await requireScope();
   const sp = await searchParams;
   const requestedIds = parsePropertyFilter(sp);

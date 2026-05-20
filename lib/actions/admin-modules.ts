@@ -27,6 +27,14 @@ const TOGGLEABLE_MODULES = [
   "moduleReferrals",
   "moduleCreativeStudio",
   "moduleLeadCapture",
+  "modulePopups",
+  "moduleVault",
+  "moduleReputation",
+  "moduleInsights",
+  "moduleAttribution",
+  "moduleResidents",
+  "moduleTours",
+  "moduleConversations",
 ] as const;
 
 export type ToggleableModule = (typeof TOGGLEABLE_MODULES)[number];

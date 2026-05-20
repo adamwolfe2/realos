@@ -371,6 +371,31 @@ model Organization {
   // discount popups in /portal/popups and paste a one-line script tag
   // on any external site. Same architecture as moduleChatbot.
   modulePopups         Boolean @default(false)
+  // Online reputation surface — /portal/reputation aggregates Google /
+  // Apartments.com / Yelp review pulls, sentiment, and reply workflow.
+  // Off by default; activated when the reputation add-on lands.
+  moduleReputation     Boolean @default(false)
+  // AEO + briefing + reports intelligence bucket. Gates
+  // /portal/insights, /portal/briefing, /portal/reports — all of which
+  // depend on the same underlying signal pipeline.
+  moduleInsights       Boolean @default(false)
+  // Cross-channel attribution surface (/portal/attribution). Direct
+  // competitor to Clarity Attribution; included as the headline
+  // value-prop module on Growth+ tiers.
+  moduleAttribution    Boolean @default(false)
+  // Post-lease PMS surface. Groups residents, renewals, work orders,
+  // and applications — every page that hangs off AppFolio operational
+  // sync. Off until the AppFolio integration is wired + healthy.
+  moduleResidents      Boolean @default(false)
+  // Tour bookings (/portal/tours). Sourced from the public booking
+  // form and API-key ingest, NOT AppFolio. Kept separate from the PMS
+  // bucket so non-AppFolio tenants can still light it up.
+  moduleTours          Boolean @default(false)
+  // Inbox-style chatbot conversations surface (/portal/conversations).
+  // Distinct from moduleChatbot, which gates the bot itself; this
+  // gates the read-side conversation pipeline. Both usually flip on
+  // together but can be unbundled for read-only deployments.
+  moduleConversations  Boolean @default(false)
   // Credentials vault. Paid add-on. Stores per-property and org-wide
   // passwords for external platforms (GA4, Meta Ads, AppFolio, etc.)
   // using envelope encryption — per-org DEK wrapped by a master KEK

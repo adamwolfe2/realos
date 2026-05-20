@@ -4,6 +4,7 @@ import { Star, AlertTriangle, MessageCircle, Flag } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
+import { requireModule } from "@/lib/portal/module-gate";
 import {
   effectivePropertyIds,
   isAccessDenied,
@@ -140,6 +141,9 @@ export default async function PortfolioReputationPage({
     sentiment?: string;
   }>;
 }) {
+  const gate = await requireModule("moduleReputation");
+  if (gate) return gate;
+
   let scope;
   try {
     scope = await requireScope();

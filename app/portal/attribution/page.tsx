@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   effectivePropertyIds,
@@ -54,6 +55,9 @@ export default async function AttributionPage({
     properties?: string;
   }>;
 }) {
+  const gate = await requireModule("moduleAttribution");
+  if (gate) return gate;
+
   const scope = await requireScope();
   const params = await searchParams;
 

@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
@@ -72,6 +73,9 @@ export default async function ConversationsList({
     c?: string;
   }>;
 }) {
+  const gate = await requireModule("moduleConversations");
+  if (gate) return gate;
+
   const scope = await requireScope();
   const sp = await searchParams;
   const propertyIds = parsePropertyFilter(sp);

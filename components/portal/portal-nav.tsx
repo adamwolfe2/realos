@@ -58,6 +58,12 @@ export type PortalNavOrg = {
   moduleReferrals: boolean;
   modulePopups: boolean;
   moduleVault: boolean;
+  moduleReputation: boolean;
+  moduleInsights: boolean;
+  moduleAttribution: boolean;
+  moduleResidents: boolean;
+  moduleTours: boolean;
+  moduleConversations: boolean;
   bringYourOwnSite: boolean;
   onboardingDismissed: boolean;
   setupComplete: boolean;
@@ -194,29 +200,30 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/portal/attribution",
         label: "Attribution",
         icon: PieChart,
-        show: ALWAYS,
+        show: (o) => o.moduleAttribution,
       },
-      // Each remaining Analytics page hides when its source data is
-      // empty so the sidebar doesn't surface dead-end clicks. The pages
-      // remain reachable by URL for power users; we just hide the entry
-      // point until there's something to show.
+      // Each remaining Analytics page is gated on the Insights module
+      // (which covers AEO + briefing + reports) AND a soft data-presence
+      // check so brand-new tenants with the module on don't see five
+      // empty pages they have to ignore. Items appear in the sidebar the
+      // moment the underlying tables have at least one row.
       {
         href: "/portal/briefing",
         label: "Briefing",
         icon: Gauge,
-        show: (o) => Boolean(o.briefingHasContent),
+        show: (o) => o.moduleInsights && Boolean(o.briefingHasContent),
       },
       {
         href: "/portal/insights",
         label: "Insights",
         icon: Sparkles,
-        show: (o) => Boolean(o.hasInsights),
+        show: (o) => o.moduleInsights && Boolean(o.hasInsights),
       },
       {
         href: "/portal/reports",
         label: "Reports",
         icon: FileText,
-        show: (o) => Boolean(o.hasReports),
+        show: (o) => o.moduleInsights && Boolean(o.hasReports),
       },
     ],
   },
@@ -231,20 +238,20 @@ export const NAV_GROUPS: NavGroup[] = [
         badge: (o) => o.pendingCurationCount && o.pendingCurationCount > 0 ? o.pendingCurationCount : null,
       },
       { href: "/portal/leads", label: "Leads", icon: Users, show: ALWAYS },
-      // Tours: gated on at least one tour existing. Source is the public
-      // booking form or the API-key ingest endpoint — NOT AppFolio.
-      { href: "/portal/tours", label: "Tours", icon: Calendar, show: (o) => Boolean(o.hasTours) },
-      // Applications: gated until rows exist. There is no production
-      // write path today; surfacing an empty page as a "feature" misleads
-      // operators about what the platform can do.
-      { href: "/portal/applications", label: "Applications", icon: ClipboardList, show: (o) => Boolean(o.hasApplications) },
+      // Tours: gated on the Tours module AND at least one tour existing.
+      // Source is the public booking form or the API-key ingest endpoint
+      // — NOT AppFolio — so it stays separate from the PMS bucket.
+      { href: "/portal/tours", label: "Tours", icon: Calendar, show: (o) => o.moduleTours && Boolean(o.hasTours) },
+      // Applications: PMS-bucket surface. Gated on moduleResidents (which
+      // groups every AppFolio-backed operational page) AND a row existing.
+      { href: "/portal/applications", label: "Applications", icon: ClipboardList, show: (o) => o.moduleResidents && Boolean(o.hasApplications) },
       {
         href: "/portal/visitors",
         label: "Visitors",
         icon: Eye,
         show: (o) => o.modulePixel,
       },
-      { href: "/portal/reputation", label: "Reputation", icon: Star, show: ALWAYS },
+      { href: "/portal/reputation", label: "Reputation", icon: Star, show: (o) => o.moduleReputation },
     ],
   },
   // Operations group (Residents / Renewals / Work orders) intentionally
@@ -263,7 +270,7 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/portal/conversations",
         label: "Conversations",
         icon: MessageSquare,
-        show: (o) => o.moduleChatbot,
+        show: (o) => o.moduleConversations,
       },
       {
         href: "/portal/chatbot",

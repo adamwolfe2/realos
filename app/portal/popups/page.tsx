@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowRight, Plus, Sparkles } from "lucide-react";
 import { requireScope } from "@/lib/tenancy/scope";
+import { requireModule } from "@/lib/portal/module-gate";
 import { listPopups, getPopupSummary } from "@/lib/popups/queries";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
@@ -13,6 +14,9 @@ export const metadata: Metadata = { title: "Popups" };
 export const dynamic = "force-dynamic";
 
 export default async function PopupsListPage() {
+  const gate = await requireModule("modulePopups");
+  if (gate) return gate;
+
   const scope = await requireScope();
   const [popups, summary] = await Promise.all([
     listPopups(scope.orgId).catch(() => []),

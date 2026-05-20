@@ -7,6 +7,7 @@ import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
 import { AeoScanButton } from "./aeo-scan-button";
 import { RecentChecksTable, type CheckRow } from "./recent-checks-table";
+import { ALL_ENGINES } from "@/lib/aeo/engines";
 import type { AeoEngine } from "@prisma/client";
 
 export const metadata: Metadata = { title: "AI search visibility" };
@@ -90,6 +91,16 @@ export default async function AeoPage() {
   const priorRate = prior30Total > 0 ? prior30Cited / prior30Total : 0;
   const trendDelta = citationRate30 - priorRate;
 
+  // Build a configured map per engine — gated on the API key being
+  // present on the server (`isConfigured()` checks env vars). When a key
+  // is missing the per-engine card flips to "Not configured" instead of
+  // claiming "No queries yet", which would otherwise look like the cron
+  // hadn't run when really we can't query that engine at all.
+  const engineConfigured = new Map<AeoEngine, boolean>();
+  for (const e of ALL_ENGINES) {
+    engineConfigured.set(e.engine as AeoEngine, e.isConfigured());
+  }
+
   // Per-engine breakdown over the last 30 days.
   const perEngine = ENGINES.map((engine) => {
     const forEngine = last30.filter((c) => c.engine === engine);
@@ -99,7 +110,16 @@ export default async function AeoPage() {
     const sampleCitedUrl =
       cited.find((c) => !!c.citedUrl)?.citedUrl ?? null;
     const lastScan = forEngine[0]?.queryRunAt ?? null;
-    return { engine, totalQ, cited: cited.length, rate, sampleCitedUrl, lastScan };
+    const configured = engineConfigured.get(engine) ?? false;
+    return {
+      engine,
+      totalQ,
+      cited: cited.length,
+      rate,
+      sampleCitedUrl,
+      lastScan,
+      configured,
+    };
   });
 
   // Competitors-cited rollup. Aggregate counts across rows where we WEREN'T
@@ -203,35 +223,46 @@ export default async function AeoPage() {
           {perEngine.map((row) => (
             <div
               key={row.engine}
-              className="rounded-xl border border-border bg-card p-4 flex flex-col gap-2"
+              className={
+                "rounded-xl border border-border bg-card p-4 flex flex-col gap-2 " +
+                (row.configured ? "" : "opacity-60")
+              }
             >
               <div className="flex items-center justify-between">
                 <span className="text-[13px] font-semibold text-foreground">
                   {ENGINE_LABELS[row.engine]}
                 </span>
                 <span className="text-[11px] text-muted-foreground tabular-nums">
-                  {fmtPercent(row.rate)}
+                  {row.configured ? fmtPercent(row.rate) : "—"}
                 </span>
               </div>
-              <div className="text-[11px] text-muted-foreground">
-                {row.totalQ === 0
-                  ? "No queries yet"
-                  : `${row.cited} of ${row.totalQ} queries`}
-              </div>
-              {row.sampleCitedUrl ? (
-                <a
-                  href={row.sampleCitedUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] text-primary hover:underline truncate"
-                  title={row.sampleCitedUrl}
-                >
-                  {row.sampleCitedUrl}
-                </a>
-              ) : (
-                <div className="text-[11px] text-muted-foreground italic">
-                  No cited URL yet
+              {!row.configured ? (
+                <div className="text-[11px] text-muted-foreground">
+                  Not configured — API key missing on server.
                 </div>
+              ) : (
+                <>
+                  <div className="text-[11px] text-muted-foreground">
+                    {row.totalQ === 0
+                      ? "No queries yet"
+                      : `${row.cited} of ${row.totalQ} queries`}
+                  </div>
+                  {row.sampleCitedUrl ? (
+                    <a
+                      href={row.sampleCitedUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[11px] text-primary hover:underline truncate"
+                      title={row.sampleCitedUrl}
+                    >
+                      {row.sampleCitedUrl}
+                    </a>
+                  ) : (
+                    <div className="text-[11px] text-muted-foreground italic">
+                      No cited URL yet
+                    </div>
+                  )}
+                </>
               )}
               <div className="text-[10px] text-muted-foreground mt-auto">
                 {row.lastScan

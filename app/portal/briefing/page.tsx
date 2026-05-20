@@ -5,6 +5,7 @@ import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, AlertTriangle, Arrow
 // component used them.
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   effectivePropertyIds,
@@ -36,6 +37,9 @@ export default async function BriefingPage({
 }: {
   searchParams: Promise<{ property?: string; properties?: string }>;
 }) {
+  const gate = await requireModule("moduleInsights");
+  if (gate) return gate;
+
   const scope = await requireScope();
   const params = await searchParams;
   const requestedIds = parsePropertyFilter(params);

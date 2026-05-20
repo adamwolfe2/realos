@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   parsePropertyFilter,
@@ -29,6 +30,9 @@ export default async function ReportsListPage({
 }: {
   searchParams: Promise<Search>;
 }) {
+  const gate = await requireModule("moduleInsights");
+  if (gate) return gate;
+
   const scope = await requireScope();
   const sp = await searchParams;
 

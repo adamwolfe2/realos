@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { requireModule } from "@/lib/portal/module-gate";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   isAccessDenied,
@@ -75,6 +76,9 @@ export default async function ResidentsPage({
     properties?: string;
   }>;
 }) {
+  const gate = await requireModule("moduleResidents");
+  if (gate) return gate;
+
   const scope = await requireScope();
   try {
   const sp = await searchParams;
