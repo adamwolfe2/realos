@@ -596,6 +596,11 @@ export async function getIntegrationHealth(orgId: string): Promise<IntegrationCh
         apiKeyEncrypted: true,
         syncStatus: true,
         lastSyncAt: true,
+        // Surfaced through to the dashboard so the AppFolio chip can read
+        // "Auto-sync paused" when the operator has manual-only mode on.
+        // Falls into the "degraded" bucket so the UI gets to show a
+        // honest amber state rather than a misleading green.
+        autoSyncEnabled: true,
       },
     }),
     // Dashboard "is the pixel firing?" badge — surface ANY active
@@ -698,6 +703,7 @@ function appfolioStatus(
     apiKeyEncrypted: string | null;
     syncStatus: string | null;
     lastSyncAt: Date | null;
+    autoSyncEnabled?: boolean;
   } | null,
 ): IntegrationChipStatus {
   if (!af) return "off";
@@ -706,6 +712,11 @@ function appfolioStatus(
   if (!hasCreds) return "off";
   const sync = (af.syncStatus ?? "").toLowerCase();
   if (sync === "error") return "error";
+  // Auto-sync paused — credentials work, but the operator has switched off
+  // the hourly cron. Surface as degraded so the dashboard chip and Connect
+  // hub render an honest amber state with the "Enable auto-sync" link
+  // instead of a misleading green checkmark.
+  if (af.autoSyncEnabled === false) return "degraded";
   if (!af.lastSyncAt) return "degraded";
   if (Date.now() - af.lastSyncAt.getTime() > 7 * DAY_MS) return "degraded";
   return "connected";

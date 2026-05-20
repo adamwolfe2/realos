@@ -480,6 +480,21 @@ export default async function PortalHome({
     properties.map((p) => p.id),
   );
 
+  // Onboarding rollup — surfaces total properties still in ONBOARDING
+  // beneath the leaderboard so an operator with a long tail (e.g. SG
+  // launching with 120+ IMPORTED rows, 2 ACTIVE) sees one honest number
+  // instead of staring at a top-5 list that doesn't represent the
+  // portfolio yet. Cheap count, no per-row data.
+  const propertiesInOnboarding = await prisma.property
+    .count({
+      where: {
+        orgId: scope.orgId,
+        launchStatus: "ONBOARDING",
+        ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
+      },
+    })
+    .catch(() => 0);
+
   // Realistic delta calc: % change vs previous 28d window.
   const leadsDeltaPct =
     leadsPrev28d > 0
@@ -576,6 +591,18 @@ export default async function PortalHome({
   const appfolioChip = integrationChips.find((c) => c.key === "appfolio");
   const appfolioOff = appfolioChip?.status === "off";
   const appfolioDegraded = appfolioChip?.status === "degraded";
+  // AppFolio integration row — used to surface "Auto-sync paused" as a
+  // subtle chip on the dashboard Operations teaser. Cheap probe (a few
+  // boolean fields) and only renders when the operator has connected
+  // AppFolio but disabled the hourly cron.
+  const appfolioRow = await prisma.appFolioIntegration
+    .findUnique({
+      where: { orgId: scope.orgId },
+      select: { autoSyncEnabled: true, instanceSubdomain: true },
+    })
+    .catch(() => null);
+  const appfolioAutoSyncPaused =
+    !!appfolioRow?.instanceSubdomain && appfolioRow.autoSyncEnabled === false;
   const adsOff =
     integrationChips.find((c) => c.key === "google-ads")?.status === "off" &&
     integrationChips.find((c) => c.key === "meta-ads")?.status === "off";
@@ -838,6 +865,19 @@ export default async function PortalHome({
           className="lg:col-span-2"
         >
           <TopPropertiesLeaderboard rows={topPropertiesByLeads} />
+          {propertiesInOnboarding > 0 ? (
+            <Link
+              href="/portal/properties?launch=ONBOARDING"
+              className="mt-3 inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground hover:text-primary hover:border-primary/40 transition-colors"
+            >
+              <span
+                aria-hidden="true"
+                className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"
+              />
+              {propertiesInOnboarding.toLocaleString()} {propertiesInOnboarding === 1 ? "property" : "properties"} in onboarding
+              <span aria-hidden="true">→</span>
+            </Link>
+          ) : null}
         </DashboardSection>
       </section>
 
@@ -980,7 +1020,7 @@ export default async function PortalHome({
               tenant-facing surface. When `enableOperations` ships on
               Organization, this card flips into the full Operations
               section. */}
-          <section className="rounded-2xl border border-border bg-gradient-to-br from-card to-primary/[0.03] p-5">
+          <section className="rounded-xl border border-border bg-gradient-to-br from-card to-primary/[0.03] p-5">
             <div className="flex items-start justify-between gap-4 flex-wrap">
               <div className="min-w-0 flex-1">
                 <div className="inline-flex items-center gap-2 mb-2">
@@ -1012,6 +1052,21 @@ export default async function PortalHome({
                 </Link>
               </div>
             </div>
+            {appfolioAutoSyncPaused ? (
+              <div className="mt-3">
+                <Link
+                  href="/portal/settings/integrations#appfolio"
+                  className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"
+                  />
+                  Auto-sync paused — enable for fresh data every hour
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            ) : null}
           </section>
 
     </div>

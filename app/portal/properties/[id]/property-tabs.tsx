@@ -117,10 +117,15 @@ const TAB_TO_CATEGORY: Record<TabKey, Category["id"]> = {
 function PropertyTabsInner({
   initialTab,
   showOccupancy,
+  showAds,
   panels,
 }: {
   initialTab: string;
   showOccupancy: boolean;
+  /** When both moduleGoogleAds and moduleMetaAds are off for the org we
+   *  hide the Ads sub-tab entirely — an Acquisition group of "Leads ·
+   *  Traffic · Ads(empty)" looks broken; "Leads · Traffic" reads clean. */
+  showAds: boolean;
   panels: Partial<Record<TabKey, React.ReactNode>>;
 }) {
   const router = useRouter();
@@ -141,18 +146,32 @@ function PropertyTabsInner({
     setActive(all.includes(t) ? t : "overview");
   }, [searchParams]);
 
-  // Drop occupancy sub from the operations category when no units configured.
+  // Drop occupancy sub from operations when no units configured, and drop
+  // the Ads sub from acquisition when both ad modules are off org-wide.
+  // Re-anchors the category's defaultTab so the operator never lands on
+  // a sub-tab we're about to hide.
   const categories = React.useMemo<Category[]>(() => {
     return CATEGORIES.map((cat) => {
-      if (cat.id !== "operations") return cat;
-      return {
-        ...cat,
-        subs: showOccupancy
-          ? cat.subs
-          : cat.subs.filter((s) => s.key !== "occupancy"),
-      };
+      if (cat.id === "operations") {
+        return {
+          ...cat,
+          subs: showOccupancy
+            ? cat.subs
+            : cat.subs.filter((s) => s.key !== "occupancy"),
+        };
+      }
+      if (cat.id === "acquisition") {
+        const subs = showAds ? cat.subs : cat.subs.filter((s) => s.key !== "ads");
+        // Default lands on the first remaining sub; "leads" stays
+        // canonical when present.
+        const defaultTab = subs.some((s) => s.key === "leads")
+          ? ("leads" as TabKey)
+          : subs[0]?.key ?? cat.defaultTab;
+        return { ...cat, subs, defaultTab };
+      }
+      return cat;
     });
-  }, [showOccupancy]);
+  }, [showOccupancy, showAds]);
 
   const activeCategoryId = TAB_TO_CATEGORY[active];
   const activeCategory = categories.find((c) => c.id === activeCategoryId) ?? categories[0];

@@ -3,6 +3,7 @@
 import * as React from "react";
 import dynamic from "next/dynamic";
 import type { LeadSourceDonutChartDatum } from "./lead-source-donut-chart";
+import { SourceBars } from "./source-bars";
 
 // Defer the recharts-bearing inner chart so the dashboard initial bundle
 // doesn't ship recharts. The legend below the chart renders immediately
@@ -45,6 +46,22 @@ export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {
       <div className="text-xs text-muted-foreground">
         No lead source data yet. Once your channels report in, this fills out.
       </div>
+    );
+  }
+
+  // Sparse-data treatment: when every lead lands in the same channel (or the
+  // dataset is so small a donut would render as a single-colour ring), fall
+  // back to a horizontal bar list. A 100% solid circle reads as a broken
+  // chart; a single bar with "All N from Chatbot" reads as intentional.
+  // Threshold of 5 mirrors the dashboard's "below 5 looks sparse" rule and
+  // catches launches like SG (4 leads, mostly one source) without flipping
+  // a normal-sized dataset into the bar fallback.
+  if (slices.length <= 1 || total <= 5) {
+    return (
+      <SourceBars
+        rows={data.map((d) => ({ label: d.name, value: d.value }))}
+        total={total}
+      />
     );
   }
 

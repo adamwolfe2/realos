@@ -11,12 +11,14 @@ import {
   TourStatus,
   type BackendPlatform,
   type CommercialSubtype,
+  type PropertyLifecycle,
+  type PropertyLaunchStatus,
   type PropertyType,
   type ResidentialSubtype,
   type LeadSource,
   type ResidentStatus,
 } from "@prisma/client";
-import { Sparkles, Cable, MessageSquare, Code, ListPlus } from "lucide-react";
+import { Sparkles, Cable, MessageSquare, Code, ListPlus, Building2 } from "lucide-react";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 import { AnimatedNumber } from "@/components/portal/ui/animated-number";
 import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
@@ -33,6 +35,13 @@ type OverviewProperty = {
   commercialSubtype: CommercialSubtype | null;
   totalUnits: number | null;
   yearBuilt: number | null;
+  // Lifecycle + launchStatus drive the sparse-data treatment. An
+  // IMPORTED + ONBOARDING row with zero downstream activity gets the
+  // compact "property in onboarding" card instead of a full grid of
+  // empty Recharts. SG Real Estate launched with 120 of these rows
+  // straight from AppFolio.
+  lifecycle: PropertyLifecycle;
+  launchStatus: PropertyLaunchStatus;
   backendPlatform: BackendPlatform;
   backendPropertyGroup: string | null;
   lastSyncedAt: Date | null;
@@ -46,6 +55,10 @@ type OverviewProperty = {
   // property visually instead of by name alone. Falls back to a
   // building glyph when null.
   heroImageUrl?: string | null;
+  /** Org-level: does either ad module (Google or Meta) light up? When
+   *  false we suppress ad-spend tiles and ads-related signals entirely
+   *  rather than show "$0 (28d)" in big numerals. */
+  orgHasAdsModule: boolean;
 };
 
 const SOURCE_LABEL: Record<LeadSource, string> = {
@@ -346,16 +359,43 @@ export async function OverviewTab({
 
   // Bug #41 — Empty-property detection: no listings, no leads, zero
   // integrations. Collapses the dense KPI grid + active-features strip
-  // into a single "3 steps" panel until real data lands.
+  // into a single onboarding panel until real data lands. SG Real
+  // Estate's launch had 120 IMPORTED rows straight from AppFolio that
+  // hit this branch.
   const appfolioConnected =
     property.backendPlatform != null && property.backendPlatform !== "NONE";
-  const isEmpty =
-    (listingCounts?._count.listings ?? 0) === 0 &&
-    (listingCounts?._count.leads ?? 0) === 0 &&
+  const allTimeLeads = listingCounts?._count.leads ?? 0;
+  const allTimeListings = listingCounts?._count.listings ?? 0;
+  const isOnboardingShell =
+    property.lifecycle === "IMPORTED" &&
+    property.launchStatus === "ONBOARDING" &&
+    allTimeListings === 0 &&
+    allTimeLeads === 0 &&
     !cursiveIntegration?.cursivePixelId &&
     !googleAdCampaign &&
     !metaAdCampaign &&
     (seoIntegrations?.length ?? 0) === 0;
+  // Legacy `isEmpty` retained for the "no activity but not freshly
+  // imported" case (e.g. an operator-curated ACTIVE property that
+  // hasn't seen any traffic yet) so we still get the 3-step setup
+  // panel instead of a wall of broken charts.
+  const isEmpty =
+    !isOnboardingShell &&
+    allTimeListings === 0 &&
+    allTimeLeads === 0 &&
+    !cursiveIntegration?.cursivePixelId &&
+    !googleAdCampaign &&
+    !metaAdCampaign &&
+    (seoIntegrations?.length ?? 0) === 0;
+
+  // Sparse-data thresholds. Below 5 leads in the 28d window the
+  // Recharts funnel renders as a 4-bar grid that's mostly empty
+  // pixels; under that threshold we swap to a compact step list with
+  // counts + a "needs more volume" note. Same logic for the source
+  // breakdown: 1 channel is a single-color donut (looks broken) and
+  // becomes a horizontal "All N from Chatbot" callout.
+  const FUNNEL_MIN = 5;
+  const showCompactFunnel = kpis.leads28d < FUNNEL_MIN;
 
   return (
     <div className="space-y-3 ls-page-fade">
@@ -390,14 +430,29 @@ export async function OverviewTab({
         noticeResidents={noticeResidents}
         adSpendCents28d={kpis.adSpendCents28d}
         adLeads28d={kpis.leads28d}
+        orgHasAdsModule={property.orgHasAdsModule}
         reputationMentions={reputationMentionTotal}
         reputationUnreviewed={reputationUnreviewedCount}
         reputationLastAt={latestReputationScan?.completedAt ?? null}
       />
 
-      {isEmpty ? (
-        // Bug #41 — Single onboarding panel for brand-new properties.
-        // All supporting surfaces re-appear the moment any data lands.
+      {isOnboardingShell ? (
+        // Compact "Property in onboarding" card. Renders for AppFolio-
+        // imported rows that haven't been touched yet (120 of SG's 127
+        // properties at launch). The full dashboard re-appears the
+        // moment any real activity lands (listing, lead, integration).
+        <OnboardingShellCard
+          propertyId={propertyId}
+          propertyName={propertyMeta.name}
+          totalUnits={property.totalUnits}
+          appfolioConnected={appfolioConnected}
+          lastSyncedAt={property.lastSyncedAt}
+        />
+      ) : isEmpty ? (
+        // Bug #41 — Single onboarding panel for operator-curated
+        // properties that haven't seen any data yet. Keeps the existing
+        // 3-step setup layout because these rows already passed the
+        // IMPORTED-row curation gate; they just need integrations.
         <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <div className="mb-4">
             <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
@@ -510,15 +565,17 @@ export async function OverviewTab({
         googleAdsConnected={Boolean(googleAdCampaign)}
         metaAdsConnected={Boolean(metaAdCampaign)}
         adSpendCents28d={kpis.adSpendCents28d}
+        showAdChips={property.orgHasAdsModule}
       />
 
       {/* Top KPI strip — hero metric (Leads) anchors the row at 1.6x
-          weight, with the rest of the funnel (Tours, Apps, Spend,
-          Organic) rendered as secondary tiles in a 2x2 alongside.
-          Replaces the previous 5-equal-weight strip that flattened the
-          most important signal into the same visual rank as everything
-          else. Hierarchy mirrors the operator's mental model: leads is
-          the leading indicator, the others are downstream context. */}
+          weight, with the rest of the funnel (Tours, Apps, Organic,
+          and optionally Spend) rendered as secondary tiles alongside.
+          Hierarchy mirrors the operator's mental model: leads is the
+          leading indicator, the others are downstream context.
+          When the org has no ad modules turned on we drop the Spend
+          tile entirely so the row doesn't read "$0" in big numerals;
+          dropping to a 3-tile secondary block keeps the grid clean. */}
       <section className="grid grid-cols-1 lg:grid-cols-[1.6fr_2fr] gap-2">
         <HeroLeadsTile
           leads={kpis.leads28d}
@@ -529,39 +586,72 @@ export async function OverviewTab({
           tourRate={tourRate}
           appRate={appRate}
         />
-        <div className="grid grid-cols-2 gap-2">
+        <div
+          className={cn(
+            "grid gap-2",
+            property.orgHasAdsModule
+              ? "grid-cols-2"
+              : "grid-cols-1 sm:grid-cols-3",
+          )}
+        >
           <KpiTile
             label="Tours (28d)"
-            value={kpis.tours28d}
-            hint={kpis.leads28d > 0 ? `${tourRate}% of leads` : "No leads yet"}
+            value={kpis.tours28d > 0 ? kpis.tours28d : <DimZero />}
+            hint={
+              kpis.leads28d > 0
+                ? kpis.tours28d > 0
+                  ? `${tourRate}% of leads`
+                  : "Schedule from a lead to start"
+                : "First lead lands here"
+            }
           />
           <KpiTile
             label="Applications (28d)"
-            value={kpis.applications28d}
-            hint={kpis.tours28d > 0 ? `${appRate}% of tours` : "—"}
-          />
-          <KpiTile
-            label="Ad spend (28d)"
-            value={centsToUsdShort(kpis.adSpendCents28d)}
+            value={kpis.applications28d > 0 ? kpis.applications28d : <DimZero />}
             hint={
-              kpis.adSpendCents28d > 0 && kpis.leads28d > 0
-                ? `$${Math.round(kpis.adSpendCents28d / 100 / kpis.leads28d).toLocaleString()}/lead`
-                : "Attributed to this property"
+              kpis.tours28d > 0
+                ? kpis.applications28d > 0
+                  ? `${appRate}% of tours`
+                  : "Sent from a completed tour"
+                : "First tour lands here"
             }
           />
+          {property.orgHasAdsModule ? (
+            <KpiTile
+              label="Ad spend (28d)"
+              value={
+                kpis.adSpendCents28d > 0 ? (
+                  centsToUsdShort(kpis.adSpendCents28d)
+                ) : (
+                  <DimZero />
+                )
+              }
+              hint={
+                kpis.adSpendCents28d > 0 && kpis.leads28d > 0
+                  ? `$${Math.round(kpis.adSpendCents28d / 100 / kpis.leads28d).toLocaleString()}/lead`
+                  : kpis.adSpendCents28d > 0
+                    ? "Attributed to this property"
+                    : "Connect ad accounts in Settings"
+              }
+            />
+          ) : null}
           <KpiTile
             label="Organic (28d)"
             value={
-              kpis.organicMapped
-                ? kpis.organicSessions28d == null
-                  ? "—"
-                  : kpis.organicSessions28d.toLocaleString()
-                : "—"
+              kpis.organicMapped &&
+              kpis.organicSessions28d != null &&
+              kpis.organicSessions28d > 0 ? (
+                kpis.organicSessions28d.toLocaleString()
+              ) : (
+                <DimZero />
+              )
             }
             hint={
               kpis.organicMapped
-                ? "Sessions on matching URLs"
-                : "No URL mapping"
+                ? kpis.organicSessions28d != null && kpis.organicSessions28d > 0
+                  ? "Sessions on matching URLs"
+                  : "No matching sessions yet"
+                : "Map listing URLs in SEO settings"
             }
           />
         </div>
@@ -611,19 +701,35 @@ export async function OverviewTab({
         <DashboardSection
           title="Lead funnel"
           eyebrow="28-day"
-          description="Visit-to-lease progression. Drop-off rates show where the funnel leaks."
+          description={
+            kpis.leads28d === 0
+              ? "Visit → lead → tour → application progression."
+              : showCompactFunnel
+                ? "Visit → lead → tour → application. Needs more volume to read as a chart."
+                : "Visit-to-lease progression. Drop-off rates show where the funnel leaks."
+          }
         >
-          <FunnelBars
-            stages={[
-              { label: "Leads", value: kpis.leads28d, color: "#1D4ED8" },
-              { label: "Tours", value: kpis.tours28d, color: "#2563EB" },
-              {
-                label: "Applications",
-                value: kpis.applications28d,
-                color: "#3B82F6",
-              },
-            ]}
-          />
+          {kpis.leads28d === 0 ? (
+            <FunnelEmpty />
+          ) : showCompactFunnel ? (
+            <CompactFunnel
+              leads={kpis.leads28d}
+              tours={kpis.tours28d}
+              applications={kpis.applications28d}
+            />
+          ) : (
+            <FunnelBars
+              stages={[
+                { label: "Leads", value: kpis.leads28d, color: "#1D4ED8" },
+                { label: "Tours", value: kpis.tours28d, color: "#2563EB" },
+                {
+                  label: "Applications",
+                  value: kpis.applications28d,
+                  color: "#3B82F6",
+                },
+              ]}
+            />
+          )}
         </DashboardSection>
 
         <DashboardSection
@@ -631,14 +737,22 @@ export async function OverviewTab({
           eyebrow="28-day"
           description={
             sourceTotal === 0
-              ? "No leads in this window."
-              : `${sourceTotal} leads across ${sourceSlices.length} channels`
+              ? "Channel mix appears once leads start flowing."
+              : sourceSlices.length === 1
+                ? `${sourceTotal} lead${sourceTotal === 1 ? "" : "s"} from one channel`
+                : `${sourceTotal} leads across ${sourceSlices.length} channels`
           }
         >
           {sourceTotal === 0 ? (
-            <div className="h-32 flex items-center justify-center text-xs text-muted-foreground text-center px-4">
-              Once leads flow in, you&apos;ll see the channel mix here.
-            </div>
+            <SourceMixEmpty />
+          ) : sourceSlices.length === 1 ? (
+            // Single-channel callout. The previous build rendered this
+            // as a one-color donut that looked broken; this reads as a
+            // deliberate "all leads attributed here" statement.
+            <SingleSourceCallout
+              label={sourceSlices[0].label}
+              value={sourceSlices[0].value}
+            />
           ) : (
             <SourceMix slices={sourceSlices} />
           )}
@@ -652,12 +766,16 @@ export async function OverviewTab({
           eyebrow="Next 120 days"
           description={
             expiringTotal === 0
-              ? "No leases expiring in the window."
+              ? "No leases up for renewal in the window."
               : `${expiringTotal} ${expiringTotal === 1 ? "lease" : "leases"} up for renewal`
           }
           className="lg:col-span-2"
         >
-          <RenewalBars buckets={buckets} max={maxBucket} />
+          {expiringTotal === 0 ? (
+            <RenewalEmpty />
+          ) : (
+            <RenewalBars buckets={buckets} max={maxBucket} />
+          )}
         </DashboardSection>
 
         <DashboardSection
@@ -849,6 +967,7 @@ function ActiveFeaturesStrip({
   googleAdsConnected,
   metaAdsConnected,
   adSpendCents28d,
+  showAdChips,
 }: {
   propertyId: string;
   chatbotEnabled: boolean;
@@ -860,6 +979,10 @@ function ActiveFeaturesStrip({
   googleAdsConnected: boolean;
   metaAdsConnected: boolean;
   adSpendCents28d: number;
+  /** When false, Google/Meta Ads chips are dropped — the org has no
+   *  ad modules turned on and the chips would just be permanent "Not
+   *  connected" pills with no useful action behind them. */
+  showAdChips: boolean;
 }) {
   const PIXEL_FRESH_DAYS = 14;
   const pixelFiring =
@@ -922,26 +1045,33 @@ function ActiveFeaturesStrip({
     // attributed 28d ad spend was $0. We pass through the spend
     // figure and downgrade the detail to "No recent spend" when
     // the campaign is connected but spend is zero.
-    {
-      label: "Google Ads",
-      connected: googleAdsConnected,
-      detail: googleAdsConnected
-        ? adSpendCents28d > 0
-          ? "Active campaign"
-          : "Connected · $0 recent spend"
-        : "Not connected",
-      href: `/portal/properties/${propertyId}?tab=ads&platform=GOOGLE`,
-    },
-    {
-      label: "Meta Ads",
-      connected: metaAdsConnected,
-      detail: metaAdsConnected
-        ? adSpendCents28d > 0
-          ? "Active campaign"
-          : "Connected · $0 recent spend"
-        : "Not connected",
-      href: `/portal/properties/${propertyId}?tab=ads&platform=META`,
-    },
+    // Only render the ad chips when the org actually has an ad
+    // module on; otherwise these were two permanent "Not connected"
+    // pills with no useful click target.
+    ...(showAdChips
+      ? [
+          {
+            label: "Google Ads",
+            connected: googleAdsConnected,
+            detail: googleAdsConnected
+              ? adSpendCents28d > 0
+                ? "Active campaign"
+                : "Connected · $0 recent spend"
+              : "Not connected",
+            href: `/portal/properties/${propertyId}?tab=ads&platform=GOOGLE`,
+          },
+          {
+            label: "Meta Ads",
+            connected: metaAdsConnected,
+            detail: metaAdsConnected
+              ? adSpendCents28d > 0
+                ? "Active campaign"
+                : "Connected · $0 recent spend"
+              : "Not connected",
+            href: `/portal/properties/${propertyId}?tab=ads&platform=META`,
+          },
+        ]
+      : []),
     // Bug #37 — Reputation was sitting in the Active Features strip
     // even though it's a passive monitoring surface, not an active
     // marketing channel. We've removed it here and trigger a
@@ -1037,42 +1167,57 @@ function HeroLeadsTile({
       </div>
 
       <div className="flex items-end justify-between gap-3 min-w-0">
-        <div className="text-[40px] leading-none font-semibold tracking-tight tabular-nums text-foreground">
-          {leads.toLocaleString()}
-        </div>
+        {leads === 0 ? (
+          // Zero-state: drop the giant "0" — it reads as broken, not
+          // as a deliberate "no leads yet." Replace with a smaller
+          // dimmed dash and an explicit helper line.
+          <div className="flex flex-col gap-1">
+            <span className="text-[28px] leading-none font-semibold tabular-nums text-muted-foreground/40">
+              —
+            </span>
+            <span className="text-[11px] text-muted-foreground leading-tight">
+              First lead lands here
+            </span>
+          </div>
+        ) : (
+          <div className="text-[40px] leading-none font-semibold tracking-tight tabular-nums text-foreground">
+            {leads.toLocaleString()}
+          </div>
+        )}
         {/* Funnel breakdown — micro horizontal bar showing tour & app
-            conversion as a fraction of leads. Bar widths come from the
-            absolute counts, so the visualization scales correctly even
-            when both rates are equal (e.g. 100% tour + 100% app =
-            equal bars, not stacked). */}
-        <div className="text-right shrink-0">
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-            Funnel
-          </p>
-          <p className="text-[12px] text-foreground mt-0.5 tabular-nums">
-            {tours} tours
-            {tourRate > 0 ? (
-              <span className="text-muted-foreground"> · {tourRate}%</span>
-            ) : null}
-          </p>
-          <p className="text-[12px] text-foreground tabular-nums">
-            {applications} apps
-            {appRate > 0 ? (
-              <span className="text-muted-foreground"> · {appRate}%</span>
-            ) : null}
-          </p>
-        </div>
+            conversion as a fraction of leads. We only render this when
+            there's leads volume; otherwise it's just a trio of "0 ·"
+            lines that adds noise. */}
+        {leads > 0 ? (
+          <div className="text-right shrink-0">
+            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+              Funnel
+            </p>
+            <p className="text-[12px] text-foreground mt-0.5 tabular-nums">
+              {tours} tours
+              {tourRate > 0 ? (
+                <span className="text-muted-foreground"> · {tourRate}%</span>
+              ) : null}
+            </p>
+            <p className="text-[12px] text-foreground tabular-nums">
+              {applications} apps
+              {appRate > 0 ? (
+                <span className="text-muted-foreground"> · {appRate}%</span>
+              ) : null}
+            </p>
+          </div>
+        ) : null}
       </div>
 
+      {/* Sparkline only renders once we have a real curve to draw.
+          Previously an empty "Sparkline appears once 7+ days of data
+          exists" panel held the slot — that looked like a broken
+          chart shell. Now the tile just gets shorter when sparse. */}
       {showSpark ? (
         <div className="-mx-1 -mb-1 mt-auto">
           <HeroSparkline data={spark as number[]} />
         </div>
-      ) : (
-        <div className="mt-auto h-12 rounded-md bg-secondary/40 flex items-center justify-center text-[10px] uppercase tracking-widest text-muted-foreground">
-          Sparkline appears once 7+ days of data exists
-        </div>
-      )}
+      ) : null}
     </div>
   );
 }
@@ -1136,6 +1281,7 @@ function PropertyHeroStrip({
   noticeResidents,
   adSpendCents28d,
   adLeads28d,
+  orgHasAdsModule,
   reputationMentions,
   reputationUnreviewed,
   reputationLastAt,
@@ -1160,6 +1306,9 @@ function PropertyHeroStrip({
   noticeResidents: number;
   adSpendCents28d: number;
   adLeads28d: number;
+  /** When false, the "Ad performance" card is dropped from the rail —
+   *  the Ads sub-tab is hidden upstream so a link there is dead. */
+  orgHasAdsModule: boolean;
   reputationMentions: number;
   reputationUnreviewed: number;
   reputationLastAt: Date | null;
@@ -1312,11 +1461,18 @@ function PropertyHeroStrip({
                 label: "Residents",
                 metric: residentMetric,
               },
-              {
-                tab: "ads",
-                label: "Ad performance",
-                metric: adMetric,
-              },
+              // Ads card only renders when the org actually has an ad
+              // module turned on. Otherwise the Ads sub-tab is hidden
+              // upstream and this card would route to a dead link.
+              ...(orgHasAdsModule
+                ? [
+                    {
+                      tab: "ads",
+                      label: "Ad performance",
+                      metric: adMetric,
+                    },
+                  ]
+                : []),
               {
                 tab: "reputation",
                 label: "Reputation",
@@ -1883,6 +2039,207 @@ function Row({ k, v }: { k: string; v: string }) {
         {v}
       </dd>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sparse-data primitives. Pulled into their own helpers so every
+// section uses the same visual language for "we don't have data here
+// yet" — no half-broken Recharts, no giant "0" tiles.
+// ---------------------------------------------------------------------------
+
+// Single character placeholder used inside KpiTile when a zero value
+// would otherwise read as broken. Wrapping the dash in this dim style
+// keeps the tile's height locked while signalling "no data" softly.
+function DimZero() {
+  return (
+    <span className="text-muted-foreground/40 tabular-nums">—</span>
+  );
+}
+
+// Compact step-list funnel for when the 28d window has < 5 leads.
+// Three rows of label + count + conversion %, separated by a faint
+// vertical rule so the eye reads it as a sequence. Replaces the
+// Recharts FunnelBars which renders as a stack of nearly-empty
+// bars when the data is this sparse.
+function CompactFunnel({
+  leads,
+  tours,
+  applications,
+}: {
+  leads: number;
+  tours: number;
+  applications: number;
+}) {
+  const rows: Array<{ label: string; value: number; pct: number | null }> = [
+    { label: "Leads", value: leads, pct: null },
+    {
+      label: "Tours",
+      value: tours,
+      pct: leads > 0 ? Math.round((tours / leads) * 100) : null,
+    },
+    {
+      label: "Applications",
+      value: applications,
+      pct: tours > 0 ? Math.round((applications / tours) * 100) : null,
+    },
+  ];
+  return (
+    <div className="space-y-2">
+      <ol className="rounded-lg border border-border bg-card/40 divide-y divide-border">
+        {rows.map((row) => (
+          <li
+            key={row.label}
+            className="flex items-center justify-between gap-3 px-3 py-2"
+          >
+            <span className="text-[12px] text-foreground">{row.label}</span>
+            <span className="flex items-baseline gap-2 tabular-nums">
+              <span className="text-[14px] font-semibold text-foreground">
+                {row.value.toLocaleString()}
+              </span>
+              {row.pct != null ? (
+                <span className="text-[10.5px] text-muted-foreground">
+                  {row.pct}%
+                </span>
+              ) : null}
+            </span>
+          </li>
+        ))}
+      </ol>
+      <p className="text-[10.5px] text-muted-foreground leading-snug">
+        Needs more volume to read as a chart. The full funnel view returns
+        once {leads >= 1 ? `${5 - leads} more` : "5"} leads land.
+      </p>
+    </div>
+  );
+}
+
+function FunnelEmpty() {
+  return (
+    <p className="text-[12px] text-muted-foreground leading-snug">
+      The funnel fills out once leads start landing for this property.
+      Drop-off rates and bar widths appear automatically.
+    </p>
+  );
+}
+
+function SourceMixEmpty() {
+  return (
+    <p className="text-[12px] text-muted-foreground leading-snug">
+      Channel mix appears here as leads come in. Every lead carries its
+      source (Chatbot, Ads, Organic, etc.) so the breakdown is automatic.
+    </p>
+  );
+}
+
+// Single-channel callout. Used in place of a one-color donut when
+// every lead in the window came from the same source — the donut
+// reads as broken, the callout reads as intentional. Renders as a
+// short statement with a single horizontal bar at 100%.
+function SingleSourceCallout({
+  label,
+  value,
+}: {
+  label: string;
+  value: number;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-card/40 px-3 py-3 space-y-2">
+      <p className="text-[12.5px] text-foreground leading-snug">
+        All <span className="font-semibold tabular-nums">{value}</span>{" "}
+        {value === 1 ? "lead" : "leads"} from{" "}
+        <span className="font-semibold">{label}</span>.
+      </p>
+      <div
+        className="h-1.5 rounded-full overflow-hidden"
+        style={{ backgroundColor: "rgba(37,99,235,0.08)" }}
+      >
+        <div
+          className="h-full rounded-full"
+          style={{ width: "100%", backgroundColor: "#2563EB" }}
+        />
+      </div>
+      <p className="text-[10.5px] text-muted-foreground leading-snug">
+        Mix expands the moment a second channel reports a lead.
+      </p>
+    </div>
+  );
+}
+
+function RenewalEmpty() {
+  return (
+    <p className="text-[12px] text-muted-foreground leading-snug">
+      No leases expiring in the next 120 days. Renewal cohorts appear
+      here as lease end dates enter the window.
+    </p>
+  );
+}
+
+// Compact "Property in onboarding" card. Renders in place of the dense
+// dashboard layout for AppFolio-imported rows that haven't been
+// activated yet. Single card, clear next-step CTA. SG Real Estate's
+// launch surfaced 120 of these from a fresh AppFolio sync; without
+// this treatment each one would render an empty dashboard.
+function OnboardingShellCard({
+  propertyId,
+  propertyName,
+  totalUnits,
+  appfolioConnected,
+  lastSyncedAt,
+}: {
+  propertyId: string;
+  propertyName: string;
+  totalUnits: number | null;
+  appfolioConnected: boolean;
+  lastSyncedAt: Date | null;
+}) {
+  const syncedLabel = lastSyncedAt
+    ? `Last synced ${formatPixelAge(lastSyncedAt)}`
+    : "Not synced yet";
+  return (
+    <section className="rounded-xl border border-border bg-card p-5 md:p-6">
+      <div className="flex items-start gap-4 flex-wrap">
+        <div className="inline-flex h-11 w-11 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0">
+          <Building2 className="h-5 w-5" aria-hidden="true" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+            Property in onboarding
+          </p>
+          <h2 className="mt-1 text-base font-semibold text-foreground">
+            {propertyName}
+          </h2>
+          <p className="mt-1 text-[12px] text-muted-foreground leading-snug max-w-[44ch]">
+            Imported from AppFolio and waiting on activation.
+            {totalUnits != null
+              ? ` ${totalUnits} unit${totalUnits === 1 ? "" : "s"}.`
+              : ""}{" "}
+            {syncedLabel}.
+          </p>
+          <p className="mt-3 text-[11.5px] text-muted-foreground leading-snug max-w-[52ch]">
+            Activate this property to start tracking leads, tours,
+            applications, and ad attribution. The full dashboard fills
+            in automatically once the first listing or lead lands.
+          </p>
+          <div className="mt-4 flex items-center gap-2 flex-wrap">
+            <a
+              href={`/portal/properties/${propertyId}?tab=onboarding`}
+              className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-[12px] font-semibold hover:bg-primary-dark transition-colors"
+            >
+              Activate this property
+            </a>
+            {!appfolioConnected ? (
+              <a
+                href="/portal/connect"
+                className="inline-flex items-center rounded-md border border-border bg-card px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted/50 transition-colors"
+              >
+                Connect AppFolio
+              </a>
+            ) : null}
+          </div>
+        </div>
+      </div>
+    </section>
   );
 }
 

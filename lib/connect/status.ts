@@ -35,6 +35,11 @@ export type ConnectSourceStatus = {
       properties have this source connected (e.g. Cursive pixel installed
       per-property). */
   scopedPropertyIds?: string[] | null;
+  /** Source-specific health note (e.g. AppFolio "Auto-sync paused"). When
+      present, the Connect hub card renders a subtle amber chip linking to
+      the per-integration settings page rather than implying the source is
+      fully green. */
+  healthNote?: { label: string; href: string } | null;
 };
 
 export async function getConnectStatusForOrg(
@@ -48,6 +53,7 @@ export async function getConnectStatusForOrg(
           select: {
             instanceSubdomain: true,
             lastSyncAt: true,
+            autoSyncEnabled: true,
           },
         })
         .catch(() => null),
@@ -127,6 +133,17 @@ export async function getConnectStatusForOrg(
       accountLabel: appfolio?.instanceSubdomain
         ? `${appfolio.instanceSubdomain}.appfolio.com`
         : null,
+      // Surface "Auto-sync paused" so the Connect hub renders an honest
+      // amber state when the operator has switched the hourly cron off
+      // (default-true field on AppFolioIntegration). Clicking the chip
+      // jumps to the per-integration settings panel where the toggle lives.
+      healthNote:
+        appfolio && appfolio.autoSyncEnabled === false
+          ? {
+              label: "Auto-sync paused — enable for fresh data every hour",
+              href: "/portal/settings/integrations#appfolio",
+            }
+          : null,
     },
     {
       id: "ga4",

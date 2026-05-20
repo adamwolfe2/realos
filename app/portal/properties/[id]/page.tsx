@@ -41,11 +41,24 @@ export default async function PropertyDetail({
   // turns on the Insights module in /admin/clients/[id]. Multifamily
   // landlords with whole-unit pricing get value from it; everyone else
   // sees zero noise.
+  //
+  // We also pull moduleGoogleAds / moduleMetaAds here so the property
+  // tab nav can decide whether to surface the Ads sub-tab at all. An
+  // operator with both ad modules off (SG Real Estate at launch) gets
+  // a 2-item Acquisition group (Leads, Traffic) instead of a 3-item
+  // group where the third is permanently empty.
   const orgInsights = await prisma.organization.findUnique({
     where: { id: scope.orgId },
-    select: { moduleInsights: true },
+    select: {
+      moduleInsights: true,
+      moduleGoogleAds: true,
+      moduleMetaAds: true,
+    },
   });
   const showMarketIntelligence = orgInsights?.moduleInsights === true;
+  const showAdsTab =
+    (orgInsights?.moduleGoogleAds ?? false) ||
+    (orgInsights?.moduleMetaAds ?? false);
 
   // Property gate: a restricted user (UserPropertyAccess) must NEVER
   // be able to load a sibling property's detail page, even by URL
@@ -72,6 +85,8 @@ export default async function PropertyDetail({
       postalCode: true,
       totalUnits: true,
       yearBuilt: true,
+      lifecycle: true,
+      launchStatus: true,
       backendPlatform: true,
       backendPropertyGroup: true,
       lastSyncedAt: true,
@@ -154,6 +169,7 @@ export default async function PropertyDetail({
       <PropertyTabs
         initialTab={tab ?? "overview"}
         showOccupancy={showOccupancyTab}
+        showAds={showAdsTab}
         panels={{
           onboarding: (
             <OnboardingTab orgId={scope.orgId} propertyId={property.id} />
@@ -169,6 +185,8 @@ export default async function PropertyDetail({
                 commercialSubtype: property.commercialSubtype,
                 totalUnits: property.totalUnits,
                 yearBuilt: property.yearBuilt,
+                lifecycle: property.lifecycle,
+                launchStatus: property.launchStatus,
                 backendPlatform: property.backendPlatform,
                 backendPropertyGroup: property.backendPropertyGroup,
                 lastSyncedAt: property.lastSyncedAt,
@@ -179,6 +197,7 @@ export default async function PropertyDetail({
                 priceMaxCents: property.priceMax ?? null,
                 heroImageUrl: property.heroImageUrl,
                 description: property.description,
+                orgHasAdsModule: showAdsTab,
               }}
             />
           ),

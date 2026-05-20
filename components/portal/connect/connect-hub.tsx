@@ -52,6 +52,10 @@ export type ConnectSourceVM = {
   connected: boolean;
   lastSyncAt: string | null;
   accountLabel: string | null;
+  /** Subtle inline health chip — surfaced when the source is connected but
+      not in a fully-green state (e.g. AppFolio with auto-sync paused). Not
+      a banner, just an amber row beneath the tagline. */
+  healthNote?: { label: string; href: string } | null;
 };
 
 const SOURCE_META: Record<
@@ -357,6 +361,23 @@ function SourceCard({
           </p>
         </div>
       </div>
+
+      {/* Health note — subtle amber chip below the header when a connected
+          source isn't in a fully-green state (e.g. AppFolio auto-sync paused).
+          Reads as a one-line action, not a banner. */}
+      {isConnected && source.healthNote ? (
+        <Link
+          href={source.healthNote.href}
+          className="mt-2 inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-100 transition-colors"
+        >
+          <span
+            aria-hidden="true"
+            className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"
+          />
+          {source.healthNote.label}
+          <ArrowRight className="w-2.5 h-2.5" />
+        </Link>
+      ) : null}
 
       {/* Unlocks — 2-col compact grid */}
       <div className="mt-2.5 pt-2.5 border-t border-border/40">

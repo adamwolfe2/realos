@@ -32,6 +32,7 @@ export default async function ConnectPage() {
           connected: s.connected,
           lastSyncAt: s.lastSyncAt ? s.lastSyncAt.toISOString() : null,
           accountLabel: s.accountLabel,
+          healthNote: s.healthNote ?? null,
         }))}
       />
     </div>

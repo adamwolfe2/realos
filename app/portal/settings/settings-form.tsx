@@ -36,6 +36,21 @@ function seed(initial: SettingsInitial): Editable {
 
 const HEX = /^#[0-9a-fA-F]{3,8}$/;
 
+// Render a 1–2 letter brand monogram for the logo placeholder. Strips
+// common org suffixes ("Real Estate", "LLC", "Properties") so an org named
+// "SG Real Estate" still reads as "SG" rather than "SR".
+function monogramFor(input: string | null | undefined): string {
+  if (!input) return "?";
+  const stripped = input
+    .replace(/\b(LLC|Inc\.?|Real Estate|Properties|Holdings|Group|Corp\.?)\b/gi, "")
+    .trim();
+  const tokens = stripped.split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return input.slice(0, 1).toUpperCase();
+  const first = tokens[0][0] ?? "";
+  const second = tokens[1]?.[0] ?? "";
+  return (first + second).toUpperCase().slice(0, 2);
+}
+
 export function SettingsForm({ initial }: { initial: SettingsInitial }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -187,8 +202,21 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
                   }}
                 />
               ) : (
-                <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                  Preview
+                // Monogram fallback — reads as an intentional brand mark
+                // (initials on the operator's primary color) rather than a
+                // ghosted "Preview" label that makes it feel like the form
+                // is broken when the logo URL is empty. Tracks the brand
+                // color the operator has set so the preview previews even
+                // before a logo is uploaded.
+                <span
+                  className="inline-flex items-center justify-center h-7 w-7 rounded text-[12px] font-semibold tracking-tight"
+                  style={{
+                    background: primaryHex ?? "var(--muted)",
+                    color: primaryHex ? "#fff" : "var(--muted-foreground)",
+                  }}
+                  aria-label="Logo preview placeholder"
+                >
+                  {monogramFor(state.shortName || state.name)}
                 </span>
               )}
             </div>
