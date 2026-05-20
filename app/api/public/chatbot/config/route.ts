@@ -25,6 +25,24 @@ const CORS_HEADERS = {
   "Access-Control-Max-Age": "86400",
 } as const;
 
+// Edge-cache successful config responses for 60s, with a 10-minute
+// stale-while-revalidate window so the embed never blocks on a cold
+// CDN miss. The chatbot config changes only when an operator edits it
+// in the LeaseStack portal — sub-minute freshness is fine and keeps
+// the route off the DB / rate-limiter critical path. `private=false`
+// implied by `public` so Vercel's edge will hold a shared copy.
+//
+// We don't cache the rate-limited or "no slug" branches: those are
+// either error states or unauthenticated probes, and we'd rather hit
+// the limiter again than pin a bad response to the edge for a minute.
+const SUCCESS_CACHE_HEADERS = {
+  "Cache-Control": "public, s-maxage=60, stale-while-revalidate=600",
+  // Vary on the only request signal that actually changes the body —
+  // some CDNs choke without an explicit Vary even when the URL alone
+  // determines the cache key.
+  Vary: "Accept-Encoding",
+} as const;
+
 export function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS });
 }
@@ -120,6 +138,9 @@ export async function GET(req: NextRequest) {
     })) as OrgConfig;
   } catch (err) {
     console.warn("[public/chatbot/config] DB read failed:", err);
+    // DB outage — don't cache this branch. We want to retry on the
+    // next request so the chatbot recovers automatically when the DB
+    // comes back.
     return NextResponse.json(
       { enabled: false },
       { status: 200, headers: CORS_HEADERS },
@@ -127,9 +148,14 @@ export async function GET(req: NextRequest) {
   }
 
   if (!org || org.orgType !== "CLIENT" || !org.moduleChatbot) {
+    // Cache "unknown slug" / "module off" for 60s too — protects the
+    // limiter and DB from drive-by probes hitting the same slug.
     return NextResponse.json(
       { enabled: false },
-      { status: 200, headers: CORS_HEADERS }
+      {
+        status: 200,
+        headers: { ...CORS_HEADERS, ...SUCCESS_CACHE_HEADERS },
+      },
     );
   }
 
@@ -137,7 +163,10 @@ export async function GET(req: NextRequest) {
   if (!cfg || !cfg.chatbotEnabled) {
     return NextResponse.json(
       { enabled: false },
-      { status: 200, headers: CORS_HEADERS }
+      {
+        status: 200,
+        headers: { ...CORS_HEADERS, ...SUCCESS_CACHE_HEADERS },
+      },
     );
   }
 
@@ -181,6 +210,9 @@ export async function GET(req: NextRequest) {
       contactEmail: cfg.contactEmail ?? null,
       ga4MeasurementId: cfg.ga4MeasurementId ?? null,
     },
-    { status: 200, headers: CORS_HEADERS }
+    {
+      status: 200,
+      headers: { ...CORS_HEADERS, ...SUCCESS_CACHE_HEADERS },
+    },
   );
 }

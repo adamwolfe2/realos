@@ -90,8 +90,17 @@ export const adminReadLimiter = createLimiter(redis, 30, '1 m')
 // 120 pixel/JS asset requests per IP per minute (high-volume CDN-cached asset)
 export const pixelAssetLimiter = createLimiter(redis, 120, '1 m')
 
-// 30 chatbot config lookups per IP per minute (widget init on page load)
-export const chatbotConfigLimiter = createLimiter(redis, 30, '1 m')
+// 600 chatbot config lookups per IP per minute. The widget on every
+// tenant site fires this on page load, and many real visitors share an
+// IP (campus WiFi, mobile carriers, corporate NAT). 30/min was
+// catastrophic: a single classroom of UC Berkeley students opening
+// telegraphcommons.com would silence the chatbot for everyone behind
+// that NAT, because the embed treats any non-`enabled` JSON (including
+// the rate-limit error body) as "chatbot disabled" and silently
+// vanishes. The route also sets a 60s edge cache (Cache-Control:
+// public, s-maxage=60) so 99% of requests don't reach this limiter or
+// the DB — the high cap is just belt-and-suspenders for cache misses.
+export const chatbotConfigLimiter = createLimiter(redis, 600, '1 m')
 
 // 1000 webhook calls per IP per minute — primary protection is sig verification;
 // this catches misconfigured senders or port-scan probes.
