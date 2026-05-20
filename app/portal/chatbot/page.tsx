@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { headers } from "next/headers";
+import { formatDistanceToNow } from "date-fns";
 import { ChatbotCaptureMode } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
@@ -7,7 +9,7 @@ import { ChatbotConfigForm } from "./chatbot-config-form";
 import { readGtmContainerId } from "@/components/tenant-site/tenant-analytics";
 import { MasterToggle } from "./master-toggle";
 import { InstallSnippet } from "./install-snippet";
-import { PageHeader } from "@/components/admin/page-header";
+import { PageHeader, SectionCard } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Chatbot" };
 export const dynamic = "force-dynamic";
@@ -35,7 +37,7 @@ async function resolveAppUrl(): Promise<string> {
 export default async function ChatbotPage() {
   const scope = await requireScope();
 
-  const [org, existingConfig, appUrl] = await Promise.all([
+  const [org, existingConfig, appUrl, recentConversations] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
       select: {
@@ -64,6 +66,27 @@ export default async function ChatbotPage() {
       },
     }),
     resolveAppUrl(),
+    // Compact recent-conversation feed — keeps the chatbot page honest
+    // about what's happening live without turning the surface into a
+    // full chat-app UI. Capped to 6 rows; deep-link sends operators to
+    // the lead detail for the full transcript.
+    prisma.chatbotConversation
+      .findMany({
+        where: { orgId: scope.orgId },
+        orderBy: { lastMessageAt: "desc" },
+        take: 6,
+        select: {
+          id: true,
+          status: true,
+          messageCount: true,
+          capturedName: true,
+          capturedEmail: true,
+          lastMessageAt: true,
+          leadId: true,
+          pageUrl: true,
+        },
+      })
+      .catch(() => []),
   ]);
 
   if (!org) return null;
@@ -125,6 +148,57 @@ export default async function ChatbotPage() {
         orgPrimaryColor={org.primaryColor}
         moduleActive={org.moduleChatbot}
       />
+
+      {recentConversations.length > 0 ? (
+        <SectionCard
+          label="Recent conversations"
+          description="Most recent visitor chats with this bot. Click through to the full transcript on the lead detail page."
+        >
+          <ul className="divide-y divide-border -mx-1">
+            {recentConversations.map((c) => {
+              const name =
+                c.capturedName?.trim() ||
+                c.capturedEmail?.trim() ||
+                "Anonymous visitor";
+              const href = c.leadId
+                ? `/portal/leads/${c.leadId}`
+                : `/portal/conversations?conversation=${c.id}`;
+              return (
+                <li key={c.id}>
+                  <Link
+                    href={href}
+                    className="group flex items-center gap-3 px-1 py-2.5 -mx-0.5 rounded-md hover:bg-muted/30 transition-colors"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="shrink-0 h-2 w-2 rounded-full"
+                      style={{
+                        backgroundColor:
+                          c.status === "ACTIVE"
+                            ? "var(--terracotta)"
+                            : "rgb(156, 163, 175)",
+                      }}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                        {name}
+                      </span>
+                      <span className="block text-[11px] text-muted-foreground truncate mt-0.5">
+                        {c.messageCount}{" "}
+                        {c.messageCount === 1 ? "message" : "messages"}
+                        {c.pageUrl ? ` · ${c.pageUrl}` : ""}
+                      </span>
+                    </span>
+                    <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+                      {formatDistanceToNow(c.lastMessageAt, { addSuffix: true })}
+                    </span>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </SectionCard>
+      ) : null}
 
       <InstallSnippet snippet={snippet} />
     </div>

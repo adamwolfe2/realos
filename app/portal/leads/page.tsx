@@ -88,6 +88,7 @@ export default async function LeadsKanbanPage({
     kpiHotLeads,
     kpiToursScheduled,
     kpiSigned28d,
+    sourceCounts,
   ] = await Promise.all([
     prisma.lead.findMany({
       where,
@@ -138,7 +139,28 @@ export default async function LeadsKanbanPage({
         },
       })
       .catch(() => 0),
+    // Group all-time lead counts by source so we can hide filter chips
+    // that have zero data. With low-volume tenants (e.g. day-1 launch
+    // tenants with 4 leads) the full 12-source chip strip otherwise
+    // reads as a UI shell — half the chips lead to empty boards.
+    prisma.lead
+      .groupBy({
+        by: ["source"],
+        where: kpiWhere,
+        _count: { _all: true },
+      })
+      .catch(() => [] as Array<{ source: LeadSource; _count: { _all: number } }>),
   ]);
+
+  // Build a Set of sources that have at least one lead. Includes the
+  // currently-active source filter even if its count is zero so the
+  // operator can always see/clear their own filter.
+  const sourcesWithData = new Set<string>(
+    sourceCounts.map((r) => r.source as string),
+  );
+  if (sp.source && (SOURCES as string[]).includes(sp.source)) {
+    sourcesWithData.add(sp.source);
+  }
 
   // Conversion rate (signed / leads created in the window). Falls to "—"
   // when the window has no leads so we don't render a divide-by-zero NaN.
@@ -237,6 +259,22 @@ export default async function LeadsKanbanPage({
         />
       </section>
 
+      {/* Source-mix one-liner. Renders only when at least one lead
+          exists and at least one source has data so it doesn't echo
+          "0 leads from no sources" on day-one tenants. */}
+      {totalCount > 0 && sourceCounts.length > 0 ? (
+        <p className="text-[11.5px] text-muted-foreground">
+          {totalCount.toLocaleString()}{" "}
+          {totalCount === 1 ? "lead" : "leads"}
+          {" · "}
+          {sourceCounts
+            .slice()
+            .sort((a, b) => b._count._all - a._count._all)
+            .map((r) => `${r._count._all} from ${humanLeadSource(r.source)}`)
+            .join(" · ")}
+        </p>
+      ) : null}
+
       {/* Premium filter bar — search + pill-based source tabs */}
       <div className="rounded-xl border border-border bg-card p-3 space-y-2.5">
         {/* Search row */}
@@ -284,7 +322,7 @@ export default async function LeadsKanbanPage({
             active={!sp.source}
             href={buildHref({ source: undefined, q: sp.q, properties: sp.properties })}
           />
-          {SOURCES.map((s) => (
+          {SOURCES.filter((s) => sourcesWithData.has(s)).map((s) => (
             <SourcePill
               key={s}
               label={humanLeadSource(s)}
@@ -292,6 +330,11 @@ export default async function LeadsKanbanPage({
               href={buildHref({ source: s, q: sp.q, properties: sp.properties })}
             />
           ))}
+          {sourcesWithData.size === 0 ? (
+            <span className="text-[11px] text-muted-foreground italic">
+              No sources yet.
+            </span>
+          ) : null}
         </div>
       </div>
 

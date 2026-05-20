@@ -182,10 +182,24 @@ export default function NotificationsPage() {
             ))}
           </div>
         ) : visible.length === 0 ? (
-          <div className="px-4 py-16 text-center text-sm text-muted-foreground">
-            {filter === "unread"
-              ? "All caught up. No unread notifications."
-              : "No notifications match this filter."}
+          <div className="px-6 py-16 text-center flex flex-col items-center gap-1.5">
+            <div className="mb-1 inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
+              <CheckCheck className="h-4 w-4" aria-hidden="true" />
+            </div>
+            <p className="text-sm font-semibold text-foreground">
+              {items.length === 0
+                ? "You're all set."
+                : filter === "unread"
+                  ? "All caught up."
+                  : "Nothing to show here."}
+            </p>
+            <p className="max-w-sm text-[11px] text-muted-foreground leading-snug">
+              {items.length === 0
+                ? "Notifications about new leads, scheduled tours, chatbot conversations, and integration health land here."
+                : filter === "unread"
+                  ? "No unread notifications. Recent activity still appears under “All.”"
+                  : "Try a different filter to see more activity."}
+            </p>
           </div>
         ) : (
           <div className="divide-y divide-border">

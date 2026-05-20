@@ -55,12 +55,23 @@ export default async function NeighborhoodPagesIndex() {
 
       <SectionCard
         label="Existing pages"
-        description={`${pages.length} page${pages.length === 1 ? "" : "s"} in this workspace.`}
+        description={
+          pages.length === 0
+            ? "Generate your first neighborhood page above. Each page is published to your marketing site at /n/<slug>."
+            : `${pages.length} page${pages.length === 1 ? "" : "s"} in this workspace.`
+        }
       >
         {pages.length === 0 ? (
-          <p className="text-sm text-muted-foreground py-2">
-            No pages yet. Generate one above to get started.
-          </p>
+          <div className="px-2 py-6 text-center">
+            <p className="text-[13px] font-semibold text-foreground">
+              No neighborhood pages yet.
+            </p>
+            <p className="mt-1 text-[11.5px] text-muted-foreground leading-snug max-w-md mx-auto">
+              Start with the neighborhood your flagship property anchors —
+              that page tends to rank fastest because Google already sees
+              you cited there.
+            </p>
+          </div>
         ) : (
           <ul className="divide-y divide-[var(--hair)]">
             {pages.map((p) => (
@@ -91,15 +102,17 @@ export default async function NeighborhoodPagesIndex() {
 }
 
 function StatusPill({ status }: { status: "DRAFT" | "PUBLISHED" | "ARCHIVED" }) {
+  // Lowercase, rounded-md, 11px — matches the portal-wide status pill
+  // grammar (no amber/emerald rainbow; brand-primary vs neutral only).
   const map = {
-    DRAFT: { label: "Draft", className: "bg-amber-100 text-amber-800" },
-    PUBLISHED: { label: "Published", className: "bg-emerald-100 text-emerald-800" },
-    ARCHIVED: { label: "Archived", className: "bg-gray-100 text-gray-700" },
+    DRAFT: { label: "draft", className: "bg-muted text-muted-foreground border border-border" },
+    PUBLISHED: { label: "published", className: "bg-primary/10 text-primary" },
+    ARCHIVED: { label: "archived", className: "bg-muted text-muted-foreground" },
   } as const;
   const v = map[status];
   return (
     <span
-      className={`text-[10.5px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 ${v.className}`}
+      className={`text-[11px] font-medium lowercase rounded-md px-1.5 py-0.5 ${v.className}`}
     >
       {v.label}
     </span>

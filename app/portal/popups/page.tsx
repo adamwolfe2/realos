@@ -32,6 +32,13 @@ export default async function PopupsListPage() {
     })),
   ]);
 
+  // Bucket the campaign list by status so the KPI strip reads honestly
+  // for low-volume tenants (one active campaign on day one shouldn't
+  // count as "drafts, live, and paused").
+  const activeCount = popups.filter((p) => p.status === "ACTIVE").length;
+  const pausedCount = popups.filter((p) => p.status === "PAUSED").length;
+  const draftCount = popups.filter((p) => p.status === "DRAFT").length;
+
   return (
     <div className="space-y-4 ls-page-fade">
       <PageHeader
@@ -56,17 +63,29 @@ export default async function PopupsListPage() {
         <KpiTile
           label="Active campaigns"
           value={summary.totalCampaigns.toLocaleString()}
-          hint={summary.totalCampaigns === 0 ? "Create your first" : "Drafts, live, and paused"}
+          hint={
+            summary.totalCampaigns === 0
+              ? "Create your first"
+              : `${activeCount} active · ${pausedCount + draftCount} not live`
+          }
         />
         <KpiTile
           label="Shown (28d)"
           value={summary.shown28d.toLocaleString()}
-          hint={`${summary.shownAllTime.toLocaleString()} all-time`}
+          hint={
+            summary.shownAllTime === 0
+              ? "No impressions yet"
+              : `${summary.shownAllTime.toLocaleString()} all-time`
+          }
         />
         <KpiTile
           label="CTA clicks (28d)"
           value={summary.ctaClicks28d.toLocaleString()}
-          hint={summary.ctaClickAllTime > 0 ? `${summary.ctaClickAllTime.toLocaleString()} all-time` : "—"}
+          hint={
+            summary.ctaClickAllTime > 0
+              ? `${summary.ctaClickAllTime.toLocaleString()} all-time`
+              : "No clicks yet"
+          }
         />
         <KpiTile
           label="Conversion rate"
@@ -75,7 +94,11 @@ export default async function PopupsListPage() {
               ? `${summary.conversionRatePct}%`
               : "—"
           }
-          hint={`${summary.convertedAllTime.toLocaleString()} converted`}
+          hint={
+            summary.convertedAllTime > 0
+              ? `${summary.convertedAllTime.toLocaleString()} converted`
+              : "No conversions yet"
+          }
         />
       </section>
 
@@ -146,6 +169,19 @@ export default async function PopupsListPage() {
               </li>
             ))}
           </ul>
+          {/* Inline "Create another" affordance so operators can stack
+              campaigns from the list without scrolling back to the
+              header. Hidden on the empty-state branch (handled by
+              EmptyState's primary CTA above). */}
+          <div className="mt-3 pt-3 border-t border-border flex justify-end">
+            <Link
+              href="/portal/popups/new"
+              className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/40 transition-colors"
+            >
+              <Plus className="h-3 w-3" />
+              Create another
+            </Link>
+          </div>
         </SectionCard>
       )}
     </div>
@@ -153,22 +189,25 @@ export default async function PopupsListPage() {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  // Lowercase, rounded-md, 11px text — matches the portal-wide status
+  // pill grammar (no emerald/amber rainbow; tone communicated via
+  // brand-primary vs neutral instead).
   const tone =
     status === "ACTIVE"
-      ? "bg-emerald-50 text-emerald-700"
+      ? "bg-primary/10 text-primary"
       : status === "PAUSED"
-        ? "bg-amber-50 text-amber-700"
+        ? "bg-muted text-muted-foreground border border-border"
         : status === "ARCHIVED"
           ? "bg-muted text-muted-foreground"
-          : "bg-primary/10 text-primary";
+          : "bg-card text-muted-foreground border border-border";
   return (
     <span
       className={cn(
-        "inline-flex items-center rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest",
+        "inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-medium lowercase",
         tone,
       )}
     >
-      {status}
+      {status.toLowerCase()}
     </span>
   );
 }

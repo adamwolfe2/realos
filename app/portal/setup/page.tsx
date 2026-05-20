@@ -99,6 +99,14 @@ export default async function SetupHubPage() {
 
       <section className="space-y-5">
         <div className="space-y-3">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground">
+              Overall progress
+            </span>
+            <span className="text-[11px] font-semibold tabular-nums text-foreground">
+              {percent}% · {completedCount} of {totalCount}
+            </span>
+          </div>
           <div
             className="h-1.5 w-full rounded-full bg-muted overflow-hidden"
             role="progressbar"

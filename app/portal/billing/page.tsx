@@ -190,6 +190,14 @@ export default async function BillingPage() {
     !org.subscriptionTier &&
     !org.subscriptionStatus;
 
+  // Partially-provisioned: tier picked (e.g. SCALE) but subscription
+  // status not yet set by the AM. Surface this honestly above the
+  // tile grid so the operator doesn't read "—" tiles as bugs.
+  const billingStatusPending =
+    !billingNotConfigured &&
+    !!org.subscriptionTier &&
+    !org.subscriptionStatus;
+
   const isTrialing = org.subscriptionStatus === "TRIALING";
   const trialEndsAt = org.trialEndsAt ?? null;
   const tierForActivation =
@@ -227,6 +235,36 @@ export default async function BillingPage() {
         />
       ) : null}
 
+      {billingStatusPending ? (
+        <section className="rounded-xl border border-primary/20 bg-primary/[0.03] p-5">
+          <p className="text-[10px] tracking-widest uppercase font-semibold text-primary">
+            Action needed
+          </p>
+          <h2 className="text-base font-semibold mt-1.5">
+            Subscription status pending
+          </h2>
+          <p className="text-sm text-muted-foreground mt-2 max-w-lg leading-snug">
+            Your{" "}
+            <span className="font-semibold text-foreground">
+              {humanizeEnum(org.subscriptionTier)}
+            </span>{" "}
+            tier is provisioned, but your account manager still needs to
+            activate the Stripe subscription before billing runs. The
+            portal is fully usable in the meantime.
+          </p>
+          <p className="text-xs text-muted-foreground mt-3">
+            Contact{" "}
+            <a
+              href="mailto:team@leasestack.co"
+              className="font-semibold text-foreground underline underline-offset-2 hover:no-underline"
+            >
+              team@leasestack.co
+            </a>{" "}
+            to activate.
+          </p>
+        </section>
+      ) : null}
+
       {billingNotConfigured ? (
         <section className="rounded-xl border border-dashed border-border bg-muted/30 p-6">
           <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
@@ -259,7 +297,11 @@ export default async function BillingPage() {
           />
           <Mini
             label="Subscription status"
-            value={humanizeEnum(org.subscriptionStatus)}
+            value={
+              org.subscriptionStatus
+                ? humanizeEnum(org.subscriptionStatus)
+                : "Pending"
+            }
             tone={
               org.subscriptionStatus === "ACTIVE"
                 ? "success"
