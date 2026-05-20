@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/db";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import {
   getPropertyOverviewKpis,
   centsToUsdShort,
@@ -14,10 +13,25 @@ import {
   type PropertyLaunchStatus,
   type PropertyType,
   type ResidentialSubtype,
-  type LeadSource,
   type ResidentStatus,
 } from "@prisma/client";
-import { Sparkles, Cable, MessageSquare, Code, ListPlus, Building2 } from "lucide-react";
+import {
+  Sparkles,
+  Cable,
+  MessageSquare,
+  Code,
+  ListPlus,
+  Building2,
+  UserPlus,
+  CalendarCheck,
+  FileText,
+  Star,
+  FileSignature,
+  ExternalLink,
+  Settings,
+  Pencil,
+  Activity,
+} from "lucide-react";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
 import {
@@ -58,33 +72,6 @@ type OverviewProperty = {
   orgHasAdsModule: boolean;
 };
 
-const SOURCE_LABEL: Record<LeadSource, string> = {
-  GOOGLE_ADS: "Google Ads",
-  META_ADS: "Meta Ads",
-  ORGANIC: "Organic",
-  CHATBOT: "Chatbot",
-  FORM: "Web form",
-  PIXEL_OUTREACH: "Pixel outreach",
-  REFERRAL: "Referral",
-  DIRECT: "Direct",
-  EMAIL_CAMPAIGN: "Email",
-  COLD_EMAIL: "Cold email",
-  MANUAL: "Manual",
-  OTHER: "Other",
-};
-
-// Single muted accent palette so the source list reads as data, not as a rainbow.
-const CHART_COLORS = [
-  "#1D4ED8",
-  "#2563EB",
-  "#3B82F6",
-  "#60A5FA",
-  "#93C5FD",
-  "#9CA3AF",
-  "#D1D5DB",
-  "#E5E7EB",
-];
-
 export async function OverviewTab({
   orgId,
   propertyId,
@@ -96,24 +83,25 @@ export async function OverviewTab({
   propertyMeta: { slug: string; name: string };
   property: OverviewProperty;
 }) {
-  const since28d = new Date(Date.now() - 28 * 24 * 60 * 60 * 1000);
   const next120 = new Date(Date.now() + 120 * 24 * 60 * 60 * 1000);
 
   const [
     kpis,
     listingCounts,
-    leadSourceGroups,
     expiringLeases,
     noticeResidents,
     rentRoll,
-    // Onboarding-shell detection still relies on these. Kept lean —
-    // the heavy "active features" / quick-actions rail data was cut.
     cursiveIntegration,
     seoIntegrations,
     googleAdCampaign,
     metaAdCampaign,
+    tenantSiteConfig,
     propertyInsights,
     propertyInsightCounts,
+    recentLeads,
+    recentTours,
+    recentLeases,
+    recentMentions,
   ] = await Promise.all([
     getPropertyOverviewKpis(orgId, propertyId, propertyMeta),
     prisma.property.findFirst({
@@ -126,11 +114,6 @@ export async function OverviewTab({
           select: { id: true },
         },
       },
-    }),
-    prisma.lead.groupBy({
-      by: ["source"],
-      where: { orgId, propertyId, createdAt: { gte: since28d } },
-      _count: { _all: true },
     }),
     prisma.lease.findMany({
       where: {
@@ -155,7 +138,11 @@ export async function OverviewTab({
     prisma.cursiveIntegration
       .findFirst({
         where: { orgId, propertyId },
-        select: { cursivePixelId: true },
+        select: {
+          cursivePixelId: true,
+          lastEventAt: true,
+          totalEventsCount: true,
+        },
       })
       .catch(() => null),
     prisma.seoIntegration
@@ -163,7 +150,10 @@ export async function OverviewTab({
         where: { orgId, propertyId },
         select: { provider: true, lastSyncAt: true },
       })
-      .catch(() => [] as Array<{ provider: string; lastSyncAt: Date | null }>),
+      .catch(
+        () =>
+          [] as Array<{ provider: string; lastSyncAt: Date | null }>,
+      ),
     prisma.adCampaign
       .findFirst({
         where: { orgId, propertyId, platform: "GOOGLE_ADS" },
@@ -174,6 +164,15 @@ export async function OverviewTab({
       .findFirst({
         where: { orgId, propertyId, platform: "META" },
         select: { id: true },
+      })
+      .catch(() => null),
+    prisma.tenantSiteConfig
+      .findUnique({
+        where: { orgId },
+        select: {
+          chatbotEnabled: true,
+          chatbotPersonaName: true,
+        },
       })
       .catch(() => null),
     getOpenInsights(orgId, { propertyId, limit: 3 }).catch(
@@ -187,6 +186,65 @@ export async function OverviewTab({
       acknowledged: 0,
       total: 0,
     })),
+    prisma.lead
+      .findMany({
+        where: { orgId, propertyId },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          source: true,
+          createdAt: true,
+        },
+      })
+      .catch(() => [] as Array<ActivityLeadRow>),
+    prisma.tour
+      .findMany({
+        where: { propertyId },
+        orderBy: { createdAt: "desc" },
+        take: 8,
+        select: {
+          id: true,
+          status: true,
+          scheduledAt: true,
+          createdAt: true,
+          lead: { select: { firstName: true, lastName: true } },
+        },
+      })
+      .catch(() => [] as Array<ActivityTourRow>),
+    prisma.lease
+      .findMany({
+        where: { orgId, propertyId },
+        orderBy: { updatedAt: "desc" },
+        take: 8,
+        select: {
+          id: true,
+          status: true,
+          monthlyRentCents: true,
+          endDate: true,
+          renewalSentAt: true,
+          noticeGivenAt: true,
+          updatedAt: true,
+        },
+      })
+      .catch(() => [] as Array<ActivityLeaseRow>),
+    prisma.propertyMention
+      .findMany({
+        where: { orgId, propertyId },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          source: true,
+          rating: true,
+          authorName: true,
+          publishedAt: true,
+          createdAt: true,
+        },
+      })
+      .catch(() => [] as Array<ActivityMentionRow>),
   ]);
 
   const totalUnits = property.totalUnits ?? null;
@@ -219,30 +277,7 @@ export async function OverviewTab({
                 : ("flat" as const),
         };
 
-  // Funnel conversions
-  const tourRate =
-    kpis.leads28d > 0 ? Math.round((kpis.tours28d / kpis.leads28d) * 100) : 0;
-  const appRate =
-    kpis.tours28d > 0
-      ? Math.round((kpis.applications28d / kpis.tours28d) * 100)
-      : 0;
-
-  // Lead source slices
-  const sourceTotal = leadSourceGroups.reduce(
-    (s, g) => s + g._count._all,
-    0,
-  );
-  const sourceSlices = leadSourceGroups
-    .filter((g) => g._count._all > 0)
-    .map((g) => ({
-      label: SOURCE_LABEL[g.source] ?? g.source,
-      value: g._count._all,
-    }))
-    .sort((a, b) => b.value - a.value);
-  const singleSourceLabel =
-    sourceSlices.length === 1 ? sourceSlices[0].label : null;
-
-  // Renewal buckets
+  // Renewal buckets — 0-30 / 31-60 / 61-90 / 91-120
   const now = Date.now();
   const buckets = [
     { label: "0–30d", count: 0, rentCents: 0 },
@@ -284,7 +319,7 @@ export async function OverviewTab({
   const priceRange =
     property.priceMinCents || property.priceMaxCents
       ? `${centsToUsdShort(property.priceMinCents)}${"–"}${centsToUsdShort(property.priceMaxCents)}`
-      : "—";
+      : null;
 
   const monthlyRentRoll = (rentRoll._sum.monthlyRentCents ?? 0) / 100;
   const monthlyRentRollDisplay =
@@ -315,21 +350,13 @@ export async function OverviewTab({
     !metaAdCampaign &&
     (seoIntegrations?.length ?? 0) === 0;
 
-  // Sparse-data threshold for the funnel viz.
-  const FUNNEL_MIN = 5;
-  const showCompactFunnel = kpis.leads28d < FUNNEL_MIN;
-
-  // Leads KPI hint — be honest about channel mix and ad coverage.
+  // Leads KPI hint
   const leadsHint =
     kpis.leads28d === 0
       ? "First lead lands here"
-      : !property.orgHasAdsModule && singleSourceLabel
-        ? `All from ${singleSourceLabel} · No paid spend`
-        : singleSourceLabel
-          ? `All from ${singleSourceLabel}`
-          : !property.orgHasAdsModule
-            ? "No paid spend"
-            : `${kpis.tours28d} tours · ${kpis.applications28d} apps`;
+      : !property.orgHasAdsModule
+        ? "No paid spend"
+        : `${kpis.tours28d} tours · ${kpis.applications28d} apps`;
 
   const renewalsHint =
     expiringTotal === 0
@@ -338,10 +365,25 @@ export async function OverviewTab({
         ? `$${Math.round(renewalsNext30Rent / 100 / 1000).toLocaleString()}K of monthly rent`
         : `${expiringTotal} in next 120d`;
 
+  // Build the unified activity timeline.
+  const activity = buildActivityEvents({
+    leads: recentLeads,
+    tours: recentTours,
+    leases: recentLeases,
+    mentions: recentMentions,
+  });
+
+  // Integration health rows for the sidebar.
+  const ga4 = seoIntegrations.find((r) => r.provider === "GA4") ?? null;
+  const gsc = seoIntegrations.find((r) => r.provider === "GSC") ?? null;
+  const pixelHasRecentEvents =
+    cursiveIntegration?.lastEventAt != null &&
+    Date.now() - cursiveIntegration.lastEventAt.getTime() <
+      30 * 24 * 60 * 60 * 1000;
+
   return (
-    <div className="space-y-4 ls-page-fade">
-      {/* 1. Hero strip — name, address, photo, fact row. No ring, no briefing,
-            no quick-actions rail. */}
+    <div className="space-y-6 ls-page-fade">
+      {/* 1. Hero strip — name, photo, fact row. */}
       <PropertyHeroStrip
         name={propertyMeta.name}
         totalUnits={totalUnits}
@@ -429,170 +471,119 @@ export async function OverviewTab({
           </div>
         </section>
       ) : (
-        <>
-          {/* 2. Insights hero — top 3 ranked insights for this property. */}
-          {propertyInsights.length > 0 ? (
-            <InsightsHero
-              insights={propertyInsights as InsightCardData[]}
-              counts={{
-                critical: propertyInsightCounts.critical,
-                warning: propertyInsightCounts.warning,
-                info: propertyInsightCounts.info,
-                total: propertyInsightCounts.total,
+        <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
+          {/* LEFT — the work. */}
+          <div className="space-y-6 min-w-0">
+            {propertyInsights.length > 0 ? (
+              <InsightsHero
+                insights={propertyInsights as InsightCardData[]}
+                counts={{
+                  critical: propertyInsightCounts.critical,
+                  warning: propertyInsightCounts.warning,
+                  info: propertyInsightCounts.info,
+                  total: propertyInsightCounts.total,
+                }}
+                scope={{
+                  kind: "property",
+                  propertyId,
+                  propertyName: propertyMeta.name,
+                }}
+              />
+            ) : (
+              <AiInsightCard insight={aiInsight} />
+            )}
+
+            <section className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <KpiTile
+                label="Occupancy"
+                value={
+                  occupancyPct != null ? `${occupancyPct}%` : <DimZero />
+                }
+                hint={
+                  totalUnits != null && leasedUnits != null
+                    ? `${leasedUnits} of ${totalUnits} units leased`
+                    : "Connect AppFolio for live occupancy"
+                }
+              />
+              <KpiTile
+                label="Monthly rent"
+                value={
+                  monthlyRentRoll > 0 ? monthlyRentRollDisplay : <DimZero />
+                }
+                hint={
+                  leasedUnits != null && leasedUnits > 0
+                    ? `From ${leasedUnits} leased units`
+                    : "From active leases"
+                }
+              />
+              <KpiTile
+                label="Leads (28d)"
+                value={kpis.leads28d > 0 ? kpis.leads28d : <DimZero />}
+                delta={leadsDelta}
+                hint={leadsHint}
+              />
+              <KpiTile
+                label="Renewals (next 30d)"
+                value={buckets[0].count > 0 ? buckets[0].count : <DimZero />}
+                hint={renewalsHint}
+              />
+            </section>
+
+            <ActivityTimeline events={activity} />
+
+            <RenewalTimeline buckets={buckets} total={expiringTotal} />
+          </div>
+
+          {/* RIGHT — sidebar. */}
+          <aside className="space-y-4 min-w-0">
+            <PropertyIntegrationsList
+              appfolio={{
+                connected: appfolioConnected,
+                lastSyncedAt: property.lastSyncedAt,
               }}
-              scope={{
-                kind: "property",
-                propertyId,
-                propertyName: propertyMeta.name,
+              chatbot={{
+                enabled: tenantSiteConfig?.chatbotEnabled ?? false,
+                personaName: tenantSiteConfig?.chatbotPersonaName ?? null,
+              }}
+              pixel={{
+                connected: !!cursiveIntegration?.cursivePixelId,
+                hasRecentEvents: pixelHasRecentEvents,
+                lastEventAt: cursiveIntegration?.lastEventAt ?? null,
+              }}
+              ga4={{
+                connected: !!ga4,
+                lastSyncAt: ga4?.lastSyncAt ?? null,
+              }}
+              gsc={{
+                connected: !!gsc,
+                lastSyncAt: gsc?.lastSyncAt ?? null,
               }}
             />
-          ) : (
-            <AiInsightCard insight={aiInsight} />
-          )}
 
-          {/* 3. KPI strip — four equal tiles. One occupancy display per page. */}
-          <section className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-            <KpiTile
-              label="Occupancy"
-              value={occupancyPct != null ? `${occupancyPct}%` : <DimZero />}
-              hint={
-                totalUnits != null && leasedUnits != null
-                  ? `${leasedUnits} of ${totalUnits} units leased`
-                  : "Connect AppFolio for live occupancy"
-              }
+            <PropertyMetaCard
+              propertyType={property.propertyType}
+              residentialSubtype={property.residentialSubtype}
+              commercialSubtype={property.commercialSubtype}
+              totalUnits={totalUnits}
+              yearBuilt={property.yearBuilt}
+              backendPlatform={property.backendPlatform}
+              backendPropertyGroup={property.backendPropertyGroup}
+              lastSyncedAt={property.lastSyncedAt}
             />
-            <KpiTile
-              label="Monthly rent"
-              value={monthlyRentRoll > 0 ? monthlyRentRollDisplay : <DimZero />}
-              hint={
-                leasedUnits != null && leasedUnits > 0
-                  ? `From ${leasedUnits} leased units`
-                  : "From active leases"
-              }
+
+            <MarketingCard
+              listingsCount={listingCounts?._count.listings ?? 0}
+              allTimeLeads={allTimeLeads}
+              description={property.description}
+              priceRange={priceRange}
             />
-            <KpiTile
-              label="Leads (28d)"
-              value={kpis.leads28d > 0 ? kpis.leads28d : <DimZero />}
-              delta={leadsDelta}
-              hint={leadsHint}
+
+            <QuickActionsCard
+              propertyId={propertyId}
+              backendPlatform={property.backendPlatform}
             />
-            <KpiTile
-              label="Renewals (next 30d)"
-              value={buckets[0].count > 0 ? buckets[0].count : <DimZero />}
-              hint={renewalsHint}
-            />
-          </section>
-
-          {/* 4. Lead funnel + Renewal pipeline (50/50). */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-            <DashboardSection
-              title="Lead funnel"
-              eyebrow="28-day"
-              description={
-                kpis.leads28d === 0
-                  ? "Funnel data unlocks at first lead."
-                  : showCompactFunnel
-                    ? "Visit → lead → tour → application. Needs more volume to read as a chart."
-                    : "Visit-to-lease progression. Drop-off rates show where the funnel leaks."
-              }
-            >
-              {kpis.leads28d === 0 ? null : showCompactFunnel ? (
-                <CompactFunnel
-                  leads={kpis.leads28d}
-                  tours={kpis.tours28d}
-                  applications={kpis.applications28d}
-                />
-              ) : (
-                <FunnelBars
-                  stages={[
-                    { label: "Leads", value: kpis.leads28d, color: "#1D4ED8" },
-                    { label: "Tours", value: kpis.tours28d, color: "#2563EB" },
-                    {
-                      label: "Applications",
-                      value: kpis.applications28d,
-                      color: "#3B82F6",
-                    },
-                  ]}
-                  tourRate={tourRate}
-                  appRate={appRate}
-                />
-              )}
-            </DashboardSection>
-
-            <DashboardSection
-              title="Renewal pipeline"
-              eyebrow="Next 120 days"
-              description={
-                expiringTotal === 0
-                  ? "No leases up for renewal in the window."
-                  : `${expiringTotal} ${expiringTotal === 1 ? "lease" : "leases"} up for renewal`
-              }
-            >
-              {expiringTotal === 0 ? (
-                <RenewalEmpty />
-              ) : (
-                <RenewalsList buckets={buckets} />
-              )}
-            </DashboardSection>
-          </section>
-
-          {/* 5. Property details + Marketing (50/50). */}
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-2">
-            <DashboardSection title="Property details" eyebrow="Basics">
-              <dl className="space-y-1 text-xs">
-                {property.propertyType ? (
-                  <Row k="Type" v={property.propertyType} />
-                ) : null}
-                {property.residentialSubtype || property.commercialSubtype ? (
-                  <Row
-                    k="Subtype"
-                    v={
-                      property.residentialSubtype ??
-                      property.commercialSubtype ??
-                      ""
-                    }
-                  />
-                ) : null}
-                {property.yearBuilt != null ? (
-                  <Row k="Year built" v={property.yearBuilt.toString()} />
-                ) : null}
-                {property.backendPlatform &&
-                property.backendPlatform !== "NONE" ? (
-                  <Row k="Backend" v={property.backendPlatform} />
-                ) : null}
-                {property.backendPropertyGroup ? (
-                  <Row k="Property group" v={property.backendPropertyGroup} />
-                ) : null}
-              </dl>
-            </DashboardSection>
-
-            <DashboardSection title="Marketing" eyebrow="SEO & listings">
-              <dl className="space-y-1 text-xs">
-                {property.metaDescription ? (
-                  <Row k="Meta description" v={property.metaDescription} />
-                ) : null}
-                {property.metaTitle ? (
-                  <Row k="Meta title" v={property.metaTitle} />
-                ) : null}
-                {priceRange !== "—" ? (
-                  <Row k="Price range" v={priceRange} />
-                ) : null}
-                <Row
-                  k="Listings configured"
-                  v={(listingCounts?._count.listings ?? 0).toString()}
-                />
-              </dl>
-              {sourceSlices.length > 0 ? (
-                <div className="pt-2 mt-2 border-t border-border">
-                  <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-1.5">
-                    Top lead sources (28d)
-                  </div>
-                  <SourceMix slices={sourceSlices} total={sourceTotal} />
-                </div>
-              ) : null}
-            </DashboardSection>
-          </section>
-        </>
+          </aside>
+        </div>
       )}
     </div>
   );
@@ -824,152 +815,650 @@ function AiInsightCard({ insight }: { insight: AiInsightShape }) {
 }
 
 // ---------------------------------------------------------------------------
-// Visualizations — pure SVG / divs, server-renderable.
+// Activity timeline — unified feed across leads, tours, leases, mentions.
 // ---------------------------------------------------------------------------
 
-function FunnelBars({
-  stages,
-  tourRate,
-  appRate,
+type ActivityKind = "lead" | "tour" | "lease" | "review" | "renewal" | "notice";
+
+type ActivityEvent = {
+  id: string;
+  kind: ActivityKind;
+  summary: string;
+  occurredAt: Date;
+};
+
+type ActivityLeadRow = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  source: string;
+  createdAt: Date;
+};
+type ActivityTourRow = {
+  id: string;
+  status: string;
+  scheduledAt: Date | null;
+  createdAt: Date;
+  lead: { firstName: string | null; lastName: string | null } | null;
+};
+type ActivityLeaseRow = {
+  id: string;
+  status: string;
+  monthlyRentCents: number | null;
+  endDate: Date | null;
+  renewalSentAt: Date | null;
+  noticeGivenAt: Date | null;
+  updatedAt: Date;
+};
+type ActivityMentionRow = {
+  id: string;
+  source: string;
+  rating: number | null;
+  authorName: string | null;
+  publishedAt: Date | null;
+  createdAt: Date;
+};
+
+function fullName(
+  first: string | null | undefined,
+  last: string | null | undefined,
+): string {
+  const f = (first ?? "").trim();
+  const l = (last ?? "").trim();
+  const joined = [f, l].filter(Boolean).join(" ");
+  return joined.length > 0 ? joined : "Someone";
+}
+
+function sourceWord(source: string): string {
+  const map: Record<string, string> = {
+    GOOGLE_ADS: "Google Ads",
+    META_ADS: "Meta Ads",
+    ORGANIC: "organic",
+    CHATBOT: "the chatbot",
+    FORM: "the web form",
+    PIXEL_OUTREACH: "pixel outreach",
+    REFERRAL: "a referral",
+    DIRECT: "direct",
+    EMAIL_CAMPAIGN: "email",
+    COLD_EMAIL: "cold email",
+    MANUAL: "manual entry",
+    OTHER: "other",
+  };
+  return map[source] ?? source.replace(/_/g, " ").toLowerCase();
+}
+
+function buildActivityEvents({
+  leads,
+  tours,
+  leases,
+  mentions,
 }: {
-  stages: Array<{ label: string; value: number; color: string }>;
-  tourRate: number;
-  appRate: number;
-}) {
-  const max = Math.max(1, ...stages.map((s) => s.value));
-  const rates = [null, tourRate, appRate] as Array<number | null>;
+  leads: ActivityLeadRow[];
+  tours: ActivityTourRow[];
+  leases: ActivityLeaseRow[];
+  mentions: ActivityMentionRow[];
+}): ActivityEvent[] {
+  const events: ActivityEvent[] = [];
+
+  for (const l of leads) {
+    events.push({
+      id: `lead:${l.id}`,
+      kind: "lead",
+      summary: `${fullName(l.firstName, l.lastName)} came in via ${sourceWord(l.source)}`,
+      occurredAt: l.createdAt,
+    });
+  }
+
+  for (const t of tours) {
+    const who = fullName(t.lead?.firstName, t.lead?.lastName);
+    let summary = `${who} requested a tour`;
+    if (t.status === "SCHEDULED" || t.status === "REQUESTED") {
+      summary = t.scheduledAt
+        ? `${who} scheduled a tour for ${formatShortDate(t.scheduledAt)}`
+        : `${who} requested a tour`;
+    } else if (t.status === "COMPLETED") {
+      summary = `${who} completed a tour`;
+    } else if (t.status === "NO_SHOW") {
+      summary = `${who} no-showed for tour`;
+    } else if (t.status === "CANCELLED") {
+      summary = `${who} cancelled a tour`;
+    }
+    events.push({
+      id: `tour:${t.id}`,
+      kind: "tour",
+      summary,
+      occurredAt: t.createdAt,
+    });
+  }
+
+  for (const ls of leases) {
+    // Pick the most informative thing that happened on this lease and
+    // attribute it to updatedAt. Notice given outranks renewal sent
+    // outranks "ended" outranks "signed".
+    if (ls.noticeGivenAt) {
+      events.push({
+        id: `lease-notice:${ls.id}`,
+        kind: "notice",
+        summary: ls.monthlyRentCents
+          ? `Resident gave notice (${formatRentShort(ls.monthlyRentCents)}/mo unit)`
+          : `Resident gave notice`,
+        occurredAt: ls.noticeGivenAt,
+      });
+      continue;
+    }
+    if (ls.renewalSentAt) {
+      events.push({
+        id: `lease-renewal:${ls.id}`,
+        kind: "renewal",
+        summary: ls.monthlyRentCents
+          ? `Renewal offer sent (${formatRentShort(ls.monthlyRentCents)}/mo)`
+          : `Renewal offer sent`,
+        occurredAt: ls.renewalSentAt,
+      });
+      continue;
+    }
+    let summary = "Lease updated";
+    if (ls.status === "ACTIVE") summary = "Lease signed";
+    else if (ls.status === "EXPIRING") summary = "Lease entering renewal window";
+    else if (ls.status === "RENEWED") summary = "Lease renewed";
+    else if (ls.status === "ENDED") summary = "Lease ended";
+    else if (ls.status === "EVICTED") summary = "Lease ended (eviction)";
+    if (ls.monthlyRentCents) {
+      summary = `${summary} (${formatRentShort(ls.monthlyRentCents)}/mo)`;
+    }
+    events.push({
+      id: `lease:${ls.id}`,
+      kind: "lease",
+      summary,
+      occurredAt: ls.updatedAt,
+    });
+  }
+
+  for (const m of mentions) {
+    const who = m.authorName ?? "Someone";
+    const sourceLabel =
+      m.source === "GOOGLE_REVIEW"
+        ? "Google"
+        : m.source === "YELP"
+          ? "Yelp"
+          : m.source === "REDDIT"
+            ? "Reddit"
+            : m.source === "FACEBOOK_PUBLIC"
+              ? "Facebook"
+              : "web";
+    const rating = m.rating != null ? ` (${m.rating}★)` : "";
+    events.push({
+      id: `mention:${m.id}`,
+      kind: "review",
+      summary: `${who} left a ${sourceLabel} review${rating}`,
+      occurredAt: m.publishedAt ?? m.createdAt,
+    });
+  }
+
+  events.sort((a, b) => b.occurredAt.getTime() - a.occurredAt.getTime());
+  return events.slice(0, 8);
+}
+
+function ActivityTimeline({ events }: { events: ActivityEvent[] }) {
   return (
-    <ul className="space-y-2">
-      {stages.map((s, i) => {
-        const widthPct = Math.max(6, Math.round((s.value / max) * 100));
-        const rate = rates[i];
-        return (
-          <li key={s.label} className="space-y-0.5">
-            <div className="flex items-baseline justify-between gap-2 text-[11px]">
-              <span className="font-medium text-foreground">{s.label}</span>
-              <span className="tabular-nums">
-                <span className="text-foreground font-semibold">
-                  {s.value.toLocaleString()}
-                </span>
-                {rate != null && rate > 0 ? (
-                  <span className="ml-1.5 text-muted-foreground">
-                    {rate}% conv
-                  </span>
-                ) : null}
-              </span>
-            </div>
-            <div className="h-2 bg-muted rounded-full overflow-hidden">
-              <div
-                className="h-full rounded-full transition-all"
-                style={{
-                  width: `${widthPct}%`,
-                  backgroundColor: s.color,
-                }}
-              />
-            </div>
-          </li>
-        );
-      })}
-    </ul>
+    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+      <div className="flex items-baseline justify-between gap-2 mb-3">
+        <div>
+          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+            Activity
+          </p>
+          <h3 className="text-sm font-semibold text-foreground">
+            Recent events
+          </h3>
+        </div>
+        {events.length > 0 ? (
+          <span className="text-[11px] text-muted-foreground tabular-nums">
+            Latest {events.length}
+          </span>
+        ) : null}
+      </div>
+
+      {events.length === 0 ? (
+        <div className="flex items-center gap-2.5 px-1 py-3 text-muted-foreground">
+          <Activity className="h-4 w-4 shrink-0" aria-hidden="true" />
+          <p className="text-[12px] leading-snug">
+            Activity appears as leads, tours, and leases come in.
+          </p>
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {events.map((e) => (
+            <ActivityRow key={e.id} event={e} />
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 
-function SourceMix({
-  slices,
+function ActivityRow({ event }: { event: ActivityEvent }) {
+  const { Icon, tone } = activityVisual(event.kind);
+  return (
+    <li className="flex items-start gap-3 min-w-0">
+      <span
+        className={`inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-md ${tone}`}
+      >
+        <Icon className="h-3.5 w-3.5" aria-hidden="true" />
+      </span>
+      <div className="min-w-0 flex-1 flex items-baseline justify-between gap-3">
+        <p className="text-[12.5px] text-foreground leading-snug truncate">
+          {event.summary}
+        </p>
+        <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
+          {formatAgeShort(event.occurredAt)}
+        </span>
+      </div>
+    </li>
+  );
+}
+
+function activityVisual(kind: ActivityKind): {
+  Icon: typeof UserPlus;
+  tone: string;
+} {
+  switch (kind) {
+    case "lead":
+      return { Icon: UserPlus, tone: "bg-primary/10 text-primary" };
+    case "tour":
+      return { Icon: CalendarCheck, tone: "bg-primary/10 text-primary" };
+    case "lease":
+      return { Icon: FileSignature, tone: "bg-muted text-foreground" };
+    case "renewal":
+      return { Icon: FileText, tone: "bg-amber-500/10 text-amber-600" };
+    case "notice":
+      return { Icon: FileText, tone: "bg-amber-500/10 text-amber-600" };
+    case "review":
+      return { Icon: Star, tone: "bg-muted text-muted-foreground" };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Renewal timeline — horizontal 4-bucket stack.
+// ---------------------------------------------------------------------------
+
+function RenewalTimeline({
+  buckets,
   total,
 }: {
-  slices: Array<{ label: string; value: number }>;
+  buckets: Array<{ label: string; count: number; rentCents: number }>;
   total: number;
 }) {
-  const max = slices.reduce((m, s) => Math.max(m, s.value), 0) || 1;
-  const rows = slices.slice(0, 5).map((s, i) => ({
-    ...s,
-    color: CHART_COLORS[i % CHART_COLORS.length],
-    pct: total > 0 ? Math.round((s.value / total) * 100) : 0,
-    barPct: Math.max(2, (s.value / max) * 100),
-  }));
+  // Opacity ramps down from urgent (0-30d) to far-out (91-120d).
+  // Hand-picked Tailwind opacity classes so we don't depend on the
+  // CSS `rgb(from …)` relative-color syntax landing in every browser.
+  const tones = [
+    "bg-primary/15 border-primary/30",
+    "bg-primary/10 border-primary/20",
+    "bg-primary/[0.06] border-border",
+    "bg-muted/40 border-border",
+  ];
 
   return (
-    <ul className="space-y-1.5">
-      {rows.map((row) => (
-        <li key={row.label} className="space-y-0.5">
-          <div className="flex items-center justify-between gap-2 text-[11.5px] min-w-0">
-            <span className="flex items-center gap-1.5 min-w-0">
-              <span
-                className="h-1.5 w-1.5 rounded-full shrink-0"
-                style={{ backgroundColor: row.color }}
-              />
-              <span className="truncate font-medium text-foreground">
-                {row.label}
-              </span>
-            </span>
-            <span className="tabular-nums text-muted-foreground shrink-0 text-[11px]">
-              <span className="font-semibold text-foreground">{row.value}</span>
-              <span className="ml-1">&middot; {row.pct}%</span>
-            </span>
-          </div>
-          <div
-            className="h-1 rounded-full overflow-hidden"
-            style={{ backgroundColor: "rgba(37,99,235,0.08)" }}
-          >
+    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+      <div className="flex items-baseline justify-between gap-2 mb-3">
+        <div>
+          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+            Next 120 days
+          </p>
+          <h3 className="text-sm font-semibold text-foreground">
+            Renewal pipeline
+          </h3>
+        </div>
+        <span className="text-[11px] text-muted-foreground tabular-nums">
+          {total === 0
+            ? "Nothing in window"
+            : `${total} ${total === 1 ? "lease" : "leases"}`}
+        </span>
+      </div>
+
+      {total === 0 ? (
+        <p className="text-[12px] text-muted-foreground leading-snug">
+          No leases expiring in the next 120 days. Renewal cohorts appear here
+          as lease end dates enter the window.
+        </p>
+      ) : (
+        <div className="grid grid-cols-4 gap-2">
+          {buckets.map((b, i) => (
             <div
-              className="h-full rounded-full"
-              style={{
-                width: `${row.barPct}%`,
-                backgroundColor: row.color,
-              }}
-            />
-          </div>
-        </li>
-      ))}
-    </ul>
+              key={b.label}
+              className={`rounded-lg border px-3 py-2.5 min-w-0 ${tones[i]}`}
+            >
+              <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                {b.label}
+              </p>
+              <p className="mt-1 text-base font-semibold text-foreground tabular-nums">
+                {b.count.toLocaleString()}
+                <span className="ml-1 text-[10.5px] font-normal text-muted-foreground">
+                  {b.count === 1 ? "lease" : "leases"}
+                </span>
+              </p>
+              <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums truncate">
+                {b.rentCents > 0
+                  ? `$${Math.round(b.rentCents / 100).toLocaleString()}/mo`
+                  : "—"}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
-// Compact renewals list — one row per 30-day bucket. Replaces the 4-bar
-// chart (which ate ~180px of vertical space for 4 numbers).
-function RenewalsList({
-  buckets,
+// ---------------------------------------------------------------------------
+// Sidebar — integrations list.
+// ---------------------------------------------------------------------------
+
+type IntegrationHealth = "healthy" | "degraded" | "off";
+
+function PropertyIntegrationsList({
+  appfolio,
+  chatbot,
+  pixel,
+  ga4,
+  gsc,
 }: {
-  buckets: Array<{ label: string; count: number; rentCents: number }>;
+  appfolio: { connected: boolean; lastSyncedAt: Date | null };
+  chatbot: { enabled: boolean; personaName: string | null };
+  pixel: {
+    connected: boolean;
+    hasRecentEvents: boolean;
+    lastEventAt: Date | null;
+  };
+  ga4: { connected: boolean; lastSyncAt: Date | null };
+  gsc: { connected: boolean; lastSyncAt: Date | null };
 }) {
+  const rows: Array<{
+    name: string;
+    state: string;
+    health: IntegrationHealth;
+  }> = [
+    {
+      name: "AppFolio",
+      state: appfolio.connected
+        ? appfolio.lastSyncedAt
+          ? `synced ${formatAge(appfolio.lastSyncedAt)}`
+          : "connected"
+        : "not connected",
+      health: appfolio.connected
+        ? appfolio.lastSyncedAt &&
+          Date.now() - appfolio.lastSyncedAt.getTime() <
+            7 * 24 * 60 * 60 * 1000
+          ? "healthy"
+          : "degraded"
+        : "off",
+    },
+    {
+      name: "Chatbot",
+      state: chatbot.enabled
+        ? chatbot.personaName
+          ? `"${chatbot.personaName}" live`
+          : "live"
+        : "not enabled",
+      health: chatbot.enabled ? "healthy" : "off",
+    },
+    {
+      name: "Cursive Pixel",
+      state: !pixel.connected
+        ? "not installed"
+        : pixel.hasRecentEvents
+          ? "live"
+          : "no recent events",
+      health: !pixel.connected
+        ? "off"
+        : pixel.hasRecentEvents
+          ? "healthy"
+          : "degraded",
+    },
+    {
+      name: "GA4",
+      state: ga4.connected
+        ? ga4.lastSyncAt
+          ? `synced ${formatAge(ga4.lastSyncAt)}`
+          : "connected"
+        : "not connected",
+      health: ga4.connected ? "healthy" : "off",
+    },
+    {
+      name: "Search Console",
+      state: gsc.connected
+        ? gsc.lastSyncAt
+          ? `synced ${formatAge(gsc.lastSyncAt)}`
+          : "connected"
+        : "not connected",
+      health: gsc.connected ? "healthy" : "off",
+    },
+  ];
+
   return (
-    <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
-      {buckets.map((b) => (
-        <li
-          key={b.label}
-          className="flex items-baseline justify-between gap-3 px-3 py-2"
-        >
-          <span className="text-[11px] uppercase tracking-widest font-semibold text-muted-foreground">
-            {b.label}
-          </span>
-          <span className="flex items-baseline gap-2 tabular-nums">
-            <span className="text-[13px] font-semibold text-foreground">
-              {b.count.toLocaleString()}
-              <span className="ml-1 text-[10.5px] font-normal text-muted-foreground">
-                {b.count === 1 ? "lease" : "leases"}
+    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+      <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        Integrations
+      </p>
+      <ul className="mt-2 space-y-2.5">
+        {rows.map((row) => (
+          <li
+            key={row.name}
+            className="flex items-center justify-between gap-3 min-w-0"
+          >
+            <span className="flex items-center gap-2 min-w-0">
+              <StatusDot health={row.health} />
+              <span className="text-[12px] font-medium text-foreground truncate">
+                {row.name}
               </span>
             </span>
-            {b.rentCents > 0 ? (
-              <span className="text-[11px] text-muted-foreground">
-                · ${Math.round(b.rentCents / 100).toLocaleString()}/mo
-              </span>
-            ) : null}
-          </span>
-        </li>
-      ))}
-    </ul>
+            <span className="text-[11px] text-muted-foreground shrink-0 truncate max-w-[55%] text-right">
+              {row.state}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
-function Row({ k, v }: { k: string; v: string }) {
+function StatusDot({ health }: { health: IntegrationHealth }) {
+  const cls =
+    health === "healthy"
+      ? "bg-green-500"
+      : health === "degraded"
+        ? "bg-amber-500"
+        : "bg-muted-foreground/30";
   return (
-    <div className="flex items-baseline justify-between gap-3">
-      <dt className="text-[11px] text-muted-foreground">{k}</dt>
-      <dd className="text-right truncate text-[11px] text-foreground">
-        {v}
-      </dd>
-    </div>
+    <span
+      className={`h-2 w-2 rounded-full shrink-0 ${cls}`}
+      aria-hidden="true"
+    />
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar — property meta card.
+// ---------------------------------------------------------------------------
+
+function PropertyMetaCard({
+  propertyType,
+  residentialSubtype,
+  commercialSubtype,
+  totalUnits,
+  yearBuilt,
+  backendPlatform,
+  backendPropertyGroup,
+  lastSyncedAt,
+}: {
+  propertyType: PropertyType;
+  residentialSubtype: ResidentialSubtype | null;
+  commercialSubtype: CommercialSubtype | null;
+  totalUnits: number | null;
+  yearBuilt: number | null;
+  backendPlatform: BackendPlatform;
+  backendPropertyGroup: string | null;
+  lastSyncedAt: Date | null;
+}) {
+  const subtype = residentialSubtype ?? commercialSubtype ?? null;
+  const rows: Array<[string, string]> = [];
+  if (propertyType) {
+    rows.push(["Type", propertyType.replace(/_/g, " ").toLowerCase()]);
+  }
+  if (subtype) {
+    rows.push(["Subtype", subtype.replace(/_/g, " ").toLowerCase()]);
+  }
+  if (totalUnits != null) {
+    rows.push(["Units", totalUnits.toLocaleString()]);
+  }
+  if (yearBuilt != null) {
+    rows.push(["Built", yearBuilt.toString()]);
+  }
+  if (backendPlatform && backendPlatform !== "NONE") {
+    rows.push(["Backend", backendPlatform]);
+  }
+  if (backendPropertyGroup) {
+    rows.push(["Group", backendPropertyGroup]);
+  }
+  if (lastSyncedAt) {
+    rows.push(["Synced", formatAge(lastSyncedAt)]);
+  }
+
+  if (rows.length === 0) return null;
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+      <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        Property
+      </p>
+      <dl className="mt-2 space-y-1.5 text-[12px]">
+        {rows.map(([k, v]) => (
+          <div
+            key={k}
+            className="flex items-baseline justify-between gap-3 min-w-0"
+          >
+            <dt className="text-muted-foreground shrink-0">{k}</dt>
+            <dd className="text-right text-foreground truncate first-letter:capitalize">
+              {v}
+            </dd>
+          </div>
+        ))}
+      </dl>
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar — marketing card.
+// ---------------------------------------------------------------------------
+
+function MarketingCard({
+  listingsCount,
+  allTimeLeads,
+  description,
+  priceRange,
+}: {
+  listingsCount: number;
+  allTimeLeads: number;
+  description: string | null;
+  priceRange: string | null;
+}) {
+  const rows: Array<[string, string]> = [
+    ["Listings", listingsCount.toLocaleString()],
+    ["All-time leads", allTimeLeads.toLocaleString()],
+  ];
+  if (priceRange) {
+    rows.push(["Price range", priceRange]);
+  }
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+      <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        Marketing
+      </p>
+      <dl className="mt-2 space-y-1.5 text-[12px]">
+        {rows.map(([k, v]) => (
+          <div
+            key={k}
+            className="flex items-baseline justify-between gap-3"
+          >
+            <dt className="text-muted-foreground">{k}</dt>
+            <dd className="text-right text-foreground tabular-nums truncate">
+              {v}
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {description ? (
+        <p className="mt-3 pt-3 border-t border-border text-[11.5px] text-muted-foreground leading-snug line-clamp-2">
+          {description}
+        </p>
+      ) : null}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Sidebar — quick actions.
+// ---------------------------------------------------------------------------
+
+function QuickActionsCard({
+  propertyId,
+  backendPlatform,
+}: {
+  propertyId: string;
+  backendPlatform: BackendPlatform;
+}) {
+  const showAppFolioLink = backendPlatform === "APPFOLIO";
+
+  return (
+    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+      <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        Quick actions
+      </p>
+      <ul className="mt-2 space-y-1">
+        {showAppFolioLink ? (
+          <li>
+            <a
+              href="https://app.appfolio.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-[12.5px] text-foreground hover:text-primary transition-colors py-1"
+            >
+              <ExternalLink
+                className="h-3.5 w-3.5 text-muted-foreground"
+                aria-hidden="true"
+              />
+              Open in AppFolio
+            </a>
+          </li>
+        ) : null}
+        <li>
+          <a
+            href={`/portal/properties/${propertyId}?tab=onboarding`}
+            className="flex items-center gap-2 text-[12.5px] text-foreground hover:text-primary transition-colors py-1"
+          >
+            <Pencil
+              className="h-3.5 w-3.5 text-muted-foreground"
+              aria-hidden="true"
+            />
+            Edit listing details
+          </a>
+        </li>
+        <li>
+          <a
+            href={`/portal/properties/${propertyId}?tab=onboarding`}
+            className="flex items-center gap-2 text-[12.5px] text-foreground hover:text-primary transition-colors py-1"
+          >
+            <Settings
+              className="h-3.5 w-3.5 text-muted-foreground"
+              aria-hidden="true"
+            />
+            Property settings
+          </a>
+        </li>
+      </ul>
+    </section>
   );
 }
 
@@ -979,63 +1468,6 @@ function Row({ k, v }: { k: string; v: string }) {
 
 function DimZero() {
   return <span className="text-muted-foreground/40 tabular-nums">—</span>;
-}
-
-function CompactFunnel({
-  leads,
-  tours,
-  applications,
-}: {
-  leads: number;
-  tours: number;
-  applications: number;
-}) {
-  const rows: Array<{ label: string; value: number; pct: number | null }> = [
-    { label: "Leads", value: leads, pct: null },
-    {
-      label: "Tours",
-      value: tours,
-      pct: leads > 0 ? Math.round((tours / leads) * 100) : null,
-    },
-    {
-      label: "Applications",
-      value: applications,
-      pct: tours > 0 ? Math.round((applications / tours) * 100) : null,
-    },
-  ];
-  return (
-    <div className="space-y-2">
-      <ol className="rounded-lg border border-border bg-card/40 divide-y divide-border">
-        {rows.map((row) => (
-          <li
-            key={row.label}
-            className="flex items-center justify-between gap-3 px-3 py-2"
-          >
-            <span className="text-[12px] text-foreground">{row.label}</span>
-            <span className="flex items-baseline gap-2 tabular-nums">
-              <span className="text-[14px] font-semibold text-foreground">
-                {row.value.toLocaleString()}
-              </span>
-              {row.pct != null ? (
-                <span className="text-[10.5px] text-muted-foreground">
-                  {row.pct}%
-                </span>
-              ) : null}
-            </span>
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
-}
-
-function RenewalEmpty() {
-  return (
-    <p className="text-[12px] text-muted-foreground leading-snug">
-      No leases expiring in the next 120 days. Renewal cohorts appear
-      here as lease end dates enter the window.
-    </p>
-  );
 }
 
 // Compact "Property in onboarding" card. Renders in place of the dense
@@ -1103,6 +1535,10 @@ function OnboardingShellCard({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Formatting helpers.
+// ---------------------------------------------------------------------------
+
 function formatAge(date: Date): string {
   const ms = Date.now() - date.getTime();
   const minutes = Math.floor(ms / 60000);
@@ -1114,4 +1550,39 @@ function formatAge(date: Date): string {
   if (days < 30) return `${days}d ago`;
   const months = Math.floor(days / 30);
   return `${months}mo ago`;
+}
+
+// Tighter timestamp for activity rows — no "ago" suffix to keep the
+// right-rail width predictable.
+function formatAgeShort(date: Date): string {
+  const ms = date.getTime() - Date.now();
+  const past = ms <= 0;
+  const abs = Math.abs(ms);
+  const minutes = Math.floor(abs / 60000);
+  if (past) {
+    if (minutes < 1) return "now";
+    if (minutes < 60) return `${minutes}m`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours}h`;
+    const days = Math.floor(hours / 24);
+    if (days < 14) return `${days}d`;
+    return formatShortDate(date);
+  }
+  // Future (scheduled tour, lease end). Show calendar date.
+  return formatShortDate(date);
+}
+
+function formatShortDate(date: Date): string {
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function formatRentShort(cents: number): string {
+  const dollars = Math.round(cents / 100);
+  if (dollars >= 1000) {
+    return `$${(dollars / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K`;
+  }
+  return `$${dollars.toLocaleString()}`;
 }
