@@ -7,7 +7,6 @@ import { listPopups, getPopupSummary } from "@/lib/popups/queries";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
-import { createPopupFromForm } from "@/lib/actions/popup-actions";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "Popups" };
@@ -39,15 +38,13 @@ export default async function PopupsListPage() {
         title="Popups"
         description="Design promo, referral, and discount popups that you can paste on any external site with a single script tag. Every render and conversion writes back to your lead pipeline."
         actions={
-          <form action={createPopupFromForm}>
-            <button
-              type="submit"
-              className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors"
-            >
-              <Plus className="h-3.5 w-3.5" />
-              New popup
-            </button>
-          </form>
+          <Link
+            href="/portal/popups/new"
+            className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors"
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New popup
+          </Link>
         }
       />
 
@@ -88,7 +85,7 @@ export default async function PopupsListPage() {
           icon={<Sparkles className="h-5 w-5" />}
           title="Design your first popup"
           body="Promos, referrals, discounts, application reminders — popups capture intent at the exact moment a visitor is about to leave. Every conversion attributes back to this campaign in your lead pipeline."
-          action={{ label: "Create popup", href: "/portal/popups" }}
+          action={{ label: "Create popup", href: "/portal/popups/new" }}
         />
       ) : (
         <SectionCard label="All popups" description="Click a row to edit copy, design, triggers, capture, and targeting.">

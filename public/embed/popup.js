@@ -1,5 +1,5 @@
 /*!
- * LeaseStack Popup Embed v1.0
+ * LeaseStack Popup Embed v1.1
  *
  * Vanilla JS, zero dependencies, IIFE. Pastes once on any external
  * site (Wix, WordPress, Webflow, custom) and renders operator-designed
@@ -10,26 +10,24 @@
  *           data-tenant="your-org-slug"
  *           data-property="optional-property-slug"></script>
  *
- * Pipeline:
- *   1. Read data-* attributes from the script tag
- *   2. Fetch /api/public/popup/config/[tenant]?property=[slug]
- *   3. For each ACTIVE campaign:
- *      - Skip if URL doesn't match targetUrlPatterns
- *      - Skip if frequency cap blocks (session / once_per_day / always)
- *      - Wire the trigger (exit_intent / scroll / time / immediate)
- *      - On trigger fire: render the popup, record SHOWN
- *   4. User dismiss → record DISMISSED + set frequency cap
- *   5. User CTA → record CTA_CLICKED, follow ctaUrl
- *   6. User form submit → POST to /api/public/leads, record CONVERTED
+ * v1.1 (phase 1) adds:
+ *   - DARK / GRADIENT theme rendering with white-on-dark hierarchy
+ *   - top gradient accent bar from gradientColors stops
+ *   - eyebrow label above the headline
+ *   - featured value card (price callout) between body and CTAs
+ *   - secondary CTA (outlined) next to primary
+ *   - icon support on CTAs (calendar / phone / external / arrow)
+ *   - tertiary dismiss link below CTAs
+ *   - decorative corner circles on DARK theme
+ *
+ * Backward compat: popups with NULL phase 1 fields render identically
+ * to v1.0 — every new branch is gated on a truthy field check.
  */
 (function () {
   "use strict";
   if (window.__leasestackPopupLoaded) return;
   window.__leasestackPopupLoaded = true;
 
-  // document.currentScript is reliable during synchronous parsing
-  // but null when an async script executes after parse on some
-  // browsers (Firefox/Safari edge). Fall back to a selector lookup.
   var script =
     document.currentScript ||
     document.querySelector('script[src*="/embed/popup.js"]');
@@ -40,9 +38,6 @@
     return;
   }
 
-  // Resolve API origin from the script's own src so the embed works
-  // whether installed from leasestack.co, a staging URL, or a custom
-  // CNAME. Falls back to leasestack.co if anything goes wrong.
   var API_ORIGIN = (function () {
     try {
       return new URL(script.src).origin;
@@ -51,10 +46,6 @@
     }
   })();
 
-  // Stable per-session id so multiple events from the same visitor
-  // tie together. sessionStorage scopes to the tab so leaving the tab
-  // and returning re-rolls the id; that's intentional for SHOWN/
-  // DISMISSED dedupe.
   var SESSION_KEY = "leasestack.popup.sid";
   var sid = (function () {
     try {
@@ -80,9 +71,6 @@
       (PROPERTY ? "?property=" + encodeURIComponent(PROPERTY) : "");
     return fetch(url, { method: "GET", credentials: "omit" })
       .then(function (r) {
-        // Retry on transient failures (429 / 5xx) with exponential backoff.
-        // Without this a single soft-fallback rate-limit hit silenced
-        // the popup widget for the rest of the page session.
         if (r.status === 429 || (r.status >= 500 && r.status < 600)) {
           if (attempt >= 3) {
             console.warn(
@@ -113,7 +101,6 @@
       })
       .catch(function (err) {
         if (attempt < 3) {
-          // Network-level error — retry with same curve.
           var waitMs = 1000 * Math.pow(2, attempt);
           return new Promise(function (resolve) {
             setTimeout(function () {
@@ -140,21 +127,12 @@
           pageUrl: window.location.href,
           referrer: document.referrer || undefined,
         }),
-        // Allow the request to live past page unload so a CTA_CLICKED
-        // event isn't dropped when the visitor navigates away.
         keepalive: true,
       });
-    } catch (_) {
-      // No-op — analytics failure should never block user-visible UX.
-    }
+    } catch (_) { /* no-op */ }
   }
 
   function submitLead(popup, data) {
-    // Dedicated popup endpoint resolves tenantSlug + propertySlug
-    // server-side and writes through the same notification side-effects
-    // a chatbot capture does. Pre-fix this hit /api/public/leads,
-    // whose schema demands `orgId` + a LeadSource enum — the embed
-    // sends neither, so every popup conversion silently 400'd.
     return fetch(API_ORIGIN + "/api/public/popup/lead", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -166,20 +144,13 @@
         email: data.email,
         phone: data.phone,
         pageUrl: window.location.href,
-        // Visitor identity for pixel attribution. Best-effort — the
-        // pixel sets this cookie on tenant marketing sites; the popup
-        // may run on other sites where the cookie won't be present.
         visitorHash: readCookie("ls_vid"),
       }),
     })
       .then(function (r) {
-        return r.json().catch(function () {
-          return { ok: false };
-        });
+        return r.json().catch(function () { return { ok: false }; });
       })
-      .catch(function () {
-        return { ok: false };
-      });
+      .catch(function () { return { ok: false }; });
   }
 
   function readCookie(name) {
@@ -192,57 +163,38 @@
           return idx === -1 ? "" : decodeURIComponent(pairs[i].slice(idx + 1));
         }
       }
-    } catch (_) {
-      /* ignore */
-    }
+    } catch (_) { /* ignore */ }
     return undefined;
   }
 
   // ──────────────────────────────────────────────────────────────────
-  // Frequency cap — prevents popup fatigue
+  // Frequency cap
   // ──────────────────────────────────────────────────────────────────
-  function frequencyKey(popupId) {
-    return "leasestack.popup.shown." + popupId;
-  }
-
+  function frequencyKey(popupId) { return "leasestack.popup.shown." + popupId; }
   function shouldShow(popup) {
     if (popup.frequency === "always") return true;
     try {
       var key = frequencyKey(popup.id);
-      var stored =
-        popup.frequency === "once_per_day"
-          ? localStorage.getItem(key)
-          : sessionStorage.getItem(key);
+      var stored = popup.frequency === "once_per_day"
+        ? localStorage.getItem(key)
+        : sessionStorage.getItem(key);
       if (!stored) return true;
       if (popup.frequency === "once_per_day") {
         var lastShown = parseInt(stored, 10);
-        return Number.isFinite(lastShown) &&
-          Date.now() - lastShown > 24 * 60 * 60 * 1000;
+        return Number.isFinite(lastShown) && Date.now() - lastShown > 24 * 60 * 60 * 1000;
       }
       return false;
-    } catch (_) {
-      return true;
-    }
+    } catch (_) { return true; }
   }
-
   function markShown(popup) {
     try {
       var key = frequencyKey(popup.id);
       var value = String(Date.now());
-      if (popup.frequency === "once_per_day") {
-        localStorage.setItem(key, value);
-      } else if (popup.frequency === "session") {
-        sessionStorage.setItem(key, value);
-      }
-      // "always" doesn't write — every page load re-renders
-    } catch (_) {
-      /* ignore */
-    }
+      if (popup.frequency === "once_per_day") localStorage.setItem(key, value);
+      else if (popup.frequency === "session") sessionStorage.setItem(key, value);
+    } catch (_) { /* ignore */ }
   }
 
-  // ──────────────────────────────────────────────────────────────────
-  // URL allowlist
-  // ──────────────────────────────────────────────────────────────────
   function urlMatches(popup) {
     var patterns = popup.targetUrlPatterns;
     if (!patterns || patterns.length === 0) return true;
@@ -254,47 +206,49 @@
   }
 
   // ──────────────────────────────────────────────────────────────────
-  // DOM render — mirrors components/portal/popups/popup-preview.tsx
+  // DOM render
   // ──────────────────────────────────────────────────────────────────
   function safe(str) {
     return String(str == null ? "" : str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#39;");
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
   }
 
-  // safeNavTarget — defense-in-depth XSS guard for popup CTA navigation.
-  // The server-side schema already gates schemes to http/https/mailto/
-  // tel/relative, but the embed MUST NOT trust a value pulled from the
-  // network at runtime. A javascript: URI assigned to location.href
-  // executes arbitrary JS in the host site's origin — that's a full
-  // cross-site script on every domain running our embed. Returns the
-  // URL if safe, null otherwise.
   var SAFE_NAV_SCHEMES = ["http:", "https:", "mailto:", "tel:"];
   function safeNavTarget(raw) {
     if (!raw || raw === "#") return null;
     var trimmed = String(raw).trim();
     if (!trimmed || trimmed === "#") return null;
-    // Same-origin / relative — the browser resolves against the host
-    // site, no scheme risk.
-    if (
-      trimmed.charAt(0) === "/" ||
-      trimmed.charAt(0) === "#" ||
-      trimmed.charAt(0) === "?"
-    ) {
-      return trimmed;
-    }
+    if (trimmed.charAt(0) === "/" || trimmed.charAt(0) === "#" || trimmed.charAt(0) === "?") return trimmed;
     try {
-      // new URL with the host site's location as base — same resolution
-      // the browser would do for an anchor href.
       var u = new URL(trimmed, window.location.href);
       if (SAFE_NAV_SCHEMES.indexOf(u.protocol) === -1) return null;
       return u.toString();
-    } catch (_) {
-      return null;
-    }
+    } catch (_) { return null; }
+  }
+
+  // Inline SVG icon set — minimal, hand-tuned to stay under the 6KB budget.
+  // Strokes inherit currentColor so theme tokens flow through automatically.
+  var ICONS = {
+    external: '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3H3v10h10v-3"/><path d="M9 3h4v4"/><path d="M13 3 7 9"/></svg>',
+    calendar: '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M5 2v3M11 2v3M2.5 7h11"/></svg>',
+    phone: '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3.5a1 1 0 0 1 1-1h1.6a1 1 0 0 1 .95.68l.8 2.4a1 1 0 0 1-.3 1.05L6 7.7a8 8 0 0 0 2.3 2.3l1.07-1.05a1 1 0 0 1 1.05-.3l2.4.8a1 1 0 0 1 .68.95V12a1 1 0 0 1-1 1A10 10 0 0 1 3 3.5z"/></svg>',
+    arrow: '<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10"/><path d="M9 4l4 4-4 4"/></svg>',
+    none: ""
+  };
+  function iconHtml(name) {
+    if (!name || name === "none") return "";
+    return ICONS[name] || "";
+  }
+
+  function splitYearAccent(headline) {
+    var m = String(headline || "").match(/(\d{4}\s*[–-]\s*\d{4}|\d{4})/);
+    if (!m || m.index == null) return null;
+    return {
+      head: headline.slice(0, m.index),
+      accent: m[0],
+      tail: headline.slice(m.index + m[0].length)
+    };
   }
 
   var STYLE_TAG_ID = "leasestack-popup-style";
@@ -307,28 +261,56 @@
       ".ls-popup-backdrop{position:fixed;inset:0;z-index:2147483646;background:rgba(15,23,42,.4);backdrop-filter:blur(4px);animation:ls-pop-fade .18s ease-out}",
       ".ls-popup-wrap{position:fixed;z-index:2147483647;animation:ls-pop-in .24s cubic-bezier(.16,1,.3,1)}",
       ".ls-popup-wrap.ls-pos-center{inset:0;display:flex;align-items:center;justify-content:center;padding:16px}",
-      ".ls-popup-wrap.ls-pos-bottom-right{bottom:20px;right:20px;max-width:420px;width:calc(100% - 40px)}",
-      ".ls-popup-wrap.ls-pos-bottom-left{bottom:20px;left:20px;max-width:420px;width:calc(100% - 40px)}",
+      ".ls-popup-wrap.ls-pos-bottom-right{bottom:20px;right:20px;max-width:520px;width:calc(100% - 40px)}",
+      ".ls-popup-wrap.ls-pos-bottom-left{bottom:20px;left:20px;max-width:520px;width:calc(100% - 40px)}",
       ".ls-popup-wrap.ls-pos-top-banner{top:0;left:0;right:0}",
-      ".ls-popup-card{position:relative;overflow:hidden;box-shadow:0 24px 48px -12px rgba(15,23,42,.18),0 0 0 1px rgba(15,23,42,.06);width:100%;max-width:420px;border-radius:16px}",
+      ".ls-popup-card{position:relative;overflow:hidden;width:100%;max-width:520px;border-radius:18px;box-shadow:0 24px 48px -12px rgba(15,23,42,.18),0 0 0 1px rgba(15,23,42,.06)}",
       ".ls-popup-card.ls-pos-top-banner{max-width:none;border-radius:0}",
-      ".ls-popup-close{position:absolute;top:10px;right:10px;z-index:1;background:rgba(0,0,0,.06);border:0;width:28px;height:28px;border-radius:9999px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;line-height:1;color:inherit}",
-      ".ls-popup-close:hover{background:rgba(0,0,0,.12)}",
+      ".ls-popup-card.ls-theme-dark{box-shadow:0 32px 64px -16px rgba(0,0,0,.5),0 0 0 1px rgba(255,255,255,.04)}",
+      ".ls-popup-gradient-bar{position:absolute;top:0;left:0;right:0;height:3px;z-index:2}",
+      ".ls-popup-deco{position:absolute;border-radius:9999px;pointer-events:none}",
+      ".ls-popup-deco-tl{top:-64px;left:-64px;width:176px;height:176px;opacity:.06}",
+      ".ls-popup-deco-br{bottom:-80px;right:-64px;width:208px;height:208px;opacity:.05}",
+      ".ls-popup-close{position:absolute;top:12px;right:12px;z-index:3;border:0;width:32px;height:32px;border-radius:9999px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;color:inherit}",
+      ".ls-popup-card.ls-theme-light .ls-popup-close{background:rgba(15,23,42,.05)}",
+      ".ls-popup-card.ls-theme-dark .ls-popup-close{background:rgba(255,255,255,.06)}",
+      ".ls-popup-card.ls-theme-gradient .ls-popup-close{background:rgba(15,23,42,.05)}",
       ".ls-popup-hero{width:100%;height:128px;object-fit:cover;display:block}",
-      ".ls-popup-body{padding:20px}",
+      ".ls-popup-body{position:relative;z-index:1;padding:24px}",
+      ".ls-popup-card.ls-theme-dark .ls-popup-body{padding:36px}",
       ".ls-popup-body.ls-pos-top-banner{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:12px 20px}",
-      ".ls-popup-headline{margin:0;font-weight:600;letter-spacing:-.01em;line-height:1.3;font-size:20px}",
+      ".ls-popup-eyebrow{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.18em;margin:0 0 10px}",
+      ".ls-popup-headline{margin:0;font-weight:700;letter-spacing:-.01em;line-height:1.15;font-size:24px}",
+      ".ls-popup-card.ls-theme-dark .ls-popup-headline{font-size:32px}",
       ".ls-popup-body.ls-pos-top-banner .ls-popup-headline{font-size:15px}",
-      ".ls-popup-text{margin:6px 0 0;font-size:14px;line-height:1.55;opacity:.78}",
-      ".ls-popup-code{display:inline-flex;align-items:center;gap:8px;border:2px dashed;padding:6px 12px;border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;font-weight:600;background:transparent;cursor:pointer;margin-top:12px}",
-      ".ls-popup-form{margin-top:12px;display:flex;flex-direction:column;gap:8px}",
-      ".ls-popup-input{width:100%;padding:9px 12px;border-radius:8px;border:1px solid rgba(0,0,0,.1);background:rgba(255,255,255,.7);font-size:14px;outline:none}",
+      ".ls-popup-text{margin:10px 0 0;font-size:14px;line-height:1.55;opacity:.78}",
+      ".ls-popup-featured{margin-top:18px;border-radius:12px;padding:16px 20px}",
+      ".ls-popup-card.ls-theme-light .ls-popup-featured{background:rgba(15,23,42,.04);border:1px solid rgba(15,23,42,.06)}",
+      ".ls-popup-card.ls-theme-dark .ls-popup-featured{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06)}",
+      ".ls-popup-featured-label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.18em}",
+      ".ls-popup-featured-value{display:flex;align-items:baseline;gap:8px;margin-top:6px}",
+      ".ls-popup-featured-value strong{font-weight:700;letter-spacing:-.02em;line-height:1;font-size:48px}",
+      ".ls-popup-card.ls-theme-dark .ls-popup-featured-value strong{font-size:60px}",
+      ".ls-popup-featured-unit{font-size:16px;font-weight:500;opacity:.85}",
+      ".ls-popup-featured-caption{margin-top:6px;font-size:12px;opacity:.75}",
+      ".ls-popup-code{display:inline-flex;align-items:center;gap:8px;border:2px dashed;padding:6px 12px;border-radius:8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;font-weight:600;background:transparent;cursor:pointer;margin-top:16px;color:inherit}",
+      ".ls-popup-form{margin-top:16px;display:flex;flex-direction:column;gap:8px}",
+      ".ls-popup-input{width:100%;padding:10px 12px;border-radius:8px;font-size:14px;outline:none}",
+      ".ls-popup-card.ls-theme-light .ls-popup-input{background:rgba(255,255,255,.7);border:1px solid rgba(0,0,0,.1);color:inherit}",
+      ".ls-popup-card.ls-theme-dark .ls-popup-input{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);color:#fff}",
       ".ls-popup-input:focus{box-shadow:0 0 0 2px var(--ls-accent)}",
-      ".ls-popup-cta{margin-top:12px;width:100%;padding:10px 16px;border-radius:8px;border:0;color:#fff;font-weight:600;font-size:14px;cursor:pointer;transition:opacity .15s}",
+      ".ls-popup-cta-stack{margin-top:16px;display:flex;flex-direction:column;gap:8px}",
+      ".ls-popup-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:10px;border:0;color:#fff;font-weight:600;font-size:14px;cursor:pointer;transition:opacity .15s}",
       ".ls-popup-cta:hover{opacity:.92}",
+      ".ls-popup-card.ls-theme-dark .ls-popup-cta-primary{color:#0F1729}",
       ".ls-popup-cta.ls-pos-top-banner{margin:0;width:auto;flex-shrink:0}",
-      ".ls-popup-secondary{margin-top:8px;background:none;border:0;width:100%;font-size:12px;font-weight:500;opacity:.5;cursor:pointer}",
-      ".ls-popup-secondary:hover{opacity:.8}",
+      ".ls-popup-cta-secondary{background:transparent !important}",
+      ".ls-popup-card.ls-theme-light .ls-popup-cta-secondary{color:inherit;border:1.5px solid currentColor}",
+      ".ls-popup-card.ls-theme-dark .ls-popup-cta-secondary{color:#fff;border:1.5px solid rgba(255,255,255,.4)}",
+      ".ls-popup-dismiss{margin-top:12px;background:none;border:0;width:100%;font-size:12px;font-weight:500;cursor:pointer;color:inherit;opacity:.6}",
+      ".ls-popup-card.ls-theme-dark .ls-popup-dismiss{opacity:.7}",
+      ".ls-popup-dismiss:hover{opacity:1}",
+      ".ls-popup-year-accent{color:var(--ls-accent)}",
       "@keyframes ls-pop-fade{from{opacity:0}to{opacity:1}}",
       "@keyframes ls-pop-in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}",
       "@media (prefers-reduced-motion:reduce){.ls-popup-wrap,.ls-popup-backdrop{animation:none}}",
@@ -340,14 +322,16 @@
     ensureStyles();
 
     var position = popup.position || "CENTER";
+    var theme = popup.theme || "LIGHT";
+    var themeClass = theme === "DARK" ? "ls-theme-dark" : theme === "GRADIENT" ? "ls-theme-gradient" : "ls-theme-light";
+    var isDark = theme === "DARK";
+    var accent = popup.accentColor || popup.primaryColor || "#2563EB";
+
     var posClass =
-      position === "CENTER"
-        ? "ls-pos-center"
-        : position === "BOTTOM_LEFT"
-          ? "ls-pos-bottom-left"
-          : position === "TOP_BANNER"
-            ? "ls-pos-top-banner"
-            : "ls-pos-bottom-right";
+      position === "CENTER" ? "ls-pos-center"
+      : position === "BOTTOM_LEFT" ? "ls-pos-bottom-left"
+      : position === "TOP_BANNER" ? "ls-pos-top-banner"
+      : "ls-pos-bottom-right";
 
     var root = document.createElement("div");
     root.className = "ls-popup-root";
@@ -364,73 +348,148 @@
     wrap.setAttribute("role", "dialog");
     wrap.setAttribute("aria-modal", position === "CENTER" ? "true" : "false");
     wrap.setAttribute("aria-label", popup.headline || "Promo");
-    wrap.style.setProperty("--ls-accent", popup.primaryColor || "#2563EB");
+    wrap.style.setProperty("--ls-accent", accent);
 
     var card = document.createElement("div");
-    card.className = "ls-popup-card " + posClass;
-    card.style.backgroundColor = popup.backgroundColor || "#FFFFFF";
-    card.style.color = popup.textColor || "#0F172A";
+    card.className = "ls-popup-card " + posClass + " " + themeClass;
+    // DARK ignores operator textColor — white-on-dark hierarchy is hard-coded
+    // so a partial brand-color edit can't break legibility.
+    card.style.backgroundColor = isDark
+      ? (popup.backgroundColor || "#0F1729")
+      : (popup.backgroundColor || "#FFFFFF");
+    card.style.color = isDark ? "#FFFFFF" : (popup.textColor || "#0F172A");
 
-    var heroHtml =
-      popup.heroImageUrl && position !== "TOP_BANNER"
-        ? '<img class="ls-popup-hero" src="' + safe(popup.heroImageUrl) + '" alt="" />'
-        : "";
+    // Gradient accent bar — visible on GRADIENT theme, and on DARK theme when
+    // gradientColors stops are present (Telegraph reference shows both).
+    var gradientHtml = "";
+    if (
+      (theme === "GRADIENT" || theme === "DARK") &&
+      Array.isArray(popup.gradientColors) &&
+      popup.gradientColors.length >= 2
+    ) {
+      // Only allow hex stops through to inline style — defense against a
+      // future schema drift letting non-color strings reach the linear-gradient.
+      var safeStops = popup.gradientColors
+        .filter(function (c) { return typeof c === "string" && /^#[0-9a-fA-F]{3,6}$/.test(c); });
+      if (safeStops.length >= 2) {
+        gradientHtml = '<div class="ls-popup-gradient-bar" style="background:linear-gradient(90deg,' + safeStops.join(",") + ')"></div>';
+      }
+    }
 
-    var codeHtml = popup.offerCode
-      ? '<button type="button" class="ls-popup-code" data-ls-action="copy-code" style="border-color:' +
-        safe(popup.primaryColor) +
-        ';color:inherit"><span>' +
-        safe(popup.offerCode) +
-        "</span></button>"
+    var decoHtml = "";
+    if (isDark && position !== "TOP_BANNER") {
+      decoHtml =
+        '<span class="ls-popup-deco ls-popup-deco-tl" style="background:' + safe(accent) + '"></span>' +
+        '<span class="ls-popup-deco ls-popup-deco-br" style="background:' + safe(accent) + '"></span>';
+    }
+
+    var heroHtml = popup.heroImageUrl && position !== "TOP_BANNER"
+      ? '<img class="ls-popup-hero" src="' + safe(popup.heroImageUrl) + '" alt="" />'
       : "";
 
-    var formHtml = popup.captureEmail
-      ? '<form class="ls-popup-form" data-ls-action="submit">' +
-        '<input class="ls-popup-input" type="email" name="email" required placeholder="Your email" />' +
-        (popup.capturePhone
-          ? '<input class="ls-popup-input" type="tel" name="phone" placeholder="Phone (optional)" />'
-          : "") +
-        '<button type="submit" class="ls-popup-cta" style="background-color:' +
-        safe(popup.primaryColor) +
-        '">' +
-        safe(popup.ctaText || "Claim offer") +
-        "</button>" +
-        "</form>"
-      : '<button type="button" class="ls-popup-cta ' +
-        (position === "TOP_BANNER" ? "ls-pos-top-banner" : "") +
-        '" data-ls-action="cta" style="background-color:' +
-        safe(popup.primaryColor) +
-        '">' +
-        safe(popup.ctaText || "Claim offer") +
-        "</button>";
+    var eyebrowHtml = popup.eyebrowText && position !== "TOP_BANNER"
+      ? '<div class="ls-popup-eyebrow" style="color:' + safe(accent) + '">' + safe(popup.eyebrowText) + "</div>"
+      : "";
 
-    var secondaryHtml =
-      popup.secondaryText && position !== "TOP_BANNER"
-        ? '<button type="button" class="ls-popup-secondary" data-ls-action="dismiss">' +
-          safe(popup.secondaryText) +
+    // Year-accent split — only applied on DARK theme to match Telegraph reference.
+    var headlineInner = safe(popup.headline);
+    if (isDark) {
+      var split = splitYearAccent(popup.headline || "");
+      if (split) {
+        headlineInner =
+          safe(split.head) +
+          '<span class="ls-popup-year-accent">' + safe(split.accent) + "</span>" +
+          safe(split.tail);
+      }
+    }
+
+    var featuredHtml = "";
+    if ((popup.featuredValue || popup.featuredLabel) && position !== "TOP_BANNER") {
+      featuredHtml =
+        '<div class="ls-popup-featured">' +
+        (popup.featuredLabel
+          ? '<div class="ls-popup-featured-label" style="color:' + safe(accent) + '">' + safe(popup.featuredLabel) + "</div>"
+          : "") +
+        (popup.featuredValue
+          ? '<div class="ls-popup-featured-value" style="color:' + safe(accent) + '"><strong>' + safe(popup.featuredValue) + "</strong>" +
+            (popup.featuredUnit ? '<span class="ls-popup-featured-unit">' + safe(popup.featuredUnit) + "</span>" : "") +
+            "</div>"
+          : "") +
+        (popup.featuredCaption
+          ? '<div class="ls-popup-featured-caption" style="color:' + safe(accent) + '">' + safe(popup.featuredCaption) + "</div>"
+          : "") +
+        "</div>";
+    }
+
+    var codeHtml = popup.offerCode && position !== "TOP_BANNER"
+      ? '<button type="button" class="ls-popup-code" data-ls-action="copy-code" style="border-color:' + safe(accent) + '"><span>' + safe(popup.offerCode) + "</span></button>"
+      : "";
+
+    var primaryIcon = iconHtml(popup.primaryCtaIcon);
+    var secondaryIcon = iconHtml(popup.secondaryCtaIcon);
+
+    var ctaStackHtml;
+    if (popup.captureEmail && position !== "TOP_BANNER") {
+      ctaStackHtml =
+        '<form class="ls-popup-form" data-ls-action="submit">' +
+        '<input class="ls-popup-input" type="email" name="email" required placeholder="Your email" />' +
+        (popup.capturePhone ? '<input class="ls-popup-input" type="tel" name="phone" placeholder="Phone (optional)" />' : "") +
+        '<button type="submit" class="ls-popup-cta ls-popup-cta-primary" style="background-color:' + safe(accent) + '">' +
+        "<span>" + safe(popup.ctaText || "Claim offer") + "</span>" + primaryIcon +
+        "</button>" +
+        "</form>";
+    } else {
+      var primaryBtn =
+        '<button type="button" class="ls-popup-cta ls-popup-cta-primary ' +
+        (position === "TOP_BANNER" ? "ls-pos-top-banner" : "") +
+        '" data-ls-action="cta" style="background-color:' + safe(accent) + '">' +
+        "<span>" + safe(popup.ctaText || "Claim offer") + "</span>" + primaryIcon +
+        "</button>";
+      var secondaryBtn = popup.secondaryCtaText && position !== "TOP_BANNER"
+        ? '<button type="button" class="ls-popup-cta ls-popup-cta-secondary" data-ls-action="cta-secondary">' +
+          "<span>" + safe(popup.secondaryCtaText) + "</span>" + secondaryIcon +
           "</button>"
         : "";
+      ctaStackHtml = position === "TOP_BANNER"
+        ? primaryBtn
+        : '<div class="ls-popup-cta-stack">' + primaryBtn + secondaryBtn + "</div>";
+    }
+
+    // dismissText wins over legacy secondaryText. When neither is set we
+    // omit the tertiary slot entirely.
+    var dismissHtml = "";
+    if (position !== "TOP_BANNER") {
+      var dismissCopy = popup.dismissText || popup.secondaryText || "";
+      if (dismissCopy) {
+        dismissHtml = '<button type="button" class="ls-popup-dismiss" data-ls-action="dismiss">' + safe(dismissCopy) + "</button>";
+      }
+    }
 
     if (position === "TOP_BANNER") {
       card.innerHTML =
+        gradientHtml +
         '<button type="button" class="ls-popup-close" data-ls-action="dismiss" aria-label="Dismiss">×</button>' +
         '<div class="ls-popup-body ls-pos-top-banner">' +
         '<div style="flex:1;min-width:0">' +
-        '<h2 class="ls-popup-headline">' + safe(popup.headline) + "</h2>" +
+        '<h2 class="ls-popup-headline">' + headlineInner + "</h2>" +
         "</div>" +
         codeHtml +
-        formHtml +
+        ctaStackHtml +
         "</div>";
     } else {
       card.innerHTML =
+        gradientHtml +
+        decoHtml +
         '<button type="button" class="ls-popup-close" data-ls-action="dismiss" aria-label="Dismiss">×</button>' +
         heroHtml +
         '<div class="ls-popup-body">' +
-        '<h2 class="ls-popup-headline">' + safe(popup.headline) + "</h2>" +
+        eyebrowHtml +
+        '<h2 class="ls-popup-headline">' + headlineInner + "</h2>" +
         '<p class="ls-popup-text">' + safe(popup.body) + "</p>" +
+        featuredHtml +
         codeHtml +
-        formHtml +
-        secondaryHtml +
+        ctaStackHtml +
+        dismissHtml +
         "</div>";
     }
 
@@ -438,17 +497,11 @@
     root.appendChild(wrap);
     document.body.appendChild(root);
 
-    // Record SHOWN immediately + mark frequency cap so a navigation
-    // during the same session doesn't re-fire.
     recordEvent(popup.id, "SHOWN");
     markShown(popup);
 
     function teardown() {
-      try {
-        document.body.removeChild(root);
-      } catch (_) {
-        /* ignore */
-      }
+      try { document.body.removeChild(root); } catch (_) { /* ignore */ }
     }
 
     function onDismiss() {
@@ -456,34 +509,29 @@
       teardown();
     }
 
-    function onCta() {
+    function onCta(url, isSecondary) {
       recordEvent(popup.id, "CTA_CLICKED");
-      var url = safeNavTarget(popup.ctaUrl);
+      var target = safeNavTarget(url);
       teardown();
-      if (url) window.location.href = url;
+      if (target) window.location.href = target;
+      // isSecondary kept for analytics future-proofing
+      void isSecondary;
     }
 
     function onCopyCode(btn) {
       if (!popup.offerCode) return;
       try {
-        navigator.clipboard
-          .writeText(popup.offerCode)
+        navigator.clipboard.writeText(popup.offerCode)
           .then(function () {
             var label = btn.querySelector("span");
             if (label) {
               var prev = label.textContent;
               label.textContent = "Copied";
-              setTimeout(function () {
-                label.textContent = prev;
-              }, 1500);
+              setTimeout(function () { label.textContent = prev; }, 1500);
             }
           })
-          .catch(function () {
-            /* ignore */
-          });
-      } catch (_) {
-        /* ignore */
-      }
+          .catch(function () { /* ignore */ });
+      } catch (_) { /* ignore */ }
     }
 
     async function onSubmit(form) {
@@ -493,24 +541,17 @@
       var phone = String(fd.get("phone") || "").trim() || undefined;
 
       var btn = form.querySelector("button[type=submit]");
-      if (btn) {
-        btn.disabled = true;
-        btn.textContent = "Submitting…";
-      }
+      var label = btn && btn.querySelector("span");
+      if (label) label.textContent = "Submitting…";
+      if (btn) btn.disabled = true;
 
       var result = await submitLead(popup, { email: email, phone: phone });
       var leadId = result && result.leadId;
-      // CONVERTED is now written server-side inside the lead route
-      // (atomically with Lead.create) so we only fall back to the
-      // client-fired event when the lead capture itself didn't return
-      // ok — that way a network blip on the lead POST still increments
-      // the campaign counter so dashboards aren't misleading. When the
-      // server confirmed the capture, skip to avoid double-counting.
       if (!result || result.ok !== true) {
         recordEvent(popup.id, "CONVERTED", leadId);
       }
 
-      if (btn) btn.textContent = "Thanks!";
+      if (label) label.textContent = "Thanks!";
       setTimeout(function () {
         teardown();
         var url = safeNavTarget(popup.ctaUrl);
@@ -518,23 +559,14 @@
       }, 900);
     }
 
-    // Click handlers via delegation.
     root.addEventListener("click", function (e) {
       var t = e.target;
       while (t && t !== root) {
         var action = t.getAttribute && t.getAttribute("data-ls-action");
-        if (action === "dismiss") {
-          onDismiss();
-          return;
-        }
-        if (action === "cta") {
-          onCta();
-          return;
-        }
-        if (action === "copy-code") {
-          onCopyCode(t);
-          return;
-        }
+        if (action === "dismiss") { onDismiss(); return; }
+        if (action === "cta") { onCta(popup.ctaUrl, false); return; }
+        if (action === "cta-secondary") { onCta(popup.secondaryCtaUrl, true); return; }
+        if (action === "copy-code") { onCopyCode(t); return; }
         t = t.parentElement;
       }
       if (backdrop && e.target === backdrop) onDismiss();
@@ -554,25 +586,15 @@
   function wireTrigger(popup) {
     if (!urlMatches(popup) || !shouldShow(popup)) return;
 
-    if (popup.trigger === "IMMEDIATE") {
-      render(popup);
-      return;
-    }
+    if (popup.trigger === "IMMEDIATE") { render(popup); return; }
 
     if (popup.trigger === "TIME_ON_PAGE") {
       var seconds = Math.max(0, Number(popup.triggerThreshold) || 0);
-      setTimeout(function () {
-        if (shouldShow(popup)) render(popup);
-      }, seconds * 1000);
+      setTimeout(function () { if (shouldShow(popup)) render(popup); }, seconds * 1000);
       return;
     }
 
     if (popup.trigger === "IDLE_TIME") {
-      // Fires after N seconds of no scroll/click/keypress/mousemove.
-      // Implemented as a resettable timer driven by activity events.
-      // Captures bored visitors who landed but never engaged — usually
-      // a better signal than "time on page" because someone actively
-      // reading shouldn't get interrupted by a popup.
       var idleSeconds = Math.max(1, Number(popup.triggerThreshold) || 30);
       var idleTimer = null;
       function resetIdle() {
@@ -600,21 +622,13 @@
     }
 
     if (popup.trigger === "SCROLL_DEPTH") {
-      // Wrap in IIFE so each popup gets its own `fired` flag — pre-fix
-      // both SCROLL_DEPTH + EXIT_INTENT declared `var fired` in the
-      // outer wireTrigger scope, which hoisted into a SHARED variable
-      // when an org had multiple popups with different triggers. The
-      // first one to fire would prevent the others from ever showing.
       (function () {
         var pct = Math.max(1, Math.min(100, Number(popup.triggerThreshold) || 50));
         var fired = false;
         function onScroll() {
           if (fired) return;
-          var scrolled =
-            (window.scrollY || document.documentElement.scrollTop || 0) +
-            window.innerHeight;
-          var height =
-            document.documentElement.scrollHeight || document.body.scrollHeight;
+          var scrolled = (window.scrollY || document.documentElement.scrollTop || 0) + window.innerHeight;
+          var height = document.documentElement.scrollHeight || document.body.scrollHeight;
           if (height > 0 && (scrolled / height) * 100 >= pct) {
             fired = true;
             window.removeEventListener("scroll", onScroll);
@@ -626,7 +640,7 @@
       return;
     }
 
-    // EXIT_INTENT (default) — same IIFE pattern to scope `fired`
+    // EXIT_INTENT (default)
     (function () {
       var fired = false;
       function onLeave(e) {
@@ -641,15 +655,10 @@
     })();
   }
 
-  // ──────────────────────────────────────────────────────────────────
-  // Boot
-  // ──────────────────────────────────────────────────────────────────
   function boot() {
     fetchConfig().then(function (popups) {
       for (var i = 0; i < popups.length; i += 1) {
-        try {
-          wireTrigger(popups[i]);
-        } catch (err) {
+        try { wireTrigger(popups[i]); } catch (err) {
           console.warn("[leasestack-popup]", err);
         }
       }

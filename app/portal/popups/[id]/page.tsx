@@ -80,6 +80,36 @@ export default async function PopupEditorPage({
           captureEmail: popup.captureEmail,
           capturePhone: popup.capturePhone,
           propertyId: popup.propertyId,
+          // Phase 1 — design parity fields. NULL on legacy rows; the editor
+          // and preview both fall through to v1 treatment when unset.
+          eyebrowText: popup.eyebrowText,
+          accentColor: popup.accentColor,
+          theme: popup.theme,
+          template: popup.template,
+          featuredLabel: popup.featuredLabel,
+          featuredValue: popup.featuredValue,
+          featuredUnit: popup.featuredUnit,
+          featuredCaption: popup.featuredCaption,
+          secondaryCtaText: popup.secondaryCtaText,
+          secondaryCtaUrl: popup.secondaryCtaUrl,
+          secondaryCtaIcon: (popup.secondaryCtaIcon ?? null) as
+            | "calendar"
+            | "phone"
+            | "external"
+            | "arrow"
+            | "none"
+            | null,
+          primaryCtaIcon: (popup.primaryCtaIcon ?? null) as
+            | "calendar"
+            | "phone"
+            | "external"
+            | "arrow"
+            | "none"
+            | null,
+          dismissText: popup.dismissText,
+          gradientColors: Array.isArray(popup.gradientColors)
+            ? (popup.gradientColors as string[])
+            : null,
         }}
         properties={properties}
       />

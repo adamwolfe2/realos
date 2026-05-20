@@ -115,7 +115,9 @@ export async function GET(
   const popups = await getActivePopupsForEmbed(org.id, propertySlug);
 
   // Project to public-safe shape. We deliberately do NOT include
-  // orgId, propertyId, internal counters, or audit-time fields.
+  // orgId, propertyId, internal counters, or audit-time fields. The
+  // phase 1 design fields are all visitor-safe (already rendered to
+  // every visitor — they're just additional copy + style metadata).
   const payload = popups.map((p) => ({
     id: p.id,
     headline: p.headline,
@@ -137,6 +139,23 @@ export async function GET(
     heroImageUrl: p.heroImageUrl,
     captureEmail: p.captureEmail,
     capturePhone: p.capturePhone,
+    // Phase 1 — design parity additions
+    eyebrowText: p.eyebrowText,
+    accentColor: p.accentColor,
+    theme: p.theme,
+    template: p.template,
+    featuredLabel: p.featuredLabel,
+    featuredValue: p.featuredValue,
+    featuredUnit: p.featuredUnit,
+    featuredCaption: p.featuredCaption,
+    secondaryCtaText: p.secondaryCtaText,
+    secondaryCtaUrl: p.secondaryCtaUrl,
+    secondaryCtaIcon: p.secondaryCtaIcon,
+    primaryCtaIcon: p.primaryCtaIcon,
+    dismissText: p.dismissText,
+    gradientColors: Array.isArray(p.gradientColors)
+      ? (p.gradientColors as string[])
+      : null,
   }));
 
   // Same cacheHeaders as the empty branches above — uniform across

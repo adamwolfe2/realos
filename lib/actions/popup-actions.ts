@@ -7,11 +7,13 @@ import {
   AuditAction,
   PopupPosition,
   PopupStatus,
+  PopupTheme,
   PopupTrigger,
   Prisma,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { auditPayload, requireScope } from "@/lib/tenancy/scope";
+import { getPopupTemplate } from "@/lib/popups/templates";
 
 // ---------------------------------------------------------------------------
 // Popup module server actions.
@@ -70,6 +72,24 @@ const ctaUrlSchema = z
   })
   .default("#");
 
+// Icon enum-as-string. Kept loose (`z.string()`) at the column level so the
+// renderer can ignore an unknown value gracefully, but pinned to a known
+// vocab at the input schema for the editor.
+const ICON_ENUM = ["calendar", "phone", "external", "arrow", "none"] as const;
+const iconSchema = z
+  .enum(ICON_ENUM)
+  .nullable()
+  .optional()
+  .or(z.literal("").transform(() => null));
+
+// Up to 4 gradient stops, each a valid hex color. Empty / null means
+// "use the legacy treatment" (no gradient bar).
+const gradientColorsSchema = z
+  .array(z.string().regex(HEX_COLOR))
+  .max(4)
+  .nullable()
+  .optional();
+
 const heroImageUrlSchema = z
   .string()
   .trim()
@@ -106,6 +126,23 @@ const upsertSchema = z.object({
   captureEmail: z.boolean().default(true),
   capturePhone: z.boolean().default(false),
   propertyId: z.string().min(1).nullable().optional(),
+
+  // Phase 1 — design parity additions. All nullable so an operator
+  // can clear a field by submitting null / "".
+  eyebrowText: z.string().trim().max(60).nullable().optional(),
+  accentColor: z.string().regex(HEX_COLOR).nullable().optional(),
+  theme: z.nativeEnum(PopupTheme).default(PopupTheme.LIGHT),
+  template: z.string().trim().max(80).nullable().optional(),
+  featuredLabel: z.string().trim().max(60).nullable().optional(),
+  featuredValue: z.string().trim().max(40).nullable().optional(),
+  featuredUnit: z.string().trim().max(20).nullable().optional(),
+  featuredCaption: z.string().trim().max(120).nullable().optional(),
+  secondaryCtaText: z.string().trim().max(40).nullable().optional(),
+  secondaryCtaUrl: ctaUrlSchema.nullable().optional(),
+  secondaryCtaIcon: iconSchema,
+  primaryCtaIcon: iconSchema,
+  dismissText: z.string().trim().max(60).nullable().optional(),
+  gradientColors: gradientColorsSchema,
 });
 
 export async function createPopup(
@@ -136,8 +173,7 @@ export async function createPopup(
   const created = await prisma.popupCampaign.create({
     data: {
       orgId: scope.orgId,
-      ...parsed.data,
-      targetUrlPatterns: parsed.data.targetUrlPatterns,
+      ...toPrismaData(parsed.data),
     },
     select: { id: true },
   });
@@ -186,7 +222,7 @@ export async function updatePopup(
 
   const updated = await prisma.popupCampaign.updateMany({
     where: { id, orgId: scope.orgId },
-    data: parsed.data,
+    data: toPrismaData(parsed.data),
   });
   if (updated.count === 0) {
     return { ok: false, error: "Popup not found." };
@@ -283,15 +319,28 @@ export async function deletePopup(id: string): Promise<ActionResult> {
  * editor on success.
  */
 export async function createPopupFromForm(formData: FormData): Promise<void> {
-  const name = (formData.get("name") ?? "").toString().trim() || "Untitled popup";
-  const result = await createPopup({
-    name,
+  const rawName = (formData.get("name") ?? "").toString().trim();
+  const templateId = (formData.get("templateId") ?? "").toString().trim() || null;
+  const template = getPopupTemplate(templateId);
+
+  // Blank-create defaults — preserved verbatim from v1 so the "Start from
+  // scratch" path produces the exact same row as it did before phase 1.
+  const blankDefaults = {
+    name: rawName || "Untitled popup",
     status: PopupStatus.DRAFT,
-    headline: name,
+    headline: rawName || "Untitled popup",
     body: "Tell visitors why they should claim this offer.",
     ctaText: "Claim offer",
     ctaUrl: "#",
-  });
+  } as const;
+
+  // Templated create — merge template defaults on top of blank defaults
+  // and override `name` if the operator typed one in the picker.
+  const payload = template
+    ? { ...template.defaults, name: rawName || template.defaults.name }
+    : blankDefaults;
+
+  const result = await createPopup(payload);
   if (result.ok && result.data) {
     redirect(`/portal/popups/${result.data.id}`);
   }
@@ -304,4 +353,46 @@ function firstZodError(err: z.ZodError): string {
   const issue = err.issues[0];
   if (!issue) return "Validation failed.";
   return issue.message ?? "Validation failed.";
+}
+
+/**
+ * Bridge between zod's parsed shape and Prisma's strict input types.
+ *
+ * Two specific reshapes:
+ *   1. JSON columns (`targetUrlPatterns`, `gradientColors`) — Prisma's
+ *      nullable Json input type demands either omitting the field, sending
+ *      a real value, or `Prisma.JsonNull`. A plain `null` from zod is a
+ *      type error, even though it persists as DB NULL.
+ *   2. `propertyId` — zod expresses "clear this field" as `null`, but
+ *      Prisma's update payload types `null` as `undefined`. We coerce it
+ *      to `undefined` (which means "don't change"); UI clears the value
+ *      by sending an empty string which zod normalizes to undefined.
+ */
+type UpsertInput = z.infer<typeof upsertSchema>;
+function toPrismaData(d: UpsertInput) {
+  // Strip the two JSON columns + propertyId so we can re-add them with the
+  // Prisma-safe shape. Spread keeps every other field intact.
+  const {
+    targetUrlPatterns,
+    gradientColors,
+    propertyId: _propertyId,
+    ...rest
+  } = d;
+
+  return {
+    ...rest,
+    // propertyId — surface only when set (otherwise leave unchanged on update,
+    // unset on create). The IDOR check above already gates non-null values.
+    ...(d.propertyId !== undefined ? { propertyId: d.propertyId } : {}),
+    // targetUrlPatterns — always an array; cast to InputJsonValue to satisfy
+    // Prisma's branded JSON type.
+    targetUrlPatterns: targetUrlPatterns as Prisma.InputJsonValue,
+    // gradientColors — null → Prisma.JsonNull, array → InputJsonValue,
+    // undefined → omit (no-op on update).
+    ...(gradientColors === undefined
+      ? {}
+      : gradientColors === null
+        ? { gradientColors: Prisma.JsonNull }
+        : { gradientColors: gradientColors as Prisma.InputJsonValue }),
+  };
 }

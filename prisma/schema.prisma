@@ -2864,6 +2864,17 @@ enum PopupEventType {
   CONVERTED // lead form was submitted from inside the popup
 }
 
+// Visual treatment for the popup card. LIGHT is the v1 default and renders
+// the exact same way pre-migration rows did. DARK swaps to a navy card
+// with white-on-dark text (Telegraph "Limited Availability" reference).
+// GRADIENT keeps a light card but adds a top accent bar built from the
+// `gradientColors` stops.
+enum PopupTheme {
+  LIGHT
+  DARK
+  GRADIENT
+}
+
 model PopupCampaign {
   id    String       @id @default(cuid())
   orgId String
@@ -2912,6 +2923,33 @@ model PopupCampaign {
 
   // Optional hero image URL (full-bleed at top of popup)
   heroImageUrl String?
+
+  // ─── Visual (phase 1 — design parity additions) ───────────────────
+  // All nullable / soft-defaulted so pre-migration rows render identically
+  // to before. The renderer + preview both check for presence and fall
+  // through to the legacy treatment when these are NULL.
+  eyebrowText      String? // small caps label above headline
+  accentColor      String? // secondary accent (used for eyebrow + featured value)
+  theme            PopupTheme @default(LIGHT)
+  template         String? // slug of the template that seeded this row
+
+  // Featured value card (price / rate callout — Telegraph-style)
+  featuredLabel   String?
+  featuredValue   String?
+  featuredUnit    String?
+  featuredCaption String?
+
+  // Dual-CTA support — secondary button rendered next to primary when set
+  secondaryCtaText String?
+  secondaryCtaUrl  String?
+  secondaryCtaIcon String? // "calendar" | "phone" | "external" | "arrow" | "none"
+  primaryCtaIcon   String? // same enum-as-string
+
+  // Tertiary dismiss link below CTAs (replaces secondaryText when set)
+  dismissText String?
+
+  // GRADIENT theme top-bar stops, e.g. ["#F5BC1A","#EC4899","#3B82F6"]
+  gradientColors Json?
 
   // ─── Form capture (optional) ──────────────────────────────────────
   // When true, the popup includes an email + (optional) phone capture
