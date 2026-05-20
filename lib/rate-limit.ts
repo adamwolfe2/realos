@@ -70,13 +70,14 @@ export const clientWriteLimiter = createLimiter(redis, 20, '1 m')
 // 5 enrich/scrape requests per userId per minute
 export const enrichLimiter = createLimiter(redis, 5, '1 m')
 
-// 10 Zillow report generations per org per minute. Tight enough to keep
-// us off Zillow's bot radar (they aggressively rate-limit scrapers and a
-// 403 wall affects every operator on the tenant, not just the abuser)
-// while still letting a sales demo or evaluation session click through
-// multiple listings in a row. The route consumes a token only AFTER URL
-// validation passes so typos don't burn the budget.
-export const zillowReportLimiter = createLimiter(redis, 10, '1 m')
+// 30 Zillow report generations per org per minute. Bumped from 10/min
+// after operators on real demos hit the cap clicking through multiple
+// comps in a row. Still tight enough that Zillow's bot wall stays away
+// (a single org can't push more than 30 outbound fetches/min) but lets
+// a power user evaluate 10+ listings during a deal review. The route
+// passes a softFallback so a misconfigured Vercel deploy missing Upstash
+// env vars degrades to in-memory limiting instead of 100% blocking.
+export const zillowReportLimiter = createLimiter(redis, 30, '1 m')
 
 // 3 reputation scans per userId per hour. On-demand and relatively expensive
 // (external API fan-out + Claude classification) so we cap per-user pressure.
@@ -112,6 +113,22 @@ export const webhookLimiter = createLimiter(redis, 1000, '1 m')
 // 30/hour is generous for legitimate use (even Norman bashing through QA
 // rarely exceeds 10) and stops a runaway script flat.
 export const bugReportLimiter = createLimiter(redis, 30, '1 h')
+
+// Soft-fallback configurations for public widget endpoints. When Upstash
+// isn't configured in Vercel env, these limiters degrade to single-instance
+// in-memory limiting instead of 100% blocking (which silently breaks the
+// chatbot/popup embeds on every tenant site). Each entry mirrors the
+// Redis-backed limit so behavior is consistent across both code paths.
+//
+// Call sites pass these to checkRateLimit as `{ softFallback: WIDGET_FALLBACK.config }`.
+// The fail-closed behavior is preserved for security-critical endpoints
+// (auth, checkout, internal admin) which simply don't pass softFallback.
+export const WIDGET_FALLBACK = {
+  chatbotConfig: { requests: 600, windowMs: 60_000 }, // matches chatbotConfigLimiter
+  publicApi: { requests: 60, windowMs: 60_000 }, // matches publicApiLimiter
+  popupEvent: { requests: 60, windowMs: 60_000 }, // matches popupEventLimiter
+  publicSignup: { requests: 5, windowMs: 60 * 60_000 }, // matches publicSignupLimiter
+} as const;
 
 // 60 popup-embed events per IP per minute. Protects denormalized counter
 // integrity (shownCount / convertedCount on PopupCampaign) from drive-by
@@ -160,9 +177,28 @@ export const vaultRevealLimiter = createLimiter(redis, 30, '1 m')
  */
 export async function checkRateLimit(
   limiter: Ratelimit | null,
-  identifier: string
+  identifier: string,
+  options?: { softFallback?: { requests: number; windowMs: number } },
 ): Promise<{ allowed: boolean; limit: number; remaining: number; reset: number }> {
   if (!limiter) {
+    // Soft fallback: low-stakes operator-facing tools (Zillow lookup,
+    // CSV export, etc.) opt in by passing softFallback. When Redis is
+    // missing in any env we degrade to an in-memory sliding-window
+    // limiter rather than 100% blocking the feature. Security-critical
+    // endpoints (auth, checkout, webhooks, public lead capture) do NOT
+    // pass softFallback and continue to fail closed in production.
+    if (options?.softFallback) {
+      const { allowed, limit, remaining, reset } = inMemoryAllow(
+        identifier,
+        options.softFallback.requests,
+        options.softFallback.windowMs,
+      );
+      if (!allowed && process.env.NODE_ENV === "production") {
+        // One-time warn per process so we know prod is falling back.
+        warnSoftFallbackOnce();
+      }
+      return { allowed, limit, remaining, reset };
+    }
     if (process.env.NODE_ENV === "production") {
       console.error(
         `rate-limit fail-closed: limiter is null (identifier=${identifier}). Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN.`,
@@ -186,6 +222,64 @@ export async function checkRateLimit(
     remaining: result.remaining,
     reset: result.reset,
   }
+}
+
+// ---------------------------------------------------------------------------
+// In-memory sliding-window fallback. Single-instance only (per lambda /
+// per Node process) — not coordinated across Vercel functions, so a
+// determined operator hitting multiple concurrent regions could exceed
+// the soft cap. That's an acceptable trade-off for low-stakes tools
+// where the alternative is hard-blocking 100% of requests.
+// ---------------------------------------------------------------------------
+
+const inMemoryBuckets = new Map<string, number[]>();
+let softFallbackWarned = false;
+
+function inMemoryAllow(
+  key: string,
+  requests: number,
+  windowMs: number,
+): { allowed: boolean; limit: number; remaining: number; reset: number } {
+  const now = Date.now();
+  const cutoff = now - windowMs;
+  const history = inMemoryBuckets.get(key) ?? [];
+  // Drop expired hits.
+  const live = history.filter((t) => t > cutoff);
+  if (live.length >= requests) {
+    // Rate limited. Reset = when the oldest live hit expires.
+    const oldest = live[0] ?? now;
+    inMemoryBuckets.set(key, live);
+    return {
+      allowed: false,
+      limit: requests,
+      remaining: 0,
+      reset: oldest + windowMs,
+    };
+  }
+  live.push(now);
+  inMemoryBuckets.set(key, live);
+  // Opportunistic cleanup to bound memory.
+  if (inMemoryBuckets.size > 5_000) {
+    for (const [k, v] of inMemoryBuckets) {
+      const fresh = v.filter((t) => t > cutoff);
+      if (fresh.length === 0) inMemoryBuckets.delete(k);
+      else inMemoryBuckets.set(k, fresh);
+    }
+  }
+  return {
+    allowed: true,
+    limit: requests,
+    remaining: requests - live.length,
+    reset: now + windowMs,
+  };
+}
+
+function warnSoftFallbackOnce(): void {
+  if (softFallbackWarned) return;
+  softFallbackWarned = true;
+  console.warn(
+    "rate-limit soft-fallback: Redis not configured — using in-memory sliding window for low-stakes endpoints. Set UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN in Vercel for coordinated limiting.",
+  );
 }
 
 /**

@@ -5,6 +5,7 @@ import {
   checkRateLimit,
   getIp,
   rateLimited,
+  WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
 
 // GET /api/public/chatbot/listings-summary?slug=<org-slug>
@@ -31,7 +32,9 @@ export function OPTIONS() {
 
 export async function GET(req: NextRequest) {
   const ip = getIp(req);
-  const { allowed } = await checkRateLimit(chatbotConfigLimiter, `ls:${ip}`);
+  const { allowed } = await checkRateLimit(chatbotConfigLimiter, `ls:${ip}`, {
+    softFallback: WIDGET_FALLBACK.chatbotConfig,
+  });
   if (!allowed) {
     return rateLimited("Rate limit exceeded", 60, { ...CORS_HEADERS });
   }

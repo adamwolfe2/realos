@@ -8,6 +8,7 @@ import {
   checkRateLimit,
   rateLimited,
   getIp,
+  WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -61,7 +62,9 @@ export async function POST(req: NextRequest) {
   // 60/min/IP is generous for legitimate embed traffic (a popup fires
   // at most once per pageview).
   const ip = getIp(req);
-  const rl = await checkRateLimit(popupEventLimiter, ip);
+  const rl = await checkRateLimit(popupEventLimiter, ip, {
+    softFallback: WIDGET_FALLBACK.popupEvent,
+  });
   if (!rl.allowed) {
     const retryAfterSec = Math.max(
       1,

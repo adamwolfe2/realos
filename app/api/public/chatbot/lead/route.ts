@@ -12,6 +12,7 @@ import {
   publicApiLimiter,
   checkRateLimit,
   getIp,
+  WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
 import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
 import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
@@ -61,7 +62,9 @@ export function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   const ip = getIp(req);
-  const { allowed } = await checkRateLimit(publicApiLimiter, ip);
+  const { allowed } = await checkRateLimit(publicApiLimiter, ip, {
+    softFallback: WIDGET_FALLBACK.publicApi,
+  });
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many requests" },

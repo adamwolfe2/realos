@@ -6,6 +6,7 @@ import {
   publicApiLimiter,
   checkRateLimit,
   getIp,
+  WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
 
 // GET /api/public/chatbot/inbox?sessionId=<uuid>&since=<iso>
@@ -39,7 +40,9 @@ export function OPTIONS() {
 
 export async function GET(req: NextRequest) {
   const ip = getIp(req);
-  const { allowed } = await checkRateLimit(publicApiLimiter, `inbox:${ip}`);
+  const { allowed } = await checkRateLimit(publicApiLimiter, `inbox:${ip}`, {
+    softFallback: WIDGET_FALLBACK.publicApi,
+  });
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many requests" },

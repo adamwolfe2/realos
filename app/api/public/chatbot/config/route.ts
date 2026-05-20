@@ -5,6 +5,7 @@ import {
   checkRateLimit,
   getIp,
   rateLimited,
+  WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
 
 // GET /api/public/chatbot/config?slug=<org-slug>
@@ -61,7 +62,9 @@ export function OPTIONS() {
 
 export async function GET(req: NextRequest) {
   const ip = getIp(req);
-  const { allowed } = await checkRateLimit(chatbotConfigLimiter, `cfg:${ip}`);
+  const { allowed } = await checkRateLimit(chatbotConfigLimiter, `cfg:${ip}`, {
+    softFallback: WIDGET_FALLBACK.chatbotConfig,
+  });
   if (!allowed) {
     // Cache the 429 too — otherwise a misbehaving client (or a hot
     // edge node with no cached success response) loops on the

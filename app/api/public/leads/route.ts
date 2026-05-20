@@ -5,6 +5,7 @@ import {
   publicSignupLimiter,
   checkRateLimit,
   getIp,
+  WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
 import {
   LeadSource,
@@ -40,7 +41,9 @@ const schema = z.object({
 // Rate-limited by IP so a competitor can't flood a tenant.
 export async function POST(req: NextRequest) {
   const ip = getIp(req);
-  const { allowed } = await checkRateLimit(publicSignupLimiter, ip);
+  const { allowed } = await checkRateLimit(publicSignupLimiter, ip, {
+    softFallback: WIDGET_FALLBACK.publicSignup,
+  });
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many requests" },

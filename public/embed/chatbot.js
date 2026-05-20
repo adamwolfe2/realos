@@ -98,18 +98,72 @@
   var root = null;
   var elements = {};
 
-  fetch(CONFIG_URL, { method: "GET", credentials: "omit" })
-    .then(function (res) { return res.json(); })
-    .then(function (cfg) {
-      if (!cfg || !cfg.enabled) return;
-      state.config = cfg;
-      ensureAnalytics(cfg);
-      mount();
-      fetchListingsSummary();
-    })
-    .catch(function (err) {
-      console.warn("[leasestack chatbot] config fetch failed:", err);
-    });
+  // Load config with retry-and-backoff on transient failures (429, 5xx,
+  // network blips). Pre-fix the embed silently bailed on 429 because the
+  // success path parsed res.json() unconditionally — a 429 body shaped
+  // { error: "..." } has no `enabled: true` so the widget vanished with
+  // only an obscure console.warn. Now we surface the HTTP status, retry
+  // with exponential backoff (1s → 2s → 4s, capped at 3 attempts), and
+  // emit a final clear error if the embed remains unable to load.
+  loadConfig(0);
+
+  function loadConfig(attempt) {
+    fetch(CONFIG_URL, { method: "GET", credentials: "omit" })
+      .then(function (res) {
+        // Retryable: rate limited or transient server error. Read the
+        // Retry-After header so we honor the server's intended backoff,
+        // capped at 10s so a misconfigured limiter can't pin us forever.
+        if (res.status === 429 || (res.status >= 500 && res.status < 600)) {
+          if (attempt >= 3) {
+            console.warn(
+              "[leasestack chatbot] config endpoint returned " +
+                res.status +
+                " after " +
+                (attempt + 1) +
+                " attempts — widget disabled. If this persists, check the LeaseStack rate-limit / Upstash env vars in Vercel."
+            );
+            return null;
+          }
+          var hint = parseInt(res.headers.get("retry-after") || "", 10);
+          var waitMs = Math.min(
+            10_000,
+            Math.max(
+              isFinite(hint) ? hint * 1000 : 0,
+              1000 * Math.pow(2, attempt)
+            )
+          );
+          setTimeout(function () { loadConfig(attempt + 1); }, waitMs);
+          return null;
+        }
+        if (!res.ok) {
+          console.warn(
+            "[leasestack chatbot] config fetch failed with HTTP " + res.status
+          );
+          return null;
+        }
+        return res.json();
+      })
+      .then(function (cfg) {
+        if (!cfg) return; // retry scheduled or terminal error already logged
+        if (!cfg.enabled) return; // operator disabled chatbot or wrong slug
+        state.config = cfg;
+        ensureAnalytics(cfg);
+        mount();
+        fetchListingsSummary();
+      })
+      .catch(function (err) {
+        if (attempt >= 3) {
+          console.warn(
+            "[leasestack chatbot] config fetch failed after retries:",
+            err
+          );
+          return;
+        }
+        // Network-level error: retry with same backoff curve.
+        var waitMs = 1000 * Math.pow(2, attempt);
+        setTimeout(function () { loadConfig(attempt + 1); }, waitMs);
+      });
+  }
 
   // Lazy-load gtag.js with the tenant's GA4 measurement ID iff the host page
   // doesn't already have GTM (window.dataLayer) or gtag installed. This means

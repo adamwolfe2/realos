@@ -71,7 +71,8 @@
   // ──────────────────────────────────────────────────────────────────
   // Network helpers
   // ──────────────────────────────────────────────────────────────────
-  function fetchConfig() {
+  function fetchConfig(attempt) {
+    attempt = attempt || 0;
     var url =
       API_ORIGIN +
       "/api/public/popup/config/" +
@@ -79,14 +80,48 @@
       (PROPERTY ? "?property=" + encodeURIComponent(PROPERTY) : "");
     return fetch(url, { method: "GET", credentials: "omit" })
       .then(function (r) {
+        // Retry on transient failures (429 / 5xx) with exponential backoff.
+        // Without this a single soft-fallback rate-limit hit silenced
+        // the popup widget for the rest of the page session.
+        if (r.status === 429 || (r.status >= 500 && r.status < 600)) {
+          if (attempt >= 3) {
+            console.warn(
+              "[leasestack-popup] config endpoint returned " +
+                r.status +
+                " after retries — popups disabled for this page."
+            );
+            return [];
+          }
+          var hint = parseInt(r.headers.get("retry-after") || "", 10);
+          var waitMs = Math.min(
+            10000,
+            Math.max(
+              isFinite(hint) ? hint * 1000 : 0,
+              1000 * Math.pow(2, attempt)
+            )
+          );
+          return new Promise(function (resolve) {
+            setTimeout(function () {
+              resolve(fetchConfig(attempt + 1));
+            }, waitMs);
+          });
+        }
         if (!r.ok) throw new Error("config fetch failed: " + r.status);
-        return r.json();
-      })
-      .then(function (j) {
-        return (j && j.popups) || [];
+        return r.json().then(function (j) {
+          return (j && j.popups) || [];
+        });
       })
       .catch(function (err) {
-        console.warn("[leasestack-popup]", err);
+        if (attempt < 3) {
+          // Network-level error — retry with same curve.
+          var waitMs = 1000 * Math.pow(2, attempt);
+          return new Promise(function (resolve) {
+            setTimeout(function () {
+              resolve(fetchConfig(attempt + 1));
+            }, waitMs);
+          });
+        }
+        console.warn("[leasestack-popup] config fetch failed:", err);
         return [];
       });
   }

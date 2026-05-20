@@ -15,12 +15,14 @@ import {
 } from "@/lib/chatbot/build-system-prompt";
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
 import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
+import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import {
   publicApiLimiter,
   checkRateLimit,
   getIp,
+  WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
 
 // POST /api/public/chatbot/chat
@@ -59,7 +61,9 @@ export function OPTIONS() {
 
 export async function POST(req: NextRequest) {
   const ip = getIp(req);
-  const { allowed } = await checkRateLimit(publicApiLimiter, ip);
+  const { allowed } = await checkRateLimit(publicApiLimiter, ip, {
+    softFallback: WIDGET_FALLBACK.publicApi,
+  });
   if (!allowed) {
     return NextResponse.json(
       { error: "Too many requests" },
@@ -259,13 +263,28 @@ async function persistConversation(args: {
       data: { leadId: lead.id },
     });
 
-    // Fire-and-forget notification. PRE_CHAT flow already seeds a leadId
+    // Fire-and-forget notifications. PRE_CHAT flow already seeds a leadId
     // on the conversation before the first message, so the guard above
-    // ensures we don't double-send.
+    // (!conversation.leadId) ensures we don't double-send.
+    //
+    // Both surfaces matter: notifyLeadCaptured is the Resend email to the
+    // operator's primary contact; notifyChatbotLeadCaptured is the in-app
+    // bell badge in /portal. Pre-fix this branch only sent email — the
+    // POST_CHAT bell notification was silently dropped (PRE_CHAT path in
+    // /api/public/chatbot/lead already sends both).
     void notifyLeadCaptured({ orgId: args.orgId, leadId: lead.id }).catch(
       (err) => {
-        console.warn("[public/chatbot/chat] notify error:", err);
+        console.warn("[public/chatbot/chat] notify email error:", err);
       }
     );
+    void notifyChatbotLeadCaptured({
+      id: conversation.id,
+      orgId: args.orgId,
+      capturedName: extracted.name ?? null,
+      capturedEmail: extracted.email,
+      leadId: lead.id,
+    }).catch((err) => {
+      console.warn("[public/chatbot/chat] notify bell error:", err);
+    });
   }
 }

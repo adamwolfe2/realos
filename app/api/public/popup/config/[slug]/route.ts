@@ -5,6 +5,7 @@ import {
   chatbotConfigLimiter,
   checkRateLimit,
   getIp,
+  WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -46,7 +47,9 @@ export async function GET(
   // Keyed by IP so one shared scraper IP can't enumerate tenant slugs
   // without tripping after 30 hits in a minute.
   const ip = getIp(req);
-  const rl = await checkRateLimit(chatbotConfigLimiter, ip);
+  const rl = await checkRateLimit(chatbotConfigLimiter, ip, {
+    softFallback: WIDGET_FALLBACK.chatbotConfig,
+  });
   if (!rl.allowed) {
     const retryAfterSec = Math.max(
       1,

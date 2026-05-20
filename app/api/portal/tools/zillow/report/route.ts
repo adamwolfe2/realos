@@ -86,19 +86,23 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Per-org rate limit. 10/min keeps a curious operator (or a browser
-  // tab they left auto-clicking) from punching us through Zillow's bot
-  // wall, while still letting a sales demo click through several
-  // listings in a row. Runs AFTER URL validation so typos/invalid URLs
-  // don't burn tokens — only real outbound scrapes count.
+  // Per-org rate limit. 30/min keeps us off Zillow's bot radar while
+  // letting a power user evaluate ~10 listings during a deal review.
+  // Soft-fallback to an in-memory limiter when Upstash isn't configured
+  // — this tool is low-stakes operator convenience, not a security
+  // surface, so degrading to single-instance limiting is preferable to
+  // 100% blocking (which is what happens when limiter is null in prod
+  // without the fallback).
   const rl = await checkRateLimit(
     zillowReportLimiter,
     `zillow-report:${scope.orgId}`,
+    { softFallback: { requests: 30, windowMs: 60_000 } },
   );
   if (!rl.allowed) {
+    const waitSec = Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000));
     return rateLimited(
-      "Too many Zillow reports in the last minute. Try again shortly.",
-      Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000)),
+      `Too many Zillow reports — wait ${waitSec}s and try again.`,
+      waitSec,
     );
   }
 
