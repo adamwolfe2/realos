@@ -329,13 +329,20 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Tools",
     items: [
-      // Zillow report — PARKED 2026-05-19. Zillow's PerimeterX bot
-      // detection blocks every fetch from Vercel's datacenter IP ranges
-      // (rate-limit fix landed but the scrape itself returns BLOCKED).
-      // Hidden from nav until we decide the data source: ScrapingBee
-      // proxy ($49/mo, drop-in), RentCast API (purpose-built for
-      // investor analysis), or a different shape entirely. See
-      // docs/SG_HARDENING_PASS_2026-05-19.md "Open decisions".
+      // Building evaluator — RentCast-powered acquisitions tool.
+      // Replaces what the parked Zillow report was trying to do, but
+      // with a reliable data source (RentCast value + rent AVM + market
+      // stats) instead of scraping a bot-walled site. Always visible —
+      // the underlying API is gated by per-org budget, not nav.
+      {
+        href: "/portal/tools/value",
+        label: "Building evaluator",
+        icon: Calculator,
+        show: ALWAYS,
+      },
+      // Zillow report — PARKED 2026-05-19, REDIRECTED 2026-05-23 to
+      // /portal/tools/value. The nav item stays hidden (NEVER) so the
+      // URL keeps working for bookmarks without polluting the sidebar.
       {
         href: "/portal/tools/zillow",
         label: "Zillow report",

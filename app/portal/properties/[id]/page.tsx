@@ -34,6 +34,19 @@ export default async function PropertyDetail({
   const { id } = await params;
   const { tab, view } = await searchParams;
 
+  // Market Intelligence section is gated behind moduleInsights. For
+  // student-housing tenants like Telegraph Commons (renting per-bed)
+  // the RentCast per-unit AVM is misleading — they already know what
+  // they charge. Only render the section when an operator explicitly
+  // turns on the Insights module in /admin/clients/[id]. Multifamily
+  // landlords with whole-unit pricing get value from it; everyone else
+  // sees zero noise.
+  const orgInsights = await prisma.organization.findUnique({
+    where: { id: scope.orgId },
+    select: { moduleInsights: true },
+  });
+  const showMarketIntelligence = orgInsights?.moduleInsights === true;
+
   // Property gate: a restricted user (UserPropertyAccess) must NEVER
   // be able to load a sibling property's detail page, even by URL
   // hacking. 404 if the requested id isn't in their allowed set.
@@ -131,9 +144,11 @@ export default async function PropertyDetail({
         bordered={false}
       />
 
-      <Suspense fallback={<MarketIntelligenceSkeleton />}>
-        <MarketIntelligenceSection propertyId={property.id} />
-      </Suspense>
+      {showMarketIntelligence ? (
+        <Suspense fallback={<MarketIntelligenceSkeleton />}>
+          <MarketIntelligenceSection propertyId={property.id} />
+        </Suspense>
+      ) : null}
 
       <Suspense fallback={<PropertyTabsSkeleton />}>
       <PropertyTabs

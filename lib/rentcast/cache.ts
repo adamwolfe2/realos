@@ -5,11 +5,13 @@ import { canSpendCredit, recordCredit } from "./budget";
 import {
   marketStatsCacheKey,
   rentAvmCacheKey,
+  valueAvmCacheKey,
 } from "./insights";
 import {
   RentCastError,
   type MarketStatsResponse,
   type RentAvmResponse,
+  type ValueAvmResponse,
 } from "./client";
 
 // ---------------------------------------------------------------------------
@@ -31,6 +33,7 @@ import {
 // ---------------------------------------------------------------------------
 
 const RENT_AVM_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30d
+const VALUE_AVM_TTL_MS = 60 * 24 * 60 * 60 * 1000; // 60d — residential values move slowly
 const MARKET_STATS_TTL_MS = 14 * 24 * 60 * 60 * 1000; // 14d
 
 export type CacheOutcome<T> =
@@ -100,6 +103,51 @@ export async function getRentAvm(
         propertyType: input.propertyType ?? undefined,
         bedrooms: input.bedrooms ?? undefined,
         bathrooms: input.bathrooms ?? undefined,
+      }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Value AVM — purpose-built for the acquisitions / building-evaluator surface.
+// Cached 60 days because residential value AVMs don't move week to week.
+// ---------------------------------------------------------------------------
+
+export type GetValueAvmCacheInput = {
+  orgId: string;
+  propertyId?: string | null;
+  address: string;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  squareFootage?: number | null;
+  propertyType?: string | null;
+  force?: boolean;
+};
+
+export async function getValueAvm(
+  input: GetValueAvmCacheInput,
+): Promise<CacheOutcome<ValueAvmResponse>> {
+  const cacheKey = valueAvmCacheKey({
+    address: input.address,
+    bedrooms: input.bedrooms,
+    bathrooms: input.bathrooms,
+    squareFootage: input.squareFootage,
+    propertyType: input.propertyType,
+  });
+
+  return runCached<ValueAvmResponse>({
+    orgId: input.orgId,
+    propertyId: input.propertyId ?? null,
+    endpoint: "VALUE",
+    cacheKey,
+    ttlMs: VALUE_AVM_TTL_MS,
+    force: input.force ?? false,
+    fetcher: () =>
+      client.getValueAvm({
+        address: input.address,
+        propertyType: input.propertyType ?? undefined,
+        bedrooms: input.bedrooms ?? undefined,
+        bathrooms: input.bathrooms ?? undefined,
+        squareFootage: input.squareFootage ?? undefined,
       }),
   });
 }

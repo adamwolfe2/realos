@@ -140,6 +140,21 @@ export function rentAvmCacheKey(input: {
   return `rent:${normalized}:${bed}:${bath}:${type}`;
 }
 
+export function valueAvmCacheKey(input: {
+  address: string;
+  bedrooms?: number | null;
+  bathrooms?: number | null;
+  squareFootage?: number | null;
+  propertyType?: string | null;
+}): string {
+  const normalized = normalizeAddress(input.address);
+  const bed = input.bedrooms != null ? `${input.bedrooms}br` : "-br";
+  const bath = input.bathrooms != null ? `${input.bathrooms}ba` : "-ba";
+  const sqft = input.squareFootage != null ? `${input.squareFootage}sf` : "-sf";
+  const type = (input.propertyType ?? "any").replace(/\s+/g, "");
+  return `value:${normalized}:${bed}:${bath}:${sqft}:${type}`;
+}
+
 export function marketStatsCacheKey(input: {
   zipCode: string;
   historyRange?: number;

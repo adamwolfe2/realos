@@ -496,6 +496,7 @@ model Organization {
   // rows. See lib/rentcast/* and prisma/migrations/20260522_rentcast_phase1.
   rentCastSnapshots      RentCastSnapshot[]
   rentCastUsage          OrgRentCastUsage?
+  propertyEvaluations    PropertyEvaluation[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -554,6 +555,7 @@ model User {
   // user can ONLY see those properties' data on every portal page.
   propertyAccess UserPropertyAccess[]
   bugReports     BugReport[]
+  propertyEvaluations PropertyEvaluation[]
 
   // Command Center: last time this operator opened the briefing view. Used to
   // compute "what's new since you last looked" deltas on /portal/briefing.
@@ -3529,4 +3531,56 @@ model OrgRentCastUsage {
 
   lastResetAt        DateTime @default(now())
   updatedAt          DateTime @updatedAt
+}
+
+// ============================================================================
+// PropertyEvaluation — Acquisitions / Building Evaluator persistence.
+//
+// Backs the /portal/tools/value surface. Each row is one address an
+// operator ran through the evaluator. We persist the raw RentCast
+// payloads + the investor math so the report card can be re-rendered
+// without spending more credits.
+//
+// Tenancy: orgId Cascade — deletes flow with the workspace. userId
+// SetNull so deactivating a user preserves the historical record.
+// Archived is a soft-delete column; the recent-list view defaults to
+// non-archived. Cost per row: 3 RentCast credits (value + rent + market)
+// at write time, deduped per address-shape via the snapshot cache.
+// ============================================================================
+
+model PropertyEvaluation {
+  id              String   @id @default(cuid())
+  orgId           String
+  org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId          String?
+  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  // Normalized cache-key form + original-cased display string.
+  address         String
+  addressDisplay  String
+
+  // Investor inputs. When askingPriceCents is null the math falls back
+  // to the value AVM mid-point so the card still renders something sane.
+  askingPriceCents Int?
+  propertyType    String?
+  bedrooms        Int?
+  bathrooms       Float?
+  squareFootageInt Int?
+
+  // Raw RentCast responses (full payload — not the typed parser shape).
+  valuePayload   Json
+  rentPayload    Json
+  marketPayload  Json
+
+  // Output of lib/zillow/calculations::computeCalculations.
+  calculations   Json
+
+  notes          String?
+  archived       Boolean  @default(false)
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([orgId, archived, createdAt])
+  @@index([userId])
 }

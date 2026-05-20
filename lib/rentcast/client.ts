@@ -70,6 +70,35 @@ export type RentAvmResponse = {
   comparables: RentComparable[];
 };
 
+// ---------------------------------------------------------------------------
+// Value AVM — `/v1/avm/value`. Comparable shape diverges from rent comps:
+// `price` here is the recent sale price (not monthly rent) and the row also
+// carries `daysOld` + `daysOnMarket` so callers can age-filter comps for
+// staleness without re-deriving.
+// ---------------------------------------------------------------------------
+
+export type ValueComparable = {
+  formattedAddress: string | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  squareFootage: number | null;
+  price: number | null;
+  distance: number | null;
+  daysOld: number | null;
+  daysOnMarket: number | null;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+export type ValueAvmResponse = {
+  price: number;
+  priceRangeLow: number;
+  priceRangeHigh: number;
+  latitude: number | null;
+  longitude: number | null;
+  comparables: ValueComparable[];
+};
+
 export type MarketStatsByBedroom = {
   bedrooms: number;
   medianRent?: number;
@@ -214,6 +243,27 @@ export async function getRentAvm(input: GetRentAvmInput): Promise<RentAvmRespons
   return parseRentAvm(json);
 }
 
+export type GetValueAvmInput = {
+  address: string;
+  propertyType?: string;
+  bedrooms?: number;
+  bathrooms?: number;
+  squareFootage?: number;
+  compCount?: number;
+};
+
+export async function getValueAvm(input: GetValueAvmInput): Promise<ValueAvmResponse> {
+  const json = await rentCastFetch("/avm/value", {
+    address: input.address,
+    propertyType: input.propertyType,
+    bedrooms: input.bedrooms,
+    bathrooms: input.bathrooms,
+    squareFootage: input.squareFootage,
+    compCount: input.compCount,
+  });
+  return parseValueAvm(json);
+}
+
 export type GetMarketStatsInput = {
   zipCode: string;
   historyRange?: number;
@@ -271,6 +321,43 @@ function parseRentAvm(raw: unknown): RentAvmResponse {
     rentRangeLow: low,
     rentRangeHigh: high,
     subjectProperty: (obj.subjectProperty as Record<string, unknown>) ?? undefined,
+    comparables,
+  };
+}
+
+function parseValueAvm(raw: unknown): ValueAvmResponse {
+  const obj = (raw ?? {}) as Record<string, unknown>;
+  const price = asNumberOrNull(obj.price);
+  const low = asNumberOrNull(obj.priceRangeLow);
+  const high = asNumberOrNull(obj.priceRangeHigh);
+  if (price === null || low === null || high === null) {
+    throw new RentCastError(
+      "UPSTREAM",
+      "RentCast value AVM response missing required price/range fields.",
+    );
+  }
+  const compsRaw = Array.isArray(obj.comparables) ? obj.comparables : [];
+  const comparables: ValueComparable[] = compsRaw.map((c) => {
+    const co = (c ?? {}) as Record<string, unknown>;
+    return {
+      formattedAddress: typeof co.formattedAddress === "string" ? co.formattedAddress : null,
+      bedrooms: asNumberOrNull(co.bedrooms),
+      bathrooms: asNumberOrNull(co.bathrooms),
+      squareFootage: asNumberOrNull(co.squareFootage),
+      price: asNumberOrNull(co.price),
+      distance: asNumberOrNull(co.distance),
+      daysOld: asNumberOrNull(co.daysOld),
+      daysOnMarket: asNumberOrNull(co.daysOnMarket),
+      latitude: asNumberOrNull(co.latitude),
+      longitude: asNumberOrNull(co.longitude),
+    };
+  });
+  return {
+    price,
+    priceRangeLow: low,
+    priceRangeHigh: high,
+    latitude: asNumberOrNull(obj.latitude),
+    longitude: asNumberOrNull(obj.longitude),
     comparables,
   };
 }
