@@ -8,7 +8,6 @@ import {
 } from "@/lib/properties/queries";
 import {
   LeaseStatus,
-  TourStatus,
   type BackendPlatform,
   type CommercialSubtype,
   type PropertyLifecycle,
@@ -20,14 +19,12 @@ import {
 } from "@prisma/client";
 import { Sparkles, Cable, MessageSquare, Code, ListPlus, Building2 } from "lucide-react";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
-import { AnimatedNumber } from "@/components/portal/ui/animated-number";
 import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
 import {
   getOpenInsights,
   getInsightCounts,
 } from "@/lib/insights/queries";
 import type { InsightCardData } from "@/components/portal/insights/insight-card";
-import { cn } from "@/lib/utils";
 
 type OverviewProperty = {
   propertyType: PropertyType;
@@ -76,9 +73,7 @@ const SOURCE_LABEL: Record<LeadSource, string> = {
   OTHER: "Other",
 };
 
-// Single muted accent palette so the donut reads as data, not as a rainbow.
-// All slices step through the brand blue scale, with neutral gray taking
-// over once we run out of blue tones for long-tail buckets.
+// Single muted accent palette so the source list reads as data, not as a rainbow.
 const CHART_COLORS = [
   "#1D4ED8",
   "#2563EB",
@@ -109,21 +104,14 @@ export async function OverviewTab({
     listingCounts,
     leadSourceGroups,
     expiringLeases,
-    activeResidents,
     noticeResidents,
     rentRoll,
-    // Bug #27 — Overview tab focus pivot. Pull which marketing
-    // features are currently active for this property so we can
-    // surface a "What's running" status strip near the top.
+    // Onboarding-shell detection still relies on these. Kept lean —
+    // the heavy "active features" / quick-actions rail data was cut.
     cursiveIntegration,
     seoIntegrations,
     googleAdCampaign,
     metaAdCampaign,
-    chatbotConfig,
-    latestReputationScan,
-    chatbotConvos28d,
-    reputationMentionTotal,
-    reputationUnreviewedCount,
     propertyInsights,
     propertyInsightCounts,
   ] = await Promise.all([
@@ -154,9 +142,6 @@ export async function OverviewTab({
       select: { endDate: true, monthlyRentCents: true },
     }),
     prisma.resident.count({
-      where: { orgId, propertyId, status: "ACTIVE" as ResidentStatus },
-    }),
-    prisma.resident.count({
       where: {
         orgId,
         propertyId,
@@ -170,7 +155,7 @@ export async function OverviewTab({
     prisma.cursiveIntegration
       .findFirst({
         where: { orgId, propertyId },
-        select: { cursivePixelId: true, lastEventAt: true },
+        select: { cursivePixelId: true },
       })
       .catch(() => null),
     prisma.seoIntegration
@@ -182,51 +167,15 @@ export async function OverviewTab({
     prisma.adCampaign
       .findFirst({
         where: { orgId, propertyId, platform: "GOOGLE_ADS" },
-        select: { id: true, status: true },
+        select: { id: true },
       })
       .catch(() => null),
     prisma.adCampaign
       .findFirst({
         where: { orgId, propertyId, platform: "META" },
-        select: { id: true, status: true },
+        select: { id: true },
       })
       .catch(() => null),
-    prisma.organization
-      .findUnique({
-        where: { id: orgId },
-        select: {
-          tenantSiteConfig: { select: { chatbotEnabled: true } },
-        },
-      })
-      .catch(() => null),
-    prisma.reputationScan
-      .findFirst({
-        where: { orgId, propertyId },
-        orderBy: { createdAt: "desc" },
-        select: { completedAt: true },
-      })
-      .catch(() => null),
-    prisma.chatbotConversation
-      .count({
-        where: { orgId, propertyId, createdAt: { gte: since28d } },
-      })
-      .catch(() => 0),
-    // Bug #38 — summary metrics for the right-nav action rail. We
-    // pull the mention total + recent negative count so the
-    // Reputation card surfaces signal (e.g. "35 mentions · 4 needs
-    // response") instead of an empty arrow tile.
-    prisma.propertyMention
-      .count({ where: { orgId, propertyId } })
-      .catch(() => 0),
-    prisma.propertyMention
-      .count({
-        where: { orgId, propertyId, reviewedByUserId: null },
-      })
-      .catch(() => 0),
-    // Per-property insights — filtered top 3 from the detector library.
-    // Renders in the InsightsHero at the top of this tab so operators
-    // see actionable signals scoped to this property without leaving
-    // the page.
     getOpenInsights(orgId, { propertyId, limit: 3 }).catch(
       () => [] as Awaited<ReturnType<typeof getOpenInsights>>,
     ),
@@ -290,6 +239,8 @@ export async function OverviewTab({
       value: g._count._all,
     }))
     .sort((a, b) => b.value - a.value);
+  const singleSourceLabel =
+    sourceSlices.length === 1 ? sourceSlices[0].label : null;
 
   // Renewal buckets
   const now = Date.now();
@@ -310,12 +261,11 @@ export async function OverviewTab({
     buckets[idx].count += 1;
     buckets[idx].rentCents += l.monthlyRentCents ?? 0;
   }
-  const maxBucket = Math.max(1, ...buckets.map((b) => b.count));
   const expiringTotal = buckets.reduce((s, b) => s + b.count, 0);
+  const renewalsNext30Rent = buckets[0].rentCents;
 
-  // AI insight — deterministic but actually useful: surfaces the single
-  // most actionable signal for this property. No LLM call; we rank a few
-  // rule-based candidates by severity and pick the top one.
+  // AI insight fallback — deterministic, used only when no detector-based
+  // insights exist (first hour after data lands).
   const aiInsight = buildAiInsight({
     occupancyPct,
     leasedUnits,
@@ -337,31 +287,12 @@ export async function OverviewTab({
       : "—";
 
   const monthlyRentRoll = (rentRoll._sum.monthlyRentCents ?? 0) / 100;
+  const monthlyRentRollDisplay =
+    monthlyRentRoll > 0
+      ? `$${(monthlyRentRoll / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K`
+      : "—";
 
-  // Build a one-paragraph operator briefing — deterministic narrative that
-  // surfaces the highest-signal facts about this property. Helps Norman see
-  // the state of the building in one read instead of triangulating across
-  // five different tiles.
-  const briefing = buildPropertyBriefing({
-    name: propertyMeta.name,
-    occupancyPct,
-    totalUnits,
-    leasedUnits,
-    availableUnits,
-    monthlyRentRoll,
-    expiringNext30: buckets[0].count,
-    expiringNext120: expiringTotal,
-    leads28d: kpis.leads28d,
-    tours28d: kpis.tours28d,
-    noticeGiven: noticeResidents,
-    activeResidents: activeResidents,
-  });
-
-  // Bug #41 — Empty-property detection: no listings, no leads, zero
-  // integrations. Collapses the dense KPI grid + active-features strip
-  // into a single onboarding panel until real data lands. SG Real
-  // Estate's launch had 120 IMPORTED rows straight from AppFolio that
-  // hit this branch.
+  // Onboarding-shell + empty-state detection.
   const appfolioConnected =
     property.backendPlatform != null && property.backendPlatform !== "NONE";
   const allTimeLeads = listingCounts?._count.leads ?? 0;
@@ -375,10 +306,6 @@ export async function OverviewTab({
     !googleAdCampaign &&
     !metaAdCampaign &&
     (seoIntegrations?.length ?? 0) === 0;
-  // Legacy `isEmpty` retained for the "no activity but not freshly
-  // imported" case (e.g. an operator-curated ACTIVE property that
-  // hasn't seen any traffic yet) so we still get the 3-step setup
-  // panel instead of a wall of broken charts.
   const isEmpty =
     !isOnboardingShell &&
     allTimeListings === 0 &&
@@ -388,33 +315,39 @@ export async function OverviewTab({
     !metaAdCampaign &&
     (seoIntegrations?.length ?? 0) === 0;
 
-  // Sparse-data thresholds. Below 5 leads in the 28d window the
-  // Recharts funnel renders as a 4-bar grid that's mostly empty
-  // pixels; under that threshold we swap to a compact step list with
-  // counts + a "needs more volume" note. Same logic for the source
-  // breakdown: 1 channel is a single-color donut (looks broken) and
-  // becomes a horizontal "All N from Chatbot" callout.
+  // Sparse-data threshold for the funnel viz.
   const FUNNEL_MIN = 5;
   const showCompactFunnel = kpis.leads28d < FUNNEL_MIN;
 
+  // Leads KPI hint — be honest about channel mix and ad coverage.
+  const leadsHint =
+    kpis.leads28d === 0
+      ? "First lead lands here"
+      : !property.orgHasAdsModule && singleSourceLabel
+        ? `All from ${singleSourceLabel} · No paid spend`
+        : singleSourceLabel
+          ? `All from ${singleSourceLabel}`
+          : !property.orgHasAdsModule
+            ? "No paid spend"
+            : `${kpis.tours28d} tours · ${kpis.applications28d} apps`;
+
+  const renewalsHint =
+    expiringTotal === 0
+      ? "No leases up in 120d"
+      : renewalsNext30Rent > 0
+        ? `$${Math.round(renewalsNext30Rent / 100 / 1000).toLocaleString()}K of monthly rent`
+        : `${expiringTotal} in next 120d`;
+
   return (
-    <div className="space-y-3 ls-page-fade">
-      {/* Hero strip — property identity at a glance with the headline metric
-          (occupancy ring), the single-paragraph briefing, and a quick-actions
-          rail. Replaces the previous "page just dropped you into KPIs"
-          experience with a deliberate orientation moment.
-          Bug #28 — now passes heroImageUrl + property type/subtype/year so
-          the hero shows a thumbnail and the basics inline, instead of
-          burying that info way down in a "Property details" card. */}
+    <div className="space-y-4 ls-page-fade">
+      {/* 1. Hero strip — name, address, photo, fact row. No ring, no briefing,
+            no quick-actions rail. */}
       <PropertyHeroStrip
         name={propertyMeta.name}
-        occupancyPct={occupancyPct}
         totalUnits={totalUnits}
         leasedUnits={leasedUnits}
-        availableUnits={availableUnits}
-        monthlyRentRoll={monthlyRentRoll}
-        briefing={briefing}
-        propertyMeta={propertyMeta}
+        occupancyPct={occupancyPct}
+        monthlyRentRollDisplay={monthlyRentRollDisplay}
         heroImageUrl={property.heroImageUrl ?? null}
         propertyType={property.propertyType}
         propertySubtype={
@@ -422,25 +355,9 @@ export async function OverviewTab({
         }
         yearBuilt={property.yearBuilt}
         lastSyncedAt={property.lastSyncedAt}
-        // Bug #38 — summary metrics for the quick-actions rail.
-        // Each card now shows one number instead of just an arrow.
-        renewalsNext30={buckets[0].count}
-        renewalsNext120={expiringTotal}
-        activeResidents={activeResidents}
-        noticeResidents={noticeResidents}
-        adSpendCents28d={kpis.adSpendCents28d}
-        adLeads28d={kpis.leads28d}
-        orgHasAdsModule={property.orgHasAdsModule}
-        reputationMentions={reputationMentionTotal}
-        reputationUnreviewed={reputationUnreviewedCount}
-        reputationLastAt={latestReputationScan?.completedAt ?? null}
       />
 
       {isOnboardingShell ? (
-        // Compact "Property in onboarding" card. Renders for AppFolio-
-        // imported rows that haven't been touched yet (120 of SG's 127
-        // properties at launch). The full dashboard re-appears the
-        // moment any real activity lands (listing, lead, integration).
         <OnboardingShellCard
           propertyId={propertyId}
           propertyName={propertyMeta.name}
@@ -449,10 +366,6 @@ export async function OverviewTab({
           lastSyncedAt={property.lastSyncedAt}
         />
       ) : isEmpty ? (
-        // Bug #41 — Single onboarding panel for operator-curated
-        // properties that haven't seen any data yet. Keeps the existing
-        // 3-step setup layout because these rows already passed the
-        // IMPORTED-row curation gate; they just need integrations.
         <section className="rounded-xl border border-border bg-card p-4 md:p-6">
           <div className="mb-4">
             <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
@@ -517,418 +430,168 @@ export async function OverviewTab({
         </section>
       ) : (
         <>
-      {/* Insights hero — top 3 ranked open insights filtered to THIS
-          property. Replaces the legacy single-card deterministic
-          AiInsightCard with real DB-backed insights from the detector
-          library. Falls back to the rule-based AiInsightCard ONLY when
-          there are zero stored insights (gives a useful signal during
-          the first hour after the user connects data and detectors
-          haven't run yet). */}
-      {propertyInsights.length > 0 ? (
-        <InsightsHero
-          insights={propertyInsights as InsightCardData[]}
-          counts={{
-            critical: propertyInsightCounts.critical,
-            warning: propertyInsightCounts.warning,
-            info: propertyInsightCounts.info,
-            total: propertyInsightCounts.total,
-          }}
-          scope={{
-            kind: "property",
-            propertyId,
-            propertyName: propertyMeta.name,
-          }}
-        />
-      ) : (
-        <AiInsightCard insight={aiInsight} />
-      )}
-
-      {/* Bug #27 — "Active features" strip. Pivot the overview's
-          headline focus from leasing/occupancy to marketing/website.
-          Each chip shows a feature's current connection state so the
-          operator scans "what's running" at a glance. Click-through
-          deep links to the respective settings/onboarding surface. */}
-      <ActiveFeaturesStrip
-        propertyId={propertyId}
-        chatbotEnabled={
-          chatbotConfig?.tenantSiteConfig?.chatbotEnabled ?? false
-        }
-        chatbotConvos28d={chatbotConvos28d}
-        pixelInstalled={Boolean(cursiveIntegration?.cursivePixelId)}
-        pixelLastEventAt={cursiveIntegration?.lastEventAt ?? null}
-        ga4Connected={seoIntegrations.some(
-          (s) => s.provider === "GA4" && s.lastSyncAt != null,
-        )}
-        gscConnected={seoIntegrations.some(
-          (s) => s.provider === "GSC" && s.lastSyncAt != null,
-        )}
-        googleAdsConnected={Boolean(googleAdCampaign)}
-        metaAdsConnected={Boolean(metaAdCampaign)}
-        adSpendCents28d={kpis.adSpendCents28d}
-        showAdChips={property.orgHasAdsModule}
-      />
-
-      {/* Top KPI strip — hero metric (Leads) anchors the row at 1.6x
-          weight, with the rest of the funnel (Tours, Apps, Organic,
-          and optionally Spend) rendered as secondary tiles alongside.
-          Hierarchy mirrors the operator's mental model: leads is the
-          leading indicator, the others are downstream context.
-          When the org has no ad modules turned on we drop the Spend
-          tile entirely so the row doesn't read "$0" in big numerals;
-          dropping to a 3-tile secondary block keeps the grid clean. */}
-      <section className="grid grid-cols-1 lg:grid-cols-[1.6fr_2fr] gap-2">
-        <HeroLeadsTile
-          leads={kpis.leads28d}
-          delta={leadsDelta}
-          spark={kpis.leadsSparkline}
-          tours={kpis.tours28d}
-          applications={kpis.applications28d}
-          tourRate={tourRate}
-          appRate={appRate}
-        />
-        <div
-          className={cn(
-            "grid gap-2",
-            property.orgHasAdsModule
-              ? "grid-cols-2"
-              : "grid-cols-1 sm:grid-cols-3",
+          {/* 2. Insights hero — top 3 ranked insights for this property. */}
+          {propertyInsights.length > 0 ? (
+            <InsightsHero
+              insights={propertyInsights as InsightCardData[]}
+              counts={{
+                critical: propertyInsightCounts.critical,
+                warning: propertyInsightCounts.warning,
+                info: propertyInsightCounts.info,
+                total: propertyInsightCounts.total,
+              }}
+              scope={{
+                kind: "property",
+                propertyId,
+                propertyName: propertyMeta.name,
+              }}
+            />
+          ) : (
+            <AiInsightCard insight={aiInsight} />
           )}
-        >
-          <KpiTile
-            label="Tours (28d)"
-            value={kpis.tours28d > 0 ? kpis.tours28d : <DimZero />}
-            hint={
-              kpis.leads28d > 0
-                ? kpis.tours28d > 0
-                  ? `${tourRate}% of leads`
-                  : "Schedule from a lead to start"
-                : "First lead lands here"
-            }
-          />
-          <KpiTile
-            label="Applications (28d)"
-            value={kpis.applications28d > 0 ? kpis.applications28d : <DimZero />}
-            hint={
-              kpis.tours28d > 0
-                ? kpis.applications28d > 0
-                  ? `${appRate}% of tours`
-                  : "Sent from a completed tour"
-                : "First tour lands here"
-            }
-          />
-          {property.orgHasAdsModule ? (
+
+          {/* 3. KPI strip — four equal tiles. One occupancy display per page. */}
+          <section className="grid grid-cols-2 lg:grid-cols-4 gap-2">
             <KpiTile
-              label="Ad spend (28d)"
-              value={
-                kpis.adSpendCents28d > 0 ? (
-                  centsToUsdShort(kpis.adSpendCents28d)
-                ) : (
-                  <DimZero />
-                )
-              }
+              label="Occupancy"
+              value={occupancyPct != null ? `${occupancyPct}%` : <DimZero />}
               hint={
-                kpis.adSpendCents28d > 0 && kpis.leads28d > 0
-                  ? `$${Math.round(kpis.adSpendCents28d / 100 / kpis.leads28d).toLocaleString()}/lead`
-                  : kpis.adSpendCents28d > 0
-                    ? "Attributed to this property"
-                    : "Connect ad accounts in Settings"
+                totalUnits != null && leasedUnits != null
+                  ? `${leasedUnits} of ${totalUnits} units leased`
+                  : "Connect AppFolio for live occupancy"
               }
             />
-          ) : null}
-          <KpiTile
-            label="Organic (28d)"
-            value={
-              kpis.organicMapped &&
-              kpis.organicSessions28d != null &&
-              kpis.organicSessions28d > 0 ? (
-                kpis.organicSessions28d.toLocaleString()
-              ) : (
-                <DimZero />
-              )
-            }
-            hint={
-              kpis.organicMapped
-                ? kpis.organicSessions28d != null && kpis.organicSessions28d > 0
-                  ? "Sessions on matching URLs"
-                  : "No matching sessions yet"
-                : "Map listing URLs in SEO settings"
-            }
-          />
-        </div>
-      </section>
+            <KpiTile
+              label="Monthly rent"
+              value={monthlyRentRoll > 0 ? monthlyRentRollDisplay : <DimZero />}
+              hint={
+                leasedUnits != null && leasedUnits > 0
+                  ? `From ${leasedUnits} leased units`
+                  : "From active leases"
+              }
+            />
+            <KpiTile
+              label="Leads (28d)"
+              value={kpis.leads28d > 0 ? kpis.leads28d : <DimZero />}
+              delta={leadsDelta}
+              hint={leadsHint}
+            />
+            <KpiTile
+              label="Renewals (next 30d)"
+              value={buckets[0].count > 0 ? buckets[0].count : <DimZero />}
+              hint={renewalsHint}
+            />
+          </section>
 
-      {/* Visualization row 1 — Occupancy donut + Lead funnel + Lead source */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-2">
-        <DashboardSection
-          title="Occupancy"
-          eyebrow="Live"
-          description={
-            totalUnits != null
-              ? `${leasedUnits} of ${totalUnits} units leased`
-              : "Connect AppFolio for live occupancy"
-          }
-        >
-          <OccupancyDonut
-            leased={leasedUnits ?? 0}
-            available={availableUnits}
-            total={totalUnits ?? availableUnits}
-            occupancyPct={occupancyPct}
-          />
-          <ul className="mt-2 grid grid-cols-2 gap-1 text-[11px]">
-            <Legend
-              color="#1D4ED8"
-              label="Leased"
-              value={leasedUnits ?? 0}
-            />
-            <Legend
-              color="#93C5FD"
-              label="Available"
-              value={availableUnits}
-            />
-            <Legend
-              color="#9CA3AF"
-              label="Notice given"
-              value={noticeResidents}
-            />
-            <Legend
-              color="#2563EB"
-              label="Active residents"
-              value={activeResidents}
-            />
-          </ul>
-        </DashboardSection>
-
-        <DashboardSection
-          title="Lead funnel"
-          eyebrow="28-day"
-          description={
-            kpis.leads28d === 0
-              ? "Visit → lead → tour → application progression."
-              : showCompactFunnel
-                ? "Visit → lead → tour → application. Needs more volume to read as a chart."
-                : "Visit-to-lease progression. Drop-off rates show where the funnel leaks."
-          }
-        >
-          {kpis.leads28d === 0 ? (
-            <FunnelEmpty />
-          ) : showCompactFunnel ? (
-            <CompactFunnel
-              leads={kpis.leads28d}
-              tours={kpis.tours28d}
-              applications={kpis.applications28d}
-            />
-          ) : (
-            <FunnelBars
-              stages={[
-                { label: "Leads", value: kpis.leads28d, color: "#1D4ED8" },
-                { label: "Tours", value: kpis.tours28d, color: "#2563EB" },
-                {
-                  label: "Applications",
-                  value: kpis.applications28d,
-                  color: "#3B82F6",
-                },
-              ]}
-            />
-          )}
-        </DashboardSection>
-
-        <DashboardSection
-          title="Lead sources"
-          eyebrow="28-day"
-          description={
-            sourceTotal === 0
-              ? "Channel mix appears once leads start flowing."
-              : sourceSlices.length === 1
-                ? `${sourceTotal} lead${sourceTotal === 1 ? "" : "s"} from one channel`
-                : `${sourceTotal} leads across ${sourceSlices.length} channels`
-          }
-        >
-          {sourceTotal === 0 ? (
-            <SourceMixEmpty />
-          ) : sourceSlices.length === 1 ? (
-            // Single-channel callout. The previous build rendered this
-            // as a one-color donut that looked broken; this reads as a
-            // deliberate "all leads attributed here" statement.
-            <SingleSourceCallout
-              label={sourceSlices[0].label}
-              value={sourceSlices[0].value}
-            />
-          ) : (
-            <SourceMix slices={sourceSlices} />
-          )}
-        </DashboardSection>
-      </section>
-
-      {/* Visualization row 2 — Renewal pipeline + Rent roll snapshot */}
-      <section className="grid grid-cols-1 lg:grid-cols-3 gap-2">
-        <DashboardSection
-          title="Renewal pipeline"
-          eyebrow="Next 120 days"
-          description={
-            expiringTotal === 0
-              ? "No leases up for renewal in the window."
-              : `${expiringTotal} ${expiringTotal === 1 ? "lease" : "leases"} up for renewal`
-          }
-          className="lg:col-span-2"
-        >
-          {expiringTotal === 0 ? (
-            <RenewalEmpty />
-          ) : (
-            <RenewalBars buckets={buckets} max={maxBucket} />
-          )}
-        </DashboardSection>
-
-        <DashboardSection
-          title="Rent roll"
-          eyebrow="Active leases"
-          description="Monthly recurring revenue from this property"
-        >
-          <div className="space-y-2.5">
-            <div>
-              <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-                Monthly rent roll
-              </p>
-              <p className="mt-0.5 text-2xl font-semibold tabular-nums tracking-tight text-foreground">
-                <AnimatedNumber value={monthlyRentRoll} format="currency" />
-              </p>
-            </div>
-            <div>
-              <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-                Active leases
-              </p>
-              <p
-                className="mt-0.5 text-base font-semibold tabular-nums text-foreground"
-                title="Lease rows in ACTIVE status synced from AppFolio. May trail occupancy when residents are tracked but their lease records haven't synced yet — see the reconciliation note below."
-              >
-                <AnimatedNumber value={activeResidents} />
-              </p>
-            </div>
-            {/* Compact reconciliation line. The full explainer is now in
-                a hover/title tooltip so the rent-roll card stays scannable
-                instead of carrying a paragraph of AppFolio sync trivia. */}
-            {leasedUnits != null && Math.abs(leasedUnits - activeResidents) >= 1 ? (
-              <p
-                className="text-[10.5px] text-muted-foreground leading-snug"
-                title={`${leasedUnits} units occupied (AppFolio unit roll-up), ${activeResidents} lease rows synced as ACTIVE. The gap is residents whose lease rows haven't propagated yet (new move-ins, pending renewals, month-to-month rolls AppFolio hasn't reissued). Avg rent stays stable because it divides by the unit denominator, not the lease-row count.`}
-              >
-                <span className="tabular-nums">{leasedUnits}</span> units occupied,{" "}
-                <span className="tabular-nums">{activeResidents}</span> lease rows synced.{" "}
-                <a
-                  href="?tab=residents"
-                  className="text-primary underline underline-offset-2 hover:no-underline"
-                >
-                  Open Residents →
-                </a>
-              </p>
-            ) : null}
-            <div>
-              <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-                Avg rent / unit
-              </p>
-              <p
-                className="mt-0.5 text-base font-semibold tabular-nums text-foreground"
-                title="Monthly rent roll divided by the number of leased physical units. Uses the unit-level occupancy denominator — not the active-lease row count — so the figure stays stable when AppFolio's lease-row sync lags."
-              >
-                <AnimatedNumber
-                  value={
-                    // Bug #33 — Norman: was dividing rent roll by
-                    // activeResidents (21 lease rows) instead of
-                    // leasedUnits (100 occupied units), yielding
-                    // $4,408 instead of the real ~$925. Fix: divide
-                    // by leasedUnits when known, fall back to
-                    // activeResidents only when no unit count is
-                    // available.
-                    leasedUnits != null && leasedUnits > 0
-                      ? Math.round(monthlyRentRoll / leasedUnits)
-                      : activeResidents > 0
-                        ? Math.round(monthlyRentRoll / activeResidents)
-                        : 0
-                  }
-                  format="currency"
+          {/* 4. Lead funnel + Renewal pipeline (50/50). */}
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            <DashboardSection
+              title="Lead funnel"
+              eyebrow="28-day"
+              description={
+                kpis.leads28d === 0
+                  ? "Funnel data unlocks at first lead."
+                  : showCompactFunnel
+                    ? "Visit → lead → tour → application. Needs more volume to read as a chart."
+                    : "Visit-to-lease progression. Drop-off rates show where the funnel leaks."
+              }
+            >
+              {kpis.leads28d === 0 ? null : showCompactFunnel ? (
+                <CompactFunnel
+                  leads={kpis.leads28d}
+                  tours={kpis.tours28d}
+                  applications={kpis.applications28d}
                 />
-              </p>
-            </div>
-          </div>
-        </DashboardSection>
-      </section>
+              ) : (
+                <FunnelBars
+                  stages={[
+                    { label: "Leads", value: kpis.leads28d, color: "#1D4ED8" },
+                    { label: "Tours", value: kpis.tours28d, color: "#2563EB" },
+                    {
+                      label: "Applications",
+                      value: kpis.applications28d,
+                      color: "#3B82F6",
+                    },
+                  ]}
+                  tourRate={tourRate}
+                  appRate={appRate}
+                />
+              )}
+            </DashboardSection>
 
-      {/* Property details + Marketing.
-          Bug #28 — show only the rows we have real data for. Empty
-          fields used to render as "Year built: —" which looked like
-          a tracking gap; now they're hidden so the section reads
-          cleanly. The hero strip above handles the basics inline. */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        <DashboardSection title="Property details" eyebrow="Basics">
-          <dl className="space-y-1 text-xs">
-            {property.propertyType ? (
-              <Row k="Type" v={property.propertyType} />
-            ) : null}
-            {property.residentialSubtype || property.commercialSubtype ? (
-              <Row
-                k="Subtype"
-                v={
-                  property.residentialSubtype ?? property.commercialSubtype ?? ""
-                }
-              />
-            ) : null}
-            {property.totalUnits != null ? (
-              <Row k="Total units" v={property.totalUnits.toString()} />
-            ) : null}
-            {property.yearBuilt != null ? (
-              <Row k="Year built" v={property.yearBuilt.toString()} />
-            ) : null}
-            {property.backendPlatform &&
-            property.backendPlatform !== "NONE" ? (
-              <Row k="Backend" v={property.backendPlatform} />
-            ) : null}
-            {property.backendPropertyGroup ? (
-              <Row k="Property group" v={property.backendPropertyGroup} />
-            ) : null}
-            {property.lastSyncedAt ? (
-              <Row
-                k="Last synced"
-                v={new Date(property.lastSyncedAt).toLocaleString()}
-              />
-            ) : null}
-          </dl>
-        </DashboardSection>
+            <DashboardSection
+              title="Renewal pipeline"
+              eyebrow="Next 120 days"
+              description={
+                expiringTotal === 0
+                  ? "No leases up for renewal in the window."
+                  : `${expiringTotal} ${expiringTotal === 1 ? "lease" : "leases"} up for renewal`
+              }
+            >
+              {expiringTotal === 0 ? (
+                <RenewalEmpty />
+              ) : (
+                <RenewalsList buckets={buckets} />
+              )}
+            </DashboardSection>
+          </section>
 
-        <DashboardSection title="Marketing" eyebrow="SEO & listings">
-          <dl className="space-y-1 text-xs">
-            {/* Bug #28 — hide unpopulated SEO/listing rows instead of
-                rendering "—" placeholders. Listings + all-time leads
-                always show because zero is a meaningful value there. */}
-            {property.metaTitle ? (
-              <Row k="Meta title" v={property.metaTitle} />
-            ) : null}
-            {property.metaDescription ? (
-              <Row k="Meta description" v={property.metaDescription} />
-            ) : null}
-            {property.virtualTourUrl ? (
-              <Row k="Virtual tour" v={property.virtualTourUrl} />
-            ) : null}
-            {priceRange !== "—" ? <Row k="Price range" v={priceRange} /> : null}
-            <Row
-              k="Listings configured"
-              v={(listingCounts?._count.listings ?? 0).toString()}
-            />
-            <Row
-              k="All-time leads"
-              v={(listingCounts?._count.leads ?? 0).toString()}
-            />
-          </dl>
-          {property.description ? (
-            <div className="pt-2 mt-2 border-t border-border">
-              <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-1">
-                Description
-              </div>
-              <p className="text-[11px] text-muted-foreground whitespace-pre-wrap leading-snug">
-                {property.description}
-              </p>
-            </div>
-          ) : null}
-        </DashboardSection>
-      </div>
+          {/* 5. Property details + Marketing (50/50). */}
+          <section className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            <DashboardSection title="Property details" eyebrow="Basics">
+              <dl className="space-y-1 text-xs">
+                {property.propertyType ? (
+                  <Row k="Type" v={property.propertyType} />
+                ) : null}
+                {property.residentialSubtype || property.commercialSubtype ? (
+                  <Row
+                    k="Subtype"
+                    v={
+                      property.residentialSubtype ??
+                      property.commercialSubtype ??
+                      ""
+                    }
+                  />
+                ) : null}
+                {property.yearBuilt != null ? (
+                  <Row k="Year built" v={property.yearBuilt.toString()} />
+                ) : null}
+                {property.backendPlatform &&
+                property.backendPlatform !== "NONE" ? (
+                  <Row k="Backend" v={property.backendPlatform} />
+                ) : null}
+                {property.backendPropertyGroup ? (
+                  <Row k="Property group" v={property.backendPropertyGroup} />
+                ) : null}
+              </dl>
+            </DashboardSection>
+
+            <DashboardSection title="Marketing" eyebrow="SEO & listings">
+              <dl className="space-y-1 text-xs">
+                {property.metaDescription ? (
+                  <Row k="Meta description" v={property.metaDescription} />
+                ) : null}
+                {property.metaTitle ? (
+                  <Row k="Meta title" v={property.metaTitle} />
+                ) : null}
+                {priceRange !== "—" ? (
+                  <Row k="Price range" v={priceRange} />
+                ) : null}
+                <Row
+                  k="Listings configured"
+                  v={(listingCounts?._count.listings ?? 0).toString()}
+                />
+              </dl>
+              {sourceSlices.length > 0 ? (
+                <div className="pt-2 mt-2 border-t border-border">
+                  <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-1.5">
+                    Top lead sources (28d)
+                  </div>
+                  <SourceMix slices={sourceSlices} total={sourceTotal} />
+                </div>
+              ) : null}
+            </DashboardSection>
+          </section>
         </>
       )}
     </div>
@@ -936,713 +599,98 @@ export async function OverviewTab({
 }
 
 // ---------------------------------------------------------------------------
-// PropertyHeroStrip — opens the Overview tab. Three-column layout:
-//
-//   ┌─────────────────────────────────────────────────────────────────────┐
-//   │ [97%]   Telegraph Commons        ▸ Open Renewals  ▸ Open Ads        │
-//   │  full   2-paragraph briefing      ▸ Open Residents  ▸ Open Reports  │
-//   │  ring   ($4.4M monthly · 71 u)                                      │
-//   └─────────────────────────────────────────────────────────────────────┘
-//
-// The ring on the left is the single biggest visual on the page so the
-// operator's eye lands on the headline metric (occupancy) first. The
-// briefing is plain English so it's skim-friendly. The action rail on the
-// right takes them to the most likely next step.
+// PropertyHeroStrip — simplified. Photo + name + a single horizontal fact
+// row. No ring, no briefing, no quick-actions rail.
 // ---------------------------------------------------------------------------
-
-// Bug #27 — Active features strip. Each chip shows a marketing-side
-// feature's connection state, with a deep link to the relevant
-// settings or onboarding surface. Renders as a compact, scannable
-// row near the top of the overview so operators see "what's
-// running" without scrolling. Connected chips lead with a green
-// dot; not-connected chips are muted with a "Set up" link.
-function ActiveFeaturesStrip({
-  propertyId,
-  chatbotEnabled,
-  chatbotConvos28d,
-  pixelInstalled,
-  pixelLastEventAt,
-  ga4Connected,
-  gscConnected,
-  googleAdsConnected,
-  metaAdsConnected,
-  adSpendCents28d,
-  showAdChips,
-}: {
-  propertyId: string;
-  chatbotEnabled: boolean;
-  chatbotConvos28d: number;
-  pixelInstalled: boolean;
-  pixelLastEventAt: Date | null;
-  ga4Connected: boolean;
-  gscConnected: boolean;
-  googleAdsConnected: boolean;
-  metaAdsConnected: boolean;
-  adSpendCents28d: number;
-  /** When false, Google/Meta Ads chips are dropped — the org has no
-   *  ad modules turned on and the chips would just be permanent "Not
-   *  connected" pills with no useful action behind them. */
-  showAdChips: boolean;
-}) {
-  const PIXEL_FRESH_DAYS = 14;
-  const pixelFiring =
-    pixelInstalled &&
-    pixelLastEventAt != null &&
-    Date.now() - pixelLastEventAt.getTime() <
-      PIXEL_FRESH_DAYS * 24 * 60 * 60 * 1000;
-
-  type Chip = {
-    label: string;
-    connected: boolean;
-    detail: string;
-    href: string;
-  };
-  const chips: Chip[] = [
-    {
-      label: "Chatbot",
-      connected: chatbotEnabled,
-      detail: chatbotEnabled
-        ? `${chatbotConvos28d} conversation${chatbotConvos28d === 1 ? "" : "s"} (28d)`
-        : "Not enabled",
-      href: "/portal/chatbot",
-    },
-    {
-      label: "Cursive Pixel",
-      connected: pixelFiring,
-      // When stale, surface the actual age of the last event ("Last event
-      // 16d ago") so the operator knows whether to chase a broken pixel
-      // install or just no traffic. Previously the generic "no recent
-      // events" left them guessing — and the Sync action on /visitors
-      // wasn't updating this surface even when it pulled fresh visitors
-      // from AudienceLab (now fixed in runCursiveSegmentSync).
-      detail: pixelFiring
-        ? "Firing"
-        : pixelInstalled
-          ? pixelLastEventAt
-            ? `Installed · last event ${formatPixelAge(pixelLastEventAt)}`
-            : "Installed · no events yet"
-          : "Not installed",
-      href: `/portal/properties/${propertyId}?tab=onboarding`,
-    },
-    {
-      label: "GA4",
-      connected: ga4Connected,
-      detail: ga4Connected ? "Connected" : "Not connected",
-      href: `/portal/seo?provider=GA4&propertyId=${propertyId}`,
-    },
-    {
-      label: "GSC",
-      connected: gscConnected,
-      detail: gscConnected ? "Connected" : "Not connected",
-      href: `/portal/seo?provider=GSC&propertyId=${propertyId}`,
-    },
-    // Bug #35 — both ads chips routed to /portal/integrations/ads
-    // which returns 404. The actual ads detail surface lives at
-    // ?tab=ads on the property page, so we redirect there. The
-    // platform query param is preserved so the ads tab can scroll
-    // to the relevant campaign block.
-    // Bug #36 — "Active campaign" label was showing even when the
-    // attributed 28d ad spend was $0. We pass through the spend
-    // figure and downgrade the detail to "No recent spend" when
-    // the campaign is connected but spend is zero.
-    // Only render the ad chips when the org actually has an ad
-    // module on; otherwise these were two permanent "Not connected"
-    // pills with no useful click target.
-    ...(showAdChips
-      ? [
-          {
-            label: "Google Ads",
-            connected: googleAdsConnected,
-            detail: googleAdsConnected
-              ? adSpendCents28d > 0
-                ? "Active campaign"
-                : "Connected · $0 recent spend"
-              : "Not connected",
-            href: `/portal/properties/${propertyId}?tab=ads&platform=GOOGLE`,
-          },
-          {
-            label: "Meta Ads",
-            connected: metaAdsConnected,
-            detail: metaAdsConnected
-              ? adSpendCents28d > 0
-                ? "Active campaign"
-                : "Connected · $0 recent spend"
-              : "Not connected",
-            href: `/portal/properties/${propertyId}?tab=ads&platform=META`,
-          },
-        ]
-      : []),
-    // Bug #37 — Reputation was sitting in the Active Features strip
-    // even though it's a passive monitoring surface, not an active
-    // marketing channel. We've removed it here and trigger a
-    // background scan when the operator visits the reputation tab
-    // instead, so the data feels live without forcing them through
-    // a separate setup state.
-  ];
-
-  const liveCount = chips.filter((c) => c.connected).length;
-
-  return (
-    <section className="rounded-xl border border-border bg-card px-3 py-2.5">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <p className="text-[11px] tracking-widest uppercase font-semibold text-muted-foreground shrink-0">
-          Channels &middot;{" "}
-          <span className="text-foreground tabular-nums">
-            {liveCount}/{chips.length} live
-          </span>
-        </p>
-        <div className="flex items-center gap-1 flex-wrap min-w-0">
-          {chips.map((chip) => (
-            <a
-              key={chip.label}
-              href={chip.href}
-              title={chip.detail}
-              className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-1 transition-colors ${
-                chip.connected
-                  ? "border-primary/25 bg-primary/[0.06] hover:bg-primary/10"
-                  : "border-border bg-muted/30 hover:bg-muted/50"
-              }`}
-            >
-              <span
-                aria-hidden="true"
-                className={`h-1.5 w-1.5 rounded-full ${
-                  chip.connected ? "bg-primary" : "bg-muted-foreground/40"
-                }`}
-              />
-              <span className="text-[11px] font-semibold text-foreground">
-                {chip.label}
-              </span>
-            </a>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-// HeroLeadsTile — anchors the property KPI strip. Big numeric display
-// (32-40px), prominent delta, taller sparkline, and a funnel-rate
-// micro-summary so the operator sees "where did the leads go" without
-// scanning the secondary tiles. Renders inside the same grid as the
-// 2x2 secondary KpiTile grid; matches that visual language but reads
-// as the dominant signal.
-function HeroLeadsTile({
-  leads,
-  delta,
-  spark,
-  tours,
-  applications,
-  tourRate,
-  appRate,
-}: {
-  leads: number;
-  delta?: { value: string; trend: "up" | "down" | "flat" };
-  spark: number[] | null | undefined;
-  tours: number;
-  applications: number;
-  tourRate: number;
-  appRate: number;
-}) {
-  const showSpark = Array.isArray(spark) && spark.length > 1;
-  return (
-    <div className="relative h-full rounded-xl border border-border bg-card p-4 flex flex-col gap-3 ls-hover-lift">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-          Leads · 28 days
-        </span>
-        {delta ? (
-          <span
-            className={cn(
-              "inline-flex items-center gap-0.5 rounded-md px-1.5 py-0.5 text-[10.5px] font-semibold tabular-nums",
-              delta.trend === "up"
-                ? "text-primary bg-primary/10"
-                : delta.trend === "down"
-                  ? "text-destructive bg-destructive/10"
-                  : "text-muted-foreground bg-muted",
-            )}
-          >
-            {delta.value}
-          </span>
-        ) : null}
-      </div>
-
-      <div className="flex items-end justify-between gap-3 min-w-0">
-        {leads === 0 ? (
-          // Zero-state: drop the giant "0" — it reads as broken, not
-          // as a deliberate "no leads yet." Replace with a smaller
-          // dimmed dash and an explicit helper line.
-          <div className="flex flex-col gap-1">
-            <span className="text-[28px] leading-none font-semibold tabular-nums text-muted-foreground/40">
-              —
-            </span>
-            <span className="text-[11px] text-muted-foreground leading-tight">
-              First lead lands here
-            </span>
-          </div>
-        ) : (
-          <div className="text-[40px] leading-none font-semibold tracking-tight tabular-nums text-foreground">
-            {leads.toLocaleString()}
-          </div>
-        )}
-        {/* Funnel breakdown — micro horizontal bar showing tour & app
-            conversion as a fraction of leads. We only render this when
-            there's leads volume; otherwise it's just a trio of "0 ·"
-            lines that adds noise. */}
-        {leads > 0 ? (
-          <div className="text-right shrink-0">
-            <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-              Funnel
-            </p>
-            <p className="text-[12px] text-foreground mt-0.5 tabular-nums">
-              {tours} tours
-              {tourRate > 0 ? (
-                <span className="text-muted-foreground"> · {tourRate}%</span>
-              ) : null}
-            </p>
-            <p className="text-[12px] text-foreground tabular-nums">
-              {applications} apps
-              {appRate > 0 ? (
-                <span className="text-muted-foreground"> · {appRate}%</span>
-              ) : null}
-            </p>
-          </div>
-        ) : null}
-      </div>
-
-      {/* Sparkline only renders once we have a real curve to draw.
-          Previously an empty "Sparkline appears once 7+ days of data
-          exists" panel held the slot — that looked like a broken
-          chart shell. Now the tile just gets shorter when sparse. */}
-      {showSpark ? (
-        <div className="-mx-1 -mb-1 mt-auto">
-          <HeroSparkline data={spark as number[]} />
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-// Taller sparkline variant for the hero tile — 56px high vs the
-// secondary KpiTile's 28px. Same brand-blue palette so the row reads
-// as a unified system, not a one-off chart.
-function HeroSparkline({ data }: { data: number[] }) {
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const w = 100;
-  const h = 56;
-  const stepX = w / (data.length - 1);
-  const points = data
-    .map((v, i) => {
-      const x = i * stepX;
-      const y = h - ((v - min) / range) * (h - 6) - 3;
-      return `${x.toFixed(2)},${y.toFixed(2)}`;
-    })
-    .join(" ");
-  const areaPath = `M0,${h} L${points.split(" ").join(" L")} L${w},${h} Z`;
-  return (
-    <svg
-      viewBox={`0 0 ${w} ${h}`}
-      preserveAspectRatio="none"
-      className="w-full h-12 overflow-visible"
-      aria-hidden="true"
-    >
-      <path d={areaPath} fill="#2563EB" opacity="0.1" />
-      <polyline
-        points={points}
-        fill="none"
-        stroke="#2563EB"
-        strokeWidth="1.75"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        vectorEffect="non-scaling-stroke"
-      />
-    </svg>
-  );
-}
 
 function PropertyHeroStrip({
   name,
-  occupancyPct,
   totalUnits,
   leasedUnits,
-  availableUnits,
-  monthlyRentRoll,
-  briefing,
-  propertyMeta,
+  occupancyPct,
+  monthlyRentRollDisplay,
   heroImageUrl,
   propertyType,
   propertySubtype,
   yearBuilt,
   lastSyncedAt,
-  renewalsNext30,
-  renewalsNext120,
-  activeResidents,
-  noticeResidents,
-  adSpendCents28d,
-  adLeads28d,
-  orgHasAdsModule,
-  reputationMentions,
-  reputationUnreviewed,
-  reputationLastAt,
 }: {
   name: string;
-  occupancyPct: number | null;
   totalUnits: number | null;
   leasedUnits: number | null;
-  availableUnits: number;
-  monthlyRentRoll: number;
-  briefing: string;
-  propertyMeta: { slug: string; name: string };
+  occupancyPct: number | null;
+  monthlyRentRollDisplay: string;
   heroImageUrl: string | null;
   propertyType: PropertyType;
   propertySubtype: ResidentialSubtype | CommercialSubtype | null;
   yearBuilt: number | null;
   lastSyncedAt: Date | null;
-  // Bug #38 — summary metrics for the quick-actions rail.
-  renewalsNext30: number;
-  renewalsNext120: number;
-  activeResidents: number;
-  noticeResidents: number;
-  adSpendCents28d: number;
-  adLeads28d: number;
-  /** When false, the "Ad performance" card is dropped from the rail —
-   *  the Ads sub-tab is hidden upstream so a link there is dead. */
-  orgHasAdsModule: boolean;
-  reputationMentions: number;
-  reputationUnreviewed: number;
-  reputationLastAt: Date | null;
 }) {
-  const monthlyDisplay =
-    monthlyRentRoll > 0
-      ? `$${(monthlyRentRoll / 1000).toLocaleString(undefined, { maximumFractionDigits: 1 })}K /mo`
-      : "—";
-  const occupancyLabel = occupancyPct != null ? `${occupancyPct}%` : "—";
-  const occupancyTone =
-    occupancyPct == null
-      ? "stroke-muted-foreground/40"
-      : occupancyPct >= 90
-        ? "stroke-primary-dark"
-        : occupancyPct >= 75
-          ? "stroke-primary"
-          : "stroke-primary/50";
-
-  // Bug #28 — inline property-detail summary. Builds a clean line of
-  // "Type · Subtype · Year · Last synced" from whatever fields are
-  // populated, dropping silently when a field is null. No more "Year
-  // built: —" or "Subtype: —" leaking into the UI.
   const subtypeLabel =
     typeof propertySubtype === "string"
       ? propertySubtype.replace(/_/g, " ").toLowerCase()
       : null;
-  const detailBits: string[] = [];
-  if (subtypeLabel) {
-    detailBits.push(subtypeLabel);
-  } else if (propertyType) {
-    detailBits.push(propertyType.replace(/_/g, " ").toLowerCase());
+  const typeLine =
+    subtypeLabel ??
+    (propertyType ? propertyType.replace(/_/g, " ").toLowerCase() : null);
+
+  const facts: string[] = [];
+  if (totalUnits != null) {
+    facts.push(`${totalUnits} units`);
   }
-  if (totalUnits != null) detailBits.push(`${totalUnits} units`);
-  if (yearBuilt) detailBits.push(`built ${yearBuilt}`);
+  if (occupancyPct != null) {
+    facts.push(`${occupancyPct}% occupied`);
+  } else if (totalUnits != null && leasedUnits != null) {
+    facts.push(`${leasedUnits} of ${totalUnits} leased`);
+  }
+  if (monthlyRentRollDisplay !== "—") {
+    facts.push(`${monthlyRentRollDisplay}/mo rent roll`);
+  }
+  if (yearBuilt) {
+    facts.push(`built ${yearBuilt}`);
+  }
   if (lastSyncedAt) {
-    const synced = new Date(lastSyncedAt);
-    const days = Math.floor(
-      (Date.now() - synced.getTime()) / (24 * 60 * 60 * 1000),
-    );
-    detailBits.push(
-      days === 0
-        ? "synced today"
-        : days === 1
-          ? "synced yesterday"
-          : days < 7
-            ? `synced ${days}d ago`
-            : `synced ${synced.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`,
-    );
+    facts.push(`synced ${formatAge(lastSyncedAt)}`);
   }
 
   return (
     <section className="rounded-xl border border-border bg-card overflow-hidden">
-      <div className="grid grid-cols-1 md:grid-cols-[auto_auto_1fr_auto] gap-5 p-4 md:p-5">
-        {/* Hero photo — small thumbnail for quick property
-            recognition. Falls back to nothing (the occupancy ring
-            anchors the row) when no heroImageUrl is set. Bug #28. */}
+      <div className="flex items-center gap-4 p-4 md:p-5">
         {heroImageUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={heroImageUrl}
             alt={name}
-            className="h-20 w-20 md:h-24 md:w-24 rounded-lg object-cover border border-border self-center shrink-0"
+            className="h-20 w-20 rounded-lg object-cover border border-border shrink-0"
           />
-        ) : null}
-
-        {/* Occupancy ring — large, anchored */}
-        <div className="flex items-center gap-4 md:gap-5">
-          <HeroOccupancyRing
-            pct={occupancyPct}
-            strokeClass={occupancyTone}
-            label={occupancyLabel}
-            sublabel={
-              totalUnits != null && leasedUnits != null
-                ? `${leasedUnits}/${totalUnits} leased`
-                : "No unit count"
-            }
-          />
-        </div>
-
-        {/* Identity + briefing */}
-        <div className="min-w-0 self-center">
-          <div className="flex items-baseline flex-wrap gap-2 mb-1.5">
-            <h2 className="text-base font-semibold text-foreground tracking-tight">
-              {name}
-            </h2>
-            <span className="text-[11px] text-muted-foreground tabular-nums">
-              {monthlyDisplay}
-            </span>
-            {availableUnits > 0 ? (
-              <span className="text-[11px] text-foreground font-medium tabular-nums">
-                · {availableUnits} open
-              </span>
-            ) : null}
+        ) : (
+          <div className="inline-flex h-20 w-20 items-center justify-center rounded-lg bg-muted text-muted-foreground shrink-0 border border-border">
+            <Building2 className="h-6 w-6" aria-hidden="true" />
           </div>
-          {/* Bug #28 — inline detail bits instead of a buried details
-              card. Capitalize-first-letter applied via class for a
-              clean read. */}
-          {detailBits.length > 0 ? (
-            <p className="text-[11px] text-muted-foreground/80 mb-1.5 first-letter:capitalize tabular-nums">
-              {detailBits.join(" · ")}
+        )}
+
+        <div className="min-w-0 flex-1">
+          <h2 className="text-lg md:text-xl font-semibold text-foreground tracking-tight truncate">
+            {name}
+          </h2>
+          {typeLine ? (
+            <p className="mt-0.5 text-[11px] uppercase tracking-widest font-semibold text-muted-foreground first-letter:capitalize">
+              {typeLine}
             </p>
           ) : null}
-          <p className="text-[12px] text-muted-foreground leading-relaxed max-w-[560px]">
-            {briefing}
-          </p>
+          {facts.length > 0 ? (
+            <p className="mt-1.5 text-[12.5px] text-muted-foreground tabular-nums leading-snug">
+              {facts.join(" · ")}
+            </p>
+          ) : null}
         </div>
-
-        {/* Quick actions rail. Bug #38 — Norman noted these were
-            empty arrow tiles with no signal. Each card now leads with
-            a metric so the operator gets at-a-glance data density
-            consistent with every other module on the page. */}
-        <nav
-          aria-label="Quick actions"
-          className="flex flex-row md:flex-col gap-1 md:min-w-[170px] self-center"
-        >
-          {(() => {
-            const renewalMetric =
-              renewalsNext30 > 0
-                ? `${renewalsNext30} in 30d`
-                : renewalsNext120 > 0
-                  ? `${renewalsNext120} in 120d`
-                  : "Quiet";
-            const residentMetric =
-              noticeResidents > 0
-                ? `${activeResidents} · ${noticeResidents} notice`
-                : `${activeResidents} active`;
-            const spendDollars = Math.round(adSpendCents28d / 100);
-            const adMetric =
-              spendDollars > 0
-                ? adLeads28d > 0
-                  ? `$${spendDollars.toLocaleString()} · ${adLeads28d} leads`
-                  : `$${spendDollars.toLocaleString()} (28d)`
-                : "No spend (28d)";
-            const reputationMetric =
-              reputationMentions > 0
-                ? reputationUnreviewed > 0
-                  ? `${reputationMentions} · ${reputationUnreviewed} to review`
-                  : `${reputationMentions} mentions`
-                : reputationLastAt
-                  ? "No mentions found"
-                  : "Not scanned yet";
-            const cards: Array<{
-              tab: string;
-              label: string;
-              metric: string;
-            }> = [
-              { tab: "renewals", label: "Renewals", metric: renewalMetric },
-              {
-                tab: "residents",
-                label: "Residents",
-                metric: residentMetric,
-              },
-              // Ads card only renders when the org actually has an ad
-              // module turned on. Otherwise the Ads sub-tab is hidden
-              // upstream and this card would route to a dead link.
-              ...(orgHasAdsModule
-                ? [
-                    {
-                      tab: "ads",
-                      label: "Ad performance",
-                      metric: adMetric,
-                    },
-                  ]
-                : []),
-              {
-                tab: "reputation",
-                label: "Reputation",
-                metric: reputationMetric,
-              },
-            ];
-            return cards.map((a) => (
-              <a
-                key={a.tab}
-                href={`?tab=${a.tab}`}
-                className="inline-flex items-center justify-between gap-2 rounded-md border border-border px-2.5 py-1.5 text-[11px] font-medium text-foreground hover:bg-muted/40 hover:border-primary/40 transition-colors group"
-              >
-                <span className="flex flex-col min-w-0">
-                  <span className="leading-tight">{a.label}</span>
-                  <span className="text-[10px] text-muted-foreground tabular-nums truncate">
-                    {a.metric}
-                  </span>
-                </span>
-                <span className="text-muted-foreground group-hover:text-primary transition-colors shrink-0">
-                  →
-                </span>
-              </a>
-            ));
-          })()}
-        </nav>
       </div>
     </section>
   );
 }
 
-// Big SVG occupancy ring used in the hero strip. 96px outer, 14px stroke.
-function HeroOccupancyRing({
-  pct,
-  strokeClass,
-  label,
-  sublabel,
-}: {
-  pct: number | null;
-  strokeClass: string;
-  label: string;
-  sublabel: string;
-}) {
-  const size = 96;
-  const stroke = 12;
-  const radius = (size - stroke) / 2;
-  const circ = 2 * Math.PI * radius;
-  const fraction = pct != null ? Math.max(0, Math.min(1, pct / 100)) : 0;
-  return (
-    <div className="relative shrink-0" style={{ width: size, height: size }}>
-      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          className="stroke-muted"
-          strokeWidth={stroke}
-        />
-        <circle
-          cx={size / 2}
-          cy={size / 2}
-          r={radius}
-          fill="none"
-          className={strokeClass}
-          strokeWidth={stroke}
-          strokeLinecap="round"
-          strokeDasharray={`${fraction * circ} ${circ}`}
-          transform={`rotate(-90 ${size / 2} ${size / 2})`}
-        />
-      </svg>
-      {/* Bug #32 — Norman flagged that the sublabel "100/100 leased"
-          was clipping the ring's outer stroke. We tighten the layout:
-          padded inner, narrower text, drop the "leased" suffix from
-          the inline ratio (it's already implied by the ring), and
-          fall back to a smaller font when the ratio width grows past
-          a single line. */}
-      <div className="absolute inset-0 flex flex-col items-center justify-center text-center px-2">
-        <span className="text-[18px] font-semibold tracking-tight text-foreground tabular-nums leading-none">
-          {label}
-        </span>
-        <span
-          className="mt-1 uppercase tracking-wider font-semibold text-muted-foreground leading-tight"
-          style={{
-            // Shrink the secondary line dynamically: 10-char ratios
-            // (e.g. "100/100") fit at 8px; longer strings drop a bit
-            // further. The ring is 96px wide so we have ~64px of safe
-            // text width inside the stroke.
-            fontSize: sublabel.length > 10 ? 7 : 8,
-            letterSpacing: "0.05em",
-          }}
-        >
-          {sublabel.replace(/\s+leased$/i, "")}
-        </span>
-      </div>
-    </div>
-  );
-}
-
 // ---------------------------------------------------------------------------
-// buildPropertyBriefing — produces a 1–2 sentence operator-grade summary
-// of the property's current state. Picks the most relevant facts based on
-// what data exists; degrades gracefully when AppFolio + ad accounts +
-// reputation aren't all wired up yet.
-// ---------------------------------------------------------------------------
-
-function buildPropertyBriefing(args: {
-  name: string;
-  occupancyPct: number | null;
-  totalUnits: number | null;
-  leasedUnits: number | null;
-  availableUnits: number;
-  monthlyRentRoll: number;
-  expiringNext30: number;
-  expiringNext120: number;
-  leads28d: number;
-  tours28d: number;
-  noticeGiven: number;
-  activeResidents: number;
-}): string {
-  const parts: string[] = [];
-
-  if (args.occupancyPct != null) {
-    if (args.occupancyPct >= 95) {
-      parts.push(
-        `Sitting at ${args.occupancyPct}% occupancy. Effectively full.`,
-      );
-    } else if (args.occupancyPct >= 85) {
-      parts.push(
-        `Occupancy is healthy at ${args.occupancyPct}% with ${args.availableUnits} unit${args.availableUnits === 1 ? "" : "s"} available.`,
-      );
-    } else {
-      parts.push(
-        `Occupancy is ${args.occupancyPct}%. ${args.availableUnits} unit${args.availableUnits === 1 ? "" : "s"} sitting, worth attention.`,
-      );
-    }
-  } else if (args.totalUnits != null) {
-    parts.push(`${args.totalUnits} units total.`);
-  }
-
-  if (args.expiringNext120 > 0) {
-    parts.push(
-      `${args.expiringNext120} lease${args.expiringNext120 === 1 ? "" : "s"} up for renewal in the next 120 days${args.expiringNext30 > 0 ? `, including ${args.expiringNext30} inside 30 days` : ""}.`,
-    );
-  }
-
-  if (args.noticeGiven > 0) {
-    parts.push(
-      `${args.noticeGiven} resident${args.noticeGiven === 1 ? " has" : "s have"} given notice. Renewal campaigns should already be live.`,
-    );
-  }
-
-  if (args.leads28d > 0) {
-    const conv =
-      args.leads28d > 0
-        ? Math.round((args.tours28d / args.leads28d) * 100)
-        : 0;
-    parts.push(
-      `${args.leads28d} lead${args.leads28d === 1 ? "" : "s"} in the last 28 days converting at ${conv}% lead-to-tour.`,
-    );
-  } else {
-    parts.push(`No leads tracked in the last 28 days yet.`);
-  }
-
-  return parts.join(" ");
-}
-
-// ---------------------------------------------------------------------------
-// AI insight — deterministic, rule-based. Picks the single most actionable
-// signal for this property and surfaces it as a one-line takeaway with a
-// recommended next step. No LLM call required; just data ranking.
+// AI insight — fallback only. Used when the detector library hasn't run yet.
 // ---------------------------------------------------------------------------
 
 type InsightSeverity = "alert" | "warn" | "info" | "ok";
@@ -1706,10 +754,7 @@ function buildAiInsight(args: {
       body: `Leads aren't converting to scheduled tours. Audit chatbot prompts and lead-response speed; the first reply window is decisive.`,
     });
   }
-  if (
-    args.tours28d >= 5 &&
-    args.applications28d === 0
-  ) {
+  if (args.tours28d >= 5 && args.applications28d === 0) {
     candidates.push({
       severity: "warn",
       headline: `${args.tours28d} tours, zero applications`,
@@ -1742,7 +787,6 @@ function buildAiInsight(args: {
       body: `Not enough signal yet to flag an action. Once leads, tours, and lease activity pick up, the model will surface what to do next.`,
     };
   }
-  // Severity priority: alert > warn > info > ok
   const order: Record<InsightSeverity, number> = {
     alert: 0,
     warn: 1,
@@ -1754,10 +798,6 @@ function buildAiInsight(args: {
 }
 
 function AiInsightCard({ insight }: { insight: AiInsightShape }) {
-  // Brand-aligned tone scale. Severity is signalled by emphasis (border
-  // weight, accent fill) inside a single brand-blue palette — no green,
-  // amber, red. The destructive token is reserved for actual destructive
-  // confirmations (delete modals), not informational alerts.
   const tone =
     insight.severity === "alert"
       ? "border-primary/40 bg-primary/10 text-primary"
@@ -1784,118 +824,25 @@ function AiInsightCard({ insight }: { insight: AiInsightShape }) {
 }
 
 // ---------------------------------------------------------------------------
-// Visualizations — pure SVG so they stream from the server.
+// Visualizations — pure SVG / divs, server-renderable.
 // ---------------------------------------------------------------------------
-
-function OccupancyDonut({
-  leased,
-  available,
-  total,
-  occupancyPct,
-}: {
-  leased: number;
-  available: number;
-  total: number;
-  occupancyPct: number | null;
-}) {
-  const size = 132;
-  const stroke = 22;
-  const radius = (size - stroke) / 2;
-  const center = size / 2;
-  const circ = 2 * Math.PI * radius;
-  const denom = Math.max(1, total);
-  const leasedFrac = leased / denom;
-  const availFrac = available / denom;
-  return (
-    <div className="flex justify-center">
-      <div className="relative" style={{ width: size, height: size }}>
-        <svg
-          width={size}
-          height={size}
-          viewBox={`0 0 ${size} ${size}`}
-          style={{ transform: "rotate(-90deg)" }}
-        >
-          <circle
-            cx={center}
-            cy={center}
-            r={radius}
-            fill="none"
-            stroke="#E5E7EB"
-            strokeWidth={stroke}
-          />
-          <circle
-            cx={center}
-            cy={center}
-            r={radius}
-            fill="none"
-            stroke="#1D4ED8"
-            strokeWidth={stroke}
-            strokeDasharray={`${leasedFrac * circ} ${circ}`}
-          />
-          <circle
-            cx={center}
-            cy={center}
-            r={radius}
-            fill="none"
-            stroke="#93C5FD"
-            strokeWidth={stroke}
-            strokeDasharray={`${availFrac * circ} ${circ}`}
-            strokeDashoffset={`${-leasedFrac * circ}`}
-          />
-        </svg>
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <p className="text-2xl font-semibold leading-none tabular-nums">
-            {occupancyPct != null ? `${occupancyPct}%` : "—"}
-          </p>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">
-            Occupied
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function Legend({
-  color,
-  label,
-  value,
-}: {
-  color: string;
-  label: string;
-  value: number;
-}) {
-  return (
-    <li className="flex items-center justify-between gap-2 min-w-0">
-      <span className="flex items-center gap-1.5 min-w-0">
-        <span
-          aria-hidden="true"
-          className="h-2 w-2 rounded-full shrink-0"
-          style={{ backgroundColor: color }}
-        />
-        <span className="truncate text-foreground">{label}</span>
-      </span>
-      <span className="tabular-nums text-muted-foreground shrink-0">
-        {value.toLocaleString()}
-      </span>
-    </li>
-  );
-}
 
 function FunnelBars({
   stages,
+  tourRate,
+  appRate,
 }: {
   stages: Array<{ label: string; value: number; color: string }>;
+  tourRate: number;
+  appRate: number;
 }) {
   const max = Math.max(1, ...stages.map((s) => s.value));
+  const rates = [null, tourRate, appRate] as Array<number | null>;
   return (
     <ul className="space-y-2">
       {stages.map((s, i) => {
         const widthPct = Math.max(6, Math.round((s.value / max) * 100));
-        const dropPct =
-          i === 0 || stages[i - 1].value === 0
-            ? null
-            : Math.round((s.value / stages[i - 1].value) * 100);
+        const rate = rates[i];
         return (
           <li key={s.label} className="space-y-0.5">
             <div className="flex items-baseline justify-between gap-2 text-[11px]">
@@ -1904,9 +851,9 @@ function FunnelBars({
                 <span className="text-foreground font-semibold">
                   {s.value.toLocaleString()}
                 </span>
-                {dropPct != null ? (
+                {rate != null && rate > 0 ? (
                   <span className="ml-1.5 text-muted-foreground">
-                    {dropPct}% from prev
+                    {rate}% conv
                   </span>
                 ) : null}
               </span>
@@ -1929,28 +876,24 @@ function FunnelBars({
 
 function SourceMix({
   slices,
+  total,
 }: {
   slices: Array<{ label: string; value: number }>;
+  total: number;
 }) {
-  // Senior-design rewrite: replaced the second donut on this row (which
-  // rendered 100% with a single-channel segment when traffic was
-  // concentrated, providing no information) with a clean horizontal bar
-  // list. The page now has exactly one donut (occupancy) and a single
-  // bar visual language for the funnel + source breakdown.
-  const total = slices.reduce((s, x) => s + x.value, 0);
   const max = slices.reduce((m, s) => Math.max(m, s.value), 0) || 1;
-  const rows = slices.slice(0, 6).map((s, i) => ({
+  const rows = slices.slice(0, 5).map((s, i) => ({
     ...s,
     color: CHART_COLORS[i % CHART_COLORS.length],
-    pct: Math.round((s.value / total) * 100),
+    pct: total > 0 ? Math.round((s.value / total) * 100) : 0,
     barPct: Math.max(2, (s.value / max) * 100),
   }));
 
   return (
-    <ul className="space-y-2.5">
+    <ul className="space-y-1.5">
       {rows.map((row) => (
-        <li key={row.label} className="space-y-1">
-          <div className="flex items-center justify-between gap-2 text-[12px] min-w-0">
+        <li key={row.label} className="space-y-0.5">
+          <div className="flex items-center justify-between gap-2 text-[11.5px] min-w-0">
             <span className="flex items-center gap-1.5 min-w-0">
               <span
                 className="h-1.5 w-1.5 rounded-full shrink-0"
@@ -1960,13 +903,13 @@ function SourceMix({
                 {row.label}
               </span>
             </span>
-            <span className="tabular-nums text-muted-foreground shrink-0 text-[11.5px]">
+            <span className="tabular-nums text-muted-foreground shrink-0 text-[11px]">
               <span className="font-semibold text-foreground">{row.value}</span>
               <span className="ml-1">&middot; {row.pct}%</span>
             </span>
           </div>
           <div
-            className="h-1.5 rounded-full overflow-hidden"
+            className="h-1 rounded-full overflow-hidden"
             style={{ backgroundColor: "rgba(37,99,235,0.08)" }}
           >
             <div
@@ -1974,7 +917,6 @@ function SourceMix({
               style={{
                 width: `${row.barPct}%`,
                 backgroundColor: row.color,
-                transition: "width 600ms cubic-bezier(.2,.7,.2,1)",
               }}
             />
           </div>
@@ -1984,50 +926,39 @@ function SourceMix({
   );
 }
 
-function RenewalBars({
+// Compact renewals list — one row per 30-day bucket. Replaces the 4-bar
+// chart (which ate ~180px of vertical space for 4 numbers).
+function RenewalsList({
   buckets,
-  max,
 }: {
   buckets: Array<{ label: string; count: number; rentCents: number }>;
-  max: number;
 }) {
-  // Renewal urgency expressed via blue saturation rather than red→amber
-  // →blue. Closest expirations get the deepest blue (= "look here first"),
-  // distant buckets fade to neutral gray.
-  const TONES = ["#1D4ED8", "#2563EB", "#60A5FA", "#9CA3AF"];
   return (
-    <div className="grid grid-cols-4 gap-2">
-      {buckets.map((b, i) => {
-        const heightPct = b.count > 0 ? Math.max(8, (b.count / max) * 100) : 4;
-        return (
-          <div key={b.label} className="flex flex-col items-stretch gap-1.5">
-            <div className="h-24 flex items-end">
-              <div
-                className="w-full rounded-md transition-all"
-                style={{
-                  height: `${heightPct}%`,
-                  backgroundColor: TONES[i],
-                  opacity: b.count > 0 ? 1 : 0.2,
-                }}
-              />
-            </div>
-            <div className="text-center">
-              <p className="text-base font-semibold tabular-nums leading-none text-foreground">
-                {b.count}
-              </p>
-              <p className="text-[10px] tracking-wider uppercase text-muted-foreground mt-1">
-                {b.label}
-              </p>
-              {b.rentCents > 0 ? (
-                <p className="text-[10px] text-muted-foreground tabular-nums mt-0.5">
-                  ${Math.round(b.rentCents / 100).toLocaleString()}/mo
-                </p>
-              ) : null}
-            </div>
-          </div>
-        );
-      })}
-    </div>
+    <ul className="divide-y divide-border rounded-lg border border-border overflow-hidden">
+      {buckets.map((b) => (
+        <li
+          key={b.label}
+          className="flex items-baseline justify-between gap-3 px-3 py-2"
+        >
+          <span className="text-[11px] uppercase tracking-widest font-semibold text-muted-foreground">
+            {b.label}
+          </span>
+          <span className="flex items-baseline gap-2 tabular-nums">
+            <span className="text-[13px] font-semibold text-foreground">
+              {b.count.toLocaleString()}
+              <span className="ml-1 text-[10.5px] font-normal text-muted-foreground">
+                {b.count === 1 ? "lease" : "leases"}
+              </span>
+            </span>
+            {b.rentCents > 0 ? (
+              <span className="text-[11px] text-muted-foreground">
+                · ${Math.round(b.rentCents / 100).toLocaleString()}/mo
+              </span>
+            ) : null}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -2043,25 +974,13 @@ function Row({ k, v }: { k: string; v: string }) {
 }
 
 // ---------------------------------------------------------------------------
-// Sparse-data primitives. Pulled into their own helpers so every
-// section uses the same visual language for "we don't have data here
-// yet" — no half-broken Recharts, no giant "0" tiles.
+// Sparse-data primitives.
 // ---------------------------------------------------------------------------
 
-// Single character placeholder used inside KpiTile when a zero value
-// would otherwise read as broken. Wrapping the dash in this dim style
-// keeps the tile's height locked while signalling "no data" softly.
 function DimZero() {
-  return (
-    <span className="text-muted-foreground/40 tabular-nums">—</span>
-  );
+  return <span className="text-muted-foreground/40 tabular-nums">—</span>;
 }
 
-// Compact step-list funnel for when the 28d window has < 5 leads.
-// Three rows of label + count + conversion %, separated by a faint
-// vertical rule so the eye reads it as a sequence. Replaces the
-// Recharts FunnelBars which renders as a stack of nearly-empty
-// bars when the data is this sparse.
 function CompactFunnel({
   leads,
   tours,
@@ -2106,62 +1025,6 @@ function CompactFunnel({
           </li>
         ))}
       </ol>
-      <p className="text-[10.5px] text-muted-foreground leading-snug">
-        Needs more volume to read as a chart. The full funnel view returns
-        once {leads >= 1 ? `${5 - leads} more` : "5"} leads land.
-      </p>
-    </div>
-  );
-}
-
-function FunnelEmpty() {
-  return (
-    <p className="text-[12px] text-muted-foreground leading-snug">
-      The funnel fills out once leads start landing for this property.
-      Drop-off rates and bar widths appear automatically.
-    </p>
-  );
-}
-
-function SourceMixEmpty() {
-  return (
-    <p className="text-[12px] text-muted-foreground leading-snug">
-      Channel mix appears here as leads come in. Every lead carries its
-      source (Chatbot, Ads, Organic, etc.) so the breakdown is automatic.
-    </p>
-  );
-}
-
-// Single-channel callout. Used in place of a one-color donut when
-// every lead in the window came from the same source — the donut
-// reads as broken, the callout reads as intentional. Renders as a
-// short statement with a single horizontal bar at 100%.
-function SingleSourceCallout({
-  label,
-  value,
-}: {
-  label: string;
-  value: number;
-}) {
-  return (
-    <div className="rounded-lg border border-border bg-card/40 px-3 py-3 space-y-2">
-      <p className="text-[12.5px] text-foreground leading-snug">
-        All <span className="font-semibold tabular-nums">{value}</span>{" "}
-        {value === 1 ? "lead" : "leads"} from{" "}
-        <span className="font-semibold">{label}</span>.
-      </p>
-      <div
-        className="h-1.5 rounded-full overflow-hidden"
-        style={{ backgroundColor: "rgba(37,99,235,0.08)" }}
-      >
-        <div
-          className="h-full rounded-full"
-          style={{ width: "100%", backgroundColor: "#2563EB" }}
-        />
-      </div>
-      <p className="text-[10.5px] text-muted-foreground leading-snug">
-        Mix expands the moment a second channel reports a lead.
-      </p>
     </div>
   );
 }
@@ -2176,10 +1039,7 @@ function RenewalEmpty() {
 }
 
 // Compact "Property in onboarding" card. Renders in place of the dense
-// dashboard layout for AppFolio-imported rows that haven't been
-// activated yet. Single card, clear next-step CTA. SG Real Estate's
-// launch surfaced 120 of these from a fresh AppFolio sync; without
-// this treatment each one would render an empty dashboard.
+// dashboard layout for AppFolio-imported rows that haven't been activated.
 function OnboardingShellCard({
   propertyId,
   propertyName,
@@ -2194,7 +1054,7 @@ function OnboardingShellCard({
   lastSyncedAt: Date | null;
 }) {
   const syncedLabel = lastSyncedAt
-    ? `Last synced ${formatPixelAge(lastSyncedAt)}`
+    ? `Last synced ${formatAge(lastSyncedAt)}`
     : "Not synced yet";
   return (
     <section className="rounded-xl border border-border bg-card p-5 md:p-6">
@@ -2243,10 +1103,7 @@ function OnboardingShellCard({
   );
 }
 
-// Compact relative-age formatter for the Cursive Pixel "last event" chip.
-// Reads as "2h ago", "3d ago", "16d ago" — operator-scannable without
-// the verbose "about 16 days ago" formatDistanceToNow output.
-function formatPixelAge(date: Date): string {
+function formatAge(date: Date): string {
   const ms = Date.now() - date.getTime();
   const minutes = Math.floor(ms / 60000);
   if (minutes < 1) return "just now";
