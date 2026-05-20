@@ -1,121 +1,75 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Calculator, Construction } from "lucide-react";
 import { requireScope } from "@/lib/tenancy/scope";
-import { prisma } from "@/lib/db";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
-import { ZillowToolClient } from "@/components/portal/tools/zillow-tool-client";
-import type { ZillowListing } from "@/lib/zillow/scrape";
-import type { CalculationOutputs } from "@/lib/zillow/calculations";
 
-export const metadata: Metadata = { title: "Zillow report" };
-export const dynamic = "force-dynamic";
-
-type Search = { report?: string };
+export const metadata: Metadata = { title: "Zillow report (parked)" };
 
 // ---------------------------------------------------------------------------
-// /portal/tools/zillow
+// /portal/tools/zillow — PARKED 2026-05-19
 //
-// Paste a Zillow listing URL → server-side scrape → render a one-page
-// report with parsed facts + investor math. The form + report renderer
-// live in client components; this server page does the tenant-scoped
-// data load (list of recent saved reports + optional preloaded report
-// by ?report=<id>).
+// Zillow's PerimeterX bot detection blocks every fetch from Vercel's
+// datacenter IP ranges. The rate-limit fix landed (config endpoint
+// returns 200) but the scrape itself returns BLOCKED. We hid the nav
+// entry and replaced this page with a placeholder until we pick a data
+// source: ScrapingBee proxy ($49/mo, drop-in), RentCast API (purpose-
+// built for investor analysis), or a different tool shape entirely.
+//
+// The scrape + calculations code in lib/zillow/* + the saved-reports
+// list + the client components are all intentionally left in place so
+// the wire-up is one PR away once a data source is chosen. The DB
+// table (ZillowReport) and the API route stay untouched; only the
+// presentation surface is parked.
 // ---------------------------------------------------------------------------
-export default async function ZillowToolPage({
-  searchParams,
-}: {
-  searchParams: Promise<Search>;
-}) {
-  const scope = await requireScope();
-  const sp = await searchParams;
-
-  const recent = await prisma.zillowReport.findMany({
-    where: { orgId: scope.orgId },
-    orderBy: { createdAt: "desc" },
-    take: 10,
-    select: {
-      id: true,
-      zillowUrl: true,
-      zpid: true,
-      createdAt: true,
-      payload: true,
-    },
-  });
-
-  // Optional pre-loaded report — clicking a row in the saved list
-  // re-renders the report from the stored payload (no re-fetch).
-  let initialReport: {
-    id: string;
-    listing: ZillowListing;
-    calculations: CalculationOutputs;
-  } | null = null;
-  if (sp.report) {
-    const row = await prisma.zillowReport.findFirst({
-      where: { id: sp.report, orgId: scope.orgId },
-      select: { id: true, payload: true, calculations: true },
-    });
-    if (row) {
-      initialReport = {
-        id: row.id,
-        listing: row.payload as unknown as ZillowListing,
-        calculations: row.calculations as unknown as CalculationOutputs,
-      };
-    }
-  }
+export default async function ZillowToolPage() {
+  // requireScope still runs so unauthenticated visitors get redirected
+  // to sign-in like any other portal page — keeping the auth posture
+  // identical to the live version once we re-enable.
+  await requireScope();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 ls-page-fade">
       <PageHeader
-        eyebrow="Tools"
         title="Zillow report"
-        description="Paste a Zillow listing URL and we'll pull the headline facts plus quick investor math — cash down at 20/25/30%, monthly P&I, cap rate, and cash-on-cash."
+        description="A quick-look investor analysis tool. Currently parked while we pick a data source."
       />
 
-      {recent.length > 0 && (
-        <SectionCard
-          label="Saved reports"
-          description="Click a row to revisit the report without re-fetching Zillow."
-        >
-          <ul className="divide-y divide-[var(--hair)]">
-            {recent.map((r) => {
-              const p = r.payload as unknown as Partial<ZillowListing>;
-              return (
-                <li key={r.id}>
-                  <Link
-                    href={`/portal/tools/zillow?report=${r.id}`}
-                    className="flex items-center justify-between py-2.5 hover:bg-muted/30 -mx-2 px-2 rounded transition-colors"
-                  >
-                    <div className="min-w-0">
-                      <div className="text-[13.5px] font-medium truncate">
-                        {p.address ?? "Unknown address"}
-                      </div>
-                      <div className="text-[11.5px] text-muted-foreground tabular-nums">
-                        zpid {r.zpid} ·{" "}
-                        {new Date(r.createdAt).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                          year: "numeric",
-                        })}
-                      </div>
-                    </div>
-                    <div className="text-[13px] tabular-nums text-foreground shrink-0 pl-3">
-                      {p.listPrice
-                        ? new Intl.NumberFormat("en-US", {
-                            style: "currency",
-                            currency: "USD",
-                            maximumFractionDigits: 0,
-                          }).format(p.listPrice)
-                        : "—"}
-                    </div>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-        </SectionCard>
-      )}
+      <SectionCard label="Coming back online" padded={false}>
+        <div className="flex flex-col items-start gap-4 p-6">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-amber-50">
+            <Construction className="h-6 w-6 text-amber-600" />
+          </div>
 
-      <ZillowToolClient initialReport={initialReport} />
+          <div className="space-y-2">
+            <h2 className="text-lg font-semibold text-foreground">
+              Tool temporarily parked
+            </h2>
+            <p className="max-w-prose text-sm text-muted-foreground">
+              We&rsquo;re reworking the data source behind this tool. Zillow
+              actively blocks server-side requests, so we&rsquo;re picking
+              between a proxy service and a purpose-built investor-analysis
+              API. Expect this back online next week with cleaner data and
+              comparable rent estimates.
+            </p>
+          </div>
+
+          <div className="rounded-md border border-border bg-muted/30 px-3 py-2 text-xs text-muted-foreground">
+            <Calculator className="mr-1.5 inline h-3.5 w-3.5" />
+            In the meantime, run quick numbers manually: cap rate ={" "}
+            <span className="font-mono">NOI / price</span>, cash-on-cash ={" "}
+            <span className="font-mono">annual cash flow / cash invested</span>
+            .
+          </div>
+
+          <Link
+            href="/portal"
+            className="text-sm font-medium text-primary hover:underline"
+          >
+            Back to dashboard &rarr;
+          </Link>
+        </div>
+      </SectionCard>
     </div>
   );
 }

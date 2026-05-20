@@ -132,6 +132,7 @@ export type NavGroup = {
 };
 
 const ALWAYS = () => true;
+const NEVER = () => false;
 
 // Audience Sync product line nav. Shown when org.isAudienceSync is true
 // (or AL_PARTNER user without an impersonation target). Replaces the full
@@ -328,16 +329,18 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Tools",
     items: [
-      // Zillow report — paste a Zillow URL, get a one-page investor
-      // report (cash down, P&I, cap rate, cash-on-cash). Always-on:
-      // it's a stateless utility that doesn't depend on any module
-      // entitlement, and operators consistently ask for "give me a
-      // quick read on this property" tooling.
+      // Zillow report — PARKED 2026-05-19. Zillow's PerimeterX bot
+      // detection blocks every fetch from Vercel's datacenter IP ranges
+      // (rate-limit fix landed but the scrape itself returns BLOCKED).
+      // Hidden from nav until we decide the data source: ScrapingBee
+      // proxy ($49/mo, drop-in), RentCast API (purpose-built for
+      // investor analysis), or a different shape entirely. See
+      // docs/SG_HARDENING_PASS_2026-05-19.md "Open decisions".
       {
         href: "/portal/tools/zillow",
         label: "Zillow report",
         icon: Calculator,
-        show: ALWAYS,
+        show: NEVER,
       },
     ],
   },
