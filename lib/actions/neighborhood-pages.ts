@@ -451,35 +451,10 @@ export type StoredNeighborhoodPage = {
   updatedAt: Date;
 };
 
-export function parseStored(
-  raw: Awaited<
-    ReturnType<typeof prisma.neighborhoodPage.findFirst>
-  > extends infer T
-    ? T
-    : never,
-): StoredNeighborhoodPage | null {
-  if (!raw) return null;
-  const r = raw as unknown as Record<string, unknown>;
-  return {
-    id: r.id as string,
-    orgId: r.orgId as string,
-    propertyId: (r.propertyId as string | null) ?? null,
-    city: r.city as string,
-    state: (r.state as string | null) ?? null,
-    neighborhood: r.neighborhood as string,
-    slug: r.slug as string,
-    title: r.title as string,
-    metaDescription: r.metaDescription as string,
-    intro: r.intro as string,
-    sections: Array.isArray(r.sections)
-      ? (r.sections as NeighborhoodPageSection[])
-      : [],
-    faqs: Array.isArray(r.faqs) ? (r.faqs as NeighborhoodPageFaq[]) : [],
-    aiCitations: Array.isArray(r.aiCitations)
-      ? (r.aiCitations as string[])
-      : null,
-    status: r.status as NeighborhoodPageStatus,
-    publishedAt: (r.publishedAt as Date | null) ?? null,
-    updatedAt: r.updatedAt as Date,
-  };
-}
+// parseStored() — the sync raw-row → view-model helper — used to live
+// here, but Next.js requires every exported binding in a `"use server"`
+// file to be an async function. Moved to
+// `./neighborhood-pages-helpers.ts`. Callers should import directly
+// from there:
+//
+//   import { parseStored } from "@/lib/actions/neighborhood-pages-helpers";

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
 import { EditorClient } from "./editor-client";
-import { parseStored } from "@/lib/actions/neighborhood-pages";
+import { parseStored } from "@/lib/actions/neighborhood-pages-helpers";
 import { parseClaimSets } from "@/lib/aeo/prompts-neighborhood";
 import { getEnabledEngines } from "@/lib/aeo/engines";
 import type { AeoEngine } from "@prisma/client";

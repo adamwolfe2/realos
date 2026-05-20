@@ -5,7 +5,7 @@ import { prisma } from "@/lib/db";
 import { getTenantFromHeaders } from "@/lib/tenancy/tenant-context";
 import { getEffectiveBrand } from "@/lib/brand/effective";
 import { NeighborhoodPageStatus } from "@prisma/client";
-import { parseStored } from "@/lib/actions/neighborhood-pages";
+import { parseStored } from "@/lib/actions/neighborhood-pages-helpers";
 
 // ---------------------------------------------------------------------------
 // Public render for per-neighborhood landing pages.
