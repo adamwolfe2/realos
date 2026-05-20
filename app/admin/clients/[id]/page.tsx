@@ -6,7 +6,9 @@ import { prisma } from "@/lib/db";
 import { OrgType } from "@prisma/client";
 import { ImpersonateButton } from "./impersonate-button";
 import { ModuleToggle } from "./module-toggle";
+import { RentCastUsageRow } from "./rentcast-usage-row";
 import { CursivePanel } from "./cursive-panel";
+import { getUsageSummary } from "@/lib/rentcast/budget";
 import { DomainsPanel } from "./domains-panel";
 import { InviteUserButton } from "./invite-user-button";
 import { LaunchReadiness } from "./launch-readiness";
@@ -186,6 +188,12 @@ export default async function ClientDetail({
   // build, silent pixel) at the top of the page so the admin doesn't
   // have to scroll to find what's broken.
   const actionItems = await getClientActionItems(org.id).catch(() => []);
+
+  // RentCast usage breadcrumb — lazily upserts an OrgRentCastUsage row
+  // for this org if none exists, so the admin row always renders with a
+  // current monthly counter + the operator's budget. Safe to call even
+  // for tenants who've never opened the Market Intelligence section.
+  const rentCastUsage = await getUsageSummary(org.id).catch(() => null);
 
   const propertyTypeLabel = [
     humanPropertyType(org.propertyType),
@@ -413,6 +421,16 @@ export default async function ClientDetail({
               />
             ))}
           </ul>
+          {rentCastUsage ? (
+            <div className="mt-4 pt-3 border-t border-[var(--hair)]">
+              <RentCastUsageRow
+                orgId={org.id}
+                used={rentCastUsage.used}
+                initialBudget={rentCastUsage.budget}
+                monthKey={rentCastUsage.monthKey}
+              />
+            </div>
+          ) : null}
         </SectionCard>
 
         <SectionCard label="Domains">

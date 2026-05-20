@@ -490,6 +490,13 @@ model Organization {
   neighborhoodPages      NeighborhoodPage[]
   onboardingProgress     OnboardingProgress?
 
+  // Per-property + per-org RentCast market intelligence cache + usage
+  // counter. Both are populated lazily — only orgs that actually open
+  // the Market Intelligence section on a property detail page allocate
+  // rows. See lib/rentcast/* and prisma/migrations/20260522_rentcast_phase1.
+  rentCastSnapshots      RentCastSnapshot[]
+  rentCastUsage          OrgRentCastUsage?
+
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
   onboardingDismissed Boolean @default(false)
@@ -839,6 +846,10 @@ model Property {
   websiteBuildRequests WebsiteBuildRequest[]
   aeoChecks            AeoCitationCheck[]
   neighborhoodPages    NeighborhoodPage[]
+  // Per-property RentCast market intelligence snapshots (rent AVM,
+  // market stats). Populated by the Market Intelligence section on
+  // the property detail page; cached by lib/rentcast/cache.ts.
+  rentCastSnapshots    RentCastSnapshot[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3444,3 +3455,78 @@ model OnboardingStepProgress {
   @@index([progressId, status])
 }
 
+
+// ============================================================================
+// RentCast (https://developers.rentcast.io) — market intelligence cache
+// + per-org budget tracking.
+//
+// Two-table design:
+//   * RentCastSnapshot — per-call cache. Cache key collapses repeated
+//     fetches for the same address + property attrs / zip code so a
+//     single org doesn't burn through quota on duplicate calls.
+//   * OrgRentCastUsage — per-org monthly budget. Defaults to RentCast's
+//     50-call free-tier quota. The cache layer refuses fetches when
+//     `requestsThisMonth >= monthlyBudget * hardCapMultiplier`, and the
+//     property detail page swaps to an upsell card.
+// ============================================================================
+
+model RentCastSnapshot {
+  id          String   @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // Optional — most snapshots are tied to a specific property, but
+  // tool-use snapshots (ad-hoc address lookups for acquisitions, future
+  // phase) leave this null. SET NULL is not used: if a Property row is
+  // deleted, its per-property snapshots cascade out so the cache key
+  // can be reclaimed cleanly.
+  propertyId  String?
+  property    Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // String-typed for forward compatibility — we'll add VALUE, LISTINGS,
+  // PROPERTIES, etc. as future phases land. Stored as TEXT so we don't
+  // need a Postgres enum migration for every new endpoint.
+  // Accepted values today: RENT_LONG_TERM | MARKET_STATS | VALUE
+  endpoint    String
+
+  // Normalized key for cache deduplication. See lib/rentcast/cache.ts
+  // for the canonical shape: e.g.
+  //   rent:2410-telegraph-ave-berkeley-ca-94704:2br:1ba:Apartment
+  //   market:94704:Rental:6
+  cacheKey    String
+
+  payload     Json
+  fetchedAt   DateTime @default(now())
+  expiresAt   DateTime
+  // Credits consumed for this fetch. Currently always 1; reserved for
+  // per-endpoint cost variance (e.g. comparable count multipliers).
+  requestCost Int      @default(1)
+
+  @@unique([orgId, cacheKey])
+  @@index([orgId, endpoint, fetchedAt])
+  @@index([propertyId])
+}
+
+model OrgRentCastUsage {
+  id                 String   @id @default(cuid())
+  orgId              String   @unique
+  org                Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // YYYY-MM tracking window. Rolled over by lib/rentcast/budget.ts when
+  // the current calendar month no longer matches; counter resets to 0
+  // and lastResetAt updates.
+  monthKey           String
+  requestsThisMonth  Int      @default(0)
+
+  // Defaults to RentCast's Developer (free) tier quota. Admin can raise
+  // per-org via the admin client detail page when the tenant upgrades.
+  monthlyBudget      Int      @default(50)
+
+  // Hard refuse fetches above (monthlyBudget * hardCapMultiplier). 1.5×
+  // gives a soft buffer for the inevitable mis-clicks then surfaces an
+  // upsell card on the property detail page.
+  hardCapMultiplier  Float    @default(1.5)
+
+  lastResetAt        DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}

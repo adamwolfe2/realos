@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
 import { PropertyAvatar } from "@/components/portal/properties/property-avatar";
+import { MarketIntelligenceSection } from "@/components/portal/properties/market-intelligence-section";
 import { PropertyTabs } from "./property-tabs";
 import { OverviewTab } from "./tabs/overview";
 import { OnboardingTab } from "./tabs/onboarding";
@@ -130,6 +131,10 @@ export default async function PropertyDetail({
         bordered={false}
       />
 
+      <Suspense fallback={<MarketIntelligenceSkeleton />}>
+        <MarketIntelligenceSection propertyId={property.id} />
+      </Suspense>
+
       <Suspense fallback={<PropertyTabsSkeleton />}>
       <PropertyTabs
         initialTab={tab ?? "overview"}
@@ -247,6 +252,22 @@ export default async function PropertyDetail({
 // blank between the header and the tab content. Matches the dimensions
 // of the real tab bar + KPI strip closely enough that there's no layout
 // shift when content arrives.
+// Market intelligence first-load skeleton. Matches the SectionCard width
+// + a hero card silhouette so the section reserves vertical space while
+// RentCast fetches the snapshot (cache hit ~5ms, cold ~600-900ms).
+function MarketIntelligenceSkeleton() {
+  return (
+    <div className="ls-card p-5 animate-pulse" aria-label="Loading market intelligence">
+      <div className="h-3 w-32 bg-muted/60 rounded mb-4" />
+      <div className="rounded-xl border border-[var(--hair)] p-5 space-y-3">
+        <div className="h-2.5 w-28 bg-muted/60 rounded" />
+        <div className="h-10 w-44 bg-muted rounded" />
+        <div className="h-3 w-56 bg-muted/40 rounded" />
+      </div>
+    </div>
+  );
+}
+
 function PropertyTabsSkeleton() {
   return (
     <div className="space-y-6 animate-pulse" aria-label="Loading property data">
