@@ -16,7 +16,19 @@ import {
 // page (graceful degradation).
 
 export const runtime = "nodejs";
-export const dynamic = "force-dynamic";
+// `dynamic = "force-dynamic"` was previously set here — it told Vercel
+// to bypass the CDN cache and invoke the handler on every request,
+// which made the Cache-Control headers below completely useless and
+// meant every chatbot visitor hit the rate limiter directly. Removing
+// it so Vercel's edge cache actually engages: 99%+ of requests now
+// short-circuit at the edge with the cached 200 response and never
+// reach this handler at all. The rate limiter is now belt-and-
+// suspenders for the rare cache miss.
+//
+// `revalidate = 60` belts the `Cache-Control: s-maxage=60` response
+// headers below by also opting Next.js's data cache into the same
+// 60s window, so framework-level caching agrees with the CDN.
+export const revalidate = 60;
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
@@ -51,7 +63,16 @@ export async function GET(req: NextRequest) {
   const ip = getIp(req);
   const { allowed } = await checkRateLimit(chatbotConfigLimiter, `cfg:${ip}`);
   if (!allowed) {
-    return rateLimited("Rate limit exceeded", 60, { ...CORS_HEADERS });
+    // Cache the 429 too — otherwise a misbehaving client (or a hot
+    // edge node with no cached success response) loops on the
+    // rate-limit error and re-invokes the handler 60×/sec. The
+    // s-maxage=10 window is short enough that the visitor recovers
+    // quickly once they back off, but long enough that we don't spam
+    // the limiter from the same edge.
+    return rateLimited("Rate limit exceeded", 60, {
+      ...CORS_HEADERS,
+      "Cache-Control": "public, s-maxage=10",
+    });
   }
 
   const slug = req.nextUrl.searchParams.get("slug");
