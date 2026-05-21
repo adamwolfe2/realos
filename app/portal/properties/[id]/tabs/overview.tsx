@@ -521,42 +521,15 @@ export async function OverviewTab({
                 SIGNALS"). The new panel uses the live recommendation
                 engine and supersedes both. */}
 
-            {/* KPI tiles. Trimmed to 3 (was 4) per Norman 2026-05-21:
-                Leads (28d) was duplicating the hero banner's "Leads · 30d"
-                stat one row above. Tours / Applications / Available units
-                are unique signal — kept here so the operator sees the
-                conversion shape at a glance. */}
-            <section className="grid grid-cols-2 lg:grid-cols-3 gap-2">
-              <KpiTile
-                label="Tours (28d)"
-                value={kpis.tours28d > 0 ? kpis.tours28d : <DimZero />}
-                hint={
-                  kpis.tours28d === 0
-                    ? "Tours show as leads schedule them"
-                    : `${kpis.applications28d} applications`
-                }
-              />
-              <KpiTile
-                label="Applications (28d)"
-                value={
-                  kpis.applications28d > 0 ? kpis.applications28d : <DimZero />
-                }
-                hint={
-                  kpis.applications28d === 0
-                    ? "First application lands here"
-                    : "Last 28 days"
-                }
-              />
-              <KpiTile
-                label="Available units"
-                value={availableUnits > 0 ? availableUnits : <DimZero />}
-                hint={
-                  totalUnits != null
-                    ? `${totalUnits.toLocaleString()} total units`
-                    : "Connect AppFolio for live unit data"
-                }
-              />
-            </section>
+            {/* Norman 2026-05-21 second screenshot: the standalone
+                Tours / Applications / Available units KPI row was
+                another bulky stat surface duplicating signal that
+                MarketingSection's funnel already shows (Leads → Tours
+                → Applications). Removed. The "Available units" /
+                "Total units" inventory signal is now surfaced as a
+                fact row in the MarketingSection header so the operator
+                doesn't lose it. Net: one fewer section, ~120px of
+                vertical real estate reclaimed. */}
 
             {/* Marketing — promoted from sidebar to main column per
                 Norman feedback (#75). Replaces the static listings +
@@ -578,6 +551,8 @@ export async function OverviewTab({
               hasAdsModule={property.orgHasAdsModule}
               chatbotEnabled={tenantSiteConfig?.chatbotEnabled ?? false}
               pixelConnected={!!cursiveIntegration?.cursivePixelId}
+              availableUnits={availableUnits}
+              totalUnits={totalUnits}
             />
 
             <ActivityTimeline events={activity} />
@@ -1413,6 +1388,8 @@ function MarketingSection({
   hasAdsModule,
   chatbotEnabled,
   pixelConnected,
+  availableUnits,
+  totalUnits,
 }: {
   propertyId: string;
   organicSessions28d: number | null;
@@ -1425,6 +1402,11 @@ function MarketingSection({
   hasAdsModule: boolean;
   chatbotEnabled: boolean;
   pixelConnected: boolean;
+  /** Inventory fact surfaced in the header. Picked up from the parent
+   *  so deleting the standalone KPI strip didn't lose the available-unit
+   *  signal. */
+  availableUnits?: number;
+  totalUnits?: number | null;
 }) {
   void pixelConnected;
   // Conversion: leads / organic sessions. We use organic sessions as
@@ -1506,19 +1488,38 @@ function MarketingSection({
 
   return (
     <section className="rounded-xl border border-border bg-card p-4 md:p-5">
-      <header className="flex items-baseline justify-between gap-3 mb-3">
-        <div>
+      <header className="flex items-baseline justify-between gap-3 mb-3 flex-wrap">
+        <div className="min-w-0">
           <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
             Last 28 days
           </p>
-          <h3 className="text-sm font-semibold text-foreground">Marketing</h3>
+          <h3 className="text-sm font-semibold text-foreground">
+            Marketing &amp; pipeline
+          </h3>
         </div>
-        <a
-          href={`/portal/properties/${propertyId}?tab=traffic`}
-          className="text-[11.5px] font-semibold text-primary hover:underline whitespace-nowrap"
-        >
-          Open traffic →
-        </a>
+        <div className="flex items-center gap-3 flex-wrap">
+          {/* Inventory fact — surfaced here after the standalone "Available
+              units" KpiTile was removed. Reads as a small contextual chip
+              next to the section CTA rather than another full tile. */}
+          {totalUnits != null && totalUnits > 0 ? (
+            <span className="inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+              <span
+                aria-hidden="true"
+                className="inline-block h-1 w-1 rounded-full bg-primary/50"
+              />
+              <span className="tabular-nums font-semibold text-foreground">
+                {availableUnits ?? 0}
+              </span>
+              <span>available · {totalUnits.toLocaleString()} total</span>
+            </span>
+          ) : null}
+          <a
+            href={`/portal/properties/${propertyId}?tab=traffic`}
+            className="text-[11.5px] font-semibold text-primary hover:underline whitespace-nowrap"
+          >
+            Open traffic →
+          </a>
+        </div>
       </header>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
