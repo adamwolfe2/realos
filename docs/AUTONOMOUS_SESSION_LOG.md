@@ -100,6 +100,8 @@
 32. feat(seo): snoozed recs panel with wake-now action
 33. feat(seo): recommendation archive at /portal/seo/recommendations
 34. feat(admin): 'Focus here first' client suggestion on /admin/clients
+35. docs(crisp): cover snooze/archive/bulk-ops + draft email loop
+36. feat(seo): portfolio comparison view at /portal/seo/properties
 
 All pushed to origin/main.
 
