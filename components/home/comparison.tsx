@@ -82,7 +82,17 @@ function ComparisonRow({
   return (
     <li
       ref={ref}
-      className="grid grid-cols-[auto_1fr] md:grid-cols-[56px_1fr_28px_1fr] gap-x-4 md:gap-x-8 gap-y-3 py-8 md:py-10 items-start"
+      // Norman bug (2026-05-21 mobile screenshot IMG_9549): the previous
+      // mobile grid `grid-cols-[auto_1fr]` with a `hidden md:flex` arrow
+      // forced "With LeaseStack" copy into the narrow `auto` index
+      // column on row 2, while "Today" copy stayed full-width on row 1
+      // — the two halves rendered as visually unrelated narrow strips
+      // with the right-hand TODAY column clipping off the viewport.
+      // Mobile is now a single column where the label, Today, and With
+      // LeaseStack each take their own row at full width. Desktop
+      // 4-column layout (label · Today · arrow · WithLeaseStack)
+      // unchanged via the md: breakpoint.
+      className="grid grid-cols-1 md:grid-cols-[56px_1fr_28px_1fr] gap-x-4 md:gap-x-8 gap-y-3 py-8 md:py-10 items-start"
       style={{
         borderTop: isFirst ? "none" : `1px solid ${BORDER}`,
       }}
