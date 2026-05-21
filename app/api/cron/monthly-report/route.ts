@@ -28,7 +28,13 @@ export async function GET(req: NextRequest) {
       where: {
         orgType: "CLIENT",
         status: { in: ["LAUNCHED", "ACTIVE", "AT_RISK"] },
-        primaryContactEmail: { not: null },
+        // Norman bug #100: include orgs that have EITHER a configured
+        // recipient list (via /portal/reports/settings) OR a legacy
+        // primaryContactEmail. The recipient list wins below.
+        OR: [
+          { primaryContactEmail: { not: null } },
+          { reportRecipients: { isEmpty: false } },
+        ],
       },
       select: {
         id: true,
@@ -36,6 +42,9 @@ export async function GET(req: NextRequest) {
         logoUrl: true,
         primaryContactEmail: true,
         primaryContactName: true,
+        reportCadence: true,
+        reportRecipients: true,
+        reportAutoSend: true,
       },
     });
 
@@ -45,6 +54,24 @@ export async function GET(req: NextRequest) {
 
     for (const org of orgs) {
       try {
+        // Pick the recipient list. If the operator configured an
+        // explicit reportRecipients list AND opted into the monthly
+        // cadence with auto-send, use that. Otherwise fall back to the
+        // legacy primaryContactEmail behaviour.
+        const useConfigured =
+          org.reportAutoSend &&
+          org.reportCadence === "monthly" &&
+          (org.reportRecipients?.length ?? 0) > 0;
+        const recipients = useConfigured
+          ? (org.reportRecipients ?? [])
+          : org.primaryContactEmail
+            ? [org.primaryContactEmail]
+            : [];
+        if (recipients.length === 0) {
+          skipped += 1;
+          continue;
+        }
+
         const snapshot = await generateReportSnapshot(org.id, "monthly");
         const periodStart = new Date(snapshot.periodStart);
 
@@ -72,12 +99,12 @@ export async function GET(req: NextRequest) {
         });
 
         await sendReportEmail({
-          to: [org.primaryContactEmail!],
+          to: recipients,
           orgName: org.name,
           orgLogoUrl: org.logoUrl,
           snapshot,
           shareToken,
-          recipientName: org.primaryContactName ?? undefined,
+          recipientName: useConfigured ? undefined : org.primaryContactName ?? undefined,
           senderName: "LeaseStack",
         });
 

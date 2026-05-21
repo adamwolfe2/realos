@@ -124,9 +124,15 @@ const STEP_META: Record<
     href: "/portal/seo/neighborhoods",
   },
   CUSTOM_REPORT_PREFS: {
+    // Norman bug #100: the dashboard checklist step previously pointed
+    // to /portal/reports (the manual generation surface) so operators
+    // couldn't actually do anything to "customize cadence" from the
+    // landing page. New /portal/reports/settings surface lets them
+    // pick cadence + recipients + auto-send opt-in.
     label: "Customize your report cadence",
-    description: "Tune frequency and recipients of automated reports.",
-    href: "/portal/reports",
+    description:
+      "Pick how often the report ships and who receives it. Default is draft-only — opt into auto-send if you want hands-off delivery.",
+    href: "/portal/reports/settings",
   },
   INVITE_TEAMMATE: {
     label: "Invite a teammate",

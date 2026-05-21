@@ -371,6 +371,16 @@ model Organization {
   // discount popups in /portal/popups and paste a one-line script tag
   // on any external site. Same architecture as moduleChatbot.
   modulePopups         Boolean @default(false)
+
+  // ── Report cadence config (Norman bug #100) ───────────────────────
+  // Drives the daily / weekly / monthly cron auto-send loop. NONE
+  // (default) preserves the existing white-glove behavior: the cron
+  // generates a DRAFT only and the operator manually clicks "Share"
+  // or "Email" to ship it. The other values opt into auto-send to
+  // the recipient list below the moment the snapshot is generated.
+  reportCadence        String  @default("none") // none | daily | weekly | monthly
+  reportRecipients     String[] @default([])    // explicit email addresses
+  reportAutoSend       Boolean @default(false)  // master enable for auto-send
   // Online reputation surface — /portal/reputation aggregates Google /
   // Apartments.com / Yelp review pulls, sentiment, and reply workflow.
   // Off by default; activated when the reputation add-on lands.
