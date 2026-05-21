@@ -439,6 +439,12 @@ export default async function PortalLayout({
           >
             <CmdKSearch />
             <NotificationBell />
+            {/* Norman 2026-05-21: user icon promoted from the sidebar
+                footer to the topbar — sits next to the notification
+                bell so the entire account control surface is in one
+                top-right cluster, freeing the sidebar footer for the
+                bell + bug button. */}
+            <UserButton />
           </div>
           <div className="ls-page-enter flex-1 p-4 pb-20 md:p-6 md:pb-10">{children}</div>
         </main>

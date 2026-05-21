@@ -3,7 +3,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useState } from "react";
 import {
@@ -551,11 +550,13 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
         )}
       </button>
 
-      {/* Footer */}
+      {/* Footer — Norman 2026-05-21: UserButton moved out to the
+          top-right topbar next to the notification bell so the entire
+          account control surface sits in one cluster. Bell stays here
+          on collapsed-state mobile/narrow viewports as a safety net. */}
       <div className="border-t border-border p-3">
         <div className={cn("flex items-center gap-3", collapsed && "justify-center")}>
-          <UserButton />
-          {!collapsed && <NotificationBell />}
+          <NotificationBell />
         </div>
       </div>
     </aside>

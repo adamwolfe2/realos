@@ -235,7 +235,11 @@ export function BugReportButton() {
         aria-label="Report a bug"
         title="Report a bug"
         className={cn(
-          "fixed z-40 bottom-4 right-4 md:bottom-6 md:right-6",
+          // Norman 2026-05-21: bug button moves to bottom-LEFT so the
+          // top-right is free for the user icon next to the bell, and
+          // the bottom-right stays clear for the floating onboarding
+          // checklist widget.
+          "fixed z-40 bottom-4 left-4 md:bottom-6 md:left-6",
           "inline-flex items-center gap-2 rounded-full",
           "bg-foreground text-background",
           "px-4 py-2.5 text-xs font-semibold tracking-wide",
