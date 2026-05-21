@@ -92,13 +92,31 @@ export async function GET(req: NextRequest) {
       }),
     );
 
+    // Bonus pass: revive SeoActionRecommendation rows whose snoozedUntil
+    // has passed. Keeps snooze hygiene without a second cron.
+    const revivedCount = await prisma.seoActionRecommendation
+      .updateMany({
+        where: {
+          status: "SNOOZED",
+          snoozedUntil: { lt: now },
+        },
+        data: {
+          status: "OPEN",
+          snoozedUntil: null,
+          snoozedReason: null,
+        },
+      })
+      .then((r) => r.count)
+      .catch(() => 0);
+
     return {
       result: NextResponse.json({
         ok: true,
         expired: candidates.length,
+        revived: revivedCount,
         cutoff: cutoff.toISOString(),
       }),
-      recordsProcessed: candidates.length,
+      recordsProcessed: candidates.length + revivedCount,
     };
   });
 }

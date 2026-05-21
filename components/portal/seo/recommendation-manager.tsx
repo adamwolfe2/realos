@@ -79,17 +79,18 @@ function RecommendationRow({ rec }: { rec: SeoRecommendation }) {
   const [pending, startTransition] = useTransition();
   const [showDismiss, setShowDismiss] = useState(false);
   const [dismissReason, setDismissReason] = useState("");
+  const [showSnooze, setShowSnooze] = useState(false);
 
   function patchStatus(
-    status: "IN_PROGRESS" | "COMPLETED" | "DISMISSED",
-    reason?: string,
+    status: "IN_PROGRESS" | "COMPLETED" | "DISMISSED" | "SNOOZED",
+    extra: { reason?: string; snoozeUntil?: string } = {},
   ) {
     startTransition(async () => {
       try {
         const res = await fetch(`/api/portal/seo/recommendations/${rec.id}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status, reason }),
+          body: JSON.stringify({ status, ...extra }),
         });
         const body = await res.json().catch(() => ({}));
         if (!res.ok) {
@@ -101,9 +102,12 @@ function RecommendationRow({ rec }: { rec: SeoRecommendation }) {
             ? "Marked in-progress"
             : status === "COMPLETED"
               ? "Marked completed"
-              : "Dismissed";
+              : status === "SNOOZED"
+                ? "Snoozed"
+                : "Dismissed";
         toast.success(label);
         setShowDismiss(false);
+        setShowSnooze(false);
         setDismissReason("");
         router.refresh();
       } catch {
@@ -178,12 +182,55 @@ function RecommendationRow({ rec }: { rec: SeoRecommendation }) {
         <button
           type="button"
           disabled={pending}
+          onClick={() => setShowSnooze((v) => !v)}
+          className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+        >
+          Snooze
+        </button>
+        <button
+          type="button"
+          disabled={pending}
           onClick={() => setShowDismiss((v) => !v)}
           className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
         >
           Dismiss
         </button>
       </div>
+
+      {showSnooze ? (
+        <div className="mt-2 pl-[68px] flex flex-wrap gap-1.5">
+          {(
+            [
+              { label: "1 week", days: 7 },
+              { label: "2 weeks", days: 14 },
+              { label: "1 month", days: 30 },
+              { label: "Until next quarter", days: 90 },
+            ] as const
+          ).map((opt) => (
+            <button
+              key={opt.label}
+              type="button"
+              disabled={pending}
+              onClick={() => {
+                const date = new Date(
+                  Date.now() + opt.days * 24 * 60 * 60 * 1000,
+                );
+                patchStatus("SNOOZED", { snoozeUntil: date.toISOString() });
+              }}
+              className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+            >
+              {opt.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setShowSnooze(false)}
+            className="rounded-md px-2 py-0.5 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : null}
 
       {showDismiss ? (
         <div className="mt-2 pl-[68px] flex flex-col sm:flex-row gap-2">
@@ -195,14 +242,16 @@ function RecommendationRow({ rec }: { rec: SeoRecommendation }) {
             className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/30"
             onKeyDown={(e) => {
               if (e.key === "Enter" && dismissReason.trim().length >= 4) {
-                patchStatus("DISMISSED", dismissReason.trim());
+                patchStatus("DISMISSED", { reason: dismissReason.trim() });
               }
             }}
           />
           <button
             type="button"
             disabled={pending || dismissReason.trim().length < 4}
-            onClick={() => patchStatus("DISMISSED", dismissReason.trim())}
+            onClick={() =>
+              patchStatus("DISMISSED", { reason: dismissReason.trim() })
+            }
             className="rounded-md bg-foreground px-2.5 py-1 text-[12px] font-medium text-background hover:opacity-90 disabled:opacity-50"
           >
             Confirm

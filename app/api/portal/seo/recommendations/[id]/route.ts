@@ -26,8 +26,19 @@ export const dynamic = "force-dynamic";
 // ---------------------------------------------------------------------------
 
 const bodySchema = z.object({
-  status: z.enum(["IN_PROGRESS", "COMPLETED", "DISMISSED", "OPEN"]),
+  status: z.enum([
+    "IN_PROGRESS",
+    "COMPLETED",
+    "DISMISSED",
+    "OPEN",
+    "SNOOZED",
+  ]),
   reason: z.string().min(4).max(500).optional(),
+  /** ISO date string. Required when status=SNOOZED. */
+  snoozeUntil: z
+    .string()
+    .datetime()
+    .optional(),
 });
 
 export async function PATCH(
@@ -75,6 +86,21 @@ export async function PATCH(
       { status: 400 },
     );
   }
+  if (parsed.status === "SNOOZED" && !parsed.snoozeUntil) {
+    return NextResponse.json(
+      { error: "Provide snoozeUntil when snoozing." },
+      { status: 400 },
+    );
+  }
+  if (parsed.snoozeUntil) {
+    const date = new Date(parsed.snoozeUntil);
+    if (date.getTime() <= Date.now()) {
+      return NextResponse.json(
+        { error: "snoozeUntil must be in the future." },
+        { status: 400 },
+      );
+    }
+  }
 
   const now = new Date();
   const data: Record<string, unknown> = {
@@ -88,12 +114,18 @@ export async function PATCH(
     data.dismissedAt = now;
     data.dismissedReason = parsed.reason;
   }
+  if (parsed.status === "SNOOZED") {
+    data.snoozedUntil = new Date(parsed.snoozeUntil!);
+    data.snoozedReason = parsed.reason ?? null;
+  }
   if (parsed.status === "OPEN") {
-    // Re-open: clear terminal columns.
+    // Re-open: clear terminal + snooze columns.
     data.completedAt = null;
     data.completedBy = null;
     data.dismissedAt = null;
     data.dismissedReason = null;
+    data.snoozedUntil = null;
+    data.snoozedReason = null;
   }
 
   const previousStatus = rec.status;

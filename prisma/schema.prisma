@@ -3681,6 +3681,11 @@ model SeoActionRecommendation {
   dismissedReason String?
   completedAt     DateTime?
   completedBy     String?
+  /// Operator-set snooze. When non-null and in the future, the
+  /// recommendation hides from active queues. Cron auto-revives to
+  /// OPEN once the date passes (see /api/cron/draft-expiry sibling).
+  snoozedUntil    DateTime?
+  snoozedReason   String?
 
   /// Why this rec exists. Shape varies by category — UI renders generically.
   evidence Json?
@@ -3696,6 +3701,7 @@ model SeoActionRecommendation {
   @@unique([orgId, propertyId, kind])
   @@index([orgId, status, score(sort: Desc)])
   @@index([orgId, category])
+  @@index([snoozedUntil])
 }
 
 enum SeoActionCategory {
@@ -3724,6 +3730,7 @@ enum SeoActionStatus {
   COMPLETED
   DISMISSED
   EXPIRED
+  SNOOZED
 }
 
 model ContentDraft {
