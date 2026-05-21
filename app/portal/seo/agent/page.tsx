@@ -860,6 +860,12 @@ function PageHeader() {
           Export CSV
         </a>
         <Link
+          href="/portal/seo/properties"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+        >
+          Portfolio →
+        </Link>
+        <Link
           href="/portal/seo/recommendations"
           className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
         >
