@@ -509,6 +509,12 @@ model Organization {
   serpRankings            SerpRanking[]
   onPageAudits            OnPageAudit[]
   backlinkSummaries       BacklinkSummary[]
+  // DataforSEO ingestion (Phase 2)
+  onPageInstantAudits     OnPageInstantAudit[]
+  localPackRankings       LocalPackRanking[]
+  rankedKeywords          RankedKeyword[]
+  keywordIntersections    KeywordIntersection[]
+  queryLandingDaily       QueryLandingDaily[]
 
   // Per-property + per-org RentCast market intelligence cache + usage
   // counter. Both are populated lazily — only orgs that actually open
@@ -815,9 +821,9 @@ model Property {
   // container (translate); scale is a multiplier (1.0 = fit, max 3.0).
   // Defaults give the natural object-contain layout. Operator adjusts
   // via "Reposition" mode on the hero banner.
-  heroImageOffsetX     Float    @default(0)
-  heroImageOffsetY     Float    @default(0)
-  heroImageScale       Float    @default(1)
+  heroImageOffsetX     Float     @default(0)
+  heroImageOffsetY     Float     @default(0)
+  heroImageScale       Float     @default(1)
   photoUrls            Json? // Array of URLs
   virtualTourUrl       String?
   googleReviewUrl      String? // Google Maps review link for this property
@@ -901,6 +907,12 @@ model Property {
   serpRankings         SerpRanking[]
   onPageAudits         OnPageAudit[]
   backlinkSummaries    BacklinkSummary[]
+  // DataforSEO ingestion (Phase 2)
+  onPageInstantAudits  OnPageInstantAudit[]
+  localPackRankings    LocalPackRanking[]
+  rankedKeywords       RankedKeyword[]
+  keywordIntersections KeywordIntersection[]
+  queryLandingDaily    QueryLandingDaily[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3951,4 +3963,200 @@ model BacklinkSummary {
 
   @@unique([orgId, target, date])
   @@index([orgId, propertyId, date])
+}
+
+// ============================================================================
+// SEO/AEO Phase 2 — extended ingestion + unified fact table
+//
+// What this adds:
+//
+//   OnPageInstantAudit       Per-URL on-page audit (titles, meta, H1s, schema,
+//                            broken links, image alts). Beyond Lighthouse.
+//   LocalPackRanking         Google local pack position per (query, day).
+//                            The huge missing piece for apartment marketing.
+//   RankedKeyword            Every keyword OUR domain ranks for (DataforSEO
+//                            Labs ranked_keywords). Drives portfolio charts.
+//   KeywordIntersection      Per (our domain × competitor) — queries the
+//                            competitor outranks us on. Pure content-gap.
+//   QueryLandingDaily        Unified (date, url, query) fact table joining
+//                            DataforSEO + GSC + GA4. Backbone of every
+//                            composite chart.
+// ============================================================================
+
+model OnPageInstantAudit {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  url  String   @db.Text
+  date DateTime
+
+  // Top-level page metadata
+  pageTitle        String?  @db.Text
+  metaDescription  String?  @db.Text
+  metaKeywords     String?  @db.Text
+  canonical        String?  @db.Text
+  h1Count          Int      @default(0)
+  h1Texts          String[] @default([])
+  wordCount        Int?
+  readabilityScore Float?
+
+  // Issue counts — drive the SEO Agent rules + the site-health gauge.
+  duplicateTitle Boolean @default(false)
+  duplicateMeta  Boolean @default(false)
+  missingTitle   Boolean @default(false)
+  missingMeta    Boolean @default(false)
+  brokenLinks    Int     @default(0)
+  brokenImages   Int     @default(0)
+  imagesNoAlt    Int     @default(0)
+  internalLinks  Int     @default(0)
+  externalLinks  Int     @default(0)
+
+  // Schema markup detection — empty array = none found.
+  schemaTypes String[] @default([])
+
+  // Composite issue counts by severity (for the health gauge).
+  issuesCritical Int @default(0)
+  issuesWarning  Int @default(0)
+  issuesNotice   Int @default(0)
+
+  rawPayload Json?
+
+  createdAt DateTime @default(now())
+
+  @@unique([orgId, url, date])
+  @@index([orgId, propertyId, date])
+}
+
+model LocalPackRanking {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  query String   @db.Text
+  date  DateTime
+
+  // Our position in the local pack (1, 2, 3, or null = not in pack).
+  ourPosition Int?
+  // Top-3 local results JSON: [{ position, name, rating, reviewCount, address }]
+  topResults  Json
+
+  createdAt DateTime @default(now())
+
+  @@unique([orgId, propertyId, query, date])
+  @@index([orgId, propertyId, date])
+}
+
+model RankedKeyword {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  domain  String // the operator's domain
+  keyword String   @db.Text
+  date    DateTime
+
+  position          Int // 1..100
+  searchVolume      Int?
+  competition       Float? // 0..1
+  cpc               Float?
+  keywordDifficulty Float? // 0..100
+  // Search intent classifier: informational / navigational / commercial / transactional
+  intent            String?
+  // Page on our domain that's ranking for this keyword.
+  rankingUrl        String?  @db.Text
+  // SERP features present (faq, video, image_pack, knowledge_graph, etc.)
+  serpFeatures      String[] @default([])
+
+  createdAt DateTime @default(now())
+
+  @@unique([orgId, domain, keyword, date])
+  @@index([orgId, propertyId, date, position])
+  @@index([orgId, domain, date])
+}
+
+model KeywordIntersection {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  ourDomain        String
+  competitorDomain String
+  keyword          String   @db.Text
+  date             DateTime
+
+  ourPosition        Int? // null = we don't rank in top 100
+  competitorPosition Int // their position
+  searchVolume       Int?
+  // Gap score — higher when the competitor ranks well AND volume is high.
+  gapScore           Float @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([orgId, propertyId, ourDomain, competitorDomain, keyword, date])
+  @@index([orgId, propertyId, date, gapScore(sort: Desc)])
+}
+
+// ----------------------------------------------------------------------------
+// Unified fact table — the backbone of every composite chart.
+//
+// One row per (org, propertyId, date, url, query). Nightly aggregator stitches
+// DataforSEO SerpRanking + GSC SeoQuery + GA4 page metrics into a single
+// dimensionally-conformed row so every cross-source chart is a single
+// Prisma query away.
+// ----------------------------------------------------------------------------
+model QueryLandingDaily {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  date  DateTime
+  url   String   @db.Text // landing page
+  query String   @db.Text // search query
+
+  // DataforSEO SERP
+  serpPosition Int? // live SERP position from DataforSEO
+  serpFeatures String[] @default([])
+
+  // GSC
+  gscImpressions Int    @default(0)
+  gscClicks      Int    @default(0)
+  gscCtr         Float? // 0..1
+  gscPosition    Float? // GSC-reported average position
+
+  // GA4
+  ga4Sessions         Int    @default(0)
+  ga4Users            Int    @default(0)
+  ga4EngagedSessions  Int    @default(0)
+  ga4AvgEngagementSec Float?
+  ga4Conversions      Int    @default(0)
+  ga4Revenue          Float?
+
+  // DataforSEO Keywords
+  searchVolume      Int?
+  keywordDifficulty Float?
+  cpc               Float?
+  intent            String? // informational / navigational / commercial / transactional
+
+  // Brand classification — derived at write time via simple regex match on
+  // (org.brandName + property.name) against the query.
+  isBranded Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, propertyId, date, url, query])
+  @@index([orgId, propertyId, date])
+  @@index([orgId, date, gscClicks(sort: Desc)])
+  @@index([orgId, date, searchVolume(sort: Desc)])
 }

@@ -345,3 +345,327 @@ export function isDataforSeoConfigured(): boolean {
     process.env.DATAFORSEO_LOGIN && process.env.DATAFORSEO_PASSWORD,
   );
 }
+
+// ===========================================================================
+// PHASE 2 — Extended endpoints
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// On-Page instant_pages — full single-page audit (titles, meta, H1s,
+// images, links, schema). Beyond Lighthouse. ~$0.005/call.
+// ---------------------------------------------------------------------------
+
+export type InstantPageAudit = {
+  meta: {
+    title: string | null;
+    description: string | null;
+    keywords: string | null;
+    canonical: string | null;
+    htags: { h1?: string[]; h2?: string[]; h3?: string[] };
+    content: {
+      plain_text_word_count: number | null;
+      automated_readability_index: number | null;
+    } | null;
+    images_count: number | null;
+    images_size: number | null;
+    internal_links_count: number | null;
+    external_links_count: number | null;
+    duplicate_title: boolean;
+    duplicate_description: boolean;
+    no_image_alt: number;
+    broken_resources: number;
+    broken_links: number;
+    is_https: boolean;
+  };
+  checks: Record<string, boolean>;
+  // Detected schema.org / JSON-LD types.
+  schema?: { type?: string[] };
+};
+
+export async function fetchInstantPageAudit(input: {
+  url: string;
+}): Promise<CallResult<InstantPageAudit>> {
+  const result = await call<Array<{ items: Array<{ meta: InstantPageAudit["meta"]; checks: Record<string, boolean>; }> }>>(
+    "/on_page/instant_pages",
+    [{ url: input.url, enable_javascript: true, custom_js: "" }],
+    `instant_pages[${input.url.slice(0, 48)}]`,
+  );
+  if (!("ok" in result) || !result.ok) {
+    return result as CallResult<InstantPageAudit>;
+  }
+  const item = result.data?.[0]?.items?.[0];
+  if (!item) {
+    return { ok: false, error: "instant_pages: empty result" };
+  }
+  return {
+    ok: true,
+    data: { meta: item.meta, checks: item.checks },
+    costUsd: result.costUsd,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// DataforSEO Labs — search_intent classifier (informational, navigational,
+// commercial, transactional). ~$0.01/call for up to 1000 keywords.
+// ---------------------------------------------------------------------------
+
+export type IntentClassification = {
+  keyword: string;
+  intent: "informational" | "navigational" | "commercial" | "transactional";
+  probability: number;
+};
+
+export async function fetchSearchIntent(input: {
+  keywords: string[];
+  locationCode?: number;
+}): Promise<CallResult<IntentClassification[]>> {
+  if (input.keywords.length === 0) return { ok: true, data: [], costUsd: 0 };
+  const result = await call<Array<{ items: Array<{ keyword: string; keyword_intent: { label: string; probability: number } }> }>>(
+    "/dataforseo_labs/google/search_intent/live",
+    [
+      {
+        keywords: input.keywords.slice(0, 1000),
+        location_code: input.locationCode ?? 2840,
+        language_code: "en",
+      },
+    ],
+    `intent[${input.keywords.length}]`,
+  );
+  if (!("ok" in result) || !result.ok) {
+    return result as CallResult<IntentClassification[]>;
+  }
+  const items = (result.data?.[0]?.items ?? []).map((i) => ({
+    keyword: i.keyword,
+    intent: (i.keyword_intent?.label ?? "informational") as IntentClassification["intent"],
+    probability: i.keyword_intent?.probability ?? 0,
+  }));
+  return { ok: true, data: items, costUsd: result.costUsd };
+}
+
+// ---------------------------------------------------------------------------
+// DataforSEO Labs — keyword_intersection. Queries the competitor outranks
+// us on. Pure content-gap analysis. ~$0.02/call.
+// ---------------------------------------------------------------------------
+
+export type IntersectionKeyword = {
+  keyword: string;
+  search_volume: number | null;
+  competition: number | null;
+  cpc: number | null;
+  // Positions are returned per-domain in the order targets were passed.
+  intersection_result: Array<{ position: number | null; url: string | null }>;
+};
+
+export async function fetchKeywordIntersection(input: {
+  ourDomain: string;
+  competitorDomain: string;
+  limit?: number;
+  locationCode?: number;
+}): Promise<CallResult<IntersectionKeyword[]>> {
+  const result = await call<Array<{ items: IntersectionKeyword[] }>>(
+    "/dataforseo_labs/google/domain_intersection/live",
+    [
+      {
+        target1: input.ourDomain,
+        target2: input.competitorDomain,
+        location_code: input.locationCode ?? 2840,
+        language_code: "en",
+        // Filter to queries the competitor wins. position[0] = our rank.
+        intersections: false,
+        limit: Math.min(input.limit ?? 100, 1000),
+      },
+    ],
+    `intersection[${input.ourDomain}|${input.competitorDomain}]`,
+  );
+  if (!("ok" in result) || !result.ok) {
+    return result as CallResult<IntersectionKeyword[]>;
+  }
+  return {
+    ok: true,
+    data: result.data?.[0]?.items ?? [],
+    costUsd: result.costUsd,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// DataforSEO Labs — ranked_keywords. Every keyword OUR domain ranks for.
+// Drives the keyword-portfolio breakdown by position bucket. ~$0.02/call.
+// ---------------------------------------------------------------------------
+
+export type DomainRankedKeyword = {
+  keyword_data: {
+    keyword: string;
+    keyword_info: {
+      search_volume: number | null;
+      competition: number | null;
+      cpc: number | null;
+    } | null;
+  };
+  ranked_serp_element: {
+    serp_item: {
+      rank_absolute: number;
+      url: string | null;
+    };
+  };
+};
+
+export async function fetchRankedKeywords(input: {
+  domain: string;
+  limit?: number;
+  locationCode?: number;
+}): Promise<CallResult<DomainRankedKeyword[]>> {
+  const result = await call<Array<{ items: DomainRankedKeyword[] }>>(
+    "/dataforseo_labs/google/ranked_keywords/live",
+    [
+      {
+        target: input.domain,
+        location_code: input.locationCode ?? 2840,
+        language_code: "en",
+        limit: Math.min(input.limit ?? 100, 1000),
+        order_by: ["ranked_serp_element.serp_item.rank_absolute,asc"],
+      },
+    ],
+    `ranked[${input.domain}]`,
+  );
+  if (!("ok" in result) || !result.ok) {
+    return result as CallResult<DomainRankedKeyword[]>;
+  }
+  return {
+    ok: true,
+    data: result.data?.[0]?.items ?? [],
+    costUsd: result.costUsd,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// DataforSEO Labs — historical_search_volume. 24-month volume per keyword.
+// ~$0.005/call.
+// ---------------------------------------------------------------------------
+
+export type HistoricalVolume = {
+  keyword: string;
+  history: Array<{ year: number; month: number; search_volume: number }>;
+};
+
+export async function fetchHistoricalSearchVolume(input: {
+  keywords: string[];
+  locationCode?: number;
+}): Promise<CallResult<HistoricalVolume[]>> {
+  if (input.keywords.length === 0) return { ok: true, data: [], costUsd: 0 };
+  const result = await call<
+    Array<{ items: Array<{ keyword: string; keyword_info: { history: HistoricalVolume["history"] } | null }> }>
+  >(
+    "/dataforseo_labs/google/historical_search_volume/live",
+    [
+      {
+        keywords: input.keywords.slice(0, 1000),
+        location_code: input.locationCode ?? 2840,
+        language_code: "en",
+      },
+    ],
+    `historical[${input.keywords.length}]`,
+  );
+  if (!("ok" in result) || !result.ok) {
+    return result as CallResult<HistoricalVolume[]>;
+  }
+  const items = (result.data?.[0]?.items ?? []).map((i) => ({
+    keyword: i.keyword,
+    history: i.keyword_info?.history ?? [],
+  }));
+  return { ok: true, data: items, costUsd: result.costUsd };
+}
+
+// ---------------------------------------------------------------------------
+// Business Data — Google My Business info. Local pack data, GBP rating +
+// review count + categories. ~$0.005/call.
+// ---------------------------------------------------------------------------
+
+export type GoogleBusinessInfo = {
+  title: string;
+  category: string | null;
+  rating: { value: number | null; votes_count: number };
+  // Search-result-specific fields.
+  cid: string | null;
+  feature_id: string | null;
+  domain: string | null;
+  phone: string | null;
+  address: string | null;
+  rank_absolute: number | null;
+};
+
+export async function fetchGoogleBusinessInfo(input: {
+  keyword: string;
+  locationCode?: number;
+}): Promise<CallResult<GoogleBusinessInfo[]>> {
+  const result = await call<Array<{ items: GoogleBusinessInfo[] }>>(
+    "/business_data/google/my_business_info/live",
+    [
+      {
+        keyword: input.keyword,
+        location_code: input.locationCode ?? 2840,
+        language_code: "en",
+      },
+    ],
+    `gbp[${input.keyword.slice(0, 32)}]`,
+  );
+  if (!("ok" in result) || !result.ok) {
+    return result as CallResult<GoogleBusinessInfo[]>;
+  }
+  return {
+    ok: true,
+    data: result.data?.[0]?.items ?? [],
+    costUsd: result.costUsd,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// SERP API — local pack rankings. Returns the 3-result local pack for a
+// query so we can track who shows up on the map. ~$0.002/call.
+// ---------------------------------------------------------------------------
+
+export type LocalPackResult = {
+  position: number;
+  title: string;
+  domain: string | null;
+  url: string | null;
+  rating: { value: number | null; votes_count: number } | null;
+  cid: string | null;
+};
+
+export async function fetchLocalPack(input: {
+  query: string;
+  locationCode?: number;
+}): Promise<CallResult<LocalPackResult[]>> {
+  // Local pack rows come embedded in the regular organic SERP advanced
+  // response under type=local_pack. Reuse the same endpoint and filter.
+  const result = await call<
+    Array<{ items: Array<{ type: string; rank_absolute: number; title: string; domain?: string; url?: string; rating?: { value: number; votes_count: number }; cid?: string; items?: Array<{ rank_absolute: number; title: string; domain?: string; url?: string; rating?: { value: number; votes_count: number }; cid?: string }> }> }>
+  >(
+    "/serp/google/organic/live/advanced",
+    [
+      {
+        keyword: input.query,
+        location_code: input.locationCode ?? 2840,
+        language_code: "en",
+        depth: 20,
+      },
+    ],
+    `local_pack[${input.query.slice(0, 32)}]`,
+  );
+  if (!("ok" in result) || !result.ok) {
+    return result as CallResult<LocalPackResult[]>;
+  }
+  const items = result.data?.[0]?.items ?? [];
+  // Find the local_pack container item (single SERP feature) then
+  // unpack its `items` array.
+  const container = items.find((i) => i.type === "local_pack");
+  const packItems = (container?.items ?? []).map((p, idx) => ({
+    position: p.rank_absolute ?? idx + 1,
+    title: p.title,
+    domain: p.domain ?? null,
+    url: p.url ?? null,
+    rating: p.rating ?? null,
+    cid: p.cid ?? null,
+  }));
+  return { ok: true, data: packItems, costUsd: result.costUsd };
+}
