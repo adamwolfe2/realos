@@ -715,19 +715,36 @@
     var persona = escapeHtml(cfg.personaName || "Leasing");
     var teaser = escapeHtml(cfg.teaserText || "Questions? I'm here.");
     var avatar = cfg.avatarUrl ? escapeHtml(cfg.avatarUrl) : "";
-    // `onerror` swaps the broken <img> for the same dot fallback we
-    // render when avatarUrl is null in the first place. Real-world
-    // tenants occasionally paste a website URL into the logo field —
-    // that loads as HTML and renders the browser's broken-image icon,
-    // which looks unprofessional in the teaser. This fallback degrades
-    // gracefully to a brand-colored dot the moment the image load
-    // fails (404, wrong content-type, CORS, etc.). The single-quote
-    // double-escape lets the handler live inside the outer attribute
-    // string we build by concatenation.
+    // User-icon fallback used when avatarUrl is null OR the image fails
+    // to load. Reporter feedback (Norman, screenshot 2026-05-20): the
+    // previous brand-colored dot fallback let the underlying logo bleed
+    // through when the image was a transparent PNG, which looked like
+    // a broken render. Switched to an explicit white-on-brand person
+    // glyph that reads unambiguously as "no photo set" even with no
+    // network. SVG is inlined so there's no second request.
+    var FALLBACK_AVATAR_HTML =
+      '<div class="rec-avatar rec-avatar-fallback" aria-hidden="true">' +
+        '<svg viewBox="0 0 24 24" width="60%" height="60%" fill="none" ' +
+        'stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+        'stroke-linejoin="round">' +
+        '<circle cx="12" cy="8" r="3.5"/>' +
+        '<path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>' +
+        '</svg>' +
+      '</div>';
+    // The `onerror` handler swaps the broken <img> for the same user-
+    // icon fallback we render when avatarUrl is null. Real-world tenants
+    // occasionally paste a website URL into the logo field — that loads
+    // as HTML and renders the browser's broken-image icon, which looks
+    // unprofessional in the teaser. The single-quote double-escape lets
+    // the handler live inside the outer attribute string we build by
+    // concatenation.
+    var fallbackForOnError = FALLBACK_AVATAR_HTML
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "\\'");
     var avatarMarkup = avatar
       ? '<img class="rec-avatar" src="' + avatar + '" alt="" ' +
-        'onerror="this.outerHTML=&quot;<div class=\\&quot;rec-avatar rec-avatar-dot\\&quot;></div>&quot;" />'
-      : '<div class="rec-avatar rec-avatar-dot"></div>';
+        'onerror="this.outerHTML=\'' + fallbackForOnError + '\'" />'
+      : FALLBACK_AVATAR_HTML;
     var avatarWithDot =
       '<div class="rec-avatar-wrap">' + avatarMarkup +
       '<span class="rec-online-dot" aria-hidden="true"></span></div>';
@@ -838,7 +855,11 @@
       ".rec-teaser-text { flex: 1; min-width: 0; word-wrap: break-word; overflow-wrap: anywhere; }" +
       ".rec-teaser-close { position: absolute; top: 4px; right: 6px; all: unset; cursor: pointer; font-size: 16px; color: #888; padding: 2px 6px; line-height: 1; }" +
       ".rec-avatar { width: 28px; height: 28px; border-radius: 999px; object-fit: cover; flex-shrink: 0; }" +
-      ".rec-avatar-dot { background: var(--rec-color); }" +
+      // Fallback glyph used when avatarUrl is null/broken. Solid brand
+      // background + white stroke so it reads as an intentional anonymous
+      // user, not a missing image.
+      ".rec-avatar-fallback { background: var(--rec-color); color: #fff; display: inline-flex; align-items: center; justify-content: center; }" +
+      ".rec-avatar-fallback svg { display: block; }" +
       ".rec-avatar-wrap { position: relative; flex-shrink: 0; }" +
       ".rec-avatar-wrap .rec-avatar { width: 40px; height: 40px; border: 2px solid rgba(255,255,255,0.4); }" +
       ".rec-online-dot { position: absolute; bottom: -2px; right: -2px; width: 12px; height: 12px; border-radius: 999px; background: #34d399; border: 2px solid #fff; }" +

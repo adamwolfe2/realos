@@ -225,7 +225,14 @@ export async function GET(req: NextRequest) {
       followUpMessage: cfg.chatbotFollowUpMessage ?? null,
       teaserText: cfg.chatbotTeaserText ?? "Questions? I'm here.",
       brandColor: cfg.chatbotBrandColor ?? org.primaryColor ?? "#111111",
-      avatarUrl: cfg.chatbotAvatarUrl ?? org.logoUrl ?? null,
+      // Avatar is ONLY the operator-configured chatbot avatar. Previously
+      // we fell back to `org.logoUrl` so the chatbot launcher always had
+      // some image, but that surfaced wordmarks / property logos in the
+      // circular avatar slot (e.g. "TELEGRAPH COMM" cropped inside a
+      // round frame on telegraphcommons.com), which read as a broken
+      // render. Reporter screenshot 2026-05-20. The embed now renders an
+      // explicit user-icon fallback when avatarUrl is null.
+      avatarUrl: cfg.chatbotAvatarUrl ?? null,
       captureMode: cfg.chatbotCaptureMode,
       idleTriggerSeconds: cfg.chatbotIdleTriggerSeconds,
       primaryCtaText: cfg.primaryCtaText ?? null,
