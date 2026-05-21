@@ -34,6 +34,11 @@ import {
   fetchLighthouseScores,
   fetchBacklinksSummary,
   fetchCompetitorDomains,
+  fetchInstantPageAudit,
+  fetchSearchIntent,
+  fetchKeywordIntersection,
+  fetchRankedKeywords,
+  fetchLocalPack,
   isDataforSeoConfigured,
 } from "./dataforseo";
 import { deriveStarterQueries } from "./derive-queries";
@@ -392,6 +397,340 @@ export async function syncPropertyFromDataforSeo(input: {
         stage: "competitors",
         propertyId: property.id,
         error: compRes.error,
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Step 5 — On-page instant audit (Phase 2). Pulls titles, meta, H1s,
+  // broken links, image-alt issues, schema markup. The SEO Agent rules
+  // ONPAGE_AUDIT + SCHEMA_GAP read from OnPageInstantAudit.
+  // -------------------------------------------------------------------------
+  if (property.websiteUrl) {
+    const auditRes = await fetchInstantPageAudit({ url: property.websiteUrl });
+    if ("ok" in auditRes && auditRes.ok) {
+      stats.costEstimateUsd += auditRes.costUsd;
+      const meta = auditRes.data.meta;
+      const checks = auditRes.data.checks ?? {};
+      // Severity counts based on the DataforSEO checks payload — every
+      // failed check is at least a notice. Severity escalation mirrors
+      // their classification.
+      const failedChecks = Object.entries(checks).filter(([, v]) => v === false);
+      try {
+        await prisma.onPageInstantAudit.upsert({
+          where: {
+            orgId_url_date: {
+              orgId: property.orgId,
+              url: property.websiteUrl,
+              date: today,
+            },
+          },
+          create: {
+            orgId: property.orgId,
+            propertyId: property.id,
+            url: property.websiteUrl,
+            date: today,
+            pageTitle: meta.title ?? null,
+            metaDescription: meta.description ?? null,
+            metaKeywords: meta.keywords ?? null,
+            canonical: meta.canonical ?? null,
+            h1Count: meta.htags?.h1?.length ?? 0,
+            h1Texts: meta.htags?.h1 ?? [],
+            wordCount: meta.content?.plain_text_word_count ?? null,
+            readabilityScore: meta.content?.automated_readability_index ?? null,
+            duplicateTitle: meta.duplicate_title ?? false,
+            duplicateMeta: meta.duplicate_description ?? false,
+            missingTitle: !meta.title,
+            missingMeta: !meta.description,
+            brokenLinks: meta.broken_links ?? 0,
+            brokenImages: meta.broken_resources ?? 0,
+            imagesNoAlt: meta.no_image_alt ?? 0,
+            internalLinks: meta.internal_links_count ?? 0,
+            externalLinks: meta.external_links_count ?? 0,
+            schemaTypes: [],
+            issuesCritical: failedChecks.filter(([k]) => /critical|broken|missing/i.test(k)).length,
+            issuesWarning: failedChecks.filter(([k]) => /duplicate|warning|slow/i.test(k)).length,
+            issuesNotice: Math.max(0, failedChecks.length - failedChecks.filter(([k]) => /critical|broken|missing|duplicate|warning|slow/i.test(k)).length),
+            rawPayload: JSON.parse(JSON.stringify(auditRes.data)),
+          },
+          update: {
+            pageTitle: meta.title ?? null,
+            metaDescription: meta.description ?? null,
+            canonical: meta.canonical ?? null,
+            h1Count: meta.htags?.h1?.length ?? 0,
+            h1Texts: meta.htags?.h1 ?? [],
+            wordCount: meta.content?.plain_text_word_count ?? null,
+            readabilityScore: meta.content?.automated_readability_index ?? null,
+            duplicateTitle: meta.duplicate_title ?? false,
+            duplicateMeta: meta.duplicate_description ?? false,
+            missingTitle: !meta.title,
+            missingMeta: !meta.description,
+            brokenLinks: meta.broken_links ?? 0,
+            brokenImages: meta.broken_resources ?? 0,
+            imagesNoAlt: meta.no_image_alt ?? 0,
+            internalLinks: meta.internal_links_count ?? 0,
+            externalLinks: meta.external_links_count ?? 0,
+            rawPayload: JSON.parse(JSON.stringify(auditRes.data)),
+          },
+        });
+      } catch (err) {
+        stats.errors.push({
+          stage: "instant-audit-write",
+          propertyId: property.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    } else if ("error" in auditRes && auditRes.error) {
+      stats.errors.push({
+        stage: "instant-audit",
+        propertyId: property.id,
+        error: auditRes.error,
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Step 6 — Search intent classification for active target queries.
+  // Single batched call (up to 1000 keywords) so the cost stays at ~$0.01
+  // total regardless of query count.
+  // -------------------------------------------------------------------------
+  if (targetQueries.length > 0) {
+    const queryStrings = targetQueries.map((q) => q.query);
+    const intentRes = await fetchSearchIntent({ keywords: queryStrings });
+    if ("ok" in intentRes && intentRes.ok) {
+      stats.costEstimateUsd += intentRes.costUsd;
+      // Backfill intent on the target queries so the SEO Agent can use
+      // it to recommend page format (informational -> blog, transactional
+      // -> landing page).
+      for (const classification of intentRes.data) {
+        const target = targetQueries.find(
+          (q) => q.query.toLowerCase() === classification.keyword.toLowerCase(),
+        );
+        if (!target || target.intent === classification.intent) continue;
+        await prisma.seoTargetQuery
+          .update({
+            where: { id: target.id },
+            data: { intent: classification.intent },
+          })
+          .catch(() => undefined);
+      }
+    } else if ("error" in intentRes && intentRes.error) {
+      stats.errors.push({
+        stage: "intent",
+        propertyId: property.id,
+        error: intentRes.error,
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Step 7 — Ranked keywords for our domain. Writes RankedKeyword rows
+  // for every keyword our domain ranks for in the top 100 (capped at 100
+  // for cost). Drives the position-bucket chart + the keyword portfolio
+  // breakdown.
+  // -------------------------------------------------------------------------
+  if (ourDomain) {
+    const rkRes = await fetchRankedKeywords({
+      domain: ourDomain,
+      limit: 100,
+    });
+    if ("ok" in rkRes && rkRes.ok) {
+      stats.costEstimateUsd += rkRes.costUsd;
+      for (const k of rkRes.data) {
+        const kw = k.keyword_data?.keyword;
+        const pos = k.ranked_serp_element?.serp_item?.rank_absolute;
+        if (!kw || !pos) continue;
+        try {
+          await prisma.rankedKeyword.upsert({
+            where: {
+              orgId_domain_keyword_date: {
+                orgId: property.orgId,
+                domain: ourDomain,
+                keyword: kw,
+                date: today,
+              },
+            },
+            create: {
+              orgId: property.orgId,
+              propertyId: property.id,
+              domain: ourDomain,
+              keyword: kw,
+              date: today,
+              position: pos,
+              searchVolume: k.keyword_data?.keyword_info?.search_volume ?? null,
+              competition: k.keyword_data?.keyword_info?.competition ?? null,
+              cpc: k.keyword_data?.keyword_info?.cpc ?? null,
+              rankingUrl: k.ranked_serp_element?.serp_item?.url ?? null,
+              serpFeatures: [],
+            },
+            update: {
+              position: pos,
+              searchVolume: k.keyword_data?.keyword_info?.search_volume ?? null,
+              competition: k.keyword_data?.keyword_info?.competition ?? null,
+              cpc: k.keyword_data?.keyword_info?.cpc ?? null,
+              rankingUrl: k.ranked_serp_element?.serp_item?.url ?? null,
+            },
+          });
+        } catch (err) {
+          stats.errors.push({
+            stage: "ranked-keyword-write",
+            propertyId: property.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    } else if ("error" in rkRes && rkRes.error) {
+      stats.errors.push({
+        stage: "ranked-keywords",
+        propertyId: property.id,
+        error: rkRes.error,
+      });
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Step 8 — Keyword intersection with the top 3 organic competitors.
+  // Pulls queries each competitor outranks us on. Drives the
+  // KEYWORD_GAP_VS_COMPETITOR rule + the gap-table chart.
+  // -------------------------------------------------------------------------
+  if (ourDomain) {
+    const topCompetitors = await prisma.propertyCompetitorScan
+      .findMany({
+        where: {
+          propertyId: property.id,
+          source: "DATAFORSEO_COMPETITORS_DOMAIN",
+        },
+        orderBy: { scannedAt: "desc" },
+        take: 3,
+        select: { externalId: true },
+      })
+      .catch(() => []);
+
+    for (const c of topCompetitors) {
+      if (!c.externalId) continue;
+      const ixRes = await fetchKeywordIntersection({
+        ourDomain,
+        competitorDomain: c.externalId,
+        limit: 50,
+      });
+      if (!("ok" in ixRes) || !ixRes.ok) {
+        if ("error" in ixRes && ixRes.error) {
+          stats.errors.push({
+            stage: "intersection",
+            propertyId: property.id,
+            error: `${c.externalId}: ${ixRes.error}`,
+          });
+        }
+        continue;
+      }
+      stats.costEstimateUsd += ixRes.costUsd;
+      for (const ix of ixRes.data) {
+        // Our position is item[0], competitor is item[1].
+        const our = ix.intersection_result?.[0]?.position ?? null;
+        const theirs = ix.intersection_result?.[1]?.position;
+        if (typeof theirs !== "number") continue;
+        // Only persist gaps where THEY rank better than us (or we don't
+        // rank at all).
+        if (our != null && our <= theirs) continue;
+        const volume = ix.search_volume ?? 0;
+        // Gap score: volume × (101 - their position) so high-volume +
+        // top-of-page competitor wins float to the top.
+        const gapScore = volume * Math.max(0, 101 - theirs);
+        try {
+          await prisma.keywordIntersection.upsert({
+            where: {
+              orgId_propertyId_ourDomain_competitorDomain_keyword_date: {
+                orgId: property.orgId,
+                propertyId: property.id,
+                ourDomain,
+                competitorDomain: c.externalId,
+                keyword: ix.keyword,
+                date: today,
+              },
+            },
+            create: {
+              orgId: property.orgId,
+              propertyId: property.id,
+              ourDomain,
+              competitorDomain: c.externalId,
+              keyword: ix.keyword,
+              date: today,
+              ourPosition: our,
+              competitorPosition: theirs,
+              searchVolume: volume || null,
+              gapScore,
+            },
+            update: {
+              ourPosition: our,
+              competitorPosition: theirs,
+              searchVolume: volume || null,
+              gapScore,
+            },
+          });
+        } catch (err) {
+          stats.errors.push({
+            stage: "intersection-write",
+            propertyId: property.id,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
+      }
+    }
+  }
+
+  // -------------------------------------------------------------------------
+  // Step 9 — Local pack tracking. For each active target query, fetch
+  // the Google 3-pack and record our position (1, 2, 3, or null).
+  // Critical for apartment marketing: prospects search "apartments near
+  // me" -> see the map -> click. We were blind to this before.
+  // -------------------------------------------------------------------------
+  for (const tq of targetQueries) {
+    const lpRes = await fetchLocalPack({
+      query: tq.query,
+      locationCode: tq.locationCode ?? 2840,
+    });
+    if (!("ok" in lpRes) || !lpRes.ok) continue;
+    stats.costEstimateUsd += lpRes.costUsd;
+    let ourPosition: number | null = null;
+    if (property.name) {
+      const nameLower = property.name.toLowerCase();
+      const us = lpRes.data.find((r) =>
+        r.title.toLowerCase().includes(nameLower),
+      );
+      if (us) ourPosition = us.position;
+    }
+    if (ourDomain && ourPosition == null) {
+      const us = lpRes.data.find((r) => r.domain === ourDomain);
+      if (us) ourPosition = us.position;
+    }
+    try {
+      await prisma.localPackRanking.upsert({
+        where: {
+          orgId_propertyId_query_date: {
+            orgId: property.orgId,
+            propertyId: property.id,
+            query: tq.query,
+            date: today,
+          },
+        },
+        create: {
+          orgId: property.orgId,
+          propertyId: property.id,
+          query: tq.query,
+          date: today,
+          ourPosition,
+          topResults: JSON.parse(JSON.stringify(lpRes.data.slice(0, 3))),
+        },
+        update: {
+          ourPosition,
+          topResults: JSON.parse(JSON.stringify(lpRes.data.slice(0, 3))),
+        },
+      });
+    } catch (err) {
+      stats.errors.push({
+        stage: "local-pack-write",
+        propertyId: property.id,
+        error: err instanceof Error ? err.message : String(err),
       });
     }
   }
