@@ -76,30 +76,37 @@ const MODEL = "claude-sonnet-4-5";
 // Schemas + prompts per format
 // ---------------------------------------------------------------------------
 
+// Anthropic's structured-output API (used by generateObject under the
+// hood) only supports JSON Schema `minItems` of 0 or 1 and rejects
+// `maxItems` entirely. The schemas below previously used .min(N)/.max(N)
+// on arrays which translated to invalid constraints, so EVERY draft
+// generation call failed with "minItems values other than 0 or 1 are
+// not supported". String length constraints (z.string().min/.max) and
+// number ranges still work — only ARRAY counts had to relax.
+//
+// Count targets (e.g. "3-7 sections", "5 FAQs") are enforced via the
+// system + format-specific prompts instead. Lossy but the model
+// reliably follows count guidance from prose.
+
 const blogSchema = z.object({
   title: z.string().max(80),
   metaDescription: z.string().max(160),
   /** Hero / intro paragraph. */
   intro: z.string().min(120).max(800),
-  /** Body sections — each one becomes an H2 + 2-4 paragraphs. */
-  sections: z
-    .array(
-      z.object({
-        heading: z.string().max(80),
-        body: z.string().min(180).max(1400),
-      }),
-    )
-    .min(3)
-    .max(7),
-  faqs: z
-    .array(
-      z.object({
-        question: z.string().max(120),
-        answer: z.string().max(400),
-      }),
-    )
-    .min(3)
-    .max(6),
+  /** Body sections — prompt asks for 3-7 H2 sections. */
+  sections: z.array(
+    z.object({
+      heading: z.string().max(80),
+      body: z.string().min(180).max(1400),
+    }),
+  ),
+  /** FAQs — prompt asks for 3-6. */
+  faqs: z.array(
+    z.object({
+      question: z.string().max(120),
+      answer: z.string().max(400),
+    }),
+  ),
   /** Closing CTA paragraph. */
   closing: z.string().max(400),
   estimatedScore: z.number().int().min(0).max(100),
@@ -110,60 +117,55 @@ const neighborhoodSchema = z.object({
   metaDescription: z.string().max(160),
   neighborhood: z.string(),
   intro: z.string().min(120).max(700),
-  sections: z
-    .array(
-      z.object({
-        heading: z.string().max(80),
-        body: z.string().min(160).max(900),
-      }),
-    )
-    .min(4)
-    .max(6),
-  faqs: z
-    .array(
-      z.object({
-        question: z.string().max(120),
-        answer: z.string().max(400),
-      }),
-    )
-    .min(4)
-    .max(6),
-  /** Atomic claims an AI engine can cite. Each must be verifiable from
-   *  the input facts — these get scored later via AeoCitationCheck. */
-  aiCitations: z.array(z.string().max(200)).min(3).max(8),
+  /** Prompt asks for 4-6 sections. */
+  sections: z.array(
+    z.object({
+      heading: z.string().max(80),
+      body: z.string().min(160).max(900),
+    }),
+  ),
+  /** Prompt asks for 4-6 FAQs. */
+  faqs: z.array(
+    z.object({
+      question: z.string().max(120),
+      answer: z.string().max(400),
+    }),
+  ),
+  /** Atomic claims an AI engine can cite. Prompt asks for 3-8. Each
+   *  must be verifiable from the input facts — these get scored later
+   *  via AeoCitationCheck. */
+  aiCitations: z.array(z.string().max(200)),
   estimatedScore: z.number().int().min(0).max(100),
 });
 
 const metaRewriteSchema = z.object({
-  /** Two title variants for A/B. */
-  titles: z.array(z.string().max(60)).length(2),
-  /** Two meta description variants. */
-  metaDescriptions: z.array(z.string().max(160)).length(2),
+  /** Prompt asks for exactly 2 title variants for A/B. */
+  titles: z.array(z.string().max(60)),
+  /** Prompt asks for exactly 2 meta description variants. */
+  metaDescriptions: z.array(z.string().max(160)),
   /** Why these are expected to beat the current title + meta. */
   rationale: z.string().max(400),
   estimatedScore: z.number().int().min(0).max(100),
 });
 
 const faqBlockSchema = z.object({
-  faqs: z
-    .array(
-      z.object({
-        question: z.string().max(120),
-        answer: z.string().max(400),
-      }),
-    )
-    .min(5)
-    .max(8),
+  /** Prompt asks for 5-8 FAQs. */
+  faqs: z.array(
+    z.object({
+      question: z.string().max(120),
+      answer: z.string().max(400),
+    }),
+  ),
   /** JSON-LD ready FAQPage schema markup. */
   schemaMarkup: z.string(),
   estimatedScore: z.number().int().min(0).max(100),
 });
 
 const adCopySchema = z.object({
-  /** Google Ads format: 3 headlines (30 char max), 2 descriptions (90 char). */
+  /** Google Ads format: prompt asks for exactly 3 headlines (30 char max), 2 descriptions (90 char). */
   google: z.object({
-    headlines: z.array(z.string().max(30)).length(3),
-    descriptions: z.array(z.string().max(90)).length(2),
+    headlines: z.array(z.string().max(30)),
+    descriptions: z.array(z.string().max(90)),
   }),
   /** Meta Ads format: primary text (125 char), headline (40), description (30). */
   meta: z.object({
@@ -177,8 +179,8 @@ const adCopySchema = z.object({
 const propertyDescriptionSchema = z.object({
   /** 150-300 words tuned for chatbot grounding + AI engine citation. */
   description: z.string().min(150).max(1800),
-  /** Atomic facts the AI engines can cite. */
-  aiCitations: z.array(z.string().max(200)).min(3).max(6),
+  /** Prompt asks for 3-6 atomic facts the AI engines can cite. */
+  aiCitations: z.array(z.string().max(200)),
   estimatedScore: z.number().int().min(0).max(100),
 });
 
@@ -276,7 +278,7 @@ export async function draftBlogPost(ctx: DrafterContext): Promise<{
   const { object } = await generateObject({
     model: anthropic(MODEL),
     schema: blogSchema,
-    system: `${BASE_SYSTEM}\n\nFORMAT: BLOG_POST\nLength: 1,200-1,800 words total across intro + sections + closing. Each section is an H2 with 2-4 paragraphs. The intro hooks the target query in the first 80 characters. FAQs are schema.org FAQPage-ready.`,
+    system: `${BASE_SYSTEM}\n\nFORMAT: BLOG_POST\nLength: 1,200-1,800 words total across intro + sections + closing. Produce 3-7 H2 sections, each with 2-4 paragraphs of 180-1,400 chars total. Produce 3-6 FAQs. The intro hooks the target query in the first 80 characters. FAQs are schema.org FAQPage-ready.`,
     prompt: formatContext(ctx),
   });
 
