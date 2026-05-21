@@ -491,13 +491,27 @@ export function BacklinksCard({
   if (!summary) {
     return (
       <section className={`rounded-2xl border ${SUBTLE_BORDER} bg-card p-5`}>
-        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
-          Backlinks
-        </p>
-        <h3 className="text-sm font-semibold text-foreground">No backlink data yet</h3>
-        <p className="text-[11.5px] text-muted-foreground mt-1">
-          Appears after the first DataforSEO scan completes.
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
+              Backlinks
+            </p>
+            <h3 className="text-sm font-semibold text-foreground">
+              Available on DataforSEO Plus
+            </h3>
+            <p className="text-[11.5px] text-muted-foreground mt-1.5 leading-snug max-w-md">
+              Backlink coverage (domain rank, referring domains, link velocity)
+              is gated to DataforSEO Plus and above. All other SEO signals —
+              SERP rankings, Lighthouse, on-page audit, ranked keywords,
+              competitor scan — are tracked on every plan and refresh nightly.
+            </p>
+          </div>
+          {/* Plan-gated chip so the operator sees this is a paid-tier
+              feature, not a broken integration. */}
+          <span className="inline-flex items-center rounded-full border border-border bg-muted px-2 py-0.5 text-[10px] font-mono uppercase tracking-[0.1em] text-muted-foreground whitespace-nowrap shrink-0">
+            Add-on
+          </span>
+        </div>
       </section>
     );
   }
