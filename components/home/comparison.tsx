@@ -190,15 +190,19 @@ function ComparisonRow({
           With LeaseStack
         </p>
         <p
-          // The underline lives on the parent <p> so it spans every line
-          // of the wrapped text when the headline breaks onto two lines.
+          // Norman 2026-05-21: right column was at 16-18px / weight 600
+          // and wrapped to 2 lines while the left "current stack" copy
+          // sat on 1 line at 15px. Dropped to 15px / weight 600 +
+          // slightly tighter tracking so each row fits on one line at
+          // typical desktop widths. The underline still spans the line
+          // since it's a block-positioned child below.
           style={{
             position: "relative",
             color: INK,
             fontFamily: "var(--font-sans)",
-            fontSize: "clamp(16px, 1.3vw, 18px)",
-            lineHeight: 1.4,
-            letterSpacing: "-0.01em",
+            fontSize: "15px",
+            lineHeight: 1.5,
+            letterSpacing: "-0.012em",
             fontWeight: 600,
             display: "inline-block",
           }}
