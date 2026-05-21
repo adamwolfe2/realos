@@ -147,9 +147,16 @@ export function PropertyHeroBanner({
 
   const padding = compact ? "p-4 sm:p-5" : "p-5 sm:p-7";
   const gridCols = compact
-    ? "grid-cols-[140px_minmax(0,1fr)]"
-    : "grid-cols-1 sm:grid-cols-[200px_minmax(0,1fr)] md:grid-cols-[240px_minmax(0,1fr)]";
-  const imageSize = compact ? "h-[120px]" : "h-[180px] sm:h-[220px]";
+    ? "grid-cols-[160px_minmax(0,1fr)]"
+    : "grid-cols-1 sm:grid-cols-[260px_minmax(0,1fr)] md:grid-cols-[300px_minmax(0,1fr)]";
+  // Norman 2026-05-21 third pass: image was "stuck" because the fixed
+  // height + items-center kept it pinned inside the card. Bumped sizes
+  // and the image now uses a negative top margin to LIFT above the card
+  // edge for the 3D pop effect. A BG-removed PNG will visibly float
+  // over the brand-gradient top edge; a regular rectangular photo will
+  // still anchor to the card but read as larger and more prominent.
+  const imageSize = compact ? "h-[160px]" : "h-[260px] sm:h-[320px]";
+  const imageLift = compact ? "-mt-6" : "-mt-10 sm:-mt-14";
 
   return (
     <section
@@ -186,26 +193,33 @@ export function PropertyHeroBanner({
         }}
       />
 
-      <div className={`relative grid items-center gap-5 ${gridCols}`}>
+      {/* Grid uses items-end so the image bottom anchors to the
+          identity column's baseline, while the negative top margin
+          on the image pulls its top edge ABOVE the card. Net: the
+          building reads as floating in front of the card rather
+          than sitting inside it. */}
+      <div className={`relative grid items-end gap-5 ${gridCols}`}>
         {/* Image column — building floats above a soft ground shadow.
-            Norman 2026-05-21: the column allows overflow so a
-            BG-removed image can spill upward beyond the card top edge
-            and read as 3D pop. The `group` class ties the hover state
-            to this whole region so the Replace / X controls fade in
-            only when the operator's mouse is in the image area. */}
+            overflow: visible everywhere up the chain so a BG-removed
+            image can extend past the card edges. The `group` class
+            ties the hover state to this whole region so the Replace /
+            X controls fade in only when the mouse is here. */}
         <div className="relative group" style={{ overflow: "visible" }}>
           {currentImage ? (
-            <div className="relative" style={{ overflow: "visible" }}>
+            <div
+              className={`relative ${imageLift}`}
+              style={{ overflow: "visible" }}
+            >
               {/* Ground shadow — a soft radial smudge under the image,
                   positioned to read as the building's grounding shadow
                   rather than a box-shadow. */}
               <div
                 aria-hidden="true"
-                className="absolute left-1/2 -translate-x-1/2 bottom-[-12px] w-[88%] h-5"
+                className="absolute left-1/2 -translate-x-1/2 bottom-[-14px] w-[80%] h-6"
                 style={{
                   background:
-                    "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(15, 23, 42, 0.32), transparent 70%)",
-                  filter: "blur(8px)",
+                    "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(15, 23, 42, 0.38), transparent 70%)",
+                  filter: "blur(10px)",
                 }}
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -214,11 +228,14 @@ export function PropertyHeroBanner({
                 alt={`${propertyName} exterior`}
                 /* object-contain (was object-cover) so a BG-removed PNG
                    doesn't get cropped at the column bounds. No border
-                   radius — the image's own silhouette is the shape. */
+                   radius. The image's own silhouette is the shape. */
                 className={`relative w-full ${imageSize} object-contain`}
                 style={{
+                  /* Stacked drop-shadows give the floating-3D feel: a
+                     wide soft ambient shadow underneath, a closer
+                     contact shadow at the base of the building. */
                   filter:
-                    "drop-shadow(0 18px 28px rgba(15, 23, 42, 0.18)) drop-shadow(0 4px 8px rgba(15, 23, 42, 0.10))",
+                    "drop-shadow(0 26px 36px rgba(15, 23, 42, 0.22)) drop-shadow(0 8px 14px rgba(15, 23, 42, 0.14)) drop-shadow(0 2px 4px rgba(15, 23, 42, 0.08))",
                 }}
                 loading="lazy"
               />
