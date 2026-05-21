@@ -102,6 +102,8 @@
 34. feat(admin): 'Focus here first' client suggestion on /admin/clients
 35. docs(crisp): cover snooze/archive/bulk-ops + draft email loop
 36. feat(seo): portfolio comparison view at /portal/seo/properties
+37. feat(seo): portfolio KPI strip on /portal/seo/properties
+38. feat(seo): sort + filter on /portal/seo/properties
 
 All pushed to origin/main.
 
