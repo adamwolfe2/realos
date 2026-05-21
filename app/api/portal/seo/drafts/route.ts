@@ -8,6 +8,7 @@ import {
 } from "@/lib/tenancy/scope";
 import { ContentFormat, DraftStatus } from "@prisma/client";
 import { draftContent, type DrafterContext } from "@/lib/seo/draft-writer";
+import { notifyDraftSubmitted } from "@/lib/notifications/create";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -129,6 +130,7 @@ export async function POST(req: NextRequest) {
       commercialSubtype: true,
       totalUnits: true,
       description: true,
+      org: { select: { name: true } },
     },
   });
   if (!property) {
@@ -271,6 +273,16 @@ export async function POST(req: NextRequest) {
         submittedAt,
       },
     });
+
+    // Notify the agency that a draft needs review. Fire-and-forget.
+    void notifyDraftSubmitted({
+      draftId: updated.id,
+      format: updated.format,
+      brief: updated.brief,
+      clientOrgName: property.org?.name ?? "Client",
+      propertyName: property.name,
+    }).catch(() => undefined);
+
     return NextResponse.json({ ok: true, draft: updated });
   } catch (err) {
     const message =

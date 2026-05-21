@@ -161,6 +161,42 @@ export async function notifyCriticalInsight(insight: {
 }
 
 /**
+ * Admin-facing notification when an operator submits a new content
+ * draft that needs review. Routes to a synthetic LeaseStack agency org
+ * (orgType=AGENCY) so the bell badge surfaces on /admin. Returns silently
+ * if no agency org exists in this environment.
+ */
+export async function notifyDraftSubmitted(input: {
+  draftId: string;
+  format: string;
+  brief: string;
+  clientOrgName: string;
+  propertyName: string | null;
+}): Promise<void> {
+  const agency = await prisma.organization
+    .findFirst({
+      where: { orgType: "AGENCY" },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    })
+    .catch(() => null);
+  if (!agency) return;
+  const fmt = input.format.replace(/_/g, " ").toLowerCase();
+  const propTag = input.propertyName ? ` (${input.propertyName})` : "";
+  await prisma.notification.create({
+    data: {
+      orgId: agency.id,
+      kind: "draft_submitted",
+      title: `New draft from ${input.clientOrgName}${propTag}`,
+      body: `${fmt}: ${input.brief.slice(0, 180)}`,
+      entityType: "ContentDraft",
+      entityId: input.draftId,
+      href: `/admin/content-drafts/${input.draftId}`,
+    },
+  });
+}
+
+/**
  * Operator-facing notification when their content draft has been
  * reviewed by LeaseStack (approved, request_changes, or rejected).
  * Surfaces in the portal bell so operators don't have to refresh
