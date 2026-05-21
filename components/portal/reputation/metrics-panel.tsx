@@ -79,11 +79,22 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
               "—"
             )
           }
-          hint={
-            metrics.googleReviewCount > 0
-              ? `${metrics.googleReviewCount} Google reviews`
-              : "Scan to populate"
-          }
+          // Norman bug #82: surface the gap between the total Google
+          // review count and what we've actually pulled into the
+          // mentions feed, so operators can see at a glance that the
+          // headline rating reflects more reviews than the 5-cap feed
+          // contains.
+          hint={(() => {
+            const total = metrics.googleReviewCount;
+            const fetched =
+              metrics.sourceBreakdown.find(
+                (r) => r.source === "GOOGLE_REVIEW",
+              )?.count ?? 0;
+            if (total === 0) return "Scan to populate";
+            const unfetched = Math.max(0, total - fetched);
+            if (unfetched <= 0) return `${total} reviews`;
+            return `${total} reviews · ${fetched} in feed (Google caps API)`;
+          })()}
         />
         <KpiTile
           label="Active mentions"
