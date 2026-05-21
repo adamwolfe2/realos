@@ -6,26 +6,24 @@ import React from "react";
 
 type IconProps = { size?: number };
 
-// Meta — official infinity-ribbon mark, rendered from the canonical SVG
-// in /public/logos/meta-logo.svg (the same path data Meta publishes on
-// their brand assets page). The source SVG has a 287.5 × 191 viewBox
-// (≈ 3:2 ratio), so to fit our square-aspect logo slots we render it
-// inside a centered square box at the requested `size`, scaled to width
-// and vertically centered. Using <img> instead of inlining keeps the
-// path data in one place and lets the browser cache it.
+// Meta — official infinity-ribbon mark, rendered from the canonical raster
+// at /public/logos/META-4767da84.png (the file the user dropped in May 2026).
+// Renders contain-fitted at the requested size so the wider 3:2 ribbon
+// sits comfortably inside square logo slots without distortion.
 export function MetaMark({ size = 18 }: IconProps) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/logos/meta-logo.svg"
+      src="/logos/META-4767da84.png"
       alt="Meta"
       width={size}
-      height={Math.round(size * (191 / 287.5))}
+      height={size}
       style={{
         width: size,
-        height: "auto",
+        height: size,
         display: "inline-block",
         verticalAlign: "middle",
+        objectFit: "contain",
       }}
     />
   );
@@ -85,16 +83,17 @@ export function ChatGPTMark({ size = 18 }: IconProps) {
   );
 }
 
-// Perplexity — official sparkle mark rendered from /public/logos/perplexity-logo.svg.
-// Same pattern as MetaMark above: the canonical brand SVG lives as a static
-// asset so the path data stays authoritative and easy to swap when
-// Perplexity refreshes their identity. <img> hits the browser cache, no
-// React re-render cost per instance.
+// Perplexity — official mark, served from /public/logos/perplexity.webp
+// (the raster the user dropped in May 2026 — the canonical angular
+// chevron-asterisk in Perplexity teal). webp keeps the file ~12KB at
+// 1:1 aspect ratio. <img> hits the browser cache so every consumer
+// (AEO engine cards, All Responses table, marketplace cards, home page)
+// reuses the same paint without per-instance React cost.
 export function PerplexityMark({ size = 18 }: IconProps) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/logos/perplexity-logo.svg"
+      src="/logos/perplexity.webp"
       alt="Perplexity"
       width={size}
       height={size}
@@ -103,21 +102,20 @@ export function PerplexityMark({ size = 18 }: IconProps) {
         height: size,
         display: "inline-block",
         verticalAlign: "middle",
+        objectFit: "contain",
       }}
     />
   );
 }
 
-// Claude (Anthropic) — official asterisk-burst mark rendered from
-// /public/logos/claude-logo.svg. Eight rounded petals (4 long cardinal +
-// 4 shorter diagonal) in Anthropic coral #D97757. Same static-asset
-// pattern as MetaMark above so the canonical path data lives in one
-// place and survives identity refreshes.
+// Claude (Anthropic) — official mark, served from /public/logos/claude-logo.png
+// (the raster the user dropped in May 2026 — the canonical hand-drawn
+// coral sunburst). 1:1 aspect ratio so width=height=size renders crisply.
 export function ClaudeMark({ size = 18 }: IconProps) {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/logos/claude-logo.svg"
+      src="/logos/claude-logo.png"
       alt="Claude"
       width={size}
       height={size}
@@ -126,6 +124,7 @@ export function ClaudeMark({ size = 18 }: IconProps) {
         height: size,
         display: "inline-block",
         verticalAlign: "middle",
+        objectFit: "contain",
       }}
     />
   );
