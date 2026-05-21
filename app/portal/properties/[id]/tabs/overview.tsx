@@ -1142,7 +1142,7 @@ function RenewalTimeline({
           as lease end dates enter the window.
         </p>
       ) : (
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
           {buckets.map((b, i) => (
             <div
               key={b.label}

@@ -305,9 +305,18 @@ export default async function AeoPage() {
                     <span className="truncate text-foreground" title={name}>
                       {name}
                     </span>
-                    <span className="text-[11px] tabular-nums text-muted-foreground shrink-0">
-                      {count}×
-                    </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-[11px] tabular-nums text-muted-foreground">
+                        {count}×
+                      </span>
+                      <a
+                        href={`/portal/seo/agent?counter=${encodeURIComponent(name)}`}
+                        className="text-[11px] font-medium text-primary hover:underline"
+                        title={`Draft a counter-page targeting ${name}`}
+                      >
+                        Counter →
+                      </a>
+                    </div>
                   </li>
                 ))}
               </ul>

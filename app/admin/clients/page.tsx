@@ -59,8 +59,14 @@ export default async function ClientsList({
     string,
     { critical: number; warning: number }
   >();
+  // SEO Agent OPEN-rec counts per org so the agency table shows "this
+  // client has 4 critical + 2 high open SEO actions" without a click.
+  const seoRecsByOrg = new Map<
+    string,
+    { critical: number; high: number; medium: number; low: number }
+  >();
   if (clients.length > 0) {
-    const [leadGroups, insightGroups] = await Promise.all([
+    const [leadGroups, insightGroups, seoRecGroups] = await Promise.all([
       prisma.lead.groupBy({
         by: ["orgId"],
         where: {
@@ -80,6 +86,14 @@ export default async function ClientsList({
         },
         _count: { _all: true },
       }),
+      prisma.seoActionRecommendation.groupBy({
+        by: ["orgId", "severity"],
+        where: {
+          orgId: { in: clients.map((c) => c.id) },
+          status: "OPEN",
+        },
+        _count: { _all: true },
+      }),
     ]);
     for (const g of leadGroups) {
       leadCountsByOrg.set(g.orgId, g._count._all);
@@ -92,6 +106,21 @@ export default async function ClientsList({
       if (g.severity === "critical") existing.critical += g._count._all;
       if (g.severity === "warning") existing.warning += g._count._all;
       insightCountsByOrg.set(g.orgId, existing);
+    }
+    for (const g of seoRecGroups) {
+      const existing = seoRecsByOrg.get(g.orgId) ?? {
+        critical: 0,
+        high: 0,
+        medium: 0,
+        low: 0,
+      };
+      const sev = g.severity.toLowerCase() as
+        | "critical"
+        | "high"
+        | "medium"
+        | "low";
+      if (sev in existing) existing[sev] += g._count._all;
+      seoRecsByOrg.set(g.orgId, existing);
     }
   }
 
@@ -183,6 +212,9 @@ export default async function ClientsList({
                   <th className="px-4 py-3 text-right font-medium">
                     Insights&nbsp;14d
                   </th>
+                  <th className="px-4 py-3 text-right font-medium">
+                    SEO&nbsp;open
+                  </th>
                   <th className="px-4 py-3 text-right font-medium">MRR</th>
                   <th className="px-4 py-3 text-right font-medium">Updated</th>
                 </tr>
@@ -234,6 +266,18 @@ export default async function ClientsList({
                             }
                           }
                           orgId={c.id}
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        <SeoRecCountCell
+                          counts={
+                            seoRecsByOrg.get(c.id) ?? {
+                              critical: 0,
+                              high: 0,
+                              medium: 0,
+                              low: 0,
+                            }
+                          }
                         />
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
@@ -315,5 +359,35 @@ function InsightCountCell({
         </span>
       ) : null}
     </Link>
+  );
+}
+
+function SeoRecCountCell({
+  counts,
+}: {
+  counts: { critical: number; high: number; medium: number; low: number };
+}) {
+  const total = counts.critical + counts.high + counts.medium + counts.low;
+  if (total === 0) {
+    return <span className="text-xs text-muted-foreground">—</span>;
+  }
+  return (
+    <span className="inline-flex items-center gap-1">
+      {counts.critical > 0 ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
+          {counts.critical}
+        </span>
+      ) : null}
+      {counts.high > 0 ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:text-amber-300">
+          {counts.high}
+        </span>
+      ) : null}
+      {counts.medium + counts.low > 0 ? (
+        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
+          {counts.medium + counts.low}
+        </span>
+      ) : null}
+    </span>
   );
 }
