@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Perplexity">
+  <title>Perplexity</title>
+  <!-- Perplexity's mark: a dark rounded square with the canonical
+       four-pointed teal sparkle Perplexity uses on perplexity.ai and
+       the iOS app icon. Geometry stays recognizable down to 14px. -->
+  <rect width="256" height="256" rx="56" fill="#1F1F1F"/>
+  <g fill="#1FB8CD">
+    <!-- Four elongated capsules at 0/90/180/270 forming the sparkle.
+         Capsule terminals are rounded so the mark reads as a soft
+         "atom" rather than a hard cross at small sizes. -->
+    <rect x="120" y="40" width="16" height="80" rx="8"/>
+    <rect x="120" y="136" width="16" height="80" rx="8"/>
+    <rect x="40" y="120" width="80" height="16" rx="8"/>
+    <rect x="136" y="120" width="80" height="16" rx="8"/>
+    <!-- Centre dot ties the four arms together visually. -->
+    <circle cx="128" cy="128" r="14"/>
+  </g>
+</svg>

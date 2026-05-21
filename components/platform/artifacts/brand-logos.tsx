@@ -85,56 +85,49 @@ export function ChatGPTMark({ size = 18 }: IconProps) {
   );
 }
 
-// Perplexity — wordmark glyph "p" inside the brand teal (#20808D / #1FB8CD).
-// Approximates the official mark: a stylised lowercase "p" with the
-// circular bowl rendered as a stroked ring against the dark navy ground
-// the brand uses on white surfaces.
+// Perplexity — official sparkle mark rendered from /public/logos/perplexity-logo.svg.
+// Same pattern as MetaMark above: the canonical brand SVG lives as a static
+// asset so the path data stays authoritative and easy to swap when
+// Perplexity refreshes their identity. <img> hits the browser cache, no
+// React re-render cost per instance.
 export function PerplexityMark({ size = 18 }: IconProps) {
   return (
-    <svg
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logos/perplexity-logo.svg"
+      alt="Perplexity"
       width={size}
       height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-label="Perplexity"
-      role="img"
-    >
-      <rect width="24" height="24" rx="5" fill="#1F1F1F" />
-      <path
-        d="M12 5.25a4.75 4.75 0 0 0-4.75 4.75v8.25h2v-3.45a4.75 4.75 0 1 0 2.75-9.55Zm0 7.5a2.75 2.75 0 1 1 0-5.5 2.75 2.75 0 0 1 0 5.5Z"
-        fill="#1FB8CD"
-      />
-    </svg>
+      style={{
+        width: size,
+        height: size,
+        display: "inline-block",
+        verticalAlign: "middle",
+      }}
+    />
   );
 }
 
-// Claude (Anthropic) — official asterisk-burst mark in Anthropic coral
-// (#D97757) on Anthropic ivory (#E2E8F0). Eight tapered petals radiating
-// from the centre — the canonical Anthropic glyph used on claude.ai and
-// the API console.
+// Claude (Anthropic) — official asterisk-burst mark rendered from
+// /public/logos/claude-logo.svg. Eight rounded petals (4 long cardinal +
+// 4 shorter diagonal) in Anthropic coral #D97757. Same static-asset
+// pattern as MetaMark above so the canonical path data lives in one
+// place and survives identity refreshes.
 export function ClaudeMark({ size = 18 }: IconProps) {
   return (
-    <svg
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logos/claude-logo.svg"
+      alt="Claude"
       width={size}
       height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      aria-label="Claude"
-      role="img"
-    >
-      <rect width="24" height="24" rx="5" fill="#E2E8F0" />
-      <g fill="#D97757">
-        {/* 8 tapered petals at 0°, 45°, 90°, 135°, 180°, 225°, 270°, 315° */}
-        <path d="M12 4.2c.55 0 .9 1.5.9 4.2 0 2.7-.35 4.2-.9 4.2s-.9-1.5-.9-4.2c0-2.7.35-4.2.9-4.2Z" />
-        <path d="M12 11.4c.55 0 .9 1.5.9 4.2 0 2.7-.35 4.2-.9 4.2s-.9-1.5-.9-4.2c0-2.7.35-4.2.9-4.2Z" />
-        <path d="M4.2 12c0-.55 1.5-.9 4.2-.9 2.7 0 4.2.35 4.2.9s-1.5.9-4.2.9c-2.7 0-4.2-.35-4.2-.9Z" />
-        <path d="M11.4 12c0-.55 1.5-.9 4.2-.9 2.7 0 4.2.35 4.2.9s-1.5.9-4.2.9c-2.7 0-4.2-.35-4.2-.9Z" />
-        <path d="m6.49 6.49.64-.64c.39.39 1.34 1.83 2.93 3.42 1.59 1.59 3.03 2.54 3.42 2.93l-.64.64c-.39-.39-1.83-1.34-3.42-2.93-1.59-1.59-2.54-3.03-2.93-3.42Z" />
-        <path d="m11.55 11.55.64-.64c.39.39 1.34 1.83 2.93 3.42 1.59 1.59 3.03 2.54 3.42 2.93l-.64.64c-.39-.39-1.83-1.34-3.42-2.93-1.59-1.59-2.54-3.03-2.93-3.42Z" />
-        <path d="m17.51 6.49-.64-.64c-.39.39-1.34 1.83-2.93 3.42-1.59 1.59-3.03 2.54-3.42 2.93l.64.64c.39-.39 1.83-1.34 3.42-2.93 1.59-1.59 2.54-3.03 2.93-3.42Z" />
-        <path d="m12.45 11.55-.64-.64c-.39.39-1.34 1.83-2.93 3.42-1.59 1.59-3.03 2.54-3.42 2.93l.64.64c.39-.39 1.83-1.34 3.42-2.93 1.59-1.59 2.54-3.03 2.93-3.42Z" />
-      </g>
-    </svg>
+      style={{
+        width: size,
+        height: size,
+        display: "inline-block",
+        verticalAlign: "middle",
+      }}
+    />
   );
 }
 
