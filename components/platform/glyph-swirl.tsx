@@ -143,10 +143,11 @@ export function GlyphSwirl({
 
 function Glyph({ p, intensity }: { p: Placement; intensity: number }) {
   const grid = GLYPHS[p.g];
-  // Brand blue at ~6% max, multiplied by per-glyph opacity * caller intensity.
-  // Final fill RGBA caps around rgba(37,99,235, 0.06) for the most prominent
-  // centre glyph and trails off to ~0.015 at the edges.
-  const baseAlpha = 0.06 * p.opacity * intensity;
+  // Norman feedback (2026-05-21): glyphs were invisible against white at
+  // the previous 6% cap. Lifted to 14% so the spiral reads as a deliberate
+  // pattern from a normal viewing distance, while still staying well below
+  // the hero copy and CTAs in the visual hierarchy.
+  const baseAlpha = 0.14 * p.opacity * intensity;
   const fill = `rgba(37, 99, 235, ${baseAlpha.toFixed(4)})`;
 
   const gap = Math.max(1, Math.round(p.cell / 2.5));

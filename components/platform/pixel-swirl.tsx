@@ -49,7 +49,12 @@ type Mote = {
 };
 
 const BRAND_BLUE = "37, 99, 235"; // #2563EB in rgb()
-const MOTE_COUNT = 72;
+// Norman feedback (2026-05-21 hero screenshot): "I do not see the pixel
+// swirls in the hero background." The previous 72-mote / 0.18–0.73-opacity
+// field was technically firing but read as plain white at the resolutions
+// Norman reviews on. Doubled the count and lifted the opacity floor so the
+// swirl is unambiguously visible without losing the calm centre.
+const MOTE_COUNT = 160;
 
 function makeMote(rng: () => number): Mote {
   const inverse = rng() < 0.35;
@@ -63,8 +68,13 @@ function makeMote(rng: () => number): Mote {
     // Slow base rotation. Period 14–32s.
     omega: ((inverse ? -1 : 1) * (2 * Math.PI)) / (14000 + rng() * 18000),
     phase: rng() * Math.PI * 2,
-    size: rng() < 0.18 ? 3 : 2,
-    opacity: 0.18 + rng() * 0.55,
+    // Mix of 2 / 3 / 4-pixel motes so the field has visual depth and the
+    // larger ones read first when the eye lands on the hero.
+    size: rng() < 0.12 ? 4 : rng() < 0.42 ? 3 : 2,
+    // Lifted floor (0.42 vs prior 0.18) so even the dimmest motes register
+    // against #FFFFFF. Top end pushed to ~0.95 so the brightest pixels read
+    // as crisp brand-blue dots, not faint suggestions.
+    opacity: 0.42 + rng() * 0.55,
     inverse,
   };
 }
@@ -188,7 +198,7 @@ export function PixelSwirl({
           position: "absolute",
           inset: 0,
           background:
-            "radial-gradient(ellipse 90% 70% at 75% 0%, rgba(37,99,235,0.10), transparent 60%), radial-gradient(ellipse 60% 50% at 10% 100%, rgba(37,99,235,0.06), transparent 65%), linear-gradient(180deg, #FAFBFF 0%, #FFFFFF 70%)",
+            "radial-gradient(ellipse 90% 70% at 75% 0%, rgba(37,99,235,0.18), transparent 60%), radial-gradient(ellipse 60% 50% at 10% 100%, rgba(37,99,235,0.10), transparent 65%), linear-gradient(180deg, #F4F7FF 0%, #FFFFFF 75%)",
         }}
       />
       {/* Pixel-grid wash — square 28px grid with a faint brand-blue tint
@@ -200,13 +210,15 @@ export function PixelSwirl({
             position: "absolute",
             inset: 0,
             backgroundImage:
-              "linear-gradient(0deg, rgba(37,99,235,0.06) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.06) 1px, transparent 1px)",
+              "linear-gradient(0deg, rgba(37,99,235,0.11) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.11) 1px, transparent 1px)",
             backgroundSize: "28px 28px",
             backgroundPosition: "center top",
+            // Wider mask radius + softer falloff so the grid stays visible
+            // edge-to-edge instead of dying inside a tight oval.
             WebkitMaskImage:
-              "radial-gradient(ellipse 80% 70% at 50% 40%, #000 60%, transparent 100%)",
+              "radial-gradient(ellipse 110% 95% at 50% 45%, #000 75%, transparent 100%)",
             maskImage:
-              "radial-gradient(ellipse 80% 70% at 50% 40%, #000 60%, transparent 100%)",
+              "radial-gradient(ellipse 110% 95% at 50% 45%, #000 75%, transparent 100%)",
           }}
         />
       ) : null}
