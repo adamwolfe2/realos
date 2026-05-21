@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { EmptyStateBody } from "./charts/shared";
 import {
   Area,
   AreaChart,
@@ -40,6 +41,138 @@ const MUTED = "#94A3B8";
 const SUCCESS = "#059669";
 const DANGER = "#DC2626";
 const BORDER = "#E2E8F0";
+
+// ============================================================================
+// EMPTY-STATE PREVIEW ILLUSTRATIONS (faded mini SVG charts)
+// ============================================================================
+
+function PositionBucketPreview() {
+  // Stacked area silhouette in 6 brand-blue shades — shows the layered
+  // shape of the real chart at 1/4 scale.
+  const bands = [
+    { d: "M 0 36 L 30 32 L 60 28 L 100 22 L 140 18 L 140 22 L 100 26 L 60 32 L 30 36 L 0 40 Z", fill: BRAND, op: 0.85 },
+    { d: "M 0 44 L 30 40 L 60 34 L 100 30 L 140 26 L 140 32 L 100 36 L 60 40 L 30 46 L 0 50 Z", fill: BRAND, op: 0.55 },
+    { d: "M 0 54 L 30 50 L 60 46 L 100 44 L 140 40 L 140 46 L 100 50 L 60 52 L 30 56 L 0 60 Z", fill: BRAND_LIGHT, op: 0.55 },
+    { d: "M 0 64 L 30 62 L 60 60 L 100 58 L 140 56 L 140 62 L 100 64 L 60 66 L 30 68 L 0 70 Z", fill: BRAND_LIGHTER, op: 0.85 },
+    { d: "M 0 74 L 30 72 L 60 72 L 100 70 L 140 70 L 140 76 L 100 76 L 60 78 L 30 78 L 0 80 Z", fill: MUTED, op: 0.3 },
+  ];
+  return (
+    <svg viewBox="0 0 140 88" className="w-full h-auto" role="img" aria-hidden="true">
+      {bands.map((b, i) => (
+        <path key={i} d={b.d} fill={b.fill} fillOpacity={b.op} />
+      ))}
+      <line x1="0" y1="84" x2="140" y2="84" stroke={BORDER} strokeDasharray="2 3" />
+      <text x="4" y="10" fontSize="5.5" fontFamily="var(--font-mono)" fill={BRAND}>
+        #1
+      </text>
+      <text x="4" y="22" fontSize="5.5" fontFamily="var(--font-mono)" fill={MUTED}>
+        #2–10
+      </text>
+      <text x="4" y="78" fontSize="5.5" fontFamily="var(--font-mono)" fill={MUTED}>
+        #21+
+      </text>
+    </svg>
+  );
+}
+
+function CtrScatterPreview() {
+  // Scatter dots above/below a dashed expected-CTR curve.
+  const dots = [
+    { x: 124, y: 18, r: 5, op: 0.7 }, // pos 1, high CTR — strong
+    { x: 110, y: 32, r: 4, op: 0.65 }, // pos 3, on curve
+    { x: 96, y: 52, r: 6, op: 0.7 }, // pos 5, *below* curve — opportunity
+    { x: 80, y: 60, r: 5, op: 0.65 },
+    { x: 64, y: 70, r: 4, op: 0.55 },
+    { x: 48, y: 74, r: 3, op: 0.45 },
+  ];
+  // Approximate the expected-CTR curve as a smooth dashed line.
+  const curve = "M 14 78 Q 60 62, 96 44 T 134 18";
+  return (
+    <svg viewBox="0 0 140 96" className="w-full h-auto" role="img" aria-hidden="true">
+      <line x1="14" y1="88" x2="138" y2="88" stroke={BORDER} />
+      <line x1="14" y1="6" x2="14" y2="88" stroke={BORDER} />
+      <path d={curve} stroke={MUTED} strokeDasharray="3 3" fill="none" />
+      {dots.map((d, i) => (
+        <circle key={i} cx={d.x} cy={d.y} r={d.r} fill={BRAND} fillOpacity={d.op} />
+      ))}
+      <text x="14" y="4" fontSize="5" fontFamily="var(--font-mono)" fill={MUTED}>
+        CTR
+      </text>
+      <text x="118" y="94" fontSize="5" fontFamily="var(--font-mono)" fill={MUTED}>
+        ← POSITION
+      </text>
+    </svg>
+  );
+}
+
+function StrikingDistancePreview() {
+  // Three faded sample rows — query, position pill, impressions bar.
+  const rows = [
+    { q: "section 8 housing nyc", pos: 7, imps: 78 },
+    { q: "tenant background check", pos: 11, imps: 56 },
+    { q: "rental listing software", pos: 14, imps: 38 },
+  ];
+  return (
+    <svg viewBox="0 0 160 92" className="w-full h-auto" role="img" aria-hidden="true">
+      {rows.map((r, i) => {
+        const y = 12 + i * 26;
+        return (
+          <g key={i} opacity="0.75">
+            <text x="4" y={y + 4} fontSize="6" fontFamily="var(--font-mono)" fill={INK}>
+              {r.q}
+            </text>
+            <rect x="92" y={y - 4} width="14" height="10" rx="2" fill={BRAND} fillOpacity="0.18" />
+            <text x="99" y={y + 3} fontSize="6" fontFamily="var(--font-mono)" fill={BRAND} textAnchor="middle">
+              #{r.pos}
+            </text>
+            <rect x="114" y={y - 3} width={r.imps * 0.5} height="8" rx="2" fill={BRAND_LIGHT} fillOpacity="0.65" />
+            <rect x="114" y={y - 3} width="40" height="8" rx="2" fill="none" stroke={BORDER} />
+          </g>
+        );
+      })}
+      <line x1="0" y1="86" x2="160" y2="86" stroke={BORDER} strokeDasharray="2 3" />
+    </svg>
+  );
+}
+
+function ShareOfVoicePreview() {
+  // Faded donut with five wedges in brand-blue ramp.
+  const segments = [
+    { dasharray: "120 380", color: BRAND, op: 0.85 },
+    { dasharray: "85 380", color: BRAND, op: 0.55, offset: -120 },
+    { dasharray: "60 380", color: BRAND_LIGHT, op: 0.75, offset: -205 },
+    { dasharray: "45 380", color: BRAND_LIGHTER, op: 0.9, offset: -265 },
+    { dasharray: "70 380", color: MUTED, op: 0.4, offset: -310 },
+  ];
+  const C = 2 * Math.PI * 30;
+  return (
+    <svg viewBox="0 0 96 96" className="w-full h-auto" role="img" aria-hidden="true">
+      <circle cx="48" cy="48" r="30" fill="none" stroke={BORDER} strokeWidth="14" />
+      {segments.map((s, i) => (
+        <circle
+          key={i}
+          cx="48"
+          cy="48"
+          r="30"
+          fill="none"
+          stroke={s.color}
+          strokeOpacity={s.op}
+          strokeWidth="14"
+          strokeDasharray={s.dasharray}
+          strokeDashoffset={s.offset ?? 0}
+          transform="rotate(-90 48 48)"
+        />
+      ))}
+      <text x="48" y="46" fontSize="6" fontFamily="var(--font-mono)" fill={BRAND} textAnchor="middle">
+        YOU
+      </text>
+      <text x="48" y="55" fontSize="9" fontFamily="var(--font-display)" fill={INK} textAnchor="middle">
+        28%
+      </text>
+      {void C}
+    </svg>
+  );
+}
 
 // ============================================================================
 // EXECUTIVE SUMMARY ROW
@@ -175,10 +308,13 @@ export function PositionBucketChart({
         <SectionHeader
           eyebrow="Keyword portfolio"
           title="Position bucket distribution"
+          hint="Stacked area of keyword counts across six SERP bands, week over week."
         />
-        <p className="text-[12px] text-muted-foreground py-8 text-center">
-          Keyword position trends appear after the first weekly sync.
-        </p>
+        <EmptyStateBody
+          preview={<PositionBucketPreview />}
+          body="Tracks how many of your keywords sit in each SERP band — #1, #2–3, #4–10, #11–20, #21–50, #51–100 — over time. When the dark-blue top band grows and the gray bottom band shrinks, you're winning the portfolio."
+          example={`If 42 keywords were in #11–20 last week and 51 are this week, the light-blue band thickens — a visible signal that the next push will move dozens of queries onto page one.`}
+        />
       </section>
     );
   }
@@ -301,10 +437,13 @@ export function CtrPositionScatter({ data }: { data: CtrScatterPoint[] }) {
         <SectionHeader
           eyebrow="GSC × DataforSEO"
           title="CTR vs position"
+          hint="Dashed line is the industry expected-CTR benchmark; dots below the line are title/meta opportunities."
         />
-        <p className="text-[12px] text-muted-foreground py-8 text-center">
-          Plot appears once Search Console + DataforSEO data overlap.
-        </p>
+        <EmptyStateBody
+          preview={<CtrScatterPreview />}
+          body="Plots CTR (Y) against position (X) for every ranking query, with the AWR 2024 expected-CTR curve overlaid. Dots above the curve mean your title beats the average — dots below mean you're leaving clicks on the table at your current rank."
+          example={`A query at position 8 with 0.5% CTR sits well below the curve — push CTR up to the 2.6% benchmark and that's +12 clicks/mo without moving the rank.`}
+        />
       </section>
     );
   }
@@ -439,9 +578,13 @@ export function StrikingDistanceTable({
         </span>
       </header>
       {rows.length === 0 ? (
-        <p className="text-[12px] text-muted-foreground py-8 text-center">
-          Appears once Search Console data flows for 14 days.
-        </p>
+        <div className="px-5 py-5">
+          <EmptyStateBody
+            preview={<StrikingDistancePreview />}
+            body="A ranked list of queries already showing in positions #4–20 with real impression volume — the closest-to-the-money keywords. Each row links to the URL ranking for it, so you know exactly which page to optimize first."
+            example={`"section 8 housing nyc" at #7 with 4,200 monthly impressions and 1.4% CTR is a clean target — a meta refresh + one internal link is usually worth +2 positions and ~80 clicks/month.`}
+          />
+        </div>
       ) : (
         <table className="w-full text-[12px]">
           <thead>
@@ -511,10 +654,13 @@ export function ShareOfVoiceDonut({
         <SectionHeader
           eyebrow="Competitive"
           title="Share of voice"
+          hint="% of total impressions across your tracked queries, you vs. top competitors."
         />
-        <p className="text-[12px] text-muted-foreground py-8 text-center">
-          Available after the first competitor scan completes.
-        </p>
+        <EmptyStateBody
+          preview={<ShareOfVoicePreview />}
+          body="A donut showing how the SERP-impression pie splits across you and your top five competitors for every keyword you track. Your slice is always brand-blue and labelled — competitors fade into the ramp behind."
+          example={`If you sit at 28% and the next two competitors hold 22% and 18%, you'll see a chunky blue wedge against two lighter ones — the visual cue that you're leading but not running away with it.`}
+        />
       </section>
     );
   }

@@ -16,6 +16,7 @@ import {
   Sparkles,
   Bug,
   FileText,
+  SatelliteDish,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -105,6 +106,11 @@ export const adminNavGroups: NavGroup[] = [
     label: "System",
     items: [
       { href: "/admin/tenants", label: "Tenants + domains", icon: Building2 },
+      {
+        href: "/admin/site-intelligence",
+        label: "Site intelligence",
+        icon: SatelliteDish,
+      },
       {
         href: "/admin/integrations/appfolio",
         label: "AppFolio sync",

@@ -271,6 +271,12 @@ async function writeDraft(args: {
       );
     } catch (err) {
       console.error(`  [FAILED]`, err instanceof Error ? err.message : err);
+      if (err && typeof err === "object" && "text" in err) {
+        console.error("  Claude returned:", String((err as { text?: string }).text).slice(0, 500));
+      }
+      if (err && typeof err === "object" && "cause" in err) {
+        console.error("  Cause:", JSON.stringify((err as { cause?: unknown }).cause, null, 2).slice(0, 600));
+      }
     }
   }
 

@@ -88,100 +88,93 @@ const MODEL = "claude-sonnet-4-5";
 // system + format-specific prompts instead. Lossy but the model
 // reliably follows count guidance from prose.
 
+// All string/array min constraints have been removed because Anthropic's
+// structured-output API rejects every JSON Schema constraint they don't
+// natively support (minItems > 1, maxItems, integer min/max, even some
+// string mins under certain conditions). When we keep them, the API
+// returns "No object generated: response did not match schema" silently.
+// Count + length guidance lives entirely in the system prompts instead —
+// the model follows prose targets reliably and we get back to "drafts
+// actually work in production."
+//
+// Lossy but the alternative is the feature being broken.
+
 const blogSchema = z.object({
-  title: z.string().max(80),
-  metaDescription: z.string().max(160),
-  /** Hero / intro paragraph. */
-  intro: z.string().min(120).max(800),
-  /** Body sections — prompt asks for 3-7 H2 sections. */
+  title: z.string(),
+  metaDescription: z.string(),
+  intro: z.string(),
   sections: z.array(
     z.object({
-      heading: z.string().max(80),
-      body: z.string().min(180).max(1400),
+      heading: z.string(),
+      body: z.string(),
     }),
   ),
-  /** FAQs — prompt asks for 3-6. */
   faqs: z.array(
     z.object({
-      question: z.string().max(120),
-      answer: z.string().max(400),
+      question: z.string(),
+      answer: z.string(),
     }),
   ),
-  /** Closing CTA paragraph. */
-  closing: z.string().max(400),
-  estimatedScore: z.number().int().min(0).max(100),
+  closing: z.string(),
+  estimatedScore: z.number(),
 });
 
 const neighborhoodSchema = z.object({
-  title: z.string().max(80),
-  metaDescription: z.string().max(160),
+  title: z.string(),
+  metaDescription: z.string(),
   neighborhood: z.string(),
-  intro: z.string().min(120).max(700),
-  /** Prompt asks for 4-6 sections. */
+  intro: z.string(),
   sections: z.array(
     z.object({
-      heading: z.string().max(80),
-      body: z.string().min(160).max(900),
+      heading: z.string(),
+      body: z.string(),
     }),
   ),
-  /** Prompt asks for 4-6 FAQs. */
   faqs: z.array(
     z.object({
-      question: z.string().max(120),
-      answer: z.string().max(400),
+      question: z.string(),
+      answer: z.string(),
     }),
   ),
-  /** Atomic claims an AI engine can cite. Prompt asks for 3-8. Each
-   *  must be verifiable from the input facts — these get scored later
-   *  via AeoCitationCheck. */
-  aiCitations: z.array(z.string().max(200)),
-  estimatedScore: z.number().int().min(0).max(100),
+  aiCitations: z.array(z.string()),
+  estimatedScore: z.number(),
 });
 
 const metaRewriteSchema = z.object({
-  /** Prompt asks for exactly 2 title variants for A/B. */
-  titles: z.array(z.string().max(60)),
-  /** Prompt asks for exactly 2 meta description variants. */
-  metaDescriptions: z.array(z.string().max(160)),
-  /** Why these are expected to beat the current title + meta. */
-  rationale: z.string().max(400),
-  estimatedScore: z.number().int().min(0).max(100),
+  titles: z.array(z.string()),
+  metaDescriptions: z.array(z.string()),
+  rationale: z.string(),
+  estimatedScore: z.number(),
 });
 
 const faqBlockSchema = z.object({
-  /** Prompt asks for 5-8 FAQs. */
   faqs: z.array(
     z.object({
-      question: z.string().max(120),
-      answer: z.string().max(400),
+      question: z.string(),
+      answer: z.string(),
     }),
   ),
-  /** JSON-LD ready FAQPage schema markup. */
   schemaMarkup: z.string(),
-  estimatedScore: z.number().int().min(0).max(100),
+  estimatedScore: z.number(),
 });
 
 const adCopySchema = z.object({
-  /** Google Ads format: prompt asks for exactly 3 headlines (30 char max), 2 descriptions (90 char). */
   google: z.object({
-    headlines: z.array(z.string().max(30)),
-    descriptions: z.array(z.string().max(90)),
+    headlines: z.array(z.string()),
+    descriptions: z.array(z.string()),
   }),
-  /** Meta Ads format: primary text (125 char), headline (40), description (30). */
   meta: z.object({
-    primaryText: z.string().max(125),
-    headline: z.string().max(40),
-    description: z.string().max(30),
+    primaryText: z.string(),
+    headline: z.string(),
+    description: z.string(),
   }),
-  estimatedScore: z.number().int().min(0).max(100),
+  estimatedScore: z.number(),
 });
 
 const propertyDescriptionSchema = z.object({
-  /** 150-300 words tuned for chatbot grounding + AI engine citation. */
-  description: z.string().min(150).max(1800),
-  /** Prompt asks for 3-6 atomic facts the AI engines can cite. */
-  aiCitations: z.array(z.string().max(200)),
-  estimatedScore: z.number().int().min(0).max(100),
+  description: z.string(),
+  aiCitations: z.array(z.string()),
+  estimatedScore: z.number(),
 });
 
 // ---------------------------------------------------------------------------
