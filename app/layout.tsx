@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PostHogProvider } from "@/components/posthog-provider";
+import { CrispChat } from "@/components/crisp-chat";
+import { GoogleTags, GoogleTagManagerNoScript } from "@/components/analytics/google-tags";
 import { Toaster } from "@/components/ui/sonner";
 import { Inter, JetBrains_Mono, Fraunces } from "next/font/google";
 import "./globals.css";
@@ -77,6 +79,16 @@ export const metadata: Metadata = {
       "Your leasing data. Working for you.",
     images: ["/logos/social-background.png"],
   },
+  // Google Search Console verification. Set NEXT_PUBLIC_GSC_VERIFICATION
+  // in Vercel to the value GSC gives you (the content of the
+  // <meta name="google-site-verification"> tag, NOT the full HTML).
+  ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION
+    ? {
+        verification: {
+          google: process.env.NEXT_PUBLIC_GSC_VERIFICATION,
+        },
+      }
+    : {}),
 };
 
 const organizationSchema = {
@@ -115,6 +127,9 @@ export default function RootLayout({
             fontFamily: "var(--font-sans)",
           }}
         >
+          {/* GTM <noscript> fallback must be the FIRST child of <body>
+              per Google's install guide. */}
+          <GoogleTagManagerNoScript />
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
@@ -129,6 +144,8 @@ export default function RootLayout({
           </a>
           <PostHogProvider>{children}</PostHogProvider>
           <Toaster />
+          <CrispChat />
+          <GoogleTags />
           <Analytics />
           <SpeedInsights />
         </body>
