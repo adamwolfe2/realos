@@ -171,6 +171,163 @@ describe("SEO content-draft routes — structural contract", () => {
       expect(src).toContain("CHANGES_REQUESTED");
     });
   });
+
+  describe("/api/admin/content-drafts/bulk", () => {
+    const route = "app/api/admin/content-drafts/bulk/route.ts";
+
+    it("caps batch at 50 ids per call", () => {
+      const src = read(route);
+      expect(src).toMatch(/max\(50\)/);
+    });
+
+    it("requires notes when action is reject or request_changes", () => {
+      const src = read(route);
+      expect(src).toMatch(/Notes are required for reject and request_changes/i);
+    });
+
+    it("only operates on reviewable statuses", () => {
+      const src = read(route);
+      expect(src).toContain("PENDING_REVIEW");
+      expect(src).toContain("CHANGES_REQUESTED");
+    });
+
+    it("closes linked recommendations on approve/ship", () => {
+      const src = read(route);
+      expect(src).toContain("seoActionRecommendation");
+      expect(src).toContain("COMPLETED");
+    });
+  });
+
+  describe("/api/portal/seo/recommendations/bulk", () => {
+    const route = "app/api/portal/seo/recommendations/bulk/route.ts";
+
+    it("validates tenant + property RBAC", () => {
+      const src = read(route);
+      expect(src).toContain("requireScope");
+      expect(src).toContain("tenantWhere");
+      expect(src).toContain("allowedPropertyIds");
+    });
+
+    it("requires reason for dismissed action", () => {
+      const src = read(route);
+      expect(src).toContain("Provide a reason when dismissing");
+    });
+
+    it("requires snoozeUntil for snoozed action and validates future", () => {
+      const src = read(route);
+      expect(src).toContain("Provide snoozeUntil");
+      expect(src).toContain("future datetime");
+    });
+
+    it("busts the rec cache for each unique property touched", () => {
+      const src = read(route);
+      expect(src).toContain("invalidateRecommendationsCache");
+    });
+
+    it("writes audit events with bulk: true diff flag", () => {
+      const src = read(route);
+      expect(src).toContain("bulk: true");
+    });
+  });
+
+  describe("/api/admin/seo-agent/refresh-all", () => {
+    const route = "app/api/admin/seo-agent/refresh-all/route.ts";
+
+    it("only runs when caller is admin", () => {
+      const src = read(route);
+      expect(src).toContain("requireAdmin");
+    });
+
+    it("filters to CLIENT orgType and LIVE properties", () => {
+      const src = read(route);
+      expect(src).toContain("OrgType.CLIENT");
+      expect(src).toContain('launchStatus: "LIVE"');
+    });
+
+    it("upserts via the stable (orgId, propertyId, kind) key", () => {
+      const src = read(route);
+      expect(src).toContain("orgId_propertyId_kind");
+    });
+
+    it("expires OPEN recs the engine no longer emits", () => {
+      const src = read(route);
+      expect(src).toContain("EXPIRED");
+    });
+
+    it("writes a summary AuditEvent after the run", () => {
+      const src = read(route);
+      expect(src).toContain("auditEvent");
+      expect(src).toContain("Admin force-refresh");
+    });
+  });
+
+  describe("/api/cron/draft-expiry", () => {
+    const route = "app/api/cron/draft-expiry/route.ts";
+
+    it("verifies cron auth", () => {
+      const src = read(route);
+      expect(src).toContain("verifyCronAuth");
+    });
+
+    it("expires drafts older than the 14-day cutoff", () => {
+      const src = read(route);
+      expect(src).toMatch(/STALE_DAYS\s*=\s*14/);
+    });
+
+    it("revives snoozed recs whose snoozedUntil has passed", () => {
+      const src = read(route);
+      expect(src).toContain("snoozedUntil");
+      expect(src).toMatch(/status:\s*"SNOOZED"/);
+      expect(src).toMatch(/status:\s*"OPEN"/);
+    });
+
+    it("audits each expired row with stale reason", () => {
+      const src = read(route);
+      expect(src).toMatch(/stale > 14d/);
+    });
+  });
+
+  describe("/api/portal/seo/recommendations/[id] (single PATCH)", () => {
+    const route = "app/api/portal/seo/recommendations/[id]/route.ts";
+
+    it("supports SNOOZED status with snoozeUntil validation", () => {
+      const src = read(route);
+      expect(src).toContain("SNOOZED");
+      expect(src).toMatch(/must be in the future/);
+    });
+
+    it("OPEN transition clears terminal AND snooze columns", () => {
+      const src = read(route);
+      expect(src).toContain("snoozedUntil = null");
+    });
+
+    it("writes an AuditEvent with from/to diff", () => {
+      const src = read(route);
+      expect(src).toContain("auditEvent");
+      expect(src).toContain("from: previousStatus");
+    });
+  });
+
+  describe("/api/portal/seo/recommendations/export", () => {
+    const route = "app/api/portal/seo/recommendations/export/route.ts";
+
+    it("streams text/csv with attachment disposition", () => {
+      const src = read(route);
+      expect(src).toContain('"Content-Type": "text/csv; charset=utf-8"');
+      expect(src).toContain("attachment;");
+    });
+
+    it("RFC 4180 quotes special characters", () => {
+      const src = read(route);
+      expect(src).toContain('replace(/"/g, \'""\')');
+    });
+
+    it("tenant + property-RBAC scoped", () => {
+      const src = read(route);
+      expect(src).toContain("requireScope");
+      expect(src).toContain("allowedPropertyIds");
+    });
+  });
 });
 
 describe("Score-history cron wiring", () => {
