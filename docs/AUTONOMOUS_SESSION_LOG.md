@@ -83,6 +83,8 @@
 15. feat(seo): cross-property drafts list + SEO digest in weekly email
 16. feat(seo): operator bell notification on draft review
 17. feat(seo): admin bell notification when operator submits draft
+18. feat(seo): recommendation status workflow (in-progress / done / dismiss)
+19. feat(seo): 'What changed this week' panel + per-property score history
 
 All pushed to origin/main.
 

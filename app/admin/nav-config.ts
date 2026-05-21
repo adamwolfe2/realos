@@ -111,6 +111,7 @@ export const adminNavGroups: NavGroup[] = [
         icon: Plug,
       },
       { href: "/admin/system", label: "System health", icon: HeartPulse },
+      { href: "/admin/system/seo-agent", label: "SEO Agent metrics", icon: Activity },
       { href: "/admin/audit-log", label: "Audit log", icon: History },
       { href: "/admin/chat", label: "Support", icon: MessageSquare },
       {
