@@ -7,6 +7,7 @@ import {
   useScroll,
   useSpring,
   useTransform,
+  type MotionValue,
 } from "framer-motion";
 import { Inbox, Users, Sparkles, Moon, type LucideIcon } from "lucide-react";
 import { MARKETING } from "@/lib/copy/marketing";
@@ -76,24 +77,52 @@ function useInViewOnce<T extends HTMLElement>(threshold = 0.4) {
 
 function WeeklyItem({
   index,
+  total,
   day,
   time,
   title,
   body,
   outcome,
   isLast,
+  scrollProgress,
 }: {
   index: number;
+  total: number;
   day: string;
   time: string;
   title: string;
   body: string;
   outcome?: string;
   isLast: boolean;
+  /** Smoothed scroll progress through the timeline, 0 → 1. */
+  scrollProgress: MotionValue<number>;
 }) {
   const { ref, visible } = useInViewOnce<HTMLLIElement>(0.4);
   const reduce = useReducedMotion();
   const Icon = ITEM_ICONS[index] ?? ITEM_ICONS[ITEM_ICONS.length - 1];
+
+  // Norman feedback 2026-05-21: as the scroll line reaches each node,
+  // wrap the circle in a gradient glow that peaks at the crossing then
+  // settles to a calmer steady state. Triangular falloff against the
+  // node's vertical fraction of the timeline:
+  //   - Item 0 sits at 0.125 (12.5% down the spine)
+  //   - Item 1 at 0.375, item 2 at 0.625, item 3 at 0.875
+  // Peak opacity 1.0 at the crossing, decays to 0.55 once past, 0 before.
+  const nodeFraction = (index + 0.5) / Math.max(1, total);
+  const glowOpacity = useTransform(scrollProgress, (p) => {
+    const dist = p - nodeFraction;
+    if (dist < -0.18) return 0;        // line hasn't approached yet
+    if (dist < 0) return 0.35 + ((dist + 0.18) / 0.18) * 0.65; // 0.35 → 1.0 as line approaches
+    if (dist < 0.06) return 1;          // peak at + just after crossing
+    if (dist < 0.30) return 0.55 + (1 - (dist - 0.06) / 0.24) * 0.45; // decay 1.0 → 0.55
+    return 0.55;                        // calm steady-state once well past
+  });
+  const glowScale = useTransform(scrollProgress, (p) => {
+    const dist = Math.abs(p - nodeFraction);
+    if (dist < 0.04) return 1.35;       // brief expansion at crossing
+    if (dist < 0.10) return 1.20;
+    return 1;
+  });
 
   return (
     <li
@@ -134,6 +163,32 @@ function WeeklyItem({
           by the parent so it can span the full timeline height seamlessly;
           this column just centers the node circle on top of that line. */}
       <div className="hidden md:flex justify-center items-start relative">
+        {/* Scroll-synced gradient glow halo. Sits behind the node and
+            peaks at the moment the cobalt spine reaches this row. Soft
+            cobalt radial gradient blurred to read as a halo, not a hard
+            ring — same brand-blue rgba but spread wide for the glow
+            feel. Reduced-motion users get a static, calmer treatment. */}
+        {!reduce ? (
+          <motion.span
+            aria-hidden="true"
+            style={{
+              position: "absolute",
+              top: -16,
+              left: "50%",
+              width: 88,
+              height: 88,
+              marginLeft: -44,
+              borderRadius: 999,
+              pointerEvents: "none",
+              zIndex: 0,
+              opacity: glowOpacity,
+              scale: glowScale,
+              background:
+                "radial-gradient(circle, rgba(37,99,235,0.55) 0%, rgba(37,99,235,0.28) 35%, rgba(37,99,235,0.06) 65%, rgba(37,99,235,0) 100%)",
+              filter: "blur(6px)",
+            }}
+          />
+        ) : null}
         <motion.div
           aria-hidden="true"
           initial={false}
@@ -152,13 +207,9 @@ function WeeklyItem({
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            // Sit on top of the spine line.
+            // Sit on top of the spine line + glow halo.
             zIndex: 1,
             transition: "border-color 480ms ease",
-            // Soft cobalt halo when active.
-            boxShadow: visible
-              ? "0 0 0 6px rgba(37,99,235,0.06)"
-              : "0 0 0 0px rgba(37,99,235,0)",
           }}
         >
           <Icon
@@ -384,12 +435,14 @@ export function Weekly() {
               <WeeklyItem
                 key={item.title}
                 index={i}
+                total={weekly.items.length}
                 day={item.day}
                 time={item.time}
                 title={item.title}
                 body={item.body}
                 outcome={item.outcome}
                 isLast={i === weekly.items.length - 1}
+                scrollProgress={smooth}
               />
             ))}
           </ol>
