@@ -98,19 +98,35 @@ export function PropertyGridCard({
           </div>
         ) : null}
 
-        {/* Badges row — top-left: active campaigns + unreviewed mentions */}
+        {/* Badges row — top-left: active campaigns + unreviewed mentions.
+            Reporter bug #61 (Norman): the previous design rendered just
+            an icon + number with no label, so a "2" and "36 new" badge
+            on every card in the portfolio grid looked identical and
+            unexplained. Added explicit text labels ("ads", "reviews") +
+            a `title` tooltip so the badge is self-documenting even on
+            the first glance. */}
         {(activeCampaigns > 0 || reputationUnreviewedCount > 0) ? (
           <div className="absolute top-2 left-2 flex items-center gap-1">
             {activeCampaigns > 0 ? (
-              <span className="inline-flex items-center gap-0.5 rounded-md bg-black/50 backdrop-blur-sm px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                <Megaphone className="h-2.5 w-2.5" />
-                {activeCampaigns}
+              <span
+                className="inline-flex items-center gap-1 rounded-md bg-black/50 backdrop-blur-sm px-1.5 py-0.5 text-[10px] font-semibold text-white"
+                title={`${activeCampaigns} active ad ${activeCampaigns === 1 ? "campaign" : "campaigns"}`}
+                aria-label={`${activeCampaigns} active ad ${activeCampaigns === 1 ? "campaign" : "campaigns"}`}
+              >
+                <Megaphone className="h-2.5 w-2.5" aria-hidden="true" />
+                <span className="tabular-nums">{activeCampaigns}</span>
+                <span className="font-normal opacity-80">ads</span>
               </span>
             ) : null}
             {reputationUnreviewedCount > 0 ? (
-              <span className="inline-flex items-center gap-0.5 rounded-md bg-amber-500/80 backdrop-blur-sm px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                <Star className="h-2.5 w-2.5" />
-                {reputationUnreviewedCount} new
+              <span
+                className="inline-flex items-center gap-1 rounded-md bg-amber-500/80 backdrop-blur-sm px-1.5 py-0.5 text-[10px] font-semibold text-white"
+                title={`${reputationUnreviewedCount} unreviewed ${reputationUnreviewedCount === 1 ? "review" : "reviews"}`}
+                aria-label={`${reputationUnreviewedCount} unreviewed ${reputationUnreviewedCount === 1 ? "review" : "reviews"}`}
+              >
+                <Star className="h-2.5 w-2.5" aria-hidden="true" />
+                <span className="tabular-nums">{reputationUnreviewedCount}</span>
+                <span className="font-normal opacity-80">new</span>
               </span>
             ) : null}
           </div>
