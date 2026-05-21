@@ -161,6 +161,48 @@ export async function notifyCriticalInsight(insight: {
 }
 
 /**
+ * Operator-facing notification when their content draft has been
+ * reviewed by LeaseStack (approved, request_changes, or rejected).
+ * Surfaces in the portal bell so operators don't have to refresh
+ * /portal/seo/drafts to see status changes.
+ */
+export async function notifyDraftReviewed(input: {
+  orgId: string;
+  draftId: string;
+  status: "APPROVED" | "CHANGES_REQUESTED" | "REJECTED" | "SHIPPED";
+  format: string;
+  propertyName: string | null;
+}): Promise<void> {
+  const formatLabel = input.format.replace(/_/g, " ").toLowerCase();
+  const propertyTag = input.propertyName ? ` for ${input.propertyName}` : "";
+  const title =
+    input.status === "APPROVED"
+      ? `Draft approved: ${formatLabel}${propertyTag}`
+      : input.status === "SHIPPED"
+        ? `Draft shipped: ${formatLabel}${propertyTag}`
+        : input.status === "CHANGES_REQUESTED"
+          ? `Changes requested on ${formatLabel}${propertyTag}`
+          : `Draft rejected: ${formatLabel}${propertyTag}`;
+  const body =
+    input.status === "CHANGES_REQUESTED"
+      ? "Open the draft to see notes and re-submit."
+      : input.status === "REJECTED"
+        ? "Open the draft to see why."
+        : "Open the draft to view the final content.";
+  await prisma.notification.create({
+    data: {
+      orgId: input.orgId,
+      kind: "draft_reviewed",
+      title,
+      body,
+      entityType: "ContentDraft",
+      entityId: input.draftId,
+      href: `/portal/seo/agent/drafts/${input.draftId}`,
+    },
+  });
+}
+
+/**
  * Fire a notification when a draft weekly report is generated on Monday and
  * is waiting for operator review. Keeps the white-glove loop intact.
  */

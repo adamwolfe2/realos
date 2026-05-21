@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { DraftStatus } from "@prisma/client";
+import { notifyDraftReviewed } from "@/lib/notifications/create";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -35,7 +36,14 @@ export async function POST(
   const { id } = await ctx.params;
   const draft = await prisma.contentDraft.findUnique({
     where: { id },
-    select: { id: true, status: true, recommendationId: true },
+    select: {
+      id: true,
+      status: true,
+      recommendationId: true,
+      orgId: true,
+      format: true,
+      property: { select: { name: true } },
+    },
   });
   if (!draft) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -87,6 +95,15 @@ export async function POST(
       })
       .catch(() => undefined);
   }
+
+  // Fire-and-forget operator notification.
+  void notifyDraftReviewed({
+    orgId: draft.orgId,
+    draftId: draft.id,
+    status: ship ? "SHIPPED" : "APPROVED",
+    format: draft.format,
+    propertyName: draft.property?.name ?? null,
+  }).catch(() => undefined);
 
   return NextResponse.json({ ok: true, draft: updated });
 }
