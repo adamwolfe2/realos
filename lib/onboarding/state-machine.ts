@@ -47,7 +47,14 @@ export const PHASE_STEPS: Record<
   ],
   POLISH: [
     OnboardingStepKey.CUSTOM_DOMAIN,
-    OnboardingStepKey.WHITE_LABEL,
+    // WHITE_LABEL removed from the dashboard checklist per Norman
+    // (issue #98) — it clutters the dashboard and typical operators
+    // skip it. Still configurable via /portal/settings and surfaced on
+    // /portal/marketplace where it lives alongside the rest of the
+    // module catalog. The enum value stays in place so historical
+    // OnboardingStep rows continue to render in their respective
+    // detail views and we don't break audit queries.
+    // OnboardingStepKey.WHITE_LABEL,
     OnboardingStepKey.GENERATE_NEIGHBORHOOD_PAGE,
     OnboardingStepKey.CUSTOM_REPORT_PREFS,
     OnboardingStepKey.INVITE_TEAMMATE,

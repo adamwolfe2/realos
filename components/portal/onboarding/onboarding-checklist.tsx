@@ -112,10 +112,16 @@ const STEP_META: Record<
     href: "/portal/settings",
   },
   GENERATE_NEIGHBORHOOD_PAGE: {
-    label: "Generate a neighborhood landing page",
+    // Norman bug #99: the previous "AI-written SEO + AEO pages anchored
+    // to a specific neighborhood" copy read like Zillow content-farm
+    // language and didn't make the actual benefit visible. Reworded to
+    // describe the operator-facing outcome (publishes a page on your
+    // marketing site that ranks for searches like "apartments near
+    // <neighborhood>") so the operator knows whether to bother.
+    label: "Publish a neighborhood SEO page",
     description:
-      "AI-written SEO + AEO pages anchored to a specific neighborhood.",
-    href: "/portal/seo",
+      "Publishes a page on your marketing site that ranks for searches like \"apartments near <neighborhood>\" — captures renters before they hit Zillow.",
+    href: "/portal/seo/neighborhoods",
   },
   CUSTOM_REPORT_PREFS: {
     label: "Customize your report cadence",

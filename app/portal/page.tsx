@@ -1011,63 +1011,30 @@ export default async function PortalHome({
             </DashboardSection>
           </section>
 
-          {/* Operations module teaser — collects interest from operators
-              who want rent roll, renewal notices, and rental income
-              reconciliation. Currently a "coming soon" card rather than
-              a live module: the AppFolio integration is not yet
-              hardened enough (per-endpoint failures, no stale-data UX,
-              no retry/backoff) to render those numbers reliably on a
-              tenant-facing surface. When `enableOperations` ships on
-              Organization, this card flips into the full Operations
-              section. */}
-          <section className="rounded-xl border border-border bg-gradient-to-br from-card to-primary/[0.03] p-5">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div className="min-w-0 flex-1">
-                <div className="inline-flex items-center gap-2 mb-2">
-                  <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-semibold uppercase tracking-[0.14em]">
-                    Coming soon
-                  </span>
-                  <span className="text-[11px] text-muted-foreground">
-                    Operations module
-                  </span>
-                </div>
-                <h2 className="text-lg font-semibold tracking-tight text-foreground leading-tight">
-                  Rent roll, renewals, and rental income in one place.
-                </h2>
-                <p className="mt-1.5 text-sm text-muted-foreground leading-relaxed max-w-2xl">
-                  We&apos;re hardening the AppFolio sync to surface live rent
-                  rolls, renewal pacing, resident notices, and payment
-                  reconciliation alongside your marketing data. Connect
-                  AppFolio today and you&apos;ll be first in line when it
-                  ships.
-                </p>
-              </div>
-              <div className="shrink-0">
-                <Link
-                  href="/portal/connect"
-                  className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3.5 py-2 text-xs font-semibold hover:bg-primary-dark transition-colors"
-                >
-                  Connect AppFolio
-                  <span aria-hidden="true">→</span>
-                </Link>
-              </div>
-            </div>
-            {appfolioAutoSyncPaused ? (
-              <div className="mt-3">
-                <Link
-                  href="/portal/settings/integrations#appfolio"
-                  className="inline-flex items-center gap-1.5 rounded-md border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-800 hover:bg-amber-100 transition-colors"
-                >
-                  <span
-                    aria-hidden="true"
-                    className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"
-                  />
-                  Auto-sync paused — enable for fresh data every hour
-                  <span aria-hidden="true">→</span>
-                </Link>
-              </div>
-            ) : null}
-          </section>
+          {/* Operations module teaser — hidden per Norman feedback
+              (issue #97). Rent roll / renewals / rental income copy
+              keeps pulling the dashboard back into PMS territory; the
+              same theme already led us to hide the Operations primary
+              tab on the property detail (issue #70). Auto-sync alert
+              still renders below so operators don't miss a stuck
+              AppFolio sync — that's an actionable health signal, not
+              rent-roll content.
+          */}
+          {appfolioAutoSyncPaused ? (
+            <section className="rounded-xl border border-amber-200 bg-amber-50 p-3">
+              <Link
+                href="/portal/settings/integrations#appfolio"
+                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-amber-900 hover:underline"
+              >
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500"
+                />
+                AppFolio auto-sync paused — enable to keep listings + leads fresh
+                <span aria-hidden="true">→</span>
+              </Link>
+            </section>
+          ) : null}
 
     </div>
   );
