@@ -19,6 +19,7 @@ import {
   ReportTabs,
   ReportTabPanel,
 } from "@/components/portal/reports/report-tabs";
+import { summarizeGroup } from "@/lib/insights/summarize-group";
 
 // ---------------------------------------------------------------------------
 // ReportView — 2026 redesign.
@@ -1783,80 +1784,6 @@ const GROUP_MIN = 3;
 
 function groupKey(item: InsightItem): string {
   return `${item.kind}::${item.severity}`;
-}
-
-function summarizeGroup(kind: string, severity: string, count: number): {
-  title: string;
-  body: string;
-} {
-  switch (kind) {
-    case "portfolio_outlier":
-      if (severity === "info") {
-        return {
-          title: `${count} properties priced below portfolio average`,
-          body: "Renewing closer to the portfolio average could lift monthly rent roll. Open each to see the per-property gap and suggested move.",
-        };
-      }
-      return {
-        title: `${count} properties priced above portfolio with open vacancy`,
-        body: "These may be priced above what the local market is absorbing. Open each to see vacancy + suggested concession.",
-      };
-    case "pipeline_stall":
-      return {
-        title: `${count} leads stuck in pipeline`,
-        body: "These leads haven't moved status in a while. Open each to see who they are and the suggested next step.",
-      };
-    case "negative_review":
-      return {
-        title: `${count} new negative reviews`,
-        body: "Reviews 3 stars or lower posted this period. Open each to draft a response.",
-      };
-    case "hot_visitor":
-      return {
-        title: `${count} hot visitors flagged`,
-        body: "High-intent identified visitors who haven't converted to a lead yet.",
-      };
-    case "keyword_drop":
-      return {
-        title: `${count} keywords lost ranking`,
-        body: "Queries that previously drove traffic dropped position this period.",
-      };
-    case "vacancy_needs_boost":
-      return {
-        title: `${count} vacancies need a boost`,
-        body: "Units sitting longer than typical days-on-market for the portfolio.",
-      };
-    case "cpl_spike":
-      return {
-        title: `${count} cost-per-lead spikes`,
-        body: "Ad sources where cost-per-lead is materially above the running baseline.",
-      };
-    case "wasted_ad_spend":
-      return {
-        title: `${count} ad spend leaks`,
-        body: "Campaigns spending without converting at the portfolio benchmark.",
-      };
-    case "renewal_cliff":
-      return {
-        title: `${count} renewal cliffs ahead`,
-        body: "Concentrations of lease expirations that need outreach now.",
-      };
-    case "tour_noshow_spike":
-      return {
-        title: `${count} tour no-show spikes`,
-        body: "Properties where the no-show rate jumped over the baseline.",
-      };
-    case "chatbot_silence":
-      return {
-        title: `${count} chatbot silences`,
-        body: "Periods where chatbot capture rate dropped below baseline.",
-      };
-    default:
-      return {
-        title: `${count} ${kind.replace(/_/g, " ")} alerts`,
-        body: "Open to see the full list.",
-      };
-  }
 }
 
 function SeverityBadge({ severity }: { severity: string }) {
