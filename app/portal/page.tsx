@@ -93,6 +93,8 @@ import { WelcomeLanding } from "@/components/portal/welcome-landing";
 import { syncOnboardingProgress } from "@/lib/onboarding/step-detectors";
 import { OnboardingChecklistFloating } from "@/components/portal/onboarding/onboarding-checklist-floating";
 import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
+import { DashboardActionItems } from "@/components/portal/dashboard/dashboard-action-items";
+import { getPortfolioRecommendations } from "@/lib/intelligence/property-recommendations";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -665,6 +667,14 @@ export default async function PortalHome({
   const featuredProperty =
     liveProperties.length === 1 ? liveProperties[0] : null;
 
+  // Portfolio-wide intelligence — top 5 actionable recommendations
+  // across every LIVE property. Surfaces as a "Action items" strip
+  // below the greeting. Wrapped in catch so a slow rec query never
+  // blocks the dashboard render.
+  const portfolioActions = await getPortfolioRecommendations(scope.orgId, {
+    limit: 5,
+  }).catch(() => []);
+
   let featuredStats: Array<{
     label: string;
     value: string;
@@ -788,6 +798,15 @@ export default async function PortalHome({
         compare={compare}
         asOf={asOf}
       />
+
+      {/* Action items — top portfolio-wide recommendations from the
+          Intelligence engine. Each row is a single-click route into
+          the exact surface to act. Dismiss-to-next-page (session
+          storage) so the operator can clear items they've handled
+          without them returning until the next dashboard load. */}
+      {portfolioActions.length > 0 ? (
+        <DashboardActionItems actions={portfolioActions} />
+      ) : null}
 
       {/* Featured-property hero. Renders ONLY when the operator has
           exactly one LIVE property (SG Real Estate at launch — Telegraph

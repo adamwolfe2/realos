@@ -5,6 +5,8 @@ import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
+import { PropertyIntelligencePanel } from "@/components/portal/properties/property-intelligence-panel";
+import { getPropertyRecommendations } from "@/lib/intelligence/property-recommendations";
 import { MarketIntelligenceSection } from "@/components/portal/properties/market-intelligence-section";
 import { PropertyTabs } from "./property-tabs";
 import { OverviewTab } from "./tabs/overview";
@@ -297,6 +299,18 @@ export default async function PropertyDetail({
         stats={heroStats}
       />
 
+      {/* Intelligence panel — proactive recommendations synthesized
+          from real-time signals (reputation, SEO, AEO, listing
+          hygiene, content freshness). Streamed via Suspense so a
+          slow Prisma query never blocks the hero render. */}
+      <Suspense fallback={<IntelligenceSkeleton />}>
+        <IntelligenceSection
+          orgId={scope.orgId}
+          propertyId={property.id}
+          propertyName={property.name}
+        />
+      </Suspense>
+
       {showMarketIntelligence ? (
         <Suspense fallback={<MarketIntelligenceSkeleton />}>
           <MarketIntelligenceSection propertyId={property.id} />
@@ -478,6 +492,55 @@ function PropertyTabsSkeleton() {
                 <div className="h-3 w-32 bg-muted/80 rounded" />
               </div>
             ))}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+
+// ---------------------------------------------------------------------------
+// IntelligenceSection — Suspense child that runs the recommendation
+// engine off the critical path so the hero banner renders immediately
+// and the recommendations stream in a moment later.
+// ---------------------------------------------------------------------------
+async function IntelligenceSection({
+  orgId,
+  propertyId,
+  propertyName,
+}: {
+  orgId: string;
+  propertyId: string;
+  propertyName: string;
+}) {
+  const actions = await getPropertyRecommendations(orgId, propertyId).catch(
+    () => [],
+  );
+  return (
+    <PropertyIntelligencePanel propertyName={propertyName} actions={actions} />
+  );
+}
+
+function IntelligenceSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border bg-card p-5 animate-pulse">
+      <div className="flex items-center gap-2.5 mb-3">
+        <div className="h-6 w-6 rounded-md bg-muted" />
+        <div className="h-4 w-48 bg-muted rounded" />
+      </div>
+      <div className="space-y-2">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 rounded-lg border border-border/60 p-3"
+          >
+            <div className="h-9 w-9 rounded-lg bg-muted shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3 w-3/4 bg-muted rounded" />
+              <div className="h-2.5 w-1/2 bg-muted/60 rounded" />
+            </div>
+            <div className="h-7 w-16 bg-muted rounded shrink-0" />
           </div>
         ))}
       </div>
