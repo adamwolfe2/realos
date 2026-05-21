@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { Search, SlidersHorizontal, Users, Flame, CalendarCheck, CheckCircle2 } from "lucide-react";
 import { prisma } from "@/lib/db";
@@ -205,10 +206,12 @@ export default async function LeadsKanbanPage({
         description="Click any lead to see full detail, conversation history, tours, and applications."
         actions={
           <div className="flex items-center gap-3 flex-wrap">
-            <PropertyMultiSelect
-              properties={visibleProperties(scope, properties)}
-              orgId={scope.orgId}
-            />
+            <Suspense fallback={<div className="h-9 w-48 rounded-md border border-border bg-muted/40" />}>
+              <PropertyMultiSelect
+                properties={visibleProperties(scope, properties)}
+                orgId={scope.orgId}
+              />
+            </Suspense>
             <span className="text-xs text-muted-foreground">
               {totalCount === 0
                 ? "No leads"

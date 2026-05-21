@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
@@ -382,7 +383,9 @@ export default async function PropertiesList({
               shareable links preserve the active query. */}
           <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
             <EntityToolbar views={views} />
-            <PropertiesSearch initialValue={searchQuery} />
+            <Suspense fallback={<div className="h-9 w-56 rounded-md border border-border bg-muted/40" />}>
+              <PropertiesSearch initialValue={searchQuery} />
+            </Suspense>
           </div>
           {/* Active filter chips (issue #54). Renders only when at least
               one attribute filter is in the URL — clicking the × clears

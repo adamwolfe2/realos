@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { Star, AlertTriangle, MessageCircle, Flag } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
@@ -248,7 +249,9 @@ export default async function PortfolioReputationPage({
         actions={
           <>
             {properties.length > 1 ? (
-              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+              <Suspense fallback={<div className="h-9 w-48 rounded-md border border-border bg-muted/40" />}>
+                <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+              </Suspense>
             ) : null}
             <ReputationScanButton />
             <Link
@@ -265,16 +268,18 @@ export default async function PortfolioReputationPage({
           server-side feed query via URL params, so views are bookmarkable
           (e.g. /portal/reputation?source=REDDIT&sentiment=NEGATIVE). */}
       <section className="rounded-xl border border-border bg-muted/20 px-4 py-3">
-        <ReputationFilters
-          sourceCounts={Object.fromEntries(
-            (metrics.sourceBreakdown ?? []).map((s) => [s.source, s.count]),
-          )}
-          sentimentCounts={Object.fromEntries(
-            (metrics.sentimentBreakdown ?? [])
-              .filter((s) => s.sentiment !== "UNCLASSIFIED")
-              .map((s) => [s.sentiment as Sentiment, s.count]),
-          )}
-        />
+        <Suspense fallback={<div className="h-8 w-full rounded-md bg-muted/40 animate-pulse" />}>
+          <ReputationFilters
+            sourceCounts={Object.fromEntries(
+              (metrics.sourceBreakdown ?? []).map((s) => [s.source, s.count]),
+            )}
+            sentimentCounts={Object.fromEntries(
+              (metrics.sentimentBreakdown ?? [])
+                .filter((s) => s.sentiment !== "UNCLASSIFIED")
+                .map((s) => [s.sentiment as Sentiment, s.count]),
+            )}
+          />
+        </Suspense>
       </section>
 
 
