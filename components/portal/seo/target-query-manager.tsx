@@ -235,9 +235,9 @@ function QueryRow({
           <span
             className={`rounded-md px-2 py-0.5 text-[11px] font-mono ${
               rank <= 10
-                ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                ? "bg-primary text-primary-foreground"
                 : rank <= 30
-                  ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                  ? "bg-primary/15 text-primary"
                   : "bg-muted text-muted-foreground"
             }`}
             title={q.latestRanking?.url ?? undefined}

@@ -868,11 +868,11 @@ function FooterNote({
 }) {
   if (dataforSeoOn && googlePlacesOn) return null;
   return (
-    <section className="rounded-xl border border-amber-200 bg-amber-50/40 p-4">
-      <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-amber-800 mb-1">
+    <section className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4">
+      <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
         Setup pending
       </p>
-      <p className="text-[12px] text-amber-900 leading-snug">
+      <p className="text-[12px] text-foreground leading-snug">
         {!dataforSeoOn && !googlePlacesOn
           ? "DataforSEO and Google Places API keys are not configured. SERP rankings, Lighthouse audits, backlinks, and competitor data will appear once the platform team adds the keys in Vercel env vars."
           : !dataforSeoOn
@@ -883,7 +883,7 @@ function FooterNote({
             {" "}
             <Link
               href="/portal/connect"
-              className="underline font-semibold text-amber-900 hover:text-amber-700"
+              className="underline font-semibold text-primary hover:text-primary/80"
             >
               Manage integrations
             </Link>

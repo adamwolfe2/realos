@@ -54,7 +54,7 @@ export function IntegrationStatusRow({
             <span
               className={`inline-flex h-7 w-7 items-center justify-center rounded-md shrink-0 ${
                 connected
-                  ? "bg-emerald-50 text-emerald-700"
+                  ? "bg-primary/10 text-primary"
                   : "bg-muted text-muted-foreground"
               }`}
             >
@@ -269,7 +269,7 @@ export function SerpRankingsCard({
                     <span
                       className={`inline-flex items-center gap-1 text-[15px] font-display font-semibold tabular-nums ${
                         inTop3
-                          ? "text-emerald-700"
+                          ? "text-primary font-bold"
                           : inTop10
                             ? "text-primary"
                             : "text-foreground"
@@ -286,7 +286,7 @@ export function SerpRankingsCard({
                       No change
                     </span>
                   ) : r.delta > 0 ? (
-                    <span className="inline-flex items-center gap-1 text-[10.5px] text-emerald-700 font-semibold">
+                    <span className="inline-flex items-center gap-1 text-[10.5px] text-primary font-semibold">
                       <ArrowUp className="h-2.5 w-2.5" />
                       Up {r.delta}
                     </span>
@@ -461,7 +461,7 @@ function VitalCell({
           value == null
             ? "text-muted-foreground"
             : ok
-              ? "text-emerald-700"
+              ? "text-primary"
               : "text-destructive"
         }`}
       >

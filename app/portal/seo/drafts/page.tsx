@@ -29,17 +29,16 @@ const STATUS_OPTIONS: Array<{
   { value: DraftStatus.REJECTED, label: "Rejected" },
 ];
 
+// Single-blue cohesion across draft statuses. Matches /portal/content
+// list + admin queue. No amber/green/red status pills.
 const STATUS_TONE: Record<string, string> = {
-  GENERATING: "bg-muted text-muted-foreground",
-  PENDING_REVIEW:
-    "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  APPROVED:
-    "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  CHANGES_REQUESTED:
-    "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  REJECTED: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  SHIPPED: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  EXPIRED: "bg-muted text-muted-foreground",
+  GENERATING:        "bg-muted text-muted-foreground",
+  PENDING_REVIEW:    "bg-primary/10 text-primary",
+  APPROVED:          "bg-primary/15 text-primary font-semibold",
+  CHANGES_REQUESTED: "bg-muted text-foreground",
+  REJECTED:          "bg-muted text-muted-foreground line-through",
+  SHIPPED:           "bg-primary text-primary-foreground",
+  EXPIRED:           "bg-muted text-muted-foreground/70",
 };
 
 function fmtAge(d: Date | null): string {
@@ -234,8 +233,8 @@ export default async function PortalDraftsListPage({
                     </p>
                   ) : null}
                   {d.reviewNotes ? (
-                    <div className="mt-2 rounded-md bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1.5 border border-amber-200 dark:border-amber-900/40">
-                      <p className="text-[10px] font-mono uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-0.5">
+                    <div className="mt-2 rounded-md bg-primary/10 px-2.5 py-1.5 border border-primary/20">
+                      <p className="text-[10px] font-mono uppercase tracking-wide text-primary mb-0.5">
                         Notes from LeaseStack
                       </p>
                       <p className="text-[12px] text-foreground whitespace-pre-wrap leading-snug">

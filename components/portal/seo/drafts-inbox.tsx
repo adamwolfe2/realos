@@ -20,27 +20,30 @@ type Props = {
   propertyId: string;
 };
 
+// Enterprise-blue cohesion across draft statuses. State carried by
+// primary saturation + label weight, never by hue (no amber/red/green
+// status pills breaking the page).
 const STATUS_LABELS: Record<string, { label: string; tone: string }> = {
   GENERATING: { label: "Generating", tone: "bg-muted text-muted-foreground" },
   PENDING_REVIEW: {
     label: "Pending review",
-    tone: "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    tone: "bg-primary/10 text-primary",
   },
   APPROVED: {
     label: "Approved",
-    tone: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300",
+    tone: "bg-primary/15 text-primary font-semibold",
   },
   CHANGES_REQUESTED: {
     label: "Changes requested",
-    tone: "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
+    tone: "bg-muted text-foreground",
   },
   REJECTED: {
     label: "Rejected",
-    tone: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300",
+    tone: "bg-muted text-muted-foreground line-through",
   },
   SHIPPED: {
     label: "Shipped",
-    tone: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
+    tone: "bg-primary text-primary-foreground",
   },
   EXPIRED: { label: "Expired", tone: "bg-muted text-muted-foreground" },
 };
@@ -158,8 +161,8 @@ export function DraftsInbox({ propertyId }: Props) {
                 {d.brief}
               </p>
               {d.reviewNotes ? (
-                <div className="mt-2 rounded-md bg-amber-50 dark:bg-amber-900/20 px-2.5 py-1.5 border border-amber-200 dark:border-amber-900/40">
-                  <p className="text-[10px] font-mono uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-0.5">
+                <div className="mt-2 rounded-md bg-primary/10 px-2.5 py-1.5 border border-primary/20">
+                  <p className="text-[10px] font-mono uppercase tracking-wide text-primary mb-0.5">
                     Admin notes
                   </p>
                   <p className="text-[12px] text-foreground whitespace-pre-wrap leading-snug">

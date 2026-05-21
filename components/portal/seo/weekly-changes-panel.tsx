@@ -69,17 +69,17 @@ export function WeeklyChangesPanel({ changes }: Props) {
         </div>
         <div className="flex items-center gap-2 text-[11px] font-mono shrink-0">
           {wins.length > 0 ? (
-            <span className="rounded-md bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-1.5 py-0.5">
+            <span className="rounded-md bg-primary text-primary-foreground px-1.5 py-0.5">
               {wins.length} win{wins.length === 1 ? "" : "s"}
             </span>
           ) : null}
           {losses.length > 0 ? (
-            <span className="rounded-md bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 px-1.5 py-0.5">
+            <span className="rounded-md bg-muted text-foreground px-1.5 py-0.5">
               {losses.length} loss{losses.length === 1 ? "" : "es"}
             </span>
           ) : null}
           {competitors.length > 0 ? (
-            <span className="rounded-md bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 px-1.5 py-0.5">
+            <span className="rounded-md bg-primary/10 text-primary px-1.5 py-0.5">
               {competitors.length} compet{competitors.length === 1 ? "itor" : "itors"}
             </span>
           ) : null}
@@ -99,7 +99,7 @@ function ChangeRow({ change }: { change: WeeklyChange }) {
     case "rank_up":
       return (
         <li className="flex items-start gap-3 px-4 py-2.5">
-          <ArrowUp className="h-3.5 w-3.5 mt-0.5 text-green-600 shrink-0" />
+          <ArrowUp className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-medium text-foreground truncate">
               {change.query}
@@ -114,7 +114,7 @@ function ChangeRow({ change }: { change: WeeklyChange }) {
     case "rank_down":
       return (
         <li className="flex items-start gap-3 px-4 py-2.5">
-          <ArrowDown className="h-3.5 w-3.5 mt-0.5 text-amber-600 shrink-0" />
+          <ArrowDown className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-medium text-foreground truncate">
               {change.query}
@@ -129,7 +129,7 @@ function ChangeRow({ change }: { change: WeeklyChange }) {
     case "entered_top_10":
       return (
         <li className="flex items-start gap-3 px-4 py-2.5">
-          <Award className="h-3.5 w-3.5 mt-0.5 text-green-600 shrink-0" />
+          <Award className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-medium text-foreground truncate">
               {change.query}
@@ -143,7 +143,7 @@ function ChangeRow({ change }: { change: WeeklyChange }) {
     case "fell_out_top_10":
       return (
         <li className="flex items-start gap-3 px-4 py-2.5">
-          <AlertCircle className="h-3.5 w-3.5 mt-0.5 text-amber-600 shrink-0" />
+          <AlertCircle className="h-3.5 w-3.5 mt-0.5 text-muted-foreground shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-medium text-foreground truncate">
               {change.query}
@@ -158,7 +158,7 @@ function ChangeRow({ change }: { change: WeeklyChange }) {
     case "new_competitor_citation":
       return (
         <li className="flex items-start gap-3 px-4 py-2.5">
-          <Users className="h-3.5 w-3.5 mt-0.5 text-blue-600 shrink-0" />
+          <Users className="h-3.5 w-3.5 mt-0.5 text-primary shrink-0" />
           <div className="min-w-0 flex-1">
             <p className="text-[13px] font-medium text-foreground">
               {change.competitor} cited by AI engines

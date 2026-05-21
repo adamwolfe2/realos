@@ -18,11 +18,14 @@ export const dynamic = "force-dynamic";
 // Single org query + small joins; cheap.
 // ---------------------------------------------------------------------------
 
+// Enterprise-blue scoring scale. State carried by primary saturation +
+// weight, not by hue. Matches the marketplace + intelligence + AEO
+// treatment so we never break the single-blue rhythm.
 function scoreTone(score: number | null): string {
   if (score == null) return "text-muted-foreground";
-  if (score >= 75) return "text-green-600";
-  if (score >= 50) return "text-amber-600";
-  return "text-red-600";
+  if (score >= 75) return "text-primary font-semibold";
+  if (score >= 50) return "text-primary/70";
+  return "text-muted-foreground";
 }
 
 function fmtAge(d: Date | null): string {
@@ -461,12 +464,12 @@ export default async function SeoPortfolioPage({
                       {recs.critical + recs.high + recs.medium + recs.low > 0 ? (
                         <span className="inline-flex items-center gap-1 text-[11px] font-mono">
                           {recs.critical > 0 ? (
-                            <span className="rounded bg-red-50 dark:bg-red-900/30 px-1.5 py-0.5 text-red-700 dark:text-red-300">
+                            <span className="rounded bg-primary px-1.5 py-0.5 text-primary-foreground font-semibold">
                               {recs.critical}
                             </span>
                           ) : null}
                           {recs.high > 0 ? (
-                            <span className="rounded bg-amber-50 dark:bg-amber-900/30 px-1.5 py-0.5 text-amber-800 dark:text-amber-300">
+                            <span className="rounded bg-primary/15 px-1.5 py-0.5 text-primary">
                               {recs.high}
                             </span>
                           ) : null}
@@ -530,13 +533,15 @@ function KpiCell({
   hint?: string;
   tone?: "positive" | "danger" | "warning";
 }) {
+  // Tone reads from primary saturation + weight, not from hue. Keeps
+  // the portfolio KPI strip cohesive with the rest of the portal.
   const valueClass =
     tone === "positive"
-      ? "text-green-600"
+      ? "text-primary font-semibold"
       : tone === "danger"
-        ? "text-red-600"
+        ? "text-destructive"
         : tone === "warning"
-          ? "text-amber-600"
+          ? "text-primary/70"
           : "text-foreground";
   return (
     <div className="px-4 py-3 first:rounded-l-2xl last:rounded-r-2xl">

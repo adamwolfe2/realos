@@ -1188,7 +1188,7 @@ export function LocalPackCard({ rows }: { rows: LocalPackRow[] }) {
               ) : (
                 <span
                   className={`text-[14px] font-display font-semibold tabular-nums ${
-                    r.ourPosition === 1 ? "text-emerald-700" : "text-primary"
+                    r.ourPosition === 1 ? "text-primary font-bold" : "text-primary"
                   }`}
                 >
                   #{r.ourPosition}

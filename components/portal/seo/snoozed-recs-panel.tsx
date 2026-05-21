@@ -17,11 +17,13 @@ type Props = {
   recommendations: SnoozedRec[];
 };
 
+// Enterprise-blue severity treatment — matches the rec queue + intel
+// panel. Severity reads from primary saturation, never hue.
 const SEV_TONE: Record<string, string> = {
-  CRITICAL: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  HIGH: "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  MEDIUM: "bg-muted text-muted-foreground",
-  LOW: "bg-muted/60 text-muted-foreground",
+  CRITICAL: "bg-primary text-primary-foreground",
+  HIGH: "bg-primary/15 text-primary",
+  MEDIUM: "bg-muted text-foreground",
+  LOW: "bg-background text-muted-foreground",
 };
 
 function fmtReturn(iso: string): string {

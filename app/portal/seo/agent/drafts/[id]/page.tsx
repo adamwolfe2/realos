@@ -14,14 +14,16 @@ export const dynamic = "force-dynamic";
 // submissions and see admin notes.
 // ---------------------------------------------------------------------------
 
+// Single-blue cohesion across draft statuses. Matches /portal/content
+// list, drafts inbox, and admin queue.
 const STATUS_TONE: Record<string, string> = {
-  GENERATING: "bg-muted text-muted-foreground",
-  PENDING_REVIEW: "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  APPROVED: "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300",
-  CHANGES_REQUESTED: "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  REJECTED: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  SHIPPED: "bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300",
-  EXPIRED: "bg-muted text-muted-foreground",
+  GENERATING:        "bg-muted text-muted-foreground",
+  PENDING_REVIEW:    "bg-primary/10 text-primary",
+  APPROVED:          "bg-primary/15 text-primary font-semibold",
+  CHANGES_REQUESTED: "bg-muted text-foreground",
+  REJECTED:          "bg-muted text-muted-foreground line-through",
+  SHIPPED:           "bg-primary text-primary-foreground",
+  EXPIRED:           "bg-muted text-muted-foreground/70",
 };
 
 export default async function PortalDraftViewer({
@@ -108,8 +110,8 @@ export default async function PortalDraftViewer({
       </header>
 
       {draft.reviewNotes ? (
-        <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/40 dark:bg-amber-900/20">
-          <p className="text-[11px] font-mono uppercase tracking-wide text-amber-700 dark:text-amber-300 mb-1">
+        <div className="rounded-2xl border border-primary/20 bg-primary/[0.06] p-4">
+          <p className="text-[11px] font-mono uppercase tracking-wide text-primary mb-1">
             Notes from LeaseStack
           </p>
           <p className="text-[13px] text-foreground whitespace-pre-wrap">
@@ -132,7 +134,7 @@ export default async function PortalDraftViewer({
 
       {draft.status === "CHANGES_REQUESTED" && draft.propertyId ? (
         <div className="space-y-3">
-          <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
+          <div className="rounded-xl border border-primary/20 bg-primary/[0.04] p-4">
             <p className="text-[12px] font-medium text-foreground">
               Changes requested. Apply the notes above and re-submit
               below — we&apos;ll review again.

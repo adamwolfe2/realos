@@ -23,10 +23,14 @@ type Props = {
 };
 
 const SEV_TONE: Record<string, string> = {
-  CRITICAL: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300 border-red-200 dark:border-red-900/40",
-  HIGH: "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300 border-amber-200 dark:border-amber-900/40",
-  MEDIUM: "bg-muted text-muted-foreground border-border",
-  LOW: "bg-muted/60 text-muted-foreground border-border",
+  // Enterprise-blue severity treatment. Severity now reads from
+  // saturation + a thin left rule rather than hue, so the rec queue
+  // stays cohesive with the rest of the portal (no amber/coral/red).
+  // Critical is the densest primary; LOW lives in muted with no fill.
+  CRITICAL: "bg-primary text-primary-foreground border-primary",
+  HIGH: "bg-primary/15 text-primary border-primary/25",
+  MEDIUM: "bg-muted text-foreground border-border",
+  LOW: "bg-background text-muted-foreground border-border",
 };
 
 // ---------------------------------------------------------------------------
@@ -143,7 +147,7 @@ export function RecommendationManager({ recommendations }: Props) {
               type="button"
               disabled={bulkPending}
               onClick={() => callBulk("completed")}
-              className="rounded-md border border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-900/20 px-2 py-0.5 text-[11px] font-medium text-green-700 dark:text-green-300 hover:bg-green-100 disabled:opacity-50"
+              className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-primary/15 hover:border-primary/40 disabled:opacity-50 transition-colors"
             >
               Mark done
             </button>
@@ -371,7 +375,7 @@ function RecommendationRow({
           type="button"
           disabled={pending}
           onClick={() => patchStatus("COMPLETED")}
-          className="rounded-md border border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-900/20 px-2 py-0.5 text-[11px] font-medium text-green-700 dark:text-green-300 hover:bg-green-100 disabled:opacity-50"
+          className="rounded-md border border-primary/30 bg-primary/10 px-2 py-0.5 text-[11px] font-semibold text-primary hover:bg-primary/15 hover:border-primary/40 disabled:opacity-50 transition-colors"
         >
           Done
         </button>

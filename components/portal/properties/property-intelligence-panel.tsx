@@ -59,28 +59,33 @@ const CATEGORY_LABEL: Record<ProactiveAction["category"], string> = {
   competitor: "Competitor",
 };
 
+// Enterprise-blue severity treatment. Severity reads from primary
+// saturation (densest = critical, dimmest = low) + a thin dot rather
+// than from hue (red/amber/yellow). Keeps the intelligence panel
+// cohesive with the marketplace, AEO cards, and recommendation queue
+// — no more amber/coral surfaces breaking the single-blue rhythm.
 const SEVERITY_STYLES: Record<
   ProactiveAction["severity"],
   { dot: string; pill: string; ring: string }
 > = {
   critical: {
-    dot: "bg-destructive",
-    pill: "bg-destructive/10 text-destructive",
-    ring: "ring-destructive/30",
+    dot: "bg-primary",
+    pill: "bg-primary text-primary-foreground",
+    ring: "ring-primary/30",
   },
   high: {
-    dot: "bg-amber-500",
-    pill: "bg-amber-100 text-amber-800",
-    ring: "ring-amber-300/40",
-  },
-  medium: {
-    dot: "bg-primary",
-    pill: "bg-primary/10 text-primary",
+    dot: "bg-primary/70",
+    pill: "bg-primary/15 text-primary",
     ring: "ring-primary/20",
   },
+  medium: {
+    dot: "bg-primary/40",
+    pill: "bg-muted text-foreground",
+    ring: "ring-border",
+  },
   low: {
-    dot: "bg-muted-foreground/60",
-    pill: "bg-muted text-muted-foreground",
+    dot: "bg-muted-foreground/40",
+    pill: "bg-background text-muted-foreground",
     ring: "ring-border",
   },
 };
@@ -93,9 +98,9 @@ type Props = {
 export function PropertyIntelligencePanel({ propertyName, actions }: Props) {
   if (actions.length === 0) {
     return (
-      <section className="rounded-2xl border border-border bg-gradient-to-br from-card to-emerald-50/50 p-5">
+      <section className="rounded-2xl border border-border bg-gradient-to-br from-card to-primary/[0.04] p-5">
         <header className="flex items-center gap-2.5 mb-1">
-          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+          <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
             <Sparkles className="h-3.5 w-3.5" />
           </span>
           <h2 className="text-sm font-semibold text-foreground">
