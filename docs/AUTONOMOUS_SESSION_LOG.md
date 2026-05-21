@@ -87,8 +87,18 @@
 19. feat(seo): 'What changed this week' panel + per-property score history
 20. feat(seo): admin SEO Agent metrics dashboard at /admin/system/seo-agent
 21. feat(seo): persist recs on first generation (first-run experience fix)
+22. feat(seo): real-time email to operator on draft review
+23. feat(seo): email admin when operator submits new draft
+24. feat(seo): bulk approve/reject on /admin/content-drafts queue
 
 All pushed to origin/main.
+
+### Email loop closed end-to-end alongside bell notifications
+
+- Operator submits draft → admin gets bell + email
+- Admin reviews → operator gets bell + email (per status)
+- Bulk admin actions also fire bell + email for every updated row
+- 24h review SLA reinforced — agency reviewers see drafts off-portal
 
 ### Summary of complete SEO Agent workflow shipped tonight
 
