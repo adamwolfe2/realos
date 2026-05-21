@@ -28,16 +28,25 @@ const ACTION_TONE: Record<AuditAction, string> = {
 export default async function AuditLogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ action?: string; orgId?: string }>;
+  searchParams: Promise<{
+    action?: string;
+    orgId?: string;
+    entityType?: string;
+  }>;
 }) {
   await requireAgency();
-  const { action, orgId } = await searchParams;
+  const { action, orgId, entityType } = await searchParams;
 
-  const where: { action?: AuditAction; orgId?: string } = {};
+  const where: {
+    action?: AuditAction;
+    orgId?: string;
+    entityType?: string;
+  } = {};
   if (action && action in AuditAction) {
     where.action = action as AuditAction;
   }
   if (orgId) where.orgId = orgId;
+  if (entityType) where.entityType = entityType;
 
   const events = await prisma.auditEvent.findMany({
     where,
@@ -91,12 +100,17 @@ export default async function AuditLogPage({
         })}
       </div>
 
-      {(action || orgId) && (
+      {(action || orgId || entityType) && (
         <div className="flex items-center gap-2 text-sm">
           <span className="text-muted-foreground">Filtered by</span>
           {action && (
             <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
               {action}
+            </span>
+          )}
+          {entityType && (
+            <span className="font-mono text-xs bg-muted px-1.5 py-0.5 rounded">
+              {entityType}
             </span>
           )}
           <Link
@@ -107,6 +121,37 @@ export default async function AuditLogPage({
           </Link>
         </div>
       )}
+
+      {/* Quick-entity filter chips. Adds a one-click jump to the most
+          useful subsets for the SEO Agent + other state machines. */}
+      <div className="flex flex-wrap gap-1.5">
+        {[
+          { label: "All entities", value: null },
+          { label: "Content drafts", value: "ContentDraft" },
+          { label: "SEO recs", value: "SeoActionRecommendation" },
+          { label: "Leads", value: "Lead" },
+        ].map((opt) => {
+          const isActive = (entityType ?? null) === opt.value;
+          const params = new URLSearchParams();
+          if (opt.value) params.set("entityType", opt.value);
+          if (action) params.set("action", action);
+          if (orgId) params.set("orgId", orgId);
+          const qs = params.toString();
+          return (
+            <Link
+              key={opt.label}
+              href={`/admin/audit-log${qs ? `?${qs}` : ""}`}
+              className={`inline-flex items-center gap-1 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-colors ${
+                isActive
+                  ? "border-primary bg-primary/10 text-foreground"
+                  : "border-border bg-background text-foreground hover:bg-muted"
+              }`}
+            >
+              {opt.label}
+            </Link>
+          );
+        })}
+      </div>
 
       <div className="rounded-lg border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
