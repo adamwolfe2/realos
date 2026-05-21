@@ -156,7 +156,7 @@ export function PropertyHeroBanner({
       aria-label={`${propertyName} hero`}
       onDragOver={editable ? (e) => e.preventDefault() : undefined}
       onDrop={editable ? onDrop : undefined}
-      className={`relative overflow-hidden rounded-2xl border border-border ${padding}`}
+      className={`relative rounded-2xl border border-border ${padding}`}
       style={{
         // Layered brand-blue radial wash + soft grid texture, blended over
         // pure white so the building image reads as the focal point.
@@ -167,11 +167,15 @@ export function PropertyHeroBanner({
         `,
       }}
     >
-      {/* 28px brand grid texture — same vocabulary as the platform hero,
-          so the operator portal echoes the marketing site. */}
+      {/* Norman 2026-05-21: section no longer uses overflow-hidden so a
+          BG-removed building image can spill out the top of the card
+          and read as 3D pop instead of getting cropped at the section
+          bounds. The grid texture below keeps its own clip via the
+          rounded-2xl + overflow-hidden wrapper so it doesn't bleed out
+          of the card edges. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 pointer-events-none"
+        className="absolute inset-0 pointer-events-none rounded-2xl overflow-hidden"
         style={{
           backgroundImage: `linear-gradient(0deg, rgba(${accentRgb}, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(${accentRgb}, 0.05) 1px, transparent 1px)`,
           backgroundSize: "28px 28px",
@@ -183,10 +187,15 @@ export function PropertyHeroBanner({
       />
 
       <div className={`relative grid items-center gap-5 ${gridCols}`}>
-        {/* Image column — building floats above a soft ground shadow */}
-        <div className="relative">
+        {/* Image column — building floats above a soft ground shadow.
+            Norman 2026-05-21: the column allows overflow so a
+            BG-removed image can spill upward beyond the card top edge
+            and read as 3D pop. The `group` class ties the hover state
+            to this whole region so the Replace / X controls fade in
+            only when the operator's mouse is in the image area. */}
+        <div className="relative group" style={{ overflow: "visible" }}>
           {currentImage ? (
-            <div className="relative">
+            <div className="relative" style={{ overflow: "visible" }}>
               {/* Ground shadow — a soft radial smudge under the image,
                   positioned to read as the building's grounding shadow
                   rather than a box-shadow. */}
@@ -203,7 +212,10 @@ export function PropertyHeroBanner({
               <img
                 src={currentImage}
                 alt={`${propertyName} exterior`}
-                className={`relative w-full ${imageSize} object-cover rounded-xl`}
+                /* object-contain (was object-cover) so a BG-removed PNG
+                   doesn't get cropped at the column bounds. No border
+                   radius — the image's own silhouette is the shape. */
+                className={`relative w-full ${imageSize} object-contain`}
                 style={{
                   filter:
                     "drop-shadow(0 18px 28px rgba(15, 23, 42, 0.18)) drop-shadow(0 4px 8px rgba(15, 23, 42, 0.10))",
@@ -211,7 +223,14 @@ export function PropertyHeroBanner({
                 loading="lazy"
               />
               {editable ? (
-                <div className="absolute top-2 right-2 flex items-center gap-1.5">
+                /* Replace / Remove controls — hidden by default, fade
+                   in on group hover or while uploading so they never
+                   sit on top of the building image when the operator
+                   isn't trying to edit. */
+                <div
+                  className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150"
+                  style={uploading ? { opacity: 1 } : undefined}
+                >
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
