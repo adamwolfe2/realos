@@ -20,7 +20,10 @@ import {
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
-import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import {
+  marketablePropertyWhere,
+  withMarketableLifecycle,
+} from "@/lib/properties/marketable";
 import {
   effectivePropertyIds,
   isAccessDenied,
@@ -328,8 +331,16 @@ export default async function PortalHome({
       where: { lead: where, ...propertyClause, status: TourStatus.REQUESTED },
     }),
     prisma.property.findMany({
+      // BUG fix (Norman 2026-05-21 screenshot): the "Top properties"
+      // widget was using bare `tenantWhere(scope)` which includes
+      // IMPORTED / EXCLUDED / ARCHIVED rows — so SG Real Estate's
+      // dashboard surfaced uncurated AppFolio sub-records (2023
+      // Channing Way, 1321 Spruce, etc.) even though the Properties
+      // page (which uses `withMarketableLifecycle`) correctly shows
+      // only Telegraph Commons. Now using the same gate as the
+      // Properties page + the leaderboard helper.
       where: {
-        ...where,
+        ...withMarketableLifecycle(where),
         ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
       },
       orderBy: { updatedAt: "desc" },
