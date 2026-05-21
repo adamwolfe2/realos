@@ -715,8 +715,18 @@
     var persona = escapeHtml(cfg.personaName || "Leasing");
     var teaser = escapeHtml(cfg.teaserText || "Questions? I'm here.");
     var avatar = cfg.avatarUrl ? escapeHtml(cfg.avatarUrl) : "";
+    // `onerror` swaps the broken <img> for the same dot fallback we
+    // render when avatarUrl is null in the first place. Real-world
+    // tenants occasionally paste a website URL into the logo field —
+    // that loads as HTML and renders the browser's broken-image icon,
+    // which looks unprofessional in the teaser. This fallback degrades
+    // gracefully to a brand-colored dot the moment the image load
+    // fails (404, wrong content-type, CORS, etc.). The single-quote
+    // double-escape lets the handler live inside the outer attribute
+    // string we build by concatenation.
     var avatarMarkup = avatar
-      ? '<img class="rec-avatar" src="' + avatar + '" alt="" />'
+      ? '<img class="rec-avatar" src="' + avatar + '" alt="" ' +
+        'onerror="this.outerHTML=&quot;<div class=\\&quot;rec-avatar rec-avatar-dot\\&quot;></div>&quot;" />'
       : '<div class="rec-avatar rec-avatar-dot"></div>';
     var avatarWithDot =
       '<div class="rec-avatar-wrap">' + avatarMarkup +
