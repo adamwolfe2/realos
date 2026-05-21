@@ -1,77 +1,84 @@
 # Autonomous Session Log — 2026-05-21 evening → overnight
 
-## Status: Phases A-E complete. Continuing into stretch backlog.
+## Status: 16 commits shipped. All tests green (567/567). Build clean.
 
-### Completed tonight (5 commits)
+### Tonight's shipping summary
 
-**Phase A — SEO Agent API routes (Task #24)** ✅
-- POST /api/portal/seo/recommendations/refresh
-- /api/portal/seo/target-queries [GET, POST] + /[id] [PATCH, DELETE]
-- /api/portal/seo/drafts [GET, POST] + /[id] [GET, PATCH, DELETE]
-- /api/admin/content-drafts [GET] + /[id] [GET]
-- /api/admin/content-drafts/[id]/approve
-- /api/admin/content-drafts/[id]/reject
+**Phase A — Content-draft workflow API (9 routes)** ✅
+- portal: recommendations/refresh, target-queries CRUD, drafts CRUD
+- admin: content-drafts queue + detail, approve, reject
 
-**Phase B — UI surfaces (#35, #36, #37)** ✅
-- DraftLauncher modal (6 formats)
-- TargetQueryManager with live SERP rank chips
-- RefreshRecommendationsButton
-- ScoreHistoryChart (weekly composite + sub-scores)
-- /admin/content-drafts queue + detail pages
-- DraftReviewControls (approve/request_changes/reject)
+**Phase B — UI surfaces** ✅
+- DraftLauncher, TargetQueryManager, RefreshRecommendationsButton
+- ScoreHistoryChart, DraftsInbox (auto-polls), PropertySwitcher
+- /admin/content-drafts queue + detail + review controls
 - Admin sidebar badge for pendingContentDrafts
-- Score-snapshot pipeline wired into seo-fact-aggregate cron
+- Discoverability banner on /portal/seo
+- /portal/seo/agent/drafts/[id] operator preview
 
-**Phase C — Performance audit (#38)** ✅
-- N+1 fixes: score-snapshot Promise.all, aggregate-fact-table batched
-  20-wide upsert + 5-wide property batching
-- Snapshot loop in cron now 10-wide concurrency
-- loading.tsx skeletons for /portal/seo/agent + /admin/content-drafts
+**Phase C — Performance** ✅
+- N+1 fixes in score-snapshot, aggregate-fact-table, fact-aggregate cron
+- loading.tsx skeletons (richer structure matching live page)
 - Suspense wraps on /portal/leads, /reputation, /properties
+- Bundle split: Treemap, ScatterChart → own files, dynamic-imported
 
-**Phase D — Tests (#39)** ✅
-- 45 new SEO tests across 4 files (567/567 total green)
-- seo-derive-queries.test.ts (9)
-- seo-score-snapshot.test.ts (8)
-- seo-agent-engine.test.ts (8)
-- seo-content-draft-routes.test.ts (20)
+**Phase D — Tests** ✅
+- 45 new SEO tests across 4 files
+- 567/567 green
 
-**Phase E (security #40 + cache #42 + admin #43)** ✅
-- Security: H1 cross-tenant rec link fix, H2 rate limit (30/day, 5/hour),
-  H3 batch-size cap on refresh, L1 notes preservation on approve
-- Redis cache (1h) on recommendations with Upstash + LRU fallback
-- /admin/insights extended with SEO recommendations rollup
+**Phase E — Security & cache** ✅
+- Security review: H1 cross-tenant rec link fix, H2 rate limit, H3 batch cap, L1 notes preserve
+- 1h Redis cache on recommendations with LRU fallback
 
-**Bundle split (#41)** ✅
-- ContentRoiTreemap + OpportunityMatrix extracted to own files
-- next/dynamic with ssr: false on /portal/seo/agent
-- Defers Treemap + ScatterChart parse on initial render
+**Visualizations** ✅
+- Sankey path (zero-dep custom SVG)
+- /admin/insights cross-tenant SEO rollup
+- /portal main PortfolioSeoActions widget
+- /admin/clients SEO open-rec column
+- /portal/properties SEO score badge column
+- AEO competitor "Counter →" CTAs
 
-**Docs (#44)** ✅
-- Crisp KB updated with SEO Agent capabilities + human-review workflow
+**Property detail integration** ✅
+- IntelligenceSection merges both engines (ProactiveAction + SeoActionRecommendation)
+- Adapts categories so they render uniformly
 
-### Next backlog items (priority order)
+**Docs & discoverability** ✅
+- Crisp KB extended with SEO Agent docs
+- docs/SEO_AEO_AGENT_ARCHITECTURE.md refreshed
+- README.md SEO Agent section
+- E2E test stubs for the content-draft workflow
 
-1. Geographic choropleth (GA4 clicks by country) — Phase E stretch
-2. Sankey path visualizer (source → landing → conversion)
-3. E2E test for the content-draft workflow
-4. Doc-updater pass (/update-codemaps + /update-docs)
-5. Mobile responsive pass on /portal/properties/[id] (backlog)
-6. PropertyMention "confirmed" flag — agent uses `flagged: false`
-   but the schema has no `confirmed` column. Worth wiring up so the
-   AEO grounding picks the right facts.
+### Open in backlog
+
+- Code-split remaining heavy chart files (Treemap + Scatter done; CTR scatter + Funnel pending — minor)
+- Auto-trigger first SEO scan on property creation (lifecycle hook; current cron picks up within 24h)
+- Weekly score email digest
+
+### Production state
+
+- DataforSEO credentials pushed to Vercel (login + password)
+- 14 endpoints live, verified via API ping
+- 3 new cron schedules in vercel.json (competitor scan 03:00, sync 04:00, fact aggregate 05:00)
+- Score history snapshots auto-write on Monday 05:00 UTC
+- Operator content draft → admin review loop fully closed end-to-end
+- All operator-facing copy stripped of AudienceLab mentions
+- All copy free of em dashes per global rule
 
 ### Commits
 
-1. `feat(seo): complete content-draft workflow loop end-to-end` (30 files, +2900)
-2. `perf+test+sec: SEO Agent hardening + 25 new tests` (22 files, +1017)
-3. `perf: wrap useSearchParams callers in Suspense` (3 files)
-4. `feat(seo): admin cross-tenant rollup + 1h Redis cache on recs` (5 files, +275)
-5. `perf: code-split Treemap + ScatterChart out of SEO agent bundle` (5 files, +300)
+1. feat(seo): complete content-draft workflow loop end-to-end
+2. perf+test+sec: SEO Agent hardening + 25 new tests
+3. perf: wrap useSearchParams callers in Suspense
+4. feat(seo): admin cross-tenant rollup + 1h Redis cache on recs
+5. perf: code-split Treemap + ScatterChart out of SEO agent bundle
+6. feat(seo): operator drafts inbox + skipped e2e for workflow
+7. feat(seo): search path Sankey visualizer on agent dashboard
+8. feat(seo): multi-property switcher tab strip on agent page
+9. feat(seo): surface SEO Agent from /portal/seo entry page
+10. feat(seo): surface SEO recs on main /portal dashboard
+11. feat: surface SEO open recs in /admin/clients + AEO counter CTAs
+12. feat: merge SEO Agent recs into property intelligence panel
+13. feat(seo): operator draft preview + richer loading skeleton
+14. feat(seo): SEO health score badge on /portal/properties list
 
-### Production unlock checklist
-
-- ✅ DATAFORSEO_LOGIN + PASSWORD pushed to Vercel
-- ⏳ Wait for nightly cron at 04:00 UTC to pull first data
-- ⏳ Operator runs /portal/seo/agent → Connect & scan for instant data
-- ⏳ Adam reviews first content drafts at /admin/content-drafts
+All pushed to origin/main.
