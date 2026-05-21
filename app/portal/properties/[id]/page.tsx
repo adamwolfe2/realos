@@ -98,6 +98,9 @@ export default async function PropertyDetail({
       priceMax: true,
       description: true,
       heroImageUrl: true,
+      heroImageOffsetX: true,
+      heroImageOffsetY: true,
+      heroImageScale: true,
       logoUrl: true,
       photoUrls: true,
       // Operator-editable attributes (#68) — surfaced in the overview
@@ -297,6 +300,9 @@ export default async function PropertyDetail({
         }
         heroImageUrl={avatarSrc}
         stats={heroStats}
+        imageOffsetX={property.heroImageOffsetX}
+        imageOffsetY={property.heroImageOffsetY}
+        imageScale={property.heroImageScale}
       />
 
       {/* Intelligence panel — proactive recommendations synthesized

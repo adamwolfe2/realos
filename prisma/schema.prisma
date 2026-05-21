@@ -810,6 +810,14 @@ model Property {
   imageScrapeAt        DateTime?
   imageScrapeError     String?
   heroImageUrl         String?
+  // Notion-style drag/zoom transform applied to the heroImageUrl when
+  // rendered in PropertyHeroBanner. Offsets are in % of the image
+  // container (translate); scale is a multiplier (1.0 = fit, max 3.0).
+  // Defaults give the natural object-contain layout. Operator adjusts
+  // via "Reposition" mode on the hero banner.
+  heroImageOffsetX     Float    @default(0)
+  heroImageOffsetY     Float    @default(0)
+  heroImageScale       Float    @default(1)
   photoUrls            Json? // Array of URLs
   virtualTourUrl       String?
   googleReviewUrl      String? // Google Maps review link for this property

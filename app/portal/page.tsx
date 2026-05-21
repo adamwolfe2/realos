@@ -654,6 +654,9 @@ export default async function PortalHome({
         city: true,
         state: true,
         heroImageUrl: true,
+        heroImageOffsetX: true,
+        heroImageOffsetY: true,
+        heroImageScale: true,
         residentialSubtype: true,
         commercialSubtype: true,
         propertyType: true,
@@ -821,6 +824,9 @@ export default async function PortalHome({
           subtitle={featuredSubtitle}
           heroImageUrl={featuredProperty.heroImageUrl}
           stats={featuredStats}
+          imageOffsetX={featuredProperty.heroImageOffsetX}
+          imageOffsetY={featuredProperty.heroImageOffsetY}
+          imageScale={featuredProperty.heroImageScale}
           compact
         />
       ) : null}

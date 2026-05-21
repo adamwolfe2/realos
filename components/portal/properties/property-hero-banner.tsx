@@ -39,7 +39,15 @@
 // ---------------------------------------------------------------------------
 
 import * as React from "react";
-import { Building2, Upload, X as XIcon, Loader2 } from "lucide-react";
+import {
+  Building2,
+  Upload,
+  X as XIcon,
+  Loader2,
+  Move,
+  Check,
+  RotateCcw,
+} from "lucide-react";
 
 type Stat = {
   label: string;
@@ -63,6 +71,11 @@ type Props = {
   editable?: boolean;
   /** Compact mode for the main dashboard featured strip. */
   compact?: boolean;
+  /** Operator-curated drag/zoom transform. Defaults to natural fit when
+   *  the operator hasn't repositioned yet. */
+  imageOffsetX?: number;
+  imageOffsetY?: number;
+  imageScale?: number;
 };
 
 export function PropertyHeroBanner({
@@ -74,11 +87,40 @@ export function PropertyHeroBanner({
   accent,
   editable = true,
   compact = false,
+  imageOffsetX = 0,
+  imageOffsetY = 0,
+  imageScale = 1,
 }: Props) {
   const [currentImage, setCurrentImage] = React.useState(heroImageUrl);
   const [uploading, setUploading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const fileRef = React.useRef<HTMLInputElement | null>(null);
+
+  // Reposition mode — Notion-style drag + scroll-zoom. The current
+  // transform is a draft until the operator clicks Save, then it
+  // POSTs to /hero-image-transform and the parent re-renders with
+  // the persisted values on next page load.
+  const [repositioning, setRepositioning] = React.useState(false);
+  const [savedX, setSavedX] = React.useState(imageOffsetX);
+  const [savedY, setSavedY] = React.useState(imageOffsetY);
+  const [savedScale, setSavedScale] = React.useState(imageScale);
+  const [draftX, setDraftX] = React.useState(imageOffsetX);
+  const [draftY, setDraftY] = React.useState(imageOffsetY);
+  const [draftScale, setDraftScale] = React.useState(imageScale);
+  const [saving, setSaving] = React.useState(false);
+
+  const offsetX = repositioning ? draftX : savedX;
+  const offsetY = repositioning ? draftY : savedY;
+  const scaleVal = repositioning ? draftScale : savedScale;
+
+  const dragRef = React.useRef<{
+    startX: number;
+    startY: number;
+    startOffsetX: number;
+    startOffsetY: number;
+    containerW: number;
+    containerH: number;
+  } | null>(null);
 
   const accentRgb = hexToRgb(accent ?? "#2563EB");
 
@@ -145,6 +187,107 @@ export function PropertyHeroBanner({
     if (file) handleFile(file);
   }
 
+  // ───────────────────────────────────────────────────────────────────────
+  // Notion-style drag-to-reposition + scroll-zoom.
+  // Click "Reposition" to enter draft mode; mouse drag pans (translateX/Y
+  // in % of container); wheel/pinch zooms (scale 0.5..3.0). Save POSTs to
+  // /hero-image-transform, Cancel reverts to the persisted values, Reset
+  // jumps back to 0/0/1.
+  // ───────────────────────────────────────────────────────────────────────
+
+  function startReposition() {
+    setDraftX(savedX);
+    setDraftY(savedY);
+    setDraftScale(savedScale);
+    setRepositioning(true);
+  }
+
+  function cancelReposition() {
+    setRepositioning(false);
+  }
+
+  function resetReposition() {
+    setDraftX(0);
+    setDraftY(0);
+    setDraftScale(1);
+  }
+
+  async function saveReposition() {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(
+        `/api/portal/properties/${propertyId}/hero-image-transform`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            offsetX: draftX,
+            offsetY: draftY,
+            scale: draftScale,
+          }),
+        },
+      );
+      const data = (await res.json().catch(() => ({}))) as {
+        ok?: boolean;
+        offsetX?: number;
+        offsetY?: number;
+        scale?: number;
+        error?: string;
+      };
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error ?? `Save failed (${res.status})`);
+      }
+      setSavedX(data.offsetX ?? draftX);
+      setSavedY(data.offsetY ?? draftY);
+      setSavedScale(data.scale ?? draftScale);
+      setRepositioning(false);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function onImagePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (!repositioning) return;
+    const target = e.currentTarget;
+    const rect = target.getBoundingClientRect();
+    dragRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      startOffsetX: draftX,
+      startOffsetY: draftY,
+      containerW: rect.width || 1,
+      containerH: rect.height || 1,
+    };
+    target.setPointerCapture(e.pointerId);
+  }
+
+  function onImagePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!repositioning || !dragRef.current) return;
+    const { startX, startY, startOffsetX, startOffsetY, containerW, containerH } =
+      dragRef.current;
+    const dx = ((e.clientX - startX) / containerW) * 100;
+    const dy = ((e.clientY - startY) / containerH) * 100;
+    setDraftX(Math.max(-100, Math.min(100, startOffsetX + dx)));
+    setDraftY(Math.max(-100, Math.min(100, startOffsetY + dy)));
+  }
+
+  function onImagePointerUp(e: React.PointerEvent<HTMLDivElement>) {
+    if (!dragRef.current) return;
+    e.currentTarget.releasePointerCapture(e.pointerId);
+    dragRef.current = null;
+  }
+
+  function onImageWheel(e: React.WheelEvent<HTMLDivElement>) {
+    if (!repositioning) return;
+    // Prevent the page from scrolling while the operator zooms.
+    e.stopPropagation();
+    const factor = e.deltaY < 0 ? 1.06 : 0.94;
+    setDraftScale((s) => Math.max(0.5, Math.min(3, s * factor)));
+  }
+
   const padding = compact ? "p-4 sm:p-5" : "p-5 sm:p-7";
   const gridCols = compact
     ? "grid-cols-[180px_minmax(0,1fr)]"
@@ -206,12 +349,18 @@ export function PropertyHeroBanner({
           {currentImage ? (
             <div
               className={`relative ${imageLift}`}
-              style={{ overflow: "visible" }}
+              style={{
+                overflow: "visible",
+                // Faint dashed outline appears only in reposition mode so
+                // the operator can see the editable canvas bounds.
+                outline: repositioning
+                  ? "1px dashed rgba(37,99,235,0.45)"
+                  : "none",
+                outlineOffset: 4,
+                borderRadius: 12,
+              }}
             >
-              {/* Ground shadow — a soft, wide radial smudge beneath
-                  the building so it reads as resting on a plane,
-                  not levitating. Sized larger than the image so it
-                  extends past the silhouette's footprint. */}
+              {/* Ground shadow — soft radial smudge beneath the building. */}
               <div
                 aria-hidden="true"
                 className="absolute left-1/2 bottom-[-18px] w-[90%] h-8"
@@ -222,35 +371,63 @@ export function PropertyHeroBanner({
                   filter: "blur(14px)",
                 }}
               />
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={currentImage}
-                alt={`${propertyName} exterior`}
-                /* No rounded-xl. No card framing. The PNG's own alpha
-                   channel defines the visible shape; if a region is
-                   transparent in the source, it stays transparent
-                   here. object-contain keeps the natural aspect ratio
-                   so the silhouette never distorts. */
-                className={`relative w-full ${imageSize} object-contain`}
+              {/* Image wrapper — handles pointer drag + wheel zoom in
+                  reposition mode. The transform is applied here so the
+                  drop-shadow filter on the <img> animates with it
+                  (drop-shadow respects the transform via the GPU). */}
+              <div
+                className={`relative w-full ${imageSize}`}
+                onPointerDown={onImagePointerDown}
+                onPointerMove={onImagePointerMove}
+                onPointerUp={onImagePointerUp}
+                onPointerCancel={onImagePointerUp}
+                onWheel={onImageWheel}
                 style={{
-                  /* Stacked drop-shadows trace the silhouette
-                     (drop-shadow respects alpha channels, unlike
-                     box-shadow). Gives the BG-removed building a
-                     real floating feel that matches its outline. */
-                  filter:
-                    "drop-shadow(0 30px 40px rgba(15, 23, 42, 0.28)) drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18)) drop-shadow(0 2px 4px rgba(15, 23, 42, 0.10))",
+                  cursor: repositioning
+                    ? dragRef.current
+                      ? "grabbing"
+                      : "grab"
+                    : "default",
+                  touchAction: repositioning ? "none" : "auto",
+                  transform: `translate(${offsetX}%, ${offsetY}%) scale(${scaleVal})`,
+                  transformOrigin: "center center",
+                  transition: repositioning
+                    ? "none"
+                    : "transform 320ms cubic-bezier(0.22, 1, 0.36, 1)",
+                  willChange: "transform",
                 }}
-                loading="lazy"
-              />
-              {editable ? (
-                /* Replace / Remove controls — hidden by default, fade
-                   in on group hover or while uploading so they never
-                   sit on top of the building image when the operator
-                   isn't trying to edit. */
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={currentImage}
+                  alt={`${propertyName} exterior`}
+                  className="relative w-full h-full object-contain"
+                  draggable={false}
+                  style={{
+                    filter:
+                      "drop-shadow(0 30px 40px rgba(15, 23, 42, 0.28)) drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18)) drop-shadow(0 2px 4px rgba(15, 23, 42, 0.10))",
+                    pointerEvents: "none",
+                  }}
+                  loading="lazy"
+                />
+              </div>
+
+              {editable && !repositioning ? (
+                /* Idle controls — fade in on hover. */
                 <div
                   className="absolute top-2 right-2 flex items-center gap-1.5 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-150"
                   style={uploading ? { opacity: 1 } : undefined}
                 >
+                  <button
+                    type="button"
+                    onClick={startReposition}
+                    disabled={uploading}
+                    aria-label="Reposition image"
+                    className="inline-flex items-center gap-1 rounded-md bg-white/90 backdrop-blur px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-white transition-colors disabled:opacity-50"
+                  >
+                    <Move className="h-3 w-3" />
+                    Reposition
+                  </button>
                   <button
                     type="button"
                     onClick={() => fileRef.current?.click()}
@@ -272,6 +449,45 @@ export function PropertyHeroBanner({
                     className="inline-flex items-center justify-center h-6 w-6 rounded-md bg-white/90 backdrop-blur text-muted-foreground hover:text-destructive border border-border shadow-sm hover:bg-white transition-colors disabled:opacity-50"
                   >
                     <XIcon className="h-3 w-3" />
+                  </button>
+                </div>
+              ) : null}
+
+              {editable && repositioning ? (
+                /* Reposition controls — pinned bottom-center so they
+                   stay out of the way of the building image. */
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-[-44px] flex items-center gap-1.5 z-10">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-[10px] font-mono font-semibold text-primary border border-primary/20">
+                    Drag to move · scroll to zoom · {Math.round(scaleVal * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={resetReposition}
+                    aria-label="Reset position"
+                    className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-muted-foreground border border-border shadow-sm hover:bg-muted transition-colors"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Reset
+                  </button>
+                  <button
+                    type="button"
+                    onClick={cancelReposition}
+                    className="inline-flex items-center gap-1 rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-foreground border border-border shadow-sm hover:bg-muted transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={saveReposition}
+                    disabled={saving}
+                    className="inline-flex items-center gap-1 rounded-md bg-primary px-2.5 py-1 text-[10px] font-semibold text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+                  >
+                    {saving ? (
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                    ) : (
+                      <Check className="h-3 w-3" />
+                    )}
+                    Save
                   </button>
                 </div>
               ) : null}
