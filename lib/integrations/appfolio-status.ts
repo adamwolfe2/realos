@@ -58,6 +58,11 @@ export type AppFolioSyncStatsSummary = {
   delinquenciesUpdated: number;
   warnings: string[];
   phasesCompleted: number;
+  /** Phases auto-skipped after 3 consecutive failures (almost always a
+   *  plan limitation, e.g. guest_cards on AppFolio Core). Counted as
+   *  accounted-for so a steady-state skip doesn't keep the warning
+   *  banner up forever. */
+  phasesSkipped: number;
   totalPhases: number;
   completedAt: string | null;
 };
@@ -220,9 +225,18 @@ export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> 
   // tell the operator "leads aren't syncing, everything else is fine"
   // instead of either lying with green "Synced" or screaming red
   // "Failed" for a 5/6-successful run.
+  //
+  // Phases that have been *intentionally skipped* (auto-skip after 3
+  // consecutive failures — almost always a plan limitation, e.g.
+  // guest_cards isn't on AppFolio Core) count as accounted-for. Once
+  // every phase has either succeeded OR been deliberately skipped, the
+  // sync is in a steady state and the banner shouldn't keep alarming
+  // every page-load with "completed with warnings."
+  const phasesAccounted =
+    (stats?.phasesCompleted ?? 0) + (stats?.phasesSkipped ?? 0);
   const hasPhaseFailures =
     !!stats &&
-    stats.phasesCompleted < stats.totalPhases &&
+    phasesAccounted < stats.totalPhases &&
     stats.warnings.length > 0;
   if (hasPhaseFailures) {
     return {
@@ -269,6 +283,7 @@ function parseStats(raw: unknown): AppFolioSyncStatsSummary | null {
     delinquenciesUpdated: num("delinquenciesUpdated"),
     warnings,
     phasesCompleted: num("phasesCompleted"),
+    phasesSkipped: num("phasesSkipped"),
     totalPhases: num("totalPhases"),
     completedAt:
       typeof r.completedAt === "string" ? r.completedAt : null,
