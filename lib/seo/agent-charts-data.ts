@@ -597,3 +597,47 @@ export async function getLocalPackRows(input: {
       : [],
   }));
 }
+
+// ---------------------------------------------------------------------------
+// Weekly score history — feeds the ScoreHistoryChart on the agent dashboard.
+// Returns up to 12 most recent weeks per (orgId, propertyId).
+// ---------------------------------------------------------------------------
+export type ScoreHistoryPoint = {
+  weekOf: string;
+  composite: number;
+  technical: number;
+  content: number;
+  authority: number;
+};
+
+export async function getScoreHistory(input: {
+  orgId: string;
+  propertyId?: string;
+  weeks?: number;
+}): Promise<ScoreHistoryPoint[]> {
+  const weeks = input.weeks ?? 12;
+  const rows = await prisma.seoScoreHistory.findMany({
+    where: {
+      orgId: input.orgId,
+      ...(input.propertyId ? { propertyId: input.propertyId } : {}),
+    },
+    orderBy: { weekOf: "desc" },
+    take: weeks,
+    select: {
+      weekOf: true,
+      compositeScore: true,
+      technicalScore: true,
+      contentScore: true,
+      authorityScore: true,
+    },
+  });
+  return rows
+    .map((r) => ({
+      weekOf: r.weekOf.toISOString().slice(0, 10),
+      composite: r.compositeScore,
+      technical: r.technicalScore,
+      content: r.contentScore,
+      authority: r.authorityScore,
+    }))
+    .reverse();
+}

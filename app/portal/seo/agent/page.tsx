@@ -48,7 +48,12 @@ import {
   getBrandedSplit,
   getSiteHealth,
   getLocalPackRows,
+  getScoreHistory,
 } from "@/lib/seo/agent-charts-data";
+import { DraftLauncher } from "@/components/portal/seo/draft-launcher";
+import { TargetQueryManager } from "@/components/portal/seo/target-query-manager";
+import { RefreshRecommendationsButton } from "@/components/portal/seo/refresh-recommendations-button";
+import { ScoreHistoryChart } from "@/components/portal/seo/score-history-chart";
 
 export const metadata: Metadata = { title: "SEO Agent" };
 export const dynamic = "force-dynamic";
@@ -377,6 +382,7 @@ export default async function SeoAgentPage({
     brandedSplit,
     siteHealth,
     localPackRows,
+    scoreHistory,
   ] = await Promise.all([
     getExecSummary({ orgId: scope.orgId, propertyId: property.id, range }),
     getPositionBucketSeries({
@@ -401,6 +407,7 @@ export default async function SeoAgentPage({
     getBrandedSplit({ orgId: scope.orgId, propertyId: property.id, range }),
     getSiteHealth({ orgId: scope.orgId, propertyId: property.id }),
     getLocalPackRows({ orgId: scope.orgId, propertyId: property.id }),
+    getScoreHistory({ orgId: scope.orgId, propertyId: property.id }),
   ]);
 
   // Build the exec-summary stats array. Delta arrows are NULL when we
@@ -557,6 +564,25 @@ export default async function SeoAgentPage({
         ]}
       />
 
+      {/* Operator action bar — refresh recs + spawn a new draft. */}
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-card px-4 py-3">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">
+            Take action
+          </h3>
+          <p className="text-[12px] text-muted-foreground mt-0.5">
+            Refresh recommendations or generate a draft. Drafts go to admin for review.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <RefreshRecommendationsButton propertyId={property.id} />
+          <DraftLauncher
+            propertyId={property.id}
+            propertyName={property.name}
+          />
+        </div>
+      </div>
+
       {/* Recommendations — synthesized by lib/seo/agent.ts from real data.
           PropertyIntelligencePanel ALSO reads from the property
           recommendation engine (lib/intelligence/...) which has overlap;
@@ -627,6 +653,12 @@ export default async function SeoAgentPage({
         />
         <LocalPackCard rows={localPackRows} />
       </div>
+
+      {/* Score history — feeds the operator's "are we getting better?" question. */}
+      <ScoreHistoryChart data={scoreHistory} />
+
+      {/* Target queries — operators add/remove their own queries here. */}
+      <TargetQueryManager propertyId={property.id} />
 
       <SerpRankingsCard rows={serpRows} totalQueries={targetQueryCountTotal} />
 

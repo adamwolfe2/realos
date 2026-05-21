@@ -219,7 +219,10 @@ export function VisitorStream() {
             fontWeight: 500,
           }}
         >
-          Every named visitor goes to your team and your ad audiences
+          <span className="hidden sm:inline">
+            Every named visitor goes to your team and your ad audiences
+          </span>
+          <span className="sm:hidden">Named visitors → CRM + audiences</span>
         </span>
         <span
           style={{
@@ -401,7 +404,7 @@ function VisitorRow({
       </span>
 
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span
             className="truncate"
             style={{
@@ -410,6 +413,7 @@ function VisitorRow({
               color: INK,
               fontWeight: 500,
               transition: "color 400ms ease",
+              maxWidth: "100%",
             }}
           >
             {displayName}
@@ -463,8 +467,11 @@ function VisitorRow({
         </p>
       </div>
 
+      {/* Time-ago column: hidden on mobile (the cramped meta line above
+          truncated names mid-word when the pill was also in play). Shown
+          from sm: onward where there's room. */}
       <span
-        className="flex-shrink-0"
+        className="hidden sm:inline flex-shrink-0"
         style={{
           fontFamily: "var(--font-mono)",
           fontSize: "10px",

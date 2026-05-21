@@ -92,7 +92,7 @@ function ComparisonRow({
       // LeaseStack each take their own row at full width. Desktop
       // 4-column layout (label · Today · arrow · WithLeaseStack)
       // unchanged via the md: breakpoint.
-      className="grid grid-cols-1 md:grid-cols-[56px_1fr_28px_1fr] gap-x-4 md:gap-x-8 gap-y-3 py-8 md:py-10 items-start"
+      className="grid grid-cols-1 md:grid-cols-[56px_1fr_28px_1fr] gap-x-4 md:gap-x-8 gap-y-2 py-6 md:py-10 items-start"
       style={{
         borderTop: isFirst ? "none" : `1px solid ${BORDER}`,
       }}
@@ -255,8 +255,8 @@ export function Comparison() {
         borderTop: `1px solid ${BORDER}`,
       }}
     >
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-16 md:py-20">
-        <div className="max-w-3xl mb-10 md:mb-14">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-12 md:py-20">
+        <div className="max-w-3xl mb-8 md:mb-14">
           <p className="eyebrow mb-3">{comparison.eyebrow}</p>
           <h2
             style={{

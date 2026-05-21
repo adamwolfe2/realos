@@ -306,17 +306,16 @@ function JourneyHeader() {
         />
       </h2>
       <p
-        className="mt-4 max-w-2xl"
+        className="mt-3 md:mt-4 max-w-2xl"
         style={{
           color: "#64748B",
           fontFamily: "var(--font-sans)",
-          fontSize: 16,
+          fontSize: 15,
           lineHeight: 1.6,
         }}
       >
-        Scroll to watch the platform unlock, step by step. Every capability
-        ships on day fourteen, the next seventy-six days are compounding,
-        not deployment.
+        Every capability ships on day fourteen. The next seventy-six days are
+        compounding, not deployment.
       </p>
     </div>
   );

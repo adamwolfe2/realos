@@ -15,6 +15,7 @@ import {
   Inbox,
   Sparkles,
   Bug,
+  FileText,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -29,7 +30,8 @@ export interface NavItem {
     | "openCreative"
     | "atRiskTenants"
     | "pendingPixelRequests"
-    | "openBugReports";
+    | "openBugReports"
+    | "pendingContentDrafts";
 }
 
 export interface NavGroup {
@@ -82,6 +84,12 @@ export const adminNavGroups: NavGroup[] = [
         label: "Creative queue",
         icon: Brush,
         badgeKey: "openCreative",
+      },
+      {
+        href: "/admin/content-drafts",
+        label: "Content drafts",
+        icon: FileText,
+        badgeKey: "pendingContentDrafts",
       },
       { href: "/admin/campaigns", label: "Ad campaigns", icon: Megaphone },
       {

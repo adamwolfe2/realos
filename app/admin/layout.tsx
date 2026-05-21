@@ -39,6 +39,7 @@ const getAdminNavBadges = unstable_cache(
       atRiskTenants,
       pendingPixelRequests,
       openBugReports,
+      pendingContentDrafts,
     ] = await Promise.all([
       prisma.intakeSubmission
         .count({ where: { reviewedAt: null, convertedAt: null } })
@@ -94,6 +95,13 @@ const getAdminNavBadges = unstable_cache(
           },
         })
         .catch(() => 0),
+      prisma.contentDraft
+        .count({
+          where: {
+            status: { in: ["PENDING_REVIEW", "CHANGES_REQUESTED"] },
+          },
+        })
+        .catch(() => 0),
     ]);
     return {
       pendingIntakes,
@@ -102,6 +110,7 @@ const getAdminNavBadges = unstable_cache(
       atRiskTenants,
       pendingPixelRequests,
       openBugReports,
+      pendingContentDrafts,
       unreadMessages: 0,
     } as Record<string, number>;
   },

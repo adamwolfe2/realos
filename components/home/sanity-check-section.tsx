@@ -28,7 +28,7 @@ export function SanityCheckSection() {
       surface="muted"
       eyebrow="LIVE INSIGHTS"
       title="Catch the bad reviews before your owners do."
-      body="Every Google, Yelp, Reddit, and forum mention is pulled into one feed and classified for sentiment. Negative reviews get auto-flagged the moment they land. Drafted responses sit there, ready to send, so the operator never has to write from scratch at 11pm."
+      body="Google, Yelp, Reddit, and forum mentions pulled into one feed and classified. Negatives are flagged the moment they land, with a drafted reply ready to send."
       bullets={[
         "5-year fuse on direct reviews · 6-month fuse on general threads",
         "Auto-drafted replies tuned for residential, not hotel",
@@ -182,6 +182,7 @@ function ReputationArtifact() {
           <RedditIcon className="h-3.5 w-3.5" />
           <FacebookIcon className="h-3.5 w-3.5" />
           <span
+            className="hidden sm:inline"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 10,
@@ -191,6 +192,18 @@ function ReputationArtifact() {
             }}
           >
             ApartmentRatings · BBB · Niche · news · forums
+          </span>
+          <span
+            className="sm:hidden"
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.08em",
+              fontWeight: 500,
+              color: "#94A3B8",
+            }}
+          >
+            + news, forums
           </span>
         </span>
       </footer>
@@ -302,13 +315,16 @@ function FeedItem({
         opacity: muted ? 0.55 : 1,
       }}
     >
-      <div className="flex items-baseline justify-between gap-3 mb-1">
+      {/* Status pill on its own row on mobile so the source · author ·
+          time line never has to share width with it. On sm+, the pill
+          floats to the right of the meta line as before. */}
+      <div className="flex items-start sm:items-baseline justify-between gap-2 sm:gap-3 mb-1.5 flex-wrap sm:flex-nowrap">
         <div
-          className="flex items-center gap-2 min-w-0"
+          className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap order-2 sm:order-1"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
-            letterSpacing: "0.08em",
+            letterSpacing: "0.06em",
             textTransform: "uppercase",
             color: "#94A3B8",
           }}
@@ -318,13 +334,13 @@ function FeedItem({
           {rating != null ? (
             <span style={{ color: "#2563EB" }}>{"★".repeat(rating)}</span>
           ) : null}
-          <span>·</span>
-          <span className="truncate">{author}</span>
-          <span>·</span>
-          <span>{when}</span>
+          <span aria-hidden="true">·</span>
+          <span>{author}</span>
+          <span aria-hidden="true">·</span>
+          <span style={{ whiteSpace: "nowrap" }}>{when}</span>
         </div>
         <span
-          className="shrink-0 inline-flex items-center rounded px-1.5 py-0.5"
+          className="shrink-0 inline-flex items-center rounded px-1.5 py-0.5 order-1 sm:order-2"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 9.5,

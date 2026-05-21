@@ -127,15 +127,15 @@ function WeeklyItem({
   return (
     <li
       ref={ref}
-      className="grid grid-cols-[64px_1fr] md:grid-cols-[120px_56px_1fr] gap-x-4 md:gap-x-8 py-10 md:py-14 relative"
+      className="grid grid-cols-1 md:grid-cols-[120px_56px_1fr] gap-x-4 md:gap-x-8 gap-y-3 py-8 md:py-14 relative"
     >
-      {/* Day chip, large mono with time underneath */}
-      <div>
+      {/* Day chip — inline pill on mobile, two-line stack on desktop */}
+      <div className="flex items-baseline gap-3 md:block">
         <p
           style={{
             color: visible ? INK : MUTED,
             fontFamily: "var(--font-mono)",
-            fontSize: 13,
+            fontSize: 12,
             letterSpacing: "0.18em",
             textTransform: "uppercase",
             fontWeight: 700,
@@ -145,11 +145,11 @@ function WeeklyItem({
           {day}
         </p>
         <p
-          className="mt-1"
+          className="md:mt-1"
           style={{
             color: MUTED,
             fontFamily: "var(--font-mono)",
-            fontSize: 11,
+            fontSize: 10.5,
             letterSpacing: "0.12em",
             textTransform: "uppercase",
             fontWeight: 500,
@@ -242,7 +242,7 @@ function WeeklyItem({
           style={{
             color: INK,
             fontFamily: "var(--font-sans)",
-            fontSize: "clamp(20px, 2vw, 24px)",
+            fontSize: "clamp(18px, 2vw, 24px)",
             fontWeight: 700,
             lineHeight: 1.2,
             letterSpacing: "-0.018em",
@@ -251,12 +251,12 @@ function WeeklyItem({
           <MaskRevealUp lines={[title]} staggerMs={0} />
         </h3>
         <p
-          className="mt-3 max-w-[640px]"
+          className="mt-2 md:mt-3 max-w-[640px]"
           style={{
             color: "#64748B",
             fontFamily: "var(--font-sans)",
-            fontSize: 15,
-            lineHeight: 1.65,
+            fontSize: 14,
+            lineHeight: 1.6,
           }}
         >
           <PerWordCrossfade trigger={visible} staggerMs={28}>
@@ -265,17 +265,18 @@ function WeeklyItem({
         </p>
         {outcome ? (
           <div
-            className="mt-5 inline-flex items-center"
+            className="mt-4 md:mt-5 inline-flex items-center"
             style={{ position: "relative" }}
           >
             <span
               aria-hidden="true"
               style={{
                 display: "inline-block",
-                width: 18,
-                height: 1,
+                width: 28,
+                height: 2,
                 backgroundColor: ACCENT,
                 marginRight: 10,
+                borderRadius: 1,
               }}
             />
             <span
@@ -364,8 +365,8 @@ export function Weekly() {
         borderTop: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-16 md:py-24">
-        <div className="max-w-3xl mb-14 md:mb-20">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-12 md:py-24">
+        <div className="max-w-3xl mb-8 md:mb-20">
           <p className="eyebrow mb-3">{weekly.eyebrow}</p>
           <h2
             style={{

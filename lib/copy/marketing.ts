@@ -19,7 +19,7 @@ export const MARKETING = {
       headline: "Your leasing data. Working for you.",
       highlight: "Working for you.",
       subhead:
-        "LeaseStack tells real estate operators exactly what their digital marketing is doing, and exactly what to do about it. One platform, every signal, on your domain.",
+        "LeaseStack tells real estate operators what their marketing is doing — and what to do next. One platform, every signal, on your domain.",
       primaryCta: "Book a demo",
       primaryHref: "/onboarding",
       secondaryCta: "See the data",
@@ -50,29 +50,29 @@ export const MARKETING = {
       eyebrow: "The shift",
       headline: "The current stack vs. one that tells you what to do next.",
       body:
-        "Most operators are paying for five tools that do not talk to each other, plus a retainer for the people stitching them together. Here is what changes when the stack is a product.",
+        "Five tools that do not talk to each other, plus a retainer to stitch them together. Here is what changes when the stack ships as one product.",
       leftLabel: "The current stack",
       rightLabel: "With LeaseStack",
       rows: [
         {
-          old: "Six vendors, six invoices, and a dashboard you stitch together yourself.",
-          new: "One platform, one login, one weekly report that ties spend to leases.",
+          old: "Six vendors. Six invoices. A stitched-together dashboard.",
+          new: "One platform. One login. One weekly report tying spend to leases.",
         },
         {
           old: "Agency decks show activity: impressions, clicks, reach.",
-          new: "Your report shows outcomes: leads, tours booked, leases signed.",
+          new: "Your report shows outcomes: leads, tours, leases.",
         },
         {
-          old: "You find out the lease-up is behind when occupancy slips.",
-          new: "You get a pacing alert four to eight weeks before it shows up in occupancy.",
+          old: "You learn the lease-up is behind when occupancy slips.",
+          new: "Pacing alerts 4–8 weeks before occupancy shows it.",
         },
         {
-          old: "Most of your site traffic stays anonymous forever.",
-          new: "Names and emails on a meaningful share of the visitors who land.",
+          old: "Most site traffic stays anonymous forever.",
+          new: "Names and emails on a meaningful share of visitors.",
         },
         {
-          old: "The chatbot is a glorified FAQ, or there is not one at all.",
-          new: "An AI chatbot trained on your properties, capturing leads at 2am.",
+          old: "The chatbot is a glorified FAQ — or missing entirely.",
+          new: "AI chatbot trained on your properties, capturing leads at 2am.",
         },
       ],
     },
@@ -85,34 +85,34 @@ export const MARKETING = {
         {
           day: "Monday",
           time: "7:00 AM",
-          title: "Weekly performance report lands in your inbox.",
+          title: "Weekly report in your inbox.",
           body:
-            "Leases attributed to source, spend summary, pacing vs. last cycle, anomalies flagged, and the three actions to take this week. One page, readable over coffee.",
-          outcome: "3 prioritized actions, every Monday",
+            "Leases by source, spend, pacing, anomalies, and three actions for the week. One page, read over coffee.",
+          outcome: "3 actions, every Monday",
         },
         {
           day: "Tuesday",
           time: "Rolling",
-          title: "Tour requests land in one pipeline, with source attached.",
+          title: "Every tour, one pipeline.",
           body:
-            "Site form, chatbot, pixel-identified visitors, inbound calls, scheduling links. Every channel funnels into the same view, attribution intact.",
-          outcome: "100% of tours sourced to channel",
+            "Forms, chatbot, identified visitors, calls, scheduling links — one view, source attached.",
+          outcome: "100% of tours sourced",
         },
         {
           day: "Thursday",
           time: "By EOD",
           title: "Creative refresh ships.",
           body:
-            "New ad concepts, email subject variants, and landing-block copy within 48 hours of request. No retainer to wait on. No change-order form.",
-          outcome: "48-hour turnaround, no exceptions",
+            "New ad concepts, email variants, and landing copy within 48 hours. No retainer. No change order.",
+          outcome: "48-hour turnaround",
         },
         {
           day: "Ongoing",
           time: "Overnight",
-          title: "The AI chatbot works the nightshift.",
+          title: "Chatbot works the nightshift.",
           body:
-            "Prospects asking questions at 2am get a useful conversation, not a contact form. Hot leads land with your team the next morning, thread attached.",
-          outcome: "1 in 4 leads captured after hours",
+            "Prospects asking at 2am get a real conversation. Hot leads land with your team by morning.",
+          outcome: "1 in 4 leads after hours",
         },
       ],
     },
