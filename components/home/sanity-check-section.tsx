@@ -3,6 +3,12 @@
 import * as React from "react";
 import { StickyArtifactSection } from "@/components/platform/sticky-artifact-section";
 import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
+import {
+  GoogleIcon,
+  RedditIcon,
+  YelpIcon,
+  FacebookIcon,
+} from "@/components/portal/reputation/source-logo";
 
 // ---------------------------------------------------------------------------
 // SanityCheckSection — the Judgment-Labs-style "calm sticky text + dense
@@ -138,6 +144,14 @@ function ReputationArtifact() {
           status="positive"
         />
         <FeedItem
+          source="Facebook"
+          rating={null}
+          author="Marcus T."
+          when="10 days ago"
+          excerpt="Tour was clean, leasing agent walked through every floor plan."
+          status="positive"
+        />
+        <FeedItem
           source="Yelp"
           rating={4}
           author="Priya M."
@@ -147,8 +161,66 @@ function ReputationArtifact() {
           muted
         />
       </ul>
+
+      {/* Source-coverage strip (Norman 2026-05-21): operators kept
+          asking which platforms we monitor. Showing the live logo
+          set inline below the feed answers it without taking another
+          section of vertical real estate. */}
+      <footer
+        className="px-5 py-3 border-t flex items-center gap-3 flex-wrap"
+        style={{ borderColor: "#F1F5F9", backgroundColor: "#FAFBFF" }}
+      >
+        <span
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            fontWeight: 600,
+            color: "#94A3B8",
+          }}
+        >
+          Reading from
+        </span>
+        <span className="inline-flex items-center gap-2 opacity-90">
+          <GoogleIcon className="h-3.5 w-3.5" />
+          <YelpIcon className="h-3.5 w-3.5" />
+          <RedditIcon className="h-3.5 w-3.5" />
+          <FacebookIcon className="h-3.5 w-3.5" />
+          <span
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: 10,
+              letterSpacing: "0.08em",
+              fontWeight: 500,
+              color: "#94A3B8",
+            }}
+          >
+            ApartmentRatings · BBB · Niche · news · forums
+          </span>
+        </span>
+      </footer>
     </div>
   );
+}
+
+// Map a source string to its inline brand logo. Falls back to null
+// (the FeedItem renders no icon when null) so adding a new source
+// doesn't break the row.
+function SourceIcon({ source }: { source: string }) {
+  const className = "h-3 w-3 flex-shrink-0";
+  switch (source.toLowerCase()) {
+    case "google":
+      return <GoogleIcon className={className} />;
+    case "yelp":
+      return <YelpIcon className={className} />;
+    case "reddit":
+      return <RedditIcon className={className} />;
+    case "facebook":
+      return <FacebookIcon className={className} />;
+    default:
+      return null;
+  }
 }
 
 function Stat({
@@ -238,7 +310,7 @@ function FeedItem({
     >
       <div className="flex items-baseline justify-between gap-3 mb-1">
         <div
-          className="flex items-baseline gap-2 min-w-0"
+          className="flex items-center gap-2 min-w-0"
           style={{
             fontFamily: "var(--font-mono)",
             fontSize: 10,
@@ -247,6 +319,7 @@ function FeedItem({
             color: "#94A3B8",
           }}
         >
+          <SourceIcon source={source} />
           <span style={{ color: "#1E2A3A", fontWeight: 600 }}>{source}</span>
           {rating != null ? (
             <span style={{ color: "#2563EB" }}>{"★".repeat(rating)}</span>

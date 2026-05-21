@@ -15,7 +15,10 @@ type LogoProps = {
   title?: string;
 };
 
-function GoogleIcon({ className = "h-4 w-4", title = "Google" }: LogoProps) {
+// Exported for reuse on the marketing surface (SanityCheckSection
+// reputation-feed mockup) so the same brand glyphs render on both
+// portal + marketing without duplicating SVG paths.
+export function GoogleIcon({ className = "h-4 w-4", title = "Google" }: LogoProps) {
   return (
     <svg
       className={className}
@@ -43,7 +46,7 @@ function GoogleIcon({ className = "h-4 w-4", title = "Google" }: LogoProps) {
   );
 }
 
-function RedditIcon({ className = "h-4 w-4", title = "Reddit" }: LogoProps) {
+export function RedditIcon({ className = "h-4 w-4", title = "Reddit" }: LogoProps) {
   return (
     <svg
       className={className}
@@ -57,7 +60,7 @@ function RedditIcon({ className = "h-4 w-4", title = "Reddit" }: LogoProps) {
   );
 }
 
-function YelpIcon({ className = "h-4 w-4", title = "Yelp" }: LogoProps) {
+export function YelpIcon({ className = "h-4 w-4", title = "Yelp" }: LogoProps) {
   return (
     <svg
       className={className}
@@ -71,7 +74,7 @@ function YelpIcon({ className = "h-4 w-4", title = "Yelp" }: LogoProps) {
   );
 }
 
-function FacebookIcon({
+export function FacebookIcon({
   className = "h-4 w-4",
   title = "Facebook",
 }: LogoProps) {
@@ -88,7 +91,7 @@ function FacebookIcon({
   );
 }
 
-function InstagramIcon({
+export function InstagramIcon({
   className = "h-4 w-4",
   title = "Instagram",
 }: LogoProps) {
@@ -105,7 +108,7 @@ function InstagramIcon({
   );
 }
 
-function QuoraIcon({ className = "h-4 w-4", title = "Quora" }: LogoProps) {
+export function QuoraIcon({ className = "h-4 w-4", title = "Quora" }: LogoProps) {
   return (
     <svg
       className={className}
