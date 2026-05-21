@@ -429,21 +429,13 @@ export async function OverviewTab({
 
   return (
     <div className="space-y-6 ls-page-fade">
-      {/* 1. Hero strip — name, photo, fact row. */}
-      <PropertyHeroStrip
-        name={propertyMeta.name}
-        totalUnits={totalUnits}
-        leasedUnits={leasedUnits}
-        occupancyPct={occupancyPct}
-        monthlyRentRollDisplay={monthlyRentRollDisplay}
-        heroImageUrl={property.heroImageUrl ?? null}
-        propertyType={property.propertyType}
-        propertySubtype={
-          property.residentialSubtype ?? property.commercialSubtype ?? null
-        }
-        yearBuilt={property.yearBuilt}
-        lastSyncedAt={property.lastSyncedAt}
-      />
+      {/* Norman 2026-05-21: hero identity + headline stats now live in
+          the new PropertyHeroBanner ABOVE the tab nav (see
+          app/portal/properties/[id]/page.tsx). Removed the in-tab
+          PropertyHeroStrip — it was a duplicate identity card showing
+          the same name / units / occupancy / synced-time the banner
+          already surfaces. The property side panel covers the
+          remaining metadata (type, subtype, year built, etc.). */}
 
       {isOnboardingShell ? (
         <OnboardingShellCard
@@ -520,38 +512,21 @@ export async function OverviewTab({
         <div className="grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-6">
           {/* LEFT — the work. */}
           <div className="space-y-6 min-w-0">
-            {propertyInsights.length > 0 ? (
-              <InsightsHero
-                insights={propertyInsights as InsightCardData[]}
-                counts={{
-                  critical: propertyInsightCounts.critical,
-                  warning: propertyInsightCounts.warning,
-                  info: propertyInsightCounts.info,
-                  total: propertyInsightCounts.total,
-                }}
-                scope={{
-                  kind: "property",
-                  propertyId,
-                  propertyName: propertyMeta.name,
-                }}
-              />
-            ) : (
-              <AiInsightCard insight={aiInsight} />
-            )}
+            {/* Norman 2026-05-21: the in-tab InsightsHero / AiInsightCard
+                pair is now served by the PropertyIntelligencePanel
+                rendered ABOVE the tab nav (see page.tsx). Removed here
+                to eliminate the duplicate insight surface — operators
+                were seeing the same recommendations stacked twice
+                ("INSIGHTS FOR TELEGRAPH COMMONS" + "INTELLIGENCE · LIVE
+                SIGNALS"). The new panel uses the live recommendation
+                engine and supersedes both. */}
 
-            {/* KPI tiles. Norman feedback (issues #71, #72, #77): we're
-                pivoting away from rent-roll metrics (occupancy, monthly
-                rent, renewals) toward marketing/website performance
-                metrics. Occupancy + Monthly rent + Renewals tiles are
-                hidden; tours and applications surface from the same KPI
-                bundle without pulling rent data into the UI. */}
-            <section className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-              <KpiTile
-                label="Leads (28d)"
-                value={kpis.leads28d > 0 ? kpis.leads28d : <DimZero />}
-                delta={leadsDelta}
-                hint={leadsHint}
-              />
+            {/* KPI tiles. Trimmed to 3 (was 4) per Norman 2026-05-21:
+                Leads (28d) was duplicating the hero banner's "Leads · 30d"
+                stat one row above. Tours / Applications / Available units
+                are unique signal — kept here so the operator sees the
+                conversion shape at a glance. */}
+            <section className="grid grid-cols-2 lg:grid-cols-3 gap-2">
               <KpiTile
                 label="Tours (28d)"
                 value={kpis.tours28d > 0 ? kpis.tours28d : <DimZero />}

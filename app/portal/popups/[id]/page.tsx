@@ -9,6 +9,11 @@ import { getSiteUrl } from "@/lib/brand";
 import { PageHeader } from "@/components/admin/page-header";
 import { PopupEditor } from "@/components/portal/popups/popup-editor";
 import { InstallSnippet } from "@/app/portal/chatbot/install-snippet";
+import { EmbedDetectionChip } from "@/components/portal/popups/embed-detection-chip";
+import { PreviewLiveSite } from "@/components/portal/popups/preview-live-site";
+import { TriggerInspector } from "@/components/portal/popups/trigger-inspector";
+import { LiveEventFeed } from "@/components/portal/popups/live-event-feed";
+import { TestFireButton } from "@/components/portal/popups/test-fire-button";
 
 export const metadata: Metadata = { title: "Edit popup" };
 export const dynamic = "force-dynamic";
@@ -23,7 +28,7 @@ export default async function PopupEditorPage({
   const popup = await getPopupById(scope.orgId, id);
   if (!popup) notFound();
 
-  const [properties, org] = await Promise.all([
+  const [properties, org, marketingSite] = await Promise.all([
     prisma.property.findMany({
       where: marketablePropertyWhere(scope.orgId),
       select: { id: true, name: true },
@@ -33,6 +38,29 @@ export default async function PopupEditorPage({
       where: { id: scope.orgId },
       select: { slug: true },
     }),
+    // Resolve the URL we hand to the preview button + embed-detection
+    // probe. Preference order:
+    //   1. The property this campaign is bound to (if any), so per-
+    //      property campaigns preview against the right site.
+    //   2. The first marketable property with a websiteUrl set — this
+    //      is the org's "default" public site in practice.
+    // If neither resolves, both Preview + Embed chip render their
+    // graceful "no URL configured" empty states.
+    (async () => {
+      if (popup.propertyId) {
+        const p = await prisma.property.findFirst({
+          where: { id: popup.propertyId, orgId: scope.orgId, websiteUrl: { not: null } },
+          select: { websiteUrl: true },
+        });
+        if (p?.websiteUrl) return p.websiteUrl;
+      }
+      const p = await prisma.property.findFirst({
+        where: { ...marketablePropertyWhere(scope.orgId), websiteUrl: { not: null } },
+        select: { websiteUrl: true },
+        orderBy: { updatedAt: "desc" },
+      });
+      return p?.websiteUrl ?? null;
+    })(),
   ]);
 
   // One-line embed snippet — same shape as chatbot install-snippet so
@@ -68,6 +96,46 @@ export default async function PopupEditorPage({
         title={popup.name}
         description="Edit copy, design, triggers, and capture settings. The preview on the right updates as you type. Don't forget to hit Save."
       />
+
+      {/* Testing surface — Preview / Embed detection / Trigger inspector /
+          Live event feed. Sits above the editor so an operator can verify
+          "this is wired correctly on my live site" without scrolling
+          past every form field first. Each component degrades gracefully
+          when its input is missing (no website URL, no events yet,
+          etc.) so this whole block is safe to render unconditionally. */}
+      <section
+        aria-label="Test this popup"
+        className="rounded-xl border border-border bg-background p-4 space-y-3"
+      >
+        <header className="flex flex-wrap items-baseline justify-between gap-2">
+          <div>
+            <h2 className="text-[13px] font-semibold text-foreground">Test this popup</h2>
+            <p className="text-[11.5px] text-muted-foreground">
+              Preview on your real site, verify the embed is installed, and watch SHOWN / DISMISSED / CTA events arrive live.
+            </p>
+          </div>
+          <TestFireButton campaignId={popup.id} />
+        </header>
+
+        <PreviewLiveSite siteUrl={marketingSite} />
+
+        <EmbedDetectionChip url={marketingSite} orgSlug={org?.slug ?? ""} />
+
+        <div className="grid gap-3 md:grid-cols-2">
+          <TriggerInspector
+            trigger={popup.trigger}
+            triggerThreshold={popup.triggerThreshold}
+            targetUrlPatterns={
+              Array.isArray(popup.targetUrlPatterns)
+                ? (popup.targetUrlPatterns as string[])
+                : []
+            }
+            frequency={popup.frequency}
+            position={popup.position}
+          />
+          <LiveEventFeed campaignId={popup.id} />
+        </div>
+      </section>
 
       {showTroubleshoot ? (
         <div
