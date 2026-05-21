@@ -3,6 +3,7 @@ import { putPublic, delPublic } from "@/lib/blob-public";
 import { requireScope, ForbiddenError, tenantWhere } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { AuditAction } from "@prisma/client";
+import { removeBackground } from "@/lib/images/remove-bg";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -110,12 +111,50 @@ export async function POST(
 
   const safeName =
     file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "hero";
+
+  // Pipe through the background-removal service before persisting so the
+  // dashboard hero treatment renders against the building silhouette
+  // instead of a rectangular photo. Env-gated: if no provider key is
+  // configured, this falls through to the raw upload — the original
+  // file gets stored as-is and the operator sees the photo with its
+  // background intact.
+  let uploadBody: Buffer | File = file;
+  let uploadContentType = file.type;
+  let uploadName = safeName;
+  let backgroundRemoved = false;
+  try {
+    const originalBytes = Buffer.from(await file.arrayBuffer());
+    const bgResult = await removeBackground({
+      buffer: originalBytes,
+      filename: safeName,
+      contentType: file.type,
+    });
+    if ("ok" in bgResult && bgResult.ok) {
+      uploadBody = bgResult.buffer;
+      uploadContentType = bgResult.contentType;
+      // Re-suffix as .png so the eventual blob URL reads correctly.
+      uploadName = safeName.replace(/\.[a-z0-9]+$/i, "") + ".png";
+      backgroundRemoved = true;
+    } else if ("error" in bgResult && bgResult.error) {
+      // Soft failure: log and continue with the raw file. We never
+      // block the upload on the BG-removal pipeline.
+      console.warn("[hero-image] background removal failed:", bgResult.error);
+      uploadBody = originalBytes;
+    } else {
+      // Skipped (no provider configured). Use the original bytes so we
+      // don't re-read the File stream below.
+      uploadBody = originalBytes;
+    }
+  } catch (err) {
+    console.warn("[hero-image] background removal threw:", err);
+  }
+
   let blob;
   try {
     blob = await putPublic(
-      `property-heroes/${scope.orgId}/${property.id}/${safeName}`,
-      file,
-      { addRandomSuffix: true, contentType: file.type },
+      `property-heroes/${scope.orgId}/${property.id}/${uploadName}`,
+      uploadBody,
+      { addRandomSuffix: true, contentType: uploadContentType },
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "Upload failed";
@@ -142,12 +181,17 @@ export async function POST(
         entityType: "Property",
         entityId: property.id,
         description: `Hero image uploaded for ${property.name}`,
-        diff: { heroImageUrl: blob.url, size: file.size, type: file.type },
+        diff: {
+          heroImageUrl: blob.url,
+          size: file.size,
+          type: file.type,
+          backgroundRemoved,
+        },
       },
     })
     .catch(() => undefined);
 
-  return NextResponse.json({ ok: true, url: blob.url });
+  return NextResponse.json({ ok: true, url: blob.url, backgroundRemoved });
 }
 
 export async function DELETE(

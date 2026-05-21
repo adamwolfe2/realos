@@ -378,39 +378,39 @@ model Organization {
   // generates a DRAFT only and the operator manually clicks "Share"
   // or "Email" to ship it. The other values opt into auto-send to
   // the recipient list below the moment the snapshot is generated.
-  reportCadence        String  @default("none") // none | daily | weekly | monthly
-  reportRecipients     String[] @default([])    // explicit email addresses
-  reportAutoSend       Boolean @default(false)  // master enable for auto-send
+  reportCadence       String   @default("none") // none | daily | weekly | monthly
+  reportRecipients    String[] @default([]) // explicit email addresses
+  reportAutoSend      Boolean  @default(false) // master enable for auto-send
   // Online reputation surface — /portal/reputation aggregates Google /
   // Apartments.com / Yelp review pulls, sentiment, and reply workflow.
   // Off by default; activated when the reputation add-on lands.
-  moduleReputation     Boolean @default(false)
+  moduleReputation    Boolean  @default(false)
   // AEO + briefing + reports intelligence bucket. Gates
   // /portal/insights, /portal/briefing, /portal/reports — all of which
   // depend on the same underlying signal pipeline.
-  moduleInsights       Boolean @default(false)
+  moduleInsights      Boolean  @default(false)
   // Cross-channel attribution surface (/portal/attribution). Direct
   // competitor to Clarity Attribution; included as the headline
   // value-prop module on Growth+ tiers.
-  moduleAttribution    Boolean @default(false)
+  moduleAttribution   Boolean  @default(false)
   // Post-lease PMS surface. Groups residents, renewals, work orders,
   // and applications — every page that hangs off AppFolio operational
   // sync. Off until the AppFolio integration is wired + healthy.
-  moduleResidents      Boolean @default(false)
+  moduleResidents     Boolean  @default(false)
   // Tour bookings (/portal/tours). Sourced from the public booking
   // form and API-key ingest, NOT AppFolio. Kept separate from the PMS
   // bucket so non-AppFolio tenants can still light it up.
-  moduleTours          Boolean @default(false)
+  moduleTours         Boolean  @default(false)
   // Inbox-style chatbot conversations surface (/portal/conversations).
   // Distinct from moduleChatbot, which gates the bot itself; this
   // gates the read-side conversation pipeline. Both usually flip on
   // together but can be unbundled for read-only deployments.
-  moduleConversations  Boolean @default(false)
+  moduleConversations Boolean  @default(false)
   // Credentials vault. Paid add-on. Stores per-property and org-wide
   // passwords for external platforms (GA4, Meta Ads, AppFolio, etc.)
   // using envelope encryption — per-org DEK wrapped by a master KEK
   // in env. See docs/PRD-CREDENTIALS-VAULT.md.
-  moduleVault          Boolean @default(false)
+  moduleVault         Boolean  @default(false)
 
   // Wrapped data-encryption key for this org's credential vault.
   // 32-byte AES-256-GCM key, generated on first vault row creation,
@@ -418,9 +418,9 @@ model Organization {
   // Null until the operator creates their first credential. Rotating
   // the master KEK re-wraps these (cheap); rotating an org's DEK
   // requires re-encrypting that org's credentials (still scriptable).
-  vaultDekWrapped      Bytes?
-  vaultDekNonce        Bytes?  // 12-byte GCM nonce used to wrap the DEK
-  vaultEnabledAt       DateTime?
+  vaultDekWrapped Bytes?
+  vaultDekNonce   Bytes? // 12-byte GCM nonce used to wrap the DEK
+  vaultEnabledAt  DateTime?
 
   // Site hosting mode
   bringYourOwnSite Boolean @default(false)
@@ -443,70 +443,75 @@ model Organization {
   whiteLabelPrimaryColor String?
 
   // Relationships
-  users                  User[]
-  properties             Property[]
-  domains                DomainBinding[]
-  tenantSiteConfig       TenantSiteConfig?
-  leads                  Lead[]
-  visitors               Visitor[]
-  chatbotConversations   ChatbotConversation[]
-  creativeRequests       CreativeRequest[]
-  adAccounts             AdAccount[]
-  adCampaigns            AdCampaign[]
-  emailSubscribers       EmailSubscriber[]
-  intakeSubmission       IntakeSubmission?
-  projects               Project[]
-  auditEvents            AuditEvent[]
-  clientNotes            ClientNote[]
+  users                   User[]
+  properties              Property[]
+  domains                 DomainBinding[]
+  tenantSiteConfig        TenantSiteConfig?
+  leads                   Lead[]
+  visitors                Visitor[]
+  chatbotConversations    ChatbotConversation[]
+  creativeRequests        CreativeRequest[]
+  adAccounts              AdAccount[]
+  adCampaigns             AdCampaign[]
+  emailSubscribers        EmailSubscriber[]
+  intakeSubmission        IntakeSubmission?
+  projects                Project[]
+  auditEvents             AuditEvent[]
+  clientNotes             ClientNote[]
   // Was `cursiveIntegration` (singular, one-to-one) before the
   // multi-property migration. Now an array because tenants can have
   // one pixel per property plus an optional legacy org-wide row
   // (propertyId = NULL). Consumers should use the helpers in
   // lib/integrations/per-property.ts instead of reading directly.
-  cursiveIntegrations    CursiveIntegration[]
-  pixelProvisionRequests PixelProvisionRequest[]
-  appfolioIntegration    AppFolioIntegration?
-  seoIntegrations        SeoIntegration[]
-  seoSnapshots           SeoSnapshot[]
-  seoQueries             SeoQuery[]
-  seoLandingPages        SeoLandingPage[]
-  addresses              Address[]
-  apiKeys                ApiKey[]
-  integrationRequests    IntegrationRequest[]
-  visitorSessions        VisitorSession[]
-  visitorEvents          VisitorEvent[]
-  chatbotEngagements     ChatbotEngagement[]
-  notifications          Notification[]
-  insights               Insight[]
-  clientReports          ClientReport[]
-  conversationFlags      ConversationFlag[]
-  reputationScans        ReputationScan[]
-  reputationMentions     PropertyMention[]
-  adLibraryAdvertisers   AdLibraryAdvertiser[]
-  audienceSegments       AudienceSegment[]
-  audienceDestinations   AudienceDestination[]
-  audienceSyncRuns       AudienceSyncRun[]
-  audienceSchedules      AudienceSyncSchedule[]
-  residents              Resident[]
-  leases                 Lease[]
-  workOrders             WorkOrder[]
-  websiteBuildRequests   WebsiteBuildRequest[]
-  popupCampaigns         PopupCampaign[]
-  popupEvents            PopupEvent[]
-  credentialEntries      CredentialEntry[]
-  credentialAccessLogs   CredentialAccessLog[]
-  zillowReports          ZillowReport[]
-  aeoChecks              AeoCitationCheck[]
-  neighborhoodPages      NeighborhoodPage[]
-  onboardingProgress     OnboardingProgress?
+  cursiveIntegrations     CursiveIntegration[]
+  pixelProvisionRequests  PixelProvisionRequest[]
+  appfolioIntegration     AppFolioIntegration?
+  seoIntegrations         SeoIntegration[]
+  seoSnapshots            SeoSnapshot[]
+  seoQueries              SeoQuery[]
+  seoLandingPages         SeoLandingPage[]
+  addresses               Address[]
+  apiKeys                 ApiKey[]
+  integrationRequests     IntegrationRequest[]
+  visitorSessions         VisitorSession[]
+  visitorEvents           VisitorEvent[]
+  chatbotEngagements      ChatbotEngagement[]
+  notifications           Notification[]
+  insights                Insight[]
+  clientReports           ClientReport[]
+  conversationFlags       ConversationFlag[]
+  reputationScans         ReputationScan[]
+  reputationMentions      PropertyMention[]
+  adLibraryAdvertisers    AdLibraryAdvertiser[]
+  audienceSegments        AudienceSegment[]
+  audienceDestinations    AudienceDestination[]
+  audienceSyncRuns        AudienceSyncRun[]
+  audienceSchedules       AudienceSyncSchedule[]
+  residents               Resident[]
+  leases                  Lease[]
+  workOrders              WorkOrder[]
+  websiteBuildRequests    WebsiteBuildRequest[]
+  popupCampaigns          PopupCampaign[]
+  popupEvents             PopupEvent[]
+  credentialEntries       CredentialEntry[]
+  credentialAccessLogs    CredentialAccessLog[]
+  zillowReports           ZillowReport[]
+  aeoChecks               AeoCitationCheck[]
+  neighborhoodPages       NeighborhoodPage[]
+  onboardingProgress      OnboardingProgress?
+  // SEO/AEO Agent backrefs — Phase 1
+  seoActionRecs           SeoActionRecommendation[]
+  contentDrafts           ContentDraft[]
+  seoScoreHistory         SeoScoreHistory[]
+  propertyCompetitorScans PropertyCompetitorScan[]
 
   // Per-property + per-org RentCast market intelligence cache + usage
   // counter. Both are populated lazily — only orgs that actually open
   // the Market Intelligence section on a property detail page allocate
   // rows. See lib/rentcast/* and prisma/migrations/20260522_rentcast_phase1.
-  rentCastSnapshots      RentCastSnapshot[]
-  rentCastUsage          OrgRentCastUsage?
-  propertyEvaluations    PropertyEvaluation[]
+  rentCastSnapshots   RentCastSnapshot[]
+  rentCastUsage       OrgRentCastUsage?
+  propertyEvaluations PropertyEvaluation[]
 
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
@@ -524,10 +529,10 @@ model Organization {
   // to read-only and the activate-subscription flow takes over.
   // subscriptionStatus becomes TRIALING during this window and flips to
   // ACTIVE when the customer completes Stripe Checkout for N properties.
-  onboardingStep      String?
-  chosenTier          SubscriptionTier?
-  trialStartedAt      DateTime?
-  trialEndsAt         DateTime?
+  onboardingStep String?
+  chosenTier     SubscriptionTier?
+  trialStartedAt DateTime?
+  trialEndsAt    DateTime?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -554,17 +559,17 @@ model User {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
-  auditEvents   AuditEvent[]
-  tasksAssigned ProjectTask[]  @relation("TaskAssignee")
-  notifications Notification[]
+  auditEvents           AuditEvent[]
+  tasksAssigned         ProjectTask[]         @relation("TaskAssignee")
+  notifications         Notification[]
   websiteBuildsAssigned WebsiteBuildRequest[] @relation("WebsiteBuildAssignee")
 
   // Per-property access grants. ZERO rows = unrestricted (org-wide
   // access — preserves the legacy behavior so existing users aren't
   // affected by the property-RBAC rollout). ONE OR MORE rows = the
   // user can ONLY see those properties' data on every portal page.
-  propertyAccess UserPropertyAccess[]
-  bugReports     BugReport[]
+  propertyAccess      UserPropertyAccess[]
+  bugReports          BugReport[]
   propertyEvaluations PropertyEvaluation[]
 
   // Command Center: last time this operator opened the briefing view. Used to
@@ -765,10 +770,10 @@ model Property {
   // ACTIVE by default; new AppFolio-imported rows land as IMPORTED and
   // require operator promotion. EXCLUDED rows are sub-records (parking,
   // storage, etc.) we keep in the DB for audit but never count or show.
-  lifecycle       PropertyLifecycle       @default(IMPORTED)
-  lifecycleSetBy  PropertyLifecycleSource @default(AUTO_CLASSIFIER)
-  lifecycleSetAt  DateTime?
-  excludeReason   String?
+  lifecycle      PropertyLifecycle       @default(IMPORTED)
+  lifecycleSetBy PropertyLifecycleSource @default(AUTO_CLASSIFIER)
+  lifecycleSetAt DateTime?
+  excludeReason  String?
 
   // Launch status — see PropertyLaunchStatus enum docs. Tracks the
   // per-property onboarding state independently of lifecycle. A
@@ -873,6 +878,11 @@ model Property {
   // market stats). Populated by the Market Intelligence section on
   // the property detail page; cached by lib/rentcast/cache.ts.
   rentCastSnapshots    RentCastSnapshot[]
+  // SEO/AEO Agent backrefs — Phase 1
+  seoActionRecs        SeoActionRecommendation[]
+  contentDrafts        ContentDraft[]
+  seoScoreHistory      SeoScoreHistory[]
+  competitorScans      PropertyCompetitorScan[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1115,8 +1125,8 @@ model Resident {
 
   // Lease summary (denormalized so we can sort by lease end without
   // hopping). Kept in sync with the Lease row.
-  currentLeaseId   String?  @unique
-  currentLease     Lease?   @relation("CurrentLease", fields: [currentLeaseId], references: [id], onDelete: SetNull)
+  currentLeaseId   String?   @unique
+  currentLease     Lease?    @relation("CurrentLease", fields: [currentLeaseId], references: [id], onDelete: SetNull)
   unitNumber       String?
   moveInDate       DateTime?
   moveOutDate      DateTime?
@@ -1169,21 +1179,21 @@ model Lease {
 
   status LeaseStatus @default(ACTIVE)
 
-  startDate         DateTime?
-  endDate           DateTime?
-  monthlyRentCents  Int?
+  startDate            DateTime?
+  endDate              DateTime?
+  monthlyRentCents     Int?
   securityDepositCents Int?
-  termMonths        Int?
+  termMonths           Int?
 
   // Renewal / decision tracking — driven by AppFolio updates and
   // operator action.
-  renewalSentAt    DateTime?
-  renewalDecision  String? // "accepted", "declined", "negotiating"
-  noticeGivenAt    DateTime?
+  renewalSentAt   DateTime?
+  renewalDecision String? // "accepted", "declined", "negotiating"
+  noticeGivenAt   DateTime?
 
   // Delinquency snapshot (from delinquency report)
-  currentBalanceCents Int? @default(0)
-  isPastDue           Boolean @default(false)
+  currentBalanceCents Int?      @default(0)
+  isPastDue           Boolean   @default(false)
   pastDueAsOf         DateTime?
 
   externalSystem String?
@@ -1769,7 +1779,7 @@ model AppFolioIntegration {
   oauthExpiresAt        DateTime?
 
   // Sync state
-  lastSyncAt DateTime?
+  lastSyncAt    DateTime?
   // When the current "syncing" run actually started. Persisted so the UI
   // can show real elapsed time across page navigations (a per-component
   // local counter resets on every mount and reads as a "sync restart"
@@ -2144,9 +2154,9 @@ model WebsiteBuildRequest {
   // Cal.com booking metadata. We capture the booking URL on payment
   // success (so the success page can deep-link) and the timestamp
   // once the booking webhook fires (if we wire one).
-  calBookingUrl  String?
-  calBookedAt    DateTime?
-  kickoffCallAt  DateTime?
+  calBookingUrl String?
+  calBookedAt   DateTime?
+  kickoffCallAt DateTime?
 
   status String @default("requested")
 
@@ -2156,10 +2166,10 @@ model WebsiteBuildRequest {
   intakeJson Json?
 
   // Admin-side fulfillment metadata.
-  assignedToUserId String?
-  assignedTo       User?    @relation("WebsiteBuildAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
-  launchedAt       DateTime?
-  cancelledAt      DateTime?
+  assignedToUserId   String?
+  assignedTo         User?     @relation("WebsiteBuildAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  launchedAt         DateTime?
+  cancelledAt        DateTime?
   cancellationReason String?
 
   createdAt DateTime @default(now())
@@ -2698,9 +2708,9 @@ model AudienceSyncSchedule {
   // Optional GeoFilter snapshot { zipCodes?: string[]; states?: string[]; cities?: string[] }
   filterSnapshot Json?
 
-  enabled    Boolean   @default(true)
-  lastRunAt  DateTime?
-  nextRunAt  DateTime
+  enabled   Boolean   @default(true)
+  lastRunAt DateTime?
+  nextRunAt DateTime
 
   createdByUserId String?
   createdAt       DateTime @default(now())
@@ -2928,12 +2938,12 @@ model PopupCampaign {
   status PopupStatus @default(DRAFT)
 
   // ─── Copy (what the visitor sees) ─────────────────────────────────
-  headline String // ≤ 80 chars in UI but enforced as text in DB
-  body     String @db.Text
-  ctaText  String // "Claim offer", "Apply now", etc.
-  ctaUrl   String // where the CTA points; "#" or null-equivalent allowed
+  headline      String // ≤ 80 chars in UI but enforced as text in DB
+  body          String  @db.Text
+  ctaText       String // "Claim offer", "Apply now", etc.
+  ctaUrl        String // where the CTA points; "#" or null-equivalent allowed
   // Optional promo / referral code shown in a copy-to-clipboard pill
-  offerCode String?
+  offerCode     String?
   // Optional secondary action — e.g. "Maybe later" dismiss copy override
   secondaryText String?
 
@@ -2950,10 +2960,10 @@ model PopupCampaign {
   frequency String @default("session")
 
   // ─── Visual ───────────────────────────────────────────────────────
-  position       PopupPosition @default(CENTER)
-  primaryColor   String        @default("#2563EB") // brand blue
-  textColor      String        @default("#0F172A") // near-black
-  backgroundColor String       @default("#FFFFFF")
+  position        PopupPosition @default(CENTER)
+  primaryColor    String        @default("#2563EB") // brand blue
+  textColor       String        @default("#0F172A") // near-black
+  backgroundColor String        @default("#FFFFFF")
 
   // Optional hero image URL (full-bleed at top of popup)
   heroImageUrl String?
@@ -2962,10 +2972,10 @@ model PopupCampaign {
   // All nullable / soft-defaulted so pre-migration rows render identically
   // to before. The renderer + preview both check for presence and fall
   // through to the legacy treatment when these are NULL.
-  eyebrowText      String? // small caps label above headline
-  accentColor      String? // secondary accent (used for eyebrow + featured value)
-  theme            PopupTheme @default(LIGHT)
-  template         String? // slug of the template that seeded this row
+  eyebrowText String? // small caps label above headline
+  accentColor String? // secondary accent (used for eyebrow + featured value)
+  theme       PopupTheme @default(LIGHT)
+  template    String? // slug of the template that seeded this row
 
   // Featured value card (price / rate callout — Telegraph-style)
   featuredLabel   String?
@@ -3072,11 +3082,11 @@ model BugReport {
   // Reporter context — captured at submit time. We deliberately denormalize
   // the email + role so a future user deletion doesn't blank the history.
   // userId stays NULL when the user record is deleted.
-  userId         String?
-  user           User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
-  reporterEmail  String
-  reporterRole   String? // UserRole at submit time
-  reporterOrgId  String? // Org at submit time
+  userId          String?
+  user            User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
+  reporterEmail   String
+  reporterRole    String? // UserRole at submit time
+  reporterOrgId   String? // Org at submit time
   reporterOrgName String?
 
   title       String
@@ -3102,7 +3112,7 @@ model BugReport {
 
   // Triage / approval state
   assignedToUserId String?
-  resolutionNote   String? @db.Text // why it was approved or rejected
+  resolutionNote   String?   @db.Text // why it was approved or rejected
   approvedAt       DateTime?
   approvedBy       String? // userId
   rejectedAt       DateTime?
@@ -3146,12 +3156,12 @@ model CredentialEntry {
 
   // Clear-text metadata. The operator sees these in the list view —
   // the secret stays masked until they click reveal.
-  name        String  // "Google Analytics 4 — Telegraph Commons"
-  platform    String? // free-text label: google-ads | meta-ads | appfolio | bank | ...
-  websiteUrl  String?
-  username    String?
-  notes       String? @db.Text
-  tags        String[] @default([])
+  name       String // "Google Analytics 4 — Telegraph Commons"
+  platform   String? // free-text label: google-ads | meta-ads | appfolio | bank | ...
+  websiteUrl String?
+  username   String?
+  notes      String?  @db.Text
+  tags       String[] @default([])
 
   // Encrypted secret payload. AES-256-GCM with the org's DEK. All
   // values are base64-encoded so the DB column type stays portable.
@@ -3172,9 +3182,9 @@ model CredentialEntry {
   deletedAt   DateTime?
   deletedById String?
 
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
-  accessLogs  CredentialAccessLog[]
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  accessLogs CredentialAccessLog[]
 
   @@index([orgId, propertyId])
   @@index([orgId, platform])
@@ -3193,9 +3203,9 @@ model CredentialAccessLog {
   org              Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   userId           String?
   userEmail        String
-  asImpersonatorId String?      // agency staff impersonating a tenant
+  asImpersonatorId String? // agency staff impersonating a tenant
 
-  action     String   // "reveal" | "copy" | "edit" | "delete"
+  action     String // "reveal" | "copy" | "edit" | "delete"
   ipAddress  String?
   userAgent  String?
   occurredAt DateTime @default(now())
@@ -3217,8 +3227,8 @@ model ZillowReport {
   userId       String?
   zillowUrl    String
   zpid         String
-  payload      Json     // parsed listing data (address, price, beds, etc.)
-  calculations Json     // computed investor math snapshot
+  payload      Json // parsed listing data (address, price, beds, etc.)
+  calculations Json // computed investor math snapshot
   createdAt    DateTime @default(now())
 
   org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
@@ -3316,8 +3326,8 @@ model NeighborhoodPage {
   createdAt       DateTime               @default(now())
   updatedAt       DateTime               @updatedAt
 
-  org       Organization        @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  property  Property?           @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  org       Organization       @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property  Property?          @relation(fields: [propertyId], references: [id], onDelete: SetNull)
   aeoChecks AeoCitationCheck[]
 
   @@unique([orgId, slug])
@@ -3478,7 +3488,6 @@ model OnboardingStepProgress {
   @@index([progressId, status])
 }
 
-
 // ============================================================================
 // RentCast (https://developers.rentcast.io) — market intelligence cache
 // + per-org budget tracking.
@@ -3494,29 +3503,29 @@ model OnboardingStepProgress {
 // ============================================================================
 
 model RentCastSnapshot {
-  id          String   @id @default(cuid())
-  orgId       String
-  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   // Optional — most snapshots are tied to a specific property, but
   // tool-use snapshots (ad-hoc address lookups for acquisitions, future
   // phase) leave this null. SET NULL is not used: if a Property row is
   // deleted, its per-property snapshots cascade out so the cache key
   // can be reclaimed cleanly.
-  propertyId  String?
-  property    Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property? @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
   // String-typed for forward compatibility — we'll add VALUE, LISTINGS,
   // PROPERTIES, etc. as future phases land. Stored as TEXT so we don't
   // need a Postgres enum migration for every new endpoint.
   // Accepted values today: RENT_LONG_TERM | MARKET_STATS | VALUE
-  endpoint    String
+  endpoint String
 
   // Normalized key for cache deduplication. See lib/rentcast/cache.ts
   // for the canonical shape: e.g.
   //   rent:2410-telegraph-ave-berkeley-ca-94704:2br:1ba:Apartment
   //   market:94704:Rental:6
-  cacheKey    String
+  cacheKey String
 
   payload     Json
   fetchedAt   DateTime @default(now())
@@ -3531,27 +3540,27 @@ model RentCastSnapshot {
 }
 
 model OrgRentCastUsage {
-  id                 String   @id @default(cuid())
-  orgId              String   @unique
-  org                Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String       @unique
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   // YYYY-MM tracking window. Rolled over by lib/rentcast/budget.ts when
   // the current calendar month no longer matches; counter resets to 0
   // and lastResetAt updates.
-  monthKey           String
-  requestsThisMonth  Int      @default(0)
+  monthKey          String
+  requestsThisMonth Int    @default(0)
 
   // Defaults to RentCast's Developer (free) tier quota. Admin can raise
   // per-org via the admin client detail page when the tenant upgrades.
-  monthlyBudget      Int      @default(50)
+  monthlyBudget Int @default(50)
 
   // Hard refuse fetches above (monthlyBudget * hardCapMultiplier). 1.5×
   // gives a soft buffer for the inevitable mis-clicks then surfaces an
   // upsell card on the property detail page.
-  hardCapMultiplier  Float    @default(1.5)
+  hardCapMultiplier Float @default(1.5)
 
-  lastResetAt        DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  lastResetAt DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 // ============================================================================
@@ -3570,38 +3579,242 @@ model OrgRentCastUsage {
 // ============================================================================
 
 model PropertyEvaluation {
-  id              String   @id @default(cuid())
-  orgId           String
-  org             Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
-  userId          String?
-  user            User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  id     String       @id @default(cuid())
+  orgId  String
+  org    Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  userId String?
+  user   User?        @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   // Normalized cache-key form + original-cased display string.
-  address         String
-  addressDisplay  String
+  address        String
+  addressDisplay String
 
   // Investor inputs. When askingPriceCents is null the math falls back
   // to the value AVM mid-point so the card still renders something sane.
   askingPriceCents Int?
-  propertyType    String?
-  bedrooms        Int?
-  bathrooms       Float?
+  propertyType     String?
+  bedrooms         Int?
+  bathrooms        Float?
   squareFootageInt Int?
 
   // Raw RentCast responses (full payload — not the typed parser shape).
-  valuePayload   Json
-  rentPayload    Json
-  marketPayload  Json
+  valuePayload  Json
+  rentPayload   Json
+  marketPayload Json
 
   // Output of lib/zillow/calculations::computeCalculations.
-  calculations   Json
+  calculations Json
 
-  notes          String?
-  archived       Boolean  @default(false)
+  notes    String?
+  archived Boolean @default(false)
 
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([orgId, archived, createdAt])
   @@index([userId])
+}
+
+// ============================================================================
+// SEO/AEO AGENT — recommendations, content drafts, score history, competitor scans
+//
+// See docs/SEO_AEO_AGENT_ARCHITECTURE.md for the design rationale + phasing.
+//
+// Phase 1 (this migration):
+//   - SeoActionRecommendation: cached engine output, refreshed nightly
+//   - ContentDraft: Claude-generated copy with admin approval workflow
+//   - SeoScoreHistory: weekly composite + sub-scores
+//   - PropertyCompetitorScan: cached DataforSEO nearby-competitor + ranks data
+// ============================================================================
+
+model SeoActionRecommendation {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  category SeoActionCategory
+  /// Stable id per (kind + scope) so the engine can upsert across re-runs.
+  kind     String
+
+  title           String            @db.Text
+  detail          String            @db.Text
+  severity        SeoActionSeverity
+  estimateMinutes Int
+  score           Float
+  actionHref      String?
+  actionLabel     String?
+
+  status          SeoActionStatus @default(OPEN)
+  dismissedAt     DateTime?
+  dismissedReason String?
+  completedAt     DateTime?
+  completedBy     String?
+
+  /// Why this rec exists. Shape varies by category — UI renders generically.
+  evidence Json?
+
+  generatedAt DateTime @default(now())
+  refreshedAt DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  drafts ContentDraft[]
+
+  @@unique([orgId, propertyId, kind])
+  @@index([orgId, status, score(sort: Desc)])
+  @@index([orgId, category])
+}
+
+enum SeoActionCategory {
+  CTR_FIX
+  CONTENT_GAP
+  NEIGHBORHOOD_PAGE
+  REFRESH
+  AEO_GAP
+  AEO_NOT_CITED
+  ONPAGE_AUDIT
+  BACKLINK_OPPORTUNITY
+  SCHEMA_GAP
+  INTERNAL_LINKING
+}
+
+enum SeoActionSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum SeoActionStatus {
+  OPEN
+  IN_PROGRESS
+  COMPLETED
+  DISMISSED
+  EXPIRED
+}
+
+model ContentDraft {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  format ContentFormat
+
+  recommendationId String?
+  recommendation   SeoActionRecommendation? @relation(fields: [recommendationId], references: [id], onDelete: SetNull)
+
+  brief       String  @db.Text
+  targetQuery String?
+
+  /// Structured output. Shape varies per format.
+  output         Json?
+  /// Raw markdown — what Adam pastes into Claude Code.
+  outputMarkdown String? @db.Text
+  model          String?
+  estimatedScore Int?
+
+  status      DraftStatus @default(GENERATING)
+  generatedAt DateTime?
+  submittedAt DateTime?
+  reviewedAt  DateTime?
+  reviewedBy  String?
+  reviewNotes String?     @db.Text
+  shippedAt   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId, status])
+  @@index([status, submittedAt])
+}
+
+enum ContentFormat {
+  BLOG_POST
+  NEIGHBORHOOD_PAGE
+  PROPERTY_DESCRIPTION
+  META_REWRITE
+  FAQ_BLOCK
+  AD_COPY
+}
+
+enum DraftStatus {
+  GENERATING
+  PENDING_REVIEW
+  APPROVED
+  CHANGES_REQUESTED
+  REJECTED
+  SHIPPED
+  EXPIRED
+}
+
+model SeoScoreHistory {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  /// Monday 00:00 UTC anchor.
+  weekOf DateTime
+
+  technicalScore    Int
+  contentScore      Int
+  authorityScore    Int
+  aeoCitationRate   Float
+  organicTrafficIdx Int
+  conversionRateIdx Int
+
+  compositeScore Int
+
+  createdAt DateTime @default(now())
+
+  @@unique([orgId, propertyId, weekOf])
+  @@index([orgId, weekOf])
+}
+
+model PropertyCompetitorScan {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  /// Source of the competitor data (Google Places nearby, DataforSEO competitors_domain).
+  source     CompetitorScanSource
+  /// External identifier from the source (place_id, domain, etc).
+  externalId String?
+
+  competitorName    String
+  competitorUrl     String?
+  competitorAddress String?
+  /// Distance from the property in meters (when source supports geolocation).
+  distanceMeters    Int?
+
+  /// Cached attributes the engine compares against ours.
+  rating         Float?
+  reviewCount    Int?
+  amenities      String[] @default([])
+  /// Queries the competitor outranks us on, when DataforSEO is connected.
+  rankingQueries Json?
+
+  /// Raw provider response in case rules need fields we haven't surfaced yet.
+  rawPayload Json?
+  scannedAt  DateTime @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([propertyId, source, externalId])
+  @@index([orgId, propertyId, scannedAt])
+}
+
+enum CompetitorScanSource {
+  GOOGLE_PLACES_NEARBY
+  DATAFORSEO_COMPETITORS_DOMAIN
+  YELP_FUSION_NEARBY
 }
