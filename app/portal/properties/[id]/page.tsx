@@ -520,11 +520,80 @@ async function IntelligenceSection({
   propertyId: string;
   propertyName: string;
 }) {
-  const actions = await getPropertyRecommendations(orgId, propertyId).catch(
-    () => [],
-  );
+  // Two engines in parallel. ProactiveAction = "lib/intelligence" rules
+  // (listings, reputation, ads). SeoActionRecommendation = "lib/seo"
+  // rules (CTR, AEO, neighborhood pages, etc.). Merge + dedupe + sort
+  // by composite score so the operator sees one ranked queue.
+  const [actions, seoRows] = await Promise.all([
+    getPropertyRecommendations(orgId, propertyId).catch(() => []),
+    prisma.seoActionRecommendation
+      .findMany({
+        where: {
+          orgId,
+          propertyId,
+          status: { in: ["OPEN", "IN_PROGRESS"] },
+        },
+        orderBy: [{ severity: "asc" }, { score: "desc" }],
+        take: 8,
+        select: {
+          id: true,
+          kind: true,
+          category: true,
+          severity: true,
+          title: true,
+          detail: true,
+          estimateMinutes: true,
+          score: true,
+          actionHref: true,
+          actionLabel: true,
+        },
+      })
+      .catch(() => []),
+  ]);
+
+  // Adapt SeoActionRecommendation rows to ProactiveAction shape so the
+  // panel renders them uniformly. Category gets mapped: CTR_FIX/ONPAGE→seo,
+  // AEO_*→aeo, NEIGHBORHOOD_PAGE/REFRESH/SCHEMA→content_freshness,
+  // BACKLINK→competitor.
+  const seoAdapted = seoRows.map((r) => ({
+    id: `seo:${r.id}`,
+    category:
+      r.category === "CTR_FIX" || r.category === "ONPAGE_AUDIT"
+        ? ("seo" as const)
+        : r.category === "AEO_GAP" || r.category === "AEO_NOT_CITED"
+          ? ("aeo" as const)
+          : r.category === "NEIGHBORHOOD_PAGE" ||
+              r.category === "CONTENT_GAP" ||
+              r.category === "REFRESH" ||
+              r.category === "SCHEMA_GAP"
+            ? ("content_freshness" as const)
+            : r.category === "BACKLINK_OPPORTUNITY"
+              ? ("competitor" as const)
+              : ("listing" as const),
+    severity:
+      r.severity === "CRITICAL"
+        ? ("critical" as const)
+        : r.severity === "HIGH"
+          ? ("high" as const)
+          : r.severity === "MEDIUM"
+            ? ("medium" as const)
+            : ("low" as const),
+    title: r.title,
+    detail: r.detail,
+    estimateMinutes: r.estimateMinutes,
+    score: r.score,
+    actionHref: r.actionHref ?? "/portal/seo/agent",
+    actionLabel: r.actionLabel ?? "Open Agent",
+    icon: "Sparkles" as const,
+  }));
+
+  // Merge + sort by composite score. Cap at 8 so we don't drown the panel.
+  const merged = [...actions, ...seoAdapted]
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 8);
+
   return (
-    <PropertyIntelligencePanel propertyName={propertyName} actions={actions} />
+    <PropertyIntelligencePanel propertyName={propertyName} actions={merged} />
   );
 }
 
