@@ -14,6 +14,7 @@ import { PageHeader } from "@/components/admin/page-header";
 // timeline — one page, no duplication. The /portal/connect route still
 // exists for deep links but the nav now collapses to a single entry.
 import { getConnectStatusForOrg } from "@/lib/connect/status";
+import { getProviderAvailability } from "@/lib/connect/provider-availability";
 import { ConnectHub } from "@/components/portal/connect/connect-hub";
 
 export const metadata: Metadata = { title: "Setup" };
@@ -161,6 +162,7 @@ export default async function SetupHubPage() {
         </h2>
         <ConnectHub
           variant="embed"
+          availability={getProviderAvailability()}
           sources={connectSources.map((s) => ({
             id: s.id,
             connected: s.connected,

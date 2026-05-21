@@ -2,7 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
-import { OrgType, TenantStatus, PropertyType, Prisma } from "@prisma/client";
+import {
+  OrgType,
+  OnboardingPhase,
+  OnboardingStepStatus,
+  TenantStatus,
+  PropertyType,
+  Prisma,
+} from "@prisma/client";
 import { formatDistanceToNow } from "date-fns";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatusBadge } from "@/components/admin/status-badge";
@@ -65,36 +72,77 @@ export default async function ClientsList({
     string,
     { critical: number; high: number; medium: number; low: number }
   >();
+  // Onboarding completeness per org. Surfaces the phase + step counts so
+  // the agency can see at a glance who's stuck in setup vs already shipping
+  // value. Pulled in the same batch as the other per-org rollups.
+  const onboardingByOrg = new Map<
+    string,
+    {
+      phase: OnboardingPhase;
+      done: number;
+      total: number;
+      pendingInPhase: number;
+    }
+  >();
   if (clients.length > 0) {
-    const [leadGroups, insightGroups, seoRecGroups] = await Promise.all([
-      prisma.lead.groupBy({
-        by: ["orgId"],
-        where: {
-          createdAt: { gte: since },
-          orgId: { in: clients.map((c) => c.id) },
-        },
-        _count: { _all: true },
-      }),
-      prisma.insight.groupBy({
-        by: ["orgId", "severity"],
-        where: {
-          orgId: { in: clients.map((c) => c.id) },
-          status: { in: ["open", "acknowledged"] },
-          createdAt: { gte: insightWindow },
-          severity: { in: ["critical", "warning"] },
-          OR: [{ snoozeUntil: null }, { snoozeUntil: { lt: new Date() } }],
-        },
-        _count: { _all: true },
-      }),
-      prisma.seoActionRecommendation.groupBy({
-        by: ["orgId", "severity"],
-        where: {
-          orgId: { in: clients.map((c) => c.id) },
-          status: "OPEN",
-        },
-        _count: { _all: true },
-      }),
-    ]);
+    const [leadGroups, insightGroups, seoRecGroups, onboardingRows] =
+      await Promise.all([
+        prisma.lead.groupBy({
+          by: ["orgId"],
+          where: {
+            createdAt: { gte: since },
+            orgId: { in: clients.map((c) => c.id) },
+          },
+          _count: { _all: true },
+        }),
+        prisma.insight.groupBy({
+          by: ["orgId", "severity"],
+          where: {
+            orgId: { in: clients.map((c) => c.id) },
+            status: { in: ["open", "acknowledged"] },
+            createdAt: { gte: insightWindow },
+            severity: { in: ["critical", "warning"] },
+            OR: [{ snoozeUntil: null }, { snoozeUntil: { lt: new Date() } }],
+          },
+          _count: { _all: true },
+        }),
+        prisma.seoActionRecommendation.groupBy({
+          by: ["orgId", "severity"],
+          where: {
+            orgId: { in: clients.map((c) => c.id) },
+            status: "OPEN",
+          },
+          _count: { _all: true },
+        }),
+        prisma.onboardingProgress.findMany({
+          where: { orgId: { in: clients.map((c) => c.id) } },
+          select: {
+            orgId: true,
+            currentPhase: true,
+            steps: {
+              select: { phase: true, status: true },
+            },
+          },
+        }),
+      ]);
+    for (const row of onboardingRows) {
+      const done = row.steps.filter(
+        (s) =>
+          s.status === OnboardingStepStatus.COMPLETED ||
+          s.status === OnboardingStepStatus.SKIPPED,
+      ).length;
+      const pendingInPhase = row.steps.filter(
+        (s) =>
+          s.phase === row.currentPhase &&
+          s.status === OnboardingStepStatus.PENDING,
+      ).length;
+      onboardingByOrg.set(row.orgId, {
+        phase: row.currentPhase,
+        done,
+        total: row.steps.length,
+        pendingInPhase,
+      });
+    }
     for (const g of leadGroups) {
       leadCountsByOrg.set(g.orgId, g._count._all);
     }
@@ -257,6 +305,7 @@ export default async function ClientsList({
                   <th className="px-4 py-3 text-left font-medium">Client</th>
                   <th className="px-4 py-3 text-left font-medium">Type</th>
                   <th className="px-4 py-3 text-left font-medium">Status</th>
+                  <th className="px-4 py-3 text-left font-medium">Setup</th>
                   <th className="px-4 py-3 text-right font-medium">
                     Properties
                   </th>
@@ -304,6 +353,11 @@ export default async function ClientsList({
                         <StatusBadge tone={tenantStatusTone(c.status)}>
                           {humanTenantStatus(c.status)}
                         </StatusBadge>
+                      </td>
+                      <td className="px-4 py-3">
+                        <SetupProgressCell
+                          progress={onboardingByOrg.get(c.id) ?? null}
+                        />
                       </td>
                       <td className="px-4 py-3 text-right tabular-nums text-sm text-foreground">
                         {c._count.properties}
@@ -413,6 +467,69 @@ function InsightCountCell({
         </span>
       ) : null}
     </Link>
+  );
+}
+
+function SetupProgressCell({
+  progress,
+}: {
+  progress: {
+    phase: OnboardingPhase;
+    done: number;
+    total: number;
+    pendingInPhase: number;
+  } | null;
+}) {
+  if (!progress) {
+    return (
+      <span
+        className="text-xs text-muted-foreground"
+        title="No onboarding row yet"
+      >
+        —
+      </span>
+    );
+  }
+  const pct =
+    progress.total === 0
+      ? 0
+      : Math.round((progress.done / progress.total) * 100);
+  void pct;
+  const phaseLabel =
+    progress.phase === OnboardingPhase.COMPLETED
+      ? "Done"
+      : progress.phase === OnboardingPhase.FOUNDATION
+        ? "Foundation"
+        : progress.phase === OnboardingPhase.GROWTH
+          ? "Growth"
+          : "Polish";
+  const tone =
+    progress.phase === OnboardingPhase.COMPLETED
+      ? "bg-primary/15 text-primary"
+      : progress.phase === OnboardingPhase.FOUNDATION
+        ? "bg-muted text-foreground"
+        : progress.phase === OnboardingPhase.GROWTH
+          ? "bg-primary/10 text-primary"
+          : "bg-card text-muted-foreground border border-border";
+  return (
+    <div className="flex items-center gap-2 min-w-[140px]">
+      <span
+        className={cn(
+          "inline-flex items-center rounded-full px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider whitespace-nowrap",
+          tone,
+        )}
+      >
+        {phaseLabel}
+      </span>
+      <span className="text-[11px] tabular-nums text-muted-foreground">
+        {progress.done}/{progress.total}
+        {progress.pendingInPhase > 0 ? (
+          <span className="ml-1 text-foreground/60">
+            · {progress.pendingInPhase} pending
+          </span>
+        ) : null}
+      </span>
+    </div>
   );
 }
 

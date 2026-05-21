@@ -15,10 +15,15 @@ import {
   Loader2,
   Plus,
   ExternalLink,
+  Clock,
   type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { RunAppFolioSyncButton } from "@/components/portal/integrations/run-appfolio-sync-button";
+import type {
+  AvailabilityMap,
+  ProviderAvailability,
+} from "@/lib/connect/provider-availability";
 
 // ---------------------------------------------------------------------------
 // ConnectHub — the unified data-connection screen.
@@ -77,6 +82,15 @@ const SOURCE_META: Record<
     /** What insights this source unlocks. Surfaced as a tagline below
         the card so users know exactly what they get for connecting. */
     unlocks: string[];
+    /** Override for the primary CTA when "Connect" isn't accurate. The
+        Cursive pixel for instance uses "Request pixel" because the
+        actual provisioning is a 3-5 min manual task in AudienceLab,
+        kicked off by an ops email. */
+    connectLabel?: string;
+    /** One-line informational note rendered under the unlocks panel.
+        Use for setup expectations the operator should know before they
+        click — e.g. "We provision your pixel within 4 business hours". */
+    setupNote?: string;
   }
 > = {
   appfolio: {
@@ -158,6 +172,9 @@ const SOURCE_META: Record<
       "Best traffic-source-by-intent",
       "Abandoned-form recovery",
     ],
+    connectLabel: "Request pixel",
+    setupNote:
+      "Our ops team provisions your pixel manually within 4 business hours. You'll get an email with the install snippet the moment it's ready.",
   },
   website: {
     name: "Your Website",
@@ -186,6 +203,7 @@ export function ConnectHub({
   sources,
   variant = "page",
   onAllConnected,
+  availability,
 }: {
   sources: ConnectSourceVM[];
   /** "page" = full /portal/connect surface with hero. "embed" = trimmed
@@ -194,6 +212,12 @@ export function ConnectHub({
   /** Called when the user clicks "I'm done — show me my insights" — only
       relevant in the wizard variant. */
   onAllConnected?: () => void;
+  /** Per-provider availability map. When a provider is not available
+      (agency-side env vars missing) the Connect button collapses into a
+      "Coming soon" disabled state with the reason, instead of routing
+      through to a 503 response. Optional for backwards-compat — when
+      omitted, every provider is treated as available. */
+  availability?: AvailabilityMap;
 }) {
   const router = useRouter();
   const [pending, setPending] = React.useState<Set<string>>(new Set());
@@ -201,6 +225,10 @@ export function ConnectHub({
   const connectedCount = sources.filter((s) => s.connected).length;
   const totalCount = sources.length;
   const isComplete = connectedCount === totalCount;
+  const unavailableCount = availability
+    ? sources.filter((s) => !s.connected && !availability[s.id]?.available)
+        .length
+    : 0;
 
   const startConnect = React.useCallback(
     (source: ConnectSourceVM) => {
@@ -261,6 +289,14 @@ export function ConnectHub({
               ? `${totalCount - connectedCount} more source${totalCount - connectedCount === 1 ? "" : "s"} would unlock additional insight categories. Each is optional.`
               : "All sources connected. Insights will continue to refresh as new data arrives."}
         </p>
+        {unavailableCount > 0 ? (
+          <p className="text-[11px] text-muted-foreground/80 mt-2 leading-snug border-t border-border pt-2">
+            <Clock className="inline w-2.5 h-2.5 mr-1 -mt-0.5" />
+            {unavailableCount} source{unavailableCount === 1 ? " is" : "s are"}{" "}
+            still being provisioned by your agency. You&apos;ll be notified
+            the moment they come online.
+          </p>
+        ) : null}
       </div>
 
       {/* Cards by category */}
@@ -276,6 +312,7 @@ export function ConnectHub({
                   key={source.id}
                   source={source}
                   isPending={pending.has(source.id)}
+                  availability={availability?.[source.id]}
                   onConnect={() => startConnect(source)}
                 />
               ))}
@@ -309,23 +346,32 @@ export function ConnectHub({
 function SourceCard({
   source,
   isPending,
+  availability,
   onConnect,
 }: {
   source: ConnectSourceVM;
   isPending: boolean;
+  availability?: ProviderAvailability;
   onConnect: () => void;
 }) {
   const meta = SOURCE_META[source.id];
   if (!meta) return null;
   const Icon = meta.icon;
   const isConnected = source.connected;
+  // Card is "blocked" when not connected AND availability says it can't be
+  // connected yet. Connected cards always stay primary-tinted so an existing
+  // connection isn't dimmed just because the agency env later degrades.
+  const isBlocked =
+    !isConnected && availability != null && !availability.available;
 
   return (
     <article
       className={`rounded-xl p-4 transition-all hover:shadow-[0_2px_8px_rgba(15,23,42,0.05)] ${
         isConnected
           ? "border border-primary/25 bg-primary/[0.03]"
-          : "border border-border bg-card"
+          : isBlocked
+            ? "border border-dashed border-border bg-muted/30"
+            : "border border-border bg-card"
       }`}
     >
       {/* Header row */}
@@ -345,6 +391,11 @@ function SourceCard({
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
                 <Check className="w-2.5 h-2.5" />
                 Connected
+              </span>
+            ) : isBlocked ? (
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground shrink-0">
+                <Clock className="w-2.5 h-2.5" />
+                {availability?.eta ?? "Coming soon"}
               </span>
             ) : null}
           </div>
@@ -395,6 +446,26 @@ function SourceCard({
         </div>
       </div>
 
+      {/* Setup expectation note — only when the source has a non-instant
+          provisioning path the operator should know about. Cursive
+          pixel is the canonical case (manual AudienceLab setup). Hidden
+          once the source is connected since the note no longer
+          applies. */}
+      {!isConnected && meta.setupNote ? (
+        <p className="mt-2 text-[11px] text-muted-foreground leading-snug italic">
+          {meta.setupNote}
+        </p>
+      ) : null}
+
+      {/* Blocked rationale — when the agency hasn't finished the
+          provider setup, explain why and what happens next. Keeps the
+          operator from clicking into a 503. */}
+      {isBlocked && availability?.reason ? (
+        <p className="mt-2.5 text-[11px] text-muted-foreground leading-snug">
+          {availability.reason}
+        </p>
+      ) : null}
+
       {/* Footer */}
       <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-end gap-2">
         {isConnected ? (
@@ -416,6 +487,16 @@ function SourceCard({
               Manage <ArrowRight className="w-3 h-3" />
             </Link>
           </>
+        ) : isBlocked ? (
+          <button
+            type="button"
+            disabled
+            aria-disabled="true"
+            className="inline-flex items-center gap-1.5 h-7 px-3 rounded-md bg-muted text-muted-foreground text-[12px] font-semibold cursor-not-allowed"
+          >
+            <Clock className="w-3 h-3" />
+            Not yet available
+          </button>
         ) : (
           <button
             type="button"
@@ -426,12 +507,12 @@ function SourceCard({
             {isPending ? (
               <>
                 <Loader2 className="w-3 h-3 animate-spin" />
-                Connecting…
+                {meta.connectLabel ? `${meta.connectLabel}…` : "Connecting…"}
               </>
             ) : (
               <>
                 {meta.inline ? <Plus className="w-3 h-3" /> : <ExternalLink className="w-3 h-3" />}
-                Connect
+                {meta.connectLabel ?? "Connect"}
               </>
             )}
           </button>
