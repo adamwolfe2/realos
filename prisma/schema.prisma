@@ -504,6 +504,11 @@ model Organization {
   contentDrafts           ContentDraft[]
   seoScoreHistory         SeoScoreHistory[]
   propertyCompetitorScans PropertyCompetitorScan[]
+  // DataforSEO ingestion (Phase 1.5)
+  seoTargetQueries        SeoTargetQuery[]
+  serpRankings            SerpRanking[]
+  onPageAudits            OnPageAudit[]
+  backlinkSummaries       BacklinkSummary[]
 
   // Per-property + per-org RentCast market intelligence cache + usage
   // counter. Both are populated lazily — only orgs that actually open
@@ -883,6 +888,11 @@ model Property {
   contentDrafts        ContentDraft[]
   seoScoreHistory      SeoScoreHistory[]
   competitorScans      PropertyCompetitorScan[]
+  // DataforSEO ingestion (Phase 1.5)
+  seoTargetQueries     SeoTargetQuery[]
+  serpRankings         SerpRanking[]
+  onPageAudits         OnPageAudit[]
+  backlinkSummaries    BacklinkSummary[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -3817,4 +3827,120 @@ enum CompetitorScanSource {
   GOOGLE_PLACES_NEARBY
   DATAFORSEO_COMPETITORS_DOMAIN
   YELP_FUSION_NEARBY
+}
+
+// ============================================================================
+// SEO/AEO Agent — DataforSEO ingestion layer (Phase 1.5)
+//
+// These models cache live DataforSEO results per property so the SEO Agent
+// can synthesize recommendations from real ranking + audit + backlink data
+// without round-tripping the API on every page load.
+//
+// Daily ingestion: /api/cron/dataforseo-sync (04:00 UTC)
+// Cost guard: per property capped at 4 target queries × 1 SERP call
+// + 1 lighthouse + 1 backlinks summary = ~$0.05/property/day. At 50 LIVE
+// properties = ~$2.50/day = ~$75/mo across the platform.
+// ============================================================================
+
+model SeoTargetQuery {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  /// The target search query operator wants to track / rank for.
+  query        String  @db.Text
+  /// Loose tag — "transactional", "local", "informational", "branded".
+  intent       String?
+  /// DataforSEO numeric location code (default 2840 = United States).
+  locationCode Int?
+  /// `null` = derived automatically at first scan; set to a user id
+  /// when the operator added the query manually.
+  addedBy      String?
+  active       Boolean @default(true)
+
+  rankings SerpRanking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, propertyId, query])
+  @@index([orgId, propertyId, active])
+}
+
+model SerpRanking {
+  id            String          @id @default(cuid())
+  orgId         String
+  org           Organization    @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId    String?
+  property      Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  targetQueryId String?
+  targetQuery   SeoTargetQuery? @relation(fields: [targetQueryId], references: [id], onDelete: SetNull)
+
+  query String   @db.Text
+  date  DateTime
+
+  /// Where the operator's site ranks (1-100). null = not in top 100.
+  ourRank    Int?
+  /// The page on their domain that's ranking, if any.
+  ourUrl     String? @db.Text
+  /// Top 10 organic results JSON: [{ rank, url, title, domain, description }]
+  topResults Json
+
+  createdAt DateTime @default(now())
+
+  @@unique([orgId, propertyId, query, date])
+  @@index([orgId, propertyId, date])
+}
+
+model OnPageAudit {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  url  String   @db.Text
+  date DateTime
+
+  performance   Float?
+  accessibility Float?
+  bestPractices Float?
+  seo           Float?
+  pwa           Float?
+
+  /// Core Web Vitals — flagged when slow/poor in the SEO Agent rules.
+  fcpMs Int?
+  lcpMs Int?
+  cls   Float?
+  tbtMs Int?
+
+  rawPayload Json?
+
+  createdAt DateTime @default(now())
+
+  @@unique([orgId, url, date])
+  @@index([orgId, propertyId, date])
+}
+
+model BacklinkSummary {
+  id         String       @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String?
+  property   Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  target String   @db.Text
+  date   DateTime
+
+  domainRank           Int?
+  backlinks            Int  @default(0)
+  referringDomains     Int  @default(0)
+  referringMainDomains Int  @default(0)
+
+  createdAt DateTime @default(now())
+
+  @@unique([orgId, target, date])
+  @@index([orgId, propertyId, date])
 }
