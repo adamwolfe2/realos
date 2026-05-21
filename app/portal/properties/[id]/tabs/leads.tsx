@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
-import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funnel";
 import { LeadSourceDonut } from "@/components/portal/dashboard/lead-source-donut";
 import { getPropertyLeads } from "@/lib/properties/queries";
@@ -109,62 +108,100 @@ export async function LeadsTab({
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <KpiTile label="Leads (28d)" value={leadsCount} />
-        <KpiTile label="Tours (28d)" value={toursCount} />
-        <KpiTile label="Applications (28d)" value={appsCount} />
-        {/* Bug #30 — surface the active pipeline + pending apps as
-            first-class KPIs alongside the 28d snapshot. Operators
-            asked to see "the full picture" of in-flight prospects,
-            not just the marketing window. */}
-        <KpiTile
-          label="Active pipeline"
-          value={totalActive.toLocaleString()}
-          hint="In flight (not signed/lost)"
-        />
-        <KpiTile
-          label="Pending apps"
-          value={pendingApps.toLocaleString()}
-          hint="Submitted or under review"
-        />
+      {/* Norman 2026-05-21: Acquisition tab was eating ~480px of
+          vertical space across two nested grids (5 KPI tiles + 7
+          pipeline stage cards). Collapsed into TWO horizontal
+          nav-bar-style strips with brand-blue cohesion.
+          Strip 1: snapshot KPIs in a single row.
+          Strip 2: pipeline stages as a connected flow with chevron
+          separators — operator reads it as a funnel left-to-right
+          instead of a grid. */}
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <header className="flex items-baseline justify-between gap-3 px-4 py-2 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] via-card to-card">
+          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+            Acquisition · last 28 days
+          </p>
+        </header>
+        <div className="flex items-stretch divide-x divide-border/60">
+          <KpiStripItem label="Leads" value={leadsCount} accent />
+          <KpiStripItem label="Tours" value={toursCount} />
+          <KpiStripItem label="Applications" value={appsCount} />
+          <KpiStripItem
+            label="In flight"
+            value={totalActive}
+            hint="Not signed / lost"
+            accent={totalActive > 0}
+          />
+          <KpiStripItem
+            label="Pending apps"
+            value={pendingApps}
+            hint="Submitted"
+          />
+        </div>
       </section>
 
-      {/* Bug #30 — Active pipeline by stage. Counts every in-flight
-          lead grouped by their CURRENT status, regardless of when
-          they were created. The 28d funnel above shows recent flow;
-          this shows the live state. */}
-      {totalActive > 0 ? (
-        <DashboardSection
-          title="Active pipeline"
-          eyebrow={`${totalActive} prospects in flight`}
-          description="Live count by current status. Excludes signed and lost."
-        >
-          <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-            {pipelineCounts.map((p) => (
+      {/* Pipeline funnel — single horizontal flow with chevron
+          separators between stages. Brand-blue pill on non-zero
+          stages so the operator's eye lands on where the work is. */}
+      <section className="rounded-xl border border-border bg-card overflow-hidden">
+        <header className="flex items-baseline justify-between gap-3 px-4 py-2 border-b border-border/60 bg-gradient-to-r from-primary/[0.04] via-card to-card">
+          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+            Active pipeline · {totalActive} in flight
+          </p>
+          <Link
+            href={`/portal/leads?status_in=${ACTIVE_STATUSES.join(",")}&property=${propertyId}`}
+            className="text-[10.5px] font-semibold text-primary hover:underline"
+          >
+            See full pipeline →
+          </Link>
+        </header>
+        <ol className="flex items-stretch overflow-x-auto">
+          {pipelineCounts.map((p, i) => (
+            <li
+              key={p.status}
+              className="flex items-stretch flex-1 min-w-[110px]"
+            >
               <Link
-                key={p.status}
                 href={`/portal/leads?status=${p.status}&property=${propertyId}`}
-                className={`rounded-xl border px-3 py-2.5 transition-colors ${
+                className={`group flex-1 px-3 py-2.5 transition-colors ${
                   p.count > 0
-                    ? "border-border bg-card hover:bg-muted/40"
-                    : "border-border bg-muted/20"
+                    ? "bg-card hover:bg-primary/[0.04]"
+                    : "bg-muted/10 hover:bg-muted/30"
                 }`}
               >
-                <p className="text-[9px] tracking-widest uppercase font-semibold text-muted-foreground">
+                <p className="text-[9px] font-mono font-semibold uppercase tracking-[0.1em] text-muted-foreground truncate">
                   {STATUS_LABEL[p.status]}
                 </p>
                 <p
-                  className={`mt-1 text-xl font-semibold tabular-nums ${
-                    p.count > 0 ? "text-foreground" : "text-muted-foreground/60"
+                  className={`mt-0.5 text-[18px] font-display font-medium tabular-nums leading-tight ${
+                    p.count > 0
+                      ? "text-primary"
+                      : "text-muted-foreground/50"
                   }`}
                 >
                   {p.count.toLocaleString()}
                 </p>
               </Link>
-            ))}
-          </div>
-        </DashboardSection>
-      ) : null}
+              {i < pipelineCounts.length - 1 ? (
+                <span
+                  aria-hidden="true"
+                  className="flex items-center text-muted-foreground/40 px-0.5"
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                    <path
+                      d="M3 1L7 5L3 9"
+                      stroke="currentColor"
+                      strokeWidth="1.4"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
+                </span>
+              ) : null}
+            </li>
+          ))}
+        </ol>
+      </section>
 
       {/* Bug #30 — Recent active prospects. Operator wanted to see
           who's actively being worked, not just the marketing intake.
@@ -283,6 +320,47 @@ export async function LeadsTab({
           </ul>
         )}
       </DashboardSection>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// KpiStripItem — single cell of the horizontal acquisition strip.
+// Brand-blue accent on cells the operator should land on first
+// (Leads + non-zero In Flight), neutral for the rest.
+// ---------------------------------------------------------------------------
+function KpiStripItem({
+  label,
+  value,
+  hint,
+  accent = false,
+}: {
+  label: string;
+  value: number;
+  hint?: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className="flex-1 px-4 py-2.5 min-w-[120px]">
+      <p
+        className={`text-[9.5px] font-mono font-semibold uppercase tracking-[0.1em] ${
+          accent ? "text-primary" : "text-muted-foreground"
+        }`}
+      >
+        {label}
+      </p>
+      <p
+        className={`mt-0.5 text-[20px] font-display font-medium tabular-nums leading-none ${
+          accent ? "text-primary" : "text-foreground"
+        }`}
+      >
+        {value.toLocaleString()}
+      </p>
+      {hint ? (
+        <p className="mt-1 text-[10px] text-muted-foreground leading-tight truncate">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }
