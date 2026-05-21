@@ -12,6 +12,7 @@ import {
 import { UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
+import { getConnectStatusForOrg } from "@/lib/connect/status";
 import { SettingsForm } from "./settings-form";
 import { ClientTeamPanel } from "./team-panel";
 import { PageHeader } from "@/components/admin/page-header";
@@ -275,23 +276,12 @@ function NavCard({
 }
 
 async function countActiveIntegrations(orgId: string): Promise<number> {
-  const [pixel, appfolio, seo, ads] = await Promise.all([
-    prisma.cursiveIntegration.count({
-      where: { orgId, cursivePixelId: { not: null } },
-    }),
-    prisma.appFolioIntegration.count({
-      where: {
-        orgId,
-        OR: [
-          { clientIdEncrypted: { not: null } },
-          { useEmbedFallback: true },
-        ],
-      },
-    }),
-    prisma.seoIntegration.count({ where: { orgId } }),
-    prisma.adAccount.count({
-      where: { orgId, credentialsEncrypted: { not: null } },
-    }),
-  ]);
-  return pixel + appfolio + seo + ads;
+  // Norman bug #107: this count had drifted from the /portal/connect
+  // surface — settings reported "3 connected" while connect showed 6.
+  // Root cause: ad-hoc per-table queries here vs. the canonical
+  // getConnectStatusForOrg logic on the connect hub used different
+  // truthiness rules per source. Consolidating on the same source so
+  // the two pages can never disagree again.
+  const sources = await getConnectStatusForOrg(orgId);
+  return sources.filter((s) => s.connected).length;
 }

@@ -7,7 +7,9 @@ import { getStripeClient, isStripeConfigured } from "@/lib/stripe/config";
 import { ADDONS, TIERS } from "@/lib/billing/plans";
 import type Stripe from "stripe";
 import { TrialActivationCard } from "./trial-activation-card";
-import { WebsiteBuildCard } from "./website-build-card";
+// WebsiteBuildCard import removed per Norman bug #106 — replaced with a
+// quiet link to /portal/marketplace. The card is still available for
+// other surfaces (marketplace, onboarding) where the full pitch belongs.
 import { WebsiteBuildTracker } from "./website-build-tracker";
 
 export const metadata: Metadata = { title: "Billing" };
@@ -220,7 +222,12 @@ export default async function BillingPage() {
     <div className="space-y-8 max-w-3xl">
       <PageHeader
         title="Billing"
-        description="Subscription tier, monthly recurring modules, ad spend, and Stripe portal access."
+        // Norman bug #106: the previous description read like a SaaS
+        // feature checklist ("Subscription tier, monthly recurring
+        // modules, ad spend, and Stripe portal access"). Reworded to
+        // be calmer and more institutional — the page is for review,
+        // not selling.
+        description="Review your current plan, line items, and Stripe portal access."
       />
 
       {/* Trial activation card. Renders when subscriptionStatus is
@@ -419,10 +426,32 @@ export default async function BillingPage() {
         />
       ) : null}
 
-      {/* Website build CTA — separate paid service, not part of trial.
-          Always visible so customers who decide later they want a
-          custom site can request one without hunting through the UI. */}
-      <WebsiteBuildCard />
+      {/* Website-build offer — Norman bug #106: the previous dual-card
+          tiered upsell with gold crown badges and "Recommended"
+          ribbons read as salesy on a billing page that's meant for
+          plan review. Replaced with a single quiet line that links
+          out to the marketplace for the full offer. The card itself
+          (components/billing/website-build-card.tsx) is unchanged for
+          surfaces where the full pitch belongs (marketplace,
+          onboarding). */}
+      <section className="rounded-xl border border-border bg-card p-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-foreground">
+            Want a custom marketing site built for you?
+          </p>
+          <p className="text-[12.5px] text-muted-foreground mt-0.5">
+            One-time engagement covering design, build, and launch on
+            your domain. Detailed scope + pricing on the marketplace.
+          </p>
+        </div>
+        <a
+          href="/portal/marketplace"
+          className="inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-3 py-1.5 text-[12.5px] font-medium text-foreground hover:bg-muted/50 transition-colors"
+        >
+          View options
+          <span aria-hidden="true">→</span>
+        </a>
+      </section>
 
       <section className="rounded-xl border border-border bg-card p-5 space-y-3">
         <h2 className="text-sm font-semibold">Stripe Customer Portal</h2>
