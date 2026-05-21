@@ -9,6 +9,7 @@ import {
   loadReputationMetrics,
   type ReputationMetrics,
 } from "@/lib/reputation/aggregate";
+import { freshnessWhereFragment } from "@/lib/reputation/freshness";
 
 // ---------------------------------------------------------------------------
 // Reputation tab — server component. Seeds the client scanner with the 20
@@ -61,8 +62,22 @@ export async function ReputationTab({
   try {
     [mentionRows, scanRows, latestScan, metrics] = await Promise.all([
       prisma.propertyMention.findMany({
-        where: { orgId, propertyId },
-        orderBy: [{ publishedAt: "desc" }, { id: "desc" }],
+        // Apply the freshness policy at query time so stale rows never
+        // hit the feed UI. Issues #83, #84, #87. Direct reviews keep a
+        // 5-year fuse; general forum/news threads age out at 6 months.
+        // Counts on the metrics panel use the same policy so the two
+        // surfaces agree on what "total" means.
+        where: { AND: [{ orgId, propertyId }, freshnessWhereFragment()] },
+        orderBy: [
+          // Reviewed mentions sink to the bottom (issue #88) — operators
+          // asked for a clear visual divide between "still needs action"
+          // and "done". `reviewedByUserId nulls first desc` puts NULLs
+          // (unreviewed) above non-NULLs (reviewed). Within each band we
+          // keep the existing publishedAt desc ordering.
+          { reviewedByUserId: { sort: "desc", nulls: "first" } },
+          { publishedAt: "desc" },
+          { id: "desc" },
+        ],
         take: INITIAL_PAGE_SIZE + 1,
         select: {
           id: true,

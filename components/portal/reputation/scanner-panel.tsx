@@ -741,18 +741,55 @@ export function ScannerPanel({
           )}
         </section>
       ) : (
-        <section className="grid grid-cols-1 gap-3">
-          {filtered.map((m) => (
-            <MentionCard key={m.id} mention={m} onUpdated={upsertMention} />
-          ))}
-          {cursor && filtered.length === mentions.length ? (
-            <div className="flex justify-center pt-2">
-              <Button variant="outline" size="sm" onClick={loadMore}>
-                Load more
-              </Button>
-            </div>
-          ) : null}
-        </section>
+        (() => {
+          // Norman bug #88: when an operator checks an item off (marks
+          // it reviewed) it should visually move out of the active
+          // worklist. The query orders reviewed → bottom already, but
+          // a visual divider between the two bands tells the operator
+          // exactly where "still needs attention" ends and "handled"
+          // begins. The divider only renders when BOTH bands exist
+          // (mixing pending + reviewed in the same list).
+          const unreviewed = filtered.filter((m) => !m.reviewed);
+          const reviewed = filtered.filter((m) => m.reviewed);
+          const hasBoth = unreviewed.length > 0 && reviewed.length > 0;
+          return (
+            <section className="grid grid-cols-1 gap-3">
+              {unreviewed.map((m) => (
+                <MentionCard
+                  key={m.id}
+                  mention={m}
+                  onUpdated={upsertMention}
+                />
+              ))}
+              {hasBoth ? (
+                <div
+                  className="flex items-center gap-3 py-2"
+                  aria-label="Reviewed mentions below"
+                >
+                  <span className="h-px flex-1 bg-border" aria-hidden="true" />
+                  <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+                    Reviewed · {reviewed.length}
+                  </span>
+                  <span className="h-px flex-1 bg-border" aria-hidden="true" />
+                </div>
+              ) : null}
+              {reviewed.map((m) => (
+                <MentionCard
+                  key={m.id}
+                  mention={m}
+                  onUpdated={upsertMention}
+                />
+              ))}
+              {cursor && filtered.length === mentions.length ? (
+                <div className="flex justify-center pt-2">
+                  <Button variant="outline" size="sm" onClick={loadMore}>
+                    Load more
+                  </Button>
+                </div>
+              ) : null}
+            </section>
+          );
+        })()
       )}
 
       {/* Previous scans */}

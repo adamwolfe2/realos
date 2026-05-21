@@ -175,6 +175,12 @@ function getResponseTarget(
 // Build a deterministic response template the operator can copy +
 // adapt. We don't auto-send anywhere — the operator owns the actual
 // publish/email path because every off-API source has its own quirks.
+//
+// Norman bug #85: the previous templates read like hotel concierge
+// copy ("make your stay even better"). These are residential
+// communities — multifamily apartments and student housing — so the
+// vocabulary now reads like a property manager responding to a current
+// or former resident: "home", "residents", "the community", "move-in".
 function buildResponseDraft(args: {
   authorName: string | null;
   sentiment: Sentiment | null;
@@ -184,14 +190,14 @@ function buildResponseDraft(args: {
   const audience = args.authorName ? args.authorName : "there";
   const opener =
     args.sentiment === "NEGATIVE"
-      ? `Hi ${audience} — thanks for taking the time to share your experience, and I'm sorry it wasn't what you were hoping for.`
+      ? `Hi ${audience} — thanks for taking the time to share your experience, and I'm sorry your time with us didn't meet your expectations.`
       : args.sentiment === "POSITIVE"
-        ? `Hi ${audience} — thanks so much for the kind words, it means a lot to the whole team.`
+        ? `Hi ${audience} — thanks so much for the kind words about living here. I'll share this with the whole on-site team.`
         : `Hi ${audience} — thanks for the note about our community.`;
   const middle =
     args.sentiment === "NEGATIVE"
-      ? `I'd love to make this right. Could you send me an email with the unit number and the best time to reach you? I'll pull the full history on whatever you ran into and get back to you with a real plan, not a form letter.`
-      : `If there's anything we can do to make your stay even better, please reach out directly — we read every note and act on it.`;
+      ? `I'd like to make this right. Could you send me an email with your unit number (or move-out date if you're a former resident) and the best time to reach you? I'll pull the full history on whatever you ran into and get back to you with a real plan, not a form letter.`
+      : `If there's ever anything we can improve at the property — maintenance, amenities, the leasing experience — please reach out to the on-site office directly. We read every note and act on it.`;
   const close = `— Property management team\n(${args.platform})`;
   return `${opener}\n\n${middle}\n\n${close}`;
 }
@@ -215,9 +221,31 @@ export function MentionCard({
   const label = sourceLabel(mention.source, mention.sourceUrl);
   const host = getHost(mention.sourceUrl);
   const responseTarget = getResponseTarget(mention.source, mention.sourceUrl);
-  const when = mention.publishedAt
-    ? formatDistanceToNow(new Date(mention.publishedAt), { addSuffix: true })
-    : null;
+  // Norman bug #89: relative dates ("3 years ago") read fine for fresh
+  // mentions but get awkward for old ones. Show "Mar 2022" once a
+  // mention crosses the 6-month line — keeps recent items scannable
+  // ("2 weeks ago") while old ones get an unambiguous anchor.
+  const when = (() => {
+    if (!mention.publishedAt) return null;
+    const d = new Date(mention.publishedAt);
+    const ageDays = (Date.now() - d.getTime()) / (24 * 60 * 60 * 1000);
+    if (ageDays < 180) {
+      return formatDistanceToNow(d, { addSuffix: true });
+    }
+    return d.toLocaleString("en-US", { month: "short", year: "numeric" });
+  })();
+
+  // Norman bug #86: the draft-response modal was rendering at the top
+  // of the viewport on long pages and operators reported having to
+  // "search for it" after clicking buttons further down the page. The
+  // modal IS fixed-positioned (always centers in the viewport), but
+  // when an operator clicks a button at the bottom of the page, the
+  // visual jump up to the centered modal feels disorienting. Two
+  // mitigations: (1) hard-focus the textarea on open, which forces the
+  // browser to bring it into view and gives the operator an obvious
+  // anchor, and (2) the modal now fades in with a brief scale so the
+  // motion catches the eye.
+  const draftTextareaRef = React.useRef<HTMLTextAreaElement | null>(null);
 
   const openDraft = () => {
     setDraftText(
@@ -229,6 +257,15 @@ export function MentionCard({
       }),
     );
     setDraftOpen(true);
+    // Focus on next paint so the textarea exists. Picks up the visible-
+    // viewport scroll behaviour browsers apply to focused form fields.
+    requestAnimationFrame(() => {
+      draftTextareaRef.current?.focus({ preventScroll: false });
+      draftTextareaRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    });
   };
 
   const copyDraft = async () => {
@@ -473,6 +510,7 @@ export function MentionCard({
             </header>
             <div className="px-4 py-3 space-y-3">
               <textarea
+                ref={draftTextareaRef}
                 value={draftText}
                 onChange={(e) => setDraftText(e.target.value)}
                 rows={9}

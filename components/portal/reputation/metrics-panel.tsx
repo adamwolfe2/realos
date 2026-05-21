@@ -51,6 +51,17 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
 
   return (
     <div className="space-y-3">
+      {/* Freshness-policy note. Norman bug #80/#83/#84/#87: operators
+          need to know WHY the count differs from what they see on
+          Google directly. One subtle line beats a tooltip — readable in
+          one glance, explicit about what's shown. */}
+      <p className="text-[11px] text-muted-foreground leading-snug">
+        Showing {metrics.freshnessLabel}.
+        {metrics.staleHidden > 0
+          ? ` ${metrics.staleHidden} older mention${metrics.staleHidden === 1 ? "" : "s"} excluded from the feed but counted in source totals.`
+          : ""}
+      </p>
+
       {/* KPI tile row — platform-level hero numbers */}
       <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile
@@ -75,23 +86,30 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
           }
         />
         <KpiTile
-          label="Total mentions"
+          label="Active mentions"
           value={metrics.totalMentions}
           hint={(() => {
-            // Bug #39 — the "+35 in last 30d" subtitle was equal to
-            // the total because the count was keyed off ingestion
-            // date, not publication date. Now newLast30d reflects
-            // publication-date matches (with createdAt fallback) so
-            // the delta is honest. When the delta equals the total
-            // we render "all within last 30d" instead of "+35"
-            // (avoids implying recent growth from a backfilled
-            // history).
+            // Norman bug #80: the previous "Total mentions" tile didn't
+            // make clear what window the count covered, and the
+            // "+35 in last 30d" subtitle made the numbers feel
+            // inconsistent. Now: the headline value is "active" (in the
+            // freshness window — see lib/reputation/freshness.ts), the
+            // hint always shows the recent-30d delta, and a secondary
+            // "X older hidden" line surfaces the stale total so the
+            // operator can reconcile with what they'd see on Google
+            // directly. Bug #39 cap rules retained.
             if (metrics.totalMentions === 0) return "—";
-            if (metrics.newLast30d <= 0) return "No new in last 30d";
-            if (metrics.newLast30d >= metrics.totalMentions) {
-              return `All within last 30d`;
-            }
-            return `+${metrics.newLast30d} in last 30d`;
+            const recent =
+              metrics.newLast30d <= 0
+                ? "no new in last 30d"
+                : metrics.newLast30d >= metrics.totalMentions
+                  ? "all within last 30d"
+                  : `+${metrics.newLast30d} in last 30d`;
+            const stale =
+              metrics.staleHidden > 0
+                ? ` · ${metrics.staleHidden} older hidden`
+                : "";
+            return `${recent}${stale}`;
           })()}
           icon={<MessageSquare className="h-4 w-4" />}
         />
@@ -100,7 +118,15 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
           value={
             metrics.negativePct === null ? "—" : `${metrics.negativePct}%`
           }
-          hint="Of classified mentions"
+          // Norman bug #81: operators asked what counts as "negative".
+          // Answer: per-mention sentiment is set during the LLM-
+          // classification pass on each scan — Sentiment.NEGATIVE
+          // covers 1-2 star reviews + posts the classifier scored as
+          // dissatisfaction/complaint. The percentage divides
+          // NEGATIVE-tagged mentions by the count of every mention
+          // that received a sentiment (excluding UNCLASSIFIED, which
+          // would inflate the denominator and dilute signal).
+          hint="Negative ÷ classified mentions (excl. unclassified)"
           icon={<AlertCircle className="h-4 w-4" />}
         />
         <KpiTile

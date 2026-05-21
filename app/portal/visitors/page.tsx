@@ -338,7 +338,15 @@ export default async function VisitorsPage({
       <AutoRefresh intervalMs={15000} />
       <PageHeader
         title="Visitor feed"
-        description="Real people visiting your site, identified by the pixel. Auto-refreshes every 15 seconds."
+        // Norman bug #90: the previous copy said "auto-refreshes every
+        // 15 seconds" but the header also has a "Sync now" button, and
+        // operators understandably read that as a contradiction. They
+        // are different operations: the page refetches every 15s from
+        // OUR database (cheap); "Sync now" actively pulls the latest
+        // identified visitors from AudienceLab into our database (the
+        // upstream of the auto-refresh). Spell that out so the two
+        // controls read as a pipeline, not a duplicate.
+        description="Real people visiting your site, identified by the pixel. The list refetches every 15 seconds; use Sync now to pull the latest identifications from AudienceLab."
         actions={
           <div className="flex items-center gap-3 flex-wrap">
             <PropertyMultiSelect

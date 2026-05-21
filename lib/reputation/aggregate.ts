@@ -1,6 +1,10 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import type { MentionSource, Sentiment } from "@prisma/client";
+import {
+  freshnessWhereFragment,
+  freshnessLabel,
+} from "./freshness";
 
 // ---------------------------------------------------------------------------
 // Server-side aggregates for the Reputation metrics dashboard. Runs a handful
@@ -9,7 +13,17 @@ import type { MentionSource, Sentiment } from "@prisma/client";
 // ---------------------------------------------------------------------------
 
 export type ReputationMetrics = {
+  /** Active mentions inside the freshness window. This is what every
+   *  KPI tile + chart on the panel is computed against. */
   totalMentions: number;
+  /** All-time count, including stale rows the feed hides. Surfaced as
+   *  a tooltip / muted secondary line so the operator can reconcile
+   *  with what they see on Google directly. Issue #80. */
+  allTimeMentions: number;
+  /** Number of rows hidden by the freshness policy (allTime - total). */
+  staleHidden: number;
+  /** Human-readable description of the current freshness policy. */
+  freshnessLabel: string;
   newLast30d: number;
   negativePct: number | null;
   unreviewedCount: number;
@@ -192,10 +206,17 @@ export async function loadReputationMetrics(
   twelveMonthsAgo.setMonth(twelveMonthsAgo.getMonth() - 11);
   twelveMonthsAgo.setDate(1);
 
-  const where = { orgId, propertyId };
+  // Two scopes: `where` is the freshness-filtered "active" set everything
+  // else on the panel is computed against. `whereAllTime` is the raw
+  // total — used solely for the secondary "X stale rows hidden" line so
+  // the operator can reconcile with the all-time number on the source.
+  const baseScope = { orgId, propertyId };
+  const where = { AND: [baseScope, freshnessWhereFragment()] };
+  const whereAllTime = baseScope;
 
   const [
     totalMentions,
+    allTimeMentions,
     newLast30d,
     unreviewedCount,
     flaggedCount,
@@ -207,6 +228,7 @@ export async function loadReputationMetrics(
     topicRows,
   ] = await Promise.all([
     prisma.propertyMention.count({ where }),
+    prisma.propertyMention.count({ where: whereAllTime }),
     // Bug #39 — "+35 in last 30d" was always equal to total. Root
     // cause: counted by createdAt (ingestion timestamp), so a first
     // scan that backfilled a year of mentions reported them all as
@@ -371,6 +393,9 @@ export async function loadReputationMetrics(
 
   return {
     totalMentions,
+    allTimeMentions,
+    staleHidden: Math.max(0, allTimeMentions - totalMentions),
+    freshnessLabel: freshnessLabel(),
     newLast30d: cappedNewLast30d,
     negativePct,
     unreviewedCount,
