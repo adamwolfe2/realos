@@ -33,7 +33,12 @@ import Script from "next/script";
 // via NEXT_PUBLIC_GTM_ID when you need a per-environment container
 // (e.g. a staging container for tag debugging).
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-TXX66PJJ";
-const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID;
+// DECISION: GA4 measurement ID is hardcoded as the production default for
+// the same reason as GTM — the tag must fire on every page without
+// depending on Vercel env config. Override via NEXT_PUBLIC_GA4_MEASUREMENT_ID
+// for a per-environment property. GA4 dedupes by client_id even when GTM
+// also fires it, so running both is safe.
+const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "G-Z1RL9YKES8";
 
 export function GoogleTags() {
   return (
