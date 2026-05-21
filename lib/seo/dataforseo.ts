@@ -29,8 +29,13 @@ type CallResult<T> =
   | { ok: false; error: string };
 
 function authHeader(): string | null {
-  const login = process.env.DATAFORSEO_LOGIN;
-  const password = process.env.DATAFORSEO_PASSWORD;
+  // Defensive trim — Vercel env-var pasting via the dashboard frequently
+  // bakes trailing "\n" (literal backslash-n) or real "\n" (newline) into
+  // the stored value. HTTP Basic Auth's base64-encoded payload is byte-
+  // exact, so any trailing whitespace silently turns every call into a
+  // 401. Strip both forms here so the cred survives sloppy paste.
+  const login = process.env.DATAFORSEO_LOGIN?.replace(/\\n|\s+/g, "").trim();
+  const password = process.env.DATAFORSEO_PASSWORD?.replace(/\\n|\s+/g, "").trim();
   if (!login || !password) return null;
   const token = Buffer.from(`${login}:${password}`).toString("base64");
   return `Basic ${token}`;
