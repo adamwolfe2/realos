@@ -66,21 +66,11 @@ export function SendEmailPanel({
   return (
     <section
       data-no-print
-      className="rounded-xl border border-border bg-card p-5 space-y-4"
+      className="rounded-xl border border-border bg-card/60 p-4 space-y-4"
     >
-      <div>
-        <div className="flex items-center gap-1.5 text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-          <Mail className="h-3 w-3" />
-          Deliver
-        </div>
-        <h2 className="mt-1 text-base font-semibold text-foreground">
-          Send to client
-        </h2>
-        <p className="text-xs text-muted-foreground mt-0.5">
-          Sends the report straight to your client's inbox with your headline
-          and personal note already baked in. The email links back to the
-          shareable read-only view.
-        </p>
+      <div className="flex items-center gap-1.5 text-[11px] uppercase tracking-widest font-semibold text-muted-foreground">
+        <Mail className="h-3 w-3" />
+        Send to client
       </div>
 
       {!canSend ? (

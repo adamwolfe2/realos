@@ -11,6 +11,14 @@ import type {
   ReportSnapshot,
   ReportVisitorStats,
 } from "@/lib/reports/generate";
+import {
+  sanitizeMentionExcerpt,
+  isExcerptTruncated,
+} from "@/lib/reports/sanitize-excerpt";
+import {
+  ReportTabs,
+  ReportTabPanel,
+} from "@/components/portal/reports/report-tabs";
 
 // ---------------------------------------------------------------------------
 // ReportView — 2026 redesign.
@@ -265,6 +273,8 @@ export function ReportView({
         ) : null}
       </header>
 
+      <ReportTabs>
+        <ReportTabPanel id="overview">
       {/* Hero gradient KPI block — anchors the page like the dashboard */}
       <HeroKpi snapshot={snapshot} />
 
@@ -273,311 +283,337 @@ export function ReportView({
         <AiAnalysisSection analysis={snapshot.aiAnalysis} />
       ) : null}
 
-      {/* KPI strip — only show tiles for sources that are actually
-          connected. Hiding "Tours = 0" when AppFolio isn't connected
-          means a marketing-only operator's report doesn't look like
-          they have a tracking gap they don't know about. */}
-      <section
-        aria-label="Key metrics"
-        className="ls-report-section grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2"
-      >
-        <IconKpi
-          label="Leads"
-          value={kpis.leads.toLocaleString()}
-          deltaPct={kpiDeltas.leadsPct}
-          tone="primary"
-          glyph="target"
-        />
-        {toursTracked ? (
-          <IconKpi
-            label="Tours"
-            value={kpis.tours.toLocaleString()}
-            deltaPct={kpiDeltas.toursPct}
-            tone="primary"
-            glyph="calendar"
-          />
-        ) : null}
-        {applicationsTracked ? (
-          <IconKpi
-            label="Applications"
-            value={kpis.applications.toLocaleString()}
-            deltaPct={kpiDeltas.applicationsPct}
-            tone="primary"
-            glyph="check"
-          />
-        ) : null}
-        {showCostPerLead ? (
-          <IconKpi
-            label="Cost / lead"
-            value={
-              kpis.costPerLead != null ? `$${kpis.costPerLead.toFixed(2)}` : "—"
-            }
-            deltaPct={kpiDeltas.costPerLeadPct}
-            invertDelta
-            tone="primary"
-            glyph="dollar"
-          />
-        ) : null}
-        {ga4Connected ? (
-          <IconKpi
-            label="Organic sessions"
-            value={kpis.organicSessions.toLocaleString()}
-            deltaPct={kpiDeltas.organicSessionsPct}
-            tone="primary"
-            glyph="globe"
-          />
-        ) : null}
-      </section>
+      {/* KPI strip — show a card only when (a) the value is non-zero,
+          (b) the prior-period delta is non-zero (so we can show a
+          drop), OR (c) it's the always-anchored Leads card. A card full
+          of zeros gives the operator no signal and crowds the strip;
+          when every card would be zero, the empty-state below replaces
+          the strip entirely. */}
+      {(() => {
+        const showTours =
+          toursTracked && (kpis.tours > 0 || (kpiDeltas.toursPct ?? 0) !== 0);
+        const showApplications =
+          applicationsTracked &&
+          (kpis.applications > 0 ||
+            (kpiDeltas.applicationsPct ?? 0) !== 0);
+        const showCpl =
+          showCostPerLead &&
+          (kpis.costPerLead != null ||
+            (kpiDeltas.costPerLeadPct ?? 0) !== 0);
+        const showOrganic =
+          ga4Connected &&
+          (kpis.organicSessions > 0 ||
+            (kpiDeltas.organicSessionsPct ?? 0) !== 0);
 
-      {/* Traffic trend — full-width gradient area. Only render when
-          GA4 is connected; otherwise the "0 sessions" line is
-          misleading. */}
-      {ga4Connected && snapshot.trafficTrend.some((v) => v > 0) ? (
-        <Section
-          eyebrow="Daily organic sessions"
-          title="Traffic trend"
-          className="ls-report-section"
-        >
-          <TrendChart data={snapshot.trafficTrend} />
-        </Section>
-      ) : null}
+        const allZero =
+          kpis.leads === 0 &&
+          (kpiDeltas.leadsPct ?? 0) === 0 &&
+          !showTours &&
+          !showApplications &&
+          !showCpl &&
+          !showOrganic;
 
-      {/* Funnel + Lead sources side-by-side. Funnel stages we don't
-          actually track are hidden so the report doesn't claim a
-          tracking gap. If the operator has no tour data, "Tour
-          scheduled / Toured" rows are dropped; same logic for
-          applications/approvals when AppFolio isn't connected. */}
-      {hasFunnelData || hasSourceData ? (
-        <div className="ls-report-section grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {hasFunnelData ? (
+        if (allZero) {
+          return (
+            <EmptyTabState
+              title="Quiet period"
+              body="No new leads, tours, applications, or organic sessions recorded for this window. Connected data sources reported zero activity — not a tracking issue."
+            />
+          );
+        }
+
+        return (
+          <section
+            aria-label="Key metrics"
+            className="ls-report-section grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2"
+          >
+            <IconKpi
+              label="Leads"
+              value={kpis.leads.toLocaleString()}
+              deltaPct={kpiDeltas.leadsPct}
+              tone="primary"
+              glyph="target"
+            />
+            {showTours ? (
+              <IconKpi
+                label="Tours"
+                value={kpis.tours.toLocaleString()}
+                deltaPct={kpiDeltas.toursPct}
+                tone="primary"
+                glyph="calendar"
+              />
+            ) : null}
+            {showApplications ? (
+              <IconKpi
+                label="Applications"
+                value={kpis.applications.toLocaleString()}
+                deltaPct={kpiDeltas.applicationsPct}
+                tone="primary"
+                glyph="check"
+              />
+            ) : null}
+            {showCpl ? (
+              <IconKpi
+                label="Cost / lead"
+                value={
+                  kpis.costPerLead != null
+                    ? `$${kpis.costPerLead.toFixed(2)}`
+                    : "—"
+                }
+                deltaPct={kpiDeltas.costPerLeadPct}
+                invertDelta
+                tone="primary"
+                glyph="dollar"
+              />
+            ) : null}
+            {showOrganic ? (
+              <IconKpi
+                label="Organic sessions"
+                value={kpis.organicSessions.toLocaleString()}
+                deltaPct={kpiDeltas.organicSessionsPct}
+                tone="primary"
+                glyph="globe"
+              />
+            ) : null}
+          </section>
+        );
+      })()}
+        </ReportTabPanel>
+
+        <ReportTabPanel id="traffic">
+          {/* Traffic trend — full-width gradient area. Only render when
+              GA4 is connected; otherwise the "0 sessions" line is
+              misleading. */}
+          {ga4Connected && snapshot.trafficTrend.some((v) => v > 0) ? (
             <Section
-              eyebrow="New lead → signed lease"
-              title="Conversion funnel"
+              eyebrow="Daily organic sessions"
+              title="Traffic trend"
+              className="ls-report-section"
             >
-              <FunnelList
-                stages={snapshot.funnel.filter((s) => {
-                  // Always show "New" so the entry point is visible.
-                  // Drop tour/app/approval stages when their source
-                  // isn't tracked AND their value is 0.
-                  if (s.stage === "New") return true;
-                  const isTourStage =
-                    s.stage === "Tour scheduled" || s.stage === "Toured";
-                  const isAppStage =
-                    s.stage === "Applied" ||
-                    s.stage === "Application sent" ||
-                    s.stage === "Approved";
-                  if (isTourStage && !toursTracked && s.count === 0)
-                    return false;
-                  if (isAppStage && !applicationsTracked && s.count === 0)
-                    return false;
-                  return true;
-                })}
-              />
+              <TrendChart data={snapshot.trafficTrend} />
             </Section>
           ) : null}
-          {hasSourceData ? (
-            <Section eyebrow="Source mix" title="Lead sources">
-              <SourceList sources={snapshot.leadSources} />
-            </Section>
+
+          {/* Funnel + Lead sources side-by-side. */}
+          {hasFunnelData || hasSourceData ? (
+            <div className="ls-report-section grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {hasFunnelData ? (
+                <Section
+                  eyebrow="New lead → signed lease"
+                  title="Conversion funnel"
+                >
+                  <FunnelList
+                    stages={snapshot.funnel.filter((s) => {
+                      if (s.stage === "New") return true;
+                      const isTourStage =
+                        s.stage === "Tour scheduled" || s.stage === "Toured";
+                      const isAppStage =
+                        s.stage === "Applied" ||
+                        s.stage === "Application sent" ||
+                        s.stage === "Approved";
+                      if (isTourStage && !toursTracked && s.count === 0)
+                        return false;
+                      if (isAppStage && !applicationsTracked && s.count === 0)
+                        return false;
+                      return true;
+                    })}
+                  />
+                </Section>
+              ) : null}
+              {hasSourceData ? (
+                <Section eyebrow="Source mix" title="Lead sources">
+                  <SourceList sources={snapshot.leadSources} />
+                </Section>
+              ) : null}
+            </div>
           ) : null}
-        </div>
-      ) : null}
 
-      {/* Reputation section — new */}
-      {snapshot.reputationStats ? (
-        <ReputationSection stats={snapshot.reputationStats} />
-      ) : null}
-
-      {/* Occupancy + Renewals row — operations side-by-side. Both
-          AppFolio-dependent; gate accordingly so a marketing-only
-          tenant doesn't see "Live · AppFolio" panels with stale
-          numbers. */}
-      {appfolioConnected &&
-      (snapshot.occupancyStats || snapshot.renewalStats) ? (
-        <div className="ls-report-section grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {snapshot.occupancyStats ? (
-            <OccupancySection stats={snapshot.occupancyStats} />
-          ) : null}
-          {snapshot.renewalStats ? (
-            <RenewalSection stats={snapshot.renewalStats} />
-          ) : null}
-        </div>
-      ) : null}
-
-      {/* Visitor identification — only when the pixel is firing. */}
-      {snapshot.visitorStats && pixelConnected ? (
-        <VisitorSection stats={snapshot.visitorStats} />
-      ) : null}
-
-      {/* Ad performance — only when at least one ad platform is
-          actively connected AND has spend in the period. The
-          adPerformance.length > 0 check handles legacy snapshots that
-          don't have dataSources; ds gating handles the
-          "AdAccount exists but stale or empty" case. */}
-      {snapshot.adPerformance.length > 0 && adsConnected ? (
-        <Section
-          className="ls-report-section"
-          eyebrow="Per platform"
-          title="Paid ad performance"
-        >
-          <Table
-            columns={["Platform", "Spend", "Leads", "CPL", "Conv. rate"]}
-            rows={snapshot.adPerformance.map((r) => [
-              r.platform,
-              `$${r.spendUsd.toLocaleString()}`,
-              r.leads.toLocaleString(),
-              r.cpl != null ? `$${r.cpl.toFixed(2)}` : "—",
-              r.conversionRate != null ? `${r.conversionRate.toFixed(1)}%` : "—",
-            ])}
-          />
-        </Section>
-      ) : null}
-
-      {/* Attribution by source */}
-      {snapshot.attributionBySource &&
-      snapshot.attributionBySource.length > 0 ? (
-        <Section
-          className="ls-report-section"
-          eyebrow="Full pipeline by source"
-          title="Where leases came from"
-        >
-          <Table
-            columns={["Source", "Leads", "Tours", "Applications", "Signed"]}
-            rows={snapshot.attributionBySource.map((r) => [
-              r.source,
-              r.leads.toLocaleString(),
-              r.tours.toLocaleString(),
-              r.applications.toLocaleString(),
-              r.signed.toLocaleString(),
-            ])}
-          />
-        </Section>
-      ) : null}
-
-      {/* Top pages + queries side-by-side */}
-      {(snapshot.topPages.length > 0 && ga4Connected) ||
-      (snapshot.topQueries.length > 0 && gscConnected) ? (
-        <div className="ls-report-section grid grid-cols-1 lg:grid-cols-2 gap-3">
-          {snapshot.topPages.length > 0 && ga4Connected ? (
-            <Section eyebrow="Organic sessions" title="Top landing pages">
+          {/* Ad performance */}
+          {snapshot.adPerformance.length > 0 && adsConnected ? (
+            <Section
+              className="ls-report-section"
+              eyebrow="Per platform"
+              title="Paid ad performance"
+            >
               <Table
-                columns={["Page", "Sessions"]}
-                rows={snapshot.topPages.map((r) => [
-                  shortUrl(r.url),
-                  r.sessions.toLocaleString(),
+                columns={["Platform", "Spend", "Leads", "CPL", "Conv. rate"]}
+                rows={snapshot.adPerformance.map((r) => [
+                  r.platform,
+                  `$${r.spendUsd.toLocaleString()}`,
+                  r.leads.toLocaleString(),
+                  r.cpl != null ? `$${r.cpl.toFixed(2)}` : "—",
+                  r.conversionRate != null
+                    ? `${r.conversionRate.toFixed(1)}%`
+                    : "—",
                 ])}
               />
             </Section>
           ) : null}
-          {snapshot.topQueries.length > 0 && gscConnected ? (
-            <Section eyebrow="Clicks and impressions" title="Top search queries">
+
+          {/* Attribution by source */}
+          {snapshot.attributionBySource &&
+          snapshot.attributionBySource.length > 0 ? (
+            <Section
+              className="ls-report-section"
+              eyebrow="Full pipeline by source"
+              title="Where leases came from"
+            >
               <Table
-                columns={["Query", "Clicks", "Impr.", "Pos."]}
-                rows={snapshot.topQueries.map((r) => [
-                  r.query,
-                  r.clicks.toLocaleString(),
-                  r.impressions.toLocaleString(),
-                  r.position ? r.position.toFixed(1) : "—",
+                columns={["Source", "Leads", "Tours", "Applications", "Signed"]}
+                rows={snapshot.attributionBySource.map((r) => [
+                  r.source,
+                  r.leads.toLocaleString(),
+                  r.tours.toLocaleString(),
+                  r.applications.toLocaleString(),
+                  r.signed.toLocaleString(),
                 ])}
               />
             </Section>
           ) : null}
-        </div>
-      ) : null}
 
-      {/* Chatbot — extended if available. Gate on the chatbot being
-          enabled in config so a property without a chatbot doesn't
-          show "0 conversations" implying it's broken. */}
-      {chatbotConnected && cb.conversations > 0 ? (
-        <Section
-          className="ls-report-section"
-          eyebrow="Conversations and captured leads"
-          title="Chatbot activity"
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-            <MiniStat
-              label="Conversations"
-              value={cb.conversations.toLocaleString()}
-            />
-            <MiniStat
-              label="Leads from chat"
-              value={cb.leadsFromChat.toLocaleString()}
-            />
-            <MiniStat
-              label="Avg. messages"
-              value={cb.avgMessageCount.toFixed(1)}
-            />
-            <MiniStat
-              label="Capture rate"
-              value={
-                "capturedRatePct" in cb && cb.capturedRatePct != null
-                  ? `${cb.capturedRatePct}%`
-                  : "—"
-              }
-            />
-          </div>
-        </Section>
-      ) : null}
+          {/* Top pages + queries side-by-side */}
+          {(snapshot.topPages.length > 0 && ga4Connected) ||
+          (snapshot.topQueries.length > 0 && gscConnected) ? (
+            <div className="ls-report-section grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {snapshot.topPages.length > 0 && ga4Connected ? (
+                <Section eyebrow="Organic sessions" title="Top landing pages">
+                  <Table
+                    columns={["Page", "Sessions"]}
+                    rows={snapshot.topPages.map((r) => [
+                      shortUrl(r.url),
+                      r.sessions.toLocaleString(),
+                    ])}
+                  />
+                </Section>
+              ) : null}
+              {snapshot.topQueries.length > 0 && gscConnected ? (
+                <Section
+                  eyebrow="Clicks and impressions"
+                  title="Top search queries"
+                >
+                  <Table
+                    columns={["Query", "Clicks", "Impr.", "Pos."]}
+                    rows={snapshot.topQueries.map((r) => [
+                      r.query,
+                      r.clicks.toLocaleString(),
+                      r.impressions.toLocaleString(),
+                      r.position ? r.position.toFixed(1) : "—",
+                    ])}
+                  />
+                </Section>
+              ) : null}
+            </div>
+          ) : null}
+        </ReportTabPanel>
 
-      {/* AI visibility */}
-      {snapshot.aiVisibility && snapshot.aiVisibility.brandedClicks > 0 ? (
-        <AiVisibilitySection aiVisibility={snapshot.aiVisibility} />
-      ) : null}
+        <ReportTabPanel id="operations">
+          {/* Occupancy + Renewals row — both AppFolio-dependent; gated so
+              a marketing-only tenant doesn't see "Live · AppFolio" panels
+              with stale numbers. */}
+          {appfolioConnected &&
+          (snapshot.occupancyStats || snapshot.renewalStats) ? (
+            <div className="ls-report-section grid grid-cols-1 lg:grid-cols-2 gap-3">
+              {snapshot.occupancyStats ? (
+                <OccupancySection stats={snapshot.occupancyStats} />
+              ) : null}
+              {snapshot.renewalStats ? (
+                <RenewalSection stats={snapshot.renewalStats} />
+              ) : null}
+            </div>
+          ) : null}
 
-      {/* Insights */}
-      {snapshot.insights.length > 0 ? (
-        <Section
-          className="ls-report-section"
-          eyebrow="Automated insights"
-          title="Signals we noticed"
-        >
-          <ul className="space-y-1.5">
-            {snapshot.insights.map((insight) => (
-              <li
-                key={insight.id}
-                className="rounded-xl border border-border bg-card px-3 py-2"
-              >
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span
-                    className={
-                      "text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded font-bold " +
-                      severityTone(insight.severity)
-                    }
-                  >
-                    {insight.severity}
-                  </span>
-                  <span className="text-sm font-semibold text-foreground">
-                    {insight.title}
-                  </span>
-                </div>
-                <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
-                  {insight.body}
-                </p>
-              </li>
-            ))}
-          </ul>
-        </Section>
-      ) : null}
+          {/* Visitor identification — only when the pixel is firing. */}
+          {snapshot.visitorStats && pixelConnected ? (
+            <VisitorSection stats={snapshot.visitorStats} />
+          ) : null}
 
-      {/* Property rollup */}
-      {showProperties ? (
-        <Section
-          className="ls-report-section"
-          eyebrow="Leads and occupancy"
-          title="By property"
-        >
-          <Table
-            columns={["Property", "Leads", "Occupancy"]}
-            rows={snapshot.properties
-              .filter((p) => p.leads > 0 || p.occupancyPct != null)
-              .map((p) => [
-                p.name,
-                p.leads.toLocaleString(),
-                p.occupancyPct != null ? `${p.occupancyPct}%` : "—",
-              ])}
-          />
-        </Section>
-      ) : null}
+          {/* Chatbot — extended if available. */}
+          {chatbotConnected && cb.conversations > 0 ? (
+            <Section
+              className="ls-report-section"
+              eyebrow="Conversations and captured leads"
+              title="Chatbot activity"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+                <MiniStat
+                  label="Conversations"
+                  value={cb.conversations.toLocaleString()}
+                />
+                <MiniStat
+                  label="Leads from chat"
+                  value={cb.leadsFromChat.toLocaleString()}
+                />
+                <MiniStat
+                  label="Avg. messages"
+                  value={cb.avgMessageCount.toFixed(1)}
+                />
+                <MiniStat
+                  label="Capture rate"
+                  value={
+                    "capturedRatePct" in cb && cb.capturedRatePct != null
+                      ? `${cb.capturedRatePct}%`
+                      : "—"
+                  }
+                />
+              </div>
+            </Section>
+          ) : null}
+
+          {/* Property rollup */}
+          {showProperties ? (
+            <Section
+              className="ls-report-section"
+              eyebrow="Leads and occupancy"
+              title="By property"
+            >
+              <Table
+                columns={["Property", "Leads", "Occupancy"]}
+                rows={snapshot.properties
+                  .filter((p) => p.leads > 0 || p.occupancyPct != null)
+                  .map((p) => [
+                    p.name,
+                    p.leads.toLocaleString(),
+                    p.occupancyPct != null ? `${p.occupancyPct}%` : "—",
+                  ])}
+              />
+            </Section>
+          ) : null}
+        </ReportTabPanel>
+
+        <ReportTabPanel id="reputation">
+          {snapshot.reputationStats ? (
+            <ReputationSection stats={snapshot.reputationStats} />
+          ) : (
+            <EmptyTabState
+              title="No reputation data yet"
+              body="Connect Google Business Profile, Yelp, or your reputation source to see reviews and mentions in this report."
+            />
+          )}
+        </ReportTabPanel>
+
+        <ReportTabPanel id="insights">
+          {snapshot.aiVisibility && snapshot.aiVisibility.brandedClicks > 0 ? (
+            <AiVisibilitySection aiVisibility={snapshot.aiVisibility} />
+          ) : null}
+
+          {snapshot.insights.length > 0 ? (
+            <Section
+              className="ls-report-section"
+              eyebrow="Automated insights"
+              title="Signals we noticed"
+            >
+              <GroupedInsights items={snapshot.insights} />
+            </Section>
+          ) : !(
+              snapshot.aiVisibility && snapshot.aiVisibility.brandedClicks > 0
+            ) ? (
+            <EmptyTabState
+              title="No automated insights this period"
+              body="LeaseStack scans your data every day. Insights appear here when something material changes — a CPL spike, a pricing outlier, a pipeline stall."
+            />
+          ) : null}
+        </ReportTabPanel>
+      </ReportTabs>
 
       {/* Data sources — small transparency footer so clients know
           exactly what's flowing into the report. Builds trust:
@@ -779,17 +815,21 @@ function ReputationSection({ stats }: { stats: ReportReputationStats }) {
         </div>
       </div>
 
-      {/* Highlights — what residents are loving. Falls back to recent
-          when older snapshots don't have the curated buckets. */}
+      {/* Highlights — top 3 by default, the rest behind an expander.
+          A full dump of 42 reviews in the report is a wall of text;
+          the curated top 3 are the marketing-brag the operator cares
+          about. */}
       {(stats.highlights ?? []).length > 0 ? (
         <MentionGroup
           title="Highlights"
           subtitle="What residents are saying — by sentiment + 4.5★+ reviews"
           mentions={stats.highlights!}
+          defaultLimit={3}
         />
       ) : null}
 
-      {/* Concerns — what needs attention. Useful for ops triage. */}
+      {/* Concerns — show all by default. Negatives are action items;
+          we don't want to bury any of them. */}
       {(stats.concerns ?? []).length > 0 ? (
         <MentionGroup
           title="Needs attention"
@@ -799,12 +839,14 @@ function ReputationSection({ stats }: { stats: ReportReputationStats }) {
         />
       ) : null}
 
-      {/* Recent — chronological feed of every source for the period. */}
+      {/* Recent — top 4 by default. Operators dig in to the full
+          feed only when investigating a specific spike. */}
       {(stats.recent ?? stats.topMentions).length > 0 ? (
         <MentionGroup
           title="Recent mentions"
           subtitle="Most recent reviews + posts across Google, Reddit, Yelp, and the web"
           mentions={stats.recent ?? stats.topMentions}
+          defaultLimit={4}
         />
       ) : null}
     </Section>
@@ -823,12 +865,29 @@ function MentionGroup({
   subtitle,
   mentions,
   variant = "neutral",
+  /**
+   * Show only the first N mentions by default. Remaining mentions are
+   * tucked into a native <details> expander so the on-screen view stays
+   * scannable while the print/PDF includes every row (handled by the
+   * tab-strip print CSS that force-opens details). When undefined, all
+   * mentions render expanded — used for the "Concerns" group where
+   * burying negatives would defeat the purpose.
+   */
+  defaultLimit,
 }: {
   title: string;
   subtitle: string;
   mentions: ReportReputationMention[];
   variant?: "neutral" | "concern";
+  defaultLimit?: number;
 }) {
+  const limit =
+    defaultLimit != null && mentions.length > defaultLimit
+      ? defaultLimit
+      : mentions.length;
+  const head = mentions.slice(0, limit);
+  const tail = mentions.slice(limit);
+
   return (
     <div className="mt-4 pt-3 border-t border-border space-y-3">
       <div>
@@ -840,10 +899,27 @@ function MentionGroup({
         </p>
       </div>
       <div className="space-y-2.5">
-        {mentions.map((m) => (
+        {head.map((m) => (
           <ReportMentionCard key={m.id} mention={m} variant={variant} />
         ))}
       </div>
+      {tail.length > 0 ? (
+        <details className="ls-mention-expander group rounded-xl border border-dashed border-border bg-card/30">
+          <summary className="cursor-pointer list-none px-3 py-2 text-xs font-semibold text-primary hover:bg-muted/30">
+            <span className="group-open:hidden">
+              View {tail.length} more →
+            </span>
+            <span className="hidden group-open:inline text-muted-foreground">
+              Hide additional mentions
+            </span>
+          </summary>
+          <div className="space-y-2.5 px-3 pb-3 pt-1 border-t border-border bg-muted/10">
+            {tail.map((m) => (
+              <ReportMentionCard key={m.id} mention={m} variant={variant} />
+            ))}
+          </div>
+        </details>
+      ) : null}
     </div>
   );
 }
@@ -921,13 +997,29 @@ function ReportMentionCard({
           ) : null}
         </div>
       </div>
-      {/* Full body — no truncation. The DB stores the full review/post
-          in PropertyMention.excerpt as @db.Text so we can render it
-          all. The whitespace-pre-line preserves Reddit-style
-          paragraph breaks. */}
+      {/* Sanitized 240-char preview. Raw excerpts can come from full-page
+          web scrapes (BBB / ApartmentRatings / etc) that include site
+          nav, footers, and table-of-contents bullets — rendering them
+          verbatim destroyed the report's credibility. The sanitizer
+          strips markdown chrome and nav junk; if content was clipped, a
+          "Read full →" link to sourceUrl is the user's affordance for
+          the complete content. */}
       {m.excerpt ? (
-        <p className="mt-2 text-[12px] text-foreground/90 leading-relaxed whitespace-pre-line">
-          {m.excerpt}
+        <p className="mt-2 text-[12px] text-foreground/90 leading-relaxed line-clamp-3">
+          {sanitizeMentionExcerpt(m.excerpt)}
+          {isExcerptTruncated(m.excerpt) && m.sourceUrl ? (
+            <>
+              {" "}
+              <a
+                href={m.sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-primary font-medium hover:underline underline-offset-2"
+              >
+                Read full →
+              </a>
+            </>
+          ) : null}
         </p>
       ) : null}
       {m.topics && m.topics.length > 0 ? (
@@ -1654,6 +1746,211 @@ function TrendChart({
         }}
       />
     </svg>
+  );
+}
+
+function EmptyTabState({
+  title,
+  body,
+}: {
+  title: string;
+  body: string;
+}) {
+  return (
+    <div className="ls-report-section rounded-xl border border-dashed border-border bg-card/40 px-6 py-10 text-center">
+      <p className="text-sm font-semibold text-foreground">{title}</p>
+      <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+        {body}
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// GroupedInsights — collapses repetitive insight rows into a single summary
+// row with an expandable details panel. Operators were seeing 17 identical
+// "X rent is N% below portfolio average" rows; that's one signal, not 17.
+//
+// Grouping rule: when ≥ 3 insights share the same (kind, severity), they
+// collapse into one summary card. Click expands the inline list using a
+// native <details> element so the report stays server-rendered + print-safe
+// (print CSS forces [open] so PDFs include everything).
+// ---------------------------------------------------------------------------
+
+type InsightItem = ReportSnapshot["insights"][number];
+
+const GROUP_MIN = 3;
+
+function groupKey(item: InsightItem): string {
+  return `${item.kind}::${item.severity}`;
+}
+
+function summarizeGroup(kind: string, severity: string, count: number): {
+  title: string;
+  body: string;
+} {
+  switch (kind) {
+    case "portfolio_outlier":
+      if (severity === "info") {
+        return {
+          title: `${count} properties priced below portfolio average`,
+          body: "Renewing closer to the portfolio average could lift monthly rent roll. Open each to see the per-property gap and suggested move.",
+        };
+      }
+      return {
+        title: `${count} properties priced above portfolio with open vacancy`,
+        body: "These may be priced above what the local market is absorbing. Open each to see vacancy + suggested concession.",
+      };
+    case "pipeline_stall":
+      return {
+        title: `${count} leads stuck in pipeline`,
+        body: "These leads haven't moved status in a while. Open each to see who they are and the suggested next step.",
+      };
+    case "negative_review":
+      return {
+        title: `${count} new negative reviews`,
+        body: "Reviews 3 stars or lower posted this period. Open each to draft a response.",
+      };
+    case "hot_visitor":
+      return {
+        title: `${count} hot visitors flagged`,
+        body: "High-intent identified visitors who haven't converted to a lead yet.",
+      };
+    case "keyword_drop":
+      return {
+        title: `${count} keywords lost ranking`,
+        body: "Queries that previously drove traffic dropped position this period.",
+      };
+    case "vacancy_needs_boost":
+      return {
+        title: `${count} vacancies need a boost`,
+        body: "Units sitting longer than typical days-on-market for the portfolio.",
+      };
+    case "cpl_spike":
+      return {
+        title: `${count} cost-per-lead spikes`,
+        body: "Ad sources where cost-per-lead is materially above the running baseline.",
+      };
+    case "wasted_ad_spend":
+      return {
+        title: `${count} ad spend leaks`,
+        body: "Campaigns spending without converting at the portfolio benchmark.",
+      };
+    case "renewal_cliff":
+      return {
+        title: `${count} renewal cliffs ahead`,
+        body: "Concentrations of lease expirations that need outreach now.",
+      };
+    case "tour_noshow_spike":
+      return {
+        title: `${count} tour no-show spikes`,
+        body: "Properties where the no-show rate jumped over the baseline.",
+      };
+    case "chatbot_silence":
+      return {
+        title: `${count} chatbot silences`,
+        body: "Periods where chatbot capture rate dropped below baseline.",
+      };
+    default:
+      return {
+        title: `${count} ${kind.replace(/_/g, " ")} alerts`,
+        body: "Open to see the full list.",
+      };
+  }
+}
+
+function SeverityBadge({ severity }: { severity: string }) {
+  return (
+    <span
+      className={
+        "text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded font-bold " +
+        severityTone(severity)
+      }
+    >
+      {severity}
+    </span>
+  );
+}
+
+function InsightRow({ insight }: { insight: InsightItem }) {
+  return (
+    <li className="rounded-xl border border-border bg-card px-3 py-2">
+      <div className="flex items-center gap-2 flex-wrap">
+        <SeverityBadge severity={insight.severity} />
+        <span className="text-sm font-semibold text-foreground">
+          {insight.title}
+        </span>
+      </div>
+      <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed line-clamp-2">
+        {insight.body}
+      </p>
+    </li>
+  );
+}
+
+function GroupedInsights({ items }: { items: InsightItem[] }) {
+  // Preserve original order; bucket by (kind, severity).
+  const order: string[] = [];
+  const buckets = new Map<string, InsightItem[]>();
+  for (const item of items) {
+    const key = groupKey(item);
+    if (!buckets.has(key)) {
+      buckets.set(key, []);
+      order.push(key);
+    }
+    buckets.get(key)!.push(item);
+  }
+
+  return (
+    <ul className="space-y-1.5">
+      {order.flatMap((key) => {
+        const group = buckets.get(key)!;
+        if (group.length < GROUP_MIN) {
+          return group.map((insight) => (
+            <InsightRow key={insight.id} insight={insight} />
+          ));
+        }
+        const sample = group[0];
+        const { title, body } = summarizeGroup(
+          sample.kind,
+          sample.severity,
+          group.length,
+        );
+        return [
+          <li
+            key={key}
+            className="rounded-xl border border-border bg-card overflow-hidden ls-insight-group"
+          >
+            <details className="group">
+              <summary className="px-3 py-2 cursor-pointer list-none flex items-start gap-2 flex-wrap hover:bg-muted/30">
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <SeverityBadge severity={sample.severity} />
+                    <span className="text-sm font-semibold text-foreground">
+                      {title}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
+                    {body}
+                  </p>
+                </div>
+                <span className="text-xs text-primary font-medium shrink-0 mt-0.5 group-open:hidden">
+                  View {group.length} →
+                </span>
+                <span className="text-xs text-muted-foreground shrink-0 mt-0.5 hidden group-open:inline">
+                  Hide
+                </span>
+              </summary>
+              <ul className="space-y-1.5 px-3 pb-3 pt-1 border-t border-border bg-muted/10">
+                {group.map((insight) => (
+                  <InsightRow key={insight.id} insight={insight} />
+                ))}
+              </ul>
+            </details>
+          </li>,
+        ];
+      })}
+    </ul>
   );
 }
 

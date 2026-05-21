@@ -1165,95 +1165,21 @@ export default async function PortalHome({
         </section>
       ) : null}
 
-          {/* Properties + activity feed — Norman bug #103: the previous
-              image-led property grid took up two-thirds of the row
-              even on a tiny portfolio (and duplicated what
-              /portal/properties already shows in detail). Replaced
-              with a compact portfolio summary: top-N properties by 28d
-              lead volume, no per-property hero photo, with a clear
-              "View all properties →" link into /portal/properties for
-              the full drilldown. Saves vertical real estate for the
-              portfolio-level signals (activity feed, future insight
-              rows) that actually belong on the dashboard. */}
-          <section className="grid grid-cols-1 lg:grid-cols-3 gap-2">
-            <DashboardSection
-              title="Top properties"
-              eyebrow="Portfolio · last 28d"
-              description="Sorted by lead volume. Click into a property for the full drilldown."
-              href="/portal/properties"
-              hrefLabel="View all properties"
-              className="lg:col-span-2"
-            >
-              {properties.length === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  No properties yet. Add one to start tracking leads, ads, and
-                  occupancy here.
-                </p>
-              ) : (
-                (() => {
-                  const ranked = properties
-                    .map((p) => {
-                      const metrics = propertyMetrics.get(p.id) ?? {
-                        leads28d: 0,
-                        leadsSpark: new Array<number>(28).fill(0),
-                        activeCampaigns: 0,
-                        reputationMentionCount: 0,
-                        reputationNegativeCount: 0,
-                        reputationUnreviewedCount: 0,
-                      };
-                      const address = [p.addressLine1, p.city, p.state]
-                        .filter(Boolean)
-                        .join(", ");
-                      return { p, metrics, address };
-                    })
-                    .sort((a, b) => b.metrics.leads28d - a.metrics.leads28d)
-                    .slice(0, 5);
-                  return (
-                    <ul className="divide-y divide-border -mx-1">
-                      {ranked.map(({ p, metrics, address }) => (
-                        <li key={p.id}>
-                          <Link
-                            href={`/portal/properties/${p.id}`}
-                            className="group flex items-center gap-3 px-1 py-2.5 -mx-0.5 rounded-md hover:bg-muted/30 transition-colors"
-                          >
-                            <span className="min-w-0 flex-1">
-                              <span className="block text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                                {p.name}
-                              </span>
-                              {address ? (
-                                <span className="block text-[11px] text-muted-foreground truncate mt-0.5">
-                                  {address}
-                                </span>
-                              ) : null}
-                            </span>
-                            <span className="text-right shrink-0">
-                              <span className="block text-sm font-semibold tabular-nums text-foreground">
-                                {metrics.leads28d}
-                              </span>
-                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">
-                                {metrics.leads28d === 1 ? "lead" : "leads"}
-                              </span>
-                            </span>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  );
-                })()
-              )}
-            </DashboardSection>
-
-            <DashboardSection
-              eyebrow="Recent"
-              title="Activity feed"
-              description="Latest events from leads, tours, ads, and your chatbot. Refresh the page to see new items."
-              href="/portal/leads"
-              hrefLabel="Open leads"
-              className="lg:col-span-1"
-            >
-              <ActivityFeed items={activity} />
-            </DashboardSection>
-          </section>
+          {/* Activity feed — single full-width section. Previously this
+              row had a "Top properties" inline list on the left that
+              duplicated TopPropertiesLeaderboard above (same data, same
+              ranking, different rendering). Removed the dup so the
+              activity feed gets the breathing room it actually needs to
+              read like a feed. */}
+          <DashboardSection
+            eyebrow="Recent"
+            title="Activity feed"
+            description="Latest events from leads, tours, ads, and your chatbot. Refresh the page to see new items."
+            href="/portal/leads"
+            hrefLabel="Open leads"
+          >
+            <ActivityFeed items={activity} />
+          </DashboardSection>
 
           {/* AppFolio status row — Norman feedback evolution:
               #97 said the previous "Coming soon · Operations module"

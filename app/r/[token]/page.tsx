@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { ReportView } from "@/components/portal/reports/report-view";
 import { PrintButton } from "@/components/portal/reports/print-button";
+import { PrintExpander } from "@/components/portal/reports/print-expander";
 import { isValidShareToken } from "@/lib/reports/token";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 
@@ -88,6 +89,17 @@ export default async function PublicReportPage({
                 transform: none !important;
                 stroke-dashoffset: 0 !important;
               }
+              /* Tab chrome is on-screen-only. Every tab panel renders
+                 in print so PDFs include the whole report. */
+              .ls-report-tab-strip { display: none !important; }
+              .ls-report-tabpanel[hidden],
+              .ls-report-tabpanel[data-active="false"] {
+                display: block !important;
+              }
+              .ls-insight-group details summary > span:last-child,
+              .ls-insight-group details summary > span.group-open\\:inline {
+                display: none !important;
+              }
             }
           `,
         }}
@@ -98,6 +110,7 @@ export default async function PublicReportPage({
           <PrintButton />
         </div>
 
+        <PrintExpander />
         <ReportView
           snapshot={snapshot}
           headline={report.headline}

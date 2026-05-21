@@ -116,23 +116,12 @@ export function ReportEditorControls({
   }
 
   return (
-    <section
-      data-no-print
-      className="rounded-xl border border-border bg-card p-5 space-y-4"
-    >
+    <section data-no-print className="space-y-4">
       <div className="flex items-start justify-between gap-3 flex-wrap">
-        <div>
-          <div className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-            Operator review
-          </div>
-          <h2 className="mt-1 text-base font-semibold text-foreground">
-            Personalize before you share
-          </h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            The numbers below are frozen. Your headline and note are the human
-            layer your client reads first.
-          </p>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          Numbers are frozen. Your headline and note are the human layer your
+          client reads first.
+        </p>
         <div className="flex items-center gap-2">
           {status === "shared" && shareUrl ? (
             <button

@@ -8,6 +8,8 @@ import { ReportView } from "@/components/portal/reports/report-view";
 import { ReportEditorControls } from "@/components/portal/reports/report-editor-controls";
 import { SendEmailPanel } from "@/components/portal/reports/send-email-panel";
 import { PrintButton } from "@/components/portal/reports/print-button";
+import { PrintExpander } from "@/components/portal/reports/print-expander";
+import { OperatorReviewBar } from "@/components/portal/reports/operator-review-bar";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 
 export const metadata: Metadata = { title: "Report" };
@@ -193,6 +195,57 @@ export default async function ReportDetailPage({
                  table is still readable. */
               thead { display: table-header-group; }
               tr, td, th { page-break-inside: avoid; }
+
+              /* Insight group expanders: the "View N →" / "Hide" toggles
+                 are meaningless in print. Suppress them. The
+                 PrintExpander client component force-opens every
+                 <details> before window.print() fires so PDFs render
+                 the full grouped list. */
+              .ls-insight-group details summary > span:last-child,
+              .ls-insight-group details summary > span.group-open\\:inline {
+                display: none !important;
+              }
+
+              /* Tab nav is on-screen-only chrome. In print every tab
+                 panel renders in document order so PDFs include the
+                 entire report regardless of which tab the operator
+                 had active when they hit print. */
+              .ls-report-tab-strip { display: none !important; }
+              .ls-report-tabpanel[hidden],
+              .ls-report-tabpanel[data-active="false"] {
+                display: block !important;
+              }
+              .ls-report-tabpanel { break-before: auto; }
+              /* Tabs marked "Traffic & Leads", "Operations",
+                 "Reputation", "Insights" start a fresh page so the
+                 PDF reads section-by-section. */
+              .ls-report-tabpanel[data-tab-id="traffic"],
+              .ls-report-tabpanel[data-tab-id="operations"],
+              .ls-report-tabpanel[data-tab-id="reputation"],
+              .ls-report-tabpanel[data-tab-id="insights"] {
+                break-before: page;
+                page-break-before: always;
+              }
+
+              /* Mention previews are line-clamped on-screen for
+                 scannability. In print + PDF, restore the full
+                 sanitized excerpt so nothing is hidden. */
+              .report-article .line-clamp-2,
+              .report-article .line-clamp-3 {
+                display: block !important;
+                -webkit-line-clamp: unset !important;
+                line-clamp: unset !important;
+                overflow: visible !important;
+              }
+              /* The "View N more →" mention expanders flatten in print
+                 (PrintExpander opens every <details>). Hide their
+                 dashed-border affordance so the PDF stays clean. */
+              .ls-mention-expander {
+                border: none !important;
+                background: transparent !important;
+              }
+              .ls-mention-expander summary { display: none !important; }
+              .ls-mention-expander > div { border-top: none !important; padding: 0 !important; background: transparent !important; }
             }
 
             /* The print-only header is HIDDEN on screen and only revealed
@@ -228,7 +281,13 @@ export default async function ReportDetailPage({
         </div>
       </div>
 
-      <div data-no-print>
+      <OperatorReviewBar
+        status={status}
+        hasHeadline={(report.headline?.length ?? 0) > 0}
+        hasNotes={(report.notes?.length ?? 0) > 0}
+        shareUrl={shareUrl}
+        recipient={report.org?.primaryContactEmail ?? null}
+      >
         <ReportEditorControls
           reportId={report.id}
           initialHeadline={report.headline ?? ""}
@@ -236,18 +295,18 @@ export default async function ReportDetailPage({
           status={status}
           shareUrl={shareUrl}
         />
-      </div>
-
-      {status !== "archived" ? (
-        <div data-no-print>
+        {status !== "archived" ? (
           <SendEmailPanel
             reportId={report.id}
             defaultRecipient={report.org?.primaryContactEmail ?? null}
             defaultRecipientName={report.org?.primaryContactName ?? null}
-            canSend={(report.headline?.length ?? 0) > 0 || (report.notes?.length ?? 0) > 0}
+            canSend={
+              (report.headline?.length ?? 0) > 0 ||
+              (report.notes?.length ?? 0) > 0
+            }
           />
-        </div>
-      ) : null}
+        ) : null}
+      </OperatorReviewBar>
 
       {status === "shared" && report.viewCount > 0 ? (
         <div
@@ -260,6 +319,7 @@ export default async function ReportDetailPage({
         </div>
       ) : null}
 
+      <PrintExpander />
       <ReportView
         snapshot={snapshot}
         headline={report.headline}
