@@ -96,8 +96,16 @@
 28. feat(admin): entity-type filter chips on /admin/audit-log
 29. feat(seo): property activity feed on /portal/properties/[id]
 30. feat(seo): snooze recommendation with auto-resume (1w / 2w / 1mo / quarter)
+31. feat(seo): bulk dismiss/snooze/complete on operator rec manager
+32. feat(seo): snoozed recs panel with wake-now action
 
 All pushed to origin/main.
+
+### Bulk operations parity reached
+
+- /admin/content-drafts: bulk approve/reject (50/call)
+- /portal/seo/agent: bulk dismiss/snooze/complete (50/call)
+- Both write per-row AuditEvent rows + fire follow-up side effects
 
 ### Audit trail closed end-to-end
 
