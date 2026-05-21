@@ -62,8 +62,10 @@ export function MetricsPanel({ metrics }: { metrics: ReputationMetrics }) {
           : ""}
       </p>
 
-      {/* KPI tile row — platform-level hero numbers */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      {/* KPI tile row — platform-level hero numbers. Mobile-first:
+          single column on tiny viewports so tiles never crush; 2-up
+          on sm; 4-up on md+. */}
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile
           label="Google rating"
           value={

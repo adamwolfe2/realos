@@ -541,7 +541,7 @@ function Dashboard() {
       {/* KPIs — single row of 4 on desktop (was 2×2) so the dashboard
           fits within the fixed 640px viewport. Mobile keeps the 2×2
           stack since it has the vertical room. */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {kpis.map((k) => (
           <div
             key={k.label}
@@ -1133,7 +1133,7 @@ function LeadDrawer({ lead, onClose }: { lead: LeadRow; onClose: () => void }) {
         </div>
 
         <div className="px-5 py-4 space-y-5">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <DrawerStat label="Score"  value={<ScoreBadge score={lead.score} />} />
             <DrawerStat label="Source" value={<Pill tone="terracotta">{lead.source}</Pill>} />
             <DrawerStat label="Email"  value={<span style={{ fontSize: "13px", color: TOKENS.nearBlack }}>{lead.email}</span>} />
@@ -1196,7 +1196,7 @@ function LeadDrawer({ lead, onClose }: { lead: LeadRow; onClose: () => void }) {
             </ol>
           </div>
 
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <DrawerButton label="Send email" />
             <DrawerButton label="Send SMS" />
             <DrawerButton label="Book tour" />
@@ -1938,7 +1938,7 @@ function ChannelCard({ channel }: { channel: typeof AD_CHANNELS[number] }) {
         <span>{pct}% of budget</span>
       </div>
 
-      <div className="mt-4 grid grid-cols-3 gap-2">
+      <div className="mt-4 grid grid-cols-1 sm:grid-cols-3 gap-2">
         <MiniStat label="Impr." value={channel.impressions} />
         <MiniStat label="Leads" value={String(channel.leads)} />
         <MiniStat label="CPA"   value={channel.cpa} />
@@ -2204,7 +2204,7 @@ function PropertyCard({ property }: { property: typeof PROPERTIES[number] }) {
         <Pill tone={tone}>{property.status}</Pill>
       </div>
 
-      <div className="mt-5 grid grid-cols-3 gap-3">
+      <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
         <PropertyStat
           label="Occupancy"
           value={property.occupancyPct > 0 ? `${property.occupancyPct}%` : "—"}
@@ -2347,7 +2347,7 @@ function ReportsView() {
         </div>
       </Tile>
 
-      <div className="grid grid-cols-2 md:grid-cols-6 gap-3 mt-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-6 gap-3 mt-5">
         {[
           { label: "Leads",          value: "168" },
           { label: "Tours booked",   value: "31"  },
@@ -2754,7 +2754,7 @@ function VisitorsView() {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {[
           { label: "Resolve rate",      value: VISITOR_STATS.resolveRate },
           { label: "Identified / week", value: VISITOR_STATS.identifiedThisWeek.toLocaleString() },
@@ -2937,7 +2937,7 @@ function SeoView() {
         </button>
       </div>
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         <div style={{ backgroundColor: TOKENS.white, borderRadius: "12px", padding: "14px 16px", boxShadow: `0 0 0 1px ${TOKENS.borderCream}` }}>
           <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>Impressions (8w)</p>
           <div className="mt-1 flex items-baseline gap-2">

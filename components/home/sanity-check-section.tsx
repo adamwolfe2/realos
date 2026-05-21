@@ -99,8 +99,11 @@ function ReputationArtifact() {
       </header>
 
       {/* Stat row */}
+      {/* Mobile-first: 1 col on tiny viewports stacks the three stats so
+          each one reads at full width, 3-up on sm+ matches the desktop
+          comp. Avoids cramming three labels into a phone-narrow row. */}
       <section
-        className="grid grid-cols-3 px-5 py-4 border-b"
+        className="grid grid-cols-1 sm:grid-cols-3 px-5 py-4 border-b"
         style={{ borderColor: "#F1F5F9" }}
       >
         <Stat label="Active mentions" value="24" hint="+6 in 30d" />

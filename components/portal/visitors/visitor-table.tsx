@@ -318,7 +318,7 @@ function VisitorDrawerBody({ row }: { row: VisitorRow }) {
         <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Identity
         </h3>
-        <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+        <dl className="grid grid-cols-1 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
           <dt className="text-muted-foreground">Name</dt>
           <dd className="col-span-2 text-foreground">
             {row.firstName || row.lastName
@@ -340,7 +340,7 @@ function VisitorDrawerBody({ row }: { row: VisitorRow }) {
         <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Activity
         </h3>
-        <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+        <dl className="grid grid-cols-1 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
           <dt className="text-muted-foreground">Last seen</dt>
           <dd className="col-span-2 text-foreground">
             {formatDistanceToNow(new Date(row.lastSeenAtIso), { addSuffix: true })}

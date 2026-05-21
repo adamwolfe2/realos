@@ -250,7 +250,7 @@ export function PropertyFormDialog({
                   value={data.addressLine2 ?? ""}
                   onChange={(v) => set("addressLine2", v || null)}
                 />
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <Field
                     label="City"
                     value={data.city ?? ""}

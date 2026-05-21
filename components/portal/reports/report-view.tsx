@@ -279,7 +279,7 @@ export function ReportView({
           they have a tracking gap they don't know about. */}
       <section
         aria-label="Key metrics"
-        className="ls-report-section grid grid-cols-2 md:grid-cols-5 gap-2"
+        className="ls-report-section grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2"
       >
         <IconKpi
           label="Leads"
@@ -494,7 +494,7 @@ export function ReportView({
           eyebrow="Conversations and captured leads"
           title="Chatbot activity"
         >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
             <MiniStat
               label="Conversations"
               value={cb.conversations.toLocaleString()}
@@ -722,7 +722,7 @@ function ReputationSection({ stats }: { stats: ReportReputationStats }) {
               ★
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <MiniStat
               label="New"
               value={stats.newInPeriod.toLocaleString()}
@@ -984,7 +984,7 @@ function OccupancySection({ stats }: { stats: ReportOccupancyStats }) {
           />
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <MiniStat
           label="Monthly rent roll"
           value={`$${stats.monthlyRentRollUsd.toLocaleString()}`}
@@ -1005,7 +1005,7 @@ function OccupancySection({ stats }: { stats: ReportOccupancyStats }) {
 function RenewalSection({ stats }: { stats: ReportRenewalStats }) {
   return (
     <Section eyebrow="Next 120 days" title="Renewal pipeline">
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <MiniStat
           label="Active leases"
           value={stats.activeLeases.toLocaleString()}
@@ -1057,7 +1057,7 @@ function VisitorSection({ stats }: { stats: ReportVisitorStats }) {
       title="Website visitors identified"
     >
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-3 items-center">
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <MiniStat
             label="Identified"
             value={stats.identifiedVisitors.toLocaleString()}
@@ -1157,7 +1157,7 @@ function AiVisibilitySection({
       title="AI search visibility"
     >
       <div className="space-y-3">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <MiniStat
             label="Branded clicks"
             value={aiVisibility.brandedClicks.toLocaleString()}

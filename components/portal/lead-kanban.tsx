@@ -719,7 +719,7 @@ function LeadDrawerBody({ item }: { item: LeadKanbanItem }) {
         <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Contact
         </h3>
-        <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+        <dl className="grid grid-cols-1 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
           <dt className="text-muted-foreground">Email</dt>
           <dd className="col-span-2 text-foreground break-all">
             {item.email ?? <span className="text-muted-foreground">—</span>}
@@ -735,7 +735,7 @@ function LeadDrawerBody({ item }: { item: LeadKanbanItem }) {
         <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Source &amp; property
         </h3>
-        <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+        <dl className="grid grid-cols-1 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
           <dt className="text-muted-foreground">Source</dt>
           <dd className="col-span-2 text-foreground">
             {humanLeadSource(item.source)}

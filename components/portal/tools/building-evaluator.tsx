@@ -158,7 +158,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
           </div>
         </Field>
 
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <Field label="Beds">
             <input
               type="number"
@@ -186,7 +186,7 @@ export function BuildingEvaluator({ recent }: { recent: RecentRow[] }) {
           </Field>
         </div>
 
-        <div className="grid grid-cols-2 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
           <Field label="Sq ft">
             <input
               type="number"
