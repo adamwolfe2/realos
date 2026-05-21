@@ -73,7 +73,7 @@ function buildPath(close: boolean): string {
 // is positioned as a fraction of the chart's WIDTH so the layout
 // scales cleanly when the SVG resizes.
 type FloatingStat = {
-  /** Index into SERIES — the week the stat "anchors" to. */
+  /** Index into SERIES, the week the stat "anchors" to. */
   week: number;
   /** Where the card sits relative to the anchor point. */
   side: "above" | "below";
@@ -83,7 +83,7 @@ type FloatingStat = {
   value: string;
   /** Small body sub-line. */
   hint: string;
-  /** Reveal delay, ms — staggers the three cards so they pop in one at a time. */
+  /** Reveal delay, ms, staggers the three cards so they pop in one at a time. */
   delayMs: number;
 };
 
@@ -238,7 +238,7 @@ export function SEOTrendChart() {
               );
             })}
 
-            {/* Area fill — fades in after the line draws */}
+            {/* Area fill, fades in after the line draws */}
             <motion.path
               d={areaPath}
               fill="url(#seoArea)"

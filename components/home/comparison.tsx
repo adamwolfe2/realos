@@ -113,7 +113,7 @@ function ComparisonRow({
         {label}
       </div>
 
-      {/* "Current stack" side — muted, slightly smaller. */}
+      {/* "Current stack" side, muted, slightly smaller. */}
       <div className="min-w-0">
         <p
           className="md:hidden mb-2"
@@ -144,7 +144,7 @@ function ComparisonRow({
         </p>
       </div>
 
-      {/* Gutter arrow — visual signal that the right side resolves the left. */}
+      {/* Gutter arrow, visual signal that the right side resolves the left. */}
       <div
         className="hidden md:flex items-start justify-center"
         aria-hidden="true"
@@ -174,7 +174,7 @@ function ComparisonRow({
         </motion.svg>
       </div>
 
-      {/* "With LeaseStack" side — solid ink, bigger, animated cobalt underline. */}
+      {/* "With LeaseStack" side, solid ink, bigger, animated cobalt underline. */}
       <div className="min-w-0">
         <p
           className="md:hidden mb-2"
@@ -285,7 +285,7 @@ export function Comparison() {
           </p>
         </div>
 
-        {/* Desktop column headers — typographic anchor only, not pill chips. */}
+        {/* Desktop column headers, typographic anchor only, not pill chips. */}
         <div
           className="hidden md:grid md:grid-cols-[56px_1fr_28px_1fr] gap-x-8 pb-4 mb-2"
           style={{ borderBottom: `1px solid ${BORDER}` }}

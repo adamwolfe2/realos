@@ -174,7 +174,7 @@ export function PacingAlert() {
             />
           ))}
 
-          {/* Last cycle — muted */}
+          {/* Last cycle, muted */}
           <path
             d={linePath(LAST_CYCLE)}
             fill="none"
@@ -185,7 +185,7 @@ export function PacingAlert() {
             strokeLinejoin="round"
           />
 
-          {/* This cycle — area + line */}
+          {/* This cycle, area + line */}
           <defs>
             <linearGradient id="thisCycleFill" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor={ACCENT} stopOpacity="0.15" />
@@ -223,7 +223,7 @@ export function PacingAlert() {
           />
           <circle cx={alertX} cy={alertY} r={3.5} fill={WARN} />
 
-          {/* X axis labels — week markers */}
+          {/* X axis labels, week markers */}
           {[0, 6, 12, 18, 23].map((i) => (
             <text
               key={i}

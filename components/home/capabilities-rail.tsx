@@ -207,7 +207,7 @@ export function CapabilitiesRail() {
 
         {/* Desktop: scrollytelling layout. Mobile: stacked. */}
         <div className="grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-10 lg:gap-16 items-start">
-          {/* Left rail — capability list */}
+          {/* Left rail, capability list */}
           <ol className="lg:pt-2">
             {CAPABILITIES.map((cap, i) => (
               <li

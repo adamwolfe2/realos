@@ -305,7 +305,7 @@ function VisitorRow({
         transition: "background-color 1400ms ease",
       }}
     >
-      {/* Avatar — flips when reveal fires */}
+      {/* Avatar, flips when reveal fires */}
       <span
         className="inline-flex items-center justify-center flex-shrink-0 relative"
         style={{

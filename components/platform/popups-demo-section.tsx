@@ -44,7 +44,7 @@ const PRESETS = [
   {
     key: "exitsave",
     label: "Exit-intent save",
-    headline: "Before you go — see one floor plan we hold back.",
+    headline: "Before you go, see one floor plan we hold back.",
     body: "Our last 2-bed corner unit didn't make the public listing. Want it sent to your inbox?",
     ctaText: "Send me the floor plan",
     offerCode: null as string | null,
@@ -115,7 +115,7 @@ export function PopupsDemoSection() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[380px_minmax(0,1fr)] gap-5">
-        {/* LEFT — editor */}
+        {/* LEFT, editor */}
         <div className="space-y-3">
           <div className="rounded-2xl border border-border bg-white p-5 space-y-4">
             <Field label="Headline">
@@ -213,7 +213,7 @@ export function PopupsDemoSection() {
           </p>
         </div>
 
-        {/* RIGHT — preview */}
+        {/* RIGHT, preview */}
         <div className="relative h-[600px] rounded-2xl border border-dashed border-border bg-gradient-to-br from-[#F9FAFB] to-[#EFF6FF] overflow-hidden">
           <div className="absolute top-0 inset-x-0 h-9 bg-white/70 border-b border-border flex items-center gap-1.5 px-3">
             <span className="h-2.5 w-2.5 rounded-full bg-[#EF4444]/70" />

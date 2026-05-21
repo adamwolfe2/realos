@@ -27,18 +27,12 @@ export function SanityCheckSection() {
     <StickyArtifactSection
       surface="muted"
       eyebrow="LIVE INSIGHTS"
-      title={
-        <>
-          Catch the bad reviews before
-          <br />
-          your owners do.
-        </>
-      }
-      body="Every Google, Yelp, Reddit, and forum mention is pulled into one feed and classified for sentiment. Negative reviews get auto-flagged the moment they land — drafted responses sit there, ready to send, so the operator never has to write from scratch at 11pm."
+      title="Catch the bad reviews before your owners do."
+      body="Every Google, Yelp, Reddit, and forum mention is pulled into one feed and classified for sentiment. Negative reviews get auto-flagged the moment they land. Drafted responses sit there, ready to send, so the operator never has to write from scratch at 11pm."
       bullets={[
         "5-year fuse on direct reviews · 6-month fuse on general threads",
         "Auto-drafted replies tuned for residential, not hotel",
-        "Reviewed mentions sink to the bottom — worklist stays clean",
+        "Reviewed mentions sink to the bottom so the worklist stays clean",
       ]}
       cta={{ label: "See the reputation surface", href: "/portal/reputation" }}
       artifact={

@@ -50,7 +50,7 @@ export function Proof() {
           Pilot cohort &middot; open now
         </p>
 
-        {/* Hero row — offer on the left, action on the right */}
+        {/* Hero row, offer on the left, action on the right */}
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 lg:gap-12 items-end">
           <div>
             <h2
@@ -142,7 +142,7 @@ export function Proof() {
           </div>
         </div>
 
-        {/* Trust strip — inline horizontal proof points, not a giant grid */}
+        {/* Trust strip, inline horizontal proof points, not a giant grid */}
         <div
           className="mt-12 md:mt-14 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-0"
           style={{

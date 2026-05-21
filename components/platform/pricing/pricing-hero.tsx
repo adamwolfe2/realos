@@ -47,7 +47,7 @@ export function PricingHero() {
           </p>
         </div>
 
-        {/* Trust strip — left-aligned, hairline-divided, no centered grid. */}
+        {/* Trust strip, left-aligned, hairline-divided, no centered grid. */}
         <div
           className="mt-12 grid grid-cols-2 md:grid-cols-4 max-w-[920px]"
           style={{

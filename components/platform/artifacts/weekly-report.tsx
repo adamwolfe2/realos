@@ -45,7 +45,7 @@ const ACTIONS = [
     tag: "Spend",
   },
   {
-    text: "Refresh the 2-bed creative — CTR down 32% over the last 10 days.",
+    text: "Refresh the 2-bed creative. CTR down 32% over the last 10 days.",
     tag: "Creative",
   },
   {
@@ -297,7 +297,7 @@ export function WeeklyReport() {
         </div>
       </div>
 
-      {/* Footer — delivery channels */}
+      {/* Footer, delivery channels */}
       <div
         className="px-5 md:px-6 py-3 flex items-center justify-between gap-3"
         style={{ borderTop: `1px solid ${BORDER}`, backgroundColor: PARCHMENT }}

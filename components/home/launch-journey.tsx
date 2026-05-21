@@ -182,7 +182,7 @@ export function LaunchJourney() {
             <JourneyHeader />
 
             <div className="mt-10 lg:mt-14">
-              {/* Progress strip — sits across the row of dots */}
+              {/* Progress strip, sits across the row of dots */}
               <div className="relative" style={{ height: 14, marginBottom: 8 }}>
                 {/* Track */}
                 <div
@@ -214,7 +214,7 @@ export function LaunchJourney() {
                   aria-hidden
                 />
 
-                {/* Dots — one per milestone, positioned at flex-1 centers */}
+                {/* Dots, one per milestone, positioned at flex-1 centers */}
                 <ol className="absolute inset-0 flex items-start">
                   {MILESTONES.map((m, i) => {
                     const isUnlocked = i < effectiveUnlockedCount;
@@ -315,7 +315,7 @@ function JourneyHeader() {
         }}
       >
         Scroll to watch the platform unlock, step by step. Every capability
-        ships on day fourteen — the next seventy-six days are compounding,
+        ships on day fourteen, the next seventy-six days are compounding,
         not deployment.
       </p>
     </div>
@@ -365,7 +365,7 @@ function DesktopMilestone({
           }}
         >
           {m.when}
-          {isLaunch ? " — Launch" : ""}
+          {isLaunch ? ". Launch" : ""}
         </span>
 
         <motion.div
@@ -466,7 +466,7 @@ function MobileMilestone({
           }}
         >
           {m.when}
-          {isLaunch ? " — Launch" : ""}
+          {isLaunch ? ". Launch" : ""}
         </p>
         <p
           className="mt-1"

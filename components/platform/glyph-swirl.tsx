@@ -314,7 +314,7 @@ function Glyph({
                   ? staticFill
                   : "transparent"
                 : on
-                  ? `rgba(${BRAND_BLUE}, 0.45)` // initial — overwritten by RAF
+                  ? `rgba(${BRAND_BLUE}, 0.45)` // initial, overwritten by RAF
                   : "transparent",
               // Tiny radius so the cells read as crisp pixel marks
               // rather than soft circles.

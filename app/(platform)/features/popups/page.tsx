@@ -24,7 +24,7 @@ export default function PopupsFeaturePage() {
           </h1>
           <p className="mt-5 text-lg md:text-xl text-muted-foreground leading-relaxed max-w-2xl">
             Promo offers, referral programs, application reminders, exit-intent
-            save-saves — design them visually, embed with a single script tag,
+            save-saves, design them visually, embed with a single script tag,
             and every conversion attributes back to your lead pipeline. Try the
             full editor below.
           </p>
@@ -45,7 +45,7 @@ export default function PopupsFeaturePage() {
               Works on any website
             </h3>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              Wix, WordPress, Webflow, Squarespace, custom — anywhere you can
+              Wix, WordPress, Webflow, Squarespace, custom, anywhere you can
               paste a script tag. The popup loads asynchronously so it never
               blocks your page render.
             </p>

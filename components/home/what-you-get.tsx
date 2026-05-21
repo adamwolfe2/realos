@@ -136,7 +136,7 @@ export function WhatYouGet() {
           </p>
         </div>
 
-        {/* Three pillars — editorial, not card-grid */}
+        {/* Three pillars, editorial, not card-grid */}
         <ol className="grid grid-cols-1 md:grid-cols-3 gap-x-10 gap-y-8 mb-14 md:mb-16">
           {PILLARS.map((p) => (
             <li key={p.num}>
@@ -393,7 +393,7 @@ function LaunchTrack() {
                 />
               )}
 
-              {/* Dot — centered in its column. */}
+              {/* Dot, centered in its column. */}
               <div className="flex justify-center">
                 <span
                   aria-hidden
@@ -412,7 +412,7 @@ function LaunchTrack() {
                 />
               </div>
 
-              {/* Content block — centered under the dot. */}
+              {/* Content block, centered under the dot. */}
               <div className="mt-5 flex flex-col items-center text-center px-3">
                 <span
                   style={{
@@ -425,7 +425,7 @@ function LaunchTrack() {
                   }}
                 >
                   {s.when}
-                  {isLaunch ? " — Launch" : ""}
+                  {isLaunch ? ". Launch" : ""}
                 </span>
                 <div
                   className="inline-flex items-center justify-center mt-3 mb-4"
@@ -471,7 +471,7 @@ function LaunchTrack() {
         })}
       </ol>
 
-      {/* Mobile fallback — same content, simpler 2-col grid, no line. */}
+      {/* Mobile fallback, same content, simpler 2-col grid, no line. */}
       <ol className="md:hidden grid grid-cols-2 gap-x-4 gap-y-10">
         {LAUNCH_STEPS.map((s) => {
           const isLaunch = s.marker === "launch";
@@ -504,7 +504,7 @@ function LaunchTrack() {
                   }}
                 >
                   {s.when}
-                  {isLaunch ? " — Launch" : ""}
+                  {isLaunch ? ". Launch" : ""}
                 </span>
               </div>
               <div

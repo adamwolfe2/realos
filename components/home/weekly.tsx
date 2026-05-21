@@ -129,7 +129,7 @@ function WeeklyItem({
       ref={ref}
       className="grid grid-cols-[64px_1fr] md:grid-cols-[120px_56px_1fr] gap-x-4 md:gap-x-8 py-10 md:py-14 relative"
     >
-      {/* Day chip — large mono with time underneath */}
+      {/* Day chip, large mono with time underneath */}
       <div>
         <p
           style={{
@@ -319,7 +319,7 @@ function WeeklyItem({
         ) : null}
       </div>
 
-      {/* Item divider — appears between rows. Hidden on the last item. */}
+      {/* Item divider, appears between rows. Hidden on the last item. */}
       {!isLast ? (
         <div
           aria-hidden="true"

@@ -877,3 +877,25 @@ body {
   border-color: hsl(var(--primary));
 }
 .input::placeholder { color: hsl(var(--muted-foreground) / 0.6); }
+
+/* ---------------------------------------------------------------------------
+ * Norman 2026-05-21: marketing copy was wrapping into uneven 3- and 4-line
+ * blocks ("Catch the bad reviews / before / your owners do."). text-wrap:
+ * balance distributes characters across lines evenly so the same headline
+ * reads as two clean halves ("Catch the bad reviews before / your owners
+ * do."). pretty handles body copy — minimizes orphan widows without the
+ * full re-balance cost.
+ *
+ * Scoped to marketing typography elements; portal data tables / inputs are
+ * unaffected.
+ * --------------------------------------------------------------------------- */
+h1, h2, h3,
+.balance-wrap,
+[data-balance] {
+  text-wrap: balance;
+}
+p, li,
+.pretty-wrap,
+[data-pretty] {
+  text-wrap: pretty;
+}

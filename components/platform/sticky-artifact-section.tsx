@@ -37,7 +37,7 @@ export type StickyArtifactSectionProps = {
   eyebrow?: string;
   /** Plain string OR JSX (so callers can embed an accent span / animated reveal). */
   title: React.ReactNode;
-  /** Optional sub-paragraph under the title — same calm tone as Judgment. */
+  /** Optional sub-paragraph under the title, same calm tone as Judgment. */
   body?: React.ReactNode;
   /** Optional list of bullet points beneath the body, rendered as a small mono list. */
   bullets?: string[];
@@ -49,7 +49,7 @@ export type StickyArtifactSectionProps = {
    * scrolling column.
    */
   artifact: React.ReactNode;
-  /** Surface tone — "light" (default, white) or "muted" (#FAFBFF wash). */
+  /** Surface tone, "light" (default, white) or "muted" (#FAFBFF wash). */
   surface?: "light" | "muted";
   /**
    * Side to place the text column on. Default "left" matches the Judgment

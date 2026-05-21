@@ -219,7 +219,7 @@ export function ComparisonTable() {
           </h2>
         </div>
 
-        {/* Compact table — 8 headline rows, no section dividers. */}
+        {/* Compact table, 8 headline rows, no section dividers. */}
         <div
           className="rounded-xl overflow-hidden"
           style={{
