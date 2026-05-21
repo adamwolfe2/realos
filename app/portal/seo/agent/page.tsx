@@ -830,12 +830,21 @@ function PageHeader() {
           We pull live data from Google, your Search Console, Lighthouse, DataforSEO, and the four major AI engines, then surface specific actions that move your rank, reviews, and lease velocity. Updated daily.
         </p>
       </div>
-      <Link
-        href="/portal/seo/drafts"
-        className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
-      >
-        Drafts inbox →
-      </Link>
+      <div className="shrink-0 flex items-center gap-2">
+        <a
+          href="/api/portal/seo/recommendations/export"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+          title="Export open recommendations as CSV"
+        >
+          Export CSV
+        </a>
+        <Link
+          href="/portal/seo/drafts"
+          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+        >
+          Drafts inbox →
+        </Link>
+      </div>
     </header>
   );
 }

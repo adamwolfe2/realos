@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
+import { ResubmitWithChangesButton } from "@/components/portal/seo/resubmit-with-changes-button";
 
 export const metadata: Metadata = { title: "Draft preview" };
 export const dynamic = "force-dynamic";
@@ -129,12 +130,22 @@ export default async function PortalDraftViewer({
         </div>
       ) : null}
 
-      {draft.status === "CHANGES_REQUESTED" ? (
-        <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
-          <p className="text-[12px] font-medium text-foreground">
-            Changes requested. Generate a new draft with the notes above
-            applied, and we&apos;ll review again.
-          </p>
+      {draft.status === "CHANGES_REQUESTED" && draft.propertyId ? (
+        <div className="space-y-3">
+          <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 dark:border-amber-900/40 dark:bg-amber-900/10">
+            <p className="text-[12px] font-medium text-foreground">
+              Changes requested. Apply the notes above and re-submit
+              below — we&apos;ll review again.
+            </p>
+          </div>
+          <ResubmitWithChangesButton
+            draftId={draft.id}
+            propertyId={draft.propertyId}
+            format={draft.format}
+            originalBrief={draft.brief}
+            reviewNotes={draft.reviewNotes ?? ""}
+            targetQuery={draft.targetQuery}
+          />
         </div>
       ) : null}
 
