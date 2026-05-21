@@ -763,16 +763,24 @@ export default async function SeoAgentPage({
 
 function PageHeader() {
   return (
-    <header>
-      <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
-        SEO &amp; AEO Agent
-      </p>
-      <h1 className="text-2xl font-semibold text-foreground leading-tight">
-        Live search and AI visibility
-      </h1>
-      <p className="text-[12px] text-muted-foreground mt-1 max-w-2xl">
-        We pull live data from Google, your Search Console, Lighthouse, DataforSEO, and the four major AI engines, then surface specific actions that move your rank, reviews, and lease velocity. Updated daily.
-      </p>
+    <header className="flex items-start justify-between gap-3 flex-wrap">
+      <div className="min-w-0 flex-1">
+        <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-1">
+          SEO &amp; AEO Agent
+        </p>
+        <h1 className="text-2xl font-semibold text-foreground leading-tight">
+          Live search and AI visibility
+        </h1>
+        <p className="text-[12px] text-muted-foreground mt-1 max-w-2xl">
+          We pull live data from Google, your Search Console, Lighthouse, DataforSEO, and the four major AI engines, then surface specific actions that move your rank, reviews, and lease velocity. Updated daily.
+        </p>
+      </div>
+      <Link
+        href="/portal/seo/drafts"
+        className="shrink-0 inline-flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-1.5 text-[12px] font-medium text-foreground hover:bg-muted transition-colors"
+      >
+        Drafts inbox →
+      </Link>
     </header>
   );
 }

@@ -29,6 +29,22 @@ export type WeeklyDigest = {
   }>;
   openInsights: number;
   unreadLeads: number;
+  // SEO Agent digest — average composite score this week, delta vs prior,
+  // top 3 open recommendations across the portfolio. Surfaces "your
+  // average score moved +4pts" and the actions to keep moving.
+  seo: {
+    avgScoreThisWeek: number | null;
+    avgScoreLastWeek: number | null;
+    scoreDelta: number | null;
+    openRecsCritical: number;
+    openRecsHigh: number;
+    topRecommendations: Array<{
+      title: string;
+      severity: string;
+      propertyName: string | null;
+    }>;
+    pendingDrafts: number;
+  };
 };
 
 // ---------------------------------------------------------------------------
@@ -174,6 +190,56 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
   const adSpendCents = adSpendAgg._sum.spendCents ?? 0;
   const organicSessions = organicAgg._sum.organicSessions ?? 0;
 
+  // SEO Agent digest data. Pulled in a second batch so we don't bloat
+  // the primary Promise.all above. Each is cheap (indexed reads).
+  const [thisWeekScores, lastWeekScores, openRecs, pendingDrafts] =
+    await Promise.all([
+      prisma.seoScoreHistory.findMany({
+        where: { orgId, weekOf: { gte: thisWeekStart, lt: now } },
+        select: { compositeScore: true },
+      }),
+      prisma.seoScoreHistory.findMany({
+        where: { orgId, weekOf: { gte: lastWeekStart, lt: thisWeekStart } },
+        select: { compositeScore: true },
+      }),
+      prisma.seoActionRecommendation.findMany({
+        where: { orgId, status: "OPEN" },
+        orderBy: [{ severity: "asc" }, { score: "desc" }],
+        take: 12,
+        select: {
+          severity: true,
+          title: true,
+          property: { select: { name: true } },
+        },
+      }),
+      prisma.contentDraft.count({
+        where: {
+          orgId,
+          status: { in: ["PENDING_REVIEW", "GENERATING", "CHANGES_REQUESTED"] },
+        },
+      }),
+    ]);
+
+  function avgScore(rows: Array<{ compositeScore: number }>): number | null {
+    if (rows.length === 0) return null;
+    const sum = rows.reduce((acc, r) => acc + r.compositeScore, 0);
+    return Math.round(sum / rows.length);
+  }
+  const avgScoreThisWeek = avgScore(thisWeekScores);
+  const avgScoreLastWeek = avgScore(lastWeekScores);
+  const scoreDelta =
+    avgScoreThisWeek != null && avgScoreLastWeek != null
+      ? avgScoreThisWeek - avgScoreLastWeek
+      : null;
+
+  const openRecsCritical = openRecs.filter((r) => r.severity === "CRITICAL").length;
+  const openRecsHigh = openRecs.filter((r) => r.severity === "HIGH").length;
+  const topRecommendations = openRecs.slice(0, 3).map((r) => ({
+    title: r.title,
+    severity: r.severity,
+    propertyName: r.property?.name ?? null,
+  }));
+
   const hotVisitorPeak =
     visitorSessions.length > 0 ? visitorSessions[0].pageviewCount : 0;
 
@@ -205,7 +271,11 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
     .slice(0, 5);
 
   const hasData =
-    leadsThisWeek > 0 || adSpendCents > 0 || organicSessions > 0;
+    leadsThisWeek > 0 ||
+    adSpendCents > 0 ||
+    organicSessions > 0 ||
+    avgScoreThisWeek != null ||
+    openRecsCritical + openRecsHigh > 0;
 
   return {
     orgName: org?.name ?? orgId,
@@ -225,5 +295,14 @@ export async function buildWeeklyDigest(orgId: string): Promise<WeeklyDigest> {
     topProperties,
     openInsights: openInsightsCount,
     unreadLeads: unreadLeadsCount,
+    seo: {
+      avgScoreThisWeek,
+      avgScoreLastWeek,
+      scoreDelta,
+      openRecsCritical,
+      openRecsHigh,
+      topRecommendations,
+      pendingDrafts,
+    },
   };
 }

@@ -47,6 +47,14 @@ function e(s: string): string {
 // ---------------------------------------------------------------------------
 
 export function weeklyDigestSubject(digest: WeeklyDigest): string {
+  // When the operator has SEO content pending review, surface it in the
+  // subject so they open the email instead of skimming past.
+  if (digest.seo.pendingDrafts > 0) {
+    return `Your weekly report — ${digest.seo.pendingDrafts} draft${digest.seo.pendingDrafts === 1 ? "" : "s"} ready`;
+  }
+  if (digest.seo.scoreDelta != null && digest.seo.scoreDelta >= 5) {
+    return `Your weekly report — SEO score ${digest.seo.scoreDelta > 0 ? "+" : ""}${digest.seo.scoreDelta} pts`;
+  }
   return `Your weekly leasing report — ${digest.weekLabel}`;
 }
 
@@ -136,6 +144,96 @@ function insightsBadge(count: number): string {
 }
 
 // ---------------------------------------------------------------------------
+// SEO Agent section — composite score delta + open-rec counts + top 3
+// open recommendations across the portfolio. Renders inside the same
+// email template, just below the top-properties table.
+// ---------------------------------------------------------------------------
+
+const SEV_BADGE_COLOR: Record<string, { bg: string; fg: string }> = {
+  CRITICAL: { bg: "#FEE2E2", fg: "#991B1B" },
+  HIGH: { bg: "#FEF3C7", fg: "#92400E" },
+  MEDIUM: { bg: "#F3F4F6", fg: "#374151" },
+  LOW: { bg: "#F3F4F6", fg: "#6B7280" },
+};
+
+function seoAgentBlock(seo: WeeklyDigest["seo"], portalUrl: string): string {
+  const hasScore = seo.avgScoreThisWeek != null;
+  const hasRecs = seo.topRecommendations.length > 0;
+  const hasDrafts = seo.pendingDrafts > 0;
+  if (!hasScore && !hasRecs && !hasDrafts) return "";
+
+  const deltaHtml =
+    seo.scoreDelta != null
+      ? `<span style="display:inline-block;margin-left:8px;font-size:13px;font-weight:600;color:${seo.scoreDelta >= 0 ? "#059669" : "#DC2626"};">${seo.scoreDelta > 0 ? "+" : ""}${seo.scoreDelta} pts</span>`
+      : "";
+
+  const recsRows = seo.topRecommendations
+    .map((r) => {
+      const tone = SEV_BADGE_COLOR[r.severity] ?? SEV_BADGE_COLOR.MEDIUM;
+      const propertyTag = r.propertyName
+        ? `<span style="margin-left:8px;font-size:11px;color:#6B7280;">${e(r.propertyName)}</span>`
+        : "";
+      return `
+        <tr>
+          <td style="padding:10px 12px;border-bottom:1px solid #F3F4F6;font-size:13px;color:#111111;">
+            <span style="display:inline-block;background:${tone.bg};color:${tone.fg};font-size:10px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:2px 6px;border-radius:3px;margin-right:8px;">${e(r.severity.toLowerCase())}</span>
+            ${e(r.title)}
+            ${propertyTag}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  const draftBadge =
+    seo.pendingDrafts > 0
+      ? `<tr>
+          <td style="padding:14px 0 0;">
+            <a href="${e(portalUrl)}/seo/drafts" style="display:inline-block;background-color:#FEF3C7;color:#92400E;font-size:12px;font-weight:600;text-decoration:none;padding:8px 14px;border:1px solid #FCD34D;border-radius:4px;">
+              ${seo.pendingDrafts} draft${seo.pendingDrafts === 1 ? "" : "s"} pending review →
+            </a>
+          </td>
+        </tr>`
+      : "";
+
+  return `<tr>
+    <td style="padding:0 32px;">
+      <p style="margin:32px 0 12px;font-size:12px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;">SEO Agent</p>
+      ${
+        hasScore
+          ? `<table cellpadding="0" cellspacing="0" style="border:1px solid #E5E7EB;border-radius:4px;width:100%;margin-bottom:16px;">
+              <tr>
+                <td style="padding:14px 16px;">
+                  <span style="display:block;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#94A3B8;font-weight:600;">Composite score this week</span>
+                  <span style="display:inline-block;margin-top:6px;font-size:28px;font-weight:700;color:#111111;font-variant-numeric:tabular-nums;">${seo.avgScoreThisWeek}</span>
+                  ${deltaHtml}
+                </td>
+                <td style="padding:14px 16px;text-align:right;font-size:11px;color:#6B7280;">
+                  ${seo.openRecsCritical > 0 ? `<span style="display:inline-block;background:#FEE2E2;color:#991B1B;font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;margin-left:6px;">${seo.openRecsCritical} crit</span>` : ""}
+                  ${seo.openRecsHigh > 0 ? `<span style="display:inline-block;background:#FEF3C7;color:#92400E;font-size:11px;font-weight:700;padding:2px 8px;border-radius:3px;margin-left:6px;">${seo.openRecsHigh} high</span>` : ""}
+                </td>
+              </tr>
+            </table>`
+          : ""
+      }
+      ${
+        hasRecs
+          ? `<table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid #E5E7EB;">
+              <thead>
+                <tr style="background-color:#F9FAFB;">
+                  <th style="padding:8px 12px;text-align:left;font-size:11px;letter-spacing:0.08em;text-transform:uppercase;color:#9CA3AF;font-weight:700;">Top open recommendations</th>
+                </tr>
+              </thead>
+              <tbody>${recsRows}</tbody>
+            </table>`
+          : ""
+      }
+      <table cellpadding="0" cellspacing="0">${draftBadge}</table>
+    </td>
+  </tr>`;
+}
+
+// ---------------------------------------------------------------------------
 // buildWeeklyDigestEmail
 // ---------------------------------------------------------------------------
 
@@ -143,7 +241,7 @@ export function buildWeeklyDigestEmail(
   digest: WeeklyDigest,
   portalUrl: string
 ): string {
-  const { orgName, weekLabel, metrics, topProperties, openInsights } = digest;
+  const { orgName, weekLabel, metrics, topProperties, openInsights, seo } = digest;
   const {
     leadsThisWeek,
     leadsDelta,
@@ -242,6 +340,9 @@ export function buildWeeklyDigestEmail(
             </tr>`
               : ""
           }
+
+          <!-- SEO Agent block -->
+          ${seoAgentBlock(seo, portalUrl)}
 
           <!-- Portal CTA -->
           <tr>
