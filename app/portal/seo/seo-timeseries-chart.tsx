@@ -68,7 +68,15 @@ export function SeoTimeseriesChart({
       return next;
     });
 
-  if (data.length === 0) {
+  // Auto-trim leading zero-rows so the chart fits the actual data window.
+  // GSC sync history often goes back further than data does (a new
+  // property may have 11 months of zero-impression days before the first
+  // real signal), which leaves the chart squished into the rightmost
+  // 20% of the canvas. We keep a 7-day buffer of pre-data context so
+  // the first real day doesn't slam against the left axis.
+  const trimmed = React.useMemo(() => trimLeadingZeros(data, 7), [data]);
+
+  if (trimmed.length === 0) {
     return (
       <div className="text-sm text-muted-foreground py-16 text-center">
         No trend data yet. Once your first sync completes, daily clicks and
@@ -79,7 +87,8 @@ export function SeoTimeseriesChart({
 
   // Show ~10 x-axis ticks regardless of range length so a 30d view and a
   // 365d view both read cleanly.
-  const tickInterval = Math.max(0, Math.floor(data.length / 10));
+  const tickInterval = Math.max(0, Math.floor(trimmed.length / 10));
+  const trimmedCount = data.length - trimmed.length;
 
   return (
     <div>
@@ -109,11 +118,19 @@ export function SeoTimeseriesChart({
             </button>
           );
         })}
+        {/* Compact "trimmed N days" tag so the operator knows we hid the
+            empty prefix rather than the data being shorter than they
+            expected. Renders only when we actually trimmed something. */}
+        {trimmedCount > 0 ? (
+          <span className="text-[10px] font-mono uppercase tracking-[0.1em] text-muted-foreground ml-auto">
+            Showing {trimmed.length}d ({trimmedCount}d of empty history hidden)
+          </span>
+        ) : null}
       </div>
       <div className="w-full h-72">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={data}
+            data={trimmed}
             margin={{ top: 8, right: 24, left: 0, bottom: 0 }}
           >
             <CartesianGrid {...CHART_GRID_PROPS} />
@@ -202,4 +219,26 @@ function fmtCompact(v: number): string {
   if (abs >= 1_000_000) return `${(v / 1_000_000).toFixed(1)}M`;
   if (abs >= 1_000) return `${(v / 1_000).toFixed(1)}k`;
   return `${v}`;
+}
+
+// Trim leading zero rows so the x-axis fits the actual data window.
+//
+//   bufferDays — number of zero-rows to keep before the first real day,
+//                so the data doesn't slam against the left axis. The
+//                buffer is a visual breathing room, not a data signal.
+//
+// If the data has no real values at all, returns the original array
+// (the empty-state copy elsewhere is the right surface for that case).
+// If trimming would remove ≤bufferDays rows we don't trim at all —
+// the cost-of-context isn't worth it.
+function trimLeadingZeros(
+  data: TimeseriesPoint[],
+  bufferDays: number,
+): TimeseriesPoint[] {
+  const firstNonZeroIdx = data.findIndex(
+    (d) => d.clicks > 0 || d.impressions > 0,
+  );
+  if (firstNonZeroIdx === -1) return data;
+  if (firstNonZeroIdx <= bufferDays) return data;
+  return data.slice(firstNonZeroIdx - bufferDays);
 }
