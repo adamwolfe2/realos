@@ -89,21 +89,22 @@ export function SplitHero({
             </Reveal>
 
             {(() => {
-              // Norman feedback (2026-05-21, Judgment Labs reference):
-              // marketing hero loses the bold display weight and the
-              // wide 64px size. Hierarchy now reads through tight
-              // negative tracking (-0.035em) at regular weight, capped
-              // at 48px on the largest desktops — same restraint as the
-              // judgmentlabs.ai system that Norman flagged as "the
-              // cleanliness I want."
+              // Norman feedback (2026-05-21, third pass): bigger H1, same
+              // width + boldness. Bumped the clamp ceiling 48 → 68px and
+              // the floor 32 → 38px so the headline reads with the
+              // confidence of the Judgment Labs / Linear reference set
+              // while keeping weight 400 and the existing tight tracking
+              // (-0.035em). The vw multiplier holds the same wrap point
+              // on the lg breakpoint so the line break before the blue
+              // accent stays intact at typical viewports.
               const h1 = (
                 <h1
                   style={{
                     color: "#1E2A3A",
                     fontFamily: "var(--font-display)",
-                    fontSize: "clamp(32px, 5.4vw, 48px)",
+                    fontSize: "clamp(38px, 6.4vw, 68px)",
                     fontWeight: 400,
-                    lineHeight: 1.08,
+                    lineHeight: 1.04,
                     letterSpacing: "-0.035em",
                   }}
                 >

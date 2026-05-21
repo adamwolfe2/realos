@@ -275,7 +275,7 @@ export function ConfigTabs() {
                 animationDelay: `${i * 45}ms`,
               }}
             >
-              <FeatureIcon kind={row.icon} />
+              <FeatureIcon kind={row.icon} logos={row.logos} />
               <span
                 className="flex-1 truncate"
                 style={{
@@ -378,16 +378,60 @@ function deltaColor(d?: Delta) {
   return null;
 }
 
-function FeatureIcon({ kind }: { kind: Row["icon"] }) {
+// Norman 2026-05-21 third pass: "fix the icons and turn them into logos
+// on the 3 stages of the hero animation, it needs to be the BEST
+// looking." Lead each row with the actual brand logo of the integration
+// being described (AppFolio for property sync, Cursive for the pixel,
+// ChatGPT/Perplexity for AEO, etc.) instead of a generic glyph. Falls
+// back to the glyph only when a row has no logos at all (rare).
+//
+// Visual model: white tile (clean canvas for any vendor mark) with a
+// hairline border and a soft brand-blue ring on hover, so the marks
+// read crisp against the alternating parchment row backgrounds.
+function FeatureIcon({
+  kind,
+  logos,
+}: {
+  kind: Row["icon"];
+  logos?: React.ReactNode[];
+}) {
   const wrap = {
-    width: "22px",
-    height: "22px",
-    borderRadius: "6px",
-    backgroundColor: "rgba(37,99,235,0.12)",
-    color: ACCENT,
+    width: "26px",
+    height: "26px",
+    borderRadius: "7px",
+    boxShadow: `0 0 0 1px ${BORDER}, 0 1px 2px rgba(15,23,42,0.04)`,
+    backgroundColor: "#ffffff",
   } as const;
+
+  if (logos && logos.length > 0) {
+    return (
+      <span
+        className="inline-flex items-center justify-center flex-shrink-0"
+        style={wrap}
+      >
+        {/* Render the first logo at 14px so it sits centred inside the
+            26px tile with comfortable padding. Each brand-logos mark
+            already ships with its own viewBox so sizing is consistent. */}
+        {React.isValidElement(logos[0])
+          ? React.cloneElement(
+              logos[0] as React.ReactElement<{ size?: number }>,
+              { size: 14 },
+            )
+          : logos[0]}
+      </span>
+    );
+  }
+
   return (
-    <span className="inline-flex items-center justify-center flex-shrink-0" style={wrap}>
+    <span
+      className="inline-flex items-center justify-center flex-shrink-0"
+      style={{
+        ...wrap,
+        backgroundColor: "rgba(37,99,235,0.10)",
+        boxShadow: `0 0 0 1px rgba(37,99,235,0.18)`,
+        color: ACCENT,
+      }}
+    >
       <IconGlyph kind={kind} />
     </span>
   );

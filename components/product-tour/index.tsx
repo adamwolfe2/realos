@@ -553,35 +553,14 @@ function Dashboard() {
 
   return (
     <div>
-      <div className="flex items-start justify-between gap-4 mb-6">
-        <div>
-          <p
-            style={{
-              fontFamily: "var(--font-mono)",
-              fontSize: "11px",
-              color: TOKENS.stone,
-              letterSpacing: "0.14em",
-              textTransform: "uppercase",
-              fontWeight: 500,
-            }}
-          >
-            Overview
-          </p>
-          <h1
-            className="mt-1.5"
-            style={{
-              fontFamily: "var(--font-display)",
-              fontSize: "clamp(18px, 4vw, 28px)",
-              fontWeight: 500,
-              color: TOKENS.nearBlack,
-              lineHeight: 1.1,
-            }}
-          >
-            Good afternoon, Acme Portfolio
-          </h1>
-        </div>
-        <PeriodSwitcher value={period} onChange={setPeriod} />
-      </div>
+      {/* Featured-property strip — mirrors the live /portal hero banner
+          we ship to real operators. Building image floats above a soft
+          brand wash + 28px grid texture (same vocabulary as the
+          marketing hero) with the property identity + 3 headline stats
+          right next to it. Replaces the previous flat "Good afternoon,
+          Acme Portfolio" greeting so the dashboard reads as a real
+          product surface instead of a placeholder. */}
+      <FeaturedPropertyStrip period={period} onPeriodChange={setPeriod} />
 
       {/* KPIs — single row of 4 on desktop (was 2×2) so the dashboard
           fits within the fixed 640px viewport. Mobile keeps the 2×2
@@ -758,6 +737,178 @@ function Dashboard() {
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FeaturedPropertyStrip — compact featured-property hero used at the top
+// of the product-tour Dashboard view. Mirrors the live PropertyHeroBanner
+// component we ship on /portal so the demo and the real product share
+// the same opening visual.
+//
+// Layout (single ~120px row in the fixed 640px demo viewport):
+//
+//   ┌─────────────────────────────────────────────────────────────────┐
+//   │ [bldg]  FEATURED PROPERTY · TELEGRAPH COMMONS    [7d 30d 90d]   │
+//   │ [img ]  Berkeley · Student housing                              │
+//   │         168 leads · 99 walk · 4.6★                              │
+//   └─────────────────────────────────────────────────────────────────┘
+//
+// Building "image" is a CSS gradient block — the marketing site can
+// swap in an actual photo later without restructuring this strip.
+// ---------------------------------------------------------------------------
+function FeaturedPropertyStrip({
+  period,
+  onPeriodChange,
+}: {
+  period: "7d" | "30d" | "90d";
+  onPeriodChange: (v: "7d" | "30d" | "90d") => void;
+}) {
+  const accentRgb = "37, 99, 235";
+  return (
+    <section
+      className="relative overflow-hidden rounded-2xl mb-3"
+      style={{
+        padding: "14px 18px",
+        background: `
+          radial-gradient(ellipse 70% 90% at 12% 10%, rgba(${accentRgb}, 0.18), transparent 65%),
+          radial-gradient(ellipse 60% 80% at 95% 100%, rgba(${accentRgb}, 0.10), transparent 65%),
+          linear-gradient(180deg, #F7F9FF 0%, #FFFFFF 80%)
+        `,
+        boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
+      }}
+    >
+      {/* 28px brand grid texture, masked so it never reaches the edges. */}
+      <div
+        aria-hidden="true"
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(0deg, rgba(${accentRgb}, 0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(${accentRgb}, 0.05) 1px, transparent 1px)`,
+          backgroundSize: "28px 28px",
+          WebkitMaskImage:
+            "radial-gradient(ellipse 110% 95% at 30% 50%, #000 70%, transparent 100%)",
+          maskImage:
+            "radial-gradient(ellipse 110% 95% at 30% 50%, #000 70%, transparent 100%)",
+        }}
+      />
+
+      <div className="relative flex items-center gap-4">
+        {/* Building "photo" — soft brand-gradient block with a building
+            silhouette overlay. Reads as a placeholder for the operator's
+            uploaded photo without committing to a specific image. Ground
+            shadow underneath gives the 3D "floating" feel that matches
+            the live PropertyHeroBanner. */}
+        <div className="relative shrink-0">
+          <div
+            aria-hidden="true"
+            className="absolute left-1/2 -translate-x-1/2 bottom-[-6px]"
+            style={{
+              width: "84%",
+              height: 8,
+              background:
+                "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(15,23,42,0.25), transparent 70%)",
+              filter: "blur(4px)",
+            }}
+          />
+          <div
+            className="relative grid place-items-center"
+            style={{
+              width: 76,
+              height: 76,
+              borderRadius: 12,
+              background:
+                "linear-gradient(135deg, #2563EB 0%, #60A5FA 60%, #93C5FD 100%)",
+              boxShadow:
+                "0 10px 18px rgba(15,23,42,0.18), 0 2px 4px rgba(15,23,42,0.08)",
+              color: "#ffffff",
+            }}
+          >
+            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M3 21V8l9-5 9 5v13M9 21v-6h6v6M9 12h.01M15 12h.01"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </div>
+        </div>
+
+        {/* Identity column */}
+        <div className="min-w-0 flex-1">
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "9.5px",
+              letterSpacing: "0.16em",
+              textTransform: "uppercase",
+              color: "#2563EB",
+              fontWeight: 600,
+            }}
+          >
+            Featured property
+          </p>
+          <h1
+            className="mt-0.5"
+            style={{
+              fontFamily: "var(--font-display)",
+              fontSize: "clamp(16px, 3.4vw, 22px)",
+              fontWeight: 500,
+              color: TOKENS.nearBlack,
+              lineHeight: 1.05,
+              letterSpacing: "-0.018em",
+            }}
+          >
+            Telegraph Commons
+          </h1>
+          <div className="mt-2 flex items-center gap-3 flex-wrap">
+            <HeroStat label="Leads · 28d" value="168" />
+            <span aria-hidden="true" className="h-3 w-px bg-[#E2E8F0]" />
+            <HeroStat label="Walk score" value="99" />
+            <span aria-hidden="true" className="h-3 w-px bg-[#E2E8F0]" />
+            <HeroStat label="Reputation" value="4.6★" />
+          </div>
+        </div>
+
+        {/* Period switcher pinned right so the strip subsumes the
+            "Good afternoon" greeting + period control into one row. */}
+        <div className="shrink-0">
+          <PeriodSwitcher value={period} onChange={onPeriodChange} />
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function HeroStat({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline gap-1.5">
+      <span
+        style={{
+          fontFamily: "var(--font-display)",
+          fontSize: "15px",
+          fontWeight: 500,
+          color: TOKENS.nearBlack,
+          letterSpacing: "-0.008em",
+          lineHeight: 1,
+        }}
+      >
+        {value}
+      </span>
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "9px",
+          textTransform: "uppercase",
+          letterSpacing: "0.08em",
+          color: TOKENS.stone,
+          fontWeight: 500,
+        }}
+      >
+        {label}
+      </span>
     </div>
   );
 }
