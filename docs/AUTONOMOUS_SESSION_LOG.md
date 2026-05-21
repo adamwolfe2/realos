@@ -86,8 +86,46 @@
 18. feat(seo): recommendation status workflow (in-progress / done / dismiss)
 19. feat(seo): 'What changed this week' panel + per-property score history
 20. feat(seo): admin SEO Agent metrics dashboard at /admin/system/seo-agent
+21. feat(seo): persist recs on first generation (first-run experience fix)
 
 All pushed to origin/main.
+
+### Summary of complete SEO Agent workflow shipped tonight
+
+**Operator side** (every customer's daily workflow):
+- /portal home dashboard surfaces top-5 SEO recs across portfolio
+- /portal/seo entry page has banner pointing to the Agent
+- /portal/seo/agent live dashboard with 30+ data surfaces
+- /portal/seo/agent/drafts/[id] preview of a single draft
+- /portal/seo/drafts cross-property inbox with status filter chips
+- /portal/seo/aeo competitor list with "Counter →" CTAs
+- /portal/properties/[id] shows merged Intelligence panel + per-property score history
+- /portal/properties shows SEO score badge column with click-through
+- Bell notification when admin reviews a draft
+
+**Admin/agency side** (Adam's daily workflow):
+- /admin/insights shows cross-tenant SEO open-rec rollup
+- /admin/clients shows SEO open-rec column per client (severity chips)
+- /admin/content-drafts queue with status filter + detail + review controls
+- /admin/system/seo-agent observability (drafts, recs, API usage, score deltas)
+- Bell notification when operator submits a new draft
+- Admin sidebar badge for pendingContentDrafts
+
+**Engine + data**:
+- DataforSEO live for all 14 endpoints + 3 nightly crons
+- 1h Redis cache on the recommendation engine
+- Weekly composite score snapshots Mon 05:00 UTC
+- Bi-directional notifications closed
+- Operator first-run persists recs to DB without manual refresh
+- Weekly digest email extended with SEO section + smart subject lines
+
+**Quality**:
+- 573 tests passing (45+ new tonight)
+- TypeScript clean
+- Mobile responsive baseline maintained
+- All operator copy clean of AudienceLab + em dashes per global rules
+- Security review applied: 4 fixes (cross-tenant + rate limit + cap + notes)
+- Performance: N+1 fixes, code-split, Suspense wraps, loading skeletons
 
 ### Notification loop closed end-to-end
 
