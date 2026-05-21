@@ -94,6 +94,7 @@ import { syncOnboardingProgress } from "@/lib/onboarding/step-detectors";
 import { OnboardingChecklistFloating } from "@/components/portal/onboarding/onboarding-checklist-floating";
 import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
 import { DashboardActionItems } from "@/components/portal/dashboard/dashboard-action-items";
+import { PortfolioSeoActions } from "@/components/portal/dashboard/portfolio-seo-actions";
 import { getPortfolioRecommendations } from "@/lib/intelligence/property-recommendations";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -678,6 +679,53 @@ export default async function PortalHome({
     limit: 5,
   }).catch(() => []);
 
+  // Portfolio-wide SEO Agent recommendations. Sibling to portfolioActions,
+  // but sourced from the SEO recommendation engine (richer per-query
+  // signal). Reads from the SeoActionRecommendation table directly —
+  // these rows are kept fresh by the manual refresh button + nightly
+  // crons + the 1h Redis cache on the cached generator.
+  const portfolioSeoActionsRaw = await prisma.seoActionRecommendation
+    .findMany({
+      where: {
+        orgId: scope.orgId,
+        status: "OPEN",
+        property: {
+          launchStatus: "LIVE",
+          lifecycle: "ACTIVE",
+        },
+        ...(scope.allowedPropertyIds
+          ? { propertyId: { in: scope.allowedPropertyIds } }
+          : {}),
+      },
+      orderBy: [{ severity: "asc" }, { score: "desc" }],
+      take: 5,
+      select: {
+        id: true,
+        title: true,
+        detail: true,
+        severity: true,
+        estimateMinutes: true,
+        actionHref: true,
+        actionLabel: true,
+        category: true,
+        propertyId: true,
+        property: { select: { name: true } },
+      },
+    })
+    .catch(() => []);
+  const portfolioSeoActions = portfolioSeoActionsRaw.map((r) => ({
+    id: r.id,
+    title: r.title,
+    detail: r.detail,
+    severity: r.severity,
+    estimateMinutes: r.estimateMinutes,
+    actionHref: r.actionHref,
+    actionLabel: r.actionLabel,
+    category: r.category,
+    propertyId: r.propertyId,
+    propertyName: r.property?.name ?? null,
+  }));
+
   let featuredStats: Array<{
     label: string;
     value: string;
@@ -810,6 +858,11 @@ export default async function PortalHome({
       {portfolioActions.length > 0 ? (
         <DashboardActionItems actions={portfolioActions} />
       ) : null}
+
+      {/* SEO Agent rollup — sibling to DashboardActionItems but sourced
+          from the SEO recommendation engine. Only renders when there are
+          open OPEN recs on LIVE properties. */}
+      <PortfolioSeoActions actions={portfolioSeoActions} />
 
       {/* Featured-property hero. Renders ONLY when the operator has
           exactly one LIVE property (SG Real Estate at launch — Telegraph
