@@ -267,6 +267,32 @@ export default async function SeoPage({
         }
       />
 
+      {/* Discoverability banner — the SEO Agent lives at /portal/seo/agent
+          and is where most of the actionable work happens (recommendations,
+          drafts, live SERP, Lighthouse, backlinks). Surface it prominently
+          so operators don't miss it. */}
+      <a
+        href="/portal/seo/agent"
+        className="block rounded-xl border border-primary/30 bg-gradient-to-r from-primary/[0.08] via-primary/[0.04] to-transparent px-4 py-3 hover:border-primary/50 transition-colors group"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div>
+            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
+              New
+            </p>
+            <p className="text-[13px] font-medium text-foreground">
+              Open the SEO Agent
+            </p>
+            <p className="text-[12px] text-muted-foreground mt-0.5">
+              Live SERP rankings, Lighthouse audits, AI recommendations, and the content drafter all in one screen.
+            </p>
+          </div>
+          <span className="shrink-0 text-[11px] font-mono text-primary group-hover:translate-x-0.5 transition-transform">
+            Open →
+          </span>
+        </div>
+      </a>
+
       {!hasAny ? (
         <div className="space-y-3">
           {/* ── Hero empty state ──────────────────────────────────────── */}
