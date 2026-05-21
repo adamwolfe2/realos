@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 
 type DraftRow = {
   id: string;
@@ -127,8 +128,12 @@ export function DraftsInbox({ propertyId }: Props) {
           return (
             <li
               key={d.id}
-              className="rounded-lg border border-border bg-background p-3"
+              className="rounded-lg border border-border bg-background hover:border-primary/40 transition-colors"
             >
+              <Link
+                href={`/portal/seo/agent/drafts/${d.id}`}
+                className="block p-3"
+              >
               <div className="flex items-start justify-between gap-2 mb-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide text-primary">
@@ -162,6 +167,7 @@ export function DraftsInbox({ propertyId }: Props) {
                   </p>
                 </div>
               ) : null}
+              </Link>
             </li>
           );
         })}
