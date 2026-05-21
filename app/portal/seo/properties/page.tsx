@@ -35,8 +35,20 @@ function fmtAge(d: Date | null): string {
   return `${Math.floor(days / 30)}mo ago`;
 }
 
-export default async function SeoPortfolioPage() {
+type SortKey = "name" | "score" | "recs" | "sync";
+const VALID_SORTS: SortKey[] = ["name", "score", "recs", "sync"];
+
+export default async function SeoPortfolioPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ sort?: string; filter?: string }>;
+}) {
   const scope = await requireScope();
+  const sp = await searchParams;
+  const sort: SortKey = VALID_SORTS.includes(sp.sort as SortKey)
+    ? (sp.sort as SortKey)
+    : "score";
+  const filter = sp.filter === "open" ? "open" : "all";
 
   // Constrain to marketable + property-RBAC. Same set as /portal/seo/agent.
   const propertyWhere: Record<string, unknown> = {
@@ -287,6 +299,56 @@ export default async function SeoPortfolioPage() {
         );
       })()}
 
+      {/* Sort + filter chips. URL-driven so the state is bookmarkable. */}
+      <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap gap-1.5">
+          <span className="text-[11px] font-mono uppercase tracking-wide text-muted-foreground mr-1 self-center">
+            Sort
+          </span>
+          {(
+            [
+              { value: "score", label: "Score" },
+              { value: "recs", label: "Open recs" },
+              { value: "sync", label: "Last sync" },
+              { value: "name", label: "Name" },
+            ] as const
+          ).map((opt) => {
+            const params = new URLSearchParams();
+            params.set("sort", opt.value);
+            if (filter !== "all") params.set("filter", filter);
+            return (
+              <Link
+                key={opt.value}
+                href={`/portal/seo/properties?${params.toString()}`}
+                className={`inline-flex rounded-md border px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                  sort === opt.value
+                    ? "border-primary bg-primary/10 text-foreground"
+                    : "border-border bg-background text-foreground hover:bg-muted"
+                }`}
+              >
+                {opt.label}
+              </Link>
+            );
+          })}
+        </div>
+        <span aria-hidden="true" className="h-4 w-px bg-border" />
+        <Link
+          href={(() => {
+            const params = new URLSearchParams();
+            params.set("sort", sort);
+            if (filter !== "open") params.set("filter", "open");
+            return `/portal/seo/properties?${params.toString()}`;
+          })()}
+          className={`inline-flex rounded-md border px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+            filter === "open"
+              ? "border-primary bg-primary/10 text-foreground"
+              : "border-border bg-background text-foreground hover:bg-muted"
+          }`}
+        >
+          {filter === "open" ? "Showing: has open recs ×" : "Filter: has open recs"}
+        </Link>
+      </div>
+
       <div className="rounded-2xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px] min-w-[760px]">
@@ -309,7 +371,55 @@ export default async function SeoPortfolioPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-border/60">
-              {properties.map((p) => {
+              {(() => {
+                // Apply URL-driven sort + filter without re-querying Prisma.
+                // recsTotal computed inline so the sort key matches what
+                // operators see in the chip cluster.
+                const recsTotalFor = (id: string): number => {
+                  const r = recsByProperty.get(id);
+                  if (!r) return 0;
+                  return r.critical + r.high + r.medium + r.low;
+                };
+                let working = properties.slice();
+                if (filter === "open") {
+                  working = working.filter((p) => recsTotalFor(p.id) > 0);
+                }
+                if (sort === "score") {
+                  working.sort(
+                    (a, b) =>
+                      (scoreByProperty.get(b.id) ?? -1) -
+                      (scoreByProperty.get(a.id) ?? -1),
+                  );
+                } else if (sort === "recs") {
+                  working.sort((a, b) => {
+                    const ar = recsByProperty.get(a.id);
+                    const br = recsByProperty.get(b.id);
+                    const aw = (ar?.critical ?? 0) * 3 + (ar?.high ?? 0);
+                    const bw = (br?.critical ?? 0) * 3 + (br?.high ?? 0);
+                    return bw - aw;
+                  });
+                } else if (sort === "sync") {
+                  working.sort((a, b) => {
+                    const at = lastSyncByProperty.get(a.id)?.getTime() ?? 0;
+                    const bt = lastSyncByProperty.get(b.id)?.getTime() ?? 0;
+                    return bt - at;
+                  });
+                } else {
+                  working.sort((a, b) => a.name.localeCompare(b.name));
+                }
+                if (working.length === 0) {
+                  return (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-4 py-8 text-center text-[12px] text-muted-foreground"
+                      >
+                        No properties match this filter.
+                      </td>
+                    </tr>
+                  );
+                }
+                return working.map((p) => {
                 const score = scoreByProperty.get(p.id);
                 const recs = recsByProperty.get(p.id) ?? {
                   critical: 0,
@@ -390,7 +500,8 @@ export default async function SeoPortfolioPage() {
                     </td>
                   </tr>
                 );
-              })}
+              });
+              })()}
             </tbody>
           </table>
         </div>
