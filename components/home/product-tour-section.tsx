@@ -63,12 +63,12 @@ export function ProductTourSection() {
                 width: "100%",
                 height: "auto",
               }}
-              onError={(e) => {
-                // Graceful fallback if the preview image hasn't been added
-                // yet — hide the broken img and leave the framed card.
-                (e.currentTarget as HTMLImageElement).style.display = "none";
-              }}
             />
+            {/* Note: no onError fallback — Next 16 forbids event handlers
+                on Server Component output (this section ships SSR-only).
+                The asset exists at /public/marketing/; if it ever goes
+                missing the browser-default broken-image is acceptable
+                rather than re-introducing a Client Component boundary. */}
             <div
               style={{
                 padding: "16px 18px",
