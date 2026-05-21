@@ -236,7 +236,11 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Properties",
         icon: Building2,
         show: ALWAYS,
-        badge: (o) => o.pendingCurationCount && o.pendingCurationCount > 0 ? o.pendingCurationCount : null,
+        // Norman feedback (issue #64): the pending-curation badge surfaces
+        // AppFolio import volume that's not actionable from the nav and
+        // creates confusion (sees 99+, expects notifications). Hidden until
+        // the curation workflow is finished.
+        badge: () => null,
       },
       { href: "/portal/leads", label: "Leads", icon: Users, show: ALWAYS },
       // Tours: gated on the Tours module AND at least one tour existing.

@@ -536,8 +536,8 @@ export async function getActivityFeed(
       id: `session-${s.id}`,
       kind: "visitor",
       title: path
-        ? `Engaged visitor on ${path}`
-        : "Engaged visitor on your site",
+        ? `Engaged visitors on ${path}`
+        : "Engaged visitors on your site",
       meta:
         [s.utmSource && `via ${s.utmSource}`, s.country, `${s.pageviewCount} pages`]
           .filter(Boolean)

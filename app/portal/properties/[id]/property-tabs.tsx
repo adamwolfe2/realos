@@ -7,15 +7,17 @@ import {
   LayoutDashboard,
   Megaphone,
   Sparkles,
-  Wrench,
   TrendingUp,
   Users,
   BarChart3,
   MessageSquare,
   Star,
-  Building2,
-  Home,
-  CalendarClock,
+  // Operations icons retained as commented imports — re-enable when
+  // the Operations primary tab returns. See CATEGORIES below.
+  // Wrench,
+  // Building2,
+  // Home,
+  // CalendarClock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -86,20 +88,27 @@ const CATEGORIES: Category[] = [
       { key: "reputation", label: "Reputation", icon: Star },
     ],
   },
-  {
-    id: "operations",
-    label: "Operations",
-    icon: Wrench,
-    defaultTab: "residents",
-    subs: [
-      { key: "residents", label: "Residents", icon: Home },
-      { key: "renewals",  label: "Renewals",  icon: CalendarClock },
-      { key: "occupancy", label: "Occupancy", icon: Building2 },
-    ],
-  },
+  // Norman feedback (issues #70, #56): the Operations group competes with
+  // dedicated property management software like AppFolio and pulls us away
+  // from the digital-assets + analytics focus. Hidden in the primary nav
+  // until we have a clear operations story.
+  // {
+  //   id: "operations",
+  //   label: "Operations",
+  //   icon: Wrench,
+  //   defaultTab: "residents",
+  //   subs: [
+  //     { key: "residents", label: "Residents", icon: Home },
+  //     { key: "renewals",  label: "Renewals",  icon: CalendarClock },
+  //     { key: "occupancy", label: "Occupancy", icon: Building2 },
+  //   ],
+  // },
 ];
 
 // Map every TabKey → category id for quick lookup when ?tab= is set.
+// Operations-group tabs (residents/renewals/occupancy/work-orders) are
+// hidden but still routable via direct URL — they fall back to overview
+// so deep links don't 404.
 const TAB_TO_CATEGORY: Record<TabKey, Category["id"]> = {
   overview:     "overview",
   onboarding:   "overview", // Onboarding panel lives under Overview now.
@@ -108,10 +117,10 @@ const TAB_TO_CATEGORY: Record<TabKey, Category["id"]> = {
   ads:          "acquisition",
   chatbot:      "engagement",
   reputation:   "engagement",
-  residents:    "operations",
-  renewals:     "operations",
-  occupancy:    "operations",
-  "work-orders": "operations",
+  residents:    "overview",
+  renewals:     "overview",
+  occupancy:    "overview",
+  "work-orders": "overview",
 };
 
 function PropertyTabsInner({

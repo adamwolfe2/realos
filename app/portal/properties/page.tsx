@@ -13,7 +13,9 @@ import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-ba
 import { formatDistanceToNow } from "date-fns";
 import { Building2, MapPin } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
-import { PropertyFormDialog } from "@/components/properties/property-form-dialog";
+// PropertyFormDialog hidden in the actions row — see issue #69. Import
+// kept commented so re-enabling is one line when the backend lands.
+// import { PropertyFormDialog } from "@/components/properties/property-form-dialog";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { DataTable, EntityCell } from "@/components/portal/ui/data-table";
 import {
@@ -229,7 +231,17 @@ export default async function PropertiesList({
   ]);
   const totalAvailable = portfolioStats._sum.availableCount ?? 0;
   const properties = pageRows;
+  // Norman feedback (issue #67): the listings + available counts in the
+  // header were misleading (AppFolio import shows 141 "listings" when only
+  // a handful are live). Suppressed in the description string; queries
+  // retained so the toolbar/counters stay correct.
+  void totalAvailable;
+  void totalListings;
 
+  // View tabs. Norman feedback (issue #66): we're not focused on direct
+  // leasing-related metrics, so "Has vacancies" and "Actively leasing" are
+  // hidden until the data warrants them. Left in the URL contract (?view=)
+  // so old deep links still work — they just don't surface a tab to click.
   const views: ToolbarView[] = [
     {
       label: "All properties",
@@ -238,24 +250,16 @@ export default async function PropertiesList({
       active: view === "all",
     },
     {
-      label: "Has vacancies",
-      href: "?view=vacant",
-      count: counts.vacant,
-      active: view === "vacant",
-    },
-    {
-      label: "Actively leasing",
-      href: "?view=leasing",
-      count: counts.leasing,
-      active: view === "leasing",
-    },
-    {
       label: "Recently synced",
       href: "?view=synced",
       count: counts.synced,
       active: view === "synced",
     },
   ];
+  // Suppress unused-variable warnings on the dropped counts. Keeping the
+  // queries so toggling the views back on stays a one-line change.
+  void counts.vacant;
+  void counts.leasing;
 
   return (
     <div className="space-y-3 ls-page-fade">
@@ -263,9 +267,13 @@ export default async function PropertiesList({
       <PageHeader
         title="Properties"
         description={
+          // Norman feedback (issue #67): the listings + available counts
+          // weren't matching what operators expected (141 listings vs the
+          // 5-7 they actually have live), so we lead with the property
+          // count and a single trustworthy roll-up (leads) instead.
           countAll === 0
             ? "Listings, leads, and tours for every property in your portfolio."
-            : `${countAll.toLocaleString()} ${countAll === 1 ? "property" : "properties"} · ${totalListings.toLocaleString()} listings · ${totalAvailable.toLocaleString()} available · ${totalLeads.toLocaleString()} leads`
+            : `${countAll.toLocaleString()} ${countAll === 1 ? "property" : "properties"} · ${totalLeads.toLocaleString()} ${totalLeads === 1 ? "lead" : "leads"}`
         }
         actions={
           <div className="flex items-center gap-2">
@@ -286,7 +294,9 @@ export default async function PropertiesList({
                 Compare
               </Link>
             ) : null}
-            <PropertyFormDialog />
+            {/* Add-property dialog hidden (issue #69) until the add-property
+                backend is fully built out; properties currently flow in
+                from AppFolio sync so the manual path is misleading. */}
           </div>
         }
       />

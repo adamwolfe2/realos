@@ -493,29 +493,13 @@ export async function OverviewTab({
               <AiInsightCard insight={aiInsight} />
             )}
 
+            {/* KPI tiles. Norman feedback (issues #71, #72, #77): we're
+                pivoting away from rent-roll metrics (occupancy, monthly
+                rent, renewals) toward marketing/website performance
+                metrics. Occupancy + Monthly rent + Renewals tiles are
+                hidden; tours and applications surface from the same KPI
+                bundle without pulling rent data into the UI. */}
             <section className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-              <KpiTile
-                label="Occupancy"
-                value={
-                  occupancyPct != null ? `${occupancyPct}%` : <DimZero />
-                }
-                hint={
-                  totalUnits != null && leasedUnits != null
-                    ? `${leasedUnits} of ${totalUnits} units leased`
-                    : "Connect AppFolio for live occupancy"
-                }
-              />
-              <KpiTile
-                label="Monthly rent"
-                value={
-                  monthlyRentRoll > 0 ? monthlyRentRollDisplay : <DimZero />
-                }
-                hint={
-                  leasedUnits != null && leasedUnits > 0
-                    ? `From ${leasedUnits} leased units`
-                    : "From active leases"
-                }
-              />
               <KpiTile
                 label="Leads (28d)"
                 value={kpis.leads28d > 0 ? kpis.leads28d : <DimZero />}
@@ -523,15 +507,41 @@ export async function OverviewTab({
                 hint={leadsHint}
               />
               <KpiTile
-                label="Renewals (next 30d)"
-                value={buckets[0].count > 0 ? buckets[0].count : <DimZero />}
-                hint={renewalsHint}
+                label="Tours (28d)"
+                value={kpis.tours28d > 0 ? kpis.tours28d : <DimZero />}
+                hint={
+                  kpis.tours28d === 0
+                    ? "Tours show as leads schedule them"
+                    : `${kpis.applications28d} applications`
+                }
+              />
+              <KpiTile
+                label="Applications (28d)"
+                value={
+                  kpis.applications28d > 0 ? kpis.applications28d : <DimZero />
+                }
+                hint={
+                  kpis.applications28d === 0
+                    ? "First application lands here"
+                    : "Last 28 days"
+                }
+              />
+              <KpiTile
+                label="Available units"
+                value={availableUnits > 0 ? availableUnits : <DimZero />}
+                hint={
+                  totalUnits != null
+                    ? `${totalUnits.toLocaleString()} total units`
+                    : "Connect AppFolio for live unit data"
+                }
               />
             </section>
 
             <ActivityTimeline events={activity} />
 
-            <RenewalTimeline buckets={buckets} total={expiringTotal} />
+            {/* Renewal timeline hidden (issue #77) — rent-roll cadence is
+                not the LeaseStack focus. Bucket math retained above so
+                downstream callers (insights, AI fallback) still work. */}
           </div>
 
           {/* RIGHT — sidebar. */}
@@ -578,10 +588,14 @@ export async function OverviewTab({
               priceRange={priceRange}
             />
 
-            <QuickActionsCard
+            {/* Quick actions hidden (issue #76) — Open in AppFolio,
+                Edit listing details, and Property settings either 404 or
+                land on a half-built onboarding flow. Re-enable once each
+                target route is functional end-to-end. */}
+            {/* <QuickActionsCard
               propertyId={propertyId}
               backendPlatform={property.backendPlatform}
-            />
+            /> */}
           </aside>
         </div>
       )}
@@ -890,7 +904,12 @@ function sourceWord(source: string): string {
 function buildActivityEvents({
   leads,
   tours,
-  leases,
+  // Lease activity intentionally not rendered in the timeline. Norman
+  // feedback (issue #73): "Lease signed" / renewal-sent events are
+  // rent-roll reporting territory and pull focus from marketing-side
+  // signals (leads, tours, applications, reviews). The query still runs
+  // so we can re-enable cheaply if/when we add an ops-flavoured view.
+  leases: _leases,
   mentions,
 }: {
   leads: ActivityLeadRow[];
@@ -898,6 +917,7 @@ function buildActivityEvents({
   leases: ActivityLeaseRow[];
   mentions: ActivityMentionRow[];
 }): ActivityEvent[] {
+  void _leases;
   const events: ActivityEvent[] = [];
 
   for (const l of leads) {
@@ -931,48 +951,7 @@ function buildActivityEvents({
     });
   }
 
-  for (const ls of leases) {
-    // Pick the most informative thing that happened on this lease and
-    // attribute it to updatedAt. Notice given outranks renewal sent
-    // outranks "ended" outranks "signed".
-    if (ls.noticeGivenAt) {
-      events.push({
-        id: `lease-notice:${ls.id}`,
-        kind: "notice",
-        summary: ls.monthlyRentCents
-          ? `Resident gave notice (${formatRentShort(ls.monthlyRentCents)}/mo unit)`
-          : `Resident gave notice`,
-        occurredAt: ls.noticeGivenAt,
-      });
-      continue;
-    }
-    if (ls.renewalSentAt) {
-      events.push({
-        id: `lease-renewal:${ls.id}`,
-        kind: "renewal",
-        summary: ls.monthlyRentCents
-          ? `Renewal offer sent (${formatRentShort(ls.monthlyRentCents)}/mo)`
-          : `Renewal offer sent`,
-        occurredAt: ls.renewalSentAt,
-      });
-      continue;
-    }
-    let summary = "Lease updated";
-    if (ls.status === "ACTIVE") summary = "Lease signed";
-    else if (ls.status === "EXPIRING") summary = "Lease entering renewal window";
-    else if (ls.status === "RENEWED") summary = "Lease renewed";
-    else if (ls.status === "ENDED") summary = "Lease ended";
-    else if (ls.status === "EVICTED") summary = "Lease ended (eviction)";
-    if (ls.monthlyRentCents) {
-      summary = `${summary} (${formatRentShort(ls.monthlyRentCents)}/mo)`;
-    }
-    events.push({
-      id: `lease:${ls.id}`,
-      kind: "lease",
-      summary,
-      occurredAt: ls.updatedAt,
-    });
-  }
+  // Lease loop intentionally omitted — see "leases: _leases" comment above.
 
   for (const m of mentions) {
     const who = m.authorName ?? "Someone";
