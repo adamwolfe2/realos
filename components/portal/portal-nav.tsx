@@ -434,12 +434,17 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
                 {(org.brand.name[0] ?? "?").toUpperCase()}
               </span>
             ) : (
+              // Norman 2026-05-21: was /icon-32x32.png — an older raster
+              // mark that doesn't match the current wordmark. Swapped to
+              // the canonical /favicon.svg so the collapsed mark and the
+              // expanded wordmark read as the same brand identity.
               <Image
-                src="/icon-32x32.png"
+                src="/favicon.svg"
                 alt={BRAND_NAME}
                 width={28}
                 height={28}
                 className="w-7 h-7 shrink-0"
+                unoptimized
                 priority
               />
             )

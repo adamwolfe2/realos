@@ -55,12 +55,16 @@ export function AdminSidebar({
           aria-label={`${BRAND_NAME} admin home`}
         >
           {collapsed ? (
+            // Match the portal sidebar — use the canonical /favicon.svg
+            // mark so the collapsed admin chrome reads as the same brand
+            // identity as the wordmark and the browser tab.
             <Image
-              src="/icon-32x32.png"
+              src="/favicon.svg"
               alt={BRAND_NAME}
               width={24}
               height={24}
               className="w-6 h-6 shrink-0"
+              unoptimized
               priority
             />
           ) : (
