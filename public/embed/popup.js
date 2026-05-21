@@ -28,15 +28,40 @@
   if (window.__leasestackPopupLoaded) return;
   window.__leasestackPopupLoaded = true;
 
+  // Verbose diagnostic mode: on by default so silent failures become
+  // loud in DevTools. Operators reported "I embedded it but I don't
+  // see it" with no signal in console — every decision the embed
+  // makes (config fetched, popups found, trigger wired, frequency
+  // blocked, render fired) now prints with the [leasestack-popup]
+  // prefix so DevTools → Console filter on that string surfaces the
+  // full trail. Set window.__leasestackPopupDebug = false BEFORE the
+  // script loads to silence in production.
+  var DEBUG =
+    typeof window.__leasestackPopupDebug === "boolean"
+      ? window.__leasestackPopupDebug
+      : true;
+  function log() {
+    if (!DEBUG) return;
+    try {
+      var args = ["%c[leasestack-popup]", "color:#2563EB;font-weight:600"];
+      for (var i = 0; i < arguments.length; i++) args.push(arguments[i]);
+      console.info.apply(console, args);
+    } catch (_) { /* ignore */ }
+  }
+
   var script =
     document.currentScript ||
     document.querySelector('script[src*="/embed/popup.js"]');
   var TENANT = script && script.getAttribute("data-tenant");
   var PROPERTY = script && script.getAttribute("data-property");
   if (!TENANT) {
-    console.warn("[leasestack-popup] missing data-tenant attribute — embed will not render");
+    console.warn(
+      "[leasestack-popup] missing data-tenant attribute — embed will not render. " +
+      "Add data-tenant=\"<your-org-slug>\" to the <script> tag."
+    );
     return;
   }
+  log("boot — tenant=" + TENANT + (PROPERTY ? ", property=" + PROPERTY : ""));
 
   var API_ORIGIN = (function () {
     try {
@@ -181,8 +206,22 @@
       if (!stored) return true;
       if (popup.frequency === "once_per_day") {
         var lastShown = parseInt(stored, 10);
-        return Number.isFinite(lastShown) && Date.now() - lastShown > 24 * 60 * 60 * 1000;
+        var withinDay = Number.isFinite(lastShown) && Date.now() - lastShown > 24 * 60 * 60 * 1000;
+        if (!withinDay) {
+          log(
+            "blocked by frequency cap — popup '" + popup.headline +
+            "' (id=" + popup.id + ") was shown today. " +
+            "Clear localStorage['" + key + "'] to re-test."
+          );
+        }
+        return withinDay;
       }
+      // session
+      log(
+        "blocked by frequency cap — popup '" + popup.headline +
+        "' (id=" + popup.id + ") was already shown this session. " +
+        "Open a new incognito window OR clear sessionStorage['" + key + "'] to re-test."
+      );
       return false;
     } catch (_) { return true; }
   }
@@ -202,6 +241,10 @@
     for (var i = 0; i < patterns.length; i += 1) {
       if (path.indexOf(patterns[i]) !== -1) return true;
     }
+    log(
+      "blocked by URL mismatch — popup '" + popup.headline +
+      "' targets [" + patterns.join(", ") + "] but current path is " + path
+    );
     return false;
   }
 
@@ -319,6 +362,7 @@
   }
 
   function render(popup) {
+    log("rendering popup '" + popup.headline + "' (id=" + popup.id + ")");
     ensureStyles();
 
     var position = popup.position || "CENTER";
@@ -586,10 +630,18 @@
   function wireTrigger(popup) {
     if (!urlMatches(popup) || !shouldShow(popup)) return;
 
-    if (popup.trigger === "IMMEDIATE") { render(popup); return; }
+    if (popup.trigger === "IMMEDIATE") {
+      log("trigger IMMEDIATE — rendering popup '" + popup.headline + "' now");
+      render(popup);
+      return;
+    }
 
     if (popup.trigger === "TIME_ON_PAGE") {
       var seconds = Math.max(0, Number(popup.triggerThreshold) || 0);
+      log(
+        "trigger TIME_ON_PAGE — will render popup '" + popup.headline +
+        "' in " + seconds + "s"
+      );
       setTimeout(function () { if (shouldShow(popup)) render(popup); }, seconds * 1000);
       return;
     }
@@ -641,6 +693,10 @@
     }
 
     // EXIT_INTENT (default)
+    log(
+      "trigger EXIT_INTENT — will render popup '" + popup.headline +
+      "' when the visitor moves mouse near the top of the viewport"
+    );
     (function () {
       var fired = false;
       function onLeave(e) {
@@ -656,7 +712,23 @@
   }
 
   function boot() {
+    log("fetching popup config from " + API_ORIGIN + "/api/public/popup/config/" + TENANT);
     fetchConfig().then(function (popups) {
+      if (popups.length === 0) {
+        log(
+          "no ACTIVE popups returned for tenant '" + TENANT + "'. " +
+          "Possible causes: (1) the tenant slug doesn't match an org, " +
+          "(2) modulePopups is OFF for this org, " +
+          "(3) every campaign is in DRAFT/PAUSED/ARCHIVED state. " +
+          "Check /portal/popups in the LeaseStack portal."
+        );
+        return;
+      }
+      log("found " + popups.length + " ACTIVE popup(s): " +
+        popups.map(function (p) {
+          return "'" + p.headline + "' [trigger=" + p.trigger +
+            ", threshold=" + (p.triggerThreshold || 0) + "]";
+        }).join(", "));
       for (var i = 0; i < popups.length; i += 1) {
         try { wireTrigger(popups[i]); } catch (err) {
           console.warn("[leasestack-popup]", err);
