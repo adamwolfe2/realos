@@ -124,12 +124,66 @@ export default async function ClientsList({
     }
   }
 
+  // Highest-leverage client: weight critical = 3, high = 1 to surface
+  // the client with the most actionable SEO work outstanding. Adam uses
+  // this to decide whose portal to impersonate into first when he has
+  // 30 minutes for SEO ops. Banner only renders when there's a clear
+  // winner (>= 2 critical OR >= 5 high).
+  let topClient: {
+    id: string;
+    name: string;
+    weighted: number;
+    critical: number;
+    high: number;
+  } | null = null;
+  for (const c of clients) {
+    const recs = seoRecsByOrg.get(c.id);
+    if (!recs) continue;
+    const weighted = recs.critical * 3 + recs.high;
+    if (weighted >= 5 && (!topClient || weighted > topClient.weighted)) {
+      topClient = {
+        id: c.id,
+        name: c.name,
+        weighted,
+        critical: recs.critical,
+        high: recs.high,
+      };
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Clients"
         description="Every client organization. Click in for full detail and impersonation."
       />
+
+      {topClient ? (
+        <Link
+          href={`/admin/clients/${topClient.id}`}
+          className="block rounded-xl border border-primary/30 bg-gradient-to-r from-primary/[0.08] via-primary/[0.04] to-transparent px-4 py-3 hover:border-primary/50 transition-colors group"
+        >
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
+                Focus here first
+              </p>
+              <p className="text-[13px] font-medium text-foreground">
+                {topClient.name} has the highest open SEO debt
+              </p>
+              <p className="text-[12px] text-muted-foreground mt-0.5">
+                {topClient.critical > 0 ? `${topClient.critical} critical` : ""}
+                {topClient.critical > 0 && topClient.high > 0 ? " + " : ""}
+                {topClient.high > 0 ? `${topClient.high} high` : ""}
+                {" "}open recommendations
+              </p>
+            </div>
+            <span className="shrink-0 text-[11px] font-mono text-primary group-hover:translate-x-0.5 transition-transform">
+              Open client →
+            </span>
+          </div>
+        </Link>
+      ) : null}
 
       <form action="/admin/clients" className="flex flex-wrap items-center gap-2">
         {status ? <input type="hidden" name="status" value={status} /> : null}
