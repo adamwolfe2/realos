@@ -742,6 +742,168 @@ function trimUrl(u: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// Week-over-week changes — surfaces the meaningful deltas operators
+// actually want to see at a glance: queries that jumped into the top 10,
+// queries that lost rank, new competitor citations, and new pages
+// ranking. Drives the "What changed this week" panel on /portal/seo/agent.
+// ---------------------------------------------------------------------------
+export type WeeklyChange =
+  | {
+      kind: "rank_up";
+      query: string;
+      fromRank: number;
+      toRank: number;
+      change: number;
+    }
+  | {
+      kind: "rank_down";
+      query: string;
+      fromRank: number;
+      toRank: number;
+      change: number;
+    }
+  | {
+      kind: "entered_top_10";
+      query: string;
+      rank: number;
+    }
+  | {
+      kind: "fell_out_top_10";
+      query: string;
+      lastRank: number;
+    }
+  | {
+      kind: "new_competitor_citation";
+      competitor: string;
+      prompt: string;
+    };
+
+export async function getWeeklyChanges(input: {
+  orgId: string;
+  propertyId?: string;
+}): Promise<WeeklyChange[]> {
+  const now = new Date();
+  const sevenDaysAgo = new Date(now.getTime() - 7 * DAY_MS);
+  const fourteenDaysAgo = new Date(now.getTime() - 14 * DAY_MS);
+
+  // SERP ranking deltas: compare latest rank in the last 7d vs the
+  // latest rank in the prior 7-14d window per query.
+  const [thisWeekRanks, lastWeekRanks, newCompetitors] = await Promise.all([
+    prisma.serpRanking.findMany({
+      where: {
+        orgId: input.orgId,
+        ...(input.propertyId ? { propertyId: input.propertyId } : {}),
+        date: { gte: sevenDaysAgo },
+        ourRank: { not: null },
+      },
+      orderBy: { date: "desc" },
+      select: { query: true, ourRank: true, date: true },
+    }),
+    prisma.serpRanking.findMany({
+      where: {
+        orgId: input.orgId,
+        ...(input.propertyId ? { propertyId: input.propertyId } : {}),
+        date: { gte: fourteenDaysAgo, lt: sevenDaysAgo },
+        ourRank: { not: null },
+      },
+      orderBy: { date: "desc" },
+      select: { query: true, ourRank: true, date: true },
+    }),
+    prisma.aeoCitationCheck.findMany({
+      where: {
+        orgId: input.orgId,
+        ...(input.propertyId ? { propertyId: input.propertyId } : {}),
+        queryRunAt: { gte: sevenDaysAgo },
+        status: "COMPETITOR_CITED",
+      },
+      orderBy: { queryRunAt: "desc" },
+      take: 30,
+      select: { competitorsCited: true, prompt: true, queryRunAt: true },
+    }),
+  ]);
+
+  // Keep only the latest rank per query in each window.
+  function latestByQuery(rows: Array<{ query: string; ourRank: number | null; date: Date }>): Map<string, number> {
+    const seen = new Map<string, number>();
+    for (const r of rows) {
+      if (r.ourRank == null) continue;
+      if (!seen.has(r.query)) seen.set(r.query, r.ourRank);
+    }
+    return seen;
+  }
+  const cur = latestByQuery(thisWeekRanks);
+  const pri = latestByQuery(lastWeekRanks);
+
+  const changes: WeeklyChange[] = [];
+
+  // Movements + entries
+  for (const [q, curRank] of cur.entries()) {
+    const priRank = pri.get(q);
+    if (priRank == null) {
+      // New ranking — only flag if it landed in top 10.
+      if (curRank <= 10) {
+        changes.push({ kind: "entered_top_10", query: q, rank: curRank });
+      }
+      continue;
+    }
+    const delta = priRank - curRank; // positive = improved
+    if (delta >= 3 && curRank <= 30) {
+      changes.push({
+        kind: "rank_up",
+        query: q,
+        fromRank: priRank,
+        toRank: curRank,
+        change: delta,
+      });
+    } else if (delta <= -3) {
+      changes.push({
+        kind: "rank_down",
+        query: q,
+        fromRank: priRank,
+        toRank: curRank,
+        change: delta,
+      });
+    }
+    if (priRank > 10 && curRank <= 10) {
+      changes.push({ kind: "entered_top_10", query: q, rank: curRank });
+    }
+  }
+
+  // Fell out of top 10
+  for (const [q, priRank] of pri.entries()) {
+    const curRank = cur.get(q);
+    if (priRank <= 10 && (curRank == null || curRank > 10)) {
+      changes.push({
+        kind: "fell_out_top_10",
+        query: q,
+        lastRank: priRank,
+      });
+    }
+  }
+
+  // New competitor citations - flag the first time each competitor
+  // is cited in this 7d window (best-effort dedupe by competitor name).
+  const seenCompetitors = new Set<string>();
+  for (const row of newCompetitors) {
+    for (const c of row.competitorsCited) {
+      const key = c.trim();
+      if (!key || seenCompetitors.has(key)) continue;
+      seenCompetitors.add(key);
+      changes.push({
+        kind: "new_competitor_citation",
+        competitor: key,
+        prompt: row.prompt.slice(0, 80),
+      });
+      if (seenCompetitors.size >= 5) break;
+    }
+    if (seenCompetitors.size >= 5) break;
+  }
+
+  // Cap total changes at 12 so the panel stays scannable.
+  return changes.slice(0, 12);
+}
+
+// ---------------------------------------------------------------------------
 // Weekly score history — feeds the ScoreHistoryChart on the agent dashboard.
 // Returns up to 12 most recent weeks per (orgId, propertyId).
 // ---------------------------------------------------------------------------

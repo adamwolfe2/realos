@@ -83,6 +83,7 @@ import {
   getLocalPackRows,
   getScoreHistory,
   getSearchPathSankey,
+  getWeeklyChanges,
 } from "@/lib/seo/agent-charts-data";
 import { DraftLauncher } from "@/components/portal/seo/draft-launcher";
 import { TargetQueryManager } from "@/components/portal/seo/target-query-manager";
@@ -91,6 +92,7 @@ import { ScoreHistoryChart } from "@/components/portal/seo/score-history-chart";
 import { DraftsInbox } from "@/components/portal/seo/drafts-inbox";
 import { PropertySwitcher } from "@/components/portal/seo/property-switcher";
 import { RecommendationManager } from "@/components/portal/seo/recommendation-manager";
+import { WeeklyChangesPanel } from "@/components/portal/seo/weekly-changes-panel";
 
 export const metadata: Metadata = { title: "SEO Agent" };
 export const dynamic = "force-dynamic";
@@ -448,6 +450,7 @@ export default async function SeoAgentPage({
     localPackRows,
     scoreHistory,
     sankey,
+    weeklyChanges,
   ] = await Promise.all([
     getExecSummary({ orgId: scope.orgId, propertyId: property.id, range }),
     getPositionBucketSeries({
@@ -474,6 +477,7 @@ export default async function SeoAgentPage({
     getLocalPackRows({ orgId: scope.orgId, propertyId: property.id }),
     getScoreHistory({ orgId: scope.orgId, propertyId: property.id }),
     getSearchPathSankey({ orgId: scope.orgId, propertyId: property.id, range }),
+    getWeeklyChanges({ orgId: scope.orgId, propertyId: property.id }),
   ]);
 
   // Build the exec-summary stats array. Delta arrows are NULL when we
@@ -689,6 +693,11 @@ export default async function SeoAgentPage({
           icon: "Sparkles",
         }))}
       />
+
+      {/* Weekly changes — surfaces meaningful deltas operators want to
+          see at a glance (rank up/down, top-10 entries, new competitor
+          citations). Hidden when there's no notable signal. */}
+      <WeeklyChangesPanel changes={weeklyChanges} />
 
       {/* Recommendation workflow — only renders persisted recs. Operators
           hit Refresh in the action bar above to populate / refresh this

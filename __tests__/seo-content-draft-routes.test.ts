@@ -103,6 +103,38 @@ describe("SEO content-draft routes — structural contract", () => {
     });
   });
 
+  describe("/api/portal/seo/recommendations/[id]", () => {
+    const route = "app/api/portal/seo/recommendations/[id]/route.ts";
+
+    it("exports PATCH with tenant scoping", () => {
+      const src = read(route);
+      expect(src).toMatch(/export async function PATCH/);
+      expect(src).toContain("requireScope");
+      expect(src).toContain("tenantWhere");
+    });
+
+    it("enforces property-RBAC via allowedPropertyIds", () => {
+      const src = read(route);
+      expect(src).toContain("allowedPropertyIds");
+    });
+
+    it("requires reason for DISMISSED transition", () => {
+      const src = read(route);
+      expect(src).toContain("Provide a reason when dismissing");
+    });
+
+    it("busts the recommendation cache on status change", () => {
+      const src = read(route);
+      expect(src).toContain("invalidateRecommendationsCache");
+    });
+
+    it("writes completedAt + completedBy on COMPLETED", () => {
+      const src = read(route);
+      expect(src).toContain("completedAt");
+      expect(src).toContain("completedBy");
+    });
+  });
+
   describe("/api/admin/content-drafts", () => {
     const list = "app/api/admin/content-drafts/route.ts";
     const item = "app/api/admin/content-drafts/[id]/route.ts";

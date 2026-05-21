@@ -317,6 +317,19 @@ export default async function PropertyDetail({
         />
       </Suspense>
 
+      {/* SEO score history — sparse until the first Monday cron run.
+          Streamed so it doesn't block the hero. */}
+      <Suspense
+        fallback={
+          <div className="rounded-2xl border border-dashed border-border bg-card p-6 animate-pulse h-48" />
+        }
+      >
+        <PropertyScoreHistorySection
+          orgId={scope.orgId}
+          propertyId={property.id}
+        />
+      </Suspense>
+
       {showMarketIntelligence ? (
         <Suspense fallback={<MarketIntelligenceSkeleton />}>
           <MarketIntelligenceSection propertyId={property.id} />
@@ -595,6 +608,27 @@ async function IntelligenceSection({
   return (
     <PropertyIntelligencePanel propertyName={propertyName} actions={merged} />
   );
+}
+
+// ---------------------------------------------------------------------------
+// PropertyScoreHistorySection — Suspense child that renders the per-
+// property SEO score history. Hidden when there's no history yet so the
+// property detail page stays uncluttered for new properties.
+// ---------------------------------------------------------------------------
+async function PropertyScoreHistorySection({
+  orgId,
+  propertyId,
+}: {
+  orgId: string;
+  propertyId: string;
+}) {
+  const { getScoreHistory } = await import("@/lib/seo/agent-charts-data");
+  const { ScoreHistoryChart } = await import(
+    "@/components/portal/seo/score-history-chart"
+  );
+  const history = await getScoreHistory({ orgId, propertyId }).catch(() => []);
+  if (history.length === 0) return null;
+  return <ScoreHistoryChart data={history} />;
 }
 
 function IntelligenceSkeleton() {
