@@ -330,6 +330,20 @@ export default async function PropertyDetail({
         />
       </Suspense>
 
+      {/* Recent activity feed — shows what happened with this property
+          in the last 14 days (rec status changes, draft submissions,
+          review outcomes). Hidden when there are no events. */}
+      <Suspense
+        fallback={
+          <div className="rounded-2xl border border-dashed border-border bg-card p-6 animate-pulse h-32" />
+        }
+      >
+        <PropertyActivityFeedSection
+          orgId={scope.orgId}
+          propertyId={property.id}
+        />
+      </Suspense>
+
       {showMarketIntelligence ? (
         <Suspense fallback={<MarketIntelligenceSkeleton />}>
           <MarketIntelligenceSection propertyId={property.id} />
@@ -608,6 +622,29 @@ async function IntelligenceSection({
   return (
     <PropertyIntelligencePanel propertyName={propertyName} actions={merged} />
   );
+}
+
+// ---------------------------------------------------------------------------
+// PropertyActivityFeedSection — Suspense child that surfaces recent
+// audit + draft events for the property. Hidden when nothing happened
+// in the last 14 days so quiet properties don't get a hollow panel.
+// ---------------------------------------------------------------------------
+async function PropertyActivityFeedSection({
+  orgId,
+  propertyId,
+}: {
+  orgId: string;
+  propertyId: string;
+}) {
+  const { getPropertyActivityFeed } = await import("@/lib/seo/property-activity");
+  const { PropertyActivityFeed } = await import(
+    "@/components/portal/properties/property-activity-feed"
+  );
+  const items = await getPropertyActivityFeed({ orgId, propertyId }).catch(
+    () => [],
+  );
+  if (items.length === 0) return null;
+  return <PropertyActivityFeed items={items} />;
 }
 
 // ---------------------------------------------------------------------------
