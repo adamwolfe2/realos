@@ -92,6 +92,8 @@
 24. feat(seo): bulk approve/reject on /admin/content-drafts queue
 25. feat(seo): re-submit with changes affordance + CSV export
 26. feat(seo): audit events on rec status + draft approve/reject
+27. feat(seo): stale draft auto-expire cron (>14d)
+28. feat(admin): entity-type filter chips on /admin/audit-log
 
 All pushed to origin/main.
 
