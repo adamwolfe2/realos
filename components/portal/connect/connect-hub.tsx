@@ -18,6 +18,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
+import { RunAppFolioSyncButton } from "@/components/portal/integrations/run-appfolio-sync-button";
 
 // ---------------------------------------------------------------------------
 // ConnectHub — the unified data-connection screen.
@@ -395,14 +396,26 @@ function SourceCard({
       </div>
 
       {/* Footer */}
-      <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-end">
+      <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-end gap-2">
         {isConnected ? (
-          <Link
-            href={meta.connectUrl ?? "#"}
-            className="inline-flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline"
-          >
-            Manage <ArrowRight className="w-3 h-3" />
-          </Link>
+          <>
+            {/* Norman bug #105: when AppFolio is connected, surface
+                "Sync now" directly on the connect card instead of
+                making operators drill into Settings → Integrations to
+                find it. The button hits the existing
+                triggerAppfolioSync server action and refreshes the
+                page. Only renders for AppFolio (other sources use
+                the upstream OAuth flow's own refresh path). */}
+            {source.id === "appfolio" ? (
+              <RunAppFolioSyncButton label="Sync now" subtle />
+            ) : null}
+            <Link
+              href={meta.connectUrl ?? "#"}
+              className="inline-flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline"
+            >
+              Manage <ArrowRight className="w-3 h-3" />
+            </Link>
+          </>
         ) : (
           <button
             type="button"

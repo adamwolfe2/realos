@@ -601,8 +601,9 @@ export default async function PortalHome({
       select: { autoSyncEnabled: true, instanceSubdomain: true },
     })
     .catch(() => null);
+  const appfolioConnected = !!appfolioRow?.instanceSubdomain;
   const appfolioAutoSyncPaused =
-    !!appfolioRow?.instanceSubdomain && appfolioRow.autoSyncEnabled === false;
+    appfolioConnected && appfolioRow?.autoSyncEnabled === false;
   const adsOff =
     integrationChips.find((c) => c.key === "google-ads")?.status === "off" &&
     integrationChips.find((c) => c.key === "meta-ads")?.status === "off";
@@ -1022,15 +1023,16 @@ export default async function PortalHome({
             </DashboardSection>
           </section>
 
-          {/* Operations module teaser — hidden per Norman feedback
-              (issue #97). Rent roll / renewals / rental income copy
-              keeps pulling the dashboard back into PMS territory; the
-              same theme already led us to hide the Operations primary
-              tab on the property detail (issue #70). Auto-sync alert
-              still renders below so operators don't miss a stuck
-              AppFolio sync — that's an actionable health signal, not
-              rent-roll content.
-          */}
+          {/* AppFolio status row — Norman feedback evolution:
+              #97 said the previous "Coming soon · Operations module"
+              teaser leaned too far into rent-roll content. #104 said
+              the AppFolio connect CTA itself is worth keeping but
+              needs to be dynamic — show a confirmed/connected state
+              when the integration is already wired up. This row does
+              exactly that: a one-line status chip with three branches
+              (connected + sync paused → amber action; connected +
+              healthy → muted confirmation; not connected → blue
+              "Connect AppFolio" CTA). No rent-roll copy anywhere. */}
           {appfolioAutoSyncPaused ? (
             <section className="rounded-xl border border-amber-200 bg-amber-50 p-3">
               <Link
@@ -1045,7 +1047,44 @@ export default async function PortalHome({
                 <span aria-hidden="true">→</span>
               </Link>
             </section>
-          ) : null}
+          ) : appfolioConnected ? (
+            <section className="rounded-xl border border-border bg-card p-3">
+              <p className="inline-flex items-center gap-1.5 text-[12px] text-muted-foreground">
+                <span
+                  aria-hidden="true"
+                  className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-500"
+                />
+                AppFolio connected
+                {appfolioRow?.instanceSubdomain ? (
+                  <span className="text-foreground/70">
+                    · {appfolioRow.instanceSubdomain}
+                  </span>
+                ) : null}
+                <Link
+                  href="/portal/settings/integrations#appfolio"
+                  className="ml-2 text-[11px] underline underline-offset-2 hover:text-foreground"
+                >
+                  Manage
+                </Link>
+              </p>
+            </section>
+          ) : (
+            <section className="rounded-xl border border-primary/20 bg-primary/[0.03] p-3">
+              <div className="flex items-center justify-between gap-3 flex-wrap">
+                <p className="text-[12.5px] text-foreground">
+                  <span className="font-semibold">Connect AppFolio</span>{" "}
+                  to sync your portfolio + listings automatically.
+                </p>
+                <Link
+                  href="/portal/connect"
+                  className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-[12px] font-semibold hover:bg-primary-dark transition-colors"
+                >
+                  Connect AppFolio
+                  <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+            </section>
+          )}
 
     </div>
   );
