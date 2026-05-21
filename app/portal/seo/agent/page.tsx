@@ -22,6 +22,33 @@ import {
   type CompetitorRow,
   type IntegrationState,
 } from "@/components/portal/seo/seo-data-cards";
+import {
+  ExecSummaryRow,
+  PositionBucketChart,
+  CtrPositionScatter,
+  StrikingDistanceTable,
+  ShareOfVoiceDonut,
+  OpportunityMatrix,
+  ContentRoiTreemap,
+  KeywordPipelineFunnel,
+  BrandedVsNonBrandedCard,
+  SiteHealthGauge,
+  LocalPackCard,
+  type RangeKey,
+} from "@/components/portal/seo/seo-phase2-charts";
+import {
+  getExecSummary,
+  getPositionBucketSeries,
+  getCtrScatterPoints,
+  getStrikingDistance,
+  getShareOfVoice,
+  getOpportunityPoints,
+  getContentRoiNodes,
+  getPipelineFunnel,
+  getBrandedSplit,
+  getSiteHealth,
+  getLocalPackRows,
+} from "@/lib/seo/agent-charts-data";
 
 export const metadata: Metadata = { title: "SEO Agent" };
 export const dynamic = "force-dynamic";
@@ -48,10 +75,15 @@ function deriveDomain(url: string | null): string | null {
 export default async function SeoAgentPage({
   searchParams,
 }: {
-  searchParams: Promise<{ propertyId?: string }>;
+  searchParams: Promise<{ propertyId?: string; range?: string }>;
 }) {
   const scope = await requireScope();
-  const { propertyId: propertyIdParam } = await searchParams;
+  const { propertyId: propertyIdParam, range: rangeParam } = await searchParams;
+  const range: RangeKey = (
+    ["7d", "28d", "90d", "12mo"] as const
+  ).includes(rangeParam as RangeKey)
+    ? (rangeParam as RangeKey)
+    : "28d";
 
   // Pick the featured property: explicit ?propertyId param wins; otherwise
   // the first LIVE marketable property in the org (the SG Real Estate /
@@ -332,6 +364,126 @@ export default async function SeoAgentPage({
     };
   });
 
+  // Phase 2 chart data — parallel fetch so the page renders fast.
+  const [
+    execSummary,
+    positionBuckets,
+    ctrScatter,
+    strikingDistance,
+    shareOfVoice,
+    opportunityPoints,
+    contentRoiNodes,
+    pipelineStages,
+    brandedSplit,
+    siteHealth,
+    localPackRows,
+  ] = await Promise.all([
+    getExecSummary({ orgId: scope.orgId, propertyId: property.id, range }),
+    getPositionBucketSeries({
+      orgId: scope.orgId,
+      propertyId: property.id,
+      range,
+    }),
+    getCtrScatterPoints({
+      orgId: scope.orgId,
+      propertyId: property.id,
+      range,
+    }),
+    getStrikingDistance({ orgId: scope.orgId, propertyId: property.id }),
+    getShareOfVoice({
+      orgId: scope.orgId,
+      propertyId: property.id,
+      ourDomain: domain,
+    }),
+    getOpportunityPoints({ orgId: scope.orgId, propertyId: property.id }),
+    getContentRoiNodes({ orgId: scope.orgId, propertyId: property.id }),
+    getPipelineFunnel({ orgId: scope.orgId, propertyId: property.id, range }),
+    getBrandedSplit({ orgId: scope.orgId, propertyId: property.id, range }),
+    getSiteHealth({ orgId: scope.orgId, propertyId: property.id }),
+    getLocalPackRows({ orgId: scope.orgId, propertyId: property.id }),
+  ]);
+
+  // Build the exec-summary stats array. Delta arrows are NULL when we
+  // have no prior-period data so the UI doesn't render misleading
+  // "0% vs nothing" hints.
+  const execStats = [
+    {
+      label: "Total clicks",
+      value: execSummary.totalClicks.current.toLocaleString(),
+      delta:
+        execSummary.totalClicks.prior > 0
+          ? Math.round(
+              ((execSummary.totalClicks.current -
+                execSummary.totalClicks.prior) /
+                execSummary.totalClicks.prior) *
+                100,
+            )
+          : null,
+      deltaPct: true,
+    },
+    {
+      label: "Impressions",
+      value: execSummary.totalImpressions.current.toLocaleString(),
+      delta:
+        execSummary.totalImpressions.prior > 0
+          ? Math.round(
+              ((execSummary.totalImpressions.current -
+                execSummary.totalImpressions.prior) /
+                execSummary.totalImpressions.prior) *
+                100,
+            )
+          : null,
+      deltaPct: true,
+    },
+    {
+      label: "Avg position",
+      value:
+        execSummary.avgPosition.current != null
+          ? execSummary.avgPosition.current.toFixed(1)
+          : "—",
+      delta:
+        execSummary.avgPosition.current != null &&
+        execSummary.avgPosition.prior != null
+          ? Number(
+              (
+                execSummary.avgPosition.current -
+                execSummary.avgPosition.prior
+              ).toFixed(1),
+            )
+          : null,
+      inverted: true,
+      deltaPct: false,
+    },
+    {
+      label: "Ranked kws",
+      value: execSummary.rankedKeywords.current.toLocaleString(),
+      delta:
+        execSummary.rankedKeywords.current -
+        execSummary.rankedKeywords.prior,
+      deltaPct: false,
+    },
+    {
+      label: "Top 10",
+      value: execSummary.topTen.current.toLocaleString(),
+      delta: execSummary.topTen.current - execSummary.topTen.prior,
+      deltaPct: false,
+    },
+    {
+      label: "Est. traffic",
+      value: execSummary.estTraffic.current.toLocaleString(),
+      delta:
+        execSummary.estTraffic.prior > 0
+          ? Math.round(
+              ((execSummary.estTraffic.current -
+                execSummary.estTraffic.prior) /
+                execSummary.estTraffic.prior) *
+                100,
+            )
+          : null,
+      deltaPct: true,
+    },
+  ];
+
   // Competitors — merge Google Places + DataforSEO into one ranked list.
   const competitorRows: CompetitorRow[] = [
     ...googleNearbyCompetitors.map((c) => ({
@@ -375,6 +527,11 @@ export default async function SeoAgentPage({
       />
 
       <IntegrationStatusRow integrations={integrations} />
+
+      {/* Phase 2: executive summary at the top so the operator gets the
+          big numbers + WoW deltas before scrolling. Range selector
+          pinned right of the header band. */}
+      <ExecSummaryRow stats={execStats} />
 
       <HealthScoreCard
         composite={composite}
@@ -438,6 +595,38 @@ export default async function SeoAgentPage({
           icon: "Sparkles",
         }))}
       />
+
+      {/* Phase 2 — the composite views Norman called "the real magic." */}
+      <KeywordPipelineFunnel stages={pipelineStages} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <PositionBucketChart data={positionBuckets} />
+        <CtrPositionScatter data={ctrScatter} />
+      </div>
+
+      <OpportunityMatrix points={opportunityPoints} />
+
+      <StrikingDistanceTable rows={strikingDistance} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <ShareOfVoiceDonut slices={shareOfVoice} />
+        <BrandedVsNonBrandedCard
+          branded={brandedSplit.branded}
+          nonBranded={brandedSplit.nonBranded}
+        />
+      </div>
+
+      <ContentRoiTreemap nodes={contentRoiNodes} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <SiteHealthGauge
+          score={siteHealth.score}
+          critical={siteHealth.critical}
+          warning={siteHealth.warning}
+          notice={siteHealth.notice}
+        />
+        <LocalPackCard rows={localPackRows} />
+      </div>
 
       <SerpRankingsCard rows={serpRows} totalQueries={targetQueryCountTotal} />
 
