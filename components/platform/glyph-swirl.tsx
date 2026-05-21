@@ -132,12 +132,17 @@ export function GlyphSwirl({
       const fadeOut = Math.max(0.35, 1 - distFromCentre * 0.55);
       const opacity = baseOp * fadeOut;
 
-      // Orbit geometry — tight, 3–9% of container. Mix CW/CCW.
+      // Norman 2026-05-21 second pass: "make them pulse more and move
+      // less." Orbit radii dropped to a tiny wobble (0.6–2% of container)
+      // so each glyph stays anchored to its spot with only a subtle drift
+      // — the eye reads the field as a pulsing constellation, not
+      // satellites in orbit. Periods also slowed so what little movement
+      // remains feels meditative rather than busy.
       const inverse = rng() < 0.5;
-      const rx = 3 + rng() * 6;
-      const ry = 2.5 + rng() * 5;
-      // Period 8–18s — slow enough to read as ambient drift, not motion.
-      const periodMs = 8000 + rng() * 10000;
+      const rx = 0.6 + rng() * 1.4;
+      const ry = 0.5 + rng() * 1.2;
+      // Period 18–34s — very slow drift.
+      const periodMs = 18000 + rng() * 16000;
       const omega = ((inverse ? -1 : 1) * (2 * Math.PI)) / periodMs;
       const phase = rng() * Math.PI * 2;
       const pulsePhase = rng() * Math.PI * 2;
@@ -185,10 +190,13 @@ export function GlyphSwirl({
         const dy = Math.sin(a) * p.ry;
         el.style.transform = `translate(calc(-50% + ${dx}cqw), calc(-50% + ${dy}cqh)) rotate(${p.rotate}deg)`;
 
-        // Pulse — single sinusoid drives the cell alpha for all 9 cells
-        // simultaneously. Period ~2.6s so it reads as a breath.
-        const pulse =
-          0.6 + 0.4 * Math.sin(t / 2600 + p.pulsePhase); // 0.2 → 1.0
+        // Pulse — single sinusoid drives the cell alpha for all 9 cells.
+        // Norman second pass: more pulse, less motion. Range 0.05 → 1.05
+        // (clamped 0–1) so glyphs fade nearly to invisible at the trough
+        // and snap to full brand-blue at the peak. Period ~1.9s for a
+        // brisker heartbeat now that there's almost no orbit competing
+        // for attention.
+        const pulse = 0.55 + 0.5 * Math.sin(t / 1900 + p.pulsePhase);
         const alpha = Math.max(0, Math.min(1, p.opacity * intensity * pulse));
         const fill = `rgba(${BRAND_BLUE}, ${alpha.toFixed(3)})`;
         const cells = innerRefs.current[i];
