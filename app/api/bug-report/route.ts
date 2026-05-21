@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { put } from "@vercel/blob";
+import { putPublic } from "@/lib/blob-public";
 import { BugReportSeverity, BugReportStatus, Prisma } from "@prisma/client";
 import { getScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
@@ -273,10 +273,10 @@ export async function POST(req: NextRequest) {
             .replace(/[^a-zA-Z0-9._-]/g, "_")
             .replace(/^[._]+/, "")
             .slice(0, 100) || "upload";
-        const blob = await put(
+        const blob = await putPublic(
           `bug-reports/${report.id}/${safeName}`,
           f,
-          { access: "public", addRandomSuffix: true, contentType: f.type },
+          { addRandomSuffix: true, contentType: f.type },
         );
         return {
           url: blob.url,

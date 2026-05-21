@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put, del } from "@vercel/blob";
+import { putPublic, delPublic } from "@/lib/blob-public";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { AuditAction } from "@prisma/client";
@@ -92,16 +92,18 @@ export async function POST(req: NextRequest) {
     existing?.chatbotAvatarUrl &&
     /\.public\.blob\.vercel-storage\.com\//.test(existing.chatbotAvatarUrl)
   ) {
-    await del(existing.chatbotAvatarUrl).catch(() => undefined);
+    await delPublic(existing.chatbotAvatarUrl).catch(() => undefined);
   }
 
   // Upload with a random suffix so a new file doesn't clobber any
-  // cached URL still in flight at the widget edge.
+  // cached URL still in flight at the widget edge. Uses the PUBLIC store
+  // helper because the chatbot avatar is rendered on the customer's
+  // marketing site for anonymous visitors — the URL must resolve without
+  // any auth handshake.
   const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "avatar";
   let blob;
   try {
-    blob = await put(`chatbot-avatars/${scope.orgId}/${safeName}`, file, {
-      access: "public",
+    blob = await putPublic(`chatbot-avatars/${scope.orgId}/${safeName}`, file, {
       addRandomSuffix: true,
       contentType: file.type,
     });
@@ -164,7 +166,7 @@ export async function DELETE() {
     existing?.chatbotAvatarUrl &&
     /\.public\.blob\.vercel-storage\.com\//.test(existing.chatbotAvatarUrl)
   ) {
-    await del(existing.chatbotAvatarUrl).catch(() => undefined);
+    await delPublic(existing.chatbotAvatarUrl).catch(() => undefined);
   }
 
   await prisma.tenantSiteConfig

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { put, del } from "@vercel/blob";
+import { putPublic, delPublic } from "@/lib/blob-public";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { AuditAction, UserRole } from "@prisma/client";
@@ -144,15 +144,14 @@ export async function POST(req: NextRequest) {
     existing?.whiteLabelLogoUrl &&
     /\.public\.blob\.vercel-storage\.com\//.test(existing.whiteLabelLogoUrl)
   ) {
-    await del(existing.whiteLabelLogoUrl).catch(() => undefined);
+    await delPublic(existing.whiteLabelLogoUrl).catch(() => undefined);
   }
 
   const safeName =
     file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 80) || "logo";
   let blob;
   try {
-    blob = await put(`white-label/${scope.orgId}/${safeName}`, file, {
-      access: "public",
+    blob = await putPublic(`white-label/${scope.orgId}/${safeName}`, file, {
       addRandomSuffix: true,
       contentType: file.type,
     });
@@ -212,7 +211,7 @@ export async function DELETE() {
     existing?.whiteLabelLogoUrl &&
     /\.public\.blob\.vercel-storage\.com\//.test(existing.whiteLabelLogoUrl)
   ) {
-    await del(existing.whiteLabelLogoUrl).catch(() => undefined);
+    await delPublic(existing.whiteLabelLogoUrl).catch(() => undefined);
   }
 
   await prisma.organization
