@@ -128,6 +128,14 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
             name: property.name,
             websiteUrl: property.websiteUrl,
           });
+          // `mentioned` is the looser signal — true when the brand name
+          // or its domain shows up in the response at all (i.e. status is
+          // CITED). COMPETITOR_CITED rows mean the engine named a rival
+          // without naming the brand, so mentioned stays false. This
+          // keeps the AEO page's mention vs. citation breakdown honest:
+          // a high mention rate now means "engines are aware of the
+          // brand" rather than the previous overstatement.
+          const mentioned = parsed.status === "CITED";
           await prisma.aeoCitationCheck.create({
             data: {
               orgId: property.orgId,
@@ -135,6 +143,7 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
               engine: engine.engine as AeoEngine,
               prompt,
               status: parsed.status,
+              mentioned,
               responseText: result.responseText.slice(0, 8000),
               citedUrl: parsed.citedUrl ?? null,
               competitorsCited: parsed.competitorsCited,
@@ -411,6 +420,10 @@ export async function runNeighborhoodScan(
               engine: engine.engine as AeoEngine,
               prompt,
               status: parsed.status,
+              // Same semantics as the property scan: mentioned tracks
+              // whether the engine named the brand or linked our domain,
+              // independent of citedUrl. Stays false on COMPETITOR_CITED.
+              mentioned: parsed.status === "CITED",
               responseText: result.responseText.slice(0, 8000),
               citedUrl: parsed.citedUrl ?? null,
               competitorsCited: parsed.competitorsCited,
