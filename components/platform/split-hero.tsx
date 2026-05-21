@@ -1,6 +1,7 @@
 import React from "react";
 import Link from "next/link";
 import { Reveal } from "./reveal";
+import { PixelSwirl } from "./pixel-swirl";
 
 type CTA = { label: string; href: string; variant?: "primary" | "secondary" };
 
@@ -36,7 +37,15 @@ export function SplitHero({
       className="relative overflow-hidden"
       style={{ backgroundColor: "#FFFFFF" }}
     >
-      <div className="max-w-[1440px] mx-auto px-4 md:px-10 pt-20 md:pt-24 pb-16 md:pb-20">
+      {/* Ambient brand-pixel background. PixelSwirl renders a gradient
+          base + a faint 28px brand-blue grid + an animated field of
+          ~72 pixel motes that orbit slow elliptical paths around the
+          centre of the hero. Sits behind everything (pointer-events
+          none, aria-hidden) so CTAs and copy remain fully interactive.
+          See components/platform/pixel-swirl.tsx for the rendering
+          model + reduced-motion treatment. */}
+      <PixelSwirl />
+      <div className="relative max-w-[1440px] mx-auto px-4 md:px-10 pt-20 md:pt-24 pb-16 md:pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
           <div className="lg:col-span-6 text-left">
             <Reveal>
