@@ -44,16 +44,16 @@ const C = {
   primaryLight: "#3B82F6",
   primaryFaint: "#93C5FD",
   primaryGhost: "#DBEAFE",
-  indigo: "#4F46E5",
+  indigo: "#2563EB",
   ink: "#2563EB",
   text: "#0F172A",
   muted: "#94A3B8",
   border: "#E5E7EB",
-  positive: "#10B981",
-  negative: "#EF4444",
-  amber: "#F59E0B",
-  rose: "#F43F5E",
-  violet: "#8B5CF6",
+  positive: "#2563EB",
+  negative: "#DC2626",
+  amber: "#60A5FA",
+  rose: "#1E40AF",
+  violet: "#3B82F6",
 };
 
 export function ReportView({
@@ -293,7 +293,7 @@ export function ReportView({
             label="Tours"
             value={kpis.tours.toLocaleString()}
             deltaPct={kpiDeltas.toursPct}
-            tone="violet"
+            tone="primary"
             glyph="calendar"
           />
         ) : null}
@@ -302,7 +302,7 @@ export function ReportView({
             label="Applications"
             value={kpis.applications.toLocaleString()}
             deltaPct={kpiDeltas.applicationsPct}
-            tone="emerald"
+            tone="primary"
             glyph="check"
           />
         ) : null}
@@ -314,7 +314,7 @@ export function ReportView({
             }
             deltaPct={kpiDeltas.costPerLeadPct}
             invertDelta
-            tone="indigo"
+            tone="primary"
             glyph="dollar"
           />
         ) : null}
@@ -627,8 +627,8 @@ function DataSourcesFooter({ sources }: { sources: ReportDataSources }) {
               {r.label}
             </span>
             {r.status.connected ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-primary">
+                <span className="h-1.5 w-1.5 rounded-full bg-primary" />
                 Connected
               </span>
             ) : (
@@ -718,7 +718,7 @@ function ReputationSection({ stats }: { stats: ReportReputationStats }) {
                 ? stats.overallRating.toFixed(1)
                 : "—"}
             </span>
-            <span className="text-[20px] text-amber-400" aria-hidden="true">
+            <span className="text-[20px] text-primary" aria-hidden="true">
               ★
             </span>
           </div>
@@ -857,18 +857,18 @@ function ReportMentionCard({
 }) {
   const sentimentTone =
     m.sentiment === "POSITIVE"
-      ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+      ? "bg-primary/10 text-primary border-primary/20"
       : m.sentiment === "NEGATIVE"
-        ? "bg-red-50 text-red-700 border-red-200"
+        ? "bg-primary text-primary-foreground border-primary"
         : m.sentiment === "MIXED"
-          ? "bg-amber-50 text-amber-800 border-amber-200"
+          ? "bg-muted text-foreground border-border"
           : "bg-muted text-muted-foreground border-border";
 
   return (
     <div
       className={`rounded-xl border px-4 py-3 ${
         variant === "concern"
-          ? "border-amber-200 bg-amber-50/30"
+          ? "border-primary/20 bg-primary/5"
           : "border-border bg-card/60"
       }`}
     >
@@ -879,9 +879,9 @@ function ReportMentionCard({
               {m.source}
             </span>
             {m.rating != null ? (
-              <span className="text-[11px] font-semibold text-amber-600">
+              <span className="text-[11px] font-semibold text-primary">
                 {"★".repeat(Math.round(m.rating))}
-                <span className="text-amber-300">
+                <span className="text-primary/40">
                   {"★".repeat(Math.max(0, 5 - Math.round(m.rating)))}
                 </span>
                 <span className="ml-1 text-foreground/70">
@@ -897,7 +897,7 @@ function ReportMentionCard({
               </span>
             ) : null}
             {m.flagged ? (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border bg-red-50 text-red-700 border-red-200">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border bg-primary text-primary-foreground border-primary">
                 Flagged
               </span>
             ) : null}
@@ -1033,12 +1033,12 @@ function RenewalSection({ stats }: { stats: ReportRenewalStats }) {
         </p>
       </div>
       {stats.pastDueCount > 0 ? (
-        <div className="mt-2 rounded-xl border border-rose-200 bg-rose-50/60 p-3">
+        <div className="mt-2 rounded-xl border border-primary bg-primary p-3">
           <div className="flex items-baseline justify-between gap-2">
-            <p className="text-[10px] font-bold uppercase tracking-widest text-rose-700">
+            <p className="text-[10px] font-bold uppercase tracking-widest text-primary-foreground">
               Past-due
             </p>
-            <span className="text-[14px] font-bold tabular-nums text-rose-700">
+            <span className="text-[14px] font-bold tabular-nums text-primary-foreground">
               {stats.pastDueCount} · $
               {stats.pastDueBalanceUsd.toLocaleString()}
             </span>
@@ -1121,10 +1121,10 @@ function AiAnalysisSection({ analysis }: { analysis: AiAnalysis }) {
 function AiActionCard({ item }: { item: AiAnalysis["actions"][number] }) {
   const dotColor =
     item.priority === "high"
-      ? "bg-rose-500"
+      ? "bg-primary"
       : item.priority === "medium"
-        ? "bg-blue-400"
-        : "bg-blue-200";
+        ? "bg-primary/70"
+        : "bg-primary/30";
   return (
     <div className="rounded-xl border border-border bg-muted/30 px-3 py-2.5">
       <div className="flex items-center gap-2 mb-1">
@@ -1230,7 +1230,7 @@ function Section({
   );
 }
 
-type IconKpiTone = "primary" | "violet" | "emerald" | "indigo" | "amber";
+type IconKpiTone = "primary" | "muted";
 
 function IconKpi({
   label,
@@ -1248,11 +1248,8 @@ function IconKpi({
   glyph?: "target" | "calendar" | "check" | "dollar" | "globe";
 }) {
   const tones: Record<IconKpiTone, string> = {
-    primary: "bg-blue-50 text-blue-600",
-    violet: "bg-violet-50 text-violet-600",
-    emerald: "bg-emerald-50 text-emerald-600",
-    indigo: "bg-indigo-50 text-indigo-600",
-    amber: "bg-amber-50 text-amber-600",
+    primary: "bg-primary/10 text-primary",
+    muted: "bg-muted text-foreground",
   };
   return (
     <div className="rounded-xl border border-border bg-card p-3">
@@ -1345,10 +1342,10 @@ function DeltaPill({
   const goodDirection = invert ? value < 0 : value > 0;
   const flat = value === 0;
   const tone = flat
-    ? "bg-slate-100 text-slate-600"
+    ? "bg-muted text-muted-foreground"
     : goodDirection
-      ? "bg-emerald-50 text-emerald-700"
-      : "bg-rose-50 text-rose-700";
+      ? "bg-primary/10 text-primary"
+      : "bg-primary text-primary-foreground";
   const sz = large
     ? "px-3 py-1.5 text-[14px]"
     : "px-1.5 py-0.5 text-[10px]";
@@ -1661,9 +1658,9 @@ function TrendChart({
 }
 
 function severityTone(severity: string): string {
-  if (severity === "critical") return "bg-rose-50 text-rose-700";
-  if (severity === "warning") return "bg-amber-50 text-amber-700";
-  return "bg-blue-50 text-blue-700";
+  if (severity === "critical") return "bg-primary text-primary-foreground";
+  if (severity === "warning") return "bg-muted text-foreground";
+  return "bg-primary/10 text-primary";
 }
 
 function formatDate(d: Date): string {
