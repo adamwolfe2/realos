@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LEADS,
   CONVERSATIONS,
@@ -46,6 +46,41 @@ import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funne
 // Design: Claude-inspired (parchment + terracotta + warm neutrals, ring
 // shadows, Fraunces for display, Inter for UI).
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Animation primitives — kept inline so the demo doesn't pull in framer for
+// just two surfaces. CountUp drives the KPI ticker on period switch; the
+// dual-axis SVG chart down at SeoView uses the same easing for path draw-in.
+// ---------------------------------------------------------------------------
+
+/** Eases a value from a previous integer to a target integer over `ms`,
+ *  re-rendering at requestAnimationFrame cadence. Idle when start===target. */
+function useCountUp(target: number, ms = 600): number {
+  const [value, setValue] = useState(target);
+  const fromRef = useRef(target);
+  const startRef = useRef<number | null>(null);
+  const rafRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (target === fromRef.current) return;
+    const from = value;
+    fromRef.current = target;
+    startRef.current = null;
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3); // cubic-out
+    const tick = (now: number) => {
+      if (startRef.current === null) startRef.current = now;
+      const t = Math.min(1, (now - startRef.current) / ms);
+      const v = Math.round(from + (target - from) * ease(t));
+      setValue(v);
+      if (t < 1) rafRef.current = requestAnimationFrame(tick);
+    };
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [target, ms]);
+  return value;
+}
 
 type ViewKey =
   | "briefing"
@@ -499,11 +534,21 @@ function Dashboard() {
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");
   const multiplier = period === "7d" ? 1 : period === "30d" ? 4.2 : 12.5;
 
+  // Numeric targets ride through useCountUp so flipping 7d / 30d / 90d
+  // smoothly ramps each KPI to its new value rather than snapping.
+  // Avg cost per tour stays as a constant string — period switch
+  // doesn't change unit economics.
+  const leadsTarget = Math.round(168 * multiplier);
+  const toursTarget = Math.round(31 * multiplier);
+  const leasesTarget = Math.round(4 * multiplier);
+  const leadsAnim = useCountUp(leadsTarget);
+  const toursAnim = useCountUp(toursTarget);
+  const leasesAnim = useCountUp(leasesTarget);
   const kpis = [
-    { label: "Leads this period",  value: Math.round(168 * multiplier).toLocaleString(), delta: "+12%" },
-    { label: "Tours booked",       value: Math.round(31 * multiplier).toLocaleString(),  delta: "+4%"  },
-    { label: "Signed leases",      value: Math.round(4 * multiplier).toLocaleString(),   delta: "+1"   },
-    { label: "Avg cost per tour",  value: "$122",                                        delta: "-8%"  },
+    { label: "Leads this period",  value: leadsAnim.toLocaleString(),  delta: "+12%" },
+    { label: "Tours booked",       value: toursAnim.toLocaleString(),  delta: "+4%"  },
+    { label: "Signed leases",      value: leasesAnim.toLocaleString(), delta: "+1"   },
+    { label: "Avg cost per tour",  value: "$122",                       delta: "-8%"  },
   ];
 
   return (
@@ -545,11 +590,22 @@ function Dashboard() {
         {kpis.map((k) => (
           <div
             key={k.label}
+            className="ls-kpi-card"
             style={{
               backgroundColor: TOKENS.white,
               borderRadius: "14px",
               padding: "14px 16px",
               boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
+              transition:
+                "transform 200ms cubic-bezier(0.22,1,0.36,1), box-shadow 200ms cubic-bezier(0.22,1,0.36,1)",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = "translateY(-2px)";
+              e.currentTarget.style.boxShadow = `0 0 0 1px ${TOKENS.borderCream}, 0 12px 28px rgba(37,99,235,0.10)`;
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = "translateY(0)";
+              e.currentTarget.style.boxShadow = `0 0 0 1px ${TOKENS.borderCream}`;
             }}
           >
             <p
@@ -2894,7 +2950,6 @@ function VisitorsView() {
 // ===========================================================================
 
 function SeoView() {
-  const maxImp = Math.max(...SEO_TREND.map((d) => d.impressions));
   const latest = SEO_TREND[SEO_TREND.length - 1];
   const first  = SEO_TREND[0];
   const impDelta = Math.round(((latest.impressions - first.impressions) / first.impressions) * 100);
@@ -2963,27 +3018,16 @@ function SeoView() {
         </div>
       </div>
 
-      <SectionHeader title="Impressions, last 8 weeks" />
+      <SectionHeader title="Clicks &amp; impressions, last 8 weeks" />
       <Tile>
         <div className="p-5">
-          <div className="flex items-end gap-2.5 h-[160px]">
-            {SEO_TREND.map((d) => (
-              <div key={d.wk} className="flex-1 flex flex-col items-stretch">
-                <div className="flex-1 flex flex-col-reverse">
-                  <div
-                    style={{
-                      height: `${(d.impressions / maxImp) * 100}%`,
-                      background: `linear-gradient(to top, ${TOKENS.accent}, ${TOKENS.accentLight})`,
-                      borderRadius: "4px 4px 0 0",
-                    }}
-                  />
-                </div>
-                <p className="mt-2 text-center" style={{ fontFamily: "var(--font-mono)", fontSize: "10.5px", color: TOKENS.stone }}>
-                  {d.wk}
-                </p>
-              </div>
-            ))}
-          </div>
+          {/* Dual-axis animated line chart — mirrors the real /portal/seo
+              chart (Recharts dual-axis line) but in pure SVG so the demo
+              stays dependency-free and the line draws in left-to-right
+              with a CSS stroke-dashoffset animation. Clicks on the left
+              axis, impressions on the right. Hovering any week reveals
+              the column highlight + a stat card. */}
+          <AnimatedSeoChart points={SEO_TREND} />
         </div>
       </Tile>
 
@@ -3047,5 +3091,312 @@ function SeoView() {
         </Tile>
       </div>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AnimatedSeoChart — dual-axis SVG line chart that mirrors the real
+// /portal/seo Recharts chart (clicks on the left axis, impressions on the
+// right). Pure SVG so the demo doesn't pull Recharts client-side. Lines
+// draw in left-to-right via stroke-dashoffset; hovering any column
+// highlights the week and surfaces a stat card with the underlying
+// numbers. No external deps.
+// ---------------------------------------------------------------------------
+
+type SeoPoint = {
+  wk: string;
+  impressions: number;
+  clicks: number;
+  position: number;
+};
+
+function AnimatedSeoChart({ points }: { points: SeoPoint[] }) {
+  const [hoverIdx, setHoverIdx] = useState<number | null>(null);
+  const [drawn, setDrawn] = useState(false);
+
+  // Trigger the draw-in animation one frame after mount so the
+  // dashoffset transition fires from full to zero.
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setDrawn(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  // Viewport — rendered at native size and scaled via CSS so the lines
+  // stay crisp on any container width.
+  const W = 720;
+  const H = 200;
+  const PAD = { top: 18, right: 44, bottom: 28, left: 44 };
+  const PW = W - PAD.left - PAD.right;
+  const PH = H - PAD.top - PAD.bottom;
+
+  const maxClicks = Math.max(...points.map((p) => p.clicks));
+  const maxImps = Math.max(...points.map((p) => p.impressions));
+
+  const xAt = (i: number) => PAD.left + (i / (points.length - 1)) * PW;
+  const yClicks = (v: number) => PAD.top + (1 - v / maxClicks) * PH;
+  const yImps = (v: number) => PAD.top + (1 - v / maxImps) * PH;
+
+  // Smooth quadratic-midpoint paths so the lines read as gentle curves
+  // rather than zig-zags. Same shape as the marketing SEOTrendChart.
+  const pathFor = (yFn: (v: number) => number, key: "clicks" | "impressions") => {
+    const pts = points.map((p, i) => [xAt(i), yFn(p[key])] as const);
+    let d = `M ${pts[0][0]} ${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) {
+      const [x1, y1] = pts[i - 1];
+      const [x2, y2] = pts[i];
+      const mx = (x1 + x2) / 2;
+      const my = (y1 + y2) / 2;
+      d += ` Q ${x1} ${y1} ${mx} ${my}`;
+    }
+    d += ` T ${pts[pts.length - 1][0]} ${pts[pts.length - 1][1]}`;
+    return d;
+  };
+  const clicksPath = pathFor(yClicks, "clicks");
+  const impsPath = pathFor(yImps, "impressions");
+
+  // Approx path length for the dashoffset trick. SVG would tell us
+  // exactly via getTotalLength() at runtime, but a generous overestimate
+  // works because the trailing dash is invisible anyway.
+  const STROKE_LEN = 1800;
+
+  const colorClicks = "#2563EB"; // brand blue, primary metric
+  const colorImps = "#93C5FD"; // light blue, secondary metric
+
+  return (
+    <div className="relative w-full">
+      <svg
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="none"
+        style={{ width: "100%", height: 200, display: "block" }}
+      >
+        <defs>
+          <linearGradient id="seo-clicks-fill" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={colorClicks} stopOpacity="0.18" />
+            <stop offset="100%" stopColor={colorClicks} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+
+        {/* Horizontal grid — 4 evenly spaced lines, soft warm-grey. */}
+        {[0, 1, 2, 3, 4].map((row) => {
+          const y = PAD.top + (row / 4) * PH;
+          return (
+            <line
+              key={row}
+              x1={PAD.left}
+              x2={W - PAD.right}
+              y1={y}
+              y2={y}
+              stroke={TOKENS.borderCream}
+              strokeWidth={1}
+              strokeDasharray={row === 4 ? undefined : "2 4"}
+            />
+          );
+        })}
+
+        {/* Area fill under the primary (clicks) line. */}
+        <path
+          d={`${clicksPath} L ${xAt(points.length - 1)} ${H - PAD.bottom} L ${xAt(0)} ${H - PAD.bottom} Z`}
+          fill="url(#seo-clicks-fill)"
+          opacity={drawn ? 1 : 0}
+          style={{ transition: "opacity 800ms ease 300ms" }}
+        />
+
+        {/* Impressions line — draws in first, lighter weight. */}
+        <path
+          d={impsPath}
+          fill="none"
+          stroke={colorImps}
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            strokeDasharray: STROKE_LEN,
+            strokeDashoffset: drawn ? 0 : STROKE_LEN,
+            transition: "stroke-dashoffset 1100ms cubic-bezier(0.22,1,0.36,1)",
+          }}
+        />
+
+        {/* Clicks line — primary metric, draws in second. */}
+        <path
+          d={clicksPath}
+          fill="none"
+          stroke={colorClicks}
+          strokeWidth={2.5}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          style={{
+            strokeDasharray: STROKE_LEN,
+            strokeDashoffset: drawn ? 0 : STROKE_LEN,
+            transition:
+              "stroke-dashoffset 1100ms cubic-bezier(0.22,1,0.36,1) 200ms",
+          }}
+        />
+
+        {/* X-axis week labels. */}
+        {points.map((p, i) => (
+          <text
+            key={p.wk}
+            x={xAt(i)}
+            y={H - 8}
+            textAnchor="middle"
+            fontSize="10"
+            fontFamily="var(--font-mono)"
+            fill={TOKENS.stone}
+            fontWeight={500}
+          >
+            {p.wk}
+          </text>
+        ))}
+
+        {/* Left axis (clicks) — 3 ticks. */}
+        {[0, 0.5, 1].map((frac) => {
+          const v = Math.round(maxClicks * (1 - frac));
+          const y = PAD.top + frac * PH;
+          return (
+            <text
+              key={`l-${frac}`}
+              x={PAD.left - 8}
+              y={y + 3}
+              textAnchor="end"
+              fontSize="9.5"
+              fontFamily="var(--font-mono)"
+              fill={TOKENS.stone}
+            >
+              {v}
+            </text>
+          );
+        })}
+
+        {/* Right axis (impressions) — 3 ticks. */}
+        {[0, 0.5, 1].map((frac) => {
+          const v = Math.round(maxImps * (1 - frac));
+          const y = PAD.top + frac * PH;
+          return (
+            <text
+              key={`r-${frac}`}
+              x={W - PAD.right + 8}
+              y={y + 3}
+              textAnchor="start"
+              fontSize="9.5"
+              fontFamily="var(--font-mono)"
+              fill={TOKENS.stone}
+            >
+              {v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}
+            </text>
+          );
+        })}
+
+        {/* Hover hit-targets — one rect per column. Reveal a vertical
+            guide + larger dots on the underlying lines when active. */}
+        {points.map((p, i) => {
+          const cx = xAt(i);
+          const colWidth = PW / (points.length - 1);
+          const active = hoverIdx === i;
+          return (
+            <g key={`hit-${p.wk}`}>
+              {active ? (
+                <line
+                  x1={cx}
+                  x2={cx}
+                  y1={PAD.top}
+                  y2={H - PAD.bottom}
+                  stroke={colorClicks}
+                  strokeOpacity={0.18}
+                  strokeWidth={1}
+                />
+              ) : null}
+              <circle
+                cx={cx}
+                cy={yImps(p.impressions)}
+                r={active ? 4 : 0}
+                fill="#fff"
+                stroke={colorImps}
+                strokeWidth={2}
+                style={{ transition: "r 160ms ease" }}
+              />
+              <circle
+                cx={cx}
+                cy={yClicks(p.clicks)}
+                r={active ? 4.5 : 0}
+                fill="#fff"
+                stroke={colorClicks}
+                strokeWidth={2.5}
+                style={{ transition: "r 160ms ease" }}
+              />
+              <rect
+                x={cx - colWidth / 2}
+                y={0}
+                width={colWidth}
+                height={H}
+                fill="transparent"
+                onMouseEnter={() => setHoverIdx(i)}
+                onMouseLeave={() =>
+                  setHoverIdx((cur) => (cur === i ? null : cur))
+                }
+                style={{ cursor: "pointer" }}
+              />
+            </g>
+          );
+        })}
+      </svg>
+
+      {/* Legend + active-week stat card. The card slides in/out so the
+          hover state feels responsive without flickering. */}
+      <div className="mt-3 flex items-center justify-between gap-4">
+        <div className="flex items-center gap-4">
+          <LegendDot color={colorClicks} label="Clicks" />
+          <LegendDot color={colorImps} label="Impressions" />
+        </div>
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "10.5px",
+            color: hoverIdx !== null ? TOKENS.nearBlack : TOKENS.stone,
+            letterSpacing: "0.06em",
+            transition: "color 160ms ease",
+          }}
+        >
+          {hoverIdx !== null ? (
+            <span>
+              {points[hoverIdx].wk} ·{" "}
+              <strong style={{ color: colorClicks, fontWeight: 600 }}>
+                {points[hoverIdx].clicks} clicks
+              </strong>
+              {" · "}
+              {points[hoverIdx].impressions.toLocaleString()} impressions · pos {points[hoverIdx].position.toFixed(1)}
+            </span>
+          ) : (
+            <span>Hover any week for details</span>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function LegendDot({ color, label }: { color: string; label: string }) {
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <span
+        aria-hidden="true"
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: 999,
+          backgroundColor: color,
+          display: "inline-block",
+        }}
+      />
+      <span
+        style={{
+          fontFamily: "var(--font-mono)",
+          fontSize: "10.5px",
+          color: TOKENS.stone,
+          letterSpacing: "0.06em",
+        }}
+      >
+        {label}
+      </span>
+    </span>
   );
 }

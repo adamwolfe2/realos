@@ -71,6 +71,70 @@
     }
   })();
 
+  // ──────────────────────────────────────────────────────────────────
+  // Test-mode query params (operator preview / dedup busting)
+  // ──────────────────────────────────────────────────────────────────
+  //
+  // Operators repeatedly hit the "I added the embed but I don't see
+  // the popup" problem because `frequency: "session"` causes the
+  // sessionStorage flag to suppress every render after the first one
+  // in a tab — including silent renders that fired before the
+  // operator was watching. Three query-param escape hatches make
+  // testing painless:
+  //
+  //   ?lspopup=preview  — bypass frequency cap + URL filter + reduce
+  //                       trigger threshold to 0 so the first popup
+  //                       fires immediately on page load. Use this
+  //                       link to preview a campaign without needing
+  //                       to clear cookies or open incognito.
+  //   ?lspopup=clear    — clear ALL leasestack.popup.shown.* keys
+  //                       from both sessionStorage and localStorage,
+  //                       then proceed with normal trigger flow.
+  //                       Use after dismissing once, to test again.
+  //   ?lspopup=off      — skip popups entirely. Use when QA'ing the
+  //                       page without the overlay obscuring content.
+  //
+  // None of these affect production traffic — real users never hit a
+  // URL with these params. They show up in the DevTools network tab
+  // + console (DEBUG mode logs which mode is active).
+  var PREVIEW_MODE = false;
+  var POPUP_DISABLED = false;
+  (function () {
+    try {
+      var params = new URLSearchParams(window.location.search);
+      var mode = params.get("lspopup");
+      if (!mode) return;
+      if (mode === "preview") {
+        PREVIEW_MODE = true;
+        log("preview mode ON — frequency caps, URL filters, and trigger thresholds bypassed");
+      } else if (mode === "off") {
+        POPUP_DISABLED = true;
+        log("popups disabled for this page (?lspopup=off)");
+      } else if (mode === "clear") {
+        var cleared = 0;
+        try {
+          for (var i = sessionStorage.length - 1; i >= 0; i--) {
+            var k = sessionStorage.key(i);
+            if (k && k.indexOf("leasestack.popup.shown.") === 0) {
+              sessionStorage.removeItem(k); cleared++;
+            }
+          }
+        } catch (_) { /* ignore */ }
+        try {
+          for (var j = localStorage.length - 1; j >= 0; j--) {
+            var lk = localStorage.key(j);
+            if (lk && lk.indexOf("leasestack.popup.shown.") === 0) {
+              localStorage.removeItem(lk); cleared++;
+            }
+          }
+        } catch (_) { /* ignore */ }
+        log("cleared " + cleared + " popup dedup key(s) — popups will fire again this session");
+      } else {
+        log("unknown ?lspopup mode '" + mode + "' — expected preview / clear / off");
+      }
+    } catch (_) { /* malformed URL — ignore */ }
+  })();
+
   var SESSION_KEY = "leasestack.popup.sid";
   var sid = (function () {
     try {
@@ -197,6 +261,9 @@
   // ──────────────────────────────────────────────────────────────────
   function frequencyKey(popupId) { return "leasestack.popup.shown." + popupId; }
   function shouldShow(popup) {
+    // Preview mode bypasses every frequency cap so an operator
+    // testing a campaign sees it fire on every page load.
+    if (PREVIEW_MODE) return true;
     if (popup.frequency === "always") return true;
     try {
       var key = frequencyKey(popup.id);

@@ -570,13 +570,19 @@ export const SEO_QUERIES: SeoQuery[] = [
   { query: "2 bedroom apartment harbor point",    impressions: 1482, clicks:  98, position: 1.4, delta:  0.2 },
 ];
 
+// SEO trend data — 8 weekly samples. `clicks` added 2026-05-21 so the
+// product-tour SEO chart can render the same dual-axis (clicks +
+// impressions) shape the live /portal/seo page uses via Recharts.
+// Click-through rate climbs from ~1.0% to ~3.4% as average position
+// improves from 6.2 to 2.9, telling the canonical "we earned the top
+// of page 1, CTR followed" story.
 export const SEO_TREND = [
-  { wk: "W1", impressions: 12800, position: 6.2 },
-  { wk: "W2", impressions: 14200, position: 5.8 },
-  { wk: "W3", impressions: 16400, position: 5.3 },
-  { wk: "W4", impressions: 18100, position: 4.6 },
-  { wk: "W5", impressions: 19800, position: 4.1 },
-  { wk: "W6", impressions: 22400, position: 3.5 },
-  { wk: "W7", impressions: 23600, position: 3.2 },
-  { wk: "W8", impressions: 25100, position: 2.9 },
+  { wk: "W1", impressions: 12800, clicks: 128, position: 6.2 },
+  { wk: "W2", impressions: 14200, clicks: 184, position: 5.8 },
+  { wk: "W3", impressions: 16400, clicks: 246, position: 5.3 },
+  { wk: "W4", impressions: 18100, clicks: 326, position: 4.6 },
+  { wk: "W5", impressions: 19800, clicks: 426, position: 4.1 },
+  { wk: "W6", impressions: 22400, clicks: 560, position: 3.5 },
+  { wk: "W7", impressions: 23600, clicks: 660, position: 3.2 },
+  { wk: "W8", impressions: 25100, clicks: 854, position: 2.9 },
 ];
