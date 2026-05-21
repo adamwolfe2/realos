@@ -92,6 +92,7 @@ import { ScoreHistoryChart } from "@/components/portal/seo/score-history-chart";
 import { DraftsInbox } from "@/components/portal/seo/drafts-inbox";
 import { PropertySwitcher } from "@/components/portal/seo/property-switcher";
 import { RecommendationManager } from "@/components/portal/seo/recommendation-manager";
+import { SnoozedRecsPanel } from "@/components/portal/seo/snoozed-recs-panel";
 import { WeeklyChangesPanel } from "@/components/portal/seo/weekly-changes-panel";
 
 export const metadata: Metadata = { title: "SEO Agent" };
@@ -265,17 +266,17 @@ export default async function SeoAgentPage({
       propertyId: property.id,
     }).catch(() => []),
     // Persisted recommendations for the operator's status workflow.
-    // OPEN + IN_PROGRESS only — terminal states (COMPLETED, DISMISSED,
-    // EXPIRED) drop out of the active queue.
+    // OPEN + IN_PROGRESS + SNOOZED. Manager filters to the first two,
+    // SnoozedRecsPanel handles the third.
     prisma.seoActionRecommendation
       .findMany({
         where: {
           orgId: scope.orgId,
           propertyId: property.id,
-          status: { in: ["OPEN", "IN_PROGRESS"] },
+          status: { in: ["OPEN", "IN_PROGRESS", "SNOOZED"] },
         },
         orderBy: [{ severity: "asc" }, { score: "desc" }],
-        take: 20,
+        take: 30,
         select: {
           id: true,
           category: true,
@@ -287,6 +288,8 @@ export default async function SeoAgentPage({
           actionHref: true,
           actionLabel: true,
           status: true,
+          snoozedUntil: true,
+          snoozedReason: true,
         },
       })
       .catch(() => []),
@@ -699,22 +702,40 @@ export default async function SeoAgentPage({
           citations). Hidden when there's no notable signal. */}
       <WeeklyChangesPanel changes={weeklyChanges} />
 
-      {/* Recommendation workflow — only renders persisted recs. Operators
-          hit Refresh in the action bar above to populate / refresh this
-          queue, then triage status here. */}
+      {/* Recommendation workflow — OPEN + IN_PROGRESS only. SNOOZED
+          rows render in the SnoozedRecsPanel below so the active queue
+          stays focused on what needs work right now. */}
       <RecommendationManager
-        recommendations={persistedRecs.map((r) => ({
-          id: r.id,
-          category: r.category,
-          severity: r.severity,
-          title: r.title,
-          detail: r.detail,
-          estimateMinutes: r.estimateMinutes,
-          score: r.score,
-          actionHref: r.actionHref,
-          actionLabel: r.actionLabel,
-          status: r.status as "OPEN" | "IN_PROGRESS",
-        }))}
+        recommendations={persistedRecs
+          .filter((r) => r.status === "OPEN" || r.status === "IN_PROGRESS")
+          .map((r) => ({
+            id: r.id,
+            category: r.category,
+            severity: r.severity,
+            title: r.title,
+            detail: r.detail,
+            estimateMinutes: r.estimateMinutes,
+            score: r.score,
+            actionHref: r.actionHref,
+            actionLabel: r.actionLabel,
+            status: r.status as "OPEN" | "IN_PROGRESS",
+          }))}
+      />
+
+      {/* Snoozed recs — collapsed-by-default panel showing what's
+          coming back and when. Wake-now buttons let operators flip
+          back to OPEN before the auto-revive date. */}
+      <SnoozedRecsPanel
+        recommendations={persistedRecs
+          .filter((r) => r.status === "SNOOZED" && r.snoozedUntil)
+          .map((r) => ({
+            id: r.id,
+            title: r.title,
+            severity: r.severity,
+            category: r.category,
+            snoozedUntil: r.snoozedUntil!.toISOString(),
+            snoozedReason: r.snoozedReason,
+          }))}
       />
 
       {/* Phase 2 — the composite views Norman called "the real magic." */}
