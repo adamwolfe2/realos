@@ -3,29 +3,27 @@
 import Script from "next/script";
 
 // ---------------------------------------------------------------------------
-// Google Tag Manager + GA4 loader.
+// Marketing-site tag stack: GTM + IDPixel (Cursive/AudienceLab) + GA4.
 //
-// Architecture: GTM is the single hub. We load it once in <head>, mount its
-// <noscript> fallback at the top of <body>, and from inside GTM's UI you
-// can fire GA4, the Cursive pixel, Meta Pixel, LinkedIn Insight Tag,
-// floodlights, etc. — without ever re-deploying the site.
+// Architecture:
+//   • GTM is the hub for anything an ops person needs to swap without a
+//     deploy — Meta Pixel, LinkedIn Insight, floodlights, conversion
+//     events, etc. Configured from inside the GTM UI.
+//   • IDPixel is the LeaseStack marketing-site Cursive pixel. It does two
+//     jobs: resolves anonymous visitors to identities (Cursive's product)
+//     AND forwards pageviews to GA4 via its `data-ga4-key` attribute. So
+//     loading IDPixel with the GA4 key already wires up GA4 — no separate
+//     gtag.js install is needed (and adding one would double-count
+//     pageviews because both would fire `config`).
+//   • Direct GA4 install is now disabled by default and only fires when
+//     `NEXT_PUBLIC_GA4_MEASUREMENT_ID` is set AND
+//     `NEXT_PUBLIC_DISABLE_IDPIXEL=true`. Use this combo as an emergency
+//     fallback if IDPixel ever goes down.
 //
-// We ALSO support a direct GA4 install via `NEXT_PUBLIC_GA4_MEASUREMENT_ID`
-// for cases where you want GA4 firing before GTM is finished being
-// configured (or you want a fallback if GTM is blocked by an ad blocker).
-// Pick one; if both are set, both fire — GA4 dedupes by client_id.
-//
-// Env vars (configure in Vercel):
-//   NEXT_PUBLIC_GTM_ID            — e.g. "GTM-XXXXXXX"
-//   NEXT_PUBLIC_GA4_MEASUREMENT_ID — e.g. "G-XXXXXXXXXX"
-//
-// Cursive pixel via GTM:
-//   1. In GTM → Tags → New → Custom HTML
-//   2. Paste the Cursive pixel <script> snippet from the Cursive dashboard
-//   3. Trigger: All Pages
-//   4. Publish.
-// This avoids hard-coding the pixel in the app and lets ops swap pixels
-// without a deploy.
+// Env vars (all optional — production defaults are hardcoded):
+//   NEXT_PUBLIC_GTM_ID             — override GTM container
+//   NEXT_PUBLIC_GA4_MEASUREMENT_ID — direct GA4 override (only when IDPixel disabled)
+//   NEXT_PUBLIC_DISABLE_IDPIXEL    — set "true" to suppress IDPixel
 // ---------------------------------------------------------------------------
 
 // DECISION: GTM container ID is hardcoded as the production default so the
@@ -33,14 +31,22 @@ import Script from "next/script";
 // via NEXT_PUBLIC_GTM_ID when you need a per-environment container
 // (e.g. a staging container for tag debugging).
 const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-TXX66PJJ";
-// DECISION: GA4 measurement ID is hardcoded as the production default for
-// the same reason as GTM — the tag must fire on every page without
-// depending on Vercel env config. Override via NEXT_PUBLIC_GA4_MEASUREMENT_ID
-// for a per-environment property. GA4 dedupes by client_id even when GTM
-// also fires it, so running both is safe.
+// DECISION: GA4 measurement ID hardcoded so it survives env drift.
+// Forwarded to GA4 via IDPixel's `data-ga4-key` (single source of truth
+// for pageview counting). Override only for staging properties.
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "G-Z1RL9YKES8";
+// IDPixel (Cursive/AudienceLab) tenant build for leasestack.co. The bundle
+// hash in the URL is tenant-specific — issued by Cursive when the pixel
+// was provisioned. Don't change this unless Cursive issues a new build.
+const IDPIXEL_SRC =
+  "https://cdn.idpixel.app/v1/idp-analytics-6a0eb3eafab915af2e99d344.min.js";
+const IDPIXEL_ENABLED = process.env.NEXT_PUBLIC_DISABLE_IDPIXEL !== "true";
 
 export function GoogleTags() {
+  // If IDPixel is suppressed and a GA4 ID is configured, fall back to
+  // direct gtag.js so analytics still works.
+  const directGa4Fallback = !IDPIXEL_ENABLED && GA4_ID;
+
   return (
     <>
       {GTM_ID && (
@@ -52,7 +58,18 @@ export function GoogleTags() {
           }}
         />
       )}
-      {GA4_ID && (
+      {IDPIXEL_ENABLED && (
+        // IDPixel handles visitor identification AND forwards pageviews
+        // to GA4 via `data-ga4-key`. `strategy="afterInteractive"` matches
+        // the original `defer` semantics on the vendor's reference tag.
+        <Script
+          id="idpixel-analytics"
+          strategy="afterInteractive"
+          src={IDPIXEL_SRC}
+          data-ga4-key={GA4_ID}
+        />
+      )}
+      {directGa4Fallback && (
         <>
           <Script
             id="ga4-loader"

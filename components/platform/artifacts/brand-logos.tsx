@@ -6,14 +6,28 @@ import React from "react";
 
 type IconProps = { size?: number };
 
+// Meta — official infinity-ribbon mark, rendered from the canonical SVG
+// in /public/logos/meta-logo.svg (the same path data Meta publishes on
+// their brand assets page). The source SVG has a 287.5 × 191 viewBox
+// (≈ 3:2 ratio), so to fit our square-aspect logo slots we render it
+// inside a centered square box at the requested `size`, scaled to width
+// and vertically centered. Using <img> instead of inlining keeps the
+// path data in one place and lets the browser cache it.
 export function MetaMark({ size = 18 }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-label="Meta">
-      <path
-        d="M4 12C4 7.8 7.5 4.5 11.5 4.5c2.2 0 4 .9 5.5 2.7l-2.1 2C13.8 8 12.8 7.5 11.5 7.5 9.2 7.5 7.5 9.5 7.5 12s1.7 4.5 4 4.5c1.3 0 2.3-.5 3.4-1.7l2.1 2c-1.5 1.8-3.3 2.7-5.5 2.7C7.5 19.5 4 16.2 4 12Z"
-        fill="#1877F2"
-      />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logos/meta-logo.svg"
+      alt="Meta"
+      width={size}
+      height={Math.round(size * (191 / 287.5))}
+      style={{
+        width: size,
+        height: "auto",
+        display: "inline-block",
+        verticalAlign: "middle",
+      }}
+    />
   );
 }
 

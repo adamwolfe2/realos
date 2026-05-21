@@ -4,8 +4,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
-import { PageHeader } from "@/components/admin/page-header";
-import { PropertyAvatar } from "@/components/portal/properties/property-avatar";
+import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
 import { MarketIntelligenceSection } from "@/components/portal/properties/market-intelligence-section";
 import { PropertyTabs } from "./property-tabs";
 import { OverviewTab } from "./tabs/overview";
@@ -140,29 +139,162 @@ export default async function PropertyDetail({
   })();
   const avatarSrc = property.heroImageUrl ?? photoFallback;
 
+  // Cheap headline-stat queries for the new hero banner. We grab counts
+  // for the trailing 30d and prior 30d so the banner can show meaningful
+  // delta context — empty windows render as "—" so the operator never
+  // sees "0% / 0%" noise. Wrapped in catch so a Prisma hiccup never
+  // blocks the page render.
+  const now = new Date();
+  const thirty = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sixty = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+
+  const [
+    leadsCurrent,
+    leadsPrior,
+    convosCurrent,
+    convosPrior,
+    rating,
+  ] = await Promise.all([
+    prisma.lead
+      .count({
+        where: {
+          orgId: scope.orgId,
+          propertyId: property.id,
+          createdAt: { gte: thirty, lte: now },
+        },
+      })
+      .catch(() => 0),
+    prisma.lead
+      .count({
+        where: {
+          orgId: scope.orgId,
+          propertyId: property.id,
+          createdAt: { gte: sixty, lt: thirty },
+        },
+      })
+      .catch(() => 0),
+    prisma.chatbotConversation
+      .count({
+        where: {
+          orgId: scope.orgId,
+          propertyId: property.id,
+          createdAt: { gte: thirty, lte: now },
+        },
+      })
+      .catch(() => 0),
+    prisma.chatbotConversation
+      .count({
+        where: {
+          orgId: scope.orgId,
+          propertyId: property.id,
+          createdAt: { gte: sixty, lt: thirty },
+        },
+      })
+      .catch(() => 0),
+    prisma.property
+      .findUnique({
+        where: { id: property.id },
+        select: { googleAggRating: true, googleAggReviewCount: true },
+      })
+      .catch(() => null),
+  ]);
+
+  const fmtDelta = (cur: number, prior: number): {
+    delta?: string;
+    tone?: "positive" | "negative" | "neutral";
+  } => {
+    if (cur === 0 && prior === 0) return {};
+    if (prior === 0) return { delta: "New", tone: "positive" };
+    const pct = Math.round(((cur - prior) / prior) * 100);
+    if (pct === 0) return { delta: "Flat", tone: "neutral" };
+    return {
+      delta: `${pct > 0 ? "+" : ""}${pct}% vs prior`,
+      tone: pct > 0 ? "positive" : "negative",
+    };
+  };
+
+  const subtitleParts: string[] = [];
+  if (property.city) subtitleParts.push(property.city);
+  if (property.residentialSubtype) {
+    subtitleParts.push(
+      property.residentialSubtype
+        .toLowerCase()
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+    );
+  } else if (property.commercialSubtype) {
+    subtitleParts.push(
+      property.commercialSubtype
+        .toLowerCase()
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+    );
+  } else if (property.propertyType) {
+    subtitleParts.push(
+      property.propertyType
+        .toLowerCase()
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase()),
+    );
+  }
+
+  const heroStats = [
+    {
+      label: "Leads · 30d",
+      value: leadsCurrent > 0 ? leadsCurrent.toLocaleString("en-US") : "—",
+      ...fmtDelta(leadsCurrent, leadsPrior),
+    },
+    {
+      label: "Conversations · 30d",
+      value:
+        convosCurrent > 0 ? convosCurrent.toLocaleString("en-US") : "—",
+      ...fmtDelta(convosCurrent, convosPrior),
+    },
+    {
+      label: "Units",
+      value:
+        property.totalUnits != null && property.totalUnits > 0
+          ? property.totalUnits.toLocaleString("en-US")
+          : "—",
+    },
+    {
+      label: "Reputation",
+      value:
+        rating?.googleAggRating != null
+          ? `${rating.googleAggRating.toFixed(1)}★`
+          : "—",
+      delta:
+        rating?.googleAggReviewCount != null && rating.googleAggReviewCount > 0
+          ? `${rating.googleAggReviewCount} reviews`
+          : undefined,
+      tone: "neutral" as const,
+    },
+  ];
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title={
-          <span className="flex items-center gap-3">
-            <PropertyAvatar
-              size="lg"
-              src={avatarSrc}
-              logoSrc={property.logoUrl}
-            />
-            <span className="min-w-0 truncate">{property.name}</span>
-          </span>
+      <Link
+        href="/portal/properties"
+        className="inline-flex items-center text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+      >
+        ← All properties
+      </Link>
+
+      {/* Premium "profile picture" hero. Replaces the previous flat
+          PageHeader + PropertyAvatar combo so featured properties like
+          Telegraph Commons read as a brand with real metrics, not a row
+          in a table. Image floats above a soft ground shadow + brand
+          gradient — drag-and-drop or click "Replace" to upload. */}
+      <PropertyHeroBanner
+        propertyId={property.id}
+        propertyName={property.name}
+        subtitle={
+          subtitleParts.length > 0
+            ? `${subtitleParts.join(" · ")}${fullAddress ? ` — ${fullAddress}` : ""}`
+            : fullAddress
         }
-        description={fullAddress ?? undefined}
-        breadcrumb={
-          <Link
-            href="/portal/properties"
-            className="hover:text-foreground transition-colors"
-          >
-            All properties
-          </Link>
-        }
-        bordered={false}
+        heroImageUrl={avatarSrc}
+        stats={heroStats}
       />
 
       {showMarketIntelligence ? (

@@ -88,7 +88,8 @@ import { PageHeader } from "@/components/admin/page-header";
 import { getFirstRunSignal } from "@/lib/portal/first-run";
 import { WelcomeLanding } from "@/components/portal/welcome-landing";
 import { syncOnboardingProgress } from "@/lib/onboarding/step-detectors";
-import { OnboardingChecklist } from "@/components/portal/onboarding/onboarding-checklist";
+import { OnboardingChecklistFloating } from "@/components/portal/onboarding/onboarding-checklist-floating";
+import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
 
 export const metadata: Metadata = { title: "Dashboard" };
 export const dynamic = "force-dynamic";
@@ -619,6 +620,128 @@ export default async function PortalHome({
   });
   const selectorProperties = visibleProperties(scope, allPropertiesForSelector);
 
+  // Featured property hero. When the operator has exactly one LIVE
+  // property (the SG Real Estate / Telegraph Commons case at launch), we
+  // promote it to a full-width hero banner at the top of the dashboard
+  // so the building image + headline stats lead the page rather than
+  // getting buried in the leaderboard. Hidden once the operator launches
+  // a second property — at that point the leaderboard is the right
+  // surface for cross-property comparison.
+  const liveProperties = await prisma.property
+    .findMany({
+      where: {
+        orgId: scope.orgId,
+        launchStatus: "LIVE",
+        lifecycle: "ACTIVE",
+        ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
+      },
+      select: {
+        id: true,
+        name: true,
+        city: true,
+        state: true,
+        heroImageUrl: true,
+        residentialSubtype: true,
+        commercialSubtype: true,
+        propertyType: true,
+        totalUnits: true,
+        googleAggRating: true,
+        googleAggReviewCount: true,
+      },
+      take: 2,
+    })
+    .catch(() => []);
+  const featuredProperty =
+    liveProperties.length === 1 ? liveProperties[0] : null;
+
+  let featuredStats: Array<{
+    label: string;
+    value: string;
+    delta?: string;
+    tone?: "positive" | "negative" | "neutral";
+  }> = [];
+  if (featuredProperty) {
+    const featNow = new Date();
+    const featThirty = new Date(featNow.getTime() - 30 * 24 * 60 * 60 * 1000);
+    const featSixty = new Date(featNow.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const [fLeadsCur, fLeadsPrior, fConvosCur] = await Promise.all([
+      prisma.lead
+        .count({
+          where: {
+            orgId: scope.orgId,
+            propertyId: featuredProperty.id,
+            createdAt: { gte: featThirty, lte: featNow },
+          },
+        })
+        .catch(() => 0),
+      prisma.lead
+        .count({
+          where: {
+            orgId: scope.orgId,
+            propertyId: featuredProperty.id,
+            createdAt: { gte: featSixty, lt: featThirty },
+          },
+        })
+        .catch(() => 0),
+      prisma.chatbotConversation
+        .count({
+          where: {
+            orgId: scope.orgId,
+            propertyId: featuredProperty.id,
+            createdAt: { gte: featThirty, lte: featNow },
+          },
+        })
+        .catch(() => 0),
+    ]);
+    const fmt = (cur: number, prior: number) => {
+      if (cur === 0 && prior === 0) return {};
+      if (prior === 0) return { delta: "New", tone: "positive" as const };
+      const pct = Math.round(((cur - prior) / prior) * 100);
+      if (pct === 0) return { delta: "Flat", tone: "neutral" as const };
+      return {
+        delta: `${pct > 0 ? "+" : ""}${pct}% vs prior`,
+        tone: pct > 0 ? ("positive" as const) : ("negative" as const),
+      };
+    };
+    featuredStats = [
+      {
+        label: "Leads · 30d",
+        value: fLeadsCur > 0 ? fLeadsCur.toLocaleString("en-US") : "—",
+        ...fmt(fLeadsCur, fLeadsPrior),
+      },
+      {
+        label: "Conversations · 30d",
+        value: fConvosCur > 0 ? fConvosCur.toLocaleString("en-US") : "—",
+      },
+      {
+        label: "Reputation",
+        value:
+          featuredProperty.googleAggRating != null
+            ? `${featuredProperty.googleAggRating.toFixed(1)}★`
+            : "—",
+      },
+    ];
+  }
+
+  const featuredSubtitle = featuredProperty
+    ? [
+        [featuredProperty.city, featuredProperty.state]
+          .filter(Boolean)
+          .join(", ") || null,
+        (
+          featuredProperty.residentialSubtype ??
+          featuredProperty.commercialSubtype ??
+          featuredProperty.propertyType
+        )
+          ?.toString()
+          .toLowerCase()
+          .replace(/_/g, " ")
+          .replace(/\b\w/g, (c) => c.toUpperCase()),
+      ]
+        .filter(Boolean)
+        .join(" · ")
+    : null;
+
   return (
     <div className="space-y-2 ls-page-fade">
       {/* Auto-refresh dashboard data every 45s. Cheap — just re-runs the
@@ -626,11 +749,14 @@ export default async function PortalHome({
           jobs and on-demand syncs keep fresh. No integration API calls. */}
       <AutoRefresh intervalMs={45_000} />
 
-      {/* Self-serve onboarding checklist — visible above all other dashboard
-          content while the operator is in FOUNDATION, GROWTH, or POLISH.
-          Hides automatically once currentPhase advances to COMPLETED. */}
+      {/* Self-serve onboarding checklist — Norman 2026-05-21 feedback: the
+          old full-width card shoved Telegraph Commons' metrics below the
+          fold on every dashboard load. Moved to a bottom-right floating
+          widget (collapsed pill by default; click to expand into a slim
+          card with all Go / Done / Skip affordances). Hides automatically
+          once currentPhase advances to COMPLETED. */}
       {showChecklist && onboardingProgress ? (
-        <OnboardingChecklist progress={onboardingProgress} />
+        <OnboardingChecklistFloating progress={onboardingProgress} />
       ) : null}
 
       {/* Setup wizard overlay — floats above dashboard, dismissed via localStorage */}
@@ -651,6 +777,23 @@ export default async function PortalHome({
         compare={compare}
         asOf={asOf}
       />
+
+      {/* Featured-property hero. Renders ONLY when the operator has
+          exactly one LIVE property (SG Real Estate at launch — Telegraph
+          Commons). Building image floats above a brand-gradient base
+          with the headline stats next to it, so the demo opens with a
+          real product surface instead of a portfolio table that's mostly
+          empty. Drag-and-drop or click "Replace" on the image to swap. */}
+      {featuredProperty ? (
+        <PropertyHeroBanner
+          propertyId={featuredProperty.id}
+          propertyName={featuredProperty.name}
+          subtitle={featuredSubtitle}
+          heroImageUrl={featuredProperty.heroImageUrl}
+          stats={featuredStats}
+          compact
+        />
+      ) : null}
 
       {/* Insights hero — the centerpiece. Renders top 3 open insights when
           the org has data; falls back to a connect-data CTA when the org
