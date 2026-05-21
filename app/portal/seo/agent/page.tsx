@@ -22,7 +22,6 @@ import {
   type CompetitorRow,
   type IntegrationState,
 } from "@/components/portal/seo/seo-data-cards";
-import nextDynamic from "next/dynamic";
 import {
   ExecSummaryRow,
   PositionBucketChart,
@@ -36,39 +35,15 @@ import {
   type RangeKey,
 } from "@/components/portal/seo/seo-phase2-charts";
 
-// Heavy charts split into their own bundle chunks. ContentRoiTreemap pulls
-// Recharts' Treemap, OpportunityMatrix pulls ScatterChart + ZAxis. Both
-// land below the fold on /portal/seo/agent so deferring their parse is a
-// clean win on time-to-interactive.
-const ContentRoiTreemap = nextDynamic(
-  () =>
-    import("@/components/portal/seo/charts/content-roi-treemap").then(
-      (m) => m.ContentRoiTreemap,
-    ),
-  { ssr: false, loading: () => <ChartPlaceholder height="h-[320px]" /> },
-);
-const OpportunityMatrix = nextDynamic(
-  () =>
-    import("@/components/portal/seo/charts/opportunity-matrix").then(
-      (m) => m.OpportunityMatrix,
-    ),
-  { ssr: false, loading: () => <ChartPlaceholder height="h-[320px]" /> },
-);
-const SearchPathSankey = nextDynamic(
-  () =>
-    import("@/components/portal/seo/charts/search-path-sankey").then(
-      (m) => m.SearchPathSankey,
-    ),
-  { ssr: false, loading: () => <ChartPlaceholder height="h-[360px]" /> },
-);
-
-function ChartPlaceholder({ height }: { height: string }) {
-  return (
-    <div
-      className={`w-full ${height} rounded-xl border border-dashed border-border bg-card animate-pulse`}
-    />
-  );
-}
+// Heavy below-the-fold charts. Next.js 16 disallows `next/dynamic` with
+// `ssr: false` inside Server Components, so the dynamic loaders live in
+// a sibling Client Component (`./lazy-charts.tsx`). Import shape is
+// identical — the lazy boundary is invisible from this file.
+import {
+  ContentRoiTreemap,
+  OpportunityMatrix,
+  SearchPathSankey,
+} from "./lazy-charts";
 import {
   getExecSummary,
   getPositionBucketSeries,

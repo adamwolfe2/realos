@@ -12,9 +12,13 @@ import { getEnabledEngines } from "@/lib/aeo/engines";
 // POST /api/portal/seo/aeo/scan
 //
 // On-demand AEO scan for the caller's org. Wired to the "Scan now" button
-// on /portal/seo/aeo. Rate-limited to 1 scan per 12 hours per org so a
-// chatty operator can't burn through engine quotas (especially Perplexity
-// and OpenAI, which both meter aggressively).
+// on /portal/seo/aeo. Rate-limited per org so a chatty operator can't burn
+// through engine quotas (Perplexity + OpenAI both meter aggressively).
+//
+// Cooldown defaults to 30 minutes — generous enough for OS demos / sales
+// walk-throughs where you want to fire a scan, show results, then re-run.
+// Agency owners (super admins) bypass the cooldown entirely via the
+// `bypass=1` query string so internal QA never gets stuck behind it.
 //
 // Limiter is a Prisma count rather than Redis so it survives an Upstash
 // outage — same pattern as /api/portal/reputation/scan.
@@ -24,9 +28,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 120;
 
-const SCAN_COOLDOWN_HOURS = 12;
+const SCAN_COOLDOWN_MINUTES = 30;
 
-export async function POST(_req: NextRequest) {
+export async function POST(req: NextRequest) {
   let scope: Awaited<ReturnType<typeof requireScope>>;
   try {
     scope = await requireScope();
@@ -37,27 +41,36 @@ export async function POST(_req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const cutoff = new Date(
-    Date.now() - SCAN_COOLDOWN_HOURS * 60 * 60 * 1000,
-  );
-  const recent = await prisma.aeoCitationCheck.count({
-    where: {
-      ...tenantWhere(scope),
-      queryRunAt: { gte: cutoff },
-    },
-  });
-  if (recent > 0) {
-    return NextResponse.json(
-      {
-        error: `An AI-search visibility scan ran in the last ${SCAN_COOLDOWN_HOURS} hours. Try again later.`,
-      },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(SCAN_COOLDOWN_HOURS * 60 * 60),
-        },
-      },
+  // Bypass cooldown for agency owners (LeaseStack internal QA + Adam).
+  // The role lives on the resolved scope — no separate header check
+  // needed. Operators on a client org still get the 30-minute throttle.
+  const url = new URL(req.url);
+  const wantsBypass = url.searchParams.get("bypass") === "1";
+  const canBypass = wantsBypass && scope.role === "AGENCY_OWNER";
+
+  if (!canBypass) {
+    const cutoff = new Date(
+      Date.now() - SCAN_COOLDOWN_MINUTES * 60 * 1000,
     );
+    const recent = await prisma.aeoCitationCheck.count({
+      where: {
+        ...tenantWhere(scope),
+        queryRunAt: { gte: cutoff },
+      },
+    });
+    if (recent > 0) {
+      return NextResponse.json(
+        {
+          error: `An AI-search visibility scan ran in the last ${SCAN_COOLDOWN_MINUTES} minutes. Try again shortly.`,
+        },
+        {
+          status: 429,
+          headers: {
+            "Retry-After": String(SCAN_COOLDOWN_MINUTES * 60),
+          },
+        },
+      );
+    }
   }
 
   // Fail fast when no engine has a configured API key on the server.
