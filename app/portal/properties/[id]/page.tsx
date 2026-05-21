@@ -99,6 +99,12 @@ export default async function PropertyDetail({
       heroImageUrl: true,
       logoUrl: true,
       photoUrls: true,
+      // Operator-editable attributes (#68) — surfaced in the overview
+      // sidebar via the AttributesEditor so operators can actually
+      // assign categories + tags that the filter chips on
+      // /portal/properties query against.
+      assetCategory: true,
+      profileTags: true,
     },
   });
   if (!property) notFound();
@@ -198,6 +204,8 @@ export default async function PropertyDetail({
                 heroImageUrl: property.heroImageUrl,
                 description: property.description,
                 orgHasAdsModule: showAdsTab,
+                assetCategory: property.assetCategory,
+                profileTags: property.profileTags ?? [],
               }}
             />
           ),

@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
+import { AttributesEditor } from "@/components/portal/properties/attributes-editor";
 import {
   getOpenInsights,
   getInsightCounts,
@@ -70,6 +71,11 @@ type OverviewProperty = {
    *  false we suppress ad-spend tiles and ads-related signals entirely
    *  rather than show "$0 (28d)" in big numerals. */
   orgHasAdsModule: boolean;
+  /** Operator-editable attributes added in #68 (Norman audit 2026-05-21).
+   *  Drives the filter chips on /portal/properties. NULL / empty by
+   *  default. */
+  assetCategory: string | null;
+  profileTags: string[];
 };
 
 // 28-day window in ms — matches getPropertyOverviewKpis and every other
@@ -652,6 +658,17 @@ export async function OverviewTab({
                 priceRange={priceRange}
               />
             ) : null}
+
+            {/* Norman audit 2026-05-21: closing the loop on the half-
+                built #68 + #54 pair. AttributesEditor lets operators
+                actually assign assetCategory + profileTags to a
+                property — without it the filter chips on
+                /portal/properties had nothing to filter against. */}
+            <AttributesEditor
+              propertyId={propertyId}
+              initialAssetCategory={property.assetCategory ?? null}
+              initialProfileTags={property.profileTags ?? []}
+            />
 
             {/* Quick actions hidden (issue #76) — Open in AppFolio,
                 Edit listing details, and Property settings either 404 or
