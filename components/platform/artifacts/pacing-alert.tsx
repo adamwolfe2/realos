@@ -90,10 +90,10 @@ export function PacingAlert() {
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between gap-3 px-5 md:px-6 py-4"
+        className="flex items-center justify-between gap-3 px-5 md:px-6 py-3 sm:py-4"
         style={{ borderBottom: `1px solid ${BORDER}` }}
       >
-        <div>
+        <div className="min-w-0">
           <p
             style={{
               fontFamily: "var(--font-mono)",
@@ -104,10 +104,11 @@ export function PacingAlert() {
               fontWeight: 600,
             }}
           >
-            Lease-up · cumulative leases signed
+            <span className="hidden sm:inline">Lease-up · cumulative leases signed</span>
+            <span className="sm:hidden">Lease-up pacing</span>
           </p>
           <p
-            className="mt-1"
+            className="mt-1 hidden sm:block"
             style={{
               fontFamily: "var(--font-sans)",
               fontSize: 14,
@@ -152,7 +153,7 @@ export function PacingAlert() {
       </div>
 
       {/* Chart */}
-      <div className="px-3 md:px-4 py-4" style={{ backgroundColor: "#FFFFFF" }}>
+      <div className="px-3 md:px-4 py-3 sm:py-4" style={{ backgroundColor: "#FFFFFF" }}>
         <svg
           viewBox={`0 0 ${width} ${height}`}
           width="100%"
@@ -256,7 +257,7 @@ export function PacingAlert() {
 
       {/* Alert callout */}
       <div
-        className="px-5 md:px-6 py-4"
+        className="px-5 md:px-6 py-3 sm:py-4"
         style={{ borderTop: `1px solid ${BORDER}`, backgroundColor: WARN_BG }}
       >
         <div className="flex items-start gap-3">
@@ -290,7 +291,7 @@ export function PacingAlert() {
               Pacing {Math.abs(gapPct)}% behind last cycle at week 19. Projected to land 14 units short of full lease-up.
             </p>
             <p
-              className="mt-1.5"
+              className="mt-1.5 hidden sm:block"
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 12,

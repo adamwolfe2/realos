@@ -141,6 +141,57 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Property not found" }, { status: 404 });
   }
 
+  // H1 fix — when a recommendationId is supplied, verify it belongs to this
+  // org + property so a portal user can't link a draft to (and later close)
+  // a recommendation in another tenant via the admin approve flow.
+  if (parsed.recommendationId) {
+    const rec = await prisma.seoActionRecommendation
+      .findFirst({
+        where: {
+          id: parsed.recommendationId,
+          orgId: property.orgId,
+          propertyId: property.id,
+        },
+        select: { id: true },
+      })
+      .catch(() => null);
+    if (!rec) {
+      return NextResponse.json(
+        { error: "Invalid recommendation" },
+        { status: 400 },
+      );
+    }
+  }
+
+  // H2 fix — sliding-window rate limit. Beyond 30 drafts/24h per org or
+  // 5 drafts/hour per user, ask the caller to slow down. Combined with the
+  // in-flight cap below, this bounds DoS / spend risk.
+  const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const [perOrgDay, perUserHour] = await Promise.all([
+    prisma.contentDraft.count({
+      where: {
+        orgId: property.orgId,
+        createdAt: { gte: oneDayAgo },
+      },
+    }),
+    prisma.contentDraft.count({
+      where: {
+        orgId: property.orgId,
+        createdAt: { gte: oneHourAgo },
+      },
+    }),
+  ]);
+  if (perOrgDay >= 30 || perUserHour >= 5) {
+    return NextResponse.json(
+      {
+        error:
+          "Draft rate limit hit. Limits: 30 per org per day, 5 per hour. Try again later.",
+      },
+      { status: 429 },
+    );
+  }
+
   // Pull operator-confirmed facts for AEO grounding. Best-effort -
   // missing PropertyMention rows shouldn't block draft generation.
   const factRows = await prisma.propertyMention

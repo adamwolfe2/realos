@@ -80,7 +80,7 @@ export function SeoAnswer() {
       }}
     >
       <div
-        className="px-5 md:px-6 py-3 flex items-center justify-between gap-2"
+        className="px-5 md:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2"
         style={{ borderBottom: `1px solid ${BORDER}`, backgroundColor: PARCHMENT }}
       >
         <div className="flex items-center gap-2">
@@ -111,7 +111,7 @@ export function SeoAnswer() {
             How you show up on AI
           </span>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="hidden sm:flex items-center gap-1.5">
           <ChatGPTMark size={14} />
           <PerplexityMark size={14} />
           <ClaudeMark size={14} />
@@ -121,7 +121,7 @@ export function SeoAnswer() {
       </div>
 
       <div
-        className="px-5 md:px-6 py-3 flex items-center gap-2"
+        className="px-5 md:px-6 py-2.5 sm:py-3 flex items-center gap-2"
         style={{ borderBottom: `1px solid ${BORDER}` }}
       >
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -151,7 +151,7 @@ export function SeoAnswer() {
         </span>
       </div>
 
-      <div className="px-5 md:px-6 py-5">
+      <div className="px-5 md:px-6 py-4 sm:py-5">
         <div className="flex items-center gap-2 mb-3">
           <span
             className="inline-flex items-center justify-center"
@@ -195,12 +195,12 @@ export function SeoAnswer() {
         </div>
 
         <p
+          className="min-h-[72px] sm:min-h-[96px]"
           style={{
             fontFamily: "var(--font-sans)",
             fontSize: "14.5px",
             color: INK,
             lineHeight: 1.55,
-            minHeight: "96px",
           }}
         >
           {renderAnswerWithHighlights(ANSWER.slice(0, answeredChars))}
@@ -241,10 +241,10 @@ export function SeoAnswer() {
               Citations
             </p>
             <ul className="space-y-1.5">
-              {CITATIONS.map((c) => (
+              {CITATIONS.map((c, idx) => (
                 <li
                   key={c.rank}
-                  className="flex items-center gap-2"
+                  className={`items-center gap-2 ${idx >= 2 ? "hidden sm:flex" : "flex"}`}
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: "11.5px",
@@ -285,7 +285,7 @@ export function SeoAnswer() {
       </div>
 
       <div
-        className="px-5 md:px-6 py-3 flex items-center justify-between gap-3"
+        className="hidden sm:flex px-5 md:px-6 py-3 items-center justify-between gap-3"
         style={{ borderTop: `1px solid ${BORDER}`, backgroundColor: PARCHMENT }}
       >
         <span

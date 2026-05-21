@@ -109,6 +109,7 @@ export function ChatDemo() {
               Property assistant
             </p>
             <p
+              className="hidden sm:block"
               style={{
                 fontFamily: "var(--font-mono)",
                 fontSize: "10px",
@@ -136,8 +137,7 @@ export function ChatDemo() {
 
       <div
         ref={scrollRef}
-        className="px-4 md:px-5 py-4 space-y-2.5"
-        style={{ minHeight: "360px", maxHeight: "420px", overflowY: "auto" }}
+        className="px-4 md:px-5 py-3 sm:py-4 space-y-2.5 min-h-[240px] max-h-[280px] sm:min-h-[360px] sm:max-h-[420px] overflow-y-auto"
       >
         {SCRIPT.slice(0, visibleCount).map((turn, i) => (
           <Bubble key={i} turn={turn} />
@@ -146,7 +146,7 @@ export function ChatDemo() {
       </div>
 
       <div
-        className="px-5 md:px-6 py-3 flex items-center gap-2"
+        className="hidden sm:flex px-5 md:px-6 py-3 items-center gap-2"
         style={{ borderTop: `1px solid ${BORDER}`, backgroundColor: "#ffffff" }}
       >
         <input

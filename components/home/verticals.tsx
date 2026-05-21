@@ -41,8 +41,8 @@ const VERTICALS = [
 export function Verticals() {
   return (
     <section style={{ backgroundColor: "#F1F5F9", borderTop: "1px solid #E2E8F0" }}>
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-12 md:py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-10 lg:gap-16 items-start">
+      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-10 sm:py-12 md:py-16">
+        <div className="grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-8 sm:gap-10 lg:gap-16 items-start">
           {/* Left column, editorial header */}
           <div>
             <p className="eyebrow mb-4">Same platform, tailored</p>
@@ -89,7 +89,7 @@ export function Verticals() {
               >
                 <Link
                   href={v.href}
-                  className="group flex items-center justify-between gap-4 px-5 py-5 md:py-6 hover:bg-[#F8FAFC] transition-colors"
+                  className="group flex items-center justify-between gap-4 px-4 sm:px-5 py-4 sm:py-5 md:py-6 hover:bg-[#F8FAFC] transition-colors"
                 >
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2.5 mb-1.5 flex-wrap">
@@ -124,6 +124,7 @@ export function Verticals() {
                       ) : null}
                     </div>
                     <p
+                      className="line-clamp-2 sm:line-clamp-none"
                       style={{
                         color: "#64748B",
                         fontFamily: "var(--font-sans)",

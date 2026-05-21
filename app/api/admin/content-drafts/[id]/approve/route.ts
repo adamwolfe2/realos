@@ -61,13 +61,15 @@ export async function POST(
   const ship = body?.ship === true;
   const now = new Date();
 
+  // L1 fix — only overwrite reviewNotes when the admin actually provided
+  // new notes. Preserves prior "request_changes" feedback on approve.
   const updated = await prisma.contentDraft.update({
     where: { id: draft.id },
     data: {
       status: ship ? DraftStatus.SHIPPED : DraftStatus.APPROVED,
       reviewedAt: now,
       reviewedBy: userId,
-      reviewNotes: body?.notes ?? null,
+      ...(body?.notes !== undefined ? { reviewNotes: body.notes } : {}),
       ...(ship ? { shippedAt: now } : {}),
     },
   });

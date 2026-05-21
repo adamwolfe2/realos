@@ -876,7 +876,7 @@ export function BrandedVsNonBrandedCard({
           }}
         />
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
           <p className="text-[9.5px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
             Branded

@@ -167,55 +167,68 @@ async function aggregatePropertyDay(input: {
       return { rowsWritten: 0 };
     }
 
+    // Run upserts in bounded-concurrency batches. A single property's
+    // pair set can hit several hundred rows; sequential awaits made one
+    // property take 5-10s. 20-wide parallelism keeps DB pool happy.
+    const UPSERT_CONCURRENCY = 20;
+    const pairValues = Array.from(pairs.values());
     let rowsWritten = 0;
-    for (const value of pairs.values()) {
-      try {
-        await prisma.queryLandingDaily.upsert({
-          where: {
-            orgId_propertyId_date_url_query: {
+    let firstError: string | undefined;
+
+    for (let i = 0; i < pairValues.length; i += UPSERT_CONCURRENCY) {
+      const batch = pairValues.slice(i, i + UPSERT_CONCURRENCY);
+      const settled = await Promise.allSettled(
+        batch.map((value) =>
+          prisma.queryLandingDaily.upsert({
+            where: {
+              orgId_propertyId_date_url_query: {
+                orgId,
+                propertyId,
+                date,
+                url: value.url,
+                query: value.query,
+              },
+            },
+            create: {
               orgId,
               propertyId,
               date,
               url: value.url,
               query: value.query,
+              serpPosition: value.serpPosition,
+              serpFeatures: [],
+              gscImpressions: value.gscImpressions,
+              gscClicks: value.gscClicks,
+              gscCtr: value.gscCtr,
+              gscPosition: value.gscPosition,
+              ga4Sessions: 0,
+              ga4Users: 0,
+              ga4EngagedSessions: 0,
+              ga4Conversions: 0,
+              isBranded: isBrandedQuery(value.query, brandTokens),
             },
-          },
-          create: {
-            orgId,
-            propertyId,
-            date,
-            url: value.url,
-            query: value.query,
-            serpPosition: value.serpPosition,
-            serpFeatures: [],
-            gscImpressions: value.gscImpressions,
-            gscClicks: value.gscClicks,
-            gscCtr: value.gscCtr,
-            gscPosition: value.gscPosition,
-            ga4Sessions: 0,
-            ga4Users: 0,
-            ga4EngagedSessions: 0,
-            ga4Conversions: 0,
-            isBranded: isBrandedQuery(value.query, brandTokens),
-          },
-          update: {
-            serpPosition: value.serpPosition,
-            gscImpressions: value.gscImpressions,
-            gscClicks: value.gscClicks,
-            gscCtr: value.gscCtr,
-            gscPosition: value.gscPosition,
-            isBranded: isBrandedQuery(value.query, brandTokens),
-          },
-        });
-        rowsWritten += 1;
-      } catch (err) {
-        return {
-          rowsWritten,
-          error: err instanceof Error ? err.message : String(err),
-        };
+            update: {
+              serpPosition: value.serpPosition,
+              gscImpressions: value.gscImpressions,
+              gscClicks: value.gscClicks,
+              gscCtr: value.gscCtr,
+              gscPosition: value.gscPosition,
+              isBranded: isBrandedQuery(value.query, brandTokens),
+            },
+          }),
+        ),
+      );
+      for (const r of settled) {
+        if (r.status === "fulfilled") {
+          rowsWritten += 1;
+        } else if (!firstError) {
+          firstError =
+            r.reason instanceof Error ? r.reason.message : String(r.reason);
+        }
       }
     }
 
+    if (firstError) return { rowsWritten, error: firstError };
     return { rowsWritten };
   } catch (err) {
     return {
@@ -252,27 +265,39 @@ export async function runFactTableAggregation(opts: {
     errors: [],
   };
 
-  for (const p of properties) {
-    // Brand tokens: tokenize org name + property name on whitespace,
-    // dedupe, drop short tokens. Used by the isBranded classifier.
-    const brandTokens = Array.from(
-      new Set(
-        [...(p.org?.name ?? "").split(/\s+/), ...p.name.split(/\s+/)]
-          .map((t) => t.toLowerCase().replace(/[^a-z0-9]/g, ""))
-          .filter((t) => t.length >= 4),
-      ),
+  // Process properties in bounded-concurrency batches. Each property's
+  // aggregator is mostly DB-bound; 5 in parallel keeps the run snappy
+  // without overloading the connection pool.
+  const PROPERTY_CONCURRENCY = 5;
+  for (let i = 0; i < properties.length; i += PROPERTY_CONCURRENCY) {
+    const batch = properties.slice(i, i + PROPERTY_CONCURRENCY);
+    const settled = await Promise.all(
+      batch.map(async (p) => {
+        const brandTokens = Array.from(
+          new Set(
+            [...(p.org?.name ?? "").split(/\s+/), ...p.name.split(/\s+/)]
+              .map((t) => t.toLowerCase().replace(/[^a-z0-9]/g, ""))
+              .filter((t) => t.length >= 4),
+          ),
+        );
+        const r = await aggregatePropertyDay({
+          orgId: p.orgId,
+          propertyId: p.id,
+          date: targetDate,
+          brandTokens,
+        });
+        return { propertyId: p.id, result: r };
+      }),
     );
-
-    const r = await aggregatePropertyDay({
-      orgId: p.orgId,
-      propertyId: p.id,
-      date: targetDate,
-      brandTokens,
-    });
-    result.propertiesProcessed += 1;
-    result.rowsWritten += r.rowsWritten;
-    if (r.error) {
-      result.errors.push({ propertyId: p.id, error: r.error });
+    for (const item of settled) {
+      result.propertiesProcessed += 1;
+      result.rowsWritten += item.result.rowsWritten;
+      if (item.result.error) {
+        result.errors.push({
+          propertyId: item.propertyId,
+          error: item.result.error,
+        });
+      }
     }
   }
 

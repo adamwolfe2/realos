@@ -127,22 +127,24 @@ async function aeoCitationRateFor(
   propertyId: string,
 ): Promise<number> {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  const total = await prisma.aeoCitationCheck
-    .count({
-      where: { orgId, propertyId, queryRunAt: { gte: since } },
-    })
-    .catch(() => 0);
+  const [total, cited] = await Promise.all([
+    prisma.aeoCitationCheck
+      .count({
+        where: { orgId, propertyId, queryRunAt: { gte: since } },
+      })
+      .catch(() => 0),
+    prisma.aeoCitationCheck
+      .count({
+        where: {
+          orgId,
+          propertyId,
+          queryRunAt: { gte: since },
+          status: AeoCitationStatus.CITED,
+        },
+      })
+      .catch(() => 0),
+  ]);
   if (total === 0) return 0;
-  const cited = await prisma.aeoCitationCheck
-    .count({
-      where: {
-        orgId,
-        propertyId,
-        queryRunAt: { gte: since },
-        status: AeoCitationStatus.CITED,
-      },
-    })
-    .catch(() => 0);
   return Math.round((cited / total) * 1000) / 1000;
 }
 
@@ -153,18 +155,20 @@ async function organicTrafficIdxFor(
   const now = Date.now();
   const sevenDaysAgo = new Date(now - 7 * 24 * 60 * 60 * 1000);
   const fourteenDaysAgo = new Date(now - 14 * 24 * 60 * 60 * 1000);
-  const current = await prisma.seoQuery
-    .aggregate({
-      where: { orgId, date: { gte: sevenDaysAgo } },
-      _sum: { clicks: true },
-    })
-    .catch(() => ({ _sum: { clicks: null as number | null } }));
-  const prior = await prisma.seoQuery
-    .aggregate({
-      where: { orgId, date: { gte: fourteenDaysAgo, lt: sevenDaysAgo } },
-      _sum: { clicks: true },
-    })
-    .catch(() => ({ _sum: { clicks: null as number | null } }));
+  const [current, prior] = await Promise.all([
+    prisma.seoQuery
+      .aggregate({
+        where: { orgId, date: { gte: sevenDaysAgo } },
+        _sum: { clicks: true },
+      })
+      .catch(() => ({ _sum: { clicks: null as number | null } })),
+    prisma.seoQuery
+      .aggregate({
+        where: { orgId, date: { gte: fourteenDaysAgo, lt: sevenDaysAgo } },
+        _sum: { clicks: true },
+      })
+      .catch(() => ({ _sum: { clicks: null as number | null } })),
+  ]);
   void propertyId; // GSC is org-scoped today; per-property arrives with property mapping.
   const cur = current._sum.clicks ?? 0;
   const pri = prior._sum.clicks ?? 0;

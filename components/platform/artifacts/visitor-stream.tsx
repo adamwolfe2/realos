@@ -129,7 +129,7 @@ export function VisitorStream() {
       }}
     >
       <div
-        className="flex items-center justify-between gap-3 px-5 md:px-6 py-4"
+        className="flex items-center justify-between gap-3 px-5 md:px-6 py-3 sm:py-4"
         style={{ borderBottom: `1px solid ${BORDER}` }}
       >
         <div className="flex items-center gap-2">
@@ -193,6 +193,8 @@ export function VisitorStream() {
           const revealDelayMs = isInitial
             ? INITIAL_REVEAL_DELAYS_MS[v.id]
             : 1500;
+          // Mobile: show only top 3 rows. The reveal wave still feels alive,
+          // but the artifact stays ~half the height. Desktop unchanged.
           return (
             <VisitorRow
               key={v.id}
@@ -200,13 +202,14 @@ export function VisitorStream() {
               isTop={i === 0}
               isLast={i === rows.length - 1}
               revealDelayMs={revealDelayMs}
+              hideOnMobile={i >= 3}
             />
           );
         })}
       </ul>
 
       <div
-        className="px-5 md:px-6 py-3 flex items-center justify-between gap-3"
+        className="hidden sm:flex px-5 md:px-6 py-3 items-center justify-between gap-3"
         style={{ borderTop: `1px solid ${BORDER}`, backgroundColor: PARCHMENT }}
       >
         <span
@@ -219,10 +222,7 @@ export function VisitorStream() {
             fontWeight: 500,
           }}
         >
-          <span className="hidden sm:inline">
-            Every named visitor goes to your team and your ad audiences
-          </span>
-          <span className="sm:hidden">Named visitors → CRM + audiences</span>
+          Every named visitor goes to your team and your ad audiences
         </span>
         <span
           style={{
@@ -258,11 +258,13 @@ function VisitorRow({
   isTop,
   isLast,
   revealDelayMs = 1500,
+  hideOnMobile = false,
 }: {
   v: Visitor;
   isTop: boolean;
   isLast: boolean;
   revealDelayMs?: number;
+  hideOnMobile?: boolean;
 }) {
   const [revealed, setRevealed] = useState(v.resolved);
   const [justRevealed, setJustRevealed] = useState(false);
@@ -300,7 +302,7 @@ function VisitorRow({
 
   return (
     <li
-      className="flex items-center gap-3 px-5 md:px-6 py-3.5"
+      className={`${hideOnMobile ? "hidden sm:flex" : "flex"} items-center gap-3 px-5 md:px-6 py-3 sm:py-3.5`}
       style={{
         borderBottom: !isLast ? `1px solid ${BORDER}` : "none",
         animation: isTop ? "rowIn 520ms cubic-bezier(.2,.7,.2,1)" : undefined,

@@ -100,7 +100,7 @@ export function AttributionBreakdown() {
     >
       {/* Header */}
       <div
-        className="flex items-center justify-between gap-3 px-5 md:px-6 py-4"
+        className="flex items-center justify-between gap-3 px-5 md:px-6 py-3 sm:py-4"
         style={{ borderBottom: `1px solid ${BORDER}` }}
       >
         <div className="flex items-center gap-2">
@@ -124,14 +124,15 @@ export function AttributionBreakdown() {
               fontWeight: 600,
             }}
           >
-            Last 30 days · channel attribution
+            <span className="hidden sm:inline">Last 30 days · channel attribution</span>
+            <span className="sm:hidden">Channel attribution</span>
           </span>
         </div>
         <div className="text-right">
           <p
+            className="text-[18px] sm:text-[22px]"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: 22,
               color: INK,
               fontWeight: 500,
               lineHeight: 1,
@@ -140,6 +141,7 @@ export function AttributionBreakdown() {
             ${CAC.toLocaleString()}
           </p>
           <p
+            className="hidden sm:block"
             style={{
               fontFamily: "var(--font-mono)",
               fontSize: 9,
@@ -163,7 +165,7 @@ export function AttributionBreakdown() {
           return (
             <li
               key={c.name}
-              className="px-5 md:px-6 py-3.5"
+              className="px-5 md:px-6 py-2.5 sm:py-3.5"
               style={{
                 borderBottom: i < CHANNELS.length - 1 ? `1px solid ${BORDER}` : "none",
                 backgroundColor: isActive ? "rgba(37,99,235,0.04)" : "transparent",
@@ -243,9 +245,9 @@ export function AttributionBreakdown() {
         })}
       </ul>
 
-      {/* Active channel detail */}
+      {/* Active channel detail — desktop only; the channel rows above already show the data on mobile */}
       <div
-        className="px-5 md:px-6 py-4"
+        className="hidden sm:block px-5 md:px-6 py-4"
         style={{ borderTop: `1px solid ${BORDER}`, backgroundColor: PARCHMENT }}
       >
         <div className="flex items-baseline justify-between gap-3 flex-wrap">

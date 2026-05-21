@@ -35,14 +35,19 @@ export async function GET(req: NextRequest) {
       select: { id: true, orgId: true },
       take: 500,
     });
-    for (const p of properties) {
-      try {
-        await writeScoreSnapshot({ orgId: p.orgId, propertyId: p.id });
-        snapshotsWritten += 1;
-      } catch {
-        // Best-effort. Aggregation success matters more than every
-        // snapshot landing.
-      }
+
+    // Batched concurrency: each writeScoreSnapshot fires several queries.
+    // Run 10 properties in parallel per batch to bound DB pool pressure
+    // while still slashing wall-clock vs sequential.
+    const CONCURRENCY = 10;
+    for (let i = 0; i < properties.length; i += CONCURRENCY) {
+      const batch = properties.slice(i, i + CONCURRENCY);
+      const results = await Promise.allSettled(
+        batch.map((p) =>
+          writeScoreSnapshot({ orgId: p.orgId, propertyId: p.id }),
+        ),
+      );
+      snapshotsWritten += results.filter((r) => r.status === "fulfilled").length;
     }
 
     return {

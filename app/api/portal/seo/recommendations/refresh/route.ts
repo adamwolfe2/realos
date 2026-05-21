@@ -63,10 +63,13 @@ export async function POST(req: NextRequest) {
     Object.assign(where, { id: body.propertyId });
   }
 
+  // H3 fix — bound wall time. 25 properties × engine (currently a handful
+  // of cached-data queries, ~50ms each) keeps us safely inside maxDuration.
+  // If a caller passes propertyId, single-property runs aren't capped.
   const properties = await prisma.property.findMany({
     where,
     select: { id: true, orgId: true },
-    take: 100,
+    take: body.propertyId ? 1 : 25,
   });
   if (properties.length === 0) {
     return NextResponse.json({ ok: true, scanned: 0, written: 0 });

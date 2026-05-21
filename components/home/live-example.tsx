@@ -23,8 +23,8 @@ export function LiveExample() {
         borderTop: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-16 md:py-24">
-        <div className="max-w-3xl mb-10 md:mb-14">
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-12 sm:py-16 md:py-24">
+        <div className="max-w-3xl mb-8 sm:mb-10 md:mb-14">
           <p className="eyebrow mb-3">{liveExample.eyebrow}</p>
           <h2
             style={{
@@ -97,12 +97,11 @@ function DestinationCard({
       href={href}
       target={external ? "_blank" : undefined}
       rel={external ? "noopener" : undefined}
-      className="group block transition-shadow hover:shadow-md"
+      className="group block transition-shadow hover:shadow-md px-5 pt-6 pb-5 sm:px-7 sm:pt-7 sm:pb-6"
       style={{
         backgroundColor: "#FFFFFF",
         border: "1px solid #E2E8F0",
         borderRadius: 4,
-        padding: "28px 28px 24px",
       }}
     >
       {/* Kicker row: label + live-host chip */}
@@ -142,7 +141,7 @@ function DestinationCard({
       </div>
 
       <h3
-        className="mt-5"
+        className="mt-4 sm:mt-5"
         style={{
           color: "#1E2A3A",
           fontFamily: "var(--font-sans)",
@@ -167,7 +166,7 @@ function DestinationCard({
       </p>
 
       <p
-        className="mt-6 inline-flex items-center gap-1.5 transition-transform group-hover:translate-x-1"
+        className="mt-4 sm:mt-6 inline-flex items-center gap-1.5 transition-transform group-hover:translate-x-1"
         style={{
           color: "#2563EB",
           fontFamily: "var(--font-sans)",

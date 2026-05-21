@@ -163,7 +163,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
                 <label className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">
                   Format
                 </label>
-                <div className="mt-2 grid grid-cols-2 gap-2">
+                <div className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {FORMATS.map((f) => (
                     <button
                       key={f.id}
@@ -218,7 +218,7 @@ export function DraftLauncher({ propertyId, propertyName, prefill }: Props) {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label
                     htmlFor="audience"

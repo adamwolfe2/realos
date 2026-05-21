@@ -65,9 +65,9 @@ export function WeeklyReport() {
         overflow: "hidden",
       }}
     >
-      {/* Faux email header */}
+      {/* Faux email header — hidden on mobile, the artifact's job there is one-glance density */}
       <div
-        className="px-5 md:px-6 py-4"
+        className="hidden sm:block px-5 md:px-6 py-4"
         style={{ borderBottom: `1px solid ${BORDER}`, backgroundColor: PARCHMENT }}
       >
         <div className="flex items-center justify-between gap-3">
@@ -126,7 +126,7 @@ export function WeeklyReport() {
       </div>
 
       {/* Body */}
-      <div className="px-5 md:px-6 py-5">
+      <div className="px-5 md:px-6 py-4 sm:py-5">
         {/* Subject + lead */}
         <p
           style={{
@@ -141,10 +141,9 @@ export function WeeklyReport() {
           Week 19 · Mon Nov 10 → Sun Nov 16
         </p>
         <h4
-          className="mt-2"
+          className="mt-2 text-[16px] sm:text-[19px]"
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: 19,
             color: INK,
             fontWeight: 700,
             lineHeight: 1.25,
@@ -190,8 +189,11 @@ export function WeeklyReport() {
             ))}
           </div>
           <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
-            {ATTRIBUTION.map((a) => (
-              <li key={a.channel} className="flex items-center gap-2 min-w-0">
+            {ATTRIBUTION.map((a, idx) => (
+              <li
+                key={a.channel}
+                className={`flex items-center gap-2 min-w-0 ${idx >= 3 ? "hidden sm:flex" : ""}`}
+              >
                 <span
                   aria-hidden
                   style={{
@@ -250,7 +252,7 @@ export function WeeklyReport() {
             {ACTIONS.map((a, i) => (
               <li
                 key={a.text}
-                className="flex items-start gap-3"
+                className={`flex items-start gap-3 ${i >= 2 ? "hidden sm:flex" : ""}`}
                 style={{
                   fontFamily: "var(--font-sans)",
                   fontSize: 13,
@@ -297,9 +299,9 @@ export function WeeklyReport() {
         </div>
       </div>
 
-      {/* Footer, delivery channels */}
+      {/* Footer, delivery channels — desktop only; mobile drops it to keep the artifact short */}
       <div
-        className="px-5 md:px-6 py-3 flex items-center justify-between gap-3"
+        className="hidden sm:flex px-5 md:px-6 py-3 items-center justify-between gap-3"
         style={{ borderTop: `1px solid ${BORDER}`, backgroundColor: PARCHMENT }}
       >
         <span
