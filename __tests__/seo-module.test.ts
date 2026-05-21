@@ -51,11 +51,21 @@ describe("SEO module — structure", () => {
     const src = readFile("app/portal/seo/page.tsx");
     expect(src).toContain("requireScope");
     expect(src).toContain("seoSnapshot");
-    // Tenant scoping: every prisma read must filter by orgId.
+    // Tenant scoping: every prisma read must filter by orgId. Two equivalent
+    // gating patterns count as valid: a literal `orgId: scope.orgId` clause,
+    // OR a `tenantWhere(scope)` helper expansion (lib/tenancy/scope.ts line
+    // 422 — returns `{ orgId: scope.orgId }`). Counting only the literal
+    // gives false-positive failures the moment a query is refactored to
+    // use the helper.
     const prismaCallCount = (src.match(/prisma\.seo/g) ?? []).length;
     expect(prismaCallCount).toBeGreaterThan(0);
-    const orgIdScopeCount = (src.match(/orgId: scope\.orgId/g) ?? []).length;
-    expect(orgIdScopeCount).toBeGreaterThanOrEqual(prismaCallCount);
+    const literalScopeCount = (src.match(/orgId: scope\.orgId/g) ?? []).length;
+    const tenantWhereCount = (src.match(/tenantWhere\(scope\)/g) ?? []).length;
+    const totalScopeCount = literalScopeCount + tenantWhereCount;
+    expect(
+      totalScopeCount,
+      `Expected every prisma.seo* query to be tenant-scoped via orgId: scope.orgId or tenantWhere(scope). Found ${prismaCallCount} prisma calls but only ${totalScopeCount} tenant guards (literal=${literalScopeCount}, helper=${tenantWhereCount}).`,
+    ).toBeGreaterThanOrEqual(prismaCallCount);
   });
 
   it("integration libs exist", () => {

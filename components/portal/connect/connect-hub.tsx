@@ -431,9 +431,9 @@ function SourceCard({
         </Link>
       ) : null}
 
-      {/* Unlocks — 2-col compact grid */}
+      {/* Unlocks — 2-col compact grid (single column on small phones) */}
       <div className="mt-2.5 pt-2.5 border-t border-border/40">
-        <div className="grid grid-cols-2 gap-x-3 gap-y-0.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-0.5">
           {meta.unlocks.map((u) => (
             <p
               key={u}

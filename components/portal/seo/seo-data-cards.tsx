@@ -43,7 +43,7 @@ export function IntegrationStatusRow({
   }>;
 }) {
   return (
-    <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
+    <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
       {integrations.map((i) => {
         const connected = i.state.connected;
         return (
@@ -162,7 +162,7 @@ export function HealthScoreCard({
                   ? "Below benchmark. Several quick wins available."
                   : "Critical. Open the action items below."}
         </h3>
-        <div className="grid grid-cols-3 sm:grid-cols-6 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
           {pillars.map((p) => (
             <div
               key={p.label}
@@ -360,12 +360,12 @@ export function LighthouseCard({
           </a>
         ) : null}
       </header>
-      <div className="grid grid-cols-5 gap-2 mb-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mb-4">
         {pillars.map((p) => (
           <ScoreDot key={p.label} label={p.label} value={p.value} />
         ))}
       </div>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-3 border-t border-border/60">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 pt-3 border-t border-border/60">
         <VitalCell label="FCP" value={vitals.fcpMs} unit="ms" goodMax={1800} />
         <VitalCell label="LCP" value={vitals.lcpMs} unit="ms" goodMax={2500} />
         <VitalCell
@@ -525,7 +525,7 @@ export function BacklinksCard({
           Domain authority
         </h3>
       </header>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <Stat
           label="Domain rank"
           value={summary.domainRank}
