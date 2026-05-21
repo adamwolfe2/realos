@@ -46,35 +46,224 @@ const SEV_TONE: Record<string, string> = {
 // operators actively triage their queue.
 // ---------------------------------------------------------------------------
 export function RecommendationManager({ recommendations }: Props) {
+  const router = useRouter();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkPending, startBulk] = useTransition();
+  const [bulkMode, setBulkMode] = useState<null | "dismiss" | "snooze">(null);
+  const [bulkReason, setBulkReason] = useState("");
+
   if (recommendations.length === 0) {
     return null;
   }
 
+  function toggleSelect(id: string) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+  function toggleAll() {
+    if (selected.size === recommendations.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(recommendations.map((r) => r.id)));
+    }
+  }
+  function callBulk(
+    action: "in_progress" | "completed" | "dismissed" | "snoozed",
+    extra: { reason?: string; snoozeUntil?: string } = {},
+  ) {
+    if (selected.size === 0) return;
+    startBulk(async () => {
+      try {
+        const res = await fetch("/api/portal/seo/recommendations/bulk", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            ids: Array.from(selected),
+            action,
+            ...extra,
+          }),
+        });
+        const body = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          toast.error(body?.error ?? "Bulk action failed.");
+          return;
+        }
+        toast.success(
+          `Updated ${body.updated} rec${body.updated === 1 ? "" : "s"}${body.skipped > 0 ? ` · ${body.skipped} skipped` : ""}.`,
+        );
+        setSelected(new Set());
+        setBulkMode(null);
+        setBulkReason("");
+        router.refresh();
+      } catch {
+        toast.error("Network error.");
+      }
+    });
+  }
+  function bulkSnooze(days: number) {
+    const date = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
+    callBulk("snoozed", { snoozeUntil: date.toISOString() });
+  }
+
+  const allSelected =
+    selected.size > 0 && selected.size === recommendations.length;
+  const someSelected = selected.size > 0 && !allSelected;
+
   return (
     <div className="rounded-2xl border border-border bg-card overflow-hidden">
       <header className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-border/60">
-        <div>
-          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
-            Recommendations queue
+        <label className="inline-flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={allSelected}
+            ref={(el) => {
+              if (el) el.indeterminate = someSelected;
+            }}
+            onChange={toggleAll}
+            className="h-3.5 w-3.5"
+          />
+          <div>
+            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
+              Recommendations queue
+            </p>
+            <h3 className="text-sm font-semibold text-foreground mt-0.5">
+              {selected.size > 0
+                ? `${selected.size} selected`
+                : `${recommendations.length} open`}
+            </h3>
+          </div>
+        </label>
+        {selected.size > 0 ? (
+          <div className="flex items-center gap-1.5 flex-wrap">
+            <button
+              type="button"
+              disabled={bulkPending}
+              onClick={() => callBulk("completed")}
+              className="rounded-md border border-green-200 bg-green-50 dark:border-green-900/40 dark:bg-green-900/20 px-2 py-0.5 text-[11px] font-medium text-green-700 dark:text-green-300 hover:bg-green-100 disabled:opacity-50"
+            >
+              Mark done
+            </button>
+            <button
+              type="button"
+              disabled={bulkPending}
+              onClick={() => setBulkMode("snooze")}
+              className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+            >
+              Snooze
+            </button>
+            <button
+              type="button"
+              disabled={bulkPending}
+              onClick={() => setBulkMode("dismiss")}
+              className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50"
+            >
+              Dismiss
+            </button>
+          </div>
+        ) : (
+          <p className="text-[11px] text-muted-foreground hidden sm:block">
+            Select rows for bulk actions, or use per-row controls
           </p>
-          <h3 className="text-sm font-semibold text-foreground mt-0.5">
-            {recommendations.length} open
-          </h3>
-        </div>
-        <p className="text-[11px] text-muted-foreground hidden sm:block">
-          Mark in-progress, completed, or dismiss
-        </p>
+        )}
       </header>
+
+      {bulkMode === "snooze" ? (
+        <div className="px-4 py-2.5 bg-muted/30 border-b border-border/60 flex flex-wrap items-center gap-1.5">
+          <span className="text-[11px] text-muted-foreground mr-1">
+            Snooze {selected.size} for:
+          </span>
+          {[
+            { label: "1 week", days: 7 },
+            { label: "2 weeks", days: 14 },
+            { label: "1 month", days: 30 },
+            { label: "1 quarter", days: 90 },
+          ].map((opt) => (
+            <button
+              key={opt.label}
+              type="button"
+              disabled={bulkPending}
+              onClick={() => bulkSnooze(opt.days)}
+              className="rounded-md border border-border bg-background px-2 py-0.5 text-[11px] font-medium text-foreground hover:bg-muted disabled:opacity-50"
+            >
+              {opt.label}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setBulkMode(null)}
+            className="ml-1 text-[11px] text-muted-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : null}
+
+      {bulkMode === "dismiss" ? (
+        <div className="px-4 py-2.5 bg-muted/30 border-b border-border/60 flex flex-col sm:flex-row gap-2">
+          <input
+            type="text"
+            value={bulkReason}
+            onChange={(e) => setBulkReason(e.target.value)}
+            placeholder={`Reason for dismissing ${selected.size} rec${selected.size === 1 ? "" : "s"}`}
+            className="flex-1 rounded-md border border-border bg-background px-2 py-1 text-[12px] focus:outline-none focus:ring-2 focus:ring-primary/30"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && bulkReason.trim().length >= 4) {
+                callBulk("dismissed", { reason: bulkReason.trim() });
+              }
+            }}
+          />
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              disabled={bulkPending || bulkReason.trim().length < 4}
+              onClick={() =>
+                callBulk("dismissed", { reason: bulkReason.trim() })
+              }
+              className="rounded-md bg-foreground px-2.5 py-1 text-[11.5px] font-medium text-background hover:opacity-90 disabled:opacity-50"
+            >
+              Confirm dismiss
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setBulkMode(null);
+                setBulkReason("");
+              }}
+              className="text-[11px] text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : null}
+
       <ul className="divide-y divide-border/60">
         {recommendations.map((r) => (
-          <RecommendationRow key={r.id} rec={r} />
+          <RecommendationRow
+            key={r.id}
+            rec={r}
+            selected={selected.has(r.id)}
+            onSelect={() => toggleSelect(r.id)}
+          />
         ))}
       </ul>
     </div>
   );
 }
 
-function RecommendationRow({ rec }: { rec: SeoRecommendation }) {
+function RecommendationRow({
+  rec,
+  selected,
+  onSelect,
+}: {
+  rec: SeoRecommendation;
+  selected: boolean;
+  onSelect: () => void;
+}) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [showDismiss, setShowDismiss] = useState(false);
@@ -120,8 +309,15 @@ function RecommendationRow({ rec }: { rec: SeoRecommendation }) {
   const isInProgress = rec.status === "IN_PROGRESS";
 
   return (
-    <li className="px-4 py-3">
+    <li className={`px-4 py-3 transition-colors ${selected ? "bg-primary/5" : ""}`}>
       <div className="flex items-start gap-3">
+        <input
+          type="checkbox"
+          checked={selected}
+          onChange={onSelect}
+          className="h-3.5 w-3.5 mt-1 shrink-0"
+          aria-label="Select this recommendation"
+        />
         <span
           className={`mt-0.5 inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide shrink-0 ${tone}`}
         >
