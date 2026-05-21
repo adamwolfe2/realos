@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { OrgType } from "@prisma/client";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
+import { AdminRefreshAllButton } from "@/components/admin/seo-agent/refresh-all-button";
 
 export const metadata: Metadata = { title: "SEO Agent metrics" };
 export const dynamic = "force-dynamic";
@@ -169,10 +170,13 @@ export default async function AdminSeoAgentMetrics() {
 
   return (
     <div className="space-y-6 max-w-[1400px]">
-      <PageHeader
-        title="SEO Agent metrics"
-        description="Cross-tenant observability for the SEO Agent pipeline. Drafts, recommendations, API volume, score movement."
-      />
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <PageHeader
+          title="SEO Agent metrics"
+          description="Cross-tenant observability for the SEO Agent pipeline. Drafts, recommendations, API volume, score movement."
+        />
+        <AdminRefreshAllButton />
+      </div>
 
       {/* Top KPI strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
