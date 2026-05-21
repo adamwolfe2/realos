@@ -170,7 +170,7 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     category: "Acquisition",
     popular: true,
     setupEffort: "Drop-in snippet · 5 min",
-    brandLogoKeys: ["ga4", "linkedin"],
+    brandLogoKeys: ["appfolio"],
   },
   {
     key: "moduleLeadCapture",
@@ -380,7 +380,6 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     icon: Share2,
     category: "Operations",
     setupEffort: "Generate link · 1 min",
-    brandLogoKeys: ["slack"],
   },
 
   // ============== Pro Add-ons (paid Stripe SKUs, not free during trial) ==============
@@ -403,7 +402,6 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     icon: Sparkles,
     category: "Pro Add-ons",
     setupEffort: "Stripe checkout · instant",
-    brandLogoKeys: ["google"],
   },
   {
     key: "ls_addon_white_label",
@@ -423,7 +421,6 @@ export const MARKETPLACE_ENTRIES: CatalogEntry[] = [
     icon: Sparkles,
     category: "Pro Add-ons",
     setupEffort: "Kickoff call · we set up branding",
-    brandLogoKeys: ["figma"],
   },
 
   // ============== Coming soon (honest about what's not built yet) ==============

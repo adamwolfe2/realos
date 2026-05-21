@@ -8,16 +8,21 @@ import { Globe, Loader2, Sparkles, ExternalLink, RefreshCw } from "lucide-react"
 //
 // Pre-state (no websiteUrl on Property): a prominent card with a single
 // URL input + "Connect website" CTA. On submit, POST to
-// /api/portal/seo/scan/[propertyId] with { websiteUrl }, then poll
-// /api/portal/seo/scan/[propertyId]/status every 3 seconds so the UI
-// can show "Scanning queries... Lighthouse running... Backlinks
-// fetched..." in real time.
+// /api/portal/seo/scan/[propertyId] — the route now returns 202 with
+// { jobId } immediately and the orchestrator runs out-of-band via the
+// seo-scan-worker cron. We poll /api/portal/seo/scan/[propertyId]/status
+// every 3s; the response includes a `job` row with progressStage +
+// progressPct so we render "Querying competitors… 55%" instead of an
+// opaque spinner.
 //
 // Post-state (URL connected): a slim summary card showing the linked
-// URL + a "Re-scan now" button.
+// URL + a "Re-scan now" button that enqueues a fresh job.
 //
-// All data fetching downstream is server-side via the parent page. This
-// component owns ONLY the connect + scan lifecycle.
+// The async pattern matters because chained DataforSEO calls (Lighthouse
+// alone is 30-40s) routinely blow past Vercel's 60s synchronous-route
+// limit. Before: red "Scan is taking longer than expected" error. Now:
+// the worker keeps running for up to 5 minutes per job, the UI shows
+// honest progress, and we never time out.
 // ---------------------------------------------------------------------------
 
 type Coverage = {
@@ -29,6 +34,17 @@ type Coverage = {
   recommendationsTotal: number;
 };
 
+type JobInfo = {
+  id: string;
+  status: "QUEUED" | "RUNNING" | "DONE" | "FAILED";
+  progressStage: string | null;
+  progressPct: number;
+  error: string | null;
+  startedAt: string | null;
+  finishedAt: string | null;
+  createdAt: string;
+} | null;
+
 type Props = {
   propertyId: string;
   initialWebsiteUrl: string | null;
@@ -36,9 +52,11 @@ type Props = {
 };
 
 const POLL_INTERVAL_MS = 3_000;
-// Time after which we give up polling — if the scan hasn't returned by
-// then something's wrong (DataforSEO outage, missing keys, etc).
-const MAX_POLL_DURATION_MS = 90_000;
+// 6 minutes — generous because a real DataforSEO scan can legitimately
+// run 90-120s, and we want to leave headroom for the worker tick + an
+// automatic retry under heavy load. Past this we surface a soft warning
+// rather than killing the polling outright.
+const MAX_POLL_DURATION_MS = 360_000;
 
 export function ConnectWebsiteCard({
   propertyId,
@@ -48,6 +66,7 @@ export function ConnectWebsiteCard({
   const [url, setUrl] = React.useState(initialWebsiteUrl ?? "");
   const [websiteUrl, setWebsiteUrl] = React.useState(initialWebsiteUrl);
   const [coverage, setCoverage] = React.useState<Coverage>(initialCoverage);
+  const [job, setJob] = React.useState<JobInfo>(null);
   const [scanning, setScanning] = React.useState(false);
   const [scanError, setScanError] = React.useState<string | null>(null);
   const [scanComplete, setScanComplete] = React.useState(false);
@@ -55,37 +74,33 @@ export function ConnectWebsiteCard({
   const pollTimeoutRef = React.useRef<NodeJS.Timeout | null>(null);
   const pollStartRef = React.useRef<number>(0);
 
-  // Schedule the next status poll. Stops when coverage hasn't changed
-  // for 2 consecutive polls AND we have data, or when MAX_POLL_DURATION
-  // is hit.
+  // Poll the status endpoint. Sets coverage AND the latest job row.
+  // Completion signal flips from coverage-stabilisation (brittle) to
+  // job.status === DONE/FAILED (deterministic).
   const pollStatus = React.useCallback(async () => {
     try {
       const res = await fetch(`/api/portal/seo/scan/${propertyId}/status`);
       if (!res.ok) return;
-      const data = (await res.json()) as { coverage: Coverage };
-      setCoverage((prev) => {
-        const stable =
-          prev.serpRankingsToday === data.coverage.serpRankingsToday &&
-          prev.auditsToday === data.coverage.auditsToday &&
-          prev.backlinksToday === data.coverage.backlinksToday &&
-          prev.competitorsTotal === data.coverage.competitorsTotal;
-        const hasData =
-          data.coverage.serpRankingsToday > 0 ||
-          data.coverage.auditsToday > 0 ||
-          data.coverage.backlinksToday > 0;
-        if (stable && hasData && scanning) {
-          // Two stable polls + data present → assume scan is done.
-          setScanning(false);
-          setScanComplete(true);
-        }
-        return data.coverage;
-      });
+      const data = (await res.json()) as { coverage: Coverage; job: JobInfo };
+      setCoverage(data.coverage);
+      setJob(data.job);
+      if (data.job?.status === "DONE") {
+        setScanning(false);
+        setScanComplete(true);
+      } else if (data.job?.status === "FAILED") {
+        setScanning(false);
+        setScanError(
+          data.job.error ??
+            "Scan failed. Check the SEO Agent logs or retry in a moment.",
+        );
+      }
     } catch {
-      /* swallow — we'll retry on the next poll */
+      // Swallow — we'll retry on the next poll cycle.
     }
-  }, [propertyId, scanning]);
+  }, [propertyId]);
 
-  // Polling loop. Activated only while `scanning` is true.
+  // Polling loop. Activated only while `scanning` is true. The interval
+  // stops automatically once pollStatus marks the scan complete/failed.
   React.useEffect(() => {
     if (!scanning) {
       if (pollTimeoutRef.current) {
@@ -99,7 +114,7 @@ export function ConnectWebsiteCard({
       if (Date.now() - pollStartRef.current > MAX_POLL_DURATION_MS) {
         setScanning(false);
         setScanError(
-          "Scan is taking longer than expected. Refresh the page to see partial results — or re-run to retry.",
+          "Scan is taking longer than expected. The worker may still finish in the background — refresh the page in a minute to check.",
         );
         return;
       }
@@ -130,20 +145,21 @@ export function ConnectWebsiteCard({
       const data = (await res.json().catch(() => ({}))) as {
         ok?: boolean;
         websiteUrl?: string;
+        jobId?: string;
+        status?: string;
+        deduped?: boolean;
         error?: string;
       };
-      if (!res.ok || !data.ok) {
+      // 202 Accepted is the happy path now — orchestrator runs out-of-band.
+      if ((res.status !== 200 && res.status !== 202) || !data.ok) {
         throw new Error(data.error ?? `Scan failed (${res.status})`);
       }
       if (data.websiteUrl) setWebsiteUrl(data.websiteUrl);
-      // Immediately refresh status so the operator sees data populate
-      // without waiting for the first poll interval.
+      // Immediately fetch status so the operator sees the job row in
+      // the UI before the first 3s poll tick.
       await pollStatus();
-      // Refresh the rest of the page (server components) so freshly
-      // ingested SerpRanking / OnPageAudit rows render in their cards.
-      // We don't router.refresh() here because the polling effect
-      // will trigger it once coverage stabilises (via the parent
-      // listening for scanComplete via a Window event below).
+      // The page parent listens for this event to refresh server data
+      // when the polling effect later flips status to DONE.
       window.dispatchEvent(new CustomEvent("ls:seo-scan-complete"));
     } catch (err) {
       setScanning(false);
@@ -170,7 +186,7 @@ export function ConnectWebsiteCard({
               Connect your website
             </p>
             <h2 className="text-lg font-semibold text-foreground leading-tight">
-              Paste your URL. We'll scan it in 30 seconds.
+              Paste your URL. We&apos;ll scan it in about 90 seconds.
             </h2>
             <p className="text-[12px] text-muted-foreground mt-1 max-w-xl">
               We pull live Google rankings for your target queries, run a Lighthouse audit, check backlinks, surface your top organic competitors, and ping AI search engines to see who they cite. Then the SEO Agent recommends specific actions.
@@ -210,7 +226,7 @@ export function ConnectWebsiteCard({
           </button>
         </form>
 
-        {scanning ? <ScanProgress coverage={coverage} /> : null}
+        {scanning ? <ScanProgress job={job} coverage={coverage} /> : null}
         {scanError ? (
           <p className="mt-3 text-[12px] text-destructive">{scanError}</p>
         ) : null}
@@ -223,11 +239,11 @@ export function ConnectWebsiteCard({
     <section className="rounded-2xl border border-border bg-card p-4 md:p-5">
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="flex items-start gap-3 min-w-0">
-          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 shrink-0">
+          <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary shrink-0">
             <Globe className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-emerald-700 mb-0.5">
+            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
               Connected
             </p>
             <a
@@ -260,9 +276,9 @@ export function ConnectWebsiteCard({
           )}
         </button>
       </div>
-      {scanning ? <ScanProgress coverage={coverage} /> : null}
+      {scanning ? <ScanProgress job={job} coverage={coverage} /> : null}
       {scanComplete && !scanning ? (
-        <p className="mt-3 text-[11.5px] text-emerald-700 inline-flex items-center gap-1.5">
+        <p className="mt-3 text-[11.5px] text-primary inline-flex items-center gap-1.5">
           <Sparkles className="h-3 w-3" />
           Scan complete. Refresh the page to see updated recommendations.
         </p>
@@ -274,26 +290,36 @@ export function ConnectWebsiteCard({
   );
 }
 
-function ScanProgress({ coverage }: { coverage: Coverage }) {
-  // Each pillar progress chip pulses while idle (zero), turns checked
-  // once data lands. Gives the operator a visible "things are
-  // happening" surface during the 10-20s scan window.
+function ScanProgress({
+  job,
+  coverage,
+}: {
+  job: JobInfo;
+  coverage: Coverage;
+}) {
+  // Headline is the job's explicit progress stage when the worker has
+  // actually picked the row up. While the job is still QUEUED ("waiting
+  // for next worker tick") we show a soft pending label instead of the
+  // misleading "Scanning…".
+  const stageLabel =
+    job?.status === "RUNNING"
+      ? job.progressStage ?? "Scanning"
+      : job?.status === "QUEUED"
+        ? "Queued — worker will pick this up in under a minute"
+        : "Scanning";
+  const pct = job?.progressPct ?? 0;
+
+  // Each pillar progress chip pulses while idle (zero), turns solid blue
+  // once data lands. Gives a visible "things are happening" surface
+  // alongside the explicit stage label.
   const pillars = [
     {
       label: "SERP rankings",
       value: coverage.serpRankingsToday,
       total: coverage.targetQueries || 4,
     },
-    {
-      label: "Lighthouse",
-      value: coverage.auditsToday,
-      total: 1,
-    },
-    {
-      label: "Backlinks",
-      value: coverage.backlinksToday,
-      total: 1,
-    },
+    { label: "Lighthouse", value: coverage.auditsToday, total: 1 },
+    { label: "Backlinks", value: coverage.backlinksToday, total: 1 },
     {
       label: "Competitors",
       value: coverage.competitorsTotal,
@@ -302,35 +328,61 @@ function ScanProgress({ coverage }: { coverage: Coverage }) {
   ];
 
   return (
-    <div className="mt-4 pt-3 border-t border-border/60 grid grid-cols-2 md:grid-cols-4 gap-2">
-      {pillars.map((p) => {
-        const done = p.value >= p.total || p.value > 0;
-        return (
+    <div className="mt-4 pt-3 border-t border-border/60 space-y-3">
+      {/* Stage label + progress bar — the primary progress signal. */}
+      <div>
+        <div className="flex items-center justify-between gap-2 mb-1.5">
+          <p className="text-[11.5px] font-medium text-foreground inline-flex items-center gap-1.5">
+            <Loader2 className="h-3 w-3 animate-spin text-primary" />
+            {stageLabel}
+          </p>
+          <span className="text-[11px] tabular-nums text-muted-foreground">
+            {pct}%
+          </span>
+        </div>
+        <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
           <div
-            key={p.label}
-            className={`flex items-center gap-2 rounded-md border border-border/60 px-2.5 py-1.5 ${
-              done ? "bg-emerald-50/50" : "bg-muted/30"
-            }`}
-          >
-            {done ? (
-              <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-700 text-[10px]">
-                ✓
-              </span>
-            ) : (
-              <Loader2 className="h-3.5 w-3.5 text-primary animate-spin" />
-            )}
-            <div className="min-w-0 flex-1">
-              <p className="text-[10.5px] font-mono uppercase tracking-[0.08em] text-muted-foreground leading-tight">
-                {p.label}
-              </p>
-              <p className="text-[11.5px] font-semibold text-foreground tabular-nums leading-tight">
-                {p.value}
-                {p.total > 1 ? ` / ${p.total}` : ""}
-              </p>
+            className="h-full bg-primary transition-[width] duration-700 ease-out"
+            style={{ width: `${Math.min(100, Math.max(2, pct))}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Per-pillar pillbox — secondary signal, helps the operator see
+          which stages have already landed real data without watching the
+          progress bar. */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        {pillars.map((p) => {
+          const done = p.value >= p.total || p.value > 0;
+          return (
+            <div
+              key={p.label}
+              className={`flex items-center gap-2 rounded-md border px-2.5 py-1.5 ${
+                done
+                  ? "border-primary/30 bg-primary/5"
+                  : "border-border/60 bg-muted/30"
+              }`}
+            >
+              {done ? (
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold">
+                  ✓
+                </span>
+              ) : (
+                <Loader2 className="h-3.5 w-3.5 text-primary/60 animate-spin" />
+              )}
+              <div className="min-w-0 flex-1">
+                <p className="text-[10.5px] font-mono uppercase tracking-[0.08em] text-muted-foreground leading-tight">
+                  {p.label}
+                </p>
+                <p className="text-[11.5px] font-semibold text-foreground tabular-nums leading-tight">
+                  {p.value}
+                  {p.total > 1 ? ` / ${p.total}` : ""}
+                </p>
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

@@ -105,6 +105,10 @@
       "schedule": "0 4 * * *"
     },
     {
+      "path": "/api/cron/seo-scan-worker",
+      "schedule": "* * * * *"
+    },
+    {
       "path": "/api/cron/seo-fact-aggregate",
       "schedule": "0 5 * * *"
     },

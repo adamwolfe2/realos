@@ -506,6 +506,7 @@ model Organization {
   propertyCompetitorScans PropertyCompetitorScan[]
   // DataforSEO ingestion (Phase 1.5)
   seoTargetQueries        SeoTargetQuery[]
+  seoScanJobs             SeoScanJob[]
   serpRankings            SerpRanking[]
   onPageAudits            OnPageAudit[]
   backlinkSummaries       BacklinkSummary[]
@@ -904,6 +905,7 @@ model Property {
   competitorScans      PropertyCompetitorScan[]
   // DataforSEO ingestion (Phase 1.5)
   seoTargetQueries     SeoTargetQuery[]
+  seoScanJobs          SeoScanJob[]
   serpRankings         SerpRanking[]
   onPageAudits         OnPageAudit[]
   backlinkSummaries    BacklinkSummary[]
@@ -3311,6 +3313,15 @@ model AeoCitationCheck {
   prompt             String            @db.Text
   queryRunAt         DateTime          @default(now())
   status             AeoCitationStatus
+  /// Whether the property/brand was *mentioned* anywhere in the response,
+  /// regardless of whether a URL was cited. Searchable.ai-style breakdown:
+  /// "Mentioned?" and "Cited?" are independent — an engine can mention you
+  /// without linking, or cite a competitor while mentioning you in passing.
+  /// Backfilled in the migration from `status IN (CITED, COMPETITOR_CITED)`.
+  mentioned          Boolean           @default(false)
+  /// Rank within the engine's answer (1 = top-mentioned). Null when not
+  /// mentioned or when the engine returns an unranked enumeration.
+  position           Int?
   responseText       String            @db.Text
   citedUrl           String?
   competitorsCited   String[]
@@ -3324,6 +3335,7 @@ model AeoCitationCheck {
   @@index([propertyId, queryRunAt])
   @@index([engine, queryRunAt])
   @@index([neighborhoodPageId, queryRunAt])
+  @@index([orgId, mentioned, queryRunAt])
 }
 
 // ---------------------------------------------------------------------------
@@ -3894,6 +3906,68 @@ model SeoTargetQuery {
 
   @@unique([orgId, propertyId, query])
   @@index([orgId, propertyId, active])
+}
+
+// ---------------------------------------------------------------------------
+// SeoScanJob — async scan queue.
+//
+// DataforSEO scans chain 10 API calls per property (SERP × N queries +
+// Lighthouse + backlinks + competitors + on-page + intent + ranked KWs +
+// intersection + local pack). Lighthouse alone often takes 30–40s, well
+// past Vercel's 60s synchronous-route ceiling.
+//
+// Flow:
+//   1. Operator clicks "Re-scan now" → POST /api/portal/seo/scan/[id]
+//      inserts a QUEUED row and returns 202 with { jobId } immediately.
+//   2. /api/cron/seo-scan-worker (every minute) atomically claims the
+//      oldest QUEUED row via updateMany(where: { status: QUEUED, id })
+//      → updates to RUNNING + startedAt, then runs the orchestrator
+//      stage-by-stage, persisting `progressStage` between calls.
+//   3. UI polls /api/portal/seo/scan/[id]/status which now joins the
+//      latest SeoScanJob row and renders "Querying competitors… (4/10)".
+//   4. A reaper (same worker route) flips RUNNING rows older than 10
+//      minutes back to QUEUED with attempts++ so stuck jobs recover.
+// ---------------------------------------------------------------------------
+model SeoScanJob {
+  id         String        @id @default(cuid())
+  orgId      String
+  org        Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String
+  property   Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  status         SeoScanJobStatus @default(QUEUED)
+  /// Human-readable label of the current stage ("SERP rankings",
+  /// "Lighthouse audit", "Backlinks summary", etc). Drives the
+  /// "Querying X…" line in the operator UI.
+  progressStage  String?
+  /// 0-100 progress estimate. Worker bumps this after each completed
+  /// stage so a property with 10 stages ticks up 10pp per call.
+  progressPct    Int              @default(0)
+  /// Final orchestrator stats blob (serpQueriesScanned, lighthouseAudits,
+  /// errors[], costEstimateUsd). Populated when status flips to DONE/FAILED.
+  result         Json?
+  /// Fatal error message if the orchestrator threw uncaught. Per-stage
+  /// errors are inside `result.errors` instead.
+  error          String?          @db.Text
+  /// Tracks worker retries — incremented every time the reaper flips a
+  /// stuck RUNNING row back to QUEUED. Stops retrying past 3.
+  attempts       Int              @default(0)
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  @@index([orgId, status])
+  @@index([propertyId, createdAt])
+  @@index([status, createdAt])
+}
+
+enum SeoScanJobStatus {
+  QUEUED
+  RUNNING
+  DONE
+  FAILED
 }
 
 model SerpRanking {

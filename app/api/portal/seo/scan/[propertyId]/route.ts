@@ -6,13 +6,9 @@ import {
   ForbiddenError,
   tenantWhere,
 } from "@/lib/tenancy/scope";
-import { syncPropertyFromDataforSeo } from "@/lib/seo/sync-orchestrator";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-// Allow up to 60s so a synchronous first scan with 4 SERP calls +
-// Lighthouse + backlinks + competitors comfortably fits.
-export const maxDuration = 60;
 
 // ---------------------------------------------------------------------------
 // POST /api/portal/seo/scan/[propertyId]
@@ -20,13 +16,24 @@ export const maxDuration = 60;
 // "Connect your website" — operator submits a URL (or leaves blank to
 // re-use Property.websiteUrl). We:
 //   1. Save the URL to Property.websiteUrl if provided
-//   2. Trigger the DataforSEO sync orchestrator synchronously (up to
-//      ~30s — auto-derives starter target queries, SERP scan, Lighthouse,
-//      backlinks, competitor domains)
-//   3. Return the sync stats so the UI can refresh immediately
+//   2. Enqueue a SeoScanJob row (status=QUEUED) and return 202 with
+//      { jobId } immediately
+//   3. /api/cron/seo-scan-worker (every minute) claims + drains the
+//      queue. Each stage of the orchestrator updates progressStage +
+//      progressPct so the UI can render "Querying competitors… (4/10)".
+//   4. UI polls /api/portal/seo/scan/[propertyId]/status which returns
+//      the latest job row alongside the coverage snapshot.
+//
+// We never run the orchestrator synchronously here — DataforSEO's
+// Lighthouse stage alone routinely takes 30-40s and chained with the
+// other 9 calls blows past Vercel's 60s synchronous-route ceiling.
 //
 // Tenant-scoped via requireScope + tenantWhere. Property-restricted
-// users (UserPropertyAccess) cannot scan a sibling property's URL.
+// users (UserPropertyAccess) cannot enqueue a sibling property's scan.
+//
+// Dedupe: if there's already a QUEUED or RUNNING job for this property
+// we return the existing jobId instead of creating a duplicate. Operators
+// who mash the button repeatedly get one scan, not five.
 // ---------------------------------------------------------------------------
 
 const bodySchema = z.object({
@@ -45,7 +52,6 @@ function normalizeUrl(raw: string): string | null {
   const withProto = trimmed.startsWith("http") ? trimmed : `https://${trimmed}`;
   try {
     const u = new URL(withProto);
-    // Strip query + hash so the persisted URL is the canonical home.
     return `${u.protocol}//${u.hostname}${u.pathname === "/" ? "" : u.pathname}`;
   } catch {
     return null;
@@ -88,8 +94,9 @@ export async function POST(
     return NextResponse.json({ error: "Property not found" }, { status: 404 });
   }
 
-  // Persist the URL if the operator provided one. Normalize so we
-  // always store https://hostname/path and never a bare domain.
+  // Persist the URL if the operator provided one. Normalize so we always
+  // store https://hostname/path and never a bare domain. Stripping the
+  // path's trailing slash makes downstream URL matching consistent.
   let websiteUrl = property.websiteUrl;
   if (parsed.websiteUrl !== undefined) {
     const normalized = parsed.websiteUrl
@@ -120,17 +127,37 @@ export async function POST(
     );
   }
 
-  // Run the scan synchronously. Each stage has its own try/catch in the
-  // orchestrator so a single failed call doesn't abort the rest. Total
-  // wall time typically 10-20s; we cap maxDuration at 60s above.
-  const stats = await syncPropertyFromDataforSeo({
-    orgId: property.orgId,
-    propertyId: property.id,
+  // Dedupe — return any existing in-flight job for this property instead
+  // of stacking duplicates. Operators mashing "Re-scan" should get one
+  // scan, not five queued behind it.
+  const inflight = await prisma.seoScanJob.findFirst({
+    where: {
+      propertyId: property.id,
+      status: { in: ["QUEUED", "RUNNING"] },
+    },
+    orderBy: { createdAt: "desc" },
+    select: { id: true, status: true, progressStage: true, progressPct: true },
+  });
+  if (inflight) {
+    return NextResponse.json(
+      { ok: true, jobId: inflight.id, status: inflight.status, deduped: true },
+      { status: 202 },
+    );
+  }
+
+  const job = await prisma.seoScanJob.create({
+    data: {
+      orgId: property.orgId,
+      propertyId: property.id,
+      status: "QUEUED",
+      progressStage: "Queued for next worker tick",
+      progressPct: 0,
+    },
+    select: { id: true, status: true },
   });
 
-  return NextResponse.json({
-    ok: true,
-    websiteUrl,
-    stats,
-  });
+  return NextResponse.json(
+    { ok: true, jobId: job.id, status: job.status, websiteUrl },
+    { status: 202 },
+  );
 }

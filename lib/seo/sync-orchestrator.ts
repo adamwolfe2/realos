@@ -77,10 +77,34 @@ function deriveDomainFromUrl(url: string | null): string | null {
  * Safe to call without DataforSEO keys configured — every fetch falls
  * through with { skipped: true } and we just return zero stats.
  */
+/**
+ * Optional progress callback fired between stages. Powers the
+ * SeoScanJob progressStage/progressPct columns so the operator UI
+ * can render "Querying competitors… (4/10)" in real time.
+ *
+ * Callback errors are swallowed — progress reporting is best-effort,
+ * never blocks the orchestrator.
+ */
+export type SyncProgressCallback = (input: {
+  stage: string;
+  pct: number;
+}) => void | Promise<void>;
+
 export async function syncPropertyFromDataforSeo(input: {
   orgId: string;
   propertyId: string;
+  onProgress?: SyncProgressCallback;
 }): Promise<SyncStats> {
+  const onProgress = input.onProgress;
+  async function reportProgress(stage: string, pct: number) {
+    if (!onProgress) return;
+    try {
+      await onProgress({ stage, pct });
+    } catch {
+      // Progress reporting failures must never abort the scan.
+    }
+  }
+
   const stats: SyncStats = {
     serpQueriesScanned: 0,
     lighthouseAudits: 0,
@@ -114,6 +138,7 @@ export async function syncPropertyFromDataforSeo(input: {
   // -------------------------------------------------------------------------
   // Step 0 — ensure the property has at least 1 target query (auto-derive).
   // -------------------------------------------------------------------------
+  await reportProgress("Deriving target queries", 5);
   let targetQueries = await prisma.seoTargetQuery.findMany({
     where: { orgId: property.orgId, propertyId: property.id, active: true },
     take: MAX_QUERIES_PER_PROPERTY,
@@ -160,6 +185,7 @@ export async function syncPropertyFromDataforSeo(input: {
   // -------------------------------------------------------------------------
   // Step 1 — SERP ranking per target query.
   // -------------------------------------------------------------------------
+  await reportProgress("Scanning Google SERPs", 15);
   const ourDomain = deriveDomainFromUrl(property.websiteUrl);
   for (const tq of targetQueries) {
     const res = await fetchSerpOrganic({
@@ -238,6 +264,7 @@ export async function syncPropertyFromDataforSeo(input: {
   // -------------------------------------------------------------------------
   // Step 2 — On-page Lighthouse audit for the property's homepage.
   // -------------------------------------------------------------------------
+  await reportProgress("Running Lighthouse audit", 30);
   if (property.websiteUrl) {
     const auditRes = await fetchLighthouseScores({ url: property.websiteUrl });
     if ("ok" in auditRes && auditRes.ok) {
@@ -291,6 +318,7 @@ export async function syncPropertyFromDataforSeo(input: {
   // -------------------------------------------------------------------------
   // Step 3 — Backlinks summary for the property's domain.
   // -------------------------------------------------------------------------
+  await reportProgress("Fetching backlink profile", 45);
   if (ourDomain) {
     const blRes = await fetchBacklinksSummary({ target: ourDomain });
     if ("ok" in blRes && blRes.ok) {
@@ -342,6 +370,7 @@ export async function syncPropertyFromDataforSeo(input: {
   // -------------------------------------------------------------------------
   // Step 4 — Organic competitor domains (enriches PropertyCompetitorScan).
   // -------------------------------------------------------------------------
+  await reportProgress("Identifying organic competitors", 55);
   if (ourDomain) {
     const compRes = await fetchCompetitorDomains({
       domain: ourDomain,
@@ -406,6 +435,7 @@ export async function syncPropertyFromDataforSeo(input: {
   // broken links, image-alt issues, schema markup. The SEO Agent rules
   // ONPAGE_AUDIT + SCHEMA_GAP read from OnPageInstantAudit.
   // -------------------------------------------------------------------------
+  await reportProgress("Auditing on-page SEO", 65);
   if (property.websiteUrl) {
     const auditRes = await fetchInstantPageAudit({ url: property.websiteUrl });
     if ("ok" in auditRes && auditRes.ok) {
@@ -494,6 +524,7 @@ export async function syncPropertyFromDataforSeo(input: {
   // Single batched call (up to 1000 keywords) so the cost stays at ~$0.01
   // total regardless of query count.
   // -------------------------------------------------------------------------
+  await reportProgress("Classifying search intent", 75);
   if (targetQueries.length > 0) {
     const queryStrings = targetQueries.map((q) => q.query);
     const intentRes = await fetchSearchIntent({ keywords: queryStrings });
@@ -529,6 +560,7 @@ export async function syncPropertyFromDataforSeo(input: {
   // for cost). Drives the position-bucket chart + the keyword portfolio
   // breakdown.
   // -------------------------------------------------------------------------
+  await reportProgress("Mapping ranked keywords", 82);
   if (ourDomain) {
     const rkRes = await fetchRankedKeywords({
       domain: ourDomain,
@@ -593,6 +625,7 @@ export async function syncPropertyFromDataforSeo(input: {
   // Pulls queries each competitor outranks us on. Drives the
   // KEYWORD_GAP_VS_COMPETITOR rule + the gap-table chart.
   // -------------------------------------------------------------------------
+  await reportProgress("Finding competitor keyword gaps", 90);
   if (ourDomain) {
     const topCompetitors = await prisma.propertyCompetitorScan
       .findMany({
@@ -684,6 +717,7 @@ export async function syncPropertyFromDataforSeo(input: {
   // Critical for apartment marketing: prospects search "apartments near
   // me" -> see the map -> click. We were blind to this before.
   // -------------------------------------------------------------------------
+  await reportProgress("Checking Google Map Pack rankings", 96);
   for (const tq of targetQueries) {
     const lpRes = await fetchLocalPack({
       query: tq.query,

@@ -352,27 +352,19 @@ function ModuleCard({
   const isToggle = m.kind === "toggle";
   const isConcierge = m.kind === "concierge";
 
-  // Drastically simplified card. Was: icon + title + tagline + 4 bullets
-  // + integrates-with row + price + setup-effort + CTA. Read as a feature
-  // brochure stacked 11 times. Now: icon + title + status, 1-line
-  // tagline, footer row with logos + price + CTA. The bullets and
-  // integration list moved to the module detail page (clicked into via
-  // CTA). Less work to scan, more visual presence per card.
-  // Premium 2026 redesign: tier-coded top stripe (active=green, included=blue,
-  // concierge=amber, coming=muted), layered card depth via .ls-card, slightly
-  // larger icon chip with gradient.
-  const stripeColor =
-    isComing
-      ? "transparent"
-      : isConcierge
-        ? "linear-gradient(90deg, #f59e0b, #fbbf24)"
-        : isEnabled
-          ? "linear-gradient(90deg, #16a34a, #4ade80)"
-          : isIncluded
-            ? "linear-gradient(90deg, #2563EB, #60A5FA)"
-            : isAddon
-              ? "linear-gradient(90deg, #7c3aed, #a78bfa)"
-              : "transparent";
+  // Single-accent design: every card uses the LeaseStack blue stripe. We
+  // signal state with stripe *opacity*, not hue — active is the boldest
+  // blue, included/addon/concierge sit one step down, available toggles
+  // are a soft hairline, coming-soon is invisible. This keeps the page
+  // visually cohesive: one color, one brand, no per-tier rainbow. State
+  // still reads clearly through the status pill + CTA, where it belongs.
+  const stripeColor = isComing
+    ? "transparent"
+    : isEnabled
+      ? "linear-gradient(90deg, #2563EB, #60A5FA)"
+      : isIncluded || isAddon || isConcierge
+        ? "linear-gradient(90deg, rgba(37,99,235,0.85), rgba(96,165,250,0.85))"
+        : "linear-gradient(90deg, rgba(37,99,235,0.35), rgba(96,165,250,0.35))";
 
   return (
     <article

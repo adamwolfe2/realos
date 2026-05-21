@@ -64,6 +64,7 @@ export async function GET(
     backlinksToday,
     competitorsTotal,
     recommendationsTotal,
+    latestJob,
   ] = await Promise.all([
     prisma.seoTargetQuery
       .count({
@@ -93,6 +94,24 @@ export async function GET(
         where: { orgId: property.orgId, propertyId, status: "OPEN" },
       })
       .catch(() => 0),
+    // Latest scan job — drives the "Querying competitors… (4/10)" line
+    // in ConnectWebsiteCard. The UI polls this endpoint every 3s.
+    prisma.seoScanJob
+      .findFirst({
+        where: { propertyId },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          status: true,
+          progressStage: true,
+          progressPct: true,
+          error: true,
+          startedAt: true,
+          finishedAt: true,
+          createdAt: true,
+        },
+      })
+      .catch(() => null),
   ]);
 
   return NextResponse.json({
@@ -106,5 +125,6 @@ export async function GET(
       competitorsTotal,
       recommendationsTotal,
     },
+    job: latestJob,
   });
 }
