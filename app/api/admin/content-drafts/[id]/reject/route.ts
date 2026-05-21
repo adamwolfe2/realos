@@ -80,6 +80,26 @@ export async function POST(
       reviewNotes: parsed.notes,
     },
   });
+  // Audit trail — capture who rejected/requested-changes on this draft.
+  await prisma.auditEvent
+    .create({
+      data: {
+        orgId: draft.orgId,
+        userId,
+        action: "UPDATE",
+        entityType: "ContentDraft",
+        entityId: draft.id,
+        description: `${parsed.mode === "reject" ? "REJECTED" : "CHANGES_REQUESTED"} · ${parsed.notes.slice(0, 120)}`,
+        diff: {
+          from: draft.status,
+          to:
+            parsed.mode === "reject" ? "REJECTED" : "CHANGES_REQUESTED",
+          notes: parsed.notes,
+        } as never,
+      },
+    })
+    .catch(() => undefined);
+
   // Fire-and-forget operator notification (in-portal bell + email).
   const reviewedStatus =
     parsed.mode === "reject" ? "REJECTED" : "CHANGES_REQUESTED";

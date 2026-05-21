@@ -83,6 +83,25 @@ export async function POST(
     },
   });
 
+  // Audit trail — capture who approved/shipped this draft.
+  await prisma.auditEvent
+    .create({
+      data: {
+        orgId: draft.orgId,
+        userId,
+        action: "UPDATE",
+        entityType: "ContentDraft",
+        entityId: draft.id,
+        description: `${ship ? "SHIPPED" : "APPROVED"}${body?.notes ? ` · ${body.notes.slice(0, 120)}` : ""}`,
+        diff: {
+          from: draft.status,
+          to: ship ? "SHIPPED" : "APPROVED",
+          notes: body?.notes ?? null,
+        } as never,
+      },
+    })
+    .catch(() => undefined);
+
   // Close out the linked recommendation if any. Best-effort.
   if (draft.recommendationId) {
     await prisma.seoActionRecommendation
