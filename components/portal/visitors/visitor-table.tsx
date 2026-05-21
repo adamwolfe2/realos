@@ -92,15 +92,16 @@ export function VisitorTable({ rows }: Props) {
   };
 
   // Stub bulk actions. Both kept as stubs because the current
-  // /portal/audiences pipeline is one-way (AudienceLab segments are
-  // pulled from AL — there's no org-controlled "push these visitors to
-  // an audience" model). Send-to-ads depends on the same sync
-  // infrastructure (push to Meta / Google / TikTok via AL destinations).
-  // Toast copy makes the stub status explicit.
+  // /portal/audiences pipeline is one-way (segments are pulled from
+  // the upstream identity provider — there's no org-controlled "push
+  // these visitors to an audience" model yet). Send-to-ads depends
+  // on the same sync infrastructure (push to Meta / Google / TikTok
+  // via the pixel's destinations). Toast copy reads vendor-agnostic;
+  // operators see "the pixel" not the third-party brand.
   const stubPushToAudience = () => {
     toast.message("Pushing visitors to audiences is coming soon", {
       description:
-        "Audiences today are pulled from AudienceLab. Track outbound push at /portal/insights.",
+        "Audiences today are pulled from the pixel. Track outbound push at /portal/insights.",
     });
     setSelected(new Set());
   };

@@ -133,10 +133,9 @@ export function CursiveSetupWizard({
             Turn anonymous visitors into named leads
           </h3>
           <p className="text-[11px] text-muted-foreground leading-relaxed">
-            Connect Cursive (AudienceLab) in one flow — paste the URL we mint
-            below into your Cursive pixel&apos;s webhook field and we&apos;ll
-            auto-detect your Pixel ID from the first event. No copy-pasting
-            IDs back and forth.
+            Connect Cursive in one flow. Paste the URL we mint below into your
+            Cursive pixel&apos;s webhook field and we&apos;ll auto-detect your
+            Pixel ID from the first event. No copy-pasting IDs back and forth.
           </p>
         </div>
         <div className="rounded-md border border-border bg-muted/30 p-4 space-y-4">

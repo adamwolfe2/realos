@@ -33,13 +33,13 @@ export default async function AudienceSyncSettingsPage() {
           </Link>
         }
         title="Audience Sync settings"
-        description="Connection details for this workspace. Set a personal AudienceLab key to override the platform default."
+        description="Connection details for this workspace. Set a personal pixel key to override the platform default."
       />
 
       <DashboardSection
-        eyebrow="AudienceLab connection"
+        eyebrow="Pixel connection"
         title="Data source"
-        description="Use a personal AudienceLab API key for this org instead of the platform default. The key is encrypted at rest and only the last 4 characters are ever displayed."
+        description="Use a personal pixel API key for this org instead of the platform default. The key is encrypted at rest and only the last 4 characters are ever displayed."
       >
         <ApiKeySettings
           hasOverride={status.hasOverride}

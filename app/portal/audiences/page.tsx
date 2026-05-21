@@ -244,11 +244,11 @@ export default async function AudiencesPage() {
 
       <PageHeader
         title="Audience segments"
-        description="Live segments from your AudienceLab catalog. Push to ad accounts, CRMs, or download as CSV."
+        description="Live segments from your pixel catalog. Push to ad accounts, CRMs, or download as CSV."
         meta={
           usingCustomKey ? (
             <>
-              Using a custom AudienceLab key.{" "}
+              Using a custom pixel key.{" "}
               <Link
                 href="/portal/audiences/settings"
                 className="underline-offset-2 hover:underline text-foreground"
@@ -282,7 +282,7 @@ export default async function AudiencesPage() {
           hint={
             segments.length > 0
               ? `${formatCount(totalReach)} total reach`
-              : "Pull your AL catalog to begin"
+              : "Pull your pixel catalog to begin"
           }
           icon={<Target className="h-3.5 w-3.5" />}
         />
@@ -326,7 +326,7 @@ export default async function AudiencesPage() {
         title="Available segments"
         description={
           segments.length === 0
-            ? "Click Add segment to paste an AudienceLab segment ID. We validate it on save and unlock everything else from there."
+            ? "Click Add segment to paste a segment ID. We validate it on save and unlock everything else from there."
             : `${segments.length} segment${segments.length === 1 ? "" : "s"} ready to push. Search, filter, and push inline without leaving the page.`
         }
         href="/portal/audiences/destinations"

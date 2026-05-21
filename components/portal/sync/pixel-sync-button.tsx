@@ -98,7 +98,7 @@ export function PixelSyncButton({
       <button
         type="button"
         disabled
-        title="Bind an AudienceLab segment in admin to enable on-demand sync"
+        title="Bind a pixel segment in admin to enable on-demand sync"
         className="inline-flex items-center justify-center gap-1.5 rounded-md border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground/70 cursor-not-allowed h-[34px] min-w-[120px]"
       >
         <RefreshCw className="h-3 w-3" />
