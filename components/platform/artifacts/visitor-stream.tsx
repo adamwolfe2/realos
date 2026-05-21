@@ -27,30 +27,41 @@ type Visitor = {
 
 // Real-person portraits via randomuser.me (free, stable CDN, diverse, used in countless marketing demos).
 // Demographic notes: student-aged (men/women in 20s) for student-housing context + a couple of older parent demographics.
+//
+// Norman feedback (2026-05-21): "people scroll EXTREMELY quick — we need
+// 3-5 reveals at a time, not 1 at a time." The POOL is now heavy on
+// anonymous-with-reveal rows so any 5-row window has multiple reveals
+// in flight at once. The initial mount also fires a staggered wave so
+// the visitor sees 4 reveals within ~2.5s of landing on the page.
 const POOL: Omit<Visitor, "id" | "ago">[] = [
-  { initials: "MR", name: "Marisol Reyes",    org: "rising sophomore",       page: "/floor-plans/2-bed",  color: "#2563EB", resolved: true,
-    photo: "https://randomuser.me/api/portraits/women/68.jpg" },
-  { initials: "DJ", name: "Derek Johansson",  org: "parent · Illinois",       page: "/parents",            color: "#5B8CE6", resolved: true,
-    photo: "https://randomuser.me/api/portraits/men/52.jpg" },
-  // Anonymous that resolves to Maya Patel
+  // Anonymous → Maya Patel  (initial-wave reveal #1)
   { initials: "?",  name: "Anonymous visitor", org: "mobile · west coast",     page: "/floor-plans",        color: "#94A3B8", resolved: false,
     revealsTo: { initials: "MP", name: "Maya Patel",     org: "UC Berkeley · rising junior",  color: "#2563EB", photo: "https://randomuser.me/api/portraits/women/22.jpg" } },
-  { initials: "AL", name: "Aisha Lin",        org: "campus transfer",         page: "/amenities",          color: "#2563EB", resolved: true,
-    photo: "https://randomuser.me/api/portraits/women/79.jpg" },
-  { initials: "TM", name: "Tomás Mendes",     org: "NYU · rising junior",     page: "/floor-plans/3-bed",  color: "#5B8CE6", resolved: true,
-    photo: "https://randomuser.me/api/portraits/men/41.jpg" },
-  // Anonymous → Ethan Kim
+  // Anonymous → Ethan Kim   (initial-wave reveal #2)
   { initials: "?",  name: "Anonymous visitor", org: "mobile · Oakland",        page: "/gallery",            color: "#94A3B8", resolved: false,
     revealsTo: { initials: "EK", name: "Ethan Kim",      org: "Cal Poly · sophomore",         color: "#5B8CE6", photo: "https://randomuser.me/api/portraits/men/85.jpg" } },
-  { initials: "SP", name: "Sofia Petrova",    org: "parent · California",     page: "/parents-faq",        color: "#2563EB", resolved: true,
-    photo: "https://randomuser.me/api/portraits/women/45.jpg" },
-  { initials: "RK", name: "Ravi Krishnan",    org: "rising junior",           page: "/tour/schedule",      color: "#2563EB", resolved: true,
-    photo: "https://randomuser.me/api/portraits/men/29.jpg" },
-  // Anonymous → Olivia Bennett
+  // Anonymous → Olivia Bennett (initial-wave reveal #3)
   { initials: "?",  name: "Anonymous visitor", org: "Seattle, WA",             page: "/location",           color: "#94A3B8", resolved: false,
     revealsTo: { initials: "OB", name: "Olivia Bennett", org: "U Washington · parent",         color: "#5B8CE6", photo: "https://randomuser.me/api/portraits/women/12.jpg" } },
-  { initials: "JW", name: "Jordan Wu",        org: "Stanford · transfer",     page: "/floor-plans/1-bed",  color: "#5B8CE6", resolved: true,
-    photo: "https://randomuser.me/api/portraits/men/36.jpg" },
+  // Anonymous → Jordan Wu   (initial-wave reveal #4)
+  { initials: "?",  name: "Anonymous visitor", org: "Bay Area · mobile",       page: "/floor-plans/1-bed",  color: "#94A3B8", resolved: false,
+    revealsTo: { initials: "JW", name: "Jordan Wu",      org: "Stanford · transfer",          color: "#5B8CE6", photo: "https://randomuser.me/api/portraits/men/36.jpg" } },
+  // Anonymous → Aisha Lin   (initial-wave reveal #5)
+  { initials: "?",  name: "Anonymous visitor", org: "campus IP",               page: "/amenities",          color: "#94A3B8", resolved: false,
+    revealsTo: { initials: "AL", name: "Aisha Lin",      org: "campus transfer",              color: "#2563EB", photo: "https://randomuser.me/api/portraits/women/79.jpg" } },
+  // Identified row mixed in (rotation cycles bring more anonymous in via the loop)
+  { initials: "DJ", name: "Derek Johansson",  org: "parent · Illinois",       page: "/parents",            color: "#5B8CE6", resolved: true,
+    photo: "https://randomuser.me/api/portraits/men/52.jpg" },
+  // Anonymous → Marisol Reyes  (rotation reveal)
+  { initials: "?",  name: "Anonymous visitor", org: "mobile · Bay Area",       page: "/floor-plans/2-bed",  color: "#94A3B8", resolved: false,
+    revealsTo: { initials: "MR", name: "Marisol Reyes",  org: "rising sophomore",             color: "#2563EB", photo: "https://randomuser.me/api/portraits/women/68.jpg" } },
+  { initials: "TM", name: "Tomás Mendes",     org: "NYU · rising junior",     page: "/floor-plans/3-bed",  color: "#5B8CE6", resolved: true,
+    photo: "https://randomuser.me/api/portraits/men/41.jpg" },
+  // Anonymous → Sofia Petrova  (rotation reveal)
+  { initials: "?",  name: "Anonymous visitor", org: "Sacramento, CA",          page: "/parents-faq",        color: "#94A3B8", resolved: false,
+    revealsTo: { initials: "SP", name: "Sofia Petrova",  org: "parent · California",          color: "#2563EB", photo: "https://randomuser.me/api/portraits/women/45.jpg" } },
+  { initials: "RK", name: "Ravi Krishnan",    org: "rising junior",           page: "/tour/schedule",      color: "#2563EB", resolved: true,
+    photo: "https://randomuser.me/api/portraits/men/29.jpg" },
 ];
 
 const ACCENT = "#2563EB";
@@ -58,6 +69,21 @@ const INK = "#1E2A3A";
 const MUTED = "#94A3B8";
 const BORDER = "#E2E8F0";
 const PARCHMENT = "#F1F5F9";
+
+// Per-row reveal-delay schedule. Norman feedback (2026-05-21): "people
+// scroll EXTREMELY quick — we need 3-5 reveals at a time, not 1 at a
+// time." The initial mount renders 5 rows already in flight; this
+// table tells each row HOW MUCH to delay its anonymous → identified
+// flip so the visitor sees a staggered wave instead of one slow reveal.
+// Pattern: row 0 fires at ~500ms, then a fresh reveal every ~450ms,
+// so all 5 land inside a ~2.5s window. After that the rotation
+// interval drops new anonymous rows in at the top with the standard
+// 1500ms reveal — so steady-state still has 2-3 reveals in flight.
+const INITIAL_REVEAL_DELAYS_MS = [500, 950, 1400, 1850, 2300];
+
+// Rotation interval. Tightened from 3.4s → 2.6s so the steady-state
+// feed feels alive at a glance.
+const ROTATION_MS = 2600;
 
 export function VisitorStream() {
   const [rows, setRows] = useState<Visitor[]>(() =>
@@ -86,7 +112,7 @@ export function VisitorStream() {
         }));
         return [fresh, ...aged].slice(0, 5);
       });
-    }, 3400);
+    }, ROTATION_MS);
     return () => clearInterval(id);
   }, []);
 
@@ -159,9 +185,24 @@ export function VisitorStream() {
       </div>
 
       <ul>
-        {rows.map((v, i) => (
-          <VisitorRow key={v.id} v={v} isTop={i === 0} isLast={i === rows.length - 1} />
-        ))}
+        {rows.map((v, i) => {
+          // Initial mount only: every row in the initial slice (id 0-4)
+          // uses the staggered wave delay. Anything that comes in via
+          // rotation (id >= 5) uses the snappy default 1500ms.
+          const isInitial = v.id < INITIAL_REVEAL_DELAYS_MS.length;
+          const revealDelayMs = isInitial
+            ? INITIAL_REVEAL_DELAYS_MS[v.id]
+            : 1500;
+          return (
+            <VisitorRow
+              key={v.id}
+              v={v}
+              isTop={i === 0}
+              isLast={i === rows.length - 1}
+              revealDelayMs={revealDelayMs}
+            />
+          );
+        })}
       </ul>
 
       <div
@@ -209,7 +250,17 @@ export function VisitorStream() {
  * - Badge swaps from "Anonymous" → "Just identified" (pulses for 2.5s) → "Identified".
  * - Org line updates with the resolved identity.
  */
-function VisitorRow({ v, isTop, isLast }: { v: Visitor; isTop: boolean; isLast: boolean }) {
+function VisitorRow({
+  v,
+  isTop,
+  isLast,
+  revealDelayMs = 1500,
+}: {
+  v: Visitor;
+  isTop: boolean;
+  isLast: boolean;
+  revealDelayMs?: number;
+}) {
   const [revealed, setRevealed] = useState(v.resolved);
   const [justRevealed, setJustRevealed] = useState(false);
 
@@ -218,18 +269,22 @@ function VisitorRow({ v, isTop, isLast }: { v: Visitor; isTop: boolean; isLast: 
     setRevealed(v.resolved);
     setJustRevealed(false);
     if (v.resolved || !v.revealsTo) return;
+    // Norman feedback (2026-05-21): the initial 5 rows now stagger
+    // reveals using INITIAL_REVEAL_DELAYS_MS (500ms, 950ms, 1400ms,
+    // 1850ms, 2300ms) so the visitor sees a wave of 5 identifications
+    // within ~2.5s of landing. Rotation rows reuse the default 1500ms.
     const t1 = setTimeout(() => {
       setRevealed(true);
       setJustRevealed(true);
-    }, 1500);
+    }, revealDelayMs);
     const t2 = setTimeout(() => {
       setJustRevealed(false);
-    }, 4000);
+    }, revealDelayMs + 2500);
     return () => {
       clearTimeout(t1);
       clearTimeout(t2);
     };
-  }, [v.id, v.resolved, v.revealsTo]);
+  }, [v.id, v.resolved, v.revealsTo, revealDelayMs]);
 
   // Pick which identity to render — anonymous source vs revealed target
   const showResolved = revealed && (v.resolved || !!v.revealsTo);
