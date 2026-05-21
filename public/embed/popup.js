@@ -293,6 +293,10 @@
     } catch (_) { return true; }
   }
   function markShown(popup) {
+    // Preview mode never writes the dedup flag — otherwise the very
+    // first preview render would silence every subsequent preview
+    // load and we'd be back to "?lspopup=preview doesn't work."
+    if (PREVIEW_MODE) return;
     try {
       var key = frequencyKey(popup.id);
       var value = String(Date.now());
@@ -302,6 +306,11 @@
   }
 
   function urlMatches(popup) {
+    // Preview mode renders regardless of the campaign's URL filter,
+    // so operators can preview from any page (including from the
+    // homepage even when the campaign is path-restricted to e.g.
+    // /pricing or /resident-portal).
+    if (PREVIEW_MODE) return true;
     var patterns = popup.targetUrlPatterns;
     if (!patterns || patterns.length === 0) return true;
     var path = window.location.pathname + window.location.search;
@@ -697,6 +706,19 @@
   function wireTrigger(popup) {
     if (!urlMatches(popup) || !shouldShow(popup)) return;
 
+    // Preview mode forces every trigger to IMMEDIATE so operators
+    // don't have to wait for time-on-page, scroll-depth, or
+    // exit-intent thresholds while testing.
+    if (PREVIEW_MODE) {
+      log(
+        "preview mode — forcing IMMEDIATE render of '" + popup.headline +
+        "' (original trigger=" + popup.trigger +
+        ", threshold=" + (popup.triggerThreshold || 0) + ")"
+      );
+      render(popup);
+      return;
+    }
+
     if (popup.trigger === "IMMEDIATE") {
       log("trigger IMMEDIATE — rendering popup '" + popup.headline + "' now");
       render(popup);
@@ -779,6 +801,7 @@
   }
 
   function boot() {
+    if (POPUP_DISABLED) return;
     log("fetching popup config from " + API_ORIGIN + "/api/public/popup/config/" + TENANT);
     fetchConfig().then(function (popups) {
       if (popups.length === 0) {
