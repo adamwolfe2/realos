@@ -1,7 +1,13 @@
 import * as React from "react";
 import type { Metadata } from "next";
 import { formatDistanceToNow } from "date-fns";
-import { Search, TrendingUp, BarChart3, MousePointerClick, Target } from "lucide-react";
+import {
+  Search,
+  TrendingUp,
+  BarChart3,
+  MousePointerClick,
+  Target,
+} from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
@@ -14,15 +20,17 @@ import {
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
-import { StatCard } from "@/components/admin/stat-card";
 import { SeoProvider } from "@prisma/client";
-import { SeoTrendChart, type TrendPoint } from "./seo-trend-chart";
 import {
   ConnectSeoForm,
   DisconnectSeoForm,
-  SyncSeoButton,
 } from "./seo-connect-forms";
 import { StaleOnLoadTrigger } from "@/components/portal/sync/stale-on-load-trigger";
+import { SeoOverviewClient } from "./seo-overview-client";
+import type { KpiDelta } from "./seo-kpi-card";
+import type { SeoAnnotation } from "./seo-annotations-panel";
+import type { RankedRow } from "./seo-queries-pages-tables";
+import type { TimeseriesPoint } from "./seo-timeseries-chart";
 
 export const metadata: Metadata = { title: "SEO" };
 export const dynamic = "force-dynamic";
@@ -33,45 +41,131 @@ function startOfUtcDay(d: Date): Date {
   return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
-function fmtPercent(value: number): string {
-  if (!Number.isFinite(value)) return "—";
-  return `${(value * 100).toFixed(1)}%`;
-}
+// ---------------------------------------------------------------------------
+// Delta builders. Returns the pre-formatted label + a "positive" boolean
+// that drives tone. We've collapsed up/down/flat to a single positive flag
+// because the brand rules forbid green/red — positive uses `text-primary`,
+// everything else uses `text-muted-foreground`. The hero KPI cards consume
+// this directly so there's no per-call branching at the render site.
+// ---------------------------------------------------------------------------
 
-function fmtPosition(value: number): string {
-  if (!Number.isFinite(value) || value === 0) return "—";
-  return value.toFixed(1);
-}
-
-function fmtNumber(value: number): string {
-  if (!Number.isFinite(value)) return "0";
-  return value.toLocaleString();
-}
-
-function fmtDelta(current: number, prior: number): {
-  pct: number;
-  label: string;
-  tone: "up" | "down" | "flat";
-} {
-  if (prior === 0 && current === 0) return { pct: 0, label: "—", tone: "flat" };
-  if (prior === 0) return { pct: 100, label: "new", tone: "up" };
+function buildDelta(current: number, prior: number): KpiDelta {
+  if (prior === 0 && current === 0) return { label: "—", positive: false };
+  if (prior === 0) return { label: "new", positive: true };
   const pct = ((current - prior) / prior) * 100;
-  const tone = pct > 1 ? "up" : pct < -1 ? "down" : "flat";
   const sign = pct >= 0 ? "+" : "";
-  return { pct, label: `${sign}${pct.toFixed(0)}%`, tone };
+  return {
+    label: `${sign}${pct.toFixed(0)}%`,
+    positive: pct > 1,
+  };
 }
 
-// Position is "lower is better", so flip the tone.
-function fmtPositionDelta(current: number, prior: number): {
-  label: string;
-  tone: "up" | "down" | "flat";
-} {
-  if (prior === 0 && current === 0) return { label: "—", tone: "flat" };
-  if (prior === 0) return { label: "new", tone: "up" };
+// Position is "lower is better" — improving means the number drops. Flip the
+// positive flag so a -0.4 reads as primary tone, not muted.
+function buildPositionDelta(current: number, prior: number): KpiDelta {
+  if (prior === 0 && current === 0) return { label: "—", positive: false };
+  if (prior === 0) return { label: "new", positive: true };
   const delta = current - prior;
-  const tone = delta < -0.2 ? "up" : delta > 0.2 ? "down" : "flat";
   const sign = delta >= 0 ? "+" : "";
-  return { label: `${sign}${delta.toFixed(1)}`, tone };
+  return {
+    label: `${sign}${delta.toFixed(1)}`,
+    positive: delta < -0.2,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Build a continuous daily series of length `days`. SeoSnapshot rows are
+// not guaranteed to be present for every calendar day (a sync that hits a
+// zero-traffic day skips writing). Pad missing days with zeros so the
+// sparkline + chart x-axis read continuously rather than skipping forward.
+// ---------------------------------------------------------------------------
+
+type DailyAggregate = {
+  clicks: number;
+  impressions: number;
+  ctr: number;        // 0-1
+  position: number;   // GSC position, lower better
+};
+
+function buildDailySeries(
+  rows: Array<{
+    date: Date;
+    totalClicks: number;
+    totalImpressions: number;
+    avgCtr: number;
+    avgPosition: number;
+  }>,
+  endDay: Date,
+  days: number,
+): Array<DailyAggregate & { date: string }> {
+  // Aggregate by date key (multiple snapshots per day can exist when an org
+  // has more than one connected property, even though right now the schema
+  // is single-row-per-day; defensive sum keeps us future-safe).
+  const byKey = new Map<string, DailyAggregate>();
+  for (const r of rows) {
+    const key = startOfUtcDay(r.date).toISOString().slice(0, 10);
+    const prev = byKey.get(key);
+    if (prev) {
+      prev.clicks += r.totalClicks;
+      prev.impressions += r.totalImpressions;
+      // For CTR + position we keep the last non-zero value rather than
+      // averaging — they're already daily aggregates upstream so summing
+      // would be wrong.
+      if (r.avgCtr > 0) prev.ctr = r.avgCtr;
+      if (r.avgPosition > 0) prev.position = r.avgPosition;
+    } else {
+      byKey.set(key, {
+        clicks: r.totalClicks,
+        impressions: r.totalImpressions,
+        ctr: r.avgCtr,
+        position: r.avgPosition,
+      });
+    }
+  }
+  const out: Array<DailyAggregate & { date: string }> = [];
+  for (let i = days - 1; i >= 0; i--) {
+    const day = startOfUtcDay(new Date(endDay.getTime() - i * DAY_MS));
+    const key = day.toISOString().slice(0, 10);
+    const v = byKey.get(key);
+    out.push({
+      date: key,
+      clicks: v?.clicks ?? 0,
+      impressions: v?.impressions ?? 0,
+      ctr: v?.ctr ?? 0,
+      position: v?.position ?? 0,
+    });
+  }
+  return out;
+}
+
+// Sum / average a daily aggregate window into the totals used by the hero KPI
+// cards. CTR is recomputed from clicks/impressions instead of averaging the
+// per-day field — that mathematically matches what GSC reports for a range.
+// Position is weighted by impressions for the same reason.
+function totalize(series: Array<DailyAggregate>): {
+  clicks: number;
+  impressions: number;
+  ctr: number;
+  position: number;
+} {
+  let clicks = 0;
+  let impressions = 0;
+  let weightedPosition = 0;
+  let positionImpressions = 0;
+  for (const d of series) {
+    clicks += d.clicks;
+    impressions += d.impressions;
+    if (d.position > 0) {
+      weightedPosition += d.position * d.impressions;
+      positionImpressions += d.impressions;
+    }
+  }
+  return {
+    clicks,
+    impressions,
+    ctr: impressions > 0 ? clicks / impressions : 0,
+    position: positionImpressions > 0 ? weightedPosition / positionImpressions : 0,
+  };
 }
 
 export default async function SeoPage({
@@ -87,29 +181,22 @@ export default async function SeoPage({
 
   // SeoSnapshot/SeoQuery/SeoLandingPage are still org-level today (no
   // propertyId column). If the user is property-restricted, hide the
-  // aggregate trend sections to avoid leaking org-wide data through
-  // them. Per-property integration cards remain visible because the
+  // aggregate trend sections to avoid leaking org-wide data through them.
+  // Per-property integration cards remain visible because the
   // SeoIntegration model itself is propertyId-aware.
   const isRestricted = scope.allowedPropertyIds !== null;
 
-  // Only count rows backed by a real Google service-account JSON.
-  // Seeded demo rows store the literal string "DEMO_SEED" — surfacing
-  // those as "connected" misleads operators about whether real GSC/GA4
-  // data is flowing. Filter at the query so the dashboard's "no
-  // integration" empty state shows when nothing real is wired.
+  // Only count rows backed by a real Google service-account JSON. Seeded
+  // demo rows store the literal "DEMO_SEED" — surfacing those as
+  // "connected" would mislead operators.
   const integrations = await prisma.seoIntegration.findMany({
     where: {
       orgId: scope.orgId,
       serviceAccountJsonEncrypted: { not: "DEMO_SEED" },
-      // Property gate on integrations themselves. NULL propertyId =
-      // legacy org-wide integration; show those to org-wide users only.
       ...(effectiveIds && effectiveIds.length > 0
         ? { propertyId: { in: effectiveIds } }
         : isRestricted
-          ? // Restricted user with no URL filter — show only their
-            // allowed properties' integrations, skip the legacy
-            // org-wide rows.
-            { propertyId: { in: scope.allowedPropertyIds! } }
+          ? { propertyId: { in: scope.allowedPropertyIds! } }
           : {}),
     },
     orderBy: { provider: "asc" },
@@ -119,11 +206,9 @@ export default async function SeoPage({
   const ga4Integration = integrations.find((i) => i.provider === SeoProvider.GA4);
   const hasAny = integrations.length > 0;
 
-  // Drive an on-load sync when the freshest integration is older than
-  // 30 minutes (matches the cron cadence). The StaleOnLoadTrigger
-  // dedupes per-tab + cools down 60s, so a user clicking around the
-  // SEO page won't flood the worker. Skip entirely when nothing is
-  // connected — there'd be nothing to refresh.
+  // Drive an on-load sync when the freshest integration is older than 30
+  // minutes. StaleOnLoadTrigger dedupes per-tab + cools down 60s so a user
+  // clicking around won't flood the worker.
   const newestSyncAt = integrations
     .map((i) => i.lastSyncAt?.getTime() ?? 0)
     .reduce((a, b) => Math.max(a, b), 0);
@@ -131,112 +216,16 @@ export default async function SeoPage({
   const shouldAutoRefresh =
     hasAny && Date.now() - newestSyncAt > STALE_AFTER_MS;
 
-  // Date windows: last 28 days (current) and prior 28 days (comparison).
+  // ── Date windows for the overview ────────────────────────────────────
+  //   * Hero KPIs: last 30 days vs prior 30 days.
+  //   * Sparklines: the same 30-day current window.
+  //   * Time-series chart: last 365 days for the long view.
   const now = new Date();
   const yesterday = startOfUtcDay(new Date(now.getTime() - DAY_MS));
-  const startCurrent = new Date(yesterday.getTime() - 27 * DAY_MS);
-  const endPrior = new Date(startCurrent.getTime() - DAY_MS);
-  const startPrior = new Date(endPrior.getTime() - 27 * DAY_MS);
-
-  const [snapshotsCurrent, snapshotsPrior, topQueries, topPages] =
-    await Promise.all([
-      prisma.seoSnapshot.findMany({
-        where: {
-          orgId: scope.orgId,
-          date: { gte: startCurrent, lte: yesterday },
-        },
-        orderBy: { date: "asc" },
-      }),
-      prisma.seoSnapshot.findMany({
-        where: {
-          orgId: scope.orgId,
-          date: { gte: startPrior, lte: endPrior },
-        },
-        orderBy: { date: "asc" },
-      }),
-      prisma.seoQuery.groupBy({
-        by: ["query"],
-        where: {
-          orgId: scope.orgId,
-          date: { gte: startCurrent, lte: yesterday },
-        },
-        _sum: { clicks: true, impressions: true },
-        _avg: { ctr: true, position: true },
-        orderBy: { _sum: { clicks: "desc" } },
-        take: 25,
-      }),
-      prisma.seoLandingPage.groupBy({
-        by: ["url"],
-        where: {
-          orgId: scope.orgId,
-          date: { gte: startCurrent, lte: yesterday },
-        },
-        _sum: { sessions: true, users: true },
-        _avg: { bounceRate: true, avgEngagementTime: true },
-        orderBy: { _sum: { sessions: "desc" } },
-        take: 25,
-      }),
-    ]);
-
-  function totalize(rows: typeof snapshotsCurrent): {
-    sessions: number;
-    impressions: number;
-    clicks: number;
-    avgCtr: number;
-    avgPosition: number;
-  } {
-    let sessions = 0;
-    let impressions = 0;
-    let clicks = 0;
-    let ctrSum = 0;
-    let positionSum = 0;
-    let ctrCount = 0;
-    let positionCount = 0;
-    for (const r of rows) {
-      sessions += r.organicSessions;
-      impressions += r.totalImpressions;
-      clicks += r.totalClicks;
-      if (r.avgCtr > 0) {
-        ctrSum += r.avgCtr;
-        ctrCount++;
-      }
-      if (r.avgPosition > 0) {
-        positionSum += r.avgPosition;
-        positionCount++;
-      }
-    }
-    return {
-      sessions,
-      impressions,
-      clicks,
-      avgCtr: ctrCount > 0 ? ctrSum / ctrCount : 0,
-      avgPosition: positionCount > 0 ? positionSum / positionCount : 0,
-    };
-  }
-
-  const totalsCurrent = totalize(snapshotsCurrent);
-  const totalsPrior = totalize(snapshotsPrior);
-
-  const sessionsDelta = fmtDelta(totalsCurrent.sessions, totalsPrior.sessions);
-  const impressionsDelta = fmtDelta(
-    totalsCurrent.impressions,
-    totalsPrior.impressions,
-  );
-  const clicksDelta = fmtDelta(totalsCurrent.clicks, totalsPrior.clicks);
-  const ctrDelta = fmtDelta(
-    totalsCurrent.avgCtr * 1000,
-    totalsPrior.avgCtr * 1000,
-  );
-  const positionDelta = fmtPositionDelta(
-    totalsCurrent.avgPosition,
-    totalsPrior.avgPosition,
-  );
-
-  const trendPoints: TrendPoint[] = snapshotsCurrent.map((s) => ({
-    date: s.date.toISOString().slice(0, 10),
-    clicks: s.totalClicks,
-    impressions: s.totalImpressions,
-  }));
+  const start30 = startOfUtcDay(new Date(yesterday.getTime() - 29 * DAY_MS));
+  const startPrior = startOfUtcDay(new Date(start30.getTime() - 30 * DAY_MS));
+  const endPrior = new Date(start30.getTime() - DAY_MS);
+  const start365 = startOfUtcDay(new Date(yesterday.getTime() - 364 * DAY_MS));
 
   // Property list for the selector dropdown, gated to user's allowed set.
   const allProperties = await prisma.property.findMany({
@@ -245,6 +234,129 @@ export default async function SeoPage({
     orderBy: { name: "asc" },
   });
   const properties = visibleProperties(scope, allProperties);
+
+  // If there's no integration at all, skip every snapshot/query fetch and
+  // render the empty hero immediately.
+  if (!hasAny) {
+    return (
+      <SeoEmptyShell
+        accessDenied={accessDenied}
+        properties={properties}
+        orgId={scope.orgId}
+      />
+    );
+  }
+
+  // Restricted users can't see org-aggregate data until SeoSnapshot gains a
+  // propertyId column. Render their existing "coming soon" branch.
+  if (isRestricted) {
+    return (
+      <SeoRestrictedShell
+        accessDenied={accessDenied}
+        properties={properties}
+        orgId={scope.orgId}
+        shouldAutoRefresh={shouldAutoRefresh}
+      />
+    );
+  }
+
+  // ── Fetch the overview data set ──────────────────────────────────────
+  // One round-trip for everything we need: 365d series, recent queries,
+  // recent pages, and the action-recommendation annotation feed.
+  const [snapshots365, topQueriesRaw, topPagesRaw, annotationRows] =
+    await Promise.all([
+      prisma.seoSnapshot.findMany({
+        where: { orgId: scope.orgId, date: { gte: start365, lte: yesterday } },
+        orderBy: { date: "asc" },
+        select: {
+          date: true,
+          totalClicks: true,
+          totalImpressions: true,
+          avgCtr: true,
+          avgPosition: true,
+        },
+      }),
+      prisma.seoQuery.groupBy({
+        by: ["query"],
+        where: { orgId: scope.orgId, date: { gte: start30, lte: yesterday } },
+        _sum: { clicks: true, impressions: true },
+        orderBy: { _sum: { clicks: "desc" } },
+        take: 12,
+      }),
+      prisma.seoLandingPage.groupBy({
+        by: ["url"],
+        where: { orgId: scope.orgId, date: { gte: start30, lte: yesterday } },
+        _sum: { sessions: true, users: true },
+        orderBy: { _sum: { sessions: "desc" } },
+        take: 12,
+      }),
+      prisma.seoActionRecommendation.findMany({
+        where: {
+          ...tenantWhere(scope),
+          severity: { in: ["HIGH", "CRITICAL"] },
+        },
+        orderBy: { generatedAt: "desc" },
+        take: 10,
+        select: {
+          id: true,
+          title: true,
+          severity: true,
+          generatedAt: true,
+        },
+      }),
+    ]);
+
+  // Build a 365d continuous series (zero-pad missing days) so both the
+  // chart and the 30d sparklines below derive from the same source.
+  const series365 = buildDailySeries(snapshots365, yesterday, 365);
+  const series30 = series365.slice(-30);
+  const seriesPrior30 = series365.slice(-60, -30);
+
+  const totals30 = totalize(series30);
+  const totalsPrior = totalize(seriesPrior30);
+
+  // Extract per-metric sparkline arrays (last 30 daily values) for the KPI
+  // cards. Position has zero-days dropped before being passed so the
+  // sparkline only reflects days we actually have data.
+  const sparkClicks      = series30.map((d) => d.clicks);
+  const sparkImpressions = series30.map((d) => d.impressions);
+  const sparkCtr         = series30.map((d) => d.ctr);
+  const sparkPosition    = series30.map((d) => (d.position > 0 ? d.position : 0));
+
+  const timeseries: TimeseriesPoint[] = series365.map((d) => ({
+    date: d.date,
+    clicks: d.clicks,
+    impressions: d.impressions,
+  }));
+
+  const topQueries: RankedRow[] = topQueriesRaw.map((q) => ({
+    label: q.query,
+    clicks: q._sum.clicks ?? 0,
+    impressions: q._sum.impressions ?? 0,
+  }));
+
+  const topPages: RankedRow[] = topPagesRaw.map((p) => ({
+    label: p.url,
+    // SeoLandingPage tracks sessions, not clicks — but the overview table
+    // only has one numeric column, so we surface sessions as the right-rail
+    // count. The header label remains "Pages" which is honest.
+    clicks: p._sum.sessions ?? 0,
+  }));
+
+  const annotations: SeoAnnotation[] = annotationRows.map((a) => ({
+    id: a.id,
+    title: a.title,
+    date: a.generatedAt.toISOString(),
+    severity: a.severity,
+  }));
+
+  // Source chip: GSC always shown as "Google Search Console". The
+  // sub-label uses the integration's property identifier (e.g.
+  // "sc-domain:telegraphcommons.com") so operators can confirm the data
+  // source matches what they expect.
+  const sourceLabel = "Google Search Console";
+  const propertyLabel = gscIntegration?.propertyIdentifier ?? null;
+  const rangeLabel = "Last 30 days vs prior 30 days";
 
   return (
     <div className="space-y-3">
@@ -257,9 +369,10 @@ export default async function SeoPage({
           refreshAfterMs={3000}
         />
       ) : null}
+
       <PageHeader
         title="SEO"
-        description="Organic search performance from Google Search Console and Google Analytics 4. Last 28 days vs. the prior 28 days."
+        description="Organic search performance from Google Search Console. Hero metrics compare the last 30 days against the prior 30. The chart shows the full year so seasonality reads at a glance."
         actions={
           properties.length > 1 ? (
             <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
@@ -267,10 +380,9 @@ export default async function SeoPage({
         }
       />
 
-      {/* Discoverability banner — the SEO Agent lives at /portal/seo/agent
-          and is where most of the actionable work happens (recommendations,
-          drafts, live SERP, Lighthouse, backlinks). Surface it prominently
-          so operators don't miss it. */}
+      {/* Agent discoverability banner — keep the affordance to jump into
+          the recommendations / live SERP / Lighthouse workspace where the
+          actionable work happens. */}
       <a
         href="/portal/seo/agent"
         className="block rounded-xl border border-primary/30 bg-gradient-to-r from-primary/[0.08] via-primary/[0.04] to-transparent px-4 py-3 hover:border-primary/50 transition-colors group"
@@ -278,10 +390,10 @@ export default async function SeoPage({
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary mb-0.5">
-              New
+              SEO Agent
             </p>
             <p className="text-[13px] font-medium text-foreground">
-              Open the SEO Agent
+              Open the recommendations workspace
             </p>
             <p className="text-[12px] text-muted-foreground mt-0.5">
               Live SERP rankings, Lighthouse audits, AI recommendations, and the content drafter all in one screen.
@@ -293,332 +405,230 @@ export default async function SeoPage({
         </div>
       </a>
 
-      {!hasAny ? (
-        <div className="space-y-3">
-          {/* ── Hero empty state ──────────────────────────────────────── */}
-          <div className="rounded-xl border border-border bg-card overflow-hidden">
-            {/* Gradient hero band */}
-            <div className="px-6 py-9 flex flex-col items-center text-center border-b border-border bg-gradient-to-b from-primary/[0.04] to-transparent">
-              <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
-                <Search className="h-6 w-6" />
-              </div>
-              <h2 className="text-xl font-semibold text-foreground tracking-tight">
-                Your SEO command center
-              </h2>
-              <p className="mt-2 text-[13px] text-muted-foreground max-w-sm leading-relaxed">
-                Connect Google Search Console and Analytics 4. See exactly which
-                queries bring renters to your site — the same data agencies
-                charge thousands a month to report.
-              </p>
-            </div>
+      <SeoOverviewClient
+        source={sourceLabel}
+        propertyLabel={propertyLabel}
+        rangeLabel={rangeLabel}
+        kpis={{
+          clicks: {
+            value: totals30.clicks,
+            delta: buildDelta(totals30.clicks, totalsPrior.clicks),
+            spark: sparkClicks,
+          },
+          impressions: {
+            value: totals30.impressions,
+            delta: buildDelta(totals30.impressions, totalsPrior.impressions),
+            spark: sparkImpressions,
+          },
+          ctr: {
+            value: totals30.ctr,
+            delta: buildDelta(totals30.ctr * 10000, totalsPrior.ctr * 10000),
+            spark: sparkCtr,
+          },
+          position: {
+            value: totals30.position,
+            delta: buildPositionDelta(totals30.position, totalsPrior.position),
+            spark: sparkPosition,
+          },
+        }}
+        timeseries={timeseries}
+        annotations={annotations}
+        topQueries={topQueries}
+        topPages={topPages}
+      />
 
-            {/* Value-prop strip — 3 columns, each previewing a metric category */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
-              <SeoValueProp
-                icon={<MousePointerClick className="h-4 w-4" />}
-                label="Clicks & impressions"
-                description="28 days of search performance at a glance — daily trends and period-over-period deltas."
-              />
-              <SeoValueProp
-                icon={<Search className="h-4 w-4" />}
-                label="Top organic queries"
-                description="See the exact terms driving visits. Sort by clicks, impressions, or CTR to find quick wins."
-              />
-              <SeoValueProp
-                icon={<Target className="h-4 w-4" />}
-                label="Position tracking"
-                description="Know where you rank and which page-1 fringe queries are one push away from more clicks."
-              />
-            </div>
-          </div>
-
-          {/* ── Connect forms ─────────────────────────────────────────── */}
-          <SectionCard
-            label="Connect your data sources"
-            description="Both providers use the same paste-the-JSON flow and never require OAuth. Setup takes under 5 minutes."
-          >
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-semibold text-foreground">
-                      Google Search Console
-                    </h3>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Queries · Impressions · CTR · Position
-                    </p>
-                  </div>
-                  <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
-                    <TrendingUp className="h-2.5 w-2.5" />
-                    Recommended
-                  </span>
-                </div>
-                <ConnectSeoForm provider="GSC" />
-              </div>
-              <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
-                <div className="flex items-start justify-between gap-3">
-                  <div>
-                    <h3 className="text-sm font-semibold text-foreground">
-                      Google Analytics 4
-                    </h3>
-                    <p className="text-[11px] text-muted-foreground mt-0.5">
-                      Organic sessions · Users · Top pages
-                    </p>
-                  </div>
-                  <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
-                    <BarChart3 className="h-2.5 w-2.5" />
-                    Optional
-                  </span>
-                </div>
-                <ConnectSeoForm provider="GA4" />
-              </div>
-            </div>
-            <SetupHelp />
-          </SectionCard>
+      <SectionCard label="Connected sources">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <ProviderManageCard
+            title="Google Search Console"
+            provider="GSC"
+            connected={!!gscIntegration}
+            propertyIdentifier={gscIntegration?.propertyIdentifier ?? null}
+            serviceAccountEmail={gscIntegration?.serviceAccountEmail ?? null}
+            lastSyncAt={gscIntegration?.lastSyncAt ?? null}
+            lastSyncError={gscIntegration?.lastSyncError ?? null}
+            status={gscIntegration?.status ?? null}
+          />
+          <ProviderManageCard
+            title="Google Analytics 4"
+            provider="GA4"
+            connected={!!ga4Integration}
+            propertyIdentifier={ga4Integration?.propertyIdentifier ?? null}
+            serviceAccountEmail={ga4Integration?.serviceAccountEmail ?? null}
+            lastSyncAt={ga4Integration?.lastSyncAt ?? null}
+            lastSyncError={ga4Integration?.lastSyncError ?? null}
+            status={ga4Integration?.status ?? null}
+          />
         </div>
-      ) : isRestricted ? (
-        // Property-restricted user. We can show their per-property
-        // integrations (above) but the org-aggregate trend data
-        // below would leak data outside their scope. Hide it until
-        // SeoSnapshot/SeoQuery/SeoLandingPage gain a propertyId
-        // column (planned follow-up).
-        <SectionCard
-          label="Organic search performance"
-          description="Per-property trend data is coming soon. Your integration cards above show connection status; cross-property comparison requires the agency-wide view."
-        >
-          <p className="text-sm text-muted-foreground">
-            Sessions, impressions, clicks, top queries, and top pages
-            are tracked at the organization level today. Once we
-            partition the SEO snapshot tables by property, this view
-            will narrow to just your scope.
-          </p>
-        </SectionCard>
-      ) : (
-        <>
-          <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-2">
-            <StatCard
-              label="Organic sessions"
-              value={fmtNumber(totalsCurrent.sessions)}
-              hint={`${sessionsDelta.label} vs prior 28d`}
-              tone={
-                sessionsDelta.tone === "up"
-                  ? "success"
-                  : sessionsDelta.tone === "down"
-                    ? "danger"
-                    : undefined
-              }
-            />
-            <StatCard
-              label="Impressions"
-              value={fmtNumber(totalsCurrent.impressions)}
-              hint={`${impressionsDelta.label} vs prior 28d`}
-              tone={
-                impressionsDelta.tone === "up"
-                  ? "success"
-                  : impressionsDelta.tone === "down"
-                    ? "danger"
-                    : undefined
-              }
-            />
-            <StatCard
-              label="Clicks"
-              value={fmtNumber(totalsCurrent.clicks)}
-              hint={`${clicksDelta.label} vs prior 28d`}
-              tone={
-                clicksDelta.tone === "up"
-                  ? "success"
-                  : clicksDelta.tone === "down"
-                    ? "danger"
-                    : undefined
-              }
-            />
-            <StatCard
-              label="Avg CTR"
-              value={fmtPercent(totalsCurrent.avgCtr)}
-              hint={`${ctrDelta.label} vs prior 28d`}
-              tone={
-                ctrDelta.tone === "up"
-                  ? "success"
-                  : ctrDelta.tone === "down"
-                    ? "danger"
-                    : undefined
-              }
-            />
-            <StatCard
-              label="Avg position"
-              value={fmtPosition(totalsCurrent.avgPosition)}
-              hint={`${positionDelta.label} vs prior 28d`}
-              tone={
-                positionDelta.tone === "up"
-                  ? "success"
-                  : positionDelta.tone === "down"
-                    ? "danger"
-                    : undefined
-              }
-            />
-          </section>
-
-          <SectionCard
-            label="Clicks & impressions"
-            description="Daily totals from Search Console for the last 28 days."
-            action={<SyncSeoButton />}
-          >
-            <SeoTrendChart data={trendPoints} />
-          </SectionCard>
-
-          {/* Position distribution + Quick Wins. Both derived from the
-              already-fetched top queries set so we add zero queries. */}
-          {topQueries.length > 0 ? (
-            <section className="grid grid-cols-1 lg:grid-cols-3 gap-3">
-              <SectionCard
-                label="Position distribution"
-                description="Where your queries rank — buckets across the top 25 queries"
-              >
-                <PositionDistribution
-                  queries={topQueries.map((q) => ({
-                    position: q._avg.position ?? 0,
-                  }))}
-                />
-              </SectionCard>
-              <SectionCard
-                className="lg:col-span-2"
-                label="Quick wins"
-                description="Queries on page-1 fringe (positions 4–15) with high impressions and below-average CTR. Pushing these up moves clicks immediately."
-              >
-                <QuickWins
-                  queries={topQueries.map((q) => ({
-                    query: q.query,
-                    clicks: q._sum.clicks ?? 0,
-                    impressions: q._sum.impressions ?? 0,
-                    ctr: q._avg.ctr ?? 0,
-                    position: q._avg.position ?? 0,
-                  }))}
-                />
-              </SectionCard>
-            </section>
-          ) : null}
-
-          <section className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-            <SectionCard
-              label="Top organic queries"
-              description="Aggregated across the last 28 days. Sorted by clicks."
-            >
-              {topQueries.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6">
-                  No query data yet. Connect Search Console and run a sync.
-                </p>
-              ) : (
-                <div className="overflow-x-auto -mx-2">
-                  <table className="w-full text-xs" aria-label="Top organic queries">
-                    <thead className="text-xs uppercase tracking-wider text-muted-foreground">
-                      <tr>
-                        <th className="text-left font-medium px-2 py-2">Query</th>
-                        <th className="text-right font-medium px-2 py-2">Clicks</th>
-                        <th className="text-right font-medium px-2 py-2">Impr.</th>
-                        <th className="text-right font-medium px-2 py-2">CTR</th>
-                        <th className="text-right font-medium px-2 py-2">Pos.</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {topQueries.map((q) => (
-                        <tr key={q.query}>
-                          <td className="px-2 py-2 text-foreground truncate max-w-[260px]">
-                            {q.query}
-                          </td>
-                          <td className="text-right tabular-nums px-2 py-2 text-foreground">
-                            {fmtNumber(q._sum.clicks ?? 0)}
-                          </td>
-                          <td className="text-right tabular-nums px-2 py-2 text-muted-foreground">
-                            {fmtNumber(q._sum.impressions ?? 0)}
-                          </td>
-                          <td className="text-right tabular-nums px-2 py-2 text-muted-foreground">
-                            {fmtPercent(q._avg.ctr ?? 0)}
-                          </td>
-                          <td className="text-right tabular-nums px-2 py-2 text-muted-foreground">
-                            {fmtPosition(q._avg.position ?? 0)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </SectionCard>
-
-            <SectionCard
-              label="Top landing pages"
-              description="Organic-only sessions by URL, last 28 days."
-            >
-              {topPages.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6">
-                  No page data yet. Connect Analytics and run a sync.
-                </p>
-              ) : (
-                <div className="overflow-x-auto -mx-2">
-                  <table className="w-full text-xs" aria-label="Top landing pages">
-                    <thead className="text-xs uppercase tracking-wider text-muted-foreground">
-                      <tr>
-                        <th className="text-left font-medium px-2 py-2">Page</th>
-                        <th className="text-right font-medium px-2 py-2">Sessions</th>
-                        <th className="text-right font-medium px-2 py-2">Bounce</th>
-                        <th className="text-right font-medium px-2 py-2">Engaged (s)</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {topPages.map((p) => (
-                        <tr key={p.url}>
-                          <td className="px-2 py-2 text-foreground truncate max-w-[260px] font-mono text-[11px]">
-                            {p.url}
-                          </td>
-                          <td className="text-right tabular-nums px-2 py-2 text-foreground">
-                            {fmtNumber(p._sum.sessions ?? 0)}
-                          </td>
-                          <td className="text-right tabular-nums px-2 py-2 text-muted-foreground">
-                            {fmtPercent(p._avg.bounceRate ?? 0)}
-                          </td>
-                          <td className="text-right tabular-nums px-2 py-2 text-muted-foreground">
-                            {(p._avg.avgEngagementTime ?? 0).toFixed(0)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </SectionCard>
-          </section>
-
-          <SectionCard label="Connected sources">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-              <ProviderManageCard
-                title="Google Search Console"
-                provider="GSC"
-                connected={!!gscIntegration}
-                propertyIdentifier={gscIntegration?.propertyIdentifier ?? null}
-                serviceAccountEmail={gscIntegration?.serviceAccountEmail ?? null}
-                lastSyncAt={gscIntegration?.lastSyncAt ?? null}
-                lastSyncError={gscIntegration?.lastSyncError ?? null}
-                status={gscIntegration?.status ?? null}
-              />
-              <ProviderManageCard
-                title="Google Analytics 4"
-                provider="GA4"
-                connected={!!ga4Integration}
-                propertyIdentifier={ga4Integration?.propertyIdentifier ?? null}
-                serviceAccountEmail={ga4Integration?.serviceAccountEmail ?? null}
-                lastSyncAt={ga4Integration?.lastSyncAt ?? null}
-                lastSyncError={ga4Integration?.lastSyncError ?? null}
-                status={ga4Integration?.status ?? null}
-              />
-            </div>
-            <SetupHelp />
-          </SectionCard>
-        </>
-      )}
+        <SetupHelp />
+      </SectionCard>
     </div>
   );
 }
 
+// ---------------------------------------------------------------------------
+// SeoEmptyShell — rendered when no integration exists. Surface the value
+// prop, then the connect forms. Keeps the original hero design so the
+// rebuild doesn't regress the empty-state polish.
+// ---------------------------------------------------------------------------
+function SeoEmptyShell({
+  accessDenied,
+  properties,
+  orgId,
+}: {
+  accessDenied: boolean;
+  properties: Array<{ id: string; name: string }>;
+  orgId: string;
+}) {
+  return (
+    <div className="space-y-3">
+      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
+      <PageHeader
+        title="SEO"
+        description="Organic search performance from Google Search Console and Google Analytics 4."
+        actions={
+          properties.length > 1 ? (
+            <PropertyMultiSelect properties={properties} orgId={orgId} />
+          ) : null
+        }
+      />
+
+      <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="px-6 py-9 flex flex-col items-center text-center border-b border-border bg-gradient-to-b from-primary/[0.04] to-transparent">
+          <div className="mb-3 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-primary ring-1 ring-primary/20">
+            <Search className="h-6 w-6" />
+          </div>
+          <h2 className="text-xl font-semibold text-foreground tracking-tight">
+            Your SEO command center
+          </h2>
+          <p className="mt-2 text-[13px] text-muted-foreground max-w-sm leading-relaxed">
+            Connect Google Search Console and Analytics 4. See exactly which
+            queries bring renters to your site — the same data agencies
+            charge thousands a month to report.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border">
+          <SeoValueProp
+            icon={<MousePointerClick className="h-4 w-4" />}
+            label="Clicks & impressions"
+            description="30 days of search performance at a glance — daily trends and period-over-period deltas."
+          />
+          <SeoValueProp
+            icon={<Search className="h-4 w-4" />}
+            label="Top organic queries"
+            description="See the exact terms driving visits. Sort by clicks, impressions, or CTR to find quick wins."
+          />
+          <SeoValueProp
+            icon={<Target className="h-4 w-4" />}
+            label="Position tracking"
+            description="Know where you rank and which page-1 fringe queries are one push away from more clicks."
+          />
+        </div>
+      </div>
+
+      <SectionCard
+        label="Connect your data sources"
+        description="Both providers use the same paste-the-JSON flow and never require OAuth. Setup takes under 5 minutes."
+      >
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Google Search Console
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Queries · Impressions · CTR · Position
+                </p>
+              </div>
+              <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary/10 text-primary px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                <TrendingUp className="h-2.5 w-2.5" />
+                Recommended
+              </span>
+            </div>
+            <ConnectSeoForm provider="GSC" />
+          </div>
+          <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">
+                  Google Analytics 4
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Organic sessions · Users · Top pages
+                </p>
+              </div>
+              <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-muted text-muted-foreground px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide">
+                <BarChart3 className="h-2.5 w-2.5" />
+                Optional
+              </span>
+            </div>
+            <ConnectSeoForm provider="GA4" />
+          </div>
+        </div>
+        <SetupHelp />
+      </SectionCard>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SeoRestrictedShell — property-restricted users get the integration cards
+// (which respect their property scope) plus an explainer that the
+// aggregate trend tables aren't yet partitioned per property.
+// ---------------------------------------------------------------------------
+function SeoRestrictedShell({
+  accessDenied,
+  properties,
+  orgId,
+  shouldAutoRefresh,
+}: {
+  accessDenied: boolean;
+  properties: Array<{ id: string; name: string }>;
+  orgId: string;
+  shouldAutoRefresh: boolean;
+}) {
+  return (
+    <div className="space-y-3">
+      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
+      {shouldAutoRefresh ? (
+        <StaleOnLoadTrigger
+          endpoint="/api/tenant/seo/sync"
+          dedupeKey={`seo:${orgId}`}
+          cooldownMs={60_000}
+          refreshAfterMs={3000}
+        />
+      ) : null}
+      <PageHeader
+        title="SEO"
+        description="Per-property SEO performance is being rolled out. Your integration cards below show connection status."
+        actions={
+          properties.length > 1 ? (
+            <PropertyMultiSelect properties={properties} orgId={orgId} />
+          ) : null
+        }
+      />
+      <SectionCard
+        label="Organic search performance"
+        description="Per-property trend data is coming soon. Your integration cards above show connection status; cross-property comparison requires the agency-wide view."
+      >
+        <p className="text-sm text-muted-foreground">
+          Sessions, impressions, clicks, top queries, and top pages are
+          tracked at the organization level today. Once we partition the
+          SEO snapshot tables by property, this view will narrow to just
+          your scope.
+        </p>
+      </SectionCard>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ProviderManageCard — bottom-of-page "Connected sources" detail card.
+// Unchanged from the previous design except it lives outside the main
+// branch now (callers always render it).
+// ---------------------------------------------------------------------------
 function ProviderManageCard({
   title,
   provider,
@@ -712,10 +722,6 @@ function Detail({
   );
 }
 
-// ---------------------------------------------------------------------------
-// SeoValueProp — one column in the hero empty-state's 3-up feature strip.
-// Icon + label + short description. Pure display component.
-// ---------------------------------------------------------------------------
 function SeoValueProp({
   icon,
   label,
@@ -749,9 +755,7 @@ function SetupHelp() {
         How to create a Google service account
       </p>
       <ol className="list-decimal list-inside space-y-1.5">
-        <li>
-          Open the Google Cloud Console and create or select a project.
-        </li>
+        <li>Open the Google Cloud Console and create or select a project.</li>
         <li>
           Navigate to IAM and Admin to Service Accounts. Click{" "}
           <strong>Create Service Account</strong>. A name like{" "}
@@ -778,192 +782,6 @@ function SetupHelp() {
           saving and runs an initial 30-day backfill in the background.
         </li>
       </ol>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// PositionDistribution — bucket average position across queries into four
-// ranges and render as a horizontal stacked-bar with counts.
-//
-// Buckets use a single blue scale that fades into neutral gray as ranking
-// quality decreases. Top of page 1 reads as the deepest blue (most
-// valuable); page 3+ fades to gray (least). No green/amber/red rainbow.
-// ---------------------------------------------------------------------------
-
-function PositionDistribution({
-  queries,
-}: {
-  queries: Array<{ position: number }>;
-}) {
-  const buckets = [
-    { label: "1–3", color: "#1D4ED8", count: 0, hint: "Top of page 1" },
-    { label: "4–10", color: "#3B82F6", count: 0, hint: "Bottom of page 1" },
-    { label: "11–20", color: "#93C5FD", count: 0, hint: "Page 2" },
-    { label: "21+", color: "#D1D5DB", count: 0, hint: "Page 3 or deeper" },
-  ];
-  for (const q of queries) {
-    const p = q.position;
-    if (p <= 3) buckets[0].count += 1;
-    else if (p <= 10) buckets[1].count += 1;
-    else if (p <= 20) buckets[2].count += 1;
-    else buckets[3].count += 1;
-  }
-  const total = buckets.reduce((s, b) => s + b.count, 0);
-  if (total === 0) {
-    return (
-      <p className="text-[11px] text-muted-foreground py-4">
-        Run a GSC sync to populate position data.
-      </p>
-    );
-  }
-  return (
-    <div className="space-y-2.5">
-      {/* Stacked bar */}
-      <div
-        role="img"
-        aria-label="Position distribution"
-        className="flex h-3 w-full overflow-hidden rounded-full"
-      >
-        {buckets.map((b) => {
-          const pct = total > 0 ? (b.count / total) * 100 : 0;
-          if (pct === 0) return null;
-          return (
-            <div
-              key={b.label}
-              style={{
-                width: `${pct}%`,
-                backgroundColor: b.color,
-              }}
-              className="transition-all"
-              title={`${b.label}: ${b.count} (${pct.toFixed(1)}%)`}
-            />
-          );
-        })}
-      </div>
-      {/* Legend with counts */}
-      <ul className="space-y-1">
-        {buckets.map((b) => {
-          const pct = total > 0 ? Math.round((b.count / total) * 100) : 0;
-          return (
-            <li
-              key={b.label}
-              className="flex items-baseline justify-between gap-2 text-[11px]"
-            >
-              <span className="flex items-center gap-1.5 min-w-0">
-                <span
-                  aria-hidden="true"
-                  className="h-2 w-2 rounded-full shrink-0"
-                  style={{ backgroundColor: b.color }}
-                />
-                <span className="text-foreground font-medium">{b.label}</span>
-                <span className="text-muted-foreground hidden md:inline">
-                  · {b.hint}
-                </span>
-              </span>
-              <span className="tabular-nums text-muted-foreground shrink-0">
-                <span className="text-foreground font-semibold">{b.count}</span>{" "}
-                query{b.count === 1 ? "" : "ies"} · {pct}%
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// QuickWins — surface queries that are page-1-fringe (positions 4–15) with
-// high impressions and below-average CTR. Pushing these up converts clicks
-// immediately. Server-calculated; pure data, no extra queries.
-// ---------------------------------------------------------------------------
-
-function QuickWins({
-  queries,
-}: {
-  queries: Array<{
-    query: string;
-    clicks: number;
-    impressions: number;
-    ctr: number;
-    position: number;
-  }>;
-}) {
-  const totalImpressions = queries.reduce((s, q) => s + q.impressions, 0);
-  const totalClicks = queries.reduce((s, q) => s + q.clicks, 0);
-  const avgCtr = totalImpressions > 0 ? totalClicks / totalImpressions : 0;
-  // Impressions threshold: top quartile of the visible set, with a floor of
-  // 100 so very small accounts still surface something actionable.
-  const impressionThreshold = Math.max(
-    100,
-    queries
-      .map((q) => q.impressions)
-      .sort((a, b) => b - a)[Math.floor(queries.length / 4)] ?? 0,
-  );
-  const wins = queries
-    .filter(
-      (q) =>
-        q.position >= 4 &&
-        q.position <= 15 &&
-        q.impressions >= impressionThreshold &&
-        q.ctr < avgCtr,
-    )
-    .sort((a, b) => {
-      // Score = impressions × (avgCtr - currentCtr). Higher = bigger
-      // potential lift if we move this query up a position.
-      const scoreA = a.impressions * Math.max(0, avgCtr - a.ctr);
-      const scoreB = b.impressions * Math.max(0, avgCtr - b.ctr);
-      return scoreB - scoreA;
-    })
-    .slice(0, 8);
-  if (wins.length === 0) {
-    return (
-      <p className="text-[11px] text-muted-foreground py-4">
-        No quick-win opportunities in this window — your fringe queries already
-        out-perform the site CTR average. Look for new content gaps in Topics.
-      </p>
-    );
-  }
-  return (
-    <div className="overflow-x-auto -mx-2">
-      <table className="w-full text-[11px]" aria-label="Quick win opportunities">
-        <thead className="text-[10px] uppercase tracking-wider text-muted-foreground">
-          <tr>
-            <th className="text-left font-medium px-2 py-1.5">Query</th>
-            <th className="text-right font-medium px-2 py-1.5">Pos</th>
-            <th className="text-right font-medium px-2 py-1.5">Impr.</th>
-            <th className="text-right font-medium px-2 py-1.5">Current CTR</th>
-            <th className="text-right font-medium px-2 py-1.5">Lift potential</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {wins.map((q) => {
-            const lift = Math.round(
-              q.impressions * Math.max(0, avgCtr - q.ctr),
-            );
-            return (
-              <tr key={q.query}>
-                <td className="px-2 py-1.5 text-foreground truncate max-w-[260px]">
-                  {q.query}
-                </td>
-                <td className="text-right tabular-nums px-2 py-1.5 text-foreground font-semibold">
-                  {q.position.toFixed(1)}
-                </td>
-                <td className="text-right tabular-nums px-2 py-1.5 text-muted-foreground">
-                  {q.impressions.toLocaleString()}
-                </td>
-                <td className="text-right tabular-nums px-2 py-1.5 text-muted-foreground">
-                  {(q.ctr * 100).toFixed(1)}%
-                </td>
-                <td className="text-right tabular-nums px-2 py-1.5 text-primary font-semibold">
-                  +{lift.toLocaleString()} clicks
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
     </div>
   );
 }
