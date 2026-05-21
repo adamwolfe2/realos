@@ -90,6 +90,7 @@ import { RefreshRecommendationsButton } from "@/components/portal/seo/refresh-re
 import { ScoreHistoryChart } from "@/components/portal/seo/score-history-chart";
 import { DraftsInbox } from "@/components/portal/seo/drafts-inbox";
 import { PropertySwitcher } from "@/components/portal/seo/property-switcher";
+import { RecommendationManager } from "@/components/portal/seo/recommendation-manager";
 
 export const metadata: Metadata = { title: "SEO Agent" };
 export const dynamic = "force-dynamic";
@@ -188,6 +189,7 @@ export default async function SeoAgentPage({
     organicCompetitors,
     aeoRecent,
     recommendationsRaw,
+    persistedRecs,
     seoIntegrations,
     targetQueryCountTotal,
   ] = await Promise.all([
@@ -260,6 +262,32 @@ export default async function SeoAgentPage({
       orgId: scope.orgId,
       propertyId: property.id,
     }).catch(() => []),
+    // Persisted recommendations for the operator's status workflow.
+    // OPEN + IN_PROGRESS only — terminal states (COMPLETED, DISMISSED,
+    // EXPIRED) drop out of the active queue.
+    prisma.seoActionRecommendation
+      .findMany({
+        where: {
+          orgId: scope.orgId,
+          propertyId: property.id,
+          status: { in: ["OPEN", "IN_PROGRESS"] },
+        },
+        orderBy: [{ severity: "asc" }, { score: "desc" }],
+        take: 20,
+        select: {
+          id: true,
+          category: true,
+          severity: true,
+          title: true,
+          detail: true,
+          estimateMinutes: true,
+          score: true,
+          actionHref: true,
+          actionLabel: true,
+          status: true,
+        },
+      })
+      .catch(() => []),
     prisma.seoIntegration
       .findMany({
         where: { orgId: scope.orgId },
@@ -659,6 +687,24 @@ export default async function SeoAgentPage({
           actionHref: r.actionHref ?? "/portal/seo",
           actionLabel: r.actionLabel ?? "Open",
           icon: "Sparkles",
+        }))}
+      />
+
+      {/* Recommendation workflow — only renders persisted recs. Operators
+          hit Refresh in the action bar above to populate / refresh this
+          queue, then triage status here. */}
+      <RecommendationManager
+        recommendations={persistedRecs.map((r) => ({
+          id: r.id,
+          category: r.category,
+          severity: r.severity,
+          title: r.title,
+          detail: r.detail,
+          estimateMinutes: r.estimateMinutes,
+          score: r.score,
+          actionHref: r.actionHref,
+          actionLabel: r.actionLabel,
+          status: r.status as "OPEN" | "IN_PROGRESS",
         }))}
       />
 
