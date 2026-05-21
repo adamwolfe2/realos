@@ -98,6 +98,8 @@
 30. feat(seo): snooze recommendation with auto-resume (1w / 2w / 1mo / quarter)
 31. feat(seo): bulk dismiss/snooze/complete on operator rec manager
 32. feat(seo): snoozed recs panel with wake-now action
+33. feat(seo): recommendation archive at /portal/seo/recommendations
+34. feat(admin): 'Focus here first' client suggestion on /admin/clients
 
 All pushed to origin/main.
 
