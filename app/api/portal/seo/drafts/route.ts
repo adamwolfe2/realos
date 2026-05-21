@@ -9,6 +9,7 @@ import {
 import { ContentFormat, DraftStatus } from "@prisma/client";
 import { draftContent, type DrafterContext } from "@/lib/seo/draft-writer";
 import { notifyDraftSubmitted } from "@/lib/notifications/create";
+import { sendDraftSubmittedEmail } from "@/lib/email/draft-submitted";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -279,6 +280,15 @@ export async function POST(req: NextRequest) {
       draftId: updated.id,
       format: updated.format,
       brief: updated.brief,
+      clientOrgName: property.org?.name ?? "Client",
+      propertyName: property.name,
+    }).catch(() => undefined);
+    void sendDraftSubmittedEmail({
+      draftId: updated.id,
+      format: updated.format,
+      brief: updated.brief,
+      targetQuery: updated.targetQuery,
+      estimatedScore: updated.estimatedScore,
       clientOrgName: property.org?.name ?? "Client",
       propertyName: property.name,
     }).catch(() => undefined);
