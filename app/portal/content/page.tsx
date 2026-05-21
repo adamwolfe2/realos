@@ -34,14 +34,19 @@ const FORMAT_LABEL: Record<ContentFormat, string> = Object.fromEntries(
   FORMAT_OPTIONS.map((o) => [o.value, o.label]),
 ) as Record<ContentFormat, string>;
 
+// Single-blue cohesion. Previous rainbow (green/amber/red/blue) read as
+// "broken" alongside the rest of the LeaseStack portal which uses only
+// the LeaseStack accent #2563EB. Now: state is carried by opacity +
+// label, never by hue. Matches the marketplace + AEO + Opportunities
+// treatment so the operator never has to learn a new color taxonomy.
 const STATUS_TONE: Record<DraftStatus, string> = {
-  GENERATING: "bg-muted text-muted-foreground",
-  PENDING_REVIEW: "bg-amber-50 text-amber-800",
-  APPROVED: "bg-green-50 text-green-700",
-  CHANGES_REQUESTED: "bg-amber-50 text-amber-800",
-  REJECTED: "bg-red-50 text-red-700",
-  SHIPPED: "bg-blue-50 text-blue-700",
-  EXPIRED: "bg-muted text-muted-foreground",
+  GENERATING:        "bg-muted text-muted-foreground",        // soft, in-flight
+  PENDING_REVIEW:    "bg-primary/10 text-primary",            // active, awaiting admin
+  APPROVED:          "bg-primary/15 text-primary font-semibold", // strong primary
+  CHANGES_REQUESTED: "bg-muted text-foreground",              // needs work
+  REJECTED:          "bg-muted text-muted-foreground line-through", // terminal-soft
+  SHIPPED:           "bg-primary text-primary-foreground",    // strong + final
+  EXPIRED:           "bg-muted text-muted-foreground/70",     // faded
 };
 
 function fmtAge(d: Date | null): string {
