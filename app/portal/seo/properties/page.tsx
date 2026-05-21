@@ -209,6 +209,84 @@ export default async function SeoPortfolioPage() {
         </p>
       </header>
 
+      {(() => {
+        // Portfolio rollup. Computed inline against the maps already built
+        // above so we don't re-query Prisma. Skips properties with no score
+        // when averaging so a fresh property doesn't drag the mean to 0.
+        const scoresArr = Array.from(scoreByProperty.values());
+        const avgScore =
+          scoresArr.length > 0
+            ? Math.round(scoresArr.reduce((a, b) => a + b, 0) / scoresArr.length)
+            : null;
+        let totalCritical = 0;
+        let totalHigh = 0;
+        let totalOther = 0;
+        for (const sevs of recsByProperty.values()) {
+          totalCritical += sevs.critical;
+          totalHigh += sevs.high;
+          totalOther += sevs.medium + sevs.low;
+        }
+        const totalDrafts = Array.from(draftsByProperty.values()).reduce(
+          (a, b) => a + b,
+          0,
+        );
+        const totalTop10 = Array.from(top10ByProperty.values()).reduce(
+          (a, b) => a + b,
+          0,
+        );
+
+        return (
+          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-border/60">
+              <KpiCell
+                label="Properties"
+                value={String(properties.length)}
+                hint={`${scoresArr.length} with score`}
+              />
+              <KpiCell
+                label="Avg score"
+                value={avgScore != null ? String(avgScore) : "—"}
+                hint={
+                  avgScore != null
+                    ? avgScore >= 75
+                      ? "Healthy"
+                      : avgScore >= 50
+                        ? "Mixed"
+                        : "Needs work"
+                    : "Pending first snapshot"
+                }
+                tone={
+                  avgScore == null
+                    ? undefined
+                    : avgScore >= 75
+                      ? "positive"
+                      : avgScore < 50
+                        ? "danger"
+                        : undefined
+                }
+              />
+              <KpiCell
+                label="Open recs"
+                value={String(totalCritical + totalHigh + totalOther)}
+                hint={`${totalCritical} crit · ${totalHigh} high · ${totalOther} other`}
+                tone={totalCritical > 0 ? "danger" : undefined}
+              />
+              <KpiCell
+                label="Top-10 queries"
+                value={String(totalTop10)}
+                hint="Across portfolio, 7d"
+              />
+              <KpiCell
+                label="Pending drafts"
+                value={String(totalDrafts)}
+                hint={totalDrafts > 0 ? "Admin reviewing" : "All clear"}
+                tone={totalDrafts > 0 ? "warning" : undefined}
+              />
+            </div>
+          </div>
+        );
+      })()}
+
       <div className="rounded-2xl border border-border bg-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-[13px] min-w-[760px]">
@@ -322,6 +400,48 @@ export default async function SeoPortfolioPage() {
         Score lives weekly via the Monday 05:00 UTC snapshot. Recs and ranks
         refresh daily via the 04:00 UTC sync.
       </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// KpiCell — small stat cell for the portfolio KPI strip. Tone tints the
+// value color so wins/losses scan in two seconds.
+// ---------------------------------------------------------------------------
+function KpiCell({
+  label,
+  value,
+  hint,
+  tone,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  tone?: "positive" | "danger" | "warning";
+}) {
+  const valueClass =
+    tone === "positive"
+      ? "text-green-600"
+      : tone === "danger"
+        ? "text-red-600"
+        : tone === "warning"
+          ? "text-amber-600"
+          : "text-foreground";
+  return (
+    <div className="px-4 py-3 first:rounded-l-2xl last:rounded-r-2xl">
+      <p className="text-[9.5px] font-mono font-semibold uppercase tracking-[0.1em] text-muted-foreground leading-tight">
+        {label}
+      </p>
+      <p
+        className={`mt-1 text-[20px] font-display font-medium tabular-nums leading-none ${valueClass}`}
+      >
+        {value}
+      </p>
+      {hint ? (
+        <p className="mt-1.5 text-[10.5px] text-muted-foreground leading-snug">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }
