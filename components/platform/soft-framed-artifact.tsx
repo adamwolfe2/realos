@@ -41,6 +41,14 @@ export type SoftFramedArtifactProps = {
   pillLabel?: string;
   /** Optional className passthrough on the outer wrapper. */
   className?: string;
+  /**
+   * When the child already has its own rounded surface + shadow (e.g.
+   * ConfigTabs ships with its own white card), set `bare` to skip the
+   * inner white wrapper — the lavender frame just provides the halo
+   * of padding around the child's own surface. Avoids the "double
+   * frame" look where two rounded cards stack with visible borders.
+   */
+  bare?: boolean;
 };
 
 const FRAME_TONES: Record<
@@ -72,6 +80,7 @@ export function SoftFramedArtifact({
   padding = "lg",
   pillLabel,
   className,
+  bare,
 }: SoftFramedArtifactProps) {
   return (
     <div
@@ -104,16 +113,22 @@ export function SoftFramedArtifact({
           {pillLabel}
         </span>
       ) : null}
-      <div
-        className="rounded-2xl bg-white overflow-hidden"
-        style={{
-          // Subtle warm shadow that reads as "lifted" not "boxed".
-          boxShadow:
-            "0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04)",
-        }}
-      >
-        {children}
-      </div>
+      {bare ? (
+        // Child brings its own surface — skip the inner white wrapper
+        // to avoid the double-frame look.
+        <>{children}</>
+      ) : (
+        <div
+          className="rounded-2xl bg-white overflow-hidden"
+          style={{
+            // Subtle warm shadow that reads as "lifted" not "boxed".
+            boxShadow:
+              "0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04)",
+          }}
+        >
+          {children}
+        </div>
+      )}
     </div>
   );
 }
