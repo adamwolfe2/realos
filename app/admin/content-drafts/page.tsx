@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { redirect } from "next/navigation";
 import { DraftStatus } from "@prisma/client";
+import { BulkActions } from "@/components/admin/content-drafts/bulk-actions";
 
 export const metadata: Metadata = { title: "Content drafts" };
 export const dynamic = "force-dynamic";
@@ -118,7 +119,25 @@ export default async function AdminContentDraftsPage({
             Operators generate drafts from /portal/seo/agent. They land here for review.
           </p>
         </div>
+      ) : status === DraftStatus.PENDING_REVIEW ||
+        status === DraftStatus.CHANGES_REQUESTED ? (
+        // Reviewable statuses get the bulk-action queue.
+        <BulkActions
+          drafts={drafts.map((d) => ({
+            id: d.id,
+            format: d.format,
+            brief: d.brief,
+            status: d.status,
+            estimatedScore: d.estimatedScore,
+            submittedAt: d.submittedAt?.toISOString() ?? null,
+            createdAt: d.createdAt.toISOString(),
+            orgName: d.org?.name ?? d.orgId,
+            propertyName: d.property?.name ?? null,
+          }))}
+        />
       ) : (
+        // Read-only audit view for terminal statuses (APPROVED, SHIPPED,
+        // REJECTED). No checkboxes — these can't be bulk-acted on.
         <ul className="space-y-3">
           {drafts.map((d) => (
             <li
