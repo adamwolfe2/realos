@@ -94,6 +94,8 @@
 26. feat(seo): audit events on rec status + draft approve/reject
 27. feat(seo): stale draft auto-expire cron (>14d)
 28. feat(admin): entity-type filter chips on /admin/audit-log
+29. feat(seo): property activity feed on /portal/properties/[id]
+30. feat(seo): snooze recommendation with auto-resume (1w / 2w / 1mo / quarter)
 
 All pushed to origin/main.
 
