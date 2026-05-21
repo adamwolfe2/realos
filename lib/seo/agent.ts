@@ -354,7 +354,68 @@ export async function getCachedOrGenerateRecommendations(input: {
   if (hit) return hit;
   const fresh = await generateSeoRecommendations(input);
   await setCachedRecommendations(input.orgId, input.propertyId, fresh);
+  // Persist on cache miss so the RecommendationManager populates the first
+  // time an operator opens /portal/seo/agent. Fire-and-forget: failure
+  // shouldn't block the read path. Cache TTL ensures this fires at most
+  // once per hour per property.
+  void persistRecommendations(input.orgId, input.propertyId, fresh).catch(
+    () => undefined,
+  );
   return fresh;
+}
+
+/**
+ * Upsert engine output to SeoActionRecommendation. Used by the cron + the
+ * refresh endpoint + the cached-or-generate first-pass. Preserves
+ * operator status (IN_PROGRESS / DISMISSED) across re-runs via the
+ * (orgId, propertyId, kind) unique key.
+ */
+async function persistRecommendations(
+  orgId: string,
+  propertyId: string,
+  recs: SeoRecommendation[],
+): Promise<void> {
+  if (recs.length === 0) return;
+  // Run upserts in parallel — each is a single round-trip. Bounded by
+  // the rec engine's natural cap (~10-15 recs per property).
+  await Promise.allSettled(
+    recs.map((r) =>
+      prisma.seoActionRecommendation.upsert({
+        where: {
+          orgId_propertyId_kind: { orgId, propertyId, kind: r.kind },
+        },
+        create: {
+          orgId,
+          propertyId,
+          kind: r.kind,
+          category: r.category,
+          severity: r.severity,
+          title: r.title,
+          detail: r.detail,
+          estimateMinutes: r.estimateMinutes,
+          score: r.score,
+          actionHref: r.actionHref,
+          actionLabel: r.actionLabel,
+          evidence: r.evidence as never,
+          refreshedAt: new Date(),
+        },
+        update: {
+          // Preserve status on update — operator's IN_PROGRESS /
+          // DISMISSED choices stick. Only refresh the engine-derived
+          // fields.
+          severity: r.severity,
+          title: r.title,
+          detail: r.detail,
+          estimateMinutes: r.estimateMinutes,
+          score: r.score,
+          actionHref: r.actionHref,
+          actionLabel: r.actionLabel,
+          evidence: r.evidence as never,
+          refreshedAt: new Date(),
+        },
+      }),
+    ),
+  );
 }
 
 export async function generateSeoRecommendations(input: {

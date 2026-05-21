@@ -214,7 +214,7 @@ export default async function AdminSeoAgentMetrics() {
         label="Content draft pipeline"
         description="Funnel through approval. Audit-only — bulk operations live on /admin/content-drafts."
       >
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-6 gap-3">
           <DraftStatCell label="Generating" value={inGeneration} />
           <DraftStatCell label="Pending" value={pendingReview} />
           <DraftStatCell
@@ -240,7 +240,7 @@ export default async function AdminSeoAgentMetrics() {
         label="Open SEO recommendations"
         description="Across every client org. OPEN + IN_PROGRESS. Terminal states (DISMISSED, COMPLETED, EXPIRED) excluded."
       >
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <RecStatCell
             label="Critical"
             value={openRecsBySev.CRITICAL}
@@ -271,7 +271,7 @@ export default async function AdminSeoAgentMetrics() {
         label="DataforSEO usage this month"
         description="Row counts proxy API call volume. Each row ≈ one paid API call (varies by endpoint)."
       >
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <UsageCell
             label="SERP rankings"
             value={serpThisMonth}

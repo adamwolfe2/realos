@@ -85,6 +85,7 @@
 17. feat(seo): admin bell notification when operator submits draft
 18. feat(seo): recommendation status workflow (in-progress / done / dismiss)
 19. feat(seo): 'What changed this week' panel + per-property score history
+20. feat(seo): admin SEO Agent metrics dashboard at /admin/system/seo-agent
 
 All pushed to origin/main.
 
