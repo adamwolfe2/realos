@@ -135,9 +135,18 @@ export async function OverviewTab({
       where: { orgId, propertyId, status: LeaseStatus.ACTIVE },
       _sum: { monthlyRentCents: true },
     }),
+    // Norman feedback (issue #74, #53): the integrations sidebar was
+    // showing Cursive + GA4 as "not connected" on Telegraph Commons even
+    // though the operator had wired them up at the org level. Root cause:
+    // we filtered strictly by { orgId, propertyId } so org-scoped
+    // integrations (propertyId=null in DB) never matched. Fixed by
+    // accepting EITHER a property-specific record OR the org-wide one
+    // — the property-specific record wins when both exist via the
+    // findFirst's natural order on (propertyId desc nulls last).
     prisma.cursiveIntegration
       .findFirst({
-        where: { orgId, propertyId },
+        where: { orgId, OR: [{ propertyId }, { propertyId: null }] },
+        orderBy: { propertyId: { sort: "desc", nulls: "last" } },
         select: {
           cursivePixelId: true,
           lastEventAt: true,
@@ -147,12 +156,16 @@ export async function OverviewTab({
       .catch(() => null),
     prisma.seoIntegration
       .findMany({
-        where: { orgId, propertyId },
-        select: { provider: true, lastSyncAt: true },
+        where: { orgId, OR: [{ propertyId }, { propertyId: null }] },
+        select: { provider: true, lastSyncAt: true, propertyId: true },
       })
       .catch(
         () =>
-          [] as Array<{ provider: string; lastSyncAt: Date | null }>,
+          [] as Array<{
+            provider: string;
+            lastSyncAt: Date | null;
+            propertyId: string | null;
+          }>,
       ),
     prisma.adCampaign
       .findFirst({
@@ -373,9 +386,21 @@ export async function OverviewTab({
     mentions: recentMentions,
   });
 
-  // Integration health rows for the sidebar.
-  const ga4 = seoIntegrations.find((r) => r.provider === "GA4") ?? null;
-  const gsc = seoIntegrations.find((r) => r.provider === "GSC") ?? null;
+  // Integration health rows for the sidebar. When both a property-
+  // specific record AND an org-wide record exist, prefer the more
+  // specific one (propertyId !== null) so per-property configuration
+  // always wins over the org default.
+  const pickIntegration = (provider: string) => {
+    const matches = seoIntegrations.filter((r) => r.provider === provider);
+    if (matches.length === 0) return null;
+    return (
+      matches.find((r) => r.propertyId === propertyId) ??
+      matches.find((r) => r.propertyId === null) ??
+      matches[0]
+    );
+  };
+  const ga4 = pickIntegration("GA4");
+  const gsc = pickIntegration("GSC");
   const pixelHasRecentEvents =
     cursiveIntegration?.lastEventAt != null &&
     Date.now() - cursiveIntegration.lastEventAt.getTime() <
@@ -657,6 +682,12 @@ function PropertyHeroStrip({
   if (lastSyncedAt) {
     facts.push(`synced ${formatAge(lastSyncedAt)}`);
   }
+  // Build a Pacific-time hover label for the whole fact row when we
+  // have a sync timestamp — operators are PT-based so they expect the
+  // absolute time to land in their local zone, not UTC. Issue #58.
+  const syncedTitle = lastSyncedAt
+    ? `Last synced ${formatPacific(lastSyncedAt)}`
+    : undefined;
 
   return (
     <section className="rounded-xl border border-border bg-card overflow-hidden">
@@ -684,7 +715,10 @@ function PropertyHeroStrip({
             </p>
           ) : null}
           {facts.length > 0 ? (
-            <p className="mt-1.5 text-[12.5px] text-muted-foreground tabular-nums leading-snug">
+            <p
+              className="mt-1.5 text-[12.5px] text-muted-foreground tabular-nums leading-snug"
+              title={syncedTitle}
+            >
               {facts.join(" · ")}
             </p>
           ) : null}
@@ -1529,6 +1563,25 @@ function formatAge(date: Date): string {
   if (days < 30) return `${days}d ago`;
   const months = Math.floor(days / 30);
   return `${months}mo ago`;
+}
+
+// Norman feedback (issue #58): the "Last synced" relative-time labels
+// were timezone-agnostic ("5h ago") but when operators hovered or
+// inspected the value they got UTC or browser-local time. SG operates
+// out of US Pacific, so this helper formats an absolute date string in
+// Pacific time and returns it for use in title= tooltips alongside the
+// relative-time label.
+function formatPacific(date: Date): string {
+  try {
+    return new Intl.DateTimeFormat("en-US", {
+      timeZone: "America/Los_Angeles",
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZoneName: "short",
+    }).format(date);
+  } catch {
+    return date.toISOString();
+  }
 }
 
 // Tighter timestamp for activity rows — no "ago" suffix to keep the
