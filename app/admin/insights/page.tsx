@@ -109,6 +109,44 @@ export default async function AdminInsightsPage({
     insights.map((i) => [i.orgId, i.org.name]),
   );
 
+  // ──────────────────────────────────────────────────────────────────────
+  // SEO recommendations rollup. Separate data model (SeoActionRecommendation)
+  // from the generic Insight model, but the agency wants to triage them
+  // alongside everything else.
+  // ──────────────────────────────────────────────────────────────────────
+  const seoRecs = await prisma.seoActionRecommendation.findMany({
+    where: {
+      status: { in: ["OPEN", "IN_PROGRESS"] },
+      refreshedAt: { gte: since },
+      org: { orgType: OrgType.CLIENT },
+      ...(orgFilter ? { orgId: orgFilter } : {}),
+    },
+    orderBy: [{ severity: "asc" }, { score: "desc" }],
+    take: 50,
+    select: {
+      id: true,
+      kind: true,
+      category: true,
+      severity: true,
+      title: true,
+      detail: true,
+      score: true,
+      actionHref: true,
+      actionLabel: true,
+      refreshedAt: true,
+      org: { select: { id: true, name: true } },
+      property: { select: { id: true, name: true } },
+    },
+  });
+
+  const seoBySeverity: Record<string, number> = {
+    CRITICAL: 0,
+    HIGH: 0,
+    MEDIUM: 0,
+    LOW: 0,
+  };
+  for (const r of seoRecs) seoBySeverity[r.severity] += 1;
+
   return (
     <div className="space-y-6 max-w-[1400px]">
       <PageHeader
@@ -154,6 +192,78 @@ export default async function AdminInsightsPage({
           </Link>
         ) : null}
       </div>
+
+      {/* SEO recommendations rollup — separate model from Insight but
+          shown alongside so Adam triages the whole portfolio from one view. */}
+      {seoRecs.length > 0 ? (
+        <section className="rounded-xl border border-border bg-card p-4">
+          <header className="mb-3 flex items-start justify-between gap-3 flex-wrap">
+            <div>
+              <p className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                SEO Agent
+              </p>
+              <h2 className="text-sm font-semibold text-foreground mt-0.5">
+                Open SEO recommendations across the portfolio
+              </h2>
+            </div>
+            <div className="flex items-center gap-2 text-[11px] font-mono">
+              {(["CRITICAL", "HIGH", "MEDIUM", "LOW"] as const).map((sev) => (
+                <span
+                  key={sev}
+                  className={`rounded-md px-2 py-0.5 ${
+                    sev === "CRITICAL"
+                      ? "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300"
+                      : sev === "HIGH"
+                        ? "bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+                        : sev === "MEDIUM"
+                          ? "bg-muted text-muted-foreground"
+                          : "bg-muted/50 text-muted-foreground"
+                  }`}
+                >
+                  {sev.toLowerCase()} {seoBySeverity[sev]}
+                </span>
+              ))}
+            </div>
+          </header>
+          <ul className="space-y-1.5">
+            {seoRecs.slice(0, 12).map((r) => (
+              <li
+                key={r.id}
+                className="flex items-start gap-3 rounded-md border border-border bg-background px-3 py-2"
+              >
+                <span
+                  className={`mt-0.5 inline-block h-2 w-2 rounded-full shrink-0 ${
+                    r.severity === "CRITICAL"
+                      ? "bg-red-500"
+                      : r.severity === "HIGH"
+                        ? "bg-amber-500"
+                        : "bg-muted-foreground"
+                  }`}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[12px] font-medium text-foreground truncate">
+                    {r.title}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {r.org.name}
+                    {r.property ? ` · ${r.property.name}` : ""}
+                    {" · "}
+                    <span className="font-mono">{r.category.toLowerCase()}</span>
+                  </p>
+                </div>
+                <span className="shrink-0 text-[11px] font-mono text-muted-foreground">
+                  {Math.round(r.score)}
+                </span>
+              </li>
+            ))}
+          </ul>
+          {seoRecs.length > 12 ? (
+            <p className="mt-2 text-[11px] text-muted-foreground">
+              {seoRecs.length - 12} more. Drill into a client portal to see all.
+            </p>
+          ) : null}
+        </section>
+      ) : null}
 
       {/* Top orgs by insight load — quick triage shortcut */}
       {orgRankings.length > 0 ? (

@@ -5,7 +5,7 @@ import { Bot, Gauge, LineChart, Link2, Search } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
-import { generateSeoRecommendations } from "@/lib/seo/agent";
+import { getCachedOrGenerateRecommendations } from "@/lib/seo/agent";
 import { isDataforSeoConfigured } from "@/lib/seo/dataforseo";
 import { isGooglePlacesConfigured } from "@/lib/seo/google-places";
 import { PropertyIntelligencePanel } from "@/components/portal/properties/property-intelligence-panel";
@@ -220,7 +220,7 @@ export default async function SeoAgentPage({
         select: { status: true },
       })
       .catch(() => []),
-    generateSeoRecommendations({
+    getCachedOrGenerateRecommendations({
       orgId: scope.orgId,
       propertyId: property.id,
     }).catch(() => []),

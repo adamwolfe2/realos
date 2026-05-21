@@ -7,6 +7,10 @@ import {
   tenantWhere,
 } from "@/lib/tenancy/scope";
 import { generateSeoRecommendations } from "@/lib/seo/agent";
+import {
+  setCachedRecommendations,
+  invalidateRecommendationsCache,
+} from "@/lib/seo/recommendation-cache";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -131,6 +135,9 @@ export async function POST(req: NextRequest) {
         });
     }
 
+    // Prime the cache with the fresh result so the next read hits.
+    await setCachedRecommendations(p.orgId, p.id, recs).catch(() => undefined);
+
     // Mark any pre-existing OPEN recs that the engine no longer emits
     // as EXPIRED. This keeps the operator's queue tight.
     const liveKinds = new Set(recs.map((r) => r.kind));
@@ -151,6 +158,15 @@ export async function POST(req: NextRequest) {
         data: { status: "EXPIRED" },
       });
     }
+  }
+
+  // Invalidate stale caches for any properties not in this batch (single
+  // property mode, this is a no-op).
+  if (body.propertyId) {
+    await invalidateRecommendationsCache(
+      properties[0].orgId,
+      properties[0].id,
+    ).catch(() => undefined);
   }
 
   return NextResponse.json({

@@ -336,6 +336,27 @@ async function contentGapRecs(
 // Public entry point
 // ---------------------------------------------------------------------------
 
+/**
+ * Same as generateSeoRecommendations but with a 1h cache layer keyed on
+ * (orgId, propertyId). Use this from any page that doesn't need
+ * sub-hour freshness. Callers who want to force a fresh recompute
+ * (e.g. POST /api/portal/seo/recommendations/refresh) should call
+ * generateSeoRecommendations directly and then invalidate.
+ */
+export async function getCachedOrGenerateRecommendations(input: {
+  orgId: string;
+  propertyId: string;
+}): Promise<SeoRecommendation[]> {
+  const { getCachedRecommendations, setCachedRecommendations } = await import(
+    "./recommendation-cache"
+  );
+  const hit = await getCachedRecommendations(input.orgId, input.propertyId);
+  if (hit) return hit;
+  const fresh = await generateSeoRecommendations(input);
+  await setCachedRecommendations(input.orgId, input.propertyId, fresh);
+  return fresh;
+}
+
 export async function generateSeoRecommendations(input: {
   orgId: string;
   propertyId: string;
