@@ -425,6 +425,24 @@ model Organization {
   // Site hosting mode
   bringYourOwnSite Boolean @default(false)
 
+  /// How published content is delivered. Controls what happens when an
+  /// operator clicks "Submit for approval" on a ContentDraft or
+  /// NeighborhoodPage:
+  ///
+  ///   HOSTED              — auto-publish to the LeaseStack tenant site
+  ///                         at tenant.com/n/<slug> (default for clients
+  ///                         on the Hosted Marketing Site Managed plan).
+  ///   EXTERNAL_VIA_ADMIN  — submit to /admin/content-approvals. Adam
+  ///                         pastes the MDX into the client's external
+  ///                         repo (separate Vercel project), clicks
+  ///                         "Mark deployed" once live. Default for new
+  ///                         orgs since most clients host elsewhere.
+  ///   EXTERNAL_VIA_WEBHOOK — POST page payload to client's webhook URL.
+  ///                         (Future — not implemented yet.)
+  ///   EXTERNAL_VIA_GITHUB  — open PR on client's repo via GitHub App.
+  ///                         (Future — requires App installation.)
+  publishMode      PublishMode @default(EXTERNAL_VIA_ADMIN)
+
   // White-label workspace ($499/mo add-on, ls_addon_white_label).
   // When `whiteLabel` is true and the override fields are populated, every
   // operator-facing brand surface (portal layout, tenant marketing site,
@@ -502,6 +520,13 @@ model Organization {
   // SEO/AEO Agent backrefs — Phase 1
   seoActionRecs           SeoActionRecommendation[]
   contentDrafts           ContentDraft[]
+  siteIntelligence        SiteIntelligence?
+  contentQuotas           MonthlyContentQuota[]
+  /// Per-org override of plan-based content quotas. JSON of
+  /// { BLOG_POST: 100, NEIGHBORHOOD_PAGE: 50, ... }. Set from
+  /// /admin/clients/[id] when a client needs extra capacity outside
+  /// their plan tier.
+  contentQuotaOverride    Json?
   seoScoreHistory         SeoScoreHistory[]
   propertyCompetitorScans PropertyCompetitorScan[]
   // DataforSEO ingestion (Phase 1.5)
@@ -3764,6 +3789,18 @@ model ContentDraft {
   output         Json?
   /// Raw markdown — what Adam pastes into Claude Code.
   outputMarkdown String? @db.Text
+  /// TipTap HTML output — the rich-text form the operator edits inline
+  /// in /portal/content/[id]. Saved on every autosave so the editor
+  /// reload is lossless. Stays in sync with outputMarkdown via a
+  /// renderer the moment the operator types.
+  htmlBody       String? @db.Text
+  /// Optional context passed to the assistant when the operator opens
+  /// the editor: target keywords, internal link targets, tone hints.
+  /// Persisted so the chat sidebar can resume mid-thread.
+  aiContext      Json?
+  /// Full chat thread between operator and AI assistant. Array of
+  /// { role: 'user' | 'assistant', content: string, ts: ISO }.
+  chatThread     Json?
   model          String?
   estimatedScore Int?
 
@@ -3789,6 +3826,107 @@ enum ContentFormat {
   META_REWRITE
   FAQ_BLOCK
   AD_COPY
+}
+
+enum PublishMode {
+  HOSTED
+  EXTERNAL_VIA_ADMIN
+  EXTERNAL_VIA_WEBHOOK
+  EXTERNAL_VIA_GITHUB
+}
+
+// ---------------------------------------------------------------------------
+// SiteIntelligence — cached site context per org.
+//
+// Populated by lib/intelligence/site-ingest.ts on org setup + nightly cron.
+// Powers the content drafter's "this AI knows your brand" feel:
+//
+//   * Firecrawl /crawl on the org's primary domain — collects up to 50
+//     pages, persists their markdown + URL list.
+//   * Firecrawl /scrape on the homepage + a handful of cornerstone pages
+//     for deeper content excerpts.
+//   * Perplexity Sonar research on the company — competitive landscape,
+//     voice cues, positioning lifted from the open web.
+//   * Brand voice notes extracted by Claude from the crawled copy
+//     (tone, register, dos/don'ts).
+//
+// Everything stuffs into the assistant's system prompt at draft time so
+// the AI proposes ideas grounded in the actual brand, not generic
+// real-estate boilerplate.
+// ---------------------------------------------------------------------------
+model SiteIntelligence {
+  id         String       @id @default(cuid())
+  orgId      String       @unique
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  /// Canonical URL the ingest was run against. Usually
+  /// `https://<primary-domain>`.
+  rootUrl    String?
+
+  /// Sitemap URLs discovered during crawl. Capped at 500 entries —
+  /// anything beyond is sampled.
+  sitemapUrls String[]
+
+  /// Up to 50 crawled pages with { url, title, description, markdown,
+  /// h1, h2[], wordCount }. Schema kept loose in JSON so we don't have
+  /// to migrate every time Firecrawl tweaks their response shape.
+  pages       Json?
+
+  /// Perplexity Sonar research blob. Keys: companyOverview,
+  /// competitiveLandscape, recentNews, positioningCues.
+  research    Json?
+
+  /// Claude-extracted brand voice notes — tone, register, taboo words,
+  /// preferred CTAs. Rendered into the system prompt verbatim.
+  brandVoice  String? @db.Text
+
+  /// Timestamps split so we can refresh research more often than crawl.
+  crawledAt   DateTime?
+  researchedAt DateTime?
+  brandVoiceAt DateTime?
+
+  /// Last ingest run summary (URLs crawled, pages scraped, cost USD).
+  lastRunStats Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+}
+
+// ---------------------------------------------------------------------------
+// MonthlyContentQuota — usage counter per org, per UTC month.
+//
+// One row per (orgId, periodStart) where periodStart is the first day of
+// the UTC month. Incremented atomically whenever a ContentDraft is
+// created. Hard limit per format is read from the org's plan tier
+// (lib/content/quota.ts). Soft warning shown in the UI at 80%, hard
+// block via the create-draft API at 100%.
+//
+// Admin can override per-client via Organization.contentQuotaOverride
+// (Json, e.g. { BLOG_POST: 999, PROPERTY_DESCRIPTION: 999 }).
+// ---------------------------------------------------------------------------
+model MonthlyContentQuota {
+  id          String       @id @default(cuid())
+  orgId       String
+  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  /// First day of the UTC month this counter covers.
+  periodStart DateTime
+
+  /// Per-format usage counts. Default zeros, incremented atomically.
+  blogPostsUsed             Int @default(0)
+  neighborhoodPagesUsed     Int @default(0)
+  propertyDescriptionsUsed  Int @default(0)
+  metaRewritesUsed          Int @default(0)
+  faqBlocksUsed             Int @default(0)
+  adCopiesUsed              Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([orgId, periodStart])
+  @@index([orgId, periodStart])
 }
 
 enum DraftStatus {
