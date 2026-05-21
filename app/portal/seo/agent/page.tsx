@@ -22,20 +22,46 @@ import {
   type CompetitorRow,
   type IntegrationState,
 } from "@/components/portal/seo/seo-data-cards";
+import nextDynamic from "next/dynamic";
 import {
   ExecSummaryRow,
   PositionBucketChart,
   CtrPositionScatter,
   StrikingDistanceTable,
   ShareOfVoiceDonut,
-  OpportunityMatrix,
-  ContentRoiTreemap,
   KeywordPipelineFunnel,
   BrandedVsNonBrandedCard,
   SiteHealthGauge,
   LocalPackCard,
   type RangeKey,
 } from "@/components/portal/seo/seo-phase2-charts";
+
+// Heavy charts split into their own bundle chunks. ContentRoiTreemap pulls
+// Recharts' Treemap, OpportunityMatrix pulls ScatterChart + ZAxis. Both
+// land below the fold on /portal/seo/agent so deferring their parse is a
+// clean win on time-to-interactive.
+const ContentRoiTreemap = nextDynamic(
+  () =>
+    import("@/components/portal/seo/charts/content-roi-treemap").then(
+      (m) => m.ContentRoiTreemap,
+    ),
+  { ssr: false, loading: () => <ChartPlaceholder height="h-[320px]" /> },
+);
+const OpportunityMatrix = nextDynamic(
+  () =>
+    import("@/components/portal/seo/charts/opportunity-matrix").then(
+      (m) => m.OpportunityMatrix,
+    ),
+  { ssr: false, loading: () => <ChartPlaceholder height="h-[320px]" /> },
+);
+
+function ChartPlaceholder({ height }: { height: string }) {
+  return (
+    <div
+      className={`w-full ${height} rounded-xl border border-dashed border-border bg-card animate-pulse`}
+    />
+  );
+}
 import {
   getExecSummary,
   getPositionBucketSeries,

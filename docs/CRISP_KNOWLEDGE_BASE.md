@@ -92,7 +92,7 @@ Operators pick the modules they want at intake. Every customer gets the operator
 4. **Visitor identification** — names and emails on a meaningful share of anonymous site traffic (via the Cursive pixel).
 5. **Lead capture and CRM** — forms, exit intent, chatbot leads, and pixel-identified visitors all flow into one pipeline with automated nurture.
 6. **Google and Meta ads** — geo-fenced campaigns, retargeting, weekly creative refresh.
-7. **Search and AI discovery (SEO + AEO)** — per-location pages built to rank in Google AND get cited by ChatGPT, Perplexity, Claude, and Gemini.
+7. **Search and AI discovery (SEO + AEO)** — per-location pages built to rank in Google AND get cited by ChatGPT, Perplexity, Claude, and Gemini. Includes the full **SEO Agent**: live SERP rank tracking, Lighthouse audits, backlink monitoring, competitor scans, content gap analysis, and an AI content drafter that produces blog posts, neighborhood pages, FAQ blocks, meta rewrites, ad copy, and property descriptions on demand. Every draft is reviewed by a human before anything ships.
 8. **Creative studio** — on-demand ad creative. 48-hour turnaround. No retainer, no template.
 9. **Referral program** — native referral tracking for current residents and tenants.
 
@@ -226,6 +226,26 @@ A visitor identification pixel that surfaces names and emails on a meaningful sh
 ### How does AEO / AI search discovery work?
 
 We build per-location and per-neighborhood pages designed to rank in Google AND be cited by ChatGPT, Perplexity, Claude, and Gemini. Every page ships with structured data (schema.org), explicit "facts about this property" the AI engines can quote, and a monthly audit that tracks which engines actually cite you. When competitors get cited and you don't, the platform surfaces a recommended counter-page.
+
+### What does the SEO Agent do in the portal?
+
+At `leasestack.co/portal/seo/agent` operators see a live dashboard that pulls real data from:
+
+- **Google Search Console** (impressions, clicks, CTR, average position per query)
+- **Google Analytics** (sessions, conversions, page-level traffic)
+- **DataforSEO** (live SERP rankings, Lighthouse scores, backlink summaries, ranked keywords, keyword intersection vs. top competitors, local pack tracking, on-page audits, search intent classification)
+- **AEO citation scanner** (ChatGPT, Perplexity, Claude, Gemini citation rate over your target prompts)
+- **Google Places** (nearby competitor scan)
+
+From that data the engine produces ranked recommendations: things like "this title is getting 5,000 impressions a month with 0.5% CTR — rewrite it," or "ACME Apartments is being cited where you should be — draft a counter page." Every recommendation links to a one-click content drafter that produces a publishable AI draft. Drafts go to LeaseStack for review before they ship.
+
+Charts include: executive summary KPIs with week-over-week delta, position bucket distribution, CTR vs. position scatter, striking-distance keywords, share of voice donut, opportunity matrix (volume × position × conversion potential), content ROI treemap per URL, keyword pipeline funnel, branded vs. non-branded split, site health gauge, local pack tracker, and a weekly composite score history line chart.
+
+Operators can also manage their own target queries (up to 20 active per property), trigger an immediate scan on demand, and request fresh content drafts in six formats (blog post, neighborhood page, FAQ block, meta rewrite, ad copy, property description). All AI generations are reviewed by a human before going live.
+
+### Who reviews the AI content drafts?
+
+Every draft lands in a queue at LeaseStack (the agency) before publishing. Adam or the LeaseStack content reviewer approves, requests changes, or rejects each one. Operators see drafts in their own dashboard but can't ship content unreviewed. This protects the operator's brand, ensures fair-housing compliance, and prevents AI hallucinations from going live.
 
 ### How fast is creative turnaround?
 
