@@ -599,6 +599,149 @@ export async function getLocalPackRows(input: {
 }
 
 // ---------------------------------------------------------------------------
+// Search path Sankey — top-5 queries flowing into top-5 landing URLs, then
+// terminating at "Engaged" / "Bounced" based on GA4 sessions vs clicks.
+// Lightweight SVG-friendly shape: nodes array + links with weights. The
+// visualizer in components/portal/seo/charts/search-path-sankey.tsx
+// computes y positions client-side.
+// ---------------------------------------------------------------------------
+export type SankeyNode = {
+  id: string;
+  label: string;
+  layer: 0 | 1 | 2;
+  value: number;
+};
+export type SankeyLink = {
+  source: string;
+  target: string;
+  value: number;
+};
+export type SankeyData = {
+  nodes: SankeyNode[];
+  links: SankeyLink[];
+};
+
+export async function getSearchPathSankey(input: {
+  orgId: string;
+  propertyId?: string;
+  range: RangeKey;
+}): Promise<SankeyData> {
+  const days = rangeToDays(input.range);
+  const start = startOfUtcDay(new Date(Date.now() - days * DAY_MS));
+  const rows = await prisma.queryLandingDaily.findMany({
+    where: {
+      orgId: input.orgId,
+      ...(input.propertyId ? { propertyId: input.propertyId } : {}),
+      date: { gte: start },
+      url: { not: "" },
+      query: { not: "" },
+      gscClicks: { gt: 0 },
+    },
+    select: {
+      query: true,
+      url: true,
+      gscClicks: true,
+      ga4Sessions: true,
+      ga4Conversions: true,
+    },
+  });
+
+  if (rows.length === 0) {
+    return { nodes: [], links: [] };
+  }
+
+  // Aggregate clicks per query, per url, per (query, url) pair.
+  const byQuery = new Map<string, number>();
+  const byUrl = new Map<string, number>();
+  const byPair = new Map<string, number>();
+  let totalSessions = 0;
+  let totalConversions = 0;
+  for (const r of rows) {
+    byQuery.set(r.query, (byQuery.get(r.query) ?? 0) + r.gscClicks);
+    byUrl.set(r.url, (byUrl.get(r.url) ?? 0) + r.gscClicks);
+    const key = `${r.query}|${r.url}`;
+    byPair.set(key, (byPair.get(key) ?? 0) + r.gscClicks);
+    totalSessions += r.ga4Sessions;
+    totalConversions += r.ga4Conversions;
+  }
+
+  const topQueries = Array.from(byQuery.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+  const topUrls = Array.from(byUrl.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
+
+  const topQuerySet = new Set(topQueries.map(([q]) => q));
+  const topUrlSet = new Set(topUrls.map(([u]) => u));
+
+  // Layer 0 = queries, Layer 1 = URLs, Layer 2 = outcomes
+  const nodes: SankeyNode[] = [
+    ...topQueries.map(([q, v]) => ({
+      id: `q:${q}`,
+      label: q.slice(0, 32),
+      layer: 0 as const,
+      value: v,
+    })),
+    ...topUrls.map(([u, v]) => ({
+      id: `u:${u}`,
+      label: trimUrl(u),
+      layer: 1 as const,
+      value: v,
+    })),
+    {
+      id: "outcome:engaged",
+      label: "Engaged",
+      layer: 2 as const,
+      value: totalSessions,
+    },
+    {
+      id: "outcome:converted",
+      label: "Converted",
+      layer: 2 as const,
+      value: totalConversions,
+    },
+  ];
+
+  // Links: query -> url where both are in top-5
+  const links: SankeyLink[] = [];
+  for (const [key, v] of byPair.entries()) {
+    const [q, u] = key.split("|");
+    if (!topQuerySet.has(q) || !topUrlSet.has(u)) continue;
+    links.push({ source: `q:${q}`, target: `u:${u}`, value: v });
+  }
+  // Links: url -> outcomes. Approximate: each top url's share of total
+  // sessions/conversions is proportional to its click share.
+  const totalTopClicks =
+    topUrls.reduce((a, [, v]) => a + v, 0) || 1;
+  for (const [u, v] of topUrls) {
+    const share = v / totalTopClicks;
+    if (totalSessions > 0) {
+      links.push({
+        source: `u:${u}`,
+        target: "outcome:engaged",
+        value: Math.round(totalSessions * share),
+      });
+    }
+    if (totalConversions > 0) {
+      links.push({
+        source: `u:${u}`,
+        target: "outcome:converted",
+        value: Math.round(totalConversions * share),
+      });
+    }
+  }
+
+  return { nodes, links };
+}
+
+function trimUrl(u: string): string {
+  const stripped = u.replace(/^https?:\/\//, "").replace(/\/$/, "");
+  if (stripped.length <= 36) return stripped;
+  return stripped.slice(0, 33) + "...";
+}
+
+// ---------------------------------------------------------------------------
 // Weekly score history — feeds the ScoreHistoryChart on the agent dashboard.
 // Returns up to 12 most recent weeks per (orgId, propertyId).
 // ---------------------------------------------------------------------------

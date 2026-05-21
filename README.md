@@ -17,7 +17,9 @@ A single Next.js app that serves four surfaces from one codebase:
    cross-tenant analytics, impersonation.
 3. **Client portal** (`leasestack.co/portal`), the client's dashboard: leads,
    visitors, chatbot conversations, ad creative requests, multi-property
-   CRM, billing, site builder.
+   CRM, billing, site builder, and the **SEO Agent** at `/portal/seo/agent`
+   (composite score, ranked recommendations, target queries, AI content
+   drafter, drafts inbox).
 4. **Tenant marketing sites** (e.g. `telegraphcommons.com`), hostname-routed,
    rendered from `app/(tenant)`: live AppFolio listings, chatbot widget,
    pixel installed, lead capture, SEO pages.

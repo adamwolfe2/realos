@@ -4,7 +4,7 @@
 >
 > **Audience:** Adam Wolfe (operator) + future engineers picking up this work.
 >
-> **Status:** design + Phase-1 scope. Phase-1 schema is in this commit. Phase-2 onward is multi-week.
+> **Status:** Phase 1 + Phase 2 shipped (2026-05-21). DataforSEO client, recommendation engine, Claude content drafter, operator UI at `/portal/seo/agent`, admin queue at `/admin/content-drafts`, weekly score snapshots, and three SEO crons are live. Phase 3 (auto-ship via GitHub PR, Profound integration) deferred.
 
 ---
 
@@ -272,52 +272,88 @@ model SeoScoreHistory {
 }
 ```
 
-### New library code (Phase 1 scaffolding shipped)
+### Library code (shipped)
 
 ```
 lib/seo/
-  agent.ts                  Synthesizes recommendations from existing data.
-                            Mirrors lib/intelligence/property-recommendations.ts
-                            shape but with SEO-specific rules. Returns
-                            ProactiveAction[] persisted to SeoActionRecommendation.
-  draft-writer.ts           Claude-powered content drafter. One function per
-                            ContentFormat. Returns ContentDraft.output JSON +
-                            outputMarkdown.
-  score.ts                  Composite-score computation from SeoSnapshot +
-                            AeoCitationCheck + Lighthouse. Writes
-                            SeoScoreHistory.
-  dataforseo.ts             Thin REST wrapper around DataforSEO. Auth via
-                            DATAFORSEO_LOGIN / DATAFORSEO_PASSWORD env. (Phase 2)
+  agent.ts                   Recommendation engine. Synthesizes existing
+                             GA4 / GSC / AEO data + DataforSEO signals into
+                             ranked SeoActionRecommendation rows.
+  draft-writer.ts            Claude Sonnet 4.5 content drafter. One function
+                             per ContentFormat (BLOG_POST, NEIGHBORHOOD_PAGE,
+                             PROPERTY_DESCRIPTION, META_REWRITE, FAQ_BLOCK,
+                             AD_COPY) — returns structured Zod output + markdown.
+  dataforseo.ts              REST client. 14 endpoint wrappers: serp organic,
+                             keyword volume + suggestions, competitors_domain,
+                             lighthouse, on_page instant + audit, backlinks
+                             summary, ranked keywords, keyword intersection,
+                             local pack, search intent. HTTP Basic auth via
+                             DATAFORSEO_LOGIN / DATAFORSEO_PASSWORD. Returns
+                             { skipped: true } when env not set.
+  sync-orchestrator.ts       Per-property scan driver called by the daily
+                             cron + on-demand refresh. Caps at 4 queries per
+                             property, ~$0.05 / property / day. Writes
+                             SerpRanking, OnPageAudit, BacklinkSummary,
+                             OnPageInstantAudit, LocalPackRanking,
+                             RankedKeyword, KeywordIntersection,
+                             PropertyCompetitorScan.
+  score-snapshot.ts          Weekly SeoScoreHistory writer. Composite formula:
+                             0.35*technical + 0.35*content + 0.30*authority.
+  aggregate-fact-table.ts    Daily QueryLandingDaily roll-up from GSC + GA4.
+  derive-queries.ts          Starter SeoTargetQuery generator (city + subtype
+                             + branded) for properties with no operator-set
+                             targets.
+  agent-charts-data.ts       Server-side data shaping for the 11 operator
+                             charts in seo-phase2-charts.tsx.
+  recommendation-cache.ts    Upstash Redis (with in-process LRU fallback)
+                             cache for recommendation engine output. 1h TTL.
+  google-places.ts           Nearby competitor scan via Google Places.
 ```
 
-### New API routes (Phase 1)
+### API routes (shipped)
+
+Operator (`/api/portal/seo/*`):
 
 ```
-POST   /api/portal/seo/recommendations/refresh    Force-regenerate the rec list (operator action)
-POST   /api/portal/seo/drafts                     Create a new ContentDraft
-GET    /api/portal/seo/drafts/[id]                Get the draft (for polling while GENERATING)
-POST   /api/portal/seo/drafts/[id]/submit         Push to admin queue
-POST   /api/portal/seo/drafts/[id]/ship           Operator marks SHIPPED after publishing
-
-POST   /api/admin/content-drafts/[id]/approve     Admin approve
-POST   /api/admin/content-drafts/[id]/changes     Admin request changes (text note)
-POST   /api/admin/content-drafts/[id]/reject      Admin reject (text note)
+POST   /api/portal/seo/recommendations/refresh    Recompute the rec list on demand
+GET    /api/portal/seo/drafts                     List drafts (filter by status / property)
+POST   /api/portal/seo/drafts                     Generate a new ContentDraft (synchronous; ~15s)
+GET    /api/portal/seo/drafts/[id]                Single draft (polling-friendly)
+PATCH  /api/portal/seo/drafts/[id]                Update / submit / mark shipped
+GET    /api/portal/seo/target-queries             List active SeoTargetQuery rows
+POST   /api/portal/seo/target-queries             Add a target query (cap 20 active per property)
+PATCH  /api/portal/seo/target-queries/[id]        Toggle active / edit label
+DELETE /api/portal/seo/target-queries/[id]        Remove
+POST   /api/portal/seo/scan/[propertyId]          Trigger an immediate per-property DataforSEO scan
+GET    /api/portal/seo/scan/[propertyId]/status   Poll scan progress
+POST   /api/portal/seo/aeo/scan                   Re-run the AEO citation scanner
+POST   /api/portal/seo/neighborhoods/[id]/scan    Re-scan a NeighborhoodPage for citations
 ```
 
-### New UI surfaces (Phase 2-3)
+Admin (`/api/admin/content-drafts/*`):
 
-- `/portal/seo/agent` — new page. Top: composite score + week-over-week delta. Middle: ranked action cards (reuse `PropertyIntelligencePanel` shape). Bottom: drafts in flight + recently shipped.
-- `/portal/seo/drafts/[id]` — operator's draft view. Shows the brief + Claude's output + status. "Submit for review" CTA. After approval shows the "Copy markdown" button + "Send to Claude Code" handoff.
-- `/admin/content-drafts` — Adam's review queue. Drafts grouped by org. Inline diff if revising. Approve / Request changes / Reject buttons. Renders markdown preview side-by-side with raw.
+```
+GET    /api/admin/content-drafts                  Cross-tenant pending-review queue
+GET    /api/admin/content-drafts/[id]             Single draft (full output + metadata)
+POST   /api/admin/content-drafts/[id]/approve     Mark APPROVED, notify operator
+POST   /api/admin/content-drafts/[id]/reject      Mark REJECTED with notes
+```
 
-### Nightly cron
+### UI surfaces (shipped)
 
-`/api/cron/seo-agent` runs at 03:30 UTC daily:
+- `/portal/seo/agent` — operator page. Composite score gauge + WoW delta, ranked recommendation cards, target-query manager, drafts inbox, 11 charts (exec summary KPIs, position bucket distribution, CTR vs. position scatter, striking-distance keywords, share-of-voice donut, opportunity matrix, content ROI treemap, keyword pipeline funnel, branded vs. non-branded split, site health gauge, local pack tracker, weekly composite score history).
+- Components: `components/portal/seo/{draft-launcher,target-query-manager,drafts-inbox,score-history-chart,citation-health-panel,refresh-recommendations-button,seo-data-cards,seo-phase2-charts}.tsx` + `charts/{content-roi-treemap,opportunity-matrix,shared}.tsx`.
+- `/admin/content-drafts` — admin queue, grouped by org. List view + detail at `/admin/content-drafts/[id]`. Approve / reject actions via `components/admin/content-drafts/draft-review-controls.tsx`.
 
-1. For every LIVE property, refresh `SeoActionRecommendation` rows (delete completed + expired, upsert open ones).
-2. For every property, compute the week's `SeoScoreHistory` row if Monday hasn't been processed yet.
-3. For drafts stuck in `PENDING_REVIEW` >30d, mark `EXPIRED`.
-4. Trigger DataforSEO syncs (Phase 2) for top 50 target queries per property.
+### Crons (vercel.json)
+
+| Path | Schedule | Purpose |
+|---|---|---|
+| `/api/cron/dataforseo-sync` | `0 4 * * *` daily | Per-property DataforSEO scan via `sync-orchestrator.ts` |
+| `/api/cron/seo-competitor-scan` | `0 3 * * *` daily | Google Places nearby + DataforSEO competitors_domain |
+| `/api/cron/seo-fact-aggregate` | `0 5 * * *` daily | QueryLandingDaily roll-up + weekly SeoScoreHistory snapshot |
+| `/api/cron/seo-sync` | `*/30 * * * *` | Incremental GA4 + GSC ingest into SeoSnapshot / SeoQuery / SeoLandingPage |
+| `/api/cron/aeo-scan` | `0 2 * * 1` weekly | AEO citation scan across ChatGPT / Perplexity / Claude / Gemini |
 
 ---
 
@@ -333,34 +369,32 @@ POST   /api/admin/content-drafts/[id]/reject      Admin reject (text note)
 
 ## Phasing — concrete next steps
 
-### Phase 1 (shipped in this commit)
+### Phase 1 — shipped
 
-- ✅ Architecture doc (this file).
-- ⏳ Prisma schema additions (next commit — I want your sign-off on the tool recommendation first before migrating).
-- ⏳ `lib/seo/agent.ts` skeleton with rule signatures (mirrors `lib/intelligence/property-recommendations.ts`).
-- ⏳ DataforSEO account + env vars in `.env.example` (don't sign up yet — wait for your decision).
+- Architecture doc (this file)
+- Prisma schema: `SeoActionRecommendation`, `ContentDraft`, `SeoScoreHistory` + supporting enums
+- `lib/seo/agent.ts` recommendation engine
+- `.env.example` updated with `DATAFORSEO_LOGIN` / `DATAFORSEO_PASSWORD`
 
-### Phase 2 (~3 days)
+### Phase 2 — shipped
 
-- DataforSEO client + competitor scan cron
-- Recommendation engine rules wired to real data
-- ContentDraft + DraftWriter (Claude-powered) — BLOG_POST, NEIGHBORHOOD_PAGE, META_REWRITE formats
-- Operator UI at `/portal/seo/agent`
-- Admin queue at `/admin/content-drafts`
+- DataforSEO REST client (`lib/seo/dataforseo.ts`) with 14 endpoint wrappers
+- Sync orchestrator (`lib/seo/sync-orchestrator.ts`) + 3 dedicated SEO crons
+- 13 new Prisma models for cached DataforSEO data (`PropertyCompetitorScan`, `SeoTargetQuery`, `SerpRanking`, `OnPageAudit`, `BacklinkSummary`, `OnPageInstantAudit`, `LocalPackRanking`, `RankedKeyword`, `KeywordIntersection`, `QueryLandingDaily`)
+- Recommendation engine rules wired to real signal
+- Content drafter (`lib/seo/draft-writer.ts`) — all 6 formats (BLOG_POST, NEIGHBORHOOD_PAGE, PROPERTY_DESCRIPTION, META_REWRITE, FAQ_BLOCK, AD_COPY) via Claude Sonnet 4.5
+- Operator UI at `/portal/seo/agent` with 11-chart dashboard
+- Admin queue at `/admin/content-drafts` with approve / reject controls
+- Redis cache (`lib/seo/recommendation-cache.ts`) — 1h TTL with in-process LRU fallback
+- Weekly composite score snapshot writer (`lib/seo/score-snapshot.ts`)
 
-### Phase 3 (~3 days)
-
-- SeoScoreHistory + score chart (week-over-week)
-- On-page audit integration (DataforSEO Lighthouse)
-- Backlink-opportunity rule
-- Optional: Profound integration for tenants on Scale tier
-
-### Phase 4 (future)
+### Phase 3 — deferred / future
 
 - Auto-ship via GitHub PR (we open the PR on the tenant's marketing site repo)
 - Content versioning + revision diffs
 - A/B test new titles vs old via CTR delta
 - White-label "branded SEO report" PDF export
+- Optional: Profound integration for tenants on Scale tier
 
 ---
 

@@ -54,6 +54,13 @@ const OpportunityMatrix = nextDynamic(
     ),
   { ssr: false, loading: () => <ChartPlaceholder height="h-[320px]" /> },
 );
+const SearchPathSankey = nextDynamic(
+  () =>
+    import("@/components/portal/seo/charts/search-path-sankey").then(
+      (m) => m.SearchPathSankey,
+    ),
+  { ssr: false, loading: () => <ChartPlaceholder height="h-[360px]" /> },
+);
 
 function ChartPlaceholder({ height }: { height: string }) {
   return (
@@ -75,6 +82,7 @@ import {
   getSiteHealth,
   getLocalPackRows,
   getScoreHistory,
+  getSearchPathSankey,
 } from "@/lib/seo/agent-charts-data";
 import { DraftLauncher } from "@/components/portal/seo/draft-launcher";
 import { TargetQueryManager } from "@/components/portal/seo/target-query-manager";
@@ -410,6 +418,7 @@ export default async function SeoAgentPage({
     siteHealth,
     localPackRows,
     scoreHistory,
+    sankey,
   ] = await Promise.all([
     getExecSummary({ orgId: scope.orgId, propertyId: property.id, range }),
     getPositionBucketSeries({
@@ -435,6 +444,7 @@ export default async function SeoAgentPage({
     getSiteHealth({ orgId: scope.orgId, propertyId: property.id }),
     getLocalPackRows({ orgId: scope.orgId, propertyId: property.id }),
     getScoreHistory({ orgId: scope.orgId, propertyId: property.id }),
+    getSearchPathSankey({ orgId: scope.orgId, propertyId: property.id, range }),
   ]);
 
   // Build the exec-summary stats array. Delta arrows are NULL when we
@@ -651,6 +661,9 @@ export default async function SeoAgentPage({
 
       {/* Phase 2 — the composite views Norman called "the real magic." */}
       <KeywordPipelineFunnel stages={pipelineStages} />
+
+      {/* Search path Sankey — top queries → landing URLs → outcomes. */}
+      <SearchPathSankey nodes={sankey.nodes} links={sankey.links} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
         <PositionBucketChart data={positionBuckets} />
