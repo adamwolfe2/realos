@@ -80,5 +80,20 @@
 12. feat: merge SEO Agent recs into property intelligence panel
 13. feat(seo): operator draft preview + richer loading skeleton
 14. feat(seo): SEO health score badge on /portal/properties list
+15. feat(seo): cross-property drafts list + SEO digest in weekly email
+16. feat(seo): operator bell notification on draft review
+17. feat(seo): admin bell notification when operator submits draft
 
 All pushed to origin/main.
+
+### Notification loop closed end-to-end
+
+- Operator generates draft → /admin gets bell notification + queue badge
+- Admin approves/requests-changes/rejects → operator gets bell notification
+- Bell deep-links to the right detail page on each side
+
+### Stretch backlog still open
+
+- Auto-trigger first SEO scan on property creation (deferred, complex)
+- Geographic choropleth (no source data yet)
+- Code-split remaining heavy charts (CTR scatter + Funnel — minor wins)
