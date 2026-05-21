@@ -495,6 +495,10 @@ export async function getActivityFeed(
         createdAt: true,
         capturedEmail: true,
         capturedName: true,
+        // Norman bug #102: pull leadId so the activity-feed click
+        // target can route directly to the lead transcript instead of
+        // the gated /portal/conversations module.
+        leadId: true,
         property: { select: { name: true } },
       },
     }),
@@ -553,12 +557,19 @@ export async function getActivityFeed(
       : c.capturedName
         ? "Conversation started"
         : "Conversation started";
+    // Norman bug #102: the click target was hard-coded to
+    // /portal/conversations, but the Conversations module is off for
+    // most orgs (it's the dedicated inbox surface, gated). When the
+    // operator clicked through they landed on a locked module page.
+    // Prefer the lead-detail transcript when we have a leadId, fall
+    // back to the chatbot page (which surfaces recent conversations
+    // + config) so the link always lands on something useful.
     items.push({
       id: `chat-${c.id}`,
       kind: "chatbot",
       title: `Chatbot \u2014 ${captured}`,
       meta: c.property?.name ?? undefined,
-      href: "/portal/conversations",
+      href: c.leadId ? `/portal/leads/${c.leadId}` : "/portal/chatbot",
       at: c.createdAt,
     });
   }

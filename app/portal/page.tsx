@@ -724,9 +724,14 @@ export default async function PortalHome({
         aria-label="At a glance"
         className="grid grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
       >
+        {/* Norman bug #101: tiles needed explicit time windows, an honest
+            empty-state for ad spend when no campaigns are active, an
+            "Organic = unique website visitors" clarification, and the
+            rent-roll occupancy tile removed (same theme as the property
+            detail and dashboard rent-roll cleanup). */}
         <KpiTile
           variant="accent"
-          label="Total leads"
+          label="Leads (28d)"
           value={leadsNew28d.toLocaleString()}
           hint={`${leadsTotal.toLocaleString()} all-time`}
           spark={totalLeadsSpark}
@@ -747,43 +752,58 @@ export default async function PortalHome({
           }
           href="/portal/leads"
         />
+        {/* Ad spend tile renders only when an ad account exists AND has
+            real spend in the window. When ad modules are off, no
+            campaigns exist, OR spend is zero, swap in the Tours tile so
+            the row never reads as broken/inactive. */}
+        {(!adsOff && adSpend.spendUsd > 0) ? (
+          <KpiTile
+            label="Ad spend (28d)"
+            value={`$${adSpend.spendUsd.toLocaleString()}`}
+            hint={
+              costPerLeadDisplay !== "—"
+                ? `${costPerLeadDisplay} per lead`
+                : "Blended Google + Meta"
+            }
+            spark={adSpend.sparkline}
+            icon={<DollarSign className="h-3.5 w-3.5" />}
+            delta={
+              adSpend.deltaPct != null
+                ? {
+                    value: `${adSpend.deltaPct >= 0 ? "+" : ""}${adSpend.deltaPct}%`,
+                    trend:
+                      adSpend.deltaPct > 0
+                        ? "up"
+                        : adSpend.deltaPct < 0
+                          ? "down"
+                          : "flat",
+                  }
+                : undefined
+            }
+            href="/portal/campaigns"
+          />
+        ) : (
+          <KpiTile
+            label="Tours scheduled (28d)"
+            value={toursScheduled.toLocaleString()}
+            hint={
+              toursScheduled === 0
+                ? "Tours show as leads schedule them"
+                : "Last 28 days"
+            }
+            icon={<CalendarCheck className="h-3.5 w-3.5" />}
+            href="/portal/tours"
+          />
+        )}
         <KpiTile
-          label="Ad spend (28d)"
-          value={`$${adSpend.spendUsd.toLocaleString()}`}
-          hint={
-            costPerLeadDisplay !== "—"
-              ? `${costPerLeadDisplay} per lead`
-              : "Blended Google + Meta"
-          }
-          spark={adSpend.sparkline}
-          icon={<DollarSign className="h-3.5 w-3.5" />}
-          delta={
-            adSpend.deltaPct != null
-              ? {
-                  value: `${adSpend.deltaPct >= 0 ? "+" : ""}${adSpend.deltaPct}%`,
-                  trend:
-                    adSpend.deltaPct > 0
-                      ? "up"
-                      : adSpend.deltaPct < 0
-                        ? "down"
-                        : "flat",
-                }
-              : undefined
-          }
-          href="/portal/campaigns"
-          locked={
-            adsOff
-              ? {
-                  reason: "Requires Google Ads or Meta",
-                  href: "/portal/connect",
-                }
-              : undefined
-          }
-        />
-        <KpiTile
-          label="Organic"
+          label="Organic visitors (28d)"
           value={organic.sessions.toLocaleString()}
-          hint="From GSC + GA4"
+          // Reporter clarification: "Organic" was ambiguous. It's unique
+          // website sessions matched to your property's URL patterns
+          // via GSC (clicks) + GA4 (sessions). Spelling it out here
+          // and in the hint avoids the "is this leads? page views?"
+          // round-trip we kept having with operators.
+          hint="Unique sessions from GSC + GA4"
           spark={organic.sparkline}
           icon={<Search className="h-3.5 w-3.5" />}
           delta={
@@ -806,30 +826,20 @@ export default async function PortalHome({
               : undefined
           }
         />
+        {/* Occupancy tile dropped per Norman feedback (#101) — rent-roll
+            content is not the dashboard's focus. Properties tile takes
+            the slot: total active properties + a link into the curate
+            view. */}
         <KpiTile
-          label="Occupancy"
-          value={
-            portfolioOccupancyPct != null
-              ? `${portfolioOccupancyPct}%`
-              : "—"
-          }
+          label="Active properties"
+          value={properties.length.toLocaleString()}
           hint={
-            portfolioTotalUnits > 0
-              ? `${(portfolioTotalUnits - portfolioAvailableUnits).toLocaleString()} of ${portfolioTotalUnits.toLocaleString()} occupied`
-              : "Connect AppFolio"
-          }
-          gaugeValue={
-            portfolioOccupancyPct != null
-              ? portfolioOccupancyPct / 100
-              : undefined
+            properties.length === 0
+              ? "Add your first property"
+              : "Click to drill in"
           }
           icon={<Building2 className="h-3.5 w-3.5" />}
           href="/portal/properties"
-          locked={
-            appfolioOff && portfolioTotalUnits === 0
-              ? { reason: "Requires AppFolio", href: "/portal/connect" }
-              : undefined
-          }
         />
       </section>
 
@@ -922,13 +932,23 @@ export default async function PortalHome({
         </section>
       ) : null}
 
-          {/* Properties + activity feed */}
+          {/* Properties + activity feed — Norman bug #103: the previous
+              image-led property grid took up two-thirds of the row
+              even on a tiny portfolio (and duplicated what
+              /portal/properties already shows in detail). Replaced
+              with a compact portfolio summary: top-N properties by 28d
+              lead volume, no per-property hero photo, with a clear
+              "View all properties →" link into /portal/properties for
+              the full drilldown. Saves vertical real estate for the
+              portfolio-level signals (activity feed, future insight
+              rows) that actually belong on the dashboard. */}
           <section className="grid grid-cols-1 lg:grid-cols-3 gap-2">
             <DashboardSection
-              title="Properties"
-              eyebrow="Portfolio"
-              description="Performance per property over the last 28 days"
+              title="Top properties"
+              eyebrow="Portfolio · last 28d"
+              description="Sorted by lead volume. Click into a property for the full drilldown."
               href="/portal/properties"
+              hrefLabel="View all properties"
               className="lg:col-span-2"
             >
               {properties.length === 0 ? (
@@ -937,16 +957,9 @@ export default async function PortalHome({
                   occupancy here.
                 </p>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Replaced the dense Linear-style table rows with
-                      AeroStore-style image-led grid cards. Each property
-                      is immediately identifiable by its hero photo —
-                      critical for operators managing 4-8 buildings where
-                      "Sunset Commons" and "Maple Ridge" are visually
-                      indistinguishable in a plain text list. */}
-                  {/* Placeholder div — column header was here in list mode;
-                      grid cards carry their own labels so this is gone. */}
-                  {properties.map((p) => {
+                (() => {
+                  const ranked = properties
+                    .map((p) => {
                       const metrics = propertyMetrics.get(p.id) ?? {
                         leads28d: 0,
                         leadsSpark: new Array<number>(28).fill(0),
@@ -958,44 +971,42 @@ export default async function PortalHome({
                       const address = [p.addressLine1, p.city, p.state]
                         .filter(Boolean)
                         .join(", ");
-                      const occupancyPct = p.totalUnits
-                        ? Math.round(
-                            ((p.totalUnits - (p.availableCount ?? 0)) /
-                              p.totalUnits) *
-                              100,
-                          )
-                        : null;
-                      const photoFallback = (() => {
-                        const arr = p.photoUrls;
-                        if (Array.isArray(arr) && arr.length > 0) {
-                          const first = arr[0];
-                          return typeof first === "string" && first.length > 0
-                            ? first
-                            : null;
-                        }
-                        return null;
-                      })();
-                      const avatarUrl = p.heroImageUrl ?? photoFallback;
-                      return (
-                        <PropertyGridCard
-                          key={p.id}
-                          id={p.id}
-                          name={p.name}
-                          address={address || null}
-                          thumbnailUrl={avatarUrl}
-                          occupancyPct={occupancyPct}
-                          totalUnits={p.totalUnits ?? null}
-                          availableCount={p.availableCount ?? null}
-                          leads28d={metrics.leads28d}
-                          leadsSpark={metrics.leadsSpark}
-                          activeCampaigns={metrics.activeCampaigns}
-                          accent={org?.primaryColor ?? undefined}
-                          reputationMentionCount={metrics.reputationMentionCount}
-                          reputationUnreviewedCount={metrics.reputationUnreviewedCount}
-                        />
-                      );
-                    })}
-                </div>
+                      return { p, metrics, address };
+                    })
+                    .sort((a, b) => b.metrics.leads28d - a.metrics.leads28d)
+                    .slice(0, 5);
+                  return (
+                    <ul className="divide-y divide-border -mx-1">
+                      {ranked.map(({ p, metrics, address }) => (
+                        <li key={p.id}>
+                          <Link
+                            href={`/portal/properties/${p.id}`}
+                            className="group flex items-center gap-3 px-1 py-2.5 -mx-0.5 rounded-md hover:bg-muted/30 transition-colors"
+                          >
+                            <span className="min-w-0 flex-1">
+                              <span className="block text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
+                                {p.name}
+                              </span>
+                              {address ? (
+                                <span className="block text-[11px] text-muted-foreground truncate mt-0.5">
+                                  {address}
+                                </span>
+                              ) : null}
+                            </span>
+                            <span className="text-right shrink-0">
+                              <span className="block text-sm font-semibold tabular-nums text-foreground">
+                                {metrics.leads28d}
+                              </span>
+                              <span className="block text-[10px] uppercase tracking-widest text-muted-foreground">
+                                {metrics.leads28d === 1 ? "lead" : "leads"}
+                              </span>
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  );
+                })()
               )}
             </DashboardSection>
 
