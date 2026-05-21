@@ -1,6 +1,11 @@
 "use client";
 
 import * as React from "react";
+import {
+  computeDefaultOpen,
+  computeSummaryText,
+  type ReportStatus,
+} from "@/lib/reports/operator-bar-state";
 
 // ---------------------------------------------------------------------------
 // OperatorReviewBar
@@ -12,13 +17,11 @@ import * as React from "react";
 // past their own draft inputs just to skim the deliverable they were about
 // to share. This wraps both panels in a sticky bar that opens on demand.
 //
-// Defaults to OPEN when the report is still draft AND the operator hasn't
-// written a headline or note yet — that's the first-time-editing state and
-// the panel is the primary CTA. Otherwise defaults to CLOSED so the report
-// body is visible immediately.
+// All decision logic (default-open + summary text) lives in
+// lib/reports/operator-bar-state.ts — pure and unit-tested.
 // ---------------------------------------------------------------------------
 
-type Status = "draft" | "shared" | "archived";
+type Status = ReportStatus;
 
 export function OperatorReviewBar({
   status,
@@ -35,7 +38,7 @@ export function OperatorReviewBar({
   recipient: string | null;
   children: React.ReactNode;
 }) {
-  const defaultOpen = status === "draft" && !hasHeadline && !hasNotes;
+  const defaultOpen = computeDefaultOpen(status, hasHeadline, hasNotes);
   const [open, setOpen] = React.useState(defaultOpen);
 
   const statusPill = (() => {
@@ -68,20 +71,12 @@ export function OperatorReviewBar({
     }
   })();
 
-  const summaryText = (() => {
-    if (status === "shared") {
-      return shareUrl
-        ? "Report is live with your client"
-        : "Report marked shared";
-    }
-    if (status === "archived") return "Archived from active reports";
-    if (!hasHeadline && !hasNotes) {
-      return "Add a headline and a personal note before you share";
-    }
-    if (!hasHeadline) return "Add a headline before you share";
-    if (!hasNotes) return "Add a personal note before you share";
-    return "Ready to share — review and send to your client";
-  })();
+  const summaryText = computeSummaryText(
+    status,
+    hasHeadline,
+    hasNotes,
+    shareUrl,
+  );
 
   return (
     <section
