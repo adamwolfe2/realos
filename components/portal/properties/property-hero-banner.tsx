@@ -147,16 +147,15 @@ export function PropertyHeroBanner({
 
   const padding = compact ? "p-4 sm:p-5" : "p-5 sm:p-7";
   const gridCols = compact
-    ? "grid-cols-[160px_minmax(0,1fr)]"
-    : "grid-cols-1 sm:grid-cols-[260px_minmax(0,1fr)] md:grid-cols-[300px_minmax(0,1fr)]";
-  // Norman 2026-05-21 third pass: image was "stuck" because the fixed
-  // height + items-center kept it pinned inside the card. Bumped sizes
-  // and the image now uses a negative top margin to LIFT above the card
-  // edge for the 3D pop effect. A BG-removed PNG will visibly float
-  // over the brand-gradient top edge; a regular rectangular photo will
-  // still anchor to the card but read as larger and more prominent.
-  const imageSize = compact ? "h-[160px]" : "h-[260px] sm:h-[320px]";
-  const imageLift = compact ? "-mt-6" : "-mt-10 sm:-mt-14";
+    ? "grid-cols-[180px_minmax(0,1fr)]"
+    : "grid-cols-1 sm:grid-cols-[300px_minmax(0,1fr)] md:grid-cols-[340px_minmax(0,1fr)]";
+  // Norman 2026-05-21 fifth pass: the rounded-xl + perspective tilt
+  // were treating the BG-removed PNG as if it were a card. Dropped
+  // both. The building silhouette IS the shape now. Bigger size +
+  // generous negative margins so it visibly breaks out of all four
+  // sides of its column.
+  const imageSize = compact ? "h-[200px]" : "h-[320px] sm:h-[380px]";
+  const imageLift = compact ? "-mt-10 -mx-2" : "-mt-16 sm:-mt-20 -mx-3 sm:-mx-5";
 
   return (
     <section
@@ -193,98 +192,55 @@ export function PropertyHeroBanner({
         }}
       />
 
-      {/* Grid uses items-end so the image bottom anchors to the
-          identity column's baseline, while the negative top margin
-          on the image pulls its top edge ABOVE the card. Net: the
-          building reads as floating in front of the card rather
-          than sitting inside it. */}
+      {/* Norman 2026-05-21 fifth pass: dropped the perspective tilt and
+          the rounded-xl on the image. The whole point of a BG-removed
+          PNG is that the building silhouette IS the shape — wrapping
+          it in a tilted card with rounded corners undoes that. The
+          image now sits flat on the card surface (no tilt), no
+          rounded corners (silhouette is the outline), spilling beyond
+          all four edges of its grid column via large negative
+          margins, with a single strong drop-shadow stack for the
+          floating feel and a soft ground shadow to anchor it. */}
       <div className={`relative grid items-end gap-5 ${gridCols}`}>
-        {/* Image column — building floats above a soft ground shadow.
-            Norman 2026-05-21 fourth pass: "it's not 3D". A flat
-            rectangular photo on a flat card never will be without
-            BG-removal OR a real perspective transform. We don't
-            control the source image so we use a CSS perspective
-            wrapper + tilt transform + parallax shadow stack. The
-            photo now sits on an angled plane that rotates back
-            ~8deg on X and ~5deg on Y; on group-hover it eases back
-            to ~3deg on X and 0 on Y so the building "rises toward
-            you" as the cursor approaches. This gives real
-            three-dimensional volume with zero dependencies. */}
-        <div
-          className="relative group"
-          style={{
-            overflow: "visible",
-            perspective: "1200px",
-            perspectiveOrigin: "50% 30%",
-          }}
-        >
+        <div className="relative group" style={{ overflow: "visible" }}>
           {currentImage ? (
             <div
               className={`relative ${imageLift}`}
-              style={{
-                overflow: "visible",
-                transformStyle: "preserve-3d",
-                transform:
-                  "rotateX(8deg) rotateY(-5deg) rotateZ(-0.5deg) translateZ(0)",
-                transformOrigin: "50% 100%",
-                transition:
-                  "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)",
-                willChange: "transform",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform =
-                  "rotateX(3deg) rotateY(0deg) rotateZ(0deg) translateZ(20px)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform =
-                  "rotateX(8deg) rotateY(-5deg) rotateZ(-0.5deg) translateZ(0)";
-              }}
+              style={{ overflow: "visible" }}
             >
-              {/* Cast shadow — angled to match the tilt direction so it
-                  reads as a real cast shadow on the card surface below
-                  rather than a generic blur. Sits below the image,
-                  skewed to imply the light comes from the upper left. */}
+              {/* Ground shadow — a soft, wide radial smudge beneath
+                  the building so it reads as resting on a plane,
+                  not levitating. Sized larger than the image so it
+                  extends past the silhouette's footprint. */}
               <div
                 aria-hidden="true"
-                className="absolute left-1/2 bottom-[-22px] w-[88%] h-9"
+                className="absolute left-1/2 bottom-[-18px] w-[90%] h-8"
                 style={{
-                  transform: "translateX(-46%) skewX(-12deg)",
+                  transform: "translateX(-50%)",
                   background:
-                    "radial-gradient(ellipse 55% 50% at 50% 50%, rgba(15, 23, 42, 0.45), transparent 72%)",
+                    "radial-gradient(ellipse 60% 50% at 50% 50%, rgba(15, 23, 42, 0.40), transparent 72%)",
                   filter: "blur(14px)",
-                  transformStyle: "preserve-3d",
                 }}
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={currentImage}
                 alt={`${propertyName} exterior`}
-                /* object-contain (was object-cover) so a BG-removed PNG
-                   doesn't get cropped at the column bounds. The image
-                   now lives on the tilted plane defined by its parent
-                   so the photo itself has visible depth. */
-                className={`relative w-full ${imageSize} object-contain rounded-xl`}
+                /* No rounded-xl. No card framing. The PNG's own alpha
+                   channel defines the visible shape; if a region is
+                   transparent in the source, it stays transparent
+                   here. object-contain keeps the natural aspect ratio
+                   so the silhouette never distorts. */
+                className={`relative w-full ${imageSize} object-contain`}
                 style={{
-                  /* Stacked drop-shadows give the floating-3D feel:
-                     wide soft ambient + closer contact + crisp base. */
+                  /* Stacked drop-shadows trace the silhouette
+                     (drop-shadow respects alpha channels, unlike
+                     box-shadow). Gives the BG-removed building a
+                     real floating feel that matches its outline. */
                   filter:
                     "drop-shadow(0 30px 40px rgba(15, 23, 42, 0.28)) drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18)) drop-shadow(0 2px 4px rgba(15, 23, 42, 0.10))",
-                  backfaceVisibility: "hidden",
                 }}
                 loading="lazy"
-              />
-              {/* Subtle edge highlight — a faint linear sheen on the
-                  top-left edge so the photo reads as a tilted card
-                  catching light from above. Sits over the image but
-                  doesn't capture pointer events. */}
-              <div
-                aria-hidden="true"
-                className="absolute inset-0 rounded-xl pointer-events-none"
-                style={{
-                  background:
-                    "linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 35%, transparent 65%, rgba(15, 23, 42, 0.08) 100%)",
-                  mixBlendMode: "overlay",
-                }}
               />
               {editable ? (
                 /* Replace / Remove controls — hidden by default, fade

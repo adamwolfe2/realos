@@ -131,25 +131,21 @@ export function PropertyIntelligencePanel({ propertyName, actions }: Props) {
   );
 
   return (
-    <section className="rounded-2xl border border-border bg-card overflow-hidden">
-      <header className="flex items-start justify-between gap-3 px-5 py-4 border-b border-border bg-gradient-to-br from-card to-primary/[0.04]">
-        <div className="min-w-0">
-          <div className="inline-flex items-center gap-2 mb-1">
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-primary/10 text-primary">
-              <Sparkles className="h-3.5 w-3.5" />
-            </span>
-            <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
-              Intelligence · live signals
-            </p>
-          </div>
-          <h2 className="text-base font-semibold text-foreground leading-tight">
-            {actions.length} recommended action{actions.length === 1 ? "" : "s"} for {propertyName}
-          </h2>
-          <p className="text-[11px] text-muted-foreground mt-1">
-            Synthesized from your reputation, SEO, AEO, listing, and content-freshness data. Updated on every page load.
+    <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <header className="flex items-center justify-between gap-3 px-3.5 py-2 border-b border-border bg-gradient-to-br from-card to-primary/[0.04]">
+        <div className="min-w-0 flex items-center gap-2">
+          <span className="inline-flex h-5 w-5 items-center justify-center rounded-md bg-primary/10 text-primary shrink-0">
+            <Sparkles className="h-3 w-3" />
+          </span>
+          <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.12em] text-primary shrink-0">
+            Intelligence
           </p>
+          <span aria-hidden="true" className="h-3 w-px bg-border" />
+          <h2 className="text-[12px] font-semibold text-foreground leading-tight truncate">
+            {actions.length} action{actions.length === 1 ? "" : "s"} for {propertyName}
+          </h2>
         </div>
-        <div className="flex items-center gap-1.5 shrink-0">
+        <div className="flex items-center gap-1 shrink-0">
           {counts.critical ? (
             <SeverityChip
               count={counts.critical}
@@ -260,41 +256,40 @@ function ActionRow({
 
   return (
     <li>
-      <div className="flex items-start gap-3 px-5 py-4 hover:bg-muted/30 transition-colors">
+      <div className="group/row flex items-center gap-2.5 px-3.5 py-2 hover:bg-muted/30 transition-colors">
         <span
           aria-hidden="true"
-          className={`inline-flex h-9 w-9 items-center justify-center rounded-lg shrink-0 ${styles.pill}`}
+          className={`inline-flex h-6 w-6 items-center justify-center rounded-md shrink-0 ${styles.pill}`}
         >
-          <Icon className="h-4 w-4" />
+          <Icon className="h-3 w-3" />
         </span>
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2 mb-0.5">
+          <div className="flex items-baseline gap-1.5 flex-wrap leading-none mb-0.5">
             <span
-              className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${styles.pill}`}
+              className={`inline-flex items-center rounded-full px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide ${styles.pill}`}
             >
-              <span
-                aria-hidden="true"
-                className={`h-1 w-1 rounded-full ${styles.dot}`}
-              />
               {action.severity}
             </span>
-            <span className="text-[9.5px] font-mono uppercase tracking-[0.1em] text-muted-foreground">
+            <span className="text-[9px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
               {CATEGORY_LABEL[action.category]}
             </span>
-            <span className="text-[10px] text-muted-foreground tabular-nums">
+            <span className="text-[9.5px] text-muted-foreground tabular-nums">
               · {action.estimateMinutes} min
             </span>
           </div>
-          <p className="text-[13px] font-semibold text-foreground leading-tight">
+          <p className="text-[12px] font-semibold text-foreground leading-snug truncate">
             {action.title}
           </p>
-          <p className="text-[11.5px] text-muted-foreground leading-snug mt-1">
+          {/* Detail line hidden by default for compactness; reveal on
+              row hover so the operator can still see context when
+              they linger on a row. */}
+          <p className="hidden group-hover/row:block text-[10.5px] text-muted-foreground leading-snug mt-0.5">
             {action.detail}
           </p>
         </div>
         <Link
           href={action.actionHref}
-          className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-2.5 py-1.5 text-[11px] font-semibold hover:bg-primary-dark transition-colors"
+          className="shrink-0 inline-flex items-center gap-1 rounded-md bg-primary text-primary-foreground px-2 py-1 text-[10.5px] font-semibold hover:bg-primary-dark transition-colors"
         >
           {action.actionLabel}
           <ArrowRight className="h-3 w-3" />
