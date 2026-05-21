@@ -407,9 +407,16 @@ body {
    label above each heading. Used by StickyArtifactSection and any
    future surfaces we re-style toward the calmer "applied-research lab"
    aesthetic Norman flagged from judgmentlabs.ai. */
-.heading-hero   { font-family: var(--font-sans); font-size: clamp(36px, 5.4vw, 56px); font-weight: 400; line-height: 1.08; letter-spacing: -0.035em; }
-.heading-clean  { font-family: var(--font-sans); font-size: clamp(26px, 3.2vw, 36px); font-weight: 400; line-height: 1.15;  letter-spacing: -0.028em; }
-.heading-feature{ font-family: var(--font-sans); font-size: 22px;                      font-weight: 400; line-height: 1.25;  letter-spacing: -0.018em; }
+/* Iteration after Norman's Cluely.ai reference (2026-05-21): Judgment's
+   pure-400-weight headings read too thin for our marketing surface,
+   especially on the bigger centerpiece sections. Cluely uses heavier
+   weights (600-700) for centerpieces with the SAME tight tracking,
+   which gives a confident "Big Tech" feel without going back to bold
+   display weights. Sub-headings stay at 400-500 so hierarchy is still
+   driven by size, not just weight. */
+.heading-hero   { font-family: var(--font-sans); font-size: clamp(36px, 5.4vw, 56px); font-weight: 600; line-height: 1.08; letter-spacing: -0.035em; }
+.heading-clean  { font-family: var(--font-sans); font-size: clamp(28px, 3.4vw, 40px); font-weight: 600; line-height: 1.10;  letter-spacing: -0.028em; }
+.heading-feature{ font-family: var(--font-sans); font-size: 22px;                      font-weight: 500; line-height: 1.25;  letter-spacing: -0.018em; }
 .body-clean     { font-family: var(--font-sans); font-size: 17px; line-height: 1.65; font-weight: 400; }
 .eyebrow-mono   { font-family: var(--font-mono); font-size: 11px; line-height: 1.2;  font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; }
 

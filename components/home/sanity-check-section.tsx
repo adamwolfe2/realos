@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { StickyArtifactSection } from "@/components/platform/sticky-artifact-section";
+import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
 
 // ---------------------------------------------------------------------------
 // SanityCheckSection — the Judgment-Labs-style "calm sticky text + dense
@@ -34,7 +35,15 @@ export function SanityCheckSection() {
         "Reviewed mentions sink to the bottom — worklist stays clean",
       ]}
       cta={{ label: "See the reputation surface", href: "/portal/reputation" }}
-      artifact={<ReputationArtifact />}
+      artifact={
+        // Cluely-style soft lavender frame around the white mockup
+        // (Norman feedback 2026-05-21). Adds the "lifted" floating-
+        // card feel without darkening the surface or adding a heavy
+        // drop shadow.
+        <SoftFramedArtifact tone="lavender" padding="lg" pillLabel="LIVE">
+          <ReputationArtifact />
+        </SoftFramedArtifact>
+      }
     />
   );
 }
@@ -47,13 +56,12 @@ export function SanityCheckSection() {
 // ---------------------------------------------------------------------------
 
 function ReputationArtifact() {
+  // The SoftFramedArtifact wrapper provides the rounded-2xl shell +
+  // soft shadow, so the inner content drops the duplicate border /
+  // shell here. Keeps the dividers + padding for the internal
+  // structure (header, stat row, feed items).
   return (
-    <div
-      className="rounded-2xl bg-white"
-      style={{
-        border: "1px solid #E5E9F2",
-      }}
-    >
+    <div className="bg-white">
       {/* Header */}
       <header
         className="flex items-baseline justify-between gap-3 px-5 py-4 border-b"
@@ -85,24 +93,9 @@ function ReputationArtifact() {
             Reputation feed
           </h3>
         </div>
-        <span
-          className="inline-flex items-center gap-1.5 rounded-md px-2 py-0.5"
-          style={{
-            backgroundColor: "#EFF6FF",
-            color: "#2563EB",
-            fontFamily: "var(--font-mono)",
-            fontSize: 10,
-            letterSpacing: "0.06em",
-            fontWeight: 600,
-          }}
-        >
-          <span
-            aria-hidden="true"
-            className="inline-block h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: "#2563EB" }}
-          />
-          LIVE
-        </span>
+        {/* LIVE pill moved out to the SoftFramedArtifact wrapper so the
+            chip floats over the lavender frame instead of sitting
+            inside the white card. */}
       </header>
 
       {/* Stat row */}
