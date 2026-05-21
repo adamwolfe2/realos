@@ -181,6 +181,31 @@ curl -X POST https://www.leasestack.co/api/ingest/chatbot \
 Available scopes: `ingest:lead`, `ingest:visitor`, `ingest:tour`,
 `ingest:chatbot`, or `*` for full access.
 
+## SEO Agent
+
+End-to-end SEO + AEO automation lives at `/portal/seo/agent` (operator) and
+`/admin/content-drafts` (LeaseStack review queue). See
+[`docs/SEO_AEO_AGENT_ARCHITECTURE.md`](docs/SEO_AEO_AGENT_ARCHITECTURE.md)
+for the full design. Highlights:
+
+- DataforSEO ingest (`lib/seo/dataforseo.ts`, `lib/seo/sync-orchestrator.ts`)
+  pulls live SERP rankings, Lighthouse audits, backlinks, ranked keywords,
+  keyword intersection, local pack, and on-page audits.
+- Recommendation engine (`lib/seo/agent.ts`) ranks actions across 10
+  categories (CTR_FIX, CONTENT_GAP, NEIGHBORHOOD_PAGE, REFRESH, AEO_GAP,
+  AEO_NOT_CITED, ONPAGE_AUDIT, BACKLINK_OPPORTUNITY, SCHEMA_GAP,
+  INTERNAL_LINKING).
+- Claude Sonnet 4.5 content drafter (`lib/seo/draft-writer.ts`) produces six
+  formats: blog post, neighborhood page, property description, meta rewrite,
+  FAQ block, ad copy. Every draft is reviewed by an admin before shipping.
+- Weekly composite score snapshot in `SeoScoreHistory`
+  (`lib/seo/score-snapshot.ts`).
+- Three dedicated crons: `seo-competitor-scan` (03:00 UTC),
+  `dataforseo-sync` (04:00 UTC), `seo-fact-aggregate` (05:00 UTC).
+- Required env: `DATAFORSEO_LOGIN`, `DATAFORSEO_PASSWORD`. Engine degrades
+  gracefully when keys are absent (every DataforSEO call returns
+  `{ skipped: true }`).
+
 ## Naming
 
 `LeaseStack`, `leasestack`, `leasestack.co` are temporary placeholders. See `NAMING.md`

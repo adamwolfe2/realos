@@ -89,6 +89,7 @@ import { TargetQueryManager } from "@/components/portal/seo/target-query-manager
 import { RefreshRecommendationsButton } from "@/components/portal/seo/refresh-recommendations-button";
 import { ScoreHistoryChart } from "@/components/portal/seo/score-history-chart";
 import { DraftsInbox } from "@/components/portal/seo/drafts-inbox";
+import { PropertySwitcher } from "@/components/portal/seo/property-switcher";
 
 export const metadata: Metadata = { title: "SEO Agent" };
 export const dynamic = "force-dynamic";
@@ -555,6 +556,8 @@ export default async function SeoAgentPage({
   return (
     <div className="space-y-5 ls-page-fade">
       <PageHeader />
+
+      <PropertySwitcher properties={properties} activeId={property.id} />
 
       <ConnectWebsiteCard
         propertyId={property.id}
