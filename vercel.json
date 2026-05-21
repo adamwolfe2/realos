@@ -115,6 +115,10 @@
     {
       "path": "/api/cron/draft-expiry",
       "schedule": "13 6 * * *"
+    },
+    {
+      "path": "/api/cron/site-intelligence-refresh",
+      "schedule": "0 5 * * *"
     }
   ]
 }

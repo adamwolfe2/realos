@@ -265,6 +265,11 @@ export const NAV_GROUPS: NavGroup[] = [
       // group is now empty (Referrals moved to Engage) and is dropped
       // from NAV_GROUPS entirely below.
       { href: "/portal/seo", label: "SEO", icon: TrendingUp, show: (o) => o.moduleSEO },
+      // Content drafter — every plan can open it; the quota meter on the
+      // page (and the API enforcement) decides whether they can actually
+      // generate. Keeping it always-visible avoids hiding the upgrade
+      // surface from operators on TRIAL/STARTER who hit a cap.
+      { href: "/portal/content", label: "Content", icon: FileText, show: ALWAYS },
     ],
   },
   // Operations group (Residents / Renewals / Work orders) intentionally
