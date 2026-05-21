@@ -524,7 +524,8 @@ function AvatarPicker({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showUrlField, setShowUrlField] = useState(false);
+  // Norman feedback (2026-05-21): URL-paste path removed; upload is
+  // the only way to set an avatar now. State + toggle dropped.
 
   const initial =
     (personaName?.trim()[0] ?? "L").toUpperCase();
@@ -653,25 +654,15 @@ function AvatarPicker({
               Remove
             </button>
           ) : null}
-          <button
-            type="button"
-            onClick={() => setShowUrlField((v) => !v)}
-            className="text-[11px] text-muted-foreground hover:text-foreground underline underline-offset-2 self-start"
-          >
-            {showUrlField ? "Hide URL field" : "Or paste a URL"}
-          </button>
+          {/* Norman feedback (2026-05-21): "Or paste a URL" toggle
+              removed. Upload is the only canonical path now — the
+              external-URL escape hatch confused operators and never
+              produced a result they liked (avatars hosted on random
+              CDNs broke when the source moved). The legacy URL still
+              renders if it was set previously, but new entries flow
+              through Vercel Blob via the upload button only. */}
         </div>
       </div>
-
-      {showUrlField ? (
-        <input
-          type="url"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder="https://cdn.example.com/avatar.png"
-          className="rounded-md border border-border bg-background px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-primary/30"
-        />
-      ) : null}
 
       {error ? (
         <p className="inline-flex items-center gap-1 text-[11px] text-destructive">
