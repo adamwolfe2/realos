@@ -11,7 +11,7 @@ import { MarketplaceClient } from "@/components/portal/marketplace/marketplace-c
 export const metadata: Metadata = {
   title: "Marketplace · LeaseStack",
   description:
-    "Activate add-on modules — visitor pixel, AI chatbot, SEO, ads, creative — all free during your trial.",
+    "Activate add-on modules — visitor pixel, AI chatbot, SEO, ads, creative — all free during your trial (excluding Pro add-ons).",
 };
 export const dynamic = "force-dynamic";
 

@@ -41,7 +41,7 @@ export const NAV_REGISTRY: NavRegistryItem[] = [
   {
     href: "/portal/marketplace",
     label: "Marketplace",
-    description: "Activate add-on modules — free during your trial",
+    description: "Activate add-on modules — free during your trial (excluding Pro add-ons)",
     keywords: ["addons", "add-ons", "modules", "store", "cart", "unlock", "buy"],
     group: "Pages",
   },

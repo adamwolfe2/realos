@@ -45,7 +45,7 @@ const SETUP_STEPS = [
     icon: Layers,
     title: "Pick modules",
     description:
-      "Activate the surfaces your team actually needs. Everything is free during your trial.",
+      "Activate the surfaces your team actually needs. Everything is free during your trial (excluding Pro add-ons).",
   },
   {
     id: "connect",
@@ -134,8 +134,8 @@ export function WelcomeLanding({
 
   const trialCopy = isTrialing
     ? trialDaysLeft != null && trialDaysLeft > 0
-      ? `Everything is free for the next ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"}.`
-      : "Everything is free during your trial."
+      ? `Everything is free for the next ${trialDaysLeft} day${trialDaysLeft === 1 ? "" : "s"} (excluding Pro add-ons).`
+      : "Everything is free during your trial (excluding Pro add-ons)."
     : "Activate any module — billed monthly, cancel anytime.";
 
   const subline = isImpersonating

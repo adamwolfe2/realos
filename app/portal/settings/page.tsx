@@ -124,7 +124,7 @@ export default async function SettingsPage() {
           href="/portal/marketplace"
           icon={<Boxes className="size-4" aria-hidden="true" />}
           title="Marketplace"
-          description="Activate add-on modules — every module is free to try during your trial."
+          description="Activate add-on modules — every module is free to try during your trial (excluding Pro add-ons)."
           stat={`${onCount} of ${modules.length} active`}
         />
         <NavCard

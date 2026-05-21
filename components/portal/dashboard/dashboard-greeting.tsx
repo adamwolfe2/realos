@@ -38,8 +38,33 @@ export function rangeDays(range: DashboardRange): number {
   return RANGES.find((r) => r.key === range)?.days ?? 28;
 }
 
+// Norman bug #109: the previous timeOfDayGreeting used now.getHours()
+// which reads the SERVER's local time. Vercel functions run in UTC so
+// an operator on the West Coast saw "Good morning" until 4pm local.
+// We now extract the hour explicitly in America/Los_Angeles (the
+// operator's actual timezone — matches the #58 Pacific-time choice
+// for property sync timestamps). When we add a per-user timezone
+// preference, swap the literal for that lookup.
+const PACIFIC_TZ = "America/Los_Angeles";
+
+function hourInPacific(now: Date): number {
+  try {
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: PACIFIC_TZ,
+      hour: "numeric",
+      hour12: false,
+    }).formatToParts(now);
+    const hourPart = parts.find((p) => p.type === "hour");
+    const hour = hourPart ? Number.parseInt(hourPart.value, 10) : NaN;
+    if (Number.isFinite(hour)) return hour;
+  } catch {
+    // Intl can throw on misconfigured runtimes — fall through.
+  }
+  return now.getHours();
+}
+
 function timeOfDayGreeting(now: Date): string {
-  const hour = now.getHours();
+  const hour = hourInPacific(now);
   if (hour < 12) return "Good morning";
   if (hour < 17) return "Good afternoon";
   return "Good evening";
