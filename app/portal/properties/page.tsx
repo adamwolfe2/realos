@@ -296,6 +296,26 @@ export default async function PropertiesList({
   ]);
   const totalAvailable = portfolioStats._sum.availableCount ?? 0;
   const properties = pageRows;
+
+  // Latest weekly composite SEO score per property. One query, indexed
+  // by (orgId, weekOf). Sparse fact — many properties will have no row
+  // yet (first snapshot lands every Monday 05:00 UTC). UI renders null
+  // as a muted dash.
+  const pageIds = properties.map((p) => p.id);
+  const latestScores = await prisma.seoScoreHistory
+    .findMany({
+      where: { propertyId: { in: pageIds } },
+      orderBy: { weekOf: "desc" },
+      select: { propertyId: true, compositeScore: true, weekOf: true },
+    })
+    .catch(() => [] as Array<{ propertyId: string | null; compositeScore: number; weekOf: Date }>);
+  const seoScoreByProperty = new Map<string, number>();
+  for (const s of latestScores) {
+    if (!s.propertyId) continue;
+    if (!seoScoreByProperty.has(s.propertyId)) {
+      seoScoreByProperty.set(s.propertyId, s.compositeScore);
+    }
+  }
   // Norman feedback (issue #67): the listings + available counts in the
   // header were misleading (AppFolio import shows 141 "listings" when only
   // a handful are live). Suppressed in the description string; queries
@@ -501,6 +521,37 @@ export default async function PropertiesList({
                     ) : (
                       <EmptyCell />
                     ),
+                },
+                {
+                  key: "seoScore",
+                  header: "SEO",
+                  align: "right",
+                  hideOnMobile: true,
+                  accessor: (p) => {
+                    const score = seoScoreByProperty.get(p.id);
+                    if (score == null) {
+                      return (
+                        <span className="text-[11px] text-muted-foreground">
+                          —
+                        </span>
+                      );
+                    }
+                    const tone =
+                      score >= 75
+                        ? "bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-300"
+                        : score >= 50
+                          ? "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
+                          : "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300";
+                    return (
+                      <Link
+                        href={`/portal/seo/agent?propertyId=${p.id}`}
+                        className={`inline-flex items-center rounded-md px-1.5 py-0.5 text-[11px] font-mono font-semibold tabular-nums hover:opacity-80 transition-opacity ${tone}`}
+                        title="Open SEO Agent for this property"
+                      >
+                        {score}
+                      </Link>
+                    );
+                  },
                 },
                 {
                   key: "synced",
