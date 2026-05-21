@@ -243,26 +243,29 @@ function MicroVisual({ kind }: { kind: "attribution" | "alert" | "creative" | "l
           strokeDasharray="1.5 1.5"
           vectorEffect="non-scaling-stroke"
         />
-        {/* actual line — drops below target */}
+        {/* actual line — drops below target. Norman feedback: charts
+            should stay on the brand blue ramp (no red/amber semantic
+            colors). Darker brand blue reads as "the live trend" and
+            the lighter blue alert flag below reads as "annotation". */}
         <path
           d="M0 14 L20 14 L40 18 L60 24 L80 30 L100 32"
-          stroke="#DC2626"
+          stroke="#1E40AF"
           strokeWidth="1.5"
           fill="none"
           vectorEffect="non-scaling-stroke"
         />
         {/* alert flag at week 5 */}
-        <circle cx="60" cy="24" r="2.4" fill="#F59E0B" />
+        <circle cx="60" cy="24" r="2.4" fill="#2563EB" />
         <line
           x1="60"
           y1="24"
           x2="60"
           y2="6"
-          stroke="#F59E0B"
+          stroke="#2563EB"
           strokeWidth="0.75"
           vectorEffect="non-scaling-stroke"
         />
-        <rect x="60" y="2" width="14" height="6" fill="#F59E0B" rx="0.5" />
+        <rect x="60" y="2" width="14" height="6" fill="#2563EB" rx="0.5" />
         <text
           x="62"
           y="6.6"

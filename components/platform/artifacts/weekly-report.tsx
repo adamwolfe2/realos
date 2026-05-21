@@ -23,15 +23,20 @@ const INK = "#1E2A3A";
 const MUTED = "#94A3B8";
 const BORDER = "#E2E8F0";
 const PARCHMENT = "#F1F5F9";
-const SUCCESS = "#16A34A";
-const WARN = "#B45309";
+// Norman feedback (2026-05-21): every chart / accent stays on the
+// brand blue ramp. SUCCESS = brand blue, WARN = a darker brand-blue
+// shade for emphasis. The ATTRIBUTION channels also walk down the
+// blue ramp from darkest to lightest so the channel mix bar reads
+// like a single brand surface, not a rainbow.
+const SUCCESS = "#2563EB";
+const WARN = "#1E40AF";
 
 const ATTRIBUTION = [
-  { channel: "Google Ads",    leases: 4, share: 36, color: "#2563EB" },
-  { channel: "Meta",          leases: 3, share: 27, color: "#5B8CE6" },
-  { channel: "Organic search", leases: 2, share: 18, color: "#16A34A" },
-  { channel: "Resident referral", leases: 1, share: 10, color: "#F59E0B" },
-  { channel: "Direct / brand", leases: 1, share: 9, color: "#94A3B8" },
+  { channel: "Google Ads",        leases: 4, share: 36, color: "#1E40AF" },
+  { channel: "Meta",              leases: 3, share: 27, color: "#2563EB" },
+  { channel: "Organic search",    leases: 2, share: 18, color: "#3B82F6" },
+  { channel: "Resident referral", leases: 1, share: 10, color: "#60A5FA" },
+  { channel: "Direct / brand",    leases: 1, share: 9,  color: "#93C5FD" },
 ];
 
 const ACTIONS = [

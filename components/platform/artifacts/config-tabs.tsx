@@ -12,8 +12,12 @@ const INK = "#1E2A3A";
 const MUTED = "#94A3B8";
 const BORDER = "#E2E8F0";
 const PARCHMENT = "#F1F5F9";
-const SUCCESS = "#16A34A";
-const ERROR = "#DC2626";
+// Norman feedback (2026-05-21): every artifact on the marketing
+// surface stays on the brand blue ramp — no semantic green/red dots,
+// chips, or markers. SUCCESS reads as full brand blue, ERROR as a
+// darker brand-blue shade for emphasis without leaving the ramp.
+const SUCCESS = "#2563EB";
+const ERROR = "#1E40AF";
 
 type Delta = "up" | "down-good" | "down-bad" | "neutral";
 

@@ -29,8 +29,10 @@ const INK = "#1E2A3A";
 const MUTED = "#94A3B8";
 const BORDER = "#E2E8F0";
 const PARCHMENT = "#F1F5F9";
-const SUCCESS = "#16A34A";
-const ERROR = "#DC2626";
+// Norman feedback (2026-05-21): chart accents on the marketing
+// surface stay on the brand blue ramp. No semantic green/red.
+const SUCCESS = "#2563EB";
+const ERROR = "#1E40AF";
 
 export function PortfolioOccupancy({
   label = "Your whole portfolio, one view",

@@ -22,10 +22,12 @@ export function Proof() {
       }}
     >
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
-        {/* Eyebrow — urgency cue */}
+        {/* Eyebrow — urgency cue. Norman feedback (2026-05-21): chart
+            + accent colors stay on the brand blue ramp, no amber/
+            terracotta semantic accents. */}
         <p
           style={{
-            color: "#B45309",
+            color: "#2563EB",
             fontFamily: "var(--font-mono)",
             fontSize: "11px",
             letterSpacing: "0.22em",
@@ -40,7 +42,7 @@ export function Proof() {
               width: 6,
               height: 6,
               borderRadius: "50%",
-              backgroundColor: "#F59E0B",
+              backgroundColor: "#2563EB",
               marginRight: 8,
               verticalAlign: "middle",
             }}

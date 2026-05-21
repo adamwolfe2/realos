@@ -21,9 +21,14 @@ const INK = "#1E2A3A";
 const MUTED = "#94A3B8";
 const BORDER = "#E2E8F0";
 const PARCHMENT = "#F1F5F9";
-const WARN = "#B45309";
-const WARN_BG = "rgba(245, 158, 11, 0.08)";
-const SUCCESS = "#16A34A";
+// Norman feedback (2026-05-21): every chart + accent on the marketing
+// surface stays on the brand blue ramp. Darker brand-blue reads as the
+// active alert, lighter blue carries the muted background, and SUCCESS
+// is the same brand blue used for the chart line — no semantic
+// green/amber/red on the marketing site.
+const WARN = "#1E40AF";
+const WARN_BG = "rgba(37, 99, 235, 0.08)";
+const SUCCESS = "#2563EB";
 
 // 24-week cycle. Values are cumulative leases signed each week.
 const LAST_CYCLE = [

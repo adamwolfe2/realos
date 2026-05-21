@@ -128,7 +128,7 @@ export function ChatDemo() {
             width: "8px",
             height: "8px",
             borderRadius: "50%",
-            backgroundColor: "#16A34A",
+            backgroundColor: "#2563EB",
             animation: "chatDot 1.8s ease-in-out infinite",
           }}
         />

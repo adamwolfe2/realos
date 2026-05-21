@@ -186,7 +186,7 @@ export function WhatYouGet() {
                   fontWeight: 600,
                 }}
               >
-                <span style={{ color: "#16A34A" }}>●</span>&nbsp;&nbsp;{p.proof}
+                <span style={{ color: "#2563EB" }}>●</span>&nbsp;&nbsp;{p.proof}
               </p>
             </li>
           ))}

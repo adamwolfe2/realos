@@ -45,8 +45,15 @@ export function SplitHero({
           See components/platform/pixel-swirl.tsx for the rendering
           model + reduced-motion treatment. */}
       <PixelSwirl />
-      <div className="relative max-w-[1440px] mx-auto px-4 md:px-10 pt-20 md:pt-24 pb-16 md:pb-20">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
+      {/* Norman feedback (2026-05-21 mobile screenshot): the previous
+          pt-20 / pb-16 + gap-10 between the text column and the artifact
+          left ~80px of empty white between "PILOT. NO COMMITMENT." and
+          the ConfigTabs artifact on mobile. Tightened the mobile
+          spacing — pt-12 / pb-10 / gap-5 — without touching the desktop
+          values (md: + lg: breakpoints unchanged so the desktop layout
+          keeps its breathing room). */}
+      <div className="relative max-w-[1440px] mx-auto px-4 md:px-10 pt-12 md:pt-24 pb-10 md:pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-14 items-center">
           <div className="lg:col-span-6 text-left">
             <Reveal>
               <div className="flex items-center justify-start gap-3 mb-5">

@@ -133,7 +133,7 @@ function DestinationCard({
             style={{
               width: 6,
               height: 6,
-              backgroundColor: "#16A34A",
+              backgroundColor: "#2563EB",
               borderRadius: "50%",
             }}
           />

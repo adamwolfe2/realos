@@ -55,7 +55,11 @@ const INK = "#1E2A3A";
 const MUTED = "#94A3B8";
 const BORDER = "#E2E8F0";
 const PARCHMENT = "#F1F5F9";
-const SUCCESS = "#16A34A";
+// Norman feedback (2026-05-21): collapse all chart + accent colors onto
+// the brand blue ramp — no semantic green/amber/red on the marketing
+// surface. SUCCESS now reads as a calmer brand-blue accent for "this
+// milestone landed" markers.
+const SUCCESS = "#2563EB";
 
 type Milestone = {
   when: string;

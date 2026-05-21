@@ -22,7 +22,10 @@ const INK = "#1E2A3A";
 const MUTED = "#94A3B8";
 const BORDER = "#E2E8F0";
 const PARCHMENT = "#F1F5F9";
-const SUCCESS = "#16A34A";
+// Norman feedback (2026-05-21): all marketing-surface chart + accent
+// colors stay on the brand blue ramp. SUCCESS reads as a calmer
+// brand-blue accent (no green/amber).
+const SUCCESS = "#2563EB";
 
 type Channel = {
   name: string;
