@@ -80,6 +80,7 @@ import { DraftLauncher } from "@/components/portal/seo/draft-launcher";
 import { TargetQueryManager } from "@/components/portal/seo/target-query-manager";
 import { RefreshRecommendationsButton } from "@/components/portal/seo/refresh-recommendations-button";
 import { ScoreHistoryChart } from "@/components/portal/seo/score-history-chart";
+import { DraftsInbox } from "@/components/portal/seo/drafts-inbox";
 
 export const metadata: Metadata = { title: "SEO Agent" };
 export const dynamic = "force-dynamic";
@@ -679,6 +680,11 @@ export default async function SeoAgentPage({
         />
         <LocalPackCard rows={localPackRows} />
       </div>
+
+      {/* Drafts inbox — shows what the operator has sent for review,
+          including admin notes when changes are requested. Hidden when
+          the operator has zero drafts. */}
+      <DraftsInbox propertyId={property.id} />
 
       {/* Score history — feeds the operator's "are we getting better?" question. */}
       <ScoreHistoryChart data={scoreHistory} />
