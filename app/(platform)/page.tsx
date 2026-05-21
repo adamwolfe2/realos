@@ -3,6 +3,7 @@ import { MARKETING } from "@/lib/copy/marketing";
 import { BRAND_NAME } from "@/lib/brand";
 import { Hero } from "@/components/home/hero";
 import { CapabilitiesRail } from "@/components/home/capabilities-rail";
+import { SanityCheckSection } from "@/components/home/sanity-check-section";
 import { Comparison } from "@/components/home/comparison";
 import { Weekly } from "@/components/home/weekly";
 import { LaunchJourney } from "@/components/home/launch-journey";
@@ -40,6 +41,12 @@ export default function PlatformHome() {
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <Hero />
       <CapabilitiesRail />
+      {/* Norman's 2026-05-21 inspiration brief: judgmentlabs.ai-style
+          sticky-text + scrolling-artifact section as the "cleanliness
+          anchor" on the home page. Sits between the dense capabilities
+          rail and the wordy comparison so the reader hits a calm,
+          spacious moment before the next dense scroll. */}
+      <SanityCheckSection />
       <Comparison />
       <Weekly />
       <LaunchJourney />

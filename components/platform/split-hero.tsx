@@ -82,15 +82,22 @@ export function SplitHero({
             </Reveal>
 
             {(() => {
+              // Norman feedback (2026-05-21, Judgment Labs reference):
+              // marketing hero loses the bold display weight and the
+              // wide 64px size. Hierarchy now reads through tight
+              // negative tracking (-0.035em) at regular weight, capped
+              // at 48px on the largest desktops — same restraint as the
+              // judgmentlabs.ai system that Norman flagged as "the
+              // cleanliness I want."
               const h1 = (
                 <h1
                   style={{
                     color: "#1E2A3A",
                     fontFamily: "var(--font-display)",
-                    fontSize: "clamp(36px, 7.2vw, 64px)",
-                    fontWeight: 700,
-                    lineHeight: 1.04,
-                    letterSpacing: "-0.025em",
+                    fontSize: "clamp(32px, 5.4vw, 48px)",
+                    fontWeight: 400,
+                    lineHeight: 1.08,
+                    letterSpacing: "-0.035em",
                   }}
                 >
                   {headline}

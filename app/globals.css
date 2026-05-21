@@ -400,6 +400,19 @@ body {
 .label-mono     { font-family: var(--font-mono); font-size: 11px; line-height: 1.4; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--olive-gray); }
 .eyebrow        { font-family: var(--font-mono); font-size: 11px; line-height: 1.4; font-weight: 600; letter-spacing: 0.22em; text-transform: uppercase; color: #2563EB; }
 
+/* ── Judgment-style clean type system (Norman feedback 2026-05-21) ──────
+   Hierarchy through size + negative tracking, NOT through bold weight.
+   All headings render at weight 400 with tight tracking (-0.025 to
+   -0.035em). Pairs with `eyebrow-mono` for the small all-caps mono
+   label above each heading. Used by StickyArtifactSection and any
+   future surfaces we re-style toward the calmer "applied-research lab"
+   aesthetic Norman flagged from judgmentlabs.ai. */
+.heading-hero   { font-family: var(--font-sans); font-size: clamp(36px, 5.4vw, 56px); font-weight: 400; line-height: 1.08; letter-spacing: -0.035em; }
+.heading-clean  { font-family: var(--font-sans); font-size: clamp(26px, 3.2vw, 36px); font-weight: 400; line-height: 1.15;  letter-spacing: -0.028em; }
+.heading-feature{ font-family: var(--font-sans); font-size: 22px;                      font-weight: 400; line-height: 1.25;  letter-spacing: -0.018em; }
+.body-clean     { font-family: var(--font-sans); font-size: 17px; line-height: 1.65; font-weight: 400; }
+.eyebrow-mono   { font-family: var(--font-mono); font-size: 11px; line-height: 1.2;  font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; }
+
 /* ── Mobile global size reductions (< 768px) ─────────────────────────── */
 @media (max-width: 767px) {
   /* Buttons: shorter, tighter padding, smaller text */
