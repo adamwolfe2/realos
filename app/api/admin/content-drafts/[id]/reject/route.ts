@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { requireAdmin } from "@/lib/auth/require-admin";
 import { DraftStatus } from "@prisma/client";
 import { notifyDraftReviewed } from "@/lib/notifications/create";
+import { sendDraftReviewEmail } from "@/lib/email/draft-review";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -79,13 +80,23 @@ export async function POST(
       reviewNotes: parsed.notes,
     },
   });
-  // Fire-and-forget operator notification.
+  // Fire-and-forget operator notification (in-portal bell + email).
+  const reviewedStatus =
+    parsed.mode === "reject" ? "REJECTED" : "CHANGES_REQUESTED";
   void notifyDraftReviewed({
     orgId: draft.orgId,
     draftId: draft.id,
-    status: parsed.mode === "reject" ? "REJECTED" : "CHANGES_REQUESTED",
+    status: reviewedStatus,
     format: draft.format,
     propertyName: draft.property?.name ?? null,
+  }).catch(() => undefined);
+  void sendDraftReviewEmail({
+    orgId: draft.orgId,
+    draftId: draft.id,
+    status: reviewedStatus,
+    format: draft.format,
+    propertyName: draft.property?.name ?? null,
+    reviewNotes: parsed.notes,
   }).catch(() => undefined);
 
   return NextResponse.json({ ok: true, draft: updated });
