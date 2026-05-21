@@ -95,6 +95,10 @@
     {
       "path": "/api/cron/ad-retention",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron/seo-competitor-scan",
+      "schedule": "0 3 * * *"
     }
   ]
 }
