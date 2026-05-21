@@ -90,8 +90,17 @@
 22. feat(seo): real-time email to operator on draft review
 23. feat(seo): email admin when operator submits new draft
 24. feat(seo): bulk approve/reject on /admin/content-drafts queue
+25. feat(seo): re-submit with changes affordance + CSV export
+26. feat(seo): audit events on rec status + draft approve/reject
 
 All pushed to origin/main.
+
+### Audit trail closed end-to-end
+
+- SeoActionRecommendation status changes → AuditEvent
+- ContentDraft approve/reject → AuditEvent
+- All include userId, prior state, new state, notes/reason
+- Surface via /admin/audit-log entityType filter
 
 ### Email loop closed end-to-end alongside bell notifications
 
