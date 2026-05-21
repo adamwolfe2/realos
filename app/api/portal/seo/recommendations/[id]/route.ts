@@ -96,10 +96,32 @@ export async function PATCH(
     data.dismissedReason = null;
   }
 
+  const previousStatus = rec.status;
   const updated = await prisma.seoActionRecommendation.update({
     where: { id: rec.id },
     data,
   });
+
+  // Audit trail — let the agency see who flipped what + when without
+  // backfilling later. Best-effort: an audit log failure shouldn't
+  // break the status update.
+  await prisma.auditEvent
+    .create({
+      data: {
+        orgId: rec.orgId,
+        userId: scope.userId,
+        action: "UPDATE",
+        entityType: "SeoActionRecommendation",
+        entityId: rec.id,
+        description: `Status: ${previousStatus} → ${parsed.status}${parsed.reason ? ` · ${parsed.reason.slice(0, 120)}` : ""}`,
+        diff: {
+          from: previousStatus,
+          to: parsed.status,
+          reason: parsed.reason ?? null,
+        } as never,
+      },
+    })
+    .catch(() => undefined);
 
   // Bust the 1h cache so the next read on the property dashboard sees
   // the new status. Best-effort; cache failure shouldn't break the
