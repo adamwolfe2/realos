@@ -260,6 +260,12 @@ export const NAV_GROUPS: NavGroup[] = [
         show: (o) => o.modulePixel,
       },
       { href: "/portal/reputation", label: "Reputation", icon: Star, show: (o) => o.moduleReputation },
+      // Norman feedback (issue #95): SEO is one of the most important
+      // audience signals — moved here from the Platform group so it
+      // sits next to Properties / Leads / Visitors. Original Platform
+      // group is now empty (Referrals moved to Engage) and is dropped
+      // from NAV_GROUPS entirely below.
+      { href: "/portal/seo", label: "SEO", icon: TrendingUp, show: (o) => o.moduleSEO },
     ],
   },
   // Operations group (Residents / Renewals / Work orders) intentionally
@@ -292,6 +298,15 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Sparkles,
         show: (o) => o.modulePopups,
       },
+      // Norman feedback (issue #95): Referrals belongs with the other
+      // engagement surfaces (chatbot, popups) — it's the outbound
+      // version of the same "convert someone into a lead" loop.
+      {
+        href: "/portal/referrals",
+        label: "Referrals",
+        icon: Share2,
+        show: (o) => o.moduleReferrals,
+      },
     ],
   },
   {
@@ -321,31 +336,23 @@ export const NAV_GROUPS: NavGroup[] = [
       },
     ],
   },
-  {
-    label: "Platform",
-    items: [
-      { href: "/portal/seo", label: "SEO", icon: TrendingUp, show: (o) => o.moduleSEO },
-      {
-        href: "/portal/referrals",
-        label: "Referrals",
-        icon: Share2,
-        show: (o) => o.moduleReferrals,
-      },
-    ],
-  },
+  // Platform group dropped per Norman feedback (#95): SEO moved into
+  // Audience next to the other discovery signals; Referrals moved into
+  // Engage with the other outbound conversion surfaces. The /portal/seo
+  // and /portal/referrals routes still resolve — only the nav grouping
+  // changed.
   {
     label: "Tools",
     items: [
-      // Building evaluator — RentCast-powered acquisitions tool.
-      // Replaces what the parked Zillow report was trying to do, but
-      // with a reliable data source (RentCast value + rent AVM + market
-      // stats) instead of scraping a bot-walled site. Always visible —
-      // the underlying API is gated by per-org budget, not nav.
+      // Building evaluator hidden per Norman feedback (#94). Commercial
+      // building valuation is a separate workstream that needs domain
+      // input from him before it ships to operators. Route still
+      // resolves so bookmarks keep working.
       {
         href: "/portal/tools/value",
         label: "Building evaluator",
         icon: Calculator,
-        show: ALWAYS,
+        show: NEVER,
       },
       // Zillow report — PARKED 2026-05-19, REDIRECTED 2026-05-23 to
       // /portal/tools/value. The nav item stays hidden (NEVER) so the
