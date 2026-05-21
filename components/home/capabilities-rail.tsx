@@ -8,6 +8,7 @@ import { VisitorStream } from "@/components/platform/artifacts/visitor-stream";
 import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
 import { PacingAlert } from "@/components/platform/artifacts/pacing-alert";
 import { SeoAnswer } from "@/components/platform/artifacts/seo-answer";
+import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
 import { MaskRevealUp } from "@/components/ui/animate-text";
 
 // ---------------------------------------------------------------------------
@@ -221,7 +222,9 @@ export function CapabilitiesRail() {
               >
                 {/* Mobile: artifact stacked above text */}
                 <div className="lg:hidden mb-6">
-                  <cap.artifact />
+                  <SoftFramedArtifact tone="sky" padding="md" bare>
+                    <cap.artifact />
+                  </SoftFramedArtifact>
                 </div>
 
                 <div className="flex items-start gap-4">
@@ -338,7 +341,9 @@ export function CapabilitiesRail() {
                         pointerEvents: isActive ? "auto" : "none",
                       }}
                     >
-                      <Artifact />
+                      <SoftFramedArtifact tone="sky" padding="md" bare>
+                        <Artifact />
+                      </SoftFramedArtifact>
                     </div>
                   );
                 })}
