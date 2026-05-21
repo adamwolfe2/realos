@@ -298,7 +298,29 @@ export type LighthouseScores = {
 export async function fetchLighthouseScores(input: {
   url: string;
 }): Promise<CallResult<LighthouseScores>> {
-  const result = await call<{ scores: LighthouseScores }>(
+  // DataforSEO wraps the full Lighthouse JSON in `result` directly (no
+  // intermediate `scores` key). Categories are keyed `performance`,
+  // `accessibility`, `best-practices` (hyphen, not underscore), `seo`.
+  // Each category has { score: 0..1 } — we scale to 0..100 for the
+  // operator UI here so callers don't have to remember the unit. PWA
+  // isn't part of Lighthouse 10+ anymore — we still expose the field
+  // null-typed for backwards compat with downstream UI.
+  //
+  // The previous parser read result.data.scores.* which never existed
+  // in the real response, so every Lighthouse run silently stored nulls
+  // on OnPageAudit despite the scan reporting "1 lighthouse audit
+  // completed."
+  type LighthouseCategory = { score?: number | null };
+  type LighthouseRaw = {
+    categories?: {
+      performance?: LighthouseCategory;
+      accessibility?: LighthouseCategory;
+      "best-practices"?: LighthouseCategory;
+      seo?: LighthouseCategory;
+    };
+    audits?: Record<string, { numericValue?: number | null } | undefined>;
+  };
+  const result = await call<LighthouseRaw[]>(
     "/on_page/lighthouse/live/json",
     [{ url: input.url, for_mobile: true }],
     `lighthouse[${input.url.slice(0, 64)}]`,
@@ -306,13 +328,23 @@ export async function fetchLighthouseScores(input: {
   if (!("ok" in result) || !result.ok) {
     return result as CallResult<LighthouseScores>;
   }
+  const raw = Array.isArray(result.data) ? result.data[0] : null;
+  const cats = raw?.categories;
+  const score = (cat?: LighthouseCategory): number | null => {
+    const v = cat?.score;
+    if (v == null) return null;
+    return Math.round(v * 100);
+  };
   return {
     ok: true,
-    data: result.data?.scores ?? {
-      performance: null,
-      accessibility: null,
-      best_practices: null,
-      seo: null,
+    data: {
+      performance: score(cats?.performance),
+      accessibility: score(cats?.accessibility),
+      best_practices: score(cats?.["best-practices"]),
+      seo: score(cats?.seo),
+      // PWA category was removed in Lighthouse 10. Keep null so the
+      // OnPageAudit row still gets a defined value and the UI can show
+      // "—" rather than crash on undefined.
       pwa: null,
     },
     costUsd: result.costUsd,
@@ -392,7 +424,11 @@ export async function fetchInstantPageAudit(input: {
 }): Promise<CallResult<InstantPageAudit>> {
   const result = await call<Array<{ items: Array<{ meta: InstantPageAudit["meta"]; checks: Record<string, boolean>; }> }>>(
     "/on_page/instant_pages",
-    [{ url: input.url, enable_javascript: true, custom_js: "" }],
+    // `custom_js: ""` was rejected as "Invalid Field" — must be omitted
+    // unless we actually have a script to inject. Keep enable_javascript
+    // so SPAs (a lot of property marketing sites) render their content
+    // before the audit fires.
+    [{ url: input.url, enable_javascript: true }],
     `instant_pages[${input.url.slice(0, 48)}]`,
   );
   if (!("ok" in result) || !result.ok) {
