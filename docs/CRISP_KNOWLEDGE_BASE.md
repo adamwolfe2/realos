@@ -247,6 +247,27 @@ Operators can also manage their own target queries (up to 20 active per property
 
 Every draft lands in a queue at LeaseStack (the agency) before publishing. Adam or the LeaseStack content reviewer approves, requests changes, or rejects each one. Operators see drafts in their own dashboard but can't ship content unreviewed. This protects the operator's brand, ensures fair-housing compliance, and prevents AI hallucinations from going live.
 
+You always get a real-time email when a reviewer approves, requests changes, or rejects your draft — so you don't have to be in the portal to find out.
+
+### How do I manage my SEO recommendations?
+
+Open the SEO Agent at `leasestack.co/portal/seo/agent`. Every property has a recommendations queue with these per-row controls:
+
+- **In progress** — visual cue you're working on it
+- **Done** — terminal, captures who completed it + when
+- **Snooze** — pick 1 week / 2 weeks / 1 month / 1 quarter. The rec returns automatically.
+- **Dismiss** — terminal, requires a short reason
+
+If you have a lot of recs, select multiple rows with the checkboxes and use the bulk action buttons in the header to handle them all at once. Snoozed recs live in a separate panel below the active queue so you can see what's coming back, with a "Wake now" button to flip back to OPEN immediately.
+
+### Where do I see what I've already completed?
+
+Click "Archive →" in the SEO Agent header. You'll see every COMPLETED / DISMISSED / EXPIRED recommendation from the last 90 days, grouped by month so wins are easy to scan. Each row has a Reopen button if you closed something too early.
+
+### Can I export my SEO recommendations?
+
+Yes. Click "Export CSV" in the SEO Agent header. You'll download every OPEN + IN_PROGRESS recommendation as a spreadsheet with property, severity, category, est. minutes, and the linked action URL. Useful for sharing with your leasing team or pasting into your own ops tracker.
+
 ### How fast is creative turnaround?
 
 48 hours from request to delivery. No retainer to unlock it, no change-order, no agency revision rounds. Requests go in the portal at `/portal/creative`.
