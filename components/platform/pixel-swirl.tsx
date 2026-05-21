@@ -49,12 +49,12 @@ type Mote = {
 };
 
 const BRAND_BLUE = "37, 99, 235"; // #2563EB in rgb()
-// Norman feedback (2026-05-21 hero screenshot): "I do not see the pixel
-// swirls in the hero background." The previous 72-mote / 0.18–0.73-opacity
-// field was technically firing but read as plain white at the resolutions
-// Norman reviews on. Doubled the count and lifted the opacity floor so the
-// swirl is unambiguously visible without losing the calm centre.
-const MOTE_COUNT = 160;
+// Norman feedback (2026-05-21, second pass): the brand "swirl" Norman
+// actually wants is the orbiting + pulsing GlyphSwirl (3×3 dot patterns
+// from CapabilitiesRail). PixelSwirl is now a faint secondary texture —
+// 40 single-pixel motes that drift very gently behind the glyphs so the
+// composition doesn't feel sterile, but the eye lands on the glyphs.
+const MOTE_COUNT = 40;
 
 function makeMote(rng: () => number): Mote {
   const inverse = rng() < 0.35;
@@ -68,13 +68,13 @@ function makeMote(rng: () => number): Mote {
     // Slow base rotation. Period 14–32s.
     omega: ((inverse ? -1 : 1) * (2 * Math.PI)) / (14000 + rng() * 18000),
     phase: rng() * Math.PI * 2,
-    // Mix of 2 / 3 / 4-pixel motes so the field has visual depth and the
-    // larger ones read first when the eye lands on the hero.
-    size: rng() < 0.12 ? 4 : rng() < 0.42 ? 3 : 2,
-    // Lifted floor (0.42 vs prior 0.18) so even the dimmest motes register
-    // against #FFFFFF. Top end pushed to ~0.95 so the brightest pixels read
-    // as crisp brand-blue dots, not faint suggestions.
-    opacity: 0.42 + rng() * 0.55,
+    // Single-pixel motes only — these are now a background texture, not
+    // the focal point. The GlyphSwirl glyphs are what should catch the
+    // eye in the hero.
+    size: 2,
+    // Softer than before so they sit behind the glyphs rather than
+    // competing with them. 0.18–0.55 reads as a faint ambient field.
+    opacity: 0.18 + rng() * 0.37,
     inverse,
   };
 }
