@@ -16,16 +16,14 @@ export function StatCard({
 }) {
   // All StatCards now render on a neutral white surface. Earlier we tinted
   // success → emerald and danger → red, which produced the green/pink/cream
-  // rainbow effect across SEO + Attribution. Tone is now communicated via
-  // delta chips and copy, not by painting the entire tile background.
-  const toneClass =
-    tone === "warn"
-      ? "border-primary/40 bg-primary/[0.03]"
-      : tone === "danger"
-        ? "border-destructive/40 bg-destructive/[0.03]"
-        : tone === "success"
-          ? "border-primary/40 bg-primary/[0.03]"
-          : "border-border bg-card";
+  // rainbow effect across SEO + Attribution — visible on the SEO page as a
+  // peach wash behind every down-delta card. Tone is now communicated via
+  // the delta chip in `hint` and the prefix copy, not by painting the
+  // entire tile background. The `tone` prop is kept on the type so callers
+  // don't need to be updated, but every value resolves to the same neutral
+  // surface.
+  void tone;
+  const toneClass = "border-border bg-card";
   return (
     <div
       className={cn(

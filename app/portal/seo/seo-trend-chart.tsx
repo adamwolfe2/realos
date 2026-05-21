@@ -101,10 +101,10 @@ export function SeoTrendChart({ data }: { data: TrendPoint[] }) {
             type="monotone"
             dataKey="impressions"
             name="Impressions"
-            stroke={CHART_COLORS.warning}
+            stroke={CHART_COLORS.brandFog}
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: CHART_COLORS.warning, stroke: "#fff", strokeWidth: 2 }}
+            activeDot={{ r: 4, fill: CHART_COLORS.brandFog, stroke: "#fff", strokeWidth: 2 }}
           />
         </LineChart>
       </ResponsiveContainer>

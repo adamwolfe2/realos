@@ -24,13 +24,20 @@ export type LeadSourceSlice = {
   color?: string;
 };
 
+// Monochromatic blue ramp. Brand decision: every category slice across the
+// product (lead source donut, conversion funnel, channel breakdowns, …)
+// stays on the LeaseStack blue ramp — no orange / green / amber / violet
+// distractions. Slices step from darkest (largest) to palest (smallest);
+// for >6 slices we cycle and the brand intent still reads. Mirrors the
+// ramp used in the product-tour demo so the live portal and the marketing
+// dashboard look like the same product.
 const PALETTE = [
-  "#2563EB", // primary blue
-  "#10b981", // emerald
-  "#f59e0b", // amber
-  "#8b5cf6", // violet
-  "#ef4444", // rose
-  "#06b6d4", // cyan
+  "#1E40AF", // blue-800
+  "#2563EB", // blue-600 (brand)
+  "#3B82F6", // blue-500
+  "#60A5FA", // blue-400
+  "#93C5FD", // blue-300
+  "#BFDBFE", // blue-200
 ];
 
 export function LeadSourceDonut({ slices }: { slices: LeadSourceSlice[] }) {

@@ -8,6 +8,7 @@ import { VisitorStream } from "@/components/platform/artifacts/visitor-stream";
 import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
 import { PacingAlert } from "@/components/platform/artifacts/pacing-alert";
 import { SeoAnswer } from "@/components/platform/artifacts/seo-answer";
+import { MaskRevealUp } from "@/components/ui/animate-text";
 
 // ---------------------------------------------------------------------------
 // CapabilitiesRail — the homepage's product story, told as scrollytelling.
@@ -185,9 +186,10 @@ export function CapabilitiesRail() {
               letterSpacing: "-0.028em",
             }}
           >
-            Six surfaces.
-            <br />
-            One platform.
+            {/* Per-line "Mask Reveal Up" — pixel-point/animate-text spec
+                `mask-reveal-up.json`. 760ms, 90ms line stagger, y 30→0,
+                blur 6→0, ease 0.22,1,0.36,1. */}
+            <MaskRevealUp lines={["Six surfaces.", "One platform."]} />
           </h2>
           <p
             className="mt-5 max-w-2xl"
@@ -300,8 +302,15 @@ export function CapabilitiesRail() {
             ))}
           </ol>
 
-          {/* Right rail — sticky artifact slot (desktop only) */}
-          <div className="hidden lg:block">
+          {/* Right rail — sticky artifact slot (desktop only).
+              `lg:self-stretch` overrides the grid container's `items-start`
+              alignment for this cell only, so the wrapper fills the full
+              row track height. Without it, this column shrinks to ~480px
+              (its content height) and `position: sticky` has no room to
+              stick — the artifact scrolls off the top with its parent.
+              The left <ol> keeps its natural top-aligned layout because
+              its first <li> renders at the top of the cell either way. */}
+          <div className="hidden lg:block lg:self-stretch lg:h-full">
             <div
               className="sticky"
               style={{ top: 96 }}

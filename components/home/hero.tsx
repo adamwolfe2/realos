@@ -1,5 +1,6 @@
 import { SplitHero } from "@/components/platform/split-hero";
 import { ConfigTabs } from "@/components/platform/artifacts/config-tabs";
+import { SoftBlurIn } from "@/components/ui/animate-text";
 import { MARKETING } from "@/lib/copy/marketing";
 
 export function Hero() {
@@ -9,14 +10,18 @@ export function Hero() {
     <SplitHero
       eyebrow={hero.eyebrow}
       headline={
-        <span style={{ display: "block" }}>
-          <span style={{ display: "block" }}>Your leasing data.</span>
-          <span style={{ display: "block", color: "#2563EB" }}>
-            Working for you.
-          </span>
-        </span>
+        // Per-character "Soft Blur In" reveal — pixel-point/animate-text
+        // spec `soft-blur-in.json`. Apple keynote signature, exact values
+        // (900ms, 25ms stagger, blur 12→0, y 16→0, ease 0.22,1,0.36,1).
+        <SoftBlurIn
+          segments={[
+            { text: "Your leasing data." },
+            { text: "Working for you.", color: "#2563EB" },
+          ]}
+        />
       }
       subhead={<>{hero.subhead}</>}
+      headlineSelfAnimated
       ctas={[
         { label: hero.primaryCta, href: hero.primaryHref },
         { label: hero.secondaryCta, href: hero.secondaryHref, variant: "secondary" },

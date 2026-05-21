@@ -15,6 +15,11 @@ export function SplitHero({
   trust,
   artifact,
   caption,
+  // When the consumer is rendering its own per-character / per-word
+  // reveal (e.g. SoftBlurIn from components/ui/animate-text), skip the
+  // outer Reveal wrapper for the headline so the two animations do not
+  // multiply against each other.
+  headlineSelfAnimated = false,
 }: {
   eyebrow: string;
   headline: React.ReactNode;
@@ -24,6 +29,7 @@ export function SplitHero({
   trust?: TrustItem[];
   artifact: React.ReactNode;
   caption?: string;
+  headlineSelfAnimated?: boolean;
 }) {
   return (
     <section
@@ -59,26 +65,29 @@ export function SplitHero({
               </div>
             </Reveal>
 
-            <Reveal delay={60}>
-              <h1
-                style={{
-                  color: "#1E2A3A",
-                  fontFamily: "var(--font-display)",
-                  fontSize: "clamp(36px, 7.2vw, 64px)",
-                  fontWeight: 700,
-                  lineHeight: 1.04,
-                  letterSpacing: "-0.025em",
-                }}
-              >
-                {headline}
-                {headlineAccent ? (
-                  <>
-                    {" "}
-                    <span style={{ color: "#2563EB" }}>{headlineAccent}</span>
-                  </>
-                ) : null}
-              </h1>
-            </Reveal>
+            {(() => {
+              const h1 = (
+                <h1
+                  style={{
+                    color: "#1E2A3A",
+                    fontFamily: "var(--font-display)",
+                    fontSize: "clamp(36px, 7.2vw, 64px)",
+                    fontWeight: 700,
+                    lineHeight: 1.04,
+                    letterSpacing: "-0.025em",
+                  }}
+                >
+                  {headline}
+                  {headlineAccent ? (
+                    <>
+                      {" "}
+                      <span style={{ color: "#2563EB" }}>{headlineAccent}</span>
+                    </>
+                  ) : null}
+                </h1>
+              );
+              return headlineSelfAnimated ? h1 : <Reveal delay={60}>{h1}</Reveal>;
+            })()}
 
             <Reveal delay={140}>
               <p

@@ -17,6 +17,7 @@ import {
   Layers,
   type LucideIcon,
 } from "lucide-react";
+import { MaskRevealUp } from "@/components/ui/animate-text";
 
 // ---------------------------------------------------------------------------
 // LaunchJourney — scroll-pinned 90-day unlock animation.
@@ -294,7 +295,11 @@ function JourneyHeader() {
           letterSpacing: "-0.028em",
         }}
       >
-        Live in fourteen days. Compounding from day one.
+        {/* Mask Reveal Up — per-line. Two-line split keeps the editorial
+            rhythm even when the headline wraps on narrow viewports. */}
+        <MaskRevealUp
+          lines={["Live in fourteen days.", "Compounding from day one."]}
+        />
       </h2>
       <p
         className="mt-4 max-w-2xl"

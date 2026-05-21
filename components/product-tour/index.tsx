@@ -22,6 +22,10 @@ import {
 } from "./data";
 import { TOKENS, Icons, Pill, ScoreBadge, Tile, SectionHeader } from "./shared";
 import { LiveTicker } from "@/components/platform/live-ticker";
+// Real LeaseStack product components — using the same primitives the live
+// portal uses so the demo and the product are visually identical.
+import { LeadSourceDonut } from "@/components/portal/dashboard/lead-source-donut";
+import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funnel";
 
 // ---------------------------------------------------------------------------
 // ProductTour
@@ -436,12 +440,16 @@ function Contents({ view }: { view: ViewKey }) {
 // 1. DASHBOARD
 // ===========================================================================
 
+// Monochromatic blue ramp — every category slice stays on-brand instead of
+// reaching for orange / green / yellow. Order: darkest at the top (Chat,
+// the biggest slice) → palest at the bottom (Referral, the smallest).
+// Same ramp the real LeaseStack `LeadSourceDonut` palette uses.
 const LEAD_SOURCES: Array<{ label: string; pct: number; color: string }> = [
-  { label: "Chat",     pct: 32, color: TOKENS.accent },
-  { label: "Paid",     pct: 26, color: TOKENS.accentLight },
-  { label: "Pixel",    pct: 18, color: TOKENS.warning },
-  { label: "Form",     pct: 14, color: TOKENS.success },
-  { label: "Referral", pct: 10, color: TOKENS.coral },
+  { label: "Chat",     pct: 32, color: "#1E40AF" }, // blue-800
+  { label: "Paid",     pct: 26, color: "#2563EB" }, // blue-600 (brand)
+  { label: "Pixel",    pct: 18, color: "#3B82F6" }, // blue-500
+  { label: "Form",     pct: 14, color: "#60A5FA" }, // blue-400
+  { label: "Referral", pct: 10, color: "#93C5FD" }, // blue-300
 ];
 
 const FUNNEL: Array<{ label: string; count: number }> = [
@@ -452,58 +460,9 @@ const FUNNEL: Array<{ label: string; count: number }> = [
   { label: "Signed",   count: 4     },
 ];
 
-function LeadSourceDonut() {
-  // Build a conic-gradient string from the LEAD_SOURCES percentages.
-  let cursor = 0;
-  const stops = LEAD_SOURCES.map((s) => {
-    const from = cursor;
-    cursor += s.pct;
-    return `${s.color} ${from}% ${cursor}%`;
-  }).join(", ");
-  return (
-    <div
-      className="relative flex-shrink-0 rounded-full"
-      style={{
-        width: "140px",
-        height: "140px",
-        background: `conic-gradient(${stops})`,
-      }}
-    >
-      <div
-        className="absolute inset-[14%] rounded-full flex flex-col items-center justify-center"
-        style={{
-          backgroundColor: TOKENS.white,
-          boxShadow: `inset 0 0 0 1px ${TOKENS.borderCream}`,
-        }}
-      >
-        <span
-          style={{
-            fontFamily: "var(--font-display)",
-            fontSize: "24px",
-            fontWeight: 500,
-            color: TOKENS.nearBlack,
-            lineHeight: 1,
-          }}
-        >
-          168
-        </span>
-        <span
-          className="mt-1"
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "9.5px",
-            color: TOKENS.stone,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            fontWeight: 500,
-          }}
-        >
-          Leads
-        </span>
-      </div>
-    </div>
-  );
-}
+// Local conic-gradient donut removed — the dashboard now uses the real
+// product's <LeadSourceDonut /> (recharts) imported at the top of this
+// file so the demo and the live portal render the same primitive.
 
 function MiniPropStat({ label, value }: { label: string; value: string }) {
   return (
@@ -634,39 +593,20 @@ function Dashboard() {
         <div>
           <SectionHeader title="Leads by source (last 7 days)" />
           <Tile>
-            <div className="p-5 flex items-center gap-6">
-              <LeadSourceDonut />
-              <ul className="flex-1 space-y-2">
-                {LEAD_SOURCES.map((s) => (
-                  <li key={s.label} className="flex items-center gap-3">
-                    <span
-                      className="inline-block rounded-full flex-shrink-0"
-                      style={{ width: "10px", height: "10px", backgroundColor: s.color }}
-                    />
-                    <span
-                      className="flex-1"
-                      style={{
-                        fontFamily: "var(--font-sans)",
-                        fontSize: "13px",
-                        color: TOKENS.charcoal,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {s.label}
-                    </span>
-                    <span
-                      style={{
-                        fontFamily: "var(--font-mono)",
-                        fontSize: "12px",
-                        color: TOKENS.nearBlack,
-                        fontWeight: 500,
-                      }}
-                    >
-                      {s.pct}%
-                    </span>
-                  </li>
-                ))}
-              </ul>
+            <div className="p-5">
+              {/* Real-product LeadSourceDonut (recharts) — same component
+                  that renders on the live portal dashboard. Slices map to
+                  the demo's LEAD_SOURCES configuration so the legend / pct
+                  stay in sync with the marketing copy. */}
+              <LeadSourceDonut
+                slices={LEAD_SOURCES.map((s) => ({
+                  source: s.label,
+                  // Counts approximate the percentages × the donut center
+                  // total (168) so legend counts read as plausible.
+                  count: Math.round((s.pct / 100) * 168),
+                  color: s.color,
+                }))}
+              />
             </div>
           </Tile>
         </div>
@@ -674,49 +614,14 @@ function Dashboard() {
         <div>
           <SectionHeader title="Conversion funnel (week)" />
           <Tile>
-            <ul className="p-5 space-y-2.5">
-              {FUNNEL.map((s, i) => {
-                const pct = Math.max(2, (s.count / FUNNEL[0].count) * 100);
-                const prevConv =
-                  i === 0 ? null : Math.round((s.count / FUNNEL[i - 1].count) * 100);
-                return (
-                  <li key={s.label}>
-                    <div className="flex items-center justify-between mb-1">
-                      <span
-                        style={{
-                          fontFamily: "var(--font-sans)",
-                          fontSize: "13px",
-                          color: TOKENS.charcoal,
-                          fontWeight: 500,
-                        }}
-                      >
-                        {s.label}
-                      </span>
-                      <span
-                        style={{
-                          fontFamily: "var(--font-mono)",
-                          fontSize: "11px",
-                          color: TOKENS.stone,
-                        }}
-                      >
-                        <span style={{ color: TOKENS.nearBlack, fontWeight: 500 }}>
-                          {s.count.toLocaleString()}
-                        </span>
-                        {prevConv !== null ? ` · ${prevConv}%` : ""}
-                      </span>
-                    </div>
-                    <div
-                      className="h-7 rounded-md"
-                      style={{
-                        width: `${pct}%`,
-                        backgroundColor: TOKENS.accent,
-                        opacity: 0.15 + (i * 0.18),
-                      }}
-                    />
-                  </li>
-                );
-              })}
-            </ul>
+            <div className="p-5">
+              {/* Real-product ConversionFunnel — same stage bars the live
+                  dashboard renders, with monochromatic blue weights and
+                  computed step-by-step conversion percentages. */}
+              <ConversionFunnel
+                stages={FUNNEL.map((s) => ({ label: s.label, value: s.count }))}
+              />
+            </div>
           </Tile>
         </div>
       </div>
@@ -851,17 +756,20 @@ function PeriodSwitcher({
 }
 
 function ActivityDot({ kind }: { kind: string }) {
-  const color =
-    kind === "signed"   ? TOKENS.success :
-    kind === "lead"     ? TOKENS.terracotta :
-    kind === "chat"     ? TOKENS.coral :
-    kind === "creative" ? TOKENS.warning :
-    kind === "tour"     ? TOKENS.success :
-    TOKENS.stone;
+  // Mirrors the real product's activity feed (components/portal/dashboard/
+  // activity-feed.tsx) where every kind lands on brand blue against a
+  // 10% blue chip background. No more orange / green / amber per-event
+  // dots — every event reads as part of the same product surface.
+  void kind;
   return (
     <span
       className="inline-block flex-shrink-0 rounded-full"
-      style={{ width: "8px", height: "8px", backgroundColor: color }}
+      style={{
+        width: "8px",
+        height: "8px",
+        backgroundColor: TOKENS.accent,
+        boxShadow: `0 0 0 3px rgba(37,99,235,0.12)`,
+      }}
     />
   );
 }

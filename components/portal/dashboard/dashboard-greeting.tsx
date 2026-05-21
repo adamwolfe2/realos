@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
+import { GreetingAnimated } from "./greeting-animated";
 
 // ---------------------------------------------------------------------------
 // DashboardGreeting — the personalized header that opens /portal home.
@@ -75,7 +76,10 @@ export function DashboardGreeting({
     <header className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
       <div className="min-w-0">
         <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-foreground leading-tight">
-          {greeting}, <span className="text-primary">{subject}</span>
+          {/* Per-word crossfade reveal — pixel-point/animate-text spec
+              `per-word-crossfade.json`. Calm editorial rhythm on first
+              paint of the dashboard. */}
+          <GreetingAnimated greeting={greeting} subject={subject} />
         </h1>
       </div>
 

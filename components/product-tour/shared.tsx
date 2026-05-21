@@ -1,4 +1,26 @@
 import React from "react";
+import {
+  LayoutDashboard,
+  Users,
+  MessageSquare,
+  Sparkles,
+  Megaphone,
+  Building2,
+  BarChart3,
+  Settings as SettingsIcon,
+  Star,
+  Eye,
+  TrendingUp,
+  Search as SearchIcon,
+  Plus,
+  ArrowRight,
+  Bell,
+  Check,
+  X as XIcon,
+  ChevronDown,
+  Circle as CircleIcon,
+  Download,
+} from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // Shared primitives for the interactive product tour. All components are
@@ -6,6 +28,12 @@ import React from "react";
 // inline-styling repeatedly across views.
 // ---------------------------------------------------------------------------
 
+// All chart / category / accent surfaces are locked to a monochromatic blue
+// scale so the demo reads as a single coherent product surface (no random
+// orange / green / amber category swatches anywhere). Status polarity for
+// delta indicators (KPI up / down) stays on the real product's emerald /
+// rose pair so positive / negative still scans at a glance — same colors
+// as `.ls-delta-up` / `.ls-delta-down` in globals.css.
 export const TOKENS = {
   parchment:       "#FFFFFF",
   ivory:           "#F1F5F9",
@@ -13,16 +41,15 @@ export const TOKENS = {
   white:           "#ffffff",
   nearBlack:       "#1E2A3A",
   darkSurface:     "#1E2A3A",
-  // Brand accent is LeaseStack blue (was terracotta in the Claude draft).
-  // Token names kept for now to avoid churn across every view file; rename
-  // in a follow-up if the tour grows more contributors.
-  accent:          "#2563EB",
-  accentHover:     "#1D4ED8",
-  accentLight:     "#5B8CE6",
-  // Legacy aliases so existing inline references keep working.
+  // Brand accent + step-down scale for category / chart slices.
+  accent:          "#2563EB", // primary  — Tailwind blue-600
+  accentHover:     "#1D4ED8", //          — blue-700
+  accentLight:     "#60A5FA", //          — blue-400
+  // Legacy aliases — kept so existing inline references keep working but
+  // now all resolve to monochromatic blue ramp stops.
   terracotta:      "#2563EB",
   terracottaHover: "#1D4ED8",
-  coral:           "#5B8CE6",
+  coral:           "#93C5FD", //          — blue-300
   charcoal:        "#1E2A3A",
   olive:           "#64748B",
   stone:           "#94A3B8",
@@ -30,9 +57,11 @@ export const TOKENS = {
   borderCream:     "#E2E8F0",
   borderWarm:      "#E2E8F0",
   ring:            "#CBD5E1",
-  success:         "#16A34A",
-  warning:         "#F59E0B",
-  error:           "#DC2626",
+  // Delta polarity (KPI tiles only). Matches the real product's
+  // .ls-delta-up / .ls-delta-down classes in app/globals.css.
+  success:         "#15803D",
+  warning:         "#1D4ED8", // ← was amber #F59E0B; remapped to deep blue
+  error:           "#B91C1C",
   focusBlue:       "#3898ec",
 } as const;
 
@@ -104,131 +133,67 @@ export function ScoreBadge({ score }: { score: number }) {
 }
 
 // ---------------------------------------------------------------------------
-// Icons (minimal inline SVGs, stroke-based, terracotta/warm palette)
+// Icons — re-exports of lucide-react icons under stable demo keys.
+//
+// Previously this was a hand-authored set of inline SVGs. The real
+// LeaseStack product uses lucide-react throughout (sidebar nav, KPI tiles,
+// activity feed, every page) so the demo now sources from the exact same
+// library. Each entry below is a thin wrapper that preserves the old
+// `{ size, color, className }` call signature so every call site in
+// product-tour/index.tsx keeps working without changes.
 // ---------------------------------------------------------------------------
 
 type IconProps = { size?: number; color?: string; className?: string };
 
-export const Icons = {
-  dashboard: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="2" width="5.5" height="5.5" rx="1.2" stroke={color} strokeWidth="1.4" />
-      <rect x="8.5" y="2" width="5.5" height="3" rx="1.2" stroke={color} strokeWidth="1.4" />
-      <rect x="8.5" y="6" width="5.5" height="8" rx="1.2" stroke={color} strokeWidth="1.4" />
-      <rect x="2" y="8.5" width="5.5" height="5.5" rx="1.2" stroke={color} strokeWidth="1.4" />
-    </svg>
-  ),
-  leads: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="5.5" r="2.5" stroke={color} strokeWidth="1.4" />
-      <path d="M2.5 13.5c0-2.5 2.3-4 5.5-4s5.5 1.5 5.5 4" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  ),
-  chat: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <path d="M3 4.5c0-1 .8-1.8 1.8-1.8h6.4c1 0 1.8.8 1.8 1.8v5c0 1-.8 1.8-1.8 1.8H7l-3 2.5v-2.5h-.5c-1 0-1.8-.8-1.8-1.8z"
-        transform="translate(0.5,0.5)" stroke={color} strokeWidth="1.4" strokeLinejoin="round" />
-    </svg>
-  ),
-  creative: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <path d="M3 11.5L11 3.5l1.5 1.5L4.5 13l-1.5-.5z" stroke={color} strokeWidth="1.4" strokeLinejoin="round" />
-      <path d="M9.5 5L11 6.5" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  ),
-  campaigns: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <path d="M2 8l4-4v3h8v2H6v3z" stroke={color} strokeWidth="1.4" strokeLinejoin="round" />
-    </svg>
-  ),
-  properties: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <path d="M2 13V6l6-3.5L14 6v7" stroke={color} strokeWidth="1.4" strokeLinejoin="round" />
-      <path d="M2 13h12" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-      <rect x="6.5" y="8" width="3" height="5" stroke={color} strokeWidth="1.4" />
-    </svg>
-  ),
-  reports: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <path d="M3 13V7M7 13V3M11 13V9" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  ),
-  settings: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <circle cx="8" cy="8" r="2" stroke={color} strokeWidth="1.4" />
-      <path
-        d="M8 1.5v1.7M8 12.8v1.7M14.5 8h-1.7M3.2 8H1.5M12.6 3.4l-1.2 1.2M4.6 11.4l-1.2 1.2M12.6 12.6l-1.2-1.2M4.6 4.6L3.4 3.4"
-        stroke={color}
-        strokeWidth="1.4"
-        strokeLinecap="round"
+const wrap = (LucideIcon: React.ComponentType<{
+  size?: number;
+  color?: string;
+  className?: string;
+  strokeWidth?: number;
+}>) =>
+  function WrappedIcon({ size = 16, color = "currentColor", className }: IconProps) {
+    return (
+      <LucideIcon
+        size={size}
+        color={color}
+        className={className}
+        // 1.6 stroke matches the visual weight of the previous inline SVGs.
+        strokeWidth={1.6}
       />
-    </svg>
+    );
+  };
+
+export const Icons = {
+  dashboard:   wrap(LayoutDashboard),
+  leads:       wrap(Users),
+  chat:        wrap(MessageSquare),
+  creative:    wrap(Sparkles),
+  campaigns:   wrap(Megaphone),
+  properties:  wrap(Building2),
+  reports:     wrap(BarChart3),
+  settings:    wrap(SettingsIcon),
+  briefing:    wrap(Star),
+  visitors:    wrap(Eye),
+  seo:         wrap(TrendingUp),
+  search:      wrap(SearchIcon),
+  plus:        wrap(Plus),
+  arrowRight:  wrap(ArrowRight),
+  bell:        wrap(Bell),
+  check:       wrap(Check),
+  close:       wrap(XIcon),
+  chevronDown: wrap(ChevronDown),
+  // Solid dot — lucide's Circle has a hole; fill it inline so callers that
+  // pass `color` get a filled dot the same as the previous hand-rolled SVG.
+  dot: ({ size = 6, color = "currentColor", className }: IconProps) => (
+    <CircleIcon
+      size={size}
+      color={color}
+      className={className}
+      strokeWidth={0}
+      fill={color}
+    />
   ),
-  briefing: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <path d="M8 2l1.4 3.1L12.5 6l-2.3 2 .7 3.2L8 9.8 5.1 11.2l.7-3.2L3.5 6l3.1-.9z" stroke={color} strokeWidth="1.3" strokeLinejoin="round" />
-    </svg>
-  ),
-  visitors: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <path d="M1.5 8c1.8-3 4-4.5 6.5-4.5S12.7 5 14.5 8c-1.8 3-4 4.5-6.5 4.5S3.3 11 1.5 8z" stroke={color} strokeWidth="1.3" strokeLinejoin="round" />
-      <circle cx="8" cy="8" r="2" stroke={color} strokeWidth="1.3" />
-    </svg>
-  ),
-  seo: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <path d="M2.5 11L6 7.5L8.5 10l4.5-5" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M10 5h3v3" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  search: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <circle cx="7" cy="7" r="4.5" stroke={color} strokeWidth="1.4" />
-      <path d="M10.5 10.5L14 14" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  ),
-  plus: ({ size = 14, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-      <path d="M7 2v10M2 7h10" stroke={color} strokeWidth="1.6" strokeLinecap="round" />
-    </svg>
-  ),
-  arrowRight: ({ size = 12, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
-      <path d="M2 6h8m0 0L7 3m3 3L7 9" stroke={color} strokeWidth="1.3" strokeLinecap="round" />
-    </svg>
-  ),
-  bell: ({ size = 16, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 16 16" fill="none">
-      <path d="M4 11V7a4 4 0 0 1 8 0v4l1 1.5H3z" stroke={color} strokeWidth="1.4" strokeLinejoin="round" />
-      <path d="M6.5 13.5a1.5 1.5 0 0 0 3 0" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  ),
-  check: ({ size = 12, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
-      <path d="M2 6.5L5 9.5L10.5 3.5" stroke={color} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ),
-  close: ({ size = 14, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-      <path d="M3.5 3.5l7 7M10.5 3.5l-7 7" stroke={color} strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  ),
-  chevronDown: ({ size = 12, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 12 12" fill="none">
-      <path d="M3 5L6 8L9 5" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  ),
-  dot: ({ size = 6, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 6 6" fill={color}>
-      <circle cx="3" cy="3" r="3" />
-    </svg>
-  ),
-  download: ({ size = 14, color = "currentColor" }: IconProps) => (
-    <svg width={size} height={size} viewBox="0 0 14 14" fill="none">
-      <path d="M7 2v7m0 0L4 6m3 3l3-3" stroke={color} strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M2.5 11.5h9" stroke={color} strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  ),
+  download: wrap(Download),
 };
 
 // ---------------------------------------------------------------------------
