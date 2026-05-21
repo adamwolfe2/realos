@@ -169,14 +169,17 @@ export const NAV_GROUPS: NavGroup[] = [
         show: (o) => !o.setupComplete && !o.onboardingDismissed,
       },
       { href: "/portal", label: "Dashboard", icon: LayoutDashboard, show: ALWAYS },
-      // Connect — always visible. The unified data-connection hub.
-      // Pinned high so users can come back at any time to plug in more
-      // sources. More sources connected = richer insights.
+      // Connect — visible only when the Setup hub has been dismissed or
+      // completed. Norman feedback (issue #55): Setup and Connect
+      // overlapped because Setup embeds the Connect hub at the top of
+      // its page. While Setup is in the nav, Connect is redundant; once
+      // Setup leaves the nav (org.setupComplete || onboardingDismissed)
+      // Connect re-appears as the standalone data-connection entry.
       {
         href: "/portal/connect",
         label: "Connect",
         icon: Plug,
-        show: ALWAYS,
+        show: (o) => o.setupComplete || o.onboardingDismissed,
       },
       // Marketplace — always visible. Lets clients re-enter the
       // add-to-cart flow at any time to bolt on additional modules

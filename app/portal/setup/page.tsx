@@ -8,6 +8,13 @@ import {
 import { PHASE_LABELS, PHASE_ORDER } from "@/lib/setup/steps";
 import { SetupStepCard } from "@/components/portal/setup/setup-step-card";
 import { PageHeader } from "@/components/admin/page-header";
+// Norman feedback (issue #55): Setup and Connect overlapped. Embedded
+// the Connect hub at the top of /portal/setup so the actionable
+// integration cards live alongside the broader 10-step onboarding
+// timeline — one page, no duplication. The /portal/connect route still
+// exists for deep links but the nav now collapses to a single entry.
+import { getConnectStatusForOrg } from "@/lib/connect/status";
+import { ConnectHub } from "@/components/portal/connect/connect-hub";
 
 export const metadata: Metadata = { title: "Setup" };
 export const dynamic = "force-dynamic";
@@ -24,7 +31,10 @@ export const dynamic = "force-dynamic";
 
 export default async function SetupHubPage() {
   const scope = await requireScope();
-  const progress = await deriveSetupProgress(scope.orgId);
+  const [progress, connectSources] = await Promise.all([
+    deriveSetupProgress(scope.orgId),
+    getConnectStatusForOrg(scope.orgId),
+  ]);
 
   if (!progress) notFound();
 
@@ -139,6 +149,26 @@ export default async function SetupHubPage() {
             ))}
           </div>
         </div>
+      </section>
+
+      {/* ── Connect data sources (merged from /portal/connect per #55) ─── */}
+      <section aria-labelledby="connect-data">
+        <h2
+          id="connect-data"
+          className="font-sans text-xs uppercase tracking-[0.12px] text-muted-foreground mb-4"
+        >
+          Connect data sources
+        </h2>
+        <ConnectHub
+          variant="embed"
+          sources={connectSources.map((s) => ({
+            id: s.id,
+            connected: s.connected,
+            lastSyncAt: s.lastSyncAt ? s.lastSyncAt.toISOString() : null,
+            accountLabel: s.accountLabel,
+            healthNote: s.healthNote ?? null,
+          }))}
+        />
       </section>
 
       {/* ── Phase sections with timeline ────────────────────────────────── */}

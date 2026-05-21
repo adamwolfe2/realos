@@ -72,6 +72,11 @@ type OverviewProperty = {
   orgHasAdsModule: boolean;
 };
 
+// 28-day window in ms — matches getPropertyOverviewKpis and every other
+// time-windowed KPI on this page. Inlined as a constant so the
+// Marketing section's chatbot count uses the same horizon.
+const WINDOW_28D_MS = 28 * 24 * 60 * 60 * 1000;
+
 export async function OverviewTab({
   orgId,
   propertyId,
@@ -102,6 +107,7 @@ export async function OverviewTab({
     recentTours,
     recentLeases,
     recentMentions,
+    chatbotConversations28d,
   ] = await Promise.all([
     getPropertyOverviewKpis(orgId, propertyId, propertyMeta),
     prisma.property.findFirst({
@@ -258,6 +264,15 @@ export async function OverviewTab({
         },
       })
       .catch(() => [] as Array<ActivityMentionRow>),
+    // Norman feedback (issue #75): the Marketing box was rendering
+    // static counts (listings, all-time leads) that didn't reflect the
+    // operator's day-to-day marketing performance. We add chatbot
+    // conversations and visitor-session aggregates here so the new
+    // Marketing section can show data-backed, time-windowed metrics
+    // (28-day window matches every other KPI on this page).
+    prisma.chatbotConversation
+      .count({ where: { orgId, propertyId, createdAt: { gte: new Date(Date.now() - WINDOW_28D_MS) } } })
+      .catch(() => 0),
   ]);
 
   const totalUnits = property.totalUnits ?? null;
@@ -562,6 +577,28 @@ export async function OverviewTab({
               />
             </section>
 
+            {/* Marketing — promoted from sidebar to main column per
+                Norman feedback (#75). Replaces the static listings +
+                all-time leads pair (which read as 141 vs 3 and looked
+                wrong) with the four marketing signals the operator
+                actually uses to judge a property: organic traffic,
+                paid spend, chatbot engagement, and conversion to
+                application. Every metric uses the same 28-day window
+                as the KPI strip above. */}
+            <MarketingSection
+              propertyId={propertyId}
+              organicSessions28d={kpis.organicSessions28d}
+              organicMapped={kpis.organicMapped}
+              adSpendCents28d={kpis.adSpendCents28d}
+              chatbotConversations28d={chatbotConversations28d}
+              leads28d={kpis.leads28d}
+              tours28d={kpis.tours28d}
+              applications28d={kpis.applications28d}
+              hasAdsModule={property.orgHasAdsModule}
+              chatbotEnabled={tenantSiteConfig?.chatbotEnabled ?? false}
+              pixelConnected={!!cursiveIntegration?.cursivePixelId}
+            />
+
             <ActivityTimeline events={activity} />
 
             {/* Renewal timeline hidden (issue #77) — rent-roll cadence is
@@ -606,12 +643,15 @@ export async function OverviewTab({
               lastSyncedAt={property.lastSyncedAt}
             />
 
-            <MarketingCard
-              listingsCount={listingCounts?._count.listings ?? 0}
-              allTimeLeads={allTimeLeads}
-              description={property.description}
-              priceRange={priceRange}
-            />
+            {/* MarketingCard moved to main column as <MarketingSection>
+                per issue #75. Description + price-range still useful
+                context; surfaced inline on the meta card instead. */}
+            {(property.description || priceRange) ? (
+              <PropertyDescriptionCard
+                description={property.description}
+                priceRange={priceRange}
+              />
+            ) : null}
 
             {/* Quick actions hidden (issue #76) — Open in AppFolio,
                 Edit listing details, and Property settings either 404 or
@@ -1362,48 +1402,236 @@ function PropertyMetaCard({
 }
 
 // ---------------------------------------------------------------------------
-// Sidebar — marketing card.
+// Marketing section — promoted from sidebar to a main-column block per
+// Norman feedback (issue #75). Renders four data-backed marketing
+// signals over a 28-day window plus a conversion funnel mini-chart.
+// Empties out cleanly when the data source isn't connected (chatbot
+// off → "Connect" callout instead of "0 conversations").
 // ---------------------------------------------------------------------------
 
-function MarketingCard({
-  listingsCount,
-  allTimeLeads,
-  description,
-  priceRange,
+function MarketingSection({
+  propertyId,
+  organicSessions28d,
+  organicMapped,
+  adSpendCents28d,
+  chatbotConversations28d,
+  leads28d,
+  tours28d,
+  applications28d,
+  hasAdsModule,
+  chatbotEnabled,
+  pixelConnected,
 }: {
-  listingsCount: number;
-  allTimeLeads: number;
-  description: string | null;
-  priceRange: string | null;
+  propertyId: string;
+  organicSessions28d: number | null;
+  organicMapped: boolean;
+  adSpendCents28d: number;
+  chatbotConversations28d: number;
+  leads28d: number;
+  tours28d: number;
+  applications28d: number;
+  hasAdsModule: boolean;
+  chatbotEnabled: boolean;
+  pixelConnected: boolean;
 }) {
-  const rows: Array<[string, string]> = [
-    ["Listings", listingsCount.toLocaleString()],
-    ["All-time leads", allTimeLeads.toLocaleString()],
-  ];
-  if (priceRange) {
-    rows.push(["Price range", priceRange]);
-  }
+  void pixelConnected;
+  // Conversion: leads / organic sessions. We use organic sessions as
+  // the denominator (the audience the operator is actually responsible
+  // for marketing to) rather than total visitors — paid sessions are
+  // expected to convert and skew the ratio. Capped at 100% defensively.
+  const conversionPct =
+    organicSessions28d && organicSessions28d > 0
+      ? Math.min(100, Math.round((leads28d / organicSessions28d) * 100))
+      : null;
+
+  type Metric = {
+    label: string;
+    value: React.ReactNode;
+    hint: string;
+    cta?: { label: string; href: string };
+  };
+  const metrics: Metric[] = [];
+
+  metrics.push({
+    label: "Organic sessions (28d)",
+    value: organicMapped && organicSessions28d != null
+      ? organicSessions28d.toLocaleString()
+      : <DimZero />,
+    hint: organicMapped
+      ? organicSessions28d && organicSessions28d > 0
+        ? "From GA4 / GSC matched URLs"
+        : "GA4 connected, no sessions yet"
+      : "Map a domain to surface organic traffic",
+    cta: organicMapped
+      ? undefined
+      : { label: "Connect GA4", href: "/portal/connect" },
+  });
+
+  metrics.push({
+    label: "Chatbot conversations (28d)",
+    value: chatbotEnabled
+      ? chatbotConversations28d > 0
+        ? chatbotConversations28d.toLocaleString()
+        : <DimZero />
+      : <DimZero />,
+    hint: chatbotEnabled
+      ? chatbotConversations28d > 0
+        ? "On-site capture"
+        : "First conversation lands here"
+      : "Chatbot off",
+    cta: chatbotEnabled
+      ? undefined
+      : { label: "Enable chatbot", href: "/portal/chatbot" },
+  });
+
+  metrics.push({
+    label: "Ad spend (28d)",
+    value: hasAdsModule
+      ? adSpendCents28d > 0
+        ? centsToUsdShort(adSpendCents28d)
+        : <DimZero />
+      : <DimZero />,
+    hint: hasAdsModule
+      ? adSpendCents28d > 0
+        ? `${leads28d > 0 ? `${centsToUsdShort(Math.round(adSpendCents28d / leads28d))}/lead` : "No leads attributed"}`
+        : "No spend in window"
+      : "Ad modules off",
+    cta: hasAdsModule
+      ? undefined
+      : { label: "Connect ads", href: "/portal/connect" },
+  });
+
+  metrics.push({
+    label: "Conversion rate",
+    value: conversionPct != null ? `${conversionPct}%` : <DimZero />,
+    hint:
+      conversionPct == null
+        ? organicMapped
+          ? "Needs traffic + leads"
+          : "Map a domain first"
+        : `${leads28d} ${leads28d === 1 ? "lead" : "leads"} from ${organicSessions28d?.toLocaleString() ?? 0} sessions`,
+  });
 
   return (
     <section className="rounded-xl border border-border bg-card p-4 md:p-5">
-      <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-        Marketing
-      </p>
-      <dl className="mt-2 space-y-1.5 text-[12px]">
-        {rows.map(([k, v]) => (
+      <header className="flex items-baseline justify-between gap-3 mb-3">
+        <div>
+          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+            Last 28 days
+          </p>
+          <h3 className="text-sm font-semibold text-foreground">Marketing</h3>
+        </div>
+        <a
+          href={`/portal/properties/${propertyId}?tab=traffic`}
+          className="text-[11.5px] font-semibold text-primary hover:underline whitespace-nowrap"
+        >
+          Open traffic →
+        </a>
+      </header>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        {metrics.map((m) => (
           <div
-            key={k}
-            className="flex items-baseline justify-between gap-3"
+            key={m.label}
+            className="rounded-lg border border-border bg-muted/20 p-3 min-w-0"
           >
-            <dt className="text-muted-foreground">{k}</dt>
-            <dd className="text-right text-foreground tabular-nums truncate">
-              {v}
-            </dd>
+            <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground truncate">
+              {m.label}
+            </p>
+            <p className="mt-1 text-lg font-semibold text-foreground tabular-nums leading-none">
+              {m.value}
+            </p>
+            <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
+              {m.hint}
+            </p>
+            {m.cta ? (
+              <a
+                href={m.cta.href}
+                className="mt-2 inline-flex text-[11px] font-semibold text-primary hover:underline"
+              >
+                {m.cta.label} →
+              </a>
+            ) : null}
           </div>
         ))}
-      </dl>
+      </div>
+
+      {/* Funnel mini — sessions → leads → tours → applications.
+          Hidden when there's no data in any stage so we don't render an
+          empty rail. */}
+      {leads28d > 0 || tours28d > 0 || applications28d > 0 ? (
+        <div className="mt-4 pt-4 border-t border-border">
+          <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground mb-2">
+            Funnel
+          </p>
+          <FunnelMini
+            stages={[
+              {
+                label: "Organic sessions",
+                value: organicSessions28d ?? 0,
+              },
+              { label: "Leads", value: leads28d },
+              { label: "Tours", value: tours28d },
+              { label: "Applications", value: applications28d },
+            ]}
+          />
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function FunnelMini({
+  stages,
+}: {
+  stages: Array<{ label: string; value: number }>;
+}) {
+  const max = Math.max(1, ...stages.map((s) => s.value));
+  return (
+    <ul className="space-y-1.5">
+      {stages.map((s) => {
+        const pct = Math.round((s.value / max) * 100);
+        return (
+          <li key={s.label} className="grid grid-cols-[140px_1fr_auto] items-center gap-3 min-w-0">
+            <span className="text-[11.5px] text-muted-foreground truncate">
+              {s.label}
+            </span>
+            <span className="relative h-2 rounded-full bg-muted overflow-hidden">
+              <span
+                className="absolute inset-y-0 left-0 bg-primary/60 rounded-full"
+                style={{ width: `${Math.max(2, pct)}%` }}
+              />
+            </span>
+            <span className="text-[12px] font-semibold tabular-nums text-foreground shrink-0">
+              {s.value.toLocaleString()}
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+function PropertyDescriptionCard({
+  description,
+  priceRange,
+}: {
+  description: string | null;
+  priceRange: string | null;
+}) {
+  return (
+    <section className="rounded-xl border border-border bg-card p-4 md:p-5">
+      <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
+        Listing
+      </p>
+      {priceRange ? (
+        <p className="mt-1.5 text-[12px] text-foreground">
+          <span className="text-muted-foreground">Price range</span>{" "}
+          <span className="font-medium tabular-nums">{priceRange}</span>
+        </p>
+      ) : null}
       {description ? (
-        <p className="mt-3 pt-3 border-t border-border text-[11.5px] text-muted-foreground leading-snug line-clamp-2">
+        <p className="mt-2 text-[11.5px] text-muted-foreground leading-snug line-clamp-3">
           {description}
         </p>
       ) : null}
