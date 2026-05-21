@@ -1,18 +1,25 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Perplexity">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Perplexity">
   <title>Perplexity</title>
-  <!-- Perplexity's mark: a dark rounded square with the canonical
-       four-pointed teal sparkle Perplexity uses on perplexity.ai and
-       the iOS app icon. Geometry stays recognizable down to 14px. -->
-  <rect width="256" height="256" rx="56" fill="#1F1F1F"/>
-  <g fill="#1FB8CD">
-    <!-- Four elongated capsules at 0/90/180/270 forming the sparkle.
-         Capsule terminals are rounded so the mark reads as a soft
-         "atom" rather than a hard cross at small sizes. -->
-    <rect x="120" y="40" width="16" height="80" rx="8"/>
-    <rect x="120" y="136" width="16" height="80" rx="8"/>
-    <rect x="40" y="120" width="80" height="16" rx="8"/>
-    <rect x="136" y="120" width="80" height="16" rx="8"/>
-    <!-- Centre dot ties the four arms together visually. -->
-    <circle cx="128" cy="128" r="14"/>
+  <!-- Perplexity's geometric mark — stroked teal asterisk with chevron
+       arrows pointing inward from each cardinal direction. Reconstructed
+       from the canonical brand glyph (rebuilt May 2026). -->
+  <g fill="none" stroke="#1FB8CD" stroke-width="32" stroke-linecap="square" stroke-linejoin="miter">
+    <!-- Outer chevron arrows pointing toward centre, one per cardinal side -->
+    <!-- Top chevron (down-pointing) -->
+    <path d="M 96 64 L 256 224 L 416 64" />
+    <!-- Bottom chevron (up-pointing) -->
+    <path d="M 96 448 L 256 288 L 416 448" />
+    <!-- Left chevron (right-pointing) -->
+    <path d="M 64 96 L 224 256 L 64 416" />
+    <!-- Right chevron (left-pointing) -->
+    <path d="M 448 96 L 288 256 L 448 416" />
+
+    <!-- Central asterisk: two diagonal lines and one vertical line
+         crossing the centre to complete the snowflake-asterisk
+         silhouette. -->
+    <line x1="256" y1="64"  x2="256" y2="448" />
+    <line x1="96"  y1="96"  x2="416" y2="416" />
+    <line x1="416" y1="96"  x2="96"  y2="416" />
+    <line x1="64"  y1="256" x2="448" y2="256" />
   </g>
 </svg>

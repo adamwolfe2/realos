@@ -2,8 +2,8 @@
 
 import * as React from "react";
 import { formatDistanceToNow } from "date-fns";
+import { ArrowRight, Sparkles } from "lucide-react";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
-import { StatCard } from "@/components/admin/stat-card";
 import { AeoScanButton } from "./aeo-scan-button";
 import {
   AeoEngineCards,
@@ -26,6 +26,9 @@ export type AeoClientProps = {
   competitorRollup: { name: string; count: number }[];
   lastScanAt: string | null;
   kpis: {
+    visibilityScore: number;
+    mentionRate30: number;
+    last30Mentioned: number;
     citationRate30: number;
     last30Cited: number;
     last30Total: number;
@@ -34,6 +37,13 @@ export type AeoClientProps = {
     trendDelta: number;
     competitorsNamed: number;
   };
+  recommendations: Array<{
+    severity: "high" | "medium" | "low";
+    title: string;
+    body: string;
+    ctaLabel: string;
+    ctaHref: string;
+  }>;
 };
 
 function fmtPercent(value: number): string {
@@ -46,12 +56,158 @@ function fmtNumber(value: number): string {
   return value.toLocaleString();
 }
 
+// Visibility Score hero card — the page's single most-prominent surface.
+// Renders the composite 0-100 as a big number with a 5-step bar gauge,
+// plus a one-line explanation pulled from the score band.
+function VisibilityScoreCard({
+  score,
+  total,
+}: {
+  score: number;
+  total: number;
+}) {
+  const band: { label: string; tone: "good" | "ok" | "low" | "empty" } =
+    total === 0
+      ? { label: "No data yet — run your first scan", tone: "empty" }
+      : score >= 60
+        ? { label: "Strong — you're regularly named and cited", tone: "good" }
+        : score >= 30
+          ? { label: "Emerging — being named, room to be cited more", tone: "ok" }
+          : { label: "Low visibility — see the actions below", tone: "low" };
+
+  // 10 segments, fills proportional to score/10.
+  const segments = 10;
+  const filled = Math.min(segments, Math.round((score / 100) * segments));
+
+  return (
+    <div className="ls-card p-5 md:p-6 flex flex-col md:flex-row gap-5 md:items-center">
+      <div className="flex items-baseline gap-3 md:min-w-[200px]">
+        <div className="text-[10px] font-mono uppercase tracking-[0.14em] text-muted-foreground">
+          AI Visibility Score
+        </div>
+        <div className="text-5xl font-semibold tabular-nums tracking-tight text-foreground leading-none">
+          {total === 0 ? "—" : score}
+          {total > 0 ? (
+            <span className="text-xl text-muted-foreground"> / 100</span>
+          ) : null}
+        </div>
+      </div>
+      <div className="flex-1 space-y-2.5">
+        {/* Segmented bar */}
+        <div className="flex items-center gap-1">
+          {Array.from({ length: segments }).map((_, i) => (
+            <div
+              key={i}
+              className={
+                "flex-1 h-1.5 rounded-sm " +
+                (i < filled ? "bg-primary" : "bg-muted")
+              }
+            />
+          ))}
+        </div>
+        <p className="text-[13px] text-muted-foreground">
+          {band.label}
+          {total > 0 ? (
+            <span className="text-muted-foreground/70">
+              {" "}
+              · Based on {fmtNumber(total)} AI responses (last 30 days)
+            </span>
+          ) : null}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// Compact 3-up KPI row that complements the score card. Mention rate +
+// citation rate + competitors named — the three numbers that actually
+// matter once you've read the score.
+function MicroStat({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint: string;
+}) {
+  return (
+    <div className="ls-card p-4">
+      <div className="text-[10px] font-mono uppercase tracking-[0.12em] text-muted-foreground">
+        {label}
+      </div>
+      <div className="text-2xl font-semibold tabular-nums tracking-tight text-foreground mt-1.5 leading-none">
+        {value}
+      </div>
+      <p className="text-[11px] text-muted-foreground mt-2">{hint}</p>
+    </div>
+  );
+}
+
+function NextActions({
+  recs,
+}: {
+  recs: AeoClientProps["recommendations"];
+}) {
+  if (recs.length === 0) return null;
+  return (
+    <SectionCard
+      label="What to do next"
+      description="Actions derived from the AI responses below. Each links to where you can act."
+    >
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        {recs.map((rec, i) => {
+          const sevTone =
+            rec.severity === "high"
+              ? "bg-primary"
+              : rec.severity === "medium"
+                ? "bg-primary/60"
+                : "bg-muted-foreground/40";
+          const sevLabel =
+            rec.severity === "high"
+              ? "High"
+              : rec.severity === "medium"
+                ? "Medium"
+                : "Low";
+          return (
+            <div
+              key={i}
+              className="ls-card p-4 flex flex-col gap-3"
+            >
+              <div className="flex items-center gap-2">
+                <span className={`inline-block w-1.5 h-1.5 rounded-full ${sevTone}`} />
+                <span className="text-[10px] font-mono uppercase tracking-[0.12em] text-muted-foreground">
+                  {sevLabel} priority
+                </span>
+              </div>
+              <h3 className="text-[14px] font-semibold text-foreground leading-snug">
+                {rec.title}
+              </h3>
+              <p className="text-[12.5px] text-muted-foreground leading-relaxed line-clamp-4">
+                {rec.body}
+              </p>
+              <a
+                href={rec.ctaHref}
+                className="inline-flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline mt-auto"
+              >
+                {rec.ctaLabel}
+                <ArrowRight className="w-3 h-3" />
+              </a>
+            </div>
+          );
+        })}
+      </div>
+    </SectionCard>
+  );
+}
+
 export function AeoClient({
   engineCards,
   responses,
   competitorRollup,
   lastScanAt,
   kpis,
+  recommendations,
 }: AeoClientProps) {
   return (
     <div className="space-y-6">
@@ -74,56 +230,57 @@ export function AeoClient({
         actions={<AeoScanButton />}
       />
 
-      {/* KPI strip */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <StatCard
+      {/* Visibility Score hero */}
+      <VisibilityScoreCard
+        score={kpis.visibilityScore}
+        total={kpis.last30Total}
+      />
+
+      {/* 3-up micro KPIs underneath */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <MicroStat
+          label="Mention rate (30d)"
+          value={fmtPercent(kpis.mentionRate30)}
+          hint={
+            kpis.last30Total > 0
+              ? `${kpis.last30Mentioned} of ${kpis.last30Total} AI responses named you`
+              : "No AI responses yet"
+          }
+        />
+        <MicroStat
           label="Citation rate (30d)"
           value={fmtPercent(kpis.citationRate30)}
           hint={
             kpis.last30Total > 0
-              ? `${kpis.last30Cited} of ${kpis.last30Total} queries cited you`
-              : "No queries in window"
+              ? `${kpis.last30Cited} of ${kpis.last30Total} responses linked your URL`
+              : "Citation rate measures linked URLs only"
           }
         />
-        <StatCard
-          label="Citations (30d)"
-          value={fmtNumber(kpis.last30Cited)}
-          hint={`${fmtNumber(kpis.last30Total)} total queries`}
-        />
-        <StatCard
-          label="Trend vs prior 30d"
-          value={
-            kpis.prior30Total === 0
-              ? "—"
-              : `${kpis.trendDelta >= 0 ? "+" : ""}${(kpis.trendDelta * 100).toFixed(0)}pp`
-          }
-          hint={
-            kpis.prior30Total === 0
-              ? "Need 60d of history"
-              : `Prior period: ${fmtPercent(kpis.priorRate)}`
-          }
-        />
-        <StatCard
-          label="Competitors named"
+        <MicroStat
+          label="Competitors named (30d)"
           value={fmtNumber(kpis.competitorsNamed)}
-          hint="Unique buildings surfaced when you weren't"
+          hint="Unique buildings the AI named instead of you"
         />
       </div>
 
-      {/* Per-engine cards */}
+      {/* Per-engine cards — now show BOTH mention + citation per engine */}
       <AeoEngineCards rows={engineCards} />
 
-      {/* All Responses table */}
-      <AeoResponsesTable rows={responses} />
+      {/* What to do next — derived recommendations */}
+      <NextActions recs={recommendations} />
 
-      {/* Competitors rollup */}
+      {/* Competitors rollup — hoisted above the table since it's the
+          single most actionable data on the page. Each row links to a
+          counter-page draft pre-filled with the competitor's name. */}
       <SectionCard
         label="Competitors cited"
-        description="Buildings surfaced when your properties weren't (last 30 days)."
+        description="Buildings the AI surfaced when your properties weren't (last 30 days). Click a row to draft a counter-page that names both."
       >
         {competitorRollup.length === 0 ? (
-          <div className="text-[13px] text-muted-foreground py-2">
-            No competitor names extracted yet.
+          <div className="text-[13px] text-muted-foreground py-2 inline-flex items-center gap-2">
+            <Sparkles className="w-3 h-3" />
+            No competitor names extracted yet. The scanner will populate this
+            list as AI engines start mentioning rivals.
           </div>
         ) : (
           <ul className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-2">
@@ -140,7 +297,7 @@ export function AeoClient({
                     {count}×
                   </span>
                   <a
-                    href={`/portal/seo/agent?counter=${encodeURIComponent(name)}`}
+                    href={`/portal/content/new?format=BLOG_POST&target=${encodeURIComponent(name)}`}
                     className="text-[11px] font-medium text-primary hover:underline"
                     title={`Draft a counter-page targeting ${name}`}
                   >
@@ -152,6 +309,12 @@ export function AeoClient({
           </ul>
         )}
       </SectionCard>
+
+      {/* All Responses table — moves to the bottom now that the score +
+          mentions + competitors + recommendations carry the headline. */}
+      <div id="all-responses">
+        <AeoResponsesTable rows={responses} />
+      </div>
     </div>
   );
 }

@@ -1,22 +1,33 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-label="Claude by Anthropic">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Claude by Anthropic">
   <title>Claude</title>
-  <!-- Anthropic's canonical asterisk-burst mark in their signature coral.
-       Four longer cardinal petals (north/south/east/west) crossed by four
-       shorter diagonal petals. Each petal is a rounded capsule pointing
-       outward from the centre — the geometry Anthropic ships on
-       anthropic.com and claude.ai. -->
+  <!-- Anthropic's canonical hand-drawn sunburst — irregular coral rays
+       radiating from a small centre, each shaped like a tapered organic
+       petal (wider in the middle, pointed at both ends). 11 rays at
+       slightly randomised angles + lengths to preserve the hand-painted
+       character; no symmetry. Reconstructed May 2026 from the brand
+       reference. -->
   <g fill="#D97757">
-    <!-- Cardinal petals -->
-    <rect x="120" y="20" width="16" height="92" rx="8"/>
-    <rect x="120" y="144" width="16" height="92" rx="8"/>
-    <rect x="20" y="120" width="92" height="16" rx="8"/>
-    <rect x="144" y="120" width="92" height="16" rx="8"/>
-    <!-- Diagonal petals (rotated 45° around centre) -->
-    <g transform="rotate(45 128 128)">
-      <rect x="120" y="50" width="16" height="58" rx="8"/>
-      <rect x="120" y="148" width="16" height="58" rx="8"/>
-      <rect x="50" y="120" width="58" height="16" rx="8"/>
-      <rect x="148" y="120" width="58" height="16" rx="8"/>
-    </g>
+    <!-- Top (vertical, longest) -->
+    <path d="M 256 24 C 246 60 244 110 252 192 C 256 220 260 220 264 192 C 272 110 270 60 256 24 Z"/>
+    <!-- Upper-right diagonal -->
+    <path d="M 408 70 C 372 96 332 138 286 216 C 274 240 276 244 296 234 C 364 200 400 162 432 102 C 436 90 422 78 408 70 Z"/>
+    <!-- Right (horizontal, long) -->
+    <path d="M 488 240 C 446 246 388 250 296 256 C 270 258 270 264 296 268 C 388 274 446 278 488 272 C 496 268 496 252 488 240 Z"/>
+    <!-- Lower-right diagonal -->
+    <path d="M 430 410 C 396 376 354 336 280 290 C 256 278 254 280 268 304 C 312 376 348 408 408 432 C 420 432 432 422 430 410 Z"/>
+    <!-- Bottom-right curve (shorter) -->
+    <path d="M 318 488 C 310 452 304 412 290 348 C 286 326 282 326 280 348 C 274 412 280 452 296 488 C 304 496 316 496 318 488 Z"/>
+    <!-- Bottom (short, slightly off-axis) -->
+    <path d="M 240 488 C 232 456 226 416 220 360 C 218 340 214 340 212 360 C 208 416 212 456 224 488 C 232 496 236 496 240 488 Z"/>
+    <!-- Lower-left diagonal -->
+    <path d="M 84 432 C 116 398 152 360 214 296 C 232 278 230 274 208 286 C 142 322 100 358 70 416 C 68 426 76 434 84 432 Z"/>
+    <!-- Left (horizontal, long) -->
+    <path d="M 24 264 C 60 258 110 254 200 250 C 222 248 222 244 200 242 C 110 238 60 234 24 240 C 16 244 16 260 24 264 Z"/>
+    <!-- Upper-left diagonal -->
+    <path d="M 108 76 C 138 108 174 148 226 212 C 240 230 244 228 234 206 C 200 142 168 106 116 70 C 104 66 96 70 108 76 Z"/>
+    <!-- Short ray near top-left -->
+    <path d="M 180 28 C 184 60 190 96 204 152 C 208 166 212 164 214 152 C 218 96 216 60 200 32 C 196 24 184 24 180 28 Z"/>
+    <!-- Tiny stub ray near bottom-left -->
+    <path d="M 358 472 C 348 446 340 420 320 376 C 316 366 312 368 314 380 C 322 420 332 446 348 476 C 354 482 360 478 358 472 Z"/>
   </g>
 </svg>

@@ -57,14 +57,42 @@ export default async function AeoPage() {
     (c) => c.queryRunAt < thirtyDaysAgo && c.queryRunAt >= sixtyDaysAgo,
   );
 
+  // Mention = brand was named anywhere in the answer (mentioned column,
+  // backfilled from CITED + COMPETITOR_CITED in the migration).
+  // Citation = engine returned a URL we own.
+  const last30Mentioned = last30.filter((c) => c.mentioned).length;
   const last30Cited = last30.filter((c) => c.status === "CITED").length;
   const last30Total = last30.length;
-  const prior30Cited = prior30.filter((c) => c.status === "CITED").length;
+  const prior30Mentioned = prior30.filter((c) => c.mentioned).length;
   const prior30Total = prior30.length;
 
+  const mentionRate30 = last30Total > 0 ? last30Mentioned / last30Total : 0;
   const citationRate30 = last30Total > 0 ? last30Cited / last30Total : 0;
-  const priorRate = prior30Total > 0 ? prior30Cited / prior30Total : 0;
-  const trendDelta = citationRate30 - priorRate;
+  const priorMentionRate =
+    prior30Total > 0 ? prior30Mentioned / prior30Total : 0;
+  const trendDelta = mentionRate30 - priorMentionRate;
+
+  // Composite Visibility Score (0-100). Weighted blend of mention (50%) +
+  // citation (40%) + position bonus (10%). Position bonus rewards being
+  // mentioned in the first half of the answer (position 1-3). All weights
+  // are first-pass — tunable from one place if the framing shifts.
+  const citedRowsWithPos = last30.filter(
+    (c) => c.status === "CITED" && typeof c.position === "number",
+  );
+  const positionBonus =
+    citedRowsWithPos.length > 0
+      ? citedRowsWithPos.reduce((acc, c) => {
+          const p = c.position ?? 99;
+          // 1.0 for pos=1, 0.66 for pos=2, 0.33 for pos=3, 0 beyond
+          if (p === 1) return acc + 1;
+          if (p === 2) return acc + 0.66;
+          if (p === 3) return acc + 0.33;
+          return acc;
+        }, 0) / citedRowsWithPos.length
+      : 0;
+  const visibilityScore = Math.round(
+    mentionRate30 * 50 + citationRate30 * 40 + positionBonus * 10,
+  );
 
   // Configured map per engine — server-only because `isConfigured()`
   // reads env vars. We resolve it here and pass a boolean to the client.
@@ -73,16 +101,19 @@ export default async function AeoPage() {
     engineConfigured.set(e.engine as AeoEngine, e.isConfigured());
   }
 
-  // Per-engine summaries + 7d sparkline.
+  // Per-engine summaries with BOTH mention + citation rates + 7d sparkline.
+  // Sparkline tracks mention rate (the more sensitive signal) rather than
+  // citation rate, which is binary-flat for most orgs early on.
   const engineCards: EngineCardData[] = ENGINES.map((engine) => {
     const forEngine = last30.filter((c) => c.engine === engine);
-    const cited = forEngine.filter((c) => c.status === "CITED");
+    const mentioned = forEngine.filter((c) => c.mentioned).length;
+    const cited = forEngine.filter((c) => c.status === "CITED").length;
     const total = forEngine.length;
-    const rate = total > 0 ? cited.length / total : 0;
+    const mentionRate = total > 0 ? mentioned / total : 0;
+    const citationRate = total > 0 ? cited / total : 0;
     const lastScan = forEngine[0]?.queryRunAt ?? null;
     const configured = engineConfigured.get(engine) ?? false;
 
-    // Sparkline: citation rate per day for the last 7 days, oldest → newest.
     const sparkline7d: number[] = [];
     for (let i = 6; i >= 0; i--) {
       const dayStart = new Date(now - i * DAY_MS);
@@ -94,15 +125,17 @@ export default async function AeoPage() {
           c.queryRunAt >= dayStart &&
           c.queryRunAt < dayEnd,
       );
-      const dayCited = dayRows.filter((c) => c.status === "CITED").length;
-      sparkline7d.push(dayRows.length > 0 ? dayCited / dayRows.length : 0);
+      const dayMentioned = dayRows.filter((c) => c.mentioned).length;
+      sparkline7d.push(dayRows.length > 0 ? dayMentioned / dayRows.length : 0);
     }
 
     return {
       engine,
       configured,
-      rate,
-      cited: cited.length,
+      mentionRate,
+      mentioned,
+      citationRate,
+      cited,
       total,
       lastScan,
       sparkline7d,
@@ -110,8 +143,7 @@ export default async function AeoPage() {
   });
 
   // Competitors-cited rollup. Aggregate counts across rows where we
-  // weren't cited (NOT_CITED + COMPETITOR_CITED both reveal who the
-  // engine surfaced instead of us).
+  // weren't cited — these are the buildings the AI surfaced instead.
   const competitorCounts = new Map<string, number>();
   for (const c of last30) {
     if (c.status === "CITED") continue;
@@ -125,6 +157,72 @@ export default async function AeoPage() {
     .map(([name, count]) => ({ name, count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
+
+  // ---------------------------------------------------------------------
+  // "What to do next" — derived recommendations.
+  //
+  // Three actionable insights based on the actual data. Rule of thumb:
+  // every insight must (a) describe what the data shows, (b) name the
+  // root cause, and (c) link to the surface where the operator can act.
+  // Generic "improve your SEO" copy is forbidden — say what to change.
+  // ---------------------------------------------------------------------
+  type Recommendation = {
+    severity: "high" | "medium" | "low";
+    title: string;
+    body: string;
+    ctaLabel: string;
+    ctaHref: string;
+  };
+  const recommendations: Recommendation[] = [];
+
+  // Gap 1: Mentioned but not cited → schema / FAQ / canonical URL gaps.
+  if (mentionRate30 >= 0.3 && citationRate30 < 0.1 && last30Total >= 4) {
+    recommendations.push({
+      severity: "high",
+      title: "Engines name you, but they don't link.",
+      body: `${Math.round(mentionRate30 * 100)}% of AI answers mention your brand, only ${Math.round(citationRate30 * 100)}% cite a URL. Adding FAQPage schema + canonical tags to your top pages is the highest-ROI fix.`,
+      ctaLabel: "Draft a FAQ block",
+      ctaHref: "/portal/content/new?format=FAQ_BLOCK",
+    });
+  }
+
+  // Gap 2: Top competitor named 3+ times → counter-page opportunity.
+  if (competitorRollup.length > 0 && competitorRollup[0].count >= 3) {
+    const top = competitorRollup[0];
+    recommendations.push({
+      severity: "high",
+      title: `"${top.name}" beats you in ${top.count} AI answers.`,
+      body: `When prospects ask AI assistants for apartments in your market, "${top.name}" shows up ${top.count}× in the last 30 days while you don't. Draft a comparison page that names both — AI engines reliably surface side-by-side pages.`,
+      ctaLabel: "Draft a counter page",
+      ctaHref: `/portal/content/new?format=BLOG_POST&target=${encodeURIComponent(`${top.name} vs my property`)}`,
+    });
+  }
+
+  // Gap 3: Specific engine is shut out → diagnose missing API or low ranking.
+  const sparseEngines = engineCards.filter(
+    (c) => c.configured && c.total > 0 && c.mentionRate === 0,
+  );
+  if (sparseEngines.length > 0) {
+    const names = sparseEngines.map((e) => e.engine).join(", ");
+    recommendations.push({
+      severity: "medium",
+      title: `Invisible on ${sparseEngines.length === 1 ? sparseEngines[0].engine : names}.`,
+      body: `${names} ${sparseEngines.length === 1 ? "queried your prompts" : "queried your prompts"} but never mentioned your brand. ${sparseEngines[0].engine === "PERPLEXITY" ? "Perplexity weighs citations heavily — add canonical URLs and outbound links to citable sources." : "Try adding longer, more structured content (Q&A blocks especially)."}`,
+      ctaLabel: "View live responses",
+      ctaHref: "#all-responses",
+    });
+  }
+
+  // Fallback: no data yet → tell them to scan.
+  if (recommendations.length === 0 && last30Total === 0) {
+    recommendations.push({
+      severity: "low",
+      title: "No AI scans yet.",
+      body: "Run your first scan to see how ChatGPT, Perplexity, Claude, and Gemini answer questions about your market. Scans run automatically every Monday.",
+      ctaLabel: "Scan now",
+      ctaHref: "#scan",
+    });
+  }
 
   // Build the response rows for the All Responses table. Truncate
   // server-side to ~300 chars to keep the client payload tight — the
@@ -158,14 +256,18 @@ export default async function AeoPage() {
       competitorRollup={competitorRollup}
       lastScanAt={lastScanAt}
       kpis={{
+        visibilityScore,
+        mentionRate30,
+        last30Mentioned,
         citationRate30,
         last30Cited,
         last30Total,
-        priorRate,
+        priorRate: priorMentionRate,
         prior30Total,
         trendDelta,
         competitorsNamed: competitorCounts.size,
       }}
+      recommendations={recommendations}
     />
   );
 }

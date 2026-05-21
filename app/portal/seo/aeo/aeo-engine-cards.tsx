@@ -1,5 +1,6 @@
 import * as React from "react";
 import { formatDistanceToNow } from "date-fns";
+import { Check, Link2 } from "lucide-react";
 import type { AeoEngine } from "@prisma/client";
 import {
   ChatGPTMark,
@@ -8,24 +9,36 @@ import {
   GeminiMark,
 } from "@/components/platform/artifacts/brand-logos";
 
-// Per-engine summary strip rendered above the All Responses table.
-// 4 cards, one per AI assistant. Each card shows engine logo + name on
-// top, the headline citation % below in tabular nums, a hand-rolled 7-day
-// citation-rate sparkline, total queries hint, and last-scan relative
-// time. Engines without an API key configured render an opacity-60 card
-// with a "Not configured" pill instead of the metric.
+// ---------------------------------------------------------------------------
+// Per-engine summary cards.
 //
-// All accent strokes use LeaseStack blue (text-primary / currentColor)
-// — no per-engine rainbow.
+// Each card surfaces TWO numbers, not one:
+//   • Mention rate  — share of queries where the engine *named* the brand
+//                     anywhere in its answer (your brand is in the AI's
+//                     awareness even if it doesn't link out).
+//   • Citation rate — share of queries where the engine *linked* the
+//                     brand's URL (the harder, AEO-money signal).
+//
+// The previous single-headline-percent design surfaced only citation
+// rate, which routinely reads 0% even when the brand is being
+// mentioned 80% of the time. That made the page feel "broken" when it
+// was actually showing real, actionable signal — just badly framed.
+//
+// All accent strokes use LeaseStack blue. No per-engine rainbow.
+// ---------------------------------------------------------------------------
 
 export type EngineCardData = {
   engine: AeoEngine;
   configured: boolean;
-  rate: number;
+  /** Mention rate over the last 30d (mentioned / total queries). */
+  mentionRate: number;
+  mentioned: number;
+  /** Citation rate over the last 30d (citedUrl present / total queries). */
+  citationRate: number;
   cited: number;
   total: number;
   lastScan: Date | null;
-  /** Citation rate per day for the last 7 days, oldest → newest. */
+  /** Mention rate per day for the last 7 days, oldest → newest. */
   sparkline7d: number[];
 };
 
@@ -114,11 +127,45 @@ function Sparkline({ data }: { data: number[] }) {
   );
 }
 
+// Compact dual-metric row — "Mentioned 67%" / "Cited 0%" stacked on
+// the right of the card, with the metric label in caps-mono and the
+// value in tabular nums. This is the visual switch from "single
+// misleading 0%" to "honest two-number split".
+function MetricLine({
+  icon: Icon,
+  label,
+  value,
+  count,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: number;
+  count: { hits: number; total: number };
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="inline-flex items-center gap-1 text-[10px] font-mono uppercase tracking-[0.10em] text-muted-foreground">
+        <Icon className="w-2.5 h-2.5" />
+        {label}
+      </span>
+      <div className="flex items-center gap-1.5">
+        <span className="text-[11px] tabular-nums text-muted-foreground">
+          {count.hits}/{count.total}
+        </span>
+        <span className="text-[13px] tabular-nums font-semibold text-foreground">
+          {fmtPercent(value)}
+        </span>
+      </div>
+    </div>
+  );
+}
+
 export function AeoEngineCards({ rows }: { rows: EngineCardData[] }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
       {rows.map((row) => {
         const dim = !row.configured;
+        const noData = row.configured && row.total === 0;
         return (
           <div
             key={row.engine}
@@ -126,6 +173,7 @@ export function AeoEngineCards({ rows }: { rows: EngineCardData[] }) {
               "ls-card p-4 flex flex-col gap-3 " + (dim ? "opacity-60" : "")
             }
           >
+            {/* Header: logo + name + (sparkline | Not configured pill) */}
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 <EngineLogo engine={row.engine} size={20} />
@@ -137,31 +185,46 @@ export function AeoEngineCards({ rows }: { rows: EngineCardData[] }) {
                 <span className="inline-flex items-center rounded-full border border-border bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
                   Not configured
                 </span>
-              ) : null}
-            </div>
-            <div className="flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <div className="text-2xl font-semibold tabular-nums tracking-tight text-foreground leading-none">
-                  {row.configured ? fmtPercent(row.rate) : "—"}
+              ) : (
+                <div className="w-[64px] shrink-0">
+                  <Sparkline data={row.sparkline7d} />
                 </div>
-                <div className="text-[11px] text-muted-foreground mt-1.5">
-                  {!row.configured
-                    ? "API key missing"
-                    : row.total === 0
-                      ? "No queries yet"
-                      : `${row.cited} of ${row.total} queries`}
-                </div>
-              </div>
-              <div className="w-[100px] shrink-0">
-                <Sparkline data={row.sparkline7d} />
-              </div>
+              )}
             </div>
-            <div className="text-[10px] text-muted-foreground tabular-nums">
+
+            {/* Dual-metric block */}
+            {dim ? (
+              <p className="text-[11px] text-muted-foreground">
+                API key missing on server.
+              </p>
+            ) : noData ? (
+              <p className="text-[11px] text-muted-foreground">
+                No queries yet. The scanner runs Mondays — or hit "Scan now"
+                above to start one.
+              </p>
+            ) : (
+              <div className="space-y-1.5">
+                <MetricLine
+                  icon={Check}
+                  label="Mentioned"
+                  value={row.mentionRate}
+                  count={{ hits: row.mentioned, total: row.total }}
+                />
+                <MetricLine
+                  icon={Link2}
+                  label="Cited"
+                  value={row.citationRate}
+                  count={{ hits: row.cited, total: row.total }}
+                />
+              </div>
+            )}
+
+            <div className="text-[10px] text-muted-foreground tabular-nums mt-auto">
               {row.lastScan
                 ? `Last scan ${formatDistanceToNow(row.lastScan, {
                     addSuffix: true,
                   })}`
-                : "—"}
+                : "Never scanned"}
             </div>
           </div>
         );
