@@ -25,6 +25,12 @@ import {
 import { PillCell, NumberCell, EmptyCell } from "@/components/portal/ui/cells";
 import { PropertiesSearch } from "@/components/portal/properties/properties-search";
 import { PropertyAvatar } from "@/components/portal/properties/property-avatar";
+import {
+  ASSET_CLASS_LABEL,
+  SIZE_BAND_LABEL,
+  type AssetClass,
+  type SizeBand,
+} from "@/lib/properties/attrs";
 
 export const metadata: Metadata = { title: "Properties" };
 export const dynamic = "force-dynamic";
@@ -72,6 +78,12 @@ export default async function PropertiesList({
     properties?: string;
     q?: string;
     page?: string;
+    // Norman feedback (issue #54): custom filter chips so operators can
+    // slice the portfolio by Asset Class, Size band, or Profile tag.
+    // All three are URL-bound so the chips form a shareable view.
+    assetClass?: string;
+    size?: string;
+    tag?: string;
   }>;
 }) {
   const scope = await requireScope();
@@ -83,6 +95,10 @@ export default async function PropertiesList({
     ? (rawView as ViewKey)
     : "all";
   const searchQuery = (sp.q ?? "").trim();
+  // Active attribute filters — null means "no filter applied".
+  const assetClassFilter = sp.assetClass?.trim() || null;
+  const sizeFilter = sp.size?.trim() || null;
+  const tagFilter = sp.tag?.trim() || null;
   const PAGE_SIZE = 50;
   const page = Math.max(1, Number.parseInt(sp.page ?? "1", 10) || 1);
   const skip = (page - 1) * PAGE_SIZE;
@@ -155,12 +171,60 @@ export default async function PropertiesList({
       }
     : {};
 
+  // Attribute filter fragments. Asset class + size band live as derived
+  // values (computed from propertyType/subtype + totalUnits), so the SQL
+  // form maps the filter token back to the underlying columns. Profile
+  // tags use Postgres' has-any on the text[] column with the GIN index
+  // added in the 20260520_property_attributes migration.
+  const attrWhereFragments: Prisma.PropertyWhereInput[] = [];
+  if (assetClassFilter) {
+    // Reverse-map from canonical asset class → enum value(s) on the
+    // existing residential/commercial subtype columns.
+    const SUB_FOR_CLASS: Record<string, Prisma.PropertyWhereInput> = {
+      STUDENT_HOUSING: { residentialSubtype: "STUDENT_HOUSING" },
+      MULTIFAMILY: { residentialSubtype: "MULTIFAMILY" },
+      SENIOR_LIVING: { residentialSubtype: "SENIOR_LIVING" },
+      SINGLE_FAMILY: { residentialSubtype: "SINGLE_FAMILY_RENTAL" },
+      CO_LIVING: { residentialSubtype: "CO_LIVING" },
+      SHORT_TERM: { residentialSubtype: "SHORT_TERM_RENTAL" },
+      OFFICE: { commercialSubtype: "OFFICE" },
+      RETAIL: { commercialSubtype: "RETAIL" },
+      INDUSTRIAL: { commercialSubtype: "INDUSTRIAL" },
+      MIXED_USE: { commercialSubtype: "MIXED_USE" },
+      FLEX_SPACE: { commercialSubtype: "FLEX_SPACE" },
+      MEDICAL_OFFICE: { commercialSubtype: "MEDICAL_OFFICE" },
+    };
+    const frag = SUB_FOR_CLASS[assetClassFilter];
+    if (frag) attrWhereFragments.push(frag);
+  }
+  if (sizeFilter) {
+    // Numeric band → totalUnits range. Inclusive bounds match the
+    // labels Norman gave in the bug report.
+    const SIZE_RANGES: Record<string, { gte?: number; lte?: number }> = {
+      XS: { lte: 25 },
+      S: { gte: 26, lte: 50 },
+      M: { gte: 51, lte: 100 },
+      L: { gte: 101, lte: 250 },
+      XL: { gte: 251, lte: 1000 },
+    };
+    const range = SIZE_RANGES[sizeFilter];
+    if (range) attrWhereFragments.push({ totalUnits: range });
+  }
+  if (tagFilter) {
+    attrWhereFragments.push({ profileTags: { has: tagFilter } });
+  }
+
   const baseWhere: Prisma.PropertyWhereInput = {
     ...withMarketableLifecycle(tenantWhere(scope)),
     ...visibilityWhere,
   };
   const filteredWhere: Prisma.PropertyWhereInput = {
-    AND: [baseWhere, viewWhereFragment(view), searchWhereFragment],
+    AND: [
+      baseWhere,
+      viewWhereFragment(view),
+      searchWhereFragment,
+      ...attrWhereFragments,
+    ],
   };
 
   // Parallel queries: per-view counts (toolbar), portfolio totals,
@@ -320,6 +384,17 @@ export default async function PropertiesList({
             <EntityToolbar views={views} />
             <PropertiesSearch initialValue={searchQuery} />
           </div>
+          {/* Active filter chips (issue #54). Renders only when at least
+              one attribute filter is in the URL — clicking the × clears
+              that single dimension while preserving the others, view, and
+              search. */}
+          {(assetClassFilter || sizeFilter || tagFilter) ? (
+            <ActiveFilterChips
+              assetClass={assetClassFilter}
+              size={sizeFilter}
+              tag={tagFilter}
+            />
+          ) : null}
           {properties.length === 0 ? (
             <EmptyState
               icon={<Building2 className="h-4 w-4" />}
@@ -458,6 +533,72 @@ export default async function PropertiesList({
           />
         </>
       )}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// ActiveFilterChips — pill row that shows currently-applied attribute
+// filters from the URL and lets the operator clear them one at a time.
+// Server component (Link-only). The whole props.assetClass / size / tag
+// path renders as plain anchors with a `?` query string that strips
+// just that one parameter, so the navigation stays accessible + JS-free.
+// Issue #54.
+// ---------------------------------------------------------------------------
+function ActiveFilterChips({
+  assetClass,
+  size,
+  tag,
+}: {
+  assetClass: string | null;
+  size: string | null;
+  tag: string | null;
+}) {
+  // Strip a single key from a fresh URLSearchParams; keep the others
+  // intact so closing one chip never collapses the rest.
+  const buildHref = (drop: "assetClass" | "size" | "tag"): string => {
+    const params = new URLSearchParams();
+    if (assetClass && drop !== "assetClass") params.set("assetClass", assetClass);
+    if (size && drop !== "size") params.set("size", size);
+    if (tag && drop !== "tag") params.set("tag", tag);
+    const qs = params.toString();
+    return qs ? `/portal/properties?${qs}` : "/portal/properties";
+  };
+
+  const chip = (
+    key: "assetClass" | "size" | "tag",
+    label: string,
+  ) => (
+    <Link
+      key={key}
+      href={buildHref(key)}
+      className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2.5 py-0.5 text-[11px] font-medium text-primary hover:bg-primary/15 transition-colors"
+      title={`Clear ${label}`}
+    >
+      <span>{label}</span>
+      <span aria-hidden="true" className="text-primary/70">×</span>
+    </Link>
+  );
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+        Filters
+      </span>
+      {assetClass
+        ? chip(
+            "assetClass",
+            ASSET_CLASS_LABEL[assetClass as AssetClass] ?? assetClass,
+          )
+        : null}
+      {size ? chip("size", SIZE_BAND_LABEL[size as SizeBand] ?? size) : null}
+      {tag ? chip("tag", `Tag: ${tag}`) : null}
+      <Link
+        href="/portal/properties"
+        className="text-[11px] text-muted-foreground hover:text-foreground ml-1 underline-offset-2 hover:underline"
+      >
+        Clear all
+      </Link>
     </div>
   );
 }

@@ -809,6 +809,17 @@ model Property {
   totalUnits           Int?
   description          String?   @db.Text
 
+  // Operator-editable attributes (Norman feedback, issue #68).
+  // assetCategory is a short, asset-class-specific label
+  // ("dorm-style", "apartment-style", "warehouse", "self-storage", …).
+  // profileTags is a free-form tag array operators use to segment the
+  // portfolio for the filter UI on /portal/properties (issue #54):
+  // "affordable", "near campus", "downtown", "suburban", etc.
+  // Asset class itself is derived from propertyType + subtype, and
+  // size band is derived from totalUnits — see lib/properties/attrs.ts.
+  assetCategory String?
+  profileTags   String[] @default([])
+
   // SEO
   metaTitle       String?
   metaDescription String?
