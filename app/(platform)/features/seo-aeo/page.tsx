@@ -3,7 +3,13 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { SplitHero, SplitSection } from "@/components/platform/split-hero";
 import { Reveal } from "@/components/platform/reveal";
-import { SeoAnswer } from "@/components/platform/artifacts/seo-answer";
+// SeoAnswer (static AI-citation card) replaced by the animated
+// SEOTrendChart below — kept the import path commented as a
+// breadcrumb in case we want to bring the static card back to a
+// secondary section.
+// import { SeoAnswer } from "@/components/platform/artifacts/seo-answer";
+import { SEOTrendChart } from "@/components/platform/artifacts/seo-trend-chart";
+import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
 import {
   ChatGPTMark, PerplexityMark, ClaudeMark, GeminiMark, GoogleMark,
 } from "@/components/platform/artifacts/brand-logos";
@@ -27,7 +33,17 @@ export default function SEOAEOFeaturePage() {
           { label: "See it live", href: "/demo", variant: "secondary" },
         ]}
         caption="Per-location coverage · schema on every page · monthly AI-discovery audit"
-        artifact={<SeoAnswer />}
+        // Norman 2026-05-21: the static SeoAnswer card read flat.
+        // Swapped for the new SEOTrendChart — animated ramp curve,
+        // three floating stat-modal callouts pop in on scroll, soft
+        // brand-blue grid + perspective tilt for the 3D feel. Wrapped
+        // in SoftFramedArtifact for the lavender halo. `bare` because
+        // SEOTrendChart ships its own white surface.
+        artifact={
+          <SoftFramedArtifact tone="lavender" padding="md" pillLabel="LIVE" bare>
+            <SEOTrendChart />
+          </SoftFramedArtifact>
+        }
       />
 
       <SplitSection
