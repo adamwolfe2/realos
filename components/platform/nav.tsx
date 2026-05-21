@@ -43,25 +43,77 @@ export function PlatformNav() {
   const labelColor = "#1E2A3A";
   const navBtnClass = "btn-nav";
 
+  // Norman 2026-05-21: nav should glide into a floating glass-morphism
+  // pill as the user scrolls away from the hero, then expand back to a
+  // full-width edge-aligned bar when they return to the top.
+  //
+  // Implementation:
+  //   - Outer <header> stays sticky + transparent so the inner shell
+  //     can freely change width / radius / background without losing
+  //     its scroll anchoring.
+  //   - Inner shell (`<div data-floating>`) uses CSS transitions on
+  //     max-width, border-radius, background, backdrop-filter,
+  //     box-shadow, margin, and padding so the morph is one smooth
+  //     500ms animation instead of a snap.
+  //   - Threshold-driven (>20px) rather than progress-driven so we
+  //     don't repaint on every scroll frame.
   return (
     <header
       className="sticky top-0 z-40"
       style={{
-        backgroundColor: scrolled
-          ? "rgba(255,255,255,0.85)"
-          : "rgba(255,255,255,1)",
-        backdropFilter: scrolled ? "blur(18px)" : "none",
-        WebkitBackdropFilter: scrolled ? "blur(18px)" : "none",
-        borderBottom: scrolled ? "1px solid #E2E8F0" : "1px solid transparent",
-        transition: "background-color 0.2s ease, border-color 0.2s ease",
+        // Transparent outer so the inner shell defines the chrome.
+        backgroundColor: "transparent",
+        // Tiny top inset that animates in when floating so the pill
+        // doesn't kiss the top edge of the viewport.
+        paddingTop: scrolled ? 10 : 0,
+        transition: "padding-top 500ms cubic-bezier(0.22, 1, 0.36, 1)",
       }}
     >
-      <div className="max-w-[1400px] mx-auto px-4 md:px-8 h-20 flex items-center justify-between gap-4">
+      <div
+        data-floating={scrolled ? "true" : "false"}
+        className="mx-auto h-16 md:h-[68px] flex items-center justify-between gap-4"
+        style={{
+          // Width morph: edge-to-edge at top, floating pill on scroll.
+          // The 1180px cap reads as a comfortable laptop width.
+          maxWidth: scrolled ? "min(1180px, calc(100% - 24px))" : "100%",
+          // Horizontal padding inside the shell — slightly tighter
+          // when floating so the content sits closer to the rounded
+          // edges of the pill.
+          paddingLeft: scrolled ? 20 : 16,
+          paddingRight: scrolled ? 12 : 16,
+          // Glass-morphism chrome — opaque at top, frosted floating.
+          backgroundColor: scrolled
+            ? "rgba(255, 255, 255, 0.72)"
+            : "rgba(255, 255, 255, 1)",
+          backdropFilter: scrolled ? "blur(20px) saturate(180%)" : "none",
+          WebkitBackdropFilter: scrolled
+            ? "blur(20px) saturate(180%)"
+            : "none",
+          // Rounded corners only when floating. At top, the bar reads
+          // as a flush edge with a hairline divider.
+          borderRadius: scrolled ? 18 : 0,
+          // Subtle ring + lifted shadow when floating; hairline bottom
+          // border at top. Both interpolate through the same CSS prop
+          // (boxShadow) so the morph reads as a single animation.
+          boxShadow: scrolled
+            ? "0 0 0 1px rgba(15, 23, 42, 0.06), 0 12px 36px rgba(15, 23, 42, 0.10)"
+            : "inset 0 -1px 0 #E2E8F0",
+          transition:
+            "max-width 500ms cubic-bezier(0.22, 1, 0.36, 1)," +
+            " padding-left 500ms cubic-bezier(0.22, 1, 0.36, 1)," +
+            " padding-right 500ms cubic-bezier(0.22, 1, 0.36, 1)," +
+            " background-color 350ms ease," +
+            " backdrop-filter 350ms ease," +
+            " -webkit-backdrop-filter 350ms ease," +
+            " border-radius 500ms cubic-bezier(0.22, 1, 0.36, 1)," +
+            " box-shadow 500ms cubic-bezier(0.22, 1, 0.36, 1)",
+        }}
+      >
         <Link href="/" className="flex items-center" aria-label="LeaseStack home">
           <img
             src="/logos/leasestack-wordmark.png"
             alt="LeaseStack"
-            className="h-8 md:h-14 w-auto block"
+            className="h-7 md:h-10 w-auto block"
           />
         </Link>
 
