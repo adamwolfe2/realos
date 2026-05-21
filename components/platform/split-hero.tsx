@@ -2,6 +2,7 @@ import React from "react";
 import Link from "next/link";
 import { Reveal } from "./reveal";
 import { PixelSwirl } from "./pixel-swirl";
+import { GlyphSwirl } from "./glyph-swirl";
 
 type CTA = { label: string; href: string; variant?: "primary" | "secondary" };
 
@@ -45,6 +46,12 @@ export function SplitHero({
           See components/platform/pixel-swirl.tsx for the rendering
           model + reduced-motion treatment. */}
       <PixelSwirl />
+      {/* GlyphSwirl (Adam 2026-05-20): scatters the same 3x3 dot-grid
+          glyphs from CapabilitiesRail across the hero in a faint
+          spiral. Echoes the iconography users see later in the page
+          without competing with the artifact or copy. ≤6% brand-blue
+          opacity, static, aria-hidden. */}
+      <GlyphSwirl />
       {/* Norman feedback (2026-05-21 mobile screenshot): the previous
           pt-20 / pb-16 + gap-10 between the text column and the artifact
           left ~80px of empty white between "PILOT. NO COMMITMENT." and
