@@ -40,6 +40,20 @@ export default async function PopupEditorPage({
   // attribute, calls /api/public/popup/config/[slug], and renders.
   const snippet = `<script async src="${getSiteUrl()}/embed/popup.js" data-tenant="${org?.slug ?? ""}"></script>`;
 
+  // Norman bug #93: "the popups should have been shown many times since
+  // going live, so there is probably just a data disconnect." We can't
+  // see the embed config on every external site, but we can detect the
+  // most common cause from server data and surface a self-service
+  // troubleshoot card: status=ACTIVE for >24h with shownCount=0 almost
+  // always means either (a) the embed snippet hasn't been pasted on
+  // the live site, (b) it's pasted with the wrong data-tenant slug,
+  // or (c) targetUrlPatterns excludes the pages where it fires. The
+  // diagnostic only renders for this narrow case.
+  const showTroubleshoot =
+    popup.status === "ACTIVE" &&
+    popup.shownCount === 0 &&
+    Date.now() - popup.updatedAt.getTime() > 24 * 60 * 60 * 1000;
+
   return (
     <div className="space-y-4 ls-page-fade">
       <PageHeader
@@ -54,6 +68,51 @@ export default async function PopupEditorPage({
         title={popup.name}
         description="Edit copy, design, triggers, and capture settings. The preview on the right updates as you type. Don't forget to hit Save."
       />
+
+      {showTroubleshoot ? (
+        <div
+          role="status"
+          className="rounded-xl border border-amber-500/30 bg-amber-50/60 p-4 text-[12.5px] text-foreground space-y-2"
+        >
+          <p className="font-semibold flex items-center gap-2">
+            <span aria-hidden="true">⚠</span>
+            This popup is active but hasn&apos;t recorded any impressions.
+          </p>
+          <p className="text-muted-foreground leading-snug">
+            Most common causes, in order of likelihood:
+          </p>
+          <ol className="list-decimal pl-5 text-muted-foreground space-y-1 leading-snug">
+            <li>
+              The install snippet below isn&apos;t pasted on your live site
+              yet. Add it once in your site&apos;s &lt;head&gt; (or via your CMS).
+            </li>
+            <li>
+              The snippet is pasted with the wrong{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-[11px] text-foreground">
+                data-tenant
+              </code>{" "}
+              attribute. It must match your org slug exactly:{" "}
+              <code className="rounded bg-muted px-1 py-0.5 text-[11px] text-foreground">
+                {org?.slug ?? ""}
+              </code>
+              .
+            </li>
+            <li>
+              Your{" "}
+              <span className="font-semibold text-foreground">
+                target URL patterns
+              </span>{" "}
+              don&apos;t match the page where you expect the popup to fire.
+              Empty pattern list = any URL; otherwise the visited path
+              must contain one of the patterns as a substring.
+            </li>
+            <li>
+              The trigger threshold hasn&apos;t been reached. Time-on-page +
+              scroll-depth triggers can sit silent on bounces.
+            </li>
+          </ol>
+        </div>
+      ) : null}
 
       <PopupEditor
         initial={{

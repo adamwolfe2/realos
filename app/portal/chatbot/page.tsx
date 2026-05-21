@@ -37,7 +37,21 @@ async function resolveAppUrl(): Promise<string> {
 export default async function ChatbotPage() {
   const scope = await requireScope();
 
-  const [org, existingConfig, appUrl, recentConversations] = await Promise.all([
+  // Window cutoffs for the conversation-stats strip (Norman bug #91:
+  // chatbot page should lead with engagement numbers, configuration
+  // below). 1d / 7d / 30d match the other portal surfaces' cadence.
+  const now = Date.now();
+  const since1d = new Date(now - 1 * 24 * 60 * 60 * 1000);
+  const since7d = new Date(now - 7 * 24 * 60 * 60 * 1000);
+  const since30d = new Date(now - 30 * 24 * 60 * 60 * 1000);
+
+  const [
+    org,
+    existingConfig,
+    appUrl,
+    recentConversations,
+    convStats,
+  ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
       select: {
@@ -87,6 +101,32 @@ export default async function ChatbotPage() {
         },
       })
       .catch(() => []),
+    // Conversation stats — three windowed counts + how many of those
+    // conversations captured an intake (email/phone) so the chatbot's
+    // contribution to pipeline reads at a glance. Run in parallel.
+    Promise.all([
+      prisma.chatbotConversation.count({
+        where: { orgId: scope.orgId, lastMessageAt: { gte: since1d } },
+      }),
+      prisma.chatbotConversation.count({
+        where: { orgId: scope.orgId, lastMessageAt: { gte: since7d } },
+      }),
+      prisma.chatbotConversation.count({
+        where: { orgId: scope.orgId, lastMessageAt: { gte: since30d } },
+      }),
+      prisma.chatbotConversation.count({
+        where: {
+          orgId: scope.orgId,
+          lastMessageAt: { gte: since30d },
+          OR: [
+            { capturedEmail: { not: null } },
+            { capturedPhone: { not: null } },
+          ],
+        },
+      }),
+    ])
+      .then(([d1, d7, d30, intakes30d]) => ({ d1, d7, d30, intakes30d }))
+      .catch(() => ({ d1: 0, d7: 0, d30: 0, intakes30d: 0 })),
   ]);
 
   if (!org) return null;
@@ -109,11 +149,18 @@ export default async function ChatbotPage() {
 
   const snippet = `<script src="${appUrl}/embed/chatbot.js" data-slug="${org.slug}" defer></script>`;
 
+  // Norman bug #91: lead with the insight (conversation volume +
+  // recent transcripts) so operators land on a useful dashboard, then
+  // drop into configuration. Configuration is still the bulk of the
+  // page — but it's no longer the first thing the operator sees.
+  const stats = convStats;
+  const hasAnyConversations = stats.d30 > 0 || recentConversations.length > 0;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Chatbot"
-        description="Configure the AI leasing assistant that embeds on your marketing site. Changes go live the next time a visitor loads your page."
+        description="See how the AI leasing assistant is performing on your site, then tune persona, knowledge, and capture rules below."
       />
 
       {!org.moduleChatbot ? (
@@ -138,16 +185,28 @@ export default async function ChatbotPage() {
         </div>
       ) : null}
 
-      <MasterToggle
-        enabled={initial.chatbotEnabled}
-        moduleActive={org.moduleChatbot}
-      />
-
-      <ChatbotConfigForm
-        initial={initial}
-        orgPrimaryColor={org.primaryColor}
-        moduleActive={org.moduleChatbot}
-      />
+      {/* ── INSIGHT (top of page per #91) ──────────────────────────── */}
+      {hasAnyConversations ? (
+        <SectionCard
+          label="Performance"
+          description="Conversation volume and intake capture over the last day, week, and month."
+        >
+          <dl className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <ChatbotStatTile label="Conversations · 1d" value={stats.d1} />
+            <ChatbotStatTile label="Conversations · 7d" value={stats.d7} />
+            <ChatbotStatTile label="Conversations · 30d" value={stats.d30} />
+            <ChatbotStatTile
+              label="Intakes captured · 30d"
+              value={stats.intakes30d}
+              hint={
+                stats.d30 > 0
+                  ? `${Math.round((stats.intakes30d / stats.d30) * 100)}% capture rate`
+                  : undefined
+              }
+            />
+          </dl>
+        </SectionCard>
+      ) : null}
 
       {recentConversations.length > 0 ? (
         <SectionCard
@@ -200,7 +259,48 @@ export default async function ChatbotPage() {
         </SectionCard>
       ) : null}
 
+      {/* ── CONFIGURATION (below insight per #91) ──────────────────── */}
+      <MasterToggle
+        enabled={initial.chatbotEnabled}
+        moduleActive={org.moduleChatbot}
+      />
+
+      <ChatbotConfigForm
+        initial={initial}
+        orgPrimaryColor={org.primaryColor}
+        moduleActive={org.moduleChatbot}
+      />
+
       <InstallSnippet snippet={snippet} />
+    </div>
+  );
+}
+
+// Small stat tile used only on this page. Mirrors the dashboard
+// KpiTile shape without pulling the heavier component in — keeps the
+// chatbot config bundle slim.
+function ChatbotStatTile({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number;
+  hint?: string;
+}) {
+  return (
+    <div className="rounded-lg border border-border bg-muted/20 p-3">
+      <dt className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground truncate">
+        {label}
+      </dt>
+      <dd className="mt-1 text-2xl font-semibold text-foreground tabular-nums leading-none">
+        {value.toLocaleString()}
+      </dd>
+      {hint ? (
+        <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }
