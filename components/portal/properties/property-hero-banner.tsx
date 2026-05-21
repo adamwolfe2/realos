@@ -200,26 +200,59 @@ export function PropertyHeroBanner({
           than sitting inside it. */}
       <div className={`relative grid items-end gap-5 ${gridCols}`}>
         {/* Image column — building floats above a soft ground shadow.
-            overflow: visible everywhere up the chain so a BG-removed
-            image can extend past the card edges. The `group` class
-            ties the hover state to this whole region so the Replace /
-            X controls fade in only when the mouse is here. */}
-        <div className="relative group" style={{ overflow: "visible" }}>
+            Norman 2026-05-21 fourth pass: "it's not 3D". A flat
+            rectangular photo on a flat card never will be without
+            BG-removal OR a real perspective transform. We don't
+            control the source image so we use a CSS perspective
+            wrapper + tilt transform + parallax shadow stack. The
+            photo now sits on an angled plane that rotates back
+            ~8deg on X and ~5deg on Y; on group-hover it eases back
+            to ~3deg on X and 0 on Y so the building "rises toward
+            you" as the cursor approaches. This gives real
+            three-dimensional volume with zero dependencies. */}
+        <div
+          className="relative group"
+          style={{
+            overflow: "visible",
+            perspective: "1200px",
+            perspectiveOrigin: "50% 30%",
+          }}
+        >
           {currentImage ? (
             <div
               className={`relative ${imageLift}`}
-              style={{ overflow: "visible" }}
+              style={{
+                overflow: "visible",
+                transformStyle: "preserve-3d",
+                transform:
+                  "rotateX(8deg) rotateY(-5deg) rotateZ(-0.5deg) translateZ(0)",
+                transformOrigin: "50% 100%",
+                transition:
+                  "transform 500ms cubic-bezier(0.22, 1, 0.36, 1)",
+                willChange: "transform",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform =
+                  "rotateX(3deg) rotateY(0deg) rotateZ(0deg) translateZ(20px)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform =
+                  "rotateX(8deg) rotateY(-5deg) rotateZ(-0.5deg) translateZ(0)";
+              }}
             >
-              {/* Ground shadow — a soft radial smudge under the image,
-                  positioned to read as the building's grounding shadow
-                  rather than a box-shadow. */}
+              {/* Cast shadow — angled to match the tilt direction so it
+                  reads as a real cast shadow on the card surface below
+                  rather than a generic blur. Sits below the image,
+                  skewed to imply the light comes from the upper left. */}
               <div
                 aria-hidden="true"
-                className="absolute left-1/2 -translate-x-1/2 bottom-[-14px] w-[80%] h-6"
+                className="absolute left-1/2 bottom-[-22px] w-[88%] h-9"
                 style={{
+                  transform: "translateX(-46%) skewX(-12deg)",
                   background:
-                    "radial-gradient(ellipse 50% 50% at 50% 50%, rgba(15, 23, 42, 0.38), transparent 70%)",
-                  filter: "blur(10px)",
+                    "radial-gradient(ellipse 55% 50% at 50% 50%, rgba(15, 23, 42, 0.45), transparent 72%)",
+                  filter: "blur(14px)",
+                  transformStyle: "preserve-3d",
                 }}
               />
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -227,17 +260,31 @@ export function PropertyHeroBanner({
                 src={currentImage}
                 alt={`${propertyName} exterior`}
                 /* object-contain (was object-cover) so a BG-removed PNG
-                   doesn't get cropped at the column bounds. No border
-                   radius. The image's own silhouette is the shape. */
-                className={`relative w-full ${imageSize} object-contain`}
+                   doesn't get cropped at the column bounds. The image
+                   now lives on the tilted plane defined by its parent
+                   so the photo itself has visible depth. */
+                className={`relative w-full ${imageSize} object-contain rounded-xl`}
                 style={{
-                  /* Stacked drop-shadows give the floating-3D feel: a
-                     wide soft ambient shadow underneath, a closer
-                     contact shadow at the base of the building. */
+                  /* Stacked drop-shadows give the floating-3D feel:
+                     wide soft ambient + closer contact + crisp base. */
                   filter:
-                    "drop-shadow(0 26px 36px rgba(15, 23, 42, 0.22)) drop-shadow(0 8px 14px rgba(15, 23, 42, 0.14)) drop-shadow(0 2px 4px rgba(15, 23, 42, 0.08))",
+                    "drop-shadow(0 30px 40px rgba(15, 23, 42, 0.28)) drop-shadow(0 10px 18px rgba(15, 23, 42, 0.18)) drop-shadow(0 2px 4px rgba(15, 23, 42, 0.10))",
+                  backfaceVisibility: "hidden",
                 }}
                 loading="lazy"
+              />
+              {/* Subtle edge highlight — a faint linear sheen on the
+                  top-left edge so the photo reads as a tilted card
+                  catching light from above. Sits over the image but
+                  doesn't capture pointer events. */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-0 rounded-xl pointer-events-none"
+                style={{
+                  background:
+                    "linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, transparent 35%, transparent 65%, rgba(15, 23, 42, 0.08) 100%)",
+                  mixBlendMode: "overlay",
+                }}
               />
               {editable ? (
                 /* Replace / Remove controls — hidden by default, fade
