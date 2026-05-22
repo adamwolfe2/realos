@@ -365,6 +365,26 @@ export type ReportVisitorStats = {
   identifiedWithLead: number;
   // Trend of *new* identifications per day across the period.
   identifiedTrend: number[];
+  // Norman May 22: Operations tab was sparse. We surface every honest
+  // Visitor-table signal we have so ownership reads the full pixel
+  // intelligence picture — who, where, and how engaged.
+  /** Pixel identification funnel: ANONYMOUS → IDENTIFIED → MATCHED. */
+  byStatus?: Array<{ status: string; count: number }>;
+  /** Hot visitors (intentScore >= 70). */
+  hotCount?: number;
+  /** Visitors with operator outreach sent. */
+  outreachSentCount?: number;
+  /** Audience-sync state — how many were pushed to Google / Meta. */
+  syncedToGoogleAds?: number;
+  syncedToMetaAds?: number;
+  /** Top referrers (page URLs visitors came from). */
+  topReferrers?: Array<{ referrer: string; count: number }>;
+  /** Top cities + states pulled from Cursive enrichment payload. */
+  topCities?: Array<{ city: string; count: number }>;
+  topStates?: Array<{ state: string; count: number }>;
+  /** Gender split + age range distribution from enrichment. */
+  genderSplit?: Array<{ gender: string; count: number }>;
+  ageRanges?: Array<{ ageRange: string; count: number }>;
 };
 
 export type ReportChatbotStatsExtended = ReportChatbotStats & {
@@ -2817,6 +2837,113 @@ async function buildVisitorStats(
     ? Number(identifiedWithLead[0].count)
     : 0;
 
+  // Norman May 22: Operations tab needed real visitor intelligence
+  // beyond the 4 status tiles. Pull the rich enrichment fields we
+  // already have on the Visitor row — geography (PERSONAL_CITY +
+  // PERSONAL_STATE), demographics (AGE_RANGE + GENDER), referrer
+  // mix, hot-lead count, audience-sync state. All optional; the
+  // renderer skips any field that came back empty.
+  const [
+    byStatusGroups,
+    hotCount,
+    outreachSentCount,
+    syncedToGoogleAds,
+    syncedToMetaAds,
+    referrerGroups,
+    enrichmentRows,
+  ] = await Promise.all([
+    prisma.visitor.groupBy({
+      by: ["status"],
+      where: { orgId, ...propertyClause },
+      _count: { _all: true },
+    }),
+    prisma.visitor.count({
+      where: {
+        orgId,
+        ...propertyClause,
+        status: VisitorIdentificationStatus.IDENTIFIED,
+        intentScore: { gte: 70 },
+      },
+    }),
+    prisma.visitor.count({
+      where: { orgId, ...propertyClause, outreachSent: true },
+    }),
+    prisma.visitor.count({
+      where: { orgId, ...propertyClause, syncedToGoogleAds: true },
+    }),
+    prisma.visitor.count({
+      where: { orgId, ...propertyClause, syncedToMetaAds: true },
+    }),
+    prisma.visitor.groupBy({
+      by: ["referrer"],
+      where: {
+        orgId,
+        ...propertyClause,
+        referrer: { not: null },
+      },
+      _count: { _all: true },
+      orderBy: { _count: { referrer: "desc" } },
+      take: 5,
+    }),
+    // Enrichment fields live in JSON — we have to fetch + bucket
+    // client-side. Capped at 500 rows to keep the report build cheap
+    // for orgs with tens of thousands of identified visitors. The
+    // top-10 distribution stays representative at that sample size.
+    prisma.visitor.findMany({
+      where: {
+        orgId,
+        ...propertyClause,
+        status: {
+          in: [
+            VisitorIdentificationStatus.IDENTIFIED,
+            VisitorIdentificationStatus.ENRICHED,
+            VisitorIdentificationStatus.MATCHED_TO_LEAD,
+          ],
+        },
+        enrichedData: { not: Prisma.JsonNull },
+      },
+      select: { enrichedData: true },
+      take: 500,
+    }),
+  ]);
+
+  const byStatus = byStatusGroups
+    .map((g) => ({ status: g.status, count: g._count._all }))
+    .filter((s) => s.count > 0)
+    .sort((a, b) => b.count - a.count);
+
+  const topReferrers = referrerGroups
+    .map((r) => ({
+      referrer: shortReferrer(r.referrer ?? ""),
+      count: r._count._all,
+    }))
+    .filter((r) => r.referrer.length > 0);
+
+  const cityMap = new Map<string, number>();
+  const stateMap = new Map<string, number>();
+  const genderMap = new Map<string, number>();
+  const ageRangeMap = new Map<string, number>();
+  for (const v of enrichmentRows) {
+    if (!v.enrichedData || typeof v.enrichedData !== "object") continue;
+    const e = v.enrichedData as Record<string, unknown>;
+    const city =
+      pickString(e.PERSONAL_CITY) ?? pickString((e as { city?: unknown }).city);
+    const state =
+      pickString(e.PERSONAL_STATE) ??
+      pickString((e as { state?: unknown }).state);
+    const gender = pickString(e.GENDER);
+    const ageRange = pickString(e.AGE_RANGE);
+    if (city) cityMap.set(city, (cityMap.get(city) ?? 0) + 1);
+    if (state) stateMap.set(state, (stateMap.get(state) ?? 0) + 1);
+    if (gender) genderMap.set(gender, (genderMap.get(gender) ?? 0) + 1);
+    if (ageRange) ageRangeMap.set(ageRange, (ageRangeMap.get(ageRange) ?? 0) + 1);
+  }
+  const sortDesc = <T>(m: Map<string, number>, key: string) =>
+    [...m.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 8)
+      .map(([k, count]) => ({ [key]: k, count })) as T[];
+
   return {
     identifiedVisitors: identifiedTotal,
     identifiedNewInPeriod: identifiedNew,
@@ -2824,7 +2951,43 @@ async function buildVisitorStats(
     withPhone,
     identifiedWithLead: matched,
     identifiedTrend,
+    byStatus: byStatus.length > 0 ? byStatus : undefined,
+    hotCount,
+    outreachSentCount,
+    syncedToGoogleAds,
+    syncedToMetaAds,
+    topReferrers: topReferrers.length > 0 ? topReferrers : undefined,
+    topCities:
+      cityMap.size > 0
+        ? sortDesc<{ city: string; count: number }>(cityMap, "city")
+        : undefined,
+    topStates:
+      stateMap.size > 0
+        ? sortDesc<{ state: string; count: number }>(stateMap, "state")
+        : undefined,
+    genderSplit:
+      genderMap.size > 0
+        ? sortDesc<{ gender: string; count: number }>(genderMap, "gender")
+        : undefined,
+    ageRanges:
+      ageRangeMap.size > 0
+        ? sortDesc<{ ageRange: string; count: number }>(ageRangeMap, "ageRange")
+        : undefined,
   };
+}
+
+function pickString(v: unknown): string | null {
+  return typeof v === "string" && v.trim().length > 0 ? v.trim() : null;
+}
+
+function shortReferrer(raw: string): string {
+  if (!raw) return "";
+  try {
+    const u = new URL(raw);
+    return u.hostname.replace(/^www\./, "");
+  } catch {
+    return raw.length > 40 ? `${raw.slice(0, 37)}…` : raw;
+  }
 }
 
 async function buildChatbotExtended(

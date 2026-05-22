@@ -687,6 +687,15 @@ export function ReportView({
           {snapshot.visitorStats && pixelConnected ? (
             <VisitorSection stats={snapshot.visitorStats} />
           ) : null}
+          {/* Visitor intelligence — Norman May 22: "what other data
+              points can we pull into the operations". Surfaces every
+              honest enrichment signal we have on the Visitor row:
+              hot leads, audience sync, demographics, geography,
+              referrers. Renders only when any of the optional fields
+              came back populated. */}
+          {snapshot.visitorStats && pixelConnected ? (
+            <VisitorIntelligenceSection stats={snapshot.visitorStats} />
+          ) : null}
 
           {/* Chatbot — extended if available. Norman May 22:
               he expected to see the lifetime conversation count
@@ -1453,6 +1462,224 @@ function VisitorSection({ stats }: { stats: ReportVisitorStats }) {
       </div>
     </Section>
   );
+}
+
+// ---------------------------------------------------------------------------
+// VisitorIntelligenceSection — Norman May 22 fill-the-empty-space pass.
+// Surfaces the full set of honest Visitor-table signals we have so
+// Operations stops reading as "4 numbers + a sparkline + chatbot".
+//
+// Render layout (all rows skip themselves when their data is empty):
+//
+//   ┌──────────────────────────────────────────────────────────────┐
+//   │ Hot · 147     │ Outreach · 12   │ Google Ads · 80 │ Meta · 0 │
+//   └──────────────────────────────────────────────────────────────┘
+//   ┌─────────────────┬──────────────┬──────────────────┬────────────┐
+//   │ Pixel funnel    │ Geography    │ Top referrers    │ Demographics│
+//   │ ANON 30         │ Berkeley 88  │ telegraphcommons │ 25-34: 64% │
+//   │ IDENT 147       │ Oakland 18   │ google.com 17    │ M 51/F 49  │
+//   │ MATCHED 0       │ SF 12        │ direct 22        │            │
+//   └─────────────────┴──────────────┴──────────────────┴────────────┘
+//
+// Every block is its own card so the section adapts when the org has
+// partial enrichment data — Audience Lab regions vary in field
+// coverage and we never want to ship "—" tiles.
+// ---------------------------------------------------------------------------
+function VisitorIntelligenceSection({
+  stats,
+}: {
+  stats: ReportVisitorStats;
+}) {
+  const hot = stats.hotCount ?? 0;
+  const outreach = stats.outreachSentCount ?? 0;
+  const google = stats.syncedToGoogleAds ?? 0;
+  const meta = stats.syncedToMetaAds ?? 0;
+  const headlineTiles: Array<{ label: string; value: string; hint?: string }> = [];
+  if (hot > 0)
+    headlineTiles.push({
+      label: "Hot visitors",
+      value: hot.toLocaleString(),
+      hint: "Intent score ≥ 70",
+    });
+  if (outreach > 0)
+    headlineTiles.push({
+      label: "Outreach sent",
+      value: outreach.toLocaleString(),
+      hint: "Email/SMS engaged",
+    });
+  if (google > 0)
+    headlineTiles.push({
+      label: "Synced · Google Ads",
+      value: google.toLocaleString(),
+      hint: "Custom audience",
+    });
+  if (meta > 0)
+    headlineTiles.push({
+      label: "Synced · Meta Ads",
+      value: meta.toLocaleString(),
+      hint: "Custom audience",
+    });
+
+  const blocks: Array<{
+    title: string;
+    rows: Array<{ label: string; value: string | number }>;
+  }> = [];
+  if (stats.byStatus && stats.byStatus.length > 0) {
+    const total = stats.byStatus.reduce((s, r) => s + r.count, 0) || 1;
+    blocks.push({
+      title: "Pixel funnel",
+      rows: stats.byStatus.slice(0, 6).map((r) => ({
+        label: humanStatus(r.status),
+        value: `${r.count.toLocaleString()} · ${Math.round(
+          (r.count / total) * 100,
+        )}%`,
+      })),
+    });
+  }
+  if (stats.topCities && stats.topCities.length > 0) {
+    blocks.push({
+      title: "Top visitor cities",
+      rows: stats.topCities.slice(0, 6).map((r) => ({
+        label: r.city,
+        value: r.count,
+      })),
+    });
+  } else if (stats.topStates && stats.topStates.length > 0) {
+    blocks.push({
+      title: "Top visitor states",
+      rows: stats.topStates.slice(0, 6).map((r) => ({
+        label: r.state,
+        value: r.count,
+      })),
+    });
+  }
+  if (stats.topReferrers && stats.topReferrers.length > 0) {
+    blocks.push({
+      title: "Top referrers",
+      rows: stats.topReferrers.slice(0, 5).map((r) => ({
+        label: r.referrer,
+        value: r.count,
+      })),
+    });
+  }
+  if (
+    (stats.ageRanges && stats.ageRanges.length > 0) ||
+    (stats.genderSplit && stats.genderSplit.length > 0)
+  ) {
+    const rows: Array<{ label: string; value: string | number }> = [];
+    if (stats.genderSplit && stats.genderSplit.length > 0) {
+      const total =
+        stats.genderSplit.reduce((s, r) => s + r.count, 0) || 1;
+      for (const g of stats.genderSplit.slice(0, 3)) {
+        rows.push({
+          label: humanGender(g.gender),
+          value: `${Math.round((g.count / total) * 100)}%`,
+        });
+      }
+    }
+    if (stats.ageRanges && stats.ageRanges.length > 0) {
+      const total = stats.ageRanges.reduce((s, r) => s + r.count, 0) || 1;
+      for (const a of stats.ageRanges.slice(0, 4)) {
+        rows.push({
+          label: a.ageRange,
+          value: `${Math.round((a.count / total) * 100)}%`,
+        });
+      }
+    }
+    blocks.push({ title: "Audience demographics", rows });
+  }
+
+  if (headlineTiles.length === 0 && blocks.length === 0) return null;
+
+  return (
+    <Section
+      className="ls-report-section"
+      eyebrow="Audience intelligence · enriched by Cursive"
+      title="Visitor intelligence"
+    >
+      {headlineTiles.length > 0 ? (
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3"
+          style={{
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+          }}
+        >
+          {headlineTiles.map((t) => (
+            <div
+              key={t.label}
+              className="rounded-xl border border-primary/20 px-3 py-2.5"
+              style={{
+                backgroundImage:
+                  "linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 70%)",
+              }}
+            >
+              <p className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+                {t.label}
+              </p>
+              <p className="mt-0.5 text-[22px] font-bold tabular-nums text-foreground leading-none">
+                {t.value}
+              </p>
+              {t.hint ? (
+                <p className="mt-0.5 text-[10.5px] text-muted-foreground">
+                  {t.hint}
+                </p>
+              ) : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {blocks.length > 0 ? (
+        <div
+          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+          style={{
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+          }}
+        >
+          {blocks.map((b) => (
+            <div
+              key={b.title}
+              className="rounded-xl border border-border bg-card p-3"
+            >
+              <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground mb-1.5">
+                {b.title}
+              </div>
+              <ul className="space-y-1">
+                {b.rows.map((r, i) => (
+                  <li
+                    key={`${b.title}-${i}`}
+                    className="flex items-baseline justify-between gap-2 text-[11.5px]"
+                  >
+                    <span className="text-foreground truncate font-medium">
+                      {r.label}
+                    </span>
+                    <span className="tabular-nums text-foreground font-semibold shrink-0">
+                      {typeof r.value === "number"
+                        ? r.value.toLocaleString()
+                        : r.value}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </Section>
+  );
+}
+
+function humanStatus(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function humanGender(g: string): string {
+  const x = g.toLowerCase();
+  if (x === "m" || x === "male") return "Male";
+  if (x === "f" || x === "female") return "Female";
+  return humanStatus(g);
 }
 
 // ---------------------------------------------------------------------------
