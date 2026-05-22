@@ -203,7 +203,36 @@ export default async function LeadsKanbanPage({
     <div className="space-y-3 ls-page-fade">
       <PageHeader
         title="Leads"
-        description="Click any lead to see full detail, conversation history, tours, and applications."
+        description={
+          <>
+            Form + chatbot opt-ins captured on your site. Click any lead
+            to see full detail, conversation history, tours, and
+            applications.
+            {/* Norman feedback (May 22): when a user clicks the
+                dashboard's "Captured · 30d" hero and lands here, they
+                expect to see ALL captured contacts — but this page
+                only holds Lead-table rows (form + chatbot). Spell out
+                where the rest live so they don't think the platform
+                is lying. */}
+            <span className="block mt-1 text-[12px] text-muted-foreground">
+              Pixel-identified visitors live on{" "}
+              <Link
+                href="/portal/visitors"
+                className="font-medium text-primary hover:underline"
+              >
+                /portal/visitors
+              </Link>
+              . Chatbot conversations live on{" "}
+              <Link
+                href="/portal/chatbot"
+                className="font-medium text-primary hover:underline"
+              >
+                /portal/chatbot
+              </Link>
+              .
+            </span>
+          </>
+        }
         actions={
           <div className="flex items-center gap-3 flex-wrap">
             <Suspense fallback={<div className="h-9 w-48 rounded-md border border-border bg-muted/40" />}>

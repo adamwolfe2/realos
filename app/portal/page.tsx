@@ -762,6 +762,12 @@ export default async function PortalHome({
     value: string;
     delta?: string;
     tone?: "positive" | "negative" | "neutral";
+    // Per-tile click target + breakdown hint. Mirrors the Stat shape
+    // in components/portal/properties/property-hero-banner.tsx so the
+    // operator can click a number to land on the page that actually
+    // backs it (Norman feedback May 22).
+    href?: string;
+    hint?: string;
   }> = [];
   if (featuredProperty) {
     const featNow = new Date();
@@ -929,29 +935,62 @@ export default async function PortalHome({
         tone: pct > 0 ? ("positive" as const) : ("negative" as const),
       };
     };
+    // Norman feedback (May 22): the operator clicked "173 Captured"
+    // and landed on /portal/leads expecting 173 rows, saw 4, got
+    // confused. Two fixes baked into each tile below:
+    //   1. Inline `hint` spelling out the breakdown so the headline
+    //      number isn't an opaque sum — operator reads "3 form + 147
+    //      visitors + 23 chats" right under the value.
+    //   2. `href` makes each tile click-through to the surface that
+    //      actually holds that data (visitor feed, chatbot, leads
+    //      page, etc.) instead of dumping everyone into /portal/leads.
+    const breakdownHint = [
+      fLeadsCur > 0 ? `${fLeadsCur} form` : null,
+      identVisCur > 0 ? `${identVisCur} visitors` : null,
+      fConvosCur > 0 ? `${fConvosCur} chats` : null,
+      fToursCur > 0 ? `${fToursCur} tours` : null,
+      fAppsCur > 0 ? `${fAppsCur} apps` : null,
+    ]
+      .filter(Boolean)
+      .join(" + ");
     featuredStats = [
       {
         label: "Captured · 30d",
         value:
           capturedCur > 0 ? capturedCur.toLocaleString("en-US") : "—",
+        hint: breakdownHint || undefined,
+        // Captured is an aggregate — send the operator to the surface
+        // that holds the LARGEST chunk of it (identified visitors for
+        // a pixel-active tenant). The hint below the number names
+        // every source so the navigation isn't a surprise.
+        href:
+          identVisCur >= fLeadsCur + fConvosCur
+            ? "/portal/visitors"
+            : "/portal/leads",
         ...fmt(capturedCur, capturedPrior),
       },
       {
         label: "Identified visitors",
         value: identVisCur > 0 ? identVisCur.toLocaleString("en-US") : "—",
+        href: "/portal/visitors",
       },
       {
         label: "Chatbot · 30d",
         value: fConvosCur > 0 ? fConvosCur.toLocaleString("en-US") : "—",
+        href: "/portal/chatbot",
       },
       {
         label: "Form leads · 30d",
         value: fLeadsCur > 0 ? fLeadsCur.toLocaleString("en-US") : "—",
+        href: "/portal/leads",
       },
       {
         label: "Active leases",
         value:
           fActiveLeases > 0 ? fActiveLeases.toLocaleString("en-US") : "—",
+        // No deep-link target — Operations is hidden in nav today and
+        // we don't want to surface a leasing module that's intentionally
+        // gated. Leave non-interactive.
       },
       {
         label: "Reputation",
@@ -959,6 +998,7 @@ export default async function PortalHome({
           featuredProperty.googleAggRating != null
             ? `${featuredProperty.googleAggRating.toFixed(1)}★`
             : "—",
+        href: "/portal/reputation",
       },
     ];
   }

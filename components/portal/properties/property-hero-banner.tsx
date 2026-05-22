@@ -39,6 +39,7 @@
 // ---------------------------------------------------------------------------
 
 import * as React from "react";
+import Link from "next/link";
 import {
   Building2,
   Upload,
@@ -54,6 +55,16 @@ type Stat = {
   value: string;
   delta?: string;
   tone?: "positive" | "negative" | "neutral";
+  // Optional click target — when set, the whole tile becomes a Link to
+  // the surface that actually backs this metric. Norman feedback (May
+  // 22): clicking "173 Captured" on the dashboard took the operator to
+  // /portal/leads which only shows 4 Lead rows. Each tile now navigates
+  // to the page that holds the underlying data.
+  href?: string;
+  // Optional second-line copy under the value. Used to spell out the
+  // breakdown for aggregate metrics ("3 form + 147 identified + 23
+  // chatbot") so the headline isn't an opaque sum.
+  hint?: string;
 };
 
 type Props = {
@@ -576,41 +587,68 @@ export function PropertyHeroBanner({
                   : "grid-cols-2 sm:grid-cols-4"
               }`}
             >
-              {stats.slice(0, compact ? 3 : 4).map((s, i) => (
-                <div
-                  key={s.label}
-                  className={
-                    i > 0 && !compact ? "sm:pl-3 sm:border-l border-border/70" : ""
-                  }
-                >
-                  <p
-                    className={`font-display font-semibold tabular-nums text-foreground leading-none ${
-                      compact
-                        ? "text-3xl sm:text-4xl"
-                        : "text-4xl sm:text-5xl"
-                    }`}
-                    style={{ letterSpacing: "-0.02em" }}
-                  >
-                    {s.value}
-                  </p>
-                  <p className="text-[10.5px] font-mono font-medium uppercase tracking-[0.1em] text-muted-foreground mt-1.5 leading-tight">
-                    {s.label}
-                  </p>
-                  {s.delta ? (
+              {stats.slice(0, compact ? 3 : 4).map((s, i) => {
+                const tileInner = (
+                  <>
                     <p
-                      className={`text-[10px] font-medium mt-0.5 ${
-                        s.tone === "positive"
-                          ? "text-emerald-700"
-                          : s.tone === "negative"
-                            ? "text-destructive"
-                            : "text-muted-foreground"
+                      className={`font-display font-semibold tabular-nums text-foreground leading-none ${
+                        compact
+                          ? "text-3xl sm:text-4xl"
+                          : "text-4xl sm:text-5xl"
                       }`}
+                      style={{ letterSpacing: "-0.02em" }}
                     >
-                      {s.delta}
+                      {s.value}
                     </p>
-                  ) : null}
-                </div>
-              ))}
+                    <p className="text-[10.5px] font-mono font-medium uppercase tracking-[0.1em] text-muted-foreground mt-1.5 leading-tight">
+                      {s.label}
+                    </p>
+                    {s.hint ? (
+                      <p className="text-[10.5px] text-muted-foreground/90 mt-0.5 leading-tight">
+                        {s.hint}
+                      </p>
+                    ) : null}
+                    {s.delta ? (
+                      <p
+                        className={`text-[10px] font-medium mt-0.5 ${
+                          s.tone === "positive"
+                            ? "text-emerald-700"
+                            : s.tone === "negative"
+                              ? "text-destructive"
+                              : "text-muted-foreground"
+                        }`}
+                      >
+                        {s.delta}
+                      </p>
+                    ) : null}
+                  </>
+                );
+                const layoutCls =
+                  i > 0 && !compact
+                    ? "sm:pl-3 sm:border-l border-border/70"
+                    : "";
+                // When the stat carries an href, render the whole tile
+                // as a Link so clicking the number navigates straight
+                // to the data behind it (Norman feedback May 22 —
+                // operators were clicking around trying to find where
+                // the headline numbers came from).
+                if (s.href) {
+                  return (
+                    <Link
+                      key={s.label}
+                      href={s.href}
+                      className={`${layoutCls} block -m-1 p-1 rounded hover:bg-foreground/[0.03] transition-colors`}
+                    >
+                      {tileInner}
+                    </Link>
+                  );
+                }
+                return (
+                  <div key={s.label} className={layoutCls}>
+                    {tileInner}
+                  </div>
+                );
+              })}
             </div>
           ) : null}
         </div>
