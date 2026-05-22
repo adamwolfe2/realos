@@ -1,4 +1,3 @@
-import type React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -6,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { getSiteUrl } from "@/lib/brand";
 import { ReportView } from "@/components/portal/reports/report-view";
+import { loadPropertyHero } from "@/lib/reports/load-property-hero";
 import { ReportEditorControls } from "@/components/portal/reports/report-editor-controls";
 import { SendEmailPanel } from "@/components/portal/reports/send-email-panel";
 import { PrintButton } from "@/components/portal/reports/print-button";
@@ -30,6 +30,7 @@ export default async function ReportDetailPage({
       id: true,
       kind: true,
       status: true,
+      orgId: true,
       snapshot: true,
       headline: true,
       notes: true,
@@ -58,59 +59,11 @@ export default async function ReportDetailPage({
 
   // Norman feedback (May 22): the report should open with the building
   // image pinned at the top, exactly like the dashboard's Featured
-  // Property card. Fetch the property record when the report is scoped
-  // to one so ReportView can render the PropertyHeroBanner. Mirrors
-  // the same loader logic in app/r/[token]/page.tsx — kept inline
-  // rather than extracted because there are only two call sites and
-  // each has slightly different auth/scope rules.
-  let propertyHero: React.ComponentProps<typeof ReportView>["propertyHero"] =
-    null;
-  const scopedPropertyId = snapshot.scope?.propertyId ?? null;
-  if (scopedPropertyId) {
-    const property = await prisma.property
-      .findFirst({
-        where: { id: scopedPropertyId, ...tenantWhere(scope) },
-        select: {
-          id: true,
-          name: true,
-          city: true,
-          state: true,
-          residentialSubtype: true,
-          commercialSubtype: true,
-          propertyType: true,
-          heroImageUrl: true,
-          heroImageOffsetX: true,
-          heroImageOffsetY: true,
-          heroImageScale: true,
-          googleAggRating: true,
-        },
-      })
-      .catch(() => null);
-    if (property) {
-      const subtypeRaw =
-        property.residentialSubtype ??
-        property.commercialSubtype ??
-        property.propertyType;
-      const subtype = subtypeRaw
-        ?.toString()
-        .toLowerCase()
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-      const location = [property.city, property.state]
-        .filter(Boolean)
-        .join(", ");
-      propertyHero = {
-        propertyId: property.id,
-        propertyName: property.name,
-        subtitle: [location, subtype].filter(Boolean).join(" · ") || null,
-        heroImageUrl: property.heroImageUrl,
-        imageOffsetX: property.heroImageOffsetX ?? 0,
-        imageOffsetY: property.heroImageOffsetY ?? 0,
-        imageScale: property.heroImageScale ?? 1,
-        googleAggRating: property.googleAggRating,
-      };
-    }
-  }
+  // Property card. loadPropertyHero handles both scoped (use the
+  // attached property) and portfolio reports (pick the flagship by
+  // leads, then occupancy, then any LIVE property in the org) so even
+  // an org-wide rollup opens with a real building photo.
+  const propertyHero = await loadPropertyHero(snapshot, report.orgId);
 
   return (
     <div className="space-y-5 report-page">

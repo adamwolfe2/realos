@@ -23,6 +23,13 @@ import {
 } from "@/components/portal/reports/report-tabs";
 import { summarizeGroup } from "@/lib/insights/summarize-group";
 import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
+import {
+  ChatGPTMark,
+  ClaudeMark,
+  PerplexityMark,
+  GeminiMark,
+} from "@/components/platform/artifacts/brand-logos";
+import { Donut as SharedDonut } from "@/components/portal/ui/charts";
 
 // ---------------------------------------------------------------------------
 // ReportView — 2026 redesign.
@@ -106,7 +113,6 @@ export function ReportView({
         : "Performance report";
 
   const hasFunnelData = snapshot.funnel.some((s) => s.count > 0);
-  const hasSourceData = snapshot.leadSources.length > 0;
   const showProperties = snapshot.properties.some(
     (p) => p.leads > 0 || p.occupancyPct != null,
   );
@@ -149,51 +155,49 @@ export function ReportView({
           editable=false because this is read-only — operators upload
           images from /portal/properties/[id], not the report. */}
       {propertyHero ? (
-        <div data-no-print>
-          <PropertyHeroBanner
-            propertyId={propertyHero.propertyId}
-            propertyName={propertyHero.propertyName}
-            subtitle={propertyHero.subtitle}
-            heroImageUrl={propertyHero.heroImageUrl}
-            imageOffsetX={propertyHero.imageOffsetX ?? 0}
-            imageOffsetY={propertyHero.imageOffsetY ?? 0}
-            imageScale={propertyHero.imageScale ?? 1}
-            editable={false}
-            compact
-            stats={[
-              {
-                label: "Captured · period",
-                value: (
-                  snapshot.kpis.leads + (snapshot.kpis.identifiedVisitors ?? 0)
-                ).toLocaleString("en-US"),
-                hint: `${snapshot.kpis.leads} form + ${snapshot.kpis.identifiedVisitors ?? 0} visitors`,
-              },
-              {
-                label: snapshot.aeoStats
-                  ? "AI search · cited"
-                  : "Tours · period",
-                value: snapshot.aeoStats
-                  ? `${snapshot.aeoStats.cited}/${snapshot.aeoStats.totalChecks}`
-                  : snapshot.kpis.tours.toLocaleString("en-US"),
-                hint: snapshot.aeoStats
-                  ? `${snapshot.aeoStats.enginesUsed.length} engines`
-                  : undefined,
-              },
-              {
-                label: "Reputation",
-                value:
-                  propertyHero.googleAggRating != null
-                    ? `${propertyHero.googleAggRating.toFixed(1)}★`
-                    : snapshot.reputationStats?.overallRating != null
-                      ? `${snapshot.reputationStats.overallRating.toFixed(1)}★`
-                      : "—",
-                hint: snapshot.reputationStats?.totalReviews
-                  ? `${snapshot.reputationStats.totalReviews} reviews`
-                  : undefined,
-              },
-            ]}
-          />
-        </div>
+        <PropertyHeroBanner
+          propertyId={propertyHero.propertyId}
+          propertyName={propertyHero.propertyName}
+          subtitle={propertyHero.subtitle}
+          heroImageUrl={propertyHero.heroImageUrl}
+          imageOffsetX={propertyHero.imageOffsetX ?? 0}
+          imageOffsetY={propertyHero.imageOffsetY ?? 0}
+          imageScale={propertyHero.imageScale ?? 1}
+          editable={false}
+          compact
+          stats={[
+            {
+              label: "Captured · period",
+              value: (
+                snapshot.kpis.leads + (snapshot.kpis.identifiedVisitors ?? 0)
+              ).toLocaleString("en-US"),
+              hint: `${snapshot.kpis.leads} form + ${snapshot.kpis.identifiedVisitors ?? 0} visitors`,
+            },
+            {
+              label: snapshot.aeoStats
+                ? "AI search · cited"
+                : "Tours · period",
+              value: snapshot.aeoStats
+                ? `${snapshot.aeoStats.cited}/${snapshot.aeoStats.totalChecks}`
+                : snapshot.kpis.tours.toLocaleString("en-US"),
+              hint: snapshot.aeoStats
+                ? `${snapshot.aeoStats.enginesUsed.length} engines`
+                : undefined,
+            },
+            {
+              label: "Reputation",
+              value:
+                propertyHero.googleAggRating != null
+                  ? `${propertyHero.googleAggRating.toFixed(1)}★`
+                  : snapshot.reputationStats?.overallRating != null
+                    ? `${snapshot.reputationStats.overallRating.toFixed(1)}★`
+                    : "—",
+              hint: snapshot.reputationStats?.totalReviews
+                ? `${snapshot.reputationStats.totalReviews} reviews`
+                : undefined,
+            },
+          ]}
+        />
       ) : null}
 
       {/* Print-only branded header. Hidden on screen via the
@@ -503,38 +507,39 @@ export function ReportView({
             </Section>
           ) : null}
 
-          {/* Funnel + Lead sources side-by-side. */}
-          {hasFunnelData || hasSourceData ? (
-            <div className="ls-report-section grid grid-cols-1 lg:grid-cols-2 gap-3">
-              {hasFunnelData ? (
-                <Section
-                  eyebrow="New lead → signed lease"
-                  title="Conversion funnel"
-                >
-                  <FunnelList
-                    stages={snapshot.funnel.filter((s) => {
-                      if (s.stage === "New") return true;
-                      const isTourStage =
-                        s.stage === "Tour scheduled" || s.stage === "Toured";
-                      const isAppStage =
-                        s.stage === "Applied" ||
-                        s.stage === "Application sent" ||
-                        s.stage === "Approved";
-                      if (isTourStage && !toursTracked && s.count === 0)
-                        return false;
-                      if (isAppStage && !applicationsTracked && s.count === 0)
-                        return false;
-                      return true;
-                    })}
-                  />
-                </Section>
-              ) : null}
-              {hasSourceData ? (
-                <Section eyebrow="Source mix" title="Lead sources">
-                  <SourceList sources={snapshot.leadSources} />
-                </Section>
-              ) : null}
-            </div>
+          {/* Norman feedback (May 22): "I hate all the conversion funnel
+              and lead sources! Why do we have a bar chart there?" — the
+              previous Conversion Funnel bar chart read as a stack of
+              empty 0% bars for any tenant without tour/application
+              tracking (TC: 3 leads, 0 of everything else). The Lead
+              Sources bar was equally useless when 100% came from one
+              channel. Both replaced with a denser stage strip + a real
+              donut. The "Where leases came from" attribution table
+              below already carries the per-source breakdown verbatim,
+              so we don't duplicate the source list. */}
+          {hasFunnelData ? (
+            <Section
+              className="ls-report-section"
+              eyebrow="New lead → signed lease"
+              title="Conversion stages"
+            >
+              <FunnelStrip
+                stages={snapshot.funnel.filter((s) => {
+                  if (s.stage === "New") return true;
+                  const isTourStage =
+                    s.stage === "Tour scheduled" || s.stage === "Toured";
+                  const isAppStage =
+                    s.stage === "Applied" ||
+                    s.stage === "Application sent" ||
+                    s.stage === "Approved";
+                  if (isTourStage && !toursTracked && s.count === 0)
+                    return false;
+                  if (isAppStage && !applicationsTracked && s.count === 0)
+                    return false;
+                  return true;
+                })}
+              />
+            </Section>
           ) : null}
 
           {/* Ad performance */}
@@ -943,40 +948,67 @@ function ReputationSection({ stats }: { stats: ReportReputationStats }) {
           </div>
         </div>
 
-        {/* Source breakdown */}
-        <div className="space-y-1.5">
-          <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">
-            Where reviews land
-          </div>
-          {stats.sourceBreakdown.slice(0, 6).map((row) => {
-            const total = stats.totalReviews || 1;
-            const pct = Math.round((row.count / total) * 100);
-            return (
-              <div
-                key={row.source}
-                className="grid grid-cols-[80px_1fr_50px_50px] items-center gap-2 text-[11px]"
-              >
-                <span className="font-semibold text-foreground truncate">
-                  {row.source}
-                </span>
-                <span className="relative h-2 rounded-full bg-muted overflow-hidden">
-                  <span
-                    className="absolute inset-y-0 left-0 rounded-full"
-                    style={{
-                      width: `${pct}%`,
-                      backgroundColor: C.primary,
-                    }}
-                  />
-                </span>
-                <span className="text-right tabular-nums text-foreground font-semibold">
-                  {row.count.toLocaleString()}
-                </span>
-                <span className="text-right tabular-nums text-foreground">
-                  {row.rating != null ? `${row.rating.toFixed(1)}★` : "—"}
-                </span>
+        {/* Source breakdown — Norman feedback (May 22): replace the
+            row-of-bars treatment with the same Donut primitive the
+            dashboard / SEO surfaces use. The legend carries the real
+            brand logos so Google / Reddit / Yelp / Facebook read as
+            actual platforms, not bare uppercase strings. Top 6 sources
+            are shown in the donut, anything beyond rolls into "+N more"
+            below. */}
+        <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4 items-center">
+          <SharedDonut
+            slices={stats.sourceBreakdown.slice(0, 6).map((row) => ({
+              label: prettySource(row.source),
+              value: row.count,
+            }))}
+            size={120}
+            strokeWidth={18}
+            centerPrimary={stats.totalReviews.toLocaleString()}
+            centerSecondary="Reviews"
+          />
+          <div className="space-y-1.5">
+            <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1">
+              Where reviews land
+            </div>
+            {stats.sourceBreakdown.slice(0, 6).map((row) => {
+              const total = stats.totalReviews || 1;
+              const pct = Math.round((row.count / total) * 100);
+              return (
+                <div
+                  key={row.source}
+                  className="grid grid-cols-[120px_1fr_44px_44px] items-center gap-2 text-[11px]"
+                >
+                  <span className="flex items-center gap-1.5 min-w-0">
+                    <ReviewSourceLogo source={row.source} />
+                    <span className="font-semibold text-foreground truncate">
+                      {prettySource(row.source)}
+                    </span>
+                  </span>
+                  <span className="relative h-2 rounded-full bg-muted/60 overflow-hidden">
+                    <span
+                      className="absolute inset-y-0 left-0 rounded-full"
+                      style={{
+                        width: `${pct}%`,
+                        backgroundImage:
+                          "linear-gradient(90deg, #1D4ED8 0%, #3B82F6 100%)",
+                      }}
+                    />
+                  </span>
+                  <span className="text-right tabular-nums text-foreground font-semibold">
+                    {row.count.toLocaleString()}
+                  </span>
+                  <span className="text-right tabular-nums text-foreground">
+                    {row.rating != null ? `${row.rating.toFixed(1)}★` : "—"}
+                  </span>
+                </div>
+              );
+            })}
+            {stats.sourceBreakdown.length > 6 ? (
+              <div className="text-[10px] text-muted-foreground italic pl-2">
+                +{stats.sourceBreakdown.length - 6} more sources
               </div>
-            );
-          })}
+            ) : null}
+          </div>
         </div>
       </div>
 
@@ -1116,7 +1148,8 @@ function ReportMentionCard({
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-[11px] font-semibold tracking-wide text-foreground uppercase">
+            <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-foreground uppercase">
+              <ReviewSourceLogo source={m.source} />
               {m.source}
             </span>
             {m.rating != null ? (
@@ -1502,16 +1535,33 @@ function OverviewSummaryStrip({ snapshot }: { snapshot: ReportSnapshot }) {
       className="ls-report-section grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"
     >
       {cards.map((c, i) => {
+        // Norman feedback (May 22): kill the yellow warn tone — every
+        // accent in the report should sit inside the brand blue
+        // palette. "warn" now reads as a denser blue gradient (still
+        // visually distinct from neutral cards but matches the
+        // overall palette), "good" stays as a light brand tint,
+        // neutral stays muted.
+        const isGradient = c.tone === "warn" || c.tone === "good";
         const toneCls =
           c.tone === "warn"
-            ? "border-amber-200 bg-amber-50/40"
+            ? "border-blue-200/80 text-foreground"
             : c.tone === "good"
-              ? "border-primary/20 bg-primary/[0.03]"
-              : "border-border bg-card";
+              ? "border-primary/20 text-foreground"
+              : "border-border bg-card text-foreground";
         return (
           <div
             key={`${c.eyebrow}-${i}`}
             className={`rounded-2xl border ${toneCls} px-4 py-3.5`}
+            style={
+              isGradient
+                ? {
+                    backgroundImage:
+                      c.tone === "warn"
+                        ? "linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 70%)"
+                        : "linear-gradient(135deg, #F5F9FF 0%, #FFFFFF 70%)",
+                  }
+                : undefined
+            }
           >
             <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
               {c.eyebrow}
@@ -1546,31 +1596,61 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
     stats.totalChecks > 0
       ? Math.round((stats.cited / stats.totalChecks) * 100)
       : 0;
+  // Citation-share donut — same Donut primitive the dashboard uses.
+  // "Not mentioned" = totalChecks minus (cited + competitorCited),
+  // floored at 0 because legacy snapshots sometimes overlapped buckets.
+  const notMentioned = Math.max(
+    0,
+    stats.totalChecks - stats.cited - stats.competitorCited,
+  );
+  const donutSlices = [
+    { label: "Cited you", value: stats.cited, color: "#1D4ED8" },
+    { label: "Cited competitor", value: stats.competitorCited, color: "#93C5FD" },
+    { label: "Not mentioned", value: notMentioned, color: "#E5E7EB" },
+  ].filter((s) => s.value > 0);
   return (
     <Section
       className="ls-report-section"
-      eyebrow={`${stats.totalChecks} AI search checks · ${stats.enginesUsed.join(" · ")}`}
+      eyebrow={`${stats.totalChecks} AI search checks · ${stats.enginesUsed.map(prettyEngineName).join(" · ")}`}
       title="AI answer visibility"
     >
       <div className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <MiniStat
-            label="You cited"
-            value={stats.cited.toLocaleString()}
+        {/* Glance row: donut + 3 stat tiles. Reusing the shared Donut
+            primitive so the chart reads identically to the SEO /
+            dashboard surfaces — same brand palette, same stroke
+            geometry, same center label treatment. */}
+        <div className="grid grid-cols-1 sm:grid-cols-[auto_1fr] gap-4 items-center">
+          <SharedDonut
+            slices={donutSlices}
+            size={120}
+            strokeWidth={18}
+            centerPrimary={`${sharePct}%`}
+            centerSecondary="Citation share"
           />
-          <MiniStat
-            label="Competitor cited"
-            value={stats.competitorCited.toLocaleString()}
-          />
-          <MiniStat label="Citation share" value={`${sharePct}%`} />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <MiniStat
+              label="You cited"
+              value={stats.cited.toLocaleString()}
+            />
+            <MiniStat
+              label="Competitor cited"
+              value={stats.competitorCited.toLocaleString()}
+            />
+            <MiniStat
+              label="Engines scanned"
+              value={stats.enginesUsed.length.toLocaleString()}
+            />
+          </div>
         </div>
 
         {/* Per-engine stacked bar chart (Norman feedback May 22 — richer
-            charts in every tab). Each engine row shows cited / competitor
-            cited / not-mentioned as stacked segments so ownership reads
-            "Claude cited me 4/12, Perplexity 6/15" instead of a single
-            aggregate number. Only renders when byEngine is present
-            (legacy snapshots predate this field). */}
+            charts in every tab + use real brand logos for ChatGPT /
+            Claude / Perplexity / Gemini so the section reads like a
+            real AI search audit, not a plain table). The "you cited"
+            bar gets the deep brand blue gradient, the "competitor"
+            bar gets a softer blue (so it still reads as a tracked
+            measurement, not a yellow warning), and "not mentioned"
+            stays neutral gray. Only renders when byEngine is present. */}
         {stats.byEngine && stats.byEngine.length > 0 ? (
           <div>
             <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
@@ -1584,27 +1664,38 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
                   e.total > 0 ? (n / e.total) * 100 : 0;
                 return (
                   <div key={e.engine} className="flex items-center gap-3">
-                    <div className="text-[11px] font-semibold uppercase tracking-wide text-foreground w-24 shrink-0">
-                      {e.engine}
+                    <div className="flex items-center gap-2 w-32 shrink-0">
+                      <AeoEngineLogo engine={e.engine} />
+                      <span className="text-[11px] font-semibold tracking-wide text-foreground truncate">
+                        {prettyEngineName(e.engine)}
+                      </span>
                     </div>
-                    <div className="flex-1 h-5 rounded overflow-hidden bg-muted/40 flex">
+                    <div className="flex-1 h-5 rounded-md overflow-hidden bg-muted/40 flex">
                       {e.cited > 0 ? (
                         <div
-                          className="h-full bg-primary"
-                          style={{ width: `${pct(e.cited)}%` }}
+                          className="h-full"
+                          style={{
+                            width: `${pct(e.cited)}%`,
+                            backgroundImage:
+                              "linear-gradient(90deg, #1D4ED8 0%, #3B82F6 100%)",
+                          }}
                           title={`${e.cited} cited`}
                         />
                       ) : null}
                       {e.competitorCited > 0 ? (
                         <div
-                          className="h-full bg-rose-400"
-                          style={{ width: `${pct(e.competitorCited)}%` }}
+                          className="h-full"
+                          style={{
+                            width: `${pct(e.competitorCited)}%`,
+                            backgroundImage:
+                              "linear-gradient(90deg, #93C5FD 0%, #BFDBFE 100%)",
+                          }}
                           title={`${e.competitorCited} competitor cited`}
                         />
                       ) : null}
                       {notMentioned > 0 ? (
                         <div
-                          className="h-full bg-muted-foreground/30"
+                          className="h-full bg-muted-foreground/25"
                           style={{ width: `${pct(notMentioned)}%` }}
                           title={`${notMentioned} not mentioned`}
                         />
@@ -1619,15 +1710,27 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
             </div>
             <div className="mt-2 flex items-center gap-3 text-[10.5px] text-muted-foreground">
               <span className="inline-flex items-center gap-1">
-                <span className="h-2 w-2 rounded-sm bg-primary" />
+                <span
+                  className="h-2 w-3 rounded-sm"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(90deg, #1D4ED8 0%, #3B82F6 100%)",
+                  }}
+                />
                 cited you
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="h-2 w-2 rounded-sm bg-rose-400" />
+                <span
+                  className="h-2 w-3 rounded-sm"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(90deg, #93C5FD 0%, #BFDBFE 100%)",
+                  }}
+                />
                 cited competitor
               </span>
               <span className="inline-flex items-center gap-1">
-                <span className="h-2 w-2 rounded-sm bg-muted-foreground/30" />
+                <span className="h-2 w-3 rounded-sm bg-muted-foreground/25" />
                 not mentioned
               </span>
             </div>
@@ -1643,10 +1746,12 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
               {stats.topCompetitors.map((c) => (
                 <span
                   key={c.name}
-                  className="text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full font-semibold"
+                  className="inline-flex items-center gap-1 text-[11px] font-semibold rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-blue-900"
                 >
                   {c.name}
-                  <span className="ml-1 text-rose-500/70">×{c.mentions}</span>
+                  <span className="text-blue-700/70 tabular-nums">
+                    ×{c.mentions}
+                  </span>
                 </span>
               ))}
             </div>
@@ -2395,54 +2500,11 @@ function ContentSection({ stats }: { stats: ReportContentStats }) {
         </div>
       </Section>
 
-      {stats.recent.length > 0 ? (
-        <Section
-          className="ls-report-section"
-          eyebrow="Most recent"
-          title="What we shipped"
-        >
-          <ul className="space-y-2">
-            {stats.recent.map((item, i) => {
-              const inner = (
-                <>
-                  <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-                    {item.format}
-                  </div>
-                  <div className="text-[13px] font-medium text-foreground mt-0.5 leading-snug">
-                    {item.title}
-                  </div>
-                  <div className="text-[11px] text-muted-foreground mt-0.5">
-                    Published {new Date(item.publishedAt).toLocaleDateString(undefined, {
-                      month: "short",
-                      day: "numeric",
-                      year: "numeric",
-                    })}
-                  </div>
-                </>
-              );
-              return (
-                <li
-                  key={`${item.title}-${i}`}
-                  className="rounded-lg border border-border bg-card px-3 py-2.5"
-                >
-                  {item.url ? (
-                    <a
-                      href={item.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block hover:bg-muted/30 -m-3 p-3 rounded-lg transition-colors"
-                    >
-                      {inner}
-                    </a>
-                  ) : (
-                    inner
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </Section>
-      ) : null}
+      {/* Norman feedback (May 22): the per-document "What we shipped"
+          list was dropped — reports should be high-level glance
+          surfaces, not click-through directories of individual blog
+          posts. The format breakdown above + the total counts in the
+          MiniStat row are enough story for ownership. */}
     </div>
   );
 }
@@ -2527,14 +2589,31 @@ function Card({
   sub: string;
   tone: "good" | "warn" | "neutral";
 }) {
+  // Norman feedback (May 22): kill the yellow warn tone. All three
+  // tones now sit in the brand blue palette — "warn" uses a denser
+  // blue gradient so it still pops as the call-to-action tile, "good"
+  // is a softer brand tint, neutral stays plain card.
+  const isGradient = tone === "warn" || tone === "good";
   const toneCls =
     tone === "warn"
-      ? "border-amber-200 bg-amber-50/40"
+      ? "border-blue-200/80"
       : tone === "good"
-        ? "border-primary/20 bg-primary/[0.03]"
+        ? "border-primary/20"
         : "border-border bg-card";
   return (
-    <div className={`rounded-2xl border ${toneCls} px-4 py-3.5`}>
+    <div
+      className={`rounded-2xl border ${toneCls} px-4 py-3.5`}
+      style={
+        isGradient
+          ? {
+              backgroundImage:
+                tone === "warn"
+                  ? "linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 70%)"
+                  : "linear-gradient(135deg, #F5F9FF 0%, #FFFFFF 70%)",
+            }
+          : undefined
+      }
+    >
       <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
         {eyebrow}
       </p>
@@ -2556,4 +2635,154 @@ function prettySource(s: string): string {
     .toLowerCase()
     .replace(/_/g, " ")
     .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// ---------------------------------------------------------------------------
+// AeoEngineLogo — maps engine names from the AEO scan to the real brand
+// marks (ChatGPT, Claude, Perplexity, Gemini). Falls back to a neutral
+// blue dot for unrecognised engines so a future addition (e.g. Grok)
+// renders something sensible instead of blank space.
+// ---------------------------------------------------------------------------
+function AeoEngineLogo({ engine }: { engine: string }) {
+  const key = engine.toLowerCase();
+  if (key.includes("chatgpt") || key.includes("openai") || key === "gpt")
+    return <ChatGPTMark size={16} />;
+  if (key.includes("claude") || key.includes("anthropic"))
+    return <ClaudeMark size={16} />;
+  if (key.includes("perplexity") || key === "pplx")
+    return <PerplexityMark size={16} />;
+  if (key.includes("gemini") || key.includes("google"))
+    return <GeminiMark size={16} />;
+  return (
+    <span
+      aria-hidden="true"
+      className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/10"
+    >
+      <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+    </span>
+  );
+}
+
+function prettyEngineName(engine: string): string {
+  const key = engine.toLowerCase();
+  if (key.includes("chatgpt") || key.includes("openai") || key === "gpt")
+    return "ChatGPT";
+  if (key.includes("claude") || key.includes("anthropic")) return "Claude";
+  if (key.includes("perplexity") || key === "pplx") return "Perplexity";
+  if (key.includes("gemini")) return "Gemini";
+  // Already-prettified engines (e.g. "ChatGPT") pass through.
+  return engine
+    .replace(/[_-]/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// ---------------------------------------------------------------------------
+// ReviewSourceLogo — inline SVG brand marks for the reputation channels
+// the platform tracks. Mirrors the icons in
+// components/portal/reputation/source-logo.tsx but kept server-safe
+// (no "use client") so the report can server-render without hydration.
+// ---------------------------------------------------------------------------
+function ReviewSourceLogo({ source }: { source: string }) {
+  const key = source.toLowerCase();
+  const sz = 14;
+  if (key.includes("google"))
+    return (
+      <svg width={sz} height={sz} viewBox="0 0 24 24" aria-hidden="true">
+        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.99.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+      </svg>
+    );
+  if (key.includes("reddit"))
+    return (
+      <svg width={sz} height={sz} viewBox="0 0 24 24" fill="#FF4500" aria-hidden="true">
+        <path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12.5c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249z" />
+      </svg>
+    );
+  if (key.includes("yelp"))
+    return (
+      <svg width={sz} height={sz} viewBox="0 0 24 24" fill="#AF0606" aria-hidden="true">
+        <path d="M20.16 12.594l-4.995-1.433a1.085 1.085 0 0 0-1.318 1.548l2.247 4.692a1.088 1.088 0 0 0 1.48.428 6.967 6.967 0 0 0 2.883-4.154 1.087 1.087 0 0 0-.297-1.081zm-1.93 5.99l-3.98-3.121a1.086 1.086 0 0 0-1.748.753l-.328 5.16a1.08 1.08 0 0 0 .735 1.084c1.547.548 3.222.547 4.77-.002a1.083 1.083 0 0 0 .551-1.59zm-6.865-5.39a1.091 1.091 0 0 0-1.085-.785L4.58 12.12a1.08 1.08 0 0 0-.814.615 1.06 1.06 0 0 0-.049.865c.548 1.544 1.53 2.896 2.85 3.911a1.083 1.083 0 0 0 1.585-.32l3.222-4.029c.291-.364.365-.859.191-1.293zm2.14-2.51l-1.03-10.24a1.085 1.085 0 0 0-1.2-.984 6.967 6.967 0 0 0-4.766 2.626 1.085 1.085 0 0 0 .095 1.415l5.75 6.91c.4.477 1.1.58 1.632.247.452-.286.684-.836.516-1.361z" />
+      </svg>
+    );
+  if (key.includes("facebook"))
+    return (
+      <svg width={sz} height={sz} viewBox="0 0 24 24" fill="#1877F2" aria-hidden="true">
+        <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+      </svg>
+    );
+  if (key.includes("instagram"))
+    return (
+      <svg width={sz} height={sz} viewBox="0 0 24 24" fill="#E4405F" aria-hidden="true">
+        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+      </svg>
+    );
+  // Fallback — a small globe glyph in muted blue so generic "WEB"
+  // sources still pick up a visual indicator instead of empty space.
+  return (
+    <svg
+      width={sz}
+      height={sz}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="#2563EB"
+      strokeWidth="2"
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
+    </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// FunnelStrip — replaces the old FunnelList bar chart Norman called out.
+// Renders each non-empty stage as a flat MiniStat tile in a horizontal
+// row with an inline conversion-rate hint between adjacent stages, so
+// the reader sees "New 3 → Tour scheduled 0 (0%) → Toured 0 (—)" as a
+// dense data strip instead of a row of empty bars.
+// ---------------------------------------------------------------------------
+function FunnelStrip({ stages }: { stages: ReportSnapshot["funnel"] }) {
+  if (stages.length === 0) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        No pipeline activity in this window yet.
+      </p>
+    );
+  }
+  return (
+    <ol
+      className="grid gap-1.5"
+      style={{
+        gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))`,
+      }}
+    >
+      {stages.map((s, i) => {
+        const prev = i > 0 ? stages[i - 1] : null;
+        const dropPct =
+          prev && prev.count > 0
+            ? Math.round((s.count / prev.count) * 100)
+            : null;
+        return (
+          <li
+            key={s.stage}
+            className="rounded-xl border border-border bg-card px-3 py-2.5 relative"
+          >
+            <p className="text-[9.5px] tracking-widest uppercase font-bold text-muted-foreground truncate">
+              {s.stage}
+            </p>
+            <p className="mt-0.5 text-[20px] font-bold tabular-nums text-foreground leading-none">
+              {s.count.toLocaleString()}
+            </p>
+            {dropPct != null ? (
+              <p className="mt-1 text-[10px] tabular-nums text-muted-foreground">
+                {dropPct}% from prev
+              </p>
+            ) : null}
+          </li>
+        );
+      })}
+    </ol>
+  );
 }

@@ -1,4 +1,3 @@
-import type React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -6,6 +5,7 @@ import { ReportView } from "@/components/portal/reports/report-view";
 import { PrintButton } from "@/components/portal/reports/print-button";
 import { PrintExpander } from "@/components/portal/reports/print-expander";
 import { isValidShareToken } from "@/lib/reports/token";
+import { loadPropertyHero } from "@/lib/reports/load-property-hero";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 
 export const metadata: Metadata = {
@@ -38,6 +38,7 @@ export default async function PublicReportPage({
       id: true,
       status: true,
       kind: true,
+      orgId: true,
       snapshot: true,
       headline: true,
       notes: true,
@@ -66,58 +67,13 @@ export default async function PublicReportPage({
 
   // Norman feedback (May 22): the shared report should open with the
   // property's building image pinned at the top — same hero treatment
-  // as the main dashboard's Featured Property card. Fetch the
-  // property record when the snapshot is scoped to one so ReportView
-  // can render the PropertyHeroBanner. Portfolio-wide reports skip
-  // the lookup entirely and fall through to the text-only header.
-  let propertyHero: React.ComponentProps<typeof ReportView>["propertyHero"] =
-    null;
-  const scopedPropertyId = snapshot.scope?.propertyId ?? null;
-  if (scopedPropertyId) {
-    const property = await prisma.property
-      .findUnique({
-        where: { id: scopedPropertyId },
-        select: {
-          id: true,
-          name: true,
-          city: true,
-          state: true,
-          residentialSubtype: true,
-          commercialSubtype: true,
-          propertyType: true,
-          heroImageUrl: true,
-          heroImageOffsetX: true,
-          heroImageOffsetY: true,
-          heroImageScale: true,
-          googleAggRating: true,
-        },
-      })
-      .catch(() => null);
-    if (property) {
-      const subtypeRaw =
-        property.residentialSubtype ??
-        property.commercialSubtype ??
-        property.propertyType;
-      const subtype = subtypeRaw
-        ?.toString()
-        .toLowerCase()
-        .replace(/_/g, " ")
-        .replace(/\b\w/g, (c) => c.toUpperCase());
-      const location = [property.city, property.state]
-        .filter(Boolean)
-        .join(", ");
-      propertyHero = {
-        propertyId: property.id,
-        propertyName: property.name,
-        subtitle: [location, subtype].filter(Boolean).join(" · ") || null,
-        heroImageUrl: property.heroImageUrl,
-        imageOffsetX: property.heroImageOffsetX ?? 0,
-        imageOffsetY: property.heroImageOffsetY ?? 0,
-        imageScale: property.heroImageScale ?? 1,
-        googleAggRating: property.googleAggRating,
-      };
-    }
-  }
+  // as the main dashboard's Featured Property card. loadPropertyHero
+  // resolves the scoped property when the snapshot is property-scoped,
+  // and falls back to the org's flagship property (most leads this
+  // period, then most-occupied, then any LIVE property) for portfolio-
+  // wide reports so even the "all properties" view leads with a
+  // building photo instead of plain text.
+  const propertyHero = await loadPropertyHero(snapshot, report.orgId);
 
   return (
     <div className="min-h-screen bg-[var(--parchment)] py-10 px-4">
