@@ -17,18 +17,23 @@ import * as React from "react";
 // to render so PDFs include the full report regardless of active tab.
 // ---------------------------------------------------------------------------
 
+// Norman feedback (May 22, final pass): reorder tabs to follow the
+// narrative ownership actually wants to read — start at the
+// at-a-glance Overview, then the brand-equity tabs (Reputation +
+// Insights + Content) where LeaseStack provides differentiated
+// signal, then the operational tabs (Traffic & Leads + Operations)
+// that lean on integrations + AppFolio mirror data.
 export const REPORT_TABS = [
   { id: "overview", label: "Overview" },
-  { id: "traffic", label: "Traffic & Leads" },
-  { id: "operations", label: "Operations" },
   { id: "reputation", label: "Reputation" },
   { id: "insights", label: "Insights" },
-  // Norman feedback (May 22): show the SEO content pipeline (blog
-  // posts + neighborhood pages) as a real deliverable. Tab renders
-  // only when snapshot.contentStats has rows — the report-view hides
-  // the panel when empty so the tab strip stays clean for tenants
-  // without content yet.
+  // Show the SEO content pipeline (blog posts + neighborhood pages)
+  // as a real deliverable. Tab renders only when snapshot.contentStats
+  // has rows — the report-view hides the panel when empty so the
+  // tab strip stays clean for tenants without content yet.
   { id: "content", label: "Content" },
+  { id: "traffic", label: "Traffic & Leads" },
+  { id: "operations", label: "Operations" },
 ] as const;
 
 export type ReportTabId = (typeof REPORT_TABS)[number]["id"];

@@ -532,6 +532,69 @@ export function ReportView({
       ) : null}
         </ReportTabPanel>
 
+        {/* Norman May 22 (final pass): tab order is Overview →
+            Reputation → Insights → Content → Traffic & Leads →
+            Operations. Reputation / Insights / Content are the
+            brand-equity tabs LeaseStack actually owns; Traffic +
+            Operations live at the back as the integration-driven
+            tabs that lean on AppFolio + GA4. */}
+        <ReportTabPanel id="reputation">
+          {snapshot.reputationStats ? (
+            <ReputationSection stats={snapshot.reputationStats} />
+          ) : (
+            <EmptyTabState
+              title="No reputation data yet"
+              body="Connect Google Business Profile, Yelp, or your reputation source to see reviews and mentions in this report."
+            />
+          )}
+        </ReportTabPanel>
+
+        <ReportTabPanel id="insights">
+          {snapshot.aiVisibility && snapshot.aiVisibility.brandedClicks > 0 ? (
+            <AiVisibilitySection aiVisibility={snapshot.aiVisibility} />
+          ) : null}
+
+          {/* AEO — "your competitors are getting cited in AI search, you
+              are not." Norman feedback (May 22): this was missing
+              entirely from the report despite being one of the highest-
+              signal sections we have for TC (32 competitor citations
+              across 36 checks). Renders only when aeoStats present
+              AND there's actually something to say. */}
+          {snapshot.aeoStats && snapshot.aeoStats.totalChecks > 0 ? (
+            <AeoSection stats={snapshot.aeoStats} />
+          ) : null}
+
+          {snapshot.insights.length > 0 ? (
+            <Section
+              className="ls-report-section"
+              eyebrow="Automated insights"
+              title="Signals we noticed"
+            >
+              <GroupedInsights items={snapshot.insights} />
+            </Section>
+          ) : !(
+              snapshot.aiVisibility && snapshot.aiVisibility.brandedClicks > 0
+            ) ? (
+            <EmptyTabState
+              title="No automated insights this period"
+              body="LeaseStack scans your data every day. Insights appear here when something material changes — a CPL spike, a pricing outlier, a pipeline stall."
+            />
+          ) : null}
+        </ReportTabPanel>
+
+        <ReportTabPanel id="content">
+          {snapshot.contentStats &&
+          (snapshot.contentStats.totalPublished > 0 ||
+            (snapshot.contentStats.totalInProgress ?? 0) > 0) ? (
+            <ContentSection stats={snapshot.contentStats} />
+          ) : (
+            <EmptyTabState
+              title="No published content yet"
+              body="Blog posts and neighborhood landing pages appear here once they're approved and shipped. Drafts in progress show on /portal/content."
+            />
+          )}
+        </ReportTabPanel>
+
         <ReportTabPanel id="traffic">
           {/* Traffic trend — full-width gradient area. Only render when
               GA4 is connected; otherwise the "0 sessions" line is
@@ -765,62 +828,6 @@ export function ReportView({
           ) : null}
         </ReportTabPanel>
 
-        <ReportTabPanel id="reputation">
-          {snapshot.reputationStats ? (
-            <ReputationSection stats={snapshot.reputationStats} />
-          ) : (
-            <EmptyTabState
-              title="No reputation data yet"
-              body="Connect Google Business Profile, Yelp, or your reputation source to see reviews and mentions in this report."
-            />
-          )}
-        </ReportTabPanel>
-
-        <ReportTabPanel id="insights">
-          {snapshot.aiVisibility && snapshot.aiVisibility.brandedClicks > 0 ? (
-            <AiVisibilitySection aiVisibility={snapshot.aiVisibility} />
-          ) : null}
-
-          {/* AEO — "your competitors are getting cited in AI search, you
-              are not." Norman feedback (May 22): this was missing
-              entirely from the report despite being one of the highest-
-              signal sections we have for TC (32 competitor citations
-              across 36 checks). Renders only when aeoStats present
-              AND there's actually something to say. */}
-          {snapshot.aeoStats && snapshot.aeoStats.totalChecks > 0 ? (
-            <AeoSection stats={snapshot.aeoStats} />
-          ) : null}
-
-          {snapshot.insights.length > 0 ? (
-            <Section
-              className="ls-report-section"
-              eyebrow="Automated insights"
-              title="Signals we noticed"
-            >
-              <GroupedInsights items={snapshot.insights} />
-            </Section>
-          ) : !(
-              snapshot.aiVisibility && snapshot.aiVisibility.brandedClicks > 0
-            ) ? (
-            <EmptyTabState
-              title="No automated insights this period"
-              body="LeaseStack scans your data every day. Insights appear here when something material changes — a CPL spike, a pricing outlier, a pipeline stall."
-            />
-          ) : null}
-        </ReportTabPanel>
-
-        <ReportTabPanel id="content">
-          {snapshot.contentStats &&
-          (snapshot.contentStats.totalPublished > 0 ||
-            (snapshot.contentStats.totalInProgress ?? 0) > 0) ? (
-            <ContentSection stats={snapshot.contentStats} />
-          ) : (
-            <EmptyTabState
-              title="No published content yet"
-              body="Blog posts and neighborhood landing pages appear here once they're approved and shipped. Drafts in progress show on /portal/content."
-            />
-          )}
-        </ReportTabPanel>
       </ReportTabs>
 
       {/* Top performers strip — pinned at the bottom of every report so

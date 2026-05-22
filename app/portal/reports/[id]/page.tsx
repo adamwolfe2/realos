@@ -229,10 +229,11 @@ export default async function ReportDetailPage({
               /* Tabs marked "Traffic & Leads", "Operations",
                  "Reputation", "Insights" start a fresh page so the
                  PDF reads section-by-section. */
-              .ls-report-tabpanel[data-tab-id="traffic"],
-              .ls-report-tabpanel[data-tab-id="operations"],
               .ls-report-tabpanel[data-tab-id="reputation"],
-              .ls-report-tabpanel[data-tab-id="insights"] {
+              .ls-report-tabpanel[data-tab-id="insights"],
+              .ls-report-tabpanel[data-tab-id="content"],
+              .ls-report-tabpanel[data-tab-id="traffic"],
+              .ls-report-tabpanel[data-tab-id="operations"] {
                 break-before: page;
                 page-break-before: always;
               }
