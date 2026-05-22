@@ -112,8 +112,16 @@ const STEP_META: Record<
     href: "/portal/settings",
   },
   GENERATE_NEIGHBORHOOD_PAGE: {
-    label: "Publish a neighborhood SEO page",
-    description: 'Rank for "apartments near <neighborhood>" searches.',
+    // Norman bug #99: the previous label + description left operators
+    // (correctly) confused — "neighborhood SEO page" sounded like
+    // Zillow-style listing copy. Restated as what it actually does:
+    // generates a long-form, area-specific landing page (think:
+    // "Renting in Berkeley's Southside") that captures organic search
+    // intent for the neighborhood + adds AEO citations to the
+    // property without touching the listings.
+    label: "Publish a neighborhood landing page",
+    description:
+      "AI-drafts a long-form page about the neighborhood around your property — captures organic + AI-search traffic from people researching the area.",
     href: "/portal/seo/neighborhoods",
   },
   CUSTOM_REPORT_PREFS: {
