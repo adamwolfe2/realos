@@ -133,7 +133,16 @@ export default async function PopupEditorPage({
           <TestFireButton campaignId={popup.id} />
         </header>
 
-        <PreviewLiveSite siteUrl={marketingSite} />
+        <PreviewLiveSite
+          siteUrl={marketingSite}
+          // Auto-expand the "Why isn't this firing?" help when the
+          // popup has ZERO recorded impressions despite being ACTIVE.
+          // The operator is almost certainly hitting the same
+          // sessionStorage dedup issue Norman flagged on May 22.
+          defaultShowHelp={
+            popup.status === "ACTIVE" && popup.shownCount === 0
+          }
+        />
 
         <EmbedDetectionChip url={marketingSite} orgSlug={org?.slug ?? ""} />
 
