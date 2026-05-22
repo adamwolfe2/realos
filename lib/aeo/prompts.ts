@@ -74,9 +74,19 @@ export function generatePrompts(seed: PromptSeed): string[] {
   // the growth gap (discovery), which is the honest dashboard story.
   const brand = seed.propertyName?.trim();
   if (brand) {
+    // Four branded variants — each is a different phrasing a real
+    // prospect might type after shortlisting the property. AI engines
+    // reliably cite the property on these because there's public
+    // training data (reviews, Reddit, social) about most named
+    // buildings. Keeping branded prompts ahead of discovery in the
+    // emission order means they never get trimmed by PROMPTS_PER_PROPERTY.
     out.push(`Tell me about ${brand} in ${broadLocation}. Is it a good place to live?`);
     out.push(
       `What do residents say about ${brand}? Any common complaints or things to know before signing a lease?`,
+    );
+    out.push(`What are the amenities and pricing like at ${brand}?`);
+    out.push(
+      `${brand} reviews — what are the most common positive and negative things people say?`,
     );
   }
 

@@ -72,10 +72,24 @@ export default async function AeoPage() {
     prior30Total > 0 ? prior30Mentioned / prior30Total : 0;
   const trendDelta = mentionRate30 - priorMentionRate;
 
-  // Composite Visibility Score (0-100). Weighted blend of mention (50%) +
-  // citation (40%) + position bonus (10%). Position bonus rewards being
-  // mentioned in the first half of the answer (position 1-3). All weights
-  // are first-pass — tunable from one place if the framing shifts.
+  // Composite Visibility Score (0-100). Norman feedback (May 22): the
+  // original 50/40/10 weighting capped the score at ~9 even for a
+  // property that gets cited on 100% of its branded queries, because
+  // the discovery queries (which a small property reliably loses to
+  // big-name competitors) dragged the rates down. New weighting:
+  //
+  //   mention rate         × 50  (do AI engines know who you are?)
+  //   citation rate        × 30  (do they link to you?)
+  //   position bonus       ×  5  (when cited, are you near the top?)
+  //   branded mention rate × 15  (defensive moat — given a name, do
+  //                                they have data on you?)
+  //
+  // The branded-rate kicker is the new piece — it captures the
+  // defensive moat (AI knowing you when prompted by name) separately
+  // from the growth gap (AI surfacing you off a blank competitive
+  // set). Both numbers continue to live on the page below; this just
+  // makes the headline score reflect both honestly instead of only
+  // the harder discovery axis.
   const citedRowsWithPos = last30.filter(
     (c) => c.status === "CITED" && typeof c.position === "number",
   );
@@ -83,15 +97,35 @@ export default async function AeoPage() {
     citedRowsWithPos.length > 0
       ? citedRowsWithPos.reduce((acc, c) => {
           const p = c.position ?? 99;
-          // 1.0 for pos=1, 0.66 for pos=2, 0.33 for pos=3, 0 beyond
           if (p === 1) return acc + 1;
           if (p === 2) return acc + 0.66;
           if (p === 3) return acc + 0.33;
           return acc;
         }, 0) / citedRowsWithPos.length
       : 0;
+  // Branded mention rate — what fraction of branded prompts ("Tell me
+  // about <property>", "What do residents say about <property>", etc.)
+  // had us mentioned. Detect by the generator's known phrasings rather
+  // than fetching property names — the generator in lib/aeo/prompts.ts
+  // always leads branded prompts with one of these templates, so a
+  // text match is cheap and self-contained.
+  const BRANDED_PROMPT_MARKERS = [
+    /^tell me about /i,
+    /^what do residents say about /i,
+    /^what are the amenities and pricing like at /i,
+    / reviews — what are the most common /i,
+  ];
+  const brandedRows = last30.filter((c) =>
+    BRANDED_PROMPT_MARKERS.some((re) => re.test(c.prompt)),
+  );
+  const brandedMentioned = brandedRows.filter((c) => c.mentioned).length;
+  const brandedMentionRate =
+    brandedRows.length > 0 ? brandedMentioned / brandedRows.length : 0;
   const visibilityScore = Math.round(
-    mentionRate30 * 50 + citationRate30 * 40 + positionBonus * 10,
+    mentionRate30 * 50 +
+      citationRate30 * 30 +
+      positionBonus * 5 +
+      brandedMentionRate * 15,
   );
 
   // Configured map per engine — server-only because `isConfigured()`
