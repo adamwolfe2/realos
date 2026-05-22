@@ -28,9 +28,30 @@ function rankSeverity(s: string): number {
   return SEVERITY_RANK[s] ?? 99;
 }
 
+// Norman bug #71: rent-roll insights (renewal cliffs, occupancy
+// vacancy alerts, rent-vs-portfolio comparisons) belong to PMS territory
+// — LeaseStack is positioned as marketing intelligence, not a renewal
+// pipeline. The detectors keep firing (data still flows into the
+// Insight table for historical analysis + reporting) but the operator-
+// facing surfaces filter them out so the dashboard/property pages
+// don't mix marketing signal with leasing operations. Flip back by
+// passing { includeRentRoll: true } when we re-enable Operations.
+const RENT_ROLL_KINDS = new Set([
+  "renewal_cliff",
+  "vacancy_needs_boost",
+  "leasing_velocity_drop",
+]);
+const RENT_ROLL_CATEGORIES = new Set(["renewals", "occupancy"]);
+
 export async function getOpenInsights(
   orgId: string,
-  opts: { propertyId?: string; limit?: number } = {},
+  opts: {
+    propertyId?: string;
+    limit?: number;
+    /** Default false. Pass true to bypass the rent-roll filter (admin /
+     * reports surfaces that explicitly want every detector). */
+    includeRentRoll?: boolean;
+  } = {},
 ) {
   const now = new Date();
   const limit = opts.limit ?? 50;
@@ -45,6 +66,12 @@ export async function getOpenInsights(
       ...(opts.propertyId ? { propertyId: opts.propertyId } : {}),
       status: { in: ["open", "acknowledged"] },
       OR: [{ snoozeUntil: null }, { snoozeUntil: { lt: now } }],
+      ...(opts.includeRentRoll
+        ? {}
+        : {
+            kind: { notIn: Array.from(RENT_ROLL_KINDS) },
+            category: { notIn: Array.from(RENT_ROLL_CATEGORIES) },
+          }),
     },
     orderBy: [{ createdAt: "desc" }],
     take: Math.max(limit * 4, 200),
@@ -80,7 +107,7 @@ export async function getOpenInsights(
 
 export async function getInsightCounts(
   orgId: string,
-  options: { propertyIds?: string[] | null } = {},
+  options: { propertyIds?: string[] | null; includeRentRoll?: boolean } = {},
 ) {
   const rows = await prisma.insight.groupBy({
     by: ["severity", "status"],
@@ -88,6 +115,14 @@ export async function getInsightCounts(
       orgId,
       status: { in: ["open", "acknowledged"] },
       ...propertyIdsToWhere(options.propertyIds ?? null),
+      // Match the getOpenInsights filter (Norman bug #71) so the counts
+      // the badge shows and the rows the panel renders stay in sync.
+      ...(options.includeRentRoll
+        ? {}
+        : {
+            kind: { notIn: Array.from(RENT_ROLL_KINDS) },
+            category: { notIn: Array.from(RENT_ROLL_CATEGORIES) },
+          }),
     },
     _count: true,
   });
