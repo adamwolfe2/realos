@@ -1479,20 +1479,28 @@ export async function generateReportSnapshot(
     days,
     periodEnd,
   );
-  const trafficFallback = trafficTrendFromSessions.some((v) => v > 0)
-    ? trafficTrendFromSessions
-    : trafficTrendFromClicks.some((v) => v > 0)
-      ? trafficTrendFromClicks
-      : adSpendDaily.length > 0
-        ? bucketDaily(
-            adSpendDaily.map((r) => ({
-              date: r.date,
-              value: (r._sum.spendCents ?? 0) / 100,
-            })),
-            days,
-            periodEnd,
-          )
-        : trafficTrendFromSessions;
+  // Pick whichever source has the MOST coverage — sessions can show
+  // one stray non-zero point (legacy snapshots had a single May 15
+  // value of 1 mixed into 27 zeros) which would otherwise pin the
+  // chart to the sparse series even when clicks has full daily data.
+  // Count non-zero days per source and use the winner.
+  const sessionsCoverage = trafficTrendFromSessions.filter((v) => v > 0).length;
+  const clicksCoverage = trafficTrendFromClicks.filter((v) => v > 0).length;
+  const trafficFallback =
+    sessionsCoverage > clicksCoverage
+      ? trafficTrendFromSessions
+      : clicksCoverage > 0
+        ? trafficTrendFromClicks
+        : adSpendDaily.length > 0
+          ? bucketDaily(
+              adSpendDaily.map((r) => ({
+                date: r.date,
+                value: (r._sum.spendCents ?? 0) / 100,
+              })),
+              days,
+              periodEnd,
+            )
+          : trafficTrendFromSessions;
 
   // Attribution by source — load leads with id/source/status, then join tours and apps
   const allLeadsInPeriod = await prisma.lead.findMany({

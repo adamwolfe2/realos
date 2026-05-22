@@ -2842,7 +2842,8 @@ function TopPerformersStrip({ snapshot }: { snapshot: ReportSnapshot }) {
   if (!topQuery && !topPage && !topCompetitor && !topMentionSource) return null;
   return (
     <section
-      className="ls-report-section grid grid-cols-1 md:grid-cols-3 gap-2"
+      className="ls-report-section grid grid-cols-1 sm:grid-cols-2 gap-2"
+      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}
       aria-label="Top performers this period"
     >
       {topQuery ? (
@@ -3156,21 +3157,31 @@ function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
   const sideTiles = [showSignedPeriod, showSigned180, showApplications].filter(
     Boolean,
   ).length;
+  // Norman feedback (May 22): the right-hand side tiles read as
+  // empty wells when they were narrow + only carried a single
+  // value. The hero now claims the whole row when there are zero
+  // or just one side tile (so the velocity sparkline gets real
+  // breathing room and we never ship a half-empty grid). With
+  // multiple side tiles the layout reverts to a balanced 2-column
+  // split where the hero still gets at least half the width.
   const heroSpan =
     sideTiles === 0
       ? "lg:col-span-4"
       : sideTiles === 1
         ? "lg:col-span-3"
-        : sideTiles === 2
-          ? "lg:col-span-2"
-          : "lg:col-span-1";
+        : "lg:col-span-2";
+  // Side tiles stack vertically inside their column when we've got
+  // two of them — much denser than parking them in narrow boxes
+  // alongside the hero. Operations tab swaps to inline tiles only
+  // when there are 3+ side metrics (rare — needs Application sync).
+  const sideStacked = sideTiles === 2;
   return (
     <Section
       className="ls-report-section"
       eyebrow="AppFolio · live lease sync"
       title="Lifecycle pipeline"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 items-stretch">
         {/* Headline gradient tile — always rendered. Combines the
             closed-loop floor (active leases) with the 12-month
             velocity sparkline so ownership can immediately see WHEN
@@ -3221,50 +3232,91 @@ function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
             ) : null}
           </div>
         </div>
-        {showSignedPeriod ? (
-          <div className="rounded-xl border border-border bg-card px-3.5 py-3">
-            <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
-              Signed · period
-            </div>
-            <div className="mt-1 flex items-baseline gap-2">
-              <div className="text-[24px] font-bold tabular-nums text-foreground leading-none">
-                {stats.leasesSignedInPeriod.toLocaleString()}
-              </div>
-              {deltaPct != null ? <DeltaPill value={deltaPct} /> : null}
-            </div>
-            <div className="mt-1 text-[11px] text-muted-foreground">
-              Lease.startDate in window
-            </div>
+        {/* Side tiles. When there are exactly 2 (SG case: Signed
+            period + Signed 180d) we stack them vertically inside a
+            single 2-col-spanning slot — short tiles look much less
+            empty stacked than spread across two narrow boxes. With
+            3+ they go inline. */}
+        {sideStacked ? (
+          <div className="lg:col-span-2 grid grid-cols-1 gap-2 self-stretch">
+            {showSignedPeriod ? (
+              <SideLifecycleTile
+                label="Signed · period"
+                value={stats.leasesSignedInPeriod}
+                hint="Lease.startDate in window"
+                delta={deltaPct}
+              />
+            ) : null}
+            {showSigned180 ? (
+              <SideLifecycleTile
+                label="Signed · last 180d"
+                value={stats.leasesSignedLast180d}
+                hint="Seasonal rolling 6-month"
+              />
+            ) : null}
+            {showApplications ? (
+              <SideLifecycleTile
+                label="Applications · period"
+                value={stats.applicationsInPeriod}
+                hint={`${stats.applicationsApprovedInPeriod} approved`}
+              />
+            ) : null}
           </div>
-        ) : null}
-        {showSigned180 ? (
-          <div className="rounded-xl border border-border bg-card px-3.5 py-3">
-            <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
-              Signed · last 180d
-            </div>
-            <div className="mt-1 text-[24px] font-bold tabular-nums text-foreground leading-none">
-              {stats.leasesSignedLast180d.toLocaleString()}
-            </div>
-            <div className="mt-1 text-[11px] text-muted-foreground">
-              Seasonal rolling 6-month
-            </div>
-          </div>
-        ) : null}
-        {showApplications ? (
-          <div className="rounded-xl border border-border bg-card px-3.5 py-3">
-            <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
-              Applications · period
-            </div>
-            <div className="mt-1 text-[24px] font-bold tabular-nums text-foreground leading-none">
-              {stats.applicationsInPeriod.toLocaleString()}
-            </div>
-            <div className="mt-1 text-[11px] text-muted-foreground">
-              {stats.applicationsApprovedInPeriod} approved
-            </div>
-          </div>
-        ) : null}
+        ) : (
+          <>
+            {showSignedPeriod ? (
+              <SideLifecycleTile
+                label="Signed · period"
+                value={stats.leasesSignedInPeriod}
+                hint="Lease.startDate in window"
+                delta={deltaPct}
+              />
+            ) : null}
+            {showSigned180 ? (
+              <SideLifecycleTile
+                label="Signed · last 180d"
+                value={stats.leasesSignedLast180d}
+                hint="Seasonal rolling 6-month"
+              />
+            ) : null}
+            {showApplications ? (
+              <SideLifecycleTile
+                label="Applications · period"
+                value={stats.applicationsInPeriod}
+                hint={`${stats.applicationsApprovedInPeriod} approved`}
+              />
+            ) : null}
+          </>
+        )}
       </div>
     </Section>
+  );
+}
+
+function SideLifecycleTile({
+  label,
+  value,
+  hint,
+  delta,
+}: {
+  label: string;
+  value: number;
+  hint: string;
+  delta?: number | null;
+}) {
+  return (
+    <div className="rounded-xl border border-border bg-card px-3.5 py-3 h-full">
+      <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+        {label}
+      </div>
+      <div className="mt-1 flex items-baseline gap-2">
+        <div className="text-[24px] font-bold tabular-nums text-foreground leading-none">
+          {value.toLocaleString()}
+        </div>
+        {delta != null ? <DeltaPill value={delta} /> : null}
+      </div>
+      <div className="mt-1 text-[11px] text-muted-foreground">{hint}</div>
+    </div>
   );
 }
 
@@ -3296,15 +3348,29 @@ function FunnelStrip({ stages }: { stages: ReportSnapshot["funnel"] }) {
           prev && prev.count > 0
             ? Math.round((s.count / prev.count) * 100)
             : null;
+        // Norman May 22: zeros made the strip look bland. Non-zero
+        // tiles now read as filled brand cards; zero tiles fade to
+        // a tighter outline so the eye lands on the real data
+        // (NEW 3, SIGNED 1) instead of a row of identical white
+        // cells.
+        const isZero = s.count === 0;
         return (
           <li
             key={s.stage}
-            className="rounded-xl border border-border bg-card px-3 py-2.5 relative"
+            className={`rounded-xl border px-3 py-2.5 relative ${
+              isZero
+                ? "border-dashed border-border bg-transparent"
+                : "border-primary/30 bg-primary/[0.04]"
+            }`}
           >
             <p className="text-[9.5px] tracking-widest uppercase font-bold text-muted-foreground truncate">
               {s.stage}
             </p>
-            <p className="mt-0.5 text-[20px] font-bold tabular-nums text-foreground leading-none">
+            <p
+              className={`mt-0.5 text-[20px] font-bold tabular-nums leading-none ${
+                isZero ? "text-muted-foreground/60" : "text-foreground"
+              }`}
+            >
               {s.count.toLocaleString()}
             </p>
             {dropPct != null ? (
