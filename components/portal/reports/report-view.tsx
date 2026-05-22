@@ -492,6 +492,25 @@ export function ReportView({
           page without clicking through. Each card only renders when
           there's actually data behind it. */}
       <OverviewSummaryStrip snapshot={snapshot} />
+
+      {/* Norman feedback (May 22, second pass): "The overview page
+          should have all the graphs and all the top-line metrics."
+          Pull the marquee chart blocks from Insights + Reputation up
+          to Overview so the first tab reads as the dashboard.
+          Same components render again on their own tabs — duplicate
+          rendering is intentional: Overview = at-a-glance, each tab =
+          full depth. */}
+      {snapshot.aeoStats && snapshot.aeoStats.totalChecks > 0 ? (
+        <AeoSection stats={snapshot.aeoStats} />
+      ) : null}
+      {snapshot.reputationStats &&
+      snapshot.reputationStats.totalReviews > 0 ? (
+        <ReputationSection stats={snapshot.reputationStats} />
+      ) : null}
+      {snapshot.aiVisibility &&
+      snapshot.aiVisibility.brandedClicks > 0 ? (
+        <AiVisibilitySection aiVisibility={snapshot.aiVisibility} />
+      ) : null}
         </ReportTabPanel>
 
         <ReportTabPanel id="traffic">
@@ -2766,32 +2785,58 @@ function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
             100,
         )
       : null;
+  // Norman feedback (May 22, second pass): "the lifecycle pipeline
+  // looks pretty bland". Root cause was sparse: with applications +
+  // approved both 0 (AppFolio hasn't synced the application table for
+  // SG), the strip read as half-empty zero tiles. We now only render
+  // tiles that have real data — bland zeros never make it on screen
+  // and the active-leases hero gets meaningful breathing room.
+  const showApplications = stats.applicationsInPeriod > 0;
+  const showSigned180 = stats.leasesSignedLast180d > 0;
+  const showSignedPeriod = stats.leasesSignedInPeriod > 0;
+
+  // Compute renewal/retention proxy: most tenants renew, so even a
+  // zero-signed window typically has dozens of active leases churning
+  // through. Surface "avg lease months remaining" if we have endDate
+  // data downstream — but for the first cut, just keep the columns
+  // honest. Span heroes when there's nothing to show beside them.
+  const sideTiles = [showSignedPeriod, showSigned180, showApplications].filter(
+    Boolean,
+  ).length;
+  const heroSpan =
+    sideTiles === 0
+      ? "lg:col-span-4"
+      : sideTiles === 1
+        ? "lg:col-span-3"
+        : sideTiles === 2
+          ? "lg:col-span-2"
+          : "lg:col-span-1";
   return (
     <Section
       className="ls-report-section"
-      eyebrow="AppFolio · live lease + application sync"
+      eyebrow="AppFolio · live lease sync"
       title="Lifecycle pipeline"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
-        {/* Headline tile: active leases (the closed-loop floor — what
-            the org is currently retaining). Always non-zero for any
-            AppFolio-connected property so it grounds the strip. */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+        {/* Headline gradient tile — always rendered. The closed-loop
+            floor (active leases right now) is the most meaningful
+            single number for any AppFolio-connected operator. */}
         <div
-          className="rounded-xl border border-primary/20 px-3.5 py-3 lg:col-span-2"
+          className={`rounded-2xl border border-primary/20 px-5 py-4 ${heroSpan}`}
           style={{
             backgroundImage:
-              "linear-gradient(135deg, #DBEAFE 0%, #FFFFFF 70%)",
+              "linear-gradient(135deg, #DBEAFE 0%, #EFF6FF 50%, #FFFFFF 100%)",
           }}
         >
           <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
             Active leases · right now
           </div>
-          <div className="mt-1 flex items-baseline gap-2">
+          <div className="mt-1.5 flex items-baseline gap-2 flex-wrap">
             <div
-              className="text-[36px] font-bold tabular-nums leading-none"
+              className="text-[52px] font-bold tabular-nums leading-none"
               style={{
                 backgroundImage:
-                  "linear-gradient(90deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%)",
+                  "linear-gradient(90deg, #1D4ED8 0%, #2563EB 35%, #3B82F6 70%, #60A5FA 100%)",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -2799,47 +2844,58 @@ function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
             >
               {stats.activeLeases.toLocaleString()}
             </div>
+            <span className="text-[12px] font-semibold text-primary uppercase tracking-wider">
+              leases on the books
+            </span>
           </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">
-            Closed-loop floor · AppFolio lease sync
+          <div className="mt-2 text-[11.5px] text-muted-foreground leading-relaxed">
+            Closed-loop floor straight from the AppFolio lease sync — the
+            retained-revenue number ownership cares about most. Updates
+            automatically with every AppFolio webhook.
           </div>
         </div>
-        <div className="rounded-xl border border-border bg-card px-3.5 py-3">
-          <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
-            Signed · period
-          </div>
-          <div className="mt-1 flex items-baseline gap-2">
-            <div className="text-[22px] font-bold tabular-nums text-foreground leading-none">
-              {stats.leasesSignedInPeriod.toLocaleString()}
+        {showSignedPeriod ? (
+          <div className="rounded-xl border border-border bg-card px-3.5 py-3">
+            <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+              Signed · period
             </div>
-            {deltaPct != null ? <DeltaPill value={deltaPct} /> : null}
+            <div className="mt-1 flex items-baseline gap-2">
+              <div className="text-[24px] font-bold tabular-nums text-foreground leading-none">
+                {stats.leasesSignedInPeriod.toLocaleString()}
+              </div>
+              {deltaPct != null ? <DeltaPill value={deltaPct} /> : null}
+            </div>
+            <div className="mt-1 text-[11px] text-muted-foreground">
+              Lease.startDate in window
+            </div>
           </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">
-            Lease.startDate in window
+        ) : null}
+        {showSigned180 ? (
+          <div className="rounded-xl border border-border bg-card px-3.5 py-3">
+            <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+              Signed · last 180d
+            </div>
+            <div className="mt-1 text-[24px] font-bold tabular-nums text-foreground leading-none">
+              {stats.leasesSignedLast180d.toLocaleString()}
+            </div>
+            <div className="mt-1 text-[11px] text-muted-foreground">
+              Seasonal rolling 6-month
+            </div>
           </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card px-3.5 py-3">
-          <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
-            Signed · last 180d
+        ) : null}
+        {showApplications ? (
+          <div className="rounded-xl border border-border bg-card px-3.5 py-3">
+            <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+              Applications · period
+            </div>
+            <div className="mt-1 text-[24px] font-bold tabular-nums text-foreground leading-none">
+              {stats.applicationsInPeriod.toLocaleString()}
+            </div>
+            <div className="mt-1 text-[11px] text-muted-foreground">
+              {stats.applicationsApprovedInPeriod} approved
+            </div>
           </div>
-          <div className="mt-1 text-[22px] font-bold tabular-nums text-foreground leading-none">
-            {stats.leasesSignedLast180d.toLocaleString()}
-          </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">
-            Seasonal rolling 6-month
-          </div>
-        </div>
-        <div className="rounded-xl border border-border bg-card px-3.5 py-3">
-          <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
-            Applications · period
-          </div>
-          <div className="mt-1 text-[22px] font-bold tabular-nums text-foreground leading-none">
-            {stats.applicationsInPeriod.toLocaleString()}
-          </div>
-          <div className="mt-1 text-[11px] text-muted-foreground">
-            {stats.applicationsApprovedInPeriod} approved
-          </div>
-        </div>
+        ) : null}
       </div>
     </Section>
   );
