@@ -23,6 +23,12 @@ export const REPORT_TABS = [
   { id: "operations", label: "Operations" },
   { id: "reputation", label: "Reputation" },
   { id: "insights", label: "Insights" },
+  // Norman feedback (May 22): show the SEO content pipeline (blog
+  // posts + neighborhood pages) as a real deliverable. Tab renders
+  // only when snapshot.contentStats has rows — the report-view hides
+  // the panel when empty so the tab strip stays clean for tenants
+  // without content yet.
+  { id: "content", label: "Content" },
 ] as const;
 
 export type ReportTabId = (typeof REPORT_TABS)[number]["id"];

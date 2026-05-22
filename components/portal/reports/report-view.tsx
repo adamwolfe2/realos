@@ -4,6 +4,7 @@ import type {
   DataSourceStatus,
   ReportAeoStats,
   ReportAiVisibility,
+  ReportContentStats,
   ReportDataSources,
   ReportOccupancyStats,
   ReportRenewalStats,
@@ -727,7 +728,25 @@ export function ReportView({
             />
           ) : null}
         </ReportTabPanel>
+
+        <ReportTabPanel id="content">
+          {snapshot.contentStats && snapshot.contentStats.totalPublished > 0 ? (
+            <ContentSection stats={snapshot.contentStats} />
+          ) : (
+            <EmptyTabState
+              title="No published content yet"
+              body="Blog posts and neighborhood landing pages appear here once they're approved and shipped. Drafts in progress show on /portal/content."
+            />
+          )}
+        </ReportTabPanel>
       </ReportTabs>
+
+      {/* Top performers strip — pinned at the bottom of every report so
+          ownership ends the read with the highest-ROI specifics:
+          best keywords, biggest competitor citation gaps, most-engaged
+          properties. Norman feedback (May 22): the report should
+          close strong with actionable specifics, not just data sources. */}
+      <TopPerformersStrip snapshot={snapshot} />
 
       {/* Data sources — small transparency footer so clients know
           exactly what's flowing into the report. Builds trust:
@@ -1545,6 +1564,76 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
           />
           <MiniStat label="Citation share" value={`${sharePct}%`} />
         </div>
+
+        {/* Per-engine stacked bar chart (Norman feedback May 22 — richer
+            charts in every tab). Each engine row shows cited / competitor
+            cited / not-mentioned as stacked segments so ownership reads
+            "Claude cited me 4/12, Perplexity 6/15" instead of a single
+            aggregate number. Only renders when byEngine is present
+            (legacy snapshots predate this field). */}
+        {stats.byEngine && stats.byEngine.length > 0 ? (
+          <div>
+            <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
+              By engine
+            </div>
+            <div className="space-y-1.5">
+              {stats.byEngine.map((e) => {
+                const notMentioned =
+                  e.total - e.cited - e.competitorCited;
+                const pct = (n: number) =>
+                  e.total > 0 ? (n / e.total) * 100 : 0;
+                return (
+                  <div key={e.engine} className="flex items-center gap-3">
+                    <div className="text-[11px] font-semibold uppercase tracking-wide text-foreground w-24 shrink-0">
+                      {e.engine}
+                    </div>
+                    <div className="flex-1 h-5 rounded overflow-hidden bg-muted/40 flex">
+                      {e.cited > 0 ? (
+                        <div
+                          className="h-full bg-primary"
+                          style={{ width: `${pct(e.cited)}%` }}
+                          title={`${e.cited} cited`}
+                        />
+                      ) : null}
+                      {e.competitorCited > 0 ? (
+                        <div
+                          className="h-full bg-rose-400"
+                          style={{ width: `${pct(e.competitorCited)}%` }}
+                          title={`${e.competitorCited} competitor cited`}
+                        />
+                      ) : null}
+                      {notMentioned > 0 ? (
+                        <div
+                          className="h-full bg-muted-foreground/30"
+                          style={{ width: `${pct(notMentioned)}%` }}
+                          title={`${notMentioned} not mentioned`}
+                        />
+                      ) : null}
+                    </div>
+                    <div className="text-[11px] font-semibold tabular-nums text-foreground w-14 text-right">
+                      {e.cited}/{e.total}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-2 flex items-center gap-3 text-[10.5px] text-muted-foreground">
+              <span className="inline-flex items-center gap-1">
+                <span className="h-2 w-2 rounded-sm bg-primary" />
+                cited you
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="h-2 w-2 rounded-sm bg-rose-400" />
+                cited competitor
+              </span>
+              <span className="inline-flex items-center gap-1">
+                <span className="h-2 w-2 rounded-sm bg-muted-foreground/30" />
+                not mentioned
+              </span>
+            </div>
+          </div>
+        ) : null}
+
         {stats.topCompetitors.length > 0 ? (
           <div>
             <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
@@ -2247,4 +2336,224 @@ function shortUrl(url: string): string {
   } catch {
     return url.length > 40 ? `${url.slice(0, 37)}…` : url;
   }
+}
+
+// ---------------------------------------------------------------------------
+// ContentSection — published blog posts + neighborhood landing pages.
+// Norman feedback (May 22): make the SEO content pipeline visible in
+// the report as a real deliverable. Top strip: total published + new
+// in period. Bar chart: format breakdown. List: most recent 5 with
+// clickable links so ownership can read the actual content.
+// ---------------------------------------------------------------------------
+function ContentSection({ stats }: { stats: ReportContentStats }) {
+  const maxCount = Math.max(1, ...stats.byFormat.map((f) => f.count));
+  return (
+    <div className="space-y-3">
+      <Section
+        className="ls-report-section"
+        eyebrow={`${stats.publishedInPeriod} shipped this period`}
+        title="Published content"
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+          <MiniStat
+            label="Total published"
+            value={stats.totalPublished.toLocaleString()}
+          />
+          <MiniStat
+            label="New this period"
+            value={stats.publishedInPeriod.toLocaleString()}
+          />
+          <MiniStat
+            label="Formats"
+            value={stats.byFormat.length.toLocaleString()}
+          />
+        </div>
+
+        {/* Format bar chart — horizontal bars sized by count. Reads as
+            "you publish X blog posts, Y neighborhood pages, Z FAQ
+            blocks" at a glance. */}
+        <div className="space-y-2">
+          <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+            By format
+          </div>
+          {stats.byFormat.map((row) => (
+            <div key={row.format} className="flex items-center gap-3">
+              <div className="text-[12px] font-medium text-foreground w-44 truncate">
+                {row.format}
+              </div>
+              <div className="flex-1 h-4 bg-muted/40 rounded overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded"
+                  style={{ width: `${(row.count / maxCount) * 100}%` }}
+                />
+              </div>
+              <div className="text-[12px] font-semibold tabular-nums text-foreground w-10 text-right">
+                {row.count}
+              </div>
+            </div>
+          ))}
+        </div>
+      </Section>
+
+      {stats.recent.length > 0 ? (
+        <Section
+          className="ls-report-section"
+          eyebrow="Most recent"
+          title="What we shipped"
+        >
+          <ul className="space-y-2">
+            {stats.recent.map((item, i) => {
+              const inner = (
+                <>
+                  <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                    {item.format}
+                  </div>
+                  <div className="text-[13px] font-medium text-foreground mt-0.5 leading-snug">
+                    {item.title}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground mt-0.5">
+                    Published {new Date(item.publishedAt).toLocaleDateString(undefined, {
+                      month: "short",
+                      day: "numeric",
+                      year: "numeric",
+                    })}
+                  </div>
+                </>
+              );
+              return (
+                <li
+                  key={`${item.title}-${i}`}
+                  className="rounded-lg border border-border bg-card px-3 py-2.5"
+                >
+                  {item.url ? (
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block hover:bg-muted/30 -m-3 p-3 rounded-lg transition-colors"
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    inner
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </Section>
+      ) : null}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TopPerformersStrip — pinned at the bottom of every report. Three
+// columns that answer "what's working RIGHT NOW?":
+//   1. Top organic queries (clicks)
+//   2. Top reputation source (mention count)
+//   3. Top competitor citation gap (AEO)
+// Each column is its own card so ownership ends the report on the most
+// actionable specifics. Renders only when the underlying lists have
+// content.
+// ---------------------------------------------------------------------------
+function TopPerformersStrip({ snapshot }: { snapshot: ReportSnapshot }) {
+  const topQuery = snapshot.topQueries[0] ?? null;
+  const topPage = snapshot.topPages[0] ?? null;
+  const topCompetitor = snapshot.aeoStats?.topCompetitors[0] ?? null;
+  const topMentionSource =
+    snapshot.reputationStats?.sourceBreakdown
+      ? [...snapshot.reputationStats.sourceBreakdown].sort(
+          (a, b) => b.count - a.count,
+        )[0] ?? null
+      : null;
+  // If everything is empty, render nothing — don't pad the bottom of
+  // a brand-new report with empty cards.
+  if (!topQuery && !topPage && !topCompetitor && !topMentionSource) return null;
+  return (
+    <section
+      className="ls-report-section grid grid-cols-1 md:grid-cols-3 gap-2"
+      aria-label="Top performers this period"
+    >
+      {topQuery ? (
+        <Card
+          eyebrow="Top organic query"
+          value={`#${topQuery.position.toFixed(1)}`}
+          headline={`“${topQuery.query}”`}
+          sub={`${topQuery.clicks.toLocaleString()} clicks · ${topQuery.impressions.toLocaleString()} impressions`}
+          tone="good"
+        />
+      ) : null}
+      {topCompetitor ? (
+        <Card
+          eyebrow="Biggest AI search gap"
+          value={`×${topCompetitor.mentions}`}
+          headline={topCompetitor.name}
+          sub={`Cited ${topCompetitor.mentions}× more than you on discovery queries`}
+          tone="warn"
+        />
+      ) : null}
+      {topMentionSource ? (
+        <Card
+          eyebrow="Most active reputation channel"
+          value={topMentionSource.count.toLocaleString()}
+          headline={prettySource(topMentionSource.source)}
+          sub={`${topMentionSource.count} mentions tracked across this source`}
+          tone="neutral"
+        />
+      ) : topPage ? (
+        <Card
+          eyebrow="Top landing page"
+          value={topPage.sessions.toLocaleString()}
+          headline={topPage.url}
+          sub={`${topPage.sessions} sessions · ${topPage.clicks} GSC clicks`}
+          tone="good"
+        />
+      ) : null}
+    </section>
+  );
+}
+
+function Card({
+  eyebrow,
+  value,
+  headline,
+  sub,
+  tone,
+}: {
+  eyebrow: string;
+  value: string;
+  headline: string;
+  sub: string;
+  tone: "good" | "warn" | "neutral";
+}) {
+  const toneCls =
+    tone === "warn"
+      ? "border-amber-200 bg-amber-50/40"
+      : tone === "good"
+        ? "border-primary/20 bg-primary/[0.03]"
+        : "border-border bg-card";
+  return (
+    <div className={`rounded-2xl border ${toneCls} px-4 py-3.5`}>
+      <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
+        {eyebrow}
+      </p>
+      <p className="mt-0.5 text-[22px] font-semibold tracking-tight text-foreground tabular-nums">
+        {value}
+      </p>
+      <p className="mt-1 text-[12px] font-medium text-foreground leading-snug truncate">
+        {headline}
+      </p>
+      <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+        {sub}
+      </p>
+    </div>
+  );
+}
+
+function prettySource(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
 }

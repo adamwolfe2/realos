@@ -145,6 +145,30 @@ export type ReportAiVisibility = {
   topBrandedTerms: string[];
 };
 
+// Content — Published blog posts + neighborhood landing pages in the
+// reporting window. Surfaces in the new Content tab so ownership sees
+// the SEO content pipeline as a real deliverable, not just a backstage
+// process. Counts cover both ContentDraft (BLOG_POST / FAQ_BLOCK /
+// META_REWRITE / etc.) and NeighborhoodPage.
+export type ReportContentStats = {
+  // Lifetime publishes — the surface area that earned organic traffic.
+  totalPublished: number;
+  // New this period — proves the team is actively shipping content.
+  publishedInPeriod: number;
+  // Format breakdown, sorted desc by count. Drives the small bar
+  // chart in the Content tab so ownership reads "you published 8 blog
+  // posts + 3 neighborhood pages this month" at a glance.
+  byFormat: Array<{ format: string; count: number }>;
+  // Most recent published items (max 5) with title + format + URL so
+  // ownership can click through and read the actual content.
+  recent: Array<{
+    title: string;
+    format: string;
+    url: string | null;
+    publishedAt: string;
+  }>;
+};
+
 // AEO — Answer Engine Optimization. For each AI engine (Claude, ChatGPT,
 // Perplexity, Gemini) we run a fixed set of prompts about the property's
 // market ("best apartments in <city>", "compare Berkeley student housing",
@@ -169,6 +193,15 @@ export type ReportAeoStats = {
     prompt: string;
     engine: string;
     competitors: string[];
+  }>;
+  // Per-engine breakdown — drives the bar chart in the report's AEO
+  // section so ownership reads "Claude cited you 6/12, Perplexity 8/15"
+  // as a comparable side-by-side instead of one aggregate number.
+  byEngine?: Array<{
+    engine: string;
+    total: number;
+    cited: number;
+    competitorCited: number;
   }>;
 };
 
@@ -331,6 +364,9 @@ export type ReportSnapshot = {
   // search vs how often a competitor was cited instead. Optional on
   // legacy snapshots; the view renders nothing when absent.
   aeoStats?: ReportAeoStats;
+  // Content (blog posts + neighborhood landing pages) shipped in the
+  // window. Drives the new Content tab.
+  contentStats?: ReportContentStats;
   aiAnalysis?: AiAnalysis;
   // Optional on legacy snapshots. When present, drives section gating
   // across the report (and the email) so we never show metrics for a
@@ -1318,6 +1354,14 @@ export async function generateReportSnapshot(
     periodEnd,
   ).catch(() => undefined);
 
+  // Content stats — blog posts + neighborhood pages published.
+  const contentStats = await buildContentStats(
+    orgId,
+    scope.propertyId,
+    periodStart,
+    periodEnd,
+  ).catch(() => undefined);
+
   // Connection status for every integration — drives section gating in
   // the renderer + email so we never show fake $X ad spend / 0 tours
   // numbers for sources the operator hasn't actually connected.
@@ -1356,6 +1400,7 @@ export async function generateReportSnapshot(
     renewalStats,
     visitorStats,
     aeoStats,
+    contentStats,
     dataSources,
   };
 
@@ -1567,6 +1612,141 @@ async function buildDataSources(
 }
 
 // ---------------------------------------------------------------------------
+// buildContentStats — published content (blog posts + neighborhood
+// pages) shipped in the period. Powers the Content tab in the report
+// so ownership sees the SEO content pipeline as a real deliverable
+// alongside the rest of the marketing surface.
+// ---------------------------------------------------------------------------
+async function buildContentStats(
+  orgId: string,
+  propertyId: string | null,
+  periodStart: Date,
+  periodEnd: Date,
+): Promise<ReportContentStats | undefined> {
+  const propertyClause = propertyId ? { propertyId } : {};
+  // ContentDraft — only count rows that actually landed (status !=
+  // GENERATING/REJECTED). Format covers BLOG_POST, FAQ_BLOCK, etc.
+  const [draftsAll, draftsInPeriod, neighborhoodsAll, neighborhoodsInPeriod] =
+    await Promise.all([
+      prisma.contentDraft
+        .findMany({
+          where: {
+            orgId,
+            ...propertyClause,
+            status: { in: ["APPROVED", "SHIPPED"] },
+          },
+          select: {
+            id: true,
+            format: true,
+            createdAt: true,
+            output: true,
+          },
+        })
+        .catch(() => [] as Array<{ id: string; format: string; createdAt: Date; output: unknown }>),
+      prisma.contentDraft
+        .findMany({
+          where: {
+            orgId,
+            ...propertyClause,
+            status: { in: ["APPROVED", "SHIPPED"] },
+            createdAt: { gte: periodStart, lt: periodEnd },
+          },
+          select: {
+            id: true,
+            format: true,
+            createdAt: true,
+            output: true,
+          },
+        })
+        .catch(() => [] as Array<{ id: string; format: string; createdAt: Date; output: unknown }>),
+      prisma.neighborhoodPage
+        .findMany({
+          where: {
+            orgId,
+            ...propertyClause,
+            status: "PUBLISHED",
+          },
+          select: {
+            id: true,
+            city: true,
+            neighborhood: true,
+            slug: true,
+            publishedAt: true,
+            title: true,
+          },
+        })
+        .catch(() => [] as Array<{ id: string; city: string; neighborhood: string; slug: string; title: string; publishedAt: Date | null }>),
+      prisma.neighborhoodPage
+        .findMany({
+          where: {
+            orgId,
+            ...propertyClause,
+            status: "PUBLISHED",
+            publishedAt: { gte: periodStart, lt: periodEnd },
+          },
+          select: {
+            id: true,
+            city: true,
+            neighborhood: true,
+            slug: true,
+            publishedAt: true,
+            title: true,
+          },
+        })
+        .catch(() => [] as Array<{ id: string; city: string; neighborhood: string; slug: string; title: string; publishedAt: Date | null }>),
+    ]);
+
+  const totalPublished = draftsAll.length + neighborhoodsAll.length;
+  const publishedInPeriod = draftsInPeriod.length + neighborhoodsInPeriod.length;
+  if (totalPublished === 0) return undefined;
+
+  // Format breakdown — normalize NeighborhoodPage as its own format.
+  const formatCounts = new Map<string, number>();
+  for (const d of draftsAll) {
+    const key = humanFormat(d.format);
+    formatCounts.set(key, (formatCounts.get(key) ?? 0) + 1);
+  }
+  if (neighborhoodsAll.length > 0) {
+    formatCounts.set("Neighborhood page", neighborhoodsAll.length);
+  }
+  const byFormat = [...formatCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([format, count]) => ({ format, count }));
+
+  // Recent published list — last 5 across both tables.
+  const recentMerged: ReportContentStats["recent"] = [
+    ...draftsAll.map((d) => {
+      const out = d.output && typeof d.output === "object" ? (d.output as Record<string, unknown>) : null;
+      const title = typeof out?.title === "string" ? out.title : humanFormat(d.format);
+      const url = typeof out?.url === "string" ? out.url : null;
+      return {
+        title,
+        format: humanFormat(d.format),
+        url,
+        publishedAt: d.createdAt.toISOString(),
+      };
+    }),
+    ...neighborhoodsAll.map((n) => ({
+      title: n.title || (n.neighborhood ? `${n.neighborhood}, ${n.city}` : n.city),
+      format: "Neighborhood page",
+      url: n.slug ? `/${n.slug}` : null,
+      publishedAt: (n.publishedAt ?? new Date()).toISOString(),
+    })),
+  ]
+    .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
+    .slice(0, 5);
+
+  return { totalPublished, publishedInPeriod, byFormat, recent: recentMerged };
+}
+
+function humanFormat(format: string): string {
+  return format
+    .toLowerCase()
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+// ---------------------------------------------------------------------------
 // buildAeoStats — Answer Engine Optimization rollup for the period.
 //
 // Pulls AeoCitationCheck rows in the window and summarizes:
@@ -1640,6 +1820,27 @@ async function buildAeoStats(
     .slice(0, 5)
     .map(([name, mentions]) => ({ name, mentions }));
 
+  // Per-engine breakdown for the bar chart in the report.
+  const byEngineMap = new Map<
+    string,
+    { engine: string; total: number; cited: number; competitorCited: number }
+  >();
+  for (const c of checks) {
+    const e = byEngineMap.get(c.engine) ?? {
+      engine: c.engine,
+      total: 0,
+      cited: 0,
+      competitorCited: 0,
+    };
+    e.total += 1;
+    if (c.status === "CITED") e.cited += 1;
+    else if (c.status === "COMPETITOR_CITED") e.competitorCited += 1;
+    byEngineMap.set(c.engine, e);
+  }
+  const byEngine = [...byEngineMap.values()].sort((a, b) =>
+    a.engine.localeCompare(b.engine),
+  );
+
   return {
     totalChecks: checks.length,
     cited,
@@ -1648,6 +1849,7 @@ async function buildAeoStats(
     enginesUsed: [...enginesSeen].sort(),
     topCompetitors,
     sampleCompetitorQueries: competitorSamples,
+    byEngine,
   };
 }
 
