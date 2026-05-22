@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useTransition } from "react";
 import { ArrowRight, Check, CircleDashed, Clock3, Lightbulb, X } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { SeverityPill, CategoryBadge } from "./severity-pill";
+import { CategoryBadge } from "./severity-pill";
 import { acknowledgeInsight, dismissInsight, snoozeInsight, markActed } from "@/app/portal/insights/actions";
 
 export type InsightCardData = {
@@ -58,18 +58,12 @@ export function InsightCard({
     return (
       <article
         className={cn(
-          "group relative rounded-xl border bg-card p-3 transition-shadow duration-150 hover:shadow-[0_2px_12px_rgba(0,0,0,0.03)]",
-          insight.severity === "critical"
-            ? "border-primary/40 bg-primary/[0.03]"
-            : insight.severity === "warning"
-              ? "border-primary/20"
-              : "border-border",
+          "group relative rounded-xl border border-border bg-card p-3 transition-shadow duration-150 hover:shadow-[0_2px_12px_rgba(0,0,0,0.03)]",
           pending && "opacity-60",
         )}
       >
         <header className="flex items-center justify-between gap-2">
           <div className="flex items-center gap-1.5 min-w-0">
-            <SeverityPill severity={insight.severity} size="sm" />
             {insight.property ? (
               <span className="text-[10px] font-medium text-muted-foreground truncate">
                 {insight.property.name}
@@ -109,24 +103,16 @@ export function InsightCard({
   return (
     <article
       className={cn(
-        "group relative rounded-xl border bg-card transition-shadow duration-150",
+        "group relative rounded-xl border border-border bg-card transition-shadow duration-150",
         "hover:shadow-[0_4px_24px_rgba(0,0,0,0.04)]",
-        // Brand-aligned severity scale — single accent (primary) varies
-        // by emphasis instead of hue rotation. Critical = filled accent
-        // border + tinted bg; warning = subtle accent border; info =
-        // neutral.
-        insight.severity === "critical"
-          ? "border-primary/40 bg-primary/[0.03]"
-          : insight.severity === "warning"
-            ? "border-primary/20"
-            : "border-border",
+        // No severity-based card tinting — neutral border on every card.
+        // Order conveys urgency; the operator's eye lands on the top card.
         "p-4",
         pending && "opacity-60",
       )}
     >
       <header className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-1.5 flex-wrap min-w-0">
-          <SeverityPill severity={insight.severity} size="md" />
           <CategoryBadge category={insight.category} />
           {insight.property ? (
             <span className="inline-flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
@@ -266,14 +252,12 @@ function InsightSparkline({
   data: number[];
   severity: string;
 }) {
-  const stroke =
-    severity === "critical" ? "#b91c1c" : severity === "warning" ? "#b45309" : "#2563EB";
-  const fill =
-    severity === "critical"
-      ? "rgba(185, 28, 28, 0.08)"
-      : severity === "warning"
-        ? "rgba(180, 83, 9, 0.08)"
-        : "rgba(37, 99, 235, 0.08)";
+  // Severity argument retained for future re-introduction of a hue map.
+  // Currently neutral brand blue across every severity per operator
+  // feedback that red/amber treatments felt alarming.
+  void severity;
+  const stroke = "#2563EB";
+  const fill = "rgba(37, 99, 235, 0.08)";
 
   const min = Math.min(...data);
   const max = Math.max(...data);

@@ -153,13 +153,7 @@ export function InsightsHero({
             {isProperty ? `Insights for ${propertyName}` : "Insights"}
           </p>
           <span className="text-[11px] tabular-nums text-muted-foreground">
-            {[
-              counts.critical > 0 ? `${counts.critical} critical` : null,
-              counts.warning > 0 ? `${counts.warning} warning` : null,
-              counts.info > 0 ? `${counts.info} info` : null,
-            ]
-              .filter(Boolean)
-              .join(" · ")}
+            {counts.total} signal{counts.total === 1 ? "" : "s"} this period
           </span>
         </div>
         <Link

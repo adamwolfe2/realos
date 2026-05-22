@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  AlertCircle,
   AlertTriangle,
   AlignLeft,
   ArrowRight,
@@ -59,13 +58,6 @@ const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   Sparkles,
 };
 
-const SEVERITY_DOT: Record<ProactiveAction["severity"], string> = {
-  critical: "bg-destructive",
-  high: "bg-amber-500",
-  medium: "bg-primary",
-  low: "bg-muted-foreground/60",
-};
-
 type PortfolioAction = ProactiveAction & {
   propertyName: string;
   propertyId: string;
@@ -111,8 +103,6 @@ export function DashboardActionItems({
   if (visible.length === 0) return null;
 
   const headlineCount = visible.length;
-  const criticalCount = visible.filter((a) => a.severity === "critical").length;
-  const highCount = visible.filter((a) => a.severity === "high").length;
 
   return (
     <section
@@ -129,18 +119,6 @@ export function DashboardActionItems({
               <p className="text-[10px] font-mono font-semibold uppercase tracking-[0.14em] text-primary">
                 Action items
               </p>
-              {criticalCount > 0 ? (
-                <span className="inline-flex items-center gap-1 rounded-md border border-red-400 bg-white px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-700">
-                  <AlertCircle className="h-2.5 w-2.5" strokeWidth={2.5} />
-                  {criticalCount} critical
-                </span>
-              ) : null}
-              {highCount > 0 ? (
-                <span className="inline-flex items-center gap-1 rounded-md border border-amber-400 bg-white px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
-                  <AlertCircle className="h-2.5 w-2.5" strokeWidth={2.5} />
-                  {highCount} high
-                </span>
-              ) : null}
             </div>
             <h2 className="text-[13px] font-semibold text-foreground leading-tight">
               {headlineCount} high-impact task{headlineCount === 1 ? "" : "s"} across your portfolio
@@ -158,10 +136,6 @@ export function DashboardActionItems({
           return (
             <li key={action.id}>
               <div className="group flex items-center gap-3 px-4 py-2.5 hover:bg-muted/30 transition-colors">
-                <span
-                  aria-hidden="true"
-                  className={`h-1.5 w-1.5 rounded-full shrink-0 ${SEVERITY_DOT[action.severity]}`}
-                />
                 <Icon className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline gap-1.5 flex-wrap">

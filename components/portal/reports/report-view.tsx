@@ -1786,28 +1786,12 @@ function groupKey(item: InsightItem): string {
   return `${item.kind}::${item.severity}`;
 }
 
-function SeverityBadge({ severity }: { severity: string }) {
-  return (
-    <span
-      className={
-        "text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded font-bold " +
-        severityTone(severity)
-      }
-    >
-      {severity}
-    </span>
-  );
-}
-
 function InsightRow({ insight }: { insight: InsightItem }) {
   return (
     <li className="rounded-xl border border-border bg-card px-3 py-2">
-      <div className="flex items-center gap-2 flex-wrap">
-        <SeverityBadge severity={insight.severity} />
-        <span className="text-sm font-semibold text-foreground">
-          {insight.title}
-        </span>
-      </div>
+      <span className="text-sm font-semibold text-foreground">
+        {insight.title}
+      </span>
       <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed line-clamp-2">
         {insight.body}
       </p>
@@ -1851,12 +1835,9 @@ function GroupedInsights({ items }: { items: InsightItem[] }) {
             <details className="group">
               <summary className="px-3 py-2 cursor-pointer list-none flex items-start gap-2 flex-wrap hover:bg-muted/30">
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <SeverityBadge severity={sample.severity} />
-                    <span className="text-sm font-semibold text-foreground">
-                      {title}
-                    </span>
-                  </div>
+                  <span className="text-sm font-semibold text-foreground">
+                    {title}
+                  </span>
                   <p className="mt-0.5 text-xs text-muted-foreground leading-relaxed">
                     {body}
                   </p>
