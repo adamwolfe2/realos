@@ -1004,45 +1004,13 @@ export default async function PortalHome({
 
       <SetupBanner forceShow={forceShowSetup} />
 
-      {/* Demo-prep banner for SG Real Estate (May 22). Surfaces the
-          velocity story — "we shipped 38 fixes from your bug queue this
-          week" — so Norman opens the dashboard with proof we're moving,
-          not staring at a blank greeting. Slug-gated so other tenants
-          don't see this hardcoded SG-specific copy. Remove (or move
-          behind a generic "recent updates" feature flag) after the
-          demo. */}
-      {org?.slug === "telegraph-commons" ? (
-        <section
-          data-no-print
-          className="rounded-xl border border-primary/30 bg-primary/[0.04] px-4 py-3"
-          aria-label="What changed this week"
-        >
-          <div className="flex items-start justify-between gap-3 flex-wrap">
-            <div className="min-w-0">
-              <p className="text-[10px] tracking-widest uppercase font-bold text-primary">
-                Shipped this week for SG Real Estate
-              </p>
-              <p className="mt-1 text-[13px] font-semibold text-foreground leading-tight">
-                38 of your 46 bug reports resolved · visitor feed now
-                surfaces city + landing page · AEO competitor citations
-                tracked across 3 engines · monthly report now headlines
-                &ldquo;captured contacts&rdquo; (leads + identified
-                visitors) instead of just form leads
-              </p>
-              <p className="mt-1 text-[11px] text-muted-foreground">
-                Open
-                <Link
-                  href="/admin/bug-reports"
-                  className="ml-1 underline underline-offset-2 hover:text-foreground"
-                >
-                  the bug queue
-                </Link>{" "}
-                to see every fix with its resolution note.
-              </p>
-            </div>
-          </div>
-        </section>
-      ) : null}
+      {/* Norman feedback (May 22): the "Shipped this week" velocity
+          banner that lived here was meta noise — operators (vs admin)
+          don't care about our bug-queue throughput, and linking them
+          to /admin/bug-reports from the customer-facing dashboard is
+          confusing. Removed entirely. Velocity proof belongs in the
+          admin surface (where Norman + Adam already see the queue),
+          not on the operator dashboard. */}
 
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
 
