@@ -1,7 +1,11 @@
 // ---------------------------------------------------------------------------
-// PATCH /api/admin/clients/[orgId]/content-quota
+// PATCH /api/admin/clients/[id]/content-quota
 //
-// Admin-only. Writes Organization.contentQuotaOverride.
+// Admin-only. Writes Organization.contentQuotaOverride. The `id` param is
+// the Organization.id; the slug is named `[id]` to match the convention
+// used by every other route under app/api/admin/clients/[id]/* and to
+// avoid Next.js's "different slug names for the same dynamic path" error
+// that fires when sibling dynamic dirs disagree on their param name.
 //
 // Request body:
 //   { overrides: Record<ContentFormat, number | null> }
@@ -45,12 +49,12 @@ const bodySchema = z.object({
 
 export async function PATCH(
   req: NextRequest,
-  ctx: { params: Promise<{ orgId: string }> },
+  ctx: { params: Promise<{ id: string }> },
 ) {
   const { error } = await requireAdmin();
   if (error) return error;
 
-  const { orgId } = await ctx.params;
+  const { id: orgId } = await ctx.params;
 
   let parsedBody: z.infer<typeof bodySchema>;
   try {
