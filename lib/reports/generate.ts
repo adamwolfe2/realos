@@ -160,6 +160,12 @@ export type ReportLifecycleStats = {
   leasesSignedInPeriod: number;
   // Prior-period equivalent so the view can render a delta pill.
   priorLeasesSignedInPeriod: number;
+  // Rolling 180-day signed count — useful for seasonal portfolios
+  // (student housing peaks Jan-Feb; small monthly windows can read
+  // "1" while the building actually signed 36 leases in the last
+  // 6 months). Gives ownership the seasonal context next to the
+  // honest current-period number.
+  leasesSignedLast180d: number;
   // Total active leases right now (Lease.status === ACTIVE). The
   // closed-loop floor — what the org is currently retaining.
   activeLeases: number;
@@ -714,6 +720,7 @@ export async function generateReportSnapshot(
     activeLeasesCount,
     applicationStatusGroups,
     leasesByPropertyGroups,
+    leasesSignedLast180dCount,
   ] = await Promise.all([
     // KPI counts — scope.propertyClause is `{}` for org-wide (legacy
     // behavior) or `{ propertyId }` for per-property reports.
@@ -1032,10 +1039,17 @@ export async function generateReportSnapshot(
     // the period go to "Applied"; approved go to "Approved". Same scope
     // (org-wide or per-property) the rest of the report uses.
     // ─────────────────────────────────────────────────────────────────────
+    // Important: when the report is portfolio-wide, we still want to
+    // exclude EXCLUDED / ARCHIVED / IMPORTED properties (e.g. SG's 126
+    // sub-record buildings the operator already curated out via
+    // tc-isolate). marketablePropertyWhere() returns the canonical
+    // {lifecycle: ACTIVE} clause and is applied to the Property
+    // relation on every Lease/Application query below.
     prisma.lease.count({
       where: {
         orgId,
         ...scope.propertyClause,
+        property: { lifecycle: "ACTIVE" },
         startDate: { gte: periodStart, lt: periodEnd },
       },
     }),
@@ -1043,6 +1057,7 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
+        property: { lifecycle: "ACTIVE" },
         startDate: { gte: priorStart, lt: priorEnd },
       },
     }),
@@ -1050,6 +1065,7 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
+        property: { lifecycle: "ACTIVE" },
         status: LeaseStatus.ACTIVE,
       },
     }),
@@ -1057,6 +1073,7 @@ export async function generateReportSnapshot(
       by: ["status"],
       where: {
         ...(scope.propertyId ? { propertyId: scope.propertyId } : {}),
+        property: { lifecycle: "ACTIVE" },
         lead: { orgId },
         // Use createdAt as the period boundary — appliedAt is set by
         // AppFolio sync and sometimes nulls out for in-flight rows.
@@ -1072,9 +1089,24 @@ export async function generateReportSnapshot(
       where: {
         orgId,
         ...scope.propertyClause,
+        property: { lifecycle: "ACTIVE" },
         startDate: { gte: periodStart, lt: periodEnd },
       },
       _count: { _all: true },
+    }),
+    // Rolling 180-day lease count — for seasonal portfolios where the
+    // current 7/28-day window misses the natural signing peak (student
+    // housing: Jan–Feb push; family rentals: summer move-ins).
+    prisma.lease.count({
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        property: { lifecycle: "ACTIVE" },
+        startDate: {
+          gte: new Date(Date.now() - 180 * DAY_MS),
+          lte: now,
+        },
+      },
     }),
   ]);
 
@@ -1508,6 +1540,7 @@ export async function generateReportSnapshot(
       ? {
           leasesSignedInPeriod: leasesSignedCount,
           priorLeasesSignedInPeriod: priorLeasesSignedCount,
+          leasesSignedLast180d: leasesSignedLast180dCount,
           activeLeases: activeLeasesCount,
           applicationsInPeriod,
           applicationsApprovedInPeriod,

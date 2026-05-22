@@ -2765,48 +2765,81 @@ function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
             stats.priorLeasesSignedInPeriod) *
             100,
         )
-      : stats.leasesSignedInPeriod > 0
-        ? null
-        : null;
+      : null;
   return (
     <Section
       className="ls-report-section"
       eyebrow="AppFolio · live lease + application sync"
       title="Lifecycle pipeline"
     >
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2">
+        {/* Headline tile: active leases (the closed-loop floor — what
+            the org is currently retaining). Always non-zero for any
+            AppFolio-connected property so it grounds the strip. */}
         <div
-          className="rounded-xl border border-primary/20 px-3.5 py-3"
+          className="rounded-xl border border-primary/20 px-3.5 py-3 lg:col-span-2"
           style={{
             backgroundImage:
-              "linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 70%)",
+              "linear-gradient(135deg, #DBEAFE 0%, #FFFFFF 70%)",
           }}
         >
           <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
-            Leases signed · period
+            Active leases · right now
           </div>
           <div className="mt-1 flex items-baseline gap-2">
-            <div className="text-[26px] font-bold tabular-nums text-foreground leading-none">
+            <div
+              className="text-[36px] font-bold tabular-nums leading-none"
+              style={{
+                backgroundImage:
+                  "linear-gradient(90deg, #1D4ED8 0%, #2563EB 50%, #3B82F6 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              {stats.activeLeases.toLocaleString()}
+            </div>
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            Closed-loop floor · AppFolio lease sync
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card px-3.5 py-3">
+          <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+            Signed · period
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <div className="text-[22px] font-bold tabular-nums text-foreground leading-none">
               {stats.leasesSignedInPeriod.toLocaleString()}
             </div>
             {deltaPct != null ? <DeltaPill value={deltaPct} /> : null}
           </div>
           <div className="mt-1 text-[11px] text-muted-foreground">
-            From AppFolio Lease.startDate window
+            Lease.startDate in window
           </div>
         </div>
-        <MiniStat
-          label="Active leases"
-          value={stats.activeLeases.toLocaleString()}
-        />
-        <MiniStat
-          label="Applications · period"
-          value={stats.applicationsInPeriod.toLocaleString()}
-        />
-        <MiniStat
-          label="Approved · period"
-          value={stats.applicationsApprovedInPeriod.toLocaleString()}
-        />
+        <div className="rounded-xl border border-border bg-card px-3.5 py-3">
+          <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+            Signed · last 180d
+          </div>
+          <div className="mt-1 text-[22px] font-bold tabular-nums text-foreground leading-none">
+            {stats.leasesSignedLast180d.toLocaleString()}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            Seasonal rolling 6-month
+          </div>
+        </div>
+        <div className="rounded-xl border border-border bg-card px-3.5 py-3">
+          <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+            Applications · period
+          </div>
+          <div className="mt-1 text-[22px] font-bold tabular-nums text-foreground leading-none">
+            {stats.applicationsInPeriod.toLocaleString()}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            {stats.applicationsApprovedInPeriod} approved
+          </div>
+        </div>
       </div>
     </Section>
   );
