@@ -1,3 +1,4 @@
+import type React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
@@ -63,6 +64,61 @@ export default async function PublicReportPage({
 
   const snapshot = report.snapshot as unknown as ReportSnapshot;
 
+  // Norman feedback (May 22): the shared report should open with the
+  // property's building image pinned at the top — same hero treatment
+  // as the main dashboard's Featured Property card. Fetch the
+  // property record when the snapshot is scoped to one so ReportView
+  // can render the PropertyHeroBanner. Portfolio-wide reports skip
+  // the lookup entirely and fall through to the text-only header.
+  let propertyHero: React.ComponentProps<typeof ReportView>["propertyHero"] =
+    null;
+  const scopedPropertyId = snapshot.scope?.propertyId ?? null;
+  if (scopedPropertyId) {
+    const property = await prisma.property
+      .findUnique({
+        where: { id: scopedPropertyId },
+        select: {
+          id: true,
+          name: true,
+          city: true,
+          state: true,
+          residentialSubtype: true,
+          commercialSubtype: true,
+          propertyType: true,
+          heroImageUrl: true,
+          heroImageOffsetX: true,
+          heroImageOffsetY: true,
+          heroImageScale: true,
+          googleAggRating: true,
+        },
+      })
+      .catch(() => null);
+    if (property) {
+      const subtypeRaw =
+        property.residentialSubtype ??
+        property.commercialSubtype ??
+        property.propertyType;
+      const subtype = subtypeRaw
+        ?.toString()
+        .toLowerCase()
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      const location = [property.city, property.state]
+        .filter(Boolean)
+        .join(", ");
+      propertyHero = {
+        propertyId: property.id,
+        propertyName: property.name,
+        subtitle: [location, subtype].filter(Boolean).join(" · ") || null,
+        heroImageUrl: property.heroImageUrl,
+        imageOffsetX: property.heroImageOffsetX ?? 0,
+        imageOffsetY: property.heroImageOffsetY ?? 0,
+        imageScale: property.heroImageScale ?? 1,
+        googleAggRating: property.googleAggRating,
+      };
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[var(--parchment)] py-10 px-4">
       <style
@@ -118,6 +174,7 @@ export default async function PublicReportPage({
           orgName={report.org?.name ?? null}
           orgLogoUrl={report.org?.logoUrl ?? null}
           publicFraming
+          propertyHero={propertyHero}
         />
       </div>
     </div>

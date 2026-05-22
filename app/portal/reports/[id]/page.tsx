@@ -1,3 +1,4 @@
+import type React from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -54,6 +55,62 @@ export default async function ReportDetailPage({
   const status = (report.status as "draft" | "shared" | "archived") ?? "draft";
   const shareUrl =
     status === "shared" ? `${getSiteUrl()}/r/${report.shareToken}` : null;
+
+  // Norman feedback (May 22): the report should open with the building
+  // image pinned at the top, exactly like the dashboard's Featured
+  // Property card. Fetch the property record when the report is scoped
+  // to one so ReportView can render the PropertyHeroBanner. Mirrors
+  // the same loader logic in app/r/[token]/page.tsx — kept inline
+  // rather than extracted because there are only two call sites and
+  // each has slightly different auth/scope rules.
+  let propertyHero: React.ComponentProps<typeof ReportView>["propertyHero"] =
+    null;
+  const scopedPropertyId = snapshot.scope?.propertyId ?? null;
+  if (scopedPropertyId) {
+    const property = await prisma.property
+      .findFirst({
+        where: { id: scopedPropertyId, ...tenantWhere(scope) },
+        select: {
+          id: true,
+          name: true,
+          city: true,
+          state: true,
+          residentialSubtype: true,
+          commercialSubtype: true,
+          propertyType: true,
+          heroImageUrl: true,
+          heroImageOffsetX: true,
+          heroImageOffsetY: true,
+          heroImageScale: true,
+          googleAggRating: true,
+        },
+      })
+      .catch(() => null);
+    if (property) {
+      const subtypeRaw =
+        property.residentialSubtype ??
+        property.commercialSubtype ??
+        property.propertyType;
+      const subtype = subtypeRaw
+        ?.toString()
+        .toLowerCase()
+        .replace(/_/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      const location = [property.city, property.state]
+        .filter(Boolean)
+        .join(", ");
+      propertyHero = {
+        propertyId: property.id,
+        propertyName: property.name,
+        subtitle: [location, subtype].filter(Boolean).join(" · ") || null,
+        heroImageUrl: property.heroImageUrl,
+        imageOffsetX: property.heroImageOffsetX ?? 0,
+        imageOffsetY: property.heroImageOffsetY ?? 0,
+        imageScale: property.heroImageScale ?? 1,
+        googleAggRating: property.googleAggRating,
+      };
+    }
+  }
 
   return (
     <div className="space-y-5 report-page">
@@ -326,6 +383,7 @@ export default async function ReportDetailPage({
         notes={report.notes}
         orgName={report.org?.name ?? null}
         orgLogoUrl={report.org?.logoUrl ?? null}
+        propertyHero={propertyHero}
       />
     </div>
   );

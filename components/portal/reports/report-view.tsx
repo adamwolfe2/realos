@@ -21,6 +21,7 @@ import {
   ReportTabPanel,
 } from "@/components/portal/reports/report-tabs";
 import { summarizeGroup } from "@/lib/insights/summarize-group";
+import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
 
 // ---------------------------------------------------------------------------
 // ReportView — 2026 redesign.
@@ -42,6 +43,24 @@ type Props = {
   orgName?: string | null;
   orgLogoUrl?: string | null;
   publicFraming?: boolean;
+  // Norman feedback (May 22): the shared report needs to read as a
+  // premium landing page — pinned property hero with the building
+  // image at the top, exactly like the main dashboard's featured
+  // property card. When propertyHero is supplied (org-loader fetches
+  // it for property-scoped reports), ReportView renders a
+  // PropertyHeroBanner above the existing header strip + tabs.
+  // Stays optional so portfolio-wide reports still render the
+  // text-only header.
+  propertyHero?: {
+    propertyId: string;
+    propertyName: string;
+    subtitle: string | null;
+    heroImageUrl: string | null;
+    imageOffsetX?: number;
+    imageOffsetY?: number;
+    imageScale?: number;
+    googleAggRating?: number | null;
+  } | null;
 };
 
 // Single source of truth for chart palette so PDFs are predictable.
@@ -73,6 +92,7 @@ export function ReportView({
   orgName,
   orgLogoUrl,
   publicFraming = false,
+  propertyHero = null,
 }: Props) {
   const periodStart = new Date(snapshot.periodStart);
   const periodEnd = new Date(snapshot.periodEnd);
@@ -119,6 +139,62 @@ export function ReportView({
 
   return (
     <article className="space-y-4 report-article ls-report">
+      {/* Norman feedback (May 22): the shared report should feel like
+          a premium landing page — pinned property hero with the
+          building image at the top, mirroring the main dashboard's
+          Featured Property card. Renders only when the loader fetched
+          propertyHero (single-property reports); portfolio-wide
+          reports fall through to the text-only header strip below.
+          editable=false because this is read-only — operators upload
+          images from /portal/properties/[id], not the report. */}
+      {propertyHero ? (
+        <div data-no-print>
+          <PropertyHeroBanner
+            propertyId={propertyHero.propertyId}
+            propertyName={propertyHero.propertyName}
+            subtitle={propertyHero.subtitle}
+            heroImageUrl={propertyHero.heroImageUrl}
+            imageOffsetX={propertyHero.imageOffsetX ?? 0}
+            imageOffsetY={propertyHero.imageOffsetY ?? 0}
+            imageScale={propertyHero.imageScale ?? 1}
+            editable={false}
+            compact
+            stats={[
+              {
+                label: "Captured · period",
+                value: (
+                  snapshot.kpis.leads + (snapshot.kpis.identifiedVisitors ?? 0)
+                ).toLocaleString("en-US"),
+                hint: `${snapshot.kpis.leads} form + ${snapshot.kpis.identifiedVisitors ?? 0} visitors`,
+              },
+              {
+                label: snapshot.aeoStats
+                  ? "AI search · cited"
+                  : "Tours · period",
+                value: snapshot.aeoStats
+                  ? `${snapshot.aeoStats.cited}/${snapshot.aeoStats.totalChecks}`
+                  : snapshot.kpis.tours.toLocaleString("en-US"),
+                hint: snapshot.aeoStats
+                  ? `${snapshot.aeoStats.enginesUsed.length} engines`
+                  : undefined,
+              },
+              {
+                label: "Reputation",
+                value:
+                  propertyHero.googleAggRating != null
+                    ? `${propertyHero.googleAggRating.toFixed(1)}★`
+                    : snapshot.reputationStats?.overallRating != null
+                      ? `${snapshot.reputationStats.overallRating.toFixed(1)}★`
+                      : "—",
+                hint: snapshot.reputationStats?.totalReviews
+                  ? `${snapshot.reputationStats.totalReviews} reviews`
+                  : undefined,
+              },
+            ]}
+          />
+        </div>
+      ) : null}
+
       {/* Print-only branded header. Hidden on screen via the
           `print-only-header` class (CSS in [id]/page.tsx). In print this
           renders as the first thing on page 1 — wordmark + org name +
