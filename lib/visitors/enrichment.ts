@@ -155,10 +155,31 @@ export function extractIdentity(
 
   const location = [city, state].filter(Boolean).join(", ") || null;
 
-  const { path: lastPagePath, url: lastPageUrl } =
+  // Last page: try first-party pagesViewed (set when our own pixel
+  // captures the navigation), then fall back to AudienceLab's
+  // REFERRER_URL on enrichedData (set when a visitor is identified via
+  // the segment sync rather than our pixel — this is the common case for
+  // TC, where 146/146 identified visitors have only REFERRER_URL).
+  // AudienceLab sometimes emits "$direct" for direct loads; treat that
+  // as no-page-known so the table renders an honest dash rather than
+  // a literal "$direct" string.
+  function fromReferrerUrl(): { path: string | null; url: string | null } {
+    const raw = readString(enriched, "REFERRER_URL", "referrer_url");
+    if (!raw || raw === "$direct") return { path: null, url: null };
+    try {
+      const parsed = new URL(raw);
+      const path = parsed.pathname + (parsed.search ? parsed.search : "") || "/";
+      return { path, url: raw };
+    } catch {
+      return { path: raw, url: raw };
+    }
+  }
+  const firstParty =
     "pagesViewed" in visitor
       ? readPagePath(visitor.pagesViewed as Json)
       : { path: null, url: null };
+  const { path: lastPagePath, url: lastPageUrl } =
+    firstParty.url ? firstParty : fromReferrerUrl();
 
   const displayName =
     [firstName, lastName].filter(Boolean).join(" ").trim() ||

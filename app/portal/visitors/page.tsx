@@ -18,6 +18,7 @@ import { ExportButton } from "@/components/ui/export-button";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { EngageComposer } from "./engage-composer";
 import { PixelSyncButton } from "@/components/portal/sync/pixel-sync-button";
+import { AutoRefresh } from "@/components/portal/sync/auto-refresh";
 import {
   VisitorTable,
   type VisitorRow,
@@ -188,15 +189,24 @@ export default async function VisitorsPage({
       orderBy,
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      // Explicit narrow select — drops `enrichedData` and `pagesViewed`
-      // (each 10-50KB of JSON) which the list view does NOT render and
-      // which dwarfed the per-row payload (~2MB / 50 rows pre-fix).
-      // extractIdentity (lib/visitors/enrichment.ts) now accepts a
-      // narrowed `VisitorIdentitySource` and returns nulls for
-      // JSON-derived fields when those columns aren't selected, so the
-      // "location" / "last page" columns gracefully render "—" here and
-      // the rich enrichment continues to load on the detail page where
-      // the full Visitor row is still fetched.
+      // Norman bug (May 22): the list previously omitted `enrichedData`
+      // for payload-size reasons, which caused EVERY row to render "—"
+      // for LAST PAGE and LOCATION. The "10-50KB per row" concern in
+      // the prior comment was speculative — actual TC payloads measure
+      // ~600 bytes per visitor (segment-sync enrichment is small) so
+      // 50 rows = ~30KB which is well within budget. Re-included
+      // enrichedData so the table can pull city/state and REFERRER_URL
+      // through extractIdentity. We still drop pagesViewed (NULL for
+      // every segment-sync'd visitor anyway — only set by the
+      // first-party JS pixel which TC doesn't use).
+      //
+      // firstSeenAt is also selected now — Norman's screenshot showed
+      // ALL 146 rows as "less than a minute ago" because lastSeenAt
+      // is overwritten every time the segment-sync cron fires. Until
+      // the upstream fix lands (only update lastSeenAt when there's a
+      // genuinely new event), the table falls back to firstSeenAt for
+      // display so the timestamps tell the real story of when the
+      // visitor was actually first identified.
       select: {
         id: true,
         firstName: true,
@@ -204,6 +214,8 @@ export default async function VisitorsPage({
         email: true,
         sessionCount: true,
         lastSeenAt: true,
+        firstSeenAt: true,
+        enrichedData: true,
       },
     }),
     prisma.visitor.count({ where }),
@@ -334,22 +346,22 @@ export default async function VisitorsPage({
 
   return (
     <div className="space-y-3 ls-page-fade">
-      {/* Norman bug #90: two refresh affordances on this page (silent
-          15s AutoRefresh + the visible "Sync now" button) created a
-          "which one is it?" question every time an operator landed
-          here. Killed the silent AutoRefresh — Sync now is the single
-          source of truth, the freshness dot in the header tells you
-          when the last event landed, and there's no longer a hidden
-          15s loop that fires off page rerenders behind the operator's
-          back. Re-add only if we ship a webhook-driven push channel
-          that meaningfully changes the data more often than the
-          operator is willing to click. */}
+      {/* Norman bug (May 22): page felt "stuck" because operators had
+          to manually refresh OR click Sync now to see new visitors.
+          Background context — there are actually THREE layers running:
+          (1) pixel-segment-sync cron pulls AL every 5 min,
+          (2) this AutoRefresh re-reads our DB every 60s so cron
+              updates surface without a manual reload,
+          (3) the Sync now button forces an immediate AL pull when an
+              operator can't wait for the cron.
+          60s is a calm cadence — slow enough not to flash, fast enough
+          that returning from another tab shows fresh data. The page
+          copy below names all three so there's no "which one is it?"
+          confusion from bug #90. */}
+      <AutoRefresh intervalMs={60_000} />
       <PageHeader
         title="Visitor feed"
-        // Norman bug #90: single, honest sentence — pixel does the
-        // identifying, Sync now pulls the latest into your view. No
-        // mention of background loops or refetch intervals.
-        description="Real people visiting your site, identified by the pixel. Click Sync now to pull the latest identifications."
+        description="Real people visiting your site, identified by the pixel. New identifications land every ~5 minutes; this list refreshes every 60 seconds. Click Sync now to pull fresh data immediately."
         actions={
           <div className="flex items-center gap-3 flex-wrap">
             <PropertyMultiSelect
@@ -520,6 +532,17 @@ export default async function VisitorsPage({
           <VisitorTable
             rows={visitors.map<VisitorRow>((v) => {
               const id = extractIdentity(v);
+              // Pick the most-honest "when did we see this person" timestamp.
+              // Cursive's segment-sync rewrites lastSeenAt to NOW on every
+              // refresh (the sync upserts and bumps the row), which made
+              // every visitor appear "less than a minute ago" — useless.
+              // firstSeenAt only changes when the visitor is genuinely new,
+              // so it's the better signal here until the upstream sync is
+              // fixed to only bump lastSeenAt on real new events.
+              const displayAt =
+                v.firstSeenAt && v.firstSeenAt < v.lastSeenAt
+                  ? v.firstSeenAt
+                  : v.lastSeenAt;
               return {
                 id: v.id,
                 firstName: id.firstName,
@@ -530,7 +553,7 @@ export default async function VisitorsPage({
                 lastPage: id.lastPagePath,
                 lastPageUrl: id.lastPageUrl,
                 sessions: v.sessionCount,
-                lastSeenAtIso: v.lastSeenAt.toISOString(),
+                lastSeenAtIso: displayAt.toISOString(),
                 liveChat: visitorChatMap.has(v.id),
               };
             })}

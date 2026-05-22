@@ -503,6 +503,28 @@ async function upsertResolutionAsVisitor(
   });
 
   if (existing) {
+    // Norman bug (May 22): the segment-sync cron fires every 5 min and
+    // re-pulls every member of the configured AL segment. The previous
+    // implementation bumped lastSeenAt to NOW on EVERY refresh, which
+    // made all 146 TC visitors render as "less than a minute ago" in
+    // the Visitor feed — useless. lastSeenAt should reflect when the
+    // visitor was actually on the site, not when our cron ran.
+    //
+    // Policy:
+    //   - First creation: firstSeenAt + lastSeenAt = now (correct)
+    //   - Webhook real-time event: bump lastSeenAt (real signal)
+    //   - Segment-sync refresh: DO NOT bump lastSeenAt unless the
+    //     visitor has been silent for > 6 hours (then it's reasonable
+    //     to interpret re-inclusion in the segment as new activity)
+    //
+    // The 6h threshold balances two failure modes: bump-too-eagerly
+    // (every visitor looks freshly active even after weeks dormant)
+    // vs. bump-never (a visitor who's been coming back daily looks
+    // stuck on their original timestamp). 6h matches the cadence at
+    // which a real human session ends and a fresh one starts.
+    const SIX_HOURS_MS = 6 * 60 * 60 * 1000;
+    const stale =
+      Date.now() - existing.lastSeenAt.getTime() > SIX_HOURS_MS;
     await prisma.visitor.update({
       where: { id: existing.id },
       data: {
@@ -513,7 +535,7 @@ async function upsertResolutionAsVisitor(
         phone: phone ?? existing.phone ?? undefined,
         hashedEmail: hemSha256 ?? existing.hashedEmail ?? undefined,
         enrichedData: item as unknown as Prisma.InputJsonValue,
-        lastSeenAt: new Date(),
+        ...(stale ? { lastSeenAt: new Date() } : {}),
         status:
           firstName && lastName && normalizedEmail
             ? "IDENTIFIED"
