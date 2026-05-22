@@ -359,8 +359,12 @@ export function ReportView({
 
       <ReportTabs>
         <ReportTabPanel id="overview">
-      {/* Hero gradient KPI block — anchors the page like the dashboard */}
-      <HeroKpi snapshot={snapshot} />
+      {/* Hero gradient KPI block — anchors the page like the dashboard.
+          Norman feedback (May 22): when the PropertyHeroBanner is
+          rendered above with the same "150 captured" headline, this
+          block is a literal duplicate. Suppress when propertyHero is
+          present so the page never repeats the same number twice. */}
+      {propertyHero ? null : <HeroKpi snapshot={snapshot} />}
 
       {/* AI analysis */}
       {snapshot.aiAnalysis ? (
@@ -422,7 +426,16 @@ export function ReportView({
         return (
           <section
             aria-label="Key metrics"
-            className="ls-report-section grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2"
+            // Norman feedback (May 22): "We don't wanna waste space."
+            // Was locked to md:grid-cols-5 regardless of card count
+            // so a 3-card render (SG: Form leads + Identified
+            // visitors + Organic sessions) left two empty cells.
+            // auto-fit packs whatever's rendered to fill the row.
+            className="ls-report-section grid grid-cols-1 sm:grid-cols-2 gap-2"
+            style={{
+              gridTemplateColumns:
+                "repeat(auto-fit, minmax(180px, 1fr))",
+            }}
           >
             <IconKpi
               label="Form/chatbot leads"
@@ -490,8 +503,14 @@ export function ReportView({
           summary strip pulls the highest-signal numbers from every
           other tab so an executive can see the whole platform in one
           page without clicking through. Each card only renders when
-          there's actually data behind it. */}
-      <OverviewSummaryStrip snapshot={snapshot} />
+          there's actually data behind it.
+          hideHeroDuplicates suppresses the Reputation + AI Search
+          cards when the PropertyHeroBanner above already shows the
+          same numbers. */}
+      <OverviewSummaryStrip
+        snapshot={snapshot}
+        hideHeroDuplicates={Boolean(propertyHero)}
+      />
 
       {/* Norman feedback (May 22, second pass): "The overview page
           should have all the graphs and all the top-line metrics."
@@ -1505,12 +1524,25 @@ function AiActionCard({ item }: { item: AiAnalysis["actions"][number] }) {
 // reputation/AEO configured the strip can collapse to two cards or
 // be hidden entirely.
 // ---------------------------------------------------------------------------
-function OverviewSummaryStrip({ snapshot }: { snapshot: ReportSnapshot }) {
+function OverviewSummaryStrip({
+  snapshot,
+  hideHeroDuplicates = false,
+}: {
+  snapshot: ReportSnapshot;
+  /** When the PropertyHeroBanner is shown above, skip Reputation +
+   *  AI Search Visibility cards because they duplicate the hero
+   *  stats. Norman May 22: "Notice how we have 150 captured twice
+   *  here? We don't wanna waste space!" */
+  hideHeroDuplicates?: boolean;
+}) {
   const rep = snapshot.reputationStats;
   const aeo = snapshot.aeoStats;
   const cb = snapshot.chatbotStatsExtended ?? snapshot.chatbotStats;
   const visitors = snapshot.visitorStats;
   const topQuery = snapshot.topQueries[0] ?? null;
+  const lifecycle = snapshot.lifecycleStats;
+  const aiVis = snapshot.aiVisibility;
+  const topPage = snapshot.topPages[0] ?? null;
 
   type Card = {
     eyebrow: string;
@@ -1521,7 +1553,11 @@ function OverviewSummaryStrip({ snapshot }: { snapshot: ReportSnapshot }) {
   };
   const cards: Card[] = [];
 
-  if (rep && rep.totalReviews > 0) {
+  // Hero already carries Reputation + AI Search Visibility tiles —
+  // skip them when the hero is rendered to avoid the duplicate
+  // Norman flagged. Otherwise include them for portfolio reports
+  // without a property hero.
+  if (!hideHeroDuplicates && rep && rep.totalReviews > 0) {
     cards.push({
       eyebrow: "Reputation",
       title: rep.overallRating != null ? `${rep.overallRating.toFixed(1)} ★` : "—",
@@ -1531,7 +1567,7 @@ function OverviewSummaryStrip({ snapshot }: { snapshot: ReportSnapshot }) {
     });
   }
 
-  if (aeo && aeo.totalChecks > 0) {
+  if (!hideHeroDuplicates && aeo && aeo.totalChecks > 0) {
     const gap = aeo.competitorCited - aeo.cited;
     cards.push({
       eyebrow: "AI search visibility",
@@ -1568,12 +1604,50 @@ function OverviewSummaryStrip({ snapshot }: { snapshot: ReportSnapshot }) {
         : cb.conversations > 0
           ? `${Math.round((cb.leadsFromChat / cb.conversations) * 100)}%`
           : "—";
+    const lifetimeHint =
+      "lifetimeConversations" in cb &&
+      cb.lifetimeConversations != null &&
+      cb.lifetimeConversations !== cb.conversations
+        ? ` · ${cb.lifetimeConversations.toLocaleString()} lifetime`
+        : "";
     cards.push({
       eyebrow: "Chatbot",
       title: cb.conversations.toLocaleString(),
       headline: `${cb.leadsFromChat} captured (${rate})`,
-      sub: `Avg ${cb.avgMessageCount.toFixed(1)} messages per conversation`,
+      sub: `Avg ${cb.avgMessageCount.toFixed(1)} messages per conversation${lifetimeHint}`,
       tone: cb.leadsFromChat === 0 && cb.conversations > 5 ? "warn" : "neutral",
+    });
+  }
+
+  // ─── New cards Norman May 22: fill the white space with unique
+  // dense metrics that AREN'T in the hero. Each appears only when
+  // there's real data behind it. ─────────────────────────────────
+
+  // Lifecycle headline — AppFolio active leases (the closed-loop
+  // floor). The Traffic tab carries the full strip; this card is
+  // the at-a-glance Overview signal.
+  if (lifecycle && lifecycle.activeLeases > 0) {
+    cards.push({
+      eyebrow: "Active leases",
+      title: lifecycle.activeLeases.toLocaleString(),
+      headline: `${lifecycle.leasesSignedLast180d} signed last 180d`,
+      sub: `${lifecycle.leasesSignedInPeriod} signed this period · From AppFolio sync`,
+      tone: "good",
+    });
+  }
+
+  // Branded search — the "does AI / Google know who you are" axis.
+  // Different signal than AEO citation share.
+  if (aiVis && aiVis.brandedClicks > 0) {
+    cards.push({
+      eyebrow: "Branded search clicks",
+      title: aiVis.brandedClicks.toLocaleString(),
+      headline: `${aiVis.brandedShare}% of all organic clicks`,
+      sub:
+        aiVis.topBrandedTerms.length > 0
+          ? `Top term: &ldquo;${aiVis.topBrandedTerms[0]}&rdquo;`
+          : `${aiVis.brandedImpressions.toLocaleString()} impressions`,
+      tone: "good",
     });
   }
 
@@ -1587,12 +1661,27 @@ function OverviewSummaryStrip({ snapshot }: { snapshot: ReportSnapshot }) {
     });
   }
 
+  if (topPage) {
+    cards.push({
+      eyebrow: "Top landing page",
+      title: topPage.sessions.toLocaleString(),
+      headline: `&ldquo;${shortUrl(topPage.url)}&rdquo;`,
+      sub: `${topPage.sessions.toLocaleString()} sessions in window`,
+      tone: "neutral",
+    });
+  }
+
   if (cards.length === 0) return null;
 
   return (
     <section
       aria-label="At-a-glance summary"
-      className="ls-report-section grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"
+      // auto-fit packs whatever cards render — no orphan tiles in
+      // empty cells. 240px floor keeps each card readable.
+      className="ls-report-section grid grid-cols-1 sm:grid-cols-2 gap-2"
+      style={{
+        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+      }}
     >
       {cards.map((c, i) => {
         // Norman feedback (May 22): kill the yellow warn tone — every
