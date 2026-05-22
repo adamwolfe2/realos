@@ -147,7 +147,17 @@ export default async function ChatbotPage() {
     gtmContainerId: readGtmContainerId(existingConfig?.customJson) ?? "",
   };
 
-  const snippet = `<script src="${appUrl}/embed/chatbot.js" data-slug="${org.slug}" defer></script>`;
+  // Pin install snippet to the canonical www host. NEXT_PUBLIC_APP_URL
+  // (which appUrl derives from) currently points at the apex, and
+  // Vercel's apex → www auto-redirect (HTTP 307) does not carry CORS
+  // headers — so an embed snippet referencing the apex would silently
+  // fail to fetch its config from a customer site. See popup snippet
+  // in app/portal/popups/[id]/page.tsx for the full diagnosis.
+  const snippetHost = appUrl.replace(
+    /^https:\/\/leasestack\.co/i,
+    "https://www.leasestack.co",
+  );
+  const snippet = `<script src="${snippetHost}/embed/chatbot.js" data-slug="${org.slug}" defer></script>`;
 
   // Norman bug #91: lead with the insight (conversation volume +
   // recent transcripts) so operators land on a useful dashboard, then

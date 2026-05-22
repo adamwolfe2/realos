@@ -66,7 +66,23 @@ export default async function PopupEditorPage({
   // One-line embed snippet — same shape as chatbot install-snippet so
   // operators recognize the pattern. The popup script reads the slug
   // attribute, calls /api/public/popup/config/[slug], and renders.
-  const snippet = `<script async src="${getSiteUrl()}/embed/popup.js" data-tenant="${org?.slug ?? ""}"></script>`;
+  //
+  // CORS-safe host: NEXT_PUBLIC_APP_URL is currently the apex
+  // (`https://leasestack.co`), but Vercel auto-redirects apex → www
+  // with HTTP 307, and those redirect responses do NOT carry
+  // Access-Control-Allow-Origin headers. A cross-origin fetch from a
+  // customer site (e.g. telegraphcommons.com) hitting the apex would
+  // hit the 307, browser tries to follow cross-origin, finds no CORS
+  // header on the redirect, and aborts with "blocked by CORS." The
+  // route handlers DO set CORS correctly but the browser never
+  // reaches them. The embed script itself has a runtime guard for
+  // this (public/embed/popup.js rewrites apex → www before fetch),
+  // but new install snippets should be CORS-safe out of the box.
+  const snippetHost = getSiteUrl().replace(
+    /^https:\/\/leasestack\.co/i,
+    "https://www.leasestack.co",
+  );
+  const snippet = `<script async src="${snippetHost}/embed/popup.js" data-tenant="${org?.slug ?? ""}"></script>`;
 
   // Norman bug #93: "the popups should have been shown many times since
   // going live, so there is probably just a data disconnect." We can't

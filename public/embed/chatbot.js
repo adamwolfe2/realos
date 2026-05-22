@@ -33,8 +33,18 @@
     return;
   }
 
+  // Apex → www pin (mirrors public/embed/popup.js): Vercel auto-
+  // redirects leasestack.co → www.leasestack.co with HTTP 307, and
+  // those redirect responses do NOT carry Access-Control-Allow-Origin
+  // headers. A cross-origin fetch from a customer site that hits the
+  // apex would 307 → no CORS header on the redirect → blocked. The
+  // route handlers DO set CORS correctly, but the browser never reaches
+  // them. Rewrite leasestack.co → www.leasestack.co before deriving the
+  // origin so fetches land on the canonical host directly.
   var scriptUrl = new URL(script.src, window.location.href);
-  var origin = scriptUrl.origin;
+  var origin = scriptUrl.origin === "https://leasestack.co"
+    ? "https://www.leasestack.co"
+    : scriptUrl.origin;
   var CONFIG_URL = origin + "/api/public/chatbot/config?slug=" + encodeURIComponent(slug);
   var LISTINGS_URL = origin + "/api/public/chatbot/listings-summary?slug=" + encodeURIComponent(slug);
   var CHAT_URL = origin + "/api/public/chatbot/chat";
