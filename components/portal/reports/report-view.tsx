@@ -427,14 +427,14 @@ export function ReportView({
           <section
             aria-label="Key metrics"
             // Norman feedback (May 22): "We don't wanna waste space."
-            // Was locked to md:grid-cols-5 regardless of card count
-            // so a 3-card render (SG: Form leads + Identified
-            // visitors + Organic sessions) left two empty cells.
-            // auto-fit packs whatever's rendered to fill the row.
-            className="ls-report-section grid grid-cols-1 sm:grid-cols-2 gap-2"
+            // Was locked to md:grid-cols-5 regardless of card count.
+            // auto-fit packs whatever's rendered. min 140px floor
+            // gets us 2 cols on a 390px phone instead of stacking
+            // each tile as a full-width row (Norman: "1x3 not 3x1").
+            className="ls-report-section grid gap-2"
             style={{
               gridTemplateColumns:
-                "repeat(auto-fit, minmax(180px, 1fr))",
+                "repeat(auto-fit, minmax(140px, 1fr))",
             }}
           >
             <IconKpi
@@ -708,7 +708,7 @@ export function ReportView({
               eyebrow="Conversations and captured leads"
               title="Chatbot activity"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="rounded-xl border border-border bg-card px-3 py-2">
                   <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
                     Conversations
@@ -1005,7 +1005,7 @@ function ReputationSection({ stats }: { stats: ReportReputationStats }) {
               ★
             </span>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <MiniStat
               label="New"
               value={stats.newInPeriod.toLocaleString()}
@@ -1362,7 +1362,7 @@ function OccupancySection({ stats }: { stats: ReportOccupancyStats }) {
           />
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-2 gap-2">
         <MiniStat
           label="Monthly rent roll"
           value={`$${stats.monthlyRentRollUsd.toLocaleString()}`}
@@ -1383,7 +1383,7 @@ function OccupancySection({ stats }: { stats: ReportOccupancyStats }) {
 function RenewalSection({ stats }: { stats: ReportRenewalStats }) {
   return (
     <Section eyebrow="Next 120 days" title="Renewal pipeline">
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+      <div className="grid grid-cols-3 gap-2">
         <MiniStat
           label="Active leases"
           value={stats.activeLeases.toLocaleString()}
@@ -1435,7 +1435,7 @@ function VisitorSection({ stats }: { stats: ReportVisitorStats }) {
       title="Website visitors identified"
     >
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_2fr] gap-3 items-center">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-2 gap-2">
           <MiniStat
             label="Identified"
             value={stats.identifiedVisitors.toLocaleString()}
@@ -1630,9 +1630,9 @@ function VisitorIntelligenceSection({
       ) : null}
       {blocks.length > 0 ? (
         <div
-          className="grid grid-cols-1 sm:grid-cols-2 gap-3"
+          className="grid gap-3"
           style={{
-            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
           }}
         >
           {blocks.map((b) => (
@@ -1903,11 +1903,12 @@ function OverviewSummaryStrip({
   return (
     <section
       aria-label="At-a-glance summary"
-      // auto-fit packs whatever cards render — no orphan tiles in
-      // empty cells. 240px floor keeps each card readable.
-      className="ls-report-section grid grid-cols-1 sm:grid-cols-2 gap-2"
+      // auto-fit packs whatever cards render. min 200px keeps the
+      // card readable while still packing 2-up on a 390px phone
+      // (Norman: "1x3 not 3x1").
+      className="ls-report-section grid gap-2"
       style={{
-        gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
       }}
     >
       {cards.map((c, i) => {
@@ -2003,7 +2004,7 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
             centerPrimary={`${sharePct}%`}
             centerSecondary="Citations"
           />
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2">
             <MiniStat
               label="You cited"
               value={stats.cited.toLocaleString()}
@@ -2244,7 +2245,7 @@ function AiVisibilitySection({
       title="AI search visibility"
     >
       <div className="space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <MiniStat
             label="Branded clicks"
             value={aiVisibility.brandedClicks.toLocaleString()}
@@ -2585,11 +2586,11 @@ function Table({
 
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-card px-3 py-2">
-      <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+    <div className="rounded-xl border border-border bg-card px-2.5 sm:px-3 py-2 min-w-0">
+      <div className="text-[9px] sm:text-[10px] tracking-widest uppercase font-bold text-muted-foreground truncate">
         {label}
       </div>
-      <div className="mt-0.5 text-[15px] font-bold tabular-nums text-foreground">
+      <div className="mt-0.5 text-[14px] sm:text-[15px] font-bold tabular-nums text-foreground truncate">
         {value}
       </div>
     </div>
@@ -2896,7 +2897,7 @@ function ContentSection({ stats }: { stats: ReportContentStats }) {
         eyebrow={`${stats.publishedInPeriod} shipped this period`}
         title="Published content"
       >
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
+        <div className="grid grid-cols-3 gap-2 mb-4">
           <MiniStat
             label="Total published"
             value={stats.totalPublished.toLocaleString()}
@@ -3069,8 +3070,8 @@ function TopPerformersStrip({ snapshot }: { snapshot: ReportSnapshot }) {
   if (!topQuery && !topPage && !topCompetitor && !topMentionSource) return null;
   return (
     <section
-      className="ls-report-section grid grid-cols-1 sm:grid-cols-2 gap-2"
-      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))" }}
+      className="ls-report-section grid gap-2"
+      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))" }}
       aria-label="Top performers this period"
     >
       {topQuery ? (
@@ -3465,7 +3466,12 @@ function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
             empty stacked than spread across two narrow boxes. With
             3+ they go inline. */}
         {sideStacked ? (
-          <div className="lg:col-span-2 grid grid-cols-1 gap-2 self-stretch">
+          // Norman May 22 mobile bug: was grid-cols-1 which stacked
+          // the two tiles vertically as full-width rows. They should
+          // sit side-by-side at every breakpoint so the strip reads
+          // as a single horizontal row (1x3) on phone instead of a
+          // 3-row tall column.
+          <div className="lg:col-span-2 grid grid-cols-2 lg:grid-cols-1 gap-2 self-stretch">
             {showSignedPeriod ? (
               <SideLifecycleTile
                 label="Signed · period"
@@ -3565,8 +3571,12 @@ function FunnelStrip({ stages }: { stages: ReportSnapshot["funnel"] }) {
   return (
     <ol
       className="grid gap-1.5"
+      // Norman May 22 mobile bug: at 390px viewport with 7 stages,
+      // each cell is ~50px wide and the labels truncate to "N...",
+      // "T S...", etc. auto-fit wraps to 2 rows on mobile (4+3) so
+      // each cell gets ~90px minimum and labels read cleanly.
       style={{
-        gridTemplateColumns: `repeat(${stages.length}, minmax(0, 1fr))`,
+        gridTemplateColumns: `repeat(auto-fit, minmax(85px, 1fr))`,
       }}
     >
       {stages.map((s, i) => {
