@@ -72,9 +72,30 @@ export function CursivePanel({
     startTransition(async () => {
       const res = await syncCursiveSegment(orgId);
       if (res.ok) {
+        // Norman question (May 22): "why does admin say 205 resolutions
+        // but the portal Visitor feed says 146?" The 205 is the full
+        // AudienceLab segment membership; the 146 is the subset our
+        // upsert resolved to IDENTIFIED status (firstName + lastName +
+        // email all present). The remaining ~30 land as ANONYMOUS in
+        // our DB (AL has them in the segment but with insufficient
+        // resolution data) and another ~29 get dropped entirely (no
+        // usable identity at all). Spell that out in the success
+        // message so the next time an operator clicks Sync they don't
+        // see "205" and assume that's the number of new outreach-
+        // ready contacts.
+        const dropped = res.pulled - (res.created + res.updated);
+        const droppedSuffix =
+          dropped > 0
+            ? ` (${dropped} skipped — no resolvable identity)`
+            : "";
         setSyncMsg({
           kind: "ok",
-          text: `Pulled ${res.pulled} resolutions: ${res.created} new, ${res.updated} updated.`,
+          text:
+            `Pulled ${res.pulled} segment members from AudienceLab: ` +
+            `${res.created} new, ${res.updated} updated${droppedSuffix}. ` +
+            `Operator-facing IDENTIFIED count on /portal/visitors only ` +
+            `includes rows with firstName + lastName + email — anonymous ` +
+            `rows count toward the total but aren't surfaced as contacts.`,
         });
       } else {
         setSyncMsg({ kind: "error", text: res.error });
@@ -185,14 +206,34 @@ export function CursivePanel({
       <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border">
         <div className="text-[11px] text-muted-foreground space-y-0.5">
           <div>
-            Total events received:{" "}
+            Real-time webhook events received:{" "}
             <span className="font-medium text-foreground tabular-nums">
               {initial.totalEventsCount}
             </span>
+            <span
+              className="ml-1 text-muted-foreground/80 cursor-help"
+              title="Counts only direct push events from AudienceLab to /api/webhooks/cursive. Pull-based segment-sync visitors are NOT counted here — they show up on the operator-facing /portal/visitors as IDENTIFIED contacts."
+            >
+              (?)
+            </span>
           </div>
           <div>
-            Last event: {formatTime(initial.lastEventAt)}. Last segment sync:{" "}
-            {formatTime(initial.lastSegmentSyncAt)}.
+            Last webhook event: {formatTime(initial.lastEventAt)}. Last
+            segment sync: {formatTime(initial.lastSegmentSyncAt)}.
+          </div>
+          {/* Norman question (May 22): admin says "205 resolutions", portal
+              says "146 IDENTIFIED" — why the gap? The 205 is every member
+              of the AL segment regardless of resolution quality; the 146
+              is the subset with full name + email that becomes an
+              outreach-ready contact. Spell that out below the timestamps
+              so the next operator doesn't have to ask. */}
+          <div className="pt-1">
+            Segment members pulled count what AL has in the segment. The
+            operator-facing visitor count on{" "}
+            <span className="font-medium text-foreground">/portal/visitors</span>{" "}
+            only includes IDENTIFIED rows (name + email present). Anonymous
+            and unresolved rows count toward the pull total but not the
+            outreach-ready count.
           </div>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
