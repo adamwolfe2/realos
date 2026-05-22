@@ -205,7 +205,13 @@ export type ReportContentStats = {
   recent: Array<{
     title: string;
     format: string;
+    /** Live public URL (only set for SHIPPED drafts + PUBLISHED pages). */
     url: string | null;
+    /** Read-only preview URL — populated for every row, lets ownership
+     *  click through to read the actual content even when it's still
+     *  a draft. Routes: /preview/content/[id] for ContentDraft and
+     *  /preview/neighborhood/[id] for NeighborhoodPage. */
+    previewUrl?: string;
     publishedAt: string;
     // "shipped" | "approved" | "review" | "draft" | "generating" |
     // "published". UI maps these to colored pills. Optional on legacy
@@ -2184,6 +2190,7 @@ async function buildContentStats(
       title,
       format: humanFormat(d.format),
       url,
+      previewUrl: `/preview/content/${d.id}`,
       publishedAt: d.updatedAt.toISOString(),
       status: d.status.toLowerCase(),
     };
@@ -2194,7 +2201,8 @@ async function buildContentStats(
   ].map((n) => ({
     title: n.title || (n.neighborhood ? `${n.neighborhood}, ${n.city}` : n.city),
     format: "Neighborhood page",
-    url: n.slug ? `/${n.slug}` : null,
+    url: n.status === "PUBLISHED" && n.slug ? `/${n.slug}` : null,
+    previewUrl: `/preview/neighborhood/${n.id}`,
     publishedAt: (n.publishedAt ?? n.updatedAt).toISOString(),
     status: n.status.toLowerCase(),
   }));

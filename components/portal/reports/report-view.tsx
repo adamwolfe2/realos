@@ -2639,6 +2639,12 @@ function ContentSection({ stats }: { stats: ReportContentStats }) {
             {stats.recent.map((item, i) => {
               const status = (item.status ?? "shipped").toLowerCase();
               const pill = contentStatusPill(status);
+              // Live URL wins (real published page); preview URL is the
+              // fallback so drafts/in-progress items can still be opened.
+              // Norman May 22: "It would be awesome for the user to be
+              // able to check out the blogs before they're posted."
+              const href = item.url ?? item.previewUrl ?? null;
+              const isPreview = !item.url && Boolean(item.previewUrl);
               const inner = (
                 <>
                   <div className="flex items-center gap-1.5 flex-wrap">
@@ -2654,6 +2660,11 @@ function ContentSection({ stats }: { stats: ReportContentStats }) {
                     >
                       {pill.label}
                     </span>
+                    {href ? (
+                      <span className="text-[9.5px] font-semibold text-primary ml-auto whitespace-nowrap">
+                        {isPreview ? "Preview →" : "Open →"}
+                      </span>
+                    ) : null}
                   </div>
                   <div className="text-[13px] font-medium text-foreground mt-0.5 leading-snug">
                     {item.title}
@@ -2671,9 +2682,9 @@ function ContentSection({ stats }: { stats: ReportContentStats }) {
                   key={`${item.title}-${i}`}
                   className="rounded-lg border border-border bg-card px-3 py-2.5"
                 >
-                  {item.url ? (
+                  {href ? (
                     <a
-                      href={item.url}
+                      href={href}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="block hover:bg-muted/30 -m-3 p-3 rounded-lg transition-colors"
