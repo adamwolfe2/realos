@@ -145,6 +145,33 @@ export type ReportAiVisibility = {
   topBrandedTerms: string[];
 };
 
+// AEO — Answer Engine Optimization. For each AI engine (Claude, ChatGPT,
+// Perplexity, Gemini) we run a fixed set of prompts about the property's
+// market ("best apartments in <city>", "compare Berkeley student housing",
+// etc.) and record whether the engine cited the property, cited a
+// competitor instead, or said nothing. Shown in the Insights tab as the
+// gap-to-close story: "your competitors got 32 mentions; you got 0."
+export type ReportAeoStats = {
+  totalChecks: number;
+  // Breakdown by status. Sum equals totalChecks. Status values mirror
+  // the AeoCitationStatus enum (CITED, COMPETITOR_CITED, NOT_CITED).
+  cited: number;
+  competitorCited: number;
+  notMentioned: number; // NOT_CITED — engine answered but didn't mention us
+  // Distinct engines that contributed at least one check this period.
+  enginesUsed: string[];
+  // Top competitors named across all COMPETITOR_CITED checks (most-
+  // frequent first). Drives the "you're losing to X, Y, Z" callout.
+  topCompetitors: Array<{ name: string; mentions: number }>;
+  // Sample queries where a competitor was cited — three at most so the
+  // renderer can show the actual prompts ownership cares about.
+  sampleCompetitorQueries: Array<{
+    prompt: string;
+    engine: string;
+    competitors: string[];
+  }>;
+};
+
 // ---------------------------------------------------------------------------
 // Data source connection status — drives "show vs hide vs explain" gating
 // across the report. The renderer (and the email) NEVER show metrics for
@@ -300,6 +327,10 @@ export type ReportSnapshot = {
   occupancyStats?: ReportOccupancyStats;
   renewalStats?: ReportRenewalStats;
   visitorStats?: ReportVisitorStats;
+  // AEO (Answer Engine Optimization) — how often you got cited in AI
+  // search vs how often a competitor was cited instead. Optional on
+  // legacy snapshots; the view renders nothing when absent.
+  aeoStats?: ReportAeoStats;
   aiAnalysis?: AiAnalysis;
   // Optional on legacy snapshots. When present, drives section gating
   // across the report (and the email) so we never show metrics for a
@@ -1277,6 +1308,16 @@ export async function generateReportSnapshot(
     chatbotStats,
   ).catch(() => undefined);
 
+  // AEO stats — how often we got cited vs how often a competitor was
+  // cited instead, across all AI engines in the period. Headline insight
+  // for the Insights tab.
+  const aeoStats = await buildAeoStats(
+    orgId,
+    scope.propertyId,
+    periodStart,
+    periodEnd,
+  ).catch(() => undefined);
+
   // Connection status for every integration — drives section gating in
   // the renderer + email so we never show fake $X ad spend / 0 tours
   // numbers for sources the operator hasn't actually connected.
@@ -1314,6 +1355,7 @@ export async function generateReportSnapshot(
     occupancyStats,
     renewalStats,
     visitorStats,
+    aeoStats,
     dataSources,
   };
 
@@ -1521,6 +1563,91 @@ async function buildDataSources(
       lastSyncAt: null,
       hasDataInPeriod: chatbotConvosInPeriod > 0,
     },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// buildAeoStats — Answer Engine Optimization rollup for the period.
+//
+// Pulls AeoCitationCheck rows in the window and summarizes:
+//   - totals by status (CITED, COMPETITOR_CITED, NOT_MENTIONED, etc.)
+//   - which engines contributed at least one check
+//   - which competitors are getting cited most (frequency rank)
+//   - three sample queries where a competitor was cited so the report
+//     can show ownership the actual prompts that matter
+//
+// Returns undefined when the org has zero checks in the period — the
+// renderer hides the section entirely, no "0 cited" tile.
+// ---------------------------------------------------------------------------
+async function buildAeoStats(
+  orgId: string,
+  propertyId: string | null,
+  periodStart: Date,
+  periodEnd: Date,
+): Promise<ReportAeoStats | undefined> {
+  const propertyClause = propertyId ? { propertyId } : {};
+  const checks = await prisma.aeoCitationCheck.findMany({
+    where: {
+      orgId,
+      ...propertyClause,
+      queryRunAt: { gte: periodStart, lt: periodEnd },
+    },
+    select: {
+      engine: true,
+      status: true,
+      prompt: true,
+      competitorsCited: true,
+    },
+  });
+  if (checks.length === 0) return undefined;
+
+  let cited = 0;
+  let competitorCited = 0;
+  let notMentioned = 0;
+  const enginesSeen = new Set<string>();
+  const competitorCounts = new Map<string, number>();
+  const competitorSamples: ReportAeoStats["sampleCompetitorQueries"] = [];
+
+  for (const c of checks) {
+    enginesSeen.add(c.engine);
+    if (c.status === "CITED") cited += 1;
+    else if (c.status === "COMPETITOR_CITED") {
+      competitorCited += 1;
+      const names = Array.isArray(c.competitorsCited)
+        ? (c.competitorsCited as string[]).filter((n) => typeof n === "string")
+        : [];
+      for (const name of names) {
+        competitorCounts.set(name, (competitorCounts.get(name) ?? 0) + 1);
+      }
+      // Keep up to 3 sample queries — favor variety across engines so
+      // ownership doesn't see "ChatGPT, ChatGPT, ChatGPT" but a real
+      // spread.
+      if (
+        competitorSamples.length < 3 &&
+        !competitorSamples.some((s) => s.engine === c.engine)
+      ) {
+        competitorSamples.push({
+          prompt: c.prompt,
+          engine: c.engine,
+          competitors: names.slice(0, 5),
+        });
+      }
+    } else if (c.status === "NOT_CITED") notMentioned += 1;
+  }
+
+  const topCompetitors = [...competitorCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([name, mentions]) => ({ name, mentions }));
+
+  return {
+    totalChecks: checks.length,
+    cited,
+    competitorCited,
+    notMentioned,
+    enginesUsed: [...enginesSeen].sort(),
+    topCompetitors,
+    sampleCompetitorQueries: competitorSamples,
   };
 }
 

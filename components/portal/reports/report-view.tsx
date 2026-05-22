@@ -2,6 +2,7 @@ import * as React from "react";
 import type {
   AiAnalysis,
   DataSourceStatus,
+  ReportAeoStats,
   ReportAiVisibility,
   ReportDataSources,
   ReportOccupancyStats,
@@ -401,6 +402,14 @@ export function ReportView({
           </section>
         );
       })()}
+
+      {/* Norman feedback (May 22): Overview was too thin — just the
+          hero + KPI strip, then jump straight to "Data sources". This
+          summary strip pulls the highest-signal numbers from every
+          other tab so an executive can see the whole platform in one
+          page without clicking through. Each card only renders when
+          there's actually data behind it. */}
+      <OverviewSummaryStrip snapshot={snapshot} />
         </ReportTabPanel>
 
         <ReportTabPanel id="traffic">
@@ -530,21 +539,17 @@ export function ReportView({
         </ReportTabPanel>
 
         <ReportTabPanel id="operations">
-          {/* Occupancy + Renewals row — both AppFolio-dependent; gated so
-              a marketing-only tenant doesn't see "Live · AppFolio" panels
-              with stale numbers. */}
-          {appfolioConnected &&
-          (snapshot.occupancyStats || snapshot.renewalStats) ? (
-            <div className="ls-report-section grid grid-cols-1 lg:grid-cols-2 gap-3">
-              {snapshot.occupancyStats ? (
-                <OccupancySection stats={snapshot.occupancyStats} />
-              ) : null}
-              {snapshot.renewalStats ? (
-                <RenewalSection stats={snapshot.renewalStats} />
-              ) : null}
-            </div>
-          ) : null}
-
+          {/* Norman bug #71 / #77 / repeated screenshots (May 22):
+              LeaseStack is positioned as marketing intelligence, not a
+              PMS competitor. The previous Occupancy snapshot (100%
+              occupied · $4.4M rent roll · $1,940 avg rent/unit) and
+              Renewal pipeline ($1.96M at risk in 120d) were pure
+              rent-roll surfaces — same data Norman's team already gets
+              from AppFolio, irrelevant to the digital-marketing report
+              ownership reviews. Both sections suppressed. The data
+              still loads (OccupancySection / RenewalSection retained as
+              functions) so the operations module can re-enable them
+              when we ship a dedicated "Rent roll" report kind. */}
           {/* Visitor identification — only when the pixel is firing. */}
           {snapshot.visitorStats && pixelConnected ? (
             <VisitorSection stats={snapshot.visitorStats} />
@@ -617,6 +622,16 @@ export function ReportView({
         <ReportTabPanel id="insights">
           {snapshot.aiVisibility && snapshot.aiVisibility.brandedClicks > 0 ? (
             <AiVisibilitySection aiVisibility={snapshot.aiVisibility} />
+          ) : null}
+
+          {/* AEO — "your competitors are getting cited in AI search, you
+              are not." Norman feedback (May 22): this was missing
+              entirely from the report despite being one of the highest-
+              signal sections we have for TC (32 competitor citations
+              across 36 checks). Renders only when aeoStats present
+              AND there's actually something to say. */}
+          {snapshot.aeoStats && snapshot.aeoStats.totalChecks > 0 ? (
+            <AeoSection stats={snapshot.aeoStats} />
           ) : null}
 
           {snapshot.insights.length > 0 ? (
@@ -1289,6 +1304,224 @@ function AiActionCard({ item }: { item: AiAnalysis["actions"][number] }) {
         {item.action}
       </p>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// OverviewSummaryStrip — high-signal mini-cards pulled from every other
+// tab so the Overview reads as a real executive summary instead of just
+// a single KPI strip. Each card surfaces ONE headline number + a
+// drill-in hint ("see Reputation tab", "see Insights tab") so the
+// reader knows where to click for depth. Cards render only when their
+// underlying data exists — for a marketing-only tenant without
+// reputation/AEO configured the strip can collapse to two cards or
+// be hidden entirely.
+// ---------------------------------------------------------------------------
+function OverviewSummaryStrip({ snapshot }: { snapshot: ReportSnapshot }) {
+  const rep = snapshot.reputationStats;
+  const aeo = snapshot.aeoStats;
+  const cb = snapshot.chatbotStatsExtended ?? snapshot.chatbotStats;
+  const visitors = snapshot.visitorStats;
+  const topQuery = snapshot.topQueries[0] ?? null;
+
+  type Card = {
+    eyebrow: string;
+    title: string;
+    headline: string;
+    sub: string;
+    tone?: "neutral" | "warn" | "good";
+  };
+  const cards: Card[] = [];
+
+  if (rep && rep.totalReviews > 0) {
+    cards.push({
+      eyebrow: "Reputation",
+      title: rep.overallRating != null ? `${rep.overallRating.toFixed(1)} ★` : "—",
+      headline: `${rep.totalReviews.toLocaleString()} lifetime reviews`,
+      sub: `${rep.newInPeriod} new · ${rep.positiveCount} positive · ${rep.negativeCount} negative`,
+      tone: rep.negativeCount > 0 ? "warn" : "good",
+    });
+  }
+
+  if (aeo && aeo.totalChecks > 0) {
+    const gap = aeo.competitorCited - aeo.cited;
+    cards.push({
+      eyebrow: "AI search visibility",
+      title: `${aeo.cited} / ${aeo.totalChecks}`,
+      headline:
+        gap > 0
+          ? `Cited ${aeo.cited}× · competitors cited ${aeo.competitorCited}×`
+          : `Cited ${aeo.cited}× across ${aeo.enginesUsed.length} engines`,
+      sub:
+        aeo.topCompetitors.length > 0
+          ? `Top competitors: ${aeo.topCompetitors
+              .slice(0, 3)
+              .map((c) => c.name)
+              .join(", ")}`
+          : "See Insights tab for full prompt breakdown",
+      tone: gap > 0 ? "warn" : "good",
+    });
+  }
+
+  if (visitors && visitors.identifiedVisitors > 0) {
+    cards.push({
+      eyebrow: "Pixel identifications",
+      title: visitors.identifiedVisitors.toLocaleString(),
+      headline: `${visitors.identifiedNewInPeriod} new this period`,
+      sub: `${visitors.withEmail} with email · See Operations tab for the visitor feed`,
+      tone: "good",
+    });
+  }
+
+  if (cb.conversations > 0) {
+    const rate =
+      "capturedRatePct" in cb && cb.capturedRatePct != null
+        ? `${cb.capturedRatePct}%`
+        : cb.conversations > 0
+          ? `${Math.round((cb.leadsFromChat / cb.conversations) * 100)}%`
+          : "—";
+    cards.push({
+      eyebrow: "Chatbot",
+      title: cb.conversations.toLocaleString(),
+      headline: `${cb.leadsFromChat} captured (${rate})`,
+      sub: `Avg ${cb.avgMessageCount.toFixed(1)} messages per conversation`,
+      tone: cb.leadsFromChat === 0 && cb.conversations > 5 ? "warn" : "neutral",
+    });
+  }
+
+  if (topQuery) {
+    cards.push({
+      eyebrow: "Top search query",
+      title: `#${topQuery.position.toFixed(1)}`,
+      headline: `&ldquo;${topQuery.query}&rdquo;`,
+      sub: `${topQuery.clicks.toLocaleString()} clicks · ${topQuery.impressions.toLocaleString()} impressions`,
+      tone: "good",
+    });
+  }
+
+  if (cards.length === 0) return null;
+
+  return (
+    <section
+      aria-label="At-a-glance summary"
+      className="ls-report-section grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2"
+    >
+      {cards.map((c, i) => {
+        const toneCls =
+          c.tone === "warn"
+            ? "border-amber-200 bg-amber-50/40"
+            : c.tone === "good"
+              ? "border-primary/20 bg-primary/[0.03]"
+              : "border-border bg-card";
+        return (
+          <div
+            key={`${c.eyebrow}-${i}`}
+            className={`rounded-2xl border ${toneCls} px-4 py-3.5`}
+          >
+            <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
+              {c.eyebrow}
+            </p>
+            <p className="mt-0.5 text-[22px] font-semibold tracking-tight text-foreground tabular-nums">
+              {c.title}
+            </p>
+            <p
+              className="mt-1 text-[12px] font-medium text-foreground leading-snug"
+              dangerouslySetInnerHTML={{ __html: c.headline }}
+            />
+            <p className="mt-1 text-[11px] text-muted-foreground leading-snug">
+              {c.sub}
+            </p>
+          </div>
+        );
+      })}
+    </section>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// AeoSection — AI search citation breakdown. Shows the gap-to-close
+// story: "your competitors are getting cited X times, you got cited Y."
+// This is one of the highest-signal sections in the report for any
+// pixel-active tenant — competitors named by ChatGPT / Claude /
+// Perplexity / Gemini are the literal results AI users see when they
+// ask about the local market.
+// ---------------------------------------------------------------------------
+function AeoSection({ stats }: { stats: ReportAeoStats }) {
+  const sharePct =
+    stats.totalChecks > 0
+      ? Math.round((stats.cited / stats.totalChecks) * 100)
+      : 0;
+  return (
+    <Section
+      className="ls-report-section"
+      eyebrow={`${stats.totalChecks} AI search checks · ${stats.enginesUsed.join(" · ")}`}
+      title="AI answer visibility"
+    >
+      <div className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <MiniStat
+            label="You cited"
+            value={stats.cited.toLocaleString()}
+          />
+          <MiniStat
+            label="Competitor cited"
+            value={stats.competitorCited.toLocaleString()}
+          />
+          <MiniStat label="Citation share" value={`${sharePct}%`} />
+        </div>
+        {stats.topCompetitors.length > 0 ? (
+          <div>
+            <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
+              Who is getting cited instead
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {stats.topCompetitors.map((c) => (
+                <span
+                  key={c.name}
+                  className="text-xs bg-rose-50 text-rose-700 px-2 py-0.5 rounded-full font-semibold"
+                >
+                  {c.name}
+                  <span className="ml-1 text-rose-500/70">×{c.mentions}</span>
+                </span>
+              ))}
+            </div>
+          </div>
+        ) : null}
+        {stats.sampleCompetitorQueries.length > 0 ? (
+          <div>
+            <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
+              Sample queries you lost
+            </div>
+            <ul className="space-y-1.5">
+              {stats.sampleCompetitorQueries.map((q, i) => (
+                <li
+                  key={i}
+                  className="text-[11.5px] leading-snug bg-muted/30 rounded px-2.5 py-2"
+                >
+                  <span className="font-semibold text-foreground">
+                    [{q.engine}]
+                  </span>{" "}
+                  <span className="text-foreground">
+                    &ldquo;{q.prompt.length > 110 ? q.prompt.slice(0, 107) + "…" : q.prompt}&rdquo;
+                  </span>
+                  {q.competitors.length > 0 ? (
+                    <div className="mt-0.5 text-muted-foreground">
+                      → cited {q.competitors.slice(0, 3).join(", ")}
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
+        <p className="text-[11px] text-muted-foreground leading-relaxed">
+          Each week LeaseStack asks ChatGPT, Claude, and Perplexity the
+          same set of buyer-intent prompts about your market. This is
+          the score for what they actually answered. Closing the gap
+          drives the next 12–24 months of search traffic.
+        </p>
+      </div>
+    </Section>
   );
 }
 
