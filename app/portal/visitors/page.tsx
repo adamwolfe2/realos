@@ -17,7 +17,6 @@ import { PageHeader } from "@/components/admin/page-header";
 import { ExportButton } from "@/components/ui/export-button";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { EngageComposer } from "./engage-composer";
-import { AutoRefresh } from "@/components/portal/sync/auto-refresh";
 import { PixelSyncButton } from "@/components/portal/sync/pixel-sync-button";
 import {
   VisitorTable,
@@ -335,16 +334,22 @@ export default async function VisitorsPage({
 
   return (
     <div className="space-y-3 ls-page-fade">
-      <AutoRefresh intervalMs={15000} />
+      {/* Norman bug #90: two refresh affordances on this page (silent
+          15s AutoRefresh + the visible "Sync now" button) created a
+          "which one is it?" question every time an operator landed
+          here. Killed the silent AutoRefresh — Sync now is the single
+          source of truth, the freshness dot in the header tells you
+          when the last event landed, and there's no longer a hidden
+          15s loop that fires off page rerenders behind the operator's
+          back. Re-add only if we ship a webhook-driven push channel
+          that meaningfully changes the data more often than the
+          operator is willing to click. */}
       <PageHeader
         title="Visitor feed"
-        // Norman bug #90 + 2026-05-21: operator-facing copy never
-        // names the upstream identity provider. The page refetches
-        // every 15s from OUR database (cheap); "Sync now" actively
-        // pulls the latest identified visitors from the pixel into
-        // our database. Spell that out as one pipeline without
-        // exposing the third-party vendor name.
-        description="Real people visiting your site, identified by the pixel. The list refetches every 15 seconds; use Sync now to pull the latest identifications."
+        // Norman bug #90: single, honest sentence — pixel does the
+        // identifying, Sync now pulls the latest into your view. No
+        // mention of background loops or refetch intervals.
+        description="Real people visiting your site, identified by the pixel. Click Sync now to pull the latest identifications."
         actions={
           <div className="flex items-center gap-3 flex-wrap">
             <PropertyMultiSelect
