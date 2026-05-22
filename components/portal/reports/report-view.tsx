@@ -669,7 +669,11 @@ export function ReportView({
             <VisitorSection stats={snapshot.visitorStats} />
           ) : null}
 
-          {/* Chatbot — extended if available. */}
+          {/* Chatbot — extended if available. Norman May 22:
+              he expected to see the lifetime conversation count
+              (29) but the strip only showed the period count (24).
+              We now expose BOTH numbers so ownership reads the
+              whole story. */}
           {chatbotConnected && cb.conversations > 0 ? (
             <Section
               className="ls-report-section"
@@ -677,10 +681,21 @@ export function ReportView({
               title="Chatbot activity"
             >
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
-                <MiniStat
-                  label="Conversations"
-                  value={cb.conversations.toLocaleString()}
-                />
+                <div className="rounded-xl border border-border bg-card px-3 py-2">
+                  <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+                    Conversations
+                  </div>
+                  <div className="mt-0.5 text-[15px] font-bold tabular-nums text-foreground">
+                    {cb.conversations.toLocaleString()}
+                    {"lifetimeConversations" in cb &&
+                    cb.lifetimeConversations != null &&
+                    cb.lifetimeConversations !== cb.conversations ? (
+                      <span className="ml-1.5 text-[10px] font-medium text-muted-foreground">
+                        · {cb.lifetimeConversations.toLocaleString()} lifetime
+                      </span>
+                    ) : null}
+                  </div>
+                </div>
                 <MiniStat
                   label="Leads from chat"
                   value={cb.leadsFromChat.toLocaleString()}
@@ -767,7 +782,9 @@ export function ReportView({
         </ReportTabPanel>
 
         <ReportTabPanel id="content">
-          {snapshot.contentStats && snapshot.contentStats.totalPublished > 0 ? (
+          {snapshot.contentStats &&
+          (snapshot.contentStats.totalPublished > 0 ||
+            (snapshot.contentStats.totalInProgress ?? 0) > 0) ? (
             <ContentSection stats={snapshot.contentStats} />
           ) : (
             <EmptyTabState
@@ -1657,7 +1674,7 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
             size={120}
             strokeWidth={18}
             centerPrimary={`${sharePct}%`}
-            centerSecondary="Citation share"
+            centerSecondary="Citations"
           />
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <MiniStat
@@ -1688,12 +1705,22 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
             <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
               By engine
             </div>
-            <div className="space-y-1.5">
+            {/* Norman bug (May 22, n+1): when the data has all three
+                engines at identical counts (14/14/14), simple end-aligned
+                bars read as visually flat — same proportion, same color
+                stops. Inline per-segment labels (You 14 · Comp 22 · — 2)
+                + a small win-rate pill at the end give each row its own
+                readable identity even when the underlying numbers
+                happen to match. */}
+            <div className="space-y-2">
               {stats.byEngine.map((e) => {
                 const notMentioned =
                   e.total - e.cited - e.competitorCited;
                 const pct = (n: number) =>
                   e.total > 0 ? (n / e.total) * 100 : 0;
+                const winRate = e.total > 0
+                  ? Math.round((e.cited / e.total) * 100)
+                  : 0;
                 return (
                   <div key={e.engine} className="flex items-center gap-3">
                     <div className="flex items-center gap-2 w-32 shrink-0">
@@ -1702,39 +1729,78 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
                         {prettyEngineName(e.engine)}
                       </span>
                     </div>
-                    <div className="flex-1 h-5 rounded-md overflow-hidden bg-muted/40 flex">
+                    <div className="flex-1 h-6 rounded-md overflow-hidden bg-muted/40 flex relative">
                       {e.cited > 0 ? (
                         <div
-                          className="h-full"
+                          className="h-full flex items-center justify-center min-w-0"
                           style={{
                             width: `${pct(e.cited)}%`,
                             backgroundImage:
-                              "linear-gradient(90deg, #1D4ED8 0%, #3B82F6 100%)",
+                              "linear-gradient(90deg, #1D4ED8 0%, #2563EB 100%)",
                           }}
-                          title={`${e.cited} cited`}
-                        />
+                          title={`${e.cited} cited you`}
+                        >
+                          {pct(e.cited) > 14 ? (
+                            <span className="text-[10px] font-bold text-white tabular-nums whitespace-nowrap">
+                              You {e.cited}
+                            </span>
+                          ) : null}
+                        </div>
                       ) : null}
                       {e.competitorCited > 0 ? (
                         <div
-                          className="h-full"
+                          className="h-full flex items-center justify-center min-w-0"
                           style={{
                             width: `${pct(e.competitorCited)}%`,
                             backgroundImage:
                               "linear-gradient(90deg, #93C5FD 0%, #BFDBFE 100%)",
                           }}
                           title={`${e.competitorCited} competitor cited`}
-                        />
+                        >
+                          {pct(e.competitorCited) > 14 ? (
+                            <span className="text-[10px] font-bold text-blue-900 tabular-nums whitespace-nowrap">
+                              Comp {e.competitorCited}
+                            </span>
+                          ) : null}
+                        </div>
                       ) : null}
                       {notMentioned > 0 ? (
                         <div
-                          className="h-full bg-muted-foreground/25"
+                          className="h-full bg-muted-foreground/20 flex items-center justify-center min-w-0"
                           style={{ width: `${pct(notMentioned)}%` }}
                           title={`${notMentioned} not mentioned`}
-                        />
+                        >
+                          {pct(notMentioned) > 14 ? (
+                            <span className="text-[10px] font-bold text-muted-foreground tabular-nums whitespace-nowrap">
+                              — {notMentioned}
+                            </span>
+                          ) : null}
+                        </div>
                       ) : null}
                     </div>
-                    <div className="text-[11px] font-semibold tabular-nums text-foreground w-14 text-right">
-                      {e.cited}/{e.total}
+                    <div className="flex items-center gap-1.5 w-24 shrink-0 justify-end">
+                      <span className="text-[11px] font-semibold tabular-nums text-foreground">
+                        {e.cited}/{e.total}
+                      </span>
+                      <span
+                        className="inline-flex items-center rounded-md px-1.5 py-0.5 text-[9.5px] font-bold tabular-nums"
+                        style={{
+                          backgroundColor:
+                            winRate >= 50
+                              ? "#DCFCE7"
+                              : winRate >= 30
+                                ? "#DBEAFE"
+                                : "#FEE2E2",
+                          color:
+                            winRate >= 50
+                              ? "#166534"
+                              : winRate >= 30
+                                ? "#1E40AF"
+                                : "#991B1B",
+                        }}
+                      >
+                        {winRate}%
+                      </span>
                     </div>
                   </div>
                 );
@@ -1800,9 +1866,12 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
                   key={i}
                   className="text-[11.5px] leading-snug bg-muted/30 rounded px-2.5 py-2"
                 >
-                  <span className="font-semibold text-foreground">
-                    [{q.engine}]
-                  </span>{" "}
+                  <span className="inline-flex items-center gap-1.5 mr-1 align-middle">
+                    <AeoEngineLogo engine={q.engine} />
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {prettyEngineName(q.engine)}
+                    </span>
+                  </span>
                   <span className="text-foreground">
                     &ldquo;{q.prompt.length > 110 ? q.prompt.slice(0, 107) + "…" : q.prompt}&rdquo;
                   </span>
@@ -2532,13 +2601,100 @@ function ContentSection({ stats }: { stats: ReportContentStats }) {
         </div>
       </Section>
 
-      {/* Norman feedback (May 22): the per-document "What we shipped"
-          list was dropped — reports should be high-level glance
-          surfaces, not click-through directories of individual blog
-          posts. The format breakdown above + the total counts in the
-          MiniStat row are enough story for ownership. */}
+      {/* Norman feedback (May 22, n+2): "Where are the actual blocks?
+          I want to be able to open those and see those in here. Even
+          if they're in draft detection and not fully approved yet,
+          I want to see them." Re-added the per-item list with status
+          pills so the Content tab shows the full editorial pipeline
+          (in-progress drafts + published items). Click-through is
+          opt-in — items without a public URL just render as a card
+          with the status, no broken link. */}
+      {stats.recent.length > 0 ? (
+        <Section
+          className="ls-report-section"
+          eyebrow="What's in flight + recently shipped"
+          title="Content pipeline"
+        >
+          <ul className="space-y-2">
+            {stats.recent.map((item, i) => {
+              const status = (item.status ?? "shipped").toLowerCase();
+              const pill = contentStatusPill(status);
+              const inner = (
+                <>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[9.5px] uppercase tracking-widest font-bold text-muted-foreground">
+                      {item.format}
+                    </span>
+                    <span
+                      className="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+                      style={{
+                        backgroundColor: pill.bg,
+                        color: pill.fg,
+                      }}
+                    >
+                      {pill.label}
+                    </span>
+                  </div>
+                  <div className="text-[13px] font-medium text-foreground mt-0.5 leading-snug">
+                    {item.title}
+                  </div>
+                  <div className="text-[10.5px] text-muted-foreground mt-0.5">
+                    Updated {new Date(item.publishedAt).toLocaleDateString(
+                      undefined,
+                      { month: "short", day: "numeric", year: "numeric" },
+                    )}
+                  </div>
+                </>
+              );
+              return (
+                <li
+                  key={`${item.title}-${i}`}
+                  className="rounded-lg border border-border bg-card px-3 py-2.5"
+                >
+                  {item.url ? (
+                    <a
+                      href={item.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block hover:bg-muted/30 -m-3 p-3 rounded-lg transition-colors"
+                    >
+                      {inner}
+                    </a>
+                  ) : (
+                    inner
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </Section>
+      ) : null}
     </div>
   );
+}
+
+// contentStatusPill — maps a ContentDraft / NeighborhoodPage status
+// string to a colored chip so the operator can tell at a glance
+// what's in draft vs. shipped vs. needs-review. Tones stay inside
+// the blue palette so the report never breaks into amber/red except
+// for explicit negative-review surfaces.
+function contentStatusPill(status: string): {
+  label: string;
+  bg: string;
+  fg: string;
+} {
+  const s = status.toLowerCase();
+  if (s === "shipped" || s === "published")
+    return { label: "live", bg: "#DCFCE7", fg: "#166534" };
+  if (s === "approved") return { label: "approved", bg: "#DBEAFE", fg: "#1E40AF" };
+  if (s === "pending_review")
+    return { label: "in review", bg: "#FEF3C7", fg: "#92400E" };
+  if (s === "changes_requested")
+    return { label: "revising", bg: "#FEF3C7", fg: "#92400E" };
+  if (s === "generating")
+    return { label: "drafting", bg: "#EDE9FE", fg: "#5B21B6" };
+  if (s === "draft") return { label: "draft", bg: "#E5E7EB", fg: "#374151" };
+  return { label: s, bg: "#E5E7EB", fg: "#374151" };
 }
 
 // ---------------------------------------------------------------------------
@@ -2776,6 +2932,83 @@ function ReviewSourceLogo({ source }: { source: string }) {
 // Norman bug May 22 — without this, every conversion stage past NEW
 // read 0 because Lease rows weren't joined to Lead rows.
 // ---------------------------------------------------------------------------
+// LeaseVelocitySparkline — small monthly-bars chart pinned next to the
+// active-leases hero so the 90-leases headline reads as a real curve
+// (Jul/Aug move-in + Jan signing peak, May = off-season). Pure SVG so
+// it server-renders + prints cleanly.
+function LeaseVelocitySparkline({
+  data,
+}: {
+  data: Array<{ month: string; count: number }>;
+}) {
+  if (data.length === 0) return null;
+  const max = Math.max(1, ...data.map((d) => d.count));
+  const w = 260;
+  const h = 56;
+  const barW = w / data.length;
+  return (
+    <div className="space-y-1">
+      <div className="text-[9.5px] tracking-widest uppercase font-bold text-muted-foreground">
+        12-month lease velocity
+      </div>
+      <svg
+        viewBox={`0 0 ${w} ${h + 12}`}
+        width="100%"
+        height={h + 12}
+        aria-hidden="true"
+        className="overflow-visible"
+      >
+        {data.map((d, i) => {
+          const barH = Math.max(2, (d.count / max) * h);
+          const x = i * barW + 2;
+          const y = h - barH;
+          return (
+            <g key={d.month}>
+              <rect
+                x={x}
+                y={y}
+                width={Math.max(2, barW - 4)}
+                height={barH}
+                rx={1.5}
+                fill="#2563EB"
+                opacity={d.count > 0 ? 1 : 0.18}
+              />
+              {d.count > 0 ? (
+                <text
+                  x={x + (barW - 4) / 2}
+                  y={y - 2}
+                  textAnchor="middle"
+                  fontSize="8"
+                  fontWeight="600"
+                  fill="#1D4ED8"
+                >
+                  {d.count}
+                </text>
+              ) : null}
+              <text
+                x={x + (barW - 4) / 2}
+                y={h + 9}
+                textAnchor="middle"
+                fontSize="7"
+                fill="#94A3B8"
+                style={{ textTransform: "uppercase", letterSpacing: "0.05em" }}
+              >
+                {monthLabel(d.month)}
+              </text>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
+  );
+}
+
+function monthLabel(yyyymm: string): string {
+  const [, m] = yyyymm.split("-");
+  const names = ["", "J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"];
+  return names[parseInt(m, 10)] ?? "";
+}
+
 function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
   const deltaPct =
     stats.priorLeasesSignedInPeriod > 0
@@ -2818,9 +3051,13 @@ function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
       title="Lifecycle pipeline"
     >
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
-        {/* Headline gradient tile — always rendered. The closed-loop
-            floor (active leases right now) is the most meaningful
-            single number for any AppFolio-connected operator. */}
+        {/* Headline gradient tile — always rendered. Combines the
+            closed-loop floor (active leases) with the 12-month
+            velocity sparkline so ownership can immediately see WHEN
+            those leases were signed (Jul/Aug move-in + Jan peak for
+            student housing). Norman bug May 22: the 90 number read
+            as suspicious next to the "1 signed in 28d" tile because
+            the visual context was missing. */}
         <div
           className={`rounded-2xl border border-primary/20 px-5 py-4 ${heroSpan}`}
           style={{
@@ -2828,30 +3065,40 @@ function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
               "linear-gradient(135deg, #DBEAFE 0%, #EFF6FF 50%, #FFFFFF 100%)",
           }}
         >
-          <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
-            Active leases · right now
-          </div>
-          <div className="mt-1.5 flex items-baseline gap-2 flex-wrap">
-            <div
-              className="text-[52px] font-bold tabular-nums leading-none"
-              style={{
-                backgroundImage:
-                  "linear-gradient(90deg, #1D4ED8 0%, #2563EB 35%, #3B82F6 70%, #60A5FA 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundClip: "text",
-              }}
-            >
-              {stats.activeLeases.toLocaleString()}
+          <div className="flex items-start justify-between gap-4 flex-wrap">
+            <div className="min-w-0">
+              <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+                Active leases · right now
+              </div>
+              <div className="mt-1.5 flex items-baseline gap-2 flex-wrap">
+                <div
+                  className="text-[52px] font-bold tabular-nums leading-none"
+                  style={{
+                    backgroundImage:
+                      "linear-gradient(90deg, #1D4ED8 0%, #2563EB 35%, #3B82F6 70%, #60A5FA 100%)",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  {stats.activeLeases.toLocaleString()}
+                </div>
+                <span className="text-[12px] font-semibold text-primary uppercase tracking-wider">
+                  leases on the books
+                </span>
+              </div>
+              <div className="mt-2 text-[11.5px] text-muted-foreground leading-relaxed max-w-md">
+                Closed-loop floor straight from the AppFolio lease sync —
+                the retained-revenue number ownership cares about most.
+                Updates automatically with every AppFolio webhook.
+              </div>
             </div>
-            <span className="text-[12px] font-semibold text-primary uppercase tracking-wider">
-              leases on the books
-            </span>
-          </div>
-          <div className="mt-2 text-[11.5px] text-muted-foreground leading-relaxed">
-            Closed-loop floor straight from the AppFolio lease sync — the
-            retained-revenue number ownership cares about most. Updates
-            automatically with every AppFolio webhook.
+            {stats.monthlySignedLast12 &&
+            stats.monthlySignedLast12.length > 0 ? (
+              <div className="w-full sm:w-auto sm:min-w-[280px]">
+                <LeaseVelocitySparkline data={stats.monthlySignedLast12} />
+              </div>
+            ) : null}
           </div>
         </div>
         {showSignedPeriod ? (

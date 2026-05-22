@@ -4,6 +4,7 @@ import {
   AdPlatform,
   ApplicationStatus,
   ChatbotConversationStatus,
+  DraftStatus,
   LeadSource,
   LeadStatus,
   LeaseStatus,
@@ -169,6 +170,14 @@ export type ReportLifecycleStats = {
   // Total active leases right now (Lease.status === ACTIVE). The
   // closed-loop floor — what the org is currently retaining.
   activeLeases: number;
+  // 12-month lease velocity — count of leases that started in each of
+  // the last 12 calendar months. Norman bug (May 22): the "90 active
+  // leases" headline read suspiciously alongside the "1 signed in
+  // period" tile because the funnel was scoped to the last 28d and
+  // skipped the Jul/Aug + Jan signing peaks (student housing). The
+  // sparkline lets ownership see WHEN those 90 leases were signed at
+  // a glance so the headline number stops looking like a guess.
+  monthlySignedLast12: Array<{ month: string; count: number }>;
   // Applications by status this period, summed across all stages.
   applicationsInPeriod: number;
   applicationsApprovedInPeriod: number;
@@ -178,19 +187,30 @@ export type ReportLifecycleStats = {
 export type ReportContentStats = {
   // Lifetime publishes — the surface area that earned organic traffic.
   totalPublished: number;
+  // Drafts currently in-flight (pending review or generating). Norman
+  // May 22: "Even if they're in draft detection and not fully approved
+  // yet, I want to see them." So the Content tab now shows in-progress
+  // work alongside the shipped pipeline.
+  totalInProgress: number;
   // New this period — proves the team is actively shipping content.
   publishedInPeriod: number;
   // Format breakdown, sorted desc by count. Drives the small bar
   // chart in the Content tab so ownership reads "you published 8 blog
   // posts + 3 neighborhood pages this month" at a glance.
   byFormat: Array<{ format: string; count: number }>;
-  // Most recent published items (max 5) with title + format + URL so
-  // ownership can click through and read the actual content.
+  // All items (max 10) — published + in-progress combined, sorted by
+  // most-recent-touched. Each row carries the status so the renderer
+  // can show a "DRAFT" / "REVIEW" / "PUBLISHED" pill so ownership
+  // sees the full editorial state, not just what's gone live.
   recent: Array<{
     title: string;
     format: string;
     url: string | null;
     publishedAt: string;
+    // "shipped" | "approved" | "review" | "draft" | "generating" |
+    // "published". UI maps these to colored pills. Optional on legacy
+    // snapshots — falls back to "shipped" when missing.
+    status?: string;
   }>;
 };
 
@@ -345,6 +365,10 @@ export type ReportChatbotStatsExtended = ReportChatbotStats & {
   capturedRatePct: number | null;
   // Conversations that flipped to status=LEAD_CAPTURED in this window.
   capturedConversations: number;
+  // All-time conversation count — Norman May 22: he expected to see
+  // "29 conversations" (lifetime) but the strip showed "24" (28-day
+  // period). Surfacing both numbers so ownership reads both stories.
+  lifetimeConversations?: number;
 };
 
 // Persisted scope context so the rendered view can label which slice of
@@ -601,6 +625,69 @@ async function buildScope(
   propertyId: string | null,
 ): Promise<Scope> {
   if (!propertyId) {
+    // Norman bug (May 22): for orgs where every report is effectively
+    // about ONE building (SG = TC after tc-isolate cleared the 126
+    // EXCLUDED sub-records), the portfolio-wide report still pulled
+    // unrelated SEO landing pages (/blog/warmly-vs-cursive-comparison
+    // — a marketing site page) because there was no scope filter on
+    // SEO queries. When the org has exactly one ACTIVE property, we
+    // silently apply that property's URL patterns to the SEO clauses
+    // so the report's "Top landing pages" + "Top search queries"
+    // surface only that building's data — the right answer for a
+    // single-asset operator without forcing them into a scoped report.
+    const liveProperties = await prisma.property
+      .findMany({
+        where: { orgId, lifecycle: "ACTIVE" },
+        select: { id: true, slug: true, name: true },
+        take: 2,
+      })
+      .catch(() => [] as Array<{ id: string; slug: string; name: string }>);
+    if (liveProperties.length === 1) {
+      const sole = liveProperties[0];
+      const domains = await prisma.domainBinding
+        .findMany({ where: { orgId }, select: { hostname: true } })
+        .catch(() => [] as Array<{ hostname: string }>);
+      const patterns = buildPropertyUrlPatterns(
+        sole.slug,
+        sole.name,
+        domains.map((d) => d.hostname),
+      );
+      const seoLandingClause: Prisma.SeoLandingPageWhereInput =
+        patterns.length > 0
+          ? {
+              OR: patterns.map((p) => ({
+                url: {
+                  contains: p.replace(/%/g, ""),
+                  mode: "insensitive" as const,
+                },
+              })),
+            }
+          : {};
+      const seoQueryClause: Prisma.SeoQueryWhereInput =
+        patterns.length > 0
+          ? {
+              OR: patterns.map((p) => ({
+                query: {
+                  contains: p.replace(/%/g, ""),
+                  mode: "insensitive" as const,
+                },
+              })),
+            }
+          : {};
+      return {
+        // Keep propertyId null so the rest of the snapshot still reads
+        // as "portfolio" (header copy, kpi labels, etc.) — only the SEO
+        // clauses are tightened.
+        propertyId: null,
+        propertyName: null,
+        propertySlug: null,
+        propertyClause: {},
+        leadRelClause: {},
+        seoLandingClause,
+        seoQueryClause,
+        seoScoped: true,
+      };
+    }
     return {
       propertyId: null,
       propertyName: null,
@@ -1359,25 +1446,47 @@ export async function generateReportSnapshot(
     };
   });
 
-  // Traffic trend (daily organic sessions across the period)
-  const trafficTrend = bucketDaily(
+  // Traffic trend — Norman bug (May 22): the chart was rendering as a
+  // single bump because organicSessions in SeoSnapshot is mostly zero
+  // for many orgs (GA4 sometimes doesn't fully populate the daily
+  // organic-sessions field). We have FULL daily GSC click data on the
+  // same SeoSnapshot rows though — clicks is a fine proxy for "search
+  // traffic" and reads as a meaningful curve.
+  //
+  // Strategy: prefer organic sessions when they exist, fall back to
+  // GSC clicks (always populated for orgs with GSC connected), then
+  // ad spend shape as the absolute last resort.
+  const trafficTrendFromSessions = bucketDaily(
     organicDaily.map((r) => ({ date: r.date, value: r.organicSessions ?? 0 })),
     days,
     periodEnd,
   );
-
-  // If no SEO data, fall back to ad spend shape so the chart isn't flat-zero.
-  const trafficFallback =
-    trafficTrend.every((v) => v === 0) && adSpendDaily.length > 0
-      ? bucketDaily(
-          adSpendDaily.map((r) => ({
-            date: r.date,
-            value: (r._sum.spendCents ?? 0) / 100,
-          })),
-          days,
-          periodEnd,
-        )
-      : trafficTrend;
+  const gscDaily = await prisma.seoSnapshot
+    .findMany({
+      where: { orgId, date: { gte: periodStart, lt: periodEnd } },
+      select: { date: true, totalClicks: true },
+      orderBy: { date: "asc" },
+    })
+    .catch(() => [] as Array<{ date: Date; totalClicks: number | null }>);
+  const trafficTrendFromClicks = bucketDaily(
+    gscDaily.map((r) => ({ date: r.date, value: r.totalClicks ?? 0 })),
+    days,
+    periodEnd,
+  );
+  const trafficFallback = trafficTrendFromSessions.some((v) => v > 0)
+    ? trafficTrendFromSessions
+    : trafficTrendFromClicks.some((v) => v > 0)
+      ? trafficTrendFromClicks
+      : adSpendDaily.length > 0
+        ? bucketDaily(
+            adSpendDaily.map((r) => ({
+              date: r.date,
+              value: (r._sum.spendCents ?? 0) / 100,
+            })),
+            days,
+            periodEnd,
+          )
+        : trafficTrendFromSessions;
 
   // Attribution by source — load leads with id/source/status, then join tours and apps
   const allLeadsInPeriod = await prisma.lead.findMany({
@@ -1533,6 +1642,15 @@ export async function generateReportSnapshot(
     (sum, row) => sum + row._count._all,
     0,
   );
+  // 12-month lease velocity — pull all in-window lease startDates, then
+  // bucket into calendar months client-side. Avoids a per-month DB
+  // round trip while keeping the count cheap for any sane portfolio.
+  const monthlySignedLast12 = await buildMonthlyLeaseVelocity(
+    orgId,
+    scope.propertyId,
+    now,
+  );
+
   const lifecycleStats: ReportLifecycleStats | undefined =
     activeLeasesCount > 0 ||
     leasesSignedCount > 0 ||
@@ -1542,6 +1660,7 @@ export async function generateReportSnapshot(
           priorLeasesSignedInPeriod: priorLeasesSignedCount,
           leasesSignedLast180d: leasesSignedLast180dCount,
           activeLeases: activeLeasesCount,
+          monthlySignedLast12,
           applicationsInPeriod,
           applicationsApprovedInPeriod,
           applicationsSubmittedInPeriod,
@@ -1802,6 +1921,48 @@ async function buildDataSources(
 }
 
 // ---------------------------------------------------------------------------
+// buildMonthlyLeaseVelocity — last 12 calendar months of new lease
+// startDates, scoped to ACTIVE properties. Powers the sparkline in
+// the Lifecycle pipeline strip so ownership can see the seasonality
+// (student housing: Jul/Aug move-in + Jan signing peak) and trust
+// the "X active leases" headline. Returns oldest → newest so the
+// sparkline draws left-to-right naturally.
+// ---------------------------------------------------------------------------
+async function buildMonthlyLeaseVelocity(
+  orgId: string,
+  propertyId: string | null,
+  now: Date,
+): Promise<Array<{ month: string; count: number }>> {
+  const propertyClause = propertyId ? { propertyId } : {};
+  const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
+  const leases = await prisma.lease
+    .findMany({
+      where: {
+        orgId,
+        ...propertyClause,
+        property: { lifecycle: "ACTIVE" },
+        startDate: { gte: start, lte: now },
+      },
+      select: { startDate: true },
+    })
+    .catch(() => [] as Array<{ startDate: Date | null }>);
+
+  // Bucket into the 12 calendar months ending in the current one.
+  const buckets = new Map<string, number>();
+  for (let m = 11; m >= 0; m--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - m, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    buckets.set(key, 0);
+  }
+  for (const lease of leases) {
+    if (!lease.startDate) continue;
+    const key = `${lease.startDate.getFullYear()}-${String(lease.startDate.getMonth() + 1).padStart(2, "0")}`;
+    if (buckets.has(key)) buckets.set(key, (buckets.get(key) ?? 0) + 1);
+  }
+  return [...buckets.entries()].map(([month, count]) => ({ month, count }));
+}
+
+// ---------------------------------------------------------------------------
 // buildContentStats — published content (blog posts + neighborhood
 // pages) shipped in the period. Powers the Content tab in the report
 // so ownership sees the SEO content pipeline as a real deliverable
@@ -1814,119 +1975,243 @@ async function buildContentStats(
   periodEnd: Date,
 ): Promise<ReportContentStats | undefined> {
   const propertyClause = propertyId ? { propertyId } : {};
-  // ContentDraft — only count rows that actually landed (status !=
-  // GENERATING/REJECTED). Format covers BLOG_POST, FAQ_BLOCK, etc.
-  const [draftsAll, draftsInPeriod, neighborhoodsAll, neighborhoodsInPeriod] =
-    await Promise.all([
-      prisma.contentDraft
-        .findMany({
-          where: {
-            orgId,
-            ...propertyClause,
-            status: { in: ["APPROVED", "SHIPPED"] },
-          },
-          select: {
-            id: true,
-            format: true,
-            createdAt: true,
-            output: true,
-          },
-        })
-        .catch(() => [] as Array<{ id: string; format: string; createdAt: Date; output: unknown }>),
-      prisma.contentDraft
-        .findMany({
-          where: {
-            orgId,
-            ...propertyClause,
-            status: { in: ["APPROVED", "SHIPPED"] },
-            createdAt: { gte: periodStart, lt: periodEnd },
-          },
-          select: {
-            id: true,
-            format: true,
-            createdAt: true,
-            output: true,
-          },
-        })
-        .catch(() => [] as Array<{ id: string; format: string; createdAt: Date; output: unknown }>),
-      prisma.neighborhoodPage
-        .findMany({
-          where: {
-            orgId,
-            ...propertyClause,
-            status: "PUBLISHED",
-          },
-          select: {
-            id: true,
-            city: true,
-            neighborhood: true,
-            slug: true,
-            publishedAt: true,
-            title: true,
-          },
-        })
-        .catch(() => [] as Array<{ id: string; city: string; neighborhood: string; slug: string; title: string; publishedAt: Date | null }>),
-      prisma.neighborhoodPage
-        .findMany({
-          where: {
-            orgId,
-            ...propertyClause,
-            status: "PUBLISHED",
-            publishedAt: { gte: periodStart, lt: periodEnd },
-          },
-          select: {
-            id: true,
-            city: true,
-            neighborhood: true,
-            slug: true,
-            publishedAt: true,
-            title: true,
-          },
-        })
-        .catch(() => [] as Array<{ id: string; city: string; neighborhood: string; slug: string; title: string; publishedAt: Date | null }>),
-    ]);
+  // Norman feedback (May 22): include drafts (PENDING_REVIEW + DRAFT
+  // neighborhood pages) so ownership sees the in-flight pipeline, not
+  // just what's gone live. The "totalPublished" headline still only
+  // counts APPROVED/SHIPPED + PUBLISHED so the editorial gate stays
+  // honest — drafts are surfaced separately as "in progress".
+  const PUBLISHED_DRAFT_STATUSES: DraftStatus[] = [
+    DraftStatus.APPROVED,
+    DraftStatus.SHIPPED,
+  ];
+  const IN_PROGRESS_DRAFT_STATUSES: DraftStatus[] = [
+    DraftStatus.PENDING_REVIEW,
+    DraftStatus.CHANGES_REQUESTED,
+    DraftStatus.GENERATING,
+  ];
+  const ALL_DRAFT_STATUSES = [
+    ...PUBLISHED_DRAFT_STATUSES,
+    ...IN_PROGRESS_DRAFT_STATUSES,
+  ];
 
-  const totalPublished = draftsAll.length + neighborhoodsAll.length;
-  const publishedInPeriod = draftsInPeriod.length + neighborhoodsInPeriod.length;
-  if (totalPublished === 0) return undefined;
+  const [
+    publishedDrafts,
+    inProgressDrafts,
+    publishedDraftsInPeriod,
+    publishedNeighborhoods,
+    draftNeighborhoods,
+    publishedNeighborhoodsInPeriod,
+  ] = await Promise.all([
+    prisma.contentDraft
+      .findMany({
+        where: {
+          orgId,
+          ...propertyClause,
+          status: { in: PUBLISHED_DRAFT_STATUSES },
+        },
+        select: {
+          id: true,
+          format: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          output: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      })
+      .catch(
+        () =>
+          [] as Array<{
+            id: string;
+            format: string;
+            status: string;
+            createdAt: Date;
+            updatedAt: Date;
+            output: unknown;
+          }>,
+      ),
+    prisma.contentDraft
+      .findMany({
+        where: {
+          orgId,
+          ...propertyClause,
+          status: { in: IN_PROGRESS_DRAFT_STATUSES },
+        },
+        select: {
+          id: true,
+          format: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+          output: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      })
+      .catch(
+        () =>
+          [] as Array<{
+            id: string;
+            format: string;
+            status: string;
+            createdAt: Date;
+            updatedAt: Date;
+            output: unknown;
+          }>,
+      ),
+    prisma.contentDraft
+      .count({
+        where: {
+          orgId,
+          ...propertyClause,
+          status: { in: PUBLISHED_DRAFT_STATUSES },
+          createdAt: { gte: periodStart, lt: periodEnd },
+        },
+      })
+      .catch(() => 0),
+    prisma.neighborhoodPage
+      .findMany({
+        where: { orgId, ...propertyClause, status: "PUBLISHED" },
+        select: {
+          id: true,
+          city: true,
+          neighborhood: true,
+          slug: true,
+          publishedAt: true,
+          updatedAt: true,
+          title: true,
+          status: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      })
+      .catch(
+        () =>
+          [] as Array<{
+            id: string;
+            city: string;
+            neighborhood: string;
+            slug: string;
+            title: string;
+            status: string;
+            publishedAt: Date | null;
+            updatedAt: Date;
+          }>,
+      ),
+    prisma.neighborhoodPage
+      .findMany({
+        where: { orgId, ...propertyClause, status: "DRAFT" },
+        select: {
+          id: true,
+          city: true,
+          neighborhood: true,
+          slug: true,
+          publishedAt: true,
+          updatedAt: true,
+          title: true,
+          status: true,
+        },
+        orderBy: { updatedAt: "desc" },
+      })
+      .catch(
+        () =>
+          [] as Array<{
+            id: string;
+            city: string;
+            neighborhood: string;
+            slug: string;
+            title: string;
+            status: string;
+            publishedAt: Date | null;
+            updatedAt: Date;
+          }>,
+      ),
+    prisma.neighborhoodPage
+      .count({
+        where: {
+          orgId,
+          ...propertyClause,
+          status: "PUBLISHED",
+          publishedAt: { gte: periodStart, lt: periodEnd },
+        },
+      })
+      .catch(() => 0),
+  ]);
+  // Suppress unused warning — the published variants are counted via
+  // the dedicated count queries above so the lifecycle ratio stays
+  // honest, but we also expose them via the draft pipeline tally
+  // below for the renderer.
+  void ALL_DRAFT_STATUSES;
+
+  const totalPublished = publishedDrafts.length + publishedNeighborhoods.length;
+  const totalInProgress = inProgressDrafts.length + draftNeighborhoods.length;
+  const publishedInPeriod =
+    publishedDraftsInPeriod + publishedNeighborhoodsInPeriod;
+
+  // Norman May 22: return SOMETHING (the "in progress" pipeline)
+  // even when nothing has shipped yet so the Content tab never reads
+  // "no published content yet" when there's actually work happening.
+  if (totalPublished === 0 && totalInProgress === 0) return undefined;
 
   // Format breakdown — normalize NeighborhoodPage as its own format.
+  // Includes drafts so the bar chart reflects the full pipeline
+  // (otherwise an org with 5 drafts + 0 published shows a single
+  // empty bar).
   const formatCounts = new Map<string, number>();
-  for (const d of draftsAll) {
+  for (const d of [...publishedDrafts, ...inProgressDrafts]) {
     const key = humanFormat(d.format);
     formatCounts.set(key, (formatCounts.get(key) ?? 0) + 1);
   }
-  if (neighborhoodsAll.length > 0) {
-    formatCounts.set("Neighborhood page", neighborhoodsAll.length);
+  const neighborhoodTotal =
+    publishedNeighborhoods.length + draftNeighborhoods.length;
+  if (neighborhoodTotal > 0) {
+    formatCounts.set("Neighborhood page", neighborhoodTotal);
   }
   const byFormat = [...formatCounts.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([format, count]) => ({ format, count }));
 
-  // Recent published list — last 5 across both tables.
+  // Recent items — published + in-progress merged + sorted by
+  // updatedAt desc, max 10. Each row carries the status so the
+  // renderer can render a colored pill.
+  const draftItems = [...publishedDrafts, ...inProgressDrafts].map((d) => {
+    const out =
+      d.output && typeof d.output === "object"
+        ? (d.output as Record<string, unknown>)
+        : null;
+    const title =
+      typeof out?.title === "string" ? out.title : humanFormat(d.format);
+    const url = typeof out?.url === "string" ? out.url : null;
+    return {
+      title,
+      format: humanFormat(d.format),
+      url,
+      publishedAt: d.updatedAt.toISOString(),
+      status: d.status.toLowerCase(),
+    };
+  });
+  const neighborhoodItems = [
+    ...publishedNeighborhoods,
+    ...draftNeighborhoods,
+  ].map((n) => ({
+    title: n.title || (n.neighborhood ? `${n.neighborhood}, ${n.city}` : n.city),
+    format: "Neighborhood page",
+    url: n.slug ? `/${n.slug}` : null,
+    publishedAt: (n.publishedAt ?? n.updatedAt).toISOString(),
+    status: n.status.toLowerCase(),
+  }));
   const recentMerged: ReportContentStats["recent"] = [
-    ...draftsAll.map((d) => {
-      const out = d.output && typeof d.output === "object" ? (d.output as Record<string, unknown>) : null;
-      const title = typeof out?.title === "string" ? out.title : humanFormat(d.format);
-      const url = typeof out?.url === "string" ? out.url : null;
-      return {
-        title,
-        format: humanFormat(d.format),
-        url,
-        publishedAt: d.createdAt.toISOString(),
-      };
-    }),
-    ...neighborhoodsAll.map((n) => ({
-      title: n.title || (n.neighborhood ? `${n.neighborhood}, ${n.city}` : n.city),
-      format: "Neighborhood page",
-      url: n.slug ? `/${n.slug}` : null,
-      publishedAt: (n.publishedAt ?? new Date()).toISOString(),
-    })),
+    ...draftItems,
+    ...neighborhoodItems,
   ]
     .sort((a, b) => b.publishedAt.localeCompare(a.publishedAt))
-    .slice(0, 5);
+    .slice(0, 10);
 
-  return { totalPublished, publishedInPeriod, byFormat, recent: recentMerged };
+  return {
+    totalPublished,
+    totalInProgress,
+    publishedInPeriod,
+    byFormat,
+    recent: recentMerged,
+  };
 }
 
 function humanFormat(format: string): string {
@@ -1978,6 +2263,37 @@ async function buildAeoStats(
   const competitorCounts = new Map<string, number>();
   const competitorSamples: ReportAeoStats["sampleCompetitorQueries"] = [];
 
+  // Norman feedback (May 22): "Downtown Berkeley" was showing up as
+  // a top competitor — it's a NEIGHBORHOOD, not a competing property.
+  // AI engines casually mention neighborhood names when answering
+  // location queries; treating them as competitors is misleading.
+  // Filter common Bay-area neighborhood/region strings so only real
+  // property/brand names rank as competitors. Easy to extend per-
+  // market when we expand outside the Bay.
+  const NEIGHBORHOOD_NOISE = new Set(
+    [
+      "downtown berkeley",
+      "north berkeley",
+      "south berkeley",
+      "west berkeley",
+      "east berkeley",
+      "southside",
+      "elmwood",
+      "telegraph",
+      "berkeley",
+      "oakland",
+      "albany",
+      "el cerrito",
+      "emeryville",
+      "richmond",
+      "bay area",
+      "east bay",
+      "san francisco",
+      "north oakland",
+      "downtown oakland",
+    ].map((s) => s.toLowerCase()),
+  );
+
   for (const c of checks) {
     enginesSeen.add(c.engine);
     if (c.status === "CITED") cited += 1;
@@ -1987,6 +2303,8 @@ async function buildAeoStats(
         ? (c.competitorsCited as string[]).filter((n) => typeof n === "string")
         : [];
       for (const name of names) {
+        // Skip neighborhood / region strings — they're not competitors.
+        if (NEIGHBORHOOD_NOISE.has(name.trim().toLowerCase())) continue;
         competitorCounts.set(name, (competitorCounts.get(name) ?? 0) + 1);
       }
       // Keep up to 3 sample queries — favor variety across engines so
@@ -2501,17 +2819,23 @@ async function buildChatbotExtended(
   baseStats: ReportChatbotStats,
 ): Promise<ReportChatbotStatsExtended | undefined> {
   if (baseStats.conversations === 0) return undefined;
-  const captured = await prisma.chatbotConversation.count({
-    where: {
-      orgId,
-      ...(propertyId ? { propertyId } : {}),
-      createdAt: { gte: periodStart, lt: periodEnd },
-      status: ChatbotConversationStatus.LEAD_CAPTURED,
-    },
-  });
+  const [captured, lifetime] = await Promise.all([
+    prisma.chatbotConversation.count({
+      where: {
+        orgId,
+        ...(propertyId ? { propertyId } : {}),
+        createdAt: { gte: periodStart, lt: periodEnd },
+        status: ChatbotConversationStatus.LEAD_CAPTURED,
+      },
+    }),
+    prisma.chatbotConversation.count({
+      where: { orgId, ...(propertyId ? { propertyId } : {}) },
+    }),
+  ]);
   return {
     ...baseStats,
     capturedConversations: captured,
+    lifetimeConversations: lifetime,
     capturedRatePct:
       baseStats.conversations > 0
         ? Math.round((captured / baseStats.conversations) * 100)
