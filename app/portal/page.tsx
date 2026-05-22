@@ -845,6 +845,7 @@ export default async function PortalHome({
           demo. */}
       {org?.slug === "telegraph-commons" ? (
         <section
+          data-no-print
           className="rounded-xl border border-primary/30 bg-primary/[0.04] px-4 py-3"
           aria-label="What changed this week"
         >
