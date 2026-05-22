@@ -932,7 +932,7 @@ function HeroKpi({ snapshot }: { snapshot: ReportSnapshot }) {
             {headlineLabel}
           </p>
           <p
-            className="mt-1 text-[40px] md:text-[52px] leading-none font-bold tracking-tight tabular-nums"
+            className="mt-1 text-[34px] sm:text-[40px] md:text-[52px] leading-none font-bold tracking-tight tabular-nums"
             style={{
               backgroundImage:
                 "linear-gradient(90deg, #1D4ED8 0%, #2563EB 35%, #3B82F6 70%, #60A5FA 100%)",
@@ -1025,7 +1025,10 @@ function ReputationSection({ stats }: { stats: ReportReputationStats }) {
               return (
                 <div
                   key={row.source}
-                  className="grid grid-cols-[120px_1fr_44px_44px] items-center gap-2 text-[11px]"
+                  // Mobile: shrink the label column from 120px → 90px
+                  // and merge count + rating into a single right-side
+                  // cell so the bar gets meaningful width at 390px.
+                  className="grid grid-cols-[90px_1fr_auto] sm:grid-cols-[120px_1fr_44px_44px] items-center gap-2 text-[11px]"
                 >
                   <span className="flex items-center gap-1.5 min-w-0">
                     <ReviewSourceLogo source={row.source} />
@@ -1043,10 +1046,18 @@ function ReputationSection({ stats }: { stats: ReportReputationStats }) {
                       }}
                     />
                   </span>
-                  <span className="text-right tabular-nums text-foreground font-semibold">
+                  <span className="text-right tabular-nums text-foreground font-semibold sm:hidden whitespace-nowrap">
+                    {row.count.toLocaleString()}
+                    {row.rating != null ? (
+                      <span className="ml-1 font-normal text-muted-foreground">
+                        · {row.rating.toFixed(1)}★
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="text-right tabular-nums text-foreground font-semibold hidden sm:inline">
                     {row.count.toLocaleString()}
                   </span>
-                  <span className="text-right tabular-nums text-foreground">
+                  <span className="text-right tabular-nums text-foreground hidden sm:inline">
                     {row.rating != null ? `${row.rating.toFixed(1)}★` : "—"}
                   </span>
                 </div>
@@ -1722,14 +1733,20 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
                   ? Math.round((e.cited / e.total) * 100)
                   : 0;
                 return (
-                  <div key={e.engine} className="flex items-center gap-3">
-                    <div className="flex items-center gap-2 w-32 shrink-0">
+                  <div
+                    key={e.engine}
+                    className="flex items-center gap-2 sm:gap-3"
+                  >
+                    {/* Engine label column — tighter on mobile so the
+                        bar gets the real estate. The text label hides
+                        under sm: and only the brand logo shows. */}
+                    <div className="flex items-center gap-1.5 sm:w-32 shrink-0">
                       <AeoEngineLogo engine={e.engine} />
-                      <span className="text-[11px] font-semibold tracking-wide text-foreground truncate">
+                      <span className="hidden sm:inline text-[11px] font-semibold tracking-wide text-foreground truncate">
                         {prettyEngineName(e.engine)}
                       </span>
                     </div>
-                    <div className="flex-1 h-6 rounded-md overflow-hidden bg-muted/40 flex relative">
+                    <div className="flex-1 h-6 rounded-md overflow-hidden bg-muted/40 flex relative min-w-0">
                       {e.cited > 0 ? (
                         <div
                           className="h-full flex items-center justify-center min-w-0"
@@ -1740,8 +1757,11 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
                           }}
                           title={`${e.cited} cited you`}
                         >
+                          {/* Inline labels only on sm+ — they overflow
+                              narrow viewports and the win-rate pill at
+                              the end already tells the story. */}
                           {pct(e.cited) > 14 ? (
-                            <span className="text-[10px] font-bold text-white tabular-nums whitespace-nowrap">
+                            <span className="hidden sm:inline text-[10px] font-bold text-white tabular-nums whitespace-nowrap">
                               You {e.cited}
                             </span>
                           ) : null}
@@ -1758,7 +1778,7 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
                           title={`${e.competitorCited} competitor cited`}
                         >
                           {pct(e.competitorCited) > 14 ? (
-                            <span className="text-[10px] font-bold text-blue-900 tabular-nums whitespace-nowrap">
+                            <span className="hidden sm:inline text-[10px] font-bold text-blue-900 tabular-nums whitespace-nowrap">
                               Comp {e.competitorCited}
                             </span>
                           ) : null}
@@ -1771,15 +1791,15 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
                           title={`${notMentioned} not mentioned`}
                         >
                           {pct(notMentioned) > 14 ? (
-                            <span className="text-[10px] font-bold text-muted-foreground tabular-nums whitespace-nowrap">
+                            <span className="hidden sm:inline text-[10px] font-bold text-muted-foreground tabular-nums whitespace-nowrap">
                               — {notMentioned}
                             </span>
                           ) : null}
                         </div>
                       ) : null}
                     </div>
-                    <div className="flex items-center gap-1.5 w-24 shrink-0 justify-end">
-                      <span className="text-[11px] font-semibold tabular-nums text-foreground">
+                    <div className="flex items-center gap-1 sm:gap-1.5 shrink-0 justify-end">
+                      <span className="text-[10px] sm:text-[11px] font-semibold tabular-nums text-foreground whitespace-nowrap">
                         {e.cited}/{e.total}
                       </span>
                       <span
@@ -3059,7 +3079,7 @@ function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
             as suspicious next to the "1 signed in 28d" tile because
             the visual context was missing. */}
         <div
-          className={`rounded-2xl border border-primary/20 px-5 py-4 ${heroSpan}`}
+          className={`rounded-2xl border border-primary/20 px-4 sm:px-5 py-4 ${heroSpan}`}
           style={{
             backgroundImage:
               "linear-gradient(135deg, #DBEAFE 0%, #EFF6FF 50%, #FFFFFF 100%)",
@@ -3072,7 +3092,7 @@ function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
               </div>
               <div className="mt-1.5 flex items-baseline gap-2 flex-wrap">
                 <div
-                  className="text-[52px] font-bold tabular-nums leading-none"
+                  className="text-[40px] sm:text-[52px] font-bold tabular-nums leading-none"
                   style={{
                     backgroundImage:
                       "linear-gradient(90deg, #1D4ED8 0%, #2563EB 35%, #3B82F6 70%, #60A5FA 100%)",

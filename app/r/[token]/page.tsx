@@ -76,7 +76,7 @@ export default async function PublicReportPage({
   const propertyHero = await loadPropertyHero(snapshot, report.orgId);
 
   return (
-    <div className="min-h-screen bg-[var(--parchment)] py-10 px-4">
+    <div className="min-h-screen bg-[var(--parchment)] py-4 sm:py-10 px-2 sm:px-4">
       <style
         dangerouslySetInnerHTML={{
           __html: `

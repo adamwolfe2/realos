@@ -300,8 +300,14 @@ export function PropertyHeroBanner({
   }
 
   const padding = compact ? "p-4 sm:p-5" : "p-5 sm:p-7";
+  // Norman bug (May 22): on mobile (~390px viewport) compact mode was
+  // locked to "180px image + remainder" which left only ~150px for
+  // the 3-stat column — the stats overlapped each other ("15042/4104"
+  // mashed together). Fix: stack to a single column under sm so the
+  // image takes the full width and the stats lay out cleanly below.
+  // Multi-column kicks in at sm: (640px) where there's enough room.
   const gridCols = compact
-    ? "grid-cols-[180px_minmax(0,1fr)]"
+    ? "grid-cols-1 sm:grid-cols-[180px_minmax(0,1fr)]"
     : "grid-cols-1 sm:grid-cols-[300px_minmax(0,1fr)] md:grid-cols-[340px_minmax(0,1fr)]";
   // Norman 2026-05-21 fifth pass: the rounded-xl + perspective tilt
   // were treating the BG-removed PNG as if it were a card. Dropped
@@ -581,20 +587,23 @@ export function PropertyHeroBanner({
 
           {stats.length > 0 ? (
             <div
-              className={`mt-4 pt-4 grid gap-3 border-t border-border/70 ${
-                compact
-                  ? "grid-cols-3"
-                  : "grid-cols-2 sm:grid-cols-4"
+              className={`mt-4 pt-4 grid gap-2 sm:gap-3 border-t border-border/70 ${
+                compact ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4"
               }`}
             >
               {stats.slice(0, compact ? 3 : 4).map((s, i) => {
                 const tileInner = (
                   <>
                     <p
-                      className={`font-display font-semibold tabular-nums text-foreground leading-none ${
+                      className={`font-display font-semibold tabular-nums text-foreground leading-none break-words ${
                         compact
-                          ? "text-3xl sm:text-4xl"
-                          : "text-4xl sm:text-5xl"
+                          ? // Norman May 22 mobile bug — at 390px viewport a
+                            // 3-stat compact grid only has ~95px per column;
+                            // a "42/114" at 30px overflowed. Scale starts at
+                            // text-xl on mobile so the values always fit
+                            // inside their column without overlap.
+                            "text-xl sm:text-3xl md:text-4xl"
+                          : "text-3xl sm:text-4xl md:text-5xl"
                       }`}
                       style={{ letterSpacing: "-0.02em" }}
                     >
