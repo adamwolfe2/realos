@@ -306,9 +306,22 @@ export function ReportView({
           (kpis.organicSessions > 0 ||
             (kpiDeltas.organicSessionsPct ?? 0) !== 0);
 
+        // Norman bug (May 22): Identified visitors (from the AudienceLab
+        // pixel) were never surfaced in this strip even though they
+        // dwarf form/chatbot leads for most pixel-active tenants
+        // (TC: 3 form leads vs 146 identified visitors). Render only
+        // when there's actually pixel data — for ad-only orgs with no
+        // pixel installed, the tile would just say "0" and look broken.
+        // Defensive reads — legacy snapshots predate identifiedVisitors.
+        const identifiedVisitors = kpis.identifiedVisitors ?? 0;
+        const identifiedVisitorsPct = kpiDeltas.identifiedVisitorsPct ?? null;
+        const showIdentifiedVisitors =
+          identifiedVisitors > 0 || (identifiedVisitorsPct ?? 0) !== 0;
+
         const allZero =
           kpis.leads === 0 &&
           (kpiDeltas.leadsPct ?? 0) === 0 &&
+          !showIdentifiedVisitors &&
           !showTours &&
           !showApplications &&
           !showCpl &&
@@ -329,12 +342,21 @@ export function ReportView({
             className="ls-report-section grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-2"
           >
             <IconKpi
-              label="Leads"
+              label="Form/chatbot leads"
               value={kpis.leads.toLocaleString()}
               deltaPct={kpiDeltas.leadsPct}
               tone="primary"
               glyph="target"
             />
+            {showIdentifiedVisitors ? (
+              <IconKpi
+                label="Identified visitors"
+                value={identifiedVisitors.toLocaleString()}
+                deltaPct={identifiedVisitorsPct}
+                tone="primary"
+                glyph="globe"
+              />
+            ) : null}
             {showTours ? (
               <IconKpi
                 label="Tours"
@@ -689,21 +711,53 @@ function DataSourcesFooter({ sources }: { sources: ReportDataSources }) {
 function HeroKpi({ snapshot }: { snapshot: ReportSnapshot }) {
   const { kpis, kpiDeltas } = snapshot;
 
-  // Pick the most narratively useful headline for this period: prefer leads
-  // if positive, fall back to organic if leads are zero.
-  const useLeads = kpis.leads > 0 || kpis.organicSessions === 0;
-  const headlineLabel = useLeads
-    ? "Total leads this period"
+  // Norman feedback (May 22): the original "Total leads this period" tile
+  // read "3" and looked terrible because it only counted the Lead table.
+  // Reality: TC also identified 146 visitors via the AudienceLab pixel —
+  // every one a real person with a name + email we could reach out to.
+  // The honest headline sums BOTH paths into "captured contacts": form/
+  // chatbot leads PLUS pixel-identified visitors. Same surface area an
+  // outreach-focused operator would actually work from.
+  //
+  // Headline-priority order:
+  //   1. Captured contacts (leads + identified visitors) when either > 0
+  //   2. Organic sessions when both contact buckets are empty
+  // Delta uses a blended pct so the trend reflects the combined movement.
+  // Defensive — legacy snapshots predate identifiedVisitors.
+  const identifiedVisitors = kpis.identifiedVisitors ?? 0;
+  const identifiedVisitorsPct = kpiDeltas.identifiedVisitorsPct ?? null;
+  const capturedContacts = kpis.leads + identifiedVisitors;
+  const priorCaptured =
+    kpiDeltas.leadsPct != null || identifiedVisitorsPct != null
+      ? // Reconstruct prior totals from current value + pct change so we
+        // can compute a single combined pct without plumbing prior counts
+        // through. Falls back to 0 when delta is null.
+        Math.round(
+          (kpis.leads / (1 + (kpiDeltas.leadsPct ?? 0) / 100) || 0) +
+            (identifiedVisitors /
+              (1 + (identifiedVisitorsPct ?? 0) / 100) || 0),
+        )
+      : 0;
+  const capturedPct =
+    priorCaptured > 0
+      ? Math.round(((capturedContacts - priorCaptured) / priorCaptured) * 100)
+      : capturedContacts > 0
+        ? null
+        : null;
+  const useContacts = capturedContacts > 0 || kpis.organicSessions === 0;
+  const headlineLabel = useContacts
+    ? "Captured contacts this period"
     : "Organic sessions this period";
-  const headlineValue = useLeads
-    ? kpis.leads.toLocaleString()
+  const headlineValue = useContacts
+    ? capturedContacts.toLocaleString()
     : kpis.organicSessions.toLocaleString();
-  const headlineDelta = useLeads
-    ? kpiDeltas.leadsPct
-    : kpiDeltas.organicSessionsPct;
+  const headlineDelta = useContacts ? capturedPct : kpiDeltas.organicSessionsPct;
 
-  const subline = useLeads
-    ? `${kpis.tours} tours · ${kpis.applications} applications · $${kpis.adSpendUsd.toLocaleString()} ad spend`
+  // Subline calls out the breakdown so the headline isn't a black-box
+  // aggregate — operators (and ownership) can see exactly how many came
+  // from each path and trust the math.
+  const subline = useContacts
+    ? `${kpis.leads.toLocaleString()} form/chatbot leads · ${identifiedVisitors.toLocaleString()} identified visitors · ${kpis.tours} tours · ${kpis.applications} applications`
     : `${kpis.leads} leads · ${kpis.tours} tours · $${kpis.adSpendUsd.toLocaleString()} ad spend`;
 
   return (

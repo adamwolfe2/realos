@@ -33,7 +33,22 @@ import { buildPropertyUrlPatterns } from "@/lib/properties/queries";
 export type ReportKind = "weekly" | "monthly" | "custom";
 
 export type ReportKpis = {
+  // Form/chatbot leads — rows in the Lead table created via opted-in
+  // conversion paths (contact form, chatbot email capture, intake).
   leads: number;
+  // Visitors identified via the AudienceLab pixel — real people with
+  // names + emails resolved from the third-party identity graph who
+  // visited the marketing site but did NOT submit a form. The report
+  // sums leads + identifiedVisitors as the "captured contacts" total
+  // because both represent real outreach-ready contacts; counting only
+  // Lead rows underreports the marketing surface area by 30-50x for
+  // typical pixel-active tenants.
+  //
+  // Optional in the type because legacy ClientReport.snapshot rows
+  // stored before this field was added would be undefined at runtime.
+  // Every read site defaults to 0 via `??` so the view never crashes
+  // on a pre-migration snapshot.
+  identifiedVisitors?: number;
   tours: number;
   applications: number;
   costPerLead: number | null;
@@ -43,6 +58,9 @@ export type ReportKpis = {
 
 export type ReportKpiDeltas = {
   leadsPct: number | null;
+  // Optional for the same reason as identifiedVisitors above —
+  // legacy snapshots predate this field.
+  identifiedVisitorsPct?: number | null;
   toursPct: number | null;
   applicationsPct: number | null;
   costPerLeadPct: number | null;
@@ -596,6 +614,8 @@ export async function generateReportSnapshot(
     chatbotLeadsCount,
     propertiesList,
     propertyLeadGroups,
+    identifiedVisitorsCount,
+    priorIdentifiedVisitorsCount,
   ] = await Promise.all([
     // KPI counts — scope.propertyClause is `{}` for org-wide (legacy
     // behavior) or `{ propertyId }` for per-property reports.
@@ -867,6 +887,40 @@ export async function generateReportSnapshot(
       },
       _count: { _all: true },
     }),
+    // Identified-visitor counts — see ReportKpis.identifiedVisitors
+    // comment. Status filter mirrors the /portal/visitors feed: only
+    // count rows that resolved to a real person (IDENTIFIED, ENRICHED,
+    // MATCHED_TO_LEAD), never anonymous or pending-resolution rows.
+    // Period window matches the leads count so the two combine
+    // cleanly into a single "captured contacts" headline.
+    prisma.visitor.count({
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        status: {
+          in: [
+            VisitorIdentificationStatus.IDENTIFIED,
+            VisitorIdentificationStatus.ENRICHED,
+            VisitorIdentificationStatus.MATCHED_TO_LEAD,
+          ],
+        },
+        firstSeenAt: { gte: periodStart, lt: periodEnd },
+      },
+    }),
+    prisma.visitor.count({
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        status: {
+          in: [
+            VisitorIdentificationStatus.IDENTIFIED,
+            VisitorIdentificationStatus.ENRICHED,
+            VisitorIdentificationStatus.MATCHED_TO_LEAD,
+          ],
+        },
+        firstSeenAt: { gte: priorStart, lt: priorEnd },
+      },
+    }),
   ]);
 
   // KPIs
@@ -900,6 +954,7 @@ export async function generateReportSnapshot(
 
   const kpis: ReportKpis = {
     leads: leadsCount,
+    identifiedVisitors: identifiedVisitorsCount,
     tours: toursCount,
     applications: applicationsCount,
     costPerLead,
@@ -909,6 +964,10 @@ export async function generateReportSnapshot(
 
   const kpiDeltas: ReportKpiDeltas = {
     leadsPct: pctChange(leadsCount, priorLeadsCount),
+    identifiedVisitorsPct: pctChange(
+      identifiedVisitorsCount,
+      priorIdentifiedVisitorsCount,
+    ),
     toursPct: pctChange(toursCount, priorToursCount),
     applicationsPct: pctChange(applicationsCount, priorApplicationsCount),
     costPerLeadPct:
