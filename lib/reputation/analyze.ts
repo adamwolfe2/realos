@@ -34,17 +34,18 @@ const TOPIC_SET = new Set<string>(TOPIC_TAGS);
 
 // Anthropic's structured-output rejects JSON Schema `maxItems` constraints
 // ("output_format.schema: For 'array' type, property 'maxItems' is not
-// supported"). Keep the array open here and slice in post-processing.
+// supported"). Same restriction applies to numeric `minimum`/`maximum`
+// ("output_format.schema: For 'number' type, properties maximum, minimum
+// are not supported"). Keep the schema permissive and clamp in
+// post-processing instead.
 const analysisSchema = z.object({
   mentions: z.array(
     z.object({
       id: z.string(),
       sentiment: z.enum(["POSITIVE", "NEGATIVE", "NEUTRAL", "MIXED"]),
-      // 0..1 self-reported confidence. Lets the UI fade low-confidence
-      // pills and gate negative-mention alerts on confidence ≥ 0.7.
-      // Default 0.5 keeps backward-compat with prompt versions that
-      // forgot to emit the field (rare but Claude is non-deterministic).
-      confidence: z.number().min(0).max(1).default(0.5),
+      // 0..1 self-reported confidence. Validated in post-processing so the
+      // Anthropic structured-output call doesn't reject min/max constraints.
+      confidence: z.number().default(0.5),
       topics: z.array(z.string()).default([]),
     })
   ),
@@ -113,10 +114,13 @@ export async function analyzeSentimentAndTopics(
         .map((t) => t.toLowerCase())
         .filter((t): t is TopicTag => TOPIC_SET.has(t))
         .slice(0, 5);
+      // Clamp confidence to [0, 1] in post-processing since the JSON
+      // Schema validator (Anthropic structured output) can't enforce it.
+      const confidence = Math.max(0, Math.min(1, row.confidence ?? 0.5));
       map.set(row.id, {
         id: row.id,
         sentiment: row.sentiment as Sentiment,
-        confidence: row.confidence,
+        confidence,
         topics,
       });
     }
