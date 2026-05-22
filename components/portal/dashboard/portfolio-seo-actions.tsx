@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AlertCircle } from "lucide-react";
 
 type SeoActionItem = {
   id: string;
@@ -17,11 +18,22 @@ type Props = {
   actions: SeoActionItem[];
 };
 
+// Outlined, high-contrast severity pills. The old beige-on-cream variant
+// disappeared visually next to the rest of the dashboard — these pop with
+// a saturated outline + bold uppercase text so an operator's eye lands on
+// CRITICAL the moment the page paints.
 const SEV_TONE: Record<string, string> = {
-  CRITICAL: "bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-300",
-  HIGH: "bg-amber-50 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300",
-  MEDIUM: "bg-muted text-muted-foreground",
-  LOW: "bg-muted/60 text-muted-foreground",
+  CRITICAL:
+    "bg-white text-red-700 border border-red-400 dark:bg-red-950/40 dark:text-red-300 dark:border-red-700",
+  HIGH:
+    "bg-white text-amber-700 border border-amber-400 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-700",
+  MEDIUM: "bg-white text-foreground border border-border",
+  LOW: "bg-white text-muted-foreground border border-border",
+};
+
+const SEV_ICON: Record<string, boolean> = {
+  CRITICAL: true,
+  HIGH: true,
 };
 
 // ---------------------------------------------------------------------------
@@ -62,11 +74,14 @@ export function PortfolioSeoActions({ actions }: Props) {
               className="flex items-start gap-3 group"
             >
               <span
-                className={`mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-mono uppercase tracking-wide ${
+                className={`mt-0.5 inline-flex shrink-0 items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
                   SEV_TONE[a.severity] ?? SEV_TONE.MEDIUM
                 }`}
               >
-                {a.severity.toLowerCase()}
+                {SEV_ICON[a.severity] ? (
+                  <AlertCircle className="h-2.5 w-2.5" strokeWidth={2.5} />
+                ) : null}
+                {a.severity}
               </span>
               <div className="min-w-0 flex-1">
                 <p className="text-[13px] font-medium text-foreground group-hover:text-primary transition-colors truncate">

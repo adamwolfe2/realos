@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import {
+  AlertCircle,
   AlertTriangle,
   AlignLeft,
   ArrowRight,
@@ -129,14 +130,14 @@ export function DashboardActionItems({
                 Action items
               </p>
               {criticalCount > 0 ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 text-destructive px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide">
-                  <span className="h-1 w-1 rounded-full bg-destructive" />
+                <span className="inline-flex items-center gap-1 rounded-md border border-red-400 bg-white px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-red-700">
+                  <AlertCircle className="h-2.5 w-2.5" strokeWidth={2.5} />
                   {criticalCount} critical
                 </span>
               ) : null}
               {highCount > 0 ? (
-                <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 text-amber-800 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide">
-                  <span className="h-1 w-1 rounded-full bg-amber-500" />
+                <span className="inline-flex items-center gap-1 rounded-md border border-amber-400 bg-white px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-amber-700">
+                  <AlertCircle className="h-2.5 w-2.5" strokeWidth={2.5} />
                   {highCount} high
                 </span>
               ) : null}

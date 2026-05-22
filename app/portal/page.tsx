@@ -850,26 +850,13 @@ export default async function PortalHome({
         asOf={asOf}
       />
 
-      {/* Action items — top portfolio-wide recommendations from the
-          Intelligence engine. Each row is a single-click route into
-          the exact surface to act. Dismiss-to-next-page (session
-          storage) so the operator can clear items they've handled
-          without them returning until the next dashboard load. */}
-      {portfolioActions.length > 0 ? (
-        <DashboardActionItems actions={portfolioActions} />
-      ) : null}
-
-      {/* SEO Agent rollup — sibling to DashboardActionItems but sourced
-          from the SEO recommendation engine. Only renders when there are
-          open OPEN recs on LIVE properties. */}
-      <PortfolioSeoActions actions={portfolioSeoActions} />
-
-      {/* Featured-property hero. Renders ONLY when the operator has
-          exactly one LIVE property (SG Real Estate at launch — Telegraph
-          Commons). Building image floats above a brand-gradient base
-          with the headline stats next to it, so the demo opens with a
-          real product surface instead of a portfolio table that's mostly
-          empty. Drag-and-drop or click "Replace" on the image to swap. */}
+      {/* Featured-property hero — moved to the top so it's the FIRST
+          thing the operator (or anyone walking the demo) sees. Building
+          image floats above a brand-gradient base with the headline stats
+          next to it. The action items + SEO recs strips below give the
+          operator their next move; the hero anchors the dashboard in
+          something tangible (a real building) before the action chrome.
+          Renders only when the operator has exactly one LIVE property. */}
       {featuredProperty ? (
         <PropertyHeroBanner
           propertyId={featuredProperty.id}
@@ -883,6 +870,20 @@ export default async function PortalHome({
           compact
         />
       ) : null}
+
+      {/* Action items — top portfolio-wide recommendations from the
+          Intelligence engine. Each row is a single-click route into
+          the exact surface to act. Dismiss-to-next-page (session
+          storage) so the operator can clear items they've handled
+          without them returning until the next dashboard load. */}
+      {portfolioActions.length > 0 ? (
+        <DashboardActionItems actions={portfolioActions} />
+      ) : null}
+
+      {/* SEO Agent rollup — sibling to DashboardActionItems but sourced
+          from the SEO recommendation engine. Only renders when there are
+          open OPEN recs on LIVE properties. */}
+      <PortfolioSeoActions actions={portfolioSeoActions} />
 
       {/* Insights hero — the centerpiece. Renders top 3 open insights when
           the org has data; falls back to a connect-data CTA when the org
