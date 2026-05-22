@@ -736,7 +736,42 @@ export default async function PortalHome({
     const featNow = new Date();
     const featThirty = new Date(featNow.getTime() - 30 * 24 * 60 * 60 * 1000);
     const featSixty = new Date(featNow.getTime() - 60 * 24 * 60 * 60 * 1000);
-    const [fLeadsCur, fLeadsPrior, fConvosCur] = await Promise.all([
+    // Norman feedback (May 22): "3 LEADS · 30D" looked terrible — that's
+    // just the Lead table (form/chatbot opt-ins). Real captured-contact
+    // surface is much bigger. Aggregate every signal we have so the
+    // hero reads as the actual marketing surface area:
+    //
+    //   Lead rows                — form / chatbot opt-ins
+    // + Identified visitors      — AudienceLab pixel resolved to a
+    //                              person; the visitor feed lives here.
+    //                              For single-property orgs (like TC)
+    //                              pixel visitors aren't always
+    //                              property-tagged, so fall back to
+    //                              org-wide when the property has its
+    //                              own pixel + no per-property attr.
+    // + Chatbot conversations    — people who started a conversation
+    //                              even if they didn't drop email
+    // + Tours scheduled          — calendar bookings
+    // + Applications submitted   — AppFolio guest_cards / online
+    //                              applications (gated on the
+    //                              integration being healthy)
+    // + Active leases            — closed-loop pipeline floor
+    //
+    // Each subtotal is shown alongside the headline so it reads as a
+    // breakdown, not a single opaque number.
+    const [
+      fLeadsCur,
+      fLeadsPrior,
+      fConvosCur,
+      fConvosPrior,
+      fIdentVisCur,
+      fIdentVisPrior,
+      fIdentVisOrgWideCur,
+      fIdentVisOrgWidePrior,
+      fToursCur,
+      fAppsCur,
+      fActiveLeases,
+    ] = await Promise.all([
       prisma.lead
         .count({
           where: {
@@ -764,7 +799,95 @@ export default async function PortalHome({
           },
         })
         .catch(() => 0),
+      prisma.chatbotConversation
+        .count({
+          where: {
+            orgId: scope.orgId,
+            propertyId: featuredProperty.id,
+            createdAt: { gte: featSixty, lt: featThirty },
+          },
+        })
+        .catch(() => 0),
+      prisma.visitor
+        .count({
+          where: {
+            orgId: scope.orgId,
+            propertyId: featuredProperty.id,
+            status: "IDENTIFIED",
+            firstSeenAt: { gte: featThirty, lte: featNow },
+          },
+        })
+        .catch(() => 0),
+      prisma.visitor
+        .count({
+          where: {
+            orgId: scope.orgId,
+            propertyId: featuredProperty.id,
+            status: "IDENTIFIED",
+            firstSeenAt: { gte: featSixty, lt: featThirty },
+          },
+        })
+        .catch(() => 0),
+      prisma.visitor
+        .count({
+          where: {
+            orgId: scope.orgId,
+            status: "IDENTIFIED",
+            firstSeenAt: { gte: featThirty, lte: featNow },
+          },
+        })
+        .catch(() => 0),
+      prisma.visitor
+        .count({
+          where: {
+            orgId: scope.orgId,
+            status: "IDENTIFIED",
+            firstSeenAt: { gte: featSixty, lt: featThirty },
+          },
+        })
+        .catch(() => 0),
+      prisma.tour
+        .count({
+          where: {
+            propertyId: featuredProperty.id,
+            createdAt: { gte: featThirty, lte: featNow },
+          },
+        })
+        .catch(() => 0),
+      prisma.application
+        .count({
+          where: {
+            propertyId: featuredProperty.id,
+            createdAt: { gte: featThirty, lte: featNow },
+          },
+        })
+        .catch(() => 0),
+      prisma.lease
+        .count({
+          where: {
+            orgId: scope.orgId,
+            propertyId: featuredProperty.id,
+            status: "ACTIVE",
+          },
+        })
+        .catch(() => 0),
     ]);
+
+    // Fallback to org-wide identified visitor counts when the property-
+    // scoped count is 0 — single-property orgs (TC) often have their
+    // pixel installed at the org level and visitors don't carry a
+    // propertyId. Better to attribute to the only active property than
+    // to under-report.
+    const identVisCur = fIdentVisCur > 0 ? fIdentVisCur : fIdentVisOrgWideCur;
+    const identVisPrior =
+      fIdentVisPrior > 0 ? fIdentVisPrior : fIdentVisOrgWidePrior;
+
+    // Combined captured-contacts headline.
+    const capturedCur =
+      fLeadsCur + identVisCur + fConvosCur + fToursCur + fAppsCur;
+    const capturedPrior =
+      fLeadsPrior + identVisPrior + fConvosPrior;
+
     const fmt = (cur: number, prior: number) => {
       if (cur === 0 && prior === 0) return {};
       if (prior === 0) return { delta: "New", tone: "positive" as const };
@@ -777,13 +900,27 @@ export default async function PortalHome({
     };
     featuredStats = [
       {
-        label: "Leads · 30d",
-        value: fLeadsCur > 0 ? fLeadsCur.toLocaleString("en-US") : "—",
-        ...fmt(fLeadsCur, fLeadsPrior),
+        label: "Captured · 30d",
+        value:
+          capturedCur > 0 ? capturedCur.toLocaleString("en-US") : "—",
+        ...fmt(capturedCur, capturedPrior),
       },
       {
-        label: "Conversations · 30d",
+        label: "Identified visitors",
+        value: identVisCur > 0 ? identVisCur.toLocaleString("en-US") : "—",
+      },
+      {
+        label: "Chatbot · 30d",
         value: fConvosCur > 0 ? fConvosCur.toLocaleString("en-US") : "—",
+      },
+      {
+        label: "Form leads · 30d",
+        value: fLeadsCur > 0 ? fLeadsCur.toLocaleString("en-US") : "—",
+      },
+      {
+        label: "Active leases",
+        value:
+          fActiveLeases > 0 ? fActiveLeases.toLocaleString("en-US") : "—",
       },
       {
         label: "Reputation",
