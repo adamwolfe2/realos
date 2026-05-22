@@ -10,14 +10,23 @@ import type { ReportView } from "@/components/portal/reports/report-view";
 // image of the property that we're referencing in the report up at the top."
 // — applies to BOTH property-scoped reports AND portfolio reports.
 //
-// Resolution order:
-//   1. snapshot.scope.propertyId  → use that property
-//   2. snapshot.properties[].id   → use the property with the most leads
-//   3. fallback: any LIVE property in the org with a hero image
-//   4. final fallback: any LIVE property in the org (image-less hero)
+// Resolution order (Norman bug May 22, second pass — wrong property
+// surfaced because step 2 ranked snapshot.properties by leads and
+// returned 2060 San Antonio Ave which had NO hero image; meanwhile
+// Telegraph Commons is the only LIVE+ACTIVE property in the org with
+// an image. New rule: ALWAYS try the org's actual flagship (LIVE +
+// ACTIVE + has image) BEFORE looking at snapshot.properties):
 //
-// Returns null only when the org has zero properties at all — in which case
-// ReportView gracefully falls through to the text-only header strip.
+//   1. snapshot.scope.propertyId         → use that property
+//   2. org LIVE + ACTIVE + hasImage      → real flagship (TC for SG)
+//   3. snapshot.properties[] with image  → multi-property tenant where
+//                                          the dashboard's flagship
+//                                          isn't the most-active one
+//   4. any LIVE property in the org      → image-less hero
+//   5. any ACTIVE property               → last resort
+//
+// Returns null only when the org has zero properties at all — in which
+// case ReportView gracefully falls through to the text-only header.
 // ---------------------------------------------------------------------------
 
 type PropertyHero = NonNullable<
@@ -35,26 +44,13 @@ export async function loadPropertyHero(
     if (hero) return hero;
   }
 
-  // 2. Portfolio report — pick the flagship from snapshot.properties (the
-  //    rollup the report already shows in "By property"). Prefer the
-  //    property with the highest lead count this period, falling back to
-  //    occupancy when no leads are present anywhere.
-  const ranked = [...(snapshot.properties ?? [])]
-    .filter((p) => p.id)
-    .sort((a, b) => {
-      const leadDiff = (b.leads ?? 0) - (a.leads ?? 0);
-      if (leadDiff !== 0) return leadDiff;
-      return (b.occupancyPct ?? 0) - (a.occupancyPct ?? 0);
-    });
-  for (const p of ranked) {
-    const hero = await fetchHero(p.id);
-    if (hero) return hero;
-  }
-
-  // 3 + 4. Fall through to org-level property lookup so even brand-new
-  //        snapshots with no per-property rollup still show a building.
-  //        Prefer ACTIVE + LIVE first (the same filter the portal
-  //        dashboards use), with images winning ties.
+  // 2. Real flagship lookup — ACTIVE + LIVE + heroImageUrl set. This is
+  //    Norman's "the building we actually market" filter: for SG it's
+  //    Telegraph Commons (the only LIVE + ACTIVE property after the
+  //    tc-isolate script ran). For multi-LIVE tenants we pick the
+  //    most-recently-touched one; the snapshot.properties ranking
+  //    below picks up the slack when several LIVE buildings exist
+  //    with images.
   const liveWithImage = await prisma.property
     .findFirst({
       where: {
@@ -69,6 +65,25 @@ export async function loadPropertyHero(
     .catch(() => null);
   if (liveWithImage) return toHero(liveWithImage);
 
+  // 3. Multi-property tenant fallback — rank snapshot.properties by
+  //    leads, but ONLY accept candidates that actually have an image.
+  //    Picking an image-less building (the bug Norman just hit with
+  //    2060 San Antonio Ave) leaves a "No image yet" placeholder
+  //    sitting at the top of the share link.
+  const ranked = [...(snapshot.properties ?? [])]
+    .filter((p) => p.id)
+    .sort((a, b) => {
+      const leadDiff = (b.leads ?? 0) - (a.leads ?? 0);
+      if (leadDiff !== 0) return leadDiff;
+      return (b.occupancyPct ?? 0) - (a.occupancyPct ?? 0);
+    });
+  for (const p of ranked) {
+    const hero = await fetchHero(p.id);
+    if (hero && hero.heroImageUrl) return hero;
+  }
+
+  // 4 + 5. Absolute fallback so brand-new orgs without any image
+  //        still get a hero (the placeholder + name strip).
   const anyLive = await prisma.property
     .findFirst({
       where: {

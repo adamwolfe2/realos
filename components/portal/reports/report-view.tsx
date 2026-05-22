@@ -6,6 +6,7 @@ import type {
   ReportAiVisibility,
   ReportContentStats,
   ReportDataSources,
+  ReportLifecycleStats,
   ReportOccupancyStats,
   ReportRenewalStats,
   ReportReputationMention,
@@ -517,10 +518,22 @@ export function ReportView({
               donut. The "Where leases came from" attribution table
               below already carries the per-source breakdown verbatim,
               so we don't duplicate the source list. */}
+          {/* AppFolio lifecycle strip — real lease + application
+              counts pulled from the AppFolio mirror. Norman bug May
+              22: SG signed 20+ leases at TC that never showed up
+              because the funnel only counted Lead.status. This strip
+              gives ownership a real number above the funnel so the
+              page never reads as "0 of everything" again. Renders
+              only when lifecycleStats is present (AppFolio connected
+              + activity in window). */}
+          {snapshot.lifecycleStats ? (
+            <LifecycleStrip stats={snapshot.lifecycleStats} />
+          ) : null}
+
           {hasFunnelData ? (
             <Section
               className="ls-report-section"
-              eyebrow="New lead → signed lease"
+              eyebrow="New lead → signed lease · includes AppFolio mirror"
               title="Conversion stages"
             >
               <FunnelStrip
@@ -2733,6 +2746,69 @@ function ReviewSourceLogo({ source }: { source: string }) {
       <circle cx="12" cy="12" r="9" />
       <path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18" />
     </svg>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// LifecycleStrip — AppFolio lease + application counts pulled from the
+// AppFolio mirror tables. Sits at the top of the Traffic & Leads tab
+// so ownership sees the real pipeline number (e.g. "TC signed 20+
+// leases this period") even when the form/chatbot Lead count is low.
+// Norman bug May 22 — without this, every conversion stage past NEW
+// read 0 because Lease rows weren't joined to Lead rows.
+// ---------------------------------------------------------------------------
+function LifecycleStrip({ stats }: { stats: ReportLifecycleStats }) {
+  const deltaPct =
+    stats.priorLeasesSignedInPeriod > 0
+      ? Math.round(
+          ((stats.leasesSignedInPeriod - stats.priorLeasesSignedInPeriod) /
+            stats.priorLeasesSignedInPeriod) *
+            100,
+        )
+      : stats.leasesSignedInPeriod > 0
+        ? null
+        : null;
+  return (
+    <Section
+      className="ls-report-section"
+      eyebrow="AppFolio · live lease + application sync"
+      title="Lifecycle pipeline"
+    >
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+        <div
+          className="rounded-xl border border-primary/20 px-3.5 py-3"
+          style={{
+            backgroundImage:
+              "linear-gradient(135deg, #EFF6FF 0%, #FFFFFF 70%)",
+          }}
+        >
+          <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
+            Leases signed · period
+          </div>
+          <div className="mt-1 flex items-baseline gap-2">
+            <div className="text-[26px] font-bold tabular-nums text-foreground leading-none">
+              {stats.leasesSignedInPeriod.toLocaleString()}
+            </div>
+            {deltaPct != null ? <DeltaPill value={deltaPct} /> : null}
+          </div>
+          <div className="mt-1 text-[11px] text-muted-foreground">
+            From AppFolio Lease.startDate window
+          </div>
+        </div>
+        <MiniStat
+          label="Active leases"
+          value={stats.activeLeases.toLocaleString()}
+        />
+        <MiniStat
+          label="Applications · period"
+          value={stats.applicationsInPeriod.toLocaleString()}
+        />
+        <MiniStat
+          label="Approved · period"
+          value={stats.applicationsApprovedInPeriod.toLocaleString()}
+        />
+      </div>
+    </Section>
   );
 }
 

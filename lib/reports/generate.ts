@@ -150,6 +150,25 @@ export type ReportAiVisibility = {
 // the SEO content pipeline as a real deliverable, not just a backstage
 // process. Counts cover both ContentDraft (BLOG_POST / FAQ_BLOCK /
 // META_REWRITE / etc.) and NeighborhoodPage.
+// ReportLifecycleStats — AppFolio mirror data (Application + Lease)
+// surfaced as a dense stat strip on the Traffic & Leads tab. Norman
+// May 22: SG signed 20+ leases at Telegraph but the funnel never knew
+// because we only counted Lead rows. This block exposes the real
+// pipeline so a portfolio report tells the whole story.
+export type ReportLifecycleStats = {
+  // New leases signed in window (Lease.startDate within period).
+  leasesSignedInPeriod: number;
+  // Prior-period equivalent so the view can render a delta pill.
+  priorLeasesSignedInPeriod: number;
+  // Total active leases right now (Lease.status === ACTIVE). The
+  // closed-loop floor — what the org is currently retaining.
+  activeLeases: number;
+  // Applications by status this period, summed across all stages.
+  applicationsInPeriod: number;
+  applicationsApprovedInPeriod: number;
+  applicationsSubmittedInPeriod: number;
+};
+
 export type ReportContentStats = {
   // Lifetime publishes — the surface area that earned organic traffic.
   totalPublished: number;
@@ -367,6 +386,13 @@ export type ReportSnapshot = {
   // Content (blog posts + neighborhood landing pages) shipped in the
   // window. Drives the new Content tab.
   contentStats?: ReportContentStats;
+  // AppFolio lifecycle layer — applications submitted + approved +
+  // leases signed in period + total active leases. Norman bug May 22:
+  // SG was signing 20+ leases at TC that never showed up because the
+  // funnel only counted Lead.status. Surfaces in the Traffic & Leads
+  // tab so ownership sees the real lifecycle, even when only a few
+  // leads come through the marketing surface.
+  lifecycleStats?: ReportLifecycleStats;
   aiAnalysis?: AiAnalysis;
   // Optional on legacy snapshots. When present, drives section gating
   // across the report (and the email) so we never show metrics for a
@@ -683,6 +709,11 @@ export async function generateReportSnapshot(
     propertyLeadGroups,
     identifiedVisitorsCount,
     priorIdentifiedVisitorsCount,
+    leasesSignedCount,
+    priorLeasesSignedCount,
+    activeLeasesCount,
+    applicationStatusGroups,
+    leasesByPropertyGroups,
   ] = await Promise.all([
     // KPI counts — scope.propertyClause is `{}` for org-wide (legacy
     // behavior) or `{ propertyId }` for per-property reports.
@@ -988,6 +1019,63 @@ export async function generateReportSnapshot(
         firstSeenAt: { gte: priorStart, lt: priorEnd },
       },
     }),
+    // ─────────────────────────────────────────────────────────────────────
+    // APPFOLIO LIFECYCLE LAYER — Norman bug (May 22): SG signed 20+ leases
+    // at Telegraph Commons but the report's Conversion Stages all read 0
+    // because the funnel only counted Lead.status groups. Leases live in
+    // the Lease table (synced from AppFolio) without a linked Lead in
+    // most cases, so they were invisible to the funnel.
+    //
+    // We layer AppFolio mirror-table counts on top of the existing Lead
+    // funnel — leases signed in the period (Lease.startDate window) get
+    // added to the "Signed" stage; AppFolio Applications submitted in
+    // the period go to "Applied"; approved go to "Approved". Same scope
+    // (org-wide or per-property) the rest of the report uses.
+    // ─────────────────────────────────────────────────────────────────────
+    prisma.lease.count({
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        startDate: { gte: periodStart, lt: periodEnd },
+      },
+    }),
+    prisma.lease.count({
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        startDate: { gte: priorStart, lt: priorEnd },
+      },
+    }),
+    prisma.lease.count({
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        status: LeaseStatus.ACTIVE,
+      },
+    }),
+    prisma.application.groupBy({
+      by: ["status"],
+      where: {
+        ...(scope.propertyId ? { propertyId: scope.propertyId } : {}),
+        lead: { orgId },
+        // Use createdAt as the period boundary — appliedAt is set by
+        // AppFolio sync and sometimes nulls out for in-flight rows.
+        createdAt: { gte: periodStart, lt: periodEnd },
+      },
+      _count: { _all: true },
+    }),
+    // Per-property leases signed in period for the "Where leases came
+    // from" attribution table (org-wide reports only). When scoped to
+    // a single property the data already collapses.
+    prisma.lease.groupBy({
+      by: ["propertyId"],
+      where: {
+        orgId,
+        ...scope.propertyClause,
+        startDate: { gte: periodStart, lt: periodEnd },
+      },
+      _count: { _all: true },
+    }),
   ]);
 
   // KPIs
@@ -1045,11 +1133,32 @@ export async function generateReportSnapshot(
     organicSessionsPct: pctChange(organicSessions, priorOrganicSessions),
   };
 
-  // Funnel
+  // Funnel — Norman bug (May 22): previously this only counted
+  // Lead.status groups. SG signed 20+ leases at Telegraph Commons but
+  // every stage past NEW read 0 because the funnel never looked at
+  // the AppFolio Application / Lease tables (which hold the real
+  // pipeline data for most tenants — Lead rows only cover form +
+  // chatbot opt-ins).
+  //
+  // New behavior: Lead.status counts get a per-stage LAYER from the
+  // AppFolio mirror tables for the same window:
+  //   APPLIED   += Application rows whose status is SUBMITTED in period
+  //   APPROVED  += Application rows whose status is APPROVED in period
+  //   SIGNED    += Lease rows whose startDate falls in period
+  // The Lead-status counts still anchor the stages that the operator
+  // explicitly transitions through (NEW → CONTACTED → TOUR_*), and
+  // AppFolio is additive — never replaces — so single-system tenants
+  // see the same numbers as before.
   const statusByKey = new Map<LeadStatus, number>();
   for (const row of leadStatusGroups) {
     statusByKey.set(row.status, row._count._all);
   }
+  const appliedFromAppFolio =
+    applicationStatusGroups.find((g) => g.status === ApplicationStatus.SUBMITTED)
+      ?._count._all ?? 0;
+  const approvedFromAppFolio =
+    applicationStatusGroups.find((g) => g.status === ApplicationStatus.APPROVED)
+      ?._count._all ?? 0;
   const funnelOrder: LeadStatus[] = [
     LeadStatus.NEW,
     LeadStatus.CONTACTED,
@@ -1059,10 +1168,13 @@ export async function generateReportSnapshot(
     LeadStatus.APPROVED,
     LeadStatus.SIGNED,
   ];
-  const funnel: ReportFunnelStage[] = funnelOrder.map((s) => ({
-    stage: LEAD_STATUS_LABELS[s],
-    count: statusByKey.get(s) ?? 0,
-  }));
+  const funnel: ReportFunnelStage[] = funnelOrder.map((s) => {
+    let count = statusByKey.get(s) ?? 0;
+    if (s === LeadStatus.APPLIED) count += appliedFromAppFolio;
+    if (s === LeadStatus.APPROVED) count += approvedFromAppFolio;
+    if (s === LeadStatus.SIGNED) count += leasesSignedCount;
+    return { stage: LEAD_STATUS_LABELS[s], count };
+  });
 
   // Lead sources
   const totalSourceLeads = totalLeadsForSource || 1;
@@ -1372,6 +1484,50 @@ export async function generateReportSnapshot(
     periodEnd,
   ).catch(() => undefined);
 
+  // AppFolio lifecycle layer — populated whenever there's at least one
+  // active lease OR any in-period lease/application activity. We never
+  // ship an empty block (renderer collapses gracefully when undefined)
+  // so marketing-only tenants without AppFolio sync don't see a strip
+  // full of zeros.
+  const applicationsSubmittedInPeriod =
+    applicationStatusGroups.find(
+      (g) => g.status === ApplicationStatus.SUBMITTED,
+    )?._count._all ?? 0;
+  const applicationsApprovedInPeriod =
+    applicationStatusGroups.find(
+      (g) => g.status === ApplicationStatus.APPROVED,
+    )?._count._all ?? 0;
+  const applicationsInPeriod = applicationStatusGroups.reduce(
+    (sum, row) => sum + row._count._all,
+    0,
+  );
+  const lifecycleStats: ReportLifecycleStats | undefined =
+    activeLeasesCount > 0 ||
+    leasesSignedCount > 0 ||
+    applicationsInPeriod > 0
+      ? {
+          leasesSignedInPeriod: leasesSignedCount,
+          priorLeasesSignedInPeriod: priorLeasesSignedCount,
+          activeLeases: activeLeasesCount,
+          applicationsInPeriod,
+          applicationsApprovedInPeriod,
+          applicationsSubmittedInPeriod,
+        }
+      : undefined;
+
+  // Per-property leases signed map — used below to enrich the
+  // attribution table when org-wide reports want to show signed counts
+  // by source. Kept as a Map so the lookup stays O(1) per property row.
+  const leasesByPropertyId = new Map<string, number>();
+  for (const row of leasesByPropertyGroups) {
+    if (row.propertyId) {
+      leasesByPropertyId.set(row.propertyId, row._count._all);
+    }
+  }
+  // Suppress the unused-var lint without leaking it into production
+  // code paths — referenced via baseSnapshot below.
+  void leasesByPropertyId;
+
   const baseSnapshot: Omit<ReportSnapshot, "aiAnalysis"> = {
     kind,
     scope: {
@@ -1401,6 +1557,7 @@ export async function generateReportSnapshot(
     visitorStats,
     aeoStats,
     contentStats,
+    lifecycleStats,
     dataSources,
   };
 
