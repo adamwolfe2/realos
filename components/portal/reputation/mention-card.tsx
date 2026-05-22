@@ -29,36 +29,69 @@ export type MentionView = {
   publishedAt: string | null;
   rating: number | null;
   sentiment: Sentiment | null;
+  // Optional — provided by callers that fetch the LLM-classified
+  // confidence score (0..1) so the badge can carry a tooltip explaining
+  // how sure Claude was. Older callers omit the field and the badge
+  // renders without the tooltip.
+  sentimentConfidence?: number | null;
   topics: string[];
   reviewed: boolean;
   flagged: boolean;
   isNew?: boolean;
 };
 
-function sentimentBadge(s: Sentiment | null) {
+function sentimentBadge(s: Sentiment | null, confidence?: number | null) {
+  // Norman feedback (May 22): the sentiment pills had no provenance
+  // story — engineering-credible operators wanted to know HOW we knew
+  // a review was negative. We classify every mention via Claude during
+  // each scan (lib/reputation/analyze.ts); the model self-reports a
+  // 0..1 confidence which is stored as PropertyMention.sentimentConfidence
+  // and now surfaced as a hover tooltip on every pill. Reads as
+  // "Claude classified at 0.90 confidence" — concrete, defensible,
+  // no JSON dump in the operator's face.
+  const tip =
+    typeof confidence === "number" && Number.isFinite(confidence)
+      ? `Claude classified at ${confidence.toFixed(2)} confidence`
+      : undefined;
   if (!s) {
-    return <Badge variant="outline">unclassified</Badge>;
+    return (
+      <Badge variant="outline" title={tip}>
+        unclassified
+      </Badge>
+    );
   }
   if (s === "POSITIVE") {
     return (
-      <Badge className="bg-primary text-primary-foreground hover:bg-primary">
+      <Badge
+        className="bg-primary text-primary-foreground hover:bg-primary"
+        title={tip}
+      >
         positive
       </Badge>
     );
   }
   if (s === "NEGATIVE") {
     return (
-      <Badge variant="destructive">negative</Badge>
+      <Badge variant="destructive" title={tip}>
+        negative
+      </Badge>
     );
   }
   if (s === "MIXED") {
     return (
-      <Badge className="bg-amber-500 text-white hover:bg-amber-500">
+      <Badge
+        className="bg-amber-500 text-white hover:bg-amber-500"
+        title={tip}
+      >
         mixed
       </Badge>
     );
   }
-  return <Badge variant="secondary">neutral</Badge>;
+  return (
+    <Badge variant="secondary" title={tip}>
+      neutral
+    </Badge>
+  );
 }
 
 function getHost(url: string): string {
@@ -181,24 +214,65 @@ function getResponseTarget(
 // communities — multifamily apartments and student housing — so the
 // vocabulary now reads like a property manager responding to a current
 // or former resident: "home", "residents", "the community", "move-in".
+// Topic-specific response openers. Norman feedback #85: the previous
+// generic "thanks for sharing" draft missed that residential reviews
+// have distinct complaint families — pricing, staff, maintenance,
+// noise, safety. A draft that names the actual issue ("I hear you on
+// the rent communication") reads as human attention, not a form letter.
+//
+// We surface the most-frequent topic from the LLM-classified `topics`
+// array and tailor the middle paragraph to it. Falls back to the
+// generic "make this right" middle when no topic matched.
+const NEGATIVE_TOPIC_RESPONSES: Record<string, string> = {
+  pricing:
+    "On pricing specifically — I hear you, and I want to make sure you have the full context on how we set rents for the upcoming year. Could you send me an email with the best time to reach you? I'll walk you through the comp set we use and what's actually changed at the building so you can tell me whether the increase is in line or out of line.",
+  staff:
+    "On the team interactions — that's not the standard we set and I want to dig in. Could you send me an email with which staff member you worked with and roughly when? I'll review the touchpoints in our system and follow up with you on what we found, not just an apology.",
+  maintenance:
+    "On the maintenance issues — please send me an email with your unit number and the work orders you're referencing. I'll pull the full ticket history, talk to the team that owned each one, and follow up with you on response times and what we're changing.",
+  noise:
+    "On the noise — that's a real quality-of-life issue and we take it seriously. If you'd send me an email with the unit and the times it tends to hit, I can dig into the floor plan, neighboring units, and any quiet-hours enforcement we should be doing differently.",
+  safety:
+    "On the safety concerns — those are top priority for us. Please send me an email at your earliest convenience with details on what you experienced. I'll loop in our property manager and follow up with you directly on what we're doing in response.",
+  cleanliness:
+    "On the cleanliness issues — that's directly on us and I'm sorry. Please send me an email with your unit number and the common areas you're referencing so I can review the cleaning schedule and audit our vendor's work.",
+};
+
+function pickTopTopic(topics: unknown): string | null {
+  if (!Array.isArray(topics) || topics.length === 0) return null;
+  const first = topics[0];
+  return typeof first === "string" ? first.toLowerCase() : null;
+}
+
 function buildResponseDraft(args: {
   authorName: string | null;
   sentiment: Sentiment | null;
   platform: string;
   excerpt: string;
+  topics?: unknown;
+  propertyName?: string | null;
 }): string {
   const audience = args.authorName ? args.authorName : "there";
+  const property = args.propertyName ?? "the property";
   const opener =
     args.sentiment === "NEGATIVE"
-      ? `Hi ${audience} — thanks for taking the time to share your experience, and I'm sorry your time with us didn't meet your expectations.`
+      ? `Hi ${audience} — thanks for taking the time to share this. I'm sorry your experience with ${property} fell short of what we promise, and I want to read this in detail and respond to the specifics rather than send a templated reply.`
       : args.sentiment === "POSITIVE"
-        ? `Hi ${audience} — thanks so much for the kind words about living here. I'll share this with the whole on-site team.`
-        : `Hi ${audience} — thanks for the note about our community.`;
-  const middle =
-    args.sentiment === "NEGATIVE"
-      ? `I'd like to make this right. Could you send me an email with your unit number (or move-out date if you're a former resident) and the best time to reach you? I'll pull the full history on whatever you ran into and get back to you with a real plan, not a form letter.`
-      : `If there's ever anything we can improve at the property — maintenance, amenities, the leasing experience — please reach out to the on-site office directly. We read every note and act on it.`;
-  const close = `— Property management team\n(${args.platform})`;
+        ? `Hi ${audience} — thanks so much for the kind words about ${property}. I'll share this with the whole on-site team, they put real work into the experience and it means a lot when residents notice.`
+        : `Hi ${audience} — thanks for the note about ${property}.`;
+
+  let middle: string;
+  if (args.sentiment === "NEGATIVE") {
+    const topic = pickTopTopic(args.topics);
+    middle =
+      topic && NEGATIVE_TOPIC_RESPONSES[topic]
+        ? NEGATIVE_TOPIC_RESPONSES[topic]
+        : `I'd like to make this right. Could you send me an email with your unit number (or move-out date if you're a former resident) and the best time to reach you? I'll pull the full history on whatever you ran into and follow up with a real plan, not a form letter.`;
+  } else {
+    middle = `If there's ever anything we can improve — maintenance, amenities, the leasing experience — please reach out to the on-site office directly. We read every note and act on it.`;
+  }
+
+  const close = `— ${property} management team\n(via ${args.platform})`;
   return `${opener}\n\n${middle}\n\n${close}`;
 }
 
@@ -254,6 +328,12 @@ export function MentionCard({
         sentiment: mention.sentiment,
         platform: responseTarget.platform,
         excerpt: mention.excerpt,
+        // Topic-aware drafts (Norman bug #85): when the LLM-classified
+        // topics array has e.g. ["pricing"], the draft middle paragraph
+        // explicitly addresses pricing instead of the generic
+        // "make this right" copy. Pulled from the MentionView passed in.
+        topics: (mention as { topics?: unknown }).topics,
+        propertyName: (mention as { propertyName?: string | null }).propertyName ?? null,
       }),
     );
     setDraftOpen(true);
@@ -386,7 +466,7 @@ export function MentionCard({
       </p>
 
       <div className="mt-3 flex items-center gap-1.5 flex-wrap">
-        {sentimentBadge(mention.sentiment)}
+        {sentimentBadge(mention.sentiment, mention.sentimentConfidence ?? null)}
         {mention.topics.map((t) => (
           <Badge key={t} variant="outline">
             {t}

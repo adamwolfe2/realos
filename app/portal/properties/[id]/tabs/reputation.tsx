@@ -46,6 +46,7 @@ export async function ReputationTab({
     publishedAt: Date | null;
     rating: number | null;
     sentiment: import("@prisma/client").Sentiment | null;
+    sentimentConfidence: number | null;
     topics: unknown;
     reviewedByUserId: string | null;
     flagged: boolean;
@@ -89,6 +90,11 @@ export async function ReputationTab({
           publishedAt: true,
           rating: true,
           sentiment: true,
+          // Norman bug #45 polish: surface the LLM confidence on the
+          // sentiment pill via a hover tooltip ("Claude classified at
+          // 0.90 confidence"). MentionView.sentimentConfidence is
+          // optional so old callers don't break.
+          sentimentConfidence: true,
           topics: true,
           reviewedByUserId: true,
           flagged: true,
@@ -133,6 +139,7 @@ export async function ReputationTab({
       publishedAt: r.publishedAt ? r.publishedAt.toISOString() : null,
       rating: r.rating,
       sentiment: r.sentiment,
+      sentimentConfidence: r.sentimentConfidence,
       topics: Array.isArray(r.topics) ? (r.topics as string[]) : [],
       reviewed: r.reviewedByUserId !== null,
       flagged: r.flagged,

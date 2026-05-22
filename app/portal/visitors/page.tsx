@@ -361,7 +361,7 @@ export default async function VisitorsPage({
       <AutoRefresh intervalMs={60_000} />
       <PageHeader
         title="Visitor feed"
-        description="Real people visiting your site, identified by the pixel. New identifications land every ~5 minutes; this list refreshes every 60 seconds. Click Sync now to pull fresh data immediately."
+        description="Real people who visited your site, resolved to a name + email via the AudienceLab identity graph. Every row is outreach-ready. New identifications land every ~5 minutes; this list refreshes every 60 seconds. Click Sync now to pull fresh data immediately."
         actions={
           <div className="flex items-center gap-3 flex-wrap">
             <PropertyMultiSelect

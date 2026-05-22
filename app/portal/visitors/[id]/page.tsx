@@ -29,6 +29,7 @@ import { cn } from "@/lib/utils";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { StatCard } from "@/components/admin/stat-card";
 import { EngageComposer } from "../engage-composer";
+import { ConvertToLeadButton } from "./convert-button";
 
 export const metadata: Metadata = { title: "Visitor detail" };
 export const revalidate = 15;
@@ -320,7 +321,11 @@ export default async function VisitorDetailPage({
               </IdentityRow>
             </dl>
 
-            {/* Lead link */}
+            {/* Lead link — when matched, show the link card. When not
+                matched but we have an email, surface the one-click
+                "Convert to lead" button so the operator can promote a
+                pixel-identified visitor into a tracked Lead row
+                (status MATCHED_TO_LEAD) without re-typing any data. */}
             {linkedLead ? (
               <div className="mt-4 pt-4 border-t border-border">
                 <div className="text-xs text-muted-foreground mb-2">
@@ -346,7 +351,29 @@ export default async function VisitorDetailPage({
                   <span className="text-muted-foreground text-xs">View</span>
                 </Link>
               </div>
-            ) : null}
+            ) : (
+              <div className="mt-4 pt-4 border-t border-border">
+                <div className="text-xs text-muted-foreground mb-2">
+                  No tracked lead yet
+                </div>
+                <div className="flex items-center justify-between gap-2 rounded-md border border-dashed border-border px-3 py-2.5 text-xs">
+                  <span className="text-muted-foreground leading-snug">
+                    {visitor.email
+                      ? "Convert this pixel-identified person into a Lead row to start tracking outreach + status."
+                      : "Need an email before we can mint a Lead row."}
+                  </span>
+                  <ConvertToLeadButton
+                    visitorId={visitor.id}
+                    disabled={!visitor.email}
+                    disabledReason={
+                      !visitor.email
+                        ? "Visitor has no email — cannot create a Lead yet."
+                        : undefined
+                    }
+                  />
+                </div>
+              </div>
+            )}
           </SectionCard>
         </div>
 
