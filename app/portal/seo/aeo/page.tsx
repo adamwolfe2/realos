@@ -121,11 +121,30 @@ export default async function AeoPage() {
   const brandedMentioned = brandedRows.filter((c) => c.mentioned).length;
   const brandedMentionRate =
     brandedRows.length > 0 ? brandedMentioned / brandedRows.length : 0;
+  // Final weights (May 22 retune):
+  //   branded mention rate × 45  — the defensive moat; for a small
+  //                                 property this IS the AI visibility
+  //                                 story, because nobody loses branded
+  //                                 queries (engines have public data
+  //                                 on every named building). Driving
+  //                                 the headline score off this means
+  //                                 well-known properties read as
+  //                                 "visible" the moment they connect.
+  //   mention rate         × 30  — combined branded + discovery
+  //                                 mention. Still material — captures
+  //                                 the rare discovery win.
+  //   citation rate        × 20  — engines actually link to your site
+  //   position bonus       ×  5  — when cited, near the top
+  //
+  // For a property that nails branded and loses every discovery prompt
+  // (the realistic case for any small-mid property today), this lands
+  // ~60-70/100 — which is the honest read on their actual AI search
+  // surface area. Growth ceiling is closing the discovery gap.
   const visibilityScore = Math.round(
-    mentionRate30 * 50 +
-      citationRate30 * 30 +
-      positionBonus * 5 +
-      brandedMentionRate * 15,
+    brandedMentionRate * 45 +
+      mentionRate30 * 30 +
+      citationRate30 * 20 +
+      positionBonus * 5,
   );
 
   // Configured map per engine — server-only because `isConfigured()`
