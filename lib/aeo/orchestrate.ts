@@ -32,7 +32,12 @@ import { parseCitation } from "./parse";
 import { getEnabledEngines, type EngineModule } from "./engines";
 import type { AeoEngine, Prisma } from "@prisma/client";
 
-const PROMPTS_PER_PROPERTY = 3;
+// Lifted from 3 → 5 to accommodate the 2 new branded prompts (Norman
+// feedback May 22). Budget cost: ~67% more LLM calls per scan, still
+// well within the rate limits. Branded prompts have a meaningfully
+// higher citation rate than discovery prompts, so the dashboard reads
+// as a real moat-vs-gap story instead of "0% across the board."
+const PROMPTS_PER_PROPERTY = 5;
 const PER_ENGINE_DELAY_MS = 3000;
 const PROJECTED_QUERIES_WARN = 100;
 const NEIGHBORHOOD_PROMPTS_PER_CLAIM_CAP = 3;
@@ -107,6 +112,13 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
       propertyType: property.propertyType,
       residentialSubtype: property.residentialSubtype,
       commercialSubtype: property.commercialSubtype,
+      // Brand-aware prompts (Norman feedback May 22): include 2 prompts
+      // that name the property directly so the AI Search Visibility
+      // dashboard reflects defensive moat (branded queries — AI knows
+      // who you are) alongside growth gap (discovery queries — does AI
+      // surface you against competitors). Real properties get
+      // meaningfully non-zero citation rates immediately on branded.
+      propertyName: property.name,
     }).slice(0, PROMPTS_PER_PROPERTY);
 
     if (prompts.length === 0) {

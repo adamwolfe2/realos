@@ -122,6 +122,12 @@ export default async function ClientDetail({
     ["moduleAttribution", "Attribution", org.moduleAttribution],
     ["moduleInsights", "Insights (AEO + briefing + reports)", org.moduleInsights],
     ["moduleReputation", "Reputation", org.moduleReputation],
+    // Norman feedback (May 22): RentCast market intelligence (estimated
+    // rent + nearby comparables + hot/cold market badge) on the
+    // property detail page. Off by default — residential operators
+    // typically don't want rent-comp data alongside their digital-
+    // marketing dashboards. Flip on per-tenant when there's a use case.
+    ["moduleMarketIntelligence", "Market intelligence (RentCast comparables)", org.moduleMarketIntelligence],
     // Operations (AppFolio-backed) + tours
     ["moduleTours", "Tours", org.moduleTours],
     ["moduleResidents", "Resident operations (residents / renewals / work orders / applications)", org.moduleResidents],

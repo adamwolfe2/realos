@@ -389,6 +389,15 @@ model Organization {
   // /portal/insights, /portal/briefing, /portal/reports — all of which
   // depend on the same underlying signal pipeline.
   moduleInsights      Boolean  @default(false)
+  // RentCast-powered market intelligence on the property detail page
+  // (estimated market rent, submarket median, nearby comparables,
+  // hot/cold market badge). Off by default — Norman feedback (May 22)
+  // is that residential operators don't want rent-comp data surfaced
+  // alongside their digital-marketing dashboards, same direction as
+  // bugs #71/#77/#97 (no rent-roll metrics anywhere). Agency operators
+  // can flip it on per tenant from /admin/clients/[id] when there's
+  // ever a use case for it.
+  moduleMarketIntelligence Boolean @default(false)
   // Cross-channel attribution surface (/portal/attribution). Direct
   // competitor to Clarity Attribution; included as the headline
   // value-prop module on Growth+ tiers.

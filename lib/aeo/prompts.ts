@@ -35,6 +35,16 @@ export interface PromptSeed {
   commercialSubtype: CommercialSubtype | null;
   /** Optional anchor — a nearby university for STUDENT_HOUSING. */
   nearbyUniversity?: string | null;
+  /**
+   * The property's brand name (e.g. "Telegraph Commons"). When supplied,
+   * generatePrompts emits 2 BRANDED prompts in addition to the discovery
+   * ones — questions that explicitly name the property so we can measure
+   * "do the AI engines know who you are when prompted directly?" rather
+   * than only "do they pick you off a blank competitive set?" Branded
+   * scoring is the defensive moat; discovery scoring is the growth gap.
+   * Both surface separately in the AI Search Visibility UI.
+   */
+  propertyName?: string | null;
 }
 
 /**
@@ -53,6 +63,23 @@ export function generatePrompts(seed: PromptSeed): string[] {
 
   const out: string[] = [];
 
+  // BRANDED prompts first. When the seed carries propertyName, lead with
+  // 2 prompts that explicitly name the property — these are how a real
+  // prospect researches a shortlisted building ("is X a good place to
+  // live", "what do students say about X"). AI engines have public
+  // data on most named properties via reviews, Reddit threads, social
+  // posts, so citation rate on branded prompts is meaningfully > 0
+  // even for small properties that lose every discovery query. The
+  // resulting score reflects BOTH the defensive moat (branded) and
+  // the growth gap (discovery), which is the honest dashboard story.
+  const brand = seed.propertyName?.trim();
+  if (brand) {
+    out.push(`Tell me about ${brand} in ${broadLocation}. Is it a good place to live?`);
+    out.push(
+      `What do residents say about ${brand}? Any common complaints or things to know before signing a lease?`,
+    );
+  }
+
   if (seed.propertyType === "COMMERCIAL") {
     out.push(...generateCommercialPrompts(seed, location, broadLocation));
   } else {
@@ -61,7 +88,9 @@ export function generatePrompts(seed: PromptSeed): string[] {
     );
   }
 
-  // De-dupe + cap at 6, floor at 4 (caller can return fewer if seed thin).
+  // De-dupe + cap at 6 (was 6 pre-branded, stays 6 — the 2 branded
+  // ones replace 2 of the lower-value discovery variants, not extend
+  // the budget).
   const seen = new Set<string>();
   const deduped: string[] = [];
   for (const p of out) {

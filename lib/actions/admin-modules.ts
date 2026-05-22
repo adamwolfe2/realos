@@ -35,6 +35,9 @@ const TOGGLEABLE_MODULES = [
   "moduleResidents",
   "moduleTours",
   "moduleConversations",
+  // Norman feedback May 22: RentCast comparables on /portal/properties/[id].
+  // Off by default; flip on per tenant from /admin/clients/[id] when needed.
+  "moduleMarketIntelligence",
 ] as const;
 
 export type ToggleableModule = (typeof TOGGLEABLE_MODULES)[number];

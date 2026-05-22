@@ -52,11 +52,22 @@ export default async function PropertyDetail({
     where: { id: scope.orgId },
     select: {
       moduleInsights: true,
+      moduleMarketIntelligence: true,
       moduleGoogleAds: true,
       moduleMetaAds: true,
     },
   });
-  const showMarketIntelligence = orgInsights?.moduleInsights === true;
+  // Market intelligence (RentCast comparables + submarket median rent +
+  // hot/cold market badge) is gated behind its own opt-in flag now —
+  // moduleInsights enables the analytics nav group, moduleMarketIntelligence
+  // is a second gate that has to ALSO be true for this specific panel to
+  // render. Norman feedback (May 22): residential operators don't want
+  // rent-comp data surfaced alongside digital-marketing dashboards (same
+  // direction as bugs #71/#77/#97). Defaulted false; agency admins can
+  // flip it on per tenant from /admin/clients/[id] when it's wanted.
+  const showMarketIntelligence =
+    orgInsights?.moduleInsights === true &&
+    orgInsights?.moduleMarketIntelligence === true;
   const showAdsTab =
     (orgInsights?.moduleGoogleAds ?? false) ||
     (orgInsights?.moduleMetaAds ?? false);
