@@ -1,5 +1,4 @@
 import * as React from "react";
-import { cn } from "@/lib/utils";
 
 export type FunnelStage = {
   label: string;
@@ -7,44 +6,190 @@ export type FunnelStage = {
   href?: string;
 };
 
+// ---------------------------------------------------------------------------
+// ConversionFunnel — visual funnel, not a bar chart.
+//
+// Operator feedback: the prior horizontal-bar-stack rendering read as a
+// progress chart, not a funnel. This is now a true tapered funnel:
+//
+//   ┌──────┐
+//   │      └──────┐
+//   │              └──────┐
+//   │ Visitors  Engaged  Leads  ┐
+//   │              ┌──────┘
+//   │      ┌──────┘
+//   └──────┘
+//
+// Each stage is a trapezoidal slice whose visual width tapers left→right
+// regardless of the actual counts. The taper communicates "funnel" as a
+// metaphor; the numbers communicate the data. Stage labels + conversion %
+// sit below their slice. Single-blue gradient (light → deep) per the
+// brand rule — no rainbow severity hues.
+//
+// Renders as a pure SVG with viewBox so it scales cleanly on any width.
+// ---------------------------------------------------------------------------
+
+const VIEW_W = 1000;
+const FUNNEL_H = 200;
+const TOP_MAX_H = FUNNEL_H * 0.92; // tallest slice — leftmost
+const TOP_MIN_H = FUNNEL_H * 0.28; // shortest slice — rightmost
+
+// Brand-blue gradient stops. Stage 0 is lightest, last stage darkest.
+// Interpolated linearly so any stage count produces a consistent look.
+const LIGHT = { r: 0x60, g: 0xa5, b: 0xfa }; // #60A5FA — primary/300
+const DEEP = { r: 0x1e, g: 0x40, b: 0xaf }; // #1E40AF — primary/800
+
+function fillFor(i: number, total: number): string {
+  if (total <= 1) return `rgb(${DEEP.r}, ${DEEP.g}, ${DEEP.b})`;
+  const t = i / (total - 1);
+  const r = Math.round(LIGHT.r + (DEEP.r - LIGHT.r) * t);
+  const g = Math.round(LIGHT.g + (DEEP.g - LIGHT.g) * t);
+  const b = Math.round(LIGHT.b + (DEEP.b - LIGHT.b) * t);
+  return `rgb(${r}, ${g}, ${b})`;
+}
+
 export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
   if (stages.length === 0) return null;
-  const top = Math.max(1, stages[0].value);
+
+  const n = stages.length;
+  const stageW = VIEW_W / n;
+
+  // Slice top/bottom edge Y coordinates at the boundary between stage i-1
+  // and stage i. We compute the slice height at each vertical line (0..n)
+  // then derive the polygon corners.
+  const sliceHeightAt = (idx: number): number => {
+    if (n === 1) return TOP_MAX_H;
+    const t = idx / n;
+    return TOP_MAX_H + (TOP_MIN_H - TOP_MAX_H) * t;
+  };
+  const yTopAt = (idx: number): number => (FUNNEL_H - sliceHeightAt(idx)) / 2;
+  const yBotAt = (idx: number): number => FUNNEL_H - yTopAt(idx);
+
+  // Labels live BELOW the funnel. The label band needs height for the
+  // stage name + count + conversion %. Reserve 64px.
+  const LABEL_BAND_H = 70;
+  const TOTAL_H = FUNNEL_H + LABEL_BAND_H;
 
   return (
-    <ol className="space-y-2.5">
-      {stages.map((s, i) => {
-        const widthPct = Math.max(3, Math.round((s.value / top) * 100));
-        const prev = i === 0 ? null : stages[i - 1].value;
-        const conversion =
-          prev && prev > 0 ? Math.round((s.value / prev) * 100) : null;
-        return (
-          <li key={s.label} className="flex items-center gap-3">
-            <div className="w-24 shrink-0 text-xs text-muted-foreground">
-              {s.label}
-            </div>
-            <div className="flex-1 relative h-7 rounded-md bg-muted/50 overflow-hidden">
-              <div
-                className={cn(
-                  "h-full flex items-center justify-end px-2 text-[11px] font-medium tabular-nums text-white transition-all duration-700",
-                  i === 0 ? "bg-primary" : "bg-primary/80",
-                )}
-                style={{ width: `${widthPct}%` }}
+    <div className="w-full">
+      <svg
+        viewBox={`0 0 ${VIEW_W} ${TOTAL_H}`}
+        preserveAspectRatio="none"
+        className="w-full h-auto"
+        style={{ maxHeight: 260 }}
+        aria-label="Conversion funnel"
+        role="img"
+      >
+        {/* Subtle background guides for the funnel edges — gives the
+            taper a clean container even when all values are 0. */}
+        <line
+          x1={0}
+          y1={yTopAt(0)}
+          x2={VIEW_W}
+          y2={yTopAt(n)}
+          stroke="rgba(15, 23, 42, 0.04)"
+          strokeWidth={1}
+        />
+        <line
+          x1={0}
+          y1={yBotAt(0)}
+          x2={VIEW_W}
+          y2={yBotAt(n)}
+          stroke="rgba(15, 23, 42, 0.04)"
+          strokeWidth={1}
+        />
+
+        {/* The funnel slices. */}
+        {stages.map((s, i) => {
+          const x1 = i * stageW;
+          const x2 = (i + 1) * stageW;
+          const pts = `${x1},${yTopAt(i)} ${x2},${yTopAt(i + 1)} ${x2},${yBotAt(i + 1)} ${x1},${yBotAt(i)}`;
+          // Hairline gap between slices reads as polished, like Sankey
+          // segments. 2px stroke in the slice fill color tightens edges.
+          return (
+            <polygon
+              key={s.label}
+              points={pts}
+              fill={fillFor(i, n)}
+              stroke="white"
+              strokeWidth={2}
+              strokeLinejoin="round"
+            />
+          );
+        })}
+
+        {/* Number inside each slice — vertically centered. */}
+        {stages.map((s, i) => {
+          const cx = i * stageW + stageW / 2;
+          const cy = FUNNEL_H / 2 + 8;
+          // Hide the count when slice is too narrow for legible text
+          // (last slice in a 7+ stage funnel). For ≤6 stages every
+          // slice has room.
+          const sliceMidH =
+            (sliceHeightAt(i) + sliceHeightAt(i + 1)) / 2;
+          if (sliceMidH < 36) return null;
+          return (
+            <text
+              key={`v-${s.label}`}
+              x={cx}
+              y={cy}
+              textAnchor="middle"
+              fontSize={Math.min(32, sliceMidH * 0.5)}
+              fontWeight={600}
+              fill="white"
+              style={{ fontVariantNumeric: "tabular-nums" }}
+            >
+              {s.value.toLocaleString()}
+            </text>
+          );
+        })}
+
+        {/* Stage labels + conversion % below each slice. */}
+        {stages.map((s, i) => {
+          const cx = i * stageW + stageW / 2;
+          const prev = i === 0 ? null : stages[i - 1].value;
+          const conversion =
+            prev && prev > 0 ? Math.round((s.value / prev) * 100) : null;
+          return (
+            <g key={`l-${s.label}`}>
+              <text
+                x={cx}
+                y={FUNNEL_H + 26}
+                textAnchor="middle"
+                fontSize={20}
+                fontWeight={600}
+                fill="#0F172A"
+                style={{ letterSpacing: "-0.005em" }}
               >
-                {widthPct >= 14 ? s.value.toLocaleString() : null}
-              </div>
-              {widthPct < 14 ? (
-                <span className="absolute left-0 top-0 h-full px-2 flex items-center text-[11px] font-medium tabular-nums text-foreground">
-                  {s.value.toLocaleString()}
-                </span>
+                {s.label}
+              </text>
+              {conversion != null ? (
+                <text
+                  x={cx}
+                  y={FUNNEL_H + 52}
+                  textAnchor="middle"
+                  fontSize={16}
+                  fill="#64748B"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  {conversion}% conv.
+                </text>
+              ) : i === 0 ? (
+                <text
+                  x={cx}
+                  y={FUNNEL_H + 52}
+                  textAnchor="middle"
+                  fontSize={16}
+                  fill="#64748B"
+                  style={{ fontVariantNumeric: "tabular-nums" }}
+                >
+                  top of funnel
+                </text>
               ) : null}
-            </div>
-            <div className="w-14 text-right text-[11px] tabular-nums text-muted-foreground shrink-0">
-              {conversion != null ? `${conversion}%` : "—"}
-            </div>
-          </li>
-        );
-      })}
-    </ol>
+            </g>
+          );
+        })}
+      </svg>
+    </div>
   );
 }
