@@ -634,13 +634,14 @@ export default async function PortalHome({
   });
   const selectorProperties = visibleProperties(scope, allPropertiesForSelector);
 
-  // Featured property hero. When the operator has exactly one LIVE
-  // property (the SG Real Estate / Telegraph Commons case at launch), we
-  // promote it to a full-width hero banner at the top of the dashboard
-  // so the building image + headline stats lead the page rather than
-  // getting buried in the leaderboard. Hidden once the operator launches
-  // a second property — at that point the leaderboard is the right
-  // surface for cross-property comparison.
+  // Featured property hero. Anchors the dashboard with a real building
+  // before the action chrome. Selection rule:
+  //   - Single LIVE property → that one.
+  //   - Multiple LIVE properties → the one with the most SeoScoreHistory
+  //     rows (rich data signal). Tiebreak: highest googleAggRating, then
+  //     name asc. This puts an operator's best-tracked / highest-rated
+  //     building front and centre on the demo without hard-coding any
+  //     specific tenant.
   const liveProperties = await prisma.property
     .findMany({
       where: {
@@ -665,11 +666,41 @@ export default async function PortalHome({
         googleAggRating: true,
         googleAggReviewCount: true,
       },
-      take: 2,
+      take: 25,
     })
     .catch(() => []);
-  const featuredProperty =
-    liveProperties.length === 1 ? liveProperties[0] : null;
+
+  let featuredProperty: (typeof liveProperties)[number] | null = null;
+  if (liveProperties.length === 1) {
+    featuredProperty = liveProperties[0];
+  } else if (liveProperties.length > 1) {
+    // Rank by score-history depth (proxy for "best-tracked property").
+    const scoreCounts = await prisma.seoScoreHistory
+      .groupBy({
+        by: ["propertyId"],
+        where: { propertyId: { in: liveProperties.map((p) => p.id) } },
+        _count: { _all: true },
+      })
+      .catch(
+        () =>
+          [] as Array<{ propertyId: string | null; _count: { _all: number } }>,
+      );
+    const countById = new Map<string, number>(
+      scoreCounts
+        .filter((s) => s.propertyId != null)
+        .map((s) => [s.propertyId as string, s._count._all]),
+    );
+    const ranked = [...liveProperties].sort((a, b) => {
+      const aCount = countById.get(a.id) ?? 0;
+      const bCount = countById.get(b.id) ?? 0;
+      if (aCount !== bCount) return bCount - aCount;
+      const aRating = a.googleAggRating ?? 0;
+      const bRating = b.googleAggRating ?? 0;
+      if (aRating !== bRating) return bRating - aRating;
+      return a.name.localeCompare(b.name);
+    });
+    featuredProperty = ranked[0] ?? null;
+  }
 
   // Portfolio-wide intelligence — top 5 actionable recommendations
   // across every LIVE property. Surfaces as a "Action items" strip
