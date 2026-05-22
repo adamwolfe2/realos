@@ -584,14 +584,16 @@ export function PropertyHeroBanner({
                   }
                 >
                   <p
-                    className={`font-display font-medium tabular-nums text-foreground leading-tight ${
-                      compact ? "text-base" : "text-lg sm:text-xl"
+                    className={`font-display font-semibold tabular-nums text-foreground leading-none ${
+                      compact
+                        ? "text-3xl sm:text-4xl"
+                        : "text-4xl sm:text-5xl"
                     }`}
-                    style={{ letterSpacing: "-0.01em" }}
+                    style={{ letterSpacing: "-0.02em" }}
                   >
                     {s.value}
                   </p>
-                  <p className="text-[9.5px] font-mono font-medium uppercase tracking-[0.08em] text-muted-foreground mt-0.5 leading-tight">
+                  <p className="text-[10.5px] font-mono font-medium uppercase tracking-[0.1em] text-muted-foreground mt-1.5 leading-tight">
                     {s.label}
                   </p>
                   {s.delta ? (
