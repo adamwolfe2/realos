@@ -246,6 +246,17 @@ async function handleSubscriptionUpserted(
 async function handleCheckoutCompleted(
   session: Stripe.Checkout.Session,
 ): Promise<void> {
+  // Marketplace lead purchase — handled by the shared marketplace lib.
+  // Detected via metadata.marketplaceLeadId set in the marketplace
+  // checkout route. Returns true if it owned the event; we exit early.
+  if (session.metadata?.marketplaceLeadId) {
+    const { handleMarketplaceCheckoutCompleted } = await import(
+      "@/lib/marketplace/webhook-handlers"
+    );
+    await handleMarketplaceCheckoutCompleted(session);
+    return;
+  }
+
   const stripeCustomerId =
     typeof session.customer === "string"
       ? session.customer
@@ -604,6 +615,17 @@ async function handleCheckoutExpired(
   session: Stripe.Checkout.Session,
 ): Promise<void> {
   try {
+    // Marketplace lead purchase that expired before checkout completed.
+    // Delegate to the marketplace lib which un-reserves the lead and
+    // flips the purchase row to FAILED.
+    if (session.metadata?.marketplaceLeadId) {
+      const { handleMarketplaceCheckoutExpired } = await import(
+        "@/lib/marketplace/webhook-handlers"
+      );
+      await handleMarketplaceCheckoutExpired(session);
+      return;
+    }
+
     // Reason tag on the resulting audit event so we can filter for
     // abandoned-checkout cleanup later.
     const reason = "checkout_expired";
@@ -773,6 +795,14 @@ async function handlePaymentIntentFailed(
 // manual decision for the agency owner.
 async function handleChargeRefunded(charge: Stripe.Charge): Promise<void> {
   try {
+    // Marketplace charges don't have a corresponding Organization row.
+    // The marketplace handler returns true if it owned the charge.
+    const { handleMarketplaceChargeRefunded } = await import(
+      "@/lib/marketplace/webhook-handlers"
+    );
+    const handledByMarketplace = await handleMarketplaceChargeRefunded(charge);
+    if (handledByMarketplace) return;
+
     const stripeCustomerId =
       typeof charge.customer === "string"
         ? charge.customer
