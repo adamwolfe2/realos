@@ -462,6 +462,71 @@ export default async function SellerDashboardPage() {
               </ul>
             )}
           </div>
+
+          {/* Cross-promotion: sellers come in through their own auth surface
+              and never see the LeaseStack portal nav — so they have no path
+              to discover the Site Engine. This card surfaces it. */}
+          <div
+            className="p-5"
+            style={{
+              background:
+                "linear-gradient(135deg, #1E2A3A 0%, #2D3E5C 100%)",
+              borderRadius: "12px",
+              color: "#fff",
+            }}
+          >
+            <p
+              style={{
+                color: "#93C5FD",
+                fontFamily: "var(--font-mono)",
+                fontSize: "10.5px",
+                letterSpacing: "0.14em",
+                textTransform: "uppercase",
+                fontWeight: 700,
+              }}
+            >
+              Also from us
+            </p>
+            <h3
+              className="mt-2"
+              style={{
+                fontFamily: "var(--font-display)",
+                fontSize: "18px",
+                lineHeight: 1.25,
+                fontWeight: 500,
+              }}
+            >
+              Need a website to send these leads through?
+            </h3>
+            <p
+              className="mt-2"
+              style={{
+                color: "#CBD5E1",
+                fontFamily: "var(--font-sans)",
+                fontSize: "12.5px",
+                lineHeight: 1.55,
+              }}
+            >
+              We hand-build custom marketing sites. No templates, no page
+              builders. 1–2 week turnaround.
+            </p>
+            <Link
+              href="/sites/request"
+              className="mt-4 inline-flex items-center"
+              style={{
+                padding: "8px 14px",
+                borderRadius: "8px",
+                backgroundColor: "#fff",
+                color: "#1E2A3A",
+                fontFamily: "var(--font-sans)",
+                fontSize: "12.5px",
+                fontWeight: 600,
+                textDecoration: "none",
+              }}
+            >
+              Request a site →
+            </Link>
+          </div>
         </aside>
       </div>
     </div>
