@@ -146,6 +146,58 @@ export async function getBrowseLead(id: string): Promise<BrowseLead | null> {
 }
 
 // ---------------------------------------------------------------------------
+// Full-PII detail — only ever returned for leads the buyer has actually
+// purchased. The caller is responsible for verifying purchase ownership
+// before calling this (e.g. via getBuyerPurchaseForLead).
+export type FullLead = BrowseLead & {
+  fullName: string;
+  email: string | null;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  postalCode: string | null;
+  budgetMinCents: number | null;
+  budgetMaxCents: number | null;
+  intentPayload: unknown;
+};
+
+export async function getFullLead(id: string): Promise<FullLead | null> {
+  const row = await prisma.marketplaceLead.findUnique({
+    where: { id },
+  });
+  if (!row) return null;
+  const browse = toBrowseLead(row);
+  const fullName = [row.firstName, row.lastName].filter(Boolean).join(" ").trim();
+  return {
+    ...browse,
+    fullName: fullName || "Unknown",
+    email: row.email,
+    phone: row.phone,
+    city: row.city,
+    state: row.state,
+    postalCode: row.postalCode,
+    budgetMinCents: row.budgetMinCents,
+    budgetMaxCents: row.budgetMaxCents,
+    intentPayload: row.intentPayload,
+  };
+}
+
+// Did the given buyer already purchase this lead? Used to gate PII reveal
+// and to short-circuit the checkout endpoint.
+export async function getBuyerPurchaseForLead(
+  buyerId: string,
+  leadId: string,
+) {
+  return prisma.marketplacePurchase.findFirst({
+    where: {
+      buyerId,
+      leadId,
+      status: "PAID",
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
 // Distinct market list — populates the filter sidebar dropdown. Capped to
 // the markets that currently have at least one AVAILABLE lead.
 export async function listMarketplaceMarkets(): Promise<string[]> {

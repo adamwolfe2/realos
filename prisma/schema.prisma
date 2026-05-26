@@ -4816,4 +4816,142 @@ model MarketplaceLead {
   @@index([status, expiresAt])
   @@index([sourceId, status])
   @@index([cursiveProfileId])
+
+  purchases MarketplacePurchase[]
+}
+
+// ----------------------------------------------------------------------------
+// Buyer-side: standalone accounts, NOT linked to Organization / User. Magic
+// link auth via Resend. Owns purchases and stream subscriptions.
+// ----------------------------------------------------------------------------
+
+model MarketplaceBuyer {
+  id String @id @default(cuid())
+
+  // Magic-link identity. Email is the only login factor — no passwords.
+  email     String  @unique
+  // Display name picked up from the buyer at first purchase. Optional —
+  // not required to sign in.
+  fullName  String?
+  // Business context for the email receipt and Stripe metadata.
+  companyName String?
+  phone     String?
+
+  // One-time-use sign-in token. SHA-256 hash of the random token we sent
+  // in the magic-link email; null when no link is outstanding. Tokens
+  // expire after 30 minutes via signInExpiresAt.
+  signInTokenHash    String?
+  signInExpiresAt    DateTime?
+  signInRequestedAt  DateTime?
+
+  // Stripe customer pointer, created on first checkout. Reused for every
+  // subsequent purchase so Stripe carries the buyer's saved payment
+  // methods + receipt history.
+  stripeCustomerId String? @unique
+
+  // Webhook destination — when a stream auto-purchases a lead, we POST
+  // the full PII to this URL (signed with webhookSecret).
+  webhookUrl       String?
+  webhookSecretEnc String?
+
+  // Lifecycle
+  lastSignInAt DateTime?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  purchases MarketplacePurchase[]
+  streams   MarketplaceStream[]
+
+  @@index([signInTokenHash])
+  @@index([stripeCustomerId])
+}
+
+enum MarketplacePurchaseStatus {
+  PENDING       // Stripe checkout in flight
+  PAID          // Stripe confirmed payment; PII released to buyer
+  REFUNDED      // Manual refund issued; PII access revoked
+  FAILED        // Checkout failed / expired
+}
+
+// One row per buyer-buys-a-lead transaction. PII access is gated through
+// this table — server components check ownership before returning full
+// lead fields on /marketplace/[id].
+model MarketplacePurchase {
+  id       String           @id @default(cuid())
+
+  leadId   String
+  lead     MarketplaceLead  @relation(fields: [leadId], references: [id], onDelete: Restrict)
+
+  buyerId  String
+  buyer    MarketplaceBuyer @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+
+  // How this purchase originated:
+  //   "DIRECT"  — buyer clicked Buy on /marketplace/[id]
+  //   "STREAM"  — auto-purchased by a saved MarketplaceStream
+  origin    String @default("DIRECT")
+
+  // Optional pointer to the stream that triggered an auto-purchase.
+  streamId  String?
+  stream    MarketplaceStream? @relation(fields: [streamId], references: [id], onDelete: SetNull)
+
+  // Stripe pointers
+  stripeCheckoutSessionId String?  @unique
+  stripePaymentIntentId   String?  @unique
+
+  priceCents Int
+  currency   String @default("usd")
+  status     MarketplacePurchaseStatus @default(PENDING)
+
+  // Receipts + emails
+  receiptUrl       String?
+  piiDeliveredAt   DateTime?
+  receiptSentAt    DateTime?
+
+  // Refund context, if any
+  refundedAt       DateTime?
+  refundReason     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([buyerId, createdAt(sort: Desc)])
+  @@index([leadId])
+  @@index([status])
+}
+
+// Saved buyer filter. New leads matching the filter are eligible for
+// auto-purchase in the post-replenish matching cron (Phase 2b).
+model MarketplaceStream {
+  id      String           @id @default(cuid())
+  buyerId String
+  buyer   MarketplaceBuyer @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+
+  name    String
+
+  // Filter criteria — same shape as the public browse endpoint params.
+  market         String?     // canonical market label (e.g. "Texas"), null = any
+  propertyType   MarketplaceLeadPropertyType?  // null = any
+  minIntent      Int @default(70)
+  maxPriceCents  Int @default(20000)
+
+  // How much the buyer is willing to spend in a 7-day rolling window
+  // (cents). The Phase 2b matching cron stops auto-purchasing once
+  // weeklyBudgetCents is consumed.
+  weeklyBudgetCents Int @default(50000)
+
+  // Lifecycle controls — buyer can pause without deleting.
+  enabled Boolean @default(true)
+
+  // Last time the matching cron looked at this stream + how many leads
+  // it has auto-purchased lifetime.
+  lastMatchedAt   DateTime?
+  totalPurchases  Int       @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  purchases MarketplacePurchase[]
+
+  @@index([buyerId, enabled])
+  @@index([enabled, lastMatchedAt])
 }
