@@ -68,12 +68,11 @@ export interface PaletteIndex {
 interface PresetEntry {
   slug: string;
   displayName: string;
-  lineage: string;
+  description: string;
   tone: string;
   bestFor: string[];
   fonts: unknown;
   designLanguageSlug: string | null;
-  referenceUrl: string | null;
 }
 
 export interface PresetIndex {

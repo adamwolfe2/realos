@@ -53,11 +53,10 @@ export interface PaletteOption {
 export interface PresetOption {
   slug: string;
   displayName: string;
-  lineage: string;
+  description: string;
   tone: string;
   bestFor: string[];
   designLanguageSlug: string | null;
-  referenceUrl: string | null;
 }
 
 export interface UploadedScreenshot {
@@ -478,7 +477,7 @@ function StylePanel({
                   ) : null}
                 </div>
                 <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
-                  {p.lineage}
+                  {p.description}
                 </p>
                 <div className="flex flex-wrap gap-1">
                   {p.bestFor.slice(0, 3).map((t) => (

@@ -1,12 +1,12 @@
 {
-  "schemaVersion": 1,
-  "generatedAt": "2026-05-26T16:47:05.582Z",
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-26T17:01:08.567Z",
   "totalCount": 4,
   "presets": [
     {
       "slug": "editorial-cream",
       "displayName": "Editorial Cream",
-      "lineage": "Lifted from AM Collective Capital. Warm cream paper + deep ink + restrained blue accent. Typography-led; gentle parallax + fade-up reveals.",
+      "description": "Warm cream paper with deep ink and a single restrained accent. Typography-led — large serif headlines on quiet backgrounds, gentle parallax + fade-up reveals on scroll. Reads like a curated quarterly: sophisticated, calm, premium-modern.",
       "tone": "Restrained, typography-led, premium-modern.",
       "bestFor": [
         "holding-co marketing sites",
@@ -46,13 +46,12 @@
           "source": "google"
         }
       },
-      "designLanguageSlug": "claude",
-      "referenceUrl": "https://amcollectivecapital.com"
+      "designLanguageSlug": "claude"
     },
     {
       "slug": "editorial-luxury",
       "displayName": "Editorial Luxury",
-      "lineage": "Lifted from TBGC (Truffle Boys & Girls Club). Cream paper + near-black ink + warm-grey hairlines.",
+      "description": "Cream paper, near-black ink, warm-grey hairlines, and sharp 0-radius corners. Generous editorial whitespace; Playfair Display headlines do the heavy lifting. Looks like a luxury print monograph — confident, distilled, capital-letter discipline.",
       "tone": "Confident, distilled, capital-letter discipline. Reads like a print monograph.",
       "bestFor": [
         "luxury B2B",
@@ -92,13 +91,12 @@
           "source": "google"
         }
       },
-      "designLanguageSlug": "apple",
-      "referenceUrl": "https://www.truffleboys.com"
+      "designLanguageSlug": "apple"
     },
     {
       "slug": "modern-premium",
       "displayName": "Modern Premium",
-      "lineage": "Lifted from AIMS Platform. Cream / white surfaces with a configurable accent (crimson default). SaaS-premium chrome, Inter type stack, dot-grid hero ornament.",
+      "description": "Cream and white surfaces with a single bold brand accent driving every CTA. SaaS-premium chrome, clean Inter type stack at every level, dot-grid ornament behind the hero. Reads modern and reliable — confident without being loud. Accent color is configurable per brand.",
       "tone": "Confident, utilitarian, SaaS-premium. Reads modern and reliable.",
       "bestFor": [
         "RE-tech / brokerage-tech brands",
@@ -135,13 +133,12 @@
           "source": "google"
         }
       },
-      "designLanguageSlug": "stripe",
-      "referenceUrl": "https://aimseos.com"
+      "designLanguageSlug": "stripe"
     },
     {
       "slug": "pnw-editorial",
       "displayName": "PNW Editorial",
-      "lineage": "Lifted from Parish & Company. Bone paper + basalt ink + moss-green accent + brass highlights. Editorial type scale; topo lines + mountain silhouettes as signature ornaments.",
+      "description": "Bone-paper backgrounds with basalt-ink type, moss-green primary accent, and warm brass highlights. Editorial type scale with serif headlines; signature ornaments include topo-line maps, mountain-silhouette section dividers, and folded-page imagery. Reads like a regional outdoor quarterly — reverent, lived-in, place-specific.",
       "tone": "Editorial, regional, reverent. Reads like a curated print quarterly.",
       "bestFor": [
         "regional / outdoor real-estate brands",
@@ -181,8 +178,7 @@
           "source": "google"
         }
       },
-      "designLanguageSlug": "theverge",
-      "referenceUrl": "https://parishandcompany.com"
+      "designLanguageSlug": "theverge"
     }
   ]
 }
