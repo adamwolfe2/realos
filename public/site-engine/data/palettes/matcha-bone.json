@@ -1,0 +1,55 @@
+{
+  "slug": "matcha-bone",
+  "name": "Matcha & Bone",
+  "description": "Soft matcha green on bone — calm, organic, wellness-adjacent.",
+  "category": "muted-neutral",
+  "industryFit": [
+    "wellness",
+    "boutique-residential",
+    "spa-adjacent"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F5F2E7",
+    "backgroundAlt": "#E9E4D2",
+    "surface": "#FBFAEF",
+    "textPrimary": "#1B2118",
+    "textSecondary": "#465045",
+    "textMuted": "#7C8479",
+    "primary": "#7B9A4F",
+    "primaryDark": "#577033",
+    "primaryLight": "#9AB672",
+    "accent": "#A48758",
+    "border": "#DDD7C0",
+    "borderStrong": "#BAB298"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 14.67,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 15.68,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.51,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 4.97,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/matcha-bone.svg"
+}

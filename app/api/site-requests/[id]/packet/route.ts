@@ -237,44 +237,54 @@ ${sr.intake?.anythingElse ?? "_(none)_"}
   if (dlSlug || paletteSlug) {
     const visualFolder = zip.folder("visual-direction")!;
 
-    if (dlSlug) {
-      // The kit's design-languages/<slug>.md isn't bundled into LeaseStack
-      // (would be ~40MB of MD). Try the local site-engine-kit checkout if
-      // it's a sibling of realos, otherwise drop a placeholder and log.
-      const kitPath = join(
-        process.cwd(),
-        "..",
-        "site-engine-kit",
-        "design-languages",
-        `${dlSlug}.md`,
-      );
+    // Resolution order:
+    //   1. public/site-engine/data/{design-languages,palettes}/<slug>.{md,json}
+    //      — bundled into LeaseStack at commit time via
+    //      `node scripts/sync-site-engine-data.mjs`. Works in Vercel prod.
+    //   2. Sibling site-engine-kit/ checkout (one dir up from process.cwd())
+    //      — fallback for local dev when the bundled data is stale.
+    //   3. Placeholder file with copy-paste instructions.
+    const dataRoot = join(process.cwd(), "public", "site-engine", "data");
+    const kitRoot = join(process.cwd(), "..", "site-engine-kit");
+
+    async function resolveKitFile(
+      subdir: "design-languages" | "palettes",
+      filename: string,
+    ): Promise<string | null> {
+      const bundled = join(dataRoot, subdir, filename);
       try {
-        const md = await readFile(kitPath, "utf8");
-        visualFolder.file(`design-language-${dlSlug}.md`, md);
+        return await readFile(bundled, "utf8");
       } catch {
+        /* fall through */
+      }
+      const sibling = join(kitRoot, subdir, filename);
+      try {
+        return await readFile(sibling, "utf8");
+      } catch {
+        return null;
+      }
+    }
+
+    if (dlSlug) {
+      const md = await resolveKitFile("design-languages", `${dlSlug}.md`);
+      if (md) {
+        visualFolder.file(`design-language-${dlSlug}.md`, md);
+      } else {
         visualFolder.file(
           `design-language-${dlSlug}.PLACEHOLDER.md`,
-          `# ${dlSlug}\n\nThe full design-language MD lives in site-engine-kit/design-languages/${dlSlug}.md. Copy it from there into this folder before running Prompt 03.\n`,
+          `# ${dlSlug}\n\nThe full design-language MD wasn't found in the LeaseStack data bundle or the local site-engine-kit/. Copy it from site-engine-kit/design-languages/${dlSlug}.md before running Prompt 03.\n`,
         );
       }
     }
 
     if (paletteSlug) {
-      // Same logic for palette JSON.
-      const kitPath = join(
-        process.cwd(),
-        "..",
-        "site-engine-kit",
-        "palettes",
-        `${paletteSlug}.json`,
-      );
-      try {
-        const json = await readFile(kitPath, "utf8");
+      const json = await resolveKitFile("palettes", `${paletteSlug}.json`);
+      if (json) {
         visualFolder.file(`palette-${paletteSlug}.json`, json);
-      } catch {
+      } else {
         visualFolder.file(
           `palette-${paletteSlug}.PLACEHOLDER.txt`,
-          `Palette ${paletteSlug} not found at ${kitPath}. Copy it from site-engine-kit/palettes/${paletteSlug}.json before running Prompt 03.\n`,
+          `Palette ${paletteSlug} not found in bundled data or sibling kit. Copy site-engine-kit/palettes/${paletteSlug}.json before running Prompt 03.\n`,
         );
       }
     }

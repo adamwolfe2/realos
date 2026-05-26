@@ -1,0 +1,55 @@
+{
+  "slug": "terracotta-ivory",
+  "name": "Terracotta & Ivory",
+  "description": "Mediterranean warmth — terracotta accent on ivory paper. Coastal, residential, hospitality-adjacent.",
+  "category": "warm-neutral",
+  "industryFit": [
+    "coastal-residential",
+    "vacation-rentals",
+    "boutique-hospitality"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#FBF6EE",
+    "backgroundAlt": "#F3EBD9",
+    "surface": "#FFFFFF",
+    "textPrimary": "#2A211A",
+    "textSecondary": "#5C4A3C",
+    "textMuted": "#8E7F6E",
+    "primary": "#B25A39",
+    "primaryDark": "#8B4127",
+    "primaryLight": "#D17653",
+    "accent": "#1C3B36",
+    "border": "#E8DECB",
+    "borderStrong": "#CDBE9D"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 14.67,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 15.78,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.81,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 6.77,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/terracotta-ivory.svg"
+}

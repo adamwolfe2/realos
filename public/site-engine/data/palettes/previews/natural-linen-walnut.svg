@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="600" height="320">
+  <rect width="600" height="320" fill="#F2EBD6"/>
+  <!-- swatch row -->
+  <rect x="32"  y="32" width="80" height="80" fill="#F8F4E6"      stroke="#D8CDAE"/>
+  <rect x="120" y="32" width="80" height="80" fill="#3A2618"/>
+  <rect x="208" y="32" width="80" height="80" fill="#7D8A4F"/>
+  <rect x="296" y="32" width="80" height="80" fill="#5C3F2C"/>
+  <rect x="384" y="32" width="80" height="80" fill="#E5DCC1" stroke="#D8CDAE"/>
+  <rect x="472" y="32" width="80" height="80" fill="#B7AB87"/>
+  <!-- sample type -->
+  <text x="32" y="158" font-family="Georgia, serif" font-size="28" font-weight="600" fill="#3A2618">Natural Linen &amp; Walnut</text>
+  <text x="32" y="190" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#5F4633">Linen background with deep walnut text. Natural, warm, premium-organic.</text>
+  <text x="32" y="218" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#8F7A65">natural-linen-walnut · warm-neutral</text>
+  <!-- footer rule + sample hex -->
+  <line x1="32" y1="252" x2="568" y2="252" stroke="#D8CDAE" stroke-width="1"/>
+  <text x="32"  y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#8F7A65">bg #F2EBD6</text>
+  <text x="160" y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#8F7A65">primary #3A2618</text>
+  <text x="332" y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#8F7A65">accent #7D8A4F</text>
+</svg>

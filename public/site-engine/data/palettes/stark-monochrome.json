@@ -1,0 +1,55 @@
+{
+  "slug": "stark-monochrome",
+  "name": "Stark Monochrome",
+  "description": "Pure white + pure black + a single grayscale ramp. Maximum editorial discipline.",
+  "category": "light-monochrome",
+  "industryFit": [
+    "luxury-residential",
+    "premium-agency",
+    "editorial"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#FFFFFF",
+    "backgroundAlt": "#F4F4F4",
+    "surface": "#FFFFFF",
+    "textPrimary": "#000000",
+    "textSecondary": "#333333",
+    "textMuted": "#888888",
+    "primary": "#000000",
+    "primaryDark": "#000000",
+    "primaryLight": "#333333",
+    "accent": "#666666",
+    "border": "#E5E5E5",
+    "borderStrong": "#CCCCCC"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 21,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 21,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 12.63,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 21,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/stark-monochrome.svg"
+}

@@ -1,0 +1,55 @@
+{
+  "slug": "espresso-cream",
+  "name": "Espresso & Cream",
+  "description": "Cream paper with deep espresso brown text + warm gold accent.",
+  "category": "warm-neutral",
+  "industryFit": [
+    "luxury-residential",
+    "premium-brokerage",
+    "estate-and-land"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F8F2E6",
+    "backgroundAlt": "#EBE3CE",
+    "surface": "#FCF8EF",
+    "textPrimary": "#2A1B0F",
+    "textSecondary": "#4E3623",
+    "textMuted": "#8B7558",
+    "primary": "#2A1B0F",
+    "primaryDark": "#150C06",
+    "primaryLight": "#4E3623",
+    "accent": "#C29F45",
+    "border": "#E0D3B8",
+    "borderStrong": "#BFB089"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 14.92,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 15.7,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 10.04,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 17.33,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/espresso-cream.svg"
+}

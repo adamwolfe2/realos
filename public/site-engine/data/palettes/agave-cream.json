@@ -1,0 +1,55 @@
+{
+  "slug": "agave-cream",
+  "name": "Agave & Cream",
+  "description": "Cream paper with desert agave green + warm clay accent.",
+  "category": "muted-neutral",
+  "industryFit": [
+    "desert-residential",
+    "southwest",
+    "boutique-coastal"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F8F2E2",
+    "backgroundAlt": "#ECE2C9",
+    "surface": "#FCF8ED",
+    "textPrimary": "#1A2520",
+    "textSecondary": "#3D5247",
+    "textMuted": "#788B7F",
+    "primary": "#446558",
+    "primaryDark": "#28473C",
+    "primaryLight": "#638276",
+    "accent": "#B4673E",
+    "border": "#E1D6B7",
+    "borderStrong": "#BFB089"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 14.13,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 14.89,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.53,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 9.14,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/agave-cream.svg"
+}

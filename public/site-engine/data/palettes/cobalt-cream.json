@@ -1,0 +1,55 @@
+{
+  "slug": "cobalt-cream",
+  "name": "Cobalt & Cream",
+  "description": "Crisp cream with electric cobalt blue. Tech-forward, RE-tech adjacent.",
+  "category": "single-accent-vibrant",
+  "industryFit": [
+    "RE-tech",
+    "brokerage-tech",
+    "developer-platform"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#FBFAF6",
+    "backgroundAlt": "#F3F0E6",
+    "surface": "#FFFFFF",
+    "textPrimary": "#0A0F1F",
+    "textSecondary": "#2F3850",
+    "textMuted": "#717885",
+    "primary": "#2244D4",
+    "primaryDark": "#152F9C",
+    "primaryLight": "#4664E6",
+    "accent": "#FFB938",
+    "border": "#E0DCCB",
+    "borderStrong": "#BCB7A2"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 18.26,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 19.07,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 11.16,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 10.48,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/cobalt-cream.svg"
+}

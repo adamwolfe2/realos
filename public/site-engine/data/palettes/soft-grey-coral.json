@@ -1,0 +1,55 @@
+{
+  "slug": "soft-grey-coral",
+  "name": "Soft Grey & Coral",
+  "description": "Light grey background with warm coral accent. Friendly, modern, residential.",
+  "category": "single-accent-warm",
+  "industryFit": [
+    "residential",
+    "boutique-brokerage",
+    "family-housing"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F2F1EE",
+    "backgroundAlt": "#E6E4DF",
+    "surface": "#FFFFFF",
+    "textPrimary": "#1F1F22",
+    "textSecondary": "#444448",
+    "textMuted": "#838389",
+    "primary": "#1F1F22",
+    "primaryDark": "#000000",
+    "primaryLight": "#42424A",
+    "accent": "#E37C5D",
+    "border": "#D8D6CF",
+    "borderStrong": "#B7B4AB"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 14.56,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 16.44,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 8.58,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 18.59,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/soft-grey-coral.svg"
+}

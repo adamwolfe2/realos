@@ -1,0 +1,56 @@
+{
+  "slug": "fog-mauve",
+  "name": "Fog & Mauve",
+  "description": "Cool fog grey with soft mauve accent. Calm, refined, residential-soft.",
+  "category": "muted-neutral",
+  "industryFit": [
+    "residential",
+    "wellness",
+    "senior-living",
+    "boutique"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F4F2EE",
+    "backgroundAlt": "#E8E5DE",
+    "surface": "#FFFFFF",
+    "textPrimary": "#2A2630",
+    "textSecondary": "#544E5A",
+    "textMuted": "#88838D",
+    "primary": "#8E6D8F",
+    "primaryDark": "#6B4E6D",
+    "primaryLight": "#A98AAB",
+    "accent": "#C9B493",
+    "border": "#DDD9D0",
+    "borderStrong": "#BFBAAD"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 13.24,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 14.81,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.18,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 6.4,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/fog-mauve.svg"
+}

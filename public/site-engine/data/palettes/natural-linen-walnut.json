@@ -1,0 +1,55 @@
+{
+  "slug": "natural-linen-walnut",
+  "name": "Natural Linen & Walnut",
+  "description": "Linen background with deep walnut text. Natural, warm, premium-organic.",
+  "category": "warm-neutral",
+  "industryFit": [
+    "luxury-residential",
+    "organic-design",
+    "premium-developer"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F2EBD6",
+    "backgroundAlt": "#E5DCC1",
+    "surface": "#F8F4E6",
+    "textPrimary": "#3A2618",
+    "textSecondary": "#5F4633",
+    "textMuted": "#8F7A65",
+    "primary": "#3A2618",
+    "primaryDark": "#1F140C",
+    "primaryLight": "#5C3F2C",
+    "accent": "#7D8A4F",
+    "border": "#D8CDAE",
+    "borderStrong": "#B7AB87"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 11.99,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 12.97,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.31,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 15.15,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/natural-linen-walnut.svg"
+}

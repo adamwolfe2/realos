@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="600" height="320">
+  <rect width="600" height="320" fill="#F5F2E7"/>
+  <!-- swatch row -->
+  <rect x="32"  y="32" width="80" height="80" fill="#FBFAEF"      stroke="#DDD7C0"/>
+  <rect x="120" y="32" width="80" height="80" fill="#7B9A4F"/>
+  <rect x="208" y="32" width="80" height="80" fill="#A48758"/>
+  <rect x="296" y="32" width="80" height="80" fill="#9AB672"/>
+  <rect x="384" y="32" width="80" height="80" fill="#E9E4D2" stroke="#DDD7C0"/>
+  <rect x="472" y="32" width="80" height="80" fill="#BAB298"/>
+  <!-- sample type -->
+  <text x="32" y="158" font-family="Georgia, serif" font-size="28" font-weight="600" fill="#1B2118">Matcha &amp; Bone</text>
+  <text x="32" y="190" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#465045">Soft matcha green on bone — calm, organic, wellness-adjacent.</text>
+  <text x="32" y="218" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#7C8479">matcha-bone · muted-neutral</text>
+  <!-- footer rule + sample hex -->
+  <line x1="32" y1="252" x2="568" y2="252" stroke="#DDD7C0" stroke-width="1"/>
+  <text x="32"  y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#7C8479">bg #F5F2E7</text>
+  <text x="160" y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#7C8479">primary #7B9A4F</text>
+  <text x="332" y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#7C8479">accent #A48758</text>
+</svg>

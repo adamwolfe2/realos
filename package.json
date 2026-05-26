@@ -24,7 +24,8 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset",
     "type-check": "tsc --noEmit",
-    "analyze": "ANALYZE=true next build"
+    "analyze": "ANALYZE=true next build",
+    "sync:site-engine-data": "node scripts/sync-site-engine-data.mjs"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.47",

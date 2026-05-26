@@ -1,0 +1,55 @@
+{
+  "slug": "twilight-rose",
+  "name": "Twilight Blue & Rose",
+  "description": "Deep twilight blue background with soft rose accent. Sophisticated dark.",
+  "category": "dark-monochrome",
+  "industryFit": [
+    "luxury-residential",
+    "boutique-hospitality",
+    "wellness-luxury"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#1B1F2E",
+    "backgroundAlt": "#222640",
+    "surface": "#2A2F44",
+    "textPrimary": "#F1EDE3",
+    "textSecondary": "#BAB4A4",
+    "textMuted": "#807A6C",
+    "primary": "#E6A4B0",
+    "primaryDark": "#B97C8A",
+    "primaryLight": "#F2BEC8",
+    "accent": "#F1EDE3",
+    "border": "#343856",
+    "borderStrong": "#4E5275"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 14.01,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 11.31,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.92,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 4.92,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/twilight-rose.svg"
+}

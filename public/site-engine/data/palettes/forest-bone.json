@@ -1,0 +1,55 @@
+{
+  "slug": "forest-bone",
+  "name": "Forest Green & Bone",
+  "description": "Deep forest green on bone paper. Land + estate + cabin / mountain RE.",
+  "category": "muted-neutral",
+  "industryFit": [
+    "land-and-estate",
+    "mountain-cabin",
+    "rural-luxury"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F7F4EC",
+    "backgroundAlt": "#EAE5D5",
+    "surface": "#FFFFFF",
+    "textPrimary": "#171E18",
+    "textSecondary": "#41524A",
+    "textMuted": "#7E8C84",
+    "primary": "#2E4A38",
+    "primaryDark": "#1E3326",
+    "primaryLight": "#456655",
+    "accent": "#A98A4F",
+    "border": "#E0DAC6",
+    "borderStrong": "#C4BCA1"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 15.47,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 17,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.55,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 12.27,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/forest-bone.svg"
+}

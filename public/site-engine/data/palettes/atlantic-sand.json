@@ -1,0 +1,56 @@
+{
+  "slug": "atlantic-sand",
+  "name": "Atlantic & Sand",
+  "description": "Atlantic deep blue with warm sand. Coastal, hospitality, waterfront.",
+  "category": "muted-neutral",
+  "industryFit": [
+    "coastal",
+    "waterfront",
+    "vacation-property",
+    "hospitality-adjacent"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F6F1E6",
+    "backgroundAlt": "#E9DFCB",
+    "surface": "#FCFAEF",
+    "textPrimary": "#0C2538",
+    "textSecondary": "#324D63",
+    "textMuted": "#778B9D",
+    "primary": "#0C2538",
+    "primaryDark": "#04111E",
+    "primaryLight": "#1E4061",
+    "accent": "#C2A06A",
+    "border": "#E0D5BC",
+    "borderStrong": "#C1B596"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 13.94,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 15,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.84,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 16.89,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/atlantic-sand.svg"
+}

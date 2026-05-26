@@ -1,0 +1,55 @@
+{
+  "slug": "concrete-citrus",
+  "name": "Concrete & Citrus",
+  "description": "Cool concrete grey background with bright citrus accent. Architectural-modern.",
+  "category": "single-accent-vibrant",
+  "industryFit": [
+    "modern-developer",
+    "architectural",
+    "urban-residential"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#E8E8E5",
+    "backgroundAlt": "#D9D9D5",
+    "surface": "#F4F4F1",
+    "textPrimary": "#1B1C1E",
+    "textSecondary": "#42454A",
+    "textMuted": "#7F838B",
+    "primary": "#1B1C1E",
+    "primaryDark": "#000000",
+    "primaryLight": "#3A3D44",
+    "accent": "#CFEF45",
+    "border": "#CCCCC8",
+    "borderStrong": "#A8A8A1"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 13.89,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 15.48,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.84,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 17.11,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/concrete-citrus.svg"
+}

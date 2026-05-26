@@ -1,0 +1,55 @@
+{
+  "slug": "blackboard-chalk",
+  "name": "Blackboard & Chalk",
+  "description": "Deep charcoal background with chalk-white text. Modern dark editorial.",
+  "category": "dark-monochrome",
+  "industryFit": [
+    "luxury-developer",
+    "industrial-loft",
+    "urban-modern"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#171717",
+    "backgroundAlt": "#1E1E1E",
+    "surface": "#252525",
+    "textPrimary": "#F5F4EF",
+    "textSecondary": "#B5B3AD",
+    "textMuted": "#7A7872",
+    "primary": "#F5F4EF",
+    "primaryDark": "#D5D3CC",
+    "primaryLight": "#FFFFFF",
+    "accent": "#D4A437",
+    "border": "#2E2E2E",
+    "borderStrong": "#454545"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 16.28,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 13.92,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 8.55,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 11.97,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/blackboard-chalk.svg"
+}

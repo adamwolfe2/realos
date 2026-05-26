@@ -1,0 +1,55 @@
+{
+  "slug": "modern-crimson",
+  "name": "Modern Crimson on Cream",
+  "description": "SaaS-premium cream surfaces with a confident crimson accent driving every CTA.",
+  "category": "single-accent-warm",
+  "industryFit": [
+    "RE-tech",
+    "brokerage-tech",
+    "multifamily-lease-up"
+  ],
+  "sourceUrl": "site-engine-kit/presets/modern-premium",
+  "colors": {
+    "background": "#F5F5F5",
+    "backgroundAlt": "#FFFFFF",
+    "surface": "#FFFFFF",
+    "textPrimary": "#1A1A1A",
+    "textSecondary": "#374151",
+    "textMuted": "#737373",
+    "primary": "#981B1B",
+    "primaryDark": "#791515",
+    "primaryLight": "#C42424",
+    "accent": "#FDF2F2",
+    "border": "#E3E3E3",
+    "borderStrong": "#C8C8C8"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 15.96,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 17.4,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 9.45,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 9.97,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/modern-crimson.svg"
+}

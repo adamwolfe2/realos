@@ -1,0 +1,55 @@
+{
+  "slug": "editorial-cream-blue",
+  "name": "Editorial Cream & Restrained Blue",
+  "description": "Premium-modern cream paper with deep ink and a single restrained blue accent.",
+  "category": "warm-neutral",
+  "industryFit": [
+    "holding-company",
+    "premium-agency",
+    "wealth-management"
+  ],
+  "sourceUrl": "site-engine-kit/presets/editorial-cream",
+  "colors": {
+    "background": "#F5F3EE",
+    "backgroundAlt": "#FFFFFF",
+    "surface": "#FFFFFF",
+    "textPrimary": "#0F1523",
+    "textSecondary": "#3D4556",
+    "textMuted": "#8B92A5",
+    "primary": "#2A52BE",
+    "primaryDark": "#1B3A6B",
+    "primaryLight": "#4A6FD0",
+    "accent": "#0F1523",
+    "border": "#E2DDD6",
+    "borderStrong": "#C8C3BB"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 16.44,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 18.23,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 8.67,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 10.16,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/editorial-cream-blue.svg"
+}

@@ -1,0 +1,56 @@
+{
+  "slug": "warm-cream-moss",
+  "name": "Warm Cream & Moss",
+  "description": "Inviting cream paper with deep moss accents and brass highlights. Pnw-editorial signature.",
+  "category": "warm-neutral",
+  "industryFit": [
+    "luxury-residential",
+    "boutique-brokerage",
+    "editorial",
+    "regional-outdoor"
+  ],
+  "sourceUrl": "site-engine-kit/presets/pnw-editorial",
+  "colors": {
+    "background": "#F7F4EE",
+    "backgroundAlt": "#EBE6DD",
+    "surface": "#FFFFFF",
+    "textPrimary": "#1A1F2B",
+    "textSecondary": "#525866",
+    "textMuted": "#8B92A5",
+    "primary": "#4A6B4F",
+    "primaryDark": "#3A5640",
+    "primaryLight": "#6B8C70",
+    "accent": "#A88B5C",
+    "border": "#E2DDD6",
+    "borderStrong": "#C8C3BB"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 15.01,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 16.47,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 6.49,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 7.4,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/warm-cream-moss.svg"
+}

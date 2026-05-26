@@ -1,0 +1,55 @@
+{
+  "slug": "midnight-fog",
+  "name": "Midnight & Fog",
+  "description": "Dark surface with cool fog grays. Modern dark-mode-forward.",
+  "category": "dark-monochrome",
+  "industryFit": [
+    "urban-luxury",
+    "RE-tech",
+    "modern-developer"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#0F1116",
+    "backgroundAlt": "#161922",
+    "surface": "#1B1F2A",
+    "textPrimary": "#F2F4F7",
+    "textSecondary": "#B7BCC7",
+    "textMuted": "#727885",
+    "primary": "#F2F4F7",
+    "primaryDark": "#D7DBE3",
+    "primaryLight": "#FFFFFF",
+    "accent": "#7A8AA8",
+    "border": "#262A36",
+    "borderStrong": "#3A3F4D"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 17.14,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 14.94,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 9.92,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 13.61,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/midnight-fog.svg"
+}

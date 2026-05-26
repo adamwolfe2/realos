@@ -1,0 +1,55 @@
+{
+  "slug": "stone-juniper",
+  "name": "Stone & Juniper",
+  "description": "Cool stone neutrals with deep juniper accent. Land + outdoor + mountain.",
+  "category": "muted-neutral",
+  "industryFit": [
+    "land-and-estate",
+    "mountain-cabin",
+    "outdoor-residential"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F2F1EE",
+    "backgroundAlt": "#E5E3DE",
+    "surface": "#FFFFFF",
+    "textPrimary": "#1B2120",
+    "textSecondary": "#3F4A47",
+    "textMuted": "#7A847F",
+    "primary": "#264531",
+    "primaryDark": "#172E1F",
+    "primaryLight": "#3D6249",
+    "accent": "#8E7C5C",
+    "border": "#DDDAD1",
+    "borderStrong": "#BCB7A8"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 14.47,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 16.34,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 8.15,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 12.85,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/stone-juniper.svg"
+}

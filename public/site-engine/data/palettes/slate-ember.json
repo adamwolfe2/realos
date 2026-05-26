@@ -1,0 +1,55 @@
+{
+  "slug": "slate-ember",
+  "name": "Slate & Ember",
+  "description": "Deep slate with a warm ember accent. Urban-residential, industrial-loft adjacent.",
+  "category": "dark-warm-accent",
+  "industryFit": [
+    "urban-residential",
+    "industrial-loft",
+    "developer"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F5F4F1",
+    "backgroundAlt": "#E9E7E2",
+    "surface": "#FFFFFF",
+    "textPrimary": "#1C1F24",
+    "textSecondary": "#42464F",
+    "textMuted": "#7F848D",
+    "primary": "#2E3138",
+    "primaryDark": "#1A1C20",
+    "primaryLight": "#494D55",
+    "accent": "#C7522A",
+    "border": "#DBD9D2",
+    "borderStrong": "#BDBAB1"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 15.02,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 16.52,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 8.6,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 15.51,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/slate-ember.svg"
+}

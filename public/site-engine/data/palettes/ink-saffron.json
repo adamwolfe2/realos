@@ -1,0 +1,55 @@
+{
+  "slug": "ink-saffron",
+  "name": "Ink & Saffron",
+  "description": "Pure white paper with rich ink + warm saffron accent. Editorial-modern.",
+  "category": "single-accent-warm",
+  "industryFit": [
+    "luxury-residential",
+    "editorial",
+    "boutique-developer"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#FAF9F5",
+    "backgroundAlt": "#F0EEE5",
+    "surface": "#FFFFFF",
+    "textPrimary": "#0A0A0A",
+    "textSecondary": "#2E2E2E",
+    "textMuted": "#7E7E7E",
+    "primary": "#0A0A0A",
+    "primaryDark": "#000000",
+    "primaryLight": "#222222",
+    "accent": "#D88B23",
+    "border": "#E2DFD3",
+    "borderStrong": "#BCB7A5"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 18.79,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 19.8,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 12.89,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 19.93,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/ink-saffron.svg"
+}

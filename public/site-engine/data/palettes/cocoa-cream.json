@@ -1,0 +1,55 @@
+{
+  "slug": "cocoa-cream",
+  "name": "Cocoa & Cream",
+  "description": "Cream paper with rich cocoa brown headline color. Warm, premium-residential.",
+  "category": "warm-neutral",
+  "industryFit": [
+    "luxury-residential",
+    "premium-brokerage",
+    "estate"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#FAF6EE",
+    "backgroundAlt": "#F0E8D6",
+    "surface": "#FFFFFF",
+    "textPrimary": "#3E2A1D",
+    "textSecondary": "#634936",
+    "textMuted": "#917F6A",
+    "primary": "#3E2A1D",
+    "primaryDark": "#22150C",
+    "primaryLight": "#62452F",
+    "accent": "#B68A35",
+    "border": "#E5DCC4",
+    "borderStrong": "#C5B68F"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 12.54,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 13.52,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.68,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 16.5,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/cocoa-cream.svg"
+}

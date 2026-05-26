@@ -1,0 +1,55 @@
+{
+  "slug": "graphite-amber",
+  "name": "Graphite & Amber",
+  "description": "Dark warm graphite with amber accent. Industrial-luxury, premium developer.",
+  "category": "dark-warm-accent",
+  "industryFit": [
+    "industrial-loft",
+    "urban-luxury",
+    "creative-developer"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#15131F",
+    "backgroundAlt": "#1E1B2A",
+    "surface": "#252231",
+    "textPrimary": "#F5EFE1",
+    "textSecondary": "#B7B0A1",
+    "textMuted": "#827B6E",
+    "primary": "#D08B3F",
+    "primaryDark": "#A56B2A",
+    "primaryLight": "#E5A555",
+    "accent": "#F5EFE1",
+    "border": "#2E2A3B",
+    "borderStrong": "#454258"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 16,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 13.55,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 8.51,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 4.14,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/graphite-amber.svg"
+}

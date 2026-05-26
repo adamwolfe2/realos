@@ -1,0 +1,55 @@
+{
+  "slug": "indigo-bone",
+  "name": "Indigo & Bone",
+  "description": "Bone paper with deep indigo accent + warm muted secondary.",
+  "category": "single-accent-warm",
+  "industryFit": [
+    "luxury-residential",
+    "professional-services",
+    "high-end-brokerage"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F8F5EC",
+    "backgroundAlt": "#ECE7D5",
+    "surface": "#FFFFFF",
+    "textPrimary": "#16182C",
+    "textSecondary": "#3A3F58",
+    "textMuted": "#777C8E",
+    "primary": "#283153",
+    "primaryDark": "#171E36",
+    "primaryLight": "#41507A",
+    "accent": "#A8814C",
+    "border": "#E3DCC8",
+    "borderStrong": "#C2B795"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 16.04,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 17.48,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 9.48,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 15.1,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/indigo-bone.svg"
+}

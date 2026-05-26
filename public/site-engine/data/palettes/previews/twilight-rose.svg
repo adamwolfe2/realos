@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="600" height="320">
+  <rect width="600" height="320" fill="#1B1F2E"/>
+  <!-- swatch row -->
+  <rect x="32"  y="32" width="80" height="80" fill="#2A2F44"      stroke="#343856"/>
+  <rect x="120" y="32" width="80" height="80" fill="#E6A4B0"/>
+  <rect x="208" y="32" width="80" height="80" fill="#F1EDE3"/>
+  <rect x="296" y="32" width="80" height="80" fill="#F2BEC8"/>
+  <rect x="384" y="32" width="80" height="80" fill="#222640" stroke="#343856"/>
+  <rect x="472" y="32" width="80" height="80" fill="#4E5275"/>
+  <!-- sample type -->
+  <text x="32" y="158" font-family="Georgia, serif" font-size="28" font-weight="600" fill="#F1EDE3">Twilight Blue &amp; Rose</text>
+  <text x="32" y="190" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#BAB4A4">Deep twilight blue background with soft rose accent. Sophisticated dark.</text>
+  <text x="32" y="218" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#807A6C">twilight-rose · dark-monochrome</text>
+  <!-- footer rule + sample hex -->
+  <line x1="32" y1="252" x2="568" y2="252" stroke="#343856" stroke-width="1"/>
+  <text x="32"  y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#807A6C">bg #1B1F2E</text>
+  <text x="160" y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#807A6C">primary #E6A4B0</text>
+  <text x="332" y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#807A6C">accent #F1EDE3</text>
+</svg>

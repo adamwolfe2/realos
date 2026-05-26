@@ -1,0 +1,55 @@
+{
+  "slug": "olive-bone",
+  "name": "Olive & Bone",
+  "description": "Warm bone with sage-olive primary. Calm, organic, residential.",
+  "category": "muted-neutral",
+  "industryFit": [
+    "organic-design",
+    "boutique-residential",
+    "wellness"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F4EFE0",
+    "backgroundAlt": "#E8E1CB",
+    "surface": "#FBF8EE",
+    "textPrimary": "#1F2316",
+    "textSecondary": "#4A5237",
+    "textMuted": "#7E866B",
+    "primary": "#5C6B3C",
+    "primaryDark": "#3E4D26",
+    "primaryLight": "#7B8C5C",
+    "accent": "#B68A35",
+    "border": "#DDD5BB",
+    "borderStrong": "#BAB199"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 13.94,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 15.08,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.16,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 7.96,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/olive-bone.svg"
+}

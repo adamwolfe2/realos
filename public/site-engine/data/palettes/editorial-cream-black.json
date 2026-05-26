@@ -1,0 +1,55 @@
+{
+  "slug": "editorial-cream-black",
+  "name": "Editorial Cream & Black",
+  "description": "Sharp editorial luxury — cream paper, near-black ink, warm stone secondary.",
+  "category": "warm-neutral",
+  "industryFit": [
+    "luxury-residential",
+    "brokerage",
+    "high-end-developer"
+  ],
+  "sourceUrl": "site-engine-kit/presets/editorial-luxury",
+  "colors": {
+    "background": "#F9F7F4",
+    "backgroundAlt": "#F2EFEA",
+    "surface": "#FFFFFF",
+    "textPrimary": "#0A0A0A",
+    "textSecondary": "#4A4A4A",
+    "textMuted": "#8A8A8A",
+    "primary": "#0A0A0A",
+    "primaryDark": "#000000",
+    "primaryLight": "#2A2A2A",
+    "accent": "#C8C0B4",
+    "border": "#E5E1DB",
+    "borderStrong": "#C8C0B4"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 18.51,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 19.8,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 8.29,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 19.64,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/editorial-cream-black.svg"
+}

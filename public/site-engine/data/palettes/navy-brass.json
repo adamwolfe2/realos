@@ -1,0 +1,55 @@
+{
+  "slug": "navy-brass",
+  "name": "Navy & Brass",
+  "description": "Trusted navy with warm brass highlights — classic luxury real-estate signature.",
+  "category": "dark-classic",
+  "industryFit": [
+    "luxury-residential",
+    "brokerage",
+    "wealth-real-estate"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F8F6F0",
+    "backgroundAlt": "#FFFFFF",
+    "surface": "#FFFFFF",
+    "textPrimary": "#0B1F3A",
+    "textSecondary": "#3D4D66",
+    "textMuted": "#7C8AA0",
+    "primary": "#0B1F3A",
+    "primaryDark": "#061224",
+    "primaryLight": "#1F3358",
+    "accent": "#B68A35",
+    "border": "#E4DFD0",
+    "borderStrong": "#C9C2AE"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 15.28,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 16.52,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.93,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 17.35,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/navy-brass.svg"
+}

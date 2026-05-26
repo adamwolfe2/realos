@@ -1,0 +1,56 @@
+{
+  "slug": "sage-ivory",
+  "name": "Sage & Ivory",
+  "description": "Calm sage green on ivory. Reads gentle, residential-warm, parent-friendly.",
+  "category": "muted-neutral",
+  "industryFit": [
+    "residential",
+    "family-housing",
+    "wellness-real-estate",
+    "senior-living"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#FAF8F2",
+    "backgroundAlt": "#F1EEE3",
+    "surface": "#FFFFFF",
+    "textPrimary": "#1F2622",
+    "textSecondary": "#4A574F",
+    "textMuted": "#838E84",
+    "primary": "#6B8E72",
+    "primaryDark": "#4F7058",
+    "primaryLight": "#8FAB94",
+    "accent": "#D4A574",
+    "border": "#E4DFD0",
+    "borderStrong": "#C5BEA8"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 14.55,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 15.46,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.15,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 5.22,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/sage-ivory.svg"
+}

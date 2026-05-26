@@ -1,0 +1,55 @@
+{
+  "slug": "linen-clay",
+  "name": "Linen & Clay",
+  "description": "Warm linen background with terracotta clay accent. Coastal-warm, residential.",
+  "category": "warm-neutral",
+  "industryFit": [
+    "coastal-residential",
+    "vacation-property",
+    "hospitality-adjacent"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F4EFE4",
+    "backgroundAlt": "#E8DFCC",
+    "surface": "#FAF7EF",
+    "textPrimary": "#2A211B",
+    "textSecondary": "#5A4D40",
+    "textMuted": "#8E8270",
+    "primary": "#9E5A3E",
+    "primaryDark": "#7A4128",
+    "primaryLight": "#BB7A5C",
+    "accent": "#3C5042",
+    "border": "#E0D7C0",
+    "borderStrong": "#C2B697"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 13.75,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 14.73,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 7.13,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 7.01,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/linen-clay.svg"
+}

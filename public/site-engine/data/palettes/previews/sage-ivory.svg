@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="600" height="320">
+  <rect width="600" height="320" fill="#FAF8F2"/>
+  <!-- swatch row -->
+  <rect x="32"  y="32" width="80" height="80" fill="#FFFFFF"      stroke="#E4DFD0"/>
+  <rect x="120" y="32" width="80" height="80" fill="#6B8E72"/>
+  <rect x="208" y="32" width="80" height="80" fill="#D4A574"/>
+  <rect x="296" y="32" width="80" height="80" fill="#8FAB94"/>
+  <rect x="384" y="32" width="80" height="80" fill="#F1EEE3" stroke="#E4DFD0"/>
+  <rect x="472" y="32" width="80" height="80" fill="#C5BEA8"/>
+  <!-- sample type -->
+  <text x="32" y="158" font-family="Georgia, serif" font-size="28" font-weight="600" fill="#1F2622">Sage &amp; Ivory</text>
+  <text x="32" y="190" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#4A574F">Calm sage green on ivory. Reads gentle, residential-warm, parent-friendly.</text>
+  <text x="32" y="218" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#838E84">sage-ivory · muted-neutral</text>
+  <!-- footer rule + sample hex -->
+  <line x1="32" y1="252" x2="568" y2="252" stroke="#E4DFD0" stroke-width="1"/>
+  <text x="32"  y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#838E84">bg #FAF8F2</text>
+  <text x="160" y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#838E84">primary #6B8E72</text>
+  <text x="332" y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#838E84">accent #D4A574</text>
+</svg>

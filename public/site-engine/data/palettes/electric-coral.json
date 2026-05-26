@@ -1,0 +1,55 @@
+{
+  "slug": "electric-coral",
+  "name": "Electric Coral",
+  "description": "Cream surface with a vivid coral accent. Bold, modern, attention-grabbing.",
+  "category": "single-accent-vibrant",
+  "industryFit": [
+    "urban-residential",
+    "luxury-coastal",
+    "consumer-real-estate"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#FCFAF7",
+    "backgroundAlt": "#F4F0E9",
+    "surface": "#FFFFFF",
+    "textPrimary": "#1F1B17",
+    "textSecondary": "#4F4944",
+    "textMuted": "#8A8580",
+    "primary": "#E63946",
+    "primaryDark": "#B82832",
+    "primaryLight": "#F2606C",
+    "accent": "#1F1B17",
+    "border": "#E8E1D3",
+    "borderStrong": "#C8C0AE"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 16.42,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 17.11,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 8.51,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 5.95,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/electric-coral.svg"
+}

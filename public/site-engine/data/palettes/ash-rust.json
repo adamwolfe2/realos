@@ -1,0 +1,55 @@
+{
+  "slug": "ash-rust",
+  "name": "Ash & Rust",
+  "description": "Cool ash background with warm rust accent. Industrial-residential bridge.",
+  "category": "warm-neutral",
+  "industryFit": [
+    "urban-residential",
+    "industrial-conversion",
+    "creative-developer"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#F1EEEA",
+    "backgroundAlt": "#E1DCD4",
+    "surface": "#FAF7F2",
+    "textPrimary": "#1B1815",
+    "textSecondary": "#48413B",
+    "textMuted": "#857C73",
+    "primary": "#A14A2A",
+    "primaryDark": "#7C3318",
+    "primaryLight": "#C56A48",
+    "accent": "#1B1815",
+    "border": "#DBD4C8",
+    "borderStrong": "#BDB39F"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 15.28,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 16.54,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 8.67,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 7.75,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/ash-rust.svg"
+}

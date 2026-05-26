@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 600 320" width="600" height="320">
+  <rect width="600" height="320" fill="#15131F"/>
+  <!-- swatch row -->
+  <rect x="32"  y="32" width="80" height="80" fill="#252231"      stroke="#2E2A3B"/>
+  <rect x="120" y="32" width="80" height="80" fill="#D08B3F"/>
+  <rect x="208" y="32" width="80" height="80" fill="#F5EFE1"/>
+  <rect x="296" y="32" width="80" height="80" fill="#E5A555"/>
+  <rect x="384" y="32" width="80" height="80" fill="#1E1B2A" stroke="#2E2A3B"/>
+  <rect x="472" y="32" width="80" height="80" fill="#454258"/>
+  <!-- sample type -->
+  <text x="32" y="158" font-family="Georgia, serif" font-size="28" font-weight="600" fill="#F5EFE1">Graphite &amp; Amber</text>
+  <text x="32" y="190" font-family="Inter, system-ui, sans-serif" font-size="13" fill="#B7B0A1">Dark warm graphite with amber accent. Industrial-luxury, premium developer.</text>
+  <text x="32" y="218" font-family="ui-monospace, Menlo, monospace" font-size="11" fill="#827B6E">graphite-amber · dark-warm-accent</text>
+  <!-- footer rule + sample hex -->
+  <line x1="32" y1="252" x2="568" y2="252" stroke="#2E2A3B" stroke-width="1"/>
+  <text x="32"  y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#827B6E">bg #15131F</text>
+  <text x="160" y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#827B6E">primary #D08B3F</text>
+  <text x="332" y="284" font-family="ui-monospace, Menlo, monospace" font-size="10" fill="#827B6E">accent #F5EFE1</text>
+</svg>

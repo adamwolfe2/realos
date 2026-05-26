@@ -1,0 +1,55 @@
+{
+  "slug": "paper-ink",
+  "name": "Paper & Ink",
+  "description": "Off-white paper + soft black ink + warm grey ramp. Reads like a magazine spread.",
+  "category": "light-monochrome",
+  "industryFit": [
+    "editorial",
+    "boutique-brokerage",
+    "designer-developer"
+  ],
+  "sourceUrl": null,
+  "colors": {
+    "background": "#FAFAF7",
+    "backgroundAlt": "#F0EFEB",
+    "surface": "#FFFFFF",
+    "textPrimary": "#0F0F0F",
+    "textSecondary": "#3D3D3B",
+    "textMuted": "#8A8A86",
+    "primary": "#0F0F0F",
+    "primaryDark": "#000000",
+    "primaryLight": "#333333",
+    "accent": "#3D3D3B",
+    "border": "#E5E2DA",
+    "borderStrong": "#C5C1B7"
+  },
+  "wcagAACompliant": true,
+  "wcagChecks": [
+    {
+      "pair": "textPrimary on background",
+      "ratio": 18.33,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textPrimary on surface",
+      "ratio": 19.17,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "textSecondary on background",
+      "ratio": 10.41,
+      "threshold": 4.5,
+      "pass": true
+    },
+    {
+      "pair": "primaryDark on background",
+      "ratio": 20.08,
+      "threshold": 3,
+      "pass": true
+    }
+  ],
+  "wcagNotes": null,
+  "previewImage": "./previews/paper-ink.svg"
+}
