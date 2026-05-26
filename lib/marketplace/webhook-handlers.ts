@@ -74,6 +74,14 @@ export async function handleMarketplaceCheckoutCompleted(
     }
   }
 
+  // Comp / 100%-off promo flow: when the buyer used a promotion code that
+  // dropped the actual paid amount to $0, we still flip the lead to SOLD
+  // and deliver the PII (so the full end-to-end flow is exercised), BUT
+  // we DON'T credit the seller's accrued totals against money that was
+  // never collected. Detected via session.amount_total === 0.
+  const amountPaidCents = session.amount_total ?? purchase.priceCents;
+  const isComp = amountPaidCents === 0;
+
   // Snapshot the seller revenue split at sale time.
   const lead = purchase.lead;
   let sellerSplit: {
@@ -85,9 +93,9 @@ export async function handleMarketplaceCheckoutCompleted(
     sellerIdAtSale: null,
     sellerShareBps: null,
     sellerShareCents: null,
-    platformShareCents: purchase.priceCents,
+    platformShareCents: isComp ? 0 : purchase.priceCents,
   };
-  if (lead.sellerId) {
+  if (lead.sellerId && !isComp) {
     const seller = await prisma.marketplaceSeller.findUnique({
       where: { id: lead.sellerId },
       select: { id: true, revShareBps: true },
@@ -104,6 +112,15 @@ export async function handleMarketplaceCheckoutCompleted(
         platformShareCents: purchase.priceCents - sellerShareCents,
       };
     }
+  } else if (lead.sellerId && isComp) {
+    // Record the attribution but zero the dollars — keeps the audit trail
+    // (we can see WHICH seller's lead got comped) without accruing money.
+    sellerSplit = {
+      sellerIdAtSale: lead.sellerId,
+      sellerShareBps: 0,
+      sellerShareCents: 0,
+      platformShareCents: 0,
+    };
   }
 
   const txnOps = [
@@ -111,6 +128,10 @@ export async function handleMarketplaceCheckoutCompleted(
       where: { id: purchase.id },
       data: {
         status: MarketplacePurchaseStatus.PAID,
+        // Comp purchases flip origin to COMP so dashboards + reports can
+        // exclude them from revenue / payout numbers. Stream purchases
+        // keep their own STREAM origin; direct paid buys stay DIRECT.
+        ...(isComp ? { origin: "COMP" } : {}),
         stripePaymentIntentId: paymentIntentId,
         receiptUrl,
         piiDeliveredAt: new Date(),

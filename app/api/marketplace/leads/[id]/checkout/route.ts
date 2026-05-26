@@ -140,6 +140,11 @@ export async function POST(
       mode: "payment",
       customer: stripeCustomerId,
       payment_method_types: ["card"],
+      // Render the "Add promotion code" input on the Checkout page so
+      // pre-configured promo codes (e.g. internal 100%-off comps) work.
+      // Stripe enforces the code's own restrictions (email allow-list,
+      // expiry, max redemptions) — we don't double-check on this side.
+      allow_promotion_codes: true,
       line_items: [
         {
           price_data: {

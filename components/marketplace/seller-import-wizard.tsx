@@ -429,13 +429,13 @@ function SourceCard({
       className={[
         "text-left rounded-xl border p-5 transition-colors",
         active
-          ? "border-emerald-500 bg-emerald-50/50"
+          ? "border-blue-500 bg-blue-50/50"
           : "border-slate-200 bg-white hover:border-slate-300",
       ].join(" ")}
     >
       <div
         className="flex items-center justify-center w-10 h-10 rounded-lg mb-3 text-xl"
-        style={{ background: active ? "#10B981" : "#F1F5F9" }}
+        style={{ background: active ? "#3B82F6" : "#F1F5F9" }}
       >
         <span>{icon}</span>
       </div>
@@ -476,7 +476,7 @@ function StepUploadCsv({
           {file ? file.name : "Click to choose a CSV file"}
         </p>
         {rowCount > 0 ? (
-          <p className="mt-2 text-xs uppercase tracking-widest font-bold text-emerald-700">
+          <p className="mt-2 text-xs uppercase tracking-widest font-bold text-blue-700">
             {rowCount.toLocaleString()} rows parsed
           </p>
         ) : (
@@ -581,7 +581,7 @@ function StepMap({
         We auto-detected {mapped} of {mappings.length} columns. Review and adjust as needed.
       </p>
       <div className="mt-3 flex items-center gap-2">
-        <Badge color="emerald">{mapped} mapped</Badge>
+        <Badge color="blue">{mapped} mapped</Badge>
         <Badge color="slate">{skipped} skipped</Badge>
       </div>
 
@@ -602,7 +602,7 @@ function StepMap({
                     {m.sourceHeader}
                   </div>
                   {m.confidence === "name-match" || m.confidence === "sample-detect" ? (
-                    <Badge color="emerald" small>auto</Badge>
+                    <Badge color="blue" small>auto</Badge>
                   ) : null}
                 </td>
                 <td className="px-4 py-3 align-top">
@@ -676,7 +676,7 @@ function StepDedup({
         We checked every row against your existing leads. Review the matches below — toggle anything you want to import anyway.
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Badge color="emerald">+ {preview.newCount} New</Badge>
+        <Badge color="blue">+ {preview.newCount} New</Badge>
         <Badge color="amber">↻ {preview.exactMatchCount} Exact matches</Badge>
         <Badge color="orange">⚠ {preview.possibleDupCount} Possible duplicates</Badge>
         <span className="ml-auto text-xs text-slate-500">
@@ -692,7 +692,7 @@ function StepDedup({
         <DedupGroup
           title="New records"
           icon="+"
-          color="emerald"
+          color="blue"
           rows={preview.results.filter((r) => r.bucket === "new")}
           includeRow={includeRow}
           onToggle={onToggle}
@@ -732,7 +732,7 @@ function DedupGroup({
 }: {
   title: string;
   icon: string;
-  color: "emerald" | "amber" | "orange";
+  color: "blue" | "amber" | "orange";
   rows: DedupRowResult[];
   includeRow: Record<number, boolean>;
   onToggle: (rowIndex: number, value: boolean) => void;
@@ -782,7 +782,7 @@ function DedupGroup({
             <span
               className={[
                 "text-[10px] uppercase tracking-widest font-bold px-2 py-0.5 rounded shrink-0",
-                color === "emerald" && "bg-emerald-100 text-emerald-700",
+                color === "blue" && "bg-blue-100 text-blue-700",
                 color === "amber" && "bg-amber-100 text-amber-700",
                 color === "orange" && "bg-orange-100 text-orange-700",
               ]
@@ -861,7 +861,7 @@ function StepImportSummary({
           {csvSummary.upserted.toLocaleString()} leads added to your inventory.
         </p>
         <dl className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
-          <Stat label="Imported" value={csvSummary.upserted} color="emerald" />
+          <Stat label="Imported" value={csvSummary.upserted} color="blue" />
           <Stat label="Below floor" value={csvSummary.expired} color="amber" />
           <Stat label="Skipped" value={csvSummary.skipped} color="slate" />
           <Stat label="Errors" value={csvSummary.errors.length} color="red" />
@@ -906,8 +906,8 @@ function StepImportSummary({
         </p>
         <dl className="mt-6 grid grid-cols-3 gap-3">
           <Stat label="Fetched" value={cursiveSummary.summary.fetchedCount} color="slate" />
-          <Stat label="Upserted" value={cursiveSummary.summary.upsertedCount} color="emerald" />
-          <Stat label="New" value={cursiveSummary.summary.newCount} color="emerald" />
+          <Stat label="Upserted" value={cursiveSummary.summary.upsertedCount} color="blue" />
+          <Stat label="New" value={cursiveSummary.summary.newCount} color="blue" />
         </dl>
         <div className="mt-6">
           <a
@@ -940,7 +940,7 @@ function ProgressHeader({
     <div>
       <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
         <div
-          className="h-full bg-emerald-500 transition-all"
+          className="h-full bg-blue-500 transition-all"
           style={{ width: `${progress}%` }}
         />
       </div>
@@ -954,9 +954,9 @@ function ProgressHeader({
                 className={[
                   "flex items-center justify-center w-7 h-7 rounded-full text-xs font-semibold border-2",
                   done
-                    ? "bg-emerald-500 border-emerald-500 text-white"
+                    ? "bg-blue-500 border-blue-500 text-white"
                     : active
-                      ? "bg-white border-emerald-500 text-emerald-700"
+                      ? "bg-white border-blue-500 text-blue-700"
                       : "bg-slate-100 border-slate-200 text-slate-500",
                 ].join(" ")}
               >
@@ -1015,7 +1015,7 @@ function WizardFooter({
           type="button"
           onClick={onSubmit}
           disabled={!canGoNext || submitting}
-          className="inline-flex items-center gap-2 px-5 py-2 rounded-md bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
         >
           {submitting ? "Importing…" : "Import data →"}
         </button>
@@ -1024,7 +1024,7 @@ function WizardFooter({
           type="button"
           onClick={onNext}
           disabled={!canGoNext || submitting}
-          className="inline-flex items-center gap-2 px-5 py-2 rounded-md bg-emerald-600 text-white text-sm font-medium hover:bg-emerald-700 disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-5 py-2 rounded-md bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
         >
           Next →
         </button>
@@ -1073,11 +1073,11 @@ function Badge({
   small,
 }: {
   children: React.ReactNode;
-  color: "emerald" | "amber" | "orange" | "slate" | "red";
+  color: "blue" | "amber" | "orange" | "slate" | "red";
   small?: boolean;
 }) {
   const cls = {
-    emerald: "bg-emerald-100 text-emerald-700",
+    blue: "bg-blue-100 text-blue-700",
     amber: "bg-amber-100 text-amber-800",
     orange: "bg-orange-100 text-orange-800",
     slate: "bg-slate-100 text-slate-700",
@@ -1103,10 +1103,10 @@ function Stat({
 }: {
   label: string;
   value: number;
-  color: "emerald" | "amber" | "slate" | "red";
+  color: "blue" | "amber" | "slate" | "red";
 }) {
   const cls = {
-    emerald: "text-emerald-700",
+    blue: "text-blue-700",
     amber: "text-amber-700",
     slate: "text-slate-700",
     red: "text-red-700",
