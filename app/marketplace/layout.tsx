@@ -1,6 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
+import { PixelSwirl } from "@/components/platform/pixel-swirl";
+import { GlyphSwirl } from "@/components/platform/glyph-swirl";
 
 export const metadata: Metadata = {
   title: `Marketplace · ${BRAND_NAME}`,
@@ -115,7 +117,16 @@ export default function MarketplaceLayout({
         </div>
       </header>
 
-      <main className="flex-1">{children}</main>
+      {/* PixelSwirl + GlyphSwirl form the brand ambient background that
+          runs the FULL HEIGHT of the marketplace surface — same chrome
+          as the LeaseStack /leads hero. <main> is relative + overflow-
+          hidden so the absolute-positioned swirls fill the entire
+          scrollable content area, and children sit above on z-10. */}
+      <main className="flex-1 relative overflow-hidden">
+        <PixelSwirl />
+        <GlyphSwirl />
+        <div className="relative z-10">{children}</div>
+      </main>
 
       <footer
         style={{
