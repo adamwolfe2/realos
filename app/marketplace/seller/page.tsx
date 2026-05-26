@@ -33,6 +33,10 @@ export default async function SellerDashboardPage() {
       where: {
         sellerIdAtSale: seller.id,
         status: "PAID",
+        // Hide comp / 100%-off internal-test purchases from the seller's
+        // revenue feed — they're shown in a separate "Test purchases"
+        // section below so totals stay honest.
+        origin: { not: "COMP" },
       },
       orderBy: { createdAt: "desc" },
       take: 25,
@@ -56,6 +60,26 @@ export default async function SellerDashboardPage() {
       take: 10,
     }),
   ]);
+
+  // Comp purchases (internal-test 100%-off coupons) — surfaced separately
+  // so they don't muddy "did anyone actually buy my leads" metrics, but
+  // still visible so test runs are auditable.
+  const compPurchases = await prisma.marketplacePurchase.findMany({
+    where: {
+      sellerIdAtSale: seller.id,
+      status: "PAID",
+      origin: "COMP",
+    },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+    select: {
+      id: true,
+      createdAt: true,
+      lead: {
+        select: { id: true, firstName: true, lastName: true, market: true },
+      },
+    },
+  });
 
   const availableCount = leads.filter((l) => l.status === "AVAILABLE").length;
   const soldCount = leads.filter((l) => l.status === "SOLD").length;
@@ -336,6 +360,47 @@ export default async function SellerDashboardPage() {
                 })}
               </ul>
             )}
+
+            {/* Comp / test purchases — visible but not counted toward
+                revenue. Hidden entirely when there are none. */}
+            {compPurchases.length > 0 ? (
+              <div className="mt-5 pt-4 border-t border-slate-200">
+                <p
+                  style={{
+                    color: "#94A3B8",
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "9.5px",
+                    letterSpacing: "0.14em",
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                  }}
+                >
+                  Test purchases · not counted
+                </p>
+                <ul className="mt-2 space-y-1.5">
+                  {compPurchases.slice(0, 5).map((p) => {
+                    const name =
+                      [p.lead?.firstName, p.lead?.lastName]
+                        .filter(Boolean)
+                        .join(" ")
+                        .trim() || "Unknown";
+                    return (
+                      <li
+                        key={p.id}
+                        className="flex items-center justify-between gap-2 text-xs text-slate-500"
+                      >
+                        <span className="truncate">
+                          {name} · {p.lead?.market ?? "—"}
+                        </span>
+                        <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400">
+                          {new Date(p.createdAt).toLocaleDateString()} · COMP
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ) : null}
           </div>
 
           <div
