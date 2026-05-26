@@ -75,6 +75,17 @@ export default function MarketplaceLayout({
               How it works
             </Link>
             <Link
+              href="/marketplace/seller"
+              style={{
+                fontFamily: "var(--font-sans)",
+                fontSize: "13.5px",
+                color: "#64748B",
+                fontWeight: 500,
+              }}
+            >
+              Sell leads
+            </Link>
+            <Link
               href="/marketplace/buyer/sign-in"
               style={{
                 fontFamily: "var(--font-sans)",
@@ -83,10 +94,10 @@ export default function MarketplaceLayout({
                 fontWeight: 600,
               }}
             >
-              Sign in
+              Buyer sign-in
             </Link>
             <Link
-              href="/onboarding"
+              href="/marketplace/seller/sign-in"
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: "13.5px",

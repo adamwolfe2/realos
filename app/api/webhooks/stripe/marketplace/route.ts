@@ -109,8 +109,42 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
     }
   }
 
-  // Mark the lead SOLD + the purchase PAID atomically.
-  await prisma.$transaction([
+  // Compute seller revenue split — locked at sale time so future changes
+  // to revShareBps don't retroactively affect existing purchases.
+  const lead = purchase.lead;
+  let sellerSplit: {
+    sellerIdAtSale: string | null;
+    sellerShareBps: number | null;
+    sellerShareCents: number | null;
+    platformShareCents: number | null;
+  } = {
+    sellerIdAtSale: null,
+    sellerShareBps: null,
+    sellerShareCents: null,
+    platformShareCents: null,
+  };
+  if (lead.sellerId) {
+    const seller = await prisma.marketplaceSeller.findUnique({
+      where: { id: lead.sellerId },
+      select: { id: true, revShareBps: true },
+    });
+    if (seller) {
+      const bps = seller.revShareBps;
+      const sellerShareCents = Math.floor((purchase.priceCents * bps) / 10000);
+      sellerSplit = {
+        sellerIdAtSale: seller.id,
+        sellerShareBps: bps,
+        sellerShareCents,
+        platformShareCents: purchase.priceCents - sellerShareCents,
+      };
+    }
+  } else {
+    // Platform-direct lead — we keep 100%.
+    sellerSplit.platformShareCents = purchase.priceCents;
+  }
+
+  // Mark the lead SOLD + the purchase PAID + credit the seller atomically.
+  const txnOps = [
     prisma.marketplacePurchase.update({
       where: { id: purchase.id },
       data: {
@@ -118,6 +152,10 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         stripePaymentIntentId: paymentIntentId,
         receiptUrl,
         piiDeliveredAt: new Date(),
+        sellerIdAtSale: sellerSplit.sellerIdAtSale,
+        sellerShareBps: sellerSplit.sellerShareBps,
+        sellerShareCents: sellerSplit.sellerShareCents,
+        platformShareCents: sellerSplit.platformShareCents,
       },
     }),
     prisma.marketplaceLead.update({
@@ -128,11 +166,23 @@ async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
         soldAt: new Date(),
       },
     }),
-  ]);
+  ];
+  if (sellerSplit.sellerIdAtSale && sellerSplit.sellerShareCents) {
+    txnOps.push(
+      prisma.marketplaceSeller.update({
+        where: { id: sellerSplit.sellerIdAtSale },
+        data: {
+          accruedCents: { increment: sellerSplit.sellerShareCents },
+          unpaidOwedCents: { increment: sellerSplit.sellerShareCents },
+          totalLeadsSold: { increment: 1 },
+        },
+      }) as never,
+    );
+  }
+  await prisma.$transaction(txnOps);
 
   // Send the buyer their PII email. Failure here doesn't unwind the sale —
   // the buyer can always view the lead on /marketplace/buyer.
-  const lead = purchase.lead;
   const fullName = [lead.firstName, lead.lastName].filter(Boolean).join(" ").trim();
   const result = await sendLeadDeliveryEmail({
     to: purchase.buyer.email,

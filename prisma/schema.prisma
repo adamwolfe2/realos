@@ -4756,6 +4756,12 @@ model MarketplaceLead {
   sourceId String
   source   MarketplaceSyncSource  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
+  // Optional seller credit — set when the lead came in via a seller-side
+  // import (CSV upload or seller-attributed Cursive segment). Null means
+  // platform-direct (we keep 100%).
+  sellerId String?
+  seller   MarketplaceSeller? @relation(fields: [sellerId], references: [id], onDelete: SetNull)
+
   // Stable identity from Cursive — the primary dedupe key for replenishment.
   cursiveProfileId String
 
@@ -4816,6 +4822,7 @@ model MarketplaceLead {
   @@index([status, expiresAt])
   @@index([sourceId, status])
   @@index([cursiveProfileId])
+  @@index([sellerId, status])
 
   purchases MarketplacePurchase[]
 }
@@ -4902,6 +4909,14 @@ model MarketplacePurchase {
   currency   String @default("usd")
   status     MarketplacePurchaseStatus @default(PENDING)
 
+  // Revenue split snapshot — taken at purchase time so the seller's
+  // accrued credit is locked even if revShareBps changes later. Null for
+  // platform-direct leads (no seller).
+  sellerIdAtSale     String?
+  sellerShareBps     Int?    // basis points (7000 = 70%)
+  sellerShareCents   Int?    // computed: priceCents * sellerShareBps / 10000
+  platformShareCents Int?    // computed: priceCents - sellerShareCents
+
   // Receipts + emails
   receiptUrl       String?
   piiDeliveredAt   DateTime?
@@ -4954,4 +4969,100 @@ model MarketplaceStream {
 
   @@index([buyerId, enabled])
   @@index([enabled, lastMatchedAt])
+}
+
+// ----------------------------------------------------------------------------
+// Seller side — operators who BRING leads INTO the marketplace and earn a
+// revenue share when those leads sell. Mirrors the buyer-side architecture:
+//   - Standalone magic-link auth (no Clerk)
+//   - Two ingest paths: (a) point at a Cursive segment id with their own
+//     CURSIVE_API_KEY override, (b) CSV upload via the seller dashboard
+//   - Every MarketplaceLead carries an optional sellerId so the webhook
+//     can credit the right operator on purchase
+//   - Payouts accrue per seller and clear via MarketplaceSellerPayout
+// ----------------------------------------------------------------------------
+
+enum MarketplaceSellerStatus {
+  ACTIVE
+  PAUSED   // seller can sign in but new leads don't surface in browse
+  BANNED
+}
+
+model MarketplaceSeller {
+  id String @id @default(cuid())
+
+  email     String  @unique
+  fullName  String?
+  companyName String?
+  phone     String?
+
+  // Magic-link auth (same shape as MarketplaceBuyer)
+  signInTokenHash    String?
+  signInExpiresAt    DateTime?
+  signInRequestedAt  DateTime?
+
+  // Revenue share — fraction of each sale credited to this seller, in
+  // basis points (so 7000 = 70%). Platform keeps (10000 - revShareBps).
+  // Tunable per seller; default 7000 = 70/30 in seller's favor.
+  revShareBps Int @default(7000)
+
+  // Lifetime accrued + paid out, in cents. The webhook bumps `accrued`
+  // on every PAID purchase; MarketplaceSellerPayout decrements via the
+  // payout flow (Phase 2c).
+  accruedCents       Int @default(0)
+  paidOutCents       Int @default(0)
+  unpaidOwedCents    Int @default(0)
+
+  // Lead counts for the dashboard.
+  totalLeadsContributed Int @default(0)
+  totalLeadsSold        Int @default(0)
+
+  // Stripe Connect account id (for direct payouts). Optional — without
+  // it, payouts are tracked but executed manually.
+  stripeConnectAccountId String?
+
+  status MarketplaceSellerStatus @default(ACTIVE)
+
+  // Optional per-seller Cursive API key override. Encrypted with the same
+  // AES-GCM helper used for ad-cred storage.
+  cursiveApiKeyEnc String?
+
+  lastSignInAt DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  leads   MarketplaceLead[]
+  payouts MarketplaceSellerPayout[]
+
+  @@index([signInTokenHash])
+  @@index([status])
+}
+
+enum MarketplacePayoutStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+// One row per payout to a seller. Created by admin (or future automated
+// weekly cron). Decrements the seller's unpaidOwedCents on success.
+model MarketplaceSellerPayout {
+  id        String                 @id @default(cuid())
+  sellerId  String
+  seller    MarketplaceSeller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+
+  amountCents Int
+  currency    String  @default("usd")
+  status      MarketplacePayoutStatus @default(PENDING)
+
+  // Stripe transfer id when paid via Stripe Connect; null for manual payouts.
+  stripeTransferId String?
+  note             String? @db.Text
+
+  paidAt    DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([sellerId, createdAt(sort: Desc)])
+  @@index([status])
 }
