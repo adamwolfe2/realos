@@ -14,6 +14,7 @@ const PRODUCT_LINKS = [
   { href: "/features/seo-aeo", label: "Search + AI discovery" },
   { href: "/features/ads",     label: "Managed ads" },
   { href: "/audiences",        label: "Audience Sync" },
+  { href: "/leads",            label: "Leads & marketplace" },
 ];
 
 const VERTICAL_LINKS = [
