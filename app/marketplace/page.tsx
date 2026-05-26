@@ -1,12 +1,18 @@
 import Link from "next/link";
 import { MarketplaceLive } from "@/components/marketplace/marketplace-live";
+import { PixelSwirl } from "@/components/platform/pixel-swirl";
+import { GlyphSwirl } from "@/components/platform/glyph-swirl";
 
 // ---------------------------------------------------------------------------
 // /marketplace — public live browse page (no auth)
 //
-// Single hero strip + the live MarketplaceLive component which hits
-// GET /api/marketplace/leads. The marketing-pitch live demo lives at
-// /leads — this surface is the real product.
+// Hero borrows the same ambient PixelSwirl + GlyphSwirl background that
+// anchors the LeaseStack /leads hero so the marketplace reads as the
+// same product surface, not a stripped-down sub-page.
+//
+// Below the hero, the live MarketplaceLive component (GET /api/marketplace/leads)
+// renders the actual filterable lead pool. The marketing-pitch demo lives
+// at /leads — this surface is the real product.
 // ---------------------------------------------------------------------------
 
 export const dynamic = "force-dynamic";
@@ -15,13 +21,21 @@ export default function MarketplacePage() {
   return (
     <div>
       <section
-        className="border-b"
+        className="relative overflow-hidden border-b"
         style={{
           backgroundColor: "#FFFFFF",
           borderColor: "#E2E8F0",
         }}
       >
-        <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-12 md:py-16">
+        {/* Same ambient brand chrome as the LeaseStack /leads hero —
+            PixelSwirl renders the gradient base + brand-blue grid + the
+            orbiting pixel motes, GlyphSwirl scatters the 3x3 dot-grid
+            glyphs across the surface. Both sit behind everything
+            (pointer-events: none, aria-hidden) so the CTA + filters
+            stay fully interactive. */}
+        <PixelSwirl />
+        <GlyphSwirl />
+        <div className="relative max-w-[1240px] mx-auto px-4 md:px-8 py-12 md:py-16">
           <p
             style={{
               color: "#2563EB",
@@ -96,7 +110,7 @@ export default function MarketplacePage() {
         </div>
       </section>
 
-      <section>
+      <section style={{ backgroundColor: "#FAFBFF" }}>
         <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-10 md:py-14">
           <MarketplaceLive />
         </div>

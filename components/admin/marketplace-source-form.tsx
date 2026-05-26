@@ -41,6 +41,7 @@ export function MarketplaceSourceForm() {
   const [defaultPriceCents, setDefaultPriceCents] = useState(7500);
   const [requireFullEnrichment, setRequireFullEnrichment] = useState(false);
   const [runImmediately, setRunImmediately] = useState(true);
+  const [diagnosis, setDiagnosis] = useState<DiagnosisResult | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -105,13 +106,17 @@ export function MarketplaceSourceForm() {
       </div>
 
       <Field label="Cursive ID (audience or segment)">
-        <input
-          value={externalId}
-          onChange={(e) => setExternalId(e.target.value)}
-          className="form-input font-mono text-xs"
-          placeholder="ba8c9817-f91c-4955-b2b0-53b933a15f7d"
-          required
-        />
+        <div className="flex gap-2">
+          <input
+            value={externalId}
+            onChange={(e) => setExternalId(e.target.value)}
+            className="form-input font-mono text-xs flex-1"
+            placeholder="ba8c9817-f91c-4955-b2b0-53b933a15f7d"
+            required
+          />
+          <DiagnoseButton externalId={externalId} onResult={setDiagnosis} />
+        </div>
+        {diagnosis && <DiagnosisDisplay diagnosis={diagnosis} />}
       </Field>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -294,6 +299,109 @@ function Field({
         <span className="text-[11px] text-slate-400 mt-1 block">{hint}</span>
       )}
     </label>
+  );
+}
+
+type SurfaceProbe =
+  | { ok: false; status: number; message: string }
+  | { ok: true; memberCount: number; hasMore: boolean; sampleKeys: string[]; sampleProfileId: string | null };
+
+type DiagnosisResult = {
+  env: { CURSIVE_API_KEY: string; CURSIVE_API_URL: string };
+  segmentId: string;
+  audiences: SurfaceProbe;
+  segments: SurfaceProbe;
+  recommendation: string;
+};
+
+function DiagnoseButton({
+  externalId,
+  onResult,
+}: {
+  externalId: string;
+  onResult: (r: DiagnosisResult | null) => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  return (
+    <button
+      type="button"
+      disabled={!externalId || loading}
+      onClick={async () => {
+        if (!externalId) return;
+        setLoading(true);
+        onResult(null);
+        try {
+          const res = await fetch(
+            `/api/admin/marketplace/diagnose?id=${encodeURIComponent(externalId)}`,
+          );
+          if (res.ok) {
+            const data = (await res.json()) as DiagnosisResult;
+            onResult(data);
+          }
+        } finally {
+          setLoading(false);
+        }
+      }}
+      className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-md text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+    >
+      {loading ? "Probing…" : "Diagnose"}
+    </button>
+  );
+}
+
+function DiagnosisDisplay({ diagnosis }: { diagnosis: DiagnosisResult }) {
+  return (
+    <div className="mt-2 p-3 rounded-md bg-slate-50 border border-slate-200 space-y-2">
+      <div className="flex items-center justify-between text-[11px] font-mono uppercase tracking-wider">
+        <span className="text-slate-500">CURSIVE_API_KEY:</span>
+        <span
+          className={
+            diagnosis.env.CURSIVE_API_KEY === "SET"
+              ? "text-emerald-600 font-bold"
+              : "text-red-600 font-bold"
+          }
+        >
+          {diagnosis.env.CURSIVE_API_KEY}
+        </span>
+      </div>
+      <ProbeRow label="audiences" probe={diagnosis.audiences} />
+      <ProbeRow label="segments" probe={diagnosis.segments} />
+      <p className="text-xs text-blue-700 font-medium pt-1 border-t border-slate-200">
+        {diagnosis.recommendation}
+      </p>
+    </div>
+  );
+}
+
+function ProbeRow({ label, probe }: { label: string; probe: SurfaceProbe }) {
+  return (
+    <div className="text-[11px] font-mono">
+      <div className="flex items-center justify-between">
+        <span className="uppercase tracking-wider text-slate-500">{label}</span>
+        {probe.ok ? (
+          <span className="text-emerald-600 font-bold">
+            {probe.memberCount.toLocaleString()} members
+          </span>
+        ) : (
+          <span className="text-red-600 font-bold">
+            {probe.status} · failed
+          </span>
+        )}
+      </div>
+      {!probe.ok && (
+        <p className="text-red-700 mt-1 break-all">{probe.message}</p>
+      )}
+      {probe.ok && probe.sampleKeys.length > 0 && (
+        <details className="mt-1">
+          <summary className="cursor-pointer text-slate-500">
+            sample fields ({probe.sampleKeys.length})
+          </summary>
+          <p className="mt-1 text-slate-700 break-all">
+            {probe.sampleKeys.join(", ")}
+          </p>
+        </details>
+      )}
+    </div>
   );
 }
 

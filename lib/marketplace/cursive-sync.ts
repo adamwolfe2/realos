@@ -75,17 +75,53 @@ export async function runSourceReplenish(
       throw new Error("source.externalId is null — set the Cursive segment id");
     }
 
-    // Pull every member from the Cursive segment.
-    const result = await streamAlSegmentMembers(source.externalId, {
+    // Pull every member from the Cursive segment. We try the configured
+    // surface first, then fall back to the other surface if AL returns
+    // 404 — operators sometimes pick the wrong dropdown when the ID
+    // could be either an Audience or a Studio segment.
+    const primarySurface =
+      source.kind === "CURSIVE_AUDIENCE" ? "audiences" : "segments";
+    const fallbackSurface = primarySurface === "audiences" ? "segments" : "audiences";
+
+    let result = await streamAlSegmentMembers(source.externalId, {
       apiKey: source.cursiveApiKeyEnc ?? undefined,
-      surface: source.kind === "CURSIVE_AUDIENCE" ? "audiences" : "segments",
+      surface: primarySurface,
       maxMembers: 10_000,
     });
-    if (!result.ok) {
-      throw new Error(`Cursive fetch failed: ${result.message}`);
+
+    // If primary surface 404'd or returned no rows, try the other surface.
+    if (!result.ok || (result.ok && result.data.length === 0)) {
+      const fallback = await streamAlSegmentMembers(source.externalId, {
+        apiKey: source.cursiveApiKeyEnc ?? undefined,
+        surface: fallbackSurface,
+        maxMembers: 10_000,
+      });
+      if (fallback.ok && fallback.data.length > 0) {
+        result = fallback;
+      } else if (!result.ok) {
+        // Primary failed and fallback didn't help — surface the more
+        // useful of the two error messages.
+        const message =
+          !fallback.ok && fallback.message.length > result.message.length
+            ? `${primarySurface}: ${result.message} · ${fallbackSurface}: ${fallback.message}`
+            : result.message;
+        throw new Error(
+          `Cursive fetch failed (key ${maskKey(process.env.CURSIVE_API_KEY)}): ${message}`,
+        );
+      }
     }
+
+    // result is guaranteed ok past this point — either the primary succeeded
+    // or the fallback replaced it. The else-if above already threw on
+    // double failure.
     const members = result.data;
     fetchedCount = members.length;
+
+    if (fetchedCount === 0) {
+      throw new Error(
+        `Cursive returned 0 members for ${source.externalId}. Check the ID is correct and the API key has access. Tried both 'audiences' and 'segments' surfaces.`,
+      );
+    }
 
     // Process each member: enrich → gate → score → upsert.
     for (const member of members) {
@@ -545,6 +581,15 @@ const STATE_NAMES: Record<string, string> = {
 //   intent ≥ 70  → 1.2x  (warm tier)
 //   intent ≥ 60  → 1.0x  (base — verified identity, mild signal)
 //   intent  < 60 → 0.7x  (cool tier — verified-only)
+// Show a masked preview of the API key in error messages — first 4 chars,
+// last 4 chars, with "…" in between. Distinguishes "missing key" from
+// "wrong key" without leaking the full secret.
+function maskKey(k: string | undefined): string {
+  if (!k) return "MISSING";
+  if (k.length <= 8) return "set";
+  return `${k.slice(0, 4)}…${k.slice(-4)}`;
+}
+
 function tierPrice(basePriceCents: number, intentScore: number): number {
   let multiplier = 1.0;
   if (intentScore >= 90) multiplier = 2.0;
