@@ -13,6 +13,7 @@ import {
   BugReportStatus,
   CreativeRequestStatus,
   OrgType,
+  SiteRequestStatus,
   TenantStatus,
 } from "@prisma/client";
 
@@ -40,6 +41,7 @@ const getAdminNavBadges = unstable_cache(
       pendingPixelRequests,
       openBugReports,
       pendingContentDrafts,
+      pendingSiteRequests,
     ] = await Promise.all([
       prisma.intakeSubmission
         .count({ where: { reviewedAt: null, convertedAt: null } })
@@ -102,6 +104,22 @@ const getAdminNavBadges = unstable_cache(
           },
         })
         .catch(() => 0),
+      // Site Engine inbound bucket: anything still pre-triage or
+      // waiting on the client for info. The badge mirrors what Adam
+      // works first when opening the admin.
+      prisma.siteRequest
+        .count({
+          where: {
+            status: {
+              in: [
+                SiteRequestStatus.SUBMITTED,
+                SiteRequestStatus.TRIAGE,
+                SiteRequestStatus.NEEDS_INFO,
+              ],
+            },
+          },
+        })
+        .catch(() => 0),
     ]);
     return {
       pendingIntakes,
@@ -111,6 +129,7 @@ const getAdminNavBadges = unstable_cache(
       pendingPixelRequests,
       openBugReports,
       pendingContentDrafts,
+      pendingSiteRequests,
       unreadMessages: 0,
     } as Record<string, number>;
   },

@@ -17,6 +17,7 @@ import {
   Bug,
   FileText,
   SatelliteDish,
+  Globe,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -32,7 +33,8 @@ export interface NavItem {
     | "atRiskTenants"
     | "pendingPixelRequests"
     | "openBugReports"
-    | "pendingContentDrafts";
+    | "pendingContentDrafts"
+    | "pendingSiteRequests";
 }
 
 export interface NavGroup {
@@ -72,6 +74,16 @@ export const adminNavGroups: NavGroup[] = [
         label: "Pipeline",
         icon: Kanban,
         badgeKey: "activeBuilds",
+      },
+      {
+        // Site Engine: hand-built marketing-site fulfillment queue. Public
+        // intake landing at /sites/request, logged-in version at
+        // /portal/sites/request. Lives here under Growth because every row
+        // starts as inbound demand we triage.
+        href: "/admin/site-engine",
+        label: "Site engine",
+        icon: Globe,
+        badgeKey: "pendingSiteRequests",
       },
       { href: "/admin/leads", label: "Leads", icon: Activity },
     ],

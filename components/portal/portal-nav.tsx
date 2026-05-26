@@ -38,6 +38,7 @@ import {
   Plug,
   KeyRound,
   Calculator,
+  Globe,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -187,6 +188,15 @@ export const NAV_GROUPS: NavGroup[] = [
         href: "/portal/marketplace",
         label: "Marketplace",
         icon: ShoppingBag,
+        show: ALWAYS,
+      },
+      // Site Engine CTA: every operator can request a custom website
+      // build. Always visible — we want this entry point promoted on
+      // every portal page until they have a SiteRequest in flight.
+      {
+        href: "/portal/sites/request",
+        label: "Get a website",
+        icon: Globe,
         show: ALWAYS,
       },
     ],

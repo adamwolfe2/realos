@@ -518,6 +518,7 @@ model Organization {
   leases                  Lease[]
   workOrders              WorkOrder[]
   websiteBuildRequests    WebsiteBuildRequest[]
+  siteRequests            SiteRequest[]
   popupCampaigns          PopupCampaign[]
   popupEvents             PopupEvent[]
   credentialEntries       CredentialEntry[]
@@ -609,6 +610,7 @@ model User {
   tasksAssigned         ProjectTask[]         @relation("TaskAssignee")
   notifications         Notification[]
   websiteBuildsAssigned WebsiteBuildRequest[] @relation("WebsiteBuildAssignee")
+  siteRequestsAssigned  SiteRequest[]         @relation("SiteRequestAssignee")
 
   // Per-property access grants. ZERO rows = unrestricted (org-wide
   // access — preserves the legacy behavior so existing users aren't
@@ -2243,6 +2245,229 @@ model WebsiteBuildRequest {
 
   @@index([orgId, status])
   @@index([assignedToUserId, status])
+}
+
+// ============================================================================
+// Site Engine — public + portal-based intake for custom marketing site builds.
+// Sits ALONGSIDE WebsiteBuildRequest (which is a Stripe-paid kickoff queue).
+// SiteRequest is the richer intake record: a state-machine row created by the
+// public form at /sites/request OR the logged-in form at /portal/sites/request.
+// Adam (or a contractor) works the queue at /admin/site-engine, downloads a
+// build packet (intake.json + assets zip), and builds the site by hand in
+// Claude Code. Every client site is its own GitHub repo + Vercel project; this
+// model just tracks the intake/queue/lifecycle inside LeaseStack.
+// ============================================================================
+
+enum SiteRequestStatus {
+  SUBMITTED                  // Just landed; not yet triaged.
+  TRIAGE                     // Adam reviewing fit + completeness.
+  NEEDS_INFO                 // Awaiting missing info from client.
+  DISQUALIFIED               // Politely declined.
+  QUALIFIED                  // Ready to begin build prep.
+  INSPIRATION_EXTRACTION     // Reverse-PRD pass on inspiration URLs.
+  SPEC_REVIEW                // Merged spec ready for Adam approval.
+  READY_TO_BUILD             // Spec approved; build packet downloadable.
+  IN_BUILD                   // Active Claude Code session.
+  PREVIEW_READY              // Preview URL generated.
+  CLIENT_REVIEW              // Client reviewing the preview.
+  REVISION_REQUESTED         // Client asked for changes.
+  APPROVED                   // Client signed off.
+  DEPLOYED                   // Live on production domain.
+  MAINTENANCE                // Post-launch ongoing.
+  PAUSED                     // Something blocked; manual intervention.
+  CHURNED                    // Client left.
+}
+
+enum SiteRequestTier {
+  TIER1_MARKETING  // Single marketing site
+  TIER2_PORTAL     // Marketing + lead capture + tenant portal stub
+  TIER3_CUSTOM     // Full custom scope
+}
+
+enum SiteRequestPriority {
+  URGENT
+  NORMAL
+  LOW
+}
+
+enum SiteRequestAssetType {
+  LOGO
+  HERO
+  HEADSHOT
+  PROPERTY_PHOTO
+  LISTING_PHOTO
+  BRAND_GUIDE
+  INSPIRATION
+  OTHER
+}
+
+model SiteRequest {
+  id   String @id @default(cuid())
+  slug String @unique // Short shareable URL token (used in /sites/status/[slug]).
+
+  // Linkage to existing LeaseStack org. NULL when submitted by a public
+  // visitor with no LeaseStack account yet (magic link flow can claim it
+  // later by setting orgId).
+  orgId String?
+  org   Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+
+  // Submitter snapshot (always populated, even for logged-in submissions —
+  // we keep an immutable copy of who actually filled the form).
+  submittedByName    String
+  submittedByEmail   String
+  submittedByPhone   String?
+  submittedByCompany String?
+
+  // Lifecycle
+  status            SiteRequestStatus   @default(SUBMITTED)
+  tier              SiteRequestTier     @default(TIER1_MARKETING)
+  priority          SiteRequestPriority @default(NORMAL)
+  estimatedLaunchAt DateTime?
+
+  // Attribution. `source` is the referrer slug from ?ref= (e.g. "norman"),
+  // utm_* preserved for analytics.
+  source      String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  referrer    String?
+  ipAddress   String?
+  userAgent   String?
+
+  // Fulfillment metadata
+  assignedToUserId String?
+  assignedTo       User?       @relation("SiteRequestAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  internalNotes    String?     @db.Text
+
+  // Build artifact references — populated as the build progresses.
+  githubRepoUrl     String?
+  vercelProjectId   String?
+  vercelPreviewUrl  String?
+  productionUrl     String?
+  previewSentAt     DateTime?
+  approvedAt        DateTime?
+  deployedAt        DateTime?
+  disqualifiedAt    DateTime?
+  disqualifiedReason String?
+
+  // 1:1 form payload + related collections.
+  intake     IntakeResponse?
+  assets     SiteRequestAsset[]
+  events     SiteRequestEvent[]
+
+  submittedAt    DateTime  @default(now())
+  lastActivityAt DateTime  @default(now())
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([status, lastActivityAt])
+  @@index([orgId, status])
+  @@index([assignedToUserId, status])
+  @@index([source])
+}
+
+// 1:1 with SiteRequest. Stored separately so we can evolve the intake
+// shape without bloating the queue index. Free-form `raw` blob keeps the
+// entire original submission for audit.
+model IntakeResponse {
+  id            String      @id @default(cuid())
+  siteRequestId String      @unique
+  siteRequest   SiteRequest @relation(fields: [siteRequestId], references: [id], onDelete: Cascade)
+
+  // Identity
+  identityType String? // solo_agent | team | brokerage | property_manager | developer | other
+
+  // Brand
+  brandName       String
+  tagline         String?
+  brandColorHex   String?
+  vertical        String? // residential | commercial | mixed | senior_living | etc.
+
+  // Compliance
+  licenseNumber String?
+  brokerageName String?
+  licenseState  String?
+
+  // Service area
+  serviceAreas String[] @default([])
+  hqCity       String?
+  hqState      String?
+
+  // Existing presence
+  currentSiteUrl String?
+  domain         String?
+  domainNeeded   Boolean? // true = they need us to register
+  dnsAccess      Boolean? // true = they have registrar access
+
+  // Visual direction
+  inspirationUrls String[] @default([])
+  presetChoice    String? // editorial_luxury | cinematic_portfolio | etc.
+
+  // Voice & content
+  voiceSample  String? @db.Text // 200+ word writing sample
+  bio          String? @db.Text
+  services     Json? // array of { title, description }
+  testimonials Json? // array of { name, quote, role }
+  keyStats     Json? // array of { label, value }
+
+  // Integrations
+  calendlyUrl   String?
+  crmChoice     String?
+  mlsPreference String?
+  ga4Id         String?
+
+  // Timeline + budget
+  timelineExpectation String? // asap | 1_month | 3_month | flexible
+  budgetConfirmed     Boolean?
+  budgetTier          String?
+
+  // Open text
+  anythingElse String? @db.Text
+
+  // Full raw payload (every form field, even ones not modeled above) for audit.
+  raw Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Uploaded files (logos, photos, brand guides, inspiration shots).
+model SiteRequestAsset {
+  id            String      @id @default(cuid())
+  siteRequestId String
+  siteRequest   SiteRequest @relation(fields: [siteRequestId], references: [id], onDelete: Cascade)
+
+  type     SiteRequestAssetType
+  filename String
+  mimeType String
+  size     Int
+  blobUrl  String
+  pathname String?
+  label    String? // optional caption supplied by the submitter
+
+  uploadedAt DateTime @default(now())
+
+  @@index([siteRequestId, type])
+}
+
+// Append-only audit trail of status transitions and key actions on a
+// SiteRequest. Drives the timeline shown on /admin/site-engine/[id] and
+// on the client status page.
+model SiteRequestEvent {
+  id            String      @id @default(cuid())
+  siteRequestId String
+  siteRequest   SiteRequest @relation(fields: [siteRequestId], references: [id], onDelete: Cascade)
+
+  kind         String // status_change | note | email_sent | preview_sent | revision_requested | packet_downloaded
+  fromStatus   SiteRequestStatus?
+  toStatus     SiteRequestStatus?
+  message      String? @db.Text
+  actorUserId  String? // null for system / public submitter events
+  visibleToClient Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  @@index([siteRequestId, createdAt])
 }
 
 model ProjectTask {
