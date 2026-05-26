@@ -21,7 +21,7 @@ export function SellerImportTabs() {
     <div>
       <div className="flex gap-2 border-b border-slate-200 mb-6">
         <TabButton active={tab === "csv"} onClick={() => setTab("csv")} label="CSV upload" />
-        <TabButton active={tab === "cursive"} onClick={() => setTab("cursive")} label="Cursive segment" />
+        <TabButton active={tab === "cursive"} onClick={() => setTab("cursive")} label="Audience segment" />
       </div>
 
       {tab === "csv" ? <CsvUploadTab /> : <CursiveImportTab />}
@@ -292,7 +292,7 @@ function CursiveImportTab() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          name: name || `Cursive · ${segmentId.slice(0, 8)}`,
+          name: name || `Audience · ${segmentId.slice(0, 8)}`,
           segmentId,
           kind,
           defaultPropertyType: propertyType,
@@ -331,7 +331,7 @@ function CursiveImportTab() {
           fontWeight: 500,
         }}
       >
-        Wire a Cursive segment
+        Wire an audience segment
       </h2>
       <p
         style={{
@@ -341,9 +341,9 @@ function CursiveImportTab() {
           lineHeight: 1.55,
         }}
       >
-        Paste your Cursive audience or segment ID. We'll pull every member,
-        score them, and refresh weekly. Each lead is stamped to your account
-        for revenue share.
+        Paste your audience or segment ID. We'll pull every member, score
+        them, and refresh weekly. Each lead is stamped to your account for
+        revenue share.
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -361,8 +361,8 @@ function CursiveImportTab() {
             onChange={(e) => setKind(e.target.value as "CURSIVE_AUDIENCE" | "CURSIVE_SEGMENT")}
             className="form-input"
           >
-            <option value="CURSIVE_AUDIENCE">Audience (UUID)</option>
-            <option value="CURSIVE_SEGMENT">Segment (Studio)</option>
+            <option value="CURSIVE_AUDIENCE">Audience ID</option>
+            <option value="CURSIVE_SEGMENT">Segment ID</option>
           </select>
         </Field>
       </div>

@@ -66,8 +66,8 @@ export default async function SellerSignInPage({
             lineHeight: 1.55,
           }}
         >
-          Sign in to import leads via CSV or a Cursive segment. Every lead
-          you bring earns a 70% share of every sale. We handle browse,
+          Sign in to import leads via CSV or an audience segment. Every
+          lead you bring earns a 70% share of every sale. We handle browse,
           checkout, and PII delivery.
         </p>
         {errorMessage && (

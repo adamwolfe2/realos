@@ -183,7 +183,7 @@ export default async function SellerDashboardPage() {
                   fontSize: "13px",
                 }}
               >
-                Upload a CSV or wire a Cursive segment to get started.
+                Upload a CSV or wire an audience segment to get started.
               </p>
               <Link
                 href="/marketplace/seller/import"

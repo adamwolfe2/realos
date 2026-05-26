@@ -48,7 +48,7 @@ export default async function SellerImportPage() {
         }}
       >
         Two ways to add leads: upload a CSV from your overflow inbox, or
-        wire a Cursive segment that gets re-pulled weekly. Either way,
+        wire an audience segment that gets re-pulled weekly. Either way,
         every lead is scored, priced, and earns you a {seller.revShareBps / 100}%
         share of every sale.
       </p>

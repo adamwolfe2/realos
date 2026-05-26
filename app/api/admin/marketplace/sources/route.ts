@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireAgency } from "@/lib/tenancy/scope";
 import {
   MarketplaceLeadPropertyType,
   MarketplaceSyncSourceKind,
@@ -35,8 +35,11 @@ const CreateSchema = z.object({
 });
 
 export async function GET() {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  try {
+    await requireAgency();
+  } catch {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
 
   const sources = await prisma.marketplaceSyncSource.findMany({
     orderBy: { createdAt: "desc" },
@@ -66,8 +69,11 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  try {
+    await requireAgency();
+  } catch {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
 
   let body: unknown;
   try {

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireAgency } from "@/lib/tenancy/scope";
 import { runSourceReplenish } from "@/lib/marketplace/cursive-sync";
 
 // ---------------------------------------------------------------------------
@@ -19,8 +19,11 @@ import { runSourceReplenish } from "@/lib/marketplace/cursive-sync";
 export const maxDuration = 300;
 
 export async function POST(req: NextRequest) {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  try {
+    await requireAgency();
+  } catch {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
 
   const body = (await req.json().catch(() => ({}))) as { sourceId?: string };
   const targetId = body.sourceId;

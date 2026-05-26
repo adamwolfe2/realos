@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireAdmin } from "@/lib/auth/require-admin";
+import { requireAgency } from "@/lib/tenancy/scope";
 import { getAlSegmentMembersPage } from "@/lib/integrations/al-segments";
 
 // ---------------------------------------------------------------------------
@@ -16,8 +16,11 @@ import { getAlSegmentMembersPage } from "@/lib/integrations/al-segments";
 // ---------------------------------------------------------------------------
 
 export async function GET(req: NextRequest) {
-  const { error } = await requireAdmin();
-  if (error) return error;
+  try {
+    await requireAgency();
+  } catch {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
 
   const id = req.nextUrl.searchParams.get("id");
   if (!id) {
