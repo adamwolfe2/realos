@@ -4621,3 +4621,191 @@ model QueryLandingDaily {
   @@index([orgId, date, gscClicks(sort: Desc)])
   @@index([orgId, date, searchVolume(sort: Desc)])
 }
+
+// ============================================================================
+// MARKETPLACE — platform-level lead pool, separate from operator portal
+// ============================================================================
+// The marketplace is intentionally NOT scoped to Organization. Every model
+// below is a top-level resource. The marketplace is fed by Cursive Studio
+// segments (configured in MarketplaceSyncSource) and replenished weekly
+// by a cron at /api/cron/marketplace-replenish.
+//
+// Public browsing (/marketplace) hits MarketplaceLead through the masked
+// repo (lib/marketplace/repo.ts). Only purchased leads return full PII.
+// ============================================================================
+
+enum MarketplaceLeadStatus {
+  AVAILABLE   // Live in the pool, browsable, purchasable
+  RESERVED    // Stripe checkout in flight (10-min hold)
+  SOLD        // Purchased — appears only in the buyer's dashboard
+  EXPIRED     // Past staleness window, no longer browsable
+  RETIRED     // Manually removed by admin
+}
+
+enum MarketplaceLeadPropertyType {
+  RENTAL
+  SALE
+  INVESTMENT
+  COMMERCIAL
+}
+
+enum MarketplaceSyncSourceKind {
+  CURSIVE_SEGMENT  // Pull from a Cursive Studio segment ID
+  CURSIVE_AUDIENCE // Pull from a Cursive Audience List ID
+  MANUAL           // Operator-uploaded CSV / API ingest
+}
+
+enum MarketplaceSyncRunStatus {
+  PENDING
+  RUNNING
+  SUCCESS
+  FAILED
+}
+
+// One row per (Cursive segment, property-type) feed that fills the marketplace.
+// Admin configures these. The cron iterates all enabled sources and runs them.
+model MarketplaceSyncSource {
+  id   String @id @default(cuid())
+  name String // operator-friendly label
+
+  kind            MarketplaceSyncSourceKind
+  // For CURSIVE_*: the AL segment / audience id this source pulls from.
+  externalId      String?
+  // Default property type assigned to leads from this source. Leads can be
+  // re-classified per-record by the enrichment step.
+  defaultPropertyType MarketplaceLeadPropertyType
+  // Default market (city/region). Used when the source itself doesn't carry
+  // per-record geo (e.g. a national segment we segment by zip downstream).
+  defaultMarket   String?
+
+  // Score floor — leads below this threshold get ingested but flipped to
+  // EXPIRED immediately. Default 70 (we want only the hottest).
+  minScoreFloor   Int     @default(70)
+
+  // Default per-lead listing price in cents. Each lead can override via the
+  // enrichment step (e.g. luxury leads priced higher).
+  defaultPriceCents Int   @default(5000)
+
+  // Cron cadence is fixed to weekly (Mondays 06:00 UTC) but the source can
+  // be paused via `enabled` if we need to halt replenishment.
+  enabled         Boolean @default(true)
+
+  // Last successful run pointer + counters for the admin dashboard.
+  lastRunAt           DateTime?
+  lastSuccessAt       DateTime?
+  lastIngestedCount   Int       @default(0)
+  lastEnrichedCount   Int       @default(0)
+  lastExpiredCount    Int       @default(0)
+
+  // Optional override of the global CURSIVE_API_KEY env when this source
+  // talks to a separate Cursive workspace.
+  cursiveApiKeyEnc    String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  runs  MarketplaceSyncRun[]
+  leads MarketplaceLead[]
+
+  @@index([enabled])
+  @@index([kind])
+}
+
+// Idempotent log of every replenishment run. One row per cron tick per source.
+model MarketplaceSyncRun {
+  id       String                 @id @default(cuid())
+  sourceId String
+  source   MarketplaceSyncSource  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  status   MarketplaceSyncRunStatus @default(PENDING)
+
+  // Counters populated as the run progresses.
+  fetchedCount    Int    @default(0) // members returned by Cursive
+  enrichedCount   Int    @default(0) // members that passed enrichment + score floor
+  upsertedCount   Int    @default(0) // MarketplaceLead rows created OR refreshed
+  newCount        Int    @default(0) // brand new leads added to the pool
+  refreshedCount  Int    @default(0) // existing leads re-enriched
+  expiredCount    Int    @default(0) // leads aged out by this run
+  failedCount     Int    @default(0)
+
+  startedAt    DateTime  @default(now())
+  finishedAt   DateTime?
+  errorMessage String?   @db.Text
+
+  // Snapshot of the cursor / page state — if a run fails mid-stream, the
+  // next run can resume from here instead of starting over.
+  resumeCursor String?
+
+  @@index([sourceId, startedAt(sort: Desc)])
+  @@index([status])
+}
+
+// The actual sellable lead. One row per resolved identity per source.
+// Uniqueness is (sourceId, cursiveProfileId) so re-runs of the same Cursive
+// segment refresh the existing row instead of creating duplicates.
+model MarketplaceLead {
+  id       String                 @id @default(cuid())
+  sourceId String
+  source   MarketplaceSyncSource  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+
+  // Stable identity from Cursive — the primary dedupe key for replenishment.
+  cursiveProfileId String
+
+  // Display / browse metadata. All fields are populated by the enrichment
+  // step from the Cursive payload. PII fields are returned masked through
+  // the public browse API and only un-masked after purchase.
+
+  // Identity
+  firstName    String?
+  lastName     String?
+  email        String?   // verified personal email
+  phone        String?   // wireless / verified phone
+  age          Int?
+  photoUrl     String?   // generated avatar URL (deterministic from profile id)
+
+  // Geo
+  city         String?
+  state        String?
+  postalCode   String?
+  market       String    // canonical market label (e.g. "Brooklyn", "Miami")
+
+  // Property type + behavioural intent
+  propertyType MarketplaceLeadPropertyType
+  intentScore  Int       // 0..100 composite — see lib/marketplace/scoring.ts
+  budgetLabel  String?   // "$680K – $920K" or "$3.8K – $5.2K/mo"
+  budgetMinCents Int?
+  budgetMaxCents Int?
+  signal       String?   // one-line behavioural summary ("Viewed 23 listings · 7d")
+  timeline     String?   // "0–30 days", etc.
+
+  // Raw intent payload from Cursive — full segment membership list, last-seen,
+  // search radius, etc. Used by lib/marketplace/scoring.ts and surfaced on the
+  // detail page after purchase.
+  intentPayload Json?
+
+  // Marketplace economics
+  priceCents   Int       @default(5000)
+  status       MarketplaceLeadStatus @default(AVAILABLE)
+
+  // Lifecycle pointers
+  firstSeenAt   DateTime @default(now())
+  lastEnrichedAt DateTime @default(now())
+  // Stale-after timestamp. After this point the cron flips the lead to
+  // EXPIRED. Default = lastEnrichedAt + 14 days. Refreshed on every
+  // weekly replenish to keep hot leads alive.
+  expiresAt     DateTime
+
+  // When a lead is sold the buyer id is denormalized here for fast lookups.
+  soldToBuyerId String?
+  soldAt        DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([sourceId, cursiveProfileId])
+  @@index([status, intentScore(sort: Desc)])
+  @@index([status, market, propertyType])
+  @@index([status, expiresAt])
+  @@index([sourceId, status])
+  @@index([cursiveProfileId])
+}

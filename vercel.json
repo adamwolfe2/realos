@@ -119,6 +119,10 @@
     {
       "path": "/api/cron/site-intelligence-refresh",
       "schedule": "0 5 * * *"
+    },
+    {
+      "path": "/api/cron/marketplace-replenish",
+      "schedule": "0 6 * * 1"
     }
   ]
 }
