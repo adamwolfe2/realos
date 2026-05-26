@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getSellerSession } from "@/lib/marketplace/seller-auth";
+import { InitialsAvatar } from "@/components/marketplace/initials-avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -218,19 +219,13 @@ export default async function SellerDashboardPage() {
                       boxShadow: "0 0 0 1px #E2E8F0",
                     }}
                   >
-                    {l.photoUrl && (
-                      <img
-                        src={l.photoUrl}
-                        alt={name}
-                        style={{
-                          width: "32px",
-                          height: "32px",
-                          borderRadius: "50%",
-                          objectFit: "cover",
-                          flexShrink: 0,
-                        }}
-                      />
-                    )}
+                    <InitialsAvatar
+                      firstName={l.firstName}
+                      lastName={l.lastName}
+                      displayName={name}
+                      seed={l.id}
+                      size={32}
+                    />
                     <div className="flex-1 min-w-0">
                       <p
                         style={{

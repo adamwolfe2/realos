@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getBuyerSession } from "@/lib/marketplace/auth";
+import { InitialsAvatar } from "@/components/marketplace/initials-avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -275,20 +276,13 @@ export default async function BuyerDashboardPage() {
                     boxShadow: "0 0 0 1px #E2E8F0",
                   }}
                 >
-                  {p.lead.photoUrl && (
-                    <img
-                      src={p.lead.photoUrl}
-                      alt={fullName}
-                      style={{
-                        width: "40px",
-                        height: "40px",
-                        borderRadius: "50%",
-                        objectFit: "cover",
-                        boxShadow: "0 0 0 1px #E2E8F0",
-                        flexShrink: 0,
-                      }}
-                    />
-                  )}
+                  <InitialsAvatar
+                    firstName={p.lead.firstName}
+                    lastName={p.lead.lastName}
+                    displayName={fullName}
+                    seed={p.lead.id}
+                    size={40}
+                  />
                   <div className="flex-1 min-w-0">
                     <p
                       style={{

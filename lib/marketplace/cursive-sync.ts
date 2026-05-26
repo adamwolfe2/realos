@@ -192,7 +192,7 @@ export async function runSourceReplenish(
             phone: payload.phone ?? null,
             age: payload.age ?? null,
             gender: payload.gender ?? null,
-            photoUrl: photoFor(profileId),
+            photoUrl: photoFor(profileId, payload.gender),
             companyName: payload.companyName ?? null,
             companyState: payload.companyState ?? null,
             businessEmail: payload.businessEmail ?? null,
@@ -227,6 +227,9 @@ export async function runSourceReplenish(
             phone: payload.phone ?? null,
             age: payload.age ?? null,
             gender: payload.gender ?? null,
+            // Refresh the deterministic stock photo too — backfills
+            // gender-correctness onto leads ingested before this fix.
+            photoUrl: photoFor(profileId, payload.gender),
             companyName: payload.companyName ?? null,
             companyState: payload.companyState ?? null,
             businessEmail: payload.businessEmail ?? null,
@@ -508,20 +511,31 @@ function pickProfileId(m: AlMember): string | null {
   return null;
 }
 
-// Deterministic avatar URL from the profile id so the marketplace shows a
-// face on every card without making real PII visible. Swap to a real
-// headshot-from-identity provider later if we want.
-function photoFor(profileId: string): string {
-  // randomuser.me has stable URLs for /portraits/{men|women}/{0..99}.jpg.
-  // We hash the profileId into the [0..99] range and split gender on
-  // even/odd. Deterministic + diverse.
+// Deterministic stock-portrait URL — used ONLY as a blurred placeholder
+// on browse cards to communicate "real person, identity locked." The
+// portrait is NEVER unblurred into a revealed face (post-purchase we
+// switch to InitialsAvatar + the lead's LinkedIn URL for the real photo).
+//
+// Gender-matching: when the Cursive payload includes a GENDER field we
+// pick from the corresponding randomuser.me bucket so the blurred
+// silhouette reads consistently with the lead's name. When gender is
+// missing we fall back to hash-derived parity.
+function photoFor(profileId: string, gender?: string | null): string {
   let h = 5381;
   for (let i = 0; i < profileId.length; i++) {
     h = (h * 33) ^ profileId.charCodeAt(i);
   }
   const n = Math.abs(h) % 100;
-  const gender = n % 2 === 0 ? "men" : "women";
-  return `https://randomuser.me/api/portraits/${gender}/${n}.jpg`;
+  const g = (gender ?? "").trim().toLowerCase();
+  let bucket: "men" | "women";
+  if (g === "m" || g === "male" || g.startsWith("man")) {
+    bucket = "men";
+  } else if (g === "f" || g === "female" || g.startsWith("wom")) {
+    bucket = "women";
+  } else {
+    bucket = n % 2 === 0 ? "men" : "women";
+  }
+  return `https://randomuser.me/api/portraits/${bucket}/${n}.jpg`;
 }
 
 function numberOrUndef(v: unknown): number | undefined {

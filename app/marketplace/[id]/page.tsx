@@ -4,6 +4,7 @@ import { prisma } from "@/lib/db";
 import { getBuyerSession } from "@/lib/marketplace/auth";
 import { getBuyerPurchaseForLead, getFullLead } from "@/lib/marketplace/repo";
 import { BuyLeadButton } from "@/components/marketplace/buy-lead-button";
+import { LeadAvatar } from "@/components/marketplace/initials-avatar";
 
 export const dynamic = "force-dynamic";
 
@@ -79,20 +80,13 @@ export default async function MarketplaceLeadPage({
           }}
         >
           <div className="flex items-start gap-5 flex-wrap">
-            {lead.photoUrl && (
-              <img
-                src={lead.photoUrl}
-                alt={owned ? lead.fullName : lead.displayName}
-                style={{
-                  width: "84px",
-                  height: "84px",
-                  borderRadius: "50%",
-                  objectFit: "cover",
-                  boxShadow: "0 0 0 1px #E2E8F0",
-                  flexShrink: 0,
-                }}
-              />
-            )}
+            <LeadAvatar
+              mode={owned ? "revealed" : "blurred"}
+              photoUrl={lead.photoUrl}
+              displayName={owned ? lead.fullName : lead.displayName}
+              seed={lead.id}
+              size={84}
+            />
             <div className="min-w-0">
               <p
                 style={{
@@ -191,6 +185,60 @@ export default async function MarketplaceLeadPage({
               >
                 Professional profile
               </h2>
+              {owned && lead.linkedinUrl && (
+                <div
+                  className="mt-3 mb-1 p-3 rounded-md flex items-center justify-between gap-3"
+                  style={{
+                    backgroundColor: "rgba(37,99,235,0.06)",
+                    border: "1px solid rgba(37,99,235,0.18)",
+                  }}
+                >
+                  <div className="min-w-0">
+                    <p
+                      style={{
+                        fontFamily: "var(--font-mono)",
+                        fontSize: "10px",
+                        letterSpacing: "0.14em",
+                        textTransform: "uppercase",
+                        color: "#2563EB",
+                        fontWeight: 700,
+                      }}
+                    >
+                      Verify identity
+                    </p>
+                    <p
+                      className="mt-1"
+                      style={{
+                        fontFamily: "var(--font-sans)",
+                        fontSize: "13px",
+                        color: "#1E2A3A",
+                      }}
+                    >
+                      Click through to confirm this is the right person before
+                      reaching out.
+                    </p>
+                  </div>
+                  <a
+                    href={lead.linkedinUrl}
+                    target="_blank"
+                    rel="noreferrer noopener"
+                    style={{
+                      padding: "8px 14px",
+                      borderRadius: "8px",
+                      backgroundColor: "#2563EB",
+                      color: "#fff",
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "13px",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                      flexShrink: 0,
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    View on LinkedIn ↗
+                  </a>
+                </div>
+              )}
               <ul className="mt-3 space-y-0">
                 {(owned || lead.companyName) && (
                   <Row
@@ -203,12 +251,11 @@ export default async function MarketplaceLeadPage({
                     masked={!owned}
                   />
                 )}
-                {(owned || lead.linkedinUrl) && (
+                {!owned && lead.linkedinUrl && (
                   <Row
                     label="LinkedIn"
-                    value={owned && lead.linkedinUrl ? lead.linkedinUrl : "linkedin.com/in/••••• (revealed on purchase)"}
-                    masked={!owned}
-                    link={owned ? lead.linkedinUrl : null}
+                    value="linkedin.com/in/••••• (revealed on purchase)"
+                    masked={true}
                   />
                 )}
                 {(owned || lead.incomeRange) && (

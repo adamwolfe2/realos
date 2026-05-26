@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import type { MarketplaceLeadPropertyType } from "@prisma/client";
+import { LeadAvatar } from "./initials-avatar";
 
 // ---------------------------------------------------------------------------
 // MarketplaceLive — production version of the marketing-page LeadMarketplace
@@ -388,36 +389,13 @@ function LeadCardView({ lead }: { lead: ApiLead }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          {lead.photoUrl ? (
-            <img
-              src={lead.photoUrl}
-              alt={lead.displayName}
-              className="flex-shrink-0"
-              style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                objectFit: "cover",
-                boxShadow: `0 0 0 1px ${BORDER}`,
-              }}
-            />
-          ) : (
-            <span
-              className="inline-flex items-center justify-center flex-shrink-0"
-              style={{
-                width: "36px",
-                height: "36px",
-                borderRadius: "50%",
-                backgroundColor: ACCENT,
-                color: "#fff",
-                fontFamily: "var(--font-mono)",
-                fontSize: "12px",
-                fontWeight: 600,
-              }}
-            >
-              {lead.initials}
-            </span>
-          )}
+          <LeadAvatar
+            mode="blurred"
+            photoUrl={lead.photoUrl}
+            displayName={lead.displayName}
+            seed={lead.id}
+            size={36}
+          />
           <div className="min-w-0">
             <p
               className="truncate"

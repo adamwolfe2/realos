@@ -303,14 +303,18 @@ function hash32(s: string): string {
   return Math.abs(h).toString(36);
 }
 
-function photoFor(profileId: string): string {
+function photoFor(profileId: string, gender?: string | null): string {
   let h = 5381;
   for (let i = 0; i < profileId.length; i++) {
     h = (h * 33) ^ profileId.charCodeAt(i);
   }
   const n = Math.abs(h) % 100;
-  const gender = n % 2 === 0 ? "men" : "women";
-  return `https://randomuser.me/api/portraits/${gender}/${n}.jpg`;
+  const g = (gender ?? "").trim().toLowerCase();
+  let bucket: "men" | "women";
+  if (g === "m" || g === "male" || g.startsWith("man")) bucket = "men";
+  else if (g === "f" || g === "female" || g.startsWith("wom")) bucket = "women";
+  else bucket = n % 2 === 0 ? "men" : "women";
+  return `https://randomuser.me/api/portraits/${bucket}/${n}.jpg`;
 }
 
 function tierPrice(basePriceCents: number, intentScore: number): number {
