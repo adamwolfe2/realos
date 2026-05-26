@@ -188,6 +188,18 @@ export default async function SiteEngineDetailPage({
                     />
                   </div>
 
+                  {/* Inline expanders for the chosen design language + palette
+                      — pulls actual content from public/site-engine/data/
+                      (the bundled kit data) so Adam can review without
+                      switching to GitHub. Renders nothing when nothing's
+                      picked. */}
+                  {sr.intake.chosenDesignLanguageSlug ? (
+                    <DesignLanguageCard slug={sr.intake.chosenDesignLanguageSlug} />
+                  ) : null}
+                  {sr.intake.chosenPaletteSlug ? (
+                    <PaletteCard slug={sr.intake.chosenPaletteSlug} />
+                  ) : null}
+
                   <Row
                     label="Current site"
                     value={
@@ -565,4 +577,197 @@ function humanEventKind(k: string): string {
     default:
       return k;
   }
+}
+
+// ---------------------------------------------------------------------------
+// Visual-direction inline cards. Server components — read straight from the
+// bundled kit data in public/site-engine/data/ via Node fs at request time.
+// ---------------------------------------------------------------------------
+
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
+
+interface DesignLanguageEntry {
+  name: string;
+  description: string;
+  category: string;
+  colorPhilosophy: string | null;
+  typography: string | null;
+  motion: string | null;
+  bestFor: string[];
+  sampleColors: { primary: string | null; canvas: string | null };
+}
+
+async function DesignLanguageCard({ slug }: { slug: string }) {
+  let entry: DesignLanguageEntry | null = null;
+  try {
+    const indexPath = join(
+      process.cwd(),
+      "public",
+      "site-engine",
+      "design-languages-index.json",
+    );
+    const raw = await readFile(indexPath, "utf8");
+    const parsed = JSON.parse(raw) as {
+      designLanguages: Array<DesignLanguageEntry & { slug: string }>;
+    };
+    entry = parsed.designLanguages.find((d) => d.slug === slug) ?? null;
+  } catch {
+    // Bundled data missing — fall through to slug-only render.
+  }
+
+  if (!entry) {
+    return (
+      <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-sm text-muted-foreground">
+        Design language <code className="text-foreground">{slug}</code> wasn&apos;t
+        found in the bundled catalog. Run{" "}
+        <code className="text-foreground">pnpm sync:site-engine-data</code> after
+        the kit&apos;s INDEX.json is regenerated.
+      </div>
+    );
+  }
+
+  return (
+    <details className="rounded-md border border-border bg-background p-3 open:bg-card">
+      <summary className="cursor-pointer flex items-center justify-between gap-3 text-sm">
+        <div className="min-w-0">
+          <div className="font-medium text-foreground capitalize">{entry.name}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            {entry.category} · {entry.colorPhilosophy ?? "—"} ·{" "}
+            {entry.typography ?? "—"} · {entry.motion ?? "—"}
+          </div>
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {entry.sampleColors.canvas ? (
+            <span
+              className="size-4 rounded-sm border border-border"
+              style={{ background: entry.sampleColors.canvas }}
+              title={`canvas ${entry.sampleColors.canvas}`}
+            />
+          ) : null}
+          {entry.sampleColors.primary ? (
+            <span
+              className="size-4 rounded-sm border border-border"
+              style={{ background: entry.sampleColors.primary }}
+              title={`primary ${entry.sampleColors.primary}`}
+            />
+          ) : null}
+        </div>
+      </summary>
+      <div className="mt-3 space-y-2 text-sm text-muted-foreground border-t border-border pt-3">
+        <p className="leading-relaxed">{entry.description}</p>
+        {entry.bestFor.length > 0 ? (
+          <p className="text-xs">
+            <span className="uppercase tracking-widest text-foreground font-semibold mr-2">
+              Best for
+            </span>
+            {entry.bestFor.join(" · ")}
+          </p>
+        ) : null}
+        <p className="text-xs text-muted-foreground">
+          Full DESIGN.md ships in the build packet under{" "}
+          <code className="text-foreground">visual-direction/design-language-{slug}.md</code>.
+        </p>
+      </div>
+    </details>
+  );
+}
+
+interface PaletteEntry {
+  name: string;
+  description: string;
+  category: string;
+  colors: Record<string, string>;
+  wcagAACompliant?: boolean;
+}
+
+async function PaletteCard({ slug }: { slug: string }) {
+  let palette: PaletteEntry | null = null;
+  try {
+    const palettePath = join(
+      process.cwd(),
+      "public",
+      "site-engine",
+      "data",
+      "palettes",
+      `${slug}.json`,
+    );
+    const raw = await readFile(palettePath, "utf8");
+    palette = JSON.parse(raw);
+  } catch {
+    // ignore
+  }
+
+  if (!palette) {
+    return (
+      <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-sm text-muted-foreground">
+        Palette <code className="text-foreground">{slug}</code> not found.
+      </div>
+    );
+  }
+
+  const SWATCH_ORDER = [
+    "background",
+    "backgroundAlt",
+    "surface",
+    "textPrimary",
+    "textSecondary",
+    "textMuted",
+    "primary",
+    "primaryDark",
+    "primaryLight",
+    "accent",
+    "border",
+    "borderStrong",
+  ];
+
+  return (
+    <details className="rounded-md border border-border bg-background p-3 open:bg-card">
+      <summary className="cursor-pointer flex items-center justify-between gap-3 text-sm">
+        <div className="min-w-0">
+          <div className="font-medium text-foreground">{palette.name}</div>
+          <div className="text-xs text-muted-foreground mt-0.5">
+            {palette.category}
+            {palette.wcagAACompliant === false ? " · ⚠ Not WCAG AA" : ""}
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          {["background", "primary", "accent"].map((k) =>
+            palette.colors[k] ? (
+              <span
+                key={k}
+                className="size-4 rounded-sm border border-border"
+                style={{ background: palette.colors[k] }}
+                title={`${k} ${palette.colors[k]}`}
+              />
+            ) : null,
+          )}
+        </div>
+      </summary>
+      <div className="mt-3 space-y-3 border-t border-border pt-3">
+        <p className="text-sm text-muted-foreground">{palette.description}</p>
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+          {SWATCH_ORDER.filter((k) => palette.colors[k]).map((k) => (
+            <div
+              key={k}
+              className="rounded border border-border overflow-hidden bg-background"
+            >
+              <div
+                className="h-10 w-full"
+                style={{ background: palette.colors[k] }}
+              />
+              <div className="px-2 py-1">
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+                  {k}
+                </div>
+                <div className="text-xs font-mono text-foreground">
+                  {palette.colors[k]}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </details>
+  );
 }
