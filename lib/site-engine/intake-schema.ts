@@ -135,12 +135,30 @@ export const intakeFormSchema = z.object({
   domainNeeded: z.boolean().optional(),
   dnsAccess: z.boolean().optional(),
 
-  // Visual direction
+  // Visual direction — legacy single-pick fields kept for back-compat with
+  // older submissions. Prefer the structured `visualDirection` block below.
   inspirationUrls: z
     .array(z.string().trim().url("Must be a URL").max(2000))
     .max(20)
     .default([]),
   presetChoice: z.enum(PRESETS).optional(),
+
+  // Multi-modal visual direction picker. Either or all of:
+  //   - inspirationUrls (already captured above as URLs only)
+  //   - uploadedScreenshots (referenced via assets[] with type=INSPIRATION)
+  //   - chosenPresetSlug (one of the kit's 4-6 preset slugs)
+  //   - chosenDesignLanguageSlug (one of 71 imported design-language slugs)
+  //   - chosenPaletteSlug (one of the 36 curated palette slugs)
+  //   - negativeInputs (free-text "I don't want anything that...")
+  visualDirection: z
+    .object({
+      chosenPresetSlug: z.string().trim().max(200).optional(),
+      chosenDesignLanguageSlug: z.string().trim().max(200).optional(),
+      chosenPaletteSlug: z.string().trim().max(200).optional(),
+      negativeInputs: z.string().trim().max(4000).optional(),
+    })
+    .optional()
+    .default({}),
 
   // Voice & content
   voiceSample: optionalLongText,

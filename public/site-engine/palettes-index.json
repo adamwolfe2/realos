@@ -1,0 +1,733 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-26T16:45:09.280Z",
+  "totalCount": 36,
+  "wcagAACompliantCount": 36,
+  "categories": [
+    "dark-classic",
+    "dark-monochrome",
+    "dark-warm-accent",
+    "light-monochrome",
+    "muted-neutral",
+    "single-accent-vibrant",
+    "single-accent-warm",
+    "warm-neutral"
+  ],
+  "industryFits": [
+    "RE-tech",
+    "architectural",
+    "boutique",
+    "boutique-brokerage",
+    "boutique-coastal",
+    "boutique-developer",
+    "boutique-hospitality",
+    "boutique-residential",
+    "brokerage",
+    "brokerage-tech",
+    "coastal",
+    "coastal-residential",
+    "consumer-real-estate",
+    "creative-developer",
+    "desert-residential",
+    "designer-developer",
+    "developer",
+    "developer-platform",
+    "editorial",
+    "estate",
+    "estate-and-land",
+    "family-housing",
+    "family-residential",
+    "high-end-brokerage",
+    "high-end-developer",
+    "holding-company",
+    "hospitality-adjacent",
+    "industrial-conversion",
+    "industrial-loft",
+    "land-and-estate",
+    "luxury-coastal",
+    "luxury-developer",
+    "luxury-residential",
+    "modern-developer",
+    "mountain-cabin",
+    "multifamily-lease-up",
+    "organic-design",
+    "outdoor-residential",
+    "premium-agency",
+    "premium-brokerage",
+    "premium-developer",
+    "private-development",
+    "professional-services",
+    "regional-outdoor",
+    "residential",
+    "rural-luxury",
+    "senior-living",
+    "southwest",
+    "spa-adjacent",
+    "ultra-luxury",
+    "urban-luxury",
+    "urban-modern",
+    "urban-residential",
+    "vacation-property",
+    "vacation-rentals",
+    "waterfront",
+    "wealth-management",
+    "wealth-real-estate",
+    "wellness",
+    "wellness-luxury",
+    "wellness-real-estate"
+  ],
+  "palettes": [
+    {
+      "slug": "agave-cream",
+      "name": "Agave & Cream",
+      "description": "Cream paper with desert agave green + warm clay accent.",
+      "category": "muted-neutral",
+      "industryFit": [
+        "desert-residential",
+        "southwest",
+        "boutique-coastal"
+      ],
+      "previewImage": "./previews/agave-cream.svg",
+      "colors": {
+        "background": "#F8F2E2",
+        "primary": "#446558",
+        "accent": "#B4673E"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "ash-rust",
+      "name": "Ash & Rust",
+      "description": "Cool ash background with warm rust accent. Industrial-residential bridge.",
+      "category": "warm-neutral",
+      "industryFit": [
+        "urban-residential",
+        "industrial-conversion",
+        "creative-developer"
+      ],
+      "previewImage": "./previews/ash-rust.svg",
+      "colors": {
+        "background": "#F1EEEA",
+        "primary": "#A14A2A",
+        "accent": "#1B1815"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "atlantic-sand",
+      "name": "Atlantic & Sand",
+      "description": "Atlantic deep blue with warm sand. Coastal, hospitality, waterfront.",
+      "category": "muted-neutral",
+      "industryFit": [
+        "coastal",
+        "waterfront",
+        "vacation-property",
+        "hospitality-adjacent"
+      ],
+      "previewImage": "./previews/atlantic-sand.svg",
+      "colors": {
+        "background": "#F6F1E6",
+        "primary": "#0C2538",
+        "accent": "#C2A06A"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "blackboard-chalk",
+      "name": "Blackboard & Chalk",
+      "description": "Deep charcoal background with chalk-white text. Modern dark editorial.",
+      "category": "dark-monochrome",
+      "industryFit": [
+        "luxury-developer",
+        "industrial-loft",
+        "urban-modern"
+      ],
+      "previewImage": "./previews/blackboard-chalk.svg",
+      "colors": {
+        "background": "#171717",
+        "primary": "#F5F4EF",
+        "accent": "#D4A437"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "cobalt-cream",
+      "name": "Cobalt & Cream",
+      "description": "Crisp cream with electric cobalt blue. Tech-forward, RE-tech adjacent.",
+      "category": "single-accent-vibrant",
+      "industryFit": [
+        "RE-tech",
+        "brokerage-tech",
+        "developer-platform"
+      ],
+      "previewImage": "./previews/cobalt-cream.svg",
+      "colors": {
+        "background": "#FBFAF6",
+        "primary": "#2244D4",
+        "accent": "#FFB938"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "cocoa-cream",
+      "name": "Cocoa & Cream",
+      "description": "Cream paper with rich cocoa brown headline color. Warm, premium-residential.",
+      "category": "warm-neutral",
+      "industryFit": [
+        "luxury-residential",
+        "premium-brokerage",
+        "estate"
+      ],
+      "previewImage": "./previews/cocoa-cream.svg",
+      "colors": {
+        "background": "#FAF6EE",
+        "primary": "#3E2A1D",
+        "accent": "#B68A35"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "concrete-citrus",
+      "name": "Concrete & Citrus",
+      "description": "Cool concrete grey background with bright citrus accent. Architectural-modern.",
+      "category": "single-accent-vibrant",
+      "industryFit": [
+        "modern-developer",
+        "architectural",
+        "urban-residential"
+      ],
+      "previewImage": "./previews/concrete-citrus.svg",
+      "colors": {
+        "background": "#E8E8E5",
+        "primary": "#1B1C1E",
+        "accent": "#CFEF45"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "editorial-cream-black",
+      "name": "Editorial Cream & Black",
+      "description": "Sharp editorial luxury — cream paper, near-black ink, warm stone secondary.",
+      "category": "warm-neutral",
+      "industryFit": [
+        "luxury-residential",
+        "brokerage",
+        "high-end-developer"
+      ],
+      "previewImage": "./previews/editorial-cream-black.svg",
+      "colors": {
+        "background": "#F9F7F4",
+        "primary": "#0A0A0A",
+        "accent": "#C8C0B4"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "editorial-cream-blue",
+      "name": "Editorial Cream & Restrained Blue",
+      "description": "Premium-modern cream paper with deep ink and a single restrained blue accent.",
+      "category": "warm-neutral",
+      "industryFit": [
+        "holding-company",
+        "premium-agency",
+        "wealth-management"
+      ],
+      "previewImage": "./previews/editorial-cream-blue.svg",
+      "colors": {
+        "background": "#F5F3EE",
+        "primary": "#2A52BE",
+        "accent": "#0F1523"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "electric-coral",
+      "name": "Electric Coral",
+      "description": "Cream surface with a vivid coral accent. Bold, modern, attention-grabbing.",
+      "category": "single-accent-vibrant",
+      "industryFit": [
+        "urban-residential",
+        "luxury-coastal",
+        "consumer-real-estate"
+      ],
+      "previewImage": "./previews/electric-coral.svg",
+      "colors": {
+        "background": "#FCFAF7",
+        "primary": "#E63946",
+        "accent": "#1F1B17"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "ember-charcoal",
+      "name": "Ember & Charcoal",
+      "description": "Deep charcoal with ember accent. Industrial-luxury, urban-modern.",
+      "category": "dark-warm-accent",
+      "industryFit": [
+        "industrial-loft",
+        "urban-luxury",
+        "developer"
+      ],
+      "previewImage": "./previews/ember-charcoal.svg",
+      "colors": {
+        "background": "#191917",
+        "primary": "#E55934",
+        "accent": "#F5F1E8"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "espresso-cream",
+      "name": "Espresso & Cream",
+      "description": "Cream paper with deep espresso brown text + warm gold accent.",
+      "category": "warm-neutral",
+      "industryFit": [
+        "luxury-residential",
+        "premium-brokerage",
+        "estate-and-land"
+      ],
+      "previewImage": "./previews/espresso-cream.svg",
+      "colors": {
+        "background": "#F8F2E6",
+        "primary": "#2A1B0F",
+        "accent": "#C29F45"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "fog-mauve",
+      "name": "Fog & Mauve",
+      "description": "Cool fog grey with soft mauve accent. Calm, refined, residential-soft.",
+      "category": "muted-neutral",
+      "industryFit": [
+        "residential",
+        "wellness",
+        "senior-living",
+        "boutique"
+      ],
+      "previewImage": "./previews/fog-mauve.svg",
+      "colors": {
+        "background": "#F4F2EE",
+        "primary": "#8E6D8F",
+        "accent": "#C9B493"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "forest-bone",
+      "name": "Forest Green & Bone",
+      "description": "Deep forest green on bone paper. Land + estate + cabin / mountain RE.",
+      "category": "muted-neutral",
+      "industryFit": [
+        "land-and-estate",
+        "mountain-cabin",
+        "rural-luxury"
+      ],
+      "previewImage": "./previews/forest-bone.svg",
+      "colors": {
+        "background": "#F7F4EC",
+        "primary": "#2E4A38",
+        "accent": "#A98A4F"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "graphite-amber",
+      "name": "Graphite & Amber",
+      "description": "Dark warm graphite with amber accent. Industrial-luxury, premium developer.",
+      "category": "dark-warm-accent",
+      "industryFit": [
+        "industrial-loft",
+        "urban-luxury",
+        "creative-developer"
+      ],
+      "previewImage": "./previews/graphite-amber.svg",
+      "colors": {
+        "background": "#15131F",
+        "primary": "#D08B3F",
+        "accent": "#F5EFE1"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "indigo-bone",
+      "name": "Indigo & Bone",
+      "description": "Bone paper with deep indigo accent + warm muted secondary.",
+      "category": "single-accent-warm",
+      "industryFit": [
+        "luxury-residential",
+        "professional-services",
+        "high-end-brokerage"
+      ],
+      "previewImage": "./previews/indigo-bone.svg",
+      "colors": {
+        "background": "#F8F5EC",
+        "primary": "#283153",
+        "accent": "#A8814C"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "ink-saffron",
+      "name": "Ink & Saffron",
+      "description": "Pure white paper with rich ink + warm saffron accent. Editorial-modern.",
+      "category": "single-accent-warm",
+      "industryFit": [
+        "luxury-residential",
+        "editorial",
+        "boutique-developer"
+      ],
+      "previewImage": "./previews/ink-saffron.svg",
+      "colors": {
+        "background": "#FAF9F5",
+        "primary": "#0A0A0A",
+        "accent": "#D88B23"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "linen-clay",
+      "name": "Linen & Clay",
+      "description": "Warm linen background with terracotta clay accent. Coastal-warm, residential.",
+      "category": "warm-neutral",
+      "industryFit": [
+        "coastal-residential",
+        "vacation-property",
+        "hospitality-adjacent"
+      ],
+      "previewImage": "./previews/linen-clay.svg",
+      "colors": {
+        "background": "#F4EFE4",
+        "primary": "#9E5A3E",
+        "accent": "#3C5042"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "matcha-bone",
+      "name": "Matcha & Bone",
+      "description": "Soft matcha green on bone — calm, organic, wellness-adjacent.",
+      "category": "muted-neutral",
+      "industryFit": [
+        "wellness",
+        "boutique-residential",
+        "spa-adjacent"
+      ],
+      "previewImage": "./previews/matcha-bone.svg",
+      "colors": {
+        "background": "#F5F2E7",
+        "primary": "#7B9A4F",
+        "accent": "#A48758"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "midnight-fog",
+      "name": "Midnight & Fog",
+      "description": "Dark surface with cool fog grays. Modern dark-mode-forward.",
+      "category": "dark-monochrome",
+      "industryFit": [
+        "urban-luxury",
+        "RE-tech",
+        "modern-developer"
+      ],
+      "previewImage": "./previews/midnight-fog.svg",
+      "colors": {
+        "background": "#0F1116",
+        "primary": "#F2F4F7",
+        "accent": "#7A8AA8"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "modern-crimson",
+      "name": "Modern Crimson on Cream",
+      "description": "SaaS-premium cream surfaces with a confident crimson accent driving every CTA.",
+      "category": "single-accent-warm",
+      "industryFit": [
+        "RE-tech",
+        "brokerage-tech",
+        "multifamily-lease-up"
+      ],
+      "previewImage": "./previews/modern-crimson.svg",
+      "colors": {
+        "background": "#F5F5F5",
+        "primary": "#981B1B",
+        "accent": "#FDF2F2"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "natural-linen-walnut",
+      "name": "Natural Linen & Walnut",
+      "description": "Linen background with deep walnut text. Natural, warm, premium-organic.",
+      "category": "warm-neutral",
+      "industryFit": [
+        "luxury-residential",
+        "organic-design",
+        "premium-developer"
+      ],
+      "previewImage": "./previews/natural-linen-walnut.svg",
+      "colors": {
+        "background": "#F2EBD6",
+        "primary": "#3A2618",
+        "accent": "#7D8A4F"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "navy-brass",
+      "name": "Navy & Brass",
+      "description": "Trusted navy with warm brass highlights — classic luxury real-estate signature.",
+      "category": "dark-classic",
+      "industryFit": [
+        "luxury-residential",
+        "brokerage",
+        "wealth-real-estate"
+      ],
+      "previewImage": "./previews/navy-brass.svg",
+      "colors": {
+        "background": "#F8F6F0",
+        "primary": "#0B1F3A",
+        "accent": "#B68A35"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "obsidian-gold",
+      "name": "Obsidian & Gold",
+      "description": "Near-black surface with rich gold accent. High-luxury, dark-mode forward.",
+      "category": "dark-monochrome",
+      "industryFit": [
+        "ultra-luxury",
+        "wealth-real-estate",
+        "private-development"
+      ],
+      "previewImage": "./previews/obsidian-gold.svg",
+      "colors": {
+        "background": "#0E0E10",
+        "primary": "#D4A437",
+        "accent": "#F4F0E6"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "ocean-driftwood",
+      "name": "Ocean Blue & Driftwood",
+      "description": "Coastal blue + weathered driftwood neutral. Beachfront / waterfront.",
+      "category": "muted-neutral",
+      "industryFit": [
+        "coastal",
+        "waterfront",
+        "vacation-property"
+      ],
+      "previewImage": "./previews/ocean-driftwood.svg",
+      "colors": {
+        "background": "#F6F4EE",
+        "primary": "#2A6478",
+        "accent": "#A39378"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "olive-bone",
+      "name": "Olive & Bone",
+      "description": "Warm bone with sage-olive primary. Calm, organic, residential.",
+      "category": "muted-neutral",
+      "industryFit": [
+        "organic-design",
+        "boutique-residential",
+        "wellness"
+      ],
+      "previewImage": "./previews/olive-bone.svg",
+      "colors": {
+        "background": "#F4EFE0",
+        "primary": "#5C6B3C",
+        "accent": "#B68A35"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "paper-ink",
+      "name": "Paper & Ink",
+      "description": "Off-white paper + soft black ink + warm grey ramp. Reads like a magazine spread.",
+      "category": "light-monochrome",
+      "industryFit": [
+        "editorial",
+        "boutique-brokerage",
+        "designer-developer"
+      ],
+      "previewImage": "./previews/paper-ink.svg",
+      "colors": {
+        "background": "#FAFAF7",
+        "primary": "#0F0F0F",
+        "accent": "#3D3D3B"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "porcelain-rose",
+      "name": "Porcelain & Rose",
+      "description": "Soft porcelain background with dusty rose accent. Residential-feminine, parent-friendly.",
+      "category": "warm-neutral",
+      "industryFit": [
+        "family-residential",
+        "boutique",
+        "wellness"
+      ],
+      "previewImage": "./previews/porcelain-rose.svg",
+      "colors": {
+        "background": "#FAF6F1",
+        "primary": "#B2697A",
+        "accent": "#5F614D"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "sage-ivory",
+      "name": "Sage & Ivory",
+      "description": "Calm sage green on ivory. Reads gentle, residential-warm, parent-friendly.",
+      "category": "muted-neutral",
+      "industryFit": [
+        "residential",
+        "family-housing",
+        "wellness-real-estate",
+        "senior-living"
+      ],
+      "previewImage": "./previews/sage-ivory.svg",
+      "colors": {
+        "background": "#FAF8F2",
+        "primary": "#6B8E72",
+        "accent": "#D4A574"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "slate-ember",
+      "name": "Slate & Ember",
+      "description": "Deep slate with a warm ember accent. Urban-residential, industrial-loft adjacent.",
+      "category": "dark-warm-accent",
+      "industryFit": [
+        "urban-residential",
+        "industrial-loft",
+        "developer"
+      ],
+      "previewImage": "./previews/slate-ember.svg",
+      "colors": {
+        "background": "#F5F4F1",
+        "primary": "#2E3138",
+        "accent": "#C7522A"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "soft-grey-coral",
+      "name": "Soft Grey & Coral",
+      "description": "Light grey background with warm coral accent. Friendly, modern, residential.",
+      "category": "single-accent-warm",
+      "industryFit": [
+        "residential",
+        "boutique-brokerage",
+        "family-housing"
+      ],
+      "previewImage": "./previews/soft-grey-coral.svg",
+      "colors": {
+        "background": "#F2F1EE",
+        "primary": "#1F1F22",
+        "accent": "#E37C5D"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "stark-monochrome",
+      "name": "Stark Monochrome",
+      "description": "Pure white + pure black + a single grayscale ramp. Maximum editorial discipline.",
+      "category": "light-monochrome",
+      "industryFit": [
+        "luxury-residential",
+        "premium-agency",
+        "editorial"
+      ],
+      "previewImage": "./previews/stark-monochrome.svg",
+      "colors": {
+        "background": "#FFFFFF",
+        "primary": "#000000",
+        "accent": "#666666"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "stone-juniper",
+      "name": "Stone & Juniper",
+      "description": "Cool stone neutrals with deep juniper accent. Land + outdoor + mountain.",
+      "category": "muted-neutral",
+      "industryFit": [
+        "land-and-estate",
+        "mountain-cabin",
+        "outdoor-residential"
+      ],
+      "previewImage": "./previews/stone-juniper.svg",
+      "colors": {
+        "background": "#F2F1EE",
+        "primary": "#264531",
+        "accent": "#8E7C5C"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "terracotta-ivory",
+      "name": "Terracotta & Ivory",
+      "description": "Mediterranean warmth — terracotta accent on ivory paper. Coastal, residential, hospitality-adjacent.",
+      "category": "warm-neutral",
+      "industryFit": [
+        "coastal-residential",
+        "vacation-rentals",
+        "boutique-hospitality"
+      ],
+      "previewImage": "./previews/terracotta-ivory.svg",
+      "colors": {
+        "background": "#FBF6EE",
+        "primary": "#B25A39",
+        "accent": "#1C3B36"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "twilight-rose",
+      "name": "Twilight Blue & Rose",
+      "description": "Deep twilight blue background with soft rose accent. Sophisticated dark.",
+      "category": "dark-monochrome",
+      "industryFit": [
+        "luxury-residential",
+        "boutique-hospitality",
+        "wellness-luxury"
+      ],
+      "previewImage": "./previews/twilight-rose.svg",
+      "colors": {
+        "background": "#1B1F2E",
+        "primary": "#E6A4B0",
+        "accent": "#F1EDE3"
+      },
+      "wcagAACompliant": true
+    },
+    {
+      "slug": "warm-cream-moss",
+      "name": "Warm Cream & Moss",
+      "description": "Inviting cream paper with deep moss accents and brass highlights. Pnw-editorial signature.",
+      "category": "warm-neutral",
+      "industryFit": [
+        "luxury-residential",
+        "boutique-brokerage",
+        "editorial",
+        "regional-outdoor"
+      ],
+      "previewImage": "./previews/warm-cream-moss.svg",
+      "colors": {
+        "background": "#F7F4EE",
+        "primary": "#4A6B4F",
+        "accent": "#A88B5C"
+      },
+      "wcagAACompliant": true
+    }
+  ]
+}

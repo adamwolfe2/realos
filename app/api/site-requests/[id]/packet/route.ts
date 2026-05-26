@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { readFile } from "node:fs/promises";
+import { join } from "node:path";
 import JSZip from "jszip";
 import { prisma } from "@/lib/db";
 import { requireAgency } from "@/lib/tenancy/scope";
@@ -87,8 +89,11 @@ ${sr.intake?.timelineExpectation ? `Target timeline: ${sr.intake.timelineExpecta
 - \`intake.json\` — every form answer the client provided
 - \`prompt-09-kickoff.md\` — the prompt to paste into Claude Code first
 - \`site.spec.template.json\` — starter shape; Prompt 02 fills this in
+- \`inspiration-screenshots/*\` — client-uploaded screenshots of sites they
+  want this build to emulate. **These are the primary visual targets** for
+  Prompt 03. Browse them BEFORE writing any code.
 - \`assets/MANIFEST.json\` — uploaded asset metadata (urls, sizes, types)
-- \`assets/<type>/*\` — best-effort downloaded copies of each asset
+- \`assets/<type>/*\` — logos, headshots, property photos, brand guides, etc.
 
 ## Build kickoff
 
@@ -166,8 +171,12 @@ ${sr.intake?.anythingElse ?? "_(none)_"}
   };
   zip.file("site.spec.template.json", JSON.stringify(specTemplate, null, 2));
 
-  // 3. Asset manifest + best-effort downloads.
+  // 3. Asset manifest + best-effort downloads. INSPIRATION-typed assets
+  // (client-uploaded screenshots of sites they want to emulate) get their
+  // own top-level folder so Claude Code finds them on the first ls — the
+  // build prompt (03) reaches for these as the primary visual targets.
   const assetsFolder = zip.folder("assets")!;
+  const inspirationFolder = zip.folder("inspiration-screenshots")!;
   const manifest: Array<{
     type: string;
     filename: string;
@@ -175,19 +184,29 @@ ${sr.intake?.anythingElse ?? "_(none)_"}
     size: number;
     url: string;
     downloaded: boolean;
+    storedAt: string;
     error?: string;
   }> = [];
 
   for (const asset of sr.assets) {
     let downloaded = false;
     let errMsg: string | undefined;
+    const safe = asset.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+    const isInspiration = asset.type === "INSPIRATION";
+    // Top-level inspiration-screenshots/<file> for INSPIRATION,
+    // assets/<type>/<file> for everything else.
+    const storedAt = isInspiration
+      ? `inspiration-screenshots/${safe}`
+      : `assets/${asset.type.toLowerCase()}/${safe}`;
     try {
       const r = await fetch(asset.blobUrl);
       if (r.ok) {
         const buf = Buffer.from(await r.arrayBuffer());
-        const safe = asset.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-        // Prefix with the type so the builder can sort visually in Finder.
-        assetsFolder.file(`${asset.type.toLowerCase()}/${safe}`, buf);
+        if (isInspiration) {
+          inspirationFolder.file(safe, buf);
+        } else {
+          assetsFolder.file(`${asset.type.toLowerCase()}/${safe}`, buf);
+        }
         downloaded = true;
       } else {
         errMsg = `HTTP ${r.status}`;
@@ -202,12 +221,81 @@ ${sr.intake?.anythingElse ?? "_(none)_"}
       size: asset.size,
       url: asset.blobUrl,
       downloaded,
+      storedAt,
       error: errMsg,
     });
   }
   assetsFolder.file("MANIFEST.json", JSON.stringify(manifest, null, 2));
 
-  // 4. Audit log — record that the packet was pulled so the timeline shows
+  // 4. Denormalize visual-direction picks. The full design language MD and
+  // palette JSON ride inside the zip so the local Claude Code session never
+  // has to fetch the kit at build time. Resolved from the index JSONs that
+  // live in /public/site-engine — same source the form picker reads from.
+  const dlSlug = sr.intake?.chosenDesignLanguageSlug;
+  const paletteSlug = sr.intake?.chosenPaletteSlug;
+
+  if (dlSlug || paletteSlug) {
+    const visualFolder = zip.folder("visual-direction")!;
+
+    if (dlSlug) {
+      // The kit's design-languages/<slug>.md isn't bundled into LeaseStack
+      // (would be ~40MB of MD). Try the local site-engine-kit checkout if
+      // it's a sibling of realos, otherwise drop a placeholder and log.
+      const kitPath = join(
+        process.cwd(),
+        "..",
+        "site-engine-kit",
+        "design-languages",
+        `${dlSlug}.md`,
+      );
+      try {
+        const md = await readFile(kitPath, "utf8");
+        visualFolder.file(`design-language-${dlSlug}.md`, md);
+      } catch {
+        visualFolder.file(
+          `design-language-${dlSlug}.PLACEHOLDER.md`,
+          `# ${dlSlug}\n\nThe full design-language MD lives in site-engine-kit/design-languages/${dlSlug}.md. Copy it from there into this folder before running Prompt 03.\n`,
+        );
+      }
+    }
+
+    if (paletteSlug) {
+      // Same logic for palette JSON.
+      const kitPath = join(
+        process.cwd(),
+        "..",
+        "site-engine-kit",
+        "palettes",
+        `${paletteSlug}.json`,
+      );
+      try {
+        const json = await readFile(kitPath, "utf8");
+        visualFolder.file(`palette-${paletteSlug}.json`, json);
+      } catch {
+        visualFolder.file(
+          `palette-${paletteSlug}.PLACEHOLDER.txt`,
+          `Palette ${paletteSlug} not found at ${kitPath}. Copy it from site-engine-kit/palettes/${paletteSlug}.json before running Prompt 03.\n`,
+        );
+      }
+    }
+
+    // Manifest so the build prompts can spot picks without re-reading intake.json.
+    visualFolder.file(
+      "MANIFEST.json",
+      JSON.stringify(
+        {
+          chosenPresetSlug: sr.intake?.chosenPresetSlug ?? null,
+          chosenDesignLanguageSlug: dlSlug ?? null,
+          chosenPaletteSlug: paletteSlug ?? null,
+          negativeInputs: sr.intake?.negativeInputs ?? null,
+        },
+        null,
+        2,
+      ),
+    );
+  }
+
+  // 5. Audit log — record that the packet was pulled so the timeline shows
   // who started the build and when.
   await logPacketDownload(id).catch(() => undefined);
 

@@ -14,6 +14,14 @@ import {
   TIMELINE_OPTIONS,
   TIER_OPTIONS,
 } from "@/lib/site-engine/intake-schema";
+import {
+  VisualDirectionPicker,
+  type VisualDirectionValue,
+  type DesignLanguageOption,
+  type PaletteOption,
+  type PresetOption,
+  type UploadedScreenshot,
+} from "@/components/site-engine/visual-direction-picker";
 
 // ---------------------------------------------------------------------------
 // Site-engine intake form.
@@ -49,6 +57,12 @@ export interface IntakeFormProps {
   redirectAfter?: "status_url" | "portal";
   /** Persist localStorage drafts under a per-user key so logged-in customers don't share a draft with random visitors on the same device. */
   storageKeySuffix?: string;
+  /** Catalog data for the visual-direction picker. Pass empty arrays to disable a mode. */
+  visualDirectionCatalogs: {
+    presets: PresetOption[];
+    designLanguages: DesignLanguageOption[];
+    palettes: PaletteOption[];
+  };
   className?: string;
 }
 
@@ -105,6 +119,7 @@ const EMPTY_FORM: IntakeFormInput = {
   dnsAccess: undefined,
   inspirationUrls: [],
   presetChoice: undefined,
+  visualDirection: {},
   voiceSample: undefined,
   bio: undefined,
   services: [],
@@ -131,6 +146,7 @@ export function IntakeForm({
   hideSubmitterFields = false,
   redirectAfter = "status_url",
   storageKeySuffix = "anon",
+  visualDirectionCatalogs,
   className,
 }: IntakeFormProps) {
   const router = useRouter();
@@ -140,10 +156,38 @@ export function IntakeForm({
     ...EMPTY_FORM,
     ...defaults,
   }));
+  // Inspiration screenshots live as a parallel state slice. On submit they're
+  // merged into form.assets with type=INSPIRATION so the existing storage
+  // path / build packet flow remain unchanged.
+  const [inspirationUploads, setInspirationUploads] = React.useState<
+    UploadedScreenshot[]
+  >([]);
+  // Multi-modal picker state.
+  const [visualDirection, setVisualDirection] = React.useState<VisualDirectionValue>(
+    () => ({
+      inspirationUrls: defaults?.inspirationUrls ?? [],
+      uploadedScreenshots: [],
+      chosenPresetSlug: null,
+      chosenDesignLanguageSlug: null,
+      chosenPaletteSlug: null,
+      negativeInputs: "",
+    }),
+  );
   const [currentSection, setCurrentSection] =
     React.useState<SectionId>("identity");
   const [submitting, setSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
+
+  // Keep the form.inspirationUrls field in sync with the picker so legacy
+  // submission paths + the zod schema continue to validate.
+  React.useEffect(() => {
+    setForm((prev) => ({ ...prev, inspirationUrls: visualDirection.inspirationUrls }));
+  }, [visualDirection.inspirationUrls]);
+
+  // Keep inspirationUploads in sync with the picker's uploadedScreenshots.
+  React.useEffect(() => {
+    setInspirationUploads(visualDirection.uploadedScreenshots);
+  }, [visualDirection.uploadedScreenshots]);
 
   // Capture attribution from URL once on mount.
   React.useEffect(() => {
@@ -199,10 +243,39 @@ export function IntakeForm({
     setSubmitError(null);
     setSubmitting(true);
     try {
+      // Merge picker state into the form payload:
+      //   - inspiration uploads → assets[] with type=INSPIRATION (so the
+      //     build packet's inspiration-screenshots/ folder picks them up)
+      //   - visualDirection.* (preset / design language / palette / negatives)
+      //     → top-level form.visualDirection (server reads + persists)
+      const inspirationAssets = inspirationUploads.map((u) => ({
+        type: "INSPIRATION" as const,
+        filename: u.filename,
+        mimeType: u.mimeType,
+        size: u.size,
+        blobUrl: u.blobUrl,
+        label: u.label,
+      }));
+      const payload = {
+        ...form,
+        inspirationUrls: visualDirection.inspirationUrls,
+        // Don't double-add: filter any stale INSPIRATION-typed entries first.
+        assets: [
+          ...form.assets.filter((a) => a.type !== "INSPIRATION"),
+          ...inspirationAssets,
+        ],
+        visualDirection: {
+          chosenPresetSlug: visualDirection.chosenPresetSlug ?? undefined,
+          chosenDesignLanguageSlug:
+            visualDirection.chosenDesignLanguageSlug ?? undefined,
+          chosenPaletteSlug: visualDirection.chosenPaletteSlug ?? undefined,
+          negativeInputs: visualDirection.negativeInputs.trim() || undefined,
+        },
+      };
       const res = await fetch("/api/site-requests", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
       const json = await res.json();
       if (!res.ok || !json.ok) {
@@ -295,7 +368,13 @@ export function IntakeForm({
           <ComplianceSection form={form} update={update} />
         )}
         {currentSection === "visual" && (
-          <VisualSection form={form} update={update} />
+          <VisualDirectionPicker
+            value={visualDirection}
+            onChange={setVisualDirection}
+            presets={visualDirectionCatalogs.presets}
+            designLanguages={visualDirectionCatalogs.designLanguages}
+            palettes={visualDirectionCatalogs.palettes}
+          />
         )}
         {currentSection === "assets" && (
           <AssetsSection form={form} update={update} />

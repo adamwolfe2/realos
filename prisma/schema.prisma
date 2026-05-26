@@ -2399,9 +2399,17 @@ model IntakeResponse {
   domainNeeded   Boolean? // true = they need us to register
   dnsAccess      Boolean? // true = they have registrar access
 
-  // Visual direction
+  // Visual direction (legacy single-pick fields — kept for back-compat).
   inspirationUrls String[] @default([])
   presetChoice    String? // editorial_luxury | cinematic_portfolio | etc.
+
+  // Multi-modal visual direction (new in May 2026). Either or all of these
+  // can be set per submission. The build packet endpoint denormalizes them
+  // into the zip (chosen design language full MD + chosen palette full JSON).
+  chosenPresetSlug         String? // site-engine-kit preset slug
+  chosenDesignLanguageSlug String? // site-engine-kit/design-languages slug
+  chosenPaletteSlug        String? // site-engine-kit/palettes slug
+  negativeInputs           String? @db.Text // "I don't want anything that..."
 
   // Voice & content
   voiceSample  String? @db.Text // 200+ word writing sample

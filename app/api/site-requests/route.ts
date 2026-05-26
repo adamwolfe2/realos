@@ -71,6 +71,7 @@ export async function POST(req: Request) {
   const slug = await generateUniqueSiteRequestSlug();
 
   // Build the IntakeResponse data atomically with the SiteRequest.
+  const vd = data.visualDirection ?? {};
   const intakeData: Prisma.IntakeResponseCreateWithoutSiteRequestInput = {
     identityType: data.identityType,
     brandName: data.brandName,
@@ -89,6 +90,11 @@ export async function POST(req: Request) {
     dnsAccess: data.dnsAccess,
     inspirationUrls: data.inspirationUrls,
     presetChoice: data.presetChoice,
+    // Multi-modal visual direction picker (new in May 2026).
+    chosenPresetSlug: vd.chosenPresetSlug ?? data.presetChoice ?? undefined,
+    chosenDesignLanguageSlug: vd.chosenDesignLanguageSlug,
+    chosenPaletteSlug: vd.chosenPaletteSlug,
+    negativeInputs: vd.negativeInputs,
     voiceSample: data.voiceSample,
     bio: data.bio,
     services: data.services as Prisma.InputJsonValue,

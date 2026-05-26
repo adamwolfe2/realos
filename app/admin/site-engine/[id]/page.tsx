@@ -168,11 +168,26 @@ export default async function SiteEngineDetailPage({
               </SectionCard>
 
               <SectionCard label="Visual direction">
-                <dl className="grid grid-cols-1 gap-3 text-sm">
-                  <Row
-                    label="Preset"
-                    value={sr.intake.presetChoice ?? "—"}
-                  />
+                <dl className="grid grid-cols-1 gap-4 text-sm">
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <Row
+                      label="Preset"
+                      value={
+                        sr.intake.chosenPresetSlug ??
+                        sr.intake.presetChoice ??
+                        "—"
+                      }
+                    />
+                    <Row
+                      label="Design language"
+                      value={sr.intake.chosenDesignLanguageSlug ?? "—"}
+                    />
+                    <Row
+                      label="Palette"
+                      value={sr.intake.chosenPaletteSlug ?? "—"}
+                    />
+                  </div>
+
                   <Row
                     label="Current site"
                     value={
@@ -190,27 +205,69 @@ export default async function SiteEngineDetailPage({
                       )
                     }
                   />
-                  <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mt-2">
-                    Inspiration URLs
+
+                  <div>
+                    <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-1">
+                      Inspiration URLs
+                    </div>
+                    {sr.intake.inspirationUrls.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">None provided.</p>
+                    ) : (
+                      <ul className="space-y-1">
+                        {sr.intake.inspirationUrls.map((u) => (
+                          <li key={u}>
+                            <a
+                              href={u}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-sm text-primary underline underline-offset-2 break-all"
+                            >
+                              {u}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
-                  {sr.intake.inspirationUrls.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">None provided.</p>
-                  ) : (
-                    <ul className="space-y-1">
-                      {sr.intake.inspirationUrls.map((u) => (
-                        <li key={u}>
-                          <a
-                            href={u}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-sm text-primary underline underline-offset-2 break-all"
-                          >
-                            {u}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
+
+                  {sr.assets.filter((a) => a.type === "INSPIRATION").length > 0 ? (
+                    <div>
+                      <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">
+                        Inspiration screenshots
+                      </div>
+                      <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                        {sr.assets
+                          .filter((a) => a.type === "INSPIRATION")
+                          .map((a) => (
+                            <li
+                              key={a.id}
+                              className="rounded-md border border-border overflow-hidden bg-background"
+                            >
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={a.blobUrl}
+                                alt={a.filename}
+                                className="w-full h-28 object-cover"
+                              />
+                              <div className="px-2 py-1.5 text-[11px] text-muted-foreground truncate" title={a.filename}>
+                                {a.filename}
+                              </div>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  ) : null}
+
+                  {sr.intake.negativeInputs ? (
+                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
+                      <div className="text-xs uppercase tracking-widest text-amber-700 font-semibold mb-1">
+                        Things to avoid
+                      </div>
+                      <p className="text-sm text-amber-900 whitespace-pre-wrap">
+                        {sr.intake.negativeInputs}
+                      </p>
+                    </div>
+                  ) : null}
                 </dl>
               </SectionCard>
 

@@ -1,6 +1,11 @@
 import type { Metadata } from "next";
 import { IntakeForm } from "@/components/site-engine/intake-form";
 import { BRAND_NAME } from "@/lib/brand";
+import {
+  loadDesignLanguageIndex,
+  loadPaletteIndex,
+  loadPresetIndex,
+} from "@/lib/site-engine/visual-direction-catalogs";
 
 export const metadata: Metadata = {
   title: `Request a website build | ${BRAND_NAME}`,
@@ -16,7 +21,13 @@ export const dynamic = "force-dynamic";
 // pre-fill. Both submit through POST /api/site-requests.
 // ---------------------------------------------------------------------------
 
-export default function PublicSiteRequestPage() {
+export default async function PublicSiteRequestPage() {
+  const [presetIndex, designLanguageIndex, paletteIndex] = await Promise.all([
+    loadPresetIndex(),
+    loadDesignLanguageIndex(),
+    loadPaletteIndex(),
+  ]);
+
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto w-full max-w-3xl px-4 py-12 md:py-16">
@@ -34,7 +45,14 @@ export default function PublicSiteRequestPage() {
           </p>
         </header>
 
-        <IntakeForm storageKeySuffix="public" />
+        <IntakeForm
+          storageKeySuffix="public"
+          visualDirectionCatalogs={{
+            presets: presetIndex.presets,
+            designLanguages: designLanguageIndex.designLanguages,
+            palettes: paletteIndex.palettes,
+          }}
+        />
 
         <footer className="mt-12 text-center text-xs text-muted-foreground">
           Already a {BRAND_NAME} customer?{" "}

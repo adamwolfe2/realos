@@ -5,6 +5,11 @@ import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
 import { IntakeForm } from "@/components/site-engine/intake-form";
 import type { IntakeFormInput } from "@/lib/site-engine/intake-schema";
+import {
+  loadDesignLanguageIndex,
+  loadPaletteIndex,
+  loadPresetIndex,
+} from "@/lib/site-engine/visual-direction-catalogs";
 
 export const metadata: Metadata = { title: "Request a website build" };
 export const dynamic = "force-dynamic";
@@ -19,8 +24,9 @@ export default async function PortalSiteRequestPage() {
 
   // Pull the org + the user for pre-fill data. Also surface any existing
   // SiteRequest so we can show "you've already submitted one" instead of
-  // letting the operator double-submit.
-  const [org, user, existing] = await Promise.all([
+  // letting the operator double-submit. Catalog loaders pull the kit's
+  // INDEX.json snapshots from /public/site-engine.
+  const [org, user, existing, presetIndex, designLanguageIndex, paletteIndex] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
       select: {
@@ -43,6 +49,9 @@ export default async function PortalSiteRequestPage() {
       orderBy: { submittedAt: "desc" },
       select: { id: true, slug: true, status: true, submittedAt: true },
     }),
+    loadPresetIndex(),
+    loadDesignLanguageIndex(),
+    loadPaletteIndex(),
   ]);
 
   const submitterName =
@@ -100,6 +109,11 @@ export default async function PortalSiteRequestPage() {
         hideSubmitterFields={false}
         redirectAfter="portal"
         storageKeySuffix={scope.userId}
+        visualDirectionCatalogs={{
+          presets: presetIndex.presets,
+          designLanguages: designLanguageIndex.designLanguages,
+          palettes: paletteIndex.palettes,
+        }}
       />
     </div>
   );

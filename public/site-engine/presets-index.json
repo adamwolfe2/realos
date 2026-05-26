@@ -1,0 +1,188 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-05-26T16:47:05.582Z",
+  "totalCount": 4,
+  "presets": [
+    {
+      "slug": "editorial-cream",
+      "displayName": "Editorial Cream",
+      "lineage": "Lifted from AM Collective Capital. Warm cream paper + deep ink + restrained blue accent. Typography-led; gentle parallax + fade-up reveals.",
+      "tone": "Restrained, typography-led, premium-modern.",
+      "bestFor": [
+        "holding-co marketing sites",
+        "premium agencies",
+        "wealth-management RE",
+        "agent personal brands at the high end"
+      ],
+      "fonts": {
+        "display": {
+          "family": "Newsreader",
+          "weights": [
+            400,
+            500,
+            600,
+            700
+          ],
+          "italic": [
+            400,
+            600
+          ],
+          "source": "google"
+        },
+        "body": {
+          "family": "Inter",
+          "weights": [
+            400,
+            500,
+            600
+          ],
+          "source": "google"
+        },
+        "mono": {
+          "family": "Geist Mono",
+          "weights": [
+            400
+          ],
+          "source": "google"
+        }
+      },
+      "designLanguageSlug": "claude",
+      "referenceUrl": "https://amcollectivecapital.com"
+    },
+    {
+      "slug": "editorial-luxury",
+      "displayName": "Editorial Luxury",
+      "lineage": "Lifted from TBGC (Truffle Boys & Girls Club). Cream paper + near-black ink + warm-grey hairlines.",
+      "tone": "Confident, distilled, capital-letter discipline. Reads like a print monograph.",
+      "bestFor": [
+        "luxury B2B",
+        "high-end residential brokerages",
+        "wealth-management RE",
+        "luxury developers"
+      ],
+      "fonts": {
+        "display": {
+          "family": "Playfair Display",
+          "weights": [
+            400,
+            500,
+            600,
+            700
+          ],
+          "italic": [
+            400,
+            600
+          ],
+          "source": "google"
+        },
+        "body": {
+          "family": "Geist",
+          "weights": [
+            400,
+            500,
+            600
+          ],
+          "source": "google"
+        },
+        "mono": {
+          "family": "Geist Mono",
+          "weights": [
+            400
+          ],
+          "source": "google"
+        }
+      },
+      "designLanguageSlug": "apple",
+      "referenceUrl": "https://www.truffleboys.com"
+    },
+    {
+      "slug": "modern-premium",
+      "displayName": "Modern Premium",
+      "lineage": "Lifted from AIMS Platform. Cream / white surfaces with a configurable accent (crimson default). SaaS-premium chrome, Inter type stack, dot-grid hero ornament.",
+      "tone": "Confident, utilitarian, SaaS-premium. Reads modern and reliable.",
+      "bestFor": [
+        "RE-tech / brokerage-tech brands",
+        "multifamily lease-up sites",
+        "PropTech SaaS marketing",
+        "brokerage homepages that want a SaaS feel"
+      ],
+      "fonts": {
+        "display": {
+          "family": "Inter",
+          "weights": [
+            500,
+            600,
+            700,
+            800
+          ],
+          "source": "google"
+        },
+        "body": {
+          "family": "Inter",
+          "weights": [
+            400,
+            500,
+            600
+          ],
+          "source": "google"
+        },
+        "mono": {
+          "family": "DM Mono",
+          "weights": [
+            400,
+            500
+          ],
+          "source": "google"
+        }
+      },
+      "designLanguageSlug": "stripe",
+      "referenceUrl": "https://aimseos.com"
+    },
+    {
+      "slug": "pnw-editorial",
+      "displayName": "PNW Editorial",
+      "lineage": "Lifted from Parish & Company. Bone paper + basalt ink + moss-green accent + brass highlights. Editorial type scale; topo lines + mountain silhouettes as signature ornaments.",
+      "tone": "Editorial, regional, reverent. Reads like a curated print quarterly.",
+      "bestFor": [
+        "regional / outdoor real-estate brands",
+        "neighborhood-specific RE",
+        "lifestyle + travel-adjacent RE",
+        "luxury cabin / mountain / coastal listings"
+      ],
+      "fonts": {
+        "display": {
+          "family": "Editorial New",
+          "weights": [
+            400,
+            500,
+            600
+          ],
+          "italic": [
+            400
+          ],
+          "source": "self-host",
+          "fallback": "ui-serif, Georgia, serif"
+        },
+        "body": {
+          "family": "Inter",
+          "weights": [
+            400,
+            500,
+            600
+          ],
+          "source": "google"
+        },
+        "mono": {
+          "family": "JetBrains Mono",
+          "weights": [
+            400,
+            500
+          ],
+          "source": "google"
+        }
+      },
+      "designLanguageSlug": "theverge",
+      "referenceUrl": "https://parishandcompany.com"
+    }
+  ]
+}
