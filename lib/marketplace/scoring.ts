@@ -29,9 +29,18 @@ export type RawIntentPayload = {
   firstName?: string;
   lastName?: string;
   age?: number;
+  gender?: string;
   city?: string;
   state?: string;
   postalCode?: string;
+
+  // Extended enrichment from rich Cursive segments
+  companyName?: string;
+  companyState?: string;
+  businessEmail?: string;
+  mobilePhone?: string;
+  linkedinUrl?: string;
+  incomeRange?: string;
 
   // Behaviour / intent
   segments?: string[];                  // ["Active Home Buyer", "Refinance Intent", ...]
@@ -75,7 +84,8 @@ export function scoreLead(p: RawIntentPayload): ScoringOutcome {
       searchDepthComponent(p) +
       segmentFitComponent(p) +
       verificationComponent(p) +
-      urgencyComponent(p),
+      urgencyComponent(p) +
+      richnessBonus(p),
     0,
     100,
   );
@@ -140,6 +150,21 @@ function verificationComponent(p: RawIntentPayload): number {
   if (p.phoneVerified) score += 6;
   if (p.addressVerified) score += 4;
   return Math.min(score, 15);
+}
+
+// Richness bonus — rewards leads that arrive fully enriched (LinkedIn,
+// company, income, business email, mobile). A fully-enriched B2B/B2C
+// hybrid record is much more sellable than identity-only. Capped at 10
+// so it never overwhelms behavioural intent signals.
+function richnessBonus(p: RawIntentPayload): number {
+  let score = 0;
+  if (p.linkedinUrl) score += 3;
+  if (p.companyName) score += 2;
+  if (p.businessEmail) score += 2;
+  if (p.mobilePhone && p.mobilePhone !== p.phone) score += 2;
+  if (p.incomeRange) score += 2;
+  if (p.gender) score += 1;
+  return Math.min(score, 10);
 }
 
 function urgencyComponent(p: RawIntentPayload): number {

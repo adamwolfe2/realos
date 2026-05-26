@@ -87,10 +87,20 @@ export async function runSourceReplenish(
     const members = result.data;
     fetchedCount = members.length;
 
-    // Process each member: enrich → score → upsert.
+    // Process each member: enrich → gate → score → upsert.
     for (const member of members) {
       try {
         const payload = toIntentPayload(member);
+
+        // Strict completeness gate. When the source demands fully-
+        // enriched leads (e.g. "real-estate-rich" segments), any member
+        // missing any of the 12 required fields is dropped entirely —
+        // not even ingested as EXPIRED. The pool stays premium.
+        if (source.requireFullEnrichment && !hasFullEnrichment(payload)) {
+          failedCount += 1;
+          continue;
+        }
+
         const rawOutcome = scoreLead(payload);
 
         // Identity-only segments (verified email + phone but no behavioural
@@ -137,7 +147,14 @@ export async function runSourceReplenish(
             email: payload.email ?? null,
             phone: payload.phone ?? null,
             age: payload.age ?? null,
+            gender: payload.gender ?? null,
             photoUrl: photoFor(profileId),
+            companyName: payload.companyName ?? null,
+            companyState: payload.companyState ?? null,
+            businessEmail: payload.businessEmail ?? null,
+            mobilePhone: payload.mobilePhone ?? null,
+            linkedinUrl: payload.linkedinUrl ?? null,
+            incomeRange: payload.incomeRange ?? null,
             city: payload.city ?? null,
             state: payload.state ?? null,
             postalCode: payload.postalCode ?? null,
@@ -165,6 +182,13 @@ export async function runSourceReplenish(
             email: payload.email ?? null,
             phone: payload.phone ?? null,
             age: payload.age ?? null,
+            gender: payload.gender ?? null,
+            companyName: payload.companyName ?? null,
+            companyState: payload.companyState ?? null,
+            businessEmail: payload.businessEmail ?? null,
+            mobilePhone: payload.mobilePhone ?? null,
+            linkedinUrl: payload.linkedinUrl ?? null,
+            incomeRange: payload.incomeRange ?? null,
             city: payload.city ?? null,
             state: payload.state ?? null,
             postalCode: payload.postalCode ?? null,
@@ -298,6 +322,34 @@ export async function runSourceReplenish(
 // designed to degrade gracefully.
 function toIntentPayload(m: AlMember): RawIntentPayload {
   const raw = m.raw ?? {};
+  // Tolerant first-non-empty picker — supports the half-dozen field
+  // naming conventions AudienceLab uses across audiences vs segments.
+  const pick = (...keys: string[]): string | undefined => {
+    for (const k of keys) {
+      const v = raw[k];
+      if (typeof v === "string" && v.trim()) return v.trim();
+    }
+    return undefined;
+  };
+
+  const personalEmail =
+    m.email ??
+    pick("PERSONAL_EMAIL", "PERSONAL_EMAILS", "VERIFIED_PERSONAL_EMAIL", "EMAIL");
+  const businessEmail = pick(
+    "BUSINESS_EMAIL",
+    "BUSINESS_EMAILS",
+    "VERIFIED_BUSINESS_EMAIL",
+    "WORK_EMAIL",
+  );
+  const mobilePhone = pick(
+    "MOBILE_PHONE",
+    "MOBILE",
+    "CELL_PHONE",
+    "WIRELESS_PHONE",
+  );
+  const personalPhone =
+    m.phone ?? pick("PERSONAL_PHONE", "HOME_PHONE", "PHONE");
+
   return {
     profileId:
       m.profileId ??
@@ -305,14 +357,28 @@ function toIntentPayload(m: AlMember): RawIntentPayload {
       m.cookieId ??
       m.hemSha256 ??
       String(raw.PROFILE_ID ?? raw.UID ?? ""),
-    email: m.email,
-    phone: m.phone,
-    firstName: m.firstName,
-    lastName: m.lastName,
+    email: personalEmail,
+    phone: personalPhone ?? mobilePhone,
+    firstName: m.firstName ?? pick("FIRST_NAME", "FIRSTNAME"),
+    lastName: m.lastName ?? pick("LAST_NAME", "LASTNAME"),
     age: numberOrUndef(raw.AGE),
-    city: m.city,
-    state: m.state,
-    postalCode: m.postalCode,
+    gender: pick("GENDER", "SEX"),
+    city: m.city ?? pick("PERSONAL_CITY", "CITY"),
+    state: m.state ?? pick("PERSONAL_STATE", "STATE"),
+    postalCode: m.postalCode ?? pick("PERSONAL_ZIP", "POSTAL_CODE", "ZIP"),
+
+    // Extended enrichment fields
+    companyName: pick("COMPANY_NAME", "COMPANY", "EMPLOYER"),
+    companyState: pick("COMPANY_STATE", "WORK_STATE"),
+    businessEmail,
+    mobilePhone,
+    linkedinUrl: pick(
+      "LINKEDIN_URL",
+      "LINKEDIN",
+      "LINKEDIN_PROFILE",
+      "LINKEDIN_URL_PERSONAL",
+    ),
+    incomeRange: pick("INCOME_RANGE", "HOUSEHOLD_INCOME", "INCOME"),
 
     segments: stringArrayOrUndef(raw.SEGMENTS) ?? stringArrayOrUndef(raw.SEGMENT_NAMES),
     listingsViewed7d: numberOrUndef(raw.LISTINGS_VIEWED_7D),
@@ -332,10 +398,40 @@ function toIntentPayload(m: AlMember): RawIntentPayload {
     budgetUnit:
       stringOrUndef(raw.BUDGET_UNIT) === "MONTHLY" ? "MONTHLY" : "ABS",
 
-    emailVerified: boolOrUndef(raw.EMAIL_VERIFIED) ?? Boolean(m.email),
-    phoneVerified: boolOrUndef(raw.PHONE_VERIFIED) ?? Boolean(m.phone),
-    addressVerified: boolOrUndef(raw.ADDRESS_VERIFIED) ?? Boolean(m.postalCode),
+    emailVerified: boolOrUndef(raw.EMAIL_VERIFIED) ?? Boolean(personalEmail),
+    phoneVerified:
+      boolOrUndef(raw.PHONE_VERIFIED) ?? Boolean(personalPhone ?? mobilePhone),
+    addressVerified:
+      boolOrUndef(raw.ADDRESS_VERIFIED) ?? Boolean(m.postalCode ?? pick("PERSONAL_ZIP")),
   };
+}
+
+// Strict enrichment gate — when a source has requireFullEnrichment=true,
+// any lead missing ANY of these fields is rejected at ingest. The pool
+// stays premium: every browseable lead has all 12 fields populated.
+const REQUIRED_FIELDS = [
+  "firstName",
+  "lastName",
+  "email",
+  "phone",
+  "city",
+  "companyName",
+  "companyState",
+  "businessEmail",
+  "mobilePhone",
+  "linkedinUrl",
+  "incomeRange",
+  "gender",
+] as const;
+
+export function hasFullEnrichment(p: RawIntentPayload): boolean {
+  for (const field of REQUIRED_FIELDS) {
+    const v = (p as Record<string, unknown>)[field];
+    if (typeof v !== "string" || v.trim().length === 0) {
+      return false;
+    }
+  }
+  return true;
 }
 
 function pickProfileId(m: AlMember): string | null {

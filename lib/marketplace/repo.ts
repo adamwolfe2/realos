@@ -159,6 +159,15 @@ export type FullLead = BrowseLead & {
   budgetMinCents: number | null;
   budgetMaxCents: number | null;
   intentPayload: unknown;
+
+  // Extended enrichment fields
+  gender: string | null;
+  companyName: string | null;
+  companyState: string | null;
+  businessEmail: string | null;
+  mobilePhone: string | null;
+  linkedinUrl: string | null;
+  incomeRange: string | null;
 };
 
 export async function getFullLead(id: string): Promise<FullLead | null> {
@@ -179,6 +188,13 @@ export async function getFullLead(id: string): Promise<FullLead | null> {
     budgetMinCents: row.budgetMinCents,
     budgetMaxCents: row.budgetMaxCents,
     intentPayload: row.intentPayload,
+    gender: row.gender,
+    companyName: row.companyName,
+    companyState: row.companyState,
+    businessEmail: row.businessEmail,
+    mobilePhone: row.mobilePhone,
+    linkedinUrl: row.linkedinUrl,
+    incomeRange: row.incomeRange,
   };
 }
 

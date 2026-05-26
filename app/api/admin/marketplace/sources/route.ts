@@ -30,6 +30,7 @@ const CreateSchema = z.object({
   minScoreFloor: z.number().int().min(0).max(100).optional(),
   baselineScore: z.number().int().min(0).max(100).optional(),
   defaultPriceCents: z.number().int().min(500).max(100_000).optional(),
+  requireFullEnrichment: z.boolean().optional(),
   runImmediately: z.boolean().optional(),
 });
 
@@ -94,6 +95,7 @@ export async function POST(req: NextRequest) {
       minScoreFloor: data.minScoreFloor ?? 50,
       baselineScore: data.baselineScore ?? 50,
       defaultPriceCents: data.defaultPriceCents ?? 5000,
+      requireFullEnrichment: data.requireFullEnrichment ?? false,
       enabled: true,
     },
   });

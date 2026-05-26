@@ -159,8 +159,14 @@ export default async function MarketplaceLeadPage({
 
           <ul className="mt-3 space-y-0">
             <Row label="Name"  value={owned ? lead.fullName : `${lead.displayName} (full name on purchase)`} masked={!owned} />
-            <Row label="Email" value={owned ? (lead.email ?? "—") : "•••••@•••••.com (revealed on purchase)"} masked={!owned} />
-            <Row label="Phone" value={owned ? (lead.phone ?? "—") : "•• (•••) •••-•••• (revealed on purchase)"} masked={!owned} />
+            <Row label="Personal email" value={owned ? (lead.email ?? "—") : "•••••@•••••.com (revealed on purchase)"} masked={!owned} />
+            {(owned || lead.businessEmail) && (
+              <Row label="Business email" value={owned ? (lead.businessEmail ?? "—") : "••••@company.com (revealed on purchase)"} masked={!owned} />
+            )}
+            <Row label="Personal phone" value={owned ? (lead.phone ?? "—") : "•• (•••) •••-•••• (revealed on purchase)"} masked={!owned} />
+            {(owned || lead.mobilePhone) && (
+              <Row label="Mobile phone" value={owned ? (lead.mobilePhone ?? "—") : "•• (•••) •••-•••• (revealed on purchase)"} masked={!owned} />
+            )}
             <Row
               label="Address"
               value={
@@ -171,6 +177,61 @@ export default async function MarketplaceLeadPage({
               masked={!owned}
             />
           </ul>
+
+          {(owned || lead.companyName || lead.linkedinUrl || lead.incomeRange) && (
+            <>
+              <hr style={{ border: 0, borderTop: "1px solid #F1F5F9", margin: "28px 0" }} />
+              <h2
+                style={{
+                  color: "#1E2A3A",
+                  fontFamily: "var(--font-display)",
+                  fontSize: "18px",
+                  fontWeight: 500,
+                }}
+              >
+                Professional profile
+              </h2>
+              <ul className="mt-3 space-y-0">
+                {(owned || lead.companyName) && (
+                  <Row
+                    label="Company"
+                    value={
+                      owned
+                        ? [lead.companyName, lead.companyState].filter(Boolean).join(" · ") || "—"
+                        : `${(lead.companyName ?? "Company").slice(0, 2)}••••• (revealed on purchase)`
+                    }
+                    masked={!owned}
+                  />
+                )}
+                {(owned || lead.linkedinUrl) && (
+                  <Row
+                    label="LinkedIn"
+                    value={owned && lead.linkedinUrl ? lead.linkedinUrl : "linkedin.com/in/••••• (revealed on purchase)"}
+                    masked={!owned}
+                    link={owned ? lead.linkedinUrl : null}
+                  />
+                )}
+                {(owned || lead.incomeRange) && (
+                  <Row
+                    label="Income range"
+                    value={owned ? (lead.incomeRange ?? "—") : (lead.incomeRange ?? "—")}
+                  />
+                )}
+                {(owned || lead.gender) && (
+                  <Row
+                    label="Gender"
+                    value={owned ? (lead.gender ?? "—") : (lead.gender ?? "—")}
+                  />
+                )}
+                {(owned || lead.age != null) && (
+                  <Row
+                    label="Age"
+                    value={lead.age != null ? String(lead.age) : "—"}
+                  />
+                )}
+              </ul>
+            </>
+          )}
 
           {(lead.signal || lead.budgetLabel) && (
             <>
@@ -386,12 +447,24 @@ function Row({
   value,
   masked = false,
   strong = false,
+  link = null,
 }: {
   label: string;
   value: string;
   masked?: boolean;
   strong?: boolean;
+  link?: string | null;
 }) {
+  const contentStyle: React.CSSProperties = {
+    fontFamily: "var(--font-sans)",
+    fontSize: "14px",
+    color: masked ? "#94A3B8" : strong ? "#2563EB" : "#1E2A3A",
+    fontStyle: masked ? "italic" : "normal",
+    fontWeight: strong ? 600 : 500,
+    textAlign: "right",
+    flex: 1,
+    wordBreak: "break-word",
+  };
   return (
     <li
       className="flex items-baseline justify-between gap-3 py-2.5"
@@ -405,24 +478,23 @@ function Row({
           textTransform: "uppercase",
           color: "#94A3B8",
           fontWeight: 600,
-          minWidth: "84px",
+          minWidth: "120px",
         }}
       >
         {label}
       </span>
-      <span
-        style={{
-          fontFamily: "var(--font-sans)",
-          fontSize: "14px",
-          color: masked ? "#94A3B8" : strong ? "#2563EB" : "#1E2A3A",
-          fontStyle: masked ? "italic" : "normal",
-          fontWeight: strong ? 600 : 500,
-          textAlign: "right",
-          flex: 1,
-        }}
-      >
-        {value}
-      </span>
+      {link ? (
+        <a
+          href={link}
+          target="_blank"
+          rel="noreferrer noopener"
+          style={{ ...contentStyle, color: "#2563EB", textDecoration: "none" }}
+        >
+          {value} ↗
+        </a>
+      ) : (
+        <span style={contentStyle}>{value}</span>
+      )}
     </li>
   );
 }

@@ -89,6 +89,7 @@ export default async function AdminMarketplacePage() {
               minScoreFloor: s.minScoreFloor,
               baselineScore: s.baselineScore,
               defaultPriceCents: s.defaultPriceCents,
+              requireFullEnrichment: s.requireFullEnrichment,
               enabled: s.enabled,
               lastRunAt: s.lastRunAt?.toISOString() ?? null,
               lastSuccessAt: s.lastSuccessAt?.toISOString() ?? null,

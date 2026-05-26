@@ -4690,6 +4690,14 @@ model MarketplaceSyncSource {
   // set this to 70 so identity-only leads still surface.
   baselineScore   Int     @default(50)
 
+  // When true, any member missing ANY of the required enrichment fields
+  // (firstName, lastName, email, phone, companyName, companyState,
+  // linkedinUrl, mobilePhone, incomeRange, gender, businessEmail, city)
+  // is REJECTED at ingest. The marketplace pool stays at premium
+  // quality — every browseable lead is fully enriched. Default false
+  // for backward compat with existing sources.
+  requireFullEnrichment Boolean @default(false)
+
   // Default per-lead listing price in cents. The scoring engine tiers
   // up from here based on intent score (hot leads cost more).
   defaultPriceCents Int   @default(5000)
@@ -4769,15 +4777,24 @@ model MarketplaceLead {
   // step from the Cursive payload. PII fields are returned masked through
   // the public browse API and only un-masked after purchase.
 
-  // Identity
+  // Identity — basic
   firstName    String?
   lastName     String?
   email        String?   // verified personal email
-  phone        String?   // wireless / verified phone
+  phone        String?   // verified personal landline / primary phone
   age          Int?
+  gender       String?   // "Male" | "Female" | other free-form
   photoUrl     String?   // generated avatar URL (deterministic from profile id)
 
-  // Geo
+  // Identity — extended enrichment (Cursive Studio rich segments)
+  companyName    String?  // employer / household business
+  companyState   String?  // 2-letter state code of employer
+  businessEmail  String?  // verified work email
+  mobilePhone    String?  // verified mobile (separate from primary phone)
+  linkedinUrl    String?  // https://linkedin.com/in/... or company URL
+  incomeRange    String?  // "$150K–$250K" or similar pretty band
+
+  // Geo (personal address)
   city         String?
   state        String?
   postalCode   String?

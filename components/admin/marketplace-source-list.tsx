@@ -37,6 +37,7 @@ type Source = {
   minScoreFloor: number;
   baselineScore: number;
   defaultPriceCents: number;
+  requireFullEnrichment?: boolean;
   enabled: boolean;
   lastRunAt: string | null;
   lastSuccessAt: string | null;
@@ -106,6 +107,11 @@ function SourceRow({ source }: { source: Source }) {
             <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
               {source.defaultPropertyType}
             </span>
+            {source.requireFullEnrichment && (
+              <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded">
+                Premium · all fields
+              </span>
+            )}
           </div>
           <p className="mt-1 text-xs font-mono text-slate-500 break-all">
             {source.externalId}

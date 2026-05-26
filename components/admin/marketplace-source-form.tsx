@@ -31,14 +31,15 @@ export function MarketplaceSourceForm() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<SyncSummary | null>(null);
 
-  const [name, setName] = useState("Real Estate · High-intent buyers & sellers");
+  const [name, setName] = useState("Real Estate · Fully enriched");
   const [kind, setKind] = useState<SourceKind>("CURSIVE_AUDIENCE");
   const [externalId, setExternalId] = useState("");
   const [defaultPropertyType, setDefaultPropertyType] = useState<PropertyType>("SALE");
   const [defaultMarket, setDefaultMarket] = useState("United States");
-  const [minScoreFloor, setMinScoreFloor] = useState(50);
-  const [baselineScore, setBaselineScore] = useState(70);
+  const [minScoreFloor, setMinScoreFloor] = useState(60);
+  const [baselineScore, setBaselineScore] = useState(80);
   const [defaultPriceCents, setDefaultPriceCents] = useState(7500);
+  const [requireFullEnrichment, setRequireFullEnrichment] = useState(false);
   const [runImmediately, setRunImmediately] = useState(true);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -60,6 +61,7 @@ export function MarketplaceSourceForm() {
           minScoreFloor,
           baselineScore,
           defaultPriceCents,
+          requireFullEnrichment,
           runImmediately,
         }),
       });
@@ -176,6 +178,33 @@ export function MarketplaceSourceForm() {
             className="w-full accent-blue-600"
           />
         </Field>
+      </div>
+
+      <div
+        className="p-4 rounded-lg space-y-3"
+        style={{
+          backgroundColor: requireFullEnrichment ? "rgba(37,99,235,0.06)" : "#F8FAFC",
+          border: `1px solid ${requireFullEnrichment ? "rgba(37,99,235,0.18)" : "#E2E8F0"}`,
+        }}
+      >
+        <label className="flex items-start gap-3 text-sm text-slate-800 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={requireFullEnrichment}
+            onChange={(e) => setRequireFullEnrichment(e.target.checked)}
+            className="accent-blue-600 mt-0.5"
+          />
+          <span>
+            <span className="font-semibold">Premium · require full enrichment</span>
+            <span className="block text-xs text-slate-500 mt-1 leading-relaxed">
+              Drop any member missing <em>any</em> of: first name, last name,
+              personal email, personal phone, mobile phone, business email,
+              company name, company state, city, LinkedIn URL, income range,
+              gender. The marketplace pool stays premium — only complete
+              records ever appear in browse.
+            </span>
+          </span>
+        </label>
       </div>
 
       <label className="flex items-center gap-2 text-sm text-slate-700">
