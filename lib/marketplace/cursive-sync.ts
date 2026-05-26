@@ -394,13 +394,25 @@ function toIntentPayload(m: AlMember): RawIntentPayload {
   const personalPhone =
     m.phone ?? pick("PERSONAL_PHONE", "HOME_PHONE", "PHONE");
 
+  // Canonical OR synthesized identity key (matches pickProfileId).
+  const emailKey = personalEmail?.trim().toLowerCase();
+  const phoneKey = (personalPhone ?? mobilePhone ?? "")
+    .trim()
+    .replace(/[^0-9+]/g, "");
+  const synthesizedId =
+    emailKey
+      ? `synth:email:${emailKey}`
+      : phoneKey && phoneKey.length >= 7
+        ? `synth:phone:${phoneKey}`
+        : "";
+
   return {
     profileId:
       m.profileId ??
       m.uid ??
       m.cookieId ??
       m.hemSha256 ??
-      String(raw.PROFILE_ID ?? raw.UID ?? ""),
+      (String(raw.PROFILE_ID ?? raw.UID ?? "").trim() || synthesizedId),
     email: personalEmail,
     phone: personalPhone ?? mobilePhone,
     firstName: m.firstName ?? pick("FIRST_NAME", "FIRSTNAME"),
@@ -479,9 +491,21 @@ export function hasFullEnrichment(p: RawIntentPayload): boolean {
 }
 
 function pickProfileId(m: AlMember): string | null {
-  return (
-    m.profileId ?? m.uid ?? m.cookieId ?? m.hemSha256 ?? null
-  );
+  // First preference: any canonical identity key.
+  const canonical =
+    m.profileId ?? m.uid ?? m.cookieId ?? m.hemSha256 ?? null;
+  if (canonical) return canonical;
+
+  // Some Cursive segments (e.g. rich enrichment audiences) don't ship a
+  // PROFILE_ID, UID, COOKIE_ID, or HEM_SHA256 — they only carry
+  // PERSONAL_EMAILS / PERSONAL_PHONE / MOBILE_PHONE. Synthesize a stable
+  // dedupe key from email+phone so we can still ingest them. The same
+  // member produces the same key across runs, so upsert idempotency holds.
+  const emailKey = m.email?.trim().toLowerCase();
+  const phoneKey = (m.phone ?? "").trim().replace(/[^0-9+]/g, "");
+  if (emailKey) return `synth:email:${emailKey}`;
+  if (phoneKey && phoneKey.length >= 7) return `synth:phone:${phoneKey}`;
+  return null;
 }
 
 // Deterministic avatar URL from the profile id so the marketplace shows a
