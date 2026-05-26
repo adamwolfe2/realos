@@ -4679,11 +4679,19 @@ model MarketplaceSyncSource {
   defaultMarket   String?
 
   // Score floor — leads below this threshold get ingested but flipped to
-  // EXPIRED immediately. Default 70 (we want only the hottest).
-  minScoreFloor   Int     @default(70)
+  // EXPIRED immediately. Default 50 (segments with verified identity but
+  // no behavioural signals can still produce sellable leads).
+  minScoreFloor   Int     @default(50)
 
-  // Default per-lead listing price in cents. Each lead can override via the
-  // enrichment step (e.g. luxury leads priced higher).
+  // Baseline score applied when the raw Cursive payload doesn't carry
+  // strong behavioural signals (no listings-viewed, no urgency flags).
+  // Use this to express "every member of this curated segment is at
+  // least worth this much" — e.g. a high-intent buyer audience would
+  // set this to 70 so identity-only leads still surface.
+  baselineScore   Int     @default(50)
+
+  // Default per-lead listing price in cents. The scoring engine tiers
+  // up from here based on intent score (hot leads cost more).
   defaultPriceCents Int   @default(5000)
 
   // Cron cadence is fixed to weekly (Mondays 06:00 UTC) but the source can

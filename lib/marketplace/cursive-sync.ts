@@ -91,7 +91,14 @@ export async function runSourceReplenish(
     for (const member of members) {
       try {
         const payload = toIntentPayload(member);
-        const outcome = scoreLead(payload);
+        const rawOutcome = scoreLead(payload);
+
+        // Identity-only segments (verified email + phone but no behavioural
+        // signals) get a baseline floor so they still surface. The source
+        // operator sets this — high-quality vetted segments get a higher
+        // baseline (e.g. 70 for a "high-intent buyers" audience).
+        const intentScore = Math.max(rawOutcome.intentScore, source.baselineScore);
+        const outcome = { ...rawOutcome, intentScore };
         enrichedCount += 1;
 
         const profileId = pickProfileId(member);
@@ -100,7 +107,9 @@ export async function runSourceReplenish(
           continue;
         }
 
-        const passesFloor = outcome.intentScore >= source.minScoreFloor;
+        const market = resolveMarket(payload, source);
+        const tieredPriceCents = tierPrice(source.defaultPriceCents, intentScore);
+        const passesFloor = intentScore >= source.minScoreFloor;
         const expiresAt = new Date(Date.now() + STALENESS_MS);
 
         const existing = await prisma.marketplaceLead.findUnique({
@@ -132,7 +141,7 @@ export async function runSourceReplenish(
             city: payload.city ?? null,
             state: payload.state ?? null,
             postalCode: payload.postalCode ?? null,
-            market: payload.city ?? source.defaultMarket ?? "Unspecified",
+            market,
             propertyType: source.defaultPropertyType,
             intentScore: outcome.intentScore,
             budgetLabel: outcome.budgetLabel,
@@ -141,7 +150,7 @@ export async function runSourceReplenish(
             signal: outcome.signal,
             timeline: outcome.timeline,
             intentPayload: payload as object,
-            priceCents: source.defaultPriceCents,
+            priceCents: tieredPriceCents,
             status: passesFloor
               ? MarketplaceLeadStatus.AVAILABLE
               : MarketplaceLeadStatus.EXPIRED,
@@ -159,7 +168,7 @@ export async function runSourceReplenish(
             city: payload.city ?? null,
             state: payload.state ?? null,
             postalCode: payload.postalCode ?? null,
-            market: payload.city ?? source.defaultMarket ?? "Unspecified",
+            market,
             intentScore: outcome.intentScore,
             budgetLabel: outcome.budgetLabel,
             budgetMinCents: payload.budgetMinCents ?? null,
@@ -167,6 +176,7 @@ export async function runSourceReplenish(
             signal: outcome.signal,
             timeline: outcome.timeline,
             intentPayload: payload as object,
+            priceCents: tieredPriceCents,
             lastEnrichedAt: new Date(),
             expiresAt,
             // Status transitions safe to apply on refresh:
@@ -381,3 +391,72 @@ function stringArrayOrUndef(v: unknown): string[] | undefined {
 
 // Suppress unused-import warning — the type is part of the contract above.
 export type { MarketplaceLeadPropertyType };
+
+// ---------------------------------------------------------------------------
+// Market resolution
+//
+// Pick the most specific market label we have. Cursive identity payloads
+// usually carry city + state + postal code. We prefer the city when it's
+// non-trivial; fall back to the state abbreviation expanded to a full name;
+// then to the source default; finally to "Unspecified".
+//
+// This makes the marketplace filter sidebar more usable — TX 49.8K
+// members all roll up to "Texas" instead of fragmenting across hundreds of
+// city labels. Callers that want per-zip granularity can hit the
+// intentPayload JSON column on the lead row.
+function resolveMarket(
+  payload: RawIntentPayload,
+  source: MarketplaceSyncSource,
+): string {
+  const city = (payload.city ?? "").trim();
+  const state = (payload.state ?? "").trim().toUpperCase();
+  // Use city only if it looks like a real city name (>2 chars, not a number).
+  if (city.length > 2 && !/^\d+$/.test(city)) {
+    const stateLabel = STATE_NAMES[state];
+    return stateLabel ? `${city}, ${stateLabel}` : city;
+  }
+  if (state.length === 2 && STATE_NAMES[state]) {
+    return STATE_NAMES[state];
+  }
+  return source.defaultMarket ?? "Unspecified";
+}
+
+// US state abbreviation → display name. Used for market labels.
+const STATE_NAMES: Record<string, string> = {
+  AL: "Alabama", AK: "Alaska", AZ: "Arizona", AR: "Arkansas", CA: "California",
+  CO: "Colorado", CT: "Connecticut", DE: "Delaware", FL: "Florida", GA: "Georgia",
+  HI: "Hawaii", ID: "Idaho", IL: "Illinois", IN: "Indiana", IA: "Iowa",
+  KS: "Kansas", KY: "Kentucky", LA: "Louisiana", ME: "Maine", MD: "Maryland",
+  MA: "Massachusetts", MI: "Michigan", MN: "Minnesota", MS: "Mississippi",
+  MO: "Missouri", MT: "Montana", NE: "Nebraska", NV: "Nevada", NH: "New Hampshire",
+  NJ: "New Jersey", NM: "New Mexico", NY: "New York", NC: "North Carolina",
+  ND: "North Dakota", OH: "Ohio", OK: "Oklahoma", OR: "Oregon", PA: "Pennsylvania",
+  RI: "Rhode Island", SC: "South Carolina", SD: "South Dakota", TN: "Tennessee",
+  TX: "Texas", UT: "Utah", VT: "Vermont", VA: "Virginia", WA: "Washington",
+  WV: "West Virginia", WI: "Wisconsin", WY: "Wyoming", DC: "Washington, DC",
+};
+
+// ---------------------------------------------------------------------------
+// Tiered pricing
+//
+// Adjusts the source's defaultPriceCents up for high-intent leads and down
+// for cooler ones. Buyers get clear value signals (a $145 lead obviously
+// looks hotter than a $35 one) and we extract more revenue from the leads
+// most likely to close.
+//
+//   intent ≥ 90  → 2.0x  (premium tier — mortgage pre-app, cash buyer, etc.)
+//   intent ≥ 80  → 1.5x  (hot tier)
+//   intent ≥ 70  → 1.2x  (warm tier)
+//   intent ≥ 60  → 1.0x  (base — verified identity, mild signal)
+//   intent  < 60 → 0.7x  (cool tier — verified-only)
+function tierPrice(basePriceCents: number, intentScore: number): number {
+  let multiplier = 1.0;
+  if (intentScore >= 90) multiplier = 2.0;
+  else if (intentScore >= 80) multiplier = 1.5;
+  else if (intentScore >= 70) multiplier = 1.2;
+  else if (intentScore >= 60) multiplier = 1.0;
+  else multiplier = 0.7;
+  // Round to nearest $5 to keep prices clean.
+  const cents = Math.round((basePriceCents * multiplier) / 500) * 500;
+  return Math.max(500, cents); // never below $5
+}

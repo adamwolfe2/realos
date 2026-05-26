@@ -1,0 +1,133 @@
+import type { Metadata } from "next";
+import { formatDistanceToNow } from "date-fns";
+import { requireAgency } from "@/lib/tenancy/scope";
+import { prisma } from "@/lib/db";
+import { PageHeader } from "@/components/admin/page-header";
+import { MarketplaceSourceForm } from "@/components/admin/marketplace-source-form";
+import { MarketplaceSourceList } from "@/components/admin/marketplace-source-list";
+
+export const metadata: Metadata = { title: "Marketplace sources" };
+export const dynamic = "force-dynamic";
+
+// ---------------------------------------------------------------------------
+// /admin/marketplace
+//
+// Master-admin surface for configuring which Cursive segments feed the
+// public /marketplace pool. Lists every MarketplaceSyncSource with its
+// last 3 runs and lead counts, plus a form to register a new source
+// and immediately trigger a sync.
+//
+// Restricted to AGENCY org admins (requireAgency). Same scope used by
+// /admin/system, /admin/tenants, etc.
+// ---------------------------------------------------------------------------
+
+export default async function AdminMarketplacePage() {
+  await requireAgency();
+
+  const sources = await prisma.marketplaceSyncSource.findMany({
+    orderBy: { createdAt: "desc" },
+    include: {
+      runs: {
+        orderBy: { startedAt: "desc" },
+        take: 3,
+      },
+      _count: { select: { leads: true } },
+    },
+  });
+
+  // Aggregate counts for the page-header strip.
+  const [availableLeads, totalLeads, totalRuns] = await Promise.all([
+    prisma.marketplaceLead.count({ where: { status: "AVAILABLE" } }),
+    prisma.marketplaceLead.count(),
+    prisma.marketplaceSyncRun.count(),
+  ]);
+
+  return (
+    <div className="space-y-8 px-4 md:px-8 py-6 md:py-10 max-w-[1280px] mx-auto">
+      <PageHeader
+        title="Marketplace sources"
+        description="Each source pulls a Cursive segment into the public /marketplace pool. Weekly cron re-enriches every member; manual sync available below."
+      />
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatTile label="Sources" value={String(sources.length)} />
+        <StatTile label="Available leads" value={availableLeads.toLocaleString()} />
+        <StatTile label="Total leads (all states)" value={totalLeads.toLocaleString()} />
+      </div>
+
+      <section className="bg-white border border-slate-200 rounded-2xl p-6 md:p-8">
+        <h2 className="text-lg font-medium text-slate-900 mb-1">
+          Add a new source
+        </h2>
+        <p className="text-sm text-slate-500 mb-6">
+          Paste the AL segment / audience ID, give it a name and default
+          property type, and we'll run a sync immediately so you can see
+          leads land in <code className="font-mono text-xs text-slate-700">/marketplace</code>.
+        </p>
+        <MarketplaceSourceForm />
+      </section>
+
+      <section>
+        <h2 className="text-lg font-medium text-slate-900 mb-4">
+          Configured sources
+        </h2>
+        {sources.length === 0 ? (
+          <div className="bg-slate-50 border border-dashed border-slate-200 rounded-xl p-10 text-center">
+            <p className="text-sm text-slate-500">
+              No sources yet. Add your first one above.
+            </p>
+          </div>
+        ) : (
+          <MarketplaceSourceList
+            sources={sources.map((s) => ({
+              id: s.id,
+              name: s.name,
+              kind: s.kind,
+              externalId: s.externalId ?? "",
+              defaultPropertyType: s.defaultPropertyType,
+              defaultMarket: s.defaultMarket,
+              minScoreFloor: s.minScoreFloor,
+              baselineScore: s.baselineScore,
+              defaultPriceCents: s.defaultPriceCents,
+              enabled: s.enabled,
+              lastRunAt: s.lastRunAt?.toISOString() ?? null,
+              lastSuccessAt: s.lastSuccessAt?.toISOString() ?? null,
+              lastIngestedCount: s.lastIngestedCount,
+              lastEnrichedCount: s.lastEnrichedCount,
+              lastExpiredCount: s.lastExpiredCount,
+              leadCount: s._count.leads,
+              runs: s.runs.map((r) => ({
+                id: r.id,
+                status: r.status,
+                startedAt: r.startedAt.toISOString(),
+                finishedAt: r.finishedAt?.toISOString() ?? null,
+                fetchedCount: r.fetchedCount,
+                upsertedCount: r.upsertedCount,
+                newCount: r.newCount,
+                refreshedCount: r.refreshedCount,
+                expiredCount: r.expiredCount,
+                failedCount: r.failedCount,
+                errorMessage: r.errorMessage,
+                ago: formatDistanceToNow(r.startedAt, { addSuffix: true }),
+              })),
+            }))}
+          />
+        )}
+        <p className="mt-4 text-xs text-slate-400 font-mono">
+          {totalRuns.toLocaleString()} replenish runs recorded · weekly cron at Mon 06:00 UTC
+        </p>
+      </section>
+    </div>
+  );
+}
+
+function StatTile({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="bg-white border border-slate-200 rounded-xl p-4">
+      <p className="text-xs font-mono uppercase tracking-wider text-slate-400">
+        {label}
+      </p>
+      <p className="mt-2 text-2xl font-medium text-slate-900">{value}</p>
+    </div>
+  );
+}

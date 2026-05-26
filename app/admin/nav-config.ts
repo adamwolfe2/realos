@@ -18,6 +18,7 @@ import {
   FileText,
   SatelliteDish,
   Globe,
+  Store,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -86,6 +87,7 @@ export const adminNavGroups: NavGroup[] = [
         badgeKey: "pendingSiteRequests",
       },
       { href: "/admin/leads", label: "Leads", icon: Activity },
+      { href: "/admin/marketplace", label: "Marketplace sources", icon: Store },
     ],
   },
   {
