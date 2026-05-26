@@ -119,3 +119,100 @@ export async function logPacketDownload(id: string) {
   revalidatePath(`/admin/site-engine/${id}`);
   return { ok: true };
 }
+
+// ---------------------------------------------------------------------------
+// Triage actions — record the verdict from Prompt 00, optionally transition
+// status, and stamp the event log so the timeline shows the decision.
+// ---------------------------------------------------------------------------
+
+export interface TriageVerdict {
+  totalScore?: number;
+  verdict?: "GO" | "NEEDS_INFO" | "DISQUALIFY";
+  reasoningOneLine?: string;
+  missingItems?: string[];
+  redFlags?: string[];
+  estimatedTier?: string;
+  estimatedBuildHours?: number;
+  recommendedNextAction?: string;
+}
+
+export async function recordTriageVerdict(
+  id: string,
+  verdict: TriageVerdict,
+  options?: { transition?: boolean },
+) {
+  const scope = await requireAgency();
+
+  const message = [
+    verdict.verdict ? `Verdict: ${verdict.verdict}` : null,
+    verdict.totalScore != null ? `Score: ${verdict.totalScore}/30` : null,
+    verdict.reasoningOneLine ? `— ${verdict.reasoningOneLine}` : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  await prisma.siteRequestEvent.create({
+    data: {
+      siteRequestId: id,
+      kind: "note",
+      message: message || "Triage recorded",
+      actorUserId: scope.userId,
+    },
+  });
+
+  if (options?.transition && verdict.verdict) {
+    const target =
+      verdict.verdict === "GO"
+        ? "QUALIFIED"
+        : verdict.verdict === "NEEDS_INFO"
+          ? "NEEDS_INFO"
+          : verdict.verdict === "DISQUALIFY"
+            ? "DISQUALIFIED"
+            : null;
+    if (target) {
+      await transitionStatus(id, target as SiteRequestStatus, verdict.reasoningOneLine);
+    }
+  }
+
+  await prisma.siteRequest.update({
+    where: { id },
+    data: { lastActivityAt: new Date() },
+  });
+  revalidatePath(`/admin/site-engine/${id}`);
+  return { ok: true };
+}
+
+export async function saveInspirationPrd(
+  id: string,
+  url: string,
+  prdJson: string,
+) {
+  const scope = await requireAgency();
+
+  // Validate JSON parses; reject obvious gibberish.
+  try {
+    const parsed = JSON.parse(prdJson);
+    if (!parsed || typeof parsed !== "object") {
+      throw new Error("PRD JSON must be an object");
+    }
+  } catch (err) {
+    throw new Error(
+      `Invalid PRD JSON: ${err instanceof Error ? err.message : "parse failed"}`,
+    );
+  }
+
+  await prisma.siteRequestEvent.create({
+    data: {
+      siteRequestId: id,
+      kind: "note",
+      message: `Inspiration PRD recorded for ${url}\n\n${prdJson}`,
+      actorUserId: scope.userId,
+    },
+  });
+  await prisma.siteRequest.update({
+    where: { id },
+    data: { lastActivityAt: new Date() },
+  });
+  revalidatePath(`/admin/site-engine/${id}`);
+  return { ok: true };
+}

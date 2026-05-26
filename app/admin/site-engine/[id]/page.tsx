@@ -7,6 +7,8 @@ import { requireAgency } from "@/lib/tenancy/scope";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { Button } from "@/components/ui/button";
 import { StatusPanel } from "./status-panel";
+import { PromptRunner } from "./prompt-runner";
+import { PROMPT_00_TRIAGE, PROMPT_01_REVERSE_PRD } from "@/lib/site-engine/prompt-templates";
 import { BRAND_NAME } from "@/lib/brand";
 
 export const metadata: Metadata = { title: `Site request | ${BRAND_NAME} Admin` };
@@ -71,6 +73,34 @@ export default async function SiteEngineDetailPage({
             </Button>
           </div>
         }
+      />
+
+      {/* Inline prompt runners — Triage + PRD extraction. Surface above
+          the read-only sections because these are the actions Adam takes
+          most often when working a new row. */}
+      <PromptRunner
+        siteRequestId={sr.id}
+        prompt00={PROMPT_00_TRIAGE}
+        prompt01={PROMPT_01_REVERSE_PRD}
+        inspirationUrls={sr.intake?.inspirationUrls ?? []}
+        intakePayload={{
+          siteRequest: {
+            id: sr.id,
+            slug: sr.slug,
+            tier: sr.tier,
+            status: sr.status,
+            submittedAt: sr.submittedAt.toISOString(),
+            source: sr.source,
+            submitter: {
+              name: sr.submittedByName,
+              email: sr.submittedByEmail,
+              phone: sr.submittedByPhone,
+              company: sr.submittedByCompany,
+            },
+          },
+          intake: sr.intake,
+          assetCount: sr.assets.length,
+        }}
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
