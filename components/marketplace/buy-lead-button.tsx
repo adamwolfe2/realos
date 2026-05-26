@@ -30,7 +30,9 @@ export function BuyLeadButton({
             ? "This lead was just sold or expired."
             : data?.error === "stripe_not_configured"
               ? "Checkout is temporarily unavailable."
-              : "Could not start checkout. Try again.",
+              : data?.error === "stripe_error" && data?.message
+                ? `Stripe: ${data.message}`
+                : "Could not start checkout. Try again.",
         );
         return;
       }

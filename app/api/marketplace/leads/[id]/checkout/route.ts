@@ -25,7 +25,11 @@ import {
 //     update on success.
 // ---------------------------------------------------------------------------
 
-const RESERVATION_MS = 10 * 60 * 1000;
+// Stripe Checkout requires expires_at to be at least 30 minutes in the
+// future for mode=payment sessions. We use 60 minutes so a buyer who
+// pauses mid-flow (reads the lead detail, opens a new tab, comes back)
+// doesn't time out unexpectedly.
+const RESERVATION_MS = 60 * 60 * 1000;
 
 export async function POST(
   req: NextRequest,
@@ -124,43 +128,71 @@ export async function POST(
     data: { status: MarketplaceLeadStatus.RESERVED },
   });
 
-  const successUrl = `${APP_URL}/marketplace/buyer/purchases/{CHECKOUT_SESSION_ID}`;
+  // After payment Stripe redirects to success_url. We send the buyer back
+  // to /marketplace/buyer with the session id in the query string — the
+  // dashboard already shows the just-purchased lead at the top.
+  const successUrl = `${APP_URL}/marketplace/buyer?purchased=1&session_id={CHECKOUT_SESSION_ID}`;
   const cancelUrl = `${APP_URL}/marketplace/${leadId}?canceled=1`;
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    customer: stripeCustomerId,
-    payment_method_types: ["card"],
-    line_items: [
-      {
-        price_data: {
-          currency: "usd",
-          unit_amount: lead.priceCents,
-          product_data: {
-            name: `Lead · ${lead.market} · ${prettyType(lead.propertyType)}`,
-            description: `Intent ${lead.intentScore} · ${lead.signal ?? ""}`,
-            metadata: {
-              marketplaceLeadId: lead.id,
+  let session;
+  try {
+    session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      customer: stripeCustomerId,
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            unit_amount: lead.priceCents,
+            product_data: {
+              name: `Lead · ${lead.market} · ${prettyType(lead.propertyType)}`,
+              description: `Intent ${lead.intentScore} · ${lead.signal ?? ""}`.slice(
+                0,
+                500,
+              ),
+              metadata: {
+                marketplaceLeadId: lead.id,
+              },
             },
           },
+          quantity: 1,
         },
-        quantity: 1,
-      },
-    ],
-    metadata: {
-      marketplaceLeadId: lead.id,
-      marketplaceBuyerId: buyer.id,
-    },
-    payment_intent_data: {
+      ],
       metadata: {
         marketplaceLeadId: lead.id,
         marketplaceBuyerId: buyer.id,
       },
-    },
-    success_url: successUrl,
-    cancel_url: cancelUrl,
-    expires_at: Math.floor((Date.now() + RESERVATION_MS) / 1000),
-  });
+      payment_intent_data: {
+        metadata: {
+          marketplaceLeadId: lead.id,
+          marketplaceBuyerId: buyer.id,
+        },
+      },
+      success_url: successUrl,
+      cancel_url: cancelUrl,
+      // Must be ≥ 30 min and ≤ 24h per Stripe Checkout requirements.
+      expires_at: Math.floor((Date.now() + RESERVATION_MS) / 1000),
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error("marketplace checkout — Stripe error", {
+      leadId,
+      buyerId: buyer.id,
+      stripeCustomerId,
+      priceCents: lead.priceCents,
+      message,
+    });
+    // Undo the AVAILABLE→RESERVED flip so the lead is buyable again.
+    await prisma.marketplaceLead.updateMany({
+      where: { id: leadId, status: MarketplaceLeadStatus.RESERVED },
+      data: { status: MarketplaceLeadStatus.AVAILABLE },
+    });
+    return NextResponse.json(
+      { error: "stripe_error", message },
+      { status: 502 },
+    );
+  }
 
   await prisma.marketplacePurchase.create({
     data: {
