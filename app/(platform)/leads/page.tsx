@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { SplitHero } from "@/components/platform/split-hero";
+import { SplitHero, SplitSection } from "@/components/platform/split-hero";
 import { Reveal } from "@/components/platform/reveal";
-import { StickyArtifactSection } from "@/components/platform/sticky-artifact-section";
 import { OverflowInbox } from "@/components/platform/artifacts/overflow-inbox";
 import { LeadEnrichmentCard } from "@/components/platform/artifacts/lead-enrichment-card";
 import { LeadMarketplace } from "@/components/platform/artifacts/lead-marketplace";
@@ -175,46 +174,35 @@ export default function LeadsPage() {
       </section>
 
       {/* Step 1b — pixel / visitor identification (more capture) -------- */}
-      <StickyArtifactSection
+      <SplitSection
         eyebrow="Step 1 · Capture · the silent half"
-        title={
-          <>
-            Most visitors leave without a form fill.{" "}
-            <span style={{ color: "#2563EB" }}>We name them anyway.</span>
-          </>
-        }
-        body="Drop a one-line pixel on your listings, neighbourhood pages, and tour-request flow. Anonymous browsers de-anonymize at industry-leading match rates and stream straight into the same inbox as your form fills, DMs, and inbound calls. No cookie banner gymnastics. No double-tracking."
+        headline="Most visitors leave without a form fill. We name them anyway."
+        body="Drop a one-line pixel on your listings, neighbourhood pages, and tour-request flow. Anonymous browsers de-anonymize at industry-leading match rates and stream into the same inbox as your form fills, DMs, and inbound calls."
         bullets={[
           "One pixel, every listing surface, every device",
-          "Match rates between 40 and 60 percent on US residential traffic",
+          "40–60% match rate on US residential traffic",
           "Resolved visitors land in the same inbox as form fills",
-          "Push to ad audiences and CRM as soon as they resolve",
+          "Push to ad audiences and CRM the moment they resolve",
         ]}
         artifact={<VisitorStream />}
-        surface="muted"
-        textSide="right"
+        side="left"
+        background="#FAFBFF"
       />
 
-      {/* Step 2: Enrich + Score (sticky text, animated card) ------------ */}
-      <StickyArtifactSection
+      {/* Step 2: Enrich + Score (animated card) ------------------------- */}
+      <SplitSection
         eyebrow="Step 2 · Enrich and score"
-        title={
-          <>
-            Every raw lead becomes a{" "}
-            <span style={{ color: "#2563EB" }}>scored, deliverable record</span>{" "}
-            in seconds.
-          </>
-        }
+        headline="Every raw lead becomes a scored, deliverable record in seconds."
         body="A form fill comes in with just an email and a first name. Five seconds later, that record carries a verified phone, full address, household band, behavioural intent overlay, and a composite score you can route on. Watch a single lead enrich in real time."
         bullets={[
           "Identity match against a 280M-record household graph",
-          "Verified phone, address, household band, household composition",
-          "Behavioural intent: active buyer status, listings viewed, timeline",
-          "0–100 composite score gated for routing and pricing rules",
+          "Verified phone, address, household band, composition",
+          "Behavioural intent: active buyer status, listings viewed",
+          "0–100 composite score for routing and pricing rules",
         ]}
-        cta={{ label: "See the marketplace", href: "#marketplace" }}
         artifact={<LeadEnrichmentCard />}
-        surface="light"
+        side="right"
+        background="#FFFFFF"
       />
 
       {/* The marketplace ----------------------------------------------- */}

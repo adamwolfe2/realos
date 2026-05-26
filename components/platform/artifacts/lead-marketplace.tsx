@@ -25,6 +25,7 @@ type LeadCard = {
   initials: string;
   name: string;
   age: number;
+  photo: string;
   market: string;
   propertyType: PropertyType;
   intent: number;
@@ -51,18 +52,18 @@ const BORDER = "#E2E8F0";
 const PARCHMENT = "#F1F5F9";
 
 const LEADS: LeadCard[] = [
-  { id: "LD-91428", initials: "MR", name: "Marisol R.",   age: 34, market: "New York",    propertyType: "Sale",       intent: 92, budget: "$680K – $920K", signal: "Viewed 23 listings · 7d", timeline: "0–30 days",  priceCents: 9500 },
-  { id: "LD-87311", initials: "DK", name: "Derek K.",     age: 41, market: "Miami",       propertyType: "Sale",       intent: 88, budget: "$1.4M – $2.1M", signal: "Mortgage pre-app · 3d",   timeline: "30–60 days", priceCents: 12000 },
-  { id: "LD-77205", initials: "AS", name: "Aisha S.",     age: 28, market: "Los Angeles", propertyType: "Rental",     intent: 81, budget: "$3.8K – $5.2K/mo", signal: "5 tours scheduled",      timeline: "0–14 days",  priceCents: 4500 },
-  { id: "LD-69118", initials: "TG", name: "Tyler G.",     age: 38, market: "Austin",      propertyType: "Investment", intent: 85, budget: "$420K – $620K", signal: "Cash buyer signal · 9d",  timeline: "0–45 days",  priceCents: 8500 },
-  { id: "LD-64902", initials: "RN", name: "Rohan N.",     age: 45, market: "Boston",      propertyType: "Sale",       intent: 76, budget: "$1.1M – $1.6M", signal: "Relocation · job offer",  timeline: "30–90 days", priceCents: 7500 },
-  { id: "LD-61744", initials: "LC", name: "Lila C.",      age: 31, market: "Chicago",     propertyType: "Rental",     intent: 79, budget: "$2.6K – $3.8K/mo", signal: "Lease ending in 21d",    timeline: "0–21 days",  priceCents: 3500 },
-  { id: "LD-58221", initials: "BO", name: "Ben O.",       age: 52, market: "Denver",      propertyType: "Investment", intent: 84, budget: "$580K – $820K", signal: "Distressed-property search", timeline: "0–60 days", priceCents: 7500 },
-  { id: "LD-55670", initials: "EP", name: "Elena P.",     age: 36, market: "New York",    propertyType: "Rental",     intent: 90, budget: "$5.8K – $7.4K/mo", signal: "Viewed 31 listings · 5d", timeline: "0–14 days",  priceCents: 5500 },
-  { id: "LD-52109", initials: "JR", name: "Jordan R.",    age: 29, market: "Miami",       propertyType: "Rental",     intent: 73, budget: "$2.2K – $3.1K/mo", signal: "Out-of-state mover · 11d", timeline: "30–60 days", priceCents: 3500 },
-  { id: "LD-49882", initials: "MK", name: "Mira K.",      age: 47, market: "Los Angeles", propertyType: "Sale",       intent: 87, budget: "$2.8M – $3.6M", signal: "Luxury · agent-matched",  timeline: "0–45 days",  priceCents: 12000 },
-  { id: "LD-47332", initials: "AV", name: "Ava V.",       age: 33, market: "Austin",      propertyType: "Commercial", intent: 78, budget: "$8K – $14K/mo NNN", signal: "Office tenant rep brief", timeline: "30–90 days", priceCents: 9500 },
-  { id: "LD-44021", initials: "SS", name: "Sofia S.",     age: 39, market: "Boston",      propertyType: "Investment", intent: 82, budget: "$320K – $480K", signal: "1031 exchange · pending",  timeline: "0–45 days",  priceCents: 8500 },
+  { id: "LD-91428", initials: "MR", name: "Marisol R.",   age: 34, photo: "https://randomuser.me/api/portraits/women/68.jpg", market: "New York",    propertyType: "Sale",       intent: 92, budget: "$680K – $920K", signal: "Viewed 23 listings · 7d", timeline: "0–30 days",  priceCents: 9500 },
+  { id: "LD-87311", initials: "DK", name: "Derek K.",     age: 41, photo: "https://randomuser.me/api/portraits/men/52.jpg",   market: "Miami",       propertyType: "Sale",       intent: 88, budget: "$1.4M – $2.1M", signal: "Mortgage pre-app · 3d",   timeline: "30–60 days", priceCents: 12000 },
+  { id: "LD-77205", initials: "AS", name: "Aisha S.",     age: 28, photo: "https://randomuser.me/api/portraits/women/45.jpg", market: "Los Angeles", propertyType: "Rental",     intent: 81, budget: "$3.8K – $5.2K/mo", signal: "5 tours scheduled",      timeline: "0–14 days",  priceCents: 4500 },
+  { id: "LD-69118", initials: "TG", name: "Tyler G.",     age: 38, photo: "https://randomuser.me/api/portraits/men/29.jpg",   market: "Austin",      propertyType: "Investment", intent: 85, budget: "$420K – $620K", signal: "Cash buyer signal · 9d",  timeline: "0–45 days",  priceCents: 8500 },
+  { id: "LD-64902", initials: "RN", name: "Rohan N.",     age: 45, photo: "https://randomuser.me/api/portraits/men/85.jpg",   market: "Boston",      propertyType: "Sale",       intent: 76, budget: "$1.1M – $1.6M", signal: "Relocation · job offer",  timeline: "30–90 days", priceCents: 7500 },
+  { id: "LD-61744", initials: "LC", name: "Lila C.",      age: 31, photo: "https://randomuser.me/api/portraits/women/22.jpg", market: "Chicago",     propertyType: "Rental",     intent: 79, budget: "$2.6K – $3.8K/mo", signal: "Lease ending in 21d",    timeline: "0–21 days",  priceCents: 3500 },
+  { id: "LD-58221", initials: "BO", name: "Ben O.",       age: 52, photo: "https://randomuser.me/api/portraits/men/36.jpg",   market: "Denver",      propertyType: "Investment", intent: 84, budget: "$580K – $820K", signal: "Distressed-property search", timeline: "0–60 days", priceCents: 7500 },
+  { id: "LD-55670", initials: "EP", name: "Elena P.",     age: 36, photo: "https://randomuser.me/api/portraits/women/12.jpg", market: "New York",    propertyType: "Rental",     intent: 90, budget: "$5.8K – $7.4K/mo", signal: "Viewed 31 listings · 5d", timeline: "0–14 days",  priceCents: 5500 },
+  { id: "LD-52109", initials: "JR", name: "Jordan R.",    age: 29, photo: "https://randomuser.me/api/portraits/men/41.jpg",   market: "Miami",       propertyType: "Rental",     intent: 73, budget: "$2.2K – $3.1K/mo", signal: "Out-of-state mover · 11d", timeline: "30–60 days", priceCents: 3500 },
+  { id: "LD-49882", initials: "MK", name: "Mira K.",      age: 47, photo: "https://randomuser.me/api/portraits/women/79.jpg", market: "Los Angeles", propertyType: "Sale",       intent: 87, budget: "$2.8M – $3.6M", signal: "Luxury · agent-matched",  timeline: "0–45 days",  priceCents: 12000 },
+  { id: "LD-47332", initials: "AV", name: "Ava V.",       age: 33, photo: "https://randomuser.me/api/portraits/women/55.jpg", market: "Austin",      propertyType: "Commercial", intent: 78, budget: "$8K – $14K/mo NNN", signal: "Office tenant rep brief", timeline: "30–90 days", priceCents: 9500 },
+  { id: "LD-44021", initials: "SS", name: "Sofia S.",     age: 39, photo: "https://randomuser.me/api/portraits/women/33.jpg", market: "Boston",      propertyType: "Investment", intent: 82, budget: "$320K – $480K", signal: "1031 exchange · pending",  timeline: "0–45 days",  priceCents: 8500 },
 ];
 
 const PURCHASE_TICKER = [
@@ -369,21 +370,18 @@ function LeadCardView({ lead }: { lead: LeadCard }) {
     >
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-3 min-w-0">
-          <span
-            className="inline-flex items-center justify-center flex-shrink-0"
+          <img
+            src={lead.photo}
+            alt={lead.name}
+            className="flex-shrink-0"
             style={{
               width: "36px",
               height: "36px",
               borderRadius: "50%",
-              backgroundColor: ACCENT,
-              color: "#fff",
-              fontFamily: "var(--font-mono)",
-              fontSize: "12px",
-              fontWeight: 600,
+              objectFit: "cover",
+              boxShadow: `0 0 0 1px ${BORDER}`,
             }}
-          >
-            {lead.initials}
-          </span>
+          />
           <div className="min-w-0">
             <p
               className="truncate"

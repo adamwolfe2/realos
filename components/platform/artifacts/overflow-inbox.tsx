@@ -5,13 +5,16 @@ import React, { useEffect, useState } from "react";
 // ---------------------------------------------------------------------------
 // OverflowInbox — the hero artifact for /leads.
 //
-// The core thesis: every listing gets dozens of inquiries; only one closes.
-// We show that visually with a live "unified inbox" stream — inquiries
-// arriving from listing portals, social DMs, forms, voicemail — each tagged
-// with the source, the property, and a HOT badge on a meaningful fraction.
+// Behaviour mirrors the VisitorStream reveal used on /features/pixel: every
+// row shows a real headshot, and the rows that start as "Anonymous visitor"
+// flip to a named lead after a short delay. The eye locks on the same
+// surprise-reveal animation Norman validated on the visitor-id page.
 //
-// A counter in the header ticks up showing "captured this week" so the
-// reader gets the scale intuitively without reading any copy.
+// The OverflowInbox layer ON TOP of that mechanic is the multi-source
+// context: every row carries a source tag (Zillow / Realtor / Instagram
+// DM / Apartments.com / Site form / Voicemail / Email) and the property
+// the inquiry was about. That's the "every inquiry, every source, one
+// inbox" story.
 // ---------------------------------------------------------------------------
 
 type Source =
@@ -23,49 +26,158 @@ type Source =
   | "Voicemail"
   | "Email";
 
-type Inquiry = {
-  id: number;
+type Identity = {
   initials: string;
   name: string;
-  source: Source;
-  property: string;
   market: string;
-  ago: string;
+  property: string;
+  source: Source;
   hot: boolean;
   color: string;
+  photo: string;
 };
 
+type Inquiry = {
+  id: number;
+  // Initial-state metadata. When `resolved` is false the row renders as
+  // "Anonymous visitor · viewed <property>" and then flips into the
+  // `identity` block after `revealDelayMs`. When resolved is true we
+  // render the identity row immediately.
+  resolved: boolean;
+  ago: string;
+  identity: Identity;
+};
+
+// Mix of resolved + anonymous-with-reveal rows so any 4-row window has
+// at least one reveal in flight.
 const POOL: Omit<Inquiry, "id" | "ago">[] = [
-  { initials: "JR", name: "Jordan Reyes",     source: "Zillow",          property: "412 Elm · 2BR",           market: "Brooklyn",      hot: true,  color: "#2563EB" },
-  { initials: "AM", name: "Aisha Mahmoud",    source: "Instagram DM",    property: "The Vista · PH-B",        market: "Miami",         hot: true,  color: "#5B8CE6" },
-  { initials: "DC", name: "Derek Chen",       source: "Realtor",         property: "88 Greene · 1BR",         market: "Manhattan",     hot: false, color: "#94A3B8" },
-  { initials: "MK", name: "Marcus Kim",       source: "Site form",       property: "Harbor Lofts · 305",      market: "Boston",        hot: true,  color: "#2563EB" },
-  { initials: "EP", name: "Elena Park",       source: "Apartments.com",  property: "Riverbend · 2BR",         market: "Austin",        hot: false, color: "#5B8CE6" },
-  { initials: "TG", name: "Tyler Grant",      source: "Email",           property: "The Maxwell · 1BR",       market: "Denver",        hot: true,  color: "#2563EB" },
-  { initials: "SS", name: "Sofia Salinas",    source: "Zillow",          property: "Westline · studio",       market: "Seattle",       hot: false, color: "#94A3B8" },
-  { initials: "RN", name: "Rohan Nair",       source: "Voicemail",       property: "8th & Hill · 3BR",        market: "Los Angeles",   hot: true,  color: "#5B8CE6" },
-  { initials: "LC", name: "Lila Cohen",       source: "Site form",       property: "Parkway 220 · 2BR",       market: "Chicago",       hot: false, color: "#94A3B8" },
-  { initials: "BO", name: "Ben Okafor",       source: "Instagram DM",    property: "Coastline · oceanfront",  market: "San Diego",     hot: true,  color: "#2563EB" },
-  { initials: "AV", name: "Ava Vinci",        source: "Realtor",         property: "Loft 19 · live/work",     market: "Portland",      hot: false, color: "#5B8CE6" },
-  { initials: "MK", name: "Mira Kapoor",      source: "Apartments.com",  property: "Birch House · 1BR",       market: "Nashville",     hot: true,  color: "#2563EB" },
+  {
+    resolved: false,
+    identity: {
+      initials: "AM",
+      name: "Aisha Mahmoud",
+      market: "Miami",
+      property: "The Vista · PH-B",
+      source: "Instagram DM",
+      hot: true,
+      color: "#2563EB",
+      photo: "https://randomuser.me/api/portraits/women/45.jpg",
+    },
+  },
+  {
+    resolved: false,
+    identity: {
+      initials: "JR",
+      name: "Jordan Reyes",
+      market: "Brooklyn",
+      property: "412 Elm · 2BR",
+      source: "Zillow",
+      hot: true,
+      color: "#5B8CE6",
+      photo: "https://randomuser.me/api/portraits/men/41.jpg",
+    },
+  },
+  {
+    resolved: true,
+    identity: {
+      initials: "DC",
+      name: "Derek Chen",
+      market: "Manhattan",
+      property: "88 Greene · 1BR",
+      source: "Realtor",
+      hot: false,
+      color: "#5B8CE6",
+      photo: "https://randomuser.me/api/portraits/men/52.jpg",
+    },
+  },
+  {
+    resolved: false,
+    identity: {
+      initials: "EP",
+      name: "Elena Park",
+      market: "Austin",
+      property: "Riverbend · 2BR",
+      source: "Apartments.com",
+      hot: false,
+      color: "#94A3B8",
+      photo: "https://randomuser.me/api/portraits/women/68.jpg",
+    },
+  },
+  {
+    resolved: true,
+    identity: {
+      initials: "TG",
+      name: "Tyler Grant",
+      market: "Denver",
+      property: "The Maxwell · 1BR",
+      source: "Email",
+      hot: true,
+      color: "#2563EB",
+      photo: "https://randomuser.me/api/portraits/men/29.jpg",
+    },
+  },
+  {
+    resolved: false,
+    identity: {
+      initials: "RN",
+      name: "Rohan Nair",
+      market: "Los Angeles",
+      property: "8th & Hill · 3BR",
+      source: "Voicemail",
+      hot: true,
+      color: "#5B8CE6",
+      photo: "https://randomuser.me/api/portraits/men/85.jpg",
+    },
+  },
+  {
+    resolved: true,
+    identity: {
+      initials: "LC",
+      name: "Lila Cohen",
+      market: "Chicago",
+      property: "Parkway 220 · 2BR",
+      source: "Site form",
+      hot: false,
+      color: "#94A3B8",
+      photo: "https://randomuser.me/api/portraits/women/22.jpg",
+    },
+  },
+  {
+    resolved: false,
+    identity: {
+      initials: "BO",
+      name: "Ben Okafor",
+      market: "San Diego",
+      property: "Coastline · oceanfront",
+      source: "Instagram DM",
+      hot: true,
+      color: "#2563EB",
+      photo: "https://randomuser.me/api/portraits/men/36.jpg",
+    },
+  },
 ];
 
 const ACCENT = "#2563EB";
 const INK = "#1E2A3A";
 const MUTED = "#94A3B8";
+const SLATE = "#64748B";
 const BORDER = "#E2E8F0";
 const PARCHMENT = "#F1F5F9";
 const HOT_BG = "rgba(239, 68, 68, 0.10)";
 const HOT_INK = "#DC2626";
 
-const ROTATION_MS = 2200;
+const VISIBLE_ROWS = 4;
+const ROTATION_MS = 2400;
+// Staggered reveal wave on the initial mount so the visitor sees multiple
+// anonymous → identified flips within the first ~2 seconds of landing.
+const INITIAL_REVEAL_DELAYS_MS = [500, 950, 1450, 1950];
 
 export function OverflowInbox() {
   const [rows, setRows] = useState<Inquiry[]>(() =>
-    POOL.slice(0, 6).map((p, i) => ({
+    POOL.slice(0, VISIBLE_ROWS).map((p, i) => ({
       ...p,
       id: i,
-      ago: `${(i + 1) * 2}m`,
+      ago: i === 0 ? "just now" : `${i}m`,
     })),
   );
   const [tick, setTick] = useState(0);
@@ -83,16 +195,14 @@ export function OverflowInbox() {
         };
         const aged = prev.map((r, i) => ({
           ...r,
-          ago:
-            i === 0 ? "1m" : i === 1 ? "3m" : i === 2 ? "7m" : i === 3 ? "12m" : i === 4 ? "18m" : "26m",
+          ago: i === 0 ? "1m" : i === 1 ? "4m" : i === 2 ? "9m" : "16m",
         }));
-        return [fresh, ...aged].slice(0, 6);
+        return [fresh, ...aged].slice(0, VISIBLE_ROWS);
       });
     }, ROTATION_MS);
     return () => clearInterval(id);
   }, []);
 
-  // "Captured this week" counter that walks up smoothly so the eye locks on.
   const baseCount = 1247;
   const captured = baseCount + tick;
 
@@ -107,7 +217,7 @@ export function OverflowInbox() {
       }}
     >
       <div
-        className="flex items-center justify-between gap-3 px-5 md:px-6 py-3 sm:py-4"
+        className="flex items-center justify-between gap-3 px-5 md:px-6 py-3"
         style={{ borderBottom: `1px solid ${BORDER}` }}
       >
         <div className="flex items-center gap-2">
@@ -139,7 +249,7 @@ export function OverflowInbox() {
           <p
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "22px",
+              fontSize: "20px",
               color: INK,
               fontWeight: 500,
               lineHeight: 1,
@@ -156,7 +266,7 @@ export function OverflowInbox() {
               textTransform: "uppercase",
               color: MUTED,
               fontWeight: 500,
-              marginTop: "3px",
+              marginTop: "2px",
             }}
           >
             Captured · this week
@@ -165,25 +275,31 @@ export function OverflowInbox() {
       </div>
 
       <ul style={{ listStyle: "none", margin: 0, padding: 0 }}>
-        {rows.map((r, i) => (
-          <InquiryRow
-            key={r.id}
-            r={r}
-            isTop={i === 0}
-            isLast={i === rows.length - 1}
-            hideOnMobile={i >= 4}
-          />
-        ))}
+        {rows.map((r, i) => {
+          const isInitial = r.id < INITIAL_REVEAL_DELAYS_MS.length;
+          const revealDelayMs = isInitial
+            ? INITIAL_REVEAL_DELAYS_MS[r.id]
+            : 1500;
+          return (
+            <InquiryRow
+              key={r.id}
+              r={r}
+              isTop={i === 0}
+              isLast={i === rows.length - 1}
+              revealDelayMs={revealDelayMs}
+            />
+          );
+        })}
       </ul>
 
       <div
-        className="px-5 md:px-6 py-3 flex items-center justify-between gap-3"
+        className="px-5 md:px-6 py-2.5 flex items-center justify-between gap-3"
         style={{ borderTop: `1px solid ${BORDER}`, backgroundColor: PARCHMENT }}
       >
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: "10px",
+            fontSize: "9.5px",
             letterSpacing: "0.12em",
             textTransform: "uppercase",
             color: MUTED,
@@ -195,7 +311,7 @@ export function OverflowInbox() {
         <span
           style={{
             fontFamily: "var(--font-mono)",
-            fontSize: "10px",
+            fontSize: "9.5px",
             color: ACCENT,
             fontWeight: 600,
           }}
@@ -218,16 +334,38 @@ function InquiryRow({
   r,
   isTop,
   isLast,
-  hideOnMobile = false,
+  revealDelayMs = 1500,
 }: {
   r: Inquiry;
   isTop: boolean;
   isLast: boolean;
-  hideOnMobile?: boolean;
+  revealDelayMs?: number;
 }) {
+  const [revealed, setRevealed] = useState(r.resolved);
+  const [justRevealed, setJustRevealed] = useState(false);
+
+  useEffect(() => {
+    setRevealed(r.resolved);
+    setJustRevealed(false);
+    if (r.resolved) return;
+    const t1 = setTimeout(() => {
+      setRevealed(true);
+      setJustRevealed(true);
+    }, revealDelayMs);
+    const t2 = setTimeout(() => {
+      setJustRevealed(false);
+    }, revealDelayMs + 2400);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [r.id, r.resolved, revealDelayMs]);
+
+  const id = r.identity;
+
   return (
     <li
-      className={`${hideOnMobile ? "hidden sm:flex" : "flex"} items-center gap-3 px-5 md:px-6 py-3 sm:py-3.5`}
+      className="flex items-center gap-3 px-5 md:px-6 py-2.5"
       style={{
         borderBottom: !isLast ? `1px solid ${BORDER}` : "none",
         animation: isTop ? "rowIn 520ms cubic-bezier(.2,.7,.2,1)" : undefined,
@@ -235,20 +373,76 @@ function InquiryRow({
         transition: "background-color 1400ms ease",
       }}
     >
+      {/* Avatar — flips on reveal */}
       <span
-        className="inline-flex items-center justify-center flex-shrink-0"
+        className="inline-flex items-center justify-center flex-shrink-0 relative"
         style={{
-          width: "32px",
-          height: "32px",
+          width: "30px",
+          height: "30px",
           borderRadius: "50%",
-          backgroundColor: r.color,
-          color: "#fff",
-          fontFamily: "var(--font-mono)",
-          fontSize: "11px",
-          fontWeight: 600,
+          perspective: "400px",
         }}
       >
-        {r.initials}
+        <span
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            overflow: "hidden",
+            transformStyle: "preserve-3d",
+            transition: "transform 600ms cubic-bezier(.4,0,.2,1)",
+            transform: revealed ? "rotateY(0deg)" : "rotateY(180deg)",
+          }}
+        >
+          <img
+            src={id.photo}
+            alt={id.name}
+            style={{
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              borderRadius: "50%",
+              position: "absolute",
+              inset: 0,
+              backfaceVisibility: "hidden",
+            }}
+          />
+        </span>
+
+        <span
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            backgroundColor: PARCHMENT,
+            border: `1px dashed ${MUTED}`,
+            color: MUTED,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "var(--font-mono)",
+            fontSize: "12px",
+            fontWeight: 600,
+            opacity: revealed ? 0 : 1,
+            transition: "opacity 250ms ease",
+            pointerEvents: "none",
+          }}
+        >
+          ?
+        </span>
+
+        {justRevealed && (
+          <span
+            style={{
+              position: "absolute",
+              inset: "-4px",
+              borderRadius: "50%",
+              border: `2px solid ${ACCENT}`,
+              animation: "revealPulse 1.4s ease-out",
+              pointerEvents: "none",
+            }}
+          />
+        )}
       </span>
 
       <div className="flex-1 min-w-0">
@@ -257,30 +451,51 @@ function InquiryRow({
             className="truncate"
             style={{
               fontFamily: "var(--font-sans)",
-              fontSize: "14px",
+              fontSize: "13.5px",
               color: INK,
               fontWeight: 500,
-              maxWidth: "100%",
+              transition: "color 400ms ease",
             }}
           >
-            {r.name}
+            {revealed ? id.name : "Anonymous visitor"}
           </span>
-          <SourceTag source={r.source} />
-          {r.hot && (
+          {revealed ? (
+            <>
+              <SourceTag source={id.source} />
+              {id.hot && (
+                <span
+                  style={{
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "8.5px",
+                    letterSpacing: "0.12em",
+                    textTransform: "uppercase",
+                    color: HOT_INK,
+                    backgroundColor: HOT_BG,
+                    padding: "1.5px 5px",
+                    borderRadius: "4px",
+                    fontWeight: 700,
+                  }}
+                >
+                  Hot
+                </span>
+              )}
+            </>
+          ) : (
             <span
               style={{
                 fontFamily: "var(--font-mono)",
-                fontSize: "9px",
+                fontSize: "8.5px",
                 letterSpacing: "0.12em",
                 textTransform: "uppercase",
-                color: HOT_INK,
-                backgroundColor: HOT_BG,
-                padding: "2px 6px",
+                color: justRevealed ? "#ffffff" : MUTED,
+                backgroundColor: justRevealed ? ACCENT : "transparent",
+                padding: "1.5px 5px",
                 borderRadius: "4px",
-                fontWeight: 700,
+                fontWeight: 600,
+                transition: "all 400ms ease",
               }}
             >
-              Hot
+              Anonymous
             </span>
           )}
         </div>
@@ -288,23 +503,24 @@ function InquiryRow({
           className="truncate"
           style={{
             fontFamily: "var(--font-sans)",
-            fontSize: "12px",
-            color: "#64748B",
-            marginTop: "2px",
+            fontSize: "11.5px",
+            color: SLATE,
+            marginTop: "1px",
+            transition: "all 400ms ease",
           }}
         >
-          {r.market} ·{" "}
-          <span style={{ color: INK, fontFamily: "var(--font-mono)", fontSize: "11.5px" }}>
-            {r.property}
+          {revealed ? id.market : "mobile · " + id.market.toLowerCase()} ·{" "}
+          <span style={{ color: INK, fontFamily: "var(--font-mono)", fontSize: "11px" }}>
+            {id.property}
           </span>
         </p>
       </div>
 
       <span
-        className="hidden sm:inline flex-shrink-0"
+        className="flex-shrink-0"
         style={{
           fontFamily: "var(--font-mono)",
-          fontSize: "10px",
+          fontSize: "9.5px",
           color: MUTED,
           fontWeight: 500,
         }}
@@ -317,6 +533,11 @@ function InquiryRow({
           from { opacity: 0; transform: translateY(-10px); }
           to   { opacity: 1; transform: translateY(0); }
         }
+        @keyframes revealPulse {
+          0%   { transform: scale(0.85); opacity: 0.9; }
+          70%  { transform: scale(1.6);  opacity: 0;   }
+          100% { transform: scale(1.7);  opacity: 0;   }
+        }
       `}</style>
     </li>
   );
@@ -327,12 +548,12 @@ function SourceTag({ source }: { source: Source }) {
     <span
       style={{
         fontFamily: "var(--font-mono)",
-        fontSize: "9px",
+        fontSize: "8.5px",
         letterSpacing: "0.08em",
         textTransform: "uppercase",
         color: ACCENT,
         backgroundColor: "rgba(37,99,235,0.10)",
-        padding: "2px 6px",
+        padding: "1.5px 5px",
         borderRadius: "4px",
         fontWeight: 600,
         whiteSpace: "nowrap",
