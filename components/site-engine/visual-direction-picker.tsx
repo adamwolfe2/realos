@@ -402,17 +402,67 @@ function StylePanel({
 }) {
   const [view, setView] = React.useState<"presets" | "languages">("presets");
   const [filterCategory, setFilterCategory] = React.useState<string>("all");
+  const [filterColorPhilosophy, setFilterColorPhilosophy] =
+    React.useState<string>("all");
+  const [filterBestFor, setFilterBestFor] = React.useState<string>("all");
+  const [searchQuery, setSearchQuery] = React.useState<string>("");
 
   const languageCategories = React.useMemo(
     () =>
       Array.from(new Set(designLanguages.map((d) => d.category))).sort(),
     [designLanguages],
   );
+  const colorPhilosophies = React.useMemo(
+    () =>
+      Array.from(
+        new Set(designLanguages.map((d) => d.colorPhilosophy).filter(Boolean)),
+      ).sort() as string[],
+    [designLanguages],
+  );
+  const bestForOptions = React.useMemo(
+    () =>
+      Array.from(new Set(designLanguages.flatMap((d) => d.bestFor))).sort(),
+    [designLanguages],
+  );
 
-  const filteredLanguages =
-    filterCategory === "all"
-      ? designLanguages
-      : designLanguages.filter((d) => d.category === filterCategory);
+  const filteredLanguages = React.useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return designLanguages.filter((d) => {
+      if (filterCategory !== "all" && d.category !== filterCategory) return false;
+      if (
+        filterColorPhilosophy !== "all" &&
+        d.colorPhilosophy !== filterColorPhilosophy
+      )
+        return false;
+      if (filterBestFor !== "all" && !d.bestFor.includes(filterBestFor))
+        return false;
+      if (q) {
+        const hay = [
+          d.name,
+          d.slug,
+          d.description,
+          d.category,
+          ...(d.bestFor ?? []),
+        ]
+          .join(" ")
+          .toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [
+    designLanguages,
+    filterCategory,
+    filterColorPhilosophy,
+    filterBestFor,
+    searchQuery,
+  ]);
+
+  const anyFilterActive =
+    filterCategory !== "all" ||
+    filterColorPhilosophy !== "all" ||
+    filterBestFor !== "all" ||
+    searchQuery.trim().length > 0;
 
   return (
     <div className="space-y-4">
@@ -495,23 +545,73 @@ function StylePanel({
         </div>
       ) : (
         <>
-          <div className="flex items-center gap-2 flex-wrap">
-            <Label className="text-xs">Filter:</Label>
-            <select
-              value={filterCategory}
-              onChange={(e) => setFilterCategory(e.target.value)}
-              className="h-7 rounded-md border border-input bg-transparent px-2 text-xs"
-            >
-              <option value="all">All categories</option>
-              {languageCategories.map((c) => (
-                <option key={c} value={c}>
-                  {humanCategory(c)}
-                </option>
-              ))}
-            </select>
-            <span className="text-xs text-muted-foreground">
-              {filteredLanguages.length} shown
-            </span>
+          <div className="space-y-2">
+            <div className="flex items-center gap-2 flex-wrap">
+              <Input
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search by name, vibe, or use case..."
+                className="h-8 text-xs max-w-xs"
+              />
+              <span className="text-xs text-muted-foreground">
+                {filteredLanguages.length} of {designLanguages.length} shown
+              </span>
+              {anyFilterActive ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFilterCategory("all");
+                    setFilterColorPhilosophy("all");
+                    setFilterBestFor("all");
+                    setSearchQuery("");
+                  }}
+                  className="text-xs text-primary underline underline-offset-2"
+                >
+                  Clear filters
+                </button>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <select
+                value={filterCategory}
+                onChange={(e) => setFilterCategory(e.target.value)}
+                className="h-7 rounded-md border border-input bg-transparent px-2 text-xs"
+                title="Filter by category"
+              >
+                <option value="all">All categories</option>
+                {languageCategories.map((c) => (
+                  <option key={c} value={c}>
+                    {humanCategory(c)}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filterColorPhilosophy}
+                onChange={(e) => setFilterColorPhilosophy(e.target.value)}
+                className="h-7 rounded-md border border-input bg-transparent px-2 text-xs"
+                title="Filter by color philosophy"
+              >
+                <option value="all">All palettes</option>
+                {colorPhilosophies.map((c) => (
+                  <option key={c} value={c}>
+                    {humanCategory(c)}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={filterBestFor}
+                onChange={(e) => setFilterBestFor(e.target.value)}
+                className="h-7 rounded-md border border-input bg-transparent px-2 text-xs max-w-[180px]"
+                title="Filter by best-for use case"
+              >
+                <option value="all">Any use case</option>
+                {bestForOptions.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[480px] overflow-y-auto pr-1">
             {filteredLanguages.map((d) => {
