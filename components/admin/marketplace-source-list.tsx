@@ -117,14 +117,18 @@ function SourceRow({ source }: { source: Source }) {
             {source.externalId}
           </p>
         </div>
-        <button
-          type="button"
-          onClick={syncNow}
-          disabled={syncing}
-          className="px-3.5 py-1.5 rounded-md border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-        >
-          {syncing ? "Syncing…" : "Sync now"}
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <ToggleEnrichmentButton source={source} />
+          <button
+            type="button"
+            onClick={syncNow}
+            disabled={syncing}
+            className="px-3.5 py-1.5 rounded-md border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {syncing ? "Syncing…" : "Sync now"}
+          </button>
+          <DeleteSourceButton sourceId={source.id} sourceName={source.name} />
+        </div>
       </div>
 
       <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -148,6 +152,33 @@ function SourceRow({ source }: { source: Source }) {
         <p className="mt-3 text-sm text-red-600">{error}</p>
       )}
 
+      {/* Surface the "fetched but nothing landed" case, which almost always
+          means the strict enrichment gate dropped every member because the
+          source segment doesn't have all 12 required fields populated
+          per-member. Operator can disable the gate to validate, or accept
+          the trade-off. */}
+      {source.requireFullEnrichment &&
+        lastRun &&
+        lastRun.fetchedCount > 0 &&
+        lastRun.newCount === 0 &&
+        lastRun.refreshedCount === 0 && (
+          <div className="mt-3 p-3 rounded-md bg-amber-50 border border-amber-200 text-xs leading-relaxed">
+            <p className="font-semibold text-amber-800">
+              Sync ran but 0 leads passed the strict enrichment gate.
+            </p>
+            <p className="text-amber-700 mt-1">
+              Every fetched member is missing at least one of the 12
+              required fields (firstName, lastName, email, phone, city,
+              companyName, companyState, businessEmail, mobilePhone,
+              linkedinUrl, incomeRange, gender). Either edit the source
+              and uncheck <span className="font-mono">Premium · require
+              full enrichment</span> to accept partially-enriched leads,
+              or use a different upstream segment with denser per-member
+              data.
+            </p>
+          </div>
+        )}
+
       {lastRun && (
         <div className="mt-4 pt-4 border-t border-slate-100">
           <div className="flex items-center justify-between gap-3 mb-2">
@@ -165,6 +196,14 @@ function SourceRow({ source }: { source: Source }) {
                 <span className="text-slate-500 font-mono">{r.ago}</span>
                 <span className="text-slate-700">
                   {r.fetchedCount.toLocaleString()} fetched · {r.newCount.toLocaleString()} new · {r.refreshedCount.toLocaleString()} refreshed · {r.expiredCount.toLocaleString()} expired
+                  {r.failedCount > 0 && (
+                    <>
+                      {" · "}
+                      <span className="text-amber-700 font-medium">
+                        {r.failedCount.toLocaleString()} dropped
+                      </span>
+                    </>
+                  )}
                 </span>
                 <RunStatus status={r.status} small />
               </li>
@@ -206,6 +245,86 @@ function Tile({
         <p className="text-[10px] text-slate-400 mt-0.5">{hint}</p>
       )}
     </div>
+  );
+}
+
+function ToggleEnrichmentButton({ source }: { source: Source }) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const active = !!source.requireFullEnrichment;
+
+  async function toggle() {
+    if (busy) return;
+    setBusy(true);
+    try {
+      await fetch(`/api/admin/marketplace/sources/${source.id}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ requireFullEnrichment: !active }),
+      });
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={toggle}
+      disabled={busy}
+      title={
+        active
+          ? "Currently: only ingest fully-enriched leads. Click to allow partial leads."
+          : "Currently: ingest any verified lead. Click to require all 12 fields."
+      }
+      className={`px-3 py-1.5 rounded-md text-xs font-mono uppercase tracking-wider font-bold border disabled:opacity-50 disabled:cursor-not-allowed ${
+        active
+          ? "text-emerald-700 bg-emerald-50 border-emerald-200 hover:bg-emerald-100"
+          : "text-slate-600 bg-slate-50 border-slate-200 hover:bg-slate-100"
+      }`}
+    >
+      {busy ? "..." : active ? "Premium · ON" : "Premium · off"}
+    </button>
+  );
+}
+
+function DeleteSourceButton({
+  sourceId,
+  sourceName,
+}: {
+  sourceId: string;
+  sourceName: string;
+}) {
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+
+  async function remove() {
+    if (
+      !confirm(
+        `Delete source "${sourceName}" and all of its leads + runs? This cannot be undone.`,
+      )
+    )
+      return;
+    setBusy(true);
+    try {
+      await fetch(`/api/admin/marketplace/sources/${sourceId}`, {
+        method: "DELETE",
+      });
+      router.refresh();
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <button
+      type="button"
+      onClick={remove}
+      disabled={busy}
+      title="Delete source"
+      className="px-2 py-1.5 rounded-md border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      {busy ? "..." : "🗑"}
+    </button>
   );
 }
 
