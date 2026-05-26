@@ -23,6 +23,9 @@ type SyncSummary = {
   expiredCount?: number;
   failedCount?: number;
   errorMessage?: string;
+  // Background-sync mode response
+  backgroundStarted?: boolean;
+  note?: string;
 };
 
 export function MarketplaceSourceForm() {
@@ -66,12 +69,25 @@ export function MarketplaceSourceForm() {
           runImmediately,
         }),
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data?.error ?? "Could not create source");
         return;
       }
-      setResult(data.syncSummary ?? null);
+      // Source was created. If the user opted into immediate sync, the
+      // server fired it in the background via after() and returned with
+      // syncStarted=true + a note. Show that as the "result tile" until
+      // the run actually completes (operator refreshes to see counts).
+      if (data.syncStarted) {
+        setResult({
+          backgroundStarted: true,
+          note:
+            data.note ??
+            "Sync running in background. Refresh in 1-3 minutes to see results.",
+        });
+      } else {
+        setResult(data.syncSummary ?? null);
+      }
       // Soft refresh so the new source appears in the list below
       router.refresh();
     } catch (err) {
@@ -238,13 +254,30 @@ export function MarketplaceSourceForm() {
       </div>
 
       {result && (
-        <div className="mt-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <p className="text-xs font-mono uppercase tracking-wider text-slate-400 mb-2">
-            Sync result
+        <div
+          className="mt-4 rounded-lg p-4"
+          style={{
+            backgroundColor: result.backgroundStarted
+              ? "rgba(37,99,235,0.06)"
+              : "#F8FAFC",
+            border: `1px solid ${result.backgroundStarted ? "rgba(37,99,235,0.20)" : "#E2E8F0"}`,
+          }}
+        >
+          <p className="text-xs font-mono uppercase tracking-wider text-blue-600 mb-2 font-bold">
+            {result.backgroundStarted ? "Sync started" : "Sync result"}
           </p>
           {result.status === "FAILED" ? (
             <p className="text-sm text-red-600 font-medium">
               Failed: {result.errorMessage ?? "unknown error"}
+            </p>
+          ) : result.backgroundStarted ? (
+            <p className="text-sm text-slate-700 leading-relaxed">
+              {result.note}
+              <br />
+              <span className="text-slate-500 text-xs">
+                The source appears below immediately. Lead counts will update
+                as the background sync ingests the audience.
+              </span>
             </p>
           ) : (
             <ul className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-sm">

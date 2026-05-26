@@ -83,10 +83,18 @@ export async function runSourceReplenish(
       source.kind === "CURSIVE_AUDIENCE" ? "audiences" : "segments";
     const fallbackSurface = primarySurface === "audiences" ? "segments" : "audiences";
 
+    // Per-tick cap. The full audience can be 50K+ members but each Prisma
+    // upsert costs ~50-100ms against Neon, so 2000 rows fits comfortably
+    // in Vercel's 5-min function budget (~3 min worst case) while still
+    // showing meaningful pool depth. The weekly cron picks up the rest
+    // by refreshing the source repeatedly — and we can raise this cap
+    // once we switch to chunked createMany batching.
+    const PER_RUN_MEMBER_CAP = 2000;
+
     let result = await streamAlSegmentMembers(source.externalId, {
       apiKey: source.cursiveApiKeyEnc ?? undefined,
       surface: primarySurface,
-      maxMembers: 10_000,
+      maxMembers: PER_RUN_MEMBER_CAP,
     });
 
     // If primary surface 404'd or returned no rows, try the other surface.
@@ -94,7 +102,7 @@ export async function runSourceReplenish(
       const fallback = await streamAlSegmentMembers(source.externalId, {
         apiKey: source.cursiveApiKeyEnc ?? undefined,
         surface: fallbackSurface,
-        maxMembers: 10_000,
+        maxMembers: PER_RUN_MEMBER_CAP,
       });
       if (fallback.ok && fallback.data.length > 0) {
         result = fallback;

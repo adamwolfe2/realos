@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { requireAgency } from "@/lib/tenancy/scope";
@@ -106,15 +107,31 @@ export async function POST(req: NextRequest) {
     },
   });
 
-  let syncSummary: unknown = null;
+  // The source is created synchronously and we return immediately so the
+  // form gets a fast response. The actual sync (which can pull 50K+ rows
+  // from Cursive + score each one + DB upsert) runs in the BACKGROUND via
+  // next/server `after()` so the response isn't gated by Vercel's
+  // 5-minute function cap. The operator refreshes /admin/marketplace to
+  // see results in the source list's "last run" tile.
   if (data.runImmediately) {
-    try {
-      syncSummary = await runSourceReplenish(source);
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      syncSummary = { status: "FAILED", errorMessage: message };
-    }
+    after(async () => {
+      try {
+        await runSourceReplenish(source);
+      } catch (err) {
+        console.error(
+          "marketplace background sync failed",
+          source.id,
+          err,
+        );
+      }
+    });
   }
 
-  return NextResponse.json({ source, syncSummary });
+  return NextResponse.json({
+    source,
+    syncStarted: !!data.runImmediately,
+    note: data.runImmediately
+      ? "Sync running in background. Refresh in 1-3 minutes to see results."
+      : null,
+  });
 }

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { z } from "zod";
 import { MarketplaceLeadPropertyType } from "@prisma/client";
 import { getSellerSession } from "@/lib/marketplace/seller-auth";
@@ -40,14 +41,19 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  try {
-    const result = await ingestSellerCursiveSegment(seller, parsed.data);
-    return NextResponse.json(result);
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json(
-      { error: "ingest_failed", message },
-      { status: 500 },
-    );
-  }
+  // Run the ingest in the background to avoid Vercel's 5-min function
+  // cap when the audience has tens of thousands of members. The seller
+  // dashboard surfaces results from the latest sync row.
+  after(async () => {
+    try {
+      await ingestSellerCursiveSegment(seller, parsed.data);
+    } catch (err) {
+      console.error("seller cursive ingest failed", seller.id, err);
+    }
+  });
+
+  return NextResponse.json({
+    ok: true,
+    note: "Sync started in background. Refresh your dashboard in 1-3 minutes.",
+  });
 }
