@@ -88,14 +88,48 @@ function SourceRow({ source }: { source: Source }) {
 
   const lastRun = source.runs[0];
 
+  // Delta between current pool size and what the LAST sync upserted —
+  // surfaces "leads disappeared" cases like the one Adam hit on May 26.
+  // Negative delta = current pool smaller than last successful run's
+  // upsertedCount, which usually means something nuked rows.
+  const lastSuccessful = source.runs.find((r) => r.status === "SUCCESS");
+  const expectedFloor = lastSuccessful?.upsertedCount ?? 0;
+  const poolDelta = source.leadCount - expectedFloor;
+  const showAlert = expectedFloor > 0 && source.leadCount < expectedFloor * 0.5;
+
+  // Recency string for the header.
+  const lastSyncAgo = lastRun?.ago ?? null;
+
   return (
     <li className="bg-white border border-slate-200 rounded-xl p-5">
+      {showAlert ? (
+        <div className="mb-4 -mt-1 flex items-start gap-2 p-3 rounded-md bg-amber-50 border border-amber-200 text-xs leading-relaxed">
+          <span aria-hidden="true" className="text-amber-700 font-bold">⚠</span>
+          <div className="text-amber-800">
+            <strong className="font-semibold">Pool dropped sharply.</strong>{" "}
+            Last sync upserted {expectedFloor.toLocaleString()} leads but the
+            current pool is {source.leadCount.toLocaleString()}{" "}
+            ({poolDelta > 0 ? "+" : ""}{poolDelta.toLocaleString()}). If
+            this wasn't expected, click <strong>Sync now</strong> to
+            re-pull from upstream.
+          </div>
+        </div>
+      ) : null}
       <div className="flex items-start justify-between gap-4 flex-wrap">
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-base font-medium text-slate-900">
               {source.name}
             </span>
+            {lastSyncAgo ? (
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">
+                last sync · {lastSyncAgo}
+              </span>
+            ) : (
+              <span className="text-[10px] font-mono uppercase tracking-wider text-slate-400 bg-slate-50 border border-slate-200 px-1.5 py-0.5 rounded">
+                never synced
+              </span>
+            )}
             {!source.enabled && (
               <span className="text-[10px] font-mono uppercase tracking-wider text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded">
                 Paused
@@ -119,11 +153,13 @@ function SourceRow({ source }: { source: Source }) {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <ToggleEnrichmentButton source={source} />
+          {/* Sync now: primary action — re-pulls upstream + repopulates
+              leads. The "where did my leads go?" recovery path. */}
           <button
             type="button"
             onClick={syncNow}
             disabled={syncing}
-            className="px-3.5 py-1.5 rounded-md border border-slate-200 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-1.5 rounded-md bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {syncing ? "Syncing…" : "Sync now"}
           </button>
