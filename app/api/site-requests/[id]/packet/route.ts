@@ -214,7 +214,10 @@ ${sr.intake?.anythingElse ?? "_(none)_"}
   const blob = await zip.generateAsync({ type: "nodebuffer" });
   const filename = `site-request-${sr.slug}-${brandName.replace(/[^a-zA-Z0-9-]/g, "_")}.zip`;
 
-  return new NextResponse(blob, {
+  // Re-wrap as a plain Uint8Array<ArrayBuffer> so it satisfies BodyInit —
+  // @types/node types Buffer over ArrayBufferLike, which the Response body
+  // union rejects.
+  return new NextResponse(new Uint8Array(blob), {
     status: 200,
     headers: {
       "Content-Type": "application/zip",
