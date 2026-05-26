@@ -3,57 +3,72 @@
 -- SiteRequestEvent plus their enums. Sits alongside the existing
 -- WebsiteBuildRequest queue. SiteRequest.orgId is nullable to support public
 -- submissions (no LeaseStack account yet).
+--
+-- Every statement is guarded (idempotent) so the migration can be safely
+-- re-applied after a partial/failed run without tripping "already exists".
 -- ============================================================================
 
 -- CreateEnum
-CREATE TYPE "SiteRequestStatus" AS ENUM (
-  'SUBMITTED',
-  'TRIAGE',
-  'NEEDS_INFO',
-  'DISQUALIFIED',
-  'QUALIFIED',
-  'INSPIRATION_EXTRACTION',
-  'SPEC_REVIEW',
-  'READY_TO_BUILD',
-  'IN_BUILD',
-  'PREVIEW_READY',
-  'CLIENT_REVIEW',
-  'REVISION_REQUESTED',
-  'APPROVED',
-  'DEPLOYED',
-  'MAINTENANCE',
-  'PAUSED',
-  'CHURNED'
-);
+DO $$ BEGIN
+  CREATE TYPE "SiteRequestStatus" AS ENUM (
+    'SUBMITTED',
+    'TRIAGE',
+    'NEEDS_INFO',
+    'DISQUALIFIED',
+    'QUALIFIED',
+    'INSPIRATION_EXTRACTION',
+    'SPEC_REVIEW',
+    'READY_TO_BUILD',
+    'IN_BUILD',
+    'PREVIEW_READY',
+    'CLIENT_REVIEW',
+    'REVISION_REQUESTED',
+    'APPROVED',
+    'DEPLOYED',
+    'MAINTENANCE',
+    'PAUSED',
+    'CHURNED'
+  );
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "SiteRequestTier" AS ENUM (
-  'TIER1_MARKETING',
-  'TIER2_PORTAL',
-  'TIER3_CUSTOM'
-);
+DO $$ BEGIN
+  CREATE TYPE "SiteRequestTier" AS ENUM (
+    'TIER1_MARKETING',
+    'TIER2_PORTAL',
+    'TIER3_CUSTOM'
+  );
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "SiteRequestPriority" AS ENUM (
-  'URGENT',
-  'NORMAL',
-  'LOW'
-);
+DO $$ BEGIN
+  CREATE TYPE "SiteRequestPriority" AS ENUM (
+    'URGENT',
+    'NORMAL',
+    'LOW'
+  );
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateEnum
-CREATE TYPE "SiteRequestAssetType" AS ENUM (
-  'LOGO',
-  'HERO',
-  'HEADSHOT',
-  'PROPERTY_PHOTO',
-  'LISTING_PHOTO',
-  'BRAND_GUIDE',
-  'INSPIRATION',
-  'OTHER'
-);
+DO $$ BEGIN
+  CREATE TYPE "SiteRequestAssetType" AS ENUM (
+    'LOGO',
+    'HERO',
+    'HEADSHOT',
+    'PROPERTY_PHOTO',
+    'LISTING_PHOTO',
+    'BRAND_GUIDE',
+    'INSPIRATION',
+    'OTHER'
+  );
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateTable
-CREATE TABLE "SiteRequest" (
+CREATE TABLE IF NOT EXISTS "SiteRequest" (
   "id" TEXT NOT NULL,
   "slug" TEXT NOT NULL,
   "orgId" TEXT,
@@ -92,20 +107,26 @@ CREATE TABLE "SiteRequest" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "SiteRequest_slug_key" ON "SiteRequest"("slug");
-CREATE INDEX "SiteRequest_status_lastActivityAt_idx" ON "SiteRequest"("status", "lastActivityAt");
-CREATE INDEX "SiteRequest_orgId_status_idx" ON "SiteRequest"("orgId", "status");
-CREATE INDEX "SiteRequest_assignedToUserId_status_idx" ON "SiteRequest"("assignedToUserId", "status");
-CREATE INDEX "SiteRequest_source_idx" ON "SiteRequest"("source");
+CREATE UNIQUE INDEX IF NOT EXISTS "SiteRequest_slug_key" ON "SiteRequest"("slug");
+CREATE INDEX IF NOT EXISTS "SiteRequest_status_lastActivityAt_idx" ON "SiteRequest"("status", "lastActivityAt");
+CREATE INDEX IF NOT EXISTS "SiteRequest_orgId_status_idx" ON "SiteRequest"("orgId", "status");
+CREATE INDEX IF NOT EXISTS "SiteRequest_assignedToUserId_status_idx" ON "SiteRequest"("assignedToUserId", "status");
+CREATE INDEX IF NOT EXISTS "SiteRequest_source_idx" ON "SiteRequest"("source");
 
 -- AddForeignKey
-ALTER TABLE "SiteRequest" ADD CONSTRAINT "SiteRequest_orgId_fkey"
-  FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
-ALTER TABLE "SiteRequest" ADD CONSTRAINT "SiteRequest_assignedToUserId_fkey"
-  FOREIGN KEY ("assignedToUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "SiteRequest" ADD CONSTRAINT "SiteRequest_orgId_fkey"
+    FOREIGN KEY ("orgId") REFERENCES "Organization"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
+DO $$ BEGIN
+  ALTER TABLE "SiteRequest" ADD CONSTRAINT "SiteRequest_assignedToUserId_fkey"
+    FOREIGN KEY ("assignedToUserId") REFERENCES "User"("id") ON DELETE SET NULL ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateTable
-CREATE TABLE "IntakeResponse" (
+CREATE TABLE IF NOT EXISTS "IntakeResponse" (
   "id" TEXT NOT NULL,
   "siteRequestId" TEXT NOT NULL,
   "identityType" TEXT,
@@ -145,13 +166,16 @@ CREATE TABLE "IntakeResponse" (
   CONSTRAINT "IntakeResponse_pkey" PRIMARY KEY ("id")
 );
 
-CREATE UNIQUE INDEX "IntakeResponse_siteRequestId_key" ON "IntakeResponse"("siteRequestId");
+CREATE UNIQUE INDEX IF NOT EXISTS "IntakeResponse_siteRequestId_key" ON "IntakeResponse"("siteRequestId");
 
-ALTER TABLE "IntakeResponse" ADD CONSTRAINT "IntakeResponse_siteRequestId_fkey"
-  FOREIGN KEY ("siteRequestId") REFERENCES "SiteRequest"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "IntakeResponse" ADD CONSTRAINT "IntakeResponse_siteRequestId_fkey"
+    FOREIGN KEY ("siteRequestId") REFERENCES "SiteRequest"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateTable
-CREATE TABLE "SiteRequestAsset" (
+CREATE TABLE IF NOT EXISTS "SiteRequestAsset" (
   "id" TEXT NOT NULL,
   "siteRequestId" TEXT NOT NULL,
   "type" "SiteRequestAssetType" NOT NULL,
@@ -166,13 +190,16 @@ CREATE TABLE "SiteRequestAsset" (
   CONSTRAINT "SiteRequestAsset_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "SiteRequestAsset_siteRequestId_type_idx" ON "SiteRequestAsset"("siteRequestId", "type");
+CREATE INDEX IF NOT EXISTS "SiteRequestAsset_siteRequestId_type_idx" ON "SiteRequestAsset"("siteRequestId", "type");
 
-ALTER TABLE "SiteRequestAsset" ADD CONSTRAINT "SiteRequestAsset_siteRequestId_fkey"
-  FOREIGN KEY ("siteRequestId") REFERENCES "SiteRequest"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "SiteRequestAsset" ADD CONSTRAINT "SiteRequestAsset_siteRequestId_fkey"
+    FOREIGN KEY ("siteRequestId") REFERENCES "SiteRequest"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
 
 -- CreateTable
-CREATE TABLE "SiteRequestEvent" (
+CREATE TABLE IF NOT EXISTS "SiteRequestEvent" (
   "id" TEXT NOT NULL,
   "siteRequestId" TEXT NOT NULL,
   "kind" TEXT NOT NULL,
@@ -186,7 +213,10 @@ CREATE TABLE "SiteRequestEvent" (
   CONSTRAINT "SiteRequestEvent_pkey" PRIMARY KEY ("id")
 );
 
-CREATE INDEX "SiteRequestEvent_siteRequestId_createdAt_idx" ON "SiteRequestEvent"("siteRequestId", "createdAt");
+CREATE INDEX IF NOT EXISTS "SiteRequestEvent_siteRequestId_createdAt_idx" ON "SiteRequestEvent"("siteRequestId", "createdAt");
 
-ALTER TABLE "SiteRequestEvent" ADD CONSTRAINT "SiteRequestEvent_siteRequestId_fkey"
-  FOREIGN KEY ("siteRequestId") REFERENCES "SiteRequest"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+DO $$ BEGIN
+  ALTER TABLE "SiteRequestEvent" ADD CONSTRAINT "SiteRequestEvent_siteRequestId_fkey"
+    FOREIGN KEY ("siteRequestId") REFERENCES "SiteRequest"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+EXCEPTION WHEN duplicate_object THEN null;
+END $$;
