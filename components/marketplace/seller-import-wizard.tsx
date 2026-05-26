@@ -749,11 +749,42 @@ function DedupGroup({
     );
   }
 
+  const selectedInGroup = rows.filter((r) => includeRow[r.rowIndex]).length;
+  const allSelected = selectedInGroup === rows.length;
+  const noneSelected = selectedInGroup === 0;
+  const toggleAll = (next: boolean) => {
+    for (const r of rows) onToggle(r.rowIndex, next);
+  };
+
   return (
     <div>
-      <h3 className="text-sm font-semibold text-slate-900 mb-2">
-        {icon} {title} ({rows.length})
-      </h3>
+      <div className="flex items-baseline justify-between gap-3 mb-2">
+        <h3 className="text-sm font-semibold text-slate-900">
+          {icon} {title} ({rows.length})
+          <span className="ml-2 text-xs font-normal text-slate-500">
+            {selectedInGroup} selected
+          </span>
+        </h3>
+        <div className="flex items-center gap-1">
+          <button
+            type="button"
+            onClick={() => toggleAll(true)}
+            disabled={allSelected}
+            className="text-xs text-blue-600 hover:text-blue-700 hover:underline disabled:text-slate-400 disabled:hover:no-underline disabled:cursor-not-allowed"
+          >
+            Select all
+          </button>
+          <span className="text-slate-300" aria-hidden="true">·</span>
+          <button
+            type="button"
+            onClick={() => toggleAll(false)}
+            disabled={noneSelected}
+            className="text-xs text-slate-600 hover:text-slate-900 hover:underline disabled:text-slate-400 disabled:hover:no-underline disabled:cursor-not-allowed"
+          >
+            Skip all
+          </button>
+        </div>
+      </div>
       <div className="rounded-lg border border-slate-200 max-h-[320px] overflow-y-auto divide-y divide-slate-100">
         {rows.map((r) => (
           <div
