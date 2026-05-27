@@ -598,6 +598,49 @@ interface DesignLanguageEntry {
   sampleColors: { primary: string | null; canvas: string | null };
 }
 
+// Slug → domain map for Clearbit logos + website links. Keep in sync with
+// the matching map in lib/site-engine/visual-direction-catalogs.ts.
+const DL_DOMAIN_OVERRIDES: Record<string, string> = {
+  "bmw-m": "bmw-m.com",
+  cal: "cal.com",
+  claude: "claude.ai",
+  composio: "composio.dev",
+  expo: "expo.dev",
+  hashicorp: "hashicorp.com",
+  "linear.app": "linear.app",
+  lovable: "lovable.dev",
+  meta: "meta.com",
+  minimax: "minimaxi.com",
+  mintlify: "mintlify.com",
+  "mistral.ai": "mistral.ai",
+  ollama: "ollama.com",
+  "opencode.ai": "opencode.ai",
+  playstation: "playstation.com",
+  posthog: "posthog.com",
+  raycast: "raycast.com",
+  replicate: "replicate.com",
+  resend: "resend.com",
+  runwayml: "runwayml.com",
+  sanity: "sanity.io",
+  sentry: "sentry.io",
+  spacex: "spacex.com",
+  superhuman: "superhuman.com",
+  theverge: "theverge.com",
+  "together.ai": "together.ai",
+  vercel: "vercel.com",
+  voltagent: "voltagent.dev",
+  warp: "warp.dev",
+  webflow: "webflow.com",
+  wired: "wired.com",
+  wise: "wise.com",
+  "x.ai": "x.ai",
+  zapier: "zapier.com",
+};
+
+function dlDomain(slug: string): string {
+  return DL_DOMAIN_OVERRIDES[slug] ?? `${slug}.com`;
+}
+
 async function DesignLanguageCard({ slug }: { slug: string }) {
   let entry: DesignLanguageEntry | null = null;
   try {
@@ -616,6 +659,10 @@ async function DesignLanguageCard({ slug }: { slug: string }) {
     // Bundled data missing — fall through to slug-only render.
   }
 
+  const domain = dlDomain(slug);
+  const website = `https://${domain}`;
+  const logoUrl = `https://logo.clearbit.com/${domain}?size=128`;
+
   if (!entry) {
     return (
       <div className="rounded-md border border-dashed border-border bg-muted/20 p-3 text-sm text-muted-foreground">
@@ -630,11 +677,20 @@ async function DesignLanguageCard({ slug }: { slug: string }) {
   return (
     <details className="rounded-md border border-border bg-background p-3 open:bg-card">
       <summary className="cursor-pointer flex items-center justify-between gap-3 text-sm">
-        <div className="min-w-0">
-          <div className="font-medium text-foreground capitalize">{entry.name}</div>
-          <div className="text-xs text-muted-foreground mt-0.5">
-            {entry.category} · {entry.colorPhilosophy ?? "—"} ·{" "}
-            {entry.typography ?? "—"} · {entry.motion ?? "—"}
+        <div className="flex items-center gap-2.5 min-w-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={logoUrl}
+            alt={`${entry.name} logo`}
+            className="size-7 rounded-sm bg-white object-contain border border-border/50 shrink-0"
+            loading="lazy"
+          />
+          <div className="min-w-0">
+            <div className="font-medium text-foreground capitalize">{entry.name}</div>
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {entry.category} · {entry.colorPhilosophy ?? "—"} ·{" "}
+              {entry.typography ?? "—"} · {entry.motion ?? "—"}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
@@ -668,6 +724,16 @@ async function DesignLanguageCard({ slug }: { slug: string }) {
           Full DESIGN.md ships in the build packet under{" "}
           <code className="text-foreground">visual-direction/design-language-{slug}.md</code>.
         </p>
+        <div className="pt-2">
+          <a
+            href={website}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+          >
+            View live site at {domain} <span aria-hidden="true">↗</span>
+          </a>
+        </div>
       </div>
     </details>
   );

@@ -32,6 +32,63 @@ interface DesignLanguageEntry {
   bestFor: string[];
   sampleColors: { primary: string | null; canvas: string | null };
   thumbnailReference: string | null;
+  // Derived at load time — not stored in the INDEX.json on disk.
+  website?: string;
+  logoUrl?: string;
+}
+
+// Slug → canonical domain. Most entries are <slug>.com so they're omitted
+// here; only the ones where the slug doesn't match the domain need a
+// mapping. Used to build Clearbit logo URLs + clickable "view site" links
+// on the picker cards so users can reference the actual brand quickly.
+const DOMAIN_OVERRIDES: Record<string, string> = {
+  "bmw-m": "bmw-m.com",
+  cal: "cal.com",
+  claude: "claude.ai",
+  composio: "composio.dev",
+  expo: "expo.dev",
+  hashicorp: "hashicorp.com",
+  "linear.app": "linear.app",
+  lovable: "lovable.dev",
+  meta: "meta.com",
+  minimax: "minimaxi.com",
+  mintlify: "mintlify.com",
+  "mistral.ai": "mistral.ai",
+  ollama: "ollama.com",
+  "opencode.ai": "opencode.ai",
+  playstation: "playstation.com",
+  posthog: "posthog.com",
+  raycast: "raycast.com",
+  replicate: "replicate.com",
+  resend: "resend.com",
+  runwayml: "runwayml.com",
+  sanity: "sanity.io",
+  sentry: "sentry.io",
+  spacex: "spacex.com",
+  superhuman: "superhuman.com",
+  theverge: "theverge.com",
+  "together.ai": "together.ai",
+  vercel: "vercel.com",
+  voltagent: "voltagent.dev",
+  warp: "warp.dev",
+  webflow: "webflow.com",
+  wired: "wired.com",
+  wise: "wise.com",
+  "x.ai": "x.ai",
+  zapier: "zapier.com",
+};
+
+function deriveDomain(slug: string): string {
+  return DOMAIN_OVERRIDES[slug] ?? `${slug}.com`;
+}
+
+/**
+ * Public Clearbit logo CDN — no auth needed for read. We pass `size=128` so
+ * the response is a reasonable 128px logo regardless of source asset, and
+ * `greyscale=false` to keep brand colors.
+ */
+function clearbitLogoUrl(domain: string): string {
+  return `https://logo.clearbit.com/${domain}?size=128`;
 }
 
 export interface DesignLanguageIndex {
@@ -93,7 +150,7 @@ async function readJson<T>(filename: string): Promise<T | null> {
 }
 
 export async function loadDesignLanguageIndex(): Promise<DesignLanguageIndex> {
-  return (
+  const raw =
     (await readJson<DesignLanguageIndex>("design-languages-index.json")) ?? {
       schemaVersion: 1,
       generatedAt: new Date().toISOString(),
@@ -102,8 +159,21 @@ export async function loadDesignLanguageIndex(): Promise<DesignLanguageIndex> {
       categories: [],
       colorPhilosophies: [],
       designLanguages: [],
-    }
-  );
+    };
+  // Enrich each entry with a derived website + Clearbit logo URL. Done at
+  // load time rather than baked into INDEX.json so the kit doesn't have to
+  // know about LeaseStack's UI choices.
+  return {
+    ...raw,
+    designLanguages: raw.designLanguages.map((d) => {
+      const domain = deriveDomain(d.slug);
+      return {
+        ...d,
+        website: `https://${domain}`,
+        logoUrl: clearbitLogoUrl(domain),
+      };
+    }),
+  };
 }
 
 export async function loadPaletteIndex(): Promise<PaletteIndex> {

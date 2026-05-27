@@ -37,6 +37,9 @@ export interface DesignLanguageOption {
   bestFor: string[];
   sampleColors: { primary: string | null; canvas: string | null };
   thumbnailReference: string | null;
+  // Derived from slug → domain mapping (see lib/site-engine/visual-direction-catalogs.ts)
+  website?: string;
+  logoUrl?: string;
 }
 
 export interface PaletteOption {
@@ -576,10 +579,10 @@ function StylePanel({
                 )}
               >
                 {/* Real PNG screenshot captured from the starter-template
-                    running each preset (site-engine-kit/scripts/
-                    capture-preset-screenshots.mjs). Synthetic block sits
-                    behind as a fallback if the PNG is missing — same colors
-                    + display font so the card never goes blank. */}
+                    (site-engine-kit/scripts/capture-preset-screenshots.mjs).
+                    Synthetic block renders FIRST in DOM order as a
+                    background fallback; the image paints on top of it,
+                    so when the PNG loads it fully covers the fallback. */}
                 <div
                   className="relative border-b border-border overflow-hidden"
                   style={{
@@ -587,15 +590,7 @@ function StylePanel({
                     background: thumb.bg,
                   }}
                 >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={`/site-engine/presets/${p.slug}.png`}
-                    alt={`${p.displayName} preview`}
-                    className="absolute inset-0 w-full h-full object-cover object-top"
-                    loading="lazy"
-                  />
-                  {/* Fallback layer — hidden under the image when image loads. */}
-                  <div className="absolute inset-0 px-4 py-5 pointer-events-none -z-0">
+                  <div className="absolute inset-0 px-4 py-5 pointer-events-none">
                     <div
                       className="text-[15px] tracking-tight leading-snug"
                       style={{
@@ -613,6 +608,13 @@ function StylePanel({
                       Supporting text in the body face
                     </div>
                   </div>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/site-engine/presets/${p.slug}.png`}
+                    alt={`${p.displayName} preview`}
+                    className="absolute inset-0 w-full h-full object-cover object-top bg-white"
+                    loading="lazy"
+                  />
                 </div>
 
                 <div className="p-4 space-y-2 flex-1">
@@ -715,53 +717,90 @@ function StylePanel({
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-[480px] overflow-y-auto pr-1">
             {filteredLanguages.map((d) => {
               const active = d.slug === chosenDesignLanguageSlug;
+              const displayDomain = d.website
+                ? d.website.replace(/^https?:\/\//, "")
+                : null;
               return (
-                <button
+                <div
                   key={d.slug}
-                  type="button"
-                  onClick={() => onChooseDesignLanguage(active ? null : d.slug)}
                   className={cn(
-                    "rounded-md border p-3 text-left transition-colors space-y-1.5",
+                    "rounded-md border transition-colors flex flex-col",
                     active
                       ? "border-primary bg-primary/5"
                       : "border-border bg-background hover:bg-muted/30",
                   )}
                 >
-                  <div className="flex items-baseline justify-between gap-2">
-                    <h4 className="text-sm font-semibold capitalize">{d.name}</h4>
-                    {active ? (
-                      <span className="text-[10px] uppercase tracking-widest text-primary font-bold">
-                        ✓
-                      </span>
-                    ) : null}
-                  </div>
-                  <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
-                    <span>{humanCategory(d.category)}</span>
-                    {d.colorPhilosophy ? (
-                      <>
-                        <span aria-hidden="true">·</span>
-                        <span>{d.colorPhilosophy.replaceAll("-", " ")}</span>
-                      </>
-                    ) : null}
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-snug line-clamp-3">
-                    {d.description}
-                  </p>
-                  <div className="flex items-center gap-1.5 pt-0.5">
-                    {d.sampleColors.canvas ? (
-                      <span
-                        className="size-3.5 rounded-sm border border-border"
-                        style={{ background: d.sampleColors.canvas }}
-                      />
-                    ) : null}
-                    {d.sampleColors.primary ? (
-                      <span
-                        className="size-3.5 rounded-sm border border-border"
-                        style={{ background: d.sampleColors.primary }}
-                      />
-                    ) : null}
-                  </div>
-                </button>
+                  <button
+                    type="button"
+                    onClick={() => onChooseDesignLanguage(active ? null : d.slug)}
+                    className="p-3 text-left space-y-1.5 flex-1"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {d.logoUrl ? (
+                          /* eslint-disable-next-line @next/next/no-img-element */
+                          <img
+                            src={d.logoUrl}
+                            alt={`${d.name} logo`}
+                            className="size-6 rounded-sm bg-white object-contain border border-border/50 shrink-0"
+                            loading="lazy"
+                            onError={(e) => {
+                              // Clearbit returns 404 for unknown domains —
+                              // hide the broken image cleanly.
+                              (e.currentTarget as HTMLImageElement).style.display = "none";
+                            }}
+                          />
+                        ) : null}
+                        <h4 className="text-sm font-semibold capitalize truncate">
+                          {d.name}
+                        </h4>
+                      </div>
+                      {active ? (
+                        <span className="text-[10px] uppercase tracking-widest text-primary font-bold shrink-0">
+                          ✓
+                        </span>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
+                      <span>{humanCategory(d.category)}</span>
+                      {d.colorPhilosophy ? (
+                        <>
+                          <span aria-hidden="true">·</span>
+                          <span>{d.colorPhilosophy.replaceAll("-", " ")}</span>
+                        </>
+                      ) : null}
+                    </div>
+                    <p className="text-[11px] text-muted-foreground leading-snug line-clamp-3">
+                      {d.description}
+                    </p>
+                    <div className="flex items-center gap-1.5 pt-0.5">
+                      {d.sampleColors.canvas ? (
+                        <span
+                          className="size-3.5 rounded-sm border border-border"
+                          style={{ background: d.sampleColors.canvas }}
+                        />
+                      ) : null}
+                      {d.sampleColors.primary ? (
+                        <span
+                          className="size-3.5 rounded-sm border border-border"
+                          style={{ background: d.sampleColors.primary }}
+                        />
+                      ) : null}
+                    </div>
+                  </button>
+                  {d.website ? (
+                    <a
+                      href={d.website}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      className="px-3 py-1.5 border-t border-border/60 text-[10px] uppercase tracking-wider text-muted-foreground hover:text-primary hover:bg-muted/50 transition-colors flex items-center justify-between gap-2"
+                    >
+                      <span className="truncate">{displayDomain}</span>
+                      <span aria-hidden="true">↗</span>
+                    </a>
+                  ) : null}
+                </div>
               );
             })}
           </div>
