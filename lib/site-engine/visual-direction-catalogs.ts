@@ -83,12 +83,17 @@ function deriveDomain(slug: string): string {
 }
 
 /**
- * Public Clearbit logo CDN — no auth needed for read. We pass `size=128` so
- * the response is a reasonable 128px logo regardless of source asset, and
- * `greyscale=false` to keep brand colors.
+ * Google's favicon service. Returns a real-color favicon (or brand mark
+ * when the site exposes one) at the requested size, fully CORS-enabled,
+ * no auth required. Replaced our earlier Clearbit Logo API call after
+ * Clearbit's free CDN was discontinued — Clearbit URLs now return
+ * connection-refused / 000 status.
+ *
+ * Coverage is broad because Google fetches via its general crawler
+ * cache; even tiny domains (lovable.dev, voltagent.dev) resolve.
  */
-function clearbitLogoUrl(domain: string): string {
-  return `https://logo.clearbit.com/${domain}?size=128`;
+function brandLogoUrl(domain: string): string {
+  return `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 }
 
 export interface DesignLanguageIndex {
@@ -170,7 +175,7 @@ export async function loadDesignLanguageIndex(): Promise<DesignLanguageIndex> {
       return {
         ...d,
         website: `https://${domain}`,
-        logoUrl: clearbitLogoUrl(domain),
+        logoUrl: brandLogoUrl(domain),
       };
     }),
   };

@@ -661,7 +661,10 @@ async function DesignLanguageCard({ slug }: { slug: string }) {
 
   const domain = dlDomain(slug);
   const website = `https://${domain}`;
-  const logoUrl = `https://logo.clearbit.com/${domain}?size=128`;
+  // Google's favicon service — Clearbit's Logo CDN was discontinued and
+  // now returns connection-refused. See lib/site-engine/visual-direction-
+  // catalogs.ts for the matching client-side source of truth.
+  const logoUrl = `https://www.google.com/s2/favicons?domain=${domain}&sz=128`;
 
   if (!entry) {
     return (
