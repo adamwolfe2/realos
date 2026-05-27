@@ -299,7 +299,7 @@ export function SellerImportWizard() {
         progress={progress}
       />
 
-      <div className="rounded-2xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm">
+      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-6 md:p-8 shadow-sm">
         {step === "source" && (
           <StepSource
             source={source}
@@ -585,8 +585,8 @@ function StepMap({
         <Badge color="slate">{skipped} skipped</Badge>
       </div>
 
-      <div className="mt-6 overflow-hidden rounded-xl border border-slate-200">
-        <table className="w-full text-sm">
+      <div className="mt-6 overflow-x-auto rounded-xl border border-slate-200">
+        <table className="w-full text-sm min-w-[640px]">
           <thead className="bg-slate-50 text-xs uppercase tracking-widest text-slate-500 font-semibold">
             <tr>
               <th className="text-left px-4 py-3 w-[28%]">Your CSV column</th>
@@ -967,6 +967,7 @@ function ProgressHeader({
   currentIndex: number;
   progress: number;
 }) {
+  const current = steps[currentIndex];
   return (
     <div>
       <div className="h-1.5 w-full rounded-full bg-slate-200 overflow-hidden">
@@ -975,7 +976,20 @@ function ProgressHeader({
           style={{ width: `${progress}%` }}
         />
       </div>
-      <ol className="mt-4 flex items-start justify-between">
+
+      {/* Mobile: condensed "Step N of M · current label" — labels don't fit
+          at <640px without wrapping or truncating each one. */}
+      <div className="mt-3 sm:hidden flex items-center justify-between">
+        <span className="text-xs font-mono uppercase tracking-widest text-slate-500">
+          Step {currentIndex + 1} of {steps.length}
+        </span>
+        <span className="text-sm font-medium text-slate-900">
+          {current?.label ?? ""}
+        </span>
+      </div>
+
+      {/* Desktop: full 5-circle indicator with labels. */}
+      <ol className="mt-4 hidden sm:flex items-start justify-between">
         {steps.map((step, i) => {
           const done = i < currentIndex;
           const active = i === currentIndex;
