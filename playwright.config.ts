@@ -2,10 +2,32 @@ import { defineConfig, devices } from "@playwright/test";
 import { config as loadEnv } from "dotenv";
 import path from "node:path";
 
-// Load .env.local so DATABASE_URL + Clerk keys are available to globalSetup
-// and the dev server. Playwright doesn't read .env files automatically.
+// Load env files so DATABASE_URL + Clerk + marketplace HMAC secrets are
+// available to globalSetup, the spawned dev server (it inherits this
+// process's env), and individual specs that mint signed cookies.
+//
+// Precedence — first one wins for each key (dotenv default is no-override):
+//   .env.local        — local dev primary
+//   .env              — committed defaults
+//   .env.production.local — fallback for secrets that aren't checked into
+//     .env.local (e.g. ENCRYPTION_KEY, MARKETPLACE_AUTH_SECRET). Without
+//     this, specs that need the same HMAC key the prod server uses can't
+//     mint a valid session cookie.
 loadEnv({ path: path.resolve(__dirname, ".env.local") });
 loadEnv({ path: path.resolve(__dirname, ".env") });
+loadEnv({ path: path.resolve(__dirname, ".env.production.local") });
+
+// CI safety net: if still no marketplace HMAC secret is available (the .env
+// files don't ship one, e.g. in a fresh clone or in GitHub Actions), set a
+// deterministic test-only value so the spec + dev server agree on what to
+// sign cookies with. Test-only — never used in real environments.
+if (
+  !process.env.MARKETPLACE_AUTH_SECRET &&
+  (!process.env.ENCRYPTION_KEY || process.env.ENCRYPTION_KEY.length < 32)
+) {
+  process.env.MARKETPLACE_AUTH_SECRET =
+    "test-only-marketplace-auth-secret-32-bytes-min-do-not-use-in-prod";
+}
 
 export default defineConfig({
   testDir: "./e2e",

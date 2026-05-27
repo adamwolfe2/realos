@@ -94,11 +94,19 @@ test.beforeAll(async () => {
     },
   });
 
-  // Mint a session cookie value.
+  // Mint a session cookie value. The secret is loaded by playwright.config.ts
+  // (which checks .env.local, .env, .env.production.local in priority order,
+  // and falls back to a deterministic test-only value if none are set). The
+  // dev server inherits the same process env, so the spec's HMAC and the
+  // server's verification HMAC use the same key.
   const secret =
     process.env.MARKETPLACE_AUTH_SECRET ?? process.env.ENCRYPTION_KEY;
   if (!secret || secret.length < 32) {
-    throw new Error("MARKETPLACE_AUTH_SECRET / ENCRYPTION_KEY required");
+    throw new Error(
+      "Marketplace HMAC secret not configured. Expected MARKETPLACE_AUTH_SECRET " +
+        "or ENCRYPTION_KEY in .env.local / .env.production.local (playwright.config.ts " +
+        "sets a test-only fallback when neither is present).",
+    );
   }
   const issuedAt = Date.now();
   const payload = `${seller.id}.${issuedAt}`;
