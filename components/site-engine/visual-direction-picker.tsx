@@ -93,6 +93,62 @@ const TABS: { id: Tab; label: string; description: string }[] = [
   { id: "colors", label: "Pick colors", description: "Override with a curated palette" },
 ];
 
+// Mini visual thumbnails for the preset gallery. Sourced from each
+// preset's tokens.css — when the kit's preset palette changes, update
+// the matching row here.
+const PRESET_THUMBS: Record<
+  string,
+  {
+    bg: string;
+    fg: string;
+    muted: string;
+    accent: string;
+    hairline: string;
+    displayFont: string;
+  }
+> = {
+  "editorial-cream": {
+    bg: "#F5F3EE",
+    fg: "#0F1523",
+    muted: "#8B92A5",
+    accent: "#2A52BE",
+    hairline: "#E2DDD6",
+    displayFont: "Newsreader, Georgia, serif",
+  },
+  "editorial-luxury": {
+    bg: "#F9F7F4",
+    fg: "#0A0A0A",
+    muted: "#8A8A8A",
+    accent: "#C8C0B4",
+    hairline: "#E5E1DB",
+    displayFont: "Playfair Display, Georgia, serif",
+  },
+  "modern-premium": {
+    bg: "#F5F5F5",
+    fg: "#1A1A1A",
+    muted: "#737373",
+    accent: "#981B1B",
+    hairline: "#E3E3E3",
+    displayFont: "Inter, system-ui, sans-serif",
+  },
+  "pnw-editorial": {
+    bg: "#F7F4EE",
+    fg: "#1A1F2B",
+    muted: "#525866",
+    accent: "#4A6B4F",
+    hairline: "rgba(26, 31, 43, 0.16)",
+    displayFont: "Newsreader, Georgia, serif",
+  },
+  default: {
+    bg: "#FAFAF7",
+    fg: "#0F0F0F",
+    muted: "#8A8A86",
+    accent: "#0F0F0F",
+    hairline: "#E5E2DA",
+    displayFont: "Georgia, serif",
+  },
+};
+
 export function VisualDirectionPicker({
   value,
   onChange,
@@ -506,38 +562,83 @@ function StylePanel({
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {presets.map((p) => {
             const active = p.slug === chosenPresetSlug;
+            const thumb = PRESET_THUMBS[p.slug] ?? PRESET_THUMBS.default;
             return (
               <button
                 key={p.slug}
                 type="button"
                 onClick={() => onChoosePreset(active ? null : p.slug)}
                 className={cn(
-                  "rounded-md border p-4 text-left transition-colors space-y-2",
+                  "rounded-md border text-left transition-colors overflow-hidden flex flex-col",
                   active
-                    ? "border-primary bg-primary/5"
+                    ? "border-primary ring-2 ring-primary/20"
                     : "border-border bg-background hover:bg-muted/30",
                 )}
               >
-                <div className="flex items-baseline justify-between gap-2">
-                  <h4 className="text-sm font-semibold">{p.displayName}</h4>
-                  {active ? (
-                    <span className="text-[10px] uppercase tracking-widest text-primary font-bold">
-                      Selected
-                    </span>
-                  ) : null}
-                </div>
-                <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
-                  {p.description}
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  {p.bestFor.slice(0, 3).map((t) => (
+                {/* Mini visual representation of the preset — actual
+                    background + headline + body colors mocked up as a
+                    tiny page. Static lookup table; updated when a preset's
+                    tokens.css changes. */}
+                <div
+                  className="relative px-4 py-5 border-b border-border"
+                  style={{ background: thumb.bg }}
+                >
+                  <div
+                    className="text-[15px] tracking-tight leading-snug"
+                    style={{
+                      color: thumb.fg,
+                      fontFamily: thumb.displayFont,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Sample Headline
+                  </div>
+                  <div
+                    className="mt-1 text-[10px]"
+                    style={{ color: thumb.muted }}
+                  >
+                    Supporting text in the body face
+                  </div>
+                  <div className="absolute top-3 right-3 flex gap-1">
                     <span
-                      key={t}
-                      className="text-[10px] uppercase tracking-wider bg-muted text-muted-foreground px-1.5 py-0.5 rounded"
-                    >
-                      {t}
-                    </span>
-                  ))}
+                      className="size-3 rounded-sm border"
+                      style={{
+                        background: thumb.accent,
+                        borderColor: thumb.hairline,
+                      }}
+                    />
+                    <span
+                      className="size-3 rounded-sm border"
+                      style={{
+                        background: thumb.fg,
+                        borderColor: thumb.hairline,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                <div className="p-4 space-y-2 flex-1">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <h4 className="text-sm font-semibold">{p.displayName}</h4>
+                    {active ? (
+                      <span className="text-[10px] uppercase tracking-widest text-primary font-bold">
+                        Selected
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                    {p.description}
+                  </p>
+                  <div className="flex flex-wrap gap-1">
+                    {p.bestFor.slice(0, 3).map((t) => (
+                      <span
+                        key={t}
+                        className="text-[10px] uppercase tracking-wider bg-muted text-muted-foreground px-1.5 py-0.5 rounded"
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </button>
             );
