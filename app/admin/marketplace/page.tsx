@@ -42,12 +42,62 @@ export default async function AdminMarketplacePage() {
     prisma.marketplaceSyncRun.count(),
   ]);
 
+  // Stripe webhook freshness check — most recent PAID purchase is a proxy
+  // for "is the checkout.session.completed webhook receiving + processing".
+  // If purchases exist but none in the last 7 days, the webhook is likely
+  // broken (Stripe endpoint disabled, signing secret rotated without
+  // updating env, etc.).
+  const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+  const lastPaidPurchase = await prisma.marketplacePurchase.findFirst({
+    where: { status: "PAID" },
+    orderBy: { updatedAt: "desc" },
+    select: { id: true, updatedAt: true },
+  });
+  const hasAnyPurchase =
+    (await prisma.marketplacePurchase.count({ take: 1 })) > 0;
+  const stalePaidWebhook =
+    hasAnyPurchase &&
+    (!lastPaidPurchase ||
+      Date.now() - lastPaidPurchase.updatedAt.getTime() > SEVEN_DAYS_MS);
+
   return (
     <div className="space-y-8 px-4 md:px-8 py-6 md:py-10 max-w-[1280px] mx-auto">
       <PageHeader
         title="Marketplace sources"
         description="Each source pulls a Cursive segment into the public /marketplace pool. Weekly cron re-enriches every member; manual sync available below."
       />
+
+      {stalePaidWebhook ? (
+        <div className="flex items-start gap-2.5 p-4 rounded-lg bg-amber-50 border border-amber-200">
+          <span aria-hidden="true" className="text-amber-700 text-lg leading-none">⚠</span>
+          <div className="text-sm leading-relaxed text-amber-900">
+            <strong className="font-semibold">
+              No paid purchases in the last 7 days.
+            </strong>{" "}
+            {lastPaidPurchase ? (
+              <>
+                Most recent paid event was{" "}
+                {formatDistanceToNow(lastPaidPurchase.updatedAt, {
+                  addSuffix: true,
+                })}
+                .
+              </>
+            ) : (
+              <>The database has purchase rows but none in PAID status.</>
+            )}{" "}
+            If real purchases happened in this window, the Stripe webhook is
+            likely broken (check the endpoint at{" "}
+            <code className="font-mono text-xs text-amber-900">
+              /api/webhooks/stripe/marketplace
+            </code>{" "}
+            in the Stripe dashboard, and confirm{" "}
+            <code className="font-mono text-xs text-amber-900">
+              STRIPE_WEBHOOK_SECRET
+            </code>{" "}
+            matches).
+          </div>
+        </div>
+      ) : null}
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatTile label="Sources" value={String(sources.length)} />
