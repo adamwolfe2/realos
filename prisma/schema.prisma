@@ -5083,3 +5083,48 @@ model MarketplaceSellerPayout {
   @@index([sellerId, createdAt(sort: Desc)])
   @@index([status])
 }
+
+// ----------------------------------------------------------------------------
+// Marketplace audit trail — append-only log for high-value lifecycle events on
+// the marketplace (sales, refunds, expirations, COMP grants, payouts). The
+// platform-side AuditEvent model is org-scoped via Organization → can't be
+// used here because marketplace buyers/sellers live outside the org tenancy
+// model (standalone magic-link accounts). This is the marketplace-equivalent
+// log so we can answer "what happened to lead X" and "what did seller Y see"
+// after the fact.
+//
+// Action names mirror the existing AuditAction enum naming but are kept as a
+// loose String to avoid coupling the marketplace lifecycle to the global enum.
+// ----------------------------------------------------------------------------
+model MarketplaceAuditEvent {
+  id String @id @default(cuid())
+
+  // What happened. Conventional names: "LEAD_SOLD", "LEAD_REFUNDED",
+  // "LEAD_EXPIRED", "PURCHASE_COMP_GRANTED", "PAYOUT_PAID", etc.
+  action String
+
+  // Pointers — all optional so a single action can target a lead OR a
+  // purchase OR a seller (or any combination).
+  leadId     String?
+  purchaseId String?
+  buyerId    String?
+  sellerId   String?
+
+  // Money snapshot at event time (cents). Useful for SOLD / REFUNDED rows
+  // so the audit row is a complete record without rejoining the purchase.
+  amountCents       Int?
+  sellerShareCents  Int?
+
+  // Free-form context — checkout origin (DIRECT / STREAM / COMP), refund
+  // reason, etc.
+  description String?
+  metadata    Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([leadId, createdAt(sort: Desc)])
+  @@index([purchaseId])
+  @@index([sellerId, createdAt(sort: Desc)])
+  @@index([buyerId, createdAt(sort: Desc)])
+  @@index([action, createdAt(sort: Desc)])
+}

@@ -162,6 +162,33 @@ export async function handleMarketplaceCheckoutCompleted(
       }) as never,
     );
   }
+  // Append-only audit row — every paid (or comp-granted) sale gets a record
+  // so we can answer "what happened to lead X" / "what did seller Y see" with
+  // a single index lookup. Bundled into the same transaction so a sale
+  // without an audit row is impossible.
+  txnOps.push(
+    prisma.marketplaceAuditEvent.create({
+      data: {
+        action: isComp ? "PURCHASE_COMP_GRANTED" : "LEAD_SOLD",
+        leadId: purchase.leadId,
+        purchaseId: purchase.id,
+        buyerId: purchase.buyerId,
+        sellerId: sellerSplit.sellerIdAtSale,
+        amountCents: amountPaidCents,
+        sellerShareCents: sellerSplit.sellerShareCents,
+        description: isComp
+          ? `Comp purchase ($0) — lead delivered, no seller credit accrued`
+          : `Lead sold via ${purchase.origin} origin`,
+        metadata: {
+          stripeSessionId: session.id,
+          stripePaymentIntentId: paymentIntentId,
+          origin: isComp ? "COMP" : purchase.origin,
+          priceCents: purchase.priceCents,
+          sellerShareBps: sellerSplit.sellerShareBps,
+        },
+      },
+    }) as never,
+  );
   await prisma.$transaction(txnOps);
 
   // Send the buyer their PII email. Failure doesn't unwind the sale.
@@ -219,6 +246,17 @@ export async function handleMarketplaceCheckoutExpired(
       },
       data: { status: MarketplaceLeadStatus.AVAILABLE },
     }),
+    prisma.marketplaceAuditEvent.create({
+      data: {
+        action: "PURCHASE_EXPIRED",
+        leadId: purchase.leadId,
+        purchaseId: purchase.id,
+        buyerId: purchase.buyerId,
+        amountCents: purchase.priceCents,
+        description: "Stripe checkout session expired before payment",
+        metadata: { stripeSessionId: session.id },
+      },
+    }),
   ]);
   return true;
 }
@@ -243,13 +281,35 @@ export async function handleMarketplaceChargeRefunded(
   if (!purchase) return false;
   if (purchase.status === MarketplacePurchaseStatus.REFUNDED) return true;
 
-  await prisma.marketplacePurchase.update({
-    where: { id: purchase.id },
-    data: {
-      status: MarketplacePurchaseStatus.REFUNDED,
-      refundedAt: new Date(),
-      refundReason: charge.refunds?.data?.[0]?.reason ?? null,
-    },
-  });
+  const refundReason = charge.refunds?.data?.[0]?.reason ?? null;
+  await prisma.$transaction([
+    prisma.marketplacePurchase.update({
+      where: { id: purchase.id },
+      data: {
+        status: MarketplacePurchaseStatus.REFUNDED,
+        refundedAt: new Date(),
+        refundReason,
+      },
+    }),
+    prisma.marketplaceAuditEvent.create({
+      data: {
+        action: "LEAD_REFUNDED",
+        leadId: purchase.leadId,
+        purchaseId: purchase.id,
+        buyerId: purchase.buyerId,
+        sellerId: purchase.sellerIdAtSale,
+        amountCents: charge.amount_refunded ?? purchase.priceCents,
+        sellerShareCents: purchase.sellerShareCents,
+        description: refundReason
+          ? `Refund issued: ${refundReason}`
+          : "Refund issued",
+        metadata: {
+          stripeChargeId: charge.id,
+          stripePaymentIntentId: paymentIntentId,
+          refundReason,
+        },
+      },
+    }),
+  ]);
   return true;
 }
