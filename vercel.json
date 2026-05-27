@@ -123,6 +123,10 @@
     {
       "path": "/api/cron/marketplace-replenish",
       "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/cron/marketplace-expire",
+      "schedule": "0 7 * * *"
     }
   ]
 }

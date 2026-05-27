@@ -277,16 +277,24 @@ export async function runSourceReplenish(
     }
 
     // Reap leads that have aged past expiresAt. Only flip AVAILABLE rows;
-    // RESERVED / SOLD are untouched.
-    const reaped = await prisma.marketplaceLead.updateMany({
+    // RESERVED / SOLD are untouched. Routed through expireLeads() so each
+    // transition gets a MarketplaceAuditEvent row.
+    const stale = await prisma.marketplaceLead.findMany({
       where: {
         sourceId: source.id,
         status: MarketplaceLeadStatus.AVAILABLE,
         expiresAt: { lte: new Date() },
       },
-      data: { status: MarketplaceLeadStatus.EXPIRED },
+      select: { id: true },
     });
-    expiredCount = reaped.count;
+    if (stale.length > 0) {
+      const { expireLeads } = await import("./expire");
+      const result = await expireLeads(
+        stale.map((l) => l.id),
+        { reason: "REPLENISH", description: "Aged past expiresAt during replenish" },
+      );
+      expiredCount = result.expiredCount;
+    }
 
     // Finalize the run.
     await prisma.marketplaceSyncRun.update({
