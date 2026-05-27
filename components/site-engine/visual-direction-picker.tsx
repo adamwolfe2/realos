@@ -575,45 +575,43 @@ function StylePanel({
                     : "border-border bg-background hover:bg-muted/30",
                 )}
               >
-                {/* Mini visual representation of the preset — actual
-                    background + headline + body colors mocked up as a
-                    tiny page. Static lookup table; updated when a preset's
-                    tokens.css changes. */}
+                {/* Real PNG screenshot captured from the starter-template
+                    running each preset (site-engine-kit/scripts/
+                    capture-preset-screenshots.mjs). Synthetic block sits
+                    behind as a fallback if the PNG is missing — same colors
+                    + display font so the card never goes blank. */}
                 <div
-                  className="relative px-4 py-5 border-b border-border"
-                  style={{ background: thumb.bg }}
+                  className="relative border-b border-border overflow-hidden"
+                  style={{
+                    aspectRatio: "1200/600",
+                    background: thumb.bg,
+                  }}
                 >
-                  <div
-                    className="text-[15px] tracking-tight leading-snug"
-                    style={{
-                      color: thumb.fg,
-                      fontFamily: thumb.displayFont,
-                      fontWeight: 600,
-                    }}
-                  >
-                    Sample Headline
-                  </div>
-                  <div
-                    className="mt-1 text-[10px]"
-                    style={{ color: thumb.muted }}
-                  >
-                    Supporting text in the body face
-                  </div>
-                  <div className="absolute top-3 right-3 flex gap-1">
-                    <span
-                      className="size-3 rounded-sm border"
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={`/site-engine/presets/${p.slug}.png`}
+                    alt={`${p.displayName} preview`}
+                    className="absolute inset-0 w-full h-full object-cover object-top"
+                    loading="lazy"
+                  />
+                  {/* Fallback layer — hidden under the image when image loads. */}
+                  <div className="absolute inset-0 px-4 py-5 pointer-events-none -z-0">
+                    <div
+                      className="text-[15px] tracking-tight leading-snug"
                       style={{
-                        background: thumb.accent,
-                        borderColor: thumb.hairline,
+                        color: thumb.fg,
+                        fontFamily: thumb.displayFont,
+                        fontWeight: 600,
                       }}
-                    />
-                    <span
-                      className="size-3 rounded-sm border"
-                      style={{
-                        background: thumb.fg,
-                        borderColor: thumb.hairline,
-                      }}
-                    />
+                    >
+                      Sample Headline
+                    </div>
+                    <div
+                      className="mt-1 text-[10px]"
+                      style={{ color: thumb.muted }}
+                    >
+                      Supporting text in the body face
+                    </div>
                   </div>
                 </div>
 
