@@ -287,7 +287,20 @@ export function MarketplaceLive() {
           ) : error ? (
             <ErrorState message={error} />
           ) : !leads || leads.length === 0 ? (
-            <EmptyState />
+            <EmptyState
+              hasActiveFilters={
+                market !== ALL_MARKETS_LABEL ||
+                propertyType !== "ALL" ||
+                minIntent > 60 ||
+                priceBandLabel !== PRICE_BANDS[0].label
+              }
+              onReset={() => {
+                setMarket(ALL_MARKETS_LABEL);
+                setPropertyType("ALL");
+                setMinIntent(60);
+                setPriceBandLabel(PRICE_BANDS[0].label);
+              }}
+            />
           ) : (
             <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {leads.slice(0, 6).map((l) => (
@@ -575,7 +588,13 @@ function ErrorState({ message }: { message: string }) {
   );
 }
 
-function EmptyState() {
+function EmptyState({
+  hasActiveFilters = false,
+  onReset,
+}: {
+  hasActiveFilters?: boolean;
+  onReset?: () => void;
+} = {}) {
   return (
     <div
       className="flex flex-col items-center justify-center py-10 px-6 text-center"
@@ -594,7 +613,9 @@ function EmptyState() {
           fontWeight: 500,
         }}
       >
-        No leads match these filters right now.
+        {hasActiveFilters
+          ? "No leads match these filters right now."
+          : "The marketplace is being refreshed."}
       </p>
       <p
         className="mt-2 max-w-[340px]"
@@ -605,9 +626,30 @@ function EmptyState() {
           lineHeight: 1.5,
         }}
       >
-        Subscribe to this filter set as a stream — every matching lead will be
-        delivered to your inbox the moment one scores. Streams open in Phase 2.
+        {hasActiveFilters
+          ? "Reset to see every available lead, or subscribe to this filter set as a stream — every matching lead will be delivered the moment one scores."
+          : "New leads land every Monday morning. Check back shortly or subscribe to a stream to get notified."}
       </p>
+      {hasActiveFilters && onReset ? (
+        <button
+          type="button"
+          onClick={onReset}
+          className="mt-4 inline-flex items-center"
+          style={{
+            padding: "8px 14px",
+            borderRadius: "8px",
+            backgroundColor: INK,
+            color: "#fff",
+            fontFamily: "var(--font-sans)",
+            fontSize: "12.5px",
+            fontWeight: 600,
+            border: "none",
+            cursor: "pointer",
+          }}
+        >
+          Reset filters
+        </button>
+      ) : null}
     </div>
   );
 }
