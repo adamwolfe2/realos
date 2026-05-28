@@ -20,6 +20,8 @@ import { AlertBanner } from "@/components/portal/ui/alert-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { DismissibleStrip } from "@/components/portal/dismissible-strip";
 import { PageTransition } from "@/components/portal/page-transition";
+import { getActivePropertyId } from "@/lib/portal/active-property";
+import { visibleProperties } from "@/lib/tenancy/property-filter";
 
 export const metadata: Metadata = {
   title: { template: `%s | ${BRAND_NAME} Portal`, default: `${BRAND_NAME} Portal` },
@@ -55,6 +57,8 @@ export default async function PortalLayout({
     applicationCount,
     appfolioStatus,
     pendingCurationCount,
+    rawScopeProperties,
+    activePropertyIdFromCookie,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -140,6 +144,19 @@ export default async function PortalLayout({
     prisma.property
       .count({ where: { orgId: scope.orgId, lifecycle: "IMPORTED" } })
       .catch(() => 0),
+    // Per-property scope switcher feed. Marketable properties only — the
+    // switcher should never offer parking-lot sub-records or archived
+    // rows. Sorted by name so the dropdown is alphabetised.
+    prisma.property
+      .findMany({
+        where: marketablePropertyWhere(scope.orgId),
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      })
+      .catch(() => [] as Array<{ id: string; name: string }>),
+    // Persisted property selection — read from the
+    // portal_active_property_id cookie. null = "All properties".
+    getActivePropertyId().catch(() => null),
   ]);
 
   if (!org) {
@@ -233,6 +250,21 @@ export default async function PortalLayout({
     pendingCurationCount,
   };
 
+  // Per-property switcher feed. Apply the user's UserPropertyAccess gate
+  // so a restricted operator never sees a property they can't actually
+  // open. Single-property accounts skip the switcher entirely (the
+  // component renders null at length <= 1).
+  const navScopeProperties = visibleProperties(scope, rawScopeProperties);
+  // Drop the active-property cookie back to "All" if the user can no
+  // longer see the property they previously picked (revoked grant,
+  // archived property). The cookie still lives in their browser; we
+  // just stop honoring it once the user can't reach the property.
+  const navActivePropertyId =
+    activePropertyIdFromCookie &&
+    navScopeProperties.some((p) => p.id === activePropertyIdFromCookie)
+      ? activePropertyIdFromCookie
+      : null;
+
   // Portfolio-wide stale-data banner inputs. Surfacing this once at the
   // layout level lets us delete the per-page red banners on Residents and
   // Renewals (and prevents the user from missing the issue when landing
@@ -262,7 +294,11 @@ export default async function PortalLayout({
         className="md:hidden shrink-0 flex items-center justify-between h-14 px-4 bg-card border-b border-border z-40"
       >
         <div className="flex items-center gap-2">
-          <MobileNavDrawer org={navOrg} />
+          <MobileNavDrawer
+            org={navOrg}
+            scopeProperties={navScopeProperties}
+            activePropertyId={navActivePropertyId}
+          />
           <Link href="/portal" aria-label={`${brand.name} portal home`}>
             {brand.isWhiteLabeled && brand.logoUrl ? (
               // eslint-disable-next-line @next/next/no-img-element
@@ -425,7 +461,11 @@ export default async function PortalLayout({
       {/* Main flex row — takes remaining height */}
       <div className="flex flex-1 min-h-0 portal-shell">
         <div data-no-print className="contents">
-          <PortalNav org={navOrg} />
+          <PortalNav
+            org={navOrg}
+            scopeProperties={navScopeProperties}
+            activePropertyId={navActivePropertyId}
+          />
         </div>
         <main
           id="main-content"

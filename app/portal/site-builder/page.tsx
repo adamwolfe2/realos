@@ -4,7 +4,7 @@ import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader } from "@/components/admin/page-header";
 import { SiteBuilderForm } from "./site-builder-form";
 
-export const metadata: Metadata = { title: "Site builder" };
+export const metadata: Metadata = { title: "Site Engine · Builder" };
 export const dynamic = "force-dynamic";
 
 export default async function SiteBuilderPage() {
@@ -33,7 +33,7 @@ export default async function SiteBuilderPage() {
     return (
       <div className="max-w-2xl space-y-4">
         <PageHeader
-          title="Site builder"
+          title="Site Engine · Builder"
           description="This workspace is on a plan without the managed website module, or you selected bring-your-own-site during onboarding. Ping your account manager if that's not right."
         />
       </div>
@@ -43,7 +43,7 @@ export default async function SiteBuilderPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
-        title="Site builder"
+        title="Site Engine · Builder"
         description="Edit your live marketing site. Saving publishes immediately and revalidates every tenant site route."
       />
       <SiteBuilderForm

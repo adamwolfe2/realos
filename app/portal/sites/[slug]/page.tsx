@@ -6,7 +6,7 @@ import { requireScope } from "@/lib/tenancy/scope";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { StatusTimeline, statusCopy } from "@/components/site-engine/status-timeline";
 
-export const metadata: Metadata = { title: "Your website request" };
+export const metadata: Metadata = { title: "Site Engine" };
 export const dynamic = "force-dynamic";
 
 // ---------------------------------------------------------------------------
@@ -43,11 +43,11 @@ export default async function PortalSiteStatusPage({
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
-        title={brandName}
+        title={`Site Engine · ${brandName}`}
         description={`Site request ${sr.slug} · submitted ${new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(sr.submittedAt)}`}
         breadcrumb={
-          <Link href="/portal" className="hover:underline">
-            ← Portal
+          <Link href="/portal/sites/request" className="hover:underline">
+            ← Site Engine
           </Link>
         }
       />

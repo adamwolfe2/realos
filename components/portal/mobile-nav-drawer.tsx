@@ -8,8 +8,20 @@ import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NAV_GROUPS, AUDIENCE_NAV_GROUPS, type PortalNavOrg } from "./portal-nav";
 import { BRAND_NAME } from "@/lib/brand";
+import {
+  ActivePropertySwitcher,
+  type ActivePropertyOption,
+} from "./active-property-switcher";
 
-export function MobileNavDrawer({ org }: { org: PortalNavOrg }) {
+export function MobileNavDrawer({
+  org,
+  scopeProperties = [],
+  activePropertyId = null,
+}: {
+  org: PortalNavOrg;
+  scopeProperties?: ActivePropertyOption[];
+  activePropertyId?: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -84,6 +96,15 @@ export function MobileNavDrawer({ org }: { org: PortalNavOrg }) {
             Portal
           </p>
         </div>
+
+        {scopeProperties.length > 1 ? (
+          <div className="px-3 py-2.5 border-b border-border shrink-0">
+            <ActivePropertySwitcher
+              properties={scopeProperties}
+              activePropertyId={activePropertyId}
+            />
+          </div>
+        ) : null}
 
         <nav className="flex-1 overflow-y-auto py-3" aria-label="Portal navigation">
           {(org.isAudienceSync ? AUDIENCE_NAV_GROUPS : NAV_GROUPS).map((group) => {
