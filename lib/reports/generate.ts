@@ -2407,6 +2407,32 @@ async function buildReputationStats(
 ): Promise<ReportReputationStats | undefined> {
   const propertyClause = propertyId ? { propertyId } : {};
 
+  // Recency floor for the curated "Needs Attention" + "Recent" + "Highlights"
+  // lists. Bug #10 — Norman reported 2015 and 2022 reviews surfacing in
+  // "Needs Attention" of a May 2026 monthly report. The subtitle reads
+  // "Negative sentiment + 3★ or below + flagged threads" with no recency
+  // qualifier, so a 11-year-old 1★ Google review qualified.
+  //
+  // Rule: clamp to the more permissive of "last 12 months" and "report
+  // period start" — for weekly reports the 7-day window would otherwise
+  // strip every concern out, but for monthly/annual reports the 12-month
+  // bound keeps things scoped to what actually matters.
+  const TWELVE_MONTHS_AGO = new Date(periodEnd);
+  TWELVE_MONTHS_AGO.setMonth(TWELVE_MONTHS_AGO.getMonth() - 12);
+  const recencyFloor =
+    periodStart.getTime() < TWELVE_MONTHS_AGO.getTime()
+      ? TWELVE_MONTHS_AGO
+      : periodStart;
+  // Curated lists pull mentions where publishedAt >= recencyFloor. Undated
+  // mentions (publishedAt == null) get their createdAt checked as a
+  // fallback — same pattern as the portfolio feed in lib/reputation/portfolio.ts.
+  const recencyClause = {
+    OR: [
+      { publishedAt: { gte: recencyFloor } },
+      { AND: [{ publishedAt: null }, { createdAt: { gte: recencyFloor } }] },
+    ],
+  } satisfies Prisma.PropertyMentionWhereInput;
+
   // Full mention payload — title, author, sentiment, topics, flagged
   // — so the report renderer (and the email) can show real Reddit
   // threads / Google reviews / Yelp posts with attribution + click-
@@ -2467,22 +2493,30 @@ async function buildReputationStats(
       _count: { _all: true },
     }),
     // Recent feed — most recent 12 across all sources. Drives the
-    // "Recent mentions" timeline in the report.
+    // "Recent mentions" timeline in the report. Bounded by recencyFloor
+    // so undated re-scrapes don't pin ancient reviews to the top.
     prisma.propertyMention.findMany({
-      where: { orgId, ...propertyClause },
-      orderBy: { publishedAt: "desc" },
+      where: { orgId, ...propertyClause, AND: [recencyClause] },
+      orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }],
       take: 12,
       select: FULL_SELECT,
     }),
     // Highlights — 5★ Google/Yelp OR sentiment=POSITIVE. Drives the
-    // "What residents are loving" section in the report.
+    // "What residents are loving" section in the report. Bounded by
+    // recencyFloor — a 5★ review from 2018 isn't a current marketing
+    // brag for a 2026 monthly report.
     prisma.propertyMention.findMany({
       where: {
         orgId,
         ...propertyClause,
-        OR: [
-          { rating: { gte: 4.5 } },
-          { sentiment: Sentiment.POSITIVE },
+        AND: [
+          recencyClause,
+          {
+            OR: [
+              { rating: { gte: 4.5 } },
+              { sentiment: Sentiment.POSITIVE },
+            ],
+          },
         ],
       },
       orderBy: [{ rating: "desc" }, { publishedAt: "desc" }],
@@ -2490,15 +2524,22 @@ async function buildReputationStats(
       select: FULL_SELECT,
     }),
     // Concerns — low-star reviews OR sentiment=NEGATIVE/MIXED. Drives
-    // the "What needs attention" section.
+    // the "What needs attention" section. Bounded by recencyFloor —
+    // root cause of bug #10. A 1★ review from 2015 should not show up
+    // as an action item in a May 2026 monthly report.
     prisma.propertyMention.findMany({
       where: {
         orgId,
         ...propertyClause,
-        OR: [
-          { rating: { lte: 3 } },
-          { sentiment: { in: [Sentiment.NEGATIVE, Sentiment.MIXED] } },
-          { flagged: true },
+        AND: [
+          recencyClause,
+          {
+            OR: [
+              { rating: { lte: 3 } },
+              { sentiment: { in: [Sentiment.NEGATIVE, Sentiment.MIXED] } },
+              { flagged: true },
+            ],
+          },
         ],
       },
       orderBy: [{ rating: "asc" }, { publishedAt: "desc" }],

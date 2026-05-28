@@ -278,16 +278,9 @@ export default async function ReportDetailPage({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {shareUrl ? (
-            <Link
-              href={shareUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center rounded-md border border-border bg-card px-3 py-2 text-sm font-medium hover:bg-muted"
-            >
-              Open public view
-            </Link>
-          ) : null}
+          {/* Bug #6: the inline "Open public view" link inside OperatorReviewBar
+              (next to the SHARED badge) is more contextual and already covers
+              this affordance. Removing the duplicate top-right button. */}
           <PrintButton />
         </div>
       </div>
