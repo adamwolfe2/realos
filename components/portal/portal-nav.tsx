@@ -203,6 +203,15 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Pipeline",
     items: [
+      // Properties surfaces above the lead pipeline because operators
+      // think building-first: portfolio status drives which leads matter.
+      {
+        href: "/portal/properties",
+        label: "Properties",
+        icon: Building2,
+        show: ALWAYS,
+        badge: () => null,
+      },
       { href: "/portal/leads", label: "Leads", icon: Users, show: ALWAYS },
       {
         href: "/portal/visitors",
@@ -335,13 +344,6 @@ export const NAV_GROUPS: NavGroup[] = [
   {
     label: "Account",
     items: [
-      {
-        href: "/portal/properties",
-        label: "Properties",
-        icon: Building2,
-        show: ALWAYS,
-        badge: () => null,
-      },
       // Acquisitions tool — paste an address, get cap rate / cash-on-cash
       // / comps via RentCast. Lives under Account because it's about
       // evaluating buildings the operator might add to their portfolio,
