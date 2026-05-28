@@ -3,6 +3,8 @@ import { NextRequest, NextResponse } from "next/server";
 import crypto from "node:crypto";
 import {
   isOAuthEnabled,
+  isProviderConfigured,
+  providerReadinessReason,
   getCallbackUrl,
   getProviderConfig,
   signState,
@@ -22,22 +24,29 @@ import { safeEqual } from "@/lib/utils/timing-safe";
 
 const STATE_COOKIE = "rea_oauth_state";
 
-function disabledResponse(): NextResponse {
-  return NextResponse.json(
-    {
-      ok: false,
-      reason:
-        "OAuth disabled. Set OAUTH_ENABLED=true and OAUTH_CALLBACK_BASE_URL once a production domain is configured.",
-    },
-    { status: 503 },
-  );
+function disabledResponse(reason: string): NextResponse {
+  return NextResponse.json({ ok: false, reason }, { status: 503 });
 }
 
 export async function handleOAuthStart(
   req: NextRequest,
   provider: OAuthProvider,
 ): Promise<NextResponse> {
-  if (!isOAuthEnabled()) return disabledResponse();
+  // Global kill switch (only set explicitly to "false" during incident).
+  if (!isOAuthEnabled()) {
+    return disabledResponse(
+      "OAuth temporarily disabled by OAUTH_ENABLED=false.",
+    );
+  }
+
+  // Per-provider readiness — surfaces a specific reason instead of a generic
+  // 503. Lets ops + the connect UI explain to operators which credential is
+  // still missing (Google Cloud client vs Meta App ID vs OAUTH_STATE_SECRET).
+  if (!isProviderConfigured(provider)) {
+    return disabledResponse(
+      providerReadinessReason(provider) ?? "Provider not configured.",
+    );
+  }
 
   let scope;
   try {
@@ -85,7 +94,13 @@ export async function handleOAuthStart(
 
   const authUrl = new URL(config.authorizationUrl);
   authUrl.searchParams.set("client_id", config.clientId);
-  authUrl.searchParams.set("redirect_uri", getCallbackUrl(provider));
+  // Fall back to the request origin if OAUTH_CALLBACK_BASE_URL isn't pinned.
+  // Production should still pin it (the provider dashboards register a single
+  // redirect URI), but preview/local works without the manual step.
+  authUrl.searchParams.set(
+    "redirect_uri",
+    getCallbackUrl(provider, new URL(req.url).origin),
+  );
   authUrl.searchParams.set("response_type", "code");
   authUrl.searchParams.set("scope", config.scopes.join(" "));
   authUrl.searchParams.set("state", state);
@@ -108,7 +123,16 @@ export async function handleOAuthCallback(
   req: NextRequest,
   provider: OAuthProvider,
 ): Promise<NextResponse> {
-  if (!isOAuthEnabled()) return disabledResponse();
+  if (!isOAuthEnabled()) {
+    return disabledResponse(
+      "OAuth temporarily disabled by OAUTH_ENABLED=false.",
+    );
+  }
+  if (!isProviderConfigured(provider)) {
+    return disabledResponse(
+      providerReadinessReason(provider) ?? "Provider not configured.",
+    );
+  }
 
   const url = new URL(req.url);
   const code = url.searchParams.get("code");
@@ -148,12 +172,14 @@ export async function handleOAuthCallback(
     );
   }
 
-  // Token exchange.
+  // Token exchange. Pass the request origin as fallback for the same reason
+  // we do in start — preview/local deploys without OAUTH_CALLBACK_BASE_URL
+  // still work, and prod with the env var pinned is unchanged.
   const tokenBody = new URLSearchParams({
     code,
     client_id: config.clientId,
     client_secret: config.clientSecret,
-    redirect_uri: getCallbackUrl(provider),
+    redirect_uri: getCallbackUrl(provider, new URL(req.url).origin),
     grant_type: "authorization_code",
   });
   const tokenRes = await fetch(config.tokenUrl, {

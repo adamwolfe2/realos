@@ -57,19 +57,16 @@ function metaOauthConfigured(): boolean {
   );
 }
 
-function googleAdsAdditionallyConfigured(): boolean {
-  // Google Ads requires a separately-approved developer token on top of
-  // standard OAuth. Without the token the OAuth flow succeeds but downstream
-  // API calls 401. Gate the connect button accordingly.
-  return !!process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
-}
-
-function metaAdsAdditionallyConfigured(): boolean {
-  // Meta Marketing API Standard Access is required for cross-customer
-  // ads_read / ads_management. We use the same env var the catalog uses
-  // to surface the public Ad Library widget.
-  return !!process.env.META_AD_LIBRARY_TOKEN;
-}
+// NOTE (OAuth UX): we used to additionally gate google_ads on
+// GOOGLE_ADS_DEVELOPER_TOKEN and meta_ads on META_AD_LIBRARY_TOKEN.
+// That was the wrong layer — the developer token / Standard Access only
+// gates downstream API CALLS. The OAuth login flow itself works the
+// moment the OAuth client_id + secret are configured. Letting operators
+// connect during dev-token review means we capture their refresh token
+// + store it now, and syncs start working automatically the moment the
+// token lands — no second consent screen, no re-onboarding. When the
+// API access is still pending we surface a soft "Awaiting API access"
+// note next to the Connect CTA instead of hiding it.
 
 export function getProviderAvailability(): AvailabilityMap {
   const googleReady = googleOauthConfigured();
@@ -101,26 +98,24 @@ export function getProviderAvailability(): AvailabilityMap {
     gsc: googleReady
       ? { available: true, reason: null, eta: null }
       : googleNotReady,
-    google_ads:
-      googleReady && googleAdsAdditionallyConfigured()
-        ? { available: true, reason: null, eta: null }
-        : {
-            available: false,
-            reason: googleReady
-              ? "Your agency is waiting on Google Ads developer-token approval. Once approved, this source becomes connectable."
-              : "Your agency is completing Google OAuth setup, then awaiting Google Ads developer-token approval.",
-            eta: "Coming soon",
-          },
-    meta_ads:
-      metaReady && metaAdsAdditionallyConfigured()
-        ? { available: true, reason: null, eta: null }
-        : {
-            available: false,
-            reason: metaReady
-              ? "Your agency is awaiting Meta Marketing API Standard Access approval. Once approved, this source becomes connectable."
-              : "Your agency is completing Meta Business verification + Marketing API approval.",
-            eta: "Coming soon",
-          },
+    google_ads: googleReady
+      ? {
+          available: true,
+          reason: process.env.GOOGLE_ADS_DEVELOPER_TOKEN
+            ? null
+            : "Connectable now. Google Ads developer-token approval is still in flight — syncs will activate automatically the moment it lands.",
+          eta: null,
+        }
+      : googleNotReady,
+    meta_ads: metaReady
+      ? {
+          available: true,
+          reason: process.env.META_AD_LIBRARY_TOKEN
+            ? null
+            : "Connectable now. Meta Marketing API Standard Access is still in flight — syncs will activate automatically once approved.",
+          eta: null,
+        }
+      : metaNotReady,
     cursive_pixel: {
       // Pixel request becomes a 3-5 min ops task (manual AudienceLab setup).
       // Operator-side action is always available; the request itself just

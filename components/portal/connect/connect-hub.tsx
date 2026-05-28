@@ -466,6 +466,18 @@ function SourceCard({
         </p>
       ) : null}
 
+      {/* Soft "Awaiting API access" note — for sources that are
+          OAuth-ready (so Connect is live) but where downstream API
+          access is still in flight (Google Ads developer token, Meta
+          Marketing Standard Access). The operator can connect now and
+          we'll start syncing the moment the API access lands. */}
+      {!isBlocked && !isConnected && availability?.reason ? (
+        <p className="mt-2.5 inline-flex items-start gap-1.5 rounded-md border border-amber-200/60 bg-amber-50/50 px-2 py-1 text-[11px] text-amber-900 leading-snug">
+          <Clock className="w-2.5 h-2.5 mt-0.5 shrink-0" strokeWidth={1.75} />
+          <span>{availability.reason}</span>
+        </p>
+      ) : null}
+
       {/* Footer */}
       <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-end gap-2">
         {isConnected ? (

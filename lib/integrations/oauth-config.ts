@@ -38,15 +38,81 @@ export type ProviderConfig = {
   extraAuthParams?: Record<string, string>;
 };
 
+// Legacy global kill switch. Now only honored when explicitly set to "false"
+// to take everything offline (incident response). When unset, per-provider
+// readiness via isProviderConfigured() decides whether the button is live.
+// Kept exported so existing call sites compile, but new code should prefer
+// isProviderConfigured(provider).
 export function isOAuthEnabled(): boolean {
-  return (
-    process.env.OAUTH_ENABLED === "true" &&
-    !!process.env.OAUTH_CALLBACK_BASE_URL
-  );
+  return process.env.OAUTH_ENABLED !== "false";
 }
 
-export function getCallbackUrl(provider: OAuthProvider): string {
-  const base = (process.env.OAUTH_CALLBACK_BASE_URL ?? "").replace(/\/$/, "");
+// Per-provider readiness — the real signal. A provider is "ready" when its
+// client_id + client_secret are both set AND a state secret exists. The
+// callback base URL is allowed to fall back to the request origin in the
+// route handler, so it's not part of this check.
+export function isProviderConfigured(provider: OAuthProvider): boolean {
+  if (
+    !process.env.OAUTH_STATE_SECRET ||
+    process.env.OAUTH_STATE_SECRET.length < 32
+  ) {
+    return false;
+  }
+  switch (provider) {
+    case "google-ads":
+    case "gsc":
+    case "ga4":
+      return !!(
+        process.env.GOOGLE_OAUTH_CLIENT_ID &&
+        process.env.GOOGLE_OAUTH_CLIENT_SECRET
+      );
+    case "meta-ads":
+      return !!(
+        process.env.META_OAUTH_APP_ID &&
+        process.env.META_OAUTH_APP_SECRET
+      );
+  }
+}
+
+// Human-readable reason a provider isn't ready yet. Surfaces in the UI so
+// operators understand which credential is missing instead of seeing a
+// generic "OAuth disabled".
+export function providerReadinessReason(
+  provider: OAuthProvider,
+): string | null {
+  if (isProviderConfigured(provider)) return null;
+  if (
+    !process.env.OAUTH_STATE_SECRET ||
+    process.env.OAUTH_STATE_SECRET.length < 32
+  ) {
+    return "Awaiting OAUTH_STATE_SECRET (32+ char HMAC key) on the server.";
+  }
+  switch (provider) {
+    case "google-ads":
+      return "Awaiting Google Cloud OAuth client credentials. The Google Ads developer token is a separate, longer-running approval — OAuth login itself works as soon as the client_id/secret land.";
+    case "gsc":
+    case "ga4":
+      return "Awaiting Google Cloud OAuth client credentials.";
+    case "meta-ads":
+      return "Awaiting Meta App ID + Secret from the Meta Developer dashboard.";
+  }
+}
+
+// Fallback origin lets the callback URL resolve from the current request if
+// OAUTH_CALLBACK_BASE_URL hasn't been pinned in env yet. Production should
+// still pin it (the provider dashboards register a single redirect URI), but
+// preview/local builds work without the manual step.
+export function getCallbackUrl(
+  provider: OAuthProvider,
+  fallbackOrigin?: string,
+): string {
+  const explicit = process.env.OAUTH_CALLBACK_BASE_URL;
+  const base = (explicit ?? fallbackOrigin ?? "").replace(/\/$/, "");
+  if (!base) {
+    throw new Error(
+      "Cannot build OAuth callback URL — OAUTH_CALLBACK_BASE_URL not set and no request origin available.",
+    );
+  }
   return `${base}/api/oauth/${provider}/callback`;
 }
 
