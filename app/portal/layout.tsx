@@ -19,6 +19,7 @@ import { resolveTrialState } from "@/lib/billing/trial-status";
 import { AlertBanner } from "@/components/portal/ui/alert-banner";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
 import { DismissibleStrip } from "@/components/portal/dismissible-strip";
+import { PageTransition } from "@/components/portal/page-transition";
 
 export const metadata: Metadata = {
   title: { template: `%s | ${BRAND_NAME} Portal`, default: `${BRAND_NAME} Portal` },
@@ -446,7 +447,13 @@ export default async function PortalLayout({
                 bell + bug button. */}
             <UserButton />
           </div>
-          <div className="ls-page-enter flex-1 p-4 pb-20 md:p-6 md:pb-10">{children}</div>
+          {/* Body region: framer-motion AnimatePresence fade on route
+              changes (W3 task D). The CSS `ls-page-enter` class is dropped
+              here because PageTransition keys on pathname and runs its own
+              200ms opacity fade — keeping both would double-animate. */}
+          <div className="flex-1 p-4 pb-20 md:p-6 md:pb-10">
+            <PageTransition>{children}</PageTransition>
+          </div>
         </main>
       </div>
 
