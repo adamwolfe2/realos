@@ -1,5 +1,6 @@
 import "server-only";
 import { maybeDecrypt } from "@/lib/crypto";
+import { getOAuthCredentials } from "@/lib/integrations/oauth-credentials";
 import type { AdAccount } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -77,6 +78,31 @@ export function parseMetaAdsCredentials(
 export function normalizeMetaAdAccountId(input: string): string {
   const stripped = input.trim().replace(/^act_/i, "").replace(/[^0-9]/g, "");
   return stripped;
+}
+
+// ---------------------------------------------------------------------------
+// OAuth-first credential resolution. Prefers an OAuthConnection row over the
+// legacy AdAccount.credentialsEncrypted (system-user access token) path.
+// Falls through to parseMetaAdsCredentials() when no OAuth row exists, so
+// existing tenants who pasted a system-user token keep working unchanged.
+// ---------------------------------------------------------------------------
+
+export async function resolveMetaAdsCredentials(
+  orgId: string,
+  account: Pick<AdAccount, "credentialsEncrypted">,
+  options?: { externalAccountId?: string | null },
+): Promise<MetaAdsCredentials> {
+  const oauth = await getOAuthCredentials(
+    orgId,
+    "meta_ads",
+    options?.externalAccountId,
+  );
+  if (oauth) {
+    // Meta's long-lived user access token IS the system-user-equivalent
+    // credential — same Graph API endpoints, same scope behavior.
+    return { systemUserAccessToken: oauth.accessToken };
+  }
+  return parseMetaAdsCredentials(account);
 }
 
 function withActPrefix(id: string): string {

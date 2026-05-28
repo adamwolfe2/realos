@@ -1,8 +1,11 @@
 import "server-only";
 import { google } from "googleapis";
 import { decrypt } from "@/lib/crypto";
+import { getOAuthCredentials } from "@/lib/integrations/oauth-credentials";
 
 type JWT = InstanceType<typeof google.auth.JWT>;
+type OAuth2Client = InstanceType<typeof google.auth.OAuth2>;
+type GoogleAuth = JWT | OAuth2Client;
 
 // ---------------------------------------------------------------------------
 // Google Analytics 4 (Analytics Data API v1beta).
@@ -37,6 +40,51 @@ function jwtFromJson(json: string): JWT {
 function jwtFromEncrypted(encrypted: string): JWT {
   const decrypted = decrypt(encrypted);
   return jwtFromJson(decrypted);
+}
+
+/**
+ * Build an OAuth2 client pre-loaded with credentials from the resolved
+ * OAuthConnection row. Used when the operator connected via the
+ * /api/oauth/google/connect?surface=ga4 self-serve flow instead of pasting
+ * a service-account JSON.
+ */
+function oauth2ClientFromTokens(args: {
+  accessToken: string;
+  refreshToken: string | null;
+  expiresAt: Date | null;
+}): OAuth2Client {
+  const client = new google.auth.OAuth2();
+  client.setCredentials({
+    access_token: args.accessToken,
+    refresh_token: args.refreshToken ?? undefined,
+    expiry_date: args.expiresAt ? args.expiresAt.getTime() : undefined,
+  });
+  return client;
+}
+
+/**
+ * Resolve a Google auth client for GA4 calls. Prefers an OAuthConnection row
+ * (self-serve OAuth path), falls back to a service-account JWT built from the
+ * encrypted JSON blob (legacy paste path).
+ */
+export async function resolveGa4Auth(
+  orgId: string,
+  legacyEncryptedJson: string | null,
+): Promise<GoogleAuth> {
+  const oauth = await getOAuthCredentials(orgId, "google_ga4");
+  if (oauth) {
+    return oauth2ClientFromTokens({
+      accessToken: oauth.accessToken,
+      refreshToken: oauth.refreshToken,
+      expiresAt: oauth.expiresAt,
+    });
+  }
+  if (!legacyEncryptedJson) {
+    throw new Error(
+      "GA4: no OAuth connection and no legacy service-account JSON configured for this org.",
+    );
+  }
+  return jwtFromEncrypted(legacyEncryptedJson);
 }
 
 function normalizePropertyId(raw: string): string {
