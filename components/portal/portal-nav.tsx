@@ -38,6 +38,7 @@ import {
   Plug,
   KeyRound,
   Globe,
+  Calculator,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -340,6 +341,16 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Building2,
         show: ALWAYS,
         badge: () => null,
+      },
+      // Acquisitions tool — paste an address, get cap rate / cash-on-cash
+      // / comps via RentCast. Lives under Account because it's about
+      // evaluating buildings the operator might add to their portfolio,
+      // not about the existing pipeline.
+      {
+        href: "/portal/tools/value",
+        label: "Evaluator",
+        icon: Calculator,
+        show: ALWAYS,
       },
       {
         href: "/portal/integrations",
