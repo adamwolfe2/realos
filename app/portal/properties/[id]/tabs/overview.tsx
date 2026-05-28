@@ -1669,14 +1669,14 @@ function QuickActionsCard({
         ) : null}
         <li>
           <a
-            href={`/portal/properties/${propertyId}?tab=onboarding`}
+            href={`/portal/properties/${propertyId}/edit`}
             className="flex items-center gap-2 text-[12.5px] text-foreground hover:text-primary transition-colors py-1"
           >
             <Pencil
               className="h-3.5 w-3.5 text-muted-foreground"
               aria-hidden="true"
             />
-            Edit listing details
+            Edit property details
           </a>
         </li>
         <li>
