@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import { isAllowedUrlWithDns } from "@/lib/utils/ssrf-protection";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -247,6 +248,15 @@ export async function GET(req: NextRequest) {
       checkedAt: new Date().toISOString(),
     };
     return NextResponse.json(result, { status: 200 });
+  }
+
+  // SSRF guard — resolve DNS and reject if the URL points at a private/
+  // metadata IP (or any A/AAAA record does). Defends against operator-
+  // supplied URLs like http://169.254.169.254/... and DNS-rebinding hosts
+  // that pivot to internal services after passing the sync URL/IP check.
+  const allowed = await isAllowedUrlWithDns(probeTarget);
+  if (!allowed) {
+    return NextResponse.json({ error: "URL not allowed" }, { status: 400 });
   }
 
   const probe = force
