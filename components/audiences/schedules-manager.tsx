@@ -298,7 +298,7 @@ function CreateScheduleForm({
     return (
       <div className="bg-muted/30 border border-border rounded-md p-4 text-sm text-muted-foreground">
         {segments.length === 0
-          ? "Pull your AudienceLab segments first, then come back."
+          ? "Pull your Cursive segments first, then come back."
           : "Add a destination on the Destinations tab before scheduling a sync."}
       </div>
     );

@@ -65,7 +65,7 @@ export function MemberPreview({ segmentId }: { segmentId: string }) {
 
       {!pending && !error && members && members.length === 0 ? (
         <p className="text-xs text-muted-foreground">
-          No members returned by AudienceLab.
+          No members returned by Cursive.
         </p>
       ) : null}
 

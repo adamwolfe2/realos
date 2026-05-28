@@ -50,7 +50,7 @@ export function SegmentTable({
       <EmptyState
         icon={<Target className="h-5 w-5" strokeWidth={1.5} />}
         title="No segments yet"
-        body="Audience segments power your ad targeting, lookalikes, and lead scoring. Paste an AudienceLab segment ID to bring it into this workspace, or clear filters if you're searching."
+        body="Audience segments power your ad targeting, lookalikes, and lead scoring. Paste a Cursive segment ID to bring it into this workspace, or clear filters if you're searching."
         primaryCta={{ label: "Add segment", href: "/portal/audiences?add=1" }}
         secondaryCta={{
           label: "Manage destinations",

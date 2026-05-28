@@ -148,11 +148,11 @@ export async function sendPixelReadyCustomerEmail(input: {
   const webhookSection = input.webhookUrl
     ? `
     <p style="margin:0 0 6px;font-size:12px;color:#6b7280;text-transform:uppercase;letter-spacing:0.06em;">
-      AudienceLab webhook URL
+      Cursive webhook URL
     </p>
     <pre style="margin:0 0 8px;padding:12px;background:#0a0a0a;color:#f8f9fa;font-family:Menlo,Monaco,Consolas,monospace;font-size:11px;line-height:1.5;border-radius:4px;overflow-x:auto;white-space:pre-wrap;word-break:break-all;">${escape(input.webhookUrl)}</pre>
     <p style="margin:0 0 16px;font-size:13px;line-height:1.6;color:#374151;">
-      Paste this into the AudienceLab pixel under Webhooks. AudienceLab's Test
+      Paste this into the Cursive pixel under Webhooks. The Test
       button should pass immediately. No additional headers required.
     </p>
   `

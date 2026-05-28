@@ -118,7 +118,7 @@ export function ApiKeySettings({
       <form onSubmit={handleSave} className="space-y-3">
         <div className="space-y-1.5">
           <Label htmlFor="al-api-key" className="text-xs">
-            {hasOverride ? "Replace AudienceLab key" : "AudienceLab API key"}
+            {hasOverride ? "Replace Cursive key" : "Cursive API key"}
           </Label>
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
@@ -229,7 +229,7 @@ export function ApiKeySettings({
                     : "platform default"}{" "}
                   key.
                   {testResult.segmentCount === 0
-                    ? " AudienceLab does not expose a list-all endpoint, so a true ping requires a segment ID."
+                    ? " Cursive does not expose a list-all endpoint, so a true ping requires a segment ID."
                     : ""}
                 </p>
               </>
@@ -271,7 +271,7 @@ function resolveStatus({
   }
   if (inheritedFromPlatform) {
     return {
-      title: "Using the platform AudienceLab key",
+      title: "Using the platform Cursive key",
       detail:
         "Save a key below to override the shared platform key for this org.",
       icon: <ShieldCheck className="h-4 w-4 text-muted-foreground" />,
@@ -281,7 +281,7 @@ function resolveStatus({
   return {
     title: "No AL key configured — segments cannot be loaded",
     detail:
-      "Save an AudienceLab key below, or ask the platform admin to set CURSIVE_API_KEY.",
+      "Save a Cursive key below, or ask the platform admin to set CURSIVE_API_KEY.",
     icon: <AlertCircle className="h-4 w-4 text-destructive" />,
     bgClass: "border-destructive/30 bg-destructive/5",
   };

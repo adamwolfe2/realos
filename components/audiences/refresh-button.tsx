@@ -25,7 +25,7 @@ export function RefreshSegmentsButton({
       const result = await refreshAudienceSegments();
       if (result.ok) {
         if (result.total === 0) {
-          setMessage("No audiences found in AudienceLab.");
+          setMessage("No audiences found in Cursive.");
         } else {
           const parts: string[] = [];
           if (result.created > 0) parts.push(`${result.created} new`);

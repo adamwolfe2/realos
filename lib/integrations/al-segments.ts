@@ -139,7 +139,7 @@ export async function listAlSegments(
     return {
       ok: false,
       status: 500,
-      message: "AudienceLab API key not configured.",
+      message: "Cursive API key not configured.",
     };
   }
   const page = options.page ?? 1;
@@ -272,7 +272,7 @@ export async function validateAlSegmentId(
     return {
       ok: false,
       status: 500,
-      message: "AudienceLab API key not configured.",
+      message: "Cursive API key not configured.",
     };
   }
 
@@ -296,7 +296,7 @@ export async function validateAlSegmentId(
   return {
     ok: false,
     status: 404,
-    message: `Segment "${segmentId}" not found in AudienceLab on either /audiences or /segments. Double-check the ID and that your API key owns it.`,
+    message: `Segment "${segmentId}" not found in Cursive on either /audiences or /segments. Double-check the ID and that your API key owns it.`,
   };
 }
 
@@ -335,7 +335,7 @@ export async function getAlSegmentMembersPage(
     return {
       ok: false,
       status: 500,
-      message: "AudienceLab API key not configured.",
+      message: "Cursive API key not configured.",
     };
   }
   const page = options.page ?? 1;

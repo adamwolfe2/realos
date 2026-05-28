@@ -48,14 +48,14 @@ export async function syncPixelFromSegment(): Promise<TenantPixelSyncResult> {
     return {
       ok: false,
       error:
-        "No AudienceLab pixel configured for this workspace. Contact your agency to provision one.",
+        "No Cursive pixel configured for this workspace. Contact your agency to provision one.",
     };
   }
   if (!integration.cursiveSegmentId) {
     return {
       ok: false,
       error:
-        "AudienceLab segment is not bound to this workspace yet. Ask your agency to bind one in the admin panel.",
+        "Cursive segment is not bound to this workspace yet. Ask your agency to bind one in the admin panel.",
     };
   }
 
@@ -77,7 +77,7 @@ export async function syncPixelFromSegment(): Promise<TenantPixelSyncResult> {
         action: AuditAction.SETTING_CHANGE,
         entityType: "CursiveIntegration",
         entityId: scope.orgId,
-        description: `Operator pulled ${result.pulled} visitors from AudienceLab segment`,
+        description: `Operator pulled ${result.pulled} visitors from Cursive segment`,
         diff: {
           pulled: result.pulled,
           created: result.created,

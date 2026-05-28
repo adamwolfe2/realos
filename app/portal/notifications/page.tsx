@@ -328,80 +328,85 @@ function NotificationRow(props: {
   return (
     <div
       className={cn(
-        "px-4 py-4 hover:bg-muted/40 transition-colors flex items-start gap-3",
+        "px-4 py-2 hover:bg-muted/40 transition-colors flex items-center gap-2",
         KIND_BORDER[item.kind] ?? "",
         !item.readAt && !resolved && "bg-primary/5",
         (snoozed || resolved) && "opacity-60",
       )}
     >
-      {!item.readAt && !resolved && (
-        <span className="mt-1.5 shrink-0 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
+      {!item.readAt && !resolved ? (
+        <span className="shrink-0 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
+      ) : (
+        <span className="shrink-0 h-2 w-2" aria-hidden="true" />
       )}
       <button
         type="button"
         onClick={onOpen}
-        className={cn("min-w-0 flex-1 text-left", item.readAt && "pl-5")}
+        className="min-w-0 flex-1 text-left flex items-center gap-2"
       >
-        <div className="flex items-center gap-2 flex-wrap mb-1">
-          <span
-            className={cn(
-              "text-xs uppercase tracking-wide px-1.5 py-0.5 rounded",
-              KIND_COLOR[item.kind] ?? "bg-muted text-muted-foreground",
-            )}
-          >
-            {item.kind.replace(/_/g, " ")}
-          </span>
-          {resolved && (
-            <span className="text-[11px] font-medium text-muted-foreground inline-flex items-center gap-1">
-              <Check className="h-3 w-3" aria-hidden="true" /> Resolved
-            </span>
+        <span
+          className={cn(
+            "shrink-0 text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded",
+            KIND_COLOR[item.kind] ?? "bg-muted text-muted-foreground",
           )}
-          {snoozed && !resolved && (
-            <span className="text-[11px] font-medium text-muted-foreground inline-flex items-center gap-1">
-              <Clock className="h-3 w-3" aria-hidden="true" />
-              Snoozed until{" "}
-              {item.snoozedUntil
-                ? new Date(item.snoozedUntil).toLocaleDateString("en-US", {
-                    month: "short",
-                    day: "numeric",
-                  })
-                : ""}
-            </span>
-          )}
-          <span className="text-[11px] text-muted-foreground ml-auto">
-            {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
-          </span>
-        </div>
-        <p className="text-sm font-medium">{item.title}</p>
+        >
+          {item.kind.replace(/_/g, " ")}
+        </span>
+        <span className="min-w-0 flex-1 text-sm font-medium truncate">
+          {item.title}
+        </span>
         {item.body && (
-          <p className="text-xs text-muted-foreground mt-0.5">{item.body}</p>
+          <span className="hidden sm:inline min-w-0 max-w-[40%] text-xs text-muted-foreground truncate">
+            {item.body}
+          </span>
         )}
         {item.href && (
-          <span className="text-xs text-primary mt-1 inline-block underline underline-offset-2">
-            View details
+          <span className="hidden md:inline shrink-0 text-[11px] text-primary underline underline-offset-2">
+            View
+          </span>
+        )}
+        {resolved && (
+          <span className="shrink-0 text-[11px] font-medium text-muted-foreground inline-flex items-center gap-1">
+            <Check className="h-3 w-3" aria-hidden="true" /> Resolved
+          </span>
+        )}
+        {snoozed && !resolved && (
+          <span className="shrink-0 text-[11px] font-medium text-muted-foreground inline-flex items-center gap-1">
+            <Clock className="h-3 w-3" aria-hidden="true" />
+            until{" "}
+            {item.snoozedUntil
+              ? new Date(item.snoozedUntil).toLocaleDateString("en-US", {
+                  month: "short",
+                  day: "numeric",
+                })
+              : ""}
           </span>
         )}
       </button>
 
+      <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+      </span>
+
       {/* Action column. Snooze affordance hidden once resolved (no point). */}
-      <div className="shrink-0 flex items-center gap-1 ml-2">
+      <div className="shrink-0 flex items-center gap-2 ml-2">
         {!resolved && !snoozed && (
           <>
             <button
               type="button"
               onClick={() => onSnooze(1)}
-              className="text-[11px] text-muted-foreground hover:text-foreground border border-border hover:border-foreground/40 rounded px-2 py-1 transition-colors"
+              className="text-[11px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
               title="Hide until tomorrow"
             >
-              Snooze 1d
+              1d
             </button>
             <button
               type="button"
               onClick={() => onSnooze(7)}
-              className="text-[11px] text-muted-foreground hover:text-foreground border border-border hover:border-foreground/40 rounded px-2 py-1 transition-colors"
+              className="text-[11px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
               title="Hide for a week"
             >
-              Snooze 7d
+              7d
             </button>
           </>
         )}
@@ -409,7 +414,7 @@ function NotificationRow(props: {
           <button
             type="button"
             onClick={onUnsnooze}
-            className="text-[11px] text-muted-foreground hover:text-foreground border border-border hover:border-foreground/40 rounded px-2 py-1 transition-colors"
+            className="text-[11px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
           >
             Unsnooze
           </button>
@@ -418,7 +423,7 @@ function NotificationRow(props: {
           <button
             type="button"
             onClick={onResolve}
-            className="text-[11px] font-medium text-primary hover:text-primary/80 border border-primary/40 hover:border-primary rounded px-2 py-1 transition-colors"
+            className="text-[11px] font-medium text-primary hover:text-primary/80 hover:underline underline-offset-2 transition-colors"
           >
             Resolve
           </button>

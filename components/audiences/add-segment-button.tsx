@@ -111,10 +111,10 @@ export function AddSegmentButton({
                   id="add-segment-title"
                   className="text-base font-semibold tracking-tight"
                 >
-                  Add an AudienceLab segment
+                  Add a Cursive segment
                 </h2>
                 <p className="mt-1 text-xs text-muted-foreground">
-                  Paste the segment ID from your AudienceLab dashboard. We
+                  Paste the segment ID from your Cursive dashboard. We
                   validate it on save and pull insights so the dashboard
                   populates immediately.
                 </p>
@@ -133,7 +133,7 @@ export function AddSegmentButton({
             <form onSubmit={handleSubmit} className="space-y-3 px-5 py-4">
               <div>
                 <Label htmlFor="seg-id" className="text-xs">
-                  AudienceLab segment ID
+                  Cursive segment ID
                 </Label>
                 <Input
                   id="seg-id"
@@ -202,7 +202,7 @@ export function AddSegmentButton({
                 size="sm"
                 className="rounded-md"
               >
-                {pending ? "Validating with AudienceLab…" : "Save segment"}
+                {pending ? "Validating with Cursive…" : "Save segment"}
               </Button>
             </div>
           </div>

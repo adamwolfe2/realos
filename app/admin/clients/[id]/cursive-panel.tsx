@@ -91,7 +91,7 @@ export function CursivePanel({
         setSyncMsg({
           kind: "ok",
           text:
-            `Pulled ${res.pulled} segment members from AudienceLab: ` +
+            `Pulled ${res.pulled} segment members from Cursive: ` +
             `${res.created} new, ${res.updated} updated${droppedSuffix}. ` +
             `Operator-facing IDENTIFIED count on /portal/visitors only ` +
             `includes rows with firstName + lastName + email — anonymous ` +
@@ -141,8 +141,8 @@ export function CursivePanel({
               </button>
             </div>
             <p className="text-[11px] text-muted-foreground mt-1.5">
-              Paste this URL into the AudienceLab pixel under Webhooks (Step 2).
-              The path token is the auth, no headers required, so AL&apos;s
+              Paste this URL into the Cursive pixel under Webhooks (Step 2).
+              The path token is the auth, no headers required, so the
               built-in Test button passes immediately.
             </p>
           </>
@@ -182,14 +182,14 @@ export function CursivePanel({
       <div className="grid gap-3 sm:grid-cols-2">
         <Field
           label="Cursive (V4) pixel ID"
-          hint="From AudienceLab → Pixel. Saving this for the first time auto-fulfills the customer's pending request and emails them their install snippet."
+          hint="From Cursive → Pixel. Saving this for the first time auto-fulfills the customer's pending request and emails them their install snippet."
           value={pixelId}
           onChange={setPixelId}
           placeholder="e.g. 7a91c…"
         />
         <Field
           label="Audience segment ID"
-          hint="From AudienceLab → Segments. Required to use Sync from segment."
+          hint="From Cursive → Segments. Required to use Sync from segment."
           value={segmentId}
           onChange={setSegmentId}
           placeholder="d3ee9fb0-0dd2-4b4d-aa60-8ac9bd81e8e4"
@@ -212,7 +212,7 @@ export function CursivePanel({
             </span>
             <span
               className="ml-1 text-muted-foreground/80 cursor-help"
-              title="Counts only direct push events from AudienceLab to /api/webhooks/cursive. Pull-based segment-sync visitors are NOT counted here — they show up on the operator-facing /portal/visitors as IDENTIFIED contacts."
+              title="Counts only direct push events from Cursive to /api/webhooks/cursive. Pull-based segment-sync visitors are NOT counted here — they show up on the operator-facing /portal/visitors as IDENTIFIED contacts."
             >
               (?)
             </span>

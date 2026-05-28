@@ -111,7 +111,7 @@ export default async function PixelRequestsPage({
     <div className="space-y-6">
       <PageHeader
         title="Pixel requests"
-        description="Customers waiting on a Cursive (AudienceLab) pixel. AL has no creation API, so each one is a 3-5 minute setup in the AL dashboard. Pasting the resulting pixel_id into the client's admin Cursive panel auto-fulfills the request and emails the customer their install snippet."
+        description="Customers waiting on a Cursive pixel. There's no creation API, so each one is a 3-5 minute setup in the upstream dashboard. Pasting the resulting pixel_id into the client's admin Cursive panel auto-fulfills the request and emails the customer their install snippet."
       />
 
       <div className="flex flex-wrap items-center gap-2 text-xs">

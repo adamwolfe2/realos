@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { headers } from "next/headers";
-import { formatDistanceToNow } from "date-fns";
 import { ChatbotCaptureMode } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
@@ -49,7 +47,6 @@ export default async function ChatbotPage() {
     org,
     existingConfig,
     appUrl,
-    recentConversations,
     convStats,
   ] = await Promise.all([
     prisma.organization.findUnique({
@@ -80,27 +77,6 @@ export default async function ChatbotPage() {
       },
     }),
     resolveAppUrl(),
-    // Compact recent-conversation feed — keeps the chatbot page honest
-    // about what's happening live without turning the surface into a
-    // full chat-app UI. Capped to 6 rows; deep-link sends operators to
-    // the lead detail for the full transcript.
-    prisma.chatbotConversation
-      .findMany({
-        where: { orgId: scope.orgId },
-        orderBy: { lastMessageAt: "desc" },
-        take: 6,
-        select: {
-          id: true,
-          status: true,
-          messageCount: true,
-          capturedName: true,
-          capturedEmail: true,
-          lastMessageAt: true,
-          leadId: true,
-          pageUrl: true,
-        },
-      })
-      .catch(() => []),
     // Conversation stats — three windowed counts + how many of those
     // conversations captured an intake (email/phone) so the chatbot's
     // contribution to pipeline reads at a glance. Run in parallel.
@@ -159,12 +135,12 @@ export default async function ChatbotPage() {
   );
   const snippet = `<script src="${snippetHost}/embed/chatbot.js" data-slug="${org.slug}" defer></script>`;
 
-  // Norman bug #91: lead with the insight (conversation volume +
-  // recent transcripts) so operators land on a useful dashboard, then
-  // drop into configuration. Configuration is still the bulk of the
-  // page — but it's no longer the first thing the operator sees.
+  // Norman bug #91: lead with the insight (conversation volume) so
+  // operators land on a useful dashboard, then drop into configuration.
+  // Configuration is still the bulk of the page — but it's no longer
+  // the first thing the operator sees.
   const stats = convStats;
-  const hasAnyConversations = stats.d30 > 0 || recentConversations.length > 0;
+  const hasAnyConversations = stats.d30 > 0;
 
   return (
     <div className="space-y-6">
@@ -215,57 +191,6 @@ export default async function ChatbotPage() {
               }
             />
           </dl>
-        </SectionCard>
-      ) : null}
-
-      {recentConversations.length > 0 ? (
-        <SectionCard
-          label="Recent conversations"
-          description="Most recent visitor chats with this bot. Click through to the full transcript on the lead detail page."
-        >
-          <ul className="divide-y divide-border -mx-1">
-            {recentConversations.map((c) => {
-              const name =
-                c.capturedName?.trim() ||
-                c.capturedEmail?.trim() ||
-                "Anonymous visitor";
-              const href = c.leadId
-                ? `/portal/leads/${c.leadId}`
-                : `/portal/conversations?conversation=${c.id}`;
-              return (
-                <li key={c.id}>
-                  <Link
-                    href={href}
-                    className="group flex items-center gap-3 px-1 py-2.5 -mx-0.5 rounded-md hover:bg-muted/30 transition-colors"
-                  >
-                    <span
-                      aria-hidden="true"
-                      className="shrink-0 h-2 w-2 rounded-full"
-                      style={{
-                        backgroundColor:
-                          c.status === "ACTIVE"
-                            ? "var(--terracotta)"
-                            : "rgb(156, 163, 175)",
-                      }}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium text-foreground truncate group-hover:text-primary transition-colors">
-                        {name}
-                      </span>
-                      <span className="block text-[11px] text-muted-foreground truncate mt-0.5">
-                        {c.messageCount}{" "}
-                        {c.messageCount === 1 ? "message" : "messages"}
-                        {c.pageUrl ? ` · ${c.pageUrl}` : ""}
-                      </span>
-                    </span>
-                    <span className="text-[11px] text-muted-foreground tabular-nums shrink-0">
-                      {formatDistanceToNow(c.lastMessageAt, { addSuffix: true })}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
         </SectionCard>
       ) : null}
 

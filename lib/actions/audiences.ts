@@ -289,7 +289,7 @@ export async function refreshSegmentInsights(
   if (!insights) {
     return {
       ok: false,
-      error: "AudienceLab returned no members for the sample.",
+      error: "Cursive returned no members for the sample.",
     };
   }
 
@@ -1129,7 +1129,7 @@ function assertCanWriteOrgKey(
 ) {
   if (scope.orgType !== OrgType.CLIENT) {
     throw new ForbiddenError(
-      "Switch to a client workspace to update its AudienceLab key.",
+      "Switch to a client workspace to update its Cursive key.",
     );
   }
 }
@@ -1212,7 +1212,7 @@ export async function testOrgAlApiKey(): Promise<TestOrgAlApiKeyResult> {
     return {
       ok: false,
       error:
-        "No AudienceLab key configured. Save a key for this org or ask the platform admin to set CURSIVE_API_KEY.",
+        "No Cursive key configured. Save a key for this org or ask the platform admin to set CURSIVE_API_KEY.",
     };
   }
 
@@ -1249,7 +1249,7 @@ export async function testOrgAlApiKey(): Promise<TestOrgAlApiKeyResult> {
   if (trimmed.length < 8 || /\s/.test(trimmed)) {
     return {
       ok: false,
-      error: "Key looks malformed. Re-paste the API key from AudienceLab.",
+      error: "Key looks malformed. Re-paste the API key from Cursive.",
     };
   }
 

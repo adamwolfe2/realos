@@ -328,7 +328,7 @@ export async function runCursiveSegmentSync(
     return {
       ok: false,
       error:
-        "No AudienceLab segment bound to this workspace yet. Ask the agency to set cursiveSegmentId.",
+        "No Cursive segment bound to this workspace yet. Ask the agency to set cursiveSegmentId.",
     };
   }
 
@@ -354,7 +354,7 @@ export async function runCursiveSegmentSync(
       const body = await res.text().catch(() => "");
       return {
         ok: false,
-        error: `AudienceLab fetch failed (${res.status}): ${body.slice(0, 200)}`,
+        error: `Cursive fetch failed (${res.status}): ${body.slice(0, 200)}`,
       };
     }
     const json = (await res.json()) as Record<string, unknown>;

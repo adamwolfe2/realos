@@ -316,24 +316,45 @@ function ApplyPage({ tenant, property }: TenantProp) {
 
 function SchedulePage({ tenant }: Pick<TenantProp, "tenant">) {
   const config = tenant.tenantSiteConfig;
+  const ctaUrl = config?.primaryCtaUrl ?? "/apply";
+  // Detect a Calendly link and render the inline embed widget instead of
+  // a CTA button. The iframe needs a sizeable explicit height — Calendly
+  // does not auto-resize cross-origin frames, so we clamp to the viewport
+  // with a 700px floor so the calendar always renders without an internal
+  // scrollbar at typical desktop heights.
+  const isCalendly = /(^|\.)calendly\.com\//i.test(ctaUrl);
   return (
     <div>
       <PageHeader
         title="Schedule a tour"
         subtitle="In-person, virtual, or self-guided. Pick what works for you."
       />
-      <section className="max-w-2xl mx-auto px-4 md:px-6 py-12 space-y-6 text-sm">
+      <section className="max-w-3xl mx-auto px-4 md:px-6 py-12 space-y-6 text-sm">
         <p className="opacity-80">
           Tours typically take 20 minutes. We'll meet you at the lobby and
           walk through a unit that matches your preferences.
         </p>
-        <Link
-          href={config?.primaryCtaUrl ?? "/apply"}
-          className="inline-block px-6 py-3 text-sm font-semibold rounded"
-          style={{ backgroundColor: "var(--tenant-primary)", color: "white" }}
-        >
-          Request a tour
-        </Link>
+        {isCalendly ? (
+          <iframe
+            title="Schedule a tour"
+            src={ctaUrl}
+            style={{
+              height: "min(900px, calc(100vh - 200px))",
+              minHeight: "700px",
+              width: "100%",
+              border: "none",
+            }}
+            loading="lazy"
+          />
+        ) : (
+          <Link
+            href={ctaUrl}
+            className="inline-block px-6 py-3 text-sm font-semibold rounded"
+            style={{ backgroundColor: "var(--tenant-primary)", color: "white" }}
+          >
+            Request a tour
+          </Link>
+        )}
       </section>
     </div>
   );
