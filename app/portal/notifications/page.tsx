@@ -328,52 +328,46 @@ function NotificationRow(props: {
   return (
     <div
       className={cn(
-        "px-4 py-2 hover:bg-muted/40 transition-colors flex items-center gap-2",
+        "px-3 py-1 hover:bg-muted/40 transition-colors flex items-center gap-1.5 leading-none",
         KIND_BORDER[item.kind] ?? "",
         !item.readAt && !resolved && "bg-primary/5",
         (snoozed || resolved) && "opacity-60",
       )}
     >
       {!item.readAt && !resolved ? (
-        <span className="shrink-0 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
+        <span className="shrink-0 h-1.5 w-1.5 rounded-full bg-primary" aria-hidden="true" />
       ) : (
-        <span className="shrink-0 h-2 w-2" aria-hidden="true" />
+        <span className="shrink-0 h-1.5 w-1.5" aria-hidden="true" />
       )}
       <button
         type="button"
         onClick={onOpen}
-        className="min-w-0 flex-1 text-left flex items-center gap-2"
+        className="min-w-0 flex-1 text-left flex items-center gap-1.5"
       >
         <span
           className={cn(
-            "shrink-0 text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded",
+            "shrink-0 text-[9px] uppercase tracking-wide px-1 py-px rounded",
             KIND_COLOR[item.kind] ?? "bg-muted text-muted-foreground",
           )}
         >
           {item.kind.replace(/_/g, " ")}
         </span>
-        <span className="min-w-0 flex-1 text-sm font-medium truncate">
+        <span className="min-w-0 flex-1 text-xs font-medium truncate">
           {item.title}
         </span>
         {item.body && (
-          <span className="hidden sm:inline min-w-0 max-w-[40%] text-xs text-muted-foreground truncate">
+          <span className="hidden sm:inline min-w-0 max-w-[40%] text-[11px] text-muted-foreground truncate">
             {item.body}
           </span>
         )}
-        {item.href && (
-          <span className="hidden md:inline shrink-0 text-[11px] text-primary underline underline-offset-2">
-            View
-          </span>
-        )}
         {resolved && (
-          <span className="shrink-0 text-[11px] font-medium text-muted-foreground inline-flex items-center gap-1">
-            <Check className="h-3 w-3" aria-hidden="true" /> Resolved
+          <span className="shrink-0 text-[10px] font-medium text-muted-foreground inline-flex items-center gap-0.5">
+            <Check className="h-2.5 w-2.5" aria-hidden="true" /> Resolved
           </span>
         )}
         {snoozed && !resolved && (
-          <span className="shrink-0 text-[11px] font-medium text-muted-foreground inline-flex items-center gap-1">
-            <Clock className="h-3 w-3" aria-hidden="true" />
-            until{" "}
+          <span className="shrink-0 text-[10px] font-medium text-muted-foreground inline-flex items-center gap-0.5">
+            <Clock className="h-2.5 w-2.5" aria-hidden="true" />
             {item.snoozedUntil
               ? new Date(item.snoozedUntil).toLocaleDateString("en-US", {
                   month: "short",
@@ -384,18 +378,18 @@ function NotificationRow(props: {
         )}
       </button>
 
-      <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
-        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+      <span className="shrink-0 text-[10px] text-muted-foreground tabular-nums">
+        {formatDistanceToNow(new Date(item.createdAt), { addSuffix: false })}
       </span>
 
       {/* Action column. Snooze affordance hidden once resolved (no point). */}
-      <div className="shrink-0 flex items-center gap-2 ml-2">
+      <div className="shrink-0 flex items-center gap-1.5 ml-1">
         {!resolved && !snoozed && (
           <>
             <button
               type="button"
               onClick={() => onSnooze(1)}
-              className="text-[11px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
+              className="text-[10px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
               title="Hide until tomorrow"
             >
               1d
@@ -403,7 +397,7 @@ function NotificationRow(props: {
             <button
               type="button"
               onClick={() => onSnooze(7)}
-              className="text-[11px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
+              className="text-[10px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
               title="Hide for a week"
             >
               7d
@@ -414,7 +408,7 @@ function NotificationRow(props: {
           <button
             type="button"
             onClick={onUnsnooze}
-            className="text-[11px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
+            className="text-[10px] text-muted-foreground hover:text-foreground hover:underline underline-offset-2 transition-colors"
           >
             Unsnooze
           </button>
@@ -423,7 +417,7 @@ function NotificationRow(props: {
           <button
             type="button"
             onClick={onResolve}
-            className="text-[11px] font-medium text-primary hover:text-primary/80 hover:underline underline-offset-2 transition-colors"
+            className="text-[10px] font-medium text-primary hover:text-primary/80 hover:underline underline-offset-2 transition-colors"
           >
             Resolve
           </button>
