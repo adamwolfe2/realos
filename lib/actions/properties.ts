@@ -44,6 +44,12 @@ const createSchema = z.object({
   city: z.string().max(100).optional().nullable(),
   state: z.string().max(60).optional().nullable(),
   postalCode: z.string().max(20).optional().nullable(),
+  // Google Places (New) place id, populated by the address autocomplete.
+  // Capped at the Places-documented upper bound; safe to be optional so
+  // existing intake/SQL flows continue to work.
+  googlePlaceId: z.string().max(300).optional().nullable(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
   description: z.string().max(8000).optional().nullable(),
   heroImageUrl: z.string().url().optional().nullable().or(z.literal("")),
   virtualTourUrl: z.string().url().optional().nullable().or(z.literal("")),
@@ -128,6 +134,9 @@ export async function createProperty(
       city: data.city || null,
       state: data.state || null,
       postalCode: data.postalCode || null,
+      googlePlaceId: data.googlePlaceId || null,
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
       description: data.description || null,
       heroImageUrl: data.heroImageUrl || null,
       virtualTourUrl: data.virtualTourUrl || null,
@@ -246,6 +255,9 @@ export async function updateProperty(
       city: data.city || null,
       state: data.state || null,
       postalCode: data.postalCode || null,
+      googlePlaceId: data.googlePlaceId || null,
+      latitude: data.latitude ?? null,
+      longitude: data.longitude ?? null,
       description: data.description || null,
       heroImageUrl: data.heroImageUrl || null,
       virtualTourUrl: data.virtualTourUrl || null,
