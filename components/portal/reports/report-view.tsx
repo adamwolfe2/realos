@@ -1139,7 +1139,7 @@ function ReputationSection({ stats }: { stats: ReportReputationStats }) {
       {(stats.concerns ?? []).length > 0 ? (
         <MentionGroup
           title="Needs attention"
-          subtitle="Negative sentiment + 3★ or below + flagged threads"
+          subtitle="Negative sentiment, 3★ or below, or flagged — last 12 months"
           mentions={stats.concerns!}
           variant="concern"
         />
@@ -1310,25 +1310,41 @@ function ReportMentionCard({
           verbatim destroyed the report's credibility. The sanitizer
           strips markdown chrome and nav junk; if content was clipped, a
           "Read full →" link to sourceUrl is the user's affordance for
-          the complete content. */}
-      {m.excerpt ? (
-        <p className="mt-2 text-[12px] text-foreground/90 leading-relaxed line-clamp-3">
-          {sanitizeMentionExcerpt(m.excerpt)}
-          {isExcerptTruncated(m.excerpt) && m.sourceUrl ? (
-            <>
-              {" "}
-              <a
-                href={m.sourceUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary font-medium hover:underline underline-offset-2"
-              >
-                Read full →
-              </a>
-            </>
-          ) : null}
-        </p>
-      ) : null}
+          the complete content.
+
+          Bug #9: when the body text is empty (no excerpt at all, OR the
+          sanitizer reduced full-page chrome to an empty string) we render
+          a compact "(no review text)" muted label instead of the
+          truncate-block + "Read full →" CTA, which previously made these
+          cards look like a layout glitch. */}
+      {(() => {
+        const sanitized = m.excerpt ? sanitizeMentionExcerpt(m.excerpt) : "";
+        if (!sanitized.trim()) {
+          return (
+            <p className="mt-2 text-[11.5px] italic text-muted-foreground/70 leading-snug">
+              (no review text)
+            </p>
+          );
+        }
+        return (
+          <p className="mt-2 text-[12px] text-foreground/90 leading-relaxed line-clamp-3">
+            {sanitized}
+            {m.excerpt && isExcerptTruncated(m.excerpt) && m.sourceUrl ? (
+              <>
+                {" "}
+                <a
+                  href={m.sourceUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary font-medium hover:underline underline-offset-2"
+                >
+                  Read full →
+                </a>
+              </>
+            ) : null}
+          </p>
+        );
+      })()}
       {m.topics && m.topics.length > 0 ? (
         <div className="mt-2 flex items-center gap-1.5 flex-wrap">
           {m.topics.map((t: string) => (
