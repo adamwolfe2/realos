@@ -128,7 +128,7 @@ export async function getOAuthCredentials(
         : row.refreshToken,
       expiresAt: fresh.expiresAt,
       scope: fresh.scope ?? row.scope,
-      metadata: fresh.metadata ?? row.metadata ?? undefined,
+      metadata: (fresh.metadata ?? row.metadata ?? undefined) as object | undefined,
       status: "active",
     },
   });
