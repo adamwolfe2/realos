@@ -167,7 +167,12 @@ export function ScannerPanel({
       return true;
     });
     return list.sort((a, b) => {
-      // Flagged first
+      // Norman bug #15: reviewed mentions sink to the bottom of the list
+      // so the unreviewed work is always at the top. Combined with the
+      // visual divider rendered below, this gives operators an implicit
+      // "archive" without a separate page or a destructive action.
+      if (a.reviewed !== b.reviewed) return a.reviewed ? 1 : -1;
+      // Flagged first (within their reviewed-state group)
       if (a.flagged !== b.flagged) return a.flagged ? -1 : 1;
       // Source tier (Reddit/forums first)
       const sa = sourceRank(a);

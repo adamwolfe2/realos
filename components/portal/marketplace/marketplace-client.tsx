@@ -351,6 +351,12 @@ function ModuleCard({
   const isAddon = m.kind === "addon";
   const isToggle = m.kind === "toggle";
   const isConcierge = m.kind === "concierge";
+  // Norman bug #2: operators couldn't click into a module to read the full
+  // pitch — tagline was truncated with "..." and there was no expand. Now
+  // every card has a "Details" toggle that expands the tagline (no clamp)
+  // and shows the catalog bullets + setup effort. The CTA buttons retain
+  // their own click target so toggle/activate behavior is unchanged.
+  const [expanded, setExpanded] = useState(false);
 
   // Single-accent design: every card uses the LeaseStack blue stripe. We
   // signal state with stripe *opacity*, not hue — active is the boldest
@@ -401,9 +407,57 @@ function ModuleCard({
             </h3>
             <StatusPill kind={m.kind} isEnabled={isEnabled} popular={m.popular} />
           </div>
-          <p className="mt-0.5 text-[12px] leading-snug text-muted-foreground line-clamp-2">
+          <button
+            type="button"
+            onClick={() => setExpanded((v) => !v)}
+            aria-expanded={expanded}
+            aria-label={expanded ? "Hide details" : "Show full details"}
+            className={
+              "mt-0.5 text-left w-full block text-[12px] leading-snug text-muted-foreground hover:text-foreground transition-colors " +
+              (expanded ? "" : "line-clamp-2")
+            }
+          >
             {m.tagline}
-          </p>
+          </button>
+          {expanded ? null : (
+            <button
+              type="button"
+              onClick={() => setExpanded(true)}
+              className="mt-1 text-[11px] font-medium text-primary hover:underline"
+            >
+              Details
+            </button>
+          )}
+          {expanded && m.bullets.length > 0 ? (
+            <ul className="mt-2 space-y-1">
+              {m.bullets.map((b) => (
+                <li
+                  key={b}
+                  className="flex items-start gap-1.5 text-[11.5px] text-foreground/80 leading-snug"
+                >
+                  <Check
+                    className="w-2.5 h-2.5 mt-1 shrink-0 text-primary"
+                    strokeWidth={2.5}
+                  />
+                  <span>{b}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {expanded && m.setupEffort ? (
+            <p className="mt-2 text-[11px] text-muted-foreground italic">
+              {m.setupEffort}
+            </p>
+          ) : null}
+          {expanded ? (
+            <button
+              type="button"
+              onClick={() => setExpanded(false)}
+              className="mt-2 text-[11px] font-medium text-primary hover:underline"
+            >
+              Hide
+            </button>
+          ) : null}
         </div>
       </div>
 

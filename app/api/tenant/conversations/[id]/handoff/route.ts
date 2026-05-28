@@ -71,6 +71,32 @@ export async function POST(
       }),
     });
 
+    // Norman bug #3: handoff must actually notify the team, not just flip
+    // the status. Fire a chatbot_lead notification so it lands in the
+    // org-wide inbox at /portal/notifications. The bell + unread-count
+    // pick it up automatically. Fire-and-forget — never blocks the API
+    // response on the notification write.
+    void prisma.notification
+      .create({
+        data: {
+          orgId: scope.orgId,
+          kind: "chatbot_lead",
+          title: convo.capturedName
+            ? `Chatbot conversation handed off — ${convo.capturedName}`
+            : "Chatbot conversation handed off",
+          body:
+            (convo.capturedEmail ? `Contact: ${convo.capturedEmail}. ` : "") +
+            "Pick this up from /portal/conversations.",
+          entityType: "ChatbotConversation",
+          entityId: id,
+          href: `/portal/conversations/${id}`,
+        },
+      })
+      .catch((e) => {
+        // Notification failure must not break the handoff itself.
+        console.error("[handoff] notification create failed", e);
+      });
+
     return NextResponse.json({ ok: true, status: updated.status });
   } catch (err) {
     if (err instanceof ForbiddenError) {
