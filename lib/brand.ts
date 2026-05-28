@@ -24,7 +24,16 @@ export const BRAND_NAME = trim(process.env.BRAND_NAME) || BRAND.name;
 export const BRAND_TEAM = `${BRAND_NAME} Team`;
 export const BRAND_EMAIL = trim(process.env.RESEND_FROM_EMAIL) || BRAND.email;
 export const BRAND_LOCATION = trim(process.env.BRAND_LOCATION) || "";
-export const BRAND_COLOR = trim(process.env.BRAND_PRIMARY_COLOR) || "#0A0A0A";
+// Canonical LeaseStack accent. Matches `--color-primary` in app/globals.css
+// (the marketing site / dashboard / report views) so transactional emails
+// render the same blue header as everything else. Override via env if a
+// future re-skin moves the brand.
+export const BRAND_COLOR = trim(process.env.BRAND_PRIMARY_COLOR) || "#2563EB";
+
+// Canonical wordmark used as the email header logo. Sender HTML reads this
+// when no white-label logo is in scope. Lives at /public/logos/.
+// Resolved into an absolute URL by callers via getSiteUrl().
+export const BRAND_LOGO_PATH = "/logos/leasestack-wordmark.png";
 
 export const AI_MODEL =
   trim(process.env.AI_CONFIG_MODEL) || "claude-haiku-4-5-20251001";

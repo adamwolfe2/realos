@@ -41,6 +41,16 @@ import { captureWithContext } from "@/lib/sentry";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
+// TODO(#26): Stripe-hosted invoice + receipt branding (logo, accent
+// color, brand name, footer text) lives in the Stripe Dashboard, not
+// here. Make sure the production account is set to:
+//   - Brand color: #2563EB  (matches BRAND_COLOR / marketing site)
+//   - Logo: /public/logos/leasestack-wordmark.png (uploaded to Stripe)
+//   - Public business name: LeaseStack
+//   - Support URL: https://www.leasestack.co
+// We don't set these per-Checkout-session because Stripe only honors
+// the account-level branding on subscription-mode invoices.
+
 // Self-serve property cap. Anything above this routes to Enterprise
 // sales contact. Matches SELF_SERVE_PROPERTY_CAP in lib/billing/catalog.ts.
 const PROPERTY_CAP = 99;

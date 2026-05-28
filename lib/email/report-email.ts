@@ -110,9 +110,23 @@ export function buildReportEmail(input: ReportEmailInput): {
     </p>
   `;
 
+  // TODO(#26): plumb orgId through ReportEmailInput so white-labeled
+  // orgs get their wordmark / display name in the header instead of
+  // LeaseStack's. The base HTML shell already supports `brand` — the
+  // caller (lib/email/send-report.ts) just needs to resolve the org
+  // and pass it down. Tracked separately from this branding pass so
+  // we don't gate the report ship on the white-label QA path.
   const html = buildBaseHtml({
     headline: `${kindLabel} — ${period}`,
     bodyHtml,
+    title: subject,
+    // Preheader is the 1-line inbox preview. Gmail/Apple Mail show
+    // this next to the subject; without it the recipient sees the
+    // "LEASESTACK / Real estate operator portal" wordmark text,
+    // which wastes the slot.
+    preheader: headline
+      ? `${headline} — full report inside.`
+      : `${orgName} ${kindLabel.toLowerCase()} for ${period}.`,
     theme: {
       outerBg: PARCHMENT,
       innerBg: IVORY,

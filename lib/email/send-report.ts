@@ -3,6 +3,11 @@ import { getResend, FROM_EMAIL, BRAND_EMAIL } from "./shared";
 import { buildReportEmail, shareReportUrl, type ReportEmailInput } from "./report-email";
 import type { ReportSnapshot } from "@/lib/reports/generate";
 
+// TODO(#26): migrate this sender onto sendBrandedEmail in shared.ts so
+// it picks up the suppression list, white-label display name swap, and
+// the standard tag set automatically. It currently hand-rolls the
+// headers because it predates sendBrandedEmail's broadcast support.
+
 export interface SendReportInput {
   to: string[];
   orgName: string;

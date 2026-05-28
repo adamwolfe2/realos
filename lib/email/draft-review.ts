@@ -1,10 +1,11 @@
 import "server-only";
 import {
-  getResend,
+  sendBrandedEmail,
+  buildBaseHtml,
   isValidEmail,
-  FROM_EMAIL,
   APP_URL,
   BRAND_NAME,
+  escapeHtml,
 } from "@/lib/email/shared";
 import { prisma } from "@/lib/db";
 
@@ -18,6 +19,10 @@ import { prisma } from "@/lib/db";
 // block the API response. Idempotent in the sense that re-running
 // would send duplicates (not deduped); callers should call exactly
 // once per status transition.
+//
+// Branding: routes through sendBrandedEmail + buildBaseHtml so this
+// renders in the same header / footer / accent treatment as every
+// other transactional email. Was a hand-rolled HTML shell before #26.
 // ---------------------------------------------------------------------------
 
 type ReviewStatus = "APPROVED" | "CHANGES_REQUESTED" | "REJECTED" | "SHIPPED";
@@ -30,15 +35,6 @@ type Input = {
   propertyName: string | null;
   reviewNotes: string | null;
 };
-
-function e(s: string): string {
-  return s
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
 
 function subjectFor(input: Input): string {
   const fmt = input.format.replace(/_/g, " ").toLowerCase();
@@ -88,69 +84,19 @@ function bodyText(input: Input): string {
   }
 }
 
-function buildHtml(input: Input, draftUrl: string): string {
-  const headline = headlineFor(input);
-  const body = bodyText(input);
+function buildBody(input: Input): string {
   const notesBlock = input.reviewNotes
     ? `<table cellpadding="0" cellspacing="0" style="margin-top:18px;border:1px solid #FCD34D;background:#FEF3C7;border-radius:6px;width:100%;">
         <tr>
           <td style="padding:12px 14px;">
             <p style="margin:0;font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:#92400E;">Notes from reviewer</p>
-            <p style="margin:6px 0 0;font-size:13px;color:#1F2937;white-space:pre-wrap;">${e(input.reviewNotes)}</p>
+            <p style="margin:6px 0 0;font-size:13px;color:#1F2937;white-space:pre-wrap;">${escapeHtml(input.reviewNotes)}</p>
           </td>
         </tr>
       </table>`
     : "";
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>${e(subjectFor(input))}</title>
-</head>
-<body style="margin:0;padding:0;background:#F9FAFB;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#F9FAFB;padding:32px 16px;">
-    <tr>
-      <td align="center">
-        <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#FFFFFF;border:1px solid #E5E7EB;border-radius:6px;overflow:hidden;">
-          <tr>
-            <td style="background:#2563EB;padding:24px 32px;">
-              <p style="margin:0;color:#FFFFFF;font-size:11px;letter-spacing:0.15em;text-transform:uppercase;font-weight:600;">${e(BRAND_NAME)}</p>
-              <p style="margin:8px 0 0;color:#BFDBFE;font-size:13px;">Content draft review</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:28px 32px 8px;">
-              <h1 style="margin:0;font-size:22px;font-weight:700;color:#111111;">${e(headline)}</h1>
-              <p style="margin:12px 0 0;font-size:14px;color:#374151;line-height:1.55;">${e(body)}</p>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:0 32px;">
-              ${notesBlock}
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:24px 32px 32px;">
-              <a href="${e(draftUrl)}" style="display:inline-block;background:#2563EB;color:#FFFFFF;font-size:13px;font-weight:600;text-decoration:none;padding:13px 28px;border-radius:4px;letter-spacing:0.04em;">${e(ctaLabel(input))}</a>
-            </td>
-          </tr>
-          <tr>
-            <td style="padding:20px 32px;border-top:1px solid #E5E7EB;background:#F9FAFB;">
-              <p style="margin:0;font-size:12px;color:#9CA3AF;">
-                Powered by <a href="https://leasestack.co" style="color:#94A3B8;text-decoration:none;">${e(BRAND_NAME)}</a>
-                &nbsp;&middot;&nbsp;
-                <a href="${e(APP_URL)}/portal/settings/notifications" style="color:#94A3B8;text-decoration:none;">Notification settings</a>
-              </p>
-            </td>
-          </tr>
-        </table>
-      </td>
-    </tr>
-  </table>
-</body>
-</html>`;
+  return `<p style="margin:0;font-size:14px;color:#374151;line-height:1.55;">${escapeHtml(bodyText(input))}</p>${notesBlock}`;
 }
 
 export async function sendDraftReviewEmail(input: Input): Promise<{
@@ -159,12 +105,6 @@ export async function sendDraftReviewEmail(input: Input): Promise<{
   errors: string[];
 }> {
   const result = { sent: 0, skipped: 0, errors: [] as string[] };
-
-  const resend = getResend();
-  if (!resend) {
-    result.errors.push("RESEND_API_KEY not configured");
-    return result;
-  }
 
   const members = await prisma.user
     .findMany({
@@ -181,31 +121,39 @@ export async function sendDraftReviewEmail(input: Input): Promise<{
 
   const draftUrl = `${APP_URL}/portal/seo/agent/drafts/${input.draftId}`;
   const subject = subjectFor(input);
-  const html = buildHtml(input, draftUrl);
+  const headline = headlineFor(input);
+  const cta = ctaLabel(input);
 
-  // One send per recipient so each gets a personal copy. Transactional —
-  // no marketing unsubscribe header set (only operational + product).
-  const results = await Promise.allSettled(
-    emails.map((email) =>
-      resend.emails.send({
-        from: FROM_EMAIL,
+  // One send per recipient so each gets a personal copy. Routed through
+  // sendBrandedEmail so the org's effective brand (LeaseStack or
+  // white-label) is applied to the header / footer.
+  const sends = await Promise.allSettled(
+    emails.map(async (email) => {
+      const html = buildBaseHtml({
+        headline,
+        bodyHtml: buildBody(input),
+        ctaText: cta,
+        ctaUrl: draftUrl,
+        preheader: bodyText(input),
+        title: subject,
+      });
+      return sendBrandedEmail({
         to: email,
         subject,
         html,
-        tags: [
-          { name: "template", value: "draft-review" },
-          { name: "status", value: input.status.toLowerCase() },
-          { name: "category", value: "transactional" },
-        ],
-      }),
-    ),
+        category: "transactional",
+        template: "draft-review",
+        orgId: input.orgId,
+        tags: [{ name: "status", value: input.status.toLowerCase() }],
+      });
+    }),
   );
 
-  for (const r of results) {
-    if (r.status === "fulfilled" && !r.value.error) {
+  for (const r of sends) {
+    if (r.status === "fulfilled" && r.value.ok) {
       result.sent += 1;
-    } else if (r.status === "fulfilled" && r.value.error) {
-      result.errors.push(r.value.error.message);
+    } else if (r.status === "fulfilled" && !r.value.ok) {
+      result.errors.push(r.value.error);
     } else if (r.status === "rejected") {
       result.errors.push(
         r.reason instanceof Error ? r.reason.message : String(r.reason),
