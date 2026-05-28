@@ -210,7 +210,9 @@ export default async function ConversationsList({
         title="Chatbot conversations"
         description="Read transcripts inline, flag patterns to tune the system prompt, and find leads worth chasing. Filters are URL-driven."
         actions={
-          <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+          </Suspense>
         }
       />
 

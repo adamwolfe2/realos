@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { format, formatDistanceToNow, differenceInDays } from "date-fns";
 import {
@@ -217,10 +218,12 @@ export default async function ResidentsPage({
               {lastSyncLabel}
             </span>
             <RunAppFolioSyncButton label="Sync now" subtle />
-            <PropertyMultiSelect
-              properties={visibleProperties(scope, properties)}
-              orgId={scope.orgId}
-            />
+            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+              <PropertyMultiSelect
+                properties={visibleProperties(scope, properties)}
+                orgId={scope.orgId}
+              />
+            </Suspense>
           </div>
         }
       />

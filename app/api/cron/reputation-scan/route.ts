@@ -57,11 +57,14 @@ export async function GET(req: NextRequest) {
       let propertiesFailed = 0;
       const errors: Array<{ orgId: string; propertyId?: string; error: string }> = [];
 
-      for (const org of orgs) {
-        try {
-          const properties = await prisma.property.findMany({
+      // Batch the per-org property lookup into a single query, then group
+      // in memory. Drops N round trips to 1.
+      const orgIds = orgs.map((o) => o.id);
+      const allProperties = orgIds.length === 0
+        ? []
+        : await prisma.property.findMany({
             where: {
-              orgId: org.id,
+              orgId: { in: orgIds },
               googlePlaceId: { not: null },
               lifecycle: "ACTIVE",
             },
@@ -81,6 +84,23 @@ export async function GET(req: NextRequest) {
               redditSubreddits: true,
             },
           });
+
+      const propertiesByOrg = allProperties.reduce<Map<string, typeof allProperties>>(
+        (acc, p) => {
+          const list = acc.get(p.orgId);
+          if (list) {
+            list.push(p);
+          } else {
+            acc.set(p.orgId, [p]);
+          }
+          return acc;
+        },
+        new Map(),
+      );
+
+      for (const org of orgs) {
+        try {
+          const properties = propertiesByOrg.get(org.id) ?? [];
 
           for (const p of properties) {
             const seed: PropertySeed = {

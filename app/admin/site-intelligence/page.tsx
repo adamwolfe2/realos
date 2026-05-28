@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ArrowUpRight, Globe, SatelliteDish } from "lucide-react";
@@ -188,7 +189,9 @@ export default async function SiteIntelligenceListPage({
           </p>
         </div>
 
-        <SearchInput />
+        <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+          <SearchInput />
+        </Suspense>
       </header>
 
       {filtered.length === 0 ? (

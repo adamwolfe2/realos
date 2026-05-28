@@ -4,7 +4,8 @@ import { LeadSource } from "@prisma/client";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
 
-export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
+// Heuristic recompute over a bounded batch. Finishes in seconds.
+export const maxDuration = 60;
 
 // GET /api/cron/lead-score-refresh
 // Daily. Recomputes Lead.score + intent label from a simple linear

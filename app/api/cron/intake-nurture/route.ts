@@ -10,7 +10,9 @@ import {
   BRAND_NAME,
 } from "@/lib/email/shared";
 
-export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
+// Bounded daily email batch — sends Resend messages for unconverted
+// intakes. A few dozen per run.
+export const maxDuration = 60;
 
 // GET /api/cron/intake-nurture
 // Daily at 12:00 UTC. Nurtures unconverted intake submissions with a 3-touch

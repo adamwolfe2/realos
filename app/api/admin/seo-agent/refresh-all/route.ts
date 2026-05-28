@@ -51,50 +51,53 @@ export async function POST(_req: NextRequest) {
         propertyId: p.id,
       });
 
-      // Upsert engine output and prime the cache so the next read on
-      // the operator portal hits.
-      for (const r of recs) {
-        await prisma.seoActionRecommendation
-          .upsert({
-            where: {
-              orgId_propertyId_kind: {
+      // Upsert engine output in parallel — semantics require per-row
+      // upsert (engine emits possibly-changed kinds per property), but
+      // we can fan out the writes per property concurrently.
+      const refreshedAt = new Date();
+      const upsertResults = await Promise.all(
+        recs.map((r) =>
+          prisma.seoActionRecommendation
+            .upsert({
+              where: {
+                orgId_propertyId_kind: {
+                  orgId: p.orgId,
+                  propertyId: p.id,
+                  kind: r.kind,
+                },
+              },
+              create: {
                 orgId: p.orgId,
                 propertyId: p.id,
                 kind: r.kind,
+                category: r.category,
+                severity: r.severity,
+                title: r.title,
+                detail: r.detail,
+                estimateMinutes: r.estimateMinutes,
+                score: r.score,
+                actionHref: r.actionHref,
+                actionLabel: r.actionLabel,
+                evidence: r.evidence as never,
+                refreshedAt,
               },
-            },
-            create: {
-              orgId: p.orgId,
-              propertyId: p.id,
-              kind: r.kind,
-              category: r.category,
-              severity: r.severity,
-              title: r.title,
-              detail: r.detail,
-              estimateMinutes: r.estimateMinutes,
-              score: r.score,
-              actionHref: r.actionHref,
-              actionLabel: r.actionLabel,
-              evidence: r.evidence as never,
-              refreshedAt: new Date(),
-            },
-            update: {
-              severity: r.severity,
-              title: r.title,
-              detail: r.detail,
-              estimateMinutes: r.estimateMinutes,
-              score: r.score,
-              actionHref: r.actionHref,
-              actionLabel: r.actionLabel,
-              evidence: r.evidence as never,
-              refreshedAt: new Date(),
-            },
-          })
-          .then(() => {
-            totalWritten += 1;
-          })
-          .catch(() => undefined);
-      }
+              update: {
+                severity: r.severity,
+                title: r.title,
+                detail: r.detail,
+                estimateMinutes: r.estimateMinutes,
+                score: r.score,
+                actionHref: r.actionHref,
+                actionLabel: r.actionLabel,
+                evidence: r.evidence as never,
+                refreshedAt,
+              },
+            })
+            .then(() => true)
+            .catch(() => false),
+        ),
+      );
+      totalWritten += upsertResults.filter(Boolean).length;
       await setCachedRecommendations(p.orgId, p.id, recs).catch(
         () => undefined,
       );

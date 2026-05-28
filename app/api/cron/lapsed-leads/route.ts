@@ -4,7 +4,9 @@ import { AuditAction, LeadStatus } from "@prisma/client";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
 
-export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
+// After the batch updateMany + createMany rewrite this job finishes in
+// ~1s for a 500-row daily batch. Tight cap surfaces regressions early.
+export const maxDuration = 60;
 
 // GET /api/cron/lapsed-leads
 // Daily. Moves CONTACTED / TOUR_SCHEDULED / TOURED leads with no activity
@@ -30,34 +32,41 @@ export async function GET(req: NextRequest) {
       take: 500,
     });
 
-    // Per-iteration try/catch — a single transaction failure (orgId no
-    // longer exists, FK violation on a renamed entity) shouldn't tank
-    // the entire daily run. Each failure logs to the errors array so
-    // cron-run telemetry surfaces it without the whole job 500ing.
-    let moved = 0;
+    // Batch-only path: a single updateMany + chunked createMany cuts
+    // wall-time from minutes (500 sequential txns) to ~1s. We trade
+    // per-row error isolation for aggregate stats — failure halts the
+    // batch but cron-run telemetry captures the error message.
+    const now = new Date();
+    const CHUNK_SIZE = 200;
     const errors: string[] = [];
-    for (const lead of candidates) {
+    let moved = 0;
+
+    if (candidates.length > 0) {
+      const leadIds = candidates.map((l) => l.id);
+      const auditRows = candidates.map((lead) => ({
+        orgId: lead.orgId,
+        action: AuditAction.UPDATE,
+        entityType: "Lead",
+        entityId: lead.id,
+        description: `Auto-closed stale lead, ${lead.status} → LOST (14d inactive)`,
+      }));
+
       try {
-        await prisma.$transaction([
-          prisma.lead.update({
-            where: { id: lead.id },
-            data: { status: LeadStatus.LOST, lastActivityAt: new Date() },
-          }),
-          prisma.auditEvent.create({
-            data: {
-              orgId: lead.orgId,
-              action: AuditAction.UPDATE,
-              entityType: "Lead",
-              entityId: lead.id,
-              description: `Auto-closed stale lead, ${lead.status} → LOST (14d inactive)`,
-            },
-          }),
-        ]);
-        moved++;
+        const updated = await prisma.lead.updateMany({
+          where: { id: { in: leadIds } },
+          data: { status: LeadStatus.LOST, lastActivityAt: now },
+        });
+        moved = updated.count;
+
+        for (let i = 0; i < auditRows.length; i += CHUNK_SIZE) {
+          const chunk = auditRows.slice(i, i + CHUNK_SIZE);
+          await prisma.auditEvent.createMany({
+            data: chunk,
+            skipDuplicates: true,
+          });
+        }
       } catch (err) {
-        errors.push(
-          `${lead.id}: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        errors.push(err instanceof Error ? err.message : String(err));
       }
     }
 

@@ -17,8 +17,30 @@
  */
 
 import "server-only";
+import { unstable_cache } from "next/cache";
 
 const BASE_URL = "https://api.firecrawl.dev/v1";
+
+// Cache TTLs for the two cheap-to-cache endpoints. /scrape responses for
+// marketing/brand pages don't move daily; /search results for cornerstone
+// discovery are tied to relatively stable web indexes. 7 days strikes a
+// safe balance — operator-triggered "Refresh" can bust via the tag.
+const FIRECRAWL_SCRAPE_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
+const FIRECRAWL_SEARCH_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+export function firecrawlScrapeCacheTag(url: string): string {
+  // Stable tag per origin so a "refresh this site" action can sweep
+  // every cached page from that domain in one call.
+  try {
+    return `firecrawl:scrape:${new URL(url).host.toLowerCase()}`;
+  } catch {
+    return `firecrawl:scrape:invalid`;
+  }
+}
+
+export function firecrawlSearchCacheTag(): string {
+  return `firecrawl:search`;
+}
 
 // Firecrawl public pricing as of 2026-05: ~$0.0008/page for /scrape and
 // /crawl, and ~$0.002/query for /search. These are coarse estimates we log
@@ -86,10 +108,7 @@ function notConfigured(): FirecrawlErr {
   };
 }
 
-/**
- * POST /scrape — pulls a single URL as markdown + html.
- */
-export async function scrape(args: {
+async function scrapeUncached(args: {
   url: string;
   formats?: Array<"markdown" | "html" | "rawHtml" | "links">;
 }): Promise<FirecrawlResult<FirecrawlScrapePage>> {
@@ -114,15 +133,34 @@ export async function scrape(args: {
     };
     const data = body.data ?? { url: args.url };
     const costUsd = COST_PER_PAGE_USD;
-    console.log(
-      `[firecrawl.scrape] $${costUsd.toFixed(4)} ${args.url}`,
-    );
     return { ok: true, data, costUsd };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error("[firecrawl.scrape] request failed:", message);
     return { ok: false, error: `firecrawl scrape error: ${message}` };
   }
+}
+
+/**
+ * POST /scrape — pulls a single URL as markdown + html.
+ * Cached for 7 days keyed on (url, formats) so repeated discovery
+ * passes don't burn through scrape budget. Bust via
+ * `revalidateTag(firecrawlScrapeCacheTag(url))`.
+ */
+export async function scrape(args: {
+  url: string;
+  formats?: Array<"markdown" | "html" | "rawHtml" | "links">;
+}): Promise<FirecrawlResult<FirecrawlScrapePage>> {
+  const formats = args.formats ?? ["markdown", "html"];
+  const cached = unstable_cache(
+    async () => scrapeUncached({ url: args.url, formats }),
+    ["firecrawl-scrape", args.url, formats.join(",")],
+    {
+      revalidate: FIRECRAWL_SCRAPE_CACHE_TTL_SECONDS,
+      tags: [firecrawlScrapeCacheTag(args.url)],
+    },
+  );
+  return cached();
 }
 
 /**
@@ -256,11 +294,7 @@ export async function crawl(args: {
   }
 }
 
-/**
- * POST /search — Firecrawl-powered web search. Used by upstream callers for
- * cornerstone-page discovery when sitemap doesn't surface enough URLs.
- */
-export async function search(args: {
+async function searchUncached(args: {
   query: string;
   limit?: number;
 }): Promise<FirecrawlResult<FirecrawlSearchResult>> {
@@ -290,9 +324,6 @@ export async function search(args: {
     };
     const results = Array.isArray(body.data) ? body.data : [];
     const costUsd = COST_PER_SEARCH_USD;
-    console.log(
-      `[firecrawl.search] $${costUsd.toFixed(4)} "${args.query}" ${results.length} results`,
-    );
     return {
       ok: true,
       data: { query: args.query, results },
@@ -303,6 +334,29 @@ export async function search(args: {
     console.error("[firecrawl.search] request failed:", message);
     return { ok: false, error: `firecrawl search error: ${message}` };
   }
+}
+
+/**
+ * POST /search — Firecrawl-powered web search. Used by upstream callers for
+ * cornerstone-page discovery when sitemap doesn't surface enough URLs.
+ * Cached for 7 days — search-result URLs for cornerstone discovery are
+ * extremely stable per (query, limit). Bust via
+ * `revalidateTag(firecrawlSearchCacheTag())`.
+ */
+export async function search(args: {
+  query: string;
+  limit?: number;
+}): Promise<FirecrawlResult<FirecrawlSearchResult>> {
+  const limit = args.limit ?? 5;
+  const cached = unstable_cache(
+    async () => searchUncached({ query: args.query, limit }),
+    ["firecrawl-search", args.query, String(limit)],
+    {
+      revalidate: FIRECRAWL_SEARCH_CACHE_TTL_SECONDS,
+      tags: [firecrawlSearchCacheTag()],
+    },
+  );
+  return cached();
 }
 
 export function isFirecrawlConfigured(): boolean {

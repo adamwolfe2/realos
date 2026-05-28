@@ -86,54 +86,54 @@ export async function POST(req: NextRequest) {
       propertyId: p.id,
     });
 
-    // Upsert every rec. The (orgId, propertyId, kind) unique key dedupes
-    // across runs while preserving operator status changes.
-    for (const r of recs) {
-      await prisma.seoActionRecommendation
-        .upsert({
-          where: {
-            orgId_propertyId_kind: {
+    // Upsert every rec in parallel. The (orgId, propertyId, kind) unique
+    // key dedupes across runs while preserving operator status changes.
+    const refreshedAt = new Date();
+    const upsertResults = await Promise.all(
+      recs.map((r) =>
+        prisma.seoActionRecommendation
+          .upsert({
+            where: {
+              orgId_propertyId_kind: {
+                orgId: p.orgId,
+                propertyId: p.id,
+                kind: r.kind,
+              },
+            },
+            create: {
               orgId: p.orgId,
               propertyId: p.id,
               kind: r.kind,
+              category: r.category,
+              severity: r.severity,
+              title: r.title,
+              detail: r.detail,
+              estimateMinutes: r.estimateMinutes,
+              score: r.score,
+              actionHref: r.actionHref,
+              actionLabel: r.actionLabel,
+              evidence: r.evidence as never,
+              refreshedAt,
             },
-          },
-          create: {
-            orgId: p.orgId,
-            propertyId: p.id,
-            kind: r.kind,
-            category: r.category,
-            severity: r.severity,
-            title: r.title,
-            detail: r.detail,
-            estimateMinutes: r.estimateMinutes,
-            score: r.score,
-            actionHref: r.actionHref,
-            actionLabel: r.actionLabel,
-            evidence: r.evidence as never,
-            refreshedAt: new Date(),
-          },
-          update: {
-            // Don't reset status — operator might have moved it to
-            // IN_PROGRESS. Only refresh the engine-derived fields.
-            severity: r.severity,
-            title: r.title,
-            detail: r.detail,
-            estimateMinutes: r.estimateMinutes,
-            score: r.score,
-            actionHref: r.actionHref,
-            actionLabel: r.actionLabel,
-            evidence: r.evidence as never,
-            refreshedAt: new Date(),
-          },
-        })
-        .then(() => {
-          written += 1;
-        })
-        .catch(() => {
-          // Best-effort: one failing rec shouldn't kill the batch.
-        });
-    }
+            update: {
+              // Don't reset status — operator might have moved it to
+              // IN_PROGRESS. Only refresh the engine-derived fields.
+              severity: r.severity,
+              title: r.title,
+              detail: r.detail,
+              estimateMinutes: r.estimateMinutes,
+              score: r.score,
+              actionHref: r.actionHref,
+              actionLabel: r.actionLabel,
+              evidence: r.evidence as never,
+              refreshedAt,
+            },
+          })
+          .then(() => true)
+          .catch(() => false),
+      ),
+    );
+    written += upsertResults.filter(Boolean).length;
 
     // Prime the cache with the fresh result so the next read hits.
     await setCachedRecommendations(p.orgId, p.id, recs).catch(() => undefined);

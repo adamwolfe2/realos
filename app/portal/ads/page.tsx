@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
@@ -270,10 +271,12 @@ export default async function AdsPage({
         description="Spend, clicks, and conversions from every connected ad platform. Refreshes daily."
         actions={
           <div className="flex items-center gap-2 flex-wrap">
-            <PropertyMultiSelect
-              properties={properties}
-              orgId={scope.orgId}
-            />
+            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+              <PropertyMultiSelect
+                properties={properties}
+                orgId={scope.orgId}
+              />
+            </Suspense>
             <ExportButton href="/api/tenant/ad-metrics/export?days=90" />
             <Link
               href="/portal/connect"

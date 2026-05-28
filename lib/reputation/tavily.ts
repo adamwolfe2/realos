@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import type { ScanSourceResult, ScannedMention, PropertySeed } from "./types";
 import { MentionSource } from "@prisma/client";
 
@@ -211,7 +212,29 @@ function buildQueryPlan(property: PropertySeed): Array<{
   ];
 }
 
-export async function searchTavily(
+// Cache TTL for repeated Tavily searches on the same property — 7 days.
+// Tavily costs ~$0.008/query × 4 queries per scan; the weekly reputation
+// cron repeats the exact same input N times across multiple call sites
+// (cron + manual "Scan now"). Reviews don't churn fast enough for this
+// window to hurt freshness.
+const TAVILY_CACHE_TTL_SECONDS = 7 * 24 * 60 * 60;
+
+function tavilyCacheKey(property: PropertySeed): string {
+  // Cheap stable key — what actually drives the query plan and exclude
+  // list. Skipping address details that don't show up in the query body.
+  return [
+    property.name,
+    property.city ?? "",
+    property.state ?? "",
+    property.googleReviewUrl ?? "",
+  ].join("|");
+}
+
+export function reputationTavilyCacheTag(propertyId: string): string {
+  return `reputation:tavily:${propertyId}`;
+}
+
+async function searchTavilyUncached(
   property: PropertySeed
 ): Promise<ScanSourceResult> {
   const apiKey = process.env.TAVILY_API_KEY;
@@ -282,6 +305,23 @@ export async function searchTavily(
       error: err instanceof Error ? err.message : String(err),
     };
   }
+}
+
+// Public entry point — caches the search by stable property identity.
+// Tagged per-property so `revalidateTag(reputationTavilyCacheTag(id))`
+// (e.g. after an operator-confirmed re-scan) forces a fresh fetch.
+export async function searchTavily(
+  property: PropertySeed
+): Promise<ScanSourceResult> {
+  const cached = unstable_cache(
+    async () => searchTavilyUncached(property),
+    ["reputation-tavily", tavilyCacheKey(property)],
+    {
+      revalidate: TAVILY_CACHE_TTL_SECONDS,
+      tags: [reputationTavilyCacheTag(property.id)],
+    },
+  );
+  return cached();
 }
 
 // ---------------------------------------------------------------------------
