@@ -1,5 +1,6 @@
 import "server-only";
 import { maybeDecrypt } from "@/lib/crypto";
+import { getOAuthCredentials } from "@/lib/integrations/oauth-credentials";
 import type { AdAccount } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -98,6 +99,56 @@ export function parseGoogleAdsCredentials(
 
 export function normalizeCustomerId(input: string): string {
   return input.replace(/[^0-9]/g, "");
+}
+
+// ---------------------------------------------------------------------------
+// OAuth-first credential resolution
+//
+// resolveGoogleAdsCredentials() is the preferred entry point now:
+//   1. Look for an OAuthConnection row (orgId, "google_ads") — if present,
+//      return a credential bundle backed by the OAuth-issued refresh token.
+//   2. Fall through to parseGoogleAdsCredentials() — the legacy paste path
+//      that reads AdAccount.credentialsEncrypted. Unchanged.
+//
+// Existing callers that already pass an AdAccount directly to
+// parseGoogleAdsCredentials keep working — nothing about the legacy path
+// has changed. New callers should adopt resolveGoogleAdsCredentials so the
+// OAuth connect button starts working as soon as W2's UI flips it on.
+// ---------------------------------------------------------------------------
+
+export async function resolveGoogleAdsCredentials(
+  orgId: string,
+  account: Pick<AdAccount, "credentialsEncrypted">,
+  options?: { externalAccountId?: string | null },
+): Promise<GoogleAdsCredentials> {
+  const oauth = await getOAuthCredentials(
+    orgId,
+    "google_ads",
+    options?.externalAccountId,
+  );
+  if (oauth && oauth.refreshToken) {
+    const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+    if (!developerToken) {
+      throw new Error(
+        "GOOGLE_ADS_DEVELOPER_TOKEN is not configured. The agency MCC developer token is required for every Google Ads call, even with OAuth-issued user tokens.",
+      );
+    }
+    const oauthClientId = process.env.GOOGLE_OAUTH_CLIENT_ID;
+    const oauthClientSecret = process.env.GOOGLE_OAUTH_CLIENT_SECRET;
+    if (!oauthClientId || !oauthClientSecret) {
+      throw new Error(
+        "GOOGLE_OAUTH_CLIENT_ID / GOOGLE_OAUTH_CLIENT_SECRET is not configured.",
+      );
+    }
+    return {
+      developerToken,
+      loginCustomerId: process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID ?? null,
+      refreshToken: oauth.refreshToken,
+      oauthClientId,
+      oauthClientSecret,
+    };
+  }
+  return parseGoogleAdsCredentials(account);
 }
 
 // ---------------------------------------------------------------------------
