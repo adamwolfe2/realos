@@ -3,6 +3,11 @@ import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { analyzeSentimentAndTopics } from "@/lib/reputation/analyze";
+import { aiCallLimiter, checkRateLimit, rateLimited } from "@/lib/rate-limit";
+import {
+  checkAiBillingGate,
+  aiBillingDeniedResponseBody,
+} from "@/lib/billing/gate";
 
 // ---------------------------------------------------------------------------
 // POST /api/tenant/reputation-mentions/backfill-sentiment
@@ -40,6 +45,29 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { ok: false, error: "Not authenticated" },
       { status: 401 },
+    );
+  }
+
+  // Billing gate — backfill can chew through 200 mentions in batches of
+  // 50 against Claude Haiku. Block delinquent tenants from running it.
+  const billingGate = await checkAiBillingGate(scope.orgId, {
+    isImpersonating: scope.isImpersonating,
+  });
+  if (!billingGate.allowed) {
+    return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
+      status: 402,
+    });
+  }
+
+  // Per-user hourly AI rate limit (10/hr). A single backfill run counts
+  // as one limiter hit even though it fans out internally — the BATCH_SIZE
+  // 50 cap inside the handler already bounds the per-request cost.
+  const rl = await checkRateLimit(aiCallLimiter, `ai-call:${scope.userId}`);
+  if (!rl.allowed) {
+    const retry = Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000));
+    return rateLimited(
+      "AI rate limit hit (10 calls per hour). Try again soon.",
+      retry,
     );
   }
 

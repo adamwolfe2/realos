@@ -10,6 +10,11 @@ import { ContentFormat, DraftStatus } from "@prisma/client";
 import { draftContent, type DrafterContext } from "@/lib/seo/draft-writer";
 import { notifyDraftSubmitted } from "@/lib/notifications/create";
 import { sendDraftSubmittedEmail } from "@/lib/email/draft-submitted";
+import { aiCallLimiter, checkRateLimit, rateLimited } from "@/lib/rate-limit";
+import {
+  checkAiBillingGate,
+  aiBillingDeniedResponseBody,
+} from "@/lib/billing/gate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -114,6 +119,29 @@ export async function POST(req: NextRequest) {
     parsed = createSchema.parse(await req.json());
   } catch {
     return NextResponse.json({ error: "Invalid body" }, { status: 400 });
+  }
+
+  // Billing gate — block draft generation for delinquent tenants.
+  // Anthropic spend per draft is non-trivial (8-15s of Claude time).
+  const billingGate = await checkAiBillingGate(scope.orgId, {
+    isImpersonating: scope.isImpersonating,
+  });
+  if (!billingGate.allowed) {
+    return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
+      status: 402,
+    });
+  }
+
+  // Per-user hourly AI rate limit (10/hr) — sits in front of the
+  // existing DB-count rate-limits below so a single user can't burn
+  // through the org-day cap.
+  const rl = await checkRateLimit(aiCallLimiter, `ai-call:${scope.userId}`);
+  if (!rl.allowed) {
+    const retry = Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000));
+    return rateLimited(
+      "AI rate limit hit (10 calls per hour). Try again soon.",
+      retry,
+    );
   }
 
   // Tenant + property check

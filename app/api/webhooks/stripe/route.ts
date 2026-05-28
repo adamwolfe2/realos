@@ -257,6 +257,34 @@ async function handleCheckoutCompleted(
     return;
   }
 
+  // Quote → Order checkout. The Quote/Order subsystem is not yet shipped
+  // (no Prisma models), but Stripe Checkout sessions tagged with
+  // `quote_id` metadata DO fire this webhook in production whenever a
+  // sales-issued quote completes. Pre-fix the request silently fell
+  // through to the anonymous-signup branch below, which no-ops on any
+  // session lacking customer.email — meaning a paid quote produced ZERO
+  // platform-side state: no order row, no audit event, no Sentry
+  // breadcrumb. Finance had no signal that money came in.
+  //
+  // Until the Order model lands (separate schema-design session), we
+  // turn the silent drop into a LOUD drop:
+  //   1. Capture a Sentry exception tagged `quote_checkout_unhandled`
+  //      with every field finance needs to reconcile manually.
+  //   2. Email the ops inbox (BUG_REPORT_EMAIL → ADMIN_EMAIL) so the
+  //      failure is visible without watching Sentry.
+  //   3. Write a synthetic Organization-less audit-style note via
+  //      Sentry breadcrumb (not AuditEvent — there's no orgId yet).
+  //   4. Return early so the rest of the handler doesn't try to
+  //      anonymous-link the quote's Stripe customer to a random org.
+  //
+  // When the Order subsystem lands, replace this block with the real
+  // converter that calls _quoteToOrderContract (already defined below
+  // as the implementation contract).
+  if (session.metadata?.quote_id) {
+    await handleQuoteCheckoutUnhandled(session);
+    return;
+  }
+
   const stripeCustomerId =
     typeof session.customer === "string"
       ? session.customer
@@ -930,8 +958,132 @@ async function handleDisputeClosed(dispute: Stripe.Dispute): Promise<void> {
 }
 
 // ============================================================================
-// Quote → Order conversion (forward-compat stub)
+// Quote → Order: live "loud failure" handler + forward-compat contract stub
 // ============================================================================
+//
+// The Order subsystem isn't shipped yet (no Quote/Order Prisma models).
+// Until it lands we still get Stripe `checkout.session.completed` events
+// for sales-issued quotes — those would otherwise be silently dropped.
+// `handleQuoteCheckoutUnhandled` makes that drop loud (Sentry + ops
+// email) so finance can reconcile manually until the real converter
+// (described by `_quoteToOrderContract` below) is wired up.
+
+async function handleQuoteCheckoutUnhandled(
+  session: Stripe.Checkout.Session,
+): Promise<void> {
+  const quoteId = session.metadata?.quote_id ?? null;
+  const customerEmail =
+    session.customer_details?.email ??
+    session.customer_email ??
+    null;
+  const stripeCustomerId =
+    typeof session.customer === "string"
+      ? session.customer
+      : session.customer?.id ?? null;
+  const amountTotalCents = session.amount_total ?? 0;
+  const currency = session.currency ?? null;
+
+  // 1. Sentry capture with every field finance + eng needs to reconcile.
+  captureWithContext(new Error("Quote checkout received but Order model not yet implemented"), {
+    route: "api/webhooks/stripe",
+    handler: "handleQuoteCheckoutUnhandled",
+    tag: "quote_checkout_unhandled",
+    quoteId,
+    sessionId: session.id,
+    paymentIntentId:
+      typeof session.payment_intent === "string"
+        ? session.payment_intent
+        : session.payment_intent?.id ?? null,
+    stripeCustomerId,
+    customerEmail,
+    amountTotalCents,
+    currency,
+    paymentStatus: session.payment_status,
+    mode: session.mode,
+    livemode: session.livemode,
+    allMetadata: session.metadata ?? {},
+  });
+
+  // 2. Loud log so the on-call dashboard surfaces it even if Sentry is
+  // misconfigured for this env.
+  console.error(
+    `[stripe-webhook] quote_checkout_unhandled — quoteId=${quoteId} sessionId=${session.id} ` +
+      `amount=${amountTotalCents} ${currency ?? "?"} email=${customerEmail ?? "?"} customer=${stripeCustomerId ?? "?"}`,
+  );
+
+  // 3. Email ops so the silent failure becomes a loud failure even for
+  // anyone not watching Sentry. Fire-and-forget — a Resend outage must
+  // not cause Stripe to retry (we already captured Sentry above).
+  void notifyOpsOfQuoteCheckoutDrop({
+    quoteId,
+    sessionId: session.id,
+    amountTotalCents,
+    currency,
+    customerEmail,
+    stripeCustomerId,
+    metadata: session.metadata ?? {},
+  }).catch((err) => {
+    captureWithContext(err, {
+      route: "api/webhooks/stripe",
+      handler: "handleQuoteCheckoutUnhandled.notify",
+    });
+  });
+}
+
+async function notifyOpsOfQuoteCheckoutDrop(input: {
+  quoteId: string | null;
+  sessionId: string;
+  amountTotalCents: number;
+  currency: string | null;
+  customerEmail: string | null;
+  stripeCustomerId: string | null;
+  metadata: Record<string, string>;
+}): Promise<void> {
+  const { getResend, BRAND_EMAIL } = await import("@/lib/email/shared");
+  const resend = getResend();
+  if (!resend) return; // No Resend in this env — Sentry already captured.
+
+  const to =
+    process.env.BUG_REPORT_EMAIL?.trim() ||
+    process.env.ADMIN_EMAIL?.trim() ||
+    BRAND_EMAIL ||
+    "team@leasestack.co";
+  const from =
+    process.env.RESEND_FROM_EMAIL?.trim() || `LeaseStack <team@leasestack.co>`;
+
+  const amountDisplay =
+    input.currency && input.amountTotalCents
+      ? `${(input.amountTotalCents / 100).toFixed(2)} ${input.currency.toUpperCase()}`
+      : `${input.amountTotalCents} (raw cents)`;
+
+  const metadataLines = Object.entries(input.metadata)
+    .map(([k, v]) => `  ${k}: ${v}`)
+    .join("\n");
+
+  const text = [
+    "A Stripe quote checkout completed but the Order/Quote subsystem is not yet implemented.",
+    "Reconcile this payment manually. The customer was charged successfully.",
+    "",
+    `Quote ID:           ${input.quoteId ?? "(none)"}`,
+    `Stripe Session:     ${input.sessionId}`,
+    `Amount:             ${amountDisplay}`,
+    `Customer Email:     ${input.customerEmail ?? "(unknown)"}`,
+    `Stripe Customer:    ${input.stripeCustomerId ?? "(unknown)"}`,
+    "",
+    "Full session metadata:",
+    metadataLines || "  (none)",
+    "",
+    "Sentry tag: quote_checkout_unhandled",
+  ].join("\n");
+
+  await resend.emails.send({
+    from,
+    to,
+    subject: `[LeaseStack ops] Quote checkout dropped — manual reconcile needed (${input.sessionId})`,
+    text,
+  });
+}
+
 //
 // When the order/quote subsystem ships, checkout.session.completed for a
 // quote-mode session will call createOrderWithRetry({ quoteId, sessionId })

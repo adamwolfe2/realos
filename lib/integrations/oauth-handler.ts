@@ -13,6 +13,7 @@ import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { OrgType, AdPlatform } from "@prisma/client";
+import { safeEqual } from "@/lib/utils/timing-safe";
 
 // ---------------------------------------------------------------------------
 // Shared OAuth start + callback handlers. The per-provider route files are
@@ -120,7 +121,10 @@ export async function handleOAuthCallback(
       { status: 400 },
     );
   }
-  if (stateFromQuery !== stateFromCookie) {
+  // Constant-time compare via safeEqual — defends against timing-side-channel
+  // and never throws on length mismatch (the raw `===` worked, but use the
+  // shared helper so future signed-token expansions stay safe).
+  if (!safeEqual(stateFromQuery, stateFromCookie)) {
     return NextResponse.json(
       { error: "OAuth state cookie mismatch (possible CSRF)." },
       { status: 400 },

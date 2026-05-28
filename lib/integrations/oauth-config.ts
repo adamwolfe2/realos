@@ -124,6 +124,7 @@ function metaConfig(scopes: string[]): ProviderConfig {
 // ---------------------------------------------------------------------------
 
 import crypto from "node:crypto";
+import { safeEqual } from "@/lib/utils/timing-safe";
 
 export type StatePayload = {
   orgId: string;
@@ -149,7 +150,9 @@ export function verifyState(token: string): StatePayload | null {
     .createHmac("sha256", getStateSecret())
     .update(body)
     .digest("base64url");
-  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) {
+  // safeEqual length-checks first — raw timingSafeEqual throws on length
+  // mismatch, which would bubble to a 500 + leak the length signal.
+  if (!safeEqual(sig, expected)) {
     return null;
   }
   try {

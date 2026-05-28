@@ -1,4 +1,5 @@
 import { put, del, list } from "@vercel/blob";
+import path from "node:path";
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
@@ -47,7 +48,16 @@ export async function uploadFile(
 ): Promise<{ url: string; pathname: string }> {
   validateFile(file);
 
-  const blob = await put(`${pathPrefix}/${file.name}`, file, {
+  // Sanitize file.name — never trust user-supplied filenames.
+  //   - `path.basename` strips any `../foo` traversal segments
+  //   - the allowlist regex blocks slashes, NULs, control chars, unicode
+  //   - the slice caps the length (Blob keys have practical limits)
+  //   - the fallback handles empty/all-stripped names
+  const safeBasename =
+    path.basename(file.name).replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 200) ||
+    "file";
+
+  const blob = await put(`${pathPrefix}/${safeBasename}`, file, {
     access: "public",
     addRandomSuffix: true,
   });
