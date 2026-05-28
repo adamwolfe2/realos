@@ -90,6 +90,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/admin/page-header";
 import { getFirstRunSignal } from "@/lib/portal/first-run";
 import { WelcomeLanding } from "@/components/portal/welcome-landing";
+import { FirstRunOverlay } from "@/components/portal/home/first-run-overlay";
 import { syncOnboardingProgress } from "@/lib/onboarding/step-detectors";
 import { OnboardingChecklistFloating } from "@/components/portal/onboarding/onboarding-checklist-floating";
 import { PropertyHeroBanner } from "@/components/portal/properties/property-hero-banner";
@@ -1028,6 +1029,23 @@ export default async function PortalHome({
           server-component Prisma queries against existing data the cron
           jobs and on-demand syncs keep fresh. No integration API calls. */}
       <AutoRefresh intervalMs={45_000} />
+
+      {/* First-run overlay — Task A. Renders ONLY when the org has zero
+          connected data sources, zero properties, and zero leads. The
+          existing first-run gate above re-routes to <WelcomeLanding /> in
+          even stricter conditions; this overlay covers the leftover case
+          where the operator activated a module (so they escaped that
+          redirect) but still hasn't connected, added, or captured
+          anything. Persisted dismissal via localStorage so the operator
+          can explore the empty dashboard if they want. */}
+      <FirstRunOverlay
+        shouldShow={
+          connectStatus.connected === 0 &&
+          propertiesCount === 0 &&
+          leadsTotal === 0
+        }
+        orgName={org?.name ?? "operator"}
+      />
 
       {/* Self-serve onboarding checklist — Norman 2026-05-21 feedback: the
           old full-width card shoved Telegraph Commons' metrics below the
