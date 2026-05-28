@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
@@ -16,35 +15,35 @@ import {
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { getInsightCounts, getOpenInsights } from "@/lib/insights/queries";
-import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
+import { type InsightCardData } from "@/components/portal/insights/insight-card";
 import { RunDetectorsButton } from "@/components/portal/insights/run-detectors-button";
-import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
+import { getLatestSnapshot, getSnapshotSeries } from "@/lib/signals/read";
+import { pickHeadlineSignal } from "@/lib/signals/today";
+import {
+  SignalCard,
+  SignalCardSkeleton,
+} from "@/components/portal/insights/signal-card";
+import { HeadlineCallout } from "@/components/portal/insights/headline-callout";
+import {
+  MentionFeed,
+  type MentionRow,
+} from "@/components/portal/insights/mention-feed";
+import {
+  TopMovers,
+  type TopMoverRow,
+} from "@/components/portal/insights/top-movers";
+import { LeadHeatmap } from "@/components/portal/insights/lead-heatmap";
+import { RecommendationsDrawer } from "@/components/portal/insights/recommendations-drawer";
 
 export const metadata: Metadata = { title: "Insights" };
 export const dynamic = "force-dynamic";
-
-const CATEGORY_FILTERS = [
-  { value: "all", label: "All" },
-  { value: "traffic", label: "Traffic" },
-  { value: "leads", label: "Leads" },
-  { value: "ads", label: "Ads" },
-  { value: "chatbot", label: "Chatbot" },
-  { value: "seo", label: "SEO" },
-  { value: "reputation", label: "Reputation" },
-  { value: "renewals", label: "Renewals" },
-  { value: "occupancy", label: "Occupancy" },
-  { value: "portfolio", label: "Portfolio" },
-];
 
 export default async function InsightsPage({
   searchParams,
 }: {
   searchParams: Promise<{
-    category?: string;
-    severity?: string;
-    status?: string;
     property?: string;
     properties?: string;
   }>;
@@ -54,78 +53,112 @@ export default async function InsightsPage({
 
   const scope = await requireScope();
   const params = await searchParams;
-  const category = params.category ?? "all";
-  const severity = params.severity ?? "all";
-  const status = params.status ?? "open";
 
-  // Property gate: respect both URL multi-select AND the user's
-  // UserPropertyAccess scope. Norman should only see Telegraph
-  // Commons insights even if he removes the URL filter.
+  // Tenancy / property scoping — unchanged from the prior page. Norman's
+  // per-user property gate continues to win over any URL filter.
   const requestedIds = parsePropertyFilter(params);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
   const propertyClause = propertyIdsToWhere(effectiveIds);
+  const singlePropertyId =
+    effectiveIds && effectiveIds.length === 1 ? effectiveIds[0] : undefined;
 
-  const [counts, rows, resolvedCount, allProperties] = await Promise.all([
-    getInsightCounts(scope.orgId, { propertyIds: effectiveIds }),
-    prisma.insight.findMany({
-      where: {
-        orgId: scope.orgId,
-        ...propertyClause,
-        ...(category !== "all" ? { category } : {}),
-        ...(severity !== "all" ? { severity } : {}),
-        ...(status === "open"
-          ? {
-              status: { in: ["open", "acknowledged"] },
-              OR: [{ snoozeUntil: null }, { snoozeUntil: { lt: new Date() } }],
-            }
-          : status === "snoozed"
-            ? { snoozeUntil: { gte: new Date() } }
-            : { status }),
-      },
-      orderBy: [{ severity: "desc" }, { createdAt: "desc" }],
-      take: 100,
-      select: {
-        id: true,
-        kind: true,
-        category: true,
-        severity: true,
-        status: true,
-        title: true,
-        body: true,
-        suggestedAction: true,
-        href: true,
-        context: true,
-        createdAt: true,
-        property: { select: { id: true, name: true } },
-      },
-    }),
-    prisma.insight.count({
-      where: { orgId: scope.orgId, status: "acted", ...propertyClause },
-    }),
-    prisma.property.findMany({
-      // Marketable filter — only ACTIVE properties surface in the
-      // dropdown, no IMPORTED / EXCLUDED rows.
-      where: marketablePropertyWhere(scope.orgId),
-      select: { id: true, name: true },
-      orderBy: { name: "asc" },
-    }),
-  ]);
+  const since7d = new Date(Date.now() - 7 * 86_400_000);
+
+  const tenantScope = {
+    kind: "tenant" as const,
+    orgId: scope.orgId,
+    propertyId: singlePropertyId,
+  };
+
+  const [latest, series14, mentions, leadRows, openInsightsRaw, counts, allProperties] =
+    await Promise.all([
+      getLatestSnapshot(tenantScope),
+      getSnapshotSeries(tenantScope, 14),
+      prisma.propertyMention.findMany({
+        where: {
+          orgId: scope.orgId,
+          ...propertyClause,
+          publishedAt: { gte: since7d },
+        },
+        orderBy: { publishedAt: "desc" },
+        take: 8,
+        select: {
+          id: true,
+          source: true,
+          sourceUrl: true,
+          title: true,
+          excerpt: true,
+          rating: true,
+          sentiment: true,
+          publishedAt: true,
+          property: { select: { id: true, name: true } },
+        },
+      }),
+      prisma.lead.findMany({
+        where: {
+          orgId: scope.orgId,
+          ...propertyClause,
+          createdAt: { gte: since7d },
+        },
+        select: { createdAt: true },
+      }),
+      getOpenInsights(scope.orgId, {
+        propertyId: singlePropertyId,
+        limit: 20,
+      }),
+      getInsightCounts(scope.orgId, { propertyIds: effectiveIds }),
+      prisma.property.findMany({
+        where: marketablePropertyWhere(scope.orgId),
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
 
   const properties = visibleProperties(scope, allProperties);
 
-  const casted: InsightCardData[] = rows.map((r) => ({
-    ...r,
+  // Cast Insight rows into the existing InsightCard shape used by the drawer.
+  const openInsights: InsightCardData[] = openInsightsRaw.map((r) => ({
+    id: r.id,
+    kind: r.kind,
+    category: r.category,
+    severity: r.severity,
+    status: r.status,
+    title: r.title,
+    body: r.body,
+    suggestedAction: r.suggestedAction,
+    href: r.href,
+    createdAt: r.createdAt,
+    property: r.property,
     context: (r.context as Record<string, unknown>) ?? null,
   }));
+
+  const headline = pickHeadlineSignal(latest, series14);
+
+  // Build a 14-day score series per signal so the sparklines stay aligned
+  // even when a particular section was null on some days (fall back to 0).
+  const overallSeries = series14.map((s) => s.overallScore ?? 0);
+  const seoSeries = series14.map((s) => s.seo?.score ?? 0);
+  const aeoSeries = series14.map((s) => s.aeo?.score ?? 0);
+  const repSeries = series14.map((s) => s.reputation?.score ?? 0);
+
+  // Movers come from precomputed seo.topMovers; fall back to empty so the
+  // component renders its "no notable moves" state rather than the "connect
+  // your data" empty state.
+  const movers: TopMoverRow[] = latest?.seo?.topMovers ?? [];
+  const hasSeoData = !!latest?.seo;
+
+  const wow = latest?.deltas7d ?? {};
+  const mentionRows: MentionRow[] = mentions;
+  const totalCounts = counts.critical + counts.warning + counts.info;
 
   return (
     <div className="space-y-5">
       {accessDenied ? <PropertyAccessDeniedBanner /> : null}
       <PageHeader
-        eyebrow="Signal"
+        eyebrow="Daily signal"
         title="Insights"
-        description="What your platform flagged this week. Each insight is something we detected in your data that a human would otherwise miss. Acknowledge what you've seen, snooze the noise, and open the ones worth a call."
+        description="Live look at what's moving for your portfolio — mentions, rankings, chatbot engagement, and leads. Updated every morning from a fresh signal scan."
         actions={
           <>
             {properties.length > 1 ? (
@@ -133,138 +166,129 @@ export default async function InsightsPage({
                 <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
               </Suspense>
             ) : null}
-            <StatBlock label="Critical" value={counts.critical} tone="critical" />
-            <StatBlock label="Warning" value={counts.warning} tone="warning" />
-            <StatBlock label="Info" value={counts.info} tone="info" />
-            <StatBlock label="Resolved" value={resolvedCount} tone="muted" />
             <RunDetectorsButton />
           </>
         }
       />
 
-      <div className="flex flex-wrap items-center gap-2">
-        <FilterGroup label="Category" param="category" value={category} options={CATEGORY_FILTERS} current={params} />
-        <FilterGroup
-          label="Severity"
-          param="severity"
-          value={severity}
-          options={[
-            { value: "all", label: "All" },
-            { value: "critical", label: "Critical" },
-            { value: "warning", label: "Warning" },
-            { value: "info", label: "Info" },
-          ]}
-          current={params}
-        />
-        <FilterGroup
-          label="Status"
-          param="status"
-          value={status}
-          options={[
-            { value: "open", label: "Open" },
-            { value: "snoozed", label: "Snoozed" },
-            { value: "acted", label: "Resolved" },
-            { value: "dismissed", label: "Dismissed" },
-          ]}
-          current={params}
-        />
-      </div>
-
-      {rows.length === 0 ? (
-        counts.total === 0 && resolvedCount === 0 ? (
-          <EmptyState
-            icon={<Sparkles className="h-5 w-5" />}
-            title="You don't have any insights yet"
-            body="Insights surface automatically once your data starts flowing. Connect AppFolio, Google Analytics, your ad accounts, and the pixel — each unlocks a new family of detectors that run continuously in the background."
-            action={{ label: "Connect your data", href: "/portal/connect" }}
+      {/* A. Hero strip — 6 signal cards */}
+      {latest ? (
+        <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+          <SignalCard
+            label="Overall score"
+            value={`${latest.overallScore}`}
+            caption="out of 100"
+            deltaPct={numOrNull(wow.overallScore)}
+            series={overallSeries}
+            href="/portal/insights"
           />
-        ) : (
-          <EmptyState
-            icon={<Sparkles className="h-5 w-5" />}
-            title="No insights match those filters"
-            body="Try widening the filters. Detectors run continuously plus on every data sync."
-            action={{ label: "Clear filters", href: "/portal/insights" }}
+          <SignalCard
+            label="SEO rank"
+            value={
+              latest.seo?.avgPosition != null
+                ? `#${Math.round(latest.seo.avgPosition)}`
+                : "—"
+            }
+            caption={`${latest.seo?.organicKeywords ?? 0} keywords`}
+            deltaPct={numOrNull(wow.seoScore)}
+            series={seoSeries}
+            href="/portal/seo"
           />
-        )
-      ) : (
-        <section className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {casted.map((insight) => (
-            <InsightCard key={insight.id} insight={insight} />
-          ))}
+          <SignalCard
+            label="AEO citations"
+            value={
+              latest.aeo
+                ? `${Math.round(latest.aeo.citationRate * 100)}%`
+                : "—"
+            }
+            caption={`${latest.aeo?.citationsFound ?? 0} of ${latest.aeo?.enginesChecked ?? 0} engines`}
+            deltaPct={numOrNull(wow.aeoScore)}
+            series={aeoSeries}
+            href="/portal/seo"
+          />
+          <SignalCard
+            label="Reputation"
+            value={
+              latest.reputation?.avgRating != null
+                ? latest.reputation.avgRating.toFixed(1)
+                : "—"
+            }
+            caption={`${latest.reputation?.totalMentions ?? 0} mentions`}
+            deltaPct={numOrNull(wow.reputationScore)}
+            series={repSeries}
+            href="/portal/reputation"
+          />
+          <SignalCard
+            label="Chatbot"
+            value={`${latest.chatbot?.conversations ?? 0}`}
+            caption="conversations · 24h"
+            deltaPct={numOrNull(wow.chatbotConversations)}
+            series={series14.map((_, i) => seoSeries[i] != null ? (overallSeries[i] || 0) : 0)}
+            href="/portal/chatbot"
+          />
+          <SignalCard
+            label="New leads"
+            value={`${latest.leads?.newLeads ?? 0}`}
+            caption="last 24h"
+            deltaPct={numOrNull(wow.newLeads)}
+            series={overallSeries}
+            href="/portal/leads"
+          />
         </section>
+      ) : (
+        <FirstScanEmpty />
       )}
+
+      {/* B. Today's signal callout */}
+      <HeadlineCallout signal={headline} />
+
+      {/* C + D. Mention feed + Top movers, side-by-side on lg+ */}
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <MentionFeed mentions={mentionRows} />
+        <TopMovers movers={movers} hasData={hasSeoData} />
+      </section>
+
+      {/* E. Lead activity heatmap — the flashy centerpiece */}
+      <section>
+        <LeadHeatmap leadCreatedAt={leadRows.map((r) => r.createdAt)} />
+      </section>
+
+      {/* F. Existing recommendations, behind a drawer */}
+      {openInsights.length > 0 ? (
+        <RecommendationsDrawer insights={openInsights} />
+      ) : totalCounts === 0 && !latest ? (
+        <EmptyState
+          icon={<Sparkles className="h-5 w-5" />}
+          title="Recommendations coming soon"
+          body="Connect AppFolio, Google Analytics, your ad accounts, and the pixel — each unlocks a new family of detectors that run continuously in the background."
+          action={{ label: "Connect your data", href: "/portal/connect" }}
+        />
+      ) : null}
     </div>
   );
 }
 
-function StatBlock({
-  label,
-  value,
-  tone,
-}: {
-  label: string;
-  value: number;
-  tone: "critical" | "warning" | "info" | "muted";
-}) {
-  const map = {
-    critical: "text-foreground",
-    warning: "text-foreground",
-    info: "text-foreground",
-    muted: "text-muted-foreground",
-  };
+function FirstScanEmpty() {
   return (
-    <div className="min-w-16 rounded-xl border border-border bg-card px-3 py-2 hover:shadow-[0_2px_8px_rgba(15,23,42,0.04)] transition-all">
-      <div className="text-[9px] uppercase tracking-widest font-semibold text-muted-foreground">
-        {label}
+    <section className="space-y-3">
+      <div className="rounded-xl border border-dashed border-border bg-card px-5 py-3 text-sm text-muted-foreground">
+        <span className="font-medium text-foreground">First scan coming overnight.</span>{" "}
+        Your daily signal snapshot computes during off-hours — the strip below
+        fills in as soon as the cron finishes its first pass.
       </div>
-      <div className={cn("mt-0.5 text-xl font-semibold tabular-nums", map[tone])}>
-        {value}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <SignalCardSkeleton label="Overall score" />
+        <SignalCardSkeleton label="SEO rank" />
+        <SignalCardSkeleton label="AEO citations" />
+        <SignalCardSkeleton label="Reputation" />
+        <SignalCardSkeleton label="Chatbot" />
+        <SignalCardSkeleton label="New leads" />
       </div>
-    </div>
+    </section>
   );
 }
 
-function FilterGroup({
-  label,
-  param,
-  value,
-  options,
-  current,
-}: {
-  label: string;
-  param: string;
-  value: string;
-  options: { value: string; label: string }[];
-  current: Record<string, string | undefined>;
-}) {
-  return (
-    <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-card p-1">
-      <span className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground px-2">
-        {label}
-      </span>
-      {options.map((opt) => {
-        const params = new URLSearchParams();
-        for (const [k, v] of Object.entries(current)) {
-          if (v && k !== param) params.set(k, v);
-        }
-        if (opt.value !== "all") params.set(param, opt.value);
-        const href = `/portal/insights${params.toString() ? `?${params}` : ""}`;
-        const active = value === opt.value;
-        return (
-          <Link
-            key={opt.value}
-            href={href}
-            className={cn(
-              "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
-              active
-                ? "bg-primary text-primary-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground",
-            )}
-          >
-            {opt.label}
-          </Link>
-        );
-      })}
-    </div>
-  );
+function numOrNull(v: number | undefined | null): number | null {
+  if (v == null || Number.isNaN(v)) return null;
+  return v;
 }

@@ -37,6 +37,13 @@ export const checkoutLimiter = createLimiter(redis, 10, '10 m')
 // 5 public signups per IP per hour
 export const publicSignupLimiter = createLimiter(redis, 5, '1 h')
 
+// 5 prospect /audit starts per IP per hour. The fan-out is expensive
+// (DataForSEO + Tavily + Claude) so we cap per-IP pressure tightly.
+// Dedupe-by-domain in the start route handles the legitimate "I refreshed
+// the form" case without a fresh scan, so this cap only fires for genuine
+// abuse / multi-domain scraping attempts.
+export const auditStartLimiter = createLimiter(redis, 5, '1 h')
+
 // 3 drop notify blasts per userId per minute
 export const notifyLimiter = createLimiter(redis, 3, '1 m')
 

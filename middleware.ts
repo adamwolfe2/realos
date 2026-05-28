@@ -31,6 +31,12 @@ const isPublicApi = createRouteMatcher([
   "/api/health(.*)",
   "/api/ingest(.*)",
   "/api/subscribe(.*)",
+  // Public /audit lead-magnet flow — unauthenticated. The form on /audit
+  // POSTs to /api/audit/start, polls /api/audit/[id], and (after email
+  // capture) hits /api/audit/[id]/capture-email. /api/audit/run/[id] is
+  // also publicly addressable but is gated server-side by an
+  // x-internal-trigger=CRON_SECRET header check.
+  "/api/audit(.*)",
   // /api/billing/checkout is the entry point from the public /pricing
   // page. Anonymous prospects POST here to start a Stripe Checkout
   // session BEFORE they have a Clerk account; the route handler
