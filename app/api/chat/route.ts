@@ -18,7 +18,8 @@ import { buildSystemPrompt, type ChatbotTenant } from "@/lib/chatbot/build-syste
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
-import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
+import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
+import { LeadNotifyChannel } from "@prisma/client";
 import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
 
 export const maxDuration = 30;
@@ -232,7 +233,21 @@ async function persistConversation(args: {
       null;
     try {
       await Promise.allSettled([
-        notifyLeadCaptured({ orgId: args.orgId, leadId: lead.id }),
+        notifyLeadCaptured({
+          orgId: args.orgId,
+          leadId: lead.id,
+          propertyId: args.propertyId ?? null,
+          channel: LeadNotifyChannel.CHATBOT,
+          lead: {
+            name: fullName,
+            email: extracted.email,
+            phone: extracted.phone ?? null,
+            sourceLabel: args.pageUrl
+              ? `Chatbot on ${args.pageUrl}`
+              : "Chatbot",
+          },
+          conversationId: conversation.id,
+        }),
         notifyChatbotLeadCaptured({
           id: args.sessionId,
           orgId: args.orgId,

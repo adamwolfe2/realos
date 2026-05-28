@@ -9,7 +9,8 @@ import {
   Prisma,
 } from "@prisma/client";
 import { guardIngest } from "@/lib/api-keys/ingest-shared";
-import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
+import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
+import { LeadNotifyChannel } from "@prisma/client";
 
 // POST /api/ingest/chatbot
 //
@@ -192,7 +193,21 @@ export async function POST(req: NextRequest) {
     });
 
     if (!existingLead) {
-      void notifyLeadCaptured({ orgId, leadId }).catch((err) => {
+      void notifyLeadCaptured({
+        orgId,
+        leadId,
+        propertyId: null,
+        channel: LeadNotifyChannel.CHATBOT,
+        lead: {
+          name: data.firstName ?? null,
+          email,
+          phone: data.phone ?? null,
+          sourceLabel: data.pageUrl
+            ? `Chatbot ingest on ${data.pageUrl}`
+            : "Chatbot ingest",
+        },
+        conversationId: conversation.id,
+      }).catch((err) => {
         console.warn("[ingest/chatbot] notify error", err);
       });
     }

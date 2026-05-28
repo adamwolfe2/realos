@@ -5,7 +5,9 @@ import {
   LeadStatus,
   Prisma,
   VisitorIdentificationStatus,
+  LeadNotifyChannel,
 } from "@prisma/client";
+import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 
 // AudienceLab event-processing core. Extracted from the shared
 // /api/webhooks/cursive route so the per-tenant path-token route
@@ -441,7 +443,7 @@ export async function processCursiveEvent(
 
   let leadId: string | null = null;
   if (leadWorthy && normalizedEmail) {
-    leadId = await upsertLead({
+    const upserted = await upsertLead({
       orgId: integration.orgId,
       email: normalizedEmail,
       firstName: firstName ?? null,
@@ -453,6 +455,29 @@ export async function processCursiveEvent(
       enrichedData: mergedEnrichment,
       pageUrl: pageUrl ?? null,
     });
+    leadId = upserted.id;
+
+    // Instant operator email — only on the first time we see this email.
+    // Cursive sends multiple events per visitor; firing per event would
+    // spam the operator with duplicates of the same lead identity.
+    if (upserted.isNew) {
+      void notifyLeadCaptured({
+        orgId: integration.orgId,
+        leadId,
+        propertyId: integration.propertyId ?? null,
+        channel: LeadNotifyChannel.INGEST,
+        lead: {
+          name:
+            [firstName, lastName].filter(Boolean).join(" ") || normalizedEmail,
+          email: normalizedEmail,
+          phone,
+          sourceLabel: integration.installedOnDomain
+            ? `Cursive pixel on ${integration.installedOnDomain}`
+            : "Cursive pixel",
+          intent: pageUrl ?? null,
+        },
+      }).catch(() => {});
+    }
   }
 
   // Engagement bridge: when AL fires a page_view event with a page_url, mirror
@@ -601,7 +626,7 @@ async function upsertLead(args: {
   intentScore: number;
   enrichedData: Prisma.InputJsonValue | typeof Prisma.JsonNull;
   pageUrl: string | null;
-}): Promise<string> {
+}): Promise<{ id: string; isNew: boolean }> {
   const existing = await prisma.lead.findFirst({
     where: { orgId: args.orgId, email: args.email },
     select: { id: true },
@@ -619,7 +644,7 @@ async function upsertLead(args: {
         score: Math.max(0, args.intentScore),
       },
     });
-    return existing.id;
+    return { id: existing.id, isNew: false };
   }
   // Race-safe create: catch P2002 on (orgId, email) unique and fall back
   // to find+update with the same data the update branch would have written.
@@ -640,7 +665,7 @@ async function upsertLead(args: {
         score: args.intentScore,
       },
     });
-    return lead.id;
+    return { id: lead.id, isNew: true };
   } catch (err) {
     if (
       err instanceof Prisma.PrismaClientKnownRequestError &&
@@ -663,7 +688,7 @@ async function upsertLead(args: {
           score: Math.max(0, args.intentScore),
         },
       });
-      return winner.id;
+      return { id: winner.id, isNew: false };
     }
     throw err;
   }

@@ -18,6 +18,8 @@ import {
 } from "@/lib/email/lead-emails";
 import { notifyNewIntake as notifyNewLeadSlack } from "@/lib/integrations/slack";
 import { notifyLeadCreated } from "@/lib/notifications/create";
+import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
+import { LeadNotifyChannel } from "@prisma/client";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 
 const schema = z.object({
@@ -145,6 +147,25 @@ export async function POST(req: NextRequest) {
   const moduleCount = 1;
 
   void notifyLeadCreated(lead).catch(() => {});
+
+  // Instant operator email — centralized lead-notify helper. Fire-and-forget;
+  // every error path inside is swallowed so the response never blocks.
+  void notifyLeadCaptured({
+    orgId: data.orgId,
+    leadId: lead.id,
+    propertyId: data.propertyId ?? null,
+    channel: LeadNotifyChannel.FORM,
+    lead: {
+      name:
+        [data.firstName, data.lastName].filter(Boolean).join(" ") ||
+        data.email ||
+        null,
+      email: data.email ?? null,
+      phone: data.phone ?? null,
+      sourceLabel: data.sourceDetail ?? data.source,
+      intent: data.notes ?? data.preferredUnitType ?? null,
+    },
+  }).catch(() => {});
 
   void Promise.allSettled([
     notifyNewLeadSlack({

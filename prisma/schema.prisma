@@ -431,6 +431,23 @@ model Organization {
   vaultDekNonce   Bytes? // 12-byte GCM nonce used to wrap the DEK
   vaultEnabledAt  DateTime?
 
+  // Lead-notification routing. When a lead is captured anywhere in the system
+  // (chatbot, popup, form, ingest webhook), the lead helper fires a one-shot
+  // email to this address with the lead details + a deep link to /portal/leads.
+  // Null = no notifications (existing behavior). Comma-separated for multiple.
+  notifyLeadEmail        String?
+
+  // Per-channel notification toggles, defaulting to ON so adding the email
+  // alone is enough. Off lets the operator silence individual sources without
+  // removing the email entirely.
+  notifyOnChatbotLead    Boolean @default(true)
+  notifyOnPopupLead      Boolean @default(true)
+  notifyOnFormLead       Boolean @default(true)
+  notifyOnIngestLead     Boolean @default(true)
+  notifyOnTourRequest    Boolean @default(true)
+  notifyOnVisitorConvert Boolean @default(true)
+  notifyOnManualLead     Boolean @default(true)
+
   // Site hosting mode
   bringYourOwnSite Boolean @default(false)
 
@@ -587,6 +604,11 @@ model Organization {
   trialEndsAt    DateTime?
 
   dailySignalSnapshots DailySignalSnapshot[]
+
+  // Audit trail for every outbound lead-capture notification (chatbot,
+  // popup, form, ingest webhook, tour, visitor → lead, manual add). One
+  // row per send attempt with status / error / Resend message id.
+  leadNotificationDeliveries LeadNotificationDelivery[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -906,6 +928,11 @@ model Property {
   priceMin       Int? // Cents
   priceMax       Int?
   availableCount Int? @default(0)
+
+  // Per-property override. When set, notifications about leads on this
+  // property route here INSTEAD of the org-level notifyLeadEmail. Null = use
+  // the org-level address (most properties).
+  notifyLeadEmailOverride String?
 
   listings             Listing[]
   leads                Lead[]
@@ -5287,4 +5314,60 @@ model DailySignalSnapshot {
   @@index([capturedOn])
   @@index([prospectAuditId])
   @@index([orgId, propertyId, capturedOn(sort: Desc)])
+}
+
+// ============================================================================
+// LeadNotificationDelivery — instant lead-capture alert audit trail.
+//
+// Every time a lead is captured (chatbot, popup, form, ingest webhook, tour,
+// visitor → lead conversion, or manual portal add), the lead-notify helper
+// writes one row here, attempts a Resend send to the org's notifyLeadEmail
+// (or property-level override), and updates the row with SENT / FAILED /
+// SUPPRESSED. Retryable via the status+createdAt index.
+// ============================================================================
+
+enum LeadNotifyChannel {
+  CHATBOT
+  POPUP
+  FORM
+  INGEST
+  TOUR
+  VISITOR_CONVERT
+  MANUAL
+}
+
+enum LeadNotifyStatus {
+  PENDING
+  SENT
+  FAILED
+  SUPPRESSED
+}
+
+model LeadNotificationDelivery {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  // What/who triggered it.
+  leadId     String?
+  propertyId String?
+  channel    LeadNotifyChannel
+  recipient  String // email address it went to (resolved at send time)
+
+  // Lifecycle.
+  status       LeadNotifyStatus @default(PENDING)
+  resendId     String? // Resend message id on success
+  errorMessage String?          @db.Text
+  attempts     Int              @default(0)
+
+  // Lightweight payload snapshot so we can render a "what was sent" view.
+  subject String
+  payload Json // { leadName, leadEmail, leadPhone, leadSource, propertyName, conversationId }
+
+  createdAt DateTime  @default(now())
+  sentAt    DateTime?
+
+  @@index([orgId, createdAt(sort: Desc)])
+  @@index([leadId])
+  @@index([status, createdAt]) // retry cron filter
 }

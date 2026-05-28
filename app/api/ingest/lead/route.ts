@@ -3,7 +3,8 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { LeadSource, LeadStatus, Prisma } from "@prisma/client";
 import { guardIngest } from "@/lib/api-keys/ingest-shared";
-import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
+import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
+import { LeadNotifyChannel } from "@prisma/client";
 
 // POST /api/ingest/lead
 //
@@ -142,7 +143,19 @@ export async function POST(req: NextRequest) {
   // Fire-and-forget tenant notification. Only fire on new leads so we don't
   // spam the operator when an external system retries a known email.
   if (isNew) {
-    void notifyLeadCaptured({ orgId, leadId }).catch((err) => {
+    void notifyLeadCaptured({
+      orgId,
+      leadId,
+      propertyId: data.propertyId ?? null,
+      channel: LeadNotifyChannel.INGEST,
+      lead: {
+        name: [data.firstName, data.lastName].filter(Boolean).join(" ") || null,
+        email,
+        phone: data.phone ?? null,
+        sourceLabel: sourceDetail ?? source,
+        intent: data.notes ?? null,
+      },
+    }).catch((err) => {
       console.warn("[ingest/lead] notify error", err);
     });
 

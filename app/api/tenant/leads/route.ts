@@ -16,7 +16,9 @@ import {
   LeadSource,
   LeadStatus,
   Prisma,
+  LeadNotifyChannel,
 } from "@prisma/client";
+import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 
 const createSchema = z.object({
   firstName: z.string().max(100).optional(),
@@ -151,6 +153,26 @@ export async function POST(req: NextRequest) {
         description: `Created lead ${created.email ?? created.id}`,
       }),
     });
+
+    // Instant operator email — manual portal-added leads. Useful when an
+    // admin enters a referral or walk-in so the building's leasing agent
+    // sees it in their inbox without polling /portal/leads.
+    void notifyLeadCaptured({
+      orgId: scope.orgId,
+      leadId: created.id,
+      propertyId: created.propertyId,
+      channel: LeadNotifyChannel.MANUAL,
+      lead: {
+        name:
+          [data.firstName, data.lastName].filter(Boolean).join(" ") ||
+          data.email ||
+          null,
+        email: data.email ?? null,
+        phone: data.phone ?? null,
+        sourceLabel: data.sourceDetail ?? data.source,
+        intent: data.notes ?? data.preferredUnitType ?? null,
+      },
+    }).catch(() => {});
 
     return NextResponse.json({ lead: created }, { status: 201 });
   } catch (err) {

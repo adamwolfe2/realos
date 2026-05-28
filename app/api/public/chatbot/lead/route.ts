@@ -14,8 +14,9 @@ import {
   getIp,
   WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
-import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
+import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
+import { LeadNotifyChannel } from "@prisma/client";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 
 // POST /api/public/chatbot/lead
@@ -207,7 +208,19 @@ export async function POST(req: NextRequest) {
     });
 
     // Fire-and-forget notifications. Never block the response.
-    void notifyLeadCaptured({ orgId, leadId }).catch((err) => {
+    void notifyLeadCaptured({
+      orgId,
+      leadId,
+      propertyId,
+      channel: LeadNotifyChannel.CHATBOT,
+      lead: {
+        name: last ? `${first} ${last}` : first,
+        email,
+        phone: phone ?? null,
+        sourceLabel: pageUrl ? `Chatbot pre-chat on ${pageUrl}` : "Chatbot pre-chat",
+      },
+      conversationId: sessionId,
+    }).catch((err) => {
       console.warn("[public/chatbot/lead] notify error:", err);
     });
 

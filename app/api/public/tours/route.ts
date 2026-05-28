@@ -14,6 +14,8 @@ import {
   Prisma,
 } from "@prisma/client";
 import { notifyTourScheduled } from "@/lib/notifications/create";
+import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
+import { LeadNotifyChannel } from "@prisma/client";
 import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
 
 const schema = z.object({
@@ -130,6 +132,25 @@ export async function POST(req: NextRequest) {
     tourType: tour.tourType,
     leadName,
   }).catch(() => {});
+
+  // Instant operator email — only fire for net-new leads. Repeat tours from a
+  // known lead surface in the tour notification above; double-pinging would
+  // train the operator to ignore the channel.
+  if (!existing) {
+    void notifyLeadCaptured({
+      orgId: data.orgId,
+      leadId: lead.id,
+      propertyId: data.propertyId,
+      channel: LeadNotifyChannel.TOUR,
+      lead: {
+        name: leadName,
+        email: data.email,
+        phone: data.phone ?? null,
+        sourceLabel: `Tour request (${tour.tourType})`,
+        intent: data.notes ?? null,
+      },
+    }).catch(() => {});
+  }
 
   return NextResponse.json(
     { ok: true, leadId: lead.id, tourId: tour.id },

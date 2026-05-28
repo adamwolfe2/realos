@@ -5,7 +5,13 @@ import {
   ForbiddenError,
   tenantWhere,
 } from "@/lib/tenancy/scope";
-import { LeadSource, LeadStatus, VisitorIdentificationStatus } from "@prisma/client";
+import {
+  LeadSource,
+  LeadStatus,
+  VisitorIdentificationStatus,
+  LeadNotifyChannel,
+} from "@prisma/client";
+import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -122,6 +128,25 @@ export async function POST(
       convertedAt: new Date(),
     },
   });
+
+  // Instant operator email — visitor → lead is a high-signal moment that
+  // operators often miss because the conversion happens in the portal
+  // (not at the lead's hand), so the email is the only nudge they get.
+  void notifyLeadCaptured({
+    orgId: visitor.orgId,
+    leadId: lead.id,
+    propertyId: visitor.propertyId ?? null,
+    channel: LeadNotifyChannel.VISITOR_CONVERT,
+    lead: {
+      name:
+        [visitor.firstName, visitor.lastName].filter(Boolean).join(" ") ||
+        visitor.email,
+      email: visitor.email.toLowerCase(),
+      phone: visitor.phone ?? null,
+      sourceLabel: "Pixel-identified visitor",
+      intent: locationLine,
+    },
+  }).catch(() => {});
 
   return NextResponse.json({ ok: true, leadId: lead.id, created: true });
 }

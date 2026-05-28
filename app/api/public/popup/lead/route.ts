@@ -19,6 +19,8 @@ import {
 } from "@/lib/email/lead-emails";
 import { notifyNewIntake as notifyNewLeadSlack } from "@/lib/integrations/slack";
 import { notifyLeadCreated } from "@/lib/notifications/create";
+import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
+import { LeadNotifyChannel } from "@prisma/client";
 import { recordPopupEvent } from "@/lib/popups/queries";
 
 // ---------------------------------------------------------------------------
@@ -236,6 +238,21 @@ export async function POST(req: NextRequest) {
     } catch (err) {
       console.warn("[public/popup/lead] notifyLeadCreated failed:", err);
     }
+
+    // Instant operator email — only for net-new leads. Existing leads
+    // already lit up the operator's inbox when they first came in.
+    void notifyLeadCaptured({
+      orgId: org.id,
+      leadId,
+      propertyId,
+      channel: LeadNotifyChannel.POPUP,
+      lead: {
+        name: created.firstName ?? created.lastName ?? null,
+        email: data.email ?? null,
+        phone: data.phone ?? null,
+        sourceLabel: sourceDetail,
+      },
+    }).catch(() => {});
   }
 
   // Record the CONVERTED event server-side here, atomically with the

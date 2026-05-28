@@ -14,8 +14,9 @@ import {
   type ChatbotTenant,
 } from "@/lib/chatbot/build-system-prompt";
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
-import { notifyLeadCaptured } from "@/lib/chatbot/notify-lead";
+import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
+import { LeadNotifyChannel } from "@prisma/client";
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
 import {
@@ -329,11 +330,23 @@ async function persistConversation(args: {
     // bell badge in /portal. Pre-fix this branch only sent email — the
     // POST_CHAT bell notification was silently dropped (PRE_CHAT path in
     // /api/public/chatbot/lead already sends both).
-    void notifyLeadCaptured({ orgId: args.orgId, leadId: lead.id }).catch(
-      (err) => {
-        console.warn("[public/chatbot/chat] notify email error:", err);
-      }
-    );
+    void notifyLeadCaptured({
+      orgId: args.orgId,
+      leadId: lead.id,
+      propertyId: args.propertyId ?? null,
+      channel: LeadNotifyChannel.CHATBOT,
+      lead: {
+        name: [extracted.firstName, extracted.lastName]
+          .filter(Boolean)
+          .join(" ") || null,
+        email: extracted.email ?? null,
+        phone: extracted.phone ?? null,
+        sourceLabel: args.pageUrl ? `Chatbot on ${args.pageUrl}` : "Chatbot",
+      },
+      conversationId: conversation.id,
+    }).catch((err) => {
+      console.warn("[public/chatbot/chat] notify email error:", err);
+    });
     void notifyChatbotLeadCaptured({
       id: conversation.id,
       orgId: args.orgId,

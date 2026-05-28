@@ -15,6 +15,7 @@ import { requireScope } from "@/lib/tenancy/scope";
 import { getConnectStatusForOrg } from "@/lib/connect/status";
 import { SettingsForm } from "./settings-form";
 import { ClientTeamPanel } from "./team-panel";
+import { LeadNotifySettings } from "@/components/portal/settings/lead-notify-settings";
 import { PageHeader } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Settings" };
@@ -111,6 +112,21 @@ export default async function SettingsPage() {
           brandFont: org.brandFont,
         }}
       />
+
+      {canManage ? (
+        <LeadNotifySettings
+          initial={{
+            notifyLeadEmail: org.notifyLeadEmail,
+            notifyOnChatbotLead: org.notifyOnChatbotLead,
+            notifyOnPopupLead: org.notifyOnPopupLead,
+            notifyOnFormLead: org.notifyOnFormLead,
+            notifyOnIngestLead: org.notifyOnIngestLead,
+            notifyOnTourRequest: org.notifyOnTourRequest,
+            notifyOnVisitorConvert: org.notifyOnVisitorConvert,
+            notifyOnManualLead: org.notifyOnManualLead,
+          }}
+        />
+      ) : null}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <NavCard
