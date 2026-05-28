@@ -1477,6 +1477,17 @@ model CursiveIntegration {
   lastEventAt       DateTime?
   totalEventsCount  Int       @default(0)
 
+  // Raw pixel-hit telemetry: ticks on EVERY webhook event we process,
+  // including anonymous page_views that bail at the resolution gate.
+  // `lastEventAt`/`totalEventsCount` above only tick when AL resolves
+  // a new identity, which made the integrations UI look dead (counter
+  // stuck at 31 for days) on tenants whose pixel was firing thousands
+  // of anonymous pageviews but rarely resolving. Split the counters so
+  // operators see real-time pulse separately from resolved-identity
+  // throughput.
+  lastPixelHitAt      DateTime?
+  totalPixelHitsCount Int       @default(0)
+
   // Per-tenant webhook token. URL-as-secret so AL's per-pixel webhook UI
   // works without our shared header. 32 hex chars = 128 bits of entropy.
   webhookToken String? @unique

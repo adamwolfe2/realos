@@ -14,6 +14,14 @@ type Initial = {
   lastEventAt: string | null;
   lastSegmentSyncAt: string | null;
   totalEventsCount: number;
+  // Raw pixel-hit pulse — every webhook event regardless of resolution.
+  // See lib/webhooks/cursive-process.ts for the split rationale.
+  lastPixelHitAt: string | null;
+  totalPixelHitsCount: number;
+  // Pre-resolved gap so the success message can show "X anonymous".
+  // Computed server-side from Visitor rows (IDENTIFIED + ENRICHED +
+  // MATCHED_TO_LEAD) — see Fix 2 in fix(telemetry+funnel).
+  identifiedVisitorCount: number;
 };
 
 export function CursivePanel({
@@ -88,11 +96,25 @@ export function CursivePanel({
           dropped > 0
             ? ` (${dropped} skipped — no resolvable identity)`
             : "";
+        // Anonymous gap: pulled total minus the IDENTIFIED-tier visitor
+        // count is the slice of segment members that AL has in the
+        // segment but doesn't have a name+email for. These get a Visitor
+        // row but aren't outreach-ready. Surface the number inline so
+        // operators don't have to mentally subtract /portal/visitors's
+        // IDENTIFIED filter from the sync result.
+        const anonymous = Math.max(
+          0,
+          res.pulled - initial.identifiedVisitorCount,
+        );
+        const anonymousSuffix =
+          anonymous > 0
+            ? ` · ${anonymous} anonymous (no name+email — not outreach-ready)`
+            : "";
         setSyncMsg({
           kind: "ok",
           text:
             `Pulled ${res.pulled} segment members from Cursive: ` +
-            `${res.created} new, ${res.updated} updated${droppedSuffix}. ` +
+            `${res.created} new, ${res.updated} updated${droppedSuffix}${anonymousSuffix}. ` +
             `Operator-facing IDENTIFIED count on /portal/visitors only ` +
             `includes rows with firstName + lastName + email — anonymous ` +
             `rows count toward the total but aren't surfaced as contacts.`,
@@ -205,21 +227,43 @@ export function CursivePanel({
 
       <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-border">
         <div className="text-[11px] text-muted-foreground space-y-0.5">
+          {/* Split telemetry. Before this split the panel showed only
+              "Real-time webhook events received: 31" — which ticks only
+              when AL resolves a new identity. Operators saw 31 and
+              concluded the pixel was dead, even when it was firing
+              thousands of anonymous hits per hour. Show both numbers so
+              operators can tell "pixel is firing" apart from "pixel is
+              firing AND AL is resolving identities". */}
           <div>
-            Real-time webhook events received:{" "}
+            Pixel hits:{" "}
             <span className="font-medium text-foreground tabular-nums">
-              {initial.totalEventsCount}
+              {initial.totalPixelHitsCount.toLocaleString()}
             </span>
+            {" · last "}
+            {formatTime(initial.lastPixelHitAt)}
             <span
               className="ml-1 text-muted-foreground/80 cursor-help"
-              title="Counts only direct push events from Cursive to /api/webhooks/cursive. Pull-based segment-sync visitors are NOT counted here — they show up on the operator-facing /portal/visitors as IDENTIFIED contacts."
+              title="Every webhook hit from Cursive — including anonymous page_views that don't carry resolved identity. This is the real-time pulse of the pixel."
             >
               (?)
             </span>
           </div>
           <div>
-            Last webhook event: {formatTime(initial.lastEventAt)}. Last
-            segment sync: {formatTime(initial.lastSegmentSyncAt)}.
+            Resolved identities:{" "}
+            <span className="font-medium text-foreground tabular-nums">
+              {initial.totalEventsCount.toLocaleString()}
+            </span>
+            {" · last "}
+            {formatTime(initial.lastEventAt)}
+            <span
+              className="ml-1 text-muted-foreground/80 cursor-help"
+              title="Subset of pixel hits where AL had enough data to attach a name, email, or HEM. These become Visitor rows in /portal/visitors. Pull-based segment-sync visitors are NOT counted here."
+            >
+              (?)
+            </span>
+          </div>
+          <div>
+            Last segment sync: {formatTime(initial.lastSegmentSyncAt)}.
           </div>
           {/* Norman question (May 22): admin says "205 resolutions", portal
               says "146 IDENTIFIED" — why the gap? The 205 is every member

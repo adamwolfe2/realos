@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
-import { OrgType } from "@prisma/client";
+import { OrgType, VisitorIdentificationStatus } from "@prisma/client";
 import { ImpersonateButton } from "./impersonate-button";
 import { ModuleToggle } from "./module-toggle";
 import { RentCastUsageRow } from "./rentcast-usage-row";
@@ -100,6 +100,24 @@ export default async function ClientDetail({
   // panel shows that as the primary pixel so existing UX stays intact.
   const cursiveLegacy =
     org.cursiveIntegrations.find((c) => c.propertyId === null) ?? null;
+
+  // IDENTIFIED-tier Visitor count for the cursive panel's anonymous-gap
+  // surface. Matches the operator-facing /portal/visitors "identified"
+  // filter — see app/portal/visitors/page.tsx:154-176. The cursive sync
+  // result subtracts this from the segment-pulled count to show how
+  // many segment members landed without a usable name+email.
+  const identifiedVisitorCount = await prisma.visitor.count({
+    where: {
+      orgId: org.id,
+      status: {
+        in: [
+          VisitorIdentificationStatus.IDENTIFIED,
+          VisitorIdentificationStatus.ENRICHED,
+          VisitorIdentificationStatus.MATCHED_TO_LEAD,
+        ],
+      },
+    },
+  });
 
   const moduleRows: Array<[ToggleableModule, string, boolean]> = [
     // Acquisition + on-site
@@ -485,6 +503,12 @@ export default async function ClientDetail({
                     : null,
                   totalEventsCount:
                     cursiveLegacy?.totalEventsCount ?? 0,
+                  lastPixelHitAt: cursiveLegacy?.lastPixelHitAt
+                    ? cursiveLegacy.lastPixelHitAt.toISOString()
+                    : null,
+                  totalPixelHitsCount:
+                    cursiveLegacy?.totalPixelHitsCount ?? 0,
+                  identifiedVisitorCount,
                 }}
               />
             );

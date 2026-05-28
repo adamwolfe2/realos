@@ -148,6 +148,31 @@ export async function processCursiveEvent(
     integration = found;
   }
 
+  // Pixel-hit pulse counter. Bumps on EVERY processed event regardless of
+  // whether it carries identity, so the integrations UI can show real-time
+  // pulse separately from resolved-identity throughput. Runs BEFORE the
+  // resolution gate below — that gate bails on anonymous page_views and
+  // would never let the counter tick on a freshly installed pixel, even
+  // though the pixel was firing thousands of hits per hour. Best-effort:
+  // a failure here is non-fatal because the actual event processing
+  // (Visitor upsert, etc.) below is what the tenant cares about.
+  if (integration.cursivePixelId) {
+    try {
+      await prisma.cursiveIntegration.updateMany({
+        where: {
+          orgId: integration.orgId,
+          cursivePixelId: integration.cursivePixelId,
+        },
+        data: {
+          lastPixelHitAt: new Date(),
+          totalPixelHitsCount: { increment: 1 },
+        },
+      });
+    } catch (err) {
+      console.warn("[cursive] pixel-hit telemetry bump failed", err);
+    }
+  }
+
   const eventType =
     pickString(flat, "event", "event_type", "event_data.event_type") ?? null;
   const eventTimestamp = pickString(

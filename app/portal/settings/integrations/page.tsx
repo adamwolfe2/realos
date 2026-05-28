@@ -65,6 +65,8 @@ export default async function IntegrationsPage() {
         provisionedAt: true,
         lastEventAt: true,
         totalEventsCount: true,
+        lastPixelHitAt: true,
+        totalPixelHitsCount: true,
         webhookToken: true,
       },
     }),
@@ -174,6 +176,8 @@ export default async function IntegrationsPage() {
         provisionedAt={pixel!.provisionedAt ?? null}
         lastEventAt={pixel!.lastEventAt ?? null}
         totalEventsCount={pixel!.totalEventsCount ?? 0}
+        lastPixelHitAt={pixel!.lastPixelHitAt ?? null}
+        totalPixelHitsCount={pixel!.totalPixelHitsCount ?? 0}
         installSnippet={pixelInstallSnippet}
       />
     ) : pixelSetupInFlight ? (
@@ -370,6 +374,8 @@ function PixelManage({
   provisionedAt,
   lastEventAt,
   totalEventsCount,
+  lastPixelHitAt,
+  totalPixelHitsCount,
   installSnippet,
 }: {
   pixelId: string;
@@ -377,9 +383,18 @@ function PixelManage({
   provisionedAt: Date | null;
   lastEventAt: Date | null;
   totalEventsCount: number;
+  // Raw pixel-hit pulse — every webhook event regardless of resolution.
+  // See lib/webhooks/cursive-process.ts for the split rationale.
+  lastPixelHitAt: Date | null;
+  totalPixelHitsCount: number;
   installSnippet: string | null;
 }) {
-  const verified = Boolean(lastEventAt);
+  // "Verified" means we've seen ANY pixel hit — including anonymous ones.
+  // Before the pixel-hit telemetry split this used `lastEventAt`, which
+  // only ticked on resolved identities, so a freshly installed pixel
+  // firing thousands of anonymous pageviews would still read "Pending
+  // verification" until the first resolution landed (often hours later).
+  const verified = Boolean(lastPixelHitAt ?? lastEventAt);
   return (
     <div className="space-y-5">
       {/* Pending → Connected transition. Operators install the snippet and
@@ -388,8 +403,10 @@ function PixelManage({
           "Last event Xs ago" the moment the first webhook lands. */}
       <div className="flex items-center justify-between gap-3 flex-wrap">
         <CursiveWebhookBadge
-          lastEventAtIso={lastEventAt ? lastEventAt.toISOString() : null}
-          totalEventsCount={totalEventsCount}
+          lastEventAtIso={
+            (lastPixelHitAt ?? lastEventAt)?.toISOString() ?? null
+          }
+          totalEventsCount={totalPixelHitsCount || totalEventsCount}
         />
         <span className="text-[11px] uppercase tracking-wide text-muted-foreground">
           {verified ? "Connected" : "Pending verification"}
@@ -410,16 +427,35 @@ function PixelManage({
               : "—"
           }
         />
+        {/* Split telemetry: pixel hits include every webhook the pixel
+            fires (anonymous + identified); resolved identities is the
+            subset where AL had enough data to attach a name/email/HEM.
+            Operators used to see only the resolved count, which on a
+            new pixel can sit at single digits for days while the pixel
+            fires thousands of hits per hour — the panel looked dead. */}
         <DetailRow
-          label="Last event"
+          label="Pixel hits"
+          value={
+            lastPixelHitAt
+              ? formatDistanceToNow(lastPixelHitAt, { addSuffix: true })
+              : "No hits yet"
+          }
+          hint={
+            totalPixelHitsCount > 0
+              ? `${totalPixelHitsCount.toLocaleString()} total hits`
+              : undefined
+          }
+        />
+        <DetailRow
+          label="Resolved identities"
           value={
             lastEventAt
               ? formatDistanceToNow(lastEventAt, { addSuffix: true })
-              : "No events yet"
+              : "No identities yet"
           }
           hint={
             totalEventsCount > 0
-              ? `${totalEventsCount.toLocaleString()} total events`
+              ? `${totalEventsCount.toLocaleString()} total identified`
               : undefined
           }
         />

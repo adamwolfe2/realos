@@ -230,23 +230,27 @@ export async function getFunnel(orgId: string) {
   const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
 
   const [
-    visitorDistinctRows,
+    visitorsCount,
     engagedCount,
     leadsCount,
     toursCount,
     applicationsCount,
   ] = await Promise.all([
-    // COUNT(DISTINCT) in SQL — Postgres counts unique anonymousIds
-    // without materializing one row per distinct value the way
-    // `findMany({ distinct: [...] })` did. Same semantics (count of
-    // distinct anonymousId values for the org in the 28d window) at a
-    // fraction of the bytes transferred and the planner cost.
-    prisma.$queryRaw<{ count: bigint }[]>`
-      SELECT COUNT(DISTINCT "anonymousId")::bigint AS count
-      FROM "VisitorSession"
-      WHERE "orgId" = ${orgId}
-        AND "startedAt" >= ${since28d}
-    `,
+    // Count Visitor rows, NOT VisitorSession rows. VisitorSession rows
+    // only exist when the Cursive pixel fires a `page_view` event —
+    // AudienceLab segment-sync writes Visitor rows directly without
+    // creating sessions. Tenants on segment-sync-only (e.g. Telegraph
+    // Commons: 150 visitors, 0 sessions) were reading the funnel
+    // "Visitors" stage as zero even though they had 150 real visitors
+    // in their portal. Counting Visitor.lastSeenAt in the 28d window
+    // gives the same intent (people who showed up in the last 28d) and
+    // works for both the pixel and segment-sync acquisition paths.
+    prisma.visitor.count({
+      where: {
+        orgId,
+        lastSeenAt: { gte: since28d },
+      },
+    }),
     prisma.visitorSession.count({
       where: {
         orgId,
@@ -276,10 +280,6 @@ export async function getFunnel(orgId: string) {
       },
     }),
   ]);
-
-  // $queryRaw returns COUNT as bigint — Number() is safe here because a
-  // single-org 28d distinct-visitor count won't exceed 2^53.
-  const visitorsCount = Number(visitorDistinctRows[0]?.count ?? BigInt(0));
 
   return [
     { label: "Visitors", value: visitorsCount },
