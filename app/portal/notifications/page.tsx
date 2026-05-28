@@ -1,11 +1,16 @@
 "use client";
 
 import { useState, useEffect, useTransition } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckCheck } from "lucide-react";
+import { Check, CheckCheck, Clock } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { markAllRead, markNotificationRead } from "@/lib/actions/notifications";
+import {
+  markAllRead,
+  markNotificationRead,
+  resolveNotification,
+  snoozeNotification,
+  unsnoozeNotification,
+} from "@/lib/actions/notifications";
 import { formatDistanceToNow } from "date-fns";
 import { PageHeader } from "@/components/admin/page-header";
 
@@ -17,6 +22,8 @@ type Notification = {
   href: string | null;
   readAt: string | null;
   createdAt: string;
+  snoozedUntil: string | null;
+  resolvedAt: string | null;
 };
 
 const KIND_COLOR: Record<string, string> = {
@@ -25,6 +32,10 @@ const KIND_COLOR: Record<string, string> = {
   chatbot_lead: "bg-muted text-muted-foreground",
   integration_error: "bg-destructive/10 text-destructive",
   sync_complete: "bg-muted text-muted-foreground",
+  ai_quota_warning: "bg-destructive/10 text-destructive",
+  pacing_alert: "bg-amber-100 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200",
+  critical_insight: "bg-destructive/10 text-destructive",
+  warning_insight: "bg-amber-100 text-amber-900 dark:bg-amber-900/20 dark:text-amber-200",
 };
 
 // Severity-coded left border. Mirrors AlertBanner's palette so rows visually
@@ -32,27 +43,62 @@ const KIND_COLOR: Record<string, string> = {
 // not classified gets no border so the feed stays calm.
 const KIND_BORDER: Record<string, string> = {
   integration_error: "border-l-2 border-l-destructive",
+  ai_quota_warning: "border-l-2 border-l-destructive",
+  critical_insight: "border-l-2 border-l-destructive",
+  pacing_alert: "border-l-2 border-l-amber-500",
+  warning_insight: "border-l-2 border-l-amber-500",
   lead_created: "border-l-2 border-l-primary",
   tour_scheduled: "border-l-2 border-l-primary",
   chatbot_lead: "border-l-2 border-l-primary",
   sync_complete: "",
 };
 
+// Kinds that need explicit operator action — surface a Resolve button.
+// Everything else relies on read state only.
+const ACTIONABLE_KINDS = new Set([
+  "integration_error",
+  "ai_quota_warning",
+  "critical_insight",
+]);
+
 type Filter = "all" | "unread" | "today" | "week";
 
+function isSnoozed(n: Notification, now: number): boolean {
+  if (!n.snoozedUntil) return false;
+  return new Date(n.snoozedUntil).getTime() > now;
+}
+
 function applyFilter(items: Notification[], filter: Filter): Notification[] {
-  if (filter === "all") return items;
-  if (filter === "unread") return items.filter((n) => !n.readAt);
   const now = Date.now();
+  // "all" surfaces everything including resolved + currently-snoozed rows
+  // so operators can find what they snoozed and unsnooze if needed.
+  if (filter === "all") return items;
+
+  // All other filters hide resolved + currently-snoozed by default.
+  const active = items.filter((n) => !n.resolvedAt && !isSnoozed(n, now));
+  if (filter === "unread") return active.filter((n) => !n.readAt);
   const DAY_MS = 86_400_000;
   if (filter === "today") {
-    return items.filter(
-      (n) => now - new Date(n.createdAt).getTime() < DAY_MS
+    return active.filter(
+      (n) => now - new Date(n.createdAt).getTime() < DAY_MS,
     );
   }
-  return items.filter(
-    (n) => now - new Date(n.createdAt).getTime() < 7 * DAY_MS
+  return active.filter(
+    (n) => now - new Date(n.createdAt).getTime() < 7 * DAY_MS,
   );
+}
+
+function isSafeHref(href: string): boolean {
+  // Allow same-app paths only.
+  if (href.startsWith("/portal/") || href.startsWith("/admin/")) return true;
+  // Allow absolute leasestack.co URLs (server-generated tenant
+  // marketing-site links land here for cross-tenant report shares).
+  try {
+    const url = new URL(href);
+    return url.hostname.endsWith(".leasestack.co") || url.hostname === "leasestack.co";
+  } catch {
+    return false;
+  }
 }
 
 export default function NotificationsPage() {
@@ -74,7 +120,7 @@ export default function NotificationsPage() {
     startTransition(async () => {
       await markAllRead();
       setItems((prev) =>
-        prev.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() }))
+        prev.map((n) => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })),
       );
     });
   }
@@ -85,8 +131,8 @@ export default function NotificationsPage() {
         await markNotificationRead(item.id);
         setItems((prev) =>
           prev.map((n) =>
-            n.id === item.id ? { ...n, readAt: new Date().toISOString() } : n
-          )
+            n.id === item.id ? { ...n, readAt: new Date().toISOString() } : n,
+          ),
         );
       });
     }
@@ -106,17 +152,41 @@ export default function NotificationsPage() {
     }
   }
 
-  function isSafeHref(href: string): boolean {
-    // Allow same-app paths only.
-    if (href.startsWith("/portal/") || href.startsWith("/admin/")) return true;
-    // Allow absolute leasestack.co URLs (server-generated tenant
-    // marketing-site links land here for cross-tenant report shares).
-    try {
-      const url = new URL(href);
-      return url.hostname.endsWith(".leasestack.co") || url.hostname === "leasestack.co";
-    } catch {
-      return false;
-    }
+  function handleSnooze(item: Notification, days: number) {
+    startTransition(async () => {
+      await snoozeNotification(item.id, days);
+      const snoozedUntil = new Date(Date.now() + days * 86_400_000).toISOString();
+      setItems((prev) =>
+        prev.map((n) =>
+          n.id === item.id
+            ? { ...n, snoozedUntil, readAt: n.readAt ?? new Date().toISOString() }
+            : n,
+        ),
+      );
+    });
+  }
+
+  function handleUnsnooze(item: Notification) {
+    startTransition(async () => {
+      await unsnoozeNotification(item.id);
+      setItems((prev) =>
+        prev.map((n) => (n.id === item.id ? { ...n, snoozedUntil: null } : n)),
+      );
+    });
+  }
+
+  function handleResolve(item: Notification) {
+    startTransition(async () => {
+      await resolveNotification(item.id);
+      const now = new Date().toISOString();
+      setItems((prev) =>
+        prev.map((n) =>
+          n.id === item.id
+            ? { ...n, resolvedAt: now, readAt: n.readAt ?? now, snoozedUntil: null }
+            : n,
+        ),
+      );
+    });
   }
 
   const FILTERS: { value: Filter; label: string }[] = [
@@ -127,7 +197,10 @@ export default function NotificationsPage() {
   ];
 
   const visible = applyFilter(items, filter);
-  const unreadCount = items.filter((n) => !n.readAt).length;
+  const now = Date.now();
+  const unreadCount = items.filter(
+    (n) => !n.readAt && !n.resolvedAt && !isSnoozed(n, now),
+  ).length;
 
   return (
     <div className="space-y-6">
@@ -159,7 +232,7 @@ export default function NotificationsPage() {
               "px-3 py-1.5 text-xs font-medium rounded-md border transition-colors",
               filter === f.value
                 ? "bg-primary text-primary-foreground border-foreground"
-                : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-foreground/40"
+                : "bg-card text-muted-foreground border-border hover:text-foreground hover:border-foreground/40",
             )}
           >
             {f.label}
@@ -203,48 +276,24 @@ export default function NotificationsPage() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {visible.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                onClick={() => handleRowClick(item)}
-                className={cn(
-                  "w-full text-left px-4 py-4 hover:bg-muted/40 transition-colors flex items-start gap-3",
-                  KIND_BORDER[item.kind] ?? "",
-                  !item.readAt && "bg-primary/5"
-                )}
-              >
-                {!item.readAt && (
-                  <span className="mt-1.5 shrink-0 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
-                )}
-                <div className={cn("min-w-0 flex-1", item.readAt && "pl-5")}>
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span
-                      className={cn(
-                        "text-xs uppercase tracking-wide px-1.5 py-0.5 rounded",
-                        KIND_COLOR[item.kind] ?? "bg-muted text-muted-foreground"
-                      )}
-                    >
-                      {item.kind.replace(/_/g, " ")}
-                    </span>
-                    <span className="text-[11px] text-muted-foreground ml-auto">
-                      {formatDistanceToNow(new Date(item.createdAt), {
-                        addSuffix: true,
-                      })}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium">{item.title}</p>
-                  {item.body && (
-                    <p className="text-xs text-muted-foreground mt-0.5">{item.body}</p>
-                  )}
-                  {item.href && (
-                    <span className="text-xs text-primary mt-1 inline-block underline underline-offset-2">
-                      View details
-                    </span>
-                  )}
-                </div>
-              </button>
-            ))}
+            {visible.map((item) => {
+              const snoozed = isSnoozed(item, now);
+              const resolved = Boolean(item.resolvedAt);
+              const actionable = ACTIONABLE_KINDS.has(item.kind);
+              return (
+                <NotificationRow
+                  key={item.id}
+                  item={item}
+                  snoozed={snoozed}
+                  resolved={resolved}
+                  actionable={actionable}
+                  onOpen={() => handleRowClick(item)}
+                  onSnooze={(days) => handleSnooze(item, days)}
+                  onUnsnooze={() => handleUnsnooze(item)}
+                  onResolve={() => handleResolve(item)}
+                />
+              );
+            })}
           </div>
         )}
       </div>
@@ -253,6 +302,128 @@ export default function NotificationsPage() {
         Showing the most recent 50 notifications. Older notifications are retained
         in the database.
       </p>
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------------
+// Row component — keeps the main page readable. The title/body region is a
+// button (full-row click navigates to href / marks read), with sibling
+// action buttons in their own column so Snooze/Resolve don't also fire the
+// row click.
+// ----------------------------------------------------------------------------
+
+function NotificationRow(props: {
+  item: Notification;
+  snoozed: boolean;
+  resolved: boolean;
+  actionable: boolean;
+  onOpen: () => void;
+  onSnooze: (days: number) => void;
+  onUnsnooze: () => void;
+  onResolve: () => void;
+}): React.JSX.Element {
+  const { item, snoozed, resolved, actionable, onOpen, onSnooze, onUnsnooze, onResolve } = props;
+
+  return (
+    <div
+      className={cn(
+        "px-4 py-4 hover:bg-muted/40 transition-colors flex items-start gap-3",
+        KIND_BORDER[item.kind] ?? "",
+        !item.readAt && !resolved && "bg-primary/5",
+        (snoozed || resolved) && "opacity-60",
+      )}
+    >
+      {!item.readAt && !resolved && (
+        <span className="mt-1.5 shrink-0 h-2 w-2 rounded-full bg-primary" aria-hidden="true" />
+      )}
+      <button
+        type="button"
+        onClick={onOpen}
+        className={cn("min-w-0 flex-1 text-left", item.readAt && "pl-5")}
+      >
+        <div className="flex items-center gap-2 flex-wrap mb-1">
+          <span
+            className={cn(
+              "text-xs uppercase tracking-wide px-1.5 py-0.5 rounded",
+              KIND_COLOR[item.kind] ?? "bg-muted text-muted-foreground",
+            )}
+          >
+            {item.kind.replace(/_/g, " ")}
+          </span>
+          {resolved && (
+            <span className="text-[11px] font-medium text-muted-foreground inline-flex items-center gap-1">
+              <Check className="h-3 w-3" aria-hidden="true" /> Resolved
+            </span>
+          )}
+          {snoozed && !resolved && (
+            <span className="text-[11px] font-medium text-muted-foreground inline-flex items-center gap-1">
+              <Clock className="h-3 w-3" aria-hidden="true" />
+              Snoozed until{" "}
+              {item.snoozedUntil
+                ? new Date(item.snoozedUntil).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                  })
+                : ""}
+            </span>
+          )}
+          <span className="text-[11px] text-muted-foreground ml-auto">
+            {formatDistanceToNow(new Date(item.createdAt), { addSuffix: true })}
+          </span>
+        </div>
+        <p className="text-sm font-medium">{item.title}</p>
+        {item.body && (
+          <p className="text-xs text-muted-foreground mt-0.5">{item.body}</p>
+        )}
+        {item.href && (
+          <span className="text-xs text-primary mt-1 inline-block underline underline-offset-2">
+            View details
+          </span>
+        )}
+      </button>
+
+      {/* Action column. Snooze affordance hidden once resolved (no point). */}
+      <div className="shrink-0 flex items-center gap-1 ml-2">
+        {!resolved && !snoozed && (
+          <>
+            <button
+              type="button"
+              onClick={() => onSnooze(1)}
+              className="text-[11px] text-muted-foreground hover:text-foreground border border-border hover:border-foreground/40 rounded px-2 py-1 transition-colors"
+              title="Hide until tomorrow"
+            >
+              Snooze 1d
+            </button>
+            <button
+              type="button"
+              onClick={() => onSnooze(7)}
+              className="text-[11px] text-muted-foreground hover:text-foreground border border-border hover:border-foreground/40 rounded px-2 py-1 transition-colors"
+              title="Hide for a week"
+            >
+              Snooze 7d
+            </button>
+          </>
+        )}
+        {snoozed && !resolved && (
+          <button
+            type="button"
+            onClick={onUnsnooze}
+            className="text-[11px] text-muted-foreground hover:text-foreground border border-border hover:border-foreground/40 rounded px-2 py-1 transition-colors"
+          >
+            Unsnooze
+          </button>
+        )}
+        {actionable && !resolved && (
+          <button
+            type="button"
+            onClick={onResolve}
+            className="text-[11px] font-medium text-primary hover:text-primary/80 border border-primary/40 hover:border-primary rounded px-2 py-1 transition-colors"
+          >
+            Resolve
+          </button>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,7 +1,20 @@
 import "server-only";
 import { prisma } from "@/lib/db";
-import { notifyNewInsight } from "@/lib/notifications/create";
+import { notifyNewInsight, notifyPacingAlert } from "@/lib/notifications/create";
 import type { DetectedInsight } from "./types";
+
+// Insight kinds that represent pacing alerts — leasing velocity, ad spend,
+// CPL, audience exhaustion, vacancy boost. These route to the dedicated
+// `pacing_alert` notification kind so the inbox can color/group them as
+// time-sensitive operations rows, distinct from general insights.
+const PACING_KINDS = new Set([
+  "cpl_spike",
+  "leasing_velocity_drop",
+  "wasted_ad_spend",
+  "audience_exhaustion",
+  "vacancy_needs_boost",
+  "renewal_cliff",
+]);
 
 // ---------------------------------------------------------------------------
 // Idempotent upsert for detected insights.
@@ -47,18 +60,39 @@ export async function upsertInsights(
 
       // Fire a notification for new critical OR warning insights so the
       // bell lights up. Info-level skipped to avoid noise. Dedupe handled
-      // inside notifyNewInsight via (orgId, kind, entityId) match — same
+      // inside the notify helpers via (orgId, kind, entityId) match — same
       // detector firing twice on the same insight won't stack rows.
-      notifyNewInsight({
-        id: created.id,
-        orgId,
-        severity: d.severity,
-        title: d.title,
-        body: d.body,
-        href: d.href ?? null,
-      }).catch(() => {
-        // fire-and-forget: notification failures must never break detection
-      });
+      //
+      // Pacing kinds (CPL spike, leasing velocity, wasted ad spend, etc.)
+      // route to the dedicated `pacing_alert` channel so the inbox can
+      // surface them as time-sensitive operations rows. Everything else
+      // falls through to the generic critical/warning insight channel.
+      if (
+        PACING_KINDS.has(d.kind) &&
+        (d.severity === "warning" || d.severity === "critical")
+      ) {
+        notifyPacingAlert({
+          insightId: created.id,
+          orgId,
+          severity: d.severity,
+          title: d.title,
+          body: d.body,
+          href: d.href ?? null,
+        }).catch(() => {
+          // fire-and-forget: notification failures must never break detection
+        });
+      } else {
+        notifyNewInsight({
+          id: created.id,
+          orgId,
+          severity: d.severity,
+          title: d.title,
+          body: d.body,
+          href: d.href ?? null,
+        }).catch(() => {
+          // fire-and-forget: notification failures must never break detection
+        });
+      }
     } else if (existing.status === "open" || existing.status === "acknowledged") {
       await prisma.insight.update({
         where: { id: existing.id },

@@ -9,8 +9,16 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   try {
     const scope = await requireScope();
+    // Bell dropdown shows the 10 most recent ACTIVE rows — exclude
+    // resolved and currently-snoozed. Snoozed rows reappear automatically
+    // once snoozedUntil passes.
+    const now = new Date();
     const notifications = await prisma.notification.findMany({
-      where: { orgId: scope.orgId },
+      where: {
+        orgId: scope.orgId,
+        resolvedAt: null,
+        OR: [{ snoozedUntil: null }, { snoozedUntil: { lte: now } }],
+      },
       orderBy: { createdAt: "desc" },
       take: 10,
       select: {

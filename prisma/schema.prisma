@@ -2662,7 +2662,7 @@ model Notification {
   user   User?   @relation(fields: [userId], references: [id], onDelete: SetNull)
 
   // Event classification
-  kind String // lead_created | tour_scheduled | chatbot_lead | integration_error | sync_complete
+  kind String // lead_created | tour_scheduled | chatbot_lead | integration_error | sync_complete | ai_quota_warning | pacing_alert | critical_insight | warning_insight | draft_submitted | draft_reviewed | report_draft_ready
 
   // Display
   title String
@@ -2677,9 +2677,24 @@ model Notification {
   readAt    DateTime?
   createdAt DateTime  @default(now())
 
+  // Snooze: hide from default views until this time. Null = visible.
+  // Operator-driven via the "Snooze 1d/7d" affordance on each row. The
+  // default filter (and unread count) ignores rows where snoozedUntil > now;
+  // the "all" filter still surfaces them so operators can find what they
+  // snoozed.
+  snoozedUntil DateTime?
+
+  // Resolve: explicit "I dealt with this" for rows that need action
+  // (integration_error, ai_quota_warning). Distinct from read — a row
+  // can be read but not resolved. Resolved rows drop out of the unread
+  // count and the default view.
+  resolvedAt DateTime?
+
   @@index([orgId, readAt])
   @@index([orgId, createdAt(sort: Desc)])
   @@index([orgId, kind])
+  @@index([orgId, resolvedAt])
+  @@index([orgId, snoozedUntil])
 }
 
 // ============================================================================

@@ -27,6 +27,8 @@ export async function GET(req: NextRequest) {
         href: true,
         readAt: true,
         createdAt: true,
+        snoozedUntil: true,
+        resolvedAt: true,
       },
     });
 

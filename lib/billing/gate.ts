@@ -2,6 +2,7 @@ import "server-only";
 
 import { prisma } from "@/lib/db";
 import { SubscriptionStatus } from "@prisma/client";
+import { notifyAiQuotaWarning } from "@/lib/notifications/create";
 
 // ---------------------------------------------------------------------------
 // AI billing gate — blocks Anthropic spend for delinquent tenants.
@@ -115,6 +116,37 @@ export async function checkAiBillingGate(
     default:
       return { allowed: true, reason: "ok" };
   }
+}
+
+// ---------------------------------------------------------------------------
+// AI quota inbox-warning helper.
+//
+// The per-org daily AI quota (lib/ai/quota.ts → checkAiQuota) hard-blocks
+// at 100%. That's the safety net but it lands with zero warning. The
+// per-user/hour rate limiter (lib/rate-limit.ts → aiCallLimiter) is a
+// separate, much smaller fast-path budget — those 429s are normal,
+// expected, and self-clear in <1h, so we don't notify on them.
+//
+// reportAiQuotaCrossing() is invoked from checkAiQuota the first time an
+// org crosses 80% of its DAILY budget on a given day. We emit a single
+// `ai_quota_warning` notification (deduped to one per hour per org via
+// notifyAiQuotaWarning's lookup) so the operator sees it in the bell
+// before they get blocked.
+//
+// Fire-and-forget: notification failures must never break an AI call.
+// ---------------------------------------------------------------------------
+
+export const AI_QUOTA_WARN_THRESHOLD = 0.8;
+
+export function reportAiQuotaCrossing(input: {
+  orgId: string;
+  used: number;
+  limit: number;
+  resetAt: Date;
+}): void {
+  notifyAiQuotaWarning(input).catch((err) => {
+    console.error("[billing/gate] notifyAiQuotaWarning failed:", err);
+  });
 }
 
 /**

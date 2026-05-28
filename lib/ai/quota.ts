@@ -1,4 +1,5 @@
 import { Redis } from "@upstash/redis";
+import { reportAiQuotaCrossing } from "@/lib/billing/gate";
 
 // ---------------------------------------------------------------------------
 // Per-org daily AI call quota — a BACKSTOP against a runaway Anthropic bill
@@ -131,10 +132,38 @@ export async function checkAiQuota(orgId: string): Promise<AiQuotaResult> {
   // separate Redis flag, so we log every call past the threshold — the
   // volume is bounded (200 logs/day per org in the default config) and
   // it makes the warning easy to graph.
-  if (count >= Math.floor(limit * SOFT_WARN_THRESHOLD)) {
+  const threshold = Math.floor(limit * SOFT_WARN_THRESHOLD);
+  if (count >= threshold) {
     console.warn(
       `[ai-quota] SOFT_WARN org=${orgId} count=${count} limit=${limit} (>=80%) date=${todayUtc()}`
     );
+    // Detect the FIRST crossing (count equals threshold exactly) and emit
+    // an inbox notification. notifyAiQuotaWarning has its own per-hour
+    // dedupe so a count that bounces above/below the line — or a
+    // multi-instance race where two pods both think they crossed first —
+    // still only produces one row in the operator's bell.
+    if (count === threshold) {
+      // Compute the UTC midnight when this counter resets. The TTL is 36h
+      // but the date-keyed bucket logically expires at the next UTC date
+      // boundary; show that to the operator.
+      const d = new Date();
+      const resetAt = new Date(
+        Date.UTC(
+          d.getUTCFullYear(),
+          d.getUTCMonth(),
+          d.getUTCDate() + 1,
+          0,
+          0,
+          0,
+        ),
+      );
+      reportAiQuotaCrossing({
+        orgId,
+        used: count,
+        limit,
+        resetAt,
+      });
+    }
   }
 
   return { allowed: true, count, limit };

@@ -239,6 +239,96 @@ export async function notifyDraftReviewed(input: {
 }
 
 /**
+ * Fire a notification when an org crosses ~80% of its hourly AI call quota.
+ *
+ * Why a separate notification (vs the hard 429 block at 100%): operators
+ * burn through Claude budget in batches (regenerating a draft, iterating on
+ * a report) and the 429 lands mid-flow with no warning. Surfacing the 80%
+ * crossing in the inbox lets them pace themselves before they get blocked.
+ *
+ * Dedupe: one notification per (org, current hour). The caller fires this
+ * on every AI call; this helper short-circuits if a warning already exists
+ * within the last hour so the inbox doesn't fill up on a busy operator.
+ *
+ * Kind = "ai_quota_warning" — requires explicit Resolve (it's an action
+ * row, not a passive read).
+ */
+export async function notifyAiQuotaWarning(input: {
+  orgId: string;
+  used: number;
+  limit: number;
+  resetAt: Date;
+}): Promise<void> {
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  const existing = await prisma.notification.findFirst({
+    where: {
+      orgId: input.orgId,
+      kind: "ai_quota_warning",
+      createdAt: { gte: oneHourAgo },
+    },
+    select: { id: true },
+  });
+  if (existing) return;
+
+  const pct = Math.round((input.used / input.limit) * 100);
+  const resetIn = Math.max(
+    1,
+    Math.round((input.resetAt.getTime() - Date.now()) / 60_000),
+  );
+  await prisma.notification.create({
+    data: {
+      orgId: input.orgId,
+      kind: "ai_quota_warning",
+      title: `AI usage at ${pct}% of daily limit`,
+      body: `${input.used}/${input.limit} AI calls used today. Limit resets in ~${resetIn}m. Slow down or upgrade if you need more headroom.`,
+      entityType: "AiQuota",
+      href: `/portal/billing`,
+    },
+  });
+}
+
+/**
+ * Fire a pacing notification — leasing velocity, ad spend, CPL, audience
+ * exhaustion, etc. — surfaced from the insight detector. These are time-
+ * sensitive operations rows (the leasing window is sprinting; ignored
+ * pacing drift becomes a missed quarter), distinct from generic insight
+ * notifications.
+ *
+ * Dedupe: piggybacks on insight.id so re-running the detector for the
+ * same week doesn't stack rows.
+ */
+export async function notifyPacingAlert(input: {
+  insightId: string;
+  orgId: string;
+  severity: "warning" | "critical";
+  title: string;
+  body: string;
+  href?: string | null;
+}): Promise<void> {
+  const existing = await prisma.notification.findFirst({
+    where: {
+      orgId: input.orgId,
+      kind: "pacing_alert",
+      entityId: input.insightId,
+    },
+    select: { id: true },
+  });
+  if (existing) return;
+
+  await prisma.notification.create({
+    data: {
+      orgId: input.orgId,
+      kind: "pacing_alert",
+      title: input.title,
+      body: input.body.slice(0, 300),
+      entityType: "Insight",
+      entityId: input.insightId,
+      href: input.href ?? "/portal/insights",
+    },
+  });
+}
+
+/**
  * Fire a notification when a draft weekly report is generated on Monday and
  * is waiting for operator review. Keeps the white-glove loop intact.
  */
