@@ -15,6 +15,10 @@ import {
 import { AuditAction } from "@prisma/client";
 import { orchestrateScan } from "@/lib/reputation/orchestrate";
 import type { PropertySeed, ScanProgressEvent } from "@/lib/reputation/types";
+import {
+  checkAiBillingGate,
+  aiBillingDeniedResponseBody,
+} from "@/lib/billing/gate";
 
 // ---------------------------------------------------------------------------
 // POST /api/tenant/reputation-scan
@@ -61,6 +65,18 @@ export async function POST(req: NextRequest) {
       { error: "Validation failed", details: parsed.error.flatten() },
       { status: 400 }
     );
+  }
+
+  // Billing gate — reputation scans fan out to Tavily + Claude Haiku.
+  // Block delinquent tenants from triggering paid scans. The dedicated
+  // reputationScanLimiter (3/hr) below handles per-user pressure.
+  const billingGate = await checkAiBillingGate(scope.orgId, {
+    isImpersonating: scope.isImpersonating,
+  });
+  if (!billingGate.allowed) {
+    return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
+      status: 402,
+    });
   }
 
   // Per-user rate limit.

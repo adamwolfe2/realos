@@ -3,6 +3,11 @@ import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { generateReportSnapshot, type ReportKind } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
+import { aiCallLimiter, checkRateLimit, rateLimited } from "@/lib/rate-limit";
+import {
+  checkAiBillingGate,
+  aiBillingDeniedResponseBody,
+} from "@/lib/billing/gate";
 
 export const dynamic = "force-dynamic";
 
@@ -31,6 +36,28 @@ export async function POST(req: NextRequest) {
             "Report generation requires portfolio-wide access. Ask an admin to remove the property restriction on your account.",
         },
         { status: 403 },
+      );
+    }
+
+    // Billing gate — report generation invokes the LLM polish helper
+    // (lib/insights/llm-polish.ts) which calls Claude Haiku. Block
+    // delinquent tenants from spending Anthropic budget.
+    const billingGate = await checkAiBillingGate(scope.orgId, {
+      isImpersonating: scope.isImpersonating,
+    });
+    if (!billingGate.allowed) {
+      return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
+        status: 402,
+      });
+    }
+
+    // Per-user hourly AI rate limit (10/hr).
+    const rl = await checkRateLimit(aiCallLimiter, `ai-call:${scope.userId}`);
+    if (!rl.allowed) {
+      const retry = Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000));
+      return rateLimited(
+        "AI rate limit hit (10 calls per hour). Try again soon.",
+        retry,
       );
     }
 

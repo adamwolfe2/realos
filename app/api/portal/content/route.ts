@@ -9,6 +9,11 @@ import {
 import { ContentFormat, DraftStatus } from "@prisma/client";
 import { draftContent, type DrafterContext } from "@/lib/seo/draft-writer";
 import { assertQuota, QuotaExceededError } from "@/lib/content/quota";
+import { aiCallLimiter, checkRateLimit, rateLimited } from "@/lib/rate-limit";
+import {
+  checkAiBillingGate,
+  aiBillingDeniedResponseBody,
+} from "@/lib/billing/gate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -60,6 +65,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: "Invalid body", detail },
       { status: 400 },
+    );
+  }
+
+  // Billing gate — block AI generation for delinquent tenants so we
+  // don't quietly burn Anthropic budget on a past_due account.
+  const billingGate = await checkAiBillingGate(scope.orgId, {
+    isImpersonating: scope.isImpersonating,
+  });
+  if (!billingGate.allowed) {
+    return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
+      status: 402,
+    });
+  }
+
+  // Per-user hourly AI rate limit (10/hr).
+  const rl = await checkRateLimit(aiCallLimiter, `ai-call:${scope.userId}`);
+  if (!rl.allowed) {
+    const retry = Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000));
+    return rateLimited(
+      "AI rate limit hit (10 calls per hour). Try again soon.",
+      retry,
     );
   }
 

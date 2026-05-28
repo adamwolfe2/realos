@@ -10,6 +10,10 @@ import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { orchestrateScan } from "@/lib/reputation/orchestrate";
 import { backfillSentimentForOrg } from "@/lib/reputation/sentiment";
 import type { PropertySeed } from "@/lib/reputation/types";
+import {
+  checkAiBillingGate,
+  aiBillingDeniedResponseBody,
+} from "@/lib/billing/gate";
 
 // ---------------------------------------------------------------------------
 // POST /api/portal/reputation/scan
@@ -75,6 +79,17 @@ export async function POST(req: NextRequest) {
       { error: "Validation failed", details: parsed.error.flatten() },
       { status: 400 },
     );
+  }
+
+  // Billing gate — portfolio scans fan out to Tavily + Claude Haiku
+  // across up to 5 properties per run. Block delinquent tenants.
+  const billingGate = await checkAiBillingGate(scope.orgId, {
+    isImpersonating: scope.isImpersonating,
+  });
+  if (!billingGate.allowed) {
+    return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
+      status: 402,
+    });
   }
 
   // Per-org hourly cap. Implemented as a Prisma count rather than via Redis

@@ -10,6 +10,11 @@ import {
 } from "@/lib/tenancy/scope";
 import { Prisma } from "@prisma/client";
 import { checkAiQuota } from "@/lib/ai/quota";
+import { aiCallLimiter, checkRateLimit, rateLimited } from "@/lib/rate-limit";
+import {
+  checkAiBillingGate,
+  aiBillingDeniedResponseBody,
+} from "@/lib/billing/gate";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -100,6 +105,31 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     !scope.allowedPropertyIds.includes(draft.propertyId)
   ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Billing gate — block AI calls for delinquent (past_due / canceled /
+  // paused) tenants. Without this a tenant whose card has been declining
+  // for a week racks up Anthropic spend the platform absorbs. Agency
+  // impersonation bypasses so support can debug AI on a customer's
+  // behalf during dunning.
+  const billingGate = await checkAiBillingGate(scope.orgId, {
+    isImpersonating: scope.isImpersonating,
+  });
+  if (!billingGate.allowed) {
+    return NextResponse.json(aiBillingDeniedResponseBody(billingGate), {
+      status: 402,
+    });
+  }
+
+  // Per-user hourly rate limit (10/hr) — bounds a runaway client / open
+  // tab loop from burning the per-org daily quota in minutes.
+  const rl = await checkRateLimit(aiCallLimiter, `ai-call:${scope.userId}`);
+  if (!rl.allowed) {
+    const retry = Math.max(1, Math.ceil((rl.reset - Date.now()) / 1000));
+    return rateLimited(
+      "AI rate limit hit (10 calls per hour). Try again soon.",
+      retry,
+    );
   }
 
   // Per-org daily AI quota backstop. Auth-gated route, but a single
