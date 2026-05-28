@@ -586,6 +586,8 @@ model Organization {
   trialStartedAt DateTime?
   trialEndsAt    DateTime?
 
+  dailySignalSnapshots DailySignalSnapshot[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -956,6 +958,7 @@ model Property {
   rankedKeywords       RankedKeyword[]
   keywordIntersections KeywordIntersection[]
   queryLandingDaily    QueryLandingDaily[]
+  dailySignalSnapshots DailySignalSnapshot[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -5206,4 +5209,82 @@ model MarketplaceAuditEvent {
   @@index([sellerId, createdAt(sort: Desc)])
   @@index([buyerId, createdAt(sort: Desc)])
   @@index([action, createdAt(sort: Desc)])
+}
+
+// ----------------------------------------------------------------------------
+// Signals system — shared data layer behind /audit (public lead-magnet) and
+// /portal/insights (operator dashboard). One row per day per scope (tenant
+// org/property OR public prospect audit). See lib/signals/* for compute,
+// persist, and read helpers. Provider fan-out (DataForSEO, AEO checks,
+// reputation polls) is Phase 2; current snapshots are mocked.
+// ----------------------------------------------------------------------------
+enum ProspectAuditStatus {
+  QUEUED
+  RUNNING
+  READY
+  FAILED
+}
+
+enum SignalScopeKind {
+  TENANT
+  PROSPECT
+}
+
+model ProspectAudit {
+  id              String              @id @default(cuid())
+  shareToken      String              @unique
+  urlInput        String
+  domain          String
+  brandName       String?
+  email           String?
+  emailCapturedAt DateTime?
+  ipAddress       String?
+  userAgent       String?
+  status          ProspectAuditStatus @default(QUEUED)
+  errorMessage    String?             @db.Text
+  overallScore    Int?
+  sectionScores   Json?
+  claudeSummary   String?             @db.Text
+  findings        Json?
+  viewCount       Int                 @default(0)
+  lastViewedAt    DateTime?
+  expiresAt       DateTime
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  snapshots DailySignalSnapshot[]
+
+  @@index([domain, createdAt(sort: Desc)])
+  @@index([status, createdAt])
+  @@index([expiresAt])
+}
+
+model DailySignalSnapshot {
+  id              String          @id @default(cuid())
+  scopeKind       SignalScopeKind
+  orgId           String?
+  org             Organization?   @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId      String?
+  property        Property?       @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  prospectAuditId String?
+  prospectAudit   ProspectAudit?  @relation(fields: [prospectAuditId], references: [id], onDelete: Cascade)
+  scopeKey        String
+  capturedOn      DateTime        @db.Date
+  seo             Json?
+  aeo             Json?
+  reputation      Json?
+  chatbot         Json?
+  leads           Json?
+  traffic         Json?
+  overallScore    Int?
+  deltas7d        Json?
+  computeMs       Int?
+  computeVersion  String
+  createdAt       DateTime        @default(now())
+
+  @@unique([scopeKey, capturedOn])
+  @@index([scopeKey, capturedOn(sort: Desc)])
+  @@index([capturedOn])
+  @@index([prospectAuditId])
+  @@index([orgId, propertyId, capturedOn(sort: Desc)])
 }
