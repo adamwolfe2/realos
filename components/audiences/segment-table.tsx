@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { ArrowUpRight } from "lucide-react";
+import { ArrowUpRight, Target } from "lucide-react";
+import { EmptyState } from "@/components/ui/empty-state";
 import { InlinePush, type InlinePushDestination } from "./inline-push";
 
 export type SegmentRow = {
@@ -46,10 +47,16 @@ export function SegmentTable({
 }) {
   if (rows.length === 0) {
     return (
-      <div className="text-sm text-muted-foreground py-6 text-center">
-        No segments match your filters. Adjust search, or click "Add segment"
-        to bring an AudienceLab segment ID into this workspace.
-      </div>
+      <EmptyState
+        icon={<Target className="h-5 w-5" strokeWidth={1.5} />}
+        title="No segments yet"
+        body="Audience segments power your ad targeting, lookalikes, and lead scoring. Paste an AudienceLab segment ID to bring it into this workspace, or clear filters if you're searching."
+        primaryCta={{ label: "Add segment", href: "/portal/audiences?add=1" }}
+        secondaryCta={{
+          label: "Manage destinations",
+          href: "/portal/audiences/destinations",
+        }}
+      />
     );
   }
   return (
