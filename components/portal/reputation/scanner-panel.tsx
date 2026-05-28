@@ -569,7 +569,7 @@ export function ScannerPanel({
 
         {scanning || Object.keys(sources).length > 0 ? (
           <div className="mt-4 space-y-2">
-            <SourceProgress sources={sources} />
+            <SourceProgress sources={sources} propertyId={propertyId} />
             {analysisCount !== null ? (
               <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1.5">
                 <Loader2

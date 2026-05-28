@@ -307,21 +307,60 @@ async function searchTavilyUncached(
   }
 }
 
+// Sentinel error class so the unstable_cache wrapper can recognize a
+// "soft failure" (TAVILY_API_KEY missing, transient 5xx, etc.) and treat
+// it as a throw — throws bypass the cache so the next scan re-tries
+// instead of replaying the cached failure for 7 days.
+class TavilySoftFailure extends Error {
+  constructor(
+    message: string,
+    public readonly result: ScanSourceResult,
+  ) {
+    super(message);
+    this.name = "TavilySoftFailure";
+  }
+}
+
 // Public entry point — caches the search by stable property identity.
 // Tagged per-property so `revalidateTag(reputationTavilyCacheTag(id))`
 // (e.g. after an operator-confirmed re-scan) forces a fresh fetch.
+//
+// Bug #17: the original W9 perf change cached failure results too, which
+// pinned an operator's scan into a "TAVILY_API_KEY not configured" state
+// for 7 days after a single transient failure. We now throw on failure
+// inside the cached fn (throws aren't cached by unstable_cache) and
+// recover the failure shape on the outside.
 export async function searchTavily(
   property: PropertySeed
 ): Promise<ScanSourceResult> {
   const cached = unstable_cache(
-    async () => searchTavilyUncached(property),
+    async () => {
+      const r = await searchTavilyUncached(property);
+      if (!r.ok) {
+        // Bypass caching for failures by throwing — unstable_cache will
+        // re-run on the next call instead of replaying a stale error.
+        throw new TavilySoftFailure(r.error ?? "Tavily scan failed", r);
+      }
+      return r;
+    },
     ["reputation-tavily", tavilyCacheKey(property)],
     {
       revalidate: TAVILY_CACHE_TTL_SECONDS,
       tags: [reputationTavilyCacheTag(property.id)],
     },
   );
-  return cached();
+  try {
+    return await cached();
+  } catch (err) {
+    if (err instanceof TavilySoftFailure) return err.result;
+    return {
+      source: "tavily",
+      ok: false,
+      found: 0,
+      mentions: [],
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
 }
 
 // ---------------------------------------------------------------------------

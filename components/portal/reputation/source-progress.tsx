@@ -1,6 +1,7 @@
 "use client";
 
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import Link from "next/link";
+import { Loader2, CheckCircle2, XCircle, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Live-updating per-source chip shown during an active scan. Idle state is
@@ -16,36 +17,136 @@ export type SourceState = {
 const SOURCE_LABELS: Record<string, string> = {
   google: "Google Reviews",
   tavily: "Reddit, Yelp, aggregators, forums",
+  reddit: "Reddit",
+  yelp: "Yelp",
 };
 
-// Norman bug #79: "Google Reviews failed" with no actionable next step.
-// We classify the underlying error message into a small set of buckets
-// and render a one-line hint inline beneath the failed chip. This way
-// the operator sees "Failed: no Google Place ID — add the property's
-// Google Maps URL on the Property settings page" instead of an opaque
-// red badge they have to hover over.
-function diagnoseGoogleError(error: string | undefined): string | null {
+// Norman bug #79 + bug #17: "Google Reviews failed" with no actionable
+// next step. We classify the underlying error message into a small set
+// of buckets and render a one-line hint inline beneath the failed chip,
+// PLUS a follow-up CTA where one exists (e.g. "Edit property" deep link
+// when the cause is a missing Place ID). This way the operator sees
+// "Failed: no Google Place ID — Add Google Maps URL on the property's
+// edit page" instead of an opaque red badge.
+export type SourceDiagnosis = {
+  message: string;
+  cta?: { label: string; href: string };
+};
+
+function diagnoseGoogleError(
+  error: string | undefined,
+  propertyId?: string,
+): SourceDiagnosis | null {
   if (!error) return null;
   const e = error.toLowerCase();
-  if (e.includes("place id") || e.includes("placeid")) {
-    return "Add the property's Google Maps URL on the Property settings page so we can resolve its Place ID.";
+  // Place ID missing. Pre-launch we shipped a Places autocomplete on the
+  // Property edit page (commit e5ca377) — point the operator at it so
+  // they can resolve this themselves in <30s.
+  if (
+    e.includes("place id") ||
+    e.includes("placeid") ||
+    e.includes("no google place id")
+  ) {
+    return {
+      message:
+        "No Google Place ID on this property yet. Add the Google Maps URL on the property edit page — the autocomplete will resolve the Place ID for you.",
+      cta: propertyId
+        ? { label: "Edit property", href: `/portal/properties/${propertyId}/edit` }
+        : undefined,
+    };
   }
-  if (e.includes("api_key") || e.includes("api key") || e.includes("not configured")) {
-    return "GOOGLE_PLACES_API_KEY isn't configured on the server. Contact the LeaseStack team.";
+  if (
+    e.includes("api_key") ||
+    e.includes("api key") ||
+    e.includes("not configured")
+  ) {
+    return {
+      message:
+        "Reputation scan unavailable — Google Places API key isn't configured on the server. Contact LeaseStack support.",
+    };
   }
   if (e.includes("quota") || e.includes("rate") || e.includes("429")) {
-    return "Google Places API quota hit. Try again in a few minutes.";
+    return {
+      message:
+        "Google Places API quota hit. Wait a few minutes and try the scan again.",
+    };
   }
-  if (e.includes("permission") || e.includes("denied") || e.includes("403")) {
-    return "Google Places API key lacks Places (New) permission. Contact the LeaseStack team.";
+  if (
+    e.includes("permission") ||
+    e.includes("denied") ||
+    e.includes("403") ||
+    e.includes("forbidden")
+  ) {
+    return {
+      message:
+        "Google Places API key lacks Places (New) permission. Contact LeaseStack support.",
+    };
   }
-  return error.length > 140 ? `${error.slice(0, 137)}…` : error;
+  if (
+    e.includes("not_found") ||
+    e.includes("404") ||
+    e.includes("not found")
+  ) {
+    return {
+      message:
+        "Google couldn't find this property — the Place ID may have been deleted on Google's side. Re-pick the listing on the property edit page.",
+      cta: propertyId
+        ? { label: "Edit property", href: `/portal/properties/${propertyId}/edit` }
+        : undefined,
+    };
+  }
+  if (e.includes("timeout") || e.includes("aborterror")) {
+    return {
+      message:
+        "Google Places API timed out. Try the scan again — this is usually transient.",
+    };
+  }
+  if (e.includes("network") || e.includes("fetch failed")) {
+    return {
+      message:
+        "Couldn't reach Google Places. Check your connection and retry.",
+    };
+  }
+  // Fall through — surface the raw error so operators at least see WHAT
+  // went wrong instead of a generic "failed" badge.
+  const truncated = error.length > 200 ? `${error.slice(0, 197)}…` : error;
+  return { message: `Google Reviews scan failed: ${truncated}` };
+}
+
+function diagnoseTavilyError(
+  error: string | undefined,
+): SourceDiagnosis | null {
+  if (!error) return null;
+  const e = error.toLowerCase();
+  if (
+    e.includes("api_key") ||
+    e.includes("api key") ||
+    e.includes("not configured")
+  ) {
+    return {
+      message:
+        "Reputation scan unavailable — Tavily API key isn't configured on the server. Contact LeaseStack support.",
+    };
+  }
+  if (e.includes("quota") || e.includes("rate") || e.includes("429")) {
+    return {
+      message:
+        "Tavily quota hit. Wait a few minutes and try the scan again.",
+    };
+  }
+  const truncated = error.length > 200 ? `${error.slice(0, 197)}…` : error;
+  return { message: `Web scan failed: ${truncated}` };
 }
 
 export function SourceProgress({
   sources,
+  propertyId,
 }: {
   sources: Record<string, SourceState>;
+  /** When provided, diagnostics with a property-scoped CTA (e.g. "Edit
+   *  property" for a missing Place ID) get a real deep link instead of
+   *  generic copy. */
+  propertyId?: string;
 }) {
   const keys = ["google", "tavily"];
   return (
@@ -99,22 +200,42 @@ export function SourceProgress({
           );
         })}
       </div>
-      {/* Inline diagnostic hint for the most actionable case (Google
-          scan failure). Only renders when a known error pattern matches
-          OR we have an error string at all — silent for ok runs. */}
+      {/* Inline diagnostic hint for failed sources. Bug #17: Norman saw
+          "Google Reviews failed" with no actionable next step. Each known
+          failure pattern now maps to a single-sentence hint + (when
+          applicable) a deep link CTA so the operator knows what to do
+          without a support ticket. */}
       {keys.map((k) => {
         const s = sources[k];
         if (!s || s.status !== "failed") return null;
-        const hint =
-          k === "google" ? diagnoseGoogleError(s.error) : s.error ?? null;
-        if (!hint) return null;
+        const diagnosis: SourceDiagnosis | null =
+          k === "google"
+            ? diagnoseGoogleError(s.error, propertyId)
+            : k === "tavily"
+              ? diagnoseTavilyError(s.error)
+              : s.error
+                ? { message: s.error }
+                : null;
+        if (!diagnosis) return null;
         return (
           <p
             key={`hint-${k}`}
             className="text-[11px] text-destructive/80 leading-snug"
           >
             <span className="font-semibold">{SOURCE_LABELS[k] ?? k}:</span>{" "}
-            {hint}
+            {diagnosis.message}
+            {diagnosis.cta ? (
+              <>
+                {" "}
+                <Link
+                  href={diagnosis.cta.href}
+                  className="inline-flex items-center gap-0.5 font-semibold text-destructive underline-offset-2 hover:underline"
+                >
+                  {diagnosis.cta.label}
+                  <ArrowRight className="h-3 w-3" aria-hidden="true" />
+                </Link>
+              </>
+            ) : null}
           </p>
         );
       })}
