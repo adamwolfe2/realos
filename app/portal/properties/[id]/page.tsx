@@ -328,32 +328,10 @@ export default async function PropertyDetail({
         />
       </Suspense>
 
-      {/* SEO score history — sparse until the first Monday cron run.
-          Streamed so it doesn't block the hero. */}
-      <Suspense
-        fallback={
-          <div className="rounded-2xl border border-dashed border-border bg-card p-6 animate-pulse h-48" />
-        }
-      >
-        <PropertyScoreHistorySection
-          orgId={scope.orgId}
-          propertyId={property.id}
-        />
-      </Suspense>
-
-      {/* Recent activity feed — shows what happened with this property
-          in the last 14 days (rec status changes, draft submissions,
-          review outcomes). Hidden when there are no events. */}
-      <Suspense
-        fallback={
-          <div className="rounded-2xl border border-dashed border-border bg-card p-6 animate-pulse h-32" />
-        }
-      >
-        <PropertyActivityFeedSection
-          orgId={scope.orgId}
-          propertyId={property.id}
-        />
-      </Suspense>
+      {/* Score history + Recent activity removed (May 28 2026) — operator
+          feedback: the trend chart and 14-day rec-status feed weren't
+          surfacing anything actionable. The Intelligence section above
+          and the property tabs below carry the load. */}
 
       {showMarketIntelligence ? (
         <Suspense fallback={<MarketIntelligenceSkeleton />}>
@@ -633,50 +611,6 @@ async function IntelligenceSection({
   return (
     <PropertyIntelligencePanel propertyName={propertyName} actions={merged} />
   );
-}
-
-// ---------------------------------------------------------------------------
-// PropertyActivityFeedSection — Suspense child that surfaces recent
-// audit + draft events for the property. Hidden when nothing happened
-// in the last 14 days so quiet properties don't get a hollow panel.
-// ---------------------------------------------------------------------------
-async function PropertyActivityFeedSection({
-  orgId,
-  propertyId,
-}: {
-  orgId: string;
-  propertyId: string;
-}) {
-  const { getPropertyActivityFeed } = await import("@/lib/seo/property-activity");
-  const { PropertyActivityFeed } = await import(
-    "@/components/portal/properties/property-activity-feed"
-  );
-  const items = await getPropertyActivityFeed({ orgId, propertyId }).catch(
-    () => [],
-  );
-  if (items.length === 0) return null;
-  return <PropertyActivityFeed items={items} />;
-}
-
-// ---------------------------------------------------------------------------
-// PropertyScoreHistorySection — Suspense child that renders the per-
-// property SEO score history. Hidden when there's no history yet so the
-// property detail page stays uncluttered for new properties.
-// ---------------------------------------------------------------------------
-async function PropertyScoreHistorySection({
-  orgId,
-  propertyId,
-}: {
-  orgId: string;
-  propertyId: string;
-}) {
-  const { getScoreHistory } = await import("@/lib/seo/agent-charts-data");
-  const { ScoreHistoryChart } = await import(
-    "@/components/portal/seo/score-history-chart"
-  );
-  const history = await getScoreHistory({ orgId, propertyId }).catch(() => []);
-  if (history.length === 0) return null;
-  return <ScoreHistoryChart data={history} />;
 }
 
 function IntelligenceSkeleton() {
