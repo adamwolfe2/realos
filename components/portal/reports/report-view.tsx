@@ -441,6 +441,7 @@ export function ReportView({
               label="Form/chatbot leads"
               value={kpis.leads.toLocaleString()}
               deltaPct={kpiDeltas.leadsPct}
+              currentValue={kpis.leads}
               tone="primary"
               glyph="target"
             />
@@ -449,6 +450,7 @@ export function ReportView({
                 label="Identified visitors"
                 value={identifiedVisitors.toLocaleString()}
                 deltaPct={identifiedVisitorsPct}
+                currentValue={identifiedVisitors}
                 tone="primary"
                 glyph="globe"
               />
@@ -458,6 +460,7 @@ export function ReportView({
                 label="Tours"
                 value={kpis.tours.toLocaleString()}
                 deltaPct={kpiDeltas.toursPct}
+                currentValue={kpis.tours}
                 tone="primary"
                 glyph="calendar"
               />
@@ -467,6 +470,7 @@ export function ReportView({
                 label="Applications"
                 value={kpis.applications.toLocaleString()}
                 deltaPct={kpiDeltas.applicationsPct}
+                currentValue={kpis.applications}
                 tone="primary"
                 glyph="check"
               />
@@ -490,6 +494,7 @@ export function ReportView({
                 label="Organic sessions"
                 value={kpis.organicSessions.toLocaleString()}
                 deltaPct={kpiDeltas.organicSessionsPct}
+                currentValue={kpis.organicSessions}
                 tone="primary"
                 glyph="globe"
               />
@@ -951,6 +956,11 @@ function HeroKpi({ snapshot }: { snapshot: ReportSnapshot }) {
     ? capturedContacts.toLocaleString()
     : kpis.organicSessions.toLocaleString();
   const headlineDelta = useContacts ? capturedPct : kpiDeltas.organicSessionsPct;
+  // Bug #11: absolute current value backing the headline pill — used by
+  // DeltaPill to suppress noisy percentages on low samples (<5).
+  const headlineCurrent = useContacts
+    ? capturedContacts
+    : kpis.organicSessions;
 
   // Subline calls out the breakdown so the headline isn't a black-box
   // aggregate — operators (and ownership) can see exactly how many came
@@ -981,7 +991,11 @@ function HeroKpi({ snapshot }: { snapshot: ReportSnapshot }) {
           <p className="mt-2 text-[11px] text-muted-foreground">{subline}</p>
         </div>
         {headlineDelta != null ? (
-          <DeltaPill value={headlineDelta} large />
+          <DeltaPill
+            value={headlineDelta}
+            large
+            currentValue={headlineCurrent}
+          />
         ) : null}
       </div>
     </section>
@@ -2199,36 +2213,75 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
             </div>
           </div>
         ) : null}
-        {stats.sampleCompetitorQueries.length > 0 ? (
-          <div>
-            <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
-              Sample queries you lost
-            </div>
-            <ul className="space-y-1.5">
-              {stats.sampleCompetitorQueries.map((q, i) => (
-                <li
-                  key={i}
-                  className="text-[11.5px] leading-snug bg-muted/30 rounded px-2.5 py-2"
-                >
-                  <span className="inline-flex items-center gap-1.5 mr-1 align-middle">
-                    <AeoEngineLogo engine={q.engine} />
-                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      {prettyEngineName(q.engine)}
-                    </span>
-                  </span>
-                  <span className="text-foreground">
-                    &ldquo;{q.prompt.length > 110 ? q.prompt.slice(0, 107) + "…" : q.prompt}&rdquo;
-                  </span>
-                  {q.competitors.length > 0 ? (
-                    <div className="mt-0.5 text-muted-foreground">
-                      → cited {q.competitors.slice(0, 3).join(", ")}
+        {stats.sampleCompetitorQueries.length > 0 ? (() => {
+          // Bug #7 (Joe + Norman, May): the section used to render one row
+          // per engine with the same prompt repeated 3x ("Claude / ChatGPT /
+          // Perplexity — same query"), which made the plural label "Sample
+          // queries you lost" read as a bug. We run the SAME prompt set on
+          // every engine, so duplicates are expected — group by prompt and
+          // show each prompt once with the engines + competitors it lost on.
+          type Sample = (typeof stats.sampleCompetitorQueries)[number];
+          const grouped = new Map<
+            string,
+            { prompt: string; engines: string[]; competitors: string[] }
+          >();
+          for (const q of stats.sampleCompetitorQueries) {
+            const g = grouped.get(q.prompt) ?? {
+              prompt: q.prompt,
+              engines: [],
+              competitors: [],
+            };
+            if (!g.engines.includes(q.engine)) g.engines.push(q.engine);
+            for (const c of q.competitors) {
+              if (!g.competitors.includes(c)) g.competitors.push(c);
+            }
+            grouped.set(q.prompt, g);
+          }
+          const rows = [...grouped.values()];
+          const allSameQuery = rows.length === 1 && stats.sampleCompetitorQueries.length > 1;
+          const label = allSameQuery
+            ? "Query you lost on multiple engines"
+            : rows.length === 1
+              ? "Query you lost"
+              : "Queries you lost";
+          return (
+            <div>
+              <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
+                {label}
+              </div>
+              <ul className="space-y-1.5">
+                {rows.map((q, i) => (
+                  <li
+                    key={i}
+                    className="text-[11.5px] leading-snug bg-muted/30 rounded px-2.5 py-2"
+                  >
+                    <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+                      {q.engines.map((e) => (
+                        <span
+                          key={e}
+                          className="inline-flex items-center gap-1"
+                        >
+                          <AeoEngineLogo engine={e} />
+                          <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            {prettyEngineName(e)}
+                          </span>
+                        </span>
+                      ))}
                     </div>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
+                    <div className="text-foreground">
+                      &ldquo;{q.prompt.length > 110 ? q.prompt.slice(0, 107) + "…" : q.prompt}&rdquo;
+                    </div>
+                    {q.competitors.length > 0 ? (
+                      <div className="mt-0.5 text-muted-foreground">
+                        → cited {q.competitors.slice(0, 3).join(", ")}
+                      </div>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })() : null}
         <p className="text-[11px] text-muted-foreground leading-relaxed">
           Each week LeaseStack asks ChatGPT, Claude, and Perplexity the
           same set of buyer-intent prompts about your market. This is
@@ -2334,6 +2387,7 @@ function IconKpi({
   invertDelta = false,
   tone = "primary",
   glyph,
+  currentValue,
 }: {
   label: string;
   value: string;
@@ -2341,6 +2395,8 @@ function IconKpi({
   invertDelta?: boolean;
   tone?: IconKpiTone;
   glyph?: "target" | "calendar" | "check" | "dollar" | "globe";
+  /** Absolute current value — used to suppress noisy deltas on low samples. */
+  currentValue?: number | null;
 }) {
   const tones: Record<IconKpiTone, string> = {
     primary: "bg-primary/10 text-primary",
@@ -2363,7 +2419,11 @@ function IconKpi({
           </p>
         </div>
         {deltaPct != null ? (
-          <DeltaPill value={deltaPct} invert={invertDelta} />
+          <DeltaPill
+            value={deltaPct}
+            invert={invertDelta}
+            currentValue={currentValue}
+          />
         ) : null}
       </div>
       <p className="mt-2 text-[20px] leading-none font-bold tracking-tight tabular-nums text-foreground">
@@ -2425,15 +2485,48 @@ function Glyph({ name }: { name: "target" | "calendar" | "check" | "dollar" | "g
   );
 }
 
+// Bug #11 (Joe + Norman, May): "ORGANIC SESSIONS: 1 (-100%)" looked broken
+// in a client-facing report — at very low absolute values a percentage delta
+// is statistical noise, not signal. Suppress the pill when the current
+// absolute value is below this threshold and render an em-dash with a
+// "Low sample size" tooltip in its place. Applied to every metric cell,
+// not just Organic Sessions.
+const LOW_SAMPLE_THRESHOLD = 5;
+
 function DeltaPill({
   value,
   invert = false,
   large = false,
+  currentValue,
 }: {
   value: number;
   invert?: boolean;
   large?: boolean;
+  /**
+   * Absolute value the percentage was computed from. When provided AND
+   * below LOW_SAMPLE_THRESHOLD, we hide the percentage and render an
+   * em-dash with a "Low sample size" tooltip. Omit to always render.
+   */
+  currentValue?: number | null;
 }) {
+  const lowSample =
+    currentValue != null && Math.abs(currentValue) < LOW_SAMPLE_THRESHOLD;
+  const sz = large
+    ? "px-3 py-1.5 text-[14px]"
+    : "px-1.5 py-0.5 text-[10px]";
+  if (lowSample) {
+    return (
+      <span
+        title="Low sample size"
+        className={
+          "inline-flex items-center gap-0.5 rounded-md font-bold tabular-nums bg-muted text-muted-foreground " +
+          sz
+        }
+      >
+        —
+      </span>
+    );
+  }
   const goodDirection = invert ? value < 0 : value > 0;
   const flat = value === 0;
   const tone = flat
@@ -2441,9 +2534,6 @@ function DeltaPill({
     : goodDirection
       ? "bg-primary/10 text-primary"
       : "bg-primary text-primary-foreground";
-  const sz = large
-    ? "px-3 py-1.5 text-[14px]"
-    : "px-1.5 py-0.5 text-[10px]";
   return (
     <span
       className={
@@ -3553,7 +3643,7 @@ function SideLifecycleTile({
         <div className="text-[24px] font-bold tabular-nums text-foreground leading-none">
           {value.toLocaleString()}
         </div>
-        {delta != null ? <DeltaPill value={delta} /> : null}
+        {delta != null ? <DeltaPill value={delta} currentValue={value} /> : null}
       </div>
       <div className="mt-1 text-[11px] text-muted-foreground">{hint}</div>
     </div>
