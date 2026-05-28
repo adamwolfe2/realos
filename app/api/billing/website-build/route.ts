@@ -86,6 +86,24 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Tenant-scope the propertyId. Otherwise an operator with a valid scope
+  // could pass another org's propertyId and it would land on Stripe
+  // metadata + the WebsiteBuildRequest row — mis-attributing the build
+  // to the wrong tenant. 404 (not 403) to avoid leaking whether the id
+  // exists in another org.
+  if (parsed.propertyId) {
+    const owned = await prisma.property.findFirst({
+      where: { id: parsed.propertyId, orgId: scope.orgId },
+      select: { id: true },
+    });
+    if (!owned) {
+      return NextResponse.json(
+        { ok: false, error: "Property not found" },
+        { status: 404 },
+      );
+    }
+  }
+
   const org = await prisma.organization.findUnique({
     where: { id: scope.orgId },
     select: {
