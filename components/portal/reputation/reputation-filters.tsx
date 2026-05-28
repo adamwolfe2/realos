@@ -72,25 +72,40 @@ export function ReputationFilters({
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }
 
+  const hasActiveFilter = activeSource !== "all" || activeSentiment !== "all";
+
+  function clearAll() {
+    const next = new URLSearchParams(params.toString());
+    next.delete("source");
+    next.delete("sentiment");
+    const qs = next.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }
+
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-1.5">
       <FilterRow
         label="Source"
-        options={SOURCE_OPTIONS.map((o) => ({
-          ...o,
-          count: o.value === "all" ? undefined : sourceCounts?.[o.value],
-        }))}
+        options={SOURCE_OPTIONS}
         active={activeSource}
         onChange={(v) => setParam("source", v)}
       />
       <FilterRow
         label="Sentiment"
-        options={SENTIMENT_OPTIONS.map((o) => ({
-          ...o,
-          count: o.value === "all" ? undefined : sentimentCounts?.[o.value],
-        }))}
+        options={SENTIMENT_OPTIONS}
         active={activeSentiment}
         onChange={(v) => setParam("sentiment", v)}
+        trailing={
+          hasActiveFilter ? (
+            <button
+              type="button"
+              onClick={clearAll}
+              className="ml-1 text-[11px] text-muted-foreground hover:text-foreground underline-offset-2 hover:underline transition-colors"
+            >
+              Clear
+            </button>
+          ) : null
+        }
       />
     </div>
   );
@@ -101,48 +116,38 @@ function FilterRow<T extends string>({
   options,
   active,
   onChange,
+  trailing,
 }: {
   label: string;
   options: Array<{ value: T; label: string; count?: number }>;
   active: T;
   onChange: (next: T) => void;
+  trailing?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-2 flex-wrap">
-      <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground w-16 shrink-0">
-        {label}
+    <div className="flex items-center gap-1 flex-wrap">
+      <span className="text-[11px] uppercase tracking-wide text-muted-foreground mr-1">
+        {label}:
       </span>
-      <div className="flex items-center gap-1.5 flex-wrap">
-        {options.map((opt) => {
-          const isActive = opt.value === active;
-          return (
-            <button
-              type="button"
-              key={opt.value}
-              onClick={() => onChange(opt.value)}
-              className={
-                "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium border transition-colors " +
-                (isActive
-                  ? "bg-foreground text-background border-foreground"
-                  : "bg-background text-foreground border-border hover:bg-muted")
-              }
-              aria-pressed={isActive}
-            >
-              <span>{opt.label}</span>
-              {typeof opt.count === "number" && opt.count > 0 ? (
-                <span
-                  className={
-                    "tabular-nums " +
-                    (isActive ? "text-background/80" : "text-muted-foreground")
-                  }
-                >
-                  {opt.count}
-                </span>
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
+      {options.map((opt) => {
+        const isActive = opt.value === active;
+        return (
+          <button
+            type="button"
+            key={opt.value}
+            onClick={() => onChange(opt.value)}
+            className={
+              isActive
+                ? "px-2.5 py-1 text-xs rounded-md border border-foreground/20 bg-muted/60 text-foreground font-medium transition-colors"
+                : "px-2.5 py-1 text-xs rounded-md border border-transparent text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+            }
+            aria-pressed={isActive}
+          >
+            {opt.label}
+          </button>
+        );
+      })}
+      {trailing}
     </div>
   );
 }
