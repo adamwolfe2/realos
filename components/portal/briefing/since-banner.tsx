@@ -24,12 +24,31 @@ export function SinceBanner({
     ? `Since your last briefing ${relativeTime(lastViewedAt)}`
     : "Since last Monday";
 
+  // Bug #13 (Joe + Norman, May): the command-center strip was reading
+  // "Since last Monday 1 new leads, 1 captured chats." — plural nouns even
+  // when the count is 1. Each item now declares a singular + plural form
+  // and we pick the right one based on the count.
   const items: { label: string; value: number }[] = [
-    { label: "new leads", value: delta.newLeads },
-    { label: "new insights", value: delta.newInsights },
-    { label: "tour requests", value: delta.newTours },
-    { label: "captured chats", value: delta.newChats },
-    { label: "applications", value: delta.newApplications },
+    {
+      label: plural(delta.newLeads, "new lead", "new leads"),
+      value: delta.newLeads,
+    },
+    {
+      label: plural(delta.newInsights, "new insight", "new insights"),
+      value: delta.newInsights,
+    },
+    {
+      label: plural(delta.newTours, "tour request", "tour requests"),
+      value: delta.newTours,
+    },
+    {
+      label: plural(delta.newChats, "captured chat", "captured chats"),
+      value: delta.newChats,
+    },
+    {
+      label: plural(delta.newApplications, "application", "applications"),
+      value: delta.newApplications,
+    },
   ].filter((i) => i.value > 0);
 
   return (
@@ -60,16 +79,30 @@ export function SinceBanner({
           )}
         </p>
       </div>
+      {/* Bug #12 (Joe + Norman, May): solid blue primary button pulled
+          attention away from the actual primary action (making the calls
+          listed in the Call sheet below). Demoted to a ghost / secondary
+          variant and tagged with a tooltip so operators know what it
+          does. The Call sheet's first call CTA is now the only solid
+          primary on the briefing page. */}
       <button
         onClick={() => startTransition(() => { void markBriefingViewed(); })}
         disabled={pending}
-        className="inline-flex items-center gap-1.5 rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-[12px] font-semibold transition-opacity hover:opacity-90 disabled:opacity-60"
+        title="Marks today as triaged. Doesn't change call queue or counters."
+        className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card text-muted-foreground px-3 py-1.5 text-[12px] font-semibold transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
       >
         <Check className="h-3 w-3" />
         {pending ? "Saving..." : "Mark briefing reviewed"}
       </button>
     </div>
   );
+}
+
+// Tiny pluralization helper local to this file. We could pull in a real
+// library, but the briefing strip needs five words total — a 3-line helper
+// is fine and avoids a new dependency.
+function plural(count: number, singular: string, pluralForm: string): string {
+  return count === 1 ? singular : pluralForm;
 }
 
 function relativeTime(date: Date): string {
