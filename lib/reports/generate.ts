@@ -2426,12 +2426,12 @@ async function buildReputationStats(
   // Curated lists pull mentions where publishedAt >= recencyFloor. Undated
   // mentions (publishedAt == null) get their createdAt checked as a
   // fallback — same pattern as the portfolio feed in lib/reputation/portfolio.ts.
-  const recencyClause = {
+  const recencyClause: Prisma.PropertyMentionWhereInput = {
     OR: [
       { publishedAt: { gte: recencyFloor } },
       { AND: [{ publishedAt: null }, { createdAt: { gte: recencyFloor } }] },
     ],
-  } satisfies Prisma.PropertyMentionWhereInput;
+  };
 
   // Full mention payload — title, author, sentiment, topics, flagged
   // — so the report renderer (and the email) can show real Reddit
