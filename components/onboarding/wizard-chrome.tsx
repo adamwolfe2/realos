@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { Check } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
 import type { OnboardingStep } from "@/lib/onboarding/steps";
 
@@ -92,7 +93,7 @@ export function WizardChrome({
                       fontWeight: 700,
                     }}
                   >
-                    {isDone ? "✓" : i + 1}
+                    {isDone ? <Check className="w-3 h-3" strokeWidth={1.5} /> : i + 1}
                   </span>
                   <span
                     style={{

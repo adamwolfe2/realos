@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import Image from "next/image";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -756,9 +757,7 @@ function StylePanel({
                         </h4>
                       </div>
                       {active ? (
-                        <span className="text-[10px] uppercase tracking-widest text-primary font-bold shrink-0">
-                          ✓
-                        </span>
+                        <Check className="w-4 h-4 text-primary shrink-0" strokeWidth={1.5} aria-label="Selected" />
                       ) : null}
                     </div>
                     <div className="flex items-center gap-1 text-[10px] uppercase tracking-wider text-muted-foreground">
@@ -881,12 +880,12 @@ function PalettesPanel({
                   {p.name}
                 </h4>
                 {active ? (
-                  <span
-                    className="text-[10px] uppercase tracking-widest font-bold"
+                  <Check
+                    className="w-4 h-4"
+                    strokeWidth={1.5}
                     style={{ color: p.colors.primary }}
-                  >
-                    ✓
-                  </span>
+                    aria-label="Selected"
+                  />
                 ) : null}
               </div>
               <div className="flex gap-1">

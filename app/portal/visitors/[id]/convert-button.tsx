@@ -73,7 +73,7 @@ export function ConvertToLeadButton({
       disabled={pending || done}
       className="px-3 py-1.5 text-xs font-semibold bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors disabled:opacity-60"
     >
-      {pending ? "Converting…" : done ? "Converted ✓" : "Convert to lead"}
+      {pending ? "Converting…" : done ? "Converted" : "Convert to lead"}
     </button>
   );
 }

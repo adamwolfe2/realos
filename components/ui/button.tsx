@@ -4,6 +4,13 @@ import { cva, type VariantProps } from 'class-variance-authority'
 
 import { cn } from '@/lib/utils'
 
+// TODO(#27): Centralize Lucide stroke width. We standardized on
+// strokeWidth={1.5} during the icon pass, but most call sites apply it
+// inline. Wrap lucide-react with a thin re-export (e.g. lib/icons.tsx)
+// that defaults strokeWidth so future contributors don't need to think
+// about it, and remove the inline prop everywhere. Tracked separately
+// to keep the icon-replacement diff scoped.
+
 // Premium micro-interaction: every button variant ships with a subtle
 // scale-on-press — active:scale-[0.98] with a 100ms transition. Reads as
 // satisfying tactile feedback without any visible motion on hover.

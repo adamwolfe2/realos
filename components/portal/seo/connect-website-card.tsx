@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Globe, Loader2, Sparkles, ExternalLink, RefreshCw } from "lucide-react";
+import { Globe, Loader2, Sparkles, ExternalLink, RefreshCw, Check } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // ConnectWebsiteCard — the "feels like magic" entry point.
@@ -364,8 +364,8 @@ function ScanProgress({
               }`}
             >
               {done ? (
-                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-primary text-[10px] font-bold">
-                  ✓
+                <span className="inline-flex h-4 w-4 items-center justify-center rounded-full bg-primary/15 text-primary">
+                  <Check className="h-3 w-3" strokeWidth={1.5} />
                 </span>
               ) : (
                 <Loader2 className="h-3.5 w-3.5 text-primary/60 animate-spin" />

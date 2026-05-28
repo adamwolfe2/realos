@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { MessageCircle, X } from "lucide-react";
 import { ChatInterface } from "./chat-interface";
 import { trackChatbotOpened } from "@/lib/chatbot/analytics";
 
@@ -268,13 +269,17 @@ export function ProactiveWidget({
             openChat("button");
           }
         }}
-        className="fixed right-4 z-40 w-14 h-14 rounded-full shadow-2xl text-white flex items-center justify-center text-2xl"
+        className="fixed right-4 z-40 w-14 h-14 rounded-full shadow-2xl text-white flex items-center justify-center"
         style={{
           backgroundColor: "var(--tenant-primary)",
           bottom: "max(1.5rem, calc(1.5rem + env(safe-area-inset-bottom)))",
         }}
       >
-        {open ? "×" : "💬"}
+        {open ? (
+          <X className="w-6 h-6" strokeWidth={1.5} />
+        ) : (
+          <MessageCircle className="w-6 h-6" strokeWidth={1.5} />
+        )}
       </button>
 
       {open ? (

@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Calendar, ExternalLink, CheckCircle2 } from "lucide-react";
+import { Calendar, ExternalLink, CheckCircle2, Check } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // WebsiteBuildTracker
@@ -114,7 +114,7 @@ export function WebsiteBuildTracker({ builds }: { builds: Build[] }) {
                           }}
                           aria-hidden="true"
                         >
-                          {done ? "✓" : i + 1}
+                          {done ? <Check className="w-3 h-3" strokeWidth={1.5} /> : i + 1}
                         </span>
                         <span
                           className="mt-1"

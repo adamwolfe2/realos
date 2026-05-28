@@ -130,7 +130,11 @@ export function StatusPanel(props: StatusPanelProps) {
               )}
             >
               {humanStatus(s)}
-              {suggestedNext === s ? " ★" : ""}
+              {suggestedNext === s ? (
+                <span className="ml-1 text-[10px] uppercase tracking-wider text-primary/80">
+                  (next)
+                </span>
+              ) : null}
             </button>
           ))}
         </div>

@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Check } from "lucide-react";
 import type { SiteRequestStatus } from "@prisma/client";
 import { cn } from "@/lib/utils";
 
@@ -169,7 +170,7 @@ export function StatusTimeline({
                         : "border-border text-muted-foreground",
                   )}
                 >
-                  {done ? "✓" : idx + 1}
+                  {done ? <Check className="w-3.5 h-3.5" strokeWidth={1.5} /> : idx + 1}
                 </span>
                 <div className="min-w-0">
                   <div

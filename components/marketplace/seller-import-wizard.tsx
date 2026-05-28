@@ -3,6 +3,14 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import {
+  FileText,
+  Link2,
+  AlertTriangle,
+  Check,
+  RotateCw,
+  Plus,
+} from "lucide-react";
+import {
   autoMapColumns,
   applyMapping,
   parseCsvRaw,
@@ -393,14 +401,14 @@ function StepSource({
         <SourceCard
           active={source === "csv"}
           onClick={() => onPick("csv")}
-          icon="📄"
+          icon={<FileText className="w-5 h-5" strokeWidth={1.5} />}
           title="CSV upload"
           description="Drop a spreadsheet from your overflow inbox or CRM. We'll auto-detect the columns + dedupe against your existing leads."
         />
         <SourceCard
           active={source === "cursive"}
           onClick={() => onPick("cursive")}
-          icon="🔗"
+          icon={<Link2 className="w-5 h-5" strokeWidth={1.5} />}
           title="Audience segment"
           description="Wire an identity-resolution audience by ID. Auto-refreshes weekly and continuously feeds new leads into the marketplace."
         />
@@ -418,7 +426,7 @@ function SourceCard({
 }: {
   active: boolean;
   onClick: () => void;
-  icon: string;
+  icon: React.ReactNode;
   title: string;
   description: string;
 }) {
@@ -434,10 +442,13 @@ function SourceCard({
       ].join(" ")}
     >
       <div
-        className="flex items-center justify-center w-10 h-10 rounded-lg mb-3 text-xl"
+        className={[
+          "flex items-center justify-center w-10 h-10 rounded-lg mb-3",
+          active ? "text-white" : "text-slate-600",
+        ].join(" ")}
         style={{ background: active ? "#3B82F6" : "#F1F5F9" }}
       >
-        <span>{icon}</span>
+        {icon}
       </div>
       <h3 className="text-base font-semibold text-slate-900">{title}</h3>
       <p className="mt-1 text-sm text-slate-600 leading-relaxed">{description}</p>
@@ -676,9 +687,21 @@ function StepDedup({
         We checked every row against your existing leads. Review the matches below — toggle anything you want to import anyway.
       </p>
       <div className="mt-4 flex flex-wrap items-center gap-2">
-        <Badge color="blue">+ {preview.newCount} New</Badge>
-        <Badge color="amber">↻ {preview.exactMatchCount} Exact matches</Badge>
-        <Badge color="orange">⚠ {preview.possibleDupCount} Possible duplicates</Badge>
+        <Badge color="blue">
+          <Plus className="w-3.5 h-3.5 inline-block align-text-bottom" strokeWidth={1.5} />
+          {" "}
+          {preview.newCount} New
+        </Badge>
+        <Badge color="amber">
+          <RotateCw className="w-3.5 h-3.5 inline-block align-text-bottom" strokeWidth={1.5} />
+          {" "}
+          {preview.exactMatchCount} Exact matches
+        </Badge>
+        <Badge color="orange">
+          <AlertTriangle className="w-3.5 h-3.5 inline-block align-text-bottom" strokeWidth={1.5} />
+          {" "}
+          {preview.possibleDupCount} Possible duplicates
+        </Badge>
         <span className="ml-auto text-xs text-slate-500">
           {selectedCount} selected for import
         </span>
@@ -691,7 +714,7 @@ function StepDedup({
       <div className="mt-6 space-y-5">
         <DedupGroup
           title="New records"
-          icon="+"
+          icon={<Plus className="w-3.5 h-3.5 inline-block align-text-bottom" strokeWidth={1.5} />}
           color="blue"
           rows={preview.results.filter((r) => r.bucket === "new")}
           includeRow={includeRow}
@@ -700,7 +723,7 @@ function StepDedup({
         />
         <DedupGroup
           title="Exact matches"
-          icon="↻"
+          icon={<RotateCw className="w-3.5 h-3.5 inline-block align-text-bottom" strokeWidth={1.5} />}
           color="amber"
           rows={preview.results.filter((r) => r.bucket === "exact-match")}
           includeRow={includeRow}
@@ -709,7 +732,7 @@ function StepDedup({
         />
         <DedupGroup
           title="Possible duplicates"
-          icon="⚠"
+          icon={<AlertTriangle className="w-3.5 h-3.5 inline-block align-text-bottom" strokeWidth={1.5} />}
           color="orange"
           rows={preview.results.filter((r) => r.bucket === "possible-dup")}
           includeRow={includeRow}
@@ -731,7 +754,7 @@ function DedupGroup({
   emptyText,
 }: {
   title: string;
-  icon: string;
+  icon: React.ReactNode;
   color: "blue" | "amber" | "orange";
   rows: DedupRowResult[];
   includeRow: Record<number, boolean>;
@@ -741,7 +764,7 @@ function DedupGroup({
   if (rows.length === 0) {
     return (
       <div>
-        <h3 className="text-sm font-semibold text-slate-900 mb-2">
+        <h3 className="text-sm font-semibold text-slate-900 mb-2 inline-flex items-center gap-1.5">
           {icon} {title} (0)
         </h3>
         <p className="text-xs text-slate-500">{emptyText}</p>
@@ -759,7 +782,7 @@ function DedupGroup({
   return (
     <div>
       <div className="flex items-baseline justify-between gap-3 mb-2">
-        <h3 className="text-sm font-semibold text-slate-900">
+        <h3 className="text-sm font-semibold text-slate-900 inline-flex items-center gap-1.5">
           {icon} {title} ({rows.length})
           <span className="ml-2 text-xs font-normal text-slate-500">
             {selectedInGroup} selected
@@ -885,8 +908,9 @@ function StepImportSummary({
   if (csvSummary) {
     return (
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">
-          ✓ Import complete
+        <h2 className="text-lg font-semibold text-slate-900 inline-flex items-center gap-2">
+          <Check className="w-5 h-5 text-green-600" strokeWidth={1.5} />
+          Import complete
         </h2>
         <p className="mt-1 text-sm text-slate-600">
           {csvSummary.upserted.toLocaleString()} leads added to your inventory.
@@ -929,8 +953,9 @@ function StepImportSummary({
   if (cursiveSummary) {
     return (
       <div>
-        <h2 className="text-lg font-semibold text-slate-900">
-          ✓ Audience wired
+        <h2 className="text-lg font-semibold text-slate-900 inline-flex items-center gap-2">
+          <Check className="w-5 h-5 text-green-600" strokeWidth={1.5} />
+          Audience wired
         </h2>
         <p className="mt-1 text-sm text-slate-600">
           The source is connected and the first batch has been pulled.
@@ -1005,7 +1030,7 @@ function ProgressHeader({
                       : "bg-slate-100 border-slate-200 text-slate-500",
                 ].join(" ")}
               >
-                {done ? "✓" : i + 1}
+                {done ? <Check className="w-3.5 h-3.5" strokeWidth={1.5} /> : i + 1}
               </span>
               <span
                 className={[

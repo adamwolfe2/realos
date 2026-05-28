@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { useRouter } from "next/navigation";
+import { AlertTriangle, Trash2 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
 // MarketplaceSourceList — admin list of every configured MarketplaceSyncSource.
@@ -104,7 +105,7 @@ function SourceRow({ source }: { source: Source }) {
     <li className="bg-white border border-slate-200 rounded-xl p-5">
       {showAlert ? (
         <div className="mb-4 -mt-1 flex items-start gap-2 p-3 rounded-md bg-amber-50 border border-amber-200 text-xs leading-relaxed">
-          <span aria-hidden="true" className="text-amber-700 font-bold">⚠</span>
+          <AlertTriangle aria-hidden="true" className="w-4 h-4 text-amber-700 shrink-0 mt-0.5" strokeWidth={1.5} />
           <div className="text-amber-800">
             <strong className="font-semibold">Pool dropped sharply.</strong>{" "}
             Last sync upserted {expectedFloor.toLocaleString()} leads but the
@@ -359,7 +360,7 @@ function DeleteSourceButton({
       title="Delete source"
       className="px-2 py-1.5 rounded-md border border-slate-200 text-slate-400 hover:text-red-600 hover:border-red-200 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
     >
-      {busy ? "..." : "🗑"}
+      {busy ? "..." : <Trash2 className="w-4 h-4" strokeWidth={1.5} />}
     </button>
   );
 }

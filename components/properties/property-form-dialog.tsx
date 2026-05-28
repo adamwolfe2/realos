@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { X } from "lucide-react";
 import {
   PropertyType,
   ResidentialSubtype,
@@ -152,8 +153,9 @@ export function PropertyFormDialog({
                 onClick={() => setOpen(false)}
                 disabled={pending}
                 className="text-muted-foreground hover:text-foreground"
+                aria-label="Close"
               >
-                ✕
+                <X className="w-4 h-4" strokeWidth={1.5} />
               </button>
             </div>
 

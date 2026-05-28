@@ -797,7 +797,7 @@ async function PaletteCard({ slug }: { slug: string }) {
           <div className="font-medium text-foreground">{palette.name}</div>
           <div className="text-xs text-muted-foreground mt-0.5">
             {palette.category}
-            {palette.wcagAACompliant === false ? " · ⚠ Not WCAG AA" : ""}
+            {palette.wcagAACompliant === false ? " · Not WCAG AA" : ""}
           </div>
         </div>
         <div className="flex items-center gap-1 shrink-0">

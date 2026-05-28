@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { requireScope } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
@@ -168,7 +169,7 @@ export default async function PopupEditorPage({
           className="rounded-xl border border-amber-500/30 bg-amber-50/60 p-4 text-[12.5px] text-foreground space-y-2"
         >
           <p className="font-semibold flex items-center gap-2">
-            <span aria-hidden="true">⚠</span>
+            <AlertTriangle aria-hidden="true" className="w-4 h-4 text-amber-700" strokeWidth={1.5} />
             This popup is active but hasn&apos;t recorded any impressions.
           </p>
           <p className="text-muted-foreground leading-snug">

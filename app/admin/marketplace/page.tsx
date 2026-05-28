@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { formatDistanceToNow } from "date-fns";
+import { AlertTriangle } from "lucide-react";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/admin/page-header";
@@ -69,7 +70,7 @@ export default async function AdminMarketplacePage() {
 
       {stalePaidWebhook ? (
         <div className="flex items-start gap-2.5 p-4 rounded-lg bg-amber-50 border border-amber-200">
-          <span aria-hidden="true" className="text-amber-700 text-lg leading-none">⚠</span>
+          <AlertTriangle aria-hidden="true" className="w-5 h-5 text-amber-700 shrink-0 mt-0.5" strokeWidth={1.5} />
           <div className="text-sm leading-relaxed text-amber-900">
             <strong className="font-semibold">
               No paid purchases in the last 7 days.
