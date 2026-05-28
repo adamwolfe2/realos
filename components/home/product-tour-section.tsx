@@ -53,6 +53,11 @@ export function ProductTourSection() {
               boxShadow: "0 12px 32px rgba(30, 42, 58, 0.06)",
             }}
           >
+            {/* TODO(#25): swap stock for custom photography — and ship the
+                actual screenshot. The path below resolves to /public/marketing/
+                which does not exist yet; a real PNG of the operator-portal
+                dashboard (not a stock illustration) needs to land here so the
+                mobile fallback stops rendering a broken image. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src="/marketing/product-tour-preview.png"

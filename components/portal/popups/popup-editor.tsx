@@ -559,7 +559,7 @@ function DesignTab({
         <input
           value={state.heroImageUrl ?? ""}
           onChange={(e) => set("heroImageUrl", e.target.value || null)}
-          placeholder="https://images.unsplash.com/…"
+          placeholder="https://cdn.your-property.com/hero.jpg"
           className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm font-mono"
         />
       </Field>

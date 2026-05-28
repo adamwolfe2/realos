@@ -34,6 +34,12 @@ const DEMO_ORG_SLUG = "telegraph-commons-demo" as const;
 // architecture that loosely matches each city's vibe — no people in
 // frame so we stay clear of fair-housing imagery concerns.
 //
+// TODO(#25): swap Unsplash demo URLs for custom architectural photography
+// once we have a pilot operator's actual portfolio shots cleared for
+// public marketing use. Architectural shots already match the brief —
+// these are seed-only, used to populate the /demo and screenshot
+// surfaces — but operator-recognition is stronger with named buildings.
+//
 // If any of these URLs ever 404 (Unsplash occasionally retires
 // photos), swap to a `https://picsum.photos/seed/<slug>/1600/900`
 // fallback — same dimensions, always-on.
