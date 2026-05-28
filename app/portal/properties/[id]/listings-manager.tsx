@@ -53,7 +53,7 @@ export function AddListingForm({ propertyId }: { propertyId: string }) {
       onSubmit={submit}
       className="rounded-md border border-border bg-muted/20 p-3 space-y-3"
     >
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
         <label className="flex flex-col gap-1">
           <span className={LABEL}>Unit type</span>
           <input

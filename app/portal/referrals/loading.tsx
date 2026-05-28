@@ -22,7 +22,7 @@ export default function ReferralsLoading() {
               <div className="h-4 flex-1 bg-muted/60 rounded" />
               <div className="h-7 w-16 bg-muted rounded-md" />
             </div>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {Array.from({ length: 3 }).map((_, j) => (
                 <div key={j} className="space-y-1">
                   <div className="h-3 w-16 bg-muted/50 rounded" />

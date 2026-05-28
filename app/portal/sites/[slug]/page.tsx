@@ -85,7 +85,7 @@ export default async function PortalSiteStatusPage({
 
       {sr.assets.length > 0 ? (
         <SectionCard label="Your uploads">
-          <ul className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             {sr.assets.map((a) => (
               <li
                 key={a.id}

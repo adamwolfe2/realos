@@ -112,7 +112,7 @@ export async function RenewalsTab({
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile
           label="Active leases"
           value={activeCount.toLocaleString()}
@@ -150,7 +150,7 @@ export async function RenewalsTab({
           eyebrow="Next 120 days"
           description="Grouped by days until expiration. Act early — 90-day notice windows close fast."
         >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             {buckets.map((b) => (
               <div key={b.label} className={`rounded-xl border ${b.tone} p-2.5`}>
                 <div className="flex items-center justify-between gap-2 mb-2 px-1">

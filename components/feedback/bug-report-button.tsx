@@ -390,7 +390,7 @@ export function BugReportButton() {
                     </span>
                   </div>
                   {images.length > 0 ? (
-                    <ul className="grid grid-cols-3 gap-2">
+                    <ul className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {images.map((img) => (
                         <li
                           key={img.id}

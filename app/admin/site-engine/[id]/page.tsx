@@ -106,7 +106,7 @@ export default async function SiteEngineDetailPage({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <SectionCard label="Submitter">
-            <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+            <dl className="grid grid-cols-2 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
               <Row label="Name" value={sr.submittedByName} />
               <Row label="Email" value={sr.submittedByEmail} />
               <Row label="Phone" value={sr.submittedByPhone ?? "—"} />
@@ -138,7 +138,7 @@ export default async function SiteEngineDetailPage({
           {sr.intake ? (
             <>
               <SectionCard label="Brand">
-                <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <dl className="grid grid-cols-2 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <Row label="Brand name" value={sr.intake.brandName} />
                   <Row label="Tagline" value={sr.intake.tagline ?? "—"} />
                   <Row label="Color" value={sr.intake.brandColorHex ?? "—"} />
@@ -160,7 +160,7 @@ export default async function SiteEngineDetailPage({
               </SectionCard>
 
               <SectionCard label="Compliance">
-                <dl className="grid grid-cols-3 gap-x-6 gap-y-3 text-sm">
+                <dl className="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-3 text-sm">
                   <Row label="License #" value={sr.intake.licenseNumber ?? "—"} />
                   <Row label="Brokerage" value={sr.intake.brokerageName ?? "—"} />
                   <Row label="State" value={sr.intake.licenseState ?? "—"} />
@@ -247,7 +247,7 @@ export default async function SiteEngineDetailPage({
                       <div className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-2">
                         Inspiration screenshots
                       </div>
-                      <ul className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                      <ul className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                         {sr.assets
                           .filter((a) => a.type === "INSPIRATION")
                           .map((a) => (
@@ -399,7 +399,7 @@ export default async function SiteEngineDetailPage({
               </SectionCard>
 
               <SectionCard label="Integrations & domain">
-                <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <dl className="grid grid-cols-2 sm:grid-cols-2 gap-x-6 gap-y-3 text-sm">
                   <Row label="Calendly" value={sr.intake.calendlyUrl ?? "—"} />
                   <Row label="CRM" value={sr.intake.crmChoice ?? "—"} />
                   <Row label="MLS" value={sr.intake.mlsPreference ?? "—"} />

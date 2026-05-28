@@ -60,7 +60,7 @@ export default async function PixelHealthPage() {
         description="Live firing status for all client pixels. Firing = event in last 7d. Stale = event in last 30d. Dark = nothing in 30d."
       />
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <StatTile label="Firing" value={counts.firing} tone="emerald" />
         <StatTile label="Stale" value={counts.stale} tone="amber" />
         <StatTile label="Dark" value={counts.dark} tone="rose" />

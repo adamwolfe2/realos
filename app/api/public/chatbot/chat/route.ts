@@ -24,6 +24,9 @@ import {
   getIp,
   WIDGET_FALLBACK,
 } from "@/lib/rate-limit";
+import { checkAiQuota } from "@/lib/ai/quota";
+import { requireMatchingOrigin } from "@/lib/tenancy/origin-guard";
+import * as Sentry from "@sentry/nextjs";
 
 // POST /api/public/chatbot/chat
 //
@@ -122,6 +125,60 @@ export async function POST(req: NextRequest) {
   }
 
   const orgId = org.id;
+
+  // Origin guard (SECURITY_AUDIT L2). Before this check, an attacker who
+  // scraped a tenant's slug (public, leaks via /api/public/chatbot/config)
+  // could call this endpoint from any origin and bill our Anthropic budget
+  // against that tenant's daily quota.
+  //
+  // requireMatchingOrigin resolves the request's Origin/Referer hostname via
+  // the same path the middleware uses (DomainBinding.hostname for custom
+  // domains, then {slug}.{PLATFORM_DOMAIN} subdomain fallback). The legit
+  // embed widget is loaded from the tenant's own marketing site, so its
+  // Origin header always matches one of these.
+  //
+  // CHATBOT_ALLOW_ANY_ORIGIN=true bypasses the check for local dev where
+  // the widget is loaded from localhost or a Vercel preview URL that isn't
+  // bound to any tenant.
+  if (process.env.CHATBOT_ALLOW_ANY_ORIGIN !== "true") {
+    const guard = await requireMatchingOrigin(req, orgId);
+    if (!guard.ok) {
+      // Sentry breadcrumb at warning level so we can spot abuse patterns
+      // without paging on legitimate misconfigured embeds. Intentionally
+      // does NOT include any API key / secret in tags — only the orgId
+      // claimed by the request and the offending hostname.
+      const offendingOrigin =
+        req.headers.get("origin") ?? req.headers.get("referer") ?? "(none)";
+      Sentry.withScope((scope) => {
+        scope.setLevel("warning");
+        scope.setTag("route", "public/chatbot/chat");
+        scope.setTag("orgId", orgId);
+        scope.setTag("offendingOrigin", offendingOrigin);
+        Sentry.captureMessage("chatbot.chat origin not allowed");
+      });
+      return NextResponse.json(
+        { error: "origin not allowed" },
+        { status: 403, headers: CORS_HEADERS }
+      );
+    }
+  }
+
+  // Per-org daily AI quota backstop. Far above legitimate volume (default
+  // 1000 calls/day) — primary protection is the per-IP publicApiLimiter
+  // above. This exists so a single tenant can't quietly drain the
+  // Anthropic budget before anyone notices. Fails OPEN on Redis errors;
+  // see lib/ai/quota.ts.
+  const quota = await checkAiQuota(orgId);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      {
+        error: "Chatbot temporarily unavailable",
+        details: { code: "ai_quota_exceeded" },
+      },
+      { status: 429, headers: { ...CORS_HEADERS, "Retry-After": "3600" } }
+    );
+  }
+
   const systemPrompt = buildSystemPrompt(org as ChatbotTenant);
   const userAgent = req.headers.get("user-agent") ?? undefined;
   // Match the chat's host pageUrl to a specific property when possible.

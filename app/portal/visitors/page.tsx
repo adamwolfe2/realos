@@ -471,7 +471,7 @@ export default async function VisitorsPage({
           the page stops feeling like a sidebar metric column. */}
       <section
         aria-label="Visitor pipeline at a glance"
-        className="grid grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
       >
         <KpiTile
           label="Total visits"

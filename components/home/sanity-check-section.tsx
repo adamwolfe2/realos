@@ -328,7 +328,7 @@ function ReputationArtifact() {
           (Active mentions / % Negative / Needs response). Should
           stay horizontal on phone as a 1x3 row. */}
       <section
-        className="grid grid-cols-3 px-5 py-4 border-b gap-2"
+        className="grid grid-cols-3 sm:grid-cols-3 px-5 py-4 border-b gap-2"
         style={{ borderColor: "#F1F5F9" }}
       >
         <Stat

@@ -99,7 +99,7 @@ export async function AdsTab({
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile
           label="Spend (28d)"
           value={centsToUsdShort(data.totalSpendCents28d)}

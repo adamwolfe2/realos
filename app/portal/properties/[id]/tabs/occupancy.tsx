@@ -46,7 +46,7 @@ export async function OccupancyTab({
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile
           label="Occupancy"
           value={`${data.occupancyPct}%`}
@@ -99,7 +99,7 @@ export async function OccupancyTab({
               : "Distribution of unit-type rows from AppFolio. The percentage shows the share marked available right now — useful for spotting which bed type has the most open inventory."
           }
         >
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             {data.byBedType.map((b) => {
               const availPct =
                 b.total > 0 ? Math.round((b.available / b.total) * 100) : 0;

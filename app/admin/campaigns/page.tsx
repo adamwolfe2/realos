@@ -113,7 +113,7 @@ export default async function CampaignsPage({
           and color tokens match every other admin + portal surface. */}
       <section
         aria-label="Ad campaigns at a glance"
-        className="grid grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
       >
         <KpiTile label="Active campaigns" value={activeCount.toLocaleString()} />
         <KpiTile label="Spend (28d)" value={formatCents(totalSpend)} />

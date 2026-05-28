@@ -127,6 +127,10 @@
     {
       "path": "/api/cron/marketplace-expire",
       "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/reputation-scan",
+      "schedule": "0 9 * * 1"
     }
   ]
 }

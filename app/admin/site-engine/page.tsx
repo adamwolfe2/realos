@@ -139,7 +139,7 @@ export default async function AdminSiteEnginePage({
             <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">
               {group.label}
             </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
               {group.statuses.map((s) => {
                 const count = countMap.get(s) ?? 0;
                 const active = validStatus === s;

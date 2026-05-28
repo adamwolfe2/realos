@@ -6,7 +6,7 @@ export default function ReportDetailLoading() {
         <div className="h-8 w-64 bg-muted rounded" />
         <div className="h-4 w-48 bg-muted/60 rounded" />
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="rounded-xl border border-border bg-card p-4 space-y-2">
             <div className="h-3 w-20 bg-muted/60 rounded" />

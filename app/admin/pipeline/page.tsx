@@ -77,7 +77,7 @@ export default async function PipelinePage({
       {/* Compact summary strip — replaces the floating "3 total · 1 active"
           caption with a real KPI row so the operator sees money + risk
           before scanning the board. */}
-      <div className="rounded-lg border border-border bg-card p-4 grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="rounded-lg border border-border bg-card p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
         <PipelineKpi label="Total tenants" value={orgs.length.toString()} />
         <PipelineKpi label="Live" value={activeCount.toString()} tone="positive" />
         <PipelineKpi

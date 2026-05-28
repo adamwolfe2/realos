@@ -89,7 +89,7 @@ export function StepCompany({
           Property type
           <span aria-hidden="true" className="ml-0.5">*</span>
         </p>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {PROPERTY_TYPES.map((p) => (
             <OptionButton
               key={p.key}

@@ -58,7 +58,7 @@ export default async function SupportPage() {
         description="Cross-tenant view of chatbot conversations and operator-triggered engagements. Agency-side support inbox is a follow-up."
       />
 
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
         <Stat label="Live now" value={liveConversations.length.toString()} hint="last 5 min" />
         <Stat label="Active" value={totalActive.toString()} hint="all-time" />
         <Stat label="Handed off" value={totalHandedOff.toString()} hint="awaiting human" />

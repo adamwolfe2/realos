@@ -40,7 +40,7 @@ export default async function TenantsPage() {
         description="Every client tenant on the platform with their custom domains and SSL status."
       />
 
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
         <Stat label="Total tenants" value={tenants.length} />
         <Stat label="Launched" value={launched} />
         <Stat label="Custom domains" value={totalDomains} />

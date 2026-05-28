@@ -158,7 +158,7 @@ export function SettingsForm({ initial }: { initial: SettingsInitial }) {
             value={state.hqCity}
             onChange={(v) => update("hqCity", v)}
           />
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Field
               label="State"
               value={state.hqState}

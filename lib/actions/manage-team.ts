@@ -34,6 +34,111 @@ const CLIENT_ROLES: ReadonlySet<UserRole> = new Set([
   UserRole.LEASING_AGENT,
 ]);
 
+// ---------------------------------------------------------------------------
+// Agency-side role rank, used to prevent lateral / upward escalation.
+//
+// Higher rank == more privilege. Rules:
+//   - Actor must have strictly higher rank than the TARGET's current role
+//     (you can never manage a peer or your superior).
+//   - For role UPDATES, actor must have rank >= the NEW role's rank
+//     (you can't grant a role above your own).
+//   - Only AGENCY_OWNER (rank 100) can grant AGENCY_OWNER. AGENCY_ADMIN
+//     (rank 50) cannot promote themselves or anyone else to owner.
+//   - AGENCY_OPERATOR (rank 10) cannot modify any agency-side user.
+//   - System must always have at least one AGENCY_OWNER. Removing or
+//     demoting the final owner is blocked at the call site (separate
+//     last-owner check).
+// ---------------------------------------------------------------------------
+
+const AGENCY_ROLE_RANK: Record<
+  "AGENCY_OWNER" | "AGENCY_ADMIN" | "AGENCY_OPERATOR",
+  number
+> = {
+  AGENCY_OWNER: 100,
+  AGENCY_ADMIN: 50,
+  AGENCY_OPERATOR: 10,
+};
+
+function agencyRoleRank(role: UserRole): number {
+  if (role === UserRole.AGENCY_OWNER) return AGENCY_ROLE_RANK.AGENCY_OWNER;
+  if (role === UserRole.AGENCY_ADMIN) return AGENCY_ROLE_RANK.AGENCY_ADMIN;
+  if (role === UserRole.AGENCY_OPERATOR) return AGENCY_ROLE_RANK.AGENCY_OPERATOR;
+  // Client-side / non-agency roles have no rank in the agency hierarchy.
+  return 0;
+}
+
+type RankCheckResult = { ok: true } | { ok: false; reason: string };
+
+/**
+ * Rank-aware gate for agency-side mutations on another agency user.
+ * - For role UPDATES, pass `newRole`.
+ * - For REMOVALS, omit `newRole`.
+ * Returns `{ ok: true }` when the actor is permitted to perform the action.
+ */
+export function canManageAgencyRole(
+  actorRole: UserRole,
+  targetRole: UserRole,
+  newRole?: UserRole,
+): RankCheckResult {
+  // Only meaningful for agency-on-agency operations.
+  if (!AGENCY_ROLES.has(targetRole)) {
+    return { ok: false, reason: "Target is not an agency-side user." };
+  }
+  if (!AGENCY_ROLES.has(actorRole)) {
+    return { ok: false, reason: "Actor is not an agency-side user." };
+  }
+
+  const actorRank = agencyRoleRank(actorRole);
+  const targetRank = agencyRoleRank(targetRole);
+
+  // Owner-specific privilege: only AGENCY_OWNER can manage another
+  // AGENCY_OWNER (remove, demote, or promote a user to owner).
+  if (
+    targetRole === UserRole.AGENCY_OWNER &&
+    actorRole !== UserRole.AGENCY_OWNER
+  ) {
+    return {
+      ok: false,
+      reason: "Only an AGENCY_OWNER can manage an AGENCY_OWNER.",
+    };
+  }
+
+  // General rank gate: actor must have at least the target's rank.
+  // Blocks operators from touching admins/owners and admins from
+  // touching owners (already covered above), but permits peer-on-peer
+  // operations between equally-ranked admins or owners — the spec
+  // explicitly allows that (owners managing owners, admins managing
+  // admins). The last-AGENCY_OWNER protection is enforced at the call
+  // site for any owner -> non-owner transition.
+  if (actorRank < targetRank) {
+    return {
+      ok: false,
+      reason:
+        "You don't have a high enough role to manage this agency user.",
+    };
+  }
+
+  if (newRole !== undefined) {
+    // Promotion to AGENCY_OWNER is owner-only.
+    if (newRole === UserRole.AGENCY_OWNER && actorRole !== UserRole.AGENCY_OWNER) {
+      return {
+        ok: false,
+        reason: "Only an AGENCY_OWNER can promote a user to AGENCY_OWNER.",
+      };
+    }
+    // Actor cannot grant a role above their own rank.
+    const newRank = agencyRoleRank(newRole);
+    if (newRank > actorRank) {
+      return {
+        ok: false,
+        reason: "You can't grant a role above your own.",
+      };
+    }
+  }
+
+  return { ok: true };
+}
+
 export type ManageTeamResult =
   | { ok: true }
   | { ok: false; error: string };
@@ -103,16 +208,34 @@ export async function updateUserRoleAsAgency(
       error: "Client-org users can only hold CLIENT_* / LEASING_AGENT roles.",
     };
   }
-  if (
-    scope.role === UserRole.AGENCY_OPERATOR &&
-    (nextIsAgency || AGENCY_ROLES.has(user.role))
-  ) {
-    return {
-      ok: false,
-      error:
-        "Agency operators cannot change agency-side roles. Ask an agency owner or admin.",
-    };
+  // Rank-aware gate for agency-on-agency mutations. Blocks:
+  //   - operators touching admin/owner OR promoting anyone
+  //   - admins promoting themselves or others TO owner
+  //   - peer-on-peer lateral moves (admin vs admin, etc.)
+  if (AGENCY_ROLES.has(user.role)) {
+    const rankCheck = canManageAgencyRole(scope.role, user.role, nextRole);
+    if (!rankCheck.ok) {
+      return { ok: false, error: rankCheck.reason };
+    }
+  } else if (nextIsAgency) {
+    // Promoting a client-side user INTO the agency cohort is itself an
+    // agency-role grant — require the actor to have rank >= the new role.
+    const actorRank = agencyRoleRank(scope.role);
+    const newRank = agencyRoleRank(nextRole);
+    if (
+      nextRole === UserRole.AGENCY_OWNER &&
+      scope.role !== UserRole.AGENCY_OWNER
+    ) {
+      return {
+        ok: false,
+        error: "Only an AGENCY_OWNER can promote a user to AGENCY_OWNER.",
+      };
+    }
+    if (newRank > actorRank) {
+      return { ok: false, error: "You can't grant a role above your own." };
+    }
   }
+
   // Block the last-owner foot-gun: if we're demoting the only
   // remaining AGENCY_OWNER, refuse — otherwise the agency tenant
   // would have nobody who can manage roles, billing, etc.
@@ -264,6 +387,35 @@ export async function removeUserFromOrgAsAgency(
     select: { id: true, orgId: true, email: true, clerkUserId: true, role: true },
   });
   if (!user) return { ok: false, error: "User not found." };
+
+  // Self-removal would orphan the actor's session; block it outright.
+  if (user.id === scope.userId) {
+    return { ok: false, error: "You can't remove yourself." };
+  }
+
+  // Rank-aware gate when removing another agency-side user. Blocks an
+  // operator from deleting an admin/owner, an admin from deleting another
+  // admin or the owner, and any peer-on-peer removal.
+  if (AGENCY_ROLES.has(user.role)) {
+    const rankCheck = canManageAgencyRole(scope.role, user.role);
+    if (!rankCheck.ok) {
+      return { ok: false, error: rankCheck.reason };
+    }
+
+    // Last-owner protection: never let the system end up with zero
+    // AGENCY_OWNERs. Mirrors the demotion guard in updateUserRoleAsAgency.
+    if (user.role === UserRole.AGENCY_OWNER) {
+      const ownerCount = await prisma.user.count({
+        where: { orgId: user.orgId, role: UserRole.AGENCY_OWNER },
+      });
+      if (ownerCount <= 1) {
+        return {
+          ok: false,
+          error: "Cannot remove the last remaining AGENCY_OWNER.",
+        };
+      }
+    }
+  }
 
   const org = await prisma.organization.findUnique({
     where: { id: user.orgId },

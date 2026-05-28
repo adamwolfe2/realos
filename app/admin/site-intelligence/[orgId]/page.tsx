@@ -216,7 +216,7 @@ export default async function SiteIntelligenceDetailPage({
           </p>
         ) : null}
 
-        <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <Stat label="Pages" value={`${pages.length}`} />
           <Stat label="Sitemap URLs" value={`${sitemapUrls.length}`} />
           <Stat

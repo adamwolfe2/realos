@@ -1172,7 +1172,7 @@ export default async function PortalHome({
           subpage where the operator goes when they actually need detail. */}
       <section
         aria-label="At a glance"
-        className="grid grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
       >
         {/* Norman bug #101: tiles needed explicit time windows, an honest
             empty-state for ad spend when no campaigns are active, an

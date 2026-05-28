@@ -380,7 +380,7 @@ export default async function VisitorDetailPage({
         {/* Right: Engagement + Sessions */}
         <div className="lg:col-span-2 space-y-6">
           {/* Engagement metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <StatCard
               label="Sessions"
               value={totalSessions}

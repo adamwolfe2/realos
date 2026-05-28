@@ -151,7 +151,7 @@ export default async function AdminHome() {
              actually decision-useful instead of a number floating
              alone.
           ────────────────────────────────────────────────────────── */}
-      <section className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <MoneyTile
           icon={<DollarSign className="h-3.5 w-3.5" />}
           label="Total MRR"

@@ -251,11 +251,48 @@ body {
   box-shadow: 0 6px 24px -12px rgba(20, 20, 19, 0.12);
 }
 
+/* ── Reputation-feed "live scanning" animations ───────────────────────────
+   Used by the marketing SanityCheckSection artifact to make the feed look
+   like it's actively pulling mentions from Google / Reddit / Yelp / etc.
+   ────────────────────────────────────────────────────────────────────── */
+
+/* Outer pulse ring on the scanner dot — radiates and fades, infinite loop. */
+@keyframes ls-rep-pulse {
+  0%   { transform: scale(0.9); opacity: 0.55; }
+  80%  { transform: scale(2.4); opacity: 0;    }
+  100% { transform: scale(2.4); opacity: 0;    }
+}
+.ls-rep-pulse {
+  animation: ls-rep-pulse 1.6s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+  transform-origin: center;
+}
+
+/* Brief "we just found a hit" wash on a feed row when the scanner lands
+   on that source. Background lifts to a faint blue, then settles back. */
+@keyframes ls-rep-flash {
+  0%   { background-color: rgba(37, 99, 235, 0.10); }
+  60%  { background-color: rgba(37, 99, 235, 0.04); }
+  100% { background-color: transparent;            }
+}
+.ls-rep-flash { animation: ls-rep-flash 1.4s ease-out; }
+
+/* Crossfade for the scanner query line as it rotates through sources. */
+@keyframes ls-rep-query-in {
+  from { opacity: 0; transform: translateY(2px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+.ls-rep-query-in {
+  animation: ls-rep-query-in 280ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
 /* Respect users with reduced-motion preferences. */
 @media (prefers-reduced-motion: reduce) {
   .ls-page-fade,
   .ls-stagger > *,
-  .ls-hover-lift {
+  .ls-hover-lift,
+  .ls-rep-pulse,
+  .ls-rep-flash,
+  .ls-rep-query-in {
     animation: none !important;
     transition: none !important;
     transform: none !important;

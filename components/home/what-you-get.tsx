@@ -472,7 +472,7 @@ function LaunchTrack() {
       </ol>
 
       {/* Mobile fallback, same content, simpler 2-col grid, no line. */}
-      <ol className="md:hidden grid grid-cols-2 gap-x-4 gap-y-10">
+      <ol className="md:hidden grid grid-cols-2 sm:grid-cols-2 gap-x-4 gap-y-10">
         {LAUNCH_STEPS.map((s) => {
           const isLaunch = s.marker === "launch";
           const isBefore = s.marker === "before";

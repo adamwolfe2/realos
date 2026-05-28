@@ -71,7 +71,7 @@ export function SeoOverviewClient(props: SeoOverviewClientProps) {
       </div>
 
       {/* KPI strip — 2 cols on mobile, 4 on md+ */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <SeoKpiCard
           label="Clicks"
           value={fmtNumber(props.kpis.clicks.value)}

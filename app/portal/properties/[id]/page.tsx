@@ -508,7 +508,7 @@ function PropertyTabsSkeleton() {
           <div key={i} className="h-9 w-24 bg-muted/60 rounded-t" />
         ))}
       </div>
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
         {Array.from({ length: 5 }).map((_, i) => (
           <div
             key={i}

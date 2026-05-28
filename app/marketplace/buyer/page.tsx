@@ -79,7 +79,7 @@ export default async function BuyerDashboardPage() {
         <SignOutButton />
       </div>
 
-      <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <Tile label="Leads purchased" value={purchases.length.toLocaleString()} accent />
         <Tile label="Total spent" value={`$${(totalSpentCents / 100).toFixed(2)}`} />
         <Tile label="Active streams" value={streams.filter((s) => s.enabled).length.toString()} />

@@ -1,6 +1,26 @@
 import "server-only";
 import { randomBytes, createCipheriv, createDecipheriv } from "node:crypto";
+import * as Sentry from "@sentry/nextjs";
 import { prisma } from "@/lib/db";
+
+/**
+ * Report a vault decrypt failure to Sentry without ever leaking key
+ * material or ciphertext. Intentionally a separate helper so call sites
+ * only pass the orgId (when known) and a short reason — never the
+ * payload, never the underlying openssl error string.
+ */
+function reportVaultDecryptFailure(reason: string, orgId?: string): void {
+  try {
+    Sentry.withScope((scope) => {
+      scope.setLevel("error");
+      scope.setTag("vault", "decrypt-fail");
+      if (orgId) scope.setTag("orgId", orgId);
+      Sentry.captureException(new VaultCryptoError(reason));
+    });
+  } catch {
+    // Sentry must never break the decrypt path. Swallow.
+  }
+}
 
 // ---------------------------------------------------------------------------
 // Credentials vault — envelope encryption
@@ -94,6 +114,9 @@ function decryptGcm(
     if (err instanceof Error) {
       console.warn("[vault] decryptGcm failed:", err.message);
     }
+    // Capture the failure (no orgId at this layer — see decryptForOrg /
+    // unwrapDek wrappers which add orgId context where available).
+    reportVaultDecryptFailure("Vault decrypt failed (AES-GCM)");
     throw new VaultCryptoError("Vault decrypt failed");
   }
 }
@@ -228,13 +251,25 @@ export async function decryptForOrg(
   orgId: string,
   encrypted: EncryptedSecret,
 ): Promise<string> {
-  const dek = await getOrgDek(orgId);
-  const ct = Buffer.from(encrypted.secretCiphertext, "base64");
-  const iv = Buffer.from(encrypted.secretIv, "base64");
-  const tag = Buffer.from(encrypted.secretAuthTag, "base64");
-  const plaintext = decryptGcm(ct, dek, iv, tag);
-  dek.fill(0);
-  return plaintext.toString("utf8");
+  try {
+    const dek = await getOrgDek(orgId);
+    const ct = Buffer.from(encrypted.secretCiphertext, "base64");
+    const iv = Buffer.from(encrypted.secretIv, "base64");
+    const tag = Buffer.from(encrypted.secretAuthTag, "base64");
+    const plaintext = decryptGcm(ct, dek, iv, tag);
+    dek.fill(0);
+    return plaintext.toString("utf8");
+  } catch (err) {
+    // Re-report with orgId context so Sentry alerts can be scoped per
+    // tenant. The inner decryptGcm already captured a context-less event;
+    // this adds the tenant tag. Re-throw unchanged so callers see the
+    // same VaultCryptoError they did before.
+    reportVaultDecryptFailure(
+      err instanceof Error ? err.message : "Vault decrypt failed",
+      orgId,
+    );
+    throw err;
+  }
 }
 
 /**

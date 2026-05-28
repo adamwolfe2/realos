@@ -8,6 +8,7 @@ import {
   checkRateLimit,
   getIp,
 } from "@/lib/rate-limit";
+import { checkAiQuota } from "@/lib/ai/quota";
 import {
   ChatbotConversationStatus,
   LeadSource,
@@ -95,6 +96,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: "Chatbot module is not enabled for this tenant." },
       { status: 403 }
+    );
+  }
+
+  // Per-org daily AI quota backstop. See lib/ai/quota.ts — set well above
+  // legitimate volume so this only catches a runaway tenant or bad actor,
+  // not real customers. Fails OPEN on Redis errors.
+  const quota = await checkAiQuota(orgId);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      { error: "Chatbot temporarily unavailable", code: "ai_quota_exceeded" },
+      { status: 429, headers: { "Retry-After": "3600" } }
     );
   }
 

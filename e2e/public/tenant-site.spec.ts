@@ -61,13 +61,11 @@ test.describe("Tenant marketing site @critical", () => {
     ).toBeVisible();
   });
 
-  // /apply on tenant sites is currently shadowed by a global redirect in
-  // next.config.mjs left over from the Wholesail template fork. See
-  // BUILD_LOG.md (Sprint NN) for the bug + recommended fix. Once that
-  // redirect is removed, un-skip this test.
-  test.skip("apply page renders the application form (blocked by /apply global redirect)", async ({
-    page,
-  }) => {
+  // The legacy /apply global redirect (Wholesail fork carryover) has been
+  // removed from next.config.mjs — /apply is now reserved for tenant
+  // marketing sites and is handled by the catch-all tenant route in
+  // app/(tenant)/tenant-site/[[...path]]/page.tsx.
+  test("apply page renders the application form", async ({ page }) => {
     await page.goto(`${TENANT_BASE}/apply`);
     await expect(
       page.getByRole("heading", { name: /apply to live/i })

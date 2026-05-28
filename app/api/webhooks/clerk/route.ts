@@ -3,6 +3,7 @@ import { Webhook } from "svix";
 import { prisma } from "@/lib/db";
 import { OrgType, TenantStatus, UserRole } from "@prisma/client";
 import { webhookLimiter, checkRateLimit, getIp, rateLimited } from "@/lib/rate-limit";
+import { captureWithContext } from "@/lib/sentry";
 
 const VALID_ROLES = [
   UserRole.AGENCY_OWNER,
@@ -97,6 +98,11 @@ export async function POST(req: NextRequest) {
 
   if (!WEBHOOK_SECRET) {
     console.error("CLERK_WEBHOOK_SECRET not set");
+    captureWithContext(new Error("CLERK_WEBHOOK_SECRET not set"), {
+      route: "api/webhooks/clerk",
+      webhook: "clerk",
+      stage: "config",
+    });
     return NextResponse.json({ error: "Not configured" }, { status: 500 });
   }
 
@@ -126,6 +132,12 @@ export async function POST(req: NextRequest) {
     }) as WebhookEvent;
   } catch (err) {
     console.error("Webhook verification failed:", err);
+    captureWithContext(err, {
+      route: "api/webhooks/clerk",
+      webhook: "clerk",
+      stage: "signature_verification",
+      svixId,
+    });
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
@@ -253,6 +265,13 @@ export async function POST(req: NextRequest) {
                 `[clerk webhook] provision failed for ${id}/${email}:`,
                 err,
               );
+              captureWithContext(err, {
+                route: "api/webhooks/clerk",
+                webhook: "clerk",
+                eventType: event.type,
+                clerkUserId: id,
+                stage: "provision",
+              });
             }
           }
         }

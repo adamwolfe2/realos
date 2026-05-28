@@ -358,7 +358,7 @@ export default async function LeadDetailPage({
         </div>
 
         {/* Summary tiles */}
-        <div className="grid grid-cols-3 gap-3 min-w-[22rem]">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 min-w-[22rem]">
           <Tile label="Status">
             <div className="flex items-center gap-2">
               <StatusDot status={lead.status} />

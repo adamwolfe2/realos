@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { runAppfolioSync } from "@/lib/integrations/appfolio-sync";
 import { syncListingsForOrg } from "@/lib/integrations/appfolio";
 import { recordCronRun } from "@/lib/health/cron-run";
+import { trackCronDuration } from "@/lib/observability/cron-tracker";
 import { verifyCronAuth } from "@/lib/cron/auth";
 
 export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
   const authError = verifyCronAuth(req);
   if (authError) return authError;
 
-  return recordCronRun("appfolio-sync", async () => {
+  return recordCronRun("appfolio-sync", () => trackCronDuration("appfolio-sync", async () => {
     // Self-heal stuck rows BEFORE pulling the queue. A row left in
     // syncStatus='syncing' with a syncStartedAt older than the Vercel
     // function timeout (5 min) PLUS a generous safety margin is a
@@ -209,5 +210,5 @@ export async function GET(req: NextRequest) {
       }),
       recordsProcessed: results.filter((r) => r.ok && !r.skipped).length,
     };
-  });
+  }));
 }

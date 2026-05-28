@@ -238,7 +238,7 @@ export default async function AppfolioDiagnosisPage() {
         description="Every tenant's AppFolio integration state at a glance. Diagnoses the most common silent failures and gives you the right fix button per tenant."
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-5 gap-3">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-3">
         <Stat label="Tenants" value={totals.tenants} />
         <Stat label="Connected" value={totals.connected} />
         <Stat label="Healthy" value={totals.healthy} tone="ok" />

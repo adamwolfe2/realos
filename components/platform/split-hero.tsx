@@ -154,7 +154,7 @@ export function SplitHero({
             {trust && trust.length > 0 ? (
               <Reveal delay={300}>
                 <div
-                  className="mt-10 pt-6 grid grid-cols-3 gap-4"
+                  className="mt-10 pt-6 grid grid-cols-3 sm:grid-cols-3 gap-4"
                   style={{ borderTop: "1px solid #E2E8F0", maxWidth: "560px" }}
                 >
                   {trust.map((t, i) => (

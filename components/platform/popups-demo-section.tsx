@@ -135,7 +135,7 @@ export function PopupsDemoSection() {
                 className="w-full rounded-md border border-border bg-white px-3 py-2 text-sm resize-none"
               />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
               <Field label="CTA text">
                 <input
                   value={ctaText}
@@ -154,7 +154,7 @@ export function PopupsDemoSection() {
                 />
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
               <Field label="Position">
                 <select
                   value={position}
@@ -230,7 +230,7 @@ export function PopupsDemoSection() {
               <div className="h-3 w-full bg-foreground/15 rounded" />
               <div className="h-3 w-5/6 bg-foreground/15 rounded" />
               <div className="h-3 w-4/6 bg-foreground/15 rounded" />
-              <div className="mt-6 grid grid-cols-2 gap-3">
+              <div className="mt-6 grid grid-cols-2 sm:grid-cols-2 gap-3">
                 <div className="aspect-video bg-foreground/15 rounded-lg" />
                 <div className="aspect-video bg-foreground/15 rounded-lg" />
               </div>

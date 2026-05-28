@@ -9,6 +9,7 @@ import {
   tenantWhere,
 } from "@/lib/tenancy/scope";
 import { Prisma } from "@prisma/client";
+import { checkAiQuota } from "@/lib/ai/quota";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -99,6 +100,17 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     !scope.allowedPropertyIds.includes(draft.propertyId)
   ) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
+
+  // Per-org daily AI quota backstop. Auth-gated route, but a single
+  // workspace could still spam the editor; this catches that. Fails OPEN
+  // on Redis errors. See lib/ai/quota.ts.
+  const quota = await checkAiQuota(scope.orgId);
+  if (!quota.allowed) {
+    return NextResponse.json(
+      { error: "AI quota exceeded — try again tomorrow", code: "ai_quota_exceeded" },
+      { status: 429, headers: { "Retry-After": "3600" } }
+    );
   }
 
   // Build the system prompt. Pulls brand voice + cornerstone pages from

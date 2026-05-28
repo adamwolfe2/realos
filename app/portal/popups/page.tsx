@@ -58,7 +58,7 @@ export default async function PopupsListPage() {
       {/* KPI strip */}
       <section
         aria-label="Popup performance at a glance"
-        className="grid grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
       >
         <KpiTile
           label="Active campaigns"

@@ -164,7 +164,7 @@ export function AdsDashboard({
         accounts={accounts}
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <StatCard
           label="Spend (28d)"
           value={formatCents(totals.spendCents)}

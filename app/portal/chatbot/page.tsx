@@ -201,7 +201,7 @@ export default async function ChatbotPage() {
           label="Performance"
           description="Conversation volume and intake capture over the last day, week, and month."
         >
-          <dl className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <dl className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
             <ChatbotStatTile label="Conversations · 1d" value={stats.d1} />
             <ChatbotStatTile label="Conversations · 7d" value={stats.d7} />
             <ChatbotStatTile label="Conversations · 30d" value={stats.d30} />

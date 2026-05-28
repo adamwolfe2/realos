@@ -6,6 +6,7 @@ import {
   handleMarketplaceCheckoutExpired,
   handleMarketplaceChargeRefunded,
 } from "@/lib/marketplace/webhook-handlers";
+import { captureWithContext } from "@/lib/sentry";
 
 // ---------------------------------------------------------------------------
 // POST /api/webhooks/stripe/marketplace
@@ -32,6 +33,11 @@ export async function POST(req: NextRequest) {
     event = await parseWebhookEvent(rawBody, sig);
   } catch (err) {
     console.error("marketplace webhook — bad signature", err);
+    captureWithContext(err, {
+      route: "api/webhooks/stripe/marketplace",
+      webhook: "stripe",
+      stage: "signature_verification",
+    });
     return NextResponse.json({ error: "bad_signature" }, { status: 400 });
   }
 
@@ -57,6 +63,12 @@ export async function POST(req: NextRequest) {
     }
   } catch (err) {
     console.error("marketplace webhook — handler failed", event.type, err);
+    captureWithContext(err, {
+      route: "api/webhooks/stripe/marketplace",
+      webhook: "stripe",
+      eventId: event.id,
+      eventType: event.type,
+    });
     return NextResponse.json({ error: "handler_failed" }, { status: 500 });
   }
 

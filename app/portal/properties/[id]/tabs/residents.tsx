@@ -220,7 +220,7 @@ export async function ResidentsTab({
     return (
       <div className="space-y-5">
         {/* KPI strip — stays at top. Reflects the active view. */}
-        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <KpiTile
             label="Active residents"
             value={activeCount.toLocaleString()}

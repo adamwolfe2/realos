@@ -408,7 +408,7 @@ function RenewalDrawerBody({ lease }: { lease: RenewalLease }) {
         <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Lease
         </h3>
-        <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+        <dl className="grid grid-cols-3 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
           <dt className="text-muted-foreground">End date</dt>
           <dd className="col-span-2 text-foreground tabular-nums">
             {end ? format(end, "MMM d, yyyy") : "—"}
@@ -437,7 +437,7 @@ function RenewalDrawerBody({ lease }: { lease: RenewalLease }) {
         <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Resident
         </h3>
-        <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+        <dl className="grid grid-cols-3 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
           <dt className="text-muted-foreground">Name</dt>
           <dd className="col-span-2 text-foreground">{lease.residentName}</dd>
           <dt className="text-muted-foreground">Email</dt>
@@ -459,7 +459,7 @@ function RenewalDrawerBody({ lease }: { lease: RenewalLease }) {
         <h3 className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
           Unit
         </h3>
-        <dl className="grid grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
+        <dl className="grid grid-cols-3 sm:grid-cols-3 gap-x-3 gap-y-1.5 text-xs">
           <dt className="text-muted-foreground">Property</dt>
           <dd className="col-span-2 text-foreground">{lease.propertyName}</dd>
           <dt className="text-muted-foreground">Unit</dt>

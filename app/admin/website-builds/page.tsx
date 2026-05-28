@@ -101,7 +101,7 @@ export default async function AdminWebsiteBuildsPage() {
         description="Paid custom website build queue. Each row was paid up front via Stripe and routes through a kickoff call before build starts."
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-7 gap-2">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-7 gap-2">
         {STATUS_ORDER.map((s) => (
           <div
             key={s}

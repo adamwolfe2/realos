@@ -148,7 +148,7 @@ export async function WorkOrdersTab({
 
   return (
     <div className="space-y-6">
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile
           label="Open"
           value={openCount.toLocaleString()}
@@ -181,7 +181,7 @@ export async function WorkOrdersTab({
         description="Grouped by status. Fulfillment happens in AppFolio."
       >
         <div className="overflow-x-auto">
-          <div className="grid grid-cols-3 md:grid-cols-6 gap-2 min-w-[720px] md:min-w-0">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 min-w-[720px] md:min-w-0">
             {PIPELINE_ORDER.map((status) => {
               const items = byStatus.get(status) ?? [];
               return (

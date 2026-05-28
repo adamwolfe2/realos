@@ -891,7 +891,7 @@ function StepImportSummary({
         <p className="mt-1 text-sm text-slate-600">
           {csvSummary.upserted.toLocaleString()} leads added to your inventory.
         </p>
-        <dl className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-3">
+        <dl className="mt-6 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           <Stat label="Imported" value={csvSummary.upserted} color="blue" />
           <Stat label="Below floor" value={csvSummary.expired} color="amber" />
           <Stat label="Skipped" value={csvSummary.skipped} color="slate" />
@@ -935,7 +935,7 @@ function StepImportSummary({
         <p className="mt-1 text-sm text-slate-600">
           The source is connected and the first batch has been pulled.
         </p>
-        <dl className="mt-6 grid grid-cols-3 gap-3">
+        <dl className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-3">
           <Stat label="Fetched" value={cursiveSummary.summary.fetchedCount} color="slate" />
           <Stat label="Upserted" value={cursiveSummary.summary.upsertedCount} color="blue" />
           <Stat label="New" value={cursiveSummary.summary.newCount} color="blue" />
@@ -1098,7 +1098,7 @@ function Field({
 
 function Row({ label, value, mono }: { label: string; value: string; mono?: boolean }) {
   return (
-    <div className="grid grid-cols-3 gap-4 text-sm">
+    <div className="grid grid-cols-3 sm:grid-cols-3 gap-4 text-sm">
       <dt className="text-slate-500">{label}</dt>
       <dd
         className={[

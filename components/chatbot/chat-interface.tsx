@@ -226,9 +226,9 @@ export function ChatInterface({
   const actionCount = 1 + (hasAvailability ? 1 : 0) + (hasContact ? 1 : 0);
   const gridCols =
     actionCount === 3
-      ? "grid-cols-3"
+      ? "grid-cols-1 sm:grid-cols-3"
       : actionCount === 2
-        ? "grid-cols-2"
+        ? "grid-cols-1 sm:grid-cols-2"
         : "grid-cols-1";
 
   return (

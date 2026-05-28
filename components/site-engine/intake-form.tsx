@@ -1046,7 +1046,7 @@ function TimelineSection({ form, update }: SectionProps) {
         </p>
       </header>
       <Field label="Target timeline">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
           {TIMELINE_OPTIONS.map((t) => (
             <button
               key={t}

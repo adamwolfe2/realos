@@ -46,7 +46,7 @@ export function ReferralLinkCard({ stat }: { stat: ReferralPropertyStat }) {
       </div>
 
       {/* Stats row */}
-      <div className="grid grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <StatTile
           icon={<Users className="h-3.5 w-3.5" />}
           label="Leads (30d)"

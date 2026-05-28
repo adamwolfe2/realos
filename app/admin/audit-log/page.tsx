@@ -73,7 +73,7 @@ export default async function AuditLogPage({
         description="Cross-tenant audit trail. All writes, deletes, exports, and impersonations across the platform."
       />
 
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
         {Object.values(AuditAction).map((a) => {
           const count =
             actionCounts.find((c) => c.action === a)?._count._all ?? 0;

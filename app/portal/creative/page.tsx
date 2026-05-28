@@ -56,7 +56,7 @@ export default async function CreativePage() {
         }
       />
 
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <StatCard
           label="Open"
           value={open}

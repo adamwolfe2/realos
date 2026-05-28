@@ -351,7 +351,7 @@ function ScanProgress({
       {/* Per-pillar pillbox — secondary signal, helps the operator see
           which stages have already landed real data without watching the
           progress bar. */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
         {pillars.map((p) => {
           const done = p.value >= p.total || p.value > 0;
           return (

@@ -402,7 +402,7 @@ function CopyTab({
         />
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <Field label="Primary CTA text">
           <input
             value={state.ctaText}
@@ -427,7 +427,7 @@ function CopyTab({
         onChange={(v) => set("primaryCtaIcon", v)}
       />
 
-      <div className="grid grid-cols-2 gap-3 pt-2">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
         <Field label="Secondary CTA text (optional)">
           <input
             value={state.secondaryCtaText ?? ""}
@@ -485,7 +485,7 @@ function DesignTab({
   return (
     <>
       <Field label="Theme">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           {(
             [
               [PopupTheme.LIGHT, "Light"],
@@ -523,7 +523,7 @@ function DesignTab({
         </select>
       </Field>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ColorField
           label="Primary"
           value={state.primaryColor}
@@ -535,7 +535,7 @@ function DesignTab({
           onChange={(v) => set("accentColor", v)}
         />
       </div>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <ColorField
           label="Text"
           value={state.textColor}

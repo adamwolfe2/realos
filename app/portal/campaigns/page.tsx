@@ -183,7 +183,7 @@ export default async function CampaignsPage({
           body="Spend, clicks, and conversions for the last 28 days will appear here within 24 hours of the first nightly sync."
         />
       ) : campaigns.length > 0 ? (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
           {[
             { label: "Active campaigns", value: activeCampaigns },
             {

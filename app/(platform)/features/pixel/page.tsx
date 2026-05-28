@@ -282,7 +282,7 @@ function PixelResults() {
   ];
   return (
     <div
-      className="w-full grid grid-cols-2 gap-3"
+      className="w-full grid grid-cols-2 sm:grid-cols-2 gap-3"
     >
       {deltas.map((d, i) => (
         <Reveal key={d.label} delay={i * 70}>

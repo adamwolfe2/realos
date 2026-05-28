@@ -263,7 +263,7 @@ export default async function AttributionPage({
       </div>
 
       {/* Headline KPIs */}
-      <section className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
         <KpiTile
           label="Total leads"
           value={headline.totalLeads.toLocaleString()}

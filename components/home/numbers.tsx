@@ -74,7 +74,7 @@ export function Numbers() {
             a clean bordered tile so the section reads as data, not editorial
             whitespace. */}
         <div
-          className="grid grid-cols-2 lg:grid-cols-4"
+          className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4"
           style={{
             border: "1px solid #E2E8F0",
             borderRadius: 4,

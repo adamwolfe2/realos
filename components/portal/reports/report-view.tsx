@@ -771,7 +771,7 @@ export function ReportView({
               eyebrow="Conversations and captured leads"
               title="Chatbot activity"
             >
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2">
                 <div className="rounded-xl border border-border bg-card px-3 py-2">
                   <div className="text-[10px] tracking-widest uppercase font-bold text-muted-foreground">
                     Conversations
@@ -1012,7 +1012,7 @@ function ReputationSection({ stats }: { stats: ReportReputationStats }) {
               ★
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <MiniStat
               label="New"
               value={stats.newInPeriod.toLocaleString()}
@@ -1369,7 +1369,7 @@ function OccupancySection({ stats }: { stats: ReportOccupancyStats }) {
           />
         </div>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-2">
+      <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <MiniStat
           label="Monthly rent roll"
           value={`$${stats.monthlyRentRollUsd.toLocaleString()}`}
@@ -1390,7 +1390,7 @@ function OccupancySection({ stats }: { stats: ReportOccupancyStats }) {
 function RenewalSection({ stats }: { stats: ReportRenewalStats }) {
   return (
     <Section eyebrow="Next 120 days" title="Renewal pipeline">
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <MiniStat
           label="Active leases"
           value={stats.activeLeases.toLocaleString()}
@@ -2011,7 +2011,7 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
             centerPrimary={`${sharePct}%`}
             centerSecondary="Citations"
           />
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <MiniStat
               label="You cited"
               value={stats.cited.toLocaleString()}
@@ -2252,7 +2252,7 @@ function AiVisibilitySection({
       title="AI search visibility"
     >
       <div className="space-y-3">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
           <MiniStat
             label="Branded clicks"
             value={aiVisibility.brandedClicks.toLocaleString()}
@@ -2904,7 +2904,7 @@ function ContentSection({ stats }: { stats: ReportContentStats }) {
         eyebrow={`${stats.publishedInPeriod} shipped this period`}
         title="Published content"
       >
-        <div className="grid grid-cols-3 gap-2 mb-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-4">
           <MiniStat
             label="Total published"
             value={stats.totalPublished.toLocaleString()}

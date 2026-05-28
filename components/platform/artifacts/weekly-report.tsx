@@ -188,7 +188,7 @@ export function WeeklyReport() {
               />
             ))}
           </div>
-          <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
+          <ul className="mt-3 grid grid-cols-2 sm:grid-cols-2 gap-x-3 gap-y-1.5">
             {ATTRIBUTION.map((a, idx) => (
               <li
                 key={a.channel}

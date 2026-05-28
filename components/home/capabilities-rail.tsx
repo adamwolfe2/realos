@@ -433,7 +433,7 @@ function CapabilityGlyph({
   return (
     <div
       aria-hidden
-      className="flex-shrink-0 grid grid-cols-3 gap-[2px] mt-1.5"
+      className="flex-shrink-0 grid grid-cols-3 sm:grid-cols-3 gap-[2px] mt-1.5"
       style={{
         width: cell * 3 + gap * 2,
         height: cell * 3 + gap * 2,

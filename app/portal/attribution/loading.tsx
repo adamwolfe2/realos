@@ -6,7 +6,7 @@ export default function AttributionLoading() {
         <div className="h-4 w-96 bg-muted/60 rounded mt-2" />
       </div>
       <div className="h-16 rounded-xl border border-border bg-card" />
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}

@@ -165,12 +165,29 @@ export function GeminiMark({ size = 18 }: IconProps) {
   );
 }
 
+// AppFolio — official mark, served from /public/logos/appfolio-icon.png
+// (the raster the user dropped in May 2026 — the canonical blue "a"
+// glyph). 1:1 aspect ratio, contain-fitted so the mark sits centered
+// inside square logo slots without distortion. Replaces the earlier
+// hand-drawn "A in a blue square" placeholder, which was visibly off
+// from AppFolio's real wordmark and looked like a generic SaaS icon
+// next to the genuine Meta/Claude/Perplexity rasters.
 export function AppFolioMark({ size = 18 }: IconProps) {
   return (
-    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" aria-label="AppFolio">
-      <rect x="2" y="2" width="20" height="20" rx="4" fill="#0073BB"/>
-      <path d="M7 17 12 6l5 11h-2.5l-1-2.4H10.5L9.5 17H7Z" fill="#ffffff"/>
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/logos/appfolio-icon.png"
+      alt="AppFolio"
+      width={size}
+      height={size}
+      style={{
+        width: size,
+        height: size,
+        display: "inline-block",
+        verticalAlign: "middle",
+        objectFit: "contain",
+      }}
+    />
   );
 }
 

@@ -258,7 +258,7 @@ function ChatMetrics() {
       >
         Sample dashboard · illustrative
       </p>
-    <div className="grid grid-cols-2 gap-3">
+    <div className="grid grid-cols-2 sm:grid-cols-2 gap-3">
       {deltas.map((d, i) => (
         <Reveal key={d.label} delay={i * 70}>
           <div

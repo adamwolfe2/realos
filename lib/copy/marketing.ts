@@ -15,30 +15,30 @@ export const MARKETING = {
   },
   home: {
     hero: {
-      eyebrow: "Leasing intelligence platform",
-      headline: "Your leasing data. Working for you.",
-      highlight: "Working for you.",
+      eyebrow: "Your leasing data, working for you",
+      headline: "Replace your marketing retainer. Cancel if pacing does not move.",
+      highlight: "Cancel if pacing does not move.",
       subhead:
-        "LeaseStack tells real estate operators what their marketing is doing — and what to do next. One platform, every signal, on your domain.",
-      primaryCta: "Book a demo",
+        "One platform for your site, ads, chatbot, visitor identification, and weekly report. Live on your domain in fourteen days.",
+      primaryCta: "Book a 20 min call",
       primaryHref: "/onboarding",
-      secondaryCta: "See the data",
+      secondaryCta: "See it on a real property",
       secondaryHref: "/demo",
-      microProof: "Built for student housing. Tailored for multifamily, senior living, and commercial.",
+      microProof: "Built for student housing. Running for multifamily, senior living, and commercial.",
     },
     whatYouGet: {
       eyebrow: "What you get",
-      headline: "Full visibility. Zero extra work.",
+      headline: "Every signal. One platform. Zero extra work.",
       body:
-        "Every lead source, every channel, every conversion. Tracked, aggregated, and reported automatically. No spreadsheets. No agency black boxes.",
+        "Every lead source, every channel, every conversion in one place. No spreadsheets. No agency black boxes.",
       items: [
         "Know which channel drove your last twelve lease signings",
-        "Know who visited your website, not just how many",
-        "Know your lease-up is falling behind before it shows up in occupancy",
-        "Your monthly marketing report writes itself and lands in your inbox",
+        "See names and emails on the visitors your forms missed",
+        "Catch a slipping lease-up four to eight weeks before occupancy does",
+        "Get a one-page report in your inbox every Monday morning",
         "Turn every current tenant into a leasing agent with one link",
-        "An AI chatbot trained on your units, capturing leads at 2am",
-        "Ads, listings, and pages on your domain, managed for you",
+        "Capture after-hours leads with a chatbot trained on your units",
+        "Ship a new ad, email, or landing page in 48 hours",
       ],
       timeline: [
         { day: "Day 1",  title: "Intake call",   body: "Thirty minutes. We audit your current marketing stack live." },
@@ -55,24 +55,24 @@ export const MARKETING = {
       rightLabel: "With LeaseStack",
       rows: [
         {
-          old: "Six vendors. Six invoices. A stitched-together dashboard.",
+          old: "Six vendors. Six invoices. A spreadsheet to tie it together.",
           new: "One platform. One login. One weekly report tying spend to leases.",
         },
         {
-          old: "Agency decks show activity: impressions, clicks, reach.",
-          new: "Your report shows outcomes: leads, tours, leases.",
+          old: "Quarterly decks counting impressions, clicks, and reach.",
+          new: "Weekly report counting leads, tours, and leases.",
         },
         {
-          old: "You learn the lease-up is behind when occupancy slips.",
-          new: "Pacing alerts 4–8 weeks before occupancy shows it.",
+          old: "You find out the lease-up is behind when occupancy slips.",
+          new: "Pacing alerts four to eight weeks before occupancy slips.",
         },
         {
-          old: "Most site traffic stays anonymous forever.",
-          new: "Names and emails on a meaningful share of visitors.",
+          old: "Most of your website traffic stays anonymous forever.",
+          new: "Names and emails on the visitors your forms missed.",
         },
         {
-          old: "The chatbot is a glorified FAQ — or missing entirely.",
-          new: "AI chatbot trained on your properties, capturing leads at 2am.",
+          old: "A chatbot that answers one question, then forgets you.",
+          new: "A chatbot trained on your units that captures leads at 2am.",
         },
       ],
     },
@@ -118,17 +118,17 @@ export const MARKETING = {
     },
     liveExample: {
       eyebrow: "Live proof of concept",
-      headline: "The platform, running on a real property right now.",
+      headline: "Running on a real property right now.",
       body:
-        "A resident-facing site on the operator's own domain. Live listings synced hourly. AI chatbot grounded in property facts. Visitor identification firing. Leads flowing into the operator portal. Click through both surfaces exactly as a prospective resident or a portfolio operator would.",
+        "Click the resident site and the operator portal. Both are live. Listings sync hourly. The chatbot answers from real unit data. Identified visitors land in the pipeline you can see.",
       siteLabel: "The resident-facing site",
       siteHref: "/demo",
       siteCaption:
-        "A production student-housing deployment rendered on the client's domain, fourteen days from intake to live.",
+        "A live student-housing deployment on the client's domain. Fourteen days from intake to live.",
       portalLabel: "The operator portal",
       portalHref: "#product-tour",
       portalCaption:
-        "The same operator dashboard we would build you, populated with live tenant data and real pacing signals.",
+        "The dashboard your team would use. Real tenant data, real pacing signals.",
     },
     pains: [
       {
@@ -139,10 +139,10 @@ export const MARKETING = {
       {
         title: "Your chatbot is a glorified FAQ.",
         body:
-          "It answers one question, forgets the visitor, and captures zero leads after hours.",
+          "One question answered, visitor forgotten, zero leads captured after hours.",
       },
       {
-        title: "Most site visitors never identify themselves.",
+        title: "Most site visitors stay anonymous.",
         body:
           "You see the traffic. You cannot see who. The prospects you wanted go dark.",
       },
@@ -152,23 +152,23 @@ export const MARKETING = {
         step: "01",
         title: "Twenty minute call",
         body:
-          "Bring your current marketing setup. We audit it live and tell you what we would change.",
+          "Walk us through your current marketing setup. We audit it live and tell you what we would change.",
       },
       {
         step: "02",
         title: "Free pilot",
         body:
-          "We connect to your existing stack and show you what we see in your data. No commitment.",
+          "Start setup now. We connect to your stack and show you what we see in your data, at no cost.",
       },
       {
         step: "03",
-        title: "Live in two weeks",
+        title: "Live in fourteen days",
         body:
-          "Site, pixel, chatbot, search, and ads ship together. Your domain, our stack.",
+          "Day 1 intake. Day 7 site preview. Day 14 DNS flipped, pixel firing, chatbot answering, ads running.",
       },
       {
         step: "04",
-        title: "Earn the seat every month",
+        title: "Cancel any month",
         body:
           "Month to month after launch. If pacing does not move, you cancel.",
       },
@@ -182,37 +182,37 @@ export const MARKETING = {
       {
         title: "Listing sync",
         body:
-          "Every unit on your site matches the source of truth in your PMS within the hour.",
+          "Every unit on your site matches your PMS within the hour.",
       },
       {
         title: "Visitor identification",
         body:
-          "Know who visited your website, not just how many. Names and emails fed into your CRM.",
+          "Names and emails on the visitors your forms missed, fed into your CRM.",
       },
       {
         title: "AI chatbot",
         body:
-          "Trained on your units, pricing rules, and application process. Captures leads at 2am so your team does not have to.",
+          "Trained on your units, pricing, and application flow. Captures leads at 2am.",
       },
       {
         title: "Managed ads",
         body:
-          "Google and Meta. Geo-fenced campaigns, retargeting, creative refreshed weekly, attribution back to lease signings.",
+          "Google and Meta. Geo-fenced, retargeted, refreshed weekly, attributed to leases.",
       },
       {
         title: "Search and AI discovery",
         body:
-          "Pages written to rank in Google and to be quoted by ChatGPT, Perplexity, and Claude. Per-location.",
+          "Per-location pages written to rank in Google and to be quoted by ChatGPT, Perplexity, and Claude.",
       },
       {
         title: "Creative refresh",
         body:
-          "New ad creative, email variants, and landing copy in 48 hours. No retainer. No templates.",
+          "New ad, email, or landing page in 48 hours. No retainer. No templates.",
       },
       {
         title: "Lead capture and CRM",
         body:
-          "Forms, exit intent, chat, calls. Every channel funnels into one pipeline with source attached.",
+          "Forms, exit intent, chat, calls. One pipeline, source attached to every lead.",
       },
       {
         title: "Referral program",

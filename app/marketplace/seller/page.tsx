@@ -156,7 +156,7 @@ export default async function SellerDashboardPage() {
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <Tile label="Contributed" value={seller.totalLeadsContributed.toLocaleString()} />
         <Tile label="Sold" value={seller.totalLeadsSold.toLocaleString()} accent />
         <Tile label="Lifetime accrued" value={`$${(seller.accruedCents / 100).toFixed(2)}`} />

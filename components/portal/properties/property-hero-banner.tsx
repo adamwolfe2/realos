@@ -588,7 +588,7 @@ export function PropertyHeroBanner({
           {stats.length > 0 ? (
             <div
               className={`mt-4 pt-4 grid gap-2 sm:gap-3 border-t border-border/70 ${
-                compact ? "grid-cols-3" : "grid-cols-2 sm:grid-cols-4"
+                compact ? "grid-cols-1 sm:grid-cols-3" : "grid-cols-1 sm:grid-cols-2 md:grid-cols-4"
               }`}
             >
               {stats.slice(0, compact ? 3 : 4).map((s, i) => {

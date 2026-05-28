@@ -68,7 +68,7 @@ export function StepPortfolio({
           <p className="text-xs tracking-widest uppercase opacity-70 mb-2">
             AppFolio plan
           </p>
-          <div className="grid grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {(["Core", "Plus", "Max"] as const).map((tier) => (
               <OptionButton
                 key={tier}
