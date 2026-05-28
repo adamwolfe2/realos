@@ -560,6 +560,11 @@ model Organization {
   rentCastUsage       OrgRentCastUsage?
   propertyEvaluations PropertyEvaluation[]
 
+  // Self-serve OAuth tokens for GA4 / GSC / Google Ads / Meta Ads. See
+  // lib/oauth/* and the OAuthConnection model header for the V1 → OAuth
+  // transition story.
+  oauthConnections OAuthConnection[]
+
   // Onboarding checklist dismissed by the operator. When false, the
   // first-login walkthrough renders on /portal.
   onboardingDismissed Boolean @default(false)
@@ -2099,6 +2104,65 @@ model SeoLandingPage {
   @@unique([orgId, date, url])
   @@index([orgId, date])
   @@index([orgId, sessions])
+}
+
+// Generic OAuth token storage for self-serve integration connect flows.
+//
+// V1 of the LeaseStack integration stack (AdAccount.credentialsEncrypted,
+// SeoIntegration.serviceAccountJsonEncrypted) was "operator pastes a
+// service account / dev-token / refresh token into a form." That works
+// today and keeps working — the integration libs read those legacy
+// stores first.
+//
+// This model is the destination for the self-serve OAuth path:
+// /api/oauth/{provider}/connect → user grants consent at Google/Meta →
+// /api/oauth/{provider}/callback persists an encrypted row here. Once
+// W2's UI ships, the connect button writes to OAuthConnection and the
+// integration libs prefer it over the legacy paste path.
+//
+// `provider` values match `lib/oauth/types.ts` OAuthProvider:
+//   "google_ga4" | "google_gsc" | "google_ads" | "meta_ads"
+//
+// `externalAccountId` is the surface-specific identifier the operator
+// selects after consent: GA4 property id, GSC site URL, Google Ads
+// customer id, or Meta ad account id. NULLABLE because some surfaces
+// (e.g. Google account-level consent) discover the account list AFTER
+// the token exchange; the row is written first with null then updated.
+model OAuthConnection {
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  provider          String // see header comment
+  externalAccountId String?
+
+  // Both tokens are encrypted via lib/crypto.ts (AES-256-GCM).
+  accessToken  String  @db.Text
+  refreshToken String? @db.Text
+  expiresAt    DateTime?
+  scope        String? @db.Text
+
+  // Provider-specific extras: e.g. Meta long-lived token type, Google
+  // service account email mirror, account display name cached at connect
+  // time. Read by the integration lib when present, never trusted as a
+  // security boundary.
+  metadata Json?
+
+  // "active" — usable, refresh as needed
+  // "needs_reauth" — refresh token rejected by provider, user must
+  //                  re-run the connect flow
+  // "revoked" — soft delete after revoke(); row preserved for audit
+  status String @default("active")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // One active connection per (org, provider, account). Postgres treats
+  // NULL externalAccountId as distinct, so an org can have a discovery
+  // row and per-account rows side by side.
+  @@unique([orgId, provider, externalAccountId])
+  @@index([orgId])
+  @@index([orgId, provider])
 }
 
 model ClientNote {
