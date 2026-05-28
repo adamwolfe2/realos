@@ -76,6 +76,52 @@ export default async function ReportsListPage({
     },
   });
 
+  // Bug #8 (Joe + Norman, May): three reports with identical title
+  // "End of Month Report 5/22" (2 SHARED + 1 GENERATED) made it impossible
+  // to tell which version was actually live for the client. We don't
+  // auto-archive (data loss risk) — instead we flag the duplicates so
+  // the operator can decide. Group reports by (effective title, kind,
+  // periodStart) and:
+  //   - badge the most recently SHARED row in each group as "Most recent"
+  //   - badge older rows in the same group as "Outdated" + dim them
+  // Reports with a unique title in their (kind, periodStart) bucket
+  // render unchanged.
+  type DupeBadge = "most-recent" | "outdated" | null;
+  const dupeBadge = new Map<string, DupeBadge>();
+  {
+    const effectiveTitle = (r: (typeof reports)[number]): string =>
+      (r.headline?.trim() ||
+        `${r.periodStart.toISOString()}_${r.periodEnd.toISOString()}`).toLowerCase();
+    const groups = new Map<string, typeof reports>();
+    for (const r of reports) {
+      const propertyKey = r.property?.id ?? "__portfolio__";
+      const key = `${r.kind}::${propertyKey}::${r.periodStart.toISOString()}::${effectiveTitle(r)}`;
+      const arr = groups.get(key) ?? [];
+      arr.push(r);
+      groups.set(key, arr);
+    }
+    for (const arr of groups.values()) {
+      if (arr.length < 2) continue;
+      // Pick "latest shared" = highest sharedAt among status === "shared".
+      // Fall back to highest generatedAt if nothing is shared yet.
+      const shared = arr.filter((r) => r.status === "shared" && r.sharedAt);
+      const winner = shared.length
+        ? shared.reduce((best, r) =>
+            (r.sharedAt as Date) > (best.sharedAt as Date) ? r : best,
+          )
+        : arr.reduce((best, r) =>
+            r.generatedAt > best.generatedAt ? r : best,
+          );
+      for (const r of arr) {
+        if (r.id === winner.id) {
+          dupeBadge.set(r.id, "most-recent");
+        } else {
+          dupeBadge.set(r.id, "outdated");
+        }
+      }
+    }
+  }
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -207,11 +253,17 @@ export default async function ReportsListPage({
       ) : (
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <div className="divide-y divide-border">
-            {reports.map((r) => (
+            {reports.map((r) => {
+              const badge = dupeBadge.get(r.id) ?? null;
+              const dim = badge === "outdated";
+              return (
               <Link
                 key={r.id}
                 href={`/portal/reports/${r.id}`}
-                className="flex items-center justify-between gap-3 px-5 py-4 hover:bg-muted transition-colors"
+                className={
+                  "flex items-center justify-between gap-3 px-5 py-4 hover:bg-muted transition-colors" +
+                  (dim ? " opacity-60" : "")
+                }
               >
                 <div className="min-w-0">
                   <div className="flex items-center gap-2 flex-wrap mb-0.5">
@@ -229,6 +281,22 @@ export default async function ReportsListPage({
                         Portfolio
                       </span>
                     )}
+                    {badge === "most-recent" ? (
+                      <span
+                        title="Most recently shared version of a duplicate set"
+                        className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded"
+                      >
+                        Most recent
+                      </span>
+                    ) : null}
+                    {badge === "outdated" ? (
+                      <span
+                        title="A newer report with the same title and period has been shared. Consider archiving."
+                        className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest font-semibold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded"
+                      >
+                        Outdated
+                      </span>
+                    ) : null}
                   </div>
                   <div className="text-sm font-semibold text-foreground truncate">
                     {r.headline ||
@@ -242,7 +310,8 @@ export default async function ReportsListPage({
                 </div>
                 <span className="text-xs text-muted-foreground">Open</span>
               </Link>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
