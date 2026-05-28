@@ -399,6 +399,13 @@ export type PortfolioReputationFeedItem = {
   reviewed: boolean;
 };
 
+// Default recency cutoff for the "Recent mentions" portfolio feed. Norman
+// reported (#1) that a 4-year-old Yelp review from a closed business was
+// surfacing as the 4th recent mention. The KPI strip already shows lifetime
+// totals; the recent feed should be strictly recent. 12 months matches what
+// surfaces in monthly reports and what owners think of as "recent".
+const RECENT_FEED_DEFAULT_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
+
 export async function loadPortfolioReputationFeed(
   orgId: string,
   limit = 30,
@@ -406,6 +413,9 @@ export async function loadPortfolioReputationFeed(
     propertyIds?: string[] | null;
     source?: MentionSource | null;
     sentiment?: Sentiment | null;
+    /** When true, ignore the default 12-month cutoff and surface older
+     *  mentions. Wired to the "Show older" toggle on /portal/reputation. */
+    includeOlder?: boolean;
   } = {}
 ): Promise<PortfolioReputationFeedItem[]> {
   // Same lifecycle gate as loadPortfolioReputationMetrics: skip mentions
@@ -429,9 +439,30 @@ export async function loadPortfolioReputationFeed(
   if (options.source) where.source = options.source;
   if (options.sentiment) where.sentiment = options.sentiment;
 
+  // Recency gate. Default: only mentions whose publishedAt (or
+  // ingestion-time fallback) is within the last 12 months. The fallback
+  // matters because some scraped sources (older Yelp pages, archived
+  // Tavily hits) land without a publishedAt — without a fallback those
+  // would be dropped entirely. Using createdAt as the fallback keeps
+  // fresh-but-undated finds in the feed while still cutting off ancient
+  // re-scrapes of dead pages.
+  if (!options.includeOlder) {
+    const cutoff = new Date(Date.now() - RECENT_FEED_DEFAULT_MAX_AGE_MS);
+    where.OR = [
+      { publishedAt: { gte: cutoff } },
+      { AND: [{ publishedAt: null }, { createdAt: { gte: cutoff } }] },
+    ];
+  }
+
+  // Order by publishedAt DESC, then createdAt DESC as the tie-breaker for
+  // undated mentions. The previous tie-breaker (lastSeenAt) was the root
+  // cause of #1 — a re-scrape of a closed Yelp page bumped lastSeenAt to
+  // today and pushed 4-year-old reviews into the recent feed. createdAt
+  // is the ingestion timestamp, which is the right "second sort" for
+  // undated rows. id DESC stays as a final deterministic break.
   const rows = await prisma.propertyMention.findMany({
     where,
-    orderBy: [{ publishedAt: "desc" }, { lastSeenAt: "desc" }, { id: "desc" }],
+    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
     take: limit,
     select: {
       id: true,

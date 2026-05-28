@@ -140,6 +140,7 @@ export default async function PortfolioReputationPage({
     properties?: string;
     source?: string;
     sentiment?: string;
+    showOlder?: string;
   }>;
 }) {
   const gate = await requireModule("moduleReputation");
@@ -162,6 +163,7 @@ export default async function PortfolioReputationPage({
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
   const sourceFilter = parseSourceFilter(sp.source);
   const sentimentFilter = parseSentimentFilter(sp.sentiment);
+  const showOlder = sp.showOlder === "1";
 
   let metrics: PortfolioReputationMetrics = EMPTY_METRICS;
   let feed: PortfolioReputationFeedItem[] = [];
@@ -186,6 +188,7 @@ export default async function PortfolioReputationPage({
         propertyIds: effectiveIds,
         source: sourceFilter,
         sentiment: sentimentFilter,
+        includeOlder: showOlder,
       }).catch((err) => {
         console.error("[reputation] feed load failed:", err);
         feedFailed = true;
@@ -506,15 +509,36 @@ export default async function PortfolioReputationPage({
         )}
       </DashboardSection>
 
-      {/* Recent mentions feed */}
+      {/* Recent mentions feed. Defaults to the last 12 months sorted by
+          publishedAt DESC (closes #1 — Norman reported 4-year-old reviews
+          from a closed Yelp page surfacing here). The "Show older" toggle
+          re-runs the query without the cutoff for the rare case an
+          operator does want history. */}
       <DashboardSection
         title="Recent mentions"
-        eyebrow="Latest 30"
-        description="The latest 30 across every property"
+        eyebrow={showOlder ? "All history" : "Last 12 months"}
+        description={
+          showOlder
+            ? "All mentions across every property, newest first"
+            : "Mentions from the last 12 months across every property, newest first"
+        }
+        action={
+          <RecentToggleLink
+            showOlder={showOlder}
+            currentParams={{
+              property: sp.property,
+              properties: sp.properties,
+              source: sp.source,
+              sentiment: sp.sentiment,
+            }}
+          />
+        }
       >
         {feed.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            No mentions yet. Run a scan from any property to seed the feed.
+            {showOlder
+              ? "No mentions yet. Run a scan from any property to seed the feed."
+              : "No mentions in the last 12 months. Use \"Show older\" to view archived mentions."}
           </p>
         ) : (
           <ul className="divide-y divide-border -my-2">
@@ -563,6 +587,39 @@ export default async function PortfolioReputationPage({
       />
     );
   }
+}
+
+// "Show older" / "Show recent only" link for the Recent mentions section.
+// Preserves the other filter searchParams so toggling doesn't drop the
+// user's selected property/source/sentiment.
+function RecentToggleLink({
+  showOlder,
+  currentParams,
+}: {
+  showOlder: boolean;
+  currentParams: {
+    property?: string;
+    properties?: string;
+    source?: string;
+    sentiment?: string;
+  };
+}) {
+  const next = new URLSearchParams();
+  if (currentParams.property) next.set("property", currentParams.property);
+  if (currentParams.properties) next.set("properties", currentParams.properties);
+  if (currentParams.source) next.set("source", currentParams.source);
+  if (currentParams.sentiment) next.set("sentiment", currentParams.sentiment);
+  if (!showOlder) next.set("showOlder", "1");
+  const qs = next.toString();
+  const href = `/portal/reputation${qs ? `?${qs}` : ""}#recent`;
+  return (
+    <Link
+      href={href}
+      className="text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"
+    >
+      {showOlder ? "Last 12 months" : "Show older"}
+    </Link>
+  );
 }
 
 function SentimentBar({
