@@ -134,9 +134,12 @@ export async function setBuyerSession(buyerId: string): Promise<void> {
   const payload = `${buyerId}.${issuedAt}`;
   const signed = signSessionPayload(payload);
   const cookieStore = await cookies();
+  // Always set Secure — Vercel serves prod + preview over HTTPS, and local
+  // dev should use https://localhost. Avoid branching on NODE_ENV so
+  // staging never accidentally issues a non-secure session cookie.
   cookieStore.set(COOKIE_NAME, signed, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     sameSite: "lax",
     path: "/",
     maxAge: Math.floor(SESSION_TTL_MS / 1000),
