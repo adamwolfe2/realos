@@ -39,10 +39,10 @@ vi.mock("@/lib/tenancy/scope", () => ({
 }));
 
 const {
-  canManageAgencyRole,
   updateUserRoleAsAgency,
   removeUserFromOrgAsAgency,
 } = await import("@/lib/actions/manage-team");
+const { canManageAgencyRole } = await import("@/lib/agency/role-rank");
 const { UserRole, OrgType } = await import("@prisma/client");
 
 function makeScope(role: keyof typeof UserRole, userId = "agency-actor") {

@@ -12,6 +12,12 @@ import {
   auditPayload,
   type ScopedContext,
 } from "@/lib/tenancy/scope";
+import {
+  AGENCY_ROLES,
+  CLIENT_ROLES,
+  agencyRoleRank,
+  canManageAgencyRole,
+} from "@/lib/agency/role-rank";
 
 // ---------------------------------------------------------------------------
 // Team management server actions.
@@ -19,125 +25,10 @@ import {
 // Admin (agency-side) and client-side (org-owner) operations share this file
 // because the logic is nearly identical — the only difference is which roles
 // each actor is allowed to grant/revoke. We enforce that per-action.
-// ---------------------------------------------------------------------------
-
-const AGENCY_ROLES: ReadonlySet<UserRole> = new Set([
-  UserRole.AGENCY_OWNER,
-  UserRole.AGENCY_ADMIN,
-  UserRole.AGENCY_OPERATOR,
-]);
-
-const CLIENT_ROLES: ReadonlySet<UserRole> = new Set([
-  UserRole.CLIENT_OWNER,
-  UserRole.CLIENT_ADMIN,
-  UserRole.CLIENT_VIEWER,
-  UserRole.LEASING_AGENT,
-]);
-
-// ---------------------------------------------------------------------------
-// Agency-side role rank, used to prevent lateral / upward escalation.
 //
-// Higher rank == more privilege. Rules:
-//   - Actor must have strictly higher rank than the TARGET's current role
-//     (you can never manage a peer or your superior).
-//   - For role UPDATES, actor must have rank >= the NEW role's rank
-//     (you can't grant a role above your own).
-//   - Only AGENCY_OWNER (rank 100) can grant AGENCY_OWNER. AGENCY_ADMIN
-//     (rank 50) cannot promote themselves or anyone else to owner.
-//   - AGENCY_OPERATOR (rank 10) cannot modify any agency-side user.
-//   - System must always have at least one AGENCY_OWNER. Removing or
-//     demoting the final owner is blocked at the call site (separate
-//     last-owner check).
+// Rank-check helpers live in `lib/agency/role-rank.ts` (not here) because
+// every export from a "use server" file must be an async function.
 // ---------------------------------------------------------------------------
-
-const AGENCY_ROLE_RANK: Record<
-  "AGENCY_OWNER" | "AGENCY_ADMIN" | "AGENCY_OPERATOR",
-  number
-> = {
-  AGENCY_OWNER: 100,
-  AGENCY_ADMIN: 50,
-  AGENCY_OPERATOR: 10,
-};
-
-function agencyRoleRank(role: UserRole): number {
-  if (role === UserRole.AGENCY_OWNER) return AGENCY_ROLE_RANK.AGENCY_OWNER;
-  if (role === UserRole.AGENCY_ADMIN) return AGENCY_ROLE_RANK.AGENCY_ADMIN;
-  if (role === UserRole.AGENCY_OPERATOR) return AGENCY_ROLE_RANK.AGENCY_OPERATOR;
-  // Client-side / non-agency roles have no rank in the agency hierarchy.
-  return 0;
-}
-
-type RankCheckResult = { ok: true } | { ok: false; reason: string };
-
-/**
- * Rank-aware gate for agency-side mutations on another agency user.
- * - For role UPDATES, pass `newRole`.
- * - For REMOVALS, omit `newRole`.
- * Returns `{ ok: true }` when the actor is permitted to perform the action.
- */
-export function canManageAgencyRole(
-  actorRole: UserRole,
-  targetRole: UserRole,
-  newRole?: UserRole,
-): RankCheckResult {
-  // Only meaningful for agency-on-agency operations.
-  if (!AGENCY_ROLES.has(targetRole)) {
-    return { ok: false, reason: "Target is not an agency-side user." };
-  }
-  if (!AGENCY_ROLES.has(actorRole)) {
-    return { ok: false, reason: "Actor is not an agency-side user." };
-  }
-
-  const actorRank = agencyRoleRank(actorRole);
-  const targetRank = agencyRoleRank(targetRole);
-
-  // Owner-specific privilege: only AGENCY_OWNER can manage another
-  // AGENCY_OWNER (remove, demote, or promote a user to owner).
-  if (
-    targetRole === UserRole.AGENCY_OWNER &&
-    actorRole !== UserRole.AGENCY_OWNER
-  ) {
-    return {
-      ok: false,
-      reason: "Only an AGENCY_OWNER can manage an AGENCY_OWNER.",
-    };
-  }
-
-  // General rank gate: actor must have at least the target's rank.
-  // Blocks operators from touching admins/owners and admins from
-  // touching owners (already covered above), but permits peer-on-peer
-  // operations between equally-ranked admins or owners — the spec
-  // explicitly allows that (owners managing owners, admins managing
-  // admins). The last-AGENCY_OWNER protection is enforced at the call
-  // site for any owner -> non-owner transition.
-  if (actorRank < targetRank) {
-    return {
-      ok: false,
-      reason:
-        "You don't have a high enough role to manage this agency user.",
-    };
-  }
-
-  if (newRole !== undefined) {
-    // Promotion to AGENCY_OWNER is owner-only.
-    if (newRole === UserRole.AGENCY_OWNER && actorRole !== UserRole.AGENCY_OWNER) {
-      return {
-        ok: false,
-        reason: "Only an AGENCY_OWNER can promote a user to AGENCY_OWNER.",
-      };
-    }
-    // Actor cannot grant a role above their own rank.
-    const newRank = agencyRoleRank(newRole);
-    if (newRank > actorRank) {
-      return {
-        ok: false,
-        reason: "You can't grant a role above your own.",
-      };
-    }
-  }
-
-  return { ok: true };
-}
 
 export type ManageTeamResult =
   | { ok: true }
