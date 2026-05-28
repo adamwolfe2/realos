@@ -2067,8 +2067,24 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
             stays neutral gray. Only renders when byEngine is present. */}
         {stats.byEngine && stats.byEngine.length > 0 ? (
           <div>
-            <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5">
-              By engine
+            {/* Bug #5: Norman flagged identical 14/38 counts across all
+                three engines as suspicious — looked like a binning/display
+                bug. Underlying computation is correct (per-engine groupBy
+                in buildAeoStats), but the eyebrow + segment tooltips now
+                spell out that each engine is measured independently so
+                matching counts read as a real coincidence, not as the
+                same number echoed three times. */}
+            <div
+              className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5"
+              title="Per-engine count = AI search queries where this engine cited your domain at least once. Each engine is measured independently against the same prompt set, so matching counts across engines are possible (and meaningful)."
+            >
+              By engine{" "}
+              <span
+                aria-hidden="true"
+                className="text-muted-foreground/60 normal-case tracking-normal font-normal"
+              >
+                · cited / total per engine
+              </span>
             </div>
             {/* Norman bug (May 22, n+1): when the data has all three
                 engines at identical counts (14/14/14), simple end-aligned
@@ -2109,7 +2125,7 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
                             backgroundImage:
                               "linear-gradient(90deg, #1D4ED8 0%, #2563EB 100%)",
                           }}
-                          title={`${e.cited} cited you`}
+                          title={`${e.cited} of ${e.total} queries on this engine cited your domain`}
                         >
                           {/* Inline labels only on sm+ — they overflow
                               narrow viewports and the win-rate pill at
@@ -2129,7 +2145,7 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
                             backgroundImage:
                               "linear-gradient(90deg, #93C5FD 0%, #BFDBFE 100%)",
                           }}
-                          title={`${e.competitorCited} competitor cited`}
+                          title={`${e.competitorCited} of ${e.total} queries on this engine cited a competitor instead`}
                         >
                           {pct(e.competitorCited) > 14 ? (
                             <span className="hidden sm:inline text-[10px] font-bold text-blue-900 tabular-nums whitespace-nowrap">
@@ -2142,7 +2158,7 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
                         <div
                           className="h-full bg-muted-foreground/20 flex items-center justify-center min-w-0"
                           style={{ width: `${pct(notMentioned)}%` }}
-                          title={`${notMentioned} not mentioned`}
+                          title={`${notMentioned} of ${e.total} queries on this engine returned no property mention`}
                         >
                           {pct(notMentioned) > 14 ? (
                             <span className="hidden sm:inline text-[10px] font-bold text-muted-foreground tabular-nums whitespace-nowrap">
