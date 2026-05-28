@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { prisma } from "@/lib/db";
@@ -364,10 +365,12 @@ export default async function VisitorsPage({
         description="Real people who visited your site, resolved to a name + email via the AudienceLab identity graph. Every row is outreach-ready. New identifications land every ~5 minutes; this list refreshes every 60 seconds. Click Sync now to pull fresh data immediately."
         actions={
           <div className="flex items-center gap-3 flex-wrap">
-            <PropertyMultiSelect
-              properties={properties}
-              orgId={scope.orgId}
-            />
+            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+              <PropertyMultiSelect
+                properties={properties}
+                orgId={scope.orgId}
+              />
+            </Suspense>
             {hasPixel ? (
               <p className="text-xs text-muted-foreground inline-flex items-center gap-1.5">
                 {/* Real-time freshness dot — green when an event landed in

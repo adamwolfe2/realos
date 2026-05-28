@@ -3,7 +3,8 @@ import { prisma } from "@/lib/db";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
 
-export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
+// Retry queue drainer — bounded batch of failed deliveries per tick.
+export const maxDuration = 60;
 
 // Retries failed inbound webhook events. Picks up rows with status=failed and
 // nextRetryAt in the past, exponentially backs off, abandons after 5 attempts.

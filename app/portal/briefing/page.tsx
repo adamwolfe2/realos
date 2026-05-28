@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { Gauge, Phone, MessageSquare, Sparkles, TrendingUp, AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
 // Removed Building2 + cn imports — only the deleted PropertyFilter
@@ -183,10 +184,12 @@ export default async function BriefingPage({
         title={greeting}
         description="Everything that moved since you last looked. Triage the call sheet, read the transcripts, and act on the insights before your next client touch."
         actions={
-          <PropertyMultiSelect
-            properties={visibleProperties(scope, properties)}
-            orgId={scope.orgId}
-          />
+          <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+            <PropertyMultiSelect
+              properties={visibleProperties(scope, properties)}
+              orgId={scope.orgId}
+            />
+          </Suspense>
         }
       />
 

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { Calendar, MapPin, User, Clock, CheckCircle2, X } from "lucide-react";
 import { format, formatDistanceToNow, startOfWeek, addDays } from "date-fns";
@@ -233,7 +234,9 @@ export default async function ToursPage({
           description="Calendar, pipeline, and outcomes for every property tour."
           actions={
             properties.length > 1 ? (
-              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+              <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+                <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+              </Suspense>
             ) : null
           }
         />
@@ -255,7 +258,9 @@ export default async function ToursPage({
         description="Calendar, pipeline, and outcomes for every property tour. Click any tour to open the lead."
         actions={
           properties.length > 1 ? (
-            <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+            </Suspense>
           ) : null
         }
       />

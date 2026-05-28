@@ -5,7 +5,9 @@ import { sendVisitorOutreachEmail } from "@/lib/email/visitor-emails";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { verifyCronAuth } from "@/lib/cron/auth";
 
-export const maxDuration = 300; // 5 min — Vercel Pro cap; crons need it for unbounded loops
+// Every 15 minutes — picks fresh-identified visitors and queues outbound.
+// Bounded per-tick batch keeps each run snappy.
+export const maxDuration = 120;
 
 // GET /api/cron/visitor-outreach
 // Runs hourly, fires outreach email to high-intent identified visitors

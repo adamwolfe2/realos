@@ -106,7 +106,22 @@ export default async function AdminHome() {
       .count({ where: { status: { in: ["SUBMITTED", "IN_REVIEW", "IN_PROGRESS"] } } })
       .catch(() => 0),
     prisma.intakeSubmission
-      .findMany({ orderBy: { submittedAt: "desc" }, take: 5 })
+      .findMany({
+        orderBy: { submittedAt: "desc" },
+        take: 5,
+        // Explicit select keeps the dashboard payload tight — Intake
+        // submissions carry several large Text/Json columns this card
+        // never reads.
+        select: {
+          id: true,
+          companyName: true,
+          propertyType: true,
+          currentBackendPlatform: true,
+          submittedAt: true,
+          reviewedAt: true,
+          convertedAt: true,
+        },
+      })
       .catch(() => []),
   ]);
 

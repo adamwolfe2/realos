@@ -1,4 +1,15 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
+
+// 30-day TTL: keyword volume, suggestions, competitor domains, intent,
+// historical volume — none of these signals churn meaningfully week-over-
+// week. Per-tag invalidation via `dataforseoCacheTag(domain)` exists for
+// the rare manual-refresh case.
+const DATAFORSEO_LONG_TTL_SECONDS = 30 * 24 * 60 * 60;
+
+export function dataforseoCacheTag(scope: string): string {
+  return `dataforseo:${scope.toLowerCase()}`;
+}
 
 // ---------------------------------------------------------------------------
 // DataforSEO REST client.
@@ -181,7 +192,7 @@ export type KeywordSearchVolume = {
   cpc: number | null;
 };
 
-export async function fetchKeywordVolume(input: {
+async function fetchKeywordVolumeUncached(input: {
   keywords: string[];
   locationCode?: number;
 }): Promise<CallResult<KeywordSearchVolume[]>> {
@@ -201,6 +212,29 @@ export async function fetchKeywordVolume(input: {
   return result;
 }
 
+export async function fetchKeywordVolume(input: {
+  keywords: string[];
+  locationCode?: number;
+}): Promise<CallResult<KeywordSearchVolume[]>> {
+  if (input.keywords.length === 0) {
+    return { ok: true, data: [], costUsd: 0 };
+  }
+  const sortedKeywords = [...input.keywords].sort();
+  const cached = unstable_cache(
+    async () => fetchKeywordVolumeUncached(input),
+    [
+      "dataforseo-keyword-volume",
+      sortedKeywords.join(","),
+      String(input.locationCode ?? 2840),
+    ],
+    {
+      revalidate: DATAFORSEO_LONG_TTL_SECONDS,
+      tags: [dataforseoCacheTag("keyword-volume")],
+    },
+  );
+  return cached();
+}
+
 // ---------------------------------------------------------------------------
 // Keyword suggestions — related keywords for a seed
 // ---------------------------------------------------------------------------
@@ -213,7 +247,7 @@ export type KeywordSuggestion = {
   cpc: number | null;
 };
 
-export async function fetchKeywordSuggestions(input: {
+async function fetchKeywordSuggestionsUncached(input: {
   seed: string;
   limit?: number;
   locationCode?: number;
@@ -242,6 +276,27 @@ export async function fetchKeywordSuggestions(input: {
   };
 }
 
+export async function fetchKeywordSuggestions(input: {
+  seed: string;
+  limit?: number;
+  locationCode?: number;
+}): Promise<CallResult<KeywordSuggestion[]>> {
+  const cached = unstable_cache(
+    async () => fetchKeywordSuggestionsUncached(input),
+    [
+      "dataforseo-keyword-suggestions",
+      input.seed,
+      String(input.limit ?? 100),
+      String(input.locationCode ?? 2840),
+    ],
+    {
+      revalidate: DATAFORSEO_LONG_TTL_SECONDS,
+      tags: [dataforseoCacheTag("keyword-suggestions")],
+    },
+  );
+  return cached();
+}
+
 // ---------------------------------------------------------------------------
 // Competitor domains — closest organic competitors for a target domain
 // ---------------------------------------------------------------------------
@@ -256,7 +311,7 @@ export type CompetitorDomain = {
   } | null;
 };
 
-export async function fetchCompetitorDomains(input: {
+async function fetchCompetitorDomainsUncached(input: {
   domain: string;
   limit?: number;
   locationCode?: number;
@@ -281,6 +336,27 @@ export async function fetchCompetitorDomains(input: {
     data: result.data?.[0]?.items ?? [],
     costUsd: result.costUsd,
   };
+}
+
+export async function fetchCompetitorDomains(input: {
+  domain: string;
+  limit?: number;
+  locationCode?: number;
+}): Promise<CallResult<CompetitorDomain[]>> {
+  const cached = unstable_cache(
+    async () => fetchCompetitorDomainsUncached(input),
+    [
+      "dataforseo-competitor-domains",
+      input.domain,
+      String(input.limit ?? 10),
+      String(input.locationCode ?? 2840),
+    ],
+    {
+      revalidate: DATAFORSEO_LONG_TTL_SECONDS,
+      tags: [dataforseoCacheTag(`competitors:${input.domain}`)],
+    },
+  );
+  return cached();
 }
 
 // ---------------------------------------------------------------------------

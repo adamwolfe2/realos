@@ -188,41 +188,72 @@ ${sr.intake?.anythingElse ?? "_(none)_"}
     error?: string;
   }> = [];
 
-  for (const asset of sr.assets) {
-    let downloaded = false;
-    let errMsg: string | undefined;
-    const safe = asset.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const isInspiration = asset.type === "INSPIRATION";
-    // Top-level inspiration-screenshots/<file> for INSPIRATION,
-    // assets/<type>/<file> for everything else.
-    const storedAt = isInspiration
-      ? `inspiration-screenshots/${safe}`
-      : `assets/${asset.type.toLowerCase()}/${safe}`;
-    try {
-      const r = await fetch(asset.blobUrl);
-      if (r.ok) {
-        const buf = Buffer.from(await r.arrayBuffer());
-        if (isInspiration) {
-          inspirationFolder.file(safe, buf);
-        } else {
-          assetsFolder.file(`${asset.type.toLowerCase()}/${safe}`, buf);
+  // Fetch every asset in parallel — 20-asset packets drop from ~5s
+  // (sequential) to ~250ms (single network round-trip wall-time).
+  const fetchedAssets = await Promise.all(
+    sr.assets.map(async (asset) => {
+      const safe = asset.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+      const isInspiration = asset.type === "INSPIRATION";
+      const storedAt = isInspiration
+        ? `inspiration-screenshots/${safe}`
+        : `assets/${asset.type.toLowerCase()}/${safe}`;
+      try {
+        const r = await fetch(asset.blobUrl);
+        if (r.ok) {
+          const buf = Buffer.from(await r.arrayBuffer());
+          return {
+            asset,
+            safe,
+            isInspiration,
+            storedAt,
+            buf,
+            downloaded: true,
+            errMsg: undefined as string | undefined,
+          };
         }
-        downloaded = true;
-      } else {
-        errMsg = `HTTP ${r.status}`;
+        return {
+          asset,
+          safe,
+          isInspiration,
+          storedAt,
+          buf: null as Buffer | null,
+          downloaded: false,
+          errMsg: `HTTP ${r.status}`,
+        };
+      } catch (err) {
+        return {
+          asset,
+          safe,
+          isInspiration,
+          storedAt,
+          buf: null as Buffer | null,
+          downloaded: false,
+          errMsg: err instanceof Error ? err.message : "fetch failed",
+        };
       }
-    } catch (err) {
-      errMsg = err instanceof Error ? err.message : "fetch failed";
+    }),
+  );
+
+  // Write buffers into the zip sequentially after the network is done.
+  // JSZip mutation is the unavoidable side-effect here; isolate it from
+  // the network phase.
+  for (const item of fetchedAssets) {
+    if (item.downloaded && item.buf) {
+      if (item.isInspiration) {
+        inspirationFolder.file(item.safe, item.buf);
+      } else {
+        assetsFolder.file(`${item.asset.type.toLowerCase()}/${item.safe}`, item.buf);
+      }
     }
     manifest.push({
-      type: asset.type,
-      filename: asset.filename,
-      mimeType: asset.mimeType,
-      size: asset.size,
-      url: asset.blobUrl,
-      downloaded,
-      storedAt,
-      error: errMsg,
+      type: item.asset.type,
+      filename: item.asset.filename,
+      mimeType: item.asset.mimeType,
+      size: item.asset.size,
+      url: item.asset.blobUrl,
+      downloaded: item.downloaded,
+      storedAt: item.storedAt,
+      error: item.errMsg,
     });
   }
   assetsFolder.file("MANIFEST.json", JSON.stringify(manifest, null, 2));

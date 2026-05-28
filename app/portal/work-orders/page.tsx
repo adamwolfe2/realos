@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { format, formatDistanceToNow } from "date-fns";
 import {
@@ -257,7 +258,9 @@ export default async function WorkOrdersPage({
             </span>
             <RunAppFolioSyncButton label="Sync now" subtle />
             {properties.length > 1 ? (
-              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+              <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+                <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+              </Suspense>
             ) : null}
           </div>
         }

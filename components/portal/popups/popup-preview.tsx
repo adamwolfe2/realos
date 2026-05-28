@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import {
   ArrowRight,
   Calendar,
@@ -231,8 +232,16 @@ export function PopupPreview(props: PopupPreviewProps) {
       </button>
 
       {heroImageUrl && position !== "TOP_BANNER" ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={heroImageUrl} alt="" className="w-full h-32 object-cover" />
+        <div className="relative w-full h-32 overflow-hidden">
+          <Image
+            src={heroImageUrl}
+            alt=""
+            fill
+            sizes="(max-width: 768px) 100vw, 400px"
+            className="object-cover"
+            unoptimized
+          />
+        </div>
       ) : null}
 
       <div

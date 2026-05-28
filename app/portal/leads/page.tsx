@@ -96,7 +96,20 @@ export default async function LeadsKanbanPage({
       orderBy: { lastActivityAt: "desc" },
       skip: (page - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
-      include: { property: { select: { id: true, name: true } } },
+      // Explicit select avoids pulling Lead.notes (Text) and
+      // Lead.enrichedData (Json) which the kanban never renders.
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        phone: true,
+        source: true,
+        status: true,
+        score: true,
+        createdAt: true,
+        property: { select: { id: true, name: true } },
+      },
     }),
     prisma.lead.count({ where }),
     prisma.property.findMany({

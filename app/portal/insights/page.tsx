@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Link from "next/link";
 import { Sparkles } from "lucide-react";
 import { prisma } from "@/lib/db";
@@ -128,7 +129,9 @@ export default async function InsightsPage({
         actions={
           <>
             {properties.length > 1 ? (
-              <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+              <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+                <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
+              </Suspense>
             ) : null}
             <StatBlock label="Critical" value={counts.critical} tone="critical" />
             <StatBlock label="Warning" value={counts.warning} tone="warning" />
