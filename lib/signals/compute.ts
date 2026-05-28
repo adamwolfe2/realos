@@ -4,121 +4,106 @@ import {
   COMPUTE_VERSION,
   scopeKey,
   type AeoSignal,
-  type ChatbotSignal,
-  type LeadsSignal,
   type ReputationSignal,
   type SeoSignal,
   type SignalScope,
   type SignalSnapshot,
   type TrafficSignal,
 } from "./types";
+import {
+  fetchRankedKeywords,
+  fetchLighthouseScores,
+  fetchBacklinksSummary,
+  fetchInstantPageAudit,
+  type BacklinksSummary,
+  type DomainRankedKeyword,
+  type InstantPageAudit,
+  type LighthouseScores,
+} from "@/lib/seo/dataforseo";
+import { ALL_ENGINES } from "@/lib/aeo/engines";
+import { parseCitation } from "@/lib/aeo/parse";
+import {
+  runProspectReputation,
+  brandNameFromDomain,
+  type ProspectMention,
+} from "@/lib/audit/reputation-prospect";
+import { computeMockTenantSignals } from "./mock-tenant";
 
 // ----------------------------------------------------------------------------
-// computeSignals — produces a daily snapshot for a scope.
-//
-// TODO(phase 2): replace mock with real provider fan-out. Intended shape:
-//
-//   const [seo, aeo, rep, traffic] = await Promise.all([
-//     dataforseo.fetchSeo(scope),
-//     aeoChecker.run(scope),
-//     reputation.pullMentions(scope),
-//     traffic.fetchSessions(scope),
-//   ])
-//   const chatbot = scope.kind === "tenant" ? await chatbot.fetch(scope) : null
-//   const leads   = scope.kind === "tenant" ? await leads.fetch(scope) : null
-//
-// For now we return deterministic mocked data so the /audit and
-// /portal/insights UIs can render and be reviewed end-to-end.
+// computeSignals — daily snapshot for a scope.
+//   PROSPECT: real DataforSEO + AEO + reputation fan-out.
+//   TENANT:   still mock — TODO(phase 3) wire to sync-orchestrator.
 // ----------------------------------------------------------------------------
-export async function computeSignals(scope: SignalScope): Promise<SignalSnapshot> {
+
+export type ProspectComputeResult = SignalSnapshot & {
+  /** Raw provider data — prospect scope only. Stripped before persisting.
+   * The audit run route forwards this to synthesizeAudit() so we don't
+   * re-fetch when building findings. */
+  __provider?: {
+    brandName: string;
+    domain: string;
+    rankedKeywords: DomainRankedKeyword[] | null;
+    lighthouse: LighthouseScores | null;
+    pageAudit: InstantPageAudit | null;
+    backlinks: BacklinksSummary | null;
+    mentions: ProspectMention[];
+    aeoCompetitorsCited: string[];
+    aeoCitedEngines: string[];
+    aeoUncitedEngines: string[];
+  };
+};
+
+export async function computeSignals(
+  scope: SignalScope,
+): Promise<ProspectComputeResult> {
+  if (scope.kind === "prospect") {
+    return computeProspectSignals(scope.prospectAuditId, scope.domain);
+  }
+  return computeMockTenantSignals(scope);
+}
+
+// ---------------------------------------------------------------------------
+// PROSPECT
+// ---------------------------------------------------------------------------
+
+async function computeProspectSignals(
+  prospectAuditId: string,
+  domain: string,
+): Promise<ProspectComputeResult> {
   const startedAt = Date.now();
-  const key = scopeKey(scope);
-  const seed = hashSeed(key);
-  const rand = mulberry32(seed);
+  const key = scopeKey({ kind: "prospect", prospectAuditId, domain });
+  const brandName = brandNameFromDomain(domain);
+  const url = `https://${domain}`;
 
-  const isProspect = scope.kind === "prospect";
+  // Four major fan-outs in parallel via allSettled — single source failure
+  // never throws.
+  const [seoFanout, aeoResult, repResult] = await Promise.allSettled([
+    runSeoFanout(domain, url),
+    runAeoFanout(brandName, domain),
+    runProspectReputation({ brandName, domain }),
+  ]);
 
-  const seo: SeoSignal = {
-    organicKeywords: 80 + Math.floor(rand() * 400),
-    top10Count: 5 + Math.floor(rand() * 30),
-    avgPosition: round(8 + rand() * 12, 1),
-    estimatedTraffic: 200 + Math.floor(rand() * 5000),
-    lighthouseScore: 60 + Math.floor(rand() * 40),
-    backlinks: 30 + Math.floor(rand() * 800),
-    referringDomains: 10 + Math.floor(rand() * 150),
-    topMovers: [
-      { keyword: "luxury apartments", from: 14, to: 6, volume: 1900 },
-      { keyword: "downtown lofts", from: 22, to: 11, volume: 720 },
-      { keyword: "pet friendly rentals", from: 9, to: 17, volume: 1100 },
-    ],
-    score: 50 + Math.floor(rand() * 45),
-  };
+  const seoData =
+    seoFanout.status === "fulfilled" ? seoFanout.value : emptySeoFanout();
+  const aeoData =
+    aeoResult.status === "fulfilled" ? aeoResult.value : emptyAeoFanout();
+  const rep =
+    repResult.status === "fulfilled"
+      ? repResult.value
+      : {
+          totalMentions: 0,
+          mentions: [] as ProspectMention[],
+          sentimentMix: { positive: 0, neutral: 1, negative: 0 },
+          avgRating: null,
+          errors: {},
+        };
 
-  const aeo: AeoSignal = {
-    enginesChecked: 4,
-    citationsFound: 1 + Math.floor(rand() * 3),
-    citationRate: round(rand() * 0.75 + 0.1, 2),
-    byEngine: {
-      claude: { cited: rand() > 0.4, sources: ["site.com/about"] },
-      chatgpt: { cited: rand() > 0.6, sources: [] },
-      gemini: { cited: rand() > 0.5, sources: ["site.com"] },
-      perplexity: { cited: rand() > 0.3, sources: ["site.com/blog"] },
-    },
-    score: 40 + Math.floor(rand() * 55),
-  };
+  const seo: SeoSignal | null = buildSeoSignal(seoData);
+  const traffic: TrafficSignal | null = buildTrafficSignal(seoData.rankedKeywords);
+  const aeo: AeoSignal | null = buildAeoSignal(aeoData);
+  const reputation: ReputationSignal | null = buildReputationSignal(rep);
 
-  const reputation: ReputationSignal = {
-    totalMentions: 20 + Math.floor(rand() * 300),
-    avgRating: round(3.5 + rand() * 1.4, 2),
-    sentimentMix: pickSentiment(rand),
-    newNegative7d: Math.floor(rand() * 6),
-    topThemes: ["pricing", "maintenance response", "amenities", "location"],
-    score: 45 + Math.floor(rand() * 50),
-  };
-
-  const chatbot: ChatbotSignal | null = isProspect
-    ? null
-    : {
-        conversations: 25 + Math.floor(rand() * 200),
-        engagedRate: round(0.4 + rand() * 0.45, 2),
-        avgMessages: round(3 + rand() * 6, 1),
-        leadConversion: round(0.05 + rand() * 0.2, 2),
-        score: 50 + Math.floor(rand() * 45),
-      };
-
-  const leads: LeadsSignal | null = isProspect
-    ? null
-    : {
-        newLeads: 10 + Math.floor(rand() * 80),
-        qualified: 4 + Math.floor(rand() * 35),
-        cpl: round(20 + rand() * 90, 2),
-        conversionRate: round(0.08 + rand() * 0.25, 2),
-        pipelineValue: 5000 + Math.floor(rand() * 75000),
-        score: 45 + Math.floor(rand() * 50),
-      };
-
-  const traffic: TrafficSignal = {
-    sessions: 300 + Math.floor(rand() * 8000),
-    source: isProspect ? "dataforseo_estimate" : "ga",
-    bounceRate: round(0.35 + rand() * 0.4, 2),
-    topPages: [
-      { url: "/", visits: 1200 + Math.floor(rand() * 1500) },
-      { url: "/floor-plans", visits: 400 + Math.floor(rand() * 800) },
-      { url: "/contact", visits: 80 + Math.floor(rand() * 250) },
-    ],
-    score: 50 + Math.floor(rand() * 40),
-  };
-
-  const overallScore = weightedOverall({
-    seo,
-    aeo,
-    reputation,
-    chatbot,
-    leads,
-    traffic,
-  });
-
-  const deltas7d = mockDeltas(rand);
+  const overallScore = weightedOverall({ seo, aeo, reputation, traffic });
 
   return {
     capturedOn: todayUtcDateString(),
@@ -126,24 +111,329 @@ export async function computeSignals(scope: SignalScope): Promise<SignalSnapshot
     seo,
     aeo,
     reputation,
-    chatbot,
-    leads,
+    chatbot: null,
+    leads: null,
     traffic,
     overallScore,
-    deltas7d,
+    deltas7d: null,
     computeMs: Date.now() - startedAt,
     computeVersion: COMPUTE_VERSION,
+    __provider: {
+      brandName,
+      domain,
+      rankedKeywords: seoData.rankedKeywords,
+      lighthouse: seoData.lighthouse,
+      pageAudit: seoData.pageAudit,
+      backlinks: seoData.backlinks,
+      mentions: rep.mentions,
+      aeoCompetitorsCited: aeoData.competitorsCited,
+      aeoCitedEngines: aeoData.citedEngines,
+      aeoUncitedEngines: aeoData.uncitedEngines,
+    },
   };
 }
 
-// ── helpers ─────────────────────────────────────────────────────────────────
+// ---- SEO fan-out ---------------------------------------------------------
+
+type SeoFanout = {
+  rankedKeywords: DomainRankedKeyword[] | null;
+  lighthouse: LighthouseScores | null;
+  pageAudit: InstantPageAudit | null;
+  backlinks: BacklinksSummary | null;
+};
+
+function emptySeoFanout(): SeoFanout {
+  return { rankedKeywords: null, lighthouse: null, pageAudit: null, backlinks: null };
+}
+
+async function runSeoFanout(domain: string, url: string): Promise<SeoFanout> {
+  const [rk, lh, bl, pa] = await Promise.allSettled([
+    fetchRankedKeywords({ domain, limit: 200 }),
+    fetchLighthouseScores({ url }),
+    fetchBacklinksSummary({ target: domain }),
+    fetchInstantPageAudit({ url }),
+  ]);
+
+  const unwrap = <T>(
+    r: PromiseSettledResult<{ ok: boolean; data?: T }>,
+  ): T | null => {
+    if (r.status !== "fulfilled") return null;
+    const v = r.value as { ok: boolean; data?: T };
+    return v.ok && v.data ? v.data : null;
+  };
+
+  return {
+    rankedKeywords: unwrap<DomainRankedKeyword[]>(rk),
+    lighthouse: unwrap<LighthouseScores>(lh),
+    backlinks: unwrap<BacklinksSummary>(bl),
+    pageAudit: unwrap<InstantPageAudit>(pa),
+  };
+}
+
+function buildSeoSignal(data: SeoFanout): SeoSignal | null {
+  if (!data.rankedKeywords && !data.lighthouse && !data.backlinks) return null;
+  const ranked = data.rankedKeywords ?? [];
+  const organicKeywords = ranked.length;
+  const positions = ranked
+    .map((k) => k.ranked_serp_element?.serp_item?.rank_absolute)
+    .filter((p): p is number => typeof p === "number" && p > 0);
+  const top10Count = positions.filter((p) => p <= 10).length;
+  const avgPosition =
+    positions.length > 0
+      ? round(positions.reduce((a, b) => a + b, 0) / positions.length, 1)
+      : null;
+  const estimatedTraffic = estimateTraffic(ranked);
+
+  const lhSeo = data.lighthouse?.seo ?? null;
+  const top10Ratio = organicKeywords > 0 ? top10Count / organicKeywords : 0;
+  const backlinkTier = backlinkScore(data.backlinks);
+  let score = 0;
+  let weight = 0;
+  if (lhSeo != null) {
+    score += lhSeo * 0.4;
+    weight += 0.4;
+  }
+  score += Math.min(top10Ratio * 200, 100) * 0.3;
+  weight += 0.3;
+  score += backlinkTier * 0.3;
+  weight += 0.3;
+  const finalScore = Math.round(weight > 0 ? score / weight : 0);
+
+  return {
+    organicKeywords,
+    top10Count,
+    avgPosition,
+    estimatedTraffic,
+    lighthouseScore: lhSeo,
+    backlinks: data.backlinks?.backlinks ?? 0,
+    referringDomains: data.backlinks?.referring_domains ?? 0,
+    topMovers: [],
+    score: clampScore(finalScore),
+  };
+}
+
+function backlinkScore(b: BacklinksSummary | null): number {
+  if (!b) return 50;
+  const rd = b.referring_domains ?? 0;
+  if (rd >= 500) return 95;
+  if (rd >= 100) return 80;
+  if (rd >= 30) return 65;
+  if (rd >= 10) return 50;
+  return 35;
+}
+
+// Sistrix 2024 CTR-by-position (multifamily-adjusted).
+const CTR_BY_POSITION: Record<number, number> = {
+  1: 0.28, 2: 0.15, 3: 0.11, 4: 0.08, 5: 0.07,
+  6: 0.05, 7: 0.04, 8: 0.03, 9: 0.025, 10: 0.02,
+};
+
+function ctrFor(position: number): number {
+  if (position <= 0) return 0;
+  if (position <= 10) return CTR_BY_POSITION[position] ?? 0.02;
+  if (position <= 20) return 0.012;
+  if (position <= 30) return 0.005;
+  return 0.001;
+}
+
+function estimateTraffic(ranked: DomainRankedKeyword[]): number {
+  let total = 0;
+  for (const k of ranked) {
+    const vol = k.keyword_data?.keyword_info?.search_volume ?? 0;
+    const pos = k.ranked_serp_element?.serp_item?.rank_absolute ?? 0;
+    if (!vol || !pos) continue;
+    total += vol * ctrFor(pos);
+  }
+  return Math.round(total);
+}
+
+function buildTrafficSignal(
+  ranked: DomainRankedKeyword[] | null,
+): TrafficSignal | null {
+  const traffic = estimateTraffic(ranked ?? []);
+  let score = 30;
+  if (traffic > 10_000) score = 90;
+  else if (traffic > 1_000) score = 70;
+  else if (traffic > 100) score = 50;
+  return {
+    sessions: traffic,
+    source: "dataforseo_estimate",
+    bounceRate: null,
+    topPages: [],
+    score: clampScore(score),
+  };
+}
+
+// ---- AEO fan-out ---------------------------------------------------------
+
+type AeoFanout = {
+  byEngine: AeoSignal["byEngine"];
+  enginesChecked: number;
+  citationsFound: number;
+  citationRate: number;
+  competitorsCited: string[];
+  citedEngines: string[];
+  uncitedEngines: string[];
+};
+
+function emptyAeoFanout(): AeoFanout {
+  return {
+    byEngine: {},
+    enginesChecked: 0,
+    citationsFound: 0,
+    citationRate: 0,
+    competitorsCited: [],
+    citedEngines: [],
+    uncitedEngines: [],
+  };
+}
+
+async function runAeoFanout(
+  brandName: string,
+  domain: string,
+): Promise<AeoFanout> {
+  const prompts = buildProspectPrompts(brandName, domain);
+  const enabled = ALL_ENGINES.filter((e) => e.isConfigured());
+  if (enabled.length === 0 || prompts.length === 0) {
+    return emptyAeoFanout();
+  }
+
+  type EngineMap = NonNullable<AeoSignal["byEngine"]>;
+  const engineKeyMap: Record<string, keyof EngineMap> = {
+    CLAUDE: "claude",
+    CHATGPT: "chatgpt",
+    GEMINI: "gemini",
+    PERPLEXITY: "perplexity",
+  };
+  const prettyName: Record<string, string> = {
+    CLAUDE: "Claude",
+    CHATGPT: "ChatGPT",
+    GEMINI: "Gemini",
+    PERPLEXITY: "Perplexity",
+  };
+
+  const byEngine: EngineMap = {};
+  const competitorsCited = new Set<string>();
+  const citedEngines: string[] = [];
+  const uncitedEngines: string[] = [];
+
+  await Promise.all(
+    enabled.map(async (engine) => {
+      const sources = new Set<string>();
+      let citedAny = false;
+      const results = await Promise.allSettled(
+        prompts.map((p) => engine.runPrompt(p)),
+      );
+      for (const r of results) {
+        if (r.status !== "fulfilled") continue;
+        if (r.value.skipped) continue;
+        const parse = parseCitation(r.value.responseText, {
+          name: brandName,
+          websiteUrl: domain,
+        });
+        if (parse.status === "CITED") {
+          citedAny = true;
+          if (parse.citedUrl) sources.add(parse.citedUrl);
+        } else if (parse.status === "COMPETITOR_CITED") {
+          for (const c of parse.competitorsCited) competitorsCited.add(c);
+        }
+      }
+      const key = engineKeyMap[engine.engine];
+      if (key) byEngine[key] = { cited: citedAny, sources: Array.from(sources) };
+      const pretty = prettyName[engine.engine] ?? engine.engine;
+      (citedAny ? citedEngines : uncitedEngines).push(pretty);
+    }),
+  );
+
+  const enginesChecked = enabled.length;
+  const citationsFound = citedEngines.length;
+  const citationRate =
+    enginesChecked > 0 ? round(citationsFound / enginesChecked, 2) : 0;
+
+  return {
+    byEngine,
+    enginesChecked,
+    citationsFound,
+    citationRate,
+    competitorsCited: Array.from(competitorsCited).slice(0, 10),
+    citedEngines,
+    uncitedEngines,
+  };
+}
+
+function buildProspectPrompts(brandName: string, domain: string): string[] {
+  return [
+    `Tell me about ${brandName}. Is it a good place to live?`,
+    `What do residents say about ${brandName}? Any common complaints?`,
+    `${brandName} reviews — what are people saying online?`,
+    `What are the amenities and pricing like at ${brandName}?`,
+    `Should I rent at ${brandName} or look elsewhere? (${domain})`,
+  ];
+}
+
+function buildAeoSignal(data: AeoFanout): AeoSignal | null {
+  if (data.enginesChecked === 0) return null;
+  // 0..1 citation rate → 0..100 score. 20-pt floor so a wholly uncited
+  // brand doesn't read as zero — there's always SOME defensive moat.
+  const score = clampScore(Math.round(20 + data.citationRate * 80));
+  return {
+    enginesChecked: data.enginesChecked,
+    citationsFound: data.citationsFound,
+    citationRate: data.citationRate,
+    byEngine: data.byEngine,
+    score,
+  };
+}
+
+// ---- Reputation ----------------------------------------------------------
+
+function buildReputationSignal(rep: {
+  totalMentions: number;
+  mentions: ProspectMention[];
+  sentimentMix: { positive: number; neutral: number; negative: number };
+  avgRating: number | null;
+}): ReputationSignal | null {
+  if (rep.totalMentions === 0) {
+    return {
+      totalMentions: 0,
+      avgRating: null,
+      sentimentMix: { positive: 0, neutral: 1, negative: 0 },
+      newNegative7d: 0,
+      topThemes: [],
+      score: 60,
+    };
+  }
+  const { positive, negative } = rep.sentimentMix;
+  const base = 70 + positive * 30 - negative * 60;
+  const score = clampScore(Math.round(base));
+
+  const sevenDays = 7 * 24 * 60 * 60 * 1000;
+  const negTells =
+    /(avoid|scam|worst|horrible|terrible|nightmare|do not rent)/;
+  const newNeg7d = rep.mentions.filter((m) => {
+    if (!m.publishedAt) return false;
+    const t = new Date(m.publishedAt).getTime();
+    if (!Number.isFinite(t)) return false;
+    if (Date.now() - t > sevenDays) return false;
+    return negTells.test(`${m.title ?? ""} ${m.snippet}`.toLowerCase());
+  }).length;
+
+  return {
+    totalMentions: rep.totalMentions,
+    avgRating: rep.avgRating,
+    sentimentMix: rep.sentimentMix,
+    newNegative7d: newNeg7d,
+    topThemes: [],
+    score,
+  };
+}
+
+// ---- Helpers -------------------------------------------------------------
 
 const SECTION_WEIGHTS = {
   seo: 30,
   aeo: 20,
   reputation: 20,
-  chatbot: 10,
-  leads: 15,
   traffic: 5,
 } as const;
 
@@ -151,8 +441,6 @@ function weightedOverall(s: {
   seo: SeoSignal | null;
   aeo: AeoSignal | null;
   reputation: ReputationSignal | null;
-  chatbot: ChatbotSignal | null;
-  leads: LeadsSignal | null;
   traffic: TrafficSignal | null;
 }): number {
   let weight = 0;
@@ -168,52 +456,14 @@ function weightedOverall(s: {
   return Math.round(acc / weight);
 }
 
-function pickSentiment(rand: () => number): {
-  positive: number;
-  neutral: number;
-  negative: number;
-} {
-  const pos = round(0.45 + rand() * 0.3, 2);
-  const neg = round(0.05 + rand() * 0.2, 2);
-  const neu = round(Math.max(0, 1 - pos - neg), 2);
-  return { positive: pos, neutral: neu, negative: neg };
-}
-
-function mockDeltas(rand: () => number): Record<string, number> {
-  const sign = () => (rand() > 0.5 ? 1 : -1);
-  return {
-    overall: round(sign() * rand() * 6, 1),
-    seo: round(sign() * rand() * 8, 1),
-    aeo: round(sign() * rand() * 10, 1),
-    reputation: round(sign() * rand() * 4, 1),
-    traffic: round(sign() * rand() * 12, 1),
-  };
-}
-
 function round(n: number, digits: number): number {
   const f = 10 ** digits;
   return Math.round(n * f) / f;
 }
 
-function hashSeed(s: string): number {
-  let h = 2166136261 >>> 0;
-  for (let i = 0; i < s.length; i++) {
-    h ^= s.charCodeAt(i);
-    h = Math.imul(h, 16777619);
-  }
-  return h >>> 0;
-}
-
-// Deterministic PRNG so the same scopeKey always yields the same mock.
-function mulberry32(seed: number): () => number {
-  let a = seed;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+function clampScore(n: number): number {
+  if (!Number.isFinite(n)) return 0;
+  return Math.max(0, Math.min(100, Math.round(n)));
 }
 
 function todayUtcDateString(): string {
