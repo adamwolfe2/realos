@@ -11,7 +11,7 @@ import {
   loadPresetIndex,
 } from "@/lib/site-engine/visual-direction-catalogs";
 
-export const metadata: Metadata = { title: "Request a website build" };
+export const metadata: Metadata = { title: "Site Engine" };
 export const dynamic = "force-dynamic";
 
 // ---------------------------------------------------------------------------
@@ -74,8 +74,13 @@ export default async function PortalSiteRequestPage() {
   return (
     <div className="max-w-3xl space-y-6">
       <PageHeader
-        title="Request a website build"
+        title="Site Engine"
         description="Tell us about the site you want and we'll hand-build it. Pre-filled from your portal profile — edit anything that's wrong."
+        breadcrumb={
+          <Link href="/portal" className="hover:underline">
+            ← Portal
+          </Link>
+        }
       />
 
       {existing ? (

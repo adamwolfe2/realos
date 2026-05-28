@@ -37,13 +37,16 @@ import {
   ShoppingBag,
   Plug,
   KeyRound,
-  Calculator,
   Globe,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { NotificationBell } from "@/components/portal/notification-bell";
 import { BRAND_NAME } from "@/lib/brand";
+import {
+  ActivePropertySwitcher,
+  type ActivePropertyOption,
+} from "@/components/portal/active-property-switcher";
 
 export type PortalNavOrg = {
   name: string;
@@ -158,68 +161,30 @@ export const AUDIENCE_NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+// ---------------------------------------------------------------------------
+// W2 nav consolidation (2026-05-28):
+//   Collapsed 7 sidebar groups → 4 (Today, Pipeline, Marketing, Account)
+//   per the integration-hub + portal-nav consolidation effort.
+//
+//   - Today    : dashboard, briefing, notifications
+//   - Pipeline : every surface that moves a prospect through the funnel
+//                (leads, visitors, tours, applications, residents,
+//                 work-orders, renewals, conversations)
+//   - Marketing: every outbound + content surface (ads, campaigns,
+//                creative, chatbot, popups, content, SEO, attribution,
+//                reputation, referrals, reports, insights,
+//                Site Engine)
+//   - Account  : everything an operator manages (properties, settings,
+//                billing, integrations hub, marketplace, vault)
+//
+//   Setup / Connect / Marketplace / Vault / Settings integrations are
+//   funneled into the new canonical hub at /portal/integrations.
+// ---------------------------------------------------------------------------
 export const NAV_GROUPS: NavGroup[] = [
   {
-    label: "Overview",
+    label: "Today",
     items: [
-      {
-        href: "/portal/setup",
-        label: "Setup",
-        icon: Compass,
-        show: (o) => !o.setupComplete && !o.onboardingDismissed,
-      },
       { href: "/portal", label: "Dashboard", icon: LayoutDashboard, show: ALWAYS },
-      // Connect — visible only when the Setup hub has been dismissed or
-      // completed. Norman feedback (issue #55): Setup and Connect
-      // overlapped because Setup embeds the Connect hub at the top of
-      // its page. While Setup is in the nav, Connect is redundant; once
-      // Setup leaves the nav (org.setupComplete || onboardingDismissed)
-      // Connect re-appears as the standalone data-connection entry.
-      {
-        href: "/portal/connect",
-        label: "Connect",
-        icon: Plug,
-        show: (o) => o.setupComplete || o.onboardingDismissed,
-      },
-      // Marketplace — always visible. Lets clients re-enter the
-      // add-to-cart flow at any time to bolt on additional modules
-      // (free during trial, Stripe Checkout after).
-      {
-        href: "/portal/marketplace",
-        label: "Marketplace",
-        icon: ShoppingBag,
-        show: ALWAYS,
-      },
-      // Site Engine CTA: every operator can request a custom website
-      // build. Always visible — we want this entry point promoted on
-      // every portal page until they have a SiteRequest in flight.
-      {
-        href: "/portal/sites/request",
-        label: "Get a website",
-        icon: Globe,
-        show: ALWAYS,
-      },
-    ],
-  },
-  {
-    label: "Analytics",
-    items: [
-      // Attribution is the direct competitor surface to Clarity Attribution
-      // — same charts Clarity charges $5–10k/property/month for, included
-      // as table stakes. Always visible because it's a marketing-led
-      // value prop and we want it to be the first thing prospects see
-      // after the dashboard.
-      {
-        href: "/portal/attribution",
-        label: "Attribution",
-        icon: PieChart,
-        show: (o) => o.moduleAttribution,
-      },
-      // Each remaining Analytics page is gated on the Insights module
-      // (which covers AEO + briefing + reports) AND a soft data-presence
-      // check so brand-new tenants with the module on don't see five
-      // empty pages they have to ignore. Items appear in the sidebar the
-      // moment the underlying tables have at least one row.
       {
         href: "/portal/briefing",
         label: "Briefing",
@@ -227,78 +192,82 @@ export const NAV_GROUPS: NavGroup[] = [
         show: (o) => o.moduleInsights && Boolean(o.briefingHasContent),
       },
       {
-        href: "/portal/insights",
-        label: "Insights",
-        icon: Sparkles,
-        show: (o) => o.moduleInsights && Boolean(o.hasInsights),
-      },
-      {
-        href: "/portal/reports",
-        label: "Reports",
-        icon: FileText,
-        show: (o) => o.moduleInsights && Boolean(o.hasReports),
+        href: "/portal/notifications",
+        label: "Notifications",
+        icon: Bell,
+        show: ALWAYS,
       },
     ],
   },
   {
-    label: "Audience",
+    label: "Pipeline",
     items: [
-      {
-        href: "/portal/properties",
-        label: "Properties",
-        icon: Building2,
-        show: ALWAYS,
-        // Norman feedback (issue #64): the pending-curation badge surfaces
-        // AppFolio import volume that's not actionable from the nav and
-        // creates confusion (sees 99+, expects notifications). Hidden until
-        // the curation workflow is finished.
-        badge: () => null,
-      },
       { href: "/portal/leads", label: "Leads", icon: Users, show: ALWAYS },
-      // Tours: gated on the Tours module AND at least one tour existing.
-      // Source is the public booking form or the API-key ingest endpoint
-      // — NOT AppFolio — so it stays separate from the PMS bucket.
-      { href: "/portal/tours", label: "Tours", icon: Calendar, show: (o) => o.moduleTours && Boolean(o.hasTours) },
-      // Applications: PMS-bucket surface. Gated on moduleResidents (which
-      // groups every AppFolio-backed operational page) AND a row existing.
-      { href: "/portal/applications", label: "Applications", icon: ClipboardList, show: (o) => o.moduleResidents && Boolean(o.hasApplications) },
       {
         href: "/portal/visitors",
         label: "Visitors",
         icon: Eye,
         show: (o) => o.modulePixel,
       },
-      { href: "/portal/reputation", label: "Reputation", icon: Star, show: (o) => o.moduleReputation },
-      // Norman feedback (issue #95): SEO is one of the most important
-      // audience signals — moved here from the Platform group so it
-      // sits next to Properties / Leads / Visitors. Original Platform
-      // group is now empty (Referrals moved to Engage) and is dropped
-      // from NAV_GROUPS entirely below.
-      { href: "/portal/seo", label: "SEO", icon: TrendingUp, show: (o) => o.moduleSEO },
-      // Content drafter — every plan can open it; the quota meter on the
-      // page (and the API enforcement) decides whether they can actually
-      // generate. Keeping it always-visible avoids hiding the upgrade
-      // surface from operators on TRIAL/STARTER who hit a cap.
-      { href: "/portal/content", label: "Content", icon: FileText, show: ALWAYS },
-    ],
-  },
-  // Operations group (Residents / Renewals / Work orders) intentionally
-  // pulled from the nav. LeaseStack is positioned as a marketing
-  // intelligence platform — surfacing rent rolls, renewal notices, and
-  // rental-income tiles before the AppFolio integration is bulletproof
-  // makes the product feel like a half-built PMS competitor. The pages
-  // still resolve on disk (so old bookmarks don't 404) but they're
-  // unreachable from the sidebar. A "coming soon" teaser card on the
-  // dashboard collects interest. Re-enable once AppFolio sync hardening
-  // ships and we add `enableOperations` to PortalNavOrg.
-  {
-    label: "Engage",
-    items: [
+      {
+        href: "/portal/tours",
+        label: "Tours",
+        icon: Calendar,
+        show: (o) => o.moduleTours && Boolean(o.hasTours),
+      },
+      {
+        href: "/portal/applications",
+        label: "Applications",
+        icon: ClipboardList,
+        show: (o) => o.moduleResidents && Boolean(o.hasApplications),
+      },
+      {
+        href: "/portal/residents",
+        label: "Residents",
+        icon: Home,
+        show: (o) => o.moduleResidents && Boolean(o.appFolioConnected),
+      },
+      {
+        href: "/portal/renewals",
+        label: "Renewals",
+        icon: CalendarClock,
+        show: (o) => o.moduleResidents && Boolean(o.appFolioConnected),
+      },
+      {
+        href: "/portal/work-orders",
+        label: "Work orders",
+        icon: Wrench,
+        show: (o) => o.moduleResidents && Boolean(o.appFolioConnected),
+      },
       {
         href: "/portal/conversations",
         label: "Conversations",
         icon: MessageSquare,
         show: (o) => o.moduleConversations,
+      },
+    ],
+  },
+  {
+    label: "Marketing",
+    items: [
+      {
+        href: "/portal/campaigns",
+        label: "Campaigns",
+        icon: Megaphone,
+        show: (o) => o.moduleGoogleAds || o.moduleMetaAds,
+      },
+      {
+        href: "/portal/ads",
+        label: "Ads",
+        icon: BarChart3,
+        show: (o) => o.moduleGoogleAds || o.moduleMetaAds,
+      },
+      {
+        href: "/portal/creative",
+        label: "Creative",
+        icon: Brush,
+        show: (o) =>
+          o.moduleCreativeStudio && Boolean(o.hasCreativeRequests),
       },
       {
         href: "/portal/chatbot",
@@ -312,77 +281,78 @@ export const NAV_GROUPS: NavGroup[] = [
         icon: Sparkles,
         show: (o) => o.modulePopups,
       },
-      // Norman feedback (issue #95): Referrals belongs with the other
-      // engagement surfaces (chatbot, popups) — it's the outbound
-      // version of the same "convert someone into a lead" loop.
+      // Content drafter — every plan can open it; the quota meter on the
+      // page (and the API enforcement) decides whether they can actually
+      // generate.
+      { href: "/portal/content", label: "Content", icon: FileText, show: ALWAYS },
+      {
+        href: "/portal/seo",
+        label: "SEO",
+        icon: TrendingUp,
+        show: (o) => o.moduleSEO,
+      },
+      {
+        href: "/portal/attribution",
+        label: "Attribution",
+        icon: PieChart,
+        show: (o) => o.moduleAttribution,
+      },
+      {
+        href: "/portal/insights",
+        label: "Insights",
+        icon: Sparkles,
+        show: (o) => o.moduleInsights && Boolean(o.hasInsights),
+      },
+      {
+        href: "/portal/reports",
+        label: "Reports",
+        icon: FileText,
+        show: (o) => o.moduleInsights && Boolean(o.hasReports),
+      },
+      {
+        href: "/portal/reputation",
+        label: "Reputation",
+        icon: Star,
+        show: (o) => o.moduleReputation,
+      },
       {
         href: "/portal/referrals",
         label: "Referrals",
         icon: Share2,
         show: (o) => o.moduleReferrals,
       },
-    ],
-  },
-  {
-    label: "Advertising",
-    items: [
+      // Site Engine — canonical user-facing label for the managed
+      // marketing-site workflow (TASK D consolidation).
       {
-        href: "/portal/ads",
-        label: "Ads",
-        icon: BarChart3,
-        show: (o) => o.moduleGoogleAds || o.moduleMetaAds,
-      },
-      {
-        href: "/portal/campaigns",
-        label: "Campaigns",
-        icon: Megaphone,
-        show: (o) => o.moduleGoogleAds || o.moduleMetaAds,
-      },
-      {
-        href: "/portal/creative",
-        label: "Creative",
-        icon: Brush,
-        // Only surface when the module is active AND the operator has
-        // already filed at least one request. Until then it's an empty
-        // request form that takes up sidebar real estate without
-        // showing what the page actually does.
-        show: (o) => o.moduleCreativeStudio && Boolean(o.hasCreativeRequests),
-      },
-    ],
-  },
-  // Platform group dropped per Norman feedback (#95): SEO moved into
-  // Audience next to the other discovery signals; Referrals moved into
-  // Engage with the other outbound conversion surfaces. The /portal/seo
-  // and /portal/referrals routes still resolve — only the nav grouping
-  // changed.
-  {
-    label: "Tools",
-    items: [
-      // Building evaluator hidden per Norman feedback (#94). Commercial
-      // building valuation is a separate workstream that needs domain
-      // input from him before it ships to operators. Route still
-      // resolves so bookmarks keep working.
-      {
-        href: "/portal/tools/value",
-        label: "Building evaluator",
-        icon: Calculator,
-        show: NEVER,
-      },
-      // Zillow report — PARKED 2026-05-19, REDIRECTED 2026-05-23 to
-      // /portal/tools/value. The nav item stays hidden (NEVER) so the
-      // URL keeps working for bookmarks without polluting the sidebar.
-      {
-        href: "/portal/tools/zillow",
-        label: "Zillow report",
-        icon: Calculator,
-        show: NEVER,
+        href: "/portal/sites/request",
+        label: "Site Engine",
+        icon: Globe,
+        show: ALWAYS,
       },
     ],
   },
   {
     label: "Account",
     items: [
-      { href: "/portal/notifications", label: "Notifications", icon: Bell, show: ALWAYS },
+      {
+        href: "/portal/properties",
+        label: "Properties",
+        icon: Building2,
+        show: ALWAYS,
+        badge: () => null,
+      },
+      {
+        href: "/portal/integrations",
+        label: "Integrations",
+        icon: Plug,
+        show: ALWAYS,
+      },
+      {
+        href: "/portal/marketplace",
+        label: "Marketplace",
+        icon: ShoppingBag,
+        show: ALWAYS,
+      },
       {
         href: "/portal/vault",
         label: "Vault",
@@ -391,11 +361,35 @@ export const NAV_GROUPS: NavGroup[] = [
       },
       { href: "/portal/billing", label: "Billing", icon: CreditCard, show: ALWAYS },
       { href: "/portal/settings", label: "Settings", icon: Settings, show: ALWAYS },
+      // Setup — kept as a deep link for operators still mid-onboarding,
+      // but folded into Account since the steps are mostly integration
+      // wiring + property setup.
+      {
+        href: "/portal/setup",
+        label: "Setup",
+        icon: Compass,
+        show: (o) => !o.setupComplete && !o.onboardingDismissed,
+      },
     ],
   },
 ];
 
-export function PortalNav({ org }: { org: PortalNavOrg }) {
+// Silence the "unused" warning for the NEVER helper retained for callers.
+void NEVER;
+
+export function PortalNav({
+  org,
+  scopeProperties = [],
+  activePropertyId = null,
+}: {
+  org: PortalNavOrg;
+  /** Properties the current user can scope to. Empty/1-length list hides
+      the switcher entirely. Falls back to [] for backwards-compat. */
+  scopeProperties?: ActivePropertyOption[];
+  /** Currently-selected property id from the portal_active_property_id
+      cookie. null = All properties. */
+  activePropertyId?: string | null;
+}) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -498,6 +492,19 @@ export function PortalNav({ org }: { org: PortalNavOrg }) {
           </p>
         </div>
       )}
+
+      {/* Per-property scope switcher. Renders nothing for single-property
+          operators; for multi-property accounts it lets the user scope
+          every property-aware page to one building via a cookie. */}
+      {scopeProperties.length > 1 ? (
+        <div className={cn("border-b border-border", collapsed ? "px-1.5 py-2" : "px-3 py-2.5") }>
+          <ActivePropertySwitcher
+            properties={scopeProperties}
+            activePropertyId={activePropertyId}
+            collapsed={collapsed}
+          />
+        </div>
+      ) : null}
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto py-3" aria-label="Portal navigation">
