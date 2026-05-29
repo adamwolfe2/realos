@@ -183,39 +183,103 @@ async function tavilyReviewSearch(
   return json.results ?? [];
 }
 
+// Reddit child shape — ports the same surface the portal connector
+// (lib/reputation/reddit.ts) handles so post + comment payloads decode
+// uniformly. The audit previously only read `selftext` and skipped
+// comments entirely, which is why Telegraph Commons (mentioned mostly
+// in r/berkeley comments) was returning zero hits even though the
+// portal Reputation tool finds 20+ comment threads for the same
+// property name.
 type RedditChild = {
+  kind?: string;
   data: {
     title?: string;
     selftext?: string;
+    body?: string;
     permalink?: string;
     url?: string;
     created_utc?: number;
     author?: string;
+    subreddit?: string;
     stickied?: boolean;
     over_18?: boolean;
+    removed_by_category?: string | null;
   };
 };
 
-async function redditSearch(query: string): Promise<RedditChild[]> {
+// Reddit fair-use throttle. Portal uses 1.1s between queries; the
+// audit path runs at most 2 queries so the cumulative cost is bounded.
+const REDDIT_USER_AGENT =
+  "LeaseStack-Reputation/1.0 (+https://leasestack.co)";
+const REDDIT_INTER_QUERY_MS = 1100;
+
+async function redditSearchOnce(query: string): Promise<RedditChild[]> {
   const url = new URL(REDDIT_ENDPOINT);
   url.searchParams.set("q", query);
   url.searchParams.set("sort", "new");
   url.searchParams.set("t", "year");
   url.searchParams.set("limit", "10");
+  // restrict_sr="" is what the portal uses — tells Reddit's search to
+  // span all subreddits, not just the current one (matters when the
+  // crawler is somehow scoped). Without it, anonymous unscoped search
+  // sometimes returns an empty `children` array.
+  url.searchParams.set("restrict_sr", "");
   const res = await fetch(url.toString(), {
     headers: {
-      "User-Agent": "LeaseStack-Audit/1.0 (+https://leasestack.co)",
+      "User-Agent": REDDIT_USER_AGENT,
       Accept: "application/json",
     },
     signal: AbortSignal.timeout(12_000),
   });
   if (!res.ok) {
-    throw new Error(`Reddit ${res.status}`);
+    throw new Error(
+      res.status === 429
+        ? "Reddit rate limit (429)"
+        : `Reddit ${res.status}`,
+    );
   }
   const json = (await res.json()) as {
     data?: { children?: RedditChild[] };
   };
   return json.data?.children ?? [];
+}
+
+// Multi-query Reddit fan-out — the portal connector hits Reddit with
+// {quoted brand, address+city} and (optionally) per-subreddit queries.
+// The audit path doesn't have city/subreddit context yet, so we just
+// run a couple of brand-targeted variants: the quoted brand alone,
+// and the quoted brand combined with "apartments" / "review" tokens
+// to surface posts that don't lead with the brand name in the title.
+async function redditSearch(quotedBrand: string): Promise<RedditChild[]> {
+  const queries = [
+    quotedBrand,
+    `${quotedBrand} apartments`,
+    `${quotedBrand} review`,
+  ];
+  const seen = new Map<string, RedditChild>();
+  let firstError: unknown = null;
+  for (let i = 0; i < queries.length; i++) {
+    if (i > 0) await new Promise((r) => setTimeout(r, REDDIT_INTER_QUERY_MS));
+    try {
+      const children = await redditSearchOnce(queries[i]);
+      for (const child of children) {
+        // Dedupe by permalink — the same thread shows up across the
+        // brand-alone + brand+apartments queries when both match.
+        const key = child.data?.permalink ?? child.data?.url ?? "";
+        if (!key) continue;
+        if (!seen.has(key)) seen.set(key, child);
+      }
+    } catch (err) {
+      if (!firstError) firstError = err;
+      // 429 → abort the rest; cumulative back-off is faster than
+      // letting the next query hit the same throttle.
+      if (err instanceof Error && /429/.test(err.message)) break;
+    }
+  }
+  if (seen.size === 0 && firstError) {
+    throw firstError;
+  }
+  return Array.from(seen.values());
 }
 
 function inLast90Days(iso: string | null | undefined): boolean {
@@ -365,7 +429,9 @@ export async function runProspectReputation(input: {
 
   for (const child of redditResults) {
     const d = child.data;
-    if (!d || d.stickied || d.over_18 || !d.permalink) continue;
+    if (!d || d.stickied || d.over_18 || d.removed_by_category) continue;
+    if (!d.author || d.author === "[deleted]" || d.author === "AutoModerator") continue;
+    if (!d.permalink) continue;
     const fullUrl = `https://www.reddit.com${d.permalink}`;
     const key = normalizeUrlForDedupe(fullUrl);
     if (seen.has(key)) continue;
@@ -374,11 +440,17 @@ export async function runProspectReputation(input: {
       : null;
     if (!inLast90Days(publishedAt)) continue;
     const title = d.title ?? null;
-    const body = (d.selftext ?? "").trim();
-    // Require the brand name to appear in title or body — Reddit's relevance
-    // can be loose. Same defense as the tenant Reddit connector.
-    const hay = `${title ?? ""} ${body}`.toLowerCase();
-    if (!hay.includes(brandName.toLowerCase())) continue;
+    // Posts carry `selftext`; comments carry `body`. The portal connector
+    // handles both — porting the same logic here so the audit picks up
+    // comment-thread mentions, which are the bulk of Reddit's reputation
+    // signal for any property name.
+    const body = (d.selftext || d.body || "").trim();
+    if (!title && !body) continue;
+    // Strict brand-phrase match — reuses the same matcher we apply to
+    // Tavily results so Reddit doesn't pass through "Telegraph Hill"
+    // posts as Telegraph Commons hits.
+    const hay = `${title ?? ""} ${body}`;
+    if (!brandMatcher(hay)) continue;
     seen.add(key);
     const snippet = body.slice(0, 400);
     mentions.push({
