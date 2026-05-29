@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   LEADS,
@@ -804,27 +805,34 @@ function FeaturedPropertyStrip({
             }}
           />
           <div
-            className="relative grid place-items-center"
+            className="relative overflow-hidden"
             style={{
               width: 76,
               height: 76,
               borderRadius: 12,
-              background:
-                "linear-gradient(135deg, #2563EB 0%, #60A5FA 60%, #93C5FD 100%)",
               boxShadow:
                 "0 10px 18px rgba(15,23,42,0.18), 0 2px 4px rgba(15,23,42,0.08)",
-              color: "#ffffff",
+              backgroundColor: "#1E2A3A",
             }}
           >
-            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
-              <path
-                d="M3 21V8l9-5 9 5v13M9 21v-6h6v6M9 12h.01M15 12h.01"
-                stroke="currentColor"
-                strokeWidth="1.6"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            {/* Real building photo via next/image — Unsplash whitelisted in
+                next.config. Photo chosen to read as a modern Berkeley
+                student-housing facade. Swap to /public/properties/
+                telegraph-commons.jpg when the real asset is uploaded. */}
+            <Image
+              src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=240&h=240&q=80"
+              alt="Telegraph Commons"
+              width={76}
+              height={76}
+              sizes="76px"
+              style={{
+                objectFit: "cover",
+                width: "100%",
+                height: "100%",
+              }}
+              priority={false}
+              unoptimized
+            />
           </div>
         </div>
 
