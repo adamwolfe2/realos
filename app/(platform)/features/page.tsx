@@ -70,10 +70,18 @@ const SeoAnswer = dynamic(
   { loading: () => <ArtifactSkeleton /> },
 );
 
+const ConfigTabs = dynamic(
+  () =>
+    import("@/components/platform/artifacts/config-tabs").then(
+      (m) => m.ConfigTabs,
+    ),
+  { loading: () => <ArtifactSkeleton /> },
+);
+
 // ---------------------------------------------------------------------------
 // /features — index page that previously 404'd (2026-05-29 fix).
 //
-// Each of the seven features has a dedicated sub-page already (most under
+// Each of the eight features has a dedicated sub-page already (most under
 // /features/*; reputation lives at /audit because the same surface doubles
 // as the public lead magnet). This index renders the live artifact for
 // each feature inline so a prospect can interact with every product
@@ -96,7 +104,7 @@ const SOFT_BG = "#F8FAFC";
 export const metadata: Metadata = {
   title: `Features · ${BRAND_NAME}`,
   description:
-    "Every feature in the LeaseStack platform — weekly report, managed ads, visitor identification, AI chatbot, reputation, SEO/AEO, and conversion popups — with a live interactive demo of each.",
+    "Every feature in the LeaseStack platform — weekly report, managed ads, visitor identification, AI chatbot, reputation, SEO/AEO, conversion popups, and website build — with a live interactive demo of each.",
 };
 
 type Feature = {
@@ -152,7 +160,10 @@ const FEATURES: Feature[] = [
     ],
     href: "/features/pixel",
     linkLabel: "See the pixel firing",
-    artifact: <VisitorStream />,
+    // Compact stream on the index card — sub-page renders the full
+    // 5-row default. Adam (2026-05-29): the card was reading as the
+    // tallest row in the scroll.
+    artifact: <VisitorStream visibleRows={1} />,
     tone: "sky",
   },
   {
@@ -214,6 +225,23 @@ const FEATURES: Feature[] = [
     artifact: <PopupsCallout />,
     tone: "lavender",
   },
+  {
+    eyebrow: "Website build · Add-on",
+    title: "A property website that ships in 14 days.",
+    body: "We design, build, and launch your property site under your domain — fully wired to your weekly report, identity pixel, AI chatbot, and ad audiences from day one. No web agency, no 90-day discovery phase, no broken handoff.",
+    bullets: [
+      "Designed and shipped on your domain in 14 days, not 14 weeks",
+      "Pixel, chatbot, conversion tracking pre-wired the day the site goes live",
+      "Editable inside the portal — copy, photos, unit details without an agency invoice",
+    ],
+    href: "/features/website-build",
+    linkLabel: "See the build flow",
+    // ConfigTabs is the same artifact the /features/website-build hero
+    // uses — keeps the index card and the sub-page visually linked, so
+    // the prospect lands on a familiar surface after clicking through.
+    artifact: <ConfigTabs />,
+    tone: "mint",
+  },
 ];
 
 export default function FeaturesIndexPage() {
@@ -256,7 +284,7 @@ export default function FeaturesIndexPage() {
               lineHeight: 1.55,
             }}
           >
-            Seven product surfaces, all running on your existing PMS, domain,
+            Eight product surfaces, all running on your existing PMS, domain,
             and team. Scroll through the live demos below — click any feature
             for the full pitch.
           </p>
@@ -525,11 +553,12 @@ function FeatureRow({ feature, index }: { feature: Feature; index: number }) {
 }
 
 // ---------------------------------------------------------------------------
-// PopupsCallout — visual stand-in for the popups feature on the index
-// page. The actual editor is rendered on /features/popups; embedding it
-// here would mean shipping the whole editor bundle into the index page.
-// Instead we show the "one script tag" promise — the thing operators
-// remember from the popups pitch.
+// PopupsCallout — visual mockup of an actual popup as it would appear on
+// a tenant property site. The full editor lives on /features/popups; this
+// index card shows the artifact the operator is actually pitching to the
+// owner — a promo modal floating over the live property page, with the
+// LeaseStack conversion-attribution chip underneath showing the leads
+// already flowing into the pipeline.
 // ---------------------------------------------------------------------------
 
 function PopupsCallout() {
@@ -541,8 +570,9 @@ function PopupsCallout() {
           "0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04)",
       }}
     >
+      {/* Header chip — connects this artifact to the LeaseStack pipeline */}
       <div
-        className="px-6 py-5 flex items-center gap-3"
+        className="px-6 py-5 flex items-center justify-between gap-3"
         style={{ borderBottom: `1px solid ${BORDER}` }}
       >
         <span
@@ -570,113 +600,302 @@ function PopupsCallout() {
           />
           Live on site
         </span>
-      </div>
-
-      <div className="p-6 md:p-8">
-        <p
+        <span
           style={{
             color: MUTED,
             fontFamily: "var(--font-mono)",
-            fontSize: 10.5,
-            letterSpacing: "0.14em",
+            fontSize: 10,
+            letterSpacing: "0.12em",
             textTransform: "uppercase",
             fontWeight: 600,
           }}
         >
-          Paste once · runs anywhere
-        </p>
-        <pre
-          className="mt-3 rounded-md p-4 overflow-x-auto"
+          Promo · Move-in
+        </span>
+      </div>
+
+      {/* Faux property-site stage with the popup floating over it. */}
+      <div
+        className="relative"
+        style={{
+          backgroundColor: "#F1F5F9",
+          minHeight: 380,
+          overflow: "hidden",
+        }}
+      >
+        {/* Browser URL bar */}
+        <div
+          className="px-4 py-2.5 flex items-center gap-2"
           style={{
-            backgroundColor: "#0F172A",
-            color: "#E2E8F0",
-            fontFamily: "var(--font-mono)",
-            fontSize: 13,
-            lineHeight: 1.6,
-            border: `1px solid ${BORDER}`,
+            backgroundColor: "#FFFFFF",
+            borderBottom: `1px solid ${BORDER}`,
           }}
         >
-{`<script
-  src="https://cdn.leasestack.co/popup.js"
-  data-property="telegraph-commons"
-  async
-></script>`}
-        </pre>
-
-        <div className="mt-6 grid grid-cols-3 gap-4">
-          {[
-            { k: "Promo", v: "$500 off" },
-            { k: "Referral", v: "Refer + earn" },
-            { k: "Exit", v: "Save the lease" },
-          ].map((tile) => (
-            <div
-              key={tile.k}
-              className="rounded-lg p-4"
+          <span
+            aria-hidden
+            className="flex items-center gap-1.5"
+          >
+            <span
               style={{
-                backgroundColor: "#F8FAFC",
-                border: `1px solid ${BORDER}`,
+                width: 8,
+                height: 8,
+                borderRadius: 999,
+                backgroundColor: "#E2E8F0",
+              }}
+            />
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 999,
+                backgroundColor: "#E2E8F0",
+              }}
+            />
+            <span
+              style={{
+                width: 8,
+                height: 8,
+                borderRadius: 999,
+                backgroundColor: "#E2E8F0",
+              }}
+            />
+          </span>
+          <span
+            className="ml-3 px-3 py-1 rounded-md inline-flex items-center gap-2"
+            style={{
+              backgroundColor: "#F1F5F9",
+              fontFamily: "var(--font-mono)",
+              fontSize: 11,
+              color: MUTED,
+              fontWeight: 500,
+            }}
+          >
+            <svg width="10" height="10" viewBox="0 0 12 12" fill="none" aria-hidden>
+              <path
+                d="M3 5V3.5a3 3 0 016 0V5m-7 0h8v5H2V5z"
+                stroke="currentColor"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            telegraph-commons.com
+          </span>
+        </div>
+
+        {/* Faux page content underneath — softened so the popup pops. */}
+        <div className="px-6 pt-6 pb-10" aria-hidden>
+          {/* Hero strip on the property site */}
+          <div
+            className="rounded-lg"
+            style={{
+              height: 88,
+              background:
+                "linear-gradient(135deg, #CBD5E1 0%, #94A3B8 100%)",
+              opacity: 0.55,
+            }}
+          />
+          <div className="mt-4 grid grid-cols-3 gap-3">
+            {[0, 1, 2].map((i) => (
+              <div
+                key={i}
+                className="rounded-md"
+                style={{
+                  height: 56,
+                  backgroundColor: "#FFFFFF",
+                  border: `1px solid ${BORDER}`,
+                  opacity: 0.6,
+                }}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Dim overlay so the popup reads as foreground modal. */}
+        <div
+          aria-hidden
+          className="absolute inset-x-0"
+          style={{
+            top: 41, // height of the browser bar
+            bottom: 0,
+            backgroundColor: "rgba(15, 23, 42, 0.18)",
+          }}
+        />
+
+        {/* The actual popup — what an operator's prospect sees. */}
+        <div
+          className="absolute left-1/2 -translate-x-1/2"
+          style={{
+            top: 80,
+            width: "min(86%, 320px)",
+          }}
+        >
+          <div
+            className="rounded-2xl bg-white relative"
+            style={{
+              boxShadow:
+                "0 24px 48px rgba(15, 23, 42, 0.22), 0 4px 12px rgba(15, 23, 42, 0.08)",
+              border: `1px solid ${BORDER}`,
+              padding: 22,
+            }}
+          >
+            {/* Close X — top right */}
+            <button
+              type="button"
+              aria-label="Close popup"
+              tabIndex={-1}
+              className="absolute top-3 right-3 inline-flex items-center justify-center"
+              style={{
+                width: 22,
+                height: 22,
+                borderRadius: 999,
+                color: MUTED,
+                background: "transparent",
               }}
             >
-              <p
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                <path
+                  d="M1.5 1.5l7 7m0-7l-7 7"
+                  stroke="currentColor"
+                  strokeWidth="1.4"
+                  strokeLinecap="round"
+                />
+              </svg>
+            </button>
+
+            <p
+              style={{
+                color: ACCENT,
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.18em",
+                textTransform: "uppercase",
+                fontWeight: 700,
+              }}
+            >
+              Promo · Move-in offer
+            </p>
+            <h3
+              className="mt-3"
+              style={{
+                color: INK,
+                fontFamily: "var(--font-sans)",
+                fontSize: 20,
+                fontWeight: 700,
+                lineHeight: 1.2,
+                letterSpacing: "-0.02em",
+              }}
+            >
+              Save $500 on your first month.
+            </h3>
+            <p
+              className="mt-2"
+              style={{
+                color: MUTED,
+                fontFamily: "var(--font-sans)",
+                fontSize: 13,
+                lineHeight: 1.5,
+              }}
+            >
+              Tour Telegraph Commons this week and move in by June 1 —
+              we&apos;ll knock $500 off month one, no application fee.
+            </p>
+
+            <div
+              className="mt-4 flex items-center rounded-md overflow-hidden"
+              style={{
+                border: `1px solid ${BORDER}`,
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+              <span
+                className="px-3"
                 style={{
                   color: MUTED,
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 9.5,
-                  letterSpacing: "0.14em",
-                  textTransform: "uppercase",
-                  fontWeight: 600,
+                  fontFamily: "var(--font-sans)",
+                  fontSize: 13,
+                  flex: 1,
+                  paddingTop: 10,
+                  paddingBottom: 10,
                 }}
               >
-                {tile.k}
-              </p>
-              <p
-                className="mt-1.5"
+                you@email.com
+              </span>
+              <span
+                aria-hidden
                 style={{
-                  color: INK,
+                  width: 1,
+                  alignSelf: "stretch",
+                  backgroundColor: BORDER,
+                }}
+              />
+              <span
+                className="px-4 inline-flex items-center"
+                style={{
+                  backgroundColor: ACCENT,
+                  color: "#FFFFFF",
                   fontFamily: "var(--font-sans)",
-                  fontSize: 14,
+                  fontSize: 13,
                   fontWeight: 600,
+                  paddingTop: 10,
+                  paddingBottom: 10,
                   letterSpacing: "-0.01em",
                 }}
               >
-                {tile.v}
-              </p>
+                Claim
+              </span>
             </div>
-          ))}
-        </div>
 
-        <div
-          className="mt-6 flex items-center justify-between rounded-lg p-3"
+            <p
+              className="mt-3"
+              style={{
+                color: MUTED,
+                fontFamily: "var(--font-mono)",
+                fontSize: 10,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                fontWeight: 600,
+                textAlign: "center",
+              }}
+            >
+              One email · no spam
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Pipeline attribution strip — the LeaseStack-specific payoff. */}
+      <div
+        className="px-6 py-4 flex items-center justify-between gap-3"
+        style={{
+          backgroundColor: "#FFFFFF",
+          borderTop: `1px solid ${BORDER}`,
+        }}
+      >
+        <span
           style={{
-            backgroundColor: "#F8FAFC",
-            border: `1px solid ${BORDER}`,
+            color: MUTED,
+            fontFamily: "var(--font-mono)",
+            fontSize: 10.5,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            fontWeight: 600,
           }}
         >
-          <span
-            style={{
-              color: MUTED,
-              fontFamily: "var(--font-mono)",
-              fontSize: 10.5,
-              letterSpacing: "0.12em",
-              textTransform: "uppercase",
-              fontWeight: 600,
-            }}
-          >
-            This week
-          </span>
-          <span
-            style={{
-              color: INK,
-              fontFamily: "var(--font-sans)",
-              fontSize: 14,
-              fontWeight: 600,
-              letterSpacing: "-0.01em",
-            }}
-          >
-            41 conversions →{" "}
-            <span style={{ color: ACCENT }}>/portal/leads</span>
-          </span>
-        </div>
+          This week
+        </span>
+        <span
+          style={{
+            color: INK,
+            fontFamily: "var(--font-sans)",
+            fontSize: 14,
+            fontWeight: 600,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          41 conversions →{" "}
+          <span style={{ color: ACCENT }}>/portal/leads</span>
+        </span>
       </div>
     </div>
   );
