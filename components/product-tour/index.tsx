@@ -95,17 +95,20 @@ type ViewKey =
   | "reports"
   | "settings";
 
+// Norman brief (2026-05-28): removed Creative + Reports tabs from the
+// preview. Creative implied agency services LeaseStack doesn't provide;
+// Reports was sparse and made the platform look small. Renamed
+// Conversations → Chatbot. The view keys / functions are kept in code
+// so they can be re-mounted later without restructuring.
 const VIEWS: Array<{ key: ViewKey; label: string; short: string; icon: keyof typeof Icons; count?: number }> = [
   { key: "briefing",      label: "Briefing",      short: "Brief",  icon: "briefing" },
   { key: "dashboard",     label: "Dashboard",     short: "Dash",   icon: "dashboard" },
   { key: "leads",         label: "Leads",         short: "Leads",  icon: "leads",       count: 42 },
   { key: "visitors",      label: "Visitors",      short: "Pixel",  icon: "visitors",    count: 312 },
-  { key: "conversations", label: "Conversations", short: "Chat",   icon: "chat",        count: 6  },
-  { key: "creative",      label: "Creative",      short: "Studio", icon: "creative",    count: 7  },
+  { key: "conversations", label: "Chatbot",       short: "Chat",   icon: "chat",        count: 6  },
   { key: "campaigns",     label: "Campaigns",     short: "Ads",    icon: "campaigns" },
   { key: "seo",           label: "SEO",           short: "SEO",    icon: "seo" },
   { key: "properties",    label: "Properties",    short: "Props",  icon: "properties",  count: 4  },
-  { key: "reports",       label: "Reports",       short: "Report", icon: "reports" },
   { key: "settings",      label: "Settings",      short: "Config", icon: "settings" },
 ];
 
@@ -181,7 +184,7 @@ function Topbar() {
             fontSize: "14px",
           }}
         >
-          Acme Portfolio
+          Sample Portfolio
         </span>
         <Icons.chevronDown color={TOKENS.stone} />
       </div>
@@ -257,7 +260,7 @@ function Topbar() {
             fontWeight: 600,
           }}
         >
-          NG
+          JD
         </span>
       </div>
     </div>
@@ -558,7 +561,7 @@ function Dashboard() {
           brand wash + 28px grid texture (same vocabulary as the
           marketing hero) with the property identity + 3 headline stats
           right next to it. Replaces the previous flat "Good afternoon,
-          Acme Portfolio" greeting so the dashboard reads as a real
+          Sample Portfolio" greeting so the dashboard reads as a real
           product surface instead of a placeholder. */}
       <FeaturedPropertyStrip period={period} onPeriodChange={setPeriod} />
 
@@ -668,18 +671,7 @@ function Dashboard() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
         <div className="lg:col-span-2">
-          <SectionHeader
-            title="Activity"
-            right={
-              <button
-                type="button"
-                className="btn-secondary"
-                style={{ minHeight: "28px", padding: "3px 10px", fontSize: "11.5px", borderRadius: "8px" }}
-              >
-                View all
-              </button>
-            }
-          />
+          <SectionHeader title="Activity" />
           <Tile>
             <ul>
               {ACTIVITY.slice(0, 4).map((a, i, arr) => (
@@ -722,17 +714,17 @@ function Dashboard() {
           <SectionHeader title="Quick actions" />
           <div className="space-y-2">
             <QuickAction
-              label="Submit creative request"
-              hint="New ad concepts in 48 hours"
-              terracotta
-            />
-            <QuickAction
               label="Download weekly report"
               hint="PDF, goes to owner and operator"
+              terracotta
             />
             <QuickAction
               label="Invite a teammate"
               hint="Leasing agents, owners, asset managers"
+            />
+            <QuickAction
+              label="Connect another property"
+              hint="Up and running inside 14 days"
             />
           </div>
         </div>
@@ -2060,14 +2052,7 @@ function CampaignsView() {
       </div>
 
       <div className="mt-6">
-        <SectionHeader
-          title="Spend by day"
-          right={
-            <button type="button" className="btn-secondary" style={{ minHeight: "32px", padding: "4px 12px", fontSize: "12px", borderRadius: "8px" }}>
-              Compare to last week
-            </button>
-          }
-        />
+        <SectionHeader title="Spend by day · last 7 days" />
         <Tile>
           <div className="p-5">
             <WeeklyBarChart />
@@ -2963,10 +2948,10 @@ function VisitorsView() {
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {[
-          { label: "Resolve rate",      value: VISITOR_STATS.resolveRate },
-          { label: "Identified / week", value: VISITOR_STATS.identifiedThisWeek.toLocaleString() },
-          { label: "Moved to lead",     value: VISITOR_STATS.movedToLead.toLocaleString() },
-          { label: "Still anonymous",   value: VISITOR_STATS.stillAnonymous.toLocaleString() },
+          { label: "Identification rate", value: VISITOR_STATS.resolveRate },
+          { label: "Identified / week",   value: VISITOR_STATS.identifiedThisWeek.toLocaleString() },
+          { label: "Moved to lead",       value: VISITOR_STATS.movedToLead.toLocaleString() },
+          { label: "Followed up this week", value: VISITOR_STATS.movedToLead.toLocaleString() },
         ].map((k) => (
           <div
             key={k.label}
@@ -3134,55 +3119,30 @@ function SeoView() {
             SEO
           </h1>
         </div>
-        <button
-          type="button"
-          className="btn-secondary"
-          style={{ minHeight: "36px", padding: "6px 14px", fontSize: "13px", borderRadius: "10px" }}
-        >
-          Request new landing page
-        </button>
       </div>
 
+      {/* KPI strip — Norman brief (2026-05-28): keyword/query/ranking
+          stats lead; clicks and impressions sit lower on the page. */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         <div style={{ backgroundColor: TOKENS.white, borderRadius: "12px", padding: "14px 16px", boxShadow: `0 0 0 1px ${TOKENS.borderCream}` }}>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>Impressions (8w)</p>
-          <div className="mt-1 flex items-baseline gap-2">
-            <p style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 500, color: TOKENS.nearBlack }}>
-              {latest.impressions.toLocaleString()}
-            </p>
-            <span style={{ fontFamily: "var(--font-mono)", fontSize: "11px", color: TOKENS.success, fontWeight: 500 }}>
-              +{impDelta}%
-            </span>
-          </div>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>Top keywords</p>
+          <p className="mt-1" style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 500, color: TOKENS.nearBlack }}>{SEO_QUERIES.length}</p>
         </div>
         <div style={{ backgroundColor: TOKENS.white, borderRadius: "12px", padding: "14px 16px", boxShadow: `0 0 0 1px ${TOKENS.borderCream}` }}>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>Avg position</p>
-          <p className="mt-1" style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 500, color: TOKENS.nearBlack }}>{latest.position.toFixed(1)}</p>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>Google rank (avg)</p>
+          <p className="mt-1" style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 500, color: TOKENS.nearBlack }}>#{latest.position.toFixed(1)}</p>
+        </div>
+        <div style={{ backgroundColor: TOKENS.white, borderRadius: "12px", padding: "14px 16px", boxShadow: `0 0 0 1px ${TOKENS.borderCream}` }}>
+          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>AI rank citations</p>
+          <p className="mt-1" style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 500, color: TOKENS.nearBlack }}>27</p>
         </div>
         <div style={{ backgroundColor: TOKENS.white, borderRadius: "12px", padding: "14px 16px", boxShadow: `0 0 0 1px ${TOKENS.borderCream}` }}>
           <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>Indexed pages</p>
           <p className="mt-1" style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 500, color: TOKENS.nearBlack }}>184</p>
         </div>
-        <div style={{ backgroundColor: TOKENS.white, borderRadius: "12px", padding: "14px 16px", boxShadow: `0 0 0 1px ${TOKENS.borderCream}` }}>
-          <p style={{ fontFamily: "var(--font-mono)", fontSize: "10px", color: TOKENS.stone, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 500 }}>AEO citations</p>
-          <p className="mt-1" style={{ fontFamily: "var(--font-display)", fontSize: "24px", fontWeight: 500, color: TOKENS.nearBlack }}>27</p>
-        </div>
       </div>
 
-      <SectionHeader title="Clicks &amp; impressions, last 8 weeks" />
-      <Tile>
-        <div className="p-5">
-          {/* Dual-axis animated line chart — mirrors the real /portal/seo
-              chart (Recharts dual-axis line) but in pure SVG so the demo
-              stays dependency-free and the line draws in left-to-right
-              with a CSS stroke-dashoffset animation. Clicks on the left
-              axis, impressions on the right. Hovering any week reveals
-              the column highlight + a stat card. */}
-          <AnimatedSeoChart points={SEO_TREND} />
-        </div>
-      </Tile>
-
-      <div className="mt-5">
+      <div>
         <SectionHeader title="Top queries" />
         <Tile>
           <div
@@ -3239,6 +3199,15 @@ function SeoView() {
               </span>
             </div>
           ))}
+        </Tile>
+      </div>
+
+      <div className="mt-5">
+        <SectionHeader title={`Clicks & impressions, last 8 weeks · ${latest.impressions.toLocaleString()} impressions (+${impDelta}%)`} />
+        <Tile>
+          <div className="p-5">
+            <AnimatedSeoChart points={SEO_TREND} />
+          </div>
         </Tile>
       </div>
     </div>

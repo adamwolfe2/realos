@@ -3,41 +3,43 @@
 import * as React from "react";
 import { Plus, Minus } from "lucide-react";
 
-// Pricing FAQ. Eight items max. Self-serve framing. Answers the
-// deal-breaker objections only. Anything else is faster on a call.
+// Pricing FAQ. Self-serve framing. Norman brief (2026-05-28):
+//   - Renamed CLX → marketing-agency retainer (no named competitors).
+//   - Deleted the "What happens if pacing does not move?" item — pacing
+//     isn't a live feature so we no longer surface it as a promise.
+//   - Reworked the "replace leasing staff" answer to say "saves" not
+//     "replaces".
+//   - Reframed onboarding from "no required call" to "included 30-min
+//     strategy call, free, part of the service".
 
 const FAQS: Array<{ q: string; a: string }> = [
   {
-    q: "How does this compare to a CLX-style retainer?",
-    a: "A typical residential leasing-marketing retainer runs $3,500 to $8,000 per property per month and gives you a deck of impressions, clicks, and reach. LeaseStack runs $899 per month on Standard for the same single property, and you get a full read on every channel your spend is touching plus a written recommendation on what to do about it. The math is straightforward: we replace your retainer and give you more data for less money.",
+    q: "How does this compare to a marketing-agency retainer?",
+    a: "A typical residential leasing-marketing retainer runs $3,500 to $8,000 per property per month and gives you a deck of impressions, clicks, and reach. LeaseStack runs $899 per month on Standard for the same single property, and you get a full read on every channel your spend is touching plus a written recommendation on what to do about it. The math is straightforward: we replace your retainer and give you more insights for a more economical monthly fee.",
   },
   {
     q: "What is the free pilot, exactly?",
-    a: "Zero dollars. We connect to your existing stack (PMS, Google Ads, Meta, GSC, GA4, your site) and show you what your data actually says. You get a weekly snapshot, the underlying numbers, and one operator-written recommendation on what to fix first. No card on file, no commitment, no calendar pressure. If you like what you see, you upgrade to Standard. If you do not, you close the tab.",
-  },
-  {
-    q: "What happens if pacing does not move?",
-    a: "You cancel. The Standard plan is month-to-month for exactly this reason. We are operator-built, which means we know that any tool that does not move a number is overhead. Inside 30 days you should see whether the recommendations land. If they do not, the billing portal cancels you in two clicks and your data exports cleanly.",
+    a: "Zero dollars. We connect to your existing stack (PMS, Google Ads, Meta, GSC, GA4, your site) and show you what your dashboard actually says. You get a weekly snapshot, the underlying insights, and one operator-written recommendation on what to fix first. No card on file, no commitment. If you like what you see, you upgrade to Standard. If you do not, you close the tab.",
   },
   {
     q: "What is included in the monthly fee?",
-    a: "On Standard: connections to your existing stack, identified-visitor pixel (5,000 per month), AI leasing chatbot (5,000 conversations per month), source-to-lease attribution across Google and Meta, reputation monitoring, and a weekly operator-written read on every channel. No ad spend markup. No setup fee. No required onboarding call. You bring your own ad accounts, your own site, your own PMS login.",
+    a: "On Standard: connections to your existing stack, identified-visitor pixel (5,000 per month), AI leasing chatbot (5,000 conversations per month), source-to-lease attribution across Google and Meta, reputation monitoring, and a weekly operator-written read on every channel. No ad spend markup. No setup fee. Onboarding call included — a 30-minute strategy session to connect your stack and align your team. Free, part of the service.",
   },
   {
-    q: "Do you replace my property manager or leasing staff?",
-    a: "No. LeaseStack replaces the manual work, not the people. The platform tells your team exactly what the data says and what to do about it. Your leasing agents still tour, your property manager still runs the asset, your in-house marketer (if you have one) still owns the calendar. We just stop the meeting where nobody can answer how many leases the spend produced.",
+    q: "Does LeaseStack replace my leasing staff?",
+    a: "No. LeaseStack saves your team manual work for tasks that would otherwise fall off the table. The platform tells your team exactly what the dashboard says and what to do about it. Your leasing agents still tour, your property manager still runs the asset, your in-house marketer (if you have one) still owns the calendar.",
   },
   {
     q: "What integrates with LeaseStack today?",
-    a: "AppFolio is the direct PMS integration. Google Ads, Meta Ads, Google Search Console, GA4, Google Business Profile, Reddit, and the open web are all read live. If you run Yardi, Buildium, Entrata, or RealPage we have manual entry today and custom connectors quoted per project (typically 2 to 4 weeks). The pilot does not require a PMS connection at all; the marketing and pacing reads work without it.",
+    a: "AppFolio is the direct PMS integration. Google Ads, Meta Ads, Google Search Console, GA4, Google Business Profile, Reddit, and the open web are all read live. If you run Yardi, Buildium, Entrata, or RealPage we have manual entry today and custom connectors quoted per project (typically 2 to 4 weeks). The pilot does not require a PMS connection at all; the marketing reads work without it.",
   },
   {
     q: "Are you a marketing agency?",
-    a: "No. LeaseStack is a leasing intelligence platform. We do not buy ads on your behalf, we do not write your creative for you, and we do not charge a percent of spend. We tell your existing program (or your agency, if you keep one) what is working, what is not, and what to do next. The product is the data and the recommendation, not the labor.",
+    a: "No. LeaseStack is a leasing intelligence platform. We do not buy ads on your behalf, we do not write your creative, and we do not charge a percent of spend. We tell your existing program (or your agency, if you keep one) what is working, what is not, and what to do next. The product is the dashboard and the insights, not the labor.",
   },
   {
     q: "Are there any contracts?",
-    a: "No long-term contracts. Every plan is month-to-month and cancellable in two clicks from the Stripe billing portal. Annual prepay is optional and saves you about 17 percent. Portfolio and Enterprise plans can opt into annual or multi-year terms if it helps the asset-side accounting, but it is never required.",
+    a: "No long-term contracts. Every plan is month-to-month and flexible — flexible from the Stripe billing portal in two clicks. Annual prepay is optional and saves you about 17 percent. Portfolio and Enterprise plans can opt into annual or multi-year terms if it helps the asset-side accounting, but it is never required.",
   },
 ];
 
@@ -69,9 +71,9 @@ export function PricingFaq() {
               lineHeight: 1.6,
             }}
           >
-            Cost versus retainer, what is included, cancellation, integrations,
-            and what happens if pacing does not move. Everything else is faster
-            on a call.
+            Cost versus a traditional marketing-agency retainer, what is
+            included, integrations, and the rest. Everything else is faster on
+            a call.
           </p>
         </div>
 

@@ -22,7 +22,7 @@ export function PricingCta() {
             fontSize: "clamp(28px, 4vw, 40px)",
           }}
         >
-          See what your data actually says.{" "}
+          See what your dashboard actually says.{" "}
           <span style={{ color: "#2563EB" }}>Free. No commitment.</span>
         </h2>
         <p
@@ -37,8 +37,8 @@ export function PricingCta() {
         >
           Connect your existing stack and we will show you exactly what your
           digital marketing is doing. One weekly snapshot, one operator-written
-          recommendation, no card on file. Upgrade to Standard if you want us
-          to keep going.
+          recommendation, no card on file. Upgrade when you want us to keep
+          going.
         </p>
 
         <div className="mt-9 flex flex-col sm:flex-row gap-3 justify-center items-center">
@@ -75,7 +75,7 @@ export function PricingCta() {
             textTransform: "uppercase",
           }}
         >
-          Free pilot. No contracts. Cancel if pacing does not move.
+          Free pilot. No contracts. Flexible, month-to-month.
         </p>
       </div>
     </section>

@@ -250,19 +250,21 @@ function WeeklyItem({
         >
           <MaskRevealUp lines={[title]} staggerMs={0} />
         </h3>
-        <p
-          className="mt-2 md:mt-3 max-w-[640px]"
-          style={{
-            color: "#64748B",
-            fontFamily: "var(--font-sans)",
-            fontSize: 14,
-            lineHeight: 1.6,
-          }}
-        >
-          <PerWordCrossfade trigger={visible} staggerMs={28}>
-            {body}
-          </PerWordCrossfade>
-        </p>
+        {body ? (
+          <p
+            className="mt-2 md:mt-3 max-w-[640px]"
+            style={{
+              color: "#64748B",
+              fontFamily: "var(--font-sans)",
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}
+          >
+            <PerWordCrossfade trigger={visible} staggerMs={28}>
+              {body}
+            </PerWordCrossfade>
+          </p>
+        ) : null}
         {outcome ? (
           <div
             className="mt-4 md:mt-5 inline-flex items-center"

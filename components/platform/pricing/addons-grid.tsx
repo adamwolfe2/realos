@@ -23,7 +23,7 @@ const ADDONS: AddOn[] = [
     name: "Additional property",
     tag: "Capacity",
     description:
-      "Add a property to your existing plan. Each property gets its own pacing read, chatbot, and lead pool, with one portfolio-level rollup across all of them.",
+      "Add a property to your existing plan. Each property gets its own dashboard, chatbot, and lead pool, with one portfolio-level rollup across all of them.",
     price: "20% off",
     priceUnit: "the base tier",
   },

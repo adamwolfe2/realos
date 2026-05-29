@@ -40,7 +40,7 @@ export function PricingHero() {
               maxWidth: "680px",
             }}
           >
-            Site, ads, AI chatbot, visitor pixel, reputation, and weekly report. One bill, one login. Month-to-month. Cancel if pacing doesn't move.
+            A more economical alternative to traditional marketing vendors, with more insights and control. Site, ads, AI chatbot, visitor pixel, reputation, and weekly report — one bill, one login, month-to-month.
           </p>
         </div>
 
@@ -53,10 +53,10 @@ export function PricingHero() {
           }}
         >
           {[
-            { value: "Free pilot", label: "No commitment" },
-            { value: "Month-to-month", label: "Cancel anytime" },
-            { value: "Operator-built", label: "Not a vendor" },
-            { value: "Production pilot", label: "Live operator" },
+            { value: "Free trial", label: "No commitment" },
+            { value: "Month-to-month", label: "Flexible" },
+            { value: "Operator-built", label: "By operators, for operators" },
+            { value: "Production pilot", label: "Live clients" },
           ].map((t, i) => (
             <div
               key={t.label}

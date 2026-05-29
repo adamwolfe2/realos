@@ -8,15 +8,23 @@ import { useEffect, useState } from "react";
 // to frosted white on scroll. Wordmark left, nav links centered, two utility
 // links right. No shadow, no border. Single 14px weight-500 type system.
 
+// Features dropdown — Norman brief (2026-05-28): two items only.
+// "Core LeaseStack Platform" points to the platform overview page.
+// "Add-ons" lists the modules in priority order.
 const PRODUCT_LINKS = [
-  { href: "/features/pixel",   label: "Visitor identification" },
-  { href: "/features/chatbot", label: "AI chatbot" },
-  { href: "/features/seo-aeo", label: "Search + AI discovery" },
-  { href: "/features/ads",     label: "Managed ads" },
-  { href: "/audiences",        label: "Audience Sync" },
-  { href: "/leads",            label: "Leads & marketplace" },
+  { href: "/features",         label: "Core LeaseStack Platform" },
+  { href: "/features/chatbot", label: "Add-on · AI Chatbot" },
+  { href: "/features/pixel",   label: "Add-on · Visitor Identification" },
+  { href: "/features/seo-aeo", label: "Add-on · SEO / AEO" },
+  { href: "/audit",            label: "Add-on · Reputation Management" },
+  { href: "/features/seo-aeo", label: "Add-on · Keyword Trends" },
+  { href: "/features/ads",     label: "Add-on · Managed Ads oversight" },
+  { href: "/features",         label: "Add-on · Website Build" },
 ];
 
+// Solutions / Verticals — hidden from the nav per Norman brief but kept
+// here so the underlying pages remain referenced from the mobile menu.
+// Routes stay live for SEO.
 const VERTICAL_LINKS = [
   { href: "/student-housing", label: "Student housing" },
   { href: "/multifamily",     label: "Multifamily" },
@@ -27,7 +35,6 @@ const VERTICAL_LINKS = [
 export function PlatformNav() {
   const pathname = usePathname();
   const [productOpen, setProductOpen] = useState(false);
-  const [verticalOpen, setVerticalOpen] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   // Claude-inspired nav: always light parchment canvas with a translucent
   // blur on scroll. No dark mode flip; the homepage canvas is warm all the way
@@ -119,27 +126,19 @@ export function PlatformNav() {
         </Link>
 
         <nav className="hidden md:flex items-center gap-1" aria-label="Primary">
+          <NavLink href="/" active={pathname === "/"}>
+            Home
+          </NavLink>
           <Dropdown
-            label="Product"
+            label="Features"
             btnClass={navBtnClass}
             open={productOpen}
             onOpenChange={setProductOpen}
             items={PRODUCT_LINKS}
             labelColor={labelColor}
           />
-          <Dropdown
-            label="Solutions"
-            btnClass={navBtnClass}
-            open={verticalOpen}
-            onOpenChange={setVerticalOpen}
-            items={VERTICAL_LINKS}
-            labelColor={labelColor}
-          />
           <NavLink href="/pricing" active={isActive(pathname, "/pricing")}>
             Pricing
-          </NavLink>
-          <NavLink href="/blog" active={isActive(pathname, "/blog")}>
-            Blog
           </NavLink>
         </nav>
 
@@ -290,10 +289,10 @@ function Dropdown({
 
 function MobileMenu({ onClose }: { onClose: () => void }) {
   const allLinks = [
+    { href: "/", label: "Home" },
     ...PRODUCT_LINKS,
     ...VERTICAL_LINKS,
     { href: "/pricing", label: "Pricing" },
-    { href: "/blog", label: "Blog" },
     { href: "/about", label: "About" },
     { href: "/sign-in", label: "Sign in" },
   ];

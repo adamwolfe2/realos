@@ -1,10 +1,11 @@
 // ---------------------------------------------------------------------------
 // Single source of truth for platform marketing copy.
 //
-// Voice: operator-credible, data-forward, direct, quietly confident.
-// Outcome-first. Specific over general. Operator-to-operator.
-// No buzzwords. No em dashes. No named competitors.
-// Never claim to replace property managers or leasing staff.
+// Voice: operator-credible, direct, quietly confident. Outcome-first.
+// Specific over general. Operator-to-operator. No buzzwords. No em dashes.
+// No named competitors. Never claim to replace property managers or leasing
+// staff. LeaseStack does NOT manage or produce creative — it tracks ad
+// performance.
 // ---------------------------------------------------------------------------
 
 export const MARKETING = {
@@ -14,10 +15,10 @@ export const MARKETING = {
   home: {
     hero: {
       eyebrow: "Leasing intelligence platform",
-      headline: "Replace your marketing stack. See leases sourced in 14 days.",
-      highlight: "See leases sourced in 14 days.",
+      headline: "Replace your marketing stack. Live in 14 days.",
+      highlight: "Live in 14 days.",
       subhead:
-        "Site, ads, AI chatbot, visitor pixel, reputation, and weekly report in one portal. Live on your domain in fourteen days. Cancel any month.",
+        "Site, ads, AI chatbot, visitor pixel, reputation, and weekly report in one dashboard. Live on your domain in fourteen days. Month-to-month.",
       primaryCta: "Start a free pilot",
       primaryHref: "/onboarding",
       secondaryCta: "See it on a real property",
@@ -26,23 +27,19 @@ export const MARKETING = {
     },
     comparison: {
       eyebrow: "Why operators switch",
-      headline: "Six vendors vs. one platform.",
+      headline: "Your current setup vs. full visibility.",
       body:
-        "Five tools that don't talk to each other plus a retainer to stitch them together. Here's what changes when the stack ships as one product.",
-      leftLabel: "Today",
-      rightLabel: "With LeaseStack",
+        "Your digital infrastructure is your second most valuable asset after the physical real estate itself — online brand, reputation, website function, and traffic-to-lease conversion. Today it lives across five vendors and a spreadsheet. LeaseStack platform brings it under one dashboard.",
+      leftLabel: "Your current setup",
+      rightLabel: "Full visibility with LeaseStack platform",
       rows: [
         {
           old: "Six vendors. Six invoices. A spreadsheet to tie it together.",
-          new: "One platform. One login. One weekly report tying spend to leases.",
+          new: "One dashboard tying ad spend to signed leases.",
         },
         {
           old: "Quarterly decks counting impressions, clicks, and reach.",
-          new: "Weekly report counting leads, tours, and signed leases.",
-        },
-        {
-          old: "You find out the lease-up is behind when occupancy slips.",
-          new: "Pacing alerts four to eight weeks before occupancy slips.",
+          new: "Weekly insights counting leads, tours, and signed leases.",
         },
         {
           old: "Most of your website traffic stays anonymous forever.",
@@ -50,7 +47,11 @@ export const MARKETING = {
         },
         {
           old: "A chatbot that answers one question, then forgets you.",
-          new: "An AI assistant trained on your units that books tours at 2am.",
+          new: "An AI assistant trained on your property that books tours at 2am.",
+        },
+        {
+          old: "Reputation buried across Google, Reddit, Yelp, and the open web.",
+          new: "Every public mention in one feed, sentiment-classified, one-click reply.",
         },
       ],
     },
@@ -58,15 +59,15 @@ export const MARKETING = {
       eyebrow: "Live proof",
       headline: "Running on a real property right now.",
       body:
-        "Click through the resident site and the operator portal. Both are live. Listings sync hourly. The chatbot answers from real unit data.",
+        "Click through the resident site and the operator dashboard. Both are live. Listings sync hourly. The chatbot answers from real unit data.",
       siteLabel: "Resident-facing site",
       siteHref: "/demo",
       siteCaption:
         "A live student-housing deployment on the client's domain. Fourteen days from intake to live.",
-      portalLabel: "Operator portal",
+      portalLabel: "Operator dashboard",
       portalHref: "#product-tour",
       portalCaption:
-        "The dashboard your team logs into. Real tenant data, real pacing signals.",
+        "The dashboard your team logs into. Real tenant insights, real signals.",
     },
     faq: {
       eyebrow: "Common questions",
@@ -86,7 +87,7 @@ export const MARKETING = {
         },
         {
           q: "Do we own our data?",
-          a: "Yes. Leads, conversations, visitor records, and analytics are yours. Export to CSV from the portal at any time.",
+          a: "Yes. Leads, conversations, visitor records, and analytics are yours. Export to CSV from the dashboard at any time.",
         },
         {
           q: "How long from intake to live?",
@@ -98,58 +99,54 @@ export const MARKETING = {
         },
         {
           q: "Do you require a long contract?",
-          a: "No. Month-to-month after launch. If pacing doesn't move, you cancel.",
+          a: "No. Month-to-month after launch.",
         },
         {
           q: "Does LeaseStack replace our leasing team?",
-          a: "No. We remove the manual work that slows your team down: reporting, channel reconciliation, creative production, after-hours lead capture. Your team gets back the hours, not the seat.",
+          a: "No. LeaseStack saves your team manual work for tasks that would otherwise fall off the table — reporting, channel reconciliation, after-hours lead capture. Your team gets back the hours.",
         },
       ],
     },
     final: {
       heading: "Free pilot. No commitment.",
       body:
-        "We connect to your existing stack, show you what we see in your data, and you decide if it's useful. No deck. No sales pitch.",
+        "We connect to your existing stack, show you what we see in your dashboard, and you decide if it's useful. No deck. No sales pitch.",
       primaryCta: "Start a free pilot",
       primaryHref: "/onboarding",
     },
-    // Dormant — Weekly section was cut from the homepage during the
-    // 2026-05-28 copy audit (operating rhythm overlapped CapabilitiesRail
-    // #1 and Comparison rows 1-2). The component file is preserved per
-    // CEO direction in case we bring it back; this data keeps it
-    // compiling without re-shipping it on the homepage.
+    // Operating Rhythm — back on the homepage per Norman brief (2026-05-28).
     weekly: {
       eyebrow: "Operating rhythm",
-      headline: "What operating on LeaseStack actually feels like.",
+      headline: "What operating on LeaseStack platform actually feels like.",
       body:
-        "No war rooms. No status meetings. A few touchpoints that fit inside the rest of your job.",
+        "No war rooms. No status meetings. A few purpose-built touchpoints that fit inside your existing workflow.",
       items: [
         {
           day: "Monday",
           time: "7:00 AM",
-          title: "Weekly report in your inbox.",
-          body: "Leases by source, pacing, anomalies, and three actions for the week.",
+          title: "Weekly insights in your inbox.",
+          body: "",
           outcome: "3 actions, every Monday",
         },
         {
           day: "Tuesday",
           time: "Rolling",
           title: "Every tour, one pipeline.",
-          body: "Forms, chatbot, identified visitors, calls. One view, source attached.",
+          body: "",
           outcome: "100% of tours sourced",
         },
         {
           day: "Thursday",
           time: "By EOD",
-          title: "Creative refresh ships.",
-          body: "New ad concepts, email variants, landing copy within 48 hours.",
+          title: "Optimization push.",
+          body: "Triggered by AI signals + operator input.",
           outcome: "48-hour turnaround",
         },
         {
           day: "Ongoing",
           time: "Overnight",
           title: "Chatbot works the nightshift.",
-          body: "Prospects asking at 2am get a real conversation. Hot leads by morning.",
+          body: "",
           outcome: "1 in 4 leads after hours",
         },
       ],

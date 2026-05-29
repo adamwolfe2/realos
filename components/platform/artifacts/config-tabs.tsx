@@ -72,7 +72,7 @@ const STEPS: Step[] = [
       { label: "Custom site (optional)",               value: "Your domain, capturing every visit",         icon: "home",   logos: [<VercelMark key="v" size={16} />, <FigmaMark key="fig" size={16} />] },
       { label: "Visitor identification (optional)",    value: "Names plus emails on your traffic",          icon: "pixel",  logos: [<GA4Mark key="ga2" size={16} />, <LinkedInMark key="li" size={16} />] },
       { label: "AI chatbot (optional)",                value: "Trained on each individual property",        icon: "chat",   logos: [<ClaudeMark key="cl" size={16} />] },
-      { label: "Ad campaigns (optional)",              value: "Launched and pacing",                        icon: "ads",    logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g" size={16} />, <TikTokMark key="t" size={16} />] },
+      { label: "Ad campaigns (optional)",              value: "Tracked in your dashboard",                  icon: "ads",    logos: [<MetaMark key="m" size={16} />, <GoogleMark key="g" size={16} />, <TikTokMark key="t" size={16} />] },
       { label: "AI discovery (optional)",              value: "Pages written to be cited",                  icon: "search", logos: [<ChatGPTMark key="c" size={16} />, <PerplexityMark key="p" size={16} />, <ClaudeMark key="cl2" size={16} />, <GeminiMark key="gem" size={16} />] },
       { label: "Reputation management (optional)",     value: "Live mentions and review monitoring",        icon: "shield", logos: [<GoogleMark key="g2" size={16} />] },
       { label: "Keyword optimization (optional)",      value: "AI-guided effective keyword rankings",       icon: "search", logos: [<GoogleMark key="g3" size={16} />] },

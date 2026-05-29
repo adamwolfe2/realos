@@ -52,16 +52,16 @@ const CAPABILITIES: Capability[] = [
   {
     num: "01",
     title: "Weekly report that writes itself",
-    body: "Every Monday at 7am: leases by source, pacing vs. last cycle, anomalies flagged, three actions for the week. One page, read over coffee.",
-    href: "/features/seo-aeo",
+    body: "Every Monday at 7am: leases by source, website traffic and trends, AI-driven actions flagged, three actions for the week. One page, read over coffee.",
+    href: "#product-tour",
     linkLabel: "See a sample report",
     artifact: WeeklyReport,
     glyph: "report",
   },
   {
     num: "02",
-    title: "Spend tracked to the signed lease",
-    body: "Every dollar of Google, Meta, and TikTok spend mapped to a signed lease, not an impression. Blended CAC and per-channel ROI, continuously.",
+    title: "Ad spend tracked to each lease",
+    body: "Every dollar of Google and Meta ad spend mapped to a signed lease, not an impression. Blended cost per lease and campaign ROI, continuously.",
     href: "/features/ads",
     linkLabel: "See it live",
     artifact: AttributionBreakdown,
@@ -79,7 +79,7 @@ const CAPABILITIES: Capability[] = [
   {
     num: "04",
     title: "AI assistant that books tours at 2am",
-    body: "Trained on your units, pricing rules, and application process. Books tours, emails floor plans, captures contact info. Hot leads hit your team by morning.",
+    body: "Trained on your property, brand, units, and workflow. Books tours, emails floor plans, captures contact info. Hot leads hit your team by morning.",
     href: "/features/chatbot",
     linkLabel: "Try a conversation",
     artifact: ChatDemo,
@@ -87,10 +87,10 @@ const CAPABILITIES: Capability[] = [
   },
   {
     num: "05",
-    title: "Pacing alerts 4-8 weeks early",
-    body: "Lease-up cadence compared against last cycle. Anomalies surface four to eight weeks before the gap shows up in physical occupancy. Time to fix it.",
-    href: "/features/seo-aeo",
-    linkLabel: "See an alert",
+    title: "Reputation across every review site",
+    body: "Reddit, Yelp, Google, BBB, ApartmentRatings, Facebook, and the open web — every public mention of your brand from the past 90 days, sentiment-classified, with one-click reply.",
+    href: "/audit",
+    linkLabel: "See a live audit",
     artifact: PacingAlert,
     glyph: "alert",
   },
@@ -190,7 +190,7 @@ export function CapabilitiesRail() {
             {/* Per-line "Mask Reveal Up" — pixel-point/animate-text spec
                 `mask-reveal-up.json`. 760ms, 90ms line stagger, y 30→0,
                 blur 6→0, ease 0.22,1,0.36,1. */}
-            <MaskRevealUp lines={["Six surfaces.", "One platform."]} />
+            <MaskRevealUp lines={["Six features.", "One platform."]} />
           </h2>
           <p
             className="mt-5 max-w-2xl"
@@ -201,7 +201,7 @@ export function CapabilitiesRail() {
               lineHeight: 1.55,
             }}
           >
-            All six run on your existing PMS, your existing domain, and your existing team. No replatform, no rip-and-replace.
+            Each one optimizes a specific area of your current digital infrastructure. All six run on your existing PMS, domain, and team — no replatform, no rip-and-replace.
           </p>
         </div>
 

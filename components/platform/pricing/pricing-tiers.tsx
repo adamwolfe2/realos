@@ -51,29 +51,30 @@ const TIERS: Tier[] = [
     id: "foundation",
     checkoutTierId: "starter",
     name: "Foundation",
-    tagline: "Free. We connect to your stack and show you what we see.",
+    tagline: "Free 14-day trial. We connect to your stack and show you what we see.",
     monthly: 0,
     annual: 0,
     setupFee: null,
     highlighted: false,
-    ctaLabel: "Start the pilot",
+    ctaLabel: "Start the free trial",
     ctaHref: "/onboarding?plan=foundation",
     audienceCallout: "Operators evaluating LeaseStack on a single property",
     features: [
+      { label: "14-day trial window" },
       { label: "Connect to your existing PMS, ad accounts, and site" },
       { label: "Full read on what your digital marketing is actually doing" },
-      { label: "Weekly snapshot of pacing, spend, and lead source mix" },
+      { label: "Weekly snapshot of spend, traffic, and lead source mix" },
       { label: "One operator-written recommendation on what to fix first" },
       { label: "AI leasing chatbot trained on your listings" },
       { label: "Reputation monitoring (Google, Reddit, open web)" },
-      { label: "No commitment, no card, cancel by closing the tab" },
+      { label: "No commitment, no card, month-to-month" },
     ],
   },
   {
     id: "growth",
     checkoutTierId: "growth",
     name: "Growth",
-    tagline: "Replace your retainer. Month-to-month. Cancel if pacing does not move.",
+    tagline: "Replace your retainer. Flexible, month-to-month.",
     monthly: 899,
     annual: 749,
     setupFee: null,
@@ -88,13 +89,13 @@ const TIERS: Tier[] = [
         emphasis: true,
       },
       {
-        label: "Spend and pacing recommendations across Google and Meta",
+        label: "Spend and performance recommendations across Google and Meta",
         emphasis: true,
       },
       { label: "AI chatbot at 5,000 conversations per month" },
       { label: "Source-to-lease attribution with GSC and GA4" },
       { label: "Operator-written weekly read on every channel" },
-      { label: "Month-to-month. Cancel if pacing does not move." },
+      { label: "Flexible, month-to-month." },
     ],
   },
   {
@@ -162,6 +163,87 @@ export function PricingTiers() {
   return (
     <section style={{ backgroundColor: "#FFFFFF" }}>
       <div className="max-w-[1200px] mx-auto px-4 md:px-8 pb-16 md:pb-20">
+        {/* Norman brief (2026-05-28): pull the pilot CTA up above the
+            packages so the no-commitment path is visible before the
+            buyer commits to reading prices. */}
+        <div
+          className="mt-12 mb-10 md:mt-16 md:mb-14 text-center"
+          style={{
+            borderTop: "1px solid #E2E8F0",
+            paddingTop: "32px",
+          }}
+        >
+          <p
+            className="eyebrow mb-3"
+            style={{ color: "#2563EB" }}
+          >
+            Start free
+          </p>
+          <h2
+            style={{
+              color: "#1E2A3A",
+              fontFamily: "var(--font-sans)",
+              fontSize: "clamp(24px, 3vw, 32px)",
+              fontWeight: 700,
+              letterSpacing: "-0.02em",
+              lineHeight: 1.15,
+            }}
+          >
+            Start with the pilot — see what your dashboard actually says.
+          </h2>
+          <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center items-center">
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
+              style={{ backgroundColor: "#2563EB", color: "#ffffff" }}
+            >
+              Start the free trial
+            </Link>
+            <Link
+              href="/demo"
+              className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
+              style={{
+                backgroundColor: "transparent",
+                color: "#1E2A3A",
+                border: "1px solid #1E2A3A",
+              }}
+            >
+              Book a demo
+            </Link>
+          </div>
+        </div>
+
+        {/* Section title for packages */}
+        <div className="text-center mb-2">
+          <p
+            className="eyebrow"
+            style={{ color: "#88867f" }}
+          >
+            Pre-packaged pricing
+          </p>
+        </div>
+        <p
+          className="text-center mb-6 md:mb-8 mx-auto"
+          style={{
+            color: "#64748B",
+            fontFamily: "var(--font-sans)",
+            fontSize: "14px",
+            maxWidth: "560px",
+          }}
+        >
+          Still exploring what you might need?{" "}
+          <Link
+            href="/onboarding"
+            style={{
+              color: "#2563EB",
+              textDecoration: "underline",
+              textUnderlineOffset: "2px",
+            }}
+          >
+            Book a demo with our team.
+          </Link>
+        </p>
+
         {/* Property-count stepper. Pricing is per-property so we let the
             buyer dial in their portfolio size right here; every tier
             card below updates its monthly total in real time. Additional
@@ -370,8 +452,8 @@ export function PricingTiers() {
           }}
         >
           No setup fees. No annual contracts. Additional properties on the
-          same plan get 20 percent off the per-property rate. Cancel from the
-          billing portal if pacing does not move.
+          same plan get 20 percent off the per-property rate. Flexible,
+          month-to-month from the billing portal.
         </p>
       </div>
     </section>

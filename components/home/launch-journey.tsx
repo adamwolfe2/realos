@@ -101,7 +101,7 @@ const MILESTONES: Milestone[] = [
   {
     when: "Day 60",
     title: "Cost curves drop",
-    body: "Ads optimized. Creative refreshing weekly. AI search citing your pages.",
+    body: "Ad performance dashboards sharpen. AI search citing your pages.",
     marker: "after",
     icon: TrendingDown,
   },

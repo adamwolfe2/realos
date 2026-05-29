@@ -488,19 +488,19 @@ export const BRIEFING: {
   focus: string;
 } = {
   date: "Monday, July 14",
-  greeting: "Good morning, Acme Portfolio",
+  greeting: "Good morning, Sample Portfolio",
   summary:
-    "Leasing velocity ticked up 14% week over week. Three properties are on pace, one is soft. Creative for the fall push shipped Friday and is already in rotation.",
+    "Leasing velocity ticked up 14% week over week. Three properties are on pace, one is soft.",
   highlights: [
     {
       kind: "win",
       title: "Oak Grove is ahead of pace.",
-      body: "38 leads last week, 8 tours booked, 1 signed lease. Tour-to-lease rate is 12.5%, above the 9% portfolio average. Keep Meta concept B running, pull concept A.",
+      body: "38 leads last week, 8 tours booked, 1 signed lease. Tour-to-lease rate is 12.5%, above the 9% portfolio average.",
     },
     {
       kind: "watch",
       title: "Riverside is soft.",
-      body: "Only 4 leads last week. The September open still shows a 14-day rent lag behind the comp set. Recommending a $200 incentive test for two weeks.",
+      body: "Only 4 leads last week. The September open still shows a 14-day rent lag behind the comp set. Consider testing a $200 incentive for two weeks.",
     },
     {
       kind: "note",
@@ -509,7 +509,7 @@ export const BRIEFING: {
     },
   ],
   focus:
-    "This week: approve the Riverside incentive plan (we'll handle the ad-copy and landing update inside 48h), review the new fall-season ad concepts in /creative, and sign off on the September rent roll in /reports.",
+    "Review this week's top keyword trends and apply suggested edits to your listing copy.",
 };
 
 // ---------------------------------------------------------------------------

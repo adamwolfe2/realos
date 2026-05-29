@@ -2,37 +2,33 @@ import type { Metadata } from "next";
 import { MARKETING } from "@/lib/copy/marketing";
 import { BRAND_NAME } from "@/lib/brand";
 import { Hero } from "@/components/home/hero";
-import { CapabilitiesRail } from "@/components/home/capabilities-rail";
-import { SanityCheckSection } from "@/components/home/sanity-check-section";
-import { Comparison } from "@/components/home/comparison";
 import { ProductTourSection } from "@/components/home/product-tour-section";
-import { Verticals } from "@/components/home/verticals";
-import { Proof } from "@/components/home/proof";
+import { PilotCta } from "@/components/home/pilot-cta";
+import { PlatformWalkthrough } from "@/components/home/platform-walkthrough";
+import { CapabilitiesRail } from "@/components/home/capabilities-rail";
+import { Comparison } from "@/components/home/comparison";
+import { Weekly } from "@/components/home/weekly";
+import { LaunchJourney } from "@/components/home/launch-journey";
 import { Faq } from "@/components/home/faq";
+import { Proof } from "@/components/home/proof";
 
-// Homepage structure — post 2026-05-28 copy audit (CEO ask: clarity first,
-// cut fluff, 5-7 sections). Final 8 sections, down from 11:
+// Homepage structure — Norman brief (2026-05-28). 10 sections:
 //
 //   1. Hero                 value prop + primary CTA + trust strip
-//   2. CapabilitiesRail     six product surfaces, scrollytelling
-//   3. SanityCheckSection   reputation surface (the seventh capability)
-//   4. Comparison           current stack vs. LeaseStack, 5 rows
-//   5. ProductTourSection   interactive operator portal embed
-//   6. Verticals            which markets we serve
-//   7. Faq                  8 deal-breaker objections
-//   8. Proof                final CTA
+//   2. ProductTour          interactive operator dashboard embed
+//   3. PilotCta             dedicated pilot offer card
+//   4. PlatformWalkthrough  ConfigTabs (extracted from hero)
+//   5. CapabilitiesRail     six features, scrollytelling
+//   6. Comparison           current setup vs. full visibility
+//   7. Weekly               operating rhythm
+//   8. LaunchJourney        your first 90 days
+//   9. Faq                  deal-breaker objections
+//  10. Proof                final CTA
 //
-// Sections cut from the homepage (component files preserved per CEO
-// direction, in case we bring them back):
-//   - Weekly        Operating rhythm — overlapped CapabilitiesRail #1
-//                   (weekly report) and Comparison rows 1-2. Reader sees
-//                   the same beat three times in a row.
-//   - LaunchJourney 90-day scroll-pinned timeline — overlapped Hero
-//                   ("live in 14 days"), Comparison, and Proof trust strip
-//                   ("Time to live: 14 days"). 280vh of pinned scroll
-//                   for a beat the page already makes twice.
-//   - LiveExample   Two destination link cards — duplicated ProductTour
-//                   (which IS the live example, interactive).
+// Sections kept in the codebase but cut from the homepage:
+//   - SanityCheck  (live insights / reputation) — covered in CapabilitiesRail
+//   - Verticals    (markets we serve) — covered on per-vertical pages
+//   - LiveExample  (resident site + portal links) — covered by ProductTour
 
 export const metadata: Metadata = {
   title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
@@ -43,11 +39,13 @@ export default function PlatformHome() {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <Hero />
-      <CapabilitiesRail />
-      <SanityCheckSection />
-      <Comparison />
       <ProductTourSection />
-      <Verticals />
+      <PilotCta />
+      <PlatformWalkthrough />
+      <CapabilitiesRail />
+      <Comparison />
+      <Weekly />
+      <LaunchJourney />
       <Faq />
       <Proof />
     </div>

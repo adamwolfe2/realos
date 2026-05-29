@@ -1,8 +1,11 @@
 import { SplitHero } from "@/components/platform/split-hero";
-import { ConfigTabs } from "@/components/platform/artifacts/config-tabs";
 import { SoftBlurIn } from "@/components/ui/animate-text";
-import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
 import { MARKETING } from "@/lib/copy/marketing";
+
+// Hero — keeps the per-character SoftBlurIn animation, primary CTAs, and
+// updated trust strip. The ConfigTabs artifact was extracted into its own
+// PlatformWalkthrough section below; the hero now ships with a calm
+// brand-pixel artifact slot (PixelSwirl renders behind via SplitHero).
 
 export function Hero() {
   const { hero } = MARKETING.home;
@@ -11,10 +14,6 @@ export function Hero() {
     <SplitHero
       eyebrow={hero.eyebrow}
       headline={
-        // Per-character "Soft Blur In" reveal — pixel-point/animate-text
-        // spec `soft-blur-in.json`. 2026-05-28 copy audit: changed from
-        // "Your leasing data. Working for you." (poetic but vague) to a
-        // specific value-prop split: what we do + what you get.
         <SoftBlurIn
           segments={[
             { text: "Replace your marketing stack." },
@@ -29,28 +28,57 @@ export function Hero() {
         { label: hero.secondaryCta, href: hero.secondaryHref, variant: "secondary" },
       ]}
       trust={[
-        { value: "14 days", label: "Intake to live" },
-        { value: "1 portal", label: "Site, ads, chatbot, pixel" },
-        { value: "$0",      label: "Pilot. Cancel anytime." },
+        { value: "14 days", label: "Live on your domain" },
+        { value: "100%",    label: "Ad spend tracked to lease" },
+        { value: "$0",      label: "Pilot. No commitment." },
       ]}
-      // Norman feedback (2026-05-21): the raw ConfigTabs artifact read
-      // "unprofessional" sitting on the white hero with no frame.
-      // Wrapping in SoftFramedArtifact (Cluely-style soft lavender outer
-      // card + crisp white inner mockup + floating LIVE pill) gives it
-      // the same lifted, premium feel as the SanityCheckSection below.
-      artifact={
-        // `bare` because ConfigTabs ships its own white card + shadow —
-        // the lavender frame just provides the halo of padding around
-        // it. Otherwise the surfaces would double-frame.
-        <SoftFramedArtifact
-          tone="lavender"
-          padding="md"
-          pillLabel="LIVE DEMO"
-          bare
-        >
-          <ConfigTabs />
-        </SoftFramedArtifact>
-      }
+      // Artifact slot retained but rendered empty — the platform
+      // walkthrough (ConfigTabs) now ships as its own dedicated section
+      // immediately below the hero so the live demo gets a full title +
+      // pill of its own instead of competing with the hero copy.
+      artifact={<HeroVisual />}
     />
+  );
+}
+
+// HeroVisual — calm decorative panel for the artifact slot. Uses brand
+// tokens only; no interactive content here since the live walkthrough
+// has its own section.
+function HeroVisual() {
+  return (
+    <div
+      aria-hidden
+      className="relative w-full"
+      style={{
+        aspectRatio: "5 / 4",
+        borderRadius: 22,
+        background:
+          "linear-gradient(160deg, rgba(37,99,235,0.10) 0%, rgba(37,99,235,0.02) 55%, #FFFFFF 100%)",
+        boxShadow:
+          "0 0 0 1px rgba(15,23,42,0.06), 0 24px 60px rgba(37,99,235,0.08)",
+        overflow: "hidden",
+      }}
+    >
+      {/* Concentric ring motif — same vocabulary as the brand glyphs */}
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage:
+            "radial-gradient(circle at 70% 60%, rgba(37,99,235,0.18), transparent 55%)",
+        }}
+      />
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          backgroundImage:
+            "linear-gradient(0deg, rgba(37,99,235,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(37,99,235,0.08) 1px, transparent 1px)",
+          backgroundSize: "32px 32px",
+          maskImage:
+            "radial-gradient(ellipse 70% 70% at 50% 50%, #000 60%, transparent 100%)",
+        }}
+      />
+    </div>
   );
 }

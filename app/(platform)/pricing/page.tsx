@@ -30,11 +30,11 @@ import { PricingCta } from "@/components/platform/pricing/pricing-cta";
 export const metadata: Metadata = {
   title: `Pricing | ${BRAND_NAME}`,
   description:
-    "Built by operators, priced for the market. Leasing intelligence platform that replaces the typical CLX-style retainer at lower cost while delivering more data. Free pilot, month-to-month standard plan, portfolio pricing for owners.",
+    "Operator-built leasing intelligence platform — a more economical alternative to a traditional marketing-agency retainer, with more insights and control. Free pilot, month-to-month standard plan, portfolio pricing for owners.",
   openGraph: {
     title: `Pricing | ${BRAND_NAME}`,
     description:
-      "Built by operators, priced for the market. We replace your retainer and give you more data for less money.",
+      "Operator-built. A more economical alternative to traditional marketing vendors, with more insights and control.",
     type: "website",
   },
 };
