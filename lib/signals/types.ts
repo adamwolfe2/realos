@@ -89,7 +89,18 @@ export interface SignalSnapshot {
 // Bump this string to invalidate prior snapshots (e.g. when a section's
 // scoring rubric changes). The cron skips rows where computeVersion already
 // matches today's value.
-export const COMPUTE_VERSION = "2026-05-28.v1";
+//
+// 2026-05-29 bump: prospect reputation scanner switched to per-source
+// Tavily host-pinned queries (Yelp / Google / ApartmentRatings / BBB /
+// Facebook each get dedicated host-bound calls) + open-web sweep. Existing
+// cached audits ran against the old 3-broad-query pipeline so most
+// mentions classified as TAVILY_WEB instead of their canonical source.
+// Also, synthesize.ts now preserves null section scores instead of
+// coercing to 0 — old audits have explicit `0` for missing data which
+// would still render the misleading "0/100" card.
+// Bumping the version invalidates the 14-day dedupe so the next visit
+// to a stale audit triggers a fresh scan.
+export const COMPUTE_VERSION = "2026-05-29.v2";
 
 export function scopeKey(s: SignalScope): string {
   if (s.kind === "tenant") {
