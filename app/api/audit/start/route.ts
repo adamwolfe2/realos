@@ -9,6 +9,7 @@ import {
 import { checkAuditStartLimit } from "@/lib/audit/rate-limit";
 import { rateLimited, getIp } from "@/lib/rate-limit";
 import { getSiteUrl } from "@/lib/brand";
+import { COMPUTE_VERSION } from "@/lib/signals/types";
 
 // POST /api/audit/start
 // Public, unauthenticated entry point for the prospect lead-magnet flow.
@@ -66,13 +67,17 @@ export async function POST(req: NextRequest) {
 
   try {
     // Dedupe — return any READY audit completed for this domain in the
-    // last 14d.
+    // last 14d, BUT only if it was computed under the current pipeline
+    // version. An audit run before COMPUTE_VERSION bumped (e.g. before
+    // real reputation fan-out shipped) had mock/empty mentions, so we
+    // fall through and trigger a fresh scan instead of returning fluff.
     const since = new Date(Date.now() - DEDUPE_WINDOW_MS);
     const existing = await prisma.prospectAudit.findFirst({
       where: {
         domain,
         status: ProspectAuditStatus.READY,
         createdAt: { gt: since },
+        snapshots: { some: { computeVersion: COMPUTE_VERSION } },
       },
       orderBy: { createdAt: "desc" },
       select: { id: true, shareToken: true, status: true },

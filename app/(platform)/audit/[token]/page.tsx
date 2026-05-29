@@ -8,6 +8,10 @@ import { isValidShareToken } from "@/lib/audit/token";
 import { ScoreCard, toneForScore } from "@/components/audit/score-card";
 import { CountUp } from "@/components/audit/count-up";
 import { EmailGate } from "@/components/audit/email-gate";
+import {
+  MentionsSection,
+  type AuditMention,
+} from "@/components/audit/mentions-section";
 
 interface AuditRow {
   id: string;
@@ -29,27 +33,11 @@ interface Finding {
   title: string;
   detail?: string;
 }
-interface Mention {
-  source:
-    | "REDDIT"
-    | "YELP"
-    | "BBB"
-    | "APARTMENT_RATINGS"
-    | "FACEBOOK"
-    | "GOOGLE_REVIEW"
-    | "TAVILY_WEB";
-  title: string | null;
-  snippet: string;
-  url: string;
-  publishedAt: string | null;
-  sentiment?: "POSITIVE" | "NEGATIVE" | "NEUTRAL" | "MIXED" | null;
-  themes?: string[];
-}
 interface Findings {
   quickWins: Finding[];
   risks: Finding[];
   opportunities: Finding[];
-  mentions?: Mention[];
+  mentions?: AuditMention[];
 }
 interface SectionScores {
   seo?: number;
@@ -169,9 +157,14 @@ export default async function AuditViewerPage({
         sections={sectionScores}
       />
 
-      <Findings findings={findings} />
+      <MentionsSection
+        mentions={findings.mentions ?? []}
+        brandName={subject}
+        shareToken={audit.shareToken}
+        auditCreatedAtIso={audit.createdAt.toISOString()}
+      />
 
-      <MentionsSection mentions={findings.mentions ?? []} />
+      <Findings findings={findings} />
 
       {audit.claudeSummary ? (
         <section className="mt-12">
@@ -464,168 +457,6 @@ function PendingState({
       </div>
     </>
   );
-}
-
-function MentionsSection({ mentions }: { mentions: Mention[] }) {
-  const sorted = [...mentions]
-    .filter((m) => m && m.url)
-    .sort((a, b) => {
-      const ta = a.publishedAt ? new Date(a.publishedAt).getTime() : 0;
-      const tb = b.publishedAt ? new Date(b.publishedAt).getTime() : 0;
-      return tb - ta;
-    })
-    .slice(0, 15);
-  if (sorted.length === 0) return null;
-  return (
-    <section className="mt-12">
-      <SectionEyebrow>Reputation — past 90 days</SectionEyebrow>
-      <h2
-        className="text-2xl sm:text-3xl font-semibold mt-2"
-        style={{ color: "#1E2A3A" }}
-      >
-        {sorted.length} public mention{sorted.length === 1 ? "" : "s"}
-      </h2>
-      <ul className="mt-6 space-y-3">
-        {sorted.map((m) => (
-          <li
-            key={m.url}
-            className="rounded-xl border bg-white p-4 sm:p-5 flex items-start gap-4"
-            style={{ borderColor: "#E5E7EB" }}
-          >
-            <SourceBadge source={m.source} />
-            <div className="flex-1 min-w-0">
-              <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-                <p
-                  className="text-sm font-semibold"
-                  style={{ color: "#1E2A3A" }}
-                >
-                  {sourceLabel(m.source)}
-                </p>
-                <p className="text-xs" style={{ color: "#9CA3AF" }}>
-                  {relativeTime(m.publishedAt)}
-                </p>
-              </div>
-              {m.title ? (
-                <p
-                  className="text-sm mt-1 line-clamp-2"
-                  style={{ color: "#1E2A3A" }}
-                >
-                  {m.title}
-                </p>
-              ) : null}
-              {m.snippet ? (
-                <p
-                  className="text-sm mt-1 line-clamp-3"
-                  style={{ color: "#4B5563" }}
-                >
-                  {m.snippet}
-                </p>
-              ) : null}
-              <a
-                href={m.url}
-                target="_blank"
-                rel="noopener noreferrer nofollow"
-                className="text-xs font-medium mt-2 inline-block"
-                style={{ color: "#2563EB" }}
-              >
-                View source &rarr;
-              </a>
-            </div>
-          </li>
-        ))}
-      </ul>
-    </section>
-  );
-}
-
-function SourceBadge({ source }: { source: Mention["source"] }) {
-  const bg = sourceColor(source);
-  return (
-    <div
-      className="h-9 w-9 rounded-md flex items-center justify-center shrink-0 text-xs font-semibold"
-      style={{ backgroundColor: bg, color: "#FFFFFF" }}
-      aria-hidden
-    >
-      {sourceInitial(source)}
-    </div>
-  );
-}
-
-function sourceInitial(s: Mention["source"]): string {
-  switch (s) {
-    case "REDDIT":
-      return "R";
-    case "YELP":
-      return "Y";
-    case "BBB":
-      return "B";
-    case "APARTMENT_RATINGS":
-      return "AR";
-    case "FACEBOOK":
-      return "F";
-    case "GOOGLE_REVIEW":
-      return "G";
-    case "TAVILY_WEB":
-    default:
-      return "W";
-  }
-}
-
-function sourceColor(s: Mention["source"]): string {
-  switch (s) {
-    case "REDDIT":
-      return "#FF4500";
-    case "YELP":
-      return "#D32323";
-    case "BBB":
-      return "#0F4C81";
-    case "APARTMENT_RATINGS":
-      return "#0E9F6E";
-    case "FACEBOOK":
-      return "#1877F2";
-    case "GOOGLE_REVIEW":
-      return "#4285F4";
-    case "TAVILY_WEB":
-    default:
-      return "#6B7280";
-  }
-}
-
-function sourceLabel(s: Mention["source"]): string {
-  switch (s) {
-    case "REDDIT":
-      return "Reddit";
-    case "YELP":
-      return "Yelp";
-    case "BBB":
-      return "BBB";
-    case "APARTMENT_RATINGS":
-      return "ApartmentRatings";
-    case "FACEBOOK":
-      return "Facebook";
-    case "GOOGLE_REVIEW":
-      return "Google";
-    case "TAVILY_WEB":
-    default:
-      return "Web";
-  }
-}
-
-function relativeTime(iso: string | null): string {
-  if (!iso) return "recently";
-  const t = new Date(iso).getTime();
-  if (!Number.isFinite(t)) return "recently";
-  const deltaMs = Date.now() - t;
-  const days = Math.floor(deltaMs / (24 * 60 * 60 * 1000));
-  if (days <= 0) return "today";
-  if (days === 1) return "1 day ago";
-  if (days < 14) return `${days} days ago`;
-  const weeks = Math.floor(days / 7);
-  if (weeks < 9) return `${weeks} week${weeks === 1 ? "" : "s"} ago`;
-  const months = Math.floor(days / 30);
-  if (months < 12) return `${months} month${months === 1 ? "" : "s"} ago`;
-  const years = Math.floor(days / 365);
-  return `${years} year${years === 1 ? "" : "s"} ago`;
 }
 
 function formatDate(d: Date): string {

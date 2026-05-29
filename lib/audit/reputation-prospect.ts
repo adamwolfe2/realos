@@ -235,12 +235,14 @@ export async function runProspectReputation(input: {
     if (seen.has(key)) continue;
     if (!inLast90Days(r.published_date)) continue;
     seen.add(key);
+    const snippet = (r.content ?? "").slice(0, 400);
     mentions.push({
       source: classify(r.url),
       title: r.title ?? null,
-      snippet: (r.content ?? "").slice(0, 400),
+      snippet,
       url: r.url,
       publishedAt: r.published_date ?? null,
+      sentiment: lexicalSentimentForText(`${r.title ?? ""} ${snippet}`),
     });
   }
 
@@ -261,12 +263,14 @@ export async function runProspectReputation(input: {
     const hay = `${title ?? ""} ${body}`.toLowerCase();
     if (!hay.includes(brandName.toLowerCase())) continue;
     seen.add(key);
+    const snippet = body.slice(0, 400);
     mentions.push({
       source: "REDDIT",
       title,
-      snippet: body.slice(0, 400),
+      snippet,
       url: fullUrl,
       publishedAt,
+      sentiment: lexicalSentimentForText(`${title ?? ""} ${snippet}`),
     });
   }
 
@@ -291,6 +295,26 @@ export async function runProspectReputation(input: {
     avgRating: null,
     errors,
   };
+}
+
+// Per-mention lexical sentiment — mirrors the tells used in the aggregate
+// mix below. Returns null when both pos+neg tells fire (mixed signal) so
+// the viewer doesn't render a misleading dot. The tenant path uses a
+// Haiku classifier; the prospect path stays lexical for cost reasons.
+function lexicalSentimentForText(
+  text: string,
+): "POSITIVE" | "NEGATIVE" | "NEUTRAL" | "MIXED" {
+  const hay = text.toLowerCase();
+  const positiveTells =
+    /(love|loved|great|amazing|recommend|fantastic|excellent|awesome|perfect|wonderful|5 stars|five stars)/i;
+  const negativeTells =
+    /(avoid|scam|worst|horrible|terrible|do not rent|stay away|disgusting|nightmare|complain|complaint|roach|mold|broken|unresponsive|rude|filthy|dirty)/i;
+  const isNeg = negativeTells.test(hay);
+  const isPos = positiveTells.test(hay);
+  if (isPos && isNeg) return "MIXED";
+  if (isPos) return "POSITIVE";
+  if (isNeg) return "NEGATIVE";
+  return "NEUTRAL";
 }
 
 // Tiny lexical sentiment heuristic — not a replacement for the Haiku
