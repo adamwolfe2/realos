@@ -9,18 +9,15 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 
 // ---------------------------------------------------------------------------
-// Multi-modal visual direction picker. Four modes, freely combinable:
-//   1. Paste inspiration URLs (1–3)         → Adam screenshots them manually
-//   2. Upload screenshots (up to 10)        → stored as INSPIRATION-typed assets
-//   3. Pick a preset (1)                     → kit's preset gallery
-//   4. Pick a design language (1)            → awesome-design-md library
-//   + Pick a palette (1, overrides preset)   → curated palette gallery
-//   + Negative inputs (always-visible)       → free text, "I don't want..."
+// Mode-driven visual direction picker. Renders ONE of three modes at a time:
+//   - 'style'      → presets + design language library (the centerpiece)
+//   - 'colors'     → curated palette gallery + brand override
+//   - 'references' → inspiration URLs + uploaded screenshots (both optional)
 //
-// Galleries are filterable by category. The picker is intentionally a
-// tabbed shell: each mode is independently strong, so we show one panel at
-// a time rather than a giant scrolling form. The summary card at the
-// bottom shows everything the user has chosen across all modes.
+// Each mode now lives on its own top-level intake step so design + color
+// choices feel like a dedicated decision rather than a buried sub-tab. The
+// "Anything to avoid" negative-inputs textarea always renders alongside
+// the chosen mode so the user can voice deal-breakers from any step.
 //
 // Pure presentational — owns no submit logic. Inspiration URL state lives
 // on the parent (IntakeForm) so the existing `inspirationUrls` field stays
@@ -80,22 +77,16 @@ export interface VisualDirectionValue {
   negativeInputs: string;
 }
 
+export type VisualDirectionMode = "style" | "colors" | "references";
+
 export interface VisualDirectionPickerProps {
+  mode: VisualDirectionMode;
   value: VisualDirectionValue;
   onChange: (next: VisualDirectionValue) => void;
   presets: PresetOption[];
   designLanguages: DesignLanguageOption[];
   palettes: PaletteOption[];
 }
-
-type Tab = "urls" | "screenshots" | "style" | "colors";
-
-const TABS: { id: Tab; label: string; description: string }[] = [
-  { id: "urls", label: "Inspiration sites", description: "Paste URLs of sites you love" },
-  { id: "screenshots", label: "Upload screenshots", description: "Drop in reference images" },
-  { id: "style", label: "Pick a style", description: "Browse presets + design languages" },
-  { id: "colors", label: "Pick colors", description: "Override with a curated palette" },
-];
 
 // Mini visual thumbnails for the preset gallery. Sourced from each
 // preset's tokens.css — when the kit's preset palette changes, update
@@ -154,14 +145,13 @@ const PRESET_THUMBS: Record<
 };
 
 export function VisualDirectionPicker({
+  mode,
   value,
   onChange,
   presets,
   designLanguages,
   palettes,
 }: VisualDirectionPickerProps) {
-  const [tab, setTab] = React.useState<Tab>("urls");
-
   const patch = React.useCallback(
     <K extends keyof VisualDirectionValue>(key: K, next: VisualDirectionValue[K]) => {
       onChange({ ...value, [key]: next });
@@ -171,77 +161,35 @@ export function VisualDirectionPicker({
 
   return (
     <div className="space-y-5">
-      <header className="space-y-1">
-        <h2 className="text-base font-semibold">Visual direction</h2>
-        <p className="text-sm text-muted-foreground">
-          Tell us what you want this site to look like. You can mix any of the
-          four modes below — each makes the result more specific.
-        </p>
-      </header>
+      {mode === "style" && (
+        <StylePanel
+          presets={presets}
+          designLanguages={designLanguages}
+          chosenPresetSlug={value.chosenPresetSlug}
+          chosenDesignLanguageSlug={value.chosenDesignLanguageSlug}
+          onChoosePreset={(slug) => patch("chosenPresetSlug", slug)}
+          onChooseDesignLanguage={(slug) =>
+            patch("chosenDesignLanguageSlug", slug)
+          }
+        />
+      )}
+      {mode === "colors" && (
+        <PalettesPanel
+          palettes={palettes}
+          chosenPaletteSlug={value.chosenPaletteSlug}
+          onChoose={(slug) => patch("chosenPaletteSlug", slug)}
+        />
+      )}
+      {mode === "references" && (
+        <ReferencesPanel
+          urls={value.inspirationUrls}
+          uploads={value.uploadedScreenshots}
+          onChangeUrls={(u) => patch("inspirationUrls", u)}
+          onChangeUploads={(s) => patch("uploadedScreenshots", s)}
+        />
+      )}
 
-      <nav className="flex flex-wrap gap-1.5" aria-label="Visual direction modes">
-        {TABS.map((t) => {
-          const active = tab === t.id;
-          const filled = isModeFilled(t.id, value);
-          return (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              className={cn(
-                "px-3 py-1.5 rounded-md text-xs font-medium border transition-colors text-left",
-                active
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : filled
-                    ? "bg-primary/5 text-foreground border-primary/40"
-                    : "bg-card text-muted-foreground border-border hover:bg-muted/40",
-              )}
-              aria-pressed={active}
-            >
-              <span className="flex items-center gap-1.5">
-                {filled ? <span aria-hidden="true">●</span> : null}
-                {t.label}
-              </span>
-            </button>
-          );
-        })}
-      </nav>
-
-      <div className="rounded-lg border border-border bg-card p-5">
-        {tab === "urls" && (
-          <UrlsPanel
-            urls={value.inspirationUrls}
-            onChange={(u) => patch("inspirationUrls", u)}
-          />
-        )}
-        {tab === "screenshots" && (
-          <ScreenshotsPanel
-            uploads={value.uploadedScreenshots}
-            onChange={(s) => patch("uploadedScreenshots", s)}
-          />
-        )}
-        {tab === "style" && (
-          <StylePanel
-            presets={presets}
-            designLanguages={designLanguages}
-            chosenPresetSlug={value.chosenPresetSlug}
-            chosenDesignLanguageSlug={value.chosenDesignLanguageSlug}
-            onChoosePreset={(slug) => patch("chosenPresetSlug", slug)}
-            onChooseDesignLanguage={(slug) =>
-              patch("chosenDesignLanguageSlug", slug)
-            }
-          />
-        )}
-        {tab === "colors" && (
-          <PalettesPanel
-            palettes={palettes}
-            chosenPaletteSlug={value.chosenPaletteSlug}
-            onChoose={(slug) => patch("chosenPaletteSlug", slug)}
-          />
-        )}
-      </div>
-
-      {/* Always-visible negative inputs */}
+      {/* Always-visible negative inputs — voicable from any step. */}
       <div className="rounded-lg border border-border bg-card p-5 space-y-2">
         <Label className="text-sm font-medium">Anything you definitely don't want?</Label>
         <p className="text-xs text-muted-foreground">
@@ -255,21 +203,36 @@ export function VisualDirectionPicker({
           placeholder="Tell us what to avoid..."
         />
       </div>
-
-      <VisualDirectionSummary
-        value={value}
-        presets={presets}
-        designLanguages={designLanguages}
-        palettes={palettes}
-        onEdit={(targetTab) => setTab(targetTab)}
-      />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Tab panels
+// Mode panels
 // ---------------------------------------------------------------------------
+
+function ReferencesPanel({
+  urls,
+  uploads,
+  onChangeUrls,
+  onChangeUploads,
+}: {
+  urls: string[];
+  uploads: UploadedScreenshot[];
+  onChangeUrls: (u: string[]) => void;
+  onChangeUploads: (s: UploadedScreenshot[]) => void;
+}) {
+  return (
+    <div className="space-y-5">
+      <div className="rounded-lg border border-border bg-card p-5">
+        <UrlsPanel urls={urls} onChange={onChangeUrls} />
+      </div>
+      <div className="rounded-lg border border-border bg-card p-5">
+        <ScreenshotsPanel uploads={uploads} onChange={onChangeUploads} />
+      </div>
+    </div>
+  );
+}
 
 function UrlsPanel({
   urls,
@@ -526,15 +489,6 @@ function StylePanel({
 
   return (
     <div className="space-y-4">
-      <header>
-        <h3 className="text-sm font-semibold">Pick a style</h3>
-        <p className="text-sm text-muted-foreground">
-          Two flavors: <strong>presets</strong> are our concrete starter templates,{" "}
-          <strong>design languages</strong> are aesthetic vocabularies pulled from real sites.
-          You can pick one of each.
-        </p>
-      </header>
-
       <div className="flex gap-1.5">
         <button
           type="button"
@@ -830,13 +784,6 @@ function PalettesPanel({
 
   return (
     <div className="space-y-4">
-      <header>
-        <h3 className="text-sm font-semibold">Pick colors</h3>
-        <p className="text-sm text-muted-foreground">
-          Optional — overrides your preset's default palette. All 36 pass WCAG AA contrast.
-        </p>
-      </header>
-
       <div className="flex items-center gap-2 flex-wrap">
         <Label className="text-xs">Filter:</Label>
         <select
@@ -917,204 +864,11 @@ function PalettesPanel({
 }
 
 // ---------------------------------------------------------------------------
-// Summary card
-// ---------------------------------------------------------------------------
-
-function VisualDirectionSummary({
-  value,
-  presets,
-  designLanguages,
-  palettes,
-  onEdit,
-}: {
-  value: VisualDirectionValue;
-  presets: PresetOption[];
-  designLanguages: DesignLanguageOption[];
-  palettes: PaletteOption[];
-  onEdit: (tab: Tab) => void;
-}) {
-  const preset = presets.find((p) => p.slug === value.chosenPresetSlug);
-  const dl = designLanguages.find((d) => d.slug === value.chosenDesignLanguageSlug);
-  const palette = palettes.find((p) => p.slug === value.chosenPaletteSlug);
-
-  const filled =
-    value.inspirationUrls.length > 0 ||
-    value.uploadedScreenshots.length > 0 ||
-    !!preset ||
-    !!dl ||
-    !!palette ||
-    value.negativeInputs.trim().length > 0;
-
-  if (!filled) {
-    return (
-      <div className="rounded-lg border border-dashed border-border bg-muted/20 p-5 text-center text-sm text-muted-foreground">
-        Your visual direction is empty. Pick at least one mode above so the build
-        has something to work from.
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-lg border border-border bg-card p-5 space-y-4">
-      <header className="flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-semibold">Your visual direction so far</h3>
-        <span className="text-xs text-muted-foreground">All optional, all combinable</span>
-      </header>
-
-      <SummaryRow
-        label="Inspiration URLs"
-        count={value.inspirationUrls.length}
-        onEdit={() => onEdit("urls")}
-      >
-        {value.inspirationUrls.length > 0 ? (
-          <ul className="text-xs text-muted-foreground space-y-0.5">
-            {value.inspirationUrls.map((u) => (
-              <li key={u} className="truncate">{u}</li>
-            ))}
-          </ul>
-        ) : null}
-      </SummaryRow>
-
-      <SummaryRow
-        label="Uploaded screenshots"
-        count={value.uploadedScreenshots.length}
-        onEdit={() => onEdit("screenshots")}
-      >
-        {value.uploadedScreenshots.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {value.uploadedScreenshots.slice(0, 6).map((u) => (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={u.blobUrl}
-                src={u.blobUrl}
-                alt={u.filename}
-                className="w-16 h-12 object-cover rounded border border-border"
-              />
-            ))}
-            {value.uploadedScreenshots.length > 6 ? (
-              <span className="text-xs text-muted-foreground self-center">
-                +{value.uploadedScreenshots.length - 6}
-              </span>
-            ) : null}
-          </div>
-        ) : null}
-      </SummaryRow>
-
-      <SummaryRow
-        label="Preset"
-        count={preset ? 1 : 0}
-        onEdit={() => onEdit("style")}
-      >
-        {preset ? (
-          <div>
-            <p className="text-sm font-medium">{preset.displayName}</p>
-            <p className="text-xs text-muted-foreground line-clamp-2">{preset.tone}</p>
-          </div>
-        ) : null}
-      </SummaryRow>
-
-      <SummaryRow
-        label="Design language"
-        count={dl ? 1 : 0}
-        onEdit={() => onEdit("style")}
-      >
-        {dl ? (
-          <div>
-            <p className="text-sm font-medium capitalize">{dl.name}</p>
-            <p className="text-xs text-muted-foreground line-clamp-2">{dl.description}</p>
-          </div>
-        ) : null}
-      </SummaryRow>
-
-      <SummaryRow
-        label="Color palette"
-        count={palette ? 1 : 0}
-        onEdit={() => onEdit("colors")}
-      >
-        {palette ? (
-          <div className="flex items-center gap-3">
-            <div className="flex gap-1">
-              <span
-                className="size-5 rounded-sm border border-border"
-                style={{ background: palette.colors.background }}
-              />
-              <span
-                className="size-5 rounded-sm"
-                style={{ background: palette.colors.primary }}
-              />
-              <span
-                className="size-5 rounded-sm"
-                style={{ background: palette.colors.accent }}
-              />
-            </div>
-            <span className="text-sm font-medium">{palette.name}</span>
-          </div>
-        ) : null}
-      </SummaryRow>
-
-      {value.negativeInputs.trim().length > 0 ? (
-        <div className="border-t border-border pt-3">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground font-semibold mb-1">
-            Things to avoid
-          </p>
-          <p className="text-sm text-muted-foreground line-clamp-2">
-            {value.negativeInputs}
-          </p>
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function SummaryRow({
-  label,
-  count,
-  children,
-  onEdit,
-}: {
-  label: string;
-  count: number;
-  children?: React.ReactNode;
-  onEdit: () => void;
-}) {
-  return (
-    <div className="flex items-start justify-between gap-3 text-sm">
-      <div className="min-w-0 flex-1 space-y-1">
-        <div className="flex items-baseline gap-2">
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
-            {label}
-          </span>
-          <span className="text-xs text-foreground">
-            {count > 0 ? `${count} selected` : "None"}
-          </span>
-        </div>
-        {children}
-      </div>
-      <button
-        type="button"
-        onClick={onEdit}
-        className="text-xs text-primary underline underline-offset-2 hover:opacity-80 shrink-0"
-      >
-        {count > 0 ? "Change" : "Add"}
-      </button>
-    </div>
-  );
-}
-
-// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
 function humanCategory(c: string): string {
   return c.replaceAll("-", " ");
-}
-
-function isModeFilled(tab: Tab, v: VisualDirectionValue): boolean {
-  if (tab === "urls") return v.inspirationUrls.length > 0;
-  if (tab === "screenshots") return v.uploadedScreenshots.length > 0;
-  if (tab === "style") return !!v.chosenPresetSlug || !!v.chosenDesignLanguageSlug;
-  if (tab === "colors") return !!v.chosenPaletteSlug;
-  return false;
 }
 
 // Silence unused-import warning on Image — kept for future preview-image usage

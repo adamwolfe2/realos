@@ -10,7 +10,6 @@ import {
   type IntakeFormInput,
   IDENTITY_TYPES,
   VERTICALS,
-  PRESETS,
   TIMELINE_OPTIONS,
   TIER_OPTIONS,
 } from "@/lib/site-engine/intake-schema";
@@ -70,7 +69,9 @@ const SECTION_ORDER = [
   "identity",
   "brand",
   "compliance",
-  "visual",
+  "style",
+  "colors",
+  "visualRefs",
   "assets",
   "voice",
   "content",
@@ -86,15 +87,23 @@ const SECTION_LABELS: Record<SectionId, string> = {
   identity: "1. About you",
   brand: "2. Brand basics",
   compliance: "3. Compliance",
-  visual: "4. Visual direction",
-  assets: "5. Assets",
-  voice: "6. Voice",
-  content: "7. Content",
-  integrations: "8. Integrations",
-  domain: "9. Domain",
-  timeline: "10. Timeline",
-  wrap: "11. Anything else",
+  style: "4. Style",
+  colors: "5. Colors",
+  visualRefs: "6. Visual references",
+  assets: "7. Assets",
+  voice: "8. Voice",
+  content: "9. Content",
+  integrations: "10. Integrations",
+  domain: "11. Domain",
+  timeline: "12. Timeline",
+  wrap: "13. Anything else",
 };
+
+// Section state is held in-memory only (React useState) and is NOT
+// persisted to localStorage or the DB — only the form payload is. So
+// splitting `visual` into `style`/`colors`/`visualRefs` is purely a
+// client-side wizard restructure; no schema migration or legacy section
+// id remap is required for in-flight or resumed drafts.
 
 const EMPTY_FORM: IntakeFormInput = {
   submittedByName: "",
@@ -329,8 +338,12 @@ export function IntakeForm({
       className={cn("space-y-6", className)}
       noValidate
     >
-      {/* Section pills */}
-      <nav className="flex flex-wrap gap-1.5" aria-label="Form sections">
+      {/* Section pills — 13 steps wrap on desktop, scroll horizontally on
+          narrow screens so the labels never collide. */}
+      <nav
+        className="flex gap-1.5 overflow-x-auto md:flex-wrap pb-1 -mx-1 px-1"
+        aria-label="Form sections"
+      >
         {SECTION_ORDER.map((id, i) => {
           const active = id === currentSection;
           return (
@@ -339,7 +352,7 @@ export function IntakeForm({
               type="button"
               onClick={() => setCurrentSection(id)}
               className={cn(
-                "px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors",
+                "shrink-0 px-2.5 py-1 rounded-md text-[11px] font-medium border transition-colors whitespace-nowrap",
                 active
                   ? "bg-primary text-primary-foreground border-primary"
                   : i <= sectionIndex
@@ -367,14 +380,62 @@ export function IntakeForm({
         {currentSection === "compliance" && (
           <ComplianceSection form={form} update={update} />
         )}
-        {currentSection === "visual" && (
-          <VisualDirectionPicker
-            value={visualDirection}
-            onChange={setVisualDirection}
-            presets={visualDirectionCatalogs.presets}
-            designLanguages={visualDirectionCatalogs.designLanguages}
-            palettes={visualDirectionCatalogs.palettes}
-          />
+        {currentSection === "style" && (
+          <div className="space-y-5">
+            <header>
+              <h2 className="text-base font-semibold">Pick your style</h2>
+              <p className="text-sm text-muted-foreground">
+                Choose one preset or pick from the design language library —
+                what do you want your site to feel like?
+              </p>
+            </header>
+            <VisualDirectionPicker
+              mode="style"
+              value={visualDirection}
+              onChange={setVisualDirection}
+              presets={visualDirectionCatalogs.presets}
+              designLanguages={visualDirectionCatalogs.designLanguages}
+              palettes={visualDirectionCatalogs.palettes}
+            />
+          </div>
+        )}
+        {currentSection === "colors" && (
+          <div className="space-y-5">
+            <header>
+              <h2 className="text-base font-semibold">Pick your colors</h2>
+              <p className="text-sm text-muted-foreground">
+                Optional. We'll pull defaults from your brand. Override here if
+                you want something specific.
+              </p>
+            </header>
+            <VisualDirectionPicker
+              mode="colors"
+              value={visualDirection}
+              onChange={setVisualDirection}
+              presets={visualDirectionCatalogs.presets}
+              designLanguages={visualDirectionCatalogs.designLanguages}
+              palettes={visualDirectionCatalogs.palettes}
+            />
+          </div>
+        )}
+        {currentSection === "visualRefs" && (
+          <div className="space-y-5">
+            <header>
+              <h2 className="text-base font-semibold">Show us what you like</h2>
+              <p className="text-sm text-muted-foreground">
+                Optional. Paste inspiration URLs or upload screenshots. Helps us
+                match the feel you want.
+              </p>
+            </header>
+            <VisualDirectionPicker
+              mode="references"
+              value={visualDirection}
+              onChange={setVisualDirection}
+              presets={visualDirectionCatalogs.presets}
+              designLanguages={visualDirectionCatalogs.designLanguages}
+              palettes={visualDirectionCatalogs.palettes}
+            />
+          </div>
         )}
         {currentSection === "assets" && (
           <AssetsSection form={form} update={update} />
@@ -676,62 +737,6 @@ function ComplianceSection({ form, update }: SectionProps) {
           />
         </Field>
       </div>
-    </div>
-  );
-}
-
-function VisualSection({ form, update }: SectionProps) {
-  return (
-    <div className="space-y-5">
-      <header>
-        <h2 className="text-base font-semibold">Visual direction</h2>
-        <p className="text-sm text-muted-foreground">
-          Pick a starting preset OR drop in inspiration URLs.
-        </p>
-      </header>
-      <Field label="Preset (pick the closest one)">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-          {PRESETS.map((p) => (
-            <button
-              key={p}
-              type="button"
-              onClick={() =>
-                update(
-                  "presetChoice",
-                  form.presetChoice === p ? undefined : p,
-                )
-              }
-              className={cn(
-                "px-3 py-2 rounded-md border text-sm text-left transition-colors",
-                form.presetChoice === p
-                  ? "border-primary bg-primary/5 text-foreground"
-                  : "border-border bg-background hover:bg-muted/40",
-              )}
-            >
-              {humanizePreset(p)}
-            </button>
-          ))}
-        </div>
-      </Field>
-      <Field
-        label="Inspiration URLs"
-        hint="Paste 1–5 site URLs you love. We'll extract structure + style from each."
-      >
-        <UrlListInput
-          urls={form.inspirationUrls}
-          onChange={(u) => update("inspirationUrls", u)}
-        />
-      </Field>
-      <Field label="Current site (if any)">
-        <Input
-          type="url"
-          value={form.currentSiteUrl ?? ""}
-          onChange={(e) =>
-            update("currentSiteUrl", e.target.value || undefined)
-          }
-          placeholder="https://"
-        />
-      </Field>
     </div>
   );
 }
@@ -1152,61 +1157,6 @@ function SelectChips<T extends string>({
   );
 }
 
-function UrlListInput({
-  urls,
-  onChange,
-}: {
-  urls: string[];
-  onChange: (u: string[]) => void;
-}) {
-  const [draft, setDraft] = React.useState("");
-  const add = () => {
-    const v = draft.trim();
-    if (!v) return;
-    onChange([...urls, v]);
-    setDraft("");
-  };
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-2">
-        <Input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="https://example.com"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") {
-              e.preventDefault();
-              add();
-            }
-          }}
-        />
-        <Button type="button" variant="outline" onClick={add}>
-          Add
-        </Button>
-      </div>
-      {urls.length ? (
-        <ul className="flex flex-col gap-1">
-          {urls.map((u, i) => (
-            <li
-              key={`${u}-${i}`}
-              className="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-3 py-1.5 text-sm"
-            >
-              <span className="truncate">{u}</span>
-              <button
-                type="button"
-                onClick={() => onChange(urls.filter((_, idx) => idx !== i))}
-                className="text-xs text-muted-foreground hover:text-foreground"
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
-  );
-}
-
 function CheckboxRow({
   checked,
   onChange,
@@ -1346,10 +1296,6 @@ function humanizeIdentity(id: (typeof IDENTITY_TYPES)[number]) {
     default:
       return "Other";
   }
-}
-
-function humanizePreset(p: (typeof PRESETS)[number]) {
-  return p.replaceAll("_", " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function humanizeTimeline(t: (typeof TIMELINE_OPTIONS)[number]) {
