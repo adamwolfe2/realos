@@ -25,12 +25,17 @@ export function ScoreCard({
   score,
   delta,
   caption,
+  reasoning,
   className,
 }: {
   title: string;
   score: number | null | undefined;
   delta?: number | null;
   caption?: string;
+  /** "Why this score" — short bullet list rendered under the score so
+   *  the prospect understands what's driving the number. Empty array
+   *  or undefined → reasoning section hides. Adam 2026-05-29. */
+  reasoning?: { headline?: string | null; points: string[] } | null;
   className?: string;
 }) {
   // Adam 2026-05-29: previously `score ?? 0` collapsed null/undefined
@@ -122,6 +127,41 @@ export function ScoreCard({
           }}
         />
       </div>
+      {reasoning && (reasoning.headline || reasoning.points.length > 0) ? (
+        <div className="mt-2 pt-3 border-t" style={{ borderColor: "#F3F4F6" }}>
+          {reasoning.headline ? (
+            <p
+              className="text-xs font-semibold mb-1.5"
+              style={{ color: "#1E2A3A" }}
+            >
+              {reasoning.headline}
+            </p>
+          ) : null}
+          {reasoning.points.length > 0 ? (
+            <ul className="space-y-1">
+              {reasoning.points.map((point, i) => (
+                <li
+                  key={i}
+                  className="text-[11.5px] leading-snug flex items-start gap-1.5"
+                  style={{ color: "#6B7280" }}
+                >
+                  <span
+                    aria-hidden
+                    className="inline-block flex-shrink-0 mt-1"
+                    style={{
+                      width: 3,
+                      height: 3,
+                      borderRadius: 999,
+                      backgroundColor: "#9CA3AF",
+                    }}
+                  />
+                  <span>{point}</span>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }

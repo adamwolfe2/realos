@@ -2,7 +2,13 @@ import "server-only";
 
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import type { SignalSnapshot } from "@/lib/signals/types";
+import type {
+  AeoSignal,
+  ReputationSignal,
+  SeoSignal,
+  SignalSnapshot,
+  TrafficSignal,
+} from "@/lib/signals/types";
 import type {
   BacklinksSummary,
   DomainRankedKeyword,
@@ -22,6 +28,27 @@ import type { ProspectMention } from "./reputation-prospect";
 
 export type Finding = { id: string; title: string; detail?: string };
 
+/** Per-section "why this score" — short bullet list of the supporting
+ *  numbers behind the section's score. Surfaced on the audit viewer so
+ *  the prospect understands what's driving each number instead of
+ *  staring at a score they can't trace.
+ *  Adam 2026-05-29 feedback: "we don't understand why the SEO and the
+ *  AEO and the reputation and the traffic are the numbers that they
+ *  are." Every entry here is derived from the real signal — no fluff. */
+export type SectionDetail = {
+  /** One-line headline (rendered first, slightly larger). */
+  headline?: string | null;
+  /** Bullet supporting points — up to 4 per section. */
+  points: string[];
+};
+
+export type SectionDetails = {
+  seo: SectionDetail | null;
+  aeo: SectionDetail | null;
+  reputation: SectionDetail | null;
+  traffic: SectionDetail | null;
+};
+
 export type SynthesizedFindings = {
   quickWins: Finding[];
   risks: Finding[];
@@ -29,6 +56,9 @@ export type SynthesizedFindings = {
   // Mentions persist onto the audit findings JSON so the viewer renders the
   // real reputation list (real URLs, real dates).
   mentions: ProspectMention[];
+  /** Per-section reasoning — populated by synthesize.ts so the audit
+   *  viewer can render "why" copy under each ScoreCard. */
+  sectionDetails: SectionDetails;
 };
 
 export type ProviderData = {
@@ -354,11 +384,219 @@ export async function synthesizeAudit(
     risks: risks.slice(0, 5),
     opportunities: opportunities.slice(0, 5),
     mentions: provider.mentions,
+    sectionDetails: buildSectionDetails(signals, provider),
   };
 
   const claudeSummary = await writeNarrative(signals, provider, findings);
 
   return { findings, claudeSummary, sectionScores };
+}
+
+// ---------------------------------------------------------------------------
+// buildSectionDetails
+//
+// "Why this score" copy for each section. Reads off the SignalSnapshot
+// + raw provider data and emits short bullets the audit viewer can render
+// under each ScoreCard. Every bullet is derived from a real number — no
+// generic copy. Adam 2026-05-29: prospect should see the receipts.
+// ---------------------------------------------------------------------------
+function buildSectionDetails(
+  signals: SignalSnapshot,
+  provider: ProviderData,
+): SectionDetails {
+  return {
+    seo: buildSeoDetail(signals, provider),
+    aeo: buildAeoDetail(signals, provider),
+    reputation: buildReputationDetail(signals),
+    traffic: buildTrafficDetail(signals),
+  };
+}
+
+function buildSeoDetail(
+  signals: SignalSnapshot,
+  provider: ProviderData,
+): SectionDetail | null {
+  const seo = signals.seo;
+  if (!seo) {
+    return {
+      headline: "Scan still expanding coverage",
+      points: [
+        "DataForSEO Labs has no organic ranking data yet for this domain — typical for properties under ~100 units or sites less than 6 months old.",
+        "Page-level audit (Lighthouse + on-page checks) didn't return either. Verify the homepage is reachable and serves real HTML (not a JS shell with no SSR).",
+      ],
+    };
+  }
+  const points: string[] = [];
+  if (seo.organicKeywords > 0) {
+    points.push(
+      `${seo.organicKeywords.toLocaleString()} ranked keyword${seo.organicKeywords === 1 ? "" : "s"}, ${seo.top10Count} in the top 10 of Google.`,
+    );
+    if (seo.avgPosition != null) {
+      points.push(`Average ranking position is #${seo.avgPosition}.`);
+    }
+  } else {
+    points.push(
+      "DataForSEO Labs returned 0 ranked keywords. Common for newer or smaller properties — pure on-page-audit signal driving this score.",
+    );
+  }
+  if (seo.lighthouseScore != null) {
+    points.push(`Lighthouse SEO category: ${seo.lighthouseScore}/100.`);
+  }
+  if (seo.referringDomains > 0) {
+    points.push(
+      `${seo.referringDomains.toLocaleString()} referring domain${seo.referringDomains === 1 ? "" : "s"} backlinking to the site.`,
+    );
+  }
+  if (provider.pageAudit?.meta) {
+    const m = provider.pageAudit.meta;
+    const issues: string[] = [];
+    if (!m.is_https) issues.push("no HTTPS");
+    if (!m.title) issues.push("missing <title>");
+    if (m.duplicate_title) issues.push("duplicate <title>");
+    if (m.duplicate_description) issues.push("duplicate description");
+    if ((m.htags?.h1?.length ?? 0) === 0) issues.push("no <h1>");
+    if ((m.no_image_alt ?? 0) > 0) issues.push(`${m.no_image_alt} missing alt`);
+    if ((m.broken_links ?? 0) > 0) issues.push(`${m.broken_links} broken links`);
+    if (issues.length > 0) {
+      points.push(`On-page issues found: ${issues.join(", ")}.`);
+    } else {
+      points.push("On-page audit found no blocking issues.");
+    }
+  }
+  return {
+    headline: pickSeoHeadline(seo),
+    points: points.slice(0, 4),
+  };
+}
+
+function pickSeoHeadline(seo: SeoSignal): string {
+  if (seo.score >= 80) return "Strong SEO fundamentals";
+  if (seo.score >= 60) return "Healthy with specific gaps";
+  if (seo.score >= 40) return "Significant on-page work needed";
+  return "Multiple SEO blockers";
+}
+
+function buildAeoDetail(
+  signals: SignalSnapshot,
+  provider: ProviderData,
+): SectionDetail | null {
+  const aeo = signals.aeo;
+  if (!aeo) return null;
+  const points: string[] = [];
+  points.push(
+    `${aeo.citationsFound} of ${aeo.enginesChecked} AI engines cited the brand by name (${Math.round(aeo.citationRate * 100)}% citation rate).`,
+  );
+  if (provider.aeoCitedEngines.length > 0) {
+    points.push(`Cited by: ${provider.aeoCitedEngines.join(", ")}.`);
+  }
+  if (provider.aeoUncitedEngines.length > 0) {
+    points.push(
+      `Uncited by: ${provider.aeoUncitedEngines.join(", ")} — missing reach on those engines.`,
+    );
+  }
+  if (provider.aeoCompetitorsCited.length > 0) {
+    points.push(
+      `Competitors cited instead on the same prompts: ${provider.aeoCompetitorsCited.slice(0, 3).join(", ")}.`,
+    );
+  }
+  return {
+    headline: pickAeoHeadline(aeo),
+    points: points.slice(0, 4),
+  };
+}
+
+function pickAeoHeadline(aeo: AeoSignal): string {
+  if (aeo.citationRate >= 0.8) return "AI search well-defended";
+  if (aeo.citationRate >= 0.5) return "Half the AI surface covered";
+  if (aeo.citationRate > 0) return "Limited AI citation reach";
+  return "Invisible on AI search";
+}
+
+function buildReputationDetail(
+  signals: SignalSnapshot,
+): SectionDetail | null {
+  const rep = signals.reputation;
+  if (!rep) return null;
+  const points: string[] = [];
+  if (rep.totalMentions === 0) {
+    return {
+      headline: "No public mentions found",
+      points: [
+        "Scanned Reddit, Yelp, Google, BBB, ApartmentRatings, Facebook, and the open web. Zero hits in the last 90 days.",
+        "For a leased-up property this usually means the brand name is too generic or no one's posting. For a stealth/new property, it's expected.",
+      ],
+    };
+  }
+  const pos = Math.round(rep.sentimentMix.positive * 100);
+  const neu = Math.round(rep.sentimentMix.neutral * 100);
+  const neg = Math.round(rep.sentimentMix.negative * 100);
+  points.push(
+    `${rep.totalMentions} public mention${rep.totalMentions === 1 ? "" : "s"} surfaced from the past 90 days.`,
+  );
+  points.push(
+    `Sentiment mix: ${pos}% positive, ${neu}% neutral, ${neg}% negative.`,
+  );
+  if (rep.newNegative7d > 0) {
+    points.push(
+      `${rep.newNegative7d} new negative post${rep.newNegative7d === 1 ? "" : "s"} in the last 7 days — flag for fast public reply.`,
+    );
+  }
+  if (rep.avgRating != null) {
+    points.push(`Average aggregated rating: ${rep.avgRating.toFixed(1)} / 5.`);
+  }
+  return {
+    headline: pickReputationHeadline(rep),
+    points: points.slice(0, 4),
+  };
+}
+
+function pickReputationHeadline(rep: ReputationSignal): string {
+  if (rep.sentimentMix.negative > 0.3) return "Negative tilt — needs response";
+  if (rep.sentimentMix.positive > 0.5) return "Net positive public sentiment";
+  if (rep.totalMentions < 5) return "Thin public presence";
+  return "Mixed-signal public coverage";
+}
+
+function buildTrafficDetail(
+  signals: SignalSnapshot,
+): SectionDetail | null {
+  const traffic = signals.traffic;
+  if (!traffic) {
+    return {
+      headline: "No traffic estimate available",
+      points: [
+        "Traffic is currently estimated from DataForSEO ranked-keyword data × CTR-by-position. With zero ranked keywords on file, we can't make an honest estimate.",
+        "Real-time traffic via GA4 lands when the operator connects analytics inside LeaseStack.",
+      ],
+    };
+  }
+  const points: string[] = [];
+  points.push(
+    `Estimated ${traffic.sessions.toLocaleString()} organic session${traffic.sessions === 1 ? "" : "s"} per month from ranked-keyword × CTR-by-position math.`,
+  );
+  points.push(
+    traffic.source === "ga"
+      ? "Source: Google Analytics (GA4) live data."
+      : "Source: DataForSEO ranking estimate (no GA4 connection yet).",
+  );
+  if (traffic.topPages.length > 0) {
+    const top = traffic.topPages[0];
+    points.push(`Top page by visits: ${top.url} (${top.visits.toLocaleString()}).`);
+  }
+  if (traffic.bounceRate != null) {
+    points.push(`Bounce rate: ${(traffic.bounceRate * 100).toFixed(0)}%.`);
+  }
+  return {
+    headline: pickTrafficHeadline(traffic),
+    points: points.slice(0, 4),
+  };
+}
+
+function pickTrafficHeadline(traffic: TrafficSignal): string {
+  if (traffic.sessions >= 10_000) return "Healthy organic baseline";
+  if (traffic.sessions >= 1_000) return "Real organic floor";
+  if (traffic.sessions > 100) return "Thin organic footprint";
+  return "Effectively no organic traffic";
 }
 
 function uniqueSources(mentions: ProspectMention[]): string {
