@@ -13,6 +13,7 @@ import {
   BRIEFING,
   VISITORS,
   VISITOR_STATS,
+  INITIAL_REVEAL_DELAYS_MS,
   SEO_QUERIES,
   SEO_TREND,
   type LeadRow,
@@ -2306,6 +2307,18 @@ function WeeklyBarChart() {
 // 6. PROPERTIES
 // ===========================================================================
 
+// ---------------------------------------------------------------------------
+// PropertiesView (2026-05-29 rebuild)
+//
+// Was four plain text cards with green "Live" + orange "Onboarding"
+// pills. Adam: needs real building photos + brand-blue cohesion.
+//
+// Each card now leads with a 16:9 photo (Unsplash, whitelisted in
+// next.config), a brand-blue status badge in the top-right corner of
+// the photo, then the KPI strip below. Stat numbers stay on the brand
+// blue ramp — no green / amber.
+// ---------------------------------------------------------------------------
+
 function PropertiesView() {
   return (
     <div>
@@ -2340,8 +2353,8 @@ function PropertiesView() {
           type="button"
           className="inline-flex items-center gap-2"
           style={{
-            backgroundColor: TOKENS.terracotta,
-            color: TOKENS.ivory,
+            backgroundColor: TOKENS.accent,
+            color: TOKENS.white,
             borderRadius: "10px",
             padding: "8px 14px",
             fontFamily: "var(--font-sans)",
@@ -2349,7 +2362,7 @@ function PropertiesView() {
             fontWeight: 500,
           }}
         >
-          <Icons.plus color={TOKENS.ivory} />
+          <Icons.plus color={TOKENS.white} />
           Add property
         </button>
       </div>
@@ -2359,30 +2372,116 @@ function PropertiesView() {
           <PropertyCard key={p.id} property={p} />
         ))}
       </div>
+
+      {/* Live-dot keyframes need `global` so the inline animation
+          reference on the PropertyCard "Live" badge resolves —
+          styled-jsx rewrites scoped @keyframes names, which would
+          break a `style={{ animation: 'tourLiveDot ...' }}` lookup. */}
+      <style jsx global>{`
+        @keyframes tourLiveDot {
+          0%, 100% { transform: scale(1);   opacity: 1;   }
+          50%      { transform: scale(1.3); opacity: 0.55;}
+        }
+      `}</style>
     </div>
   );
 }
 
 function PropertyCard({ property }: { property: typeof PROPERTIES[number] }) {
-  const tone: "success" | "warning" | "muted" =
-    property.status === "Live"       ? "success"  :
-    property.status === "Onboarding" ? "warning"  :
-    "muted";
+  // Status badge: every status renders on the brand-blue ramp.
+  // Live = solid accent fill; Onboarding = soft accent tint; Paused = muted.
+  const statusStyle: { bg: string; fg: string; border: string } =
+    property.status === "Live"
+      ? { bg: TOKENS.accent, fg: TOKENS.white, border: TOKENS.accent }
+      : property.status === "Onboarding"
+        ? { bg: "rgba(255,255,255,0.92)", fg: TOKENS.accent, border: "rgba(37,99,235,0.4)" }
+        : { bg: "rgba(255,255,255,0.92)", fg: TOKENS.stone,  border: TOKENS.ring };
+
   return (
     <div
       style={{
         backgroundColor: TOKENS.white,
         borderRadius: "16px",
-        padding: "20px 22px",
+        overflow: "hidden",
         boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
       }}
     >
-      <div className="flex items-start justify-between gap-3">
+      {/* Hero photo strip — 16:9 crop, building shot in the brand-blue
+          ramp. Plain <img> instead of next/image so the demo isn't
+          tied to next-image's domain whitelist for the CDN-hosted
+          building shots. */}
+      <div
+        className="relative"
+        style={{
+          aspectRatio: "16 / 9",
+          backgroundColor: TOKENS.ivory,
+          overflow: "hidden",
+        }}
+      >
+        <img
+          src={property.photo}
+          alt={`${property.name} building photo`}
+          decoding="async"
+          loading="lazy"
+          style={{
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            display: "block",
+          }}
+        />
+        {/* Subtle bottom gradient so the status badge stays legible
+            against bright building exteriors. */}
+        <div
+          aria-hidden
+          style={{
+            position: "absolute",
+            inset: 0,
+            background:
+              "linear-gradient(180deg, rgba(15,23,42,0) 60%, rgba(15,23,42,0.18) 100%)",
+            pointerEvents: "none",
+          }}
+        />
+        <span
+          className="absolute top-3 right-3 inline-flex items-center gap-1.5"
+          style={{
+            backgroundColor: statusStyle.bg,
+            color: statusStyle.fg,
+            border: `1px solid ${statusStyle.border}`,
+            padding: "3px 10px",
+            borderRadius: 999,
+            fontFamily: "var(--font-mono)",
+            fontSize: 10,
+            letterSpacing: "0.12em",
+            textTransform: "uppercase",
+            fontWeight: 600,
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+          }}
+        >
+          {property.status === "Live" ? (
+            <span
+              aria-hidden
+              style={{
+                width: 6,
+                height: 6,
+                borderRadius: "50%",
+                backgroundColor: TOKENS.white,
+                animation: "tourLiveDot 1.6s ease-in-out infinite",
+              }}
+            />
+          ) : null}
+          {property.status}
+        </span>
+      </div>
+
+      {/* Card body */}
+      <div style={{ padding: "16px 18px 18px" }}>
         <div>
           <p
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "20px",
+              fontSize: "18px",
               fontWeight: 500,
               color: TOKENS.nearBlack,
               lineHeight: 1.2,
@@ -2391,58 +2490,72 @@ function PropertyCard({ property }: { property: typeof PROPERTIES[number] }) {
             {property.name}
           </p>
           <p
-            className="mt-1"
+            className="mt-0.5"
             style={{
               fontFamily: "var(--font-sans)",
-              fontSize: "13px",
-              color: TOKENS.stone,
+              fontSize: "12.5px",
+              color: TOKENS.olive,
             }}
           >
             {property.location} &middot; {property.units} units
           </p>
         </div>
-        <Pill tone={tone}>{property.status}</Pill>
-      </div>
 
-      <div className="mt-5 grid grid-cols-1 sm:grid-cols-3 gap-3">
-        <PropertyStat
-          label="Occupancy"
-          value={property.occupancyPct > 0 ? `${property.occupancyPct}%` : "—"}
-        />
-        <PropertyStat
-          label="Leads / wk"
-          value={String(property.leadsThisWeek)}
-        />
-        <PropertyStat
-          label="Revenue"
-          value={property.revenue}
-        />
-      </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <PropertyStat
+            label="Occupancy"
+            value={property.occupancyPct > 0 ? `${property.occupancyPct}%` : "—"}
+          />
+          <PropertyStat
+            label="Leads / wk"
+            value={String(property.leadsThisWeek)}
+          />
+          <PropertyStat
+            label="Revenue"
+            value={property.revenue}
+          />
+        </div>
 
-      <div
-        className="mt-5 pt-4 flex items-center gap-2"
-        style={{ borderTop: `1px dashed ${TOKENS.borderCream}` }}
-      >
-        <button
-          type="button"
-          className="btn-secondary"
-          style={{
-            flex: 1,
-            minHeight: "32px",
-            padding: "4px 12px",
-            fontSize: "12px",
-            borderRadius: "8px",
-          }}
+        <div
+          className="mt-4 pt-3 flex items-center gap-2"
+          style={{ borderTop: `1px solid ${TOKENS.borderCream}` }}
         >
-          Open portal
-        </button>
-        <button
-          type="button"
-          className="btn-secondary"
-          style={{ minHeight: "32px", padding: "4px 12px", fontSize: "12px", borderRadius: "8px" }}
-        >
-          Settings
-        </button>
+          <button
+            type="button"
+            style={{
+              flex: 1,
+              minHeight: "32px",
+              padding: "4px 12px",
+              fontSize: "12px",
+              borderRadius: "8px",
+              backgroundColor: TOKENS.accent,
+              color: TOKENS.white,
+              fontFamily: "var(--font-sans)",
+              fontWeight: 500,
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            Open portal
+          </button>
+          <button
+            type="button"
+            style={{
+              minHeight: "32px",
+              padding: "4px 12px",
+              fontSize: "12px",
+              borderRadius: "8px",
+              backgroundColor: TOKENS.white,
+              color: TOKENS.charcoal,
+              border: `1px solid ${TOKENS.borderCream}`,
+              fontFamily: "var(--font-sans)",
+              fontWeight: 500,
+              cursor: "pointer",
+            }}
+          >
+            Settings
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -2738,10 +2851,28 @@ function SettingsRow({
 // 9. BRIEFING (daily AI digest)
 // ===========================================================================
 
+// ---------------------------------------------------------------------------
+// BriefingView (2026-05-29 overhaul)
+//
+// Previous version: verbose summary card + three big highlight cards
+// (WIN/WATCH/NOTE in green/amber/blue) + a separate "Focus this week"
+// paragraph. Too much vertical space, too much body copy.
+//
+// New layout: compact two-column row.
+//   * Left: three highlight rows, each one metric chip + one-line title
+//     + one-line body. No "WIN/WATCH/NOTE" labels — the metric chip
+//     conveys the polarity (positive vs decreasing). Everything stays
+//     on the brand-blue ramp.
+//   * Right: numbered action list ("This week"). Three actions, each
+//     short enough to read in a breath.
+//
+// The hero summary collapses to a single line under the greeting.
+// ---------------------------------------------------------------------------
+
 function BriefingView() {
   return (
     <div>
-      <div className="flex items-start justify-between gap-4 mb-4">
+      <div className="flex items-start justify-between gap-4 mb-4 flex-wrap">
         <div>
           <p
             style={{
@@ -2759,7 +2890,7 @@ function BriefingView() {
             className="mt-1"
             style={{
               fontFamily: "var(--font-display)",
-              fontSize: "20px",
+              fontSize: "22px",
               fontWeight: 500,
               color: TOKENS.nearBlack,
               lineHeight: 1.15,
@@ -2767,149 +2898,156 @@ function BriefingView() {
           >
             {BRIEFING.greeting}
           </h1>
+          <p
+            className="mt-1.5"
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: "13.5px",
+              color: TOKENS.olive,
+              lineHeight: 1.45,
+            }}
+          >
+            {BRIEFING.summary}
+          </p>
         </div>
         <button
           type="button"
-          className="btn-secondary"
-          style={{ minHeight: "30px", padding: "4px 10px", fontSize: "11.5px", borderRadius: "8px" }}
+          style={{
+            minHeight: "30px",
+            padding: "4px 12px",
+            fontSize: "11.5px",
+            borderRadius: "8px",
+            backgroundColor: TOKENS.white,
+            color: TOKENS.charcoal,
+            border: `1px solid ${TOKENS.borderCream}`,
+            fontFamily: "var(--font-sans)",
+            fontWeight: 500,
+            cursor: "pointer",
+          }}
         >
           Share
         </button>
       </div>
 
-      <div
-        className="p-4 mb-3"
-        style={{
-          backgroundColor: TOKENS.accent,
-          borderRadius: "12px",
-          color: TOKENS.white,
-        }}
-      >
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "9.5px",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            fontWeight: 500,
-            opacity: 0.9,
-          }}
-        >
-          Weekly summary
-        </p>
-        <p
-          className="mt-1.5"
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "13.5px",
-            fontWeight: 400,
-            lineHeight: 1.55,
-          }}
-        >
-          {BRIEFING.summary}
-        </p>
-      </div>
-
-      <div className="space-y-2">
-        {BRIEFING.highlights.map((h, i) => {
-          const toneColor =
-            h.kind === "win"   ? TOKENS.success :
-            h.kind === "watch" ? TOKENS.warning :
-            TOKENS.accent;
-          const toneBg =
-            h.kind === "win"   ? "rgba(22, 163, 74,0.12)" :
-            h.kind === "watch" ? "rgba(245, 158, 11,0.12)" :
-            "rgba(37,99,235,0.10)";
-          const toneLabel =
-            h.kind === "win"   ? "WIN" :
-            h.kind === "watch" ? "WATCH" :
-            "NOTE";
-          return (
-            <div
-              key={i}
-              className="p-3.5 flex gap-3"
-              style={{
-                backgroundColor: TOKENS.white,
-                borderRadius: "10px",
-                boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
-              }}
-            >
-              <span
-                className="flex-shrink-0 inline-flex items-center justify-center"
+      <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-3">
+        {/* Highlights column — three compact rows */}
+        <div className="space-y-2">
+          {BRIEFING.highlights.map((h, i) => {
+            // Polarity inferred from the metric chip's leading character.
+            // Down = lighter accent shade (still brand-blue). Up + neutral
+            // = full accent. Adam 2026-05-29: no green/amber anywhere.
+            const isDown = h.metric.trim().startsWith("-");
+            const chipColor = isDown ? TOKENS.accentLight : TOKENS.accent;
+            return (
+              <div
+                key={i}
+                className="p-3 flex items-center gap-3"
                 style={{
-                  width: "42px",
-                  height: "20px",
-                  borderRadius: "5px",
-                  backgroundColor: toneBg,
-                  color: toneColor,
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "9px",
-                  fontWeight: 600,
-                  letterSpacing: "0.12em",
+                  backgroundColor: TOKENS.white,
+                  borderRadius: "10px",
+                  boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
                 }}
               >
-                {toneLabel}
-              </span>
-              <div className="flex-1 min-w-0">
-                <h3
+                <span
+                  className="flex-shrink-0 inline-flex items-center justify-center tabular-nums"
                   style={{
-                    fontFamily: "var(--font-display)",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    color: TOKENS.nearBlack,
-                    lineHeight: 1.3,
+                    minWidth: "52px",
+                    height: "28px",
+                    padding: "0 8px",
+                    borderRadius: "6px",
+                    backgroundColor: `${chipColor}1A`,
+                    color: chipColor,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: "12.5px",
+                    fontWeight: 700,
+                    letterSpacing: "-0.01em",
                   }}
                 >
-                  {h.title}
-                </h3>
+                  {h.metric}
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p
+                    className="truncate"
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "13.5px",
+                      fontWeight: 500,
+                      color: TOKENS.nearBlack,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {h.title}
+                  </p>
+                  <p
+                    className="mt-0.5"
+                    style={{
+                      fontFamily: "var(--font-sans)",
+                      fontSize: "12px",
+                      color: TOKENS.olive,
+                      lineHeight: 1.4,
+                    }}
+                  >
+                    {h.body}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Actions column — three numbered items, scannable */}
+        <div
+          className="p-4"
+          style={{
+            backgroundColor: TOKENS.accent,
+            borderRadius: "12px",
+            color: TOKENS.white,
+          }}
+        >
+          <p
+            style={{
+              fontFamily: "var(--font-mono)",
+              fontSize: "9.5px",
+              letterSpacing: "0.14em",
+              textTransform: "uppercase",
+              fontWeight: 500,
+              opacity: 0.85,
+            }}
+          >
+            This week · 3 actions
+          </p>
+          <ol className="mt-3 space-y-2.5">
+            {BRIEFING.actions.map((action, i) => (
+              <li key={i} className="flex items-start gap-2.5">
+                <span
+                  className="flex-shrink-0 inline-flex items-center justify-center"
+                  style={{
+                    width: 18,
+                    height: 18,
+                    borderRadius: 4,
+                    backgroundColor: "rgba(255,255,255,0.18)",
+                    color: TOKENS.white,
+                    fontFamily: "var(--font-mono)",
+                    fontSize: 10,
+                    fontWeight: 700,
+                    marginTop: 1,
+                  }}
+                >
+                  {i + 1}
+                </span>
                 <p
-                  className="mt-1"
                   style={{
                     fontFamily: "var(--font-sans)",
                     fontSize: "12.5px",
-                    color: TOKENS.charcoal,
-                    lineHeight: 1.55,
+                    lineHeight: 1.45,
                   }}
                 >
-                  {h.body}
+                  {action}
                 </p>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      <div
-        className="mt-3 p-3.5"
-        style={{
-          backgroundColor: TOKENS.ivory,
-          borderRadius: "10px",
-          boxShadow: `0 0 0 1px ${TOKENS.borderCream}`,
-        }}
-      >
-        <p
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "9.5px",
-            color: TOKENS.stone,
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-            fontWeight: 500,
-          }}
-        >
-          Focus this week
-        </p>
-        <p
-          className="mt-1"
-          style={{
-            fontFamily: "var(--font-sans)",
-            fontSize: "12.5px",
-            color: TOKENS.charcoal,
-            lineHeight: 1.55,
-          }}
-        >
-          {BRIEFING.focus}
-        </p>
+              </li>
+            ))}
+          </ol>
+        </div>
       </div>
     </div>
   );
@@ -2919,9 +3057,34 @@ function BriefingView() {
 // 10. VISITORS (identity-pixel resolved traffic)
 // ===========================================================================
 
+// ---------------------------------------------------------------------------
+// VisitorsView (2026-05-29 rebuild)
+//
+// Was a static table with green/orange status chips. Adam: the demo
+// portal has to look like the real product — and the real product's
+// hero pitch on this screen is LIVE IDENTIFICATION of anonymous traffic.
+//
+// New layout mirrors the marketing-side VisitorStream artifact: the
+// 5-row visitor stream with anonymous → identified reveals (real
+// headshots, brand-blue badges, no green/orange anywhere). KPI tiles
+// keep the same four metrics from the screenshot.
+// ---------------------------------------------------------------------------
+
 function VisitorsView() {
   const [filter, setFilter] = useState<"All" | Visitor["stage"]>("All");
-  const rows = VISITORS.filter((v) => filter === "All" || v.stage === filter);
+  const rows = useMemo(
+    () => VISITORS.filter((v) => filter === "All" || v.stage === filter),
+    [filter],
+  );
+  // Animated count — ticks up over time so the "Identification rate" tile
+  // reads as a live counter instead of a screenshot.
+  const [identifiedTick, setIdentifiedTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setIdentifiedTick((t) => t + 1), 4200);
+    return () => clearInterval(id);
+  }, []);
+
+  const liveIdentified = VISITOR_STATS.identifiedThisWeek + identifiedTick;
 
   return (
     <div>
@@ -2952,14 +3115,40 @@ function VisitorsView() {
             Visitors
           </h1>
         </div>
+        <span
+          className="inline-flex items-center gap-2"
+          style={{
+            backgroundColor: "rgba(37,99,235,0.10)",
+            color: TOKENS.accent,
+            padding: "5px 10px",
+            borderRadius: "999px",
+            fontFamily: "var(--font-mono)",
+            fontSize: "10.5px",
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+            fontWeight: 600,
+          }}
+        >
+          <span
+            aria-hidden
+            style={{
+              width: 6,
+              height: 6,
+              borderRadius: "50%",
+              backgroundColor: TOKENS.accent,
+              animation: "tourLiveDot 1.6s ease-in-out infinite",
+            }}
+          />
+          Pixel live
+        </span>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 mb-5">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
         {[
           { label: "Identification rate", value: VISITOR_STATS.resolveRate },
-          { label: "Identified / week",   value: VISITOR_STATS.identifiedThisWeek.toLocaleString() },
+          { label: "Identified / week",   value: liveIdentified.toLocaleString() },
           { label: "Moved to lead",       value: VISITOR_STATS.movedToLead.toLocaleString() },
-          { label: "Followed up this week", value: VISITOR_STATS.movedToLead.toLocaleString() },
+          { label: "Avg score",           value: "82" },
         ].map((k) => (
           <div
             key={k.label}
@@ -2983,7 +3172,7 @@ function VisitorsView() {
               {k.label}
             </p>
             <p
-              className="mt-1"
+              className="mt-1 tabular-nums"
               style={{
                 fontFamily: "var(--font-display)",
                 fontSize: "24px",
@@ -2998,7 +3187,7 @@ function VisitorsView() {
         ))}
       </div>
 
-      <div className="flex items-center gap-1.5 mb-4">
+      <div className="flex items-center gap-1.5 mb-4 flex-wrap">
         {(["All", "Identified", "Nurturing", "Converted"] as const).map((s) => {
           const active = filter === s;
           return (
@@ -3012,11 +3201,11 @@ function VisitorsView() {
                 fontFamily: "var(--font-sans)",
                 fontSize: "12px",
                 fontWeight: active ? 500 : 400,
-                color: active ? TOKENS.nearBlack : TOKENS.olive,
-                backgroundColor: active ? TOKENS.sand : TOKENS.white,
-                border: `1px solid ${active ? TOKENS.ring : TOKENS.borderCream}`,
+                color: active ? TOKENS.white : TOKENS.olive,
+                backgroundColor: active ? TOKENS.accent : TOKENS.white,
+                border: `1px solid ${active ? TOKENS.accent : TOKENS.borderCream}`,
                 cursor: "pointer",
-                transition: "background-color 0.2s",
+                transition: "all 0.2s",
               }}
             >
               {s}
@@ -3025,11 +3214,16 @@ function VisitorsView() {
         })}
       </div>
 
+      {/* Stream — 5 reveal rows on mount, each row flips anonymous → named
+          via TourVisitorRow's internal reveal timer. The first five rows
+          use INITIAL_REVEAL_DELAYS_MS for a staggered wave; rows beyond
+          5 use the default 1500ms delay (rare, only when a filter shows
+          all rows). */}
       <Tile>
         <div
-          className="grid grid-cols-[1fr_1.3fr_1fr_80px_80px] gap-3 px-5 py-2.5"
+          className="px-5 py-2.5 flex items-center justify-between"
           style={{
-            backgroundColor: TOKENS.parchment,
+            backgroundColor: TOKENS.ivory,
             borderBottom: `1px solid ${TOKENS.borderCream}`,
             color: TOKENS.stone,
             fontFamily: "var(--font-mono)",
@@ -3039,53 +3233,274 @@ function VisitorsView() {
             fontWeight: 500,
           }}
         >
-          <span>Visitor</span>
-          <span>Context</span>
-          <span>Last page</span>
-          <span className="text-right">Score</span>
-          <span className="text-right">Sessions</span>
+          <span>Live on your site right now</span>
+          <span style={{ color: TOKENS.accent, fontWeight: 600 }}>
+            {rows.length} visible
+          </span>
         </div>
-        {rows.map((v, i) => (
-          <div
-            key={v.id}
-            className="grid grid-cols-[1fr_1.3fr_1fr_80px_80px] gap-3 px-5 py-3 items-center"
+        <ul>
+          {rows.map((v, i) => (
+            <TourVisitorRow
+              key={`${v.id}-${filter}`}
+              v={v}
+              isLast={i === rows.length - 1}
+              revealDelayMs={
+                i < INITIAL_REVEAL_DELAYS_MS.length
+                  ? INITIAL_REVEAL_DELAYS_MS[i]
+                  : 1500
+              }
+            />
+          ))}
+        </ul>
+      </Tile>
+
+      {/* Animation keyframes — declared global because TourVisitorRow
+          (and the property card "Live" dot) reference them via inline
+          `style={{ animation: '...' }}`. styled-jsx would rewrite
+          scoped @keyframes names and break those lookups. */}
+      <style jsx global>{`
+        @keyframes tourLiveDot {
+          0%, 100% { transform: scale(1);   opacity: 1;   }
+          50%      { transform: scale(1.3); opacity: 0.55;}
+        }
+        @keyframes tourRowIn {
+          from { opacity: 0; transform: translateY(-6px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes tourRevealPulse {
+          0%   { transform: scale(0.85); opacity: 0.9; }
+          70%  { transform: scale(1.5);  opacity: 0;   }
+          100% { transform: scale(1.55); opacity: 0;   }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// TourVisitorRow — one row in the operator-portal Visitors stream.
+//
+// Lifecycle:
+//   * Mounts in the "anonymous" state — gray dashed-border avatar with a
+//     "?" inside, "Anonymous visitor" label, gray "Anonymous" pill.
+//   * After `revealDelayMs` ms, the avatar flips (3D rotateY) to the real
+//     headshot, the label swaps to the resolved name + company line, and
+//     the pill swaps to a brand-blue "Just identified" badge that pulses
+//     for 2.5s, then settles into the visitor's actual stage badge
+//     (Identified / Nurturing / Converted).
+//
+// All chrome stays on the brand-blue ramp — no green / amber chips.
+// ---------------------------------------------------------------------------
+
+function TourVisitorRow({
+  v,
+  isLast,
+  revealDelayMs,
+}: {
+  v: Visitor;
+  isLast: boolean;
+  revealDelayMs: number;
+}) {
+  const [revealed, setRevealed] = useState(false);
+  const [justRevealed, setJustRevealed] = useState(false);
+
+  useEffect(() => {
+    setRevealed(false);
+    setJustRevealed(false);
+    const t1 = setTimeout(() => {
+      setRevealed(true);
+      setJustRevealed(true);
+    }, revealDelayMs);
+    const t2 = setTimeout(() => {
+      setJustRevealed(false);
+    }, revealDelayMs + 2500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [v.id, revealDelayMs]);
+
+  const displayName = revealed ? v.revealsTo.name : "Anonymous visitor";
+  const displayCtx = revealed
+    ? v.revealsTo.company ?? v.revealsTo.email
+    : "Bay Area · mobile";
+
+  return (
+    <li
+      className="grid grid-cols-[40px_1fr_auto] gap-3 px-5 py-3 items-center"
+      style={{
+        borderBottom: !isLast ? `1px solid ${TOKENS.borderCream}` : "none",
+        fontFamily: "var(--font-sans)",
+        animation: "tourRowIn 420ms cubic-bezier(.2,.7,.2,1)",
+      }}
+    >
+      {/* Avatar — flips on reveal. Pure CSS rotateY backed by an inner
+          stacking context so the back face hides correctly. */}
+      <span
+        className="inline-flex items-center justify-center flex-shrink-0 relative"
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: "50%",
+          perspective: 400,
+        }}
+      >
+        <span
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            overflow: "hidden",
+            transformStyle: "preserve-3d",
+            transition: "transform 600ms cubic-bezier(.4,0,.2,1)",
+            transform: revealed ? "rotateY(0deg)" : "rotateY(180deg)",
+          }}
+        >
+          {/* Resolved headshot — front face when revealed. Plain <img>
+              because randomuser.me isn't in next/image's whitelist and
+              we want the demo to dodge the next/image domain config
+              entirely. The bitmap is decoded async and the parent
+              dimensions keep layout stable. */}
+          <img
+            src={v.revealsTo.photo}
+            alt=""
+            decoding="async"
+            loading="lazy"
             style={{
-              borderBottom: i < rows.length - 1 ? `1px solid ${TOKENS.borderCream}` : "none",
-              fontFamily: "var(--font-sans)",
-              fontSize: "13.5px",
+              width: "100%",
+              height: "100%",
+              objectFit: "cover",
+              borderRadius: "50%",
+              position: "absolute",
+              inset: 0,
+              backfaceVisibility: "hidden",
+            }}
+          />
+        </span>
+
+        {/* Back face — anonymous dashed circle with a "?" */}
+        <span
+          style={{
+            position: "absolute",
+            inset: 0,
+            borderRadius: "50%",
+            backgroundColor: TOKENS.ivory,
+            border: `1px dashed ${TOKENS.stone}`,
+            color: TOKENS.stone,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontFamily: "var(--font-mono)",
+            fontSize: 14,
+            fontWeight: 600,
+            opacity: revealed ? 0 : 1,
+            transition: "opacity 220ms ease",
+            pointerEvents: "none",
+          }}
+        >
+          ?
+        </span>
+
+        {/* Pulse ring on the reveal moment */}
+        {justRevealed ? (
+          <span
+            aria-hidden
+            style={{
+              position: "absolute",
+              inset: -4,
+              borderRadius: "50%",
+              border: `2px solid ${TOKENS.accent}`,
+              animation: "tourRevealPulse 1.4s ease-out",
+              pointerEvents: "none",
+            }}
+          />
+        ) : null}
+      </span>
+
+      {/* Identity column — name + context line */}
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 flex-wrap">
+          <span
+            className="truncate"
+            style={{
+              color: TOKENS.nearBlack,
+              fontSize: 14,
+              fontWeight: 500,
+              transition: "color 320ms ease",
             }}
           >
-            <div className="min-w-0">
-              <p className="truncate" style={{ color: TOKENS.nearBlack, fontWeight: 500 }}>
-                {v.name}
-              </p>
-              <p className="truncate" style={{ color: TOKENS.stone, fontSize: "12px" }}>
-                {v.email}
-              </p>
-            </div>
-            <div className="min-w-0">
-              <Pill tone={v.stage === "Converted" ? "success" : v.stage === "Nurturing" ? "warning" : "terracotta"}>
-                {v.stage}
-              </Pill>
-              {v.company && v.company !== "—" ? (
-                <span className="ml-2" style={{ color: TOKENS.stone, fontSize: "12px" }}>
-                  {v.company}
-                </span>
-              ) : null}
-            </div>
-            <span className="truncate" style={{ color: TOKENS.charcoal, fontFamily: "var(--font-mono)", fontSize: "12px" }}>
-              {v.lastPage}
+            {displayName}
+          </span>
+          {revealed ? (
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: justRevealed ? TOKENS.white : TOKENS.accent,
+                backgroundColor: justRevealed
+                  ? TOKENS.accent
+                  : "rgba(37,99,235,0.12)",
+                padding: "2px 6px",
+                borderRadius: 4,
+                fontWeight: 600,
+                transition: "all 320ms ease",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {justRevealed ? "Just identified" : v.stage}
             </span>
-            <span className="text-right">
-              <ScoreBadge score={v.score} />
+          ) : (
+            <span
+              style={{
+                fontFamily: "var(--font-mono)",
+                fontSize: 9,
+                letterSpacing: "0.12em",
+                textTransform: "uppercase",
+                color: TOKENS.stone,
+                fontWeight: 500,
+              }}
+            >
+              Anonymous
             </span>
-            <span className="text-right" style={{ color: TOKENS.charcoal, fontFamily: "var(--font-mono)", fontSize: "12px" }}>
-              {v.sessions}
-            </span>
-          </div>
-        ))}
-      </Tile>
-    </div>
+          )}
+        </div>
+        <p
+          className="truncate mt-0.5"
+          style={{ color: TOKENS.olive, fontSize: 12 }}
+        >
+          {displayCtx}
+          {" · viewed "}
+          <span
+            style={{
+              color: TOKENS.charcoal,
+              fontFamily: "var(--font-mono)",
+              fontSize: 11.5,
+            }}
+          >
+            {v.lastPage}
+          </span>
+        </p>
+      </div>
+
+      {/* Score column — kept compact so the row fits the operator nav. */}
+      <div className="flex items-center gap-3 flex-shrink-0">
+        <ScoreBadge score={v.score} />
+        <span
+          className="hidden sm:inline tabular-nums"
+          style={{
+            color: TOKENS.stone,
+            fontFamily: "var(--font-mono)",
+            fontSize: 11,
+            minWidth: 28,
+            textAlign: "right",
+          }}
+        >
+          {v.lastSeen}
+        </span>
+      </div>
+    </li>
   );
 }
 
