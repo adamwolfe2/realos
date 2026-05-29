@@ -307,7 +307,25 @@ export type Property = {
   leadsThisWeek: number;
   revenue: string;
   status: "Live" | "Onboarding" | "Paused";
+  /** Building hero image — Unsplash photo, whitelisted in next.config.mjs.
+   *  Crops use auto-format + fit=crop so the rendered card is one
+   *  consistent aspect ratio regardless of upstream dimensions. */
+  photo: string;
 };
+
+// Real building photos via Unsplash (consistent crop / aspect ratio).
+// Picked to read as multifamily + student-housing facades, not Class-A
+// glass-tower stock that would feel wrong for the operator persona.
+const PROPERTY_PHOTOS = {
+  // Mid-rise brick + cream facade — Oak Grove vibe
+  oakGrove:    "https://images.unsplash.com/photo-1568605114967-8130f3a36994?auto=format&fit=crop&w=800&h=420&q=80",
+  // Steel + glass mid-rise on water — Harbor Point
+  harborPoint: "https://images.unsplash.com/photo-1582407947304-fd86f028f716?auto=format&fit=crop&w=800&h=420&q=80",
+  // Modern white residential with balconies — The Meridian
+  meridian:    "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=800&h=420&q=80",
+  // Riverfront brick complex — Riverside Apartments
+  riverside:   "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?auto=format&fit=crop&w=800&h=420&q=80",
+} as const;
 
 export const PROPERTIES: Property[] = [
   {
@@ -319,6 +337,7 @@ export const PROPERTIES: Property[] = [
     leadsThisWeek: 38,
     revenue: "$182k",
     status: "Live",
+    photo: PROPERTY_PHOTOS.oakGrove,
   },
   {
     id: "P002",
@@ -329,6 +348,7 @@ export const PROPERTIES: Property[] = [
     leadsThisWeek: 52,
     revenue: "$244k",
     status: "Live",
+    photo: PROPERTY_PHOTOS.harborPoint,
   },
   {
     id: "P003",
@@ -339,6 +359,7 @@ export const PROPERTIES: Property[] = [
     leadsThisWeek: 24,
     revenue: "$108k",
     status: "Live",
+    photo: PROPERTY_PHOTOS.meridian,
   },
   {
     id: "P004",
@@ -349,6 +370,7 @@ export const PROPERTIES: Property[] = [
     leadsThisWeek: 0,
     revenue: "—",
     status: "Onboarding",
+    photo: PROPERTY_PHOTOS.riverside,
   },
 ];
 
@@ -475,7 +497,11 @@ export const ACTIVITY: ActivityItem[] = [
 // ---------------------------------------------------------------------------
 
 export type BriefingHighlight = {
+  /** All tones rendered in the same brand-blue palette — the kind only
+   *  drives the leading metric label, not the chip color. Adam 2026-05-29:
+   *  no green/amber chips anywhere in the demo portal. */
   kind: "win" | "watch" | "note";
+  metric: string;
   title: string;
   body: string;
 };
@@ -485,61 +511,145 @@ export const BRIEFING: {
   greeting: string;
   summary: string;
   highlights: BriefingHighlight[];
-  focus: string;
+  /** Three numbered actions for the week — replaces the prior verbose
+   *  "Focus this week" paragraph. Compact + scannable. */
+  actions: string[];
 } = {
   date: "Monday, July 14",
   greeting: "Good morning, Sample Portfolio",
-  summary:
-    "Leasing velocity ticked up 14% week over week. Three properties are on pace, one is soft.",
+  summary: "Leasing up 14% week over week. 3 on pace, 1 soft.",
   highlights: [
     {
       kind: "win",
-      title: "Oak Grove is ahead of pace.",
-      body: "38 leads last week, 8 tours booked, 1 signed lease. Tour-to-lease rate is 12.5%, above the 9% portfolio average.",
+      metric: "+14%",
+      title: "Oak Grove ahead of pace",
+      body: "38 leads · 8 tours · 1 lease. Tour-to-lease 12.5%, above 9% portfolio avg.",
     },
     {
       kind: "watch",
-      title: "Riverside is soft.",
-      body: "Only 4 leads last week. The September open still shows a 14-day rent lag behind the comp set. Consider testing a $200 incentive for two weeks.",
+      metric: "-32%",
+      title: "Riverside is soft",
+      body: "4 leads last week. September open lags comps by 14 days. Test $200 incentive for 2 weeks.",
     },
     {
       kind: "note",
-      title: "Chatbot captured 12 leads overnight.",
-      body: "AI assistant handled 27 conversations between 9pm and 7am, captured 12 emails. 3 are already scored above 80 and sitting in 'New' for the leasing team.",
+      metric: "12",
+      title: "Chatbot captured 12 leads overnight",
+      body: "27 conversations 9pm-7am, 3 scored above 80 sitting in New.",
     },
   ],
-  focus:
-    "Review this week's top keyword trends and apply suggested edits to your listing copy.",
+  actions: [
+    "Approve the Riverside $200 incentive test.",
+    "Shift $600 from Meta into Google — Google CPL is $48, Meta is $112 this cycle.",
+    "Refresh the 2-bed creative — CTR is down 32% over the last 10 days.",
+  ],
 };
 
 // ---------------------------------------------------------------------------
 // Visitors (identity-pixel resolved anonymous traffic)
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Visitors — used to render the operator-portal "Visitors" screen as a
+// live identification stream. Mirrors the marketing-side VisitorStream
+// artifact so the demo portal feels like the same product.
+//
+// Each row has a `revealsTo` shape: row starts anonymous, flips to a
+// named visitor with a real headshot after a per-row delay. The Visitors
+// view uses INITIAL_REVEAL_DELAYS_MS to stagger the first 5 reveals into
+// a ~2.5s wave so a prospect lands on the page and immediately sees the
+// pixel resolving anonymous traffic in real time.
+// ---------------------------------------------------------------------------
+
+export type VisitorStage = "Identified" | "Nurturing" | "Converted" | "Anonymous";
+
+export type VisitorIdentity = {
+  name: string;
+  email: string;
+  company?: string;
+  photo: string;
+};
+
 export type Visitor = {
   id: string;
-  name: string;
-  email?: string;
-  company?: string;
+  /** Initial display state — every row starts anonymous and reveals into
+   *  its `revealsTo` identity. The portal view shows the reveal wave on
+   *  mount so the visitor sees the pixel doing work, not a static table. */
+  initial: VisitorIdentity | null;
+  revealsTo: VisitorIdentity;
   lastPage: string;
   sessions: number;
   firstSeen: string;
   lastSeen: string;
   score: number;
-  stage: "Identified" | "Nurturing" | "Converted" | "Anonymous";
+  stage: VisitorStage;
 };
 
+// Headshots via randomuser.me — free, stable CDN, demographically diverse,
+// same source the marketing-side VisitorStream uses so the demo portal +
+// the marketing artifact share a visual vocabulary.
 export const VISITORS: Visitor[] = [
-  { id: "V1", name: "Maya R.",    email: "maya@example.com",     company: "—",                    lastPage: "/floor-plans",   sessions: 4, firstSeen: "4 days ago",  lastSeen: "2m ago",  score: 92, stage: "Identified" },
-  { id: "V2", name: "Sophie K.",  email: "sophie@example.com",   company: "Stanford (parent)",    lastPage: "/contact",       sessions: 3, firstSeen: "6 days ago",  lastSeen: "12m ago", score: 94, stage: "Converted" },
-  { id: "V3", name: "Daniel L.",  email: "daniel@example.com",   company: "—",                    lastPage: "/amenities",     sessions: 2, firstSeen: "1 day ago",   lastSeen: "1h ago",  score: 88, stage: "Nurturing" },
-  { id: "V4", name: "Jin H.",     email: "jin@example.com",      company: "—",                    lastPage: "/floor-plans",   sessions: 1, firstSeen: "Today",       lastSeen: "30m ago", score: 74, stage: "Identified" },
-  { id: "V5", name: "Arjun P.",   email: "arjun@example.com",    company: "—",                    lastPage: "/amenities",     sessions: 5, firstSeen: "2 weeks ago", lastSeen: "6h ago",  score: 81, stage: "Nurturing" },
-  { id: "V6", name: "Noelle D.",  email: "noelle@example.com",   company: "—",                    lastPage: "/pricing-info",  sessions: 2, firstSeen: "3 days ago",  lastSeen: "45m ago", score: 77, stage: "Nurturing" },
-  { id: "V7", name: "Marcus T.",  email: "marcus@example.com",   company: "—",                    lastPage: "/tour",          sessions: 2, firstSeen: "Yesterday",   lastSeen: "Yesterday", score: 68, stage: "Nurturing" },
-  { id: "V8", name: "Ella C.",    email: "ella@example.com",     company: "Referred by resident", lastPage: "/apply",         sessions: 1, firstSeen: "Yesterday",   lastSeen: "Yesterday", score: 89, stage: "Identified" },
-  { id: "V9", name: "Luis R.",    email: "luis@example.com",     company: "—",                    lastPage: "/floor-plans",   sessions: 1, firstSeen: "1h ago",      lastSeen: "1h ago",  score: 62, stage: "Identified" },
+  {
+    id: "V1",
+    initial: null,
+    revealsTo: { name: "Maya Patel",     email: "maya@example.com",   company: "UC Berkeley · rising junior", photo: "https://randomuser.me/api/portraits/women/22.jpg" },
+    lastPage: "/floor-plans",   sessions: 4, firstSeen: "4 days ago",   lastSeen: "2m ago",   score: 92, stage: "Identified",
+  },
+  {
+    id: "V2",
+    initial: null,
+    revealsTo: { name: "Sophie Kim",     email: "sophie@example.com", company: "Stanford · parent",            photo: "https://randomuser.me/api/portraits/women/12.jpg" },
+    lastPage: "/contact",       sessions: 3, firstSeen: "6 days ago",   lastSeen: "12m ago",  score: 94, stage: "Converted",
+  },
+  {
+    id: "V3",
+    initial: null,
+    revealsTo: { name: "Daniel Lee",     email: "daniel@example.com", company: "Cal Poly · sophomore",          photo: "https://randomuser.me/api/portraits/men/85.jpg" },
+    lastPage: "/amenities",     sessions: 2, firstSeen: "1 day ago",    lastSeen: "1h ago",   score: 88, stage: "Nurturing",
+  },
+  {
+    id: "V4",
+    initial: null,
+    revealsTo: { name: "Jin Hwang",      email: "jin@example.com",    company: "Bay Area · mobile",              photo: "https://randomuser.me/api/portraits/men/36.jpg" },
+    lastPage: "/floor-plans",   sessions: 1, firstSeen: "Today",        lastSeen: "30m ago",  score: 74, stage: "Identified",
+  },
+  {
+    id: "V5",
+    initial: null,
+    revealsTo: { name: "Arjun Patel",    email: "arjun@example.com",  company: "Returning · 5 sessions",         photo: "https://randomuser.me/api/portraits/men/41.jpg" },
+    lastPage: "/amenities",     sessions: 5, firstSeen: "2 weeks ago",  lastSeen: "6h ago",   score: 81, stage: "Nurturing",
+  },
+  {
+    id: "V6",
+    initial: null,
+    revealsTo: { name: "Noelle Devereaux", email: "noelle@example.com", company: "Direct · /pricing",            photo: "https://randomuser.me/api/portraits/women/45.jpg" },
+    lastPage: "/pricing",       sessions: 2, firstSeen: "3 days ago",   lastSeen: "45m ago",  score: 77, stage: "Nurturing",
+  },
+  {
+    id: "V7",
+    initial: null,
+    revealsTo: { name: "Marcus Trent",   email: "marcus@example.com", company: "Google ad · studio search",      photo: "https://randomuser.me/api/portraits/men/52.jpg" },
+    lastPage: "/tour",          sessions: 2, firstSeen: "Yesterday",    lastSeen: "Yesterday", score: 68, stage: "Nurturing",
+  },
+  {
+    id: "V8",
+    initial: null,
+    revealsTo: { name: "Ella Cortez",    email: "ella@example.com",   company: "Referred by resident",            photo: "https://randomuser.me/api/portraits/women/68.jpg" },
+    lastPage: "/apply",         sessions: 1, firstSeen: "Yesterday",    lastSeen: "Yesterday", score: 89, stage: "Identified",
+  },
+  {
+    id: "V9",
+    initial: null,
+    revealsTo: { name: "Luis Romero",    email: "luis@example.com",   company: "Oakland IP",                       photo: "https://randomuser.me/api/portraits/men/29.jpg" },
+    lastPage: "/floor-plans",   sessions: 1, firstSeen: "1h ago",       lastSeen: "1h ago",   score: 62, stage: "Identified",
+  },
 ];
+
+// Per-row reveal-delay schedule. First five rows stagger their anonymous →
+// identified flip so the visitor sees a 5-reveal wave inside ~2.5s of
+// landing on the page. Mirrors the marketing-side VisitorStream cadence
+// (Norman 2026-05-21 feedback) so both demos animate consistently.
+export const INITIAL_REVEAL_DELAYS_MS = [500, 950, 1400, 1850, 2300];
 
 export const VISITOR_STATS = {
   resolveRate: "94%",
