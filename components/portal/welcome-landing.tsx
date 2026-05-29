@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Layers, Plug, Sparkles } from "lucide-react";
+import { ArrowRight, ExternalLink, Globe, Layers, Plug, Sparkles } from "lucide-react";
 import {
   groupModulesByCategory,
   type CatalogEntry,
@@ -31,6 +31,16 @@ import {
 
 type Props = {
   orgName: string;
+  /** Org slug — used to compute the auto-provisioned tenant-site URL
+   *  ({slug}.{platformDomain}) so the operator sees their site is live
+   *  immediately, before they configure a custom domain. The subdomain
+   *  fallback in lib/tenancy/resolve.ts handles routing. */
+  orgSlug: string | null;
+  /** Platform domain ("leasestack.co") — read from PLATFORM_DOMAIN /
+   *  NEXT_PUBLIC_PLATFORM_DOMAIN / NEXT_PUBLIC_APP_URL env in the
+   *  server caller. Null when the env isn't configured (dev, preview)
+   *  → the "live site" card hides. */
+  platformDomain: string | null;
   isTrialing: boolean;
   trialDaysLeft: number | null;
   /** True when an agency user is viewing a brand-new client via
@@ -119,11 +129,23 @@ function toVm(m: CatalogEntry): WelcomeEntryVM {
 
 export function WelcomeLanding({
   orgName,
+  orgSlug,
+  platformDomain,
   isTrialing,
   trialDaysLeft,
   isImpersonating,
 }: Props) {
   const grouped = groupModulesByCategory();
+
+  // Auto-provisioned tenant-site URL. The subdomain fallback in
+  // lib/tenancy/resolve.ts means {slug}.{platformDomain} routes to this
+  // org's tenant site the moment slug + DNS exist — no custom-domain
+  // configuration required. Hidden when either env is missing.
+  const liveSiteHost =
+    orgSlug && platformDomain && orgSlug !== "www"
+      ? `${orgSlug}.${platformDomain}`
+      : null;
+  const liveSiteUrl = liveSiteHost ? `https://${liveSiteHost}` : null;
 
   // Flatten to a single ordered list for the welcome surface. The
   // dedicated /portal/marketplace page keeps the category headers; the
@@ -154,6 +176,79 @@ export function WelcomeLanding({
           {subline}
         </p>
       </header>
+
+      {/* "Your site is live" — auto-provisioned subdomain on the
+          platform host. Renders only when we can compute a real URL
+          (we have an org slug AND a platform domain). The subdomain
+          fallback in lib/tenancy/resolve.ts handles routing, so the
+          link is functional the moment the operator's org row exists
+          — no DNS configuration required. Adam 2026-05-29: this is
+          the "your site is live in 14 minutes, not 14 days" moment
+          we were dropping on Day 1. */}
+      {liveSiteUrl ? (
+        <section aria-label="Your live site" className="ls-card p-5">
+          <div className="flex items-center gap-4 flex-wrap">
+            <span
+              aria-hidden
+              className="inline-flex items-center justify-center w-10 h-10 rounded-xl"
+              style={{
+                background:
+                  "linear-gradient(180deg, rgba(37,99,235,0.14), rgba(37,99,235,0.06))",
+                color: "var(--primary, #2563EB)",
+              }}
+            >
+              <Globe className="w-5 h-5" strokeWidth={1.75} />
+            </span>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 flex-wrap">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                  Your site is live
+                </p>
+                <span
+                  className="inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-mono font-semibold uppercase tracking-[0.1em]"
+                  style={{
+                    backgroundColor: "rgba(22,163,74,0.10)",
+                    color: "#15803D",
+                  }}
+                >
+                  <span
+                    aria-hidden
+                    className="inline-block w-1.5 h-1.5 rounded-full"
+                    style={{ backgroundColor: "#15803D" }}
+                  />
+                  Online
+                </span>
+              </div>
+              <p
+                className="mt-1 text-[15px] font-semibold tracking-tight text-foreground truncate"
+                title={liveSiteHost ?? undefined}
+              >
+                {liveSiteHost}
+              </p>
+              <p className="mt-1 text-[12.5px] text-muted-foreground leading-relaxed">
+                Preview your tenant site right now — no DNS setup needed.
+                Configure a custom domain in{" "}
+                <Link
+                  href="/portal/settings"
+                  className="font-semibold text-primary hover:text-primary-dark underline underline-offset-2"
+                >
+                  Settings
+                </Link>{" "}
+                when you&apos;re ready to point your domain at us.
+              </p>
+            </div>
+            <a
+              href={liveSiteUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-md bg-primary px-4 h-10 text-[13px] font-semibold text-primary-foreground hover:bg-primary/90 transition-colors flex-shrink-0"
+            >
+              View site
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        </section>
+      ) : null}
 
       {/* Three-step quick-start strip. Not a checklist — there's no
           persisted "completed" state. As soon as the user activates a

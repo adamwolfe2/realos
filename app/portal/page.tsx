@@ -183,6 +183,7 @@ export default async function PortalHome({
           where: { id: scope.orgId },
           select: {
             name: true,
+            slug: true,
             subscriptionStatus: true,
             trialEndsAt: true,
           },
@@ -199,9 +200,23 @@ export default async function PortalHome({
             ),
           )
         : null;
+      // Platform domain — same priority order as the runtime resolver
+      // in lib/tenancy/resolve.ts so the displayed URL matches what
+      // the middleware actually serves.
+      const platformDomain =
+        process.env.PLATFORM_DOMAIN ??
+        process.env.NEXT_PUBLIC_PLATFORM_DOMAIN ??
+        (process.env.NEXT_PUBLIC_APP_URL
+          ? new URL(process.env.NEXT_PUBLIC_APP_URL).hostname.replace(
+              /^www\./,
+              "",
+            )
+          : null);
       return (
         <WelcomeLanding
           orgName={org?.name ?? "your workspace"}
+          orgSlug={org?.slug ?? null}
+          platformDomain={platformDomain}
           isTrialing={isTrialing}
           trialDaysLeft={trialDaysLeft}
           isImpersonating={scope.isImpersonating}
