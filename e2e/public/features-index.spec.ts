@@ -15,6 +15,7 @@ const FEATURE_DESTINATIONS = [
   "/audit",
   "/features/seo-aeo",
   "/features/popups",
+  "/features/website-build",
 ];
 
 const NAV_DROPDOWN_DESTINATIONS = [
@@ -29,7 +30,7 @@ const NAV_DROPDOWN_DESTINATIONS = [
 ];
 
 test.describe("Features index @critical", () => {
-  test("/features renders the hero and seven feature rows", async ({
+  test("/features renders the hero and eight feature rows", async ({
     page,
   }) => {
     const resp = await page.goto("/features");
