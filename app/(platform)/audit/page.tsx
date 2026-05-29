@@ -15,8 +15,8 @@ export default function AuditFormPage() {
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <section className="relative">
         <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
-          <div className="max-w-3xl">
-            <div className="flex items-center gap-3 mb-6">
+          <div className="max-w-3xl mx-auto text-center">
+            <div className="flex items-center justify-center gap-3 mb-6">
               <span
                 aria-hidden
                 className="hidden sm:inline-block"
@@ -31,6 +31,11 @@ export default function AuditFormPage() {
               >
                 Free audit · 60 seconds
               </p>
+              <span
+                aria-hidden
+                className="hidden sm:inline-block"
+                style={{ width: 28, height: 1, backgroundColor: "#2563EB" }}
+              />
             </div>
             <h1
               className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight"
@@ -39,7 +44,7 @@ export default function AuditFormPage() {
               See how AI-powered renters actually find your properties.
             </h1>
             <p
-              className="mt-5 text-lg md:text-xl leading-relaxed"
+              className="mt-5 text-lg md:text-xl leading-relaxed mx-auto max-w-2xl"
               style={{ color: "#4B5563" }}
             >
               Run a free 60-second audit. Real data on your SEO, AI search
@@ -51,7 +56,7 @@ export default function AuditFormPage() {
             </div>
           </div>
 
-          <ul className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl">
+          <ul className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
             <TrustItem
               title="Powered by DataForSEO + Claude + Tavily"
               body="The same provider stack the LeaseStack platform runs in production."
