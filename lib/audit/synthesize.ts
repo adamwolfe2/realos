@@ -75,23 +75,104 @@ export async function synthesizeAudit(
   const opportunities: Finding[] = [];
 
   // ---- Quick wins — only emit when the signal SAYS this is broken --------
+  // 2026-05-29: expanded substantially. Every meaningful page-audit
+  // signal turns into a named, specific action item. The point of the
+  // /audit lead magnet is to give the prospect a concrete punch list,
+  // not a vibe-y "your SEO could be better." Each finding either calls
+  // out the exact failing field, the current value, and the fix — or
+  // doesn't render at all.
   const meta = provider.pageAudit?.meta;
   if (meta) {
+    if (!meta.is_https) {
+      quickWins.push({
+        id: "qw-https",
+        title: "Enable HTTPS",
+        detail:
+          "Site is being served over HTTP. Search engines down-rank non-HTTPS pages and modern browsers flag them as 'Not Secure', which kills the click-through from search results.",
+      });
+    }
+    if (meta.title == null || meta.title.length === 0) {
+      quickWins.push({
+        id: "qw-no-title",
+        title: "Homepage is missing a <title> tag",
+        detail:
+          "Without a <title>, Google synthesizes one from the page content — almost always worse than what you'd write yourself. Set it to '{Property name} — {city} {neighborhood} apartments' or similar (50-60 chars).",
+      });
+    } else if (meta.title.length < 30) {
+      quickWins.push({
+        id: "qw-short-title",
+        title: `Lengthen homepage <title> (currently ${meta.title.length} chars)`,
+        detail: `Current title: "${meta.title}". Google prefers 50-60 characters with the brand name + the primary keyword. You're losing ~10 chars of click-bait real estate.`,
+      });
+    } else if (meta.title.length > 65) {
+      quickWins.push({
+        id: "qw-long-title",
+        title: `Trim homepage <title> — ${meta.title.length} chars (Google truncates around 60)`,
+        detail: `Current: "${meta.title.slice(0, 80)}…". Anything past ~60 chars gets cut off in the SERP, so the part after the ellipsis is wasted.`,
+      });
+    }
     if (meta.duplicate_title) {
       quickWins.push({
         id: "qw-dup-title",
-        title: "Fix duplicate <title> tags",
+        title: "Multiple pages share the same <title>",
         detail: meta.title
-          ? `Multiple pages share the title "${meta.title.slice(0, 80)}". Each page needs a unique title for search engines to differentiate them.`
+          ? `Pages reusing "${meta.title.slice(0, 80)}". Each page needs a unique title so Google can differentiate them and rank each on its own merit.`
           : "Multiple pages share the same <title>. Unique titles per page lift CTR and indexing.",
+      });
+    }
+    if (meta.description == null || meta.description.length === 0) {
+      quickWins.push({
+        id: "qw-no-desc",
+        title: "Homepage is missing a meta description",
+        detail:
+          "Google falls back to a snippet from page content — usually a navigation list. Write a 140-160 char description focused on the property's strongest selling point.",
+      });
+    } else if (meta.description.length < 110) {
+      quickWins.push({
+        id: "qw-short-desc",
+        title: `Meta description is ${meta.description.length} chars — too short`,
+        detail: `"${meta.description.slice(0, 110)}". Aim for 140-160 chars: brand + key amenity + a number ("from $1,995", "5 min to campus").`,
+      });
+    } else if (meta.description.length > 165) {
+      quickWins.push({
+        id: "qw-long-desc",
+        title: `Meta description is ${meta.description.length} chars — Google will truncate`,
+        detail:
+          "Anything past ~160 chars is dropped from the SERP snippet. Move the most important phrase to the front.",
       });
     }
     if (meta.duplicate_description) {
       quickWins.push({
         id: "qw-dup-desc",
-        title: "Fix duplicate meta descriptions",
+        title: "Multiple pages share the same meta description",
         detail:
-          "Multiple pages share the same meta description. Rewrite each page with a unique 140–160 character description.",
+          "Each page needs a unique 140-160 char description. Pages with duplicates can't rank for their own keywords.",
+      });
+    }
+    if (!meta.canonical) {
+      quickWins.push({
+        id: "qw-no-canonical",
+        title: "Homepage is missing a canonical URL",
+        detail:
+          "Without <link rel='canonical'>, Google has to guess which version is authoritative when query strings or trailing slashes vary. Set canonical to the bare homepage URL.",
+      });
+    }
+    const h1Tags = meta.htags?.h1 ?? [];
+    if (h1Tags.length === 0) {
+      quickWins.push({
+        id: "qw-no-h1",
+        title: "Homepage has no <h1> tag",
+        detail:
+          "Google leans heavily on the H1 to confirm what the page is about. Add an H1 that names the property + the primary value prop ('Furnished apartments steps from campus').",
+      });
+    } else if (h1Tags.length > 1) {
+      quickWins.push({
+        id: "qw-multi-h1",
+        title: `Homepage has ${h1Tags.length} <h1> tags — should be exactly one`,
+        detail: `Current H1s: ${h1Tags
+          .slice(0, 3)
+          .map((h) => `"${h.slice(0, 60)}"`)
+          .join(", ")}. Multiple H1s split topical authority.`,
       });
     }
     if (meta.no_image_alt && meta.no_image_alt > 0) {
@@ -99,32 +180,59 @@ export async function synthesizeAudit(
         id: "qw-no-alt",
         title: `Add alt text to ${meta.no_image_alt} image${meta.no_image_alt === 1 ? "" : "s"}`,
         detail:
-          "Missing alt attributes hurt accessibility scoring and prevent image search ranking. ~10 minutes of work.",
-      });
-    }
-    if (meta.title && meta.title.length < 30) {
-      quickWins.push({
-        id: "qw-short-title",
-        title: `Lengthen homepage <title> (currently ${meta.title.length} chars)`,
-        detail: `Current title: "${meta.title}". Google prefers 50–60 characters with the brand name + the primary keyword.`,
+          "Missing alt attributes hurt accessibility scoring AND prevent the property from ranking in Google Images. ~10-15 min of work per page.",
       });
     }
     if (meta.broken_links && meta.broken_links > 0) {
       quickWins.push({
         id: "qw-broken-links",
-        title: `Fix ${meta.broken_links} broken link${meta.broken_links === 1 ? "" : "s"}`,
+        title: `Fix ${meta.broken_links} broken link${meta.broken_links === 1 ? "" : "s"} on the homepage`,
         detail:
-          "Broken outbound or internal links signal low quality to search engines and frustrate visitors.",
+          "Broken outbound or internal links signal low quality to crawlers and frustrate visitors. Run a link checker, fix the targets, redeploy.",
       });
     }
-    if (!meta.is_https) {
+    if (meta.broken_resources && meta.broken_resources > 0) {
       quickWins.push({
-        id: "qw-https",
-        title: "Enable HTTPS",
+        id: "qw-broken-resources",
+        title: `${meta.broken_resources} broken resource${meta.broken_resources === 1 ? "" : "s"} on the homepage`,
         detail:
-          "Site is being served over HTTP. Search engines down-rank non-HTTPS pages and modern browsers flag them as 'Not Secure'.",
+          "Missing images, CSS, or JS files load as 404s — they slow the page and tell Google the site isn't being maintained.",
       });
     }
+    if (
+      meta.internal_links_count != null &&
+      meta.internal_links_count < 10
+    ) {
+      quickWins.push({
+        id: "qw-thin-internal",
+        title: `Only ${meta.internal_links_count} internal link${meta.internal_links_count === 1 ? "" : "s"} on the homepage`,
+        detail:
+          "Internal links distribute link-authority across the site. 10-25 is the typical sweet spot for a property homepage — link to floor plans, amenities, neighborhood, tour booking.",
+      });
+    }
+    if (
+      meta.content?.plain_text_word_count != null &&
+      meta.content.plain_text_word_count < 300
+    ) {
+      quickWins.push({
+        id: "qw-thin-content",
+        title: `Homepage has ${meta.content.plain_text_word_count} words of text — under Google's preference`,
+        detail:
+          "Property pages under ~300 words tend to be classified as 'thin content' and struggle to rank against longer competitor pages. Add a neighborhood paragraph, amenity list, or FAQ.",
+      });
+    }
+  }
+
+  // Structured data — schema.org / JSON-LD presence is a meaningful AEO
+  // signal too (AI engines lean on schema to confirm entity identity).
+  const schemaTypes = provider.pageAudit?.schema?.type ?? [];
+  if (schemaTypes.length === 0 && provider.pageAudit) {
+    quickWins.push({
+      id: "qw-no-schema",
+      title: "No structured data (schema.org) detected on the homepage",
+      detail:
+        "Add ApartmentComplex or LocalBusiness JSON-LD with address, telephone, units, and price range. This is what ChatGPT and Perplexity read to confirm the property's identity — without it, AI engines hedge or skip you entirely.",
+    });
   }
 
   // Lighthouse-derived quick wins — name the specific failing audit.
@@ -237,11 +345,14 @@ export async function synthesizeAudit(
     });
   }
 
-  // Cap each section.
+  // 2026-05-29: quickWins cap raised from 5 → 10 so the punch-list
+  // actually reads like a punch-list. The expanded page-audit findings
+  // can routinely surface 8+ on-page issues for a brand-new property,
+  // and capping at 5 would hide half the actionable work.
   const findings: SynthesizedFindings = {
-    quickWins: quickWins.slice(0, 5),
-    risks: risks.slice(0, 3),
-    opportunities: opportunities.slice(0, 3),
+    quickWins: quickWins.slice(0, 10),
+    risks: risks.slice(0, 5),
+    opportunities: opportunities.slice(0, 5),
     mentions: provider.mentions,
   };
 

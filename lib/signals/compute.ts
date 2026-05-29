@@ -171,7 +171,21 @@ async function runSeoFanout(domain: string, url: string): Promise<SeoFanout> {
 }
 
 function buildSeoSignal(data: SeoFanout): SeoSignal | null {
-  if (!data.rankedKeywords && !data.lighthouse && !data.backlinks) return null;
+  // Adam 2026-05-29: include pageAudit in the null check. The page-audit
+  // endpoint (instant_pages) hits the live URL and works for ANY domain
+  // — even small recently-launched properties that DataForSEO Labs
+  // (ranked_keywords + backlinks_summary) hasn't indexed yet. Previously
+  // a brand-new site with no organic index entry returned "Awaiting data"
+  // even though the page audit had real Lighthouse-style findings ready
+  // to surface.
+  if (
+    !data.rankedKeywords &&
+    !data.lighthouse &&
+    !data.backlinks &&
+    !data.pageAudit
+  ) {
+    return null;
+  }
   const ranked = data.rankedKeywords ?? [];
   const organicKeywords = ranked.length;
   const positions = ranked
@@ -187,16 +201,36 @@ function buildSeoSignal(data: SeoFanout): SeoSignal | null {
   const lhSeo = data.lighthouse?.seo ?? null;
   const top10Ratio = organicKeywords > 0 ? top10Count / organicKeywords : 0;
   const backlinkTier = backlinkScore(data.backlinks);
+  // Page-audit tier: same scale as the other components (0..100), derived
+  // from how many of the canonical on-page checks pass. Used when the
+  // DataForSEO Labs endpoints (ranked_keywords / backlinks_summary) have
+  // nothing on the domain — small recently-launched sites still get a
+  // real SEO score from the page-audit signal alone.
+  const pageTier = pageAuditScore(data.pageAudit);
+
   let score = 0;
   let weight = 0;
   if (lhSeo != null) {
     score += lhSeo * 0.4;
     weight += 0.4;
   }
-  score += Math.min(top10Ratio * 200, 100) * 0.3;
-  weight += 0.3;
-  score += backlinkTier * 0.3;
-  weight += 0.3;
+  // Only count organic-rank component when DataForSEO actually returned
+  // ranked-keyword data. If rankedKeywords came back null, leaving the
+  // contribution at 0 with weight 0.3 would systematically tank the SEO
+  // score on every site DataForSEO hasn't indexed yet — which is most
+  // sub-100-unit properties. Conditional weight so the average is honest.
+  if (data.rankedKeywords) {
+    score += Math.min(top10Ratio * 200, 100) * 0.3;
+    weight += 0.3;
+  }
+  if (data.backlinks) {
+    score += backlinkTier * 0.3;
+    weight += 0.3;
+  }
+  if (data.pageAudit) {
+    score += pageTier * 0.3;
+    weight += 0.3;
+  }
   const finalScore = Math.round(weight > 0 ? score / weight : 0);
 
   return {
@@ -220,6 +254,33 @@ function backlinkScore(b: BacklinksSummary | null): number {
   if (rd >= 30) return 65;
   if (rd >= 10) return 50;
   return 35;
+}
+
+// On-page tier score — 100 = perfect on-page hygiene, deductions per
+// known on-page red flag from DataForSEO's instant_pages audit. The
+// list below mirrors the quick-wins the synthesizer surfaces so the
+// score and the action items stay in lockstep.
+function pageAuditScore(p: InstantPageAudit | null): number {
+  if (!p?.meta) return 50;
+  const meta = p.meta;
+  let score = 100;
+  if (!meta.is_https) score -= 18;
+  if (meta.duplicate_title) score -= 8;
+  if (meta.duplicate_description) score -= 6;
+  if (meta.title == null || meta.title.length === 0) score -= 12;
+  else if (meta.title.length < 30) score -= 6;
+  else if (meta.title.length > 65) score -= 4;
+  if (meta.no_image_alt != null && meta.no_image_alt > 0) score -= 5;
+  if (meta.broken_links != null && meta.broken_links > 0) {
+    score -= Math.min(10, meta.broken_links * 2);
+  }
+  if (
+    meta.internal_links_count != null &&
+    meta.internal_links_count < 10
+  ) {
+    score -= 4;
+  }
+  return Math.max(0, Math.min(100, score));
 }
 
 // Sistrix 2024 CTR-by-position (multifamily-adjusted).
