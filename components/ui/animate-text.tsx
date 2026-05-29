@@ -136,29 +136,41 @@ export function SoftBlurIn({
             style={{ display: "block", color: seg.color }}
           >
             <span className="sr-only">{seg.text}</span>
-            <span aria-hidden="true" style={{ display: "inline-block" }}>
-              {Array.from(seg.text).map((ch, i) => {
-                const cIdx = charIndex++;
-                // Whitespace must not collapse — render a non-breaking space
-                // so per-character offsets stay perfectly aligned.
-                const isSpace = ch === " ";
-                return (
-                  <motion.span
-                    key={`${segIdx}-${i}`}
-                    custom={cIdx}
-                    variants={reduce ? undefined : charVariants}
-                    initial={reduce ? false : "hidden"}
-                    animate={reduce ? undefined : visible ? "visible" : "hidden"}
-                    style={{
-                      display: "inline-block",
-                      whiteSpace: "pre",
-                      willChange: "transform, opacity, filter",
-                    }}
-                  >
-                    {isSpace ? " " : ch}
-                  </motion.span>
-                );
-              })}
+            {/* Layout fix (2026-05-28): wrap each WORD in inline-block +
+                white-space: nowrap so chars within a word can't break
+                across lines. Without it, narrow containers wrap
+                "marketing" as "m / arketing". */}
+            <span aria-hidden="true">
+              {seg.text.split(" ").map((word, wIdx, words) => (
+                <span
+                  key={`${segIdx}-w${wIdx}`}
+                  style={{ display: "inline-block", whiteSpace: "nowrap" }}
+                >
+                  {Array.from(word).map((ch, charI) => {
+                    const cIdx = charIndex++;
+                    return (
+                      <motion.span
+                        key={`${segIdx}-${wIdx}-${charI}`}
+                        custom={cIdx}
+                        variants={reduce ? undefined : charVariants}
+                        initial={reduce ? false : "hidden"}
+                        animate={
+                          reduce ? undefined : visible ? "visible" : "hidden"
+                        }
+                        style={{
+                          display: "inline-block",
+                          willChange: "transform, opacity, filter",
+                        }}
+                      >
+                        {ch}
+                      </motion.span>
+                    );
+                  })}
+                  {/* Regular space between words — not animated, in normal
+                      flow, so the line wraps at word boundaries. */}
+                  {wIdx < words.length - 1 ? " " : null}
+                </span>
+              ))}
             </span>
           </span>
         );
