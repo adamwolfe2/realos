@@ -1,7 +1,38 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { GoogleMark, MetaMark, TikTokMark } from "./brand-logos";
+
+// ---------------------------------------------------------------------------
+// useEaseInProgress
+//
+// Drives a 0 → 1 value over `durationMs` using requestAnimationFrame and
+// an easeOutCubic curve. One progress source feeds every animated number
+// + bar width on mount, so the card "draws in" as a single coordinated
+// motion rather than each cell snapping at its own time.
+//
+// Cleans up via cancelAnimationFrame on unmount.
+// ---------------------------------------------------------------------------
+function useEaseInProgress(durationMs: number): number {
+  const [progress, setProgress] = useState(0);
+  const startRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    let raf = 0;
+    const tick = (now: number) => {
+      if (startRef.current === null) startRef.current = now;
+      const t = Math.min(1, (now - startRef.current) / durationMs);
+      // easeOutCubic — feels like a measurement settling, not a snap.
+      const eased = 1 - Math.pow(1 - t, 3);
+      setProgress(eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [durationMs]);
+
+  return progress;
+}
 
 // ---------------------------------------------------------------------------
 // AttributionBreakdown — channel → spend → leads → tours → leases waterfall.
@@ -71,8 +102,18 @@ const TOTAL_SPEND = CHANNELS.reduce((s, c) => s + c.spend, 0);
 const TOTAL_LEASES = CHANNELS.reduce((s, c) => s + c.leases, 0);
 const CAC = Math.round(TOTAL_SPEND / TOTAL_LEASES);
 
+// Mount animation duration. The whole card "draws in" over this window
+// (bars from 0 → width, every number from 0 → target). Tuned to feel
+// like a real-time analytics surface settling, not a screenshot. Norman
+// 2026-05-21: every motion stays inside the brand-blue ramp; no flashy
+// easing curves that read as "marketing site," just measurement.
+const MOUNT_ANIM_MS = 1400;
+
 export function AttributionBreakdown() {
   const [active, setActive] = useState(0);
+
+  // Single shared progress drives every animated value on the card.
+  const progress = useEaseInProgress(MOUNT_ANIM_MS);
 
   useEffect(() => {
     const id = setInterval(() => {
@@ -85,8 +126,16 @@ export function AttributionBreakdown() {
   const cpl = Math.round(channel.spend / channel.leads);
   const cac = Math.round(channel.spend / channel.leases);
 
-  // Bar widths anchored to the largest spend so visual proportions are honest
+  // Bar widths anchored to the largest spend so visual proportions are honest.
   const maxSpend = Math.max(...CHANNELS.map((c) => c.spend));
+
+  // Helpers — every animated number ramps from 0 → target on mount.
+  // Using Math.round keeps the count-up visually integer-clean; the
+  // final value is correct because progress lands exactly at 1.
+  const animInt = (target: number) => Math.round(target * progress);
+  // Animated currency lazily formats so tabular-nums in the SVG-less
+  // numeric font still looks clean during the count-up.
+  const animCurrency = (target: number) => animInt(target).toLocaleString();
 
   return (
     <div
@@ -130,7 +179,7 @@ export function AttributionBreakdown() {
         </div>
         <div className="text-right">
           <p
-            className="text-[18px] sm:text-[22px]"
+            className="text-[18px] sm:text-[22px] tabular-nums"
             style={{
               fontFamily: "var(--font-display)",
               color: INK,
@@ -138,7 +187,7 @@ export function AttributionBreakdown() {
               lineHeight: 1,
             }}
           >
-            ${CAC.toLocaleString()}
+            ${animCurrency(CAC)}
           </p>
           <p
             className="hidden sm:block"
@@ -162,6 +211,18 @@ export function AttributionBreakdown() {
         {CHANNELS.map((c, i) => {
           const isActive = i === active;
           const pct = (c.spend / maxSpend) * 100;
+          // Stagger the bar draw-in so the three rows feel like a wave
+          // rather than three things popping at once. Each row's bar
+          // unlocks 0.18 of the progress window later than the previous.
+          // Row 0 fully draws by progress = 0.64, row 1 by 0.82, row 2
+          // by 1.0 — so the whole sequence still finishes inside
+          // MOUNT_ANIM_MS.
+          const rowStart = i * 0.18;
+          const rowSpan = 1 - 0.36;
+          const rowProgress = Math.max(
+            0,
+            Math.min(1, (progress - rowStart) / rowSpan),
+          );
           return (
             <li
               key={c.name}
@@ -197,6 +258,7 @@ export function AttributionBreakdown() {
                   {c.name}
                 </span>
                 <span
+                  className="tabular-nums"
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 12,
@@ -204,7 +266,7 @@ export function AttributionBreakdown() {
                     fontWeight: 600,
                   }}
                 >
-                  ${c.spend.toLocaleString()}
+                  ${Math.round(c.spend * rowProgress).toLocaleString()}
                 </span>
               </div>
 
@@ -217,17 +279,23 @@ export function AttributionBreakdown() {
                     backgroundColor: PARCHMENT,
                   }}
                 >
+                  {/* Bar draws in via scaleX from left so it reads as
+                      "data measuring out" rather than a CSS width
+                      reflow. transform-origin pinned left so the
+                      growth animates from the start of the track. */}
                   <div
                     style={{
                       width: `${pct}%`,
                       height: "100%",
                       backgroundColor: c.color,
-                      transition: "width 600ms cubic-bezier(.2,.7,.2,1)",
+                      transform: `scaleX(${rowProgress})`,
+                      transformOrigin: "left center",
+                      transition: "transform 80ms linear",
                     }}
                   />
                 </div>
                 <span
-                  className="flex-shrink-0"
+                  className="flex-shrink-0 tabular-nums"
                   style={{
                     fontFamily: "var(--font-mono)",
                     fontSize: 10.5,
@@ -237,7 +305,11 @@ export function AttributionBreakdown() {
                     textAlign: "right",
                   }}
                 >
-                  {c.leads} · {c.tours} · <span style={{ color: SUCCESS, fontWeight: 700 }}>{c.leases}L</span>
+                  {Math.round(c.leads * rowProgress)} ·{" "}
+                  {Math.round(c.tours * rowProgress)} ·{" "}
+                  <span style={{ color: SUCCESS, fontWeight: 700 }}>
+                    {Math.round(c.leases * rowProgress)}L
+                  </span>
                 </span>
               </div>
             </li>
@@ -265,7 +337,7 @@ export function AttributionBreakdown() {
               {channel.name} · cost per lead → cost per lease
             </p>
             <p
-              className="mt-1"
+              className="mt-1 tabular-nums"
               style={{
                 fontFamily: "var(--font-sans)",
                 fontSize: 14,
@@ -273,10 +345,12 @@ export function AttributionBreakdown() {
                 fontWeight: 500,
               }}
             >
-              <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>${cpl}</span>
+              <span style={{ fontFamily: "var(--font-mono)", fontWeight: 700 }}>
+                ${animInt(cpl)}
+              </span>
               <span style={{ color: MUTED }}> CPL · </span>
               <span style={{ fontFamily: "var(--font-mono)", color: ACCENT, fontWeight: 700 }}>
-                ${cac.toLocaleString()}
+                ${animCurrency(cac)}
               </span>
               <span style={{ color: MUTED }}> per signed lease</span>
             </p>
