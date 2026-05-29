@@ -10,7 +10,9 @@
 import "server-only";
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
-import type { EngineModule, EngineResult } from "./types";
+import type { EngineCallContext, EngineModule, EngineResult } from "./types";
+import { logUsage } from "@/lib/cost-tracker/log";
+import { tokenCostUsd, estimateTokens } from "./pricing";
 
 const SYSTEM_PROMPT = `You are a helpful assistant answering a prospective renter's question.
 Recommend specific apartment buildings, neighborhoods, and properties when
@@ -24,18 +26,35 @@ export const claudeEngine: EngineModule = {
   isConfigured() {
     return !!process.env.ANTHROPIC_API_KEY;
   },
-  async runPrompt(prompt: string): Promise<EngineResult> {
+  async runPrompt(
+    prompt: string,
+    ctx?: EngineCallContext,
+  ): Promise<EngineResult> {
     if (!this.isConfigured()) {
       return { skipped: true, reason: "ANTHROPIC_API_KEY not configured" };
     }
+    const startedAt = Date.now();
     try {
-      const { text } = await generateText({
+      const { text, usage } = await generateText({
         model: anthropic(MODEL),
         system: SYSTEM_PROMPT,
         prompt,
         maxOutputTokens: 1024,
       });
       const responseText = text ?? "";
+      const inputTokens = usage?.inputTokens ?? 0;
+      const outputTokens = usage?.outputTokens ?? 0;
+      await logUsage({
+        provider: "anthropic",
+        endpoint: `${MODEL}/aeo`,
+        status: "SUCCESS",
+        costUsd: tokenCostUsd(MODEL, inputTokens, outputTokens),
+        durationMs: Date.now() - startedAt,
+        prospectAuditId: ctx?.prospectAuditId ?? null,
+        orgId: ctx?.orgId ?? null,
+        propertyId: ctx?.propertyId ?? null,
+        meta: { model: MODEL, inputTokens, outputTokens, engine: "CLAUDE" },
+      });
       return {
         responseText,
         citedUrls: extractUrls(responseText),
@@ -44,6 +63,17 @@ export const claudeEngine: EngineModule = {
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       console.error("[aeo.claude] generateText failed:", message);
+      await logUsage({
+        provider: "anthropic",
+        endpoint: `${MODEL}/aeo`,
+        status: "ERROR",
+        costUsd: 0,
+        durationMs: Date.now() - startedAt,
+        prospectAuditId: ctx?.prospectAuditId ?? null,
+        orgId: ctx?.orgId ?? null,
+        propertyId: ctx?.propertyId ?? null,
+        meta: { model: MODEL, engine: "CLAUDE", error: message.slice(0, 200) },
+      });
       return { skipped: true, reason: `claude error: ${message}` };
     }
   },

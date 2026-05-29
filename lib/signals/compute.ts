@@ -79,7 +79,7 @@ async function computeProspectSignals(
   // never throws.
   const [seoFanout, aeoResult, repResult] = await Promise.allSettled([
     runSeoFanout(domain, url),
-    runAeoFanout(brandName, domain),
+    runAeoFanout(brandName, domain, prospectAuditId),
     runProspectReputation({ brandName, domain, prospectAuditId }),
   ]);
 
@@ -352,6 +352,10 @@ function emptyAeoFanout(): AeoFanout {
 async function runAeoFanout(
   brandName: string,
   domain: string,
+  /** 2026-05-29: pass the audit id so each engine call tags its
+   *  ApiUsage row to the audit. Lets /admin/costs answer "this audit
+   *  cost $0.08 across 16 LLM calls." */
+  prospectAuditId: string | null,
 ): Promise<AeoFanout> {
   const prompts = buildProspectPrompts(brandName, domain);
   const enabled = ALL_ENGINES.filter((e) => e.isConfigured());
@@ -383,7 +387,7 @@ async function runAeoFanout(
       const sources = new Set<string>();
       let citedAny = false;
       const results = await Promise.allSettled(
-        prompts.map((p) => engine.runPrompt(p)),
+        prompts.map((p) => engine.runPrompt(p, { prospectAuditId })),
       );
       for (const r of results) {
         if (r.status !== "fulfilled") continue;
