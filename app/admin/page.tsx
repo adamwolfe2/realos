@@ -141,7 +141,7 @@ export default async function AdminHome() {
   const warningCount = actionItems.filter((i) => i.severity === "warning").length;
 
   return (
-    <div className="space-y-5 max-w-7xl">
+    <div className="space-y-5 max-w-7xl mx-auto w-full">
       <PageHeader
         title="Agency overview"
         description={

@@ -95,7 +95,7 @@ export default async function AdminWebsiteBuildsPage() {
   );
 
   return (
-    <div className="space-y-8 max-w-6xl">
+    <div className="space-y-8 max-w-6xl mx-auto w-full">
       <PageHeader
         title="Website builds"
         description="Paid custom website build queue. Each row was paid up front via Stripe and routes through a kickoff call before build starts."

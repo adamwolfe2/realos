@@ -62,7 +62,7 @@ export default async function BugReportDetailPage({
   const orderedTimeline = [...timeline].reverse();
 
   return (
-    <div className="space-y-4 ls-page-fade max-w-5xl">
+    <div className="space-y-4 ls-page-fade max-w-5xl mx-auto w-full">
       <PageHeader
         eyebrow={
           <Link

@@ -48,7 +48,7 @@ export default async function SiteEngineDetailPage({
   const submitterLabel = `${sr.submittedByName} (${sr.submittedByEmail})`;
 
   return (
-    <div className="space-y-6 max-w-6xl">
+    <div className="space-y-6 max-w-6xl mx-auto w-full">
       <PageHeader
         title={sr.intake?.brandName ?? sr.submittedByName}
         description={`Site request ${sr.slug} · submitted ${formatDistanceToNow(
