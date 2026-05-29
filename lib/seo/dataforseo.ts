@@ -1,5 +1,6 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
+import { logUsage } from "@/lib/cost-tracker/log";
 
 // 30-day TTL: keyword volume, suggestions, competitor domains, intent,
 // historical volume — none of these signals churn meaningfully week-over-
@@ -67,6 +68,7 @@ async function call<T>(
     };
   }
 
+  const startedAt = Date.now();
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${path}`, {
@@ -82,6 +84,16 @@ async function call<T>(
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Network error";
+    // Log the failed attempt so we can spot connection-tier issues on
+    // /admin/costs (zero cost but ERROR status).
+    await logUsage({
+      provider: "dataforseo",
+      endpoint: label,
+      status: "ERROR",
+      costUsd: 0,
+      durationMs: Date.now() - startedAt,
+      meta: { phase: "network", message: message.slice(0, 240) },
+    });
     return { ok: false, error: `DataforSEO ${label} network error: ${message}` };
   }
 
@@ -92,6 +104,14 @@ async function call<T>(
     } catch {
       /* ignore */
     }
+    await logUsage({
+      provider: "dataforseo",
+      endpoint: label,
+      status: "ERROR",
+      costUsd: 0,
+      durationMs: Date.now() - startedAt,
+      meta: { phase: "http", statusCode: res.status, body: text.slice(0, 200) },
+    });
     return {
       ok: false,
       error: `DataforSEO ${label} ${res.status}: ${text.slice(0, 240)}`,
@@ -111,6 +131,14 @@ async function call<T>(
   };
 
   if (json.status_code >= 40000) {
+    await logUsage({
+      provider: "dataforseo",
+      endpoint: label,
+      status: "ERROR",
+      costUsd: 0,
+      durationMs: Date.now() - startedAt,
+      meta: { phase: "envelope", taskStatus: json.status_code, message: json.status_message },
+    });
     return {
       ok: false,
       error: `DataforSEO ${label} status ${json.status_code}: ${json.status_message}`,
@@ -119,20 +147,47 @@ async function call<T>(
 
   const task = json.tasks?.[0];
   if (!task) {
+    await logUsage({
+      provider: "dataforseo",
+      endpoint: label,
+      status: "ERROR",
+      costUsd: 0,
+      durationMs: Date.now() - startedAt,
+      meta: { phase: "empty_tasks" },
+    });
     return { ok: false, error: `DataforSEO ${label}: empty tasks array` };
   }
   if (task.status_code >= 40000) {
+    // Task-level error still incurred minimum spend on DataForSEO's
+    // side. Log the partial cost they returned (typically 0 for hard
+    // 40xxx but DataForSEO occasionally charges for partial fan-outs).
+    await logUsage({
+      provider: "dataforseo",
+      endpoint: label,
+      status: "ERROR",
+      costUsd: task.cost ?? 0,
+      durationMs: Date.now() - startedAt,
+      meta: { phase: "task", taskStatus: task.status_code, message: task.status_message },
+    });
     return {
       ok: false,
       error: `DataforSEO ${label} task ${task.status_code}: ${task.status_message}`,
     };
   }
 
-  // Cost audit log — every call writes a structured line so we can
-  // grep `[dataforseo]` over the access log to reconcile usage.
+  // Cost audit log + DB row. The console line stays so existing log
+  // tooling still works; the DB row backs /admin/costs rollups.
   console.log(
     `[dataforseo] ${label} cost=$${task.cost.toFixed(5)} ok`,
   );
+  await logUsage({
+    provider: "dataforseo",
+    endpoint: label,
+    status: "SUCCESS",
+    costUsd: task.cost,
+    durationMs: Date.now() - startedAt,
+    meta: { taskStatus: task.status_code },
+  });
 
   return { ok: true, data: task.result, costUsd: task.cost };
 }

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { logUsage } from "@/lib/cost-tracker/log";
+
 // ----------------------------------------------------------------------------
 // Reputation scanner for the PROSPECT audit lead-magnet.
 //
@@ -30,6 +32,13 @@ import "server-only";
 const TAVILY_ENDPOINT = "https://api.tavily.com/search";
 const REDDIT_ENDPOINT = "https://www.reddit.com/search.json";
 const NINETY_DAYS_MS = 90 * 24 * 60 * 60 * 1000;
+
+// Tavily flat per-call rate for `search_depth: "advanced"`. Source:
+// tavily.com pricing as of 2026-05. Basic search is $0.0005 — half
+// the cost — but we use advanced for the per-source host pinning. If
+// pricing changes, bump this constant; per-call usage rows already
+// in the DB stay valid because we store cents not multipliers.
+const TAVILY_ADVANCED_COST_USD = 0.005;
 
 export type ProspectMention = {
   source:
@@ -152,7 +161,9 @@ async function tavilyReviewSearch(
   excludeDomain: string,
   maxResults: number,
   includeDomains: string[],
+  costCtx: { prospectAuditId?: string | null } = {},
 ): Promise<TavilyResult[]> {
+  const startedAt = Date.now();
   const res = await fetch(TAVILY_ENDPOINT, {
     method: "POST",
     headers: {
@@ -175,11 +186,37 @@ async function tavilyReviewSearch(
     }),
     signal: AbortSignal.timeout(15_000),
   });
+  const durationMs = Date.now() - startedAt;
   if (!res.ok) {
     const body = await res.text().catch(() => "");
+    await logUsage({
+      provider: "tavily",
+      endpoint: "search.advanced",
+      status: "ERROR",
+      // Tavily doesn't charge for 4xx (auth, validation) but does charge
+      // for 5xx in practice. Conservatively log the full per-call cost
+      // on 5xx, zero on 4xx.
+      costUsd: res.status >= 500 ? TAVILY_ADVANCED_COST_USD : 0,
+      durationMs,
+      prospectAuditId: costCtx.prospectAuditId ?? null,
+      meta: { statusCode: res.status, body: body.slice(0, 200), include_domains: includeDomains },
+    });
     throw new Error(`Tavily ${res.status}: ${body.slice(0, 200)}`);
   }
   const json = (await res.json()) as { results?: TavilyResult[] };
+  await logUsage({
+    provider: "tavily",
+    endpoint: "search.advanced",
+    status: "SUCCESS",
+    costUsd: TAVILY_ADVANCED_COST_USD,
+    durationMs,
+    prospectAuditId: costCtx.prospectAuditId ?? null,
+    meta: {
+      include_domains: includeDomains,
+      result_count: json.results?.length ?? 0,
+      query_length: query.length,
+    },
+  });
   return json.results ?? [];
 }
 
@@ -308,8 +345,12 @@ function normalizeUrlForDedupe(raw: string): string {
 export async function runProspectReputation(input: {
   brandName: string;
   domain: string;
+  /** Optional — when set, every Tavily call this scan fires is logged
+   *  against this audit id on /admin/costs so we can attribute spend
+   *  to the actual lead-magnet conversion that triggered it. */
+  prospectAuditId?: string | null;
 }): Promise<ProspectReputationResult> {
-  const { brandName, domain } = input;
+  const { brandName, domain, prospectAuditId = null } = input;
   const errors: Record<string, string | null> = {
     tavily: null,
     reddit: null,
@@ -347,7 +388,7 @@ export async function runProspectReputation(input: {
         tasks.push({
           tag: `${scan.source.toLowerCase()}:${q}`,
           source: scan.source,
-          promise: tavilyReviewSearch(tavilyApiKey, q, domain, 8, [scan.domain]),
+          promise: tavilyReviewSearch(tavilyApiKey, q, domain, 8, [scan.domain], { prospectAuditId }),
         });
       }
     }
@@ -356,7 +397,7 @@ export async function runProspectReputation(input: {
       tasks.push({
         tag: `web:${q}`,
         source: "TAVILY_WEB",
-        promise: tavilyReviewSearch(tavilyApiKey, q, domain, 10, OPEN_WEB_DOMAINS),
+        promise: tavilyReviewSearch(tavilyApiKey, q, domain, 10, OPEN_WEB_DOMAINS, { prospectAuditId }),
       });
     }
 

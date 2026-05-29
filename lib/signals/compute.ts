@@ -80,7 +80,7 @@ async function computeProspectSignals(
   const [seoFanout, aeoResult, repResult] = await Promise.allSettled([
     runSeoFanout(domain, url),
     runAeoFanout(brandName, domain),
-    runProspectReputation({ brandName, domain }),
+    runProspectReputation({ brandName, domain, prospectAuditId }),
   ]);
 
   const seoData =

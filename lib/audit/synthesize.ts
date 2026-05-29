@@ -2,6 +2,7 @@ import "server-only";
 
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
+import { logUsage } from "@/lib/cost-tracker/log";
 import type {
   AeoSignal,
   ReputationSignal,
@@ -641,6 +642,20 @@ function slug(s: string): string {
 }
 
 // ---- Narrative writer (Claude) -------------------------------------------
+// Claude Haiku 4.5 pricing (per million tokens) — kept inline as a
+// constant so the cost estimate stays accurate even when the SDK
+// doesn't return token counts. Source: anthropic.com/pricing as of
+// 2026-05. Bump when model swaps.
+const HAIKU_INPUT_PER_M = 1.0;   // $1.00 per 1M input tokens
+const HAIKU_OUTPUT_PER_M = 5.0;  // $5.00 per 1M output tokens
+
+function estimateHaikuCostUsd(inputTokens: number, outputTokens: number): number {
+  return (
+    (inputTokens / 1_000_000) * HAIKU_INPUT_PER_M +
+    (outputTokens / 1_000_000) * HAIKU_OUTPUT_PER_M
+  );
+}
+
 async function writeNarrative(
   signals: SignalSnapshot,
   provider: ProviderData,
@@ -651,9 +666,10 @@ async function writeNarrative(
   }
 
   const factSheet = buildFactSheet(signals, provider, findings);
+  const startedAt = Date.now();
 
   try {
-    const { text } = await generateText({
+    const { text, usage } = await generateText({
       model: anthropic("claude-haiku-4-5-20251001"),
       system:
         "You are a senior property marketing analyst. Write tight, specific, number-driven prose. Never invent statistics. Cite exact numbers from the fact sheet. 180–220 words, 2–3 paragraphs.",
@@ -663,12 +679,44 @@ FACT SHEET
 ${factSheet}`,
       maxOutputTokens: 600,
     });
+
+    // Log the cost. The AI SDK returns `usage` with inputTokens +
+    // outputTokens; we compute the dollar cost from the published
+    // Haiku 4.5 rate card. Even if usage is missing for some reason
+    // (older SDK / providers omit it), we still log a row with cost=0
+    // so the count is visible on /admin/costs.
+    const inputTokens = usage?.inputTokens ?? 0;
+    const outputTokens = usage?.outputTokens ?? 0;
+    await logUsage({
+      provider: "anthropic",
+      endpoint: "claude-haiku-4.5/audit-narrative",
+      status: "SUCCESS",
+      costUsd: estimateHaikuCostUsd(inputTokens, outputTokens),
+      durationMs: Date.now() - startedAt,
+      meta: {
+        model: "claude-haiku-4-5-20251001",
+        inputTokens,
+        outputTokens,
+        domain: provider.domain,
+      },
+    });
     return text.trim() || fallbackNarrative(signals, provider, findings);
   } catch (err) {
     console.error(
       "[audit.synthesize] narrative generation failed:",
       err instanceof Error ? err.message : String(err),
     );
+    await logUsage({
+      provider: "anthropic",
+      endpoint: "claude-haiku-4.5/audit-narrative",
+      status: "ERROR",
+      costUsd: 0,
+      durationMs: Date.now() - startedAt,
+      meta: {
+        model: "claude-haiku-4-5-20251001",
+        error: err instanceof Error ? err.message : String(err),
+      },
+    });
     return fallbackNarrative(signals, provider, findings);
   }
 }
