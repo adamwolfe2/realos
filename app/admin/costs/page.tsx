@@ -262,16 +262,16 @@ export default async function AdminCostsPage() {
                   {row.provider}
                 </td>
                 <td className="px-5 py-3 text-right tabular-nums" style={{ color: "#6B7280" }}>
-                  ${row.usd24h.toFixed(2)}
+                  {formatUsd(row.usd24h)}
                 </td>
                 <td className="px-5 py-3 text-right tabular-nums" style={{ color: "#6B7280" }}>
-                  ${row.usd7d.toFixed(2)}
+                  {formatUsd(row.usd7d)}
                 </td>
                 <td
                   className="px-5 py-3 text-right tabular-nums font-semibold"
                   style={{ color: "#1E2A3A" }}
                 >
-                  ${row.usdMtd.toFixed(2)}
+                  {formatUsd(row.usdMtd)}
                 </td>
                 <td className="px-5 py-3 text-right tabular-nums" style={{ color: "#6B7280" }}>
                   {row.cap != null ? `$${row.cap.toFixed(0)}` : "—"}
@@ -366,7 +366,7 @@ export default async function AdminCostsPage() {
                         className="px-5 py-3 text-right tabular-nums font-semibold"
                         style={{ color: "#1E2A3A" }}
                       >
-                        ${microCentsToUsd(row._sum.costMicroCents ?? 0).toFixed(2)}
+                        {formatUsd(microCentsToUsd(row._sum.costMicroCents ?? 0))}
                       </td>
                     </tr>
                   );
@@ -453,7 +453,7 @@ export default async function AdminCostsPage() {
                         className="px-5 py-3 text-right tabular-nums font-semibold"
                         style={{ color: "#1E2A3A" }}
                       >
-                        ${microCentsToUsd(row._sum.costMicroCents ?? 0).toFixed(2)}
+                        {formatUsd(microCentsToUsd(row._sum.costMicroCents ?? 0))}
                       </td>
                     </tr>
                   );
@@ -552,6 +552,19 @@ export default async function AdminCostsPage() {
 // Subcomponents
 // ---------------------------------------------------------------------------
 
+// formatUsd — show genuine spend at the right precision so sub-cent
+// real activity doesn't render as "$0.00" (which looks identical to
+// "no activity"). Tiers:
+//   >= $1        : 2 decimals    ($14.27)
+//   >= $0.01     : 2 decimals    ($0.42)
+//   >  $0        : 4 decimals    ($0.0008  — visibly small but real)
+//   = 0          : "$0.00"       (genuinely zero)
+function formatUsd(usd: number): string {
+  if (!Number.isFinite(usd) || usd === 0) return "$0.00";
+  if (usd < 0.01) return `$${usd.toFixed(4)}`;
+  return `$${usd.toFixed(2)}`;
+}
+
 function CostTile({
   label,
   usd,
@@ -578,7 +591,7 @@ function CostTile({
         className="text-3xl font-semibold tabular-nums mt-1"
         style={{ color: "#1E2A3A" }}
       >
-        ${usd.toFixed(2)}
+        {formatUsd(usd)}
       </p>
       {subline ? (
         <p
@@ -661,7 +674,7 @@ function CapStatus({
         className="text-[11px] mt-2"
         style={{ color: "#6B7280", fontFamily: "var(--font-mono)" }}
       >
-        ${mtdUsd.toFixed(2)} of ${capUsd.toFixed(0)}
+        {formatUsd(mtdUsd)} of ${capUsd.toFixed(0)}
       </p>
     </div>
   );

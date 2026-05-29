@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { ApiUsageStatus } from "@prisma/client";
+import { ApiUsageStatus, Prisma } from "@prisma/client";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { usdToMicroCents } from "@/lib/cost-tracker/log";
 import {
@@ -40,7 +40,11 @@ import {
 // DataForSEO reconciliation delta so the operator can verify.
 // ---------------------------------------------------------------------------
 
-export const maxDuration = 60;
+// Bumped from 60 → 120 because the backfill walks every audit + tenant
+// snapshot in the last 90 days × 6 providers. A small portfolio of 50
+// audits = 300 row inserts (fast), but a future ~1000-event window
+// would push the upsert + DataForSEO HEAD probe past the 60s ceiling.
+export const maxDuration = 120;
 
 const BACKFILL_PROVIDER_LABEL = "leasestack-backfill";
 
@@ -51,35 +55,40 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
 
-  const body = (await req.json().catch(() => ({}))) as {
-    /** Optional: how far back to walk. Defaults to 90 days. */
-    sinceDays?: number;
-  };
-  const sinceDays = Math.min(365, Math.max(1, body.sinceDays ?? 90));
-  const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
+  // Whole-route try/catch so any Prisma/network throw returns a JSON
+  // error response instead of an empty body + 500 (which made the
+  // client throw "Unexpected end of JSON input" instead of showing
+  // the real error message).
+  try {
+    const body = (await req.json().catch(() => ({}))) as {
+      /** Optional: how far back to walk. Defaults to 90 days. */
+      sinceDays?: number;
+    };
+    const sinceDays = Math.min(365, Math.max(1, body.sinceDays ?? 90));
+    const since = new Date(Date.now() - sinceDays * 24 * 60 * 60 * 1000);
 
-  // --- 1. Drop any prior synthesized rows so re-running is idempotent ----
-  // We identify synthesized rows by provider tag "leasestack-backfill"
-  // (the reconciliation row) and by meta.synthesized=true (per-call
-  // synthesized rows). Two deletes to cover both.
-  await prisma.$executeRaw`
-    DELETE FROM "ApiUsage"
-    WHERE provider = ${BACKFILL_PROVIDER_LABEL}
-       OR (meta IS NOT NULL AND meta->>'synthesized' = 'true');
-  `;
+    // --- 1. Drop any prior synthesized rows so re-running is idempotent --
+    // We identify synthesized rows by provider tag "leasestack-backfill"
+    // (the reconciliation row) and by meta.synthesized=true (per-call
+    // synthesized rows). Two deletes to cover both.
+    await prisma.$executeRaw`
+      DELETE FROM "ApiUsage"
+      WHERE provider = ${BACKFILL_PROVIDER_LABEL}
+         OR (meta IS NOT NULL AND meta->>'synthesized' = 'true');
+    `;
 
-  // --- 2. Walk ProspectAudit rows + synthesize per-provider per-audit -----
-  const audits = await prisma.prospectAudit.findMany({
-    where: { createdAt: { gte: since } },
-    select: {
-      id: true,
-      domain: true,
-      brandName: true,
-      status: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: "asc" },
-  });
+    // --- 2. Walk ProspectAudit rows + synthesize per-provider per-audit --
+    const audits = await prisma.prospectAudit.findMany({
+      where: { createdAt: { gte: since } },
+      select: {
+        id: true,
+        domain: true,
+        brandName: true,
+        status: true,
+        createdAt: true,
+      },
+      orderBy: { createdAt: "asc" },
+    });
 
   type SeedRow = {
     provider: string;
@@ -126,9 +135,13 @@ export async function POST(req: NextRequest) {
   // Filter to tenant-scope snapshots (prospect snapshots would double-
   // count against the audits we already walked). Tenant snapshots have
   // a scopeKey like "tenant:{orgId}:{propertyId|_}".
+  //
+  // capturedOn is DateTime @db.Date — pass a Date object, not a string.
+  // The earlier `.toISOString().slice(0, 10)` was what made Prisma's
+  // type validator reject the query with PrismaClientValidationError.
   const snapshots = await prisma.dailySignalSnapshot.findMany({
     where: {
-      capturedOn: { gte: since.toISOString().slice(0, 10) },
+      capturedOn: { gte: since },
       scopeKey: { startsWith: "tenant:" },
     },
     select: {
@@ -221,24 +234,33 @@ export async function POST(req: NextRequest) {
   const allRows = [...auditRows, ...snapshotRows];
   if (reconciliationRow) allRows.push(reconciliationRow);
 
-  // createMany doesn't accept Date for the JSON `meta` field via the
-  // typed client without explicit casting. Map each row to the shape
-  // Prisma expects.
+  // createMany — cast meta through Prisma's InputJsonValue. The
+  // earlier `as never` cast compiled fine but the runtime Prisma
+  // validator rejected the createMany call (PrismaClientValidationError).
+  // Casting through InputJsonValue tells Prisma the JSON shape is
+  // explicitly safe to serialize.
+  //
+  // Postgres parameter limit is 65535. Each row uses ~10 parameters,
+  // so we batch in chunks of ~5000 to stay well under the ceiling.
   if (allRows.length > 0) {
-    await prisma.apiUsage.createMany({
-      data: allRows.map((r) => ({
-        provider: r.provider,
-        endpoint: r.endpoint,
-        status: r.status,
-        costMicroCents: r.costMicroCents,
-        orgId: r.orgId,
-        propertyId: r.propertyId,
-        prospectAuditId: r.prospectAuditId,
-        durationMs: r.durationMs,
-        meta: r.meta as never,
-        createdAt: r.createdAt,
-      })),
-    });
+    const BATCH = 1000;
+    for (let i = 0; i < allRows.length; i += BATCH) {
+      const slice = allRows.slice(i, i + BATCH);
+      await prisma.apiUsage.createMany({
+        data: slice.map((r) => ({
+          provider: r.provider,
+          endpoint: r.endpoint,
+          status: r.status,
+          costMicroCents: r.costMicroCents,
+          orgId: r.orgId,
+          propertyId: r.propertyId,
+          prospectAuditId: r.prospectAuditId,
+          durationMs: r.durationMs,
+          meta: r.meta as Prisma.InputJsonValue,
+          createdAt: r.createdAt,
+        })),
+      });
+    }
   }
 
   return NextResponse.json({
@@ -257,4 +279,17 @@ export async function POST(req: NextRequest) {
           : null,
     },
   });
+  } catch (err) {
+    // Surface real error messages as JSON so the client doesn't fail
+    // to parse the response. PrismaClientValidationError, network
+    // errors, anything — all land as a structured payload the banner
+    // can display verbatim.
+    const message =
+      err instanceof Error ? err.message : "Unknown backfill error";
+    console.error("[cost-backfill] failed:", err);
+    return NextResponse.json(
+      { ok: false, error: message.slice(0, 800) },
+      { status: 500 },
+    );
+  }
 }
