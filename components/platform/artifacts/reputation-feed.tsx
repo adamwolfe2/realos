@@ -1,6 +1,14 @@
 "use client";
 
 import React from "react";
+import {
+  siReddit,
+  siYelp,
+  siGoogle,
+  siFacebook,
+} from "simple-icons";
+
+type SiIcon = { path: string; title: string };
 
 // ---------------------------------------------------------------------------
 // ReputationFeed — public-mention feed across review + social sources.
@@ -79,14 +87,65 @@ const SOURCE_COLOR: Record<Source, string> = {
   facebook: "#1877F2",
 };
 
+// Real brand glyphs where simple-icons covers them. ApartmentRatings + BBB
+// aren't in simple-icons (too niche), so we fall back to tight uppercase
+// letterforms on their brand color — still reads as "logo" at this size.
+const SOURCE_ICON: Record<Source, SiIcon | null> = {
+  reddit: siReddit,
+  yelp: siYelp,
+  google: siGoogle,
+  facebook: siFacebook,
+  bbb: null,
+  apartments: null,
+};
+
 const SOURCE_LETTER: Record<Source, string> = {
   reddit: "R",
   yelp: "Y",
   google: "G",
-  bbb: "B",
+  bbb: "BBB",
   apartments: "AR",
   facebook: "F",
 };
+
+function SourceGlyph({
+  source,
+  size,
+  letterFontSize,
+}: {
+  source: Source;
+  size: number;
+  letterFontSize: number;
+}) {
+  const icon = SOURCE_ICON[source];
+  if (icon) {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        width={size}
+        height={size}
+        role="img"
+        aria-label={icon.title}
+        style={{ display: "block" }}
+      >
+        <path d={icon.path} fill="#FFFFFF" />
+      </svg>
+    );
+  }
+  return (
+    <span
+      style={{
+        color: "#FFFFFF",
+        fontSize: letterFontSize,
+        fontWeight: 700,
+        letterSpacing: "-0.02em",
+        lineHeight: 1,
+      }}
+    >
+      {SOURCE_LETTER[source]}
+    </span>
+  );
+}
 
 const SENTIMENT_COLOR: Record<Sentiment, string> = {
   positive: "#16A34A",
@@ -144,17 +203,14 @@ export function ReputationFeed() {
                 key={s}
                 className="inline-flex items-center justify-center shrink-0"
                 style={{
-                  width: 18,
-                  height: 18,
-                  borderRadius: 4,
+                  width: 20,
+                  height: 20,
+                  borderRadius: 5,
                   backgroundColor: SOURCE_COLOR[s],
-                  color: "#FFFFFF",
-                  fontSize: 9,
-                  fontWeight: 600,
-                  letterSpacing: "-0.01em",
                 }}
+                title={s.charAt(0).toUpperCase() + s.slice(1)}
               >
-                {SOURCE_LETTER[s]}
+                <SourceGlyph source={s} size={12} letterFontSize={8.5} />
               </span>
             ),
           )}
@@ -172,17 +228,14 @@ export function ReputationFeed() {
             <span
               className="inline-flex items-center justify-center shrink-0 mt-0.5"
               style={{
-                width: 26,
-                height: 26,
-                borderRadius: 6,
+                width: 30,
+                height: 30,
+                borderRadius: 7,
                 backgroundColor: SOURCE_COLOR[m.source],
-                color: "#FFFFFF",
-                fontSize: 11,
-                fontWeight: 700,
               }}
               aria-hidden="true"
             >
-              {SOURCE_LETTER[m.source]}
+              <SourceGlyph source={m.source} size={17} letterFontSize={10.5} />
             </span>
             <div className="flex-1 min-w-0">
               <div className="flex items-baseline justify-between gap-2">
