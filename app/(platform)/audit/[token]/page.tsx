@@ -7,7 +7,7 @@ import { BRAND_NAME, getSiteUrl } from "@/lib/brand";
 import { isValidShareToken } from "@/lib/audit/token";
 import { ScoreCard, toneForScore } from "@/components/audit/score-card";
 import { CountUp } from "@/components/audit/count-up";
-import { EmailGate } from "@/components/audit/email-gate";
+import { AuditPaywall } from "@/components/audit/paywall";
 import {
   MentionsSection,
   type AuditMention,
@@ -33,11 +33,22 @@ interface Finding {
   title: string;
   detail?: string;
 }
+interface SectionDetail {
+  headline?: string | null;
+  points: string[];
+}
+interface SectionDetails {
+  seo?: SectionDetail | null;
+  aeo?: SectionDetail | null;
+  reputation?: SectionDetail | null;
+  traffic?: SectionDetail | null;
+}
 interface Findings {
   quickWins: Finding[];
   risks: Finding[];
   opportunities: Finding[];
   mentions?: AuditMention[];
+  sectionDetails?: SectionDetails;
 }
 // 2026-05-29: score fields are nullable. synthesize.ts now preserves
 // null when DataForSEO providers come up empty (instead of coercing to
@@ -145,26 +156,19 @@ export default async function AuditViewerPage({
           ? "#B45309"
           : "#B91C1C";
 
-  if (!audit.email) {
-    return (
-      <ReportShell subject={subject} createdAt={audit.createdAt}>
-        <TopLine
-          subject={subject}
-          overall={overall}
-          accent={accent}
-          sections={sectionScores}
-        />
-        <SourceBreakdown
-          counts={perSourceCounts}
-          totalMentions={(findings.mentions ?? []).length}
-        />
-        <div className="mt-10">
-          <EmailGate auditId={audit.id} />
-        </div>
-      </ReportShell>
-    );
-  }
+  const sectionDetails = findings.sectionDetails ?? {};
+  const totalFindings =
+    (findings.quickWins ?? []).length +
+    (findings.risks ?? []).length +
+    (findings.opportunities ?? []).length;
 
+  // 2026-05-29 paywall rewrite: render the FULL report regardless of
+  // email-gate state. When the prospect hasn't entered their email yet,
+  // AuditPaywall blurs the post-TopLine content and floats an email
+  // modal over it. The TopLine + SourceBreakdown stay clear so the
+  // prospect can see the scores + breadth of the scan; everything below
+  // (mentions, findings, narrative) reads as "here's the depth, give
+  // us your email to read it." Lifts naturally on successful capture.
   return (
     <ReportShell subject={subject} createdAt={audit.createdAt}>
       <TopLine
@@ -172,6 +176,7 @@ export default async function AuditViewerPage({
         overall={overall}
         accent={accent}
         sections={sectionScores}
+        sectionDetails={sectionDetails}
       />
 
       <SourceBreakdown
@@ -179,60 +184,67 @@ export default async function AuditViewerPage({
         totalMentions={(findings.mentions ?? []).length}
       />
 
-      <MentionsSection
-        mentions={findings.mentions ?? []}
-        brandName={subject}
-        shareToken={audit.shareToken}
-        auditCreatedAtIso={audit.createdAt.toISOString()}
-      />
+      <AuditPaywall
+        unlocked={!!audit.email}
+        auditId={audit.id}
+        mentionCount={(findings.mentions ?? []).length}
+        findingCount={totalFindings}
+      >
+        <MentionsSection
+          mentions={findings.mentions ?? []}
+          brandName={subject}
+          shareToken={audit.shareToken}
+          auditCreatedAtIso={audit.createdAt.toISOString()}
+        />
 
-      <Findings findings={findings} />
+        <Findings findings={findings} />
 
-      {audit.claudeSummary ? (
-        <section className="mt-12">
-          <SectionEyebrow>What this means</SectionEyebrow>
+        {audit.claudeSummary ? (
+          <section className="mt-12">
+            <SectionEyebrow>What this means</SectionEyebrow>
+            <p
+              className="text-lg leading-relaxed mt-3 max-w-3xl"
+              style={{ color: "#1E2A3A" }}
+            >
+              {audit.claudeSummary}
+            </p>
+          </section>
+        ) : null}
+
+        <section
+          className="mt-16 rounded-2xl border p-8 sm:p-10"
+          style={{ borderColor: "#E5E7EB", backgroundColor: "#FBFBFD" }}
+        >
           <p
-            className="text-lg leading-relaxed mt-3 max-w-3xl"
+            className="text-[11px] font-mono uppercase tracking-[0.18em]"
+            style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+          >
+            Next step
+          </p>
+          <h3
+            className="text-2xl sm:text-3xl font-semibold mt-2 max-w-2xl"
             style={{ color: "#1E2A3A" }}
           >
-            {audit.claudeSummary}
-          </p>
-        </section>
-      ) : null}
-
-      <section
-        className="mt-16 rounded-2xl border p-8 sm:p-10"
-        style={{ borderColor: "#E5E7EB", backgroundColor: "#FBFBFD" }}
-      >
-        <p
-          className="text-[11px] font-mono uppercase tracking-[0.18em]"
-          style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
-        >
-          Next step
-        </p>
-        <h3
-          className="text-2xl sm:text-3xl font-semibold mt-2 max-w-2xl"
-          style={{ color: "#1E2A3A" }}
-        >
-          Want this monitored daily for your whole portfolio?
-        </h3>
-        <p
-          className="text-base mt-2 max-w-2xl"
-          style={{ color: "#4B5563" }}
-        >
-          {BRAND_NAME} runs this report every day for every property, watches
-          the deltas, and tells your team what to do about it.
-        </p>
-        <div className="mt-5">
-          <Link
-            href="/onboarding"
-            className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium text-white"
-            style={{ backgroundColor: "#2563EB" }}
+            Want this monitored daily for your whole portfolio?
+          </h3>
+          <p
+            className="text-base mt-2 max-w-2xl"
+            style={{ color: "#4B5563" }}
           >
-            Talk to us
-          </Link>
-        </div>
-      </section>
+            {BRAND_NAME} runs this report every day for every property, watches
+            the deltas, and tells your team what to do about it.
+          </p>
+          <div className="mt-5">
+            <Link
+              href="/onboarding"
+              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium text-white"
+              style={{ backgroundColor: "#2563EB" }}
+            >
+              Talk to us
+            </Link>
+          </div>
+        </section>
+      </AuditPaywall>
     </ReportShell>
   );
 }
@@ -288,11 +300,13 @@ function TopLine({
   overall,
   accent,
   sections,
+  sectionDetails,
 }: {
   subject: string;
   overall: number;
   accent: string;
   sections: SectionScores;
+  sectionDetails?: SectionDetails;
 }) {
   return (
     <section className="mt-10">
@@ -343,10 +357,26 @@ function TopLine({
       </div>
 
       <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <ScoreCard title="SEO" score={sections.seo} />
-        <ScoreCard title="AEO" score={sections.aeo} />
-        <ScoreCard title="Reputation" score={sections.reputation} />
-        <ScoreCard title="Traffic" score={sections.traffic} />
+        <ScoreCard
+          title="SEO"
+          score={sections.seo}
+          reasoning={sectionDetails?.seo ?? null}
+        />
+        <ScoreCard
+          title="AEO"
+          score={sections.aeo}
+          reasoning={sectionDetails?.aeo ?? null}
+        />
+        <ScoreCard
+          title="Reputation"
+          score={sections.reputation}
+          reasoning={sectionDetails?.reputation ?? null}
+        />
+        <ScoreCard
+          title="Traffic"
+          score={sections.traffic}
+          reasoning={sectionDetails?.traffic ?? null}
+        />
       </div>
     </section>
   );
