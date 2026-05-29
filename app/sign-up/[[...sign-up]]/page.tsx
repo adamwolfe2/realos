@@ -38,11 +38,17 @@ export default async function SignUpPage({
     : undefined;
 
   return (
-    <div className="min-h-screen bg-white text-foreground flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-white text-foreground flex flex-col lg:flex-row lg:items-stretch">
       {/* LEFT: Auth form. Thin brand-blue rail at the top reinforces the
           LeaseStack accent so the panel doesn't read as a generic stock
-          template. */}
-      <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] flex flex-col bg-white border-r border-[#EEEEEE] border-t-[3px] border-t-[#2563EB]">
+          template.
+
+          Adam 2026-05-29: `lg:min-h-screen` makes each column fill the
+          viewport height independently, so `justify-center` inside has
+          space to center the form at any zoom level. Without it the
+          column collapses to content height and the form sits at the
+          top with dead space below at low zoom. */}
+      <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] lg:min-h-screen flex flex-col bg-white border-r border-[#EEEEEE] border-t-[3px] border-t-[#2563EB]">
         <header className="px-6 lg:px-10 py-5 lg:py-6 flex items-center justify-between">
           <Link
             href="/"
@@ -209,8 +215,11 @@ export default async function SignUpPage({
         </footer>
       </main>
 
-      {/* RIGHT: Animated platform showcase */}
-      <aside className="hidden lg:block flex-1 relative">
+      {/* RIGHT: Animated platform showcase.
+          `lg:min-h-screen` mirrors the left column so both sides
+          independently fill viewport height — eliminates the dead
+          space below the dashboard mockup at low zoom levels. */}
+      <aside className="hidden lg:block flex-1 lg:min-h-screen relative">
         <PlatformShowcase />
       </aside>
     </div>

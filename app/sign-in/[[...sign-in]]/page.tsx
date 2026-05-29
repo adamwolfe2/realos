@@ -18,11 +18,19 @@ export const metadata: Metadata = {
 
 export default function SignInPage() {
   return (
-    <div className="min-h-screen bg-white text-foreground flex flex-col lg:flex-row">
+    <div className="min-h-screen bg-white text-foreground flex flex-col lg:flex-row lg:items-stretch">
       {/* LEFT: Auth form. Narrow column on desktop so the showcase
           dominates the visible canvas. Brand-blue rail at top mirrors
-          the LeaseStack accent. */}
-      <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] flex flex-col bg-white border-r border-[#EEEEEE] border-t-[3px] border-t-[#2563EB]">
+          the LeaseStack accent.
+
+          Adam 2026-05-29: `lg:min-h-screen` is the key bit. Without it,
+          the column collapses to its natural content height when the
+          right showcase is shorter than the viewport — and the
+          `justify-center` inside has nothing to center in, so the form
+          looks pinned to the top at zoomed-out / tall-viewport sizes.
+          Forcing each column to min-h-screen guarantees vertical
+          centering at any zoom level. */}
+      <main className="w-full lg:w-[42%] xl:w-[38%] 2xl:w-[34%] lg:min-h-screen flex flex-col bg-white border-r border-[#EEEEEE] border-t-[3px] border-t-[#2563EB]">
         <header className="px-6 lg:px-10 py-5 lg:py-6 flex items-center justify-between">
           <Link
             href="/"
@@ -197,8 +205,12 @@ export default function SignInPage() {
       </main>
 
       {/* RIGHT: Animated platform showcase. Hidden on mobile (<lg) so
-          the form gets the full screen without showcase noise. */}
-      <aside className="hidden lg:block flex-1 relative">
+          the form gets the full screen without showcase noise.
+          `lg:min-h-screen` mirrors the left column so both sides
+          independently fill viewport height — even at low zoom levels
+          where the natural content height would otherwise leave dead
+          space below the dashboard mockup. */}
+      <aside className="hidden lg:block flex-1 lg:min-h-screen relative">
         <PlatformShowcase />
       </aside>
     </div>
