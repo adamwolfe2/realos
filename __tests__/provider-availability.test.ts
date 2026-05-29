@@ -107,8 +107,13 @@ describe("getProviderAvailability", () => {
     });
   });
 
-  describe("Google Ads (requires OAuth + dev token)", () => {
-    it("is NOT available with OAuth ready but no dev token", () => {
+  describe("Google Ads (requires OAuth; dev token is downstream)", () => {
+    // Product contract (see lib/connect/provider-availability.ts NOTE):
+    // OAuth is the only gate for the Connect flow itself. The developer
+    // token only gates downstream API calls — so when OAuth is configured
+    // but the dev token is still in flight, we surface "Connectable now"
+    // with a soft note instead of hiding the Connect CTA.
+    it("IS connectable with OAuth ready (dev token in flight surfaces soft note)", () => {
       setEnv({
         OAUTH_ENABLED: "true",
         OAUTH_CALLBACK_BASE_URL: "https://www.leasestack.co",
@@ -116,7 +121,7 @@ describe("getProviderAvailability", () => {
         GOOGLE_OAUTH_CLIENT_SECRET: "test-secret",
       });
       const av = getProviderAvailability();
-      expect(av.google_ads.available).toBe(false);
+      expect(av.google_ads.available).toBe(true);
       expect(av.google_ads.reason).toContain("developer-token");
     });
 
@@ -128,7 +133,7 @@ describe("getProviderAvailability", () => {
       expect(av.google_ads.reason).toContain("Google OAuth setup");
     });
 
-    it("IS available with full Google OAuth + dev token", () => {
+    it("IS available cleanly with full Google OAuth + dev token", () => {
       setEnv({
         OAUTH_ENABLED: "true",
         OAUTH_CALLBACK_BASE_URL: "https://www.leasestack.co",
@@ -142,14 +147,16 @@ describe("getProviderAvailability", () => {
     });
   });
 
-  describe("Meta Ads (requires OAuth + Marketing API token)", () => {
+  describe("Meta Ads (requires OAuth; Marketing API token is downstream)", () => {
     it("is NOT available with no Meta env at all", () => {
       const av = getProviderAvailability();
       expect(av.meta_ads.available).toBe(false);
       expect(av.meta_ads.reason).toContain("Meta Business verification");
     });
 
-    it("is NOT available with OAuth ready but no Ad Library token", () => {
+    // Same pattern as google_ads — OAuth is the only gate; Marketing API
+    // Standard Access is downstream and surfaces as a soft "in flight" note.
+    it("IS connectable with OAuth ready (Ad Library token in flight surfaces soft note)", () => {
       setEnv({
         OAUTH_ENABLED: "true",
         OAUTH_CALLBACK_BASE_URL: "https://www.leasestack.co",
@@ -157,11 +164,11 @@ describe("getProviderAvailability", () => {
         META_OAUTH_APP_SECRET: "app-secret",
       });
       const av = getProviderAvailability();
-      expect(av.meta_ads.available).toBe(false);
+      expect(av.meta_ads.available).toBe(true);
       expect(av.meta_ads.reason).toContain("Standard Access");
     });
 
-    it("IS available with full Meta OAuth + Ad Library token", () => {
+    it("IS available cleanly with full Meta OAuth + Ad Library token", () => {
       setEnv({
         OAUTH_ENABLED: "true",
         OAUTH_CALLBACK_BASE_URL: "https://www.leasestack.co",
