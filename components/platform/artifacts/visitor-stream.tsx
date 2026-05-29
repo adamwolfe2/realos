@@ -72,22 +72,35 @@ const PARCHMENT = "#F1F5F9";
 
 // Per-row reveal-delay schedule. Norman feedback (2026-05-21): "people
 // scroll EXTREMELY quick — we need 3-5 reveals at a time, not 1 at a
-// time." The initial mount renders 5 rows already in flight; this
-// table tells each row HOW MUCH to delay its anonymous → identified
-// flip so the visitor sees a staggered wave instead of one slow reveal.
-// Pattern: row 0 fires at ~500ms, then a fresh reveal every ~450ms,
-// so all 5 land inside a ~2.5s window. After that the rotation
-// interval drops new anonymous rows in at the top with the standard
-// 1500ms reveal — so steady-state still has 2-3 reveals in flight.
+// time." The schedule lines up the first 5 anonymous → identified
+// flips inside a ~2.5s window. Sub-pages with the full 5-row stream
+// use this whole schedule; compact callers (the /features index card)
+// just use the first entry.
 const INITIAL_REVEAL_DELAYS_MS = [500, 950, 1400, 1850, 2300];
+
+// Default visible-row count. Sub-pages (`/features/pixel`, `/leads`,
+// etc.) use the default 5-row stream — that's where the artifact
+// owns the whole right-column slot. The /features index card calls
+// this component with `visibleRows={1}` because the card was reading
+// as the tallest row in the index scroll (Adam, 2026-05-29).
+const DEFAULT_VISIBLE_ROWS = 5;
 
 // Rotation interval. Tightened from 3.4s → 2.6s so the steady-state
 // feed feels alive at a glance.
 const ROTATION_MS = 2600;
 
-export function VisitorStream() {
+interface VisitorStreamProps {
+  /** How many visitor rows to render at once. Default 5 (full stream).
+   *  Set to 1 on compact surfaces like the /features index card. */
+  visibleRows?: number;
+}
+
+export function VisitorStream({
+  visibleRows = DEFAULT_VISIBLE_ROWS,
+}: VisitorStreamProps = {}) {
+  const cap = Math.max(1, Math.min(visibleRows, POOL.length));
   const [rows, setRows] = useState<Visitor[]>(() =>
-    POOL.slice(0, 5).map((p, i) => ({
+    POOL.slice(0, cap).map((p, i) => ({
       ...p,
       id: i,
       ago: `${(i + 1) * 2}m`,
@@ -110,11 +123,11 @@ export function VisitorStream() {
           ...r,
           ago: i === 0 ? "1m" : i === 1 ? "3m" : i === 2 ? "6m" : i === 3 ? "12m" : "22m",
         }));
-        return [fresh, ...aged].slice(0, 5);
+        return [fresh, ...aged].slice(0, cap);
       });
     }, ROTATION_MS);
     return () => clearInterval(id);
-  }, []);
+  }, [cap]);
 
   const identifiedCount = 12 + Math.floor(tick / 2);
 
