@@ -5,6 +5,8 @@ import { prisma } from "@/lib/db";
 import { PageHeader } from "@/components/admin/page-header";
 import { microCentsToUsd } from "@/lib/cost-tracker/log";
 import { getMonthToDateSpend } from "@/lib/cost-tracker/cap";
+import { VENDOR_CONSOLE_URLS } from "@/lib/cost-tracker/backfill";
+import { CostBackfillBanner } from "@/components/admin/cost-backfill-banner";
 
 export const metadata: Metadata = { title: "API costs" };
 export const dynamic = "force-dynamic";
@@ -98,7 +100,23 @@ export default async function AdminCostsPage() {
       orderBy: { _sum: { costMicroCents: "desc" } },
       take: 10,
     }),
+    // Recent Calls intentionally EXCLUDES synthesized backfill rows
+    // (meta.synthesized = true) — those would visually pollute the
+    // "what fired in real time" log with fake-looking entries. Per-
+    // provider + per-org + per-audit rollups DO include them so the
+    // historical $ context is preserved in the totals.
+    // Postgres JSON `equals: null` distinguishes SQL NULL from JSON
+    // null, so we use Prisma.DbNull explicitly for the IS NULL branch.
     prisma.apiUsage.findMany({
+      where: {
+        AND: [
+          {
+            NOT: {
+              meta: { path: ["synthesized"], equals: true },
+            },
+          },
+        ],
+      },
       orderBy: { createdAt: "desc" },
       take: 50,
       select: {
@@ -162,6 +180,13 @@ export default async function AdminCostsPage() {
         title="API costs"
         description="Per-provider, per-org, per-audit cost rollups across every upstream API call."
       />
+
+      {/* Backfill banner — links to vendor consoles for pre-instrumentation
+          spend, plus a one-click button that synthesizes historical
+          ApiUsage rows from ProspectAudit + DailySignalSnapshot tables
+          using the known pipeline cost shape. Helps make the dashboard
+          useful before the first post-deploy audit lands. */}
+      <CostBackfillBanner vendorConsoles={VENDOR_CONSOLE_URLS} />
 
       {/* Headline tiles */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
