@@ -19,6 +19,7 @@ import {
   SatelliteDish,
   Globe,
   Store,
+  DollarSign,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -132,6 +133,7 @@ export const adminNavGroups: NavGroup[] = [
       },
       { href: "/admin/system", label: "System health", icon: HeartPulse },
       { href: "/admin/system/seo-agent", label: "SEO Agent metrics", icon: Activity },
+      { href: "/admin/costs", label: "API costs", icon: DollarSign },
       { href: "/admin/audit-log", label: "Audit log", icon: History },
       { href: "/admin/chat", label: "Support", icon: MessageSquare },
       {
