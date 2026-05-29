@@ -142,34 +142,42 @@ export function SoftBlurIn({
                 "marketing" as "m / arketing". */}
             <span aria-hidden="true">
               {seg.text.split(" ").map((word, wIdx, words) => (
-                <span
-                  key={`${segIdx}-w${wIdx}`}
-                  style={{ display: "inline-block", whiteSpace: "nowrap" }}
-                >
-                  {Array.from(word).map((ch, charI) => {
-                    const cIdx = charIndex++;
-                    return (
-                      <motion.span
-                        key={`${segIdx}-${wIdx}-${charI}`}
-                        custom={cIdx}
-                        variants={reduce ? undefined : charVariants}
-                        initial={reduce ? false : "hidden"}
-                        animate={
-                          reduce ? undefined : visible ? "visible" : "hidden"
-                        }
-                        style={{
-                          display: "inline-block",
-                          willChange: "transform, opacity, filter",
-                        }}
-                      >
-                        {ch}
-                      </motion.span>
-                    );
-                  })}
-                  {/* Regular space between words — not animated, in normal
-                      flow, so the line wraps at word boundaries. */}
-                  {wIdx < words.length - 1 ? " " : null}
-                </span>
+                <React.Fragment key={`${segIdx}-w${wIdx}`}>
+                  <span
+                    style={{
+                      display: "inline-block",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {Array.from(word).map((ch, charI) => {
+                      const cIdx = charIndex++;
+                      return (
+                        <motion.span
+                          key={`${segIdx}-${wIdx}-${charI}`}
+                          custom={cIdx}
+                          variants={reduce ? undefined : charVariants}
+                          initial={reduce ? false : "hidden"}
+                          animate={
+                            reduce ? undefined : visible ? "visible" : "hidden"
+                          }
+                          style={{
+                            display: "inline-block",
+                            willChange: "transform, opacity, filter",
+                          }}
+                        >
+                          {ch}
+                        </motion.span>
+                      );
+                    })}
+                  </span>
+                  {/* Word separator — non-breaking space OUTSIDE the word
+                      wrapper so it actually renders between two adjacent
+                      inline-block siblings. Using   (nbsp) is the
+                      most reliable way to force a visible space between
+                      inline-blocks; the line still breaks at this point
+                      because the outer container doesn't have nowrap. */}
+                  {wIdx < words.length - 1 ? " " : null}
+                </React.Fragment>
               ))}
             </span>
           </span>

@@ -4,7 +4,6 @@ import { BRAND_NAME } from "@/lib/brand";
 import { Hero } from "@/components/home/hero";
 import { ProductTourSection } from "@/components/home/product-tour-section";
 import { PilotCta } from "@/components/home/pilot-cta";
-import { PlatformWalkthrough } from "@/components/home/platform-walkthrough";
 import { CapabilitiesRail } from "@/components/home/capabilities-rail";
 import { Comparison } from "@/components/home/comparison";
 import { LaunchJourney } from "@/components/home/launch-journey";
@@ -42,7 +41,6 @@ export default function PlatformHome() {
       <Hero />
       <ProductTourSection />
       <PilotCta />
-      <PlatformWalkthrough />
       <CapabilitiesRail />
       <Comparison />
       <LaunchJourney />
