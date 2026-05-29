@@ -100,7 +100,7 @@ export interface SignalSnapshot {
 // would still render the misleading "0/100" card.
 // Bumping the version invalidates the 14-day dedupe so the next visit
 // to a stale audit triggers a fresh scan.
-export const COMPUTE_VERSION = "2026-05-29.v4";
+export const COMPUTE_VERSION = "2026-05-29.v5";
 
 export function scopeKey(s: SignalScope): string {
   if (s.kind === "tenant") {

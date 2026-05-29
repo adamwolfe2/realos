@@ -27,6 +27,11 @@ import {
   brandNameFromDomain,
   type ProspectMention,
 } from "@/lib/audit/reputation-prospect";
+import {
+  crawlSite,
+  crawlScore,
+  type SiteCrawlResult,
+} from "@/lib/audit/site-crawl";
 import { computeMockTenantSignals } from "./mock-tenant";
 
 // ----------------------------------------------------------------------------
@@ -46,6 +51,10 @@ export type ProspectComputeResult = SignalSnapshot & {
     lighthouse: LighthouseScores | null;
     pageAudit: InstantPageAudit | null;
     backlinks: BacklinksSummary | null;
+    /** Direct site crawl — runs always (free, no API key). Synthesizer
+     *  reads this to generate findings when DataForSEO Labs returned
+     *  nothing. */
+    siteCrawl: SiteCrawlResult | null;
     mentions: ProspectMention[];
     aeoCompetitorsCited: string[];
     aeoCitedEngines: string[];
@@ -75,18 +84,28 @@ async function computeProspectSignals(
   const brandName = brandNameFromDomain(domain);
   const url = `https://${domain}`;
 
-  // Four major fan-outs in parallel via allSettled — single source failure
+  // Five major fan-outs in parallel via allSettled — single source failure
   // never throws.
-  const [seoFanout, aeoResult, repResult] = await Promise.allSettled([
-    runSeoFanout(domain, url),
-    runAeoFanout(brandName, domain, prospectAuditId),
-    runProspectReputation({ brandName, domain, prospectAuditId }),
-  ]);
+  //
+  // 2026-05-29: site crawl added as a free fallback signal source so the
+  // SEO surface never renders "Awaiting data" on a reachable site. Runs
+  // ALWAYS (not just when DataForSEO fails) — buildSeoSignal merges the
+  // two, preferring DataForSEO where present and falling back to the
+  // crawl-derived score + findings otherwise.
+  const [seoFanout, aeoResult, repResult, crawlResult] =
+    await Promise.allSettled([
+      runSeoFanout(domain, url),
+      runAeoFanout(brandName, domain, prospectAuditId),
+      runProspectReputation({ brandName, domain, prospectAuditId }),
+      crawlSite(url),
+    ]);
 
   const seoData =
     seoFanout.status === "fulfilled" ? seoFanout.value : emptySeoFanout();
   const aeoData =
     aeoResult.status === "fulfilled" ? aeoResult.value : emptyAeoFanout();
+  const crawlData: SiteCrawlResult | null =
+    crawlResult.status === "fulfilled" ? crawlResult.value : null;
   const rep =
     repResult.status === "fulfilled"
       ? repResult.value
@@ -98,7 +117,7 @@ async function computeProspectSignals(
           errors: {},
         };
 
-  const seo: SeoSignal | null = buildSeoSignal(seoData);
+  const seo: SeoSignal | null = buildSeoSignal(seoData, crawlData);
   const traffic: TrafficSignal | null = buildTrafficSignal(seoData.rankedKeywords);
   const aeo: AeoSignal | null = buildAeoSignal(aeoData);
   const reputation: ReputationSignal | null = buildReputationSignal(rep);
@@ -125,6 +144,7 @@ async function computeProspectSignals(
       lighthouse: seoData.lighthouse,
       pageAudit: seoData.pageAudit,
       backlinks: seoData.backlinks,
+      siteCrawl: crawlData,
       mentions: rep.mentions,
       aeoCompetitorsCited: aeoData.competitorsCited,
       aeoCitedEngines: aeoData.citedEngines,
@@ -170,19 +190,23 @@ async function runSeoFanout(domain: string, url: string): Promise<SeoFanout> {
   };
 }
 
-function buildSeoSignal(data: SeoFanout): SeoSignal | null {
-  // Adam 2026-05-29: include pageAudit in the null check. The page-audit
-  // endpoint (instant_pages) hits the live URL and works for ANY domain
-  // — even small recently-launched properties that DataForSEO Labs
-  // (ranked_keywords + backlinks_summary) hasn't indexed yet. Previously
-  // a brand-new site with no organic index entry returned "Awaiting data"
-  // even though the page audit had real Lighthouse-style findings ready
-  // to surface.
+function buildSeoSignal(
+  data: SeoFanout,
+  crawl: SiteCrawlResult | null = null,
+): SeoSignal | null {
+  // Adam 2026-05-29: include pageAudit AND direct-crawl in the null check.
+  // The page-audit endpoint (instant_pages) hits the live URL and works
+  // for ANY domain — even small recently-launched properties that
+  // DataForSEO Labs (ranked_keywords + backlinks_summary) hasn't indexed
+  // yet. The site crawl is a free zero-API fallback that hits the URL
+  // directly via fetch — works on any reachable site. With both layered
+  // in, "Awaiting data" only renders when the site itself is unreachable.
   if (
     !data.rankedKeywords &&
     !data.lighthouse &&
     !data.backlinks &&
-    !data.pageAudit
+    !data.pageAudit &&
+    (!crawl || crawl.status !== "ok")
   ) {
     return null;
   }
@@ -230,6 +254,16 @@ function buildSeoSignal(data: SeoFanout): SeoSignal | null {
   if (data.pageAudit) {
     score += pageTier * 0.3;
     weight += 0.3;
+  }
+  // Direct site-crawl tier — runs always, contributes whenever the crawl
+  // succeeded. Weight intentionally lower than DataForSEO components
+  // (0.2 vs 0.3-0.4) because the crawl is a single-page observation
+  // and shouldn't dominate a real domain-wide signal when DataForSEO
+  // has data. But on small/new sites where DataForSEO is empty, this
+  // becomes the sole signal and carries the full average.
+  if (crawl && crawl.status === "ok") {
+    score += crawlScore(crawl) * 0.2;
+    weight += 0.2;
   }
   const finalScore = Math.round(weight > 0 ? score / weight : 0);
 

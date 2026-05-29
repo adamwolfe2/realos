@@ -86,6 +86,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
         lighthouse: __provider?.lighthouse ?? null,
         lighthouseAudits: null,
         pageAudit: __provider?.pageAudit ?? null,
+        siteCrawl: __provider?.siteCrawl ?? null,
         backlinks: __provider?.backlinks ?? null,
         mentions: __provider?.mentions ?? [],
         aeoCompetitorsCited: __provider?.aeoCompetitorsCited ?? [],

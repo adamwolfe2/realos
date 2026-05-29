@@ -17,6 +17,10 @@ import type {
   LighthouseScores,
 } from "@/lib/seo/dataforseo";
 import type { ProspectMention } from "./reputation-prospect";
+import {
+  crawlFindings,
+  type SiteCrawlResult,
+} from "./site-crawl";
 
 // ----------------------------------------------------------------------------
 // Synthesizer — turns the raw provider responses + rolled-up SignalSnapshot
@@ -72,6 +76,10 @@ export type ProviderData = {
   lighthouseAudits: Record<string, { id?: string; title?: string; score?: number | null }> | null;
   pageAudit: InstantPageAudit | null;
   backlinks: BacklinksSummary | null;
+  /** Direct site crawl — runs always (free, no API key). Used by the
+   *  synthesizer to generate quick-win findings when DataForSEO Labs
+   *  returned nothing for the domain. */
+  siteCrawl?: SiteCrawlResult | null;
   mentions: ProspectMention[];
   aeoCompetitorsCited: string[];
   aeoCitedEngines: string[];
@@ -266,6 +274,43 @@ export async function synthesizeAudit(
     });
   }
 
+  // Direct site-crawl findings — fired when DataForSEO Labs has nothing
+  // on the domain (small / new properties). The crawl observes the live
+  // homepage and emits concrete quick-wins (missing canonical, no H1,
+  // thin content, no sitemap, etc.) so the SEO surface always has real
+  // action items even without DataForSEO indexing.
+  //
+  // De-duplicate: if a page-audit finding above already covered a
+  // particular issue (e.g. duplicate <title>), we keep the page-audit
+  // version since it's based on whole-site signal. The crawl is single-
+  // page only.
+  if (provider.siteCrawl) {
+    const existingIds = new Set(quickWins.map((f) => f.id));
+    // Map crawl-finding ids onto page-audit ids so we can detect overlap.
+    const overlapMap: Record<string, string> = {
+      "qw-crawl-https": "qw-https",
+      "qw-crawl-no-title": "qw-no-title",
+      "qw-crawl-short-title": "qw-short-title",
+      "qw-crawl-long-title": "qw-long-title",
+      "qw-crawl-no-desc": "qw-no-desc",
+      "qw-crawl-short-desc": "qw-short-desc",
+      "qw-crawl-long-desc": "qw-long-desc",
+      "qw-crawl-no-canonical": "qw-no-canonical",
+      "qw-crawl-no-h1": "qw-no-h1",
+      "qw-crawl-multi-h1": "qw-multi-h1",
+      "qw-crawl-no-alt": "qw-no-alt",
+      "qw-crawl-thin-content": "qw-thin-content",
+      "qw-crawl-thin-internal": "qw-thin-internal",
+      "qw-crawl-no-schema": "qw-no-schema",
+    };
+    for (const f of crawlFindings(provider.siteCrawl)) {
+      const overlap = overlapMap[f.id];
+      if (overlap && existingIds.has(overlap)) continue;
+      if (existingIds.has(f.id)) continue;
+      quickWins.push(f);
+    }
+  }
+
   // Lighthouse-derived quick wins — name the specific failing audit.
   if (provider.lighthouse?.seo != null && provider.lighthouse.seo < 80) {
     const failing = topFailingLighthouseAudits(provider.lighthouseAudits, 2);
@@ -418,7 +463,38 @@ function buildSeoDetail(
   provider: ProviderData,
 ): SectionDetail | null {
   const seo = signals.seo;
+  const crawl = provider.siteCrawl ?? null;
   if (!seo) {
+    // The site-crawl fallback should have produced data unless the site
+    // itself is unreachable. Tailor the empty-state copy to the actual
+    // failure mode so the prospect knows what's wrong.
+    if (crawl?.status === "unreachable") {
+      return {
+        headline: "Homepage was unreachable",
+        points: [
+          "Our crawler couldn't connect to the homepage within the timeout window. The domain may be down, behind DNS issues, or pointed at the wrong IP.",
+          "Try loading the URL in a private browser window — if it fails for you too, that's the root cause.",
+        ],
+      };
+    }
+    if (crawl?.status === "blocked") {
+      return {
+        headline: "Homepage is blocking our crawler",
+        points: [
+          `HTTP ${crawl.httpStatus ?? "4xx"} — site is rejecting bot traffic (Cloudflare / WAF / CAPTCHA).`,
+          "Search engines and AI crawlers hit the same wall. Allowlist legitimate crawler user-agents in your WAF to unblock indexing.",
+        ],
+      };
+    }
+    if (crawl?.status === "non_html") {
+      return {
+        headline: "Homepage isn't serving HTML",
+        points: [
+          `Content-Type "${crawl.errorMessage ?? "non-HTML"}" — likely a single-page JS app that doesn't render HTML server-side.`,
+          "Without server-rendered HTML, search engines see an empty shell. Add server-side rendering or a static prerender layer.",
+        ],
+      };
+    }
     return {
       headline: "Scan still expanding coverage",
       points: [
@@ -436,9 +512,25 @@ function buildSeoDetail(
       points.push(`Average ranking position is #${seo.avgPosition}.`);
     }
   } else {
-    points.push(
-      "DataForSEO Labs returned 0 ranked keywords. Common for newer or smaller properties — pure on-page-audit signal driving this score.",
-    );
+    // No DataForSEO Labs data — lean on whatever the crawl observed
+    // instead of just saying "0 keywords". This is the bullet most
+    // operators of new properties will read first.
+    if (crawl?.status === "ok") {
+      points.push(
+        `Direct homepage scan: ${crawl.bodyWordCount} words of content, ${crawl.h1Count} H1 tag${crawl.h1Count === 1 ? "" : "s"}, ${crawl.imageCount} image${crawl.imageCount === 1 ? "" : "s"} (${crawl.imagesMissingAlt} missing alt), ${crawl.internalLinkCount} internal links.`,
+      );
+      if (!crawl.hasSitemapXml) {
+        points.push("No /sitemap.xml detected — slows crawler indexing.");
+      } else if (crawl.schemaTypes.length === 0) {
+        points.push(
+          "No schema.org structured data detected — AI engines can't confirm property identity without it.",
+        );
+      }
+    } else {
+      points.push(
+        "DataForSEO Labs returned 0 ranked keywords. Common for newer or smaller properties.",
+      );
+    }
   }
   if (seo.lighthouseScore != null) {
     points.push(`Lighthouse SEO category: ${seo.lighthouseScore}/100.`);
