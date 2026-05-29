@@ -1,167 +1,118 @@
-import { Check } from "lucide-react";
-import { SplitHero } from "@/components/platform/split-hero";
-import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
+import Link from "next/link";
 
 // ---------------------------------------------------------------------------
-// PricingHero — rebuilt on the homepage SplitHero pattern so the pricing
-// page opens with the same rhythm as the rest of the site.
+// PricingHero — single-column centered text hero. No artifact, no
+// split layout. Matches the /audit hero's centered rhythm so pricing
+// reads as a focused buying moment instead of a marketing wall.
 //
-// What changed (CEO brief 2026-05-28):
-//   - Switched from the standalone left-aligned hero to SplitHero so the
-//     right column gets a calm artifact (faux Growth tier card preview)
-//     instead of empty white space.
-//   - Subhead collapsed from three sentences to one.
-//   - Stat tiles cut. Trust strip is now 3 chips matching the homepage.
-//   - Eyebrow handled by SplitHero so it matches every other section
-//     across the site (line + mono blue label).
+// Structure mirrors app/(platform)/audit/page.tsx exactly:
+//   max-w-[1100px] outer  ·  max-w-3xl mx-auto text-center inner
+//   centered eyebrow with mirroring blue lines
+//   centered headline + accent color on the second line
+//   centered subhead capped at max-w-2xl
+//   centered CTA row
+//   centered trust strip
 // ---------------------------------------------------------------------------
+
+const PRIMARY_HREF = "/onboarding";
+const SECONDARY_HREF = "/demo";
 
 export function PricingHero() {
   return (
-    <SplitHero
-      eyebrow="Pricing"
-      headline="One platform."
-      headlineAccent="Less than your retainer."
-      subhead="Site, ads, AI chatbot, visitor pixel, reputation, and weekly report — flat per-property monthly, no retainer."
-      ctas={[
-        { label: "Start the free trial", href: "/onboarding" },
-        { label: "Book a demo", href: "/demo", variant: "secondary" },
-      ]}
-      trust={[
-        { value: "14 days", label: "Live on your domain" },
-        { value: "100%", label: "Ad spend tracked" },
-        { value: "$0", label: "Pilot. Cancel anytime." },
-      ]}
-      artifact={
-        <SoftFramedArtifact tone="lavender" padding="md" bare>
-          <PricingHeroArtifact />
-        </SoftFramedArtifact>
-      }
-    />
+    <section
+      className="relative"
+      style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}
+    >
+      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
+        <div className="max-w-3xl mx-auto text-center">
+          {/* Eyebrow — line + mono blue label + mirrored line */}
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <span
+              aria-hidden
+              className="hidden sm:inline-block"
+              style={{ width: 28, height: 1, backgroundColor: "#2563EB" }}
+            />
+            <p
+              className="text-[11px] font-mono uppercase tracking-[0.18em]"
+              style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+            >
+              Pricing
+            </p>
+            <span
+              aria-hidden
+              className="hidden sm:inline-block"
+              style={{ width: 28, height: 1, backgroundColor: "#2563EB" }}
+            />
+          </div>
+
+          {/* Headline — black first line, brand-blue second line */}
+          <h1
+            className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight"
+            style={{ color: "#1E2A3A" }}
+          >
+            One platform.
+            <br />
+            <span style={{ color: "#2563EB" }}>Less than your retainer.</span>
+          </h1>
+
+          {/* Subhead — one sentence, capped width for clean line breaks */}
+          <p
+            className="mt-5 text-lg md:text-xl leading-relaxed mx-auto max-w-2xl"
+            style={{ color: "#4B5563" }}
+          >
+            Site, ads, AI chatbot, visitor pixel, reputation, and weekly
+            report — flat per-property monthly, no retainer.
+          </p>
+
+          {/* Primary + secondary CTA */}
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
+            <Link
+              href={PRIMARY_HREF}
+              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium text-white transition-colors hover:opacity-90"
+              style={{ backgroundColor: "#2563EB" }}
+            >
+              Start the free trial
+            </Link>
+            <Link
+              href={SECONDARY_HREF}
+              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium transition-colors"
+              style={{
+                border: "1px solid #E5E7EB",
+                color: "#1E2A3A",
+                backgroundColor: "#FFFFFF",
+              }}
+            >
+              Book a demo
+            </Link>
+          </div>
+
+          {/* Trust strip — 3 chips, centered, mirrors homepage rhythm */}
+          <ul className="mt-10 grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto">
+            <TrustChip value="14 days" label="Live on your domain" />
+            <TrustChip value="100%" label="Ad spend tracked" />
+            <TrustChip value="$0" label="Pilot. Cancel anytime." />
+          </ul>
+        </div>
+      </div>
+    </section>
   );
 }
 
-// Calm, static preview of a single Growth-tier card. Visually mirrors the
-// real tier cards in PricingTiers so the hero artifact reads as "this is
-// what you're about to see" instead of an unrelated mockup.
-function PricingHeroArtifact() {
+function TrustChip({ value, label }: { value: string; label: string }) {
   return (
-    <div
-      className="relative rounded-2xl p-6 md:p-7 flex flex-col bg-white"
-      style={{
-        border: "1px solid #2563EB",
-        boxShadow:
-          "0 0 0 4px rgba(37,99,235,0.08), 0 8px 24px rgba(37,99,235,0.10)",
-      }}
-    >
-      <div
-        className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full px-2.5 py-1"
-        style={{
-          backgroundColor: "#2563EB",
-          color: "#ffffff",
-          fontFamily: "var(--font-mono)",
-          fontSize: "11px",
-          letterSpacing: "0.18em",
-          textTransform: "uppercase",
-          fontWeight: 600,
-        }}
+    <li className="text-center sm:text-left">
+      <p
+        className="text-xl font-semibold"
+        style={{ color: "#1E2A3A", letterSpacing: "-0.01em" }}
       >
-        Most popular
-      </div>
-
-      <div className="mb-4">
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "11px",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: "#88867f",
-            fontWeight: 600,
-          }}
-        >
-          Growth
-        </div>
-        <p
-          className="mt-1"
-          style={{
-            color: "#1E2A3A",
-            fontFamily: "var(--font-sans)",
-            fontSize: "13px",
-            lineHeight: 1.45,
-          }}
-        >
-          Replace your retainer. Flexible, month-to-month.
-        </p>
-      </div>
-
-      <div className="mb-3">
-        <div className="flex items-baseline gap-1">
-          <span
-            style={{
-              fontFamily: "var(--font-sans)",
-              fontSize: "44px",
-              fontWeight: 700,
-              letterSpacing: "-0.026em",
-              lineHeight: 1,
-              color: "#1E2A3A",
-            }}
-          >
-            $899
-          </span>
-          <span
-            style={{
-              color: "#88867f",
-              fontFamily: "var(--font-sans)",
-              fontSize: "13px",
-              fontWeight: 500,
-            }}
-          >
-            /mo · per property
-          </span>
-        </div>
-        <p
-          className="mt-1"
-          style={{
-            color: "#88867f",
-            fontFamily: "var(--font-mono)",
-            fontSize: "10px",
-            letterSpacing: "0.14em",
-            textTransform: "uppercase",
-          }}
-        >
-          1 property
-        </p>
-      </div>
-
-      <ul className="space-y-2">
-        {[
-          "Visitor pixel · 5,000 identified visitors / mo",
-          "AI chatbot · 5,000 conversations / mo",
-          "Source-to-lease attribution",
-          "Operator-written weekly read",
-        ].map((label) => (
-          <li
-            key={label}
-            className="flex items-start gap-2"
-            style={{
-              color: "#1E2A3A",
-              fontFamily: "var(--font-sans)",
-              fontSize: "13px",
-              lineHeight: 1.5,
-            }}
-          >
-            <Check
-              className="shrink-0 mt-[3px]"
-              size={14}
-              strokeWidth={2.5}
-              style={{ color: "#2563EB" }}
-              aria-hidden="true"
-            />
-            <span>{label}</span>
-          </li>
-        ))}
-      </ul>
-    </div>
+        {value}
+      </p>
+      <p
+        className="mt-0.5 text-[11px] font-mono uppercase tracking-[0.16em]"
+        style={{ color: "#88867f", fontFamily: "var(--font-mono)" }}
+      >
+        {label}
+      </p>
+    </li>
   );
 }
