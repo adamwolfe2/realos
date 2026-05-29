@@ -53,13 +53,21 @@ export async function synthesizeAudit(
 ): Promise<{
   findings: SynthesizedFindings;
   claudeSummary: string;
-  sectionScores: Record<string, number>;
+  sectionScores: Record<string, number | null>;
 }> {
-  const sectionScores: Record<string, number> = {
-    seo: signals.seo?.score ?? 0,
-    aeo: signals.aeo?.score ?? 0,
-    reputation: signals.reputation?.score ?? 0,
-    traffic: signals.traffic?.score ?? 0,
+  // Adam 2026-05-29: preserve null so the viewer can render "Data
+  // unavailable" instead of a misleading "0/100". Previously we
+  // coerced null → 0 here, which made provider failures
+  // indistinguishable from genuinely-zero scores.
+  //
+  // The Prisma column is `Json?` and the audit viewer's
+  // SectionScores type uses `?: number` per key — so absent keys
+  // round-trip cleanly through JSON serialization.
+  const sectionScores: Record<string, number | null> = {
+    seo: signals.seo?.score ?? null,
+    aeo: signals.aeo?.score ?? null,
+    reputation: signals.reputation?.score ?? null,
+    traffic: signals.traffic?.score ?? null,
   };
 
   const quickWins: Finding[] = [];

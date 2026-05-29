@@ -33,10 +33,20 @@ export function ScoreCard({
   caption?: string;
   className?: string;
 }) {
-  const value = Math.max(0, Math.min(100, score ?? 0));
+  // Adam 2026-05-29: previously `score ?? 0` collapsed null/undefined
+  // into a real "0" displayed as 0/100 with a red ring — making provider
+  // failures look identical to genuinely-zero scores. Now an explicit
+  // null/undefined renders an "Awaiting data" placeholder card with the
+  // neutral palette and an empty progress track. Genuinely-zero scores
+  // still display 0 in red.
+  const hasScore =
+    typeof score === "number" && Number.isFinite(score);
+  const value = hasScore ? Math.max(0, Math.min(100, score)) : 0;
   const tone = toneForScore(value);
-  const palette = TONE[tone];
-  const pct = value;
+  // Unavailable state borrows the muted palette so it's visually
+  // distinguishable from a real low score (no red ring).
+  const palette = hasScore ? TONE[tone] : MUTED_PALETTE;
+  const pct = hasScore ? value : 0;
 
   return (
     <div
@@ -60,7 +70,7 @@ export function ScoreCard({
             </p>
           ) : null}
         </div>
-        {typeof delta === "number" && Number.isFinite(delta) ? (
+        {typeof delta === "number" && Number.isFinite(delta) && hasScore ? (
           <span
             className="text-xs font-medium px-2 py-0.5 rounded-md"
             style={{ color: palette.text, backgroundColor: palette.bg }}
@@ -70,20 +80,35 @@ export function ScoreCard({
           </span>
         ) : null}
       </div>
-      <div className="flex items-baseline gap-2">
-        <span
-          className="text-4xl font-semibold tabular-nums"
-          style={{ color: palette.text }}
-        >
-          {value}
-        </span>
-        <span
-          className="text-sm"
-          style={{ color: "#9CA3AF" }}
-        >
-          / 100
-        </span>
-      </div>
+      {hasScore ? (
+        <div className="flex items-baseline gap-2">
+          <span
+            className="text-4xl font-semibold tabular-nums"
+            style={{ color: palette.text }}
+          >
+            {value}
+          </span>
+          <span className="text-sm" style={{ color: "#9CA3AF" }}>
+            / 100
+          </span>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-0.5">
+          <span
+            className="text-sm font-medium"
+            style={{ color: "#6B7280" }}
+            title="Provider data isn't available yet for this property — the score will populate after the next scan."
+          >
+            Awaiting data
+          </span>
+          <span
+            className="text-[11px]"
+            style={{ color: "#9CA3AF" }}
+          >
+            Scan still expanding coverage
+          </span>
+        </div>
+      )}
       <div
         className="h-1.5 w-full rounded-full overflow-hidden"
         style={{ backgroundColor: "#F3F4F6" }}
@@ -100,3 +125,11 @@ export function ScoreCard({
     </div>
   );
 }
+
+// Neutral palette used when a section has no provider data — keeps the
+// card from reading as a "real bad score" (red ring at 0).
+const MUTED_PALETTE = {
+  ring: "#CBD5E1",
+  text: "#6B7280",
+  bg: "rgba(148,163,184,0.08)",
+};
