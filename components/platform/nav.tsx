@@ -8,18 +8,22 @@ import { useEffect, useState } from "react";
 // to frosted white on scroll. Wordmark left, nav links centered, two utility
 // links right. No shadow, no border. Single 14px weight-500 type system.
 
-// Features dropdown — Norman brief (2026-05-28): two items only.
-// "Core LeaseStack Platform" points to the platform overview page.
-// "Add-ons" lists the modules in priority order.
+// Features dropdown — Norman brief (2026-05-28): "Core LeaseStack Platform"
+// points to the all-features overview page; remaining items list the
+// individual add-on modules in priority order.
+//
+// 2026-05-29 cleanup: Keyword Trends + Website Build used to share routes
+// with adjacent items as placeholders. Now that dedicated sub-pages exist,
+// every dropdown entry resolves to its own canonical page.
 const PRODUCT_LINKS = [
-  { href: "/features",         label: "Core LeaseStack Platform" },
-  { href: "/features/chatbot", label: "Add-on · AI Chatbot" },
-  { href: "/features/pixel",   label: "Add-on · Visitor Identification" },
-  { href: "/features/seo-aeo", label: "Add-on · SEO / AEO" },
-  { href: "/audit",            label: "Add-on · Reputation Management" },
-  { href: "/features/seo-aeo", label: "Add-on · Keyword Trends" },
-  { href: "/features/ads",     label: "Add-on · Managed Ads oversight" },
-  { href: "/features",         label: "Add-on · Website Build" },
+  { href: "/features",                label: "Core LeaseStack Platform" },
+  { href: "/features/chatbot",        label: "Add-on · AI Chatbot" },
+  { href: "/features/pixel",          label: "Add-on · Visitor Identification" },
+  { href: "/features/seo-aeo",        label: "Add-on · SEO / AEO" },
+  { href: "/audit",                   label: "Add-on · Reputation Management" },
+  { href: "/features/keyword-trends", label: "Add-on · Keyword Trends" },
+  { href: "/features/ads",            label: "Add-on · Managed Ads oversight" },
+  { href: "/features/website-build",  label: "Add-on · Website Build" },
 ];
 
 // Solutions / Verticals — hidden from the nav per Norman brief but kept
