@@ -14,27 +14,27 @@ const VERTICALS = [
   {
     href: "/student-housing",
     label: "Student housing",
-    tag: "Pre-lease cycles, parent co-signers, campus-proximity targeting. Built around the academic calendar.",
+    tag: "Pre-lease cycles, parent co-signers, campus-proximity targeting.",
     primary: true,
-    stat: { l: "Avg pre-lease window", v: "8–10 mo" },
+    stat: { l: "Pre-lease window", v: "8-10 mo" },
   },
   {
     href: "/multifamily",
     label: "Multifamily",
-    tag: "Portfolio rollups, per-property retargeting, fair-housing-safe creative at every unit count.",
+    tag: "Portfolio rollups, per-property retargeting, fair-housing creative at scale.",
     stat: { l: "Per-property views", v: "Rollup" },
   },
   {
     href: "/senior-living",
     label: "Senior living",
-    tag: "Family-first nurture sequences, patient conversion timelines, compliance-aware ad creative.",
-    stat: { l: "Decision cycle", v: "3–9 mo" },
+    tag: "Family-first nurture, long decision cycles, compliance-aware creative.",
+    stat: { l: "Decision cycle", v: "3-9 mo" },
   },
   {
     href: "/commercial",
     label: "Commercial",
-    tag: "Office, industrial, and retail. Broker-aware, spec-sheet driven, longer decision cycles.",
-    stat: { l: "Broker-aware", v: "Yes" },
+    tag: "Office, industrial, retail. Broker-aware, spec-sheet driven.",
+    stat: { l: "Status", v: "Pilot" },
   },
 ];
 
@@ -45,7 +45,7 @@ export function Verticals() {
         <div className="grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-8 sm:gap-10 lg:gap-16 items-start">
           {/* Left column, editorial header */}
           <div>
-            <p className="eyebrow mb-4">Same platform, tailored</p>
+            <p className="eyebrow mb-4">Built for your market</p>
             <h2
               style={{
                 color: "#1E2A3A",
@@ -56,7 +56,7 @@ export function Verticals() {
                 letterSpacing: "-0.025em",
               }}
             >
-              Built around how your market actually works.
+              Four markets. One platform.
             </h2>
             <p
               className="mt-4 max-w-md"
@@ -67,9 +67,7 @@ export function Verticals() {
                 lineHeight: 1.55,
               }}
             >
-              The platform is one product. The intelligence layer adapts to
-              the rhythm, compliance shape, and signal pattern of each
-              vertical we serve.
+              Same data engine. Different intake playbook, creative library, and compliance guardrails per vertical.
             </p>
           </div>
 

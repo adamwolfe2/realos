@@ -12,12 +12,13 @@ export function Hero() {
       eyebrow={hero.eyebrow}
       headline={
         // Per-character "Soft Blur In" reveal — pixel-point/animate-text
-        // spec `soft-blur-in.json`. Apple keynote signature, exact values
-        // (900ms, 25ms stagger, blur 12→0, y 16→0, ease 0.22,1,0.36,1).
+        // spec `soft-blur-in.json`. 2026-05-28 copy audit: changed from
+        // "Your leasing data. Working for you." (poetic but vague) to a
+        // specific value-prop split: what we do + what you get.
         <SoftBlurIn
           segments={[
-            { text: "Your leasing data." },
-            { text: "Working for you.", color: "#2563EB" },
+            { text: "Replace your marketing stack." },
+            { text: "Live in 14 days.", color: "#2563EB" },
           ]}
         />
       }
@@ -28,9 +29,9 @@ export function Hero() {
         { label: hero.secondaryCta, href: hero.secondaryHref, variant: "secondary" },
       ]}
       trust={[
-        { value: "100%", label: "Spend tracked to lease" },
-        { value: "4-8 wk", label: "Pacing alert lead time" },
-        { value: "$0",    label: "Pilot. No commitment." },
+        { value: "14 days", label: "Intake to live" },
+        { value: "1 portal", label: "Site, ads, chatbot, pixel" },
+        { value: "$0",      label: "Pilot. Cancel anytime." },
       ]}
       // Norman feedback (2026-05-21): the raw ConfigTabs artifact read
       // "unprofessional" sitting on the white hero with no frame.

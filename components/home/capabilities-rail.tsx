@@ -51,8 +51,8 @@ type Capability = {
 const CAPABILITIES: Capability[] = [
   {
     num: "01",
-    title: "Your weekly report writes itself",
-    body: "Every Monday at 7am: leases attributed to source, pacing vs. last cycle, anomalies flagged, and the three actions to take this week. One page, readable over coffee.",
+    title: "Weekly report that writes itself",
+    body: "Every Monday at 7am: leases by source, pacing vs. last cycle, anomalies flagged, three actions for the week. One page, read over coffee.",
     href: "/features/seo-aeo",
     linkLabel: "See a sample report",
     artifact: WeeklyReport,
@@ -60,8 +60,8 @@ const CAPABILITIES: Capability[] = [
   },
   {
     num: "02",
-    title: "Spend tracked all the way to the lease",
-    body: "Every dollar of Google, Meta, and TikTok spend mapped to a signed lease, not an impression. Blended CAC and per-channel ROI calculated continuously.",
+    title: "Spend tracked to the signed lease",
+    body: "Every dollar of Google, Meta, and TikTok spend mapped to a signed lease, not an impression. Blended CAC and per-channel ROI, continuously.",
     href: "/features/ads",
     linkLabel: "See it live",
     artifact: AttributionBreakdown,
@@ -69,8 +69,8 @@ const CAPABILITIES: Capability[] = [
   },
   {
     num: "03",
-    title: "Know who visited your site",
-    body: "Not just how many. Names and emails on a meaningful share of your anonymous traffic, resolved in real time, routed to your CRM and your ad audiences.",
+    title: "Names on anonymous visitors",
+    body: "Names and emails on a meaningful share of your anonymous traffic, resolved in real time, routed to your CRM and your ad audiences.",
     href: "/features/pixel",
     linkLabel: "See the pixel firing",
     artifact: VisitorStream,
@@ -78,8 +78,8 @@ const CAPABILITIES: Capability[] = [
   },
   {
     num: "04",
-    title: "An assistant that captures leads at 2am",
-    body: "Trained on your units, pricing rules, and application process. Books tours, emails floor plans, captures contact info. Hot leads land with your team the next morning, thread attached.",
+    title: "AI assistant that books tours at 2am",
+    body: "Trained on your units, pricing rules, and application process. Books tours, emails floor plans, captures contact info. Hot leads hit your team by morning.",
     href: "/features/chatbot",
     linkLabel: "Try a conversation",
     artifact: ChatDemo,
@@ -87,8 +87,8 @@ const CAPABILITIES: Capability[] = [
   },
   {
     num: "05",
-    title: "Pacing alerts before occupancy slips",
-    body: "Lease-up cadence compared continuously against last cycle. Anomalies surface four to eight weeks before the gap shows up in physical occupancy. Time to fix it, not explain it.",
+    title: "Pacing alerts 4-8 weeks early",
+    body: "Lease-up cadence compared against last cycle. Anomalies surface four to eight weeks before the gap shows up in physical occupancy. Time to fix it.",
     href: "/features/seo-aeo",
     linkLabel: "See an alert",
     artifact: PacingAlert,
@@ -201,7 +201,7 @@ export function CapabilitiesRail() {
               lineHeight: 1.55,
             }}
           >
-            Each one targets a specific failure mode of the current marketing stack. All six run on your existing PMS, your existing domain, and your existing team.
+            All six run on your existing PMS, your existing domain, and your existing team. No replatform, no rip-and-replace.
           </p>
         </div>
 

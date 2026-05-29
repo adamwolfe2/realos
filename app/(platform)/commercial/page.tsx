@@ -22,14 +22,14 @@ export default function CommercialPage() {
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <SplitHero
         eyebrow="Commercial real estate"
-        headline="Your commercial leasing data."
-        headlineAccent="Working for you."
-        subhead="Commercial deals run six months. Audience Sync is live for commercial owners today: push verified office, retail, and industrial intent segments to your ad accounts and CRM, and track tour requests from spec sheets all the way to a signed LOI. Office, retail, industrial, flex, and medical leasing modules are in a limited design-partner pilot."
+        headline="Commercial leasing data."
+        headlineAccent="Audience Sync, live."
+        subhead="Push verified office, retail, and industrial intent segments to your ad accounts and CRM today. Track tour requests from spec sheet to signed LOI. Full leasing modules in a limited design-partner pilot."
         ctas={[
           { label: "Apply as a design partner", href: "/onboarding" },
           { label: "See the residential platform", href: "/residential", variant: "secondary" },
         ]}
-        caption="Attribution that survives a six-month sales process. Audience Sync live today. Limited design-partner pilot for leasing modules."
+        caption="Attribution that survives a six-month sales process."
         artifact={<RoadmapCard />}
       />
 

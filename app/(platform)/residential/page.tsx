@@ -15,7 +15,7 @@ const CARDS = [
     href: "/student-housing",
     title: "Student housing",
     body:
-      "Sprint pricing, international applicants, turn-heavy calendars. Live today on a real lease-up.",
+      "Pre-lease pacing, international applicants, parent co-signers. Live today on a real lease-up.",
     tag: "Live",
     accent: "#2563EB",
   },
@@ -23,7 +23,7 @@ const CARDS = [
     href: "/multifamily",
     title: "Multifamily",
     body:
-      "Portfolio-level pacing reads, source-to-lease attribution, per-property recommendations.",
+      "Portfolio pacing, source-to-lease attribution, per-property retargeting.",
     tag: "Live",
     accent: "#2563EB",
   },
@@ -31,7 +31,7 @@ const CARDS = [
     href: "/senior-living",
     title: "Senior living",
     body:
-      "Family-first inquiry handling, longer-cycle pacing models, compliance-aware forms.",
+      "Family-first nurture, long decision cycles, compliance-aware creative.",
     tag: "Live",
     accent: "#2563EB",
   },
@@ -39,7 +39,7 @@ const CARDS = [
     href: "/audiences",
     title: "SFR and build-to-rent",
     body:
-      "For single-asset operators and BTR portfolios. Same data engine, scaled to single-asset operators.",
+      "Same data engine, scaled to single-asset operators and BTR portfolios.",
     tag: "Live",
     accent: "#2563EB",
   },
@@ -50,11 +50,11 @@ export default function ResidentialHub() {
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <SplitHero
         eyebrow="Residential real estate"
-        headline="Your leasing data."
-        headlineAccent="Working for you."
-        subhead="One data engine across every residential vertical. The pacing models, the source-to-lease read, and the operator-written weekly note are the same. The KPIs and the compliance guardrails shift per audience. Pick your vertical to see the specifics, or keep scrolling for the rollup."
+        headline="Leasing data."
+        headlineAccent="Every vertical."
+        subhead="One data engine for student housing, multifamily, senior living, SFR, and BTR. Same pacing models and source-to-lease attribution. Different playbooks, creative, and compliance per market."
         ctas={[
-          { label: "Start the free pilot", href: "/onboarding" },
+          { label: "Start a free pilot", href: "/onboarding" },
           { label: "See it on a live property", href: "/demo", variant: "secondary" },
         ]}
         caption="Live today on a real lease-up. SFR and build-to-rent on the same engine."
@@ -88,7 +88,7 @@ export default function ResidentialHub() {
                   lineHeight: 1.15,
                 }}
               >
-                Different playbooks. Same data engine underneath.
+                Four playbooks. One data engine.
               </h2>
             </div>
           </Reveal>
@@ -190,7 +190,7 @@ export default function ResidentialHub() {
                 letterSpacing: "-0.008em",
               }}
             >
-              Same channel reads, same pacing models, same operator-written weekly note. The playbook changes per vertical. The data engine does not fork.
+              Same channel reads, same pacing models, same weekly report. Playbook changes per vertical. Engine doesn't fork.
             </h2>
           </Reveal>
           <Reveal delay={140}>

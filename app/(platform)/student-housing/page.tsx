@@ -3,22 +3,22 @@ import { VerticalLanding } from "@/components/platform/vertical-landing";
 import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
 
 export const metadata: Metadata = {
-  title: "Student housing leasing intelligence that fills beds on schedule",
+  title: "Student housing leasing intelligence — fill beds on schedule",
   description:
-    "LeaseStack tells student housing operators which channels are signing leases, when lease-up pacing is slipping, and what to do next. Built by an asset manager who ran a real student housing lease-up directly.",
+    "Know which channels signed your last 12 leases. Catch pacing slips 4-8 weeks before occupancy does. Built by an asset manager who ran a real lease-up.",
 };
 
 export default function StudentHousingPage() {
   return (
     <VerticalLanding
       eyebrow="Student housing"
-      headline="Your lease-up data."
-      headlineAccent="Working for you."
-      subhead="Student housing runs on a pre-lease calendar that does not forgive a slow August. LeaseStack is the leasing intelligence platform that tells you which channels signed your last twelve leases, when your pacing is falling behind the academic calendar, and exactly what to do about it."
-      caption="Know your lease-up is falling behind before it shows up in occupancy. Built by an asset manager who managed a real student housing lease-up directly."
+      headline="Lease-up data."
+      headlineAccent="Pacing alerts."
+      subhead="Which channels signed your last twelve leases. When pacing is falling behind the academic calendar. What to do about it. Daily, not quarterly."
+      caption="Built by an asset manager who ran a real student housing lease-up."
       artifact={<ChatDemo />}
       painsHeading="What student housing operators tell us."
-      modulesHeading="What you get the day you turn it on."
+      modulesHeading="What you get day one."
       pains={[
         {
           title: "Pacing slips silently",

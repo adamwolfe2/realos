@@ -3,22 +3,22 @@ import { VerticalLanding } from "@/components/platform/vertical-landing";
 import { NurtureTimeline } from "@/components/platform/artifacts/nurture-timeline";
 
 export const metadata: Metadata = {
-  title: "Senior living leasing intelligence that respects the family",
+  title: "Senior living leasing intelligence built for the family decision",
   description:
-    "LeaseStack gives senior living operators family-first nurture sequences, compliance-aware creative, and a marketing report the executive director and the family can both read.",
+    "Family-first nurture across 90-180 day decisions. Compliance-aware creative. A monthly report the executive director and the family can both read.",
 };
 
 export default function SeniorLivingPage() {
   return (
     <VerticalLanding
       eyebrow="Senior living"
-      headline="Your community's marketing data."
-      headlineAccent="Working for you."
-      subhead="Senior living decisions take 90 to 180 days, and the adult child is the one researching. LeaseStack is the leasing intelligence platform that runs patient, family-first nurture across that window, keeps creative compliant at every step, and gives the executive director one clear answer to the question the family is asking."
-      caption="The marketing report writes itself in language the executive director and the family can both read."
+      headline="Marketing data."
+      headlineAccent="Family-first."
+      subhead="Senior living decisions take 90 to 180 days, and the adult child is researching. Patient nurture across that window. Compliant creative at every step."
+      caption="One report the executive director and the family can both read."
       artifact={<NurtureTimeline />}
       painsHeading="What senior living operators tell us."
-      modulesHeading="What you get the day you turn it on."
+      modulesHeading="What you get day one."
       pains={[
         {
           title: "90 to 180 day consideration windows",

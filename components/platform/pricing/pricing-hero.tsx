@@ -25,9 +25,9 @@ export function PricingHero() {
               letterSpacing: "-0.03em",
             }}
           >
-            Built by operators.
+            One platform.
             <br />
-            <span style={{ color: "#2563EB" }}>Priced for the market.</span>
+            <span style={{ color: "#2563EB" }}>Less than your retainer.</span>
           </h1>
 
           <p
@@ -40,10 +40,7 @@ export function PricingHero() {
               maxWidth: "680px",
             }}
           >
-            We replace your retainer and give you more data for less money.
-            Connect to your existing stack, see exactly what your digital
-            marketing is doing, and get a clear recommendation on what to do
-            next. Month-to-month. Cancel if pacing does not move.
+            Site, ads, AI chatbot, visitor pixel, reputation, and weekly report. One bill, one login. Month-to-month. Cancel if pacing doesn't move.
           </p>
         </div>
 

@@ -31,13 +31,10 @@ export function ProductTourSection() {
             }}
           >
             <span className="hidden md:inline">
-              Every tab in the sidebar below is a real surface in the platform.
-              Open a lead. Read a chatbot conversation. Filter the creative
-              queue. This is what ships on day one.
+              Every tab below is a real surface in the platform. Open a lead. Read a chatbot conversation. Filter the creative queue. This ships day one.
             </span>
             <span className="md:hidden">
-              Every surface you see ships on day one. The full interactive
-              tour is built for a wider screen.
+              Every surface ships day one. The full interactive tour is built for a wider screen.
             </span>
           </p>
         </div>

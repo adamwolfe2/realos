@@ -3,22 +3,22 @@ import { VerticalLanding } from "@/components/platform/vertical-landing";
 import { PortfolioOccupancy } from "@/components/platform/artifacts/portfolio-occupancy";
 
 export const metadata: Metadata = {
-  title: "Multifamily leasing intelligence across the whole portfolio",
+  title: "Multifamily leasing intelligence across the portfolio",
   description:
-    "LeaseStack rolls up per-property leasing data into one view, attributes signed leases to the channel that produced them, and tells multifamily operators which property is dragging the rollup before the GM does.",
+    "Per-property leasing data in one view. Signed leases attributed to source. Know which property is dragging the rollup before the GM does.",
 };
 
 export default function MultifamilyPage() {
   return (
     <VerticalLanding
       eyebrow="Multifamily"
-      headline="Your portfolio leasing data."
-      headlineAccent="Working for you."
-      subhead="A portfolio is only as healthy as the property pulling the rollup down. LeaseStack is the leasing intelligence platform that gives multifamily operators unit-level attribution across every property and tells you exactly which building, which floor plan, and which channel needs attention this week."
-      caption="Know which property is dragging the portfolio rollup before the GM does. Same dashboard for the GM, the AM, and the operator."
+      headline="Portfolio leasing data."
+      headlineAccent="One dashboard."
+      subhead="Unit-level attribution across every property. Know which building, which floor plan, and which channel needs attention this week."
+      caption="Same dashboard for the GM, the AM, and the operator."
       artifact={<PortfolioOccupancy label="Your whole portfolio, one view" />}
       painsHeading="What multifamily operators tell us."
-      modulesHeading="What you get the day you turn it on."
+      modulesHeading="What you get day one."
       pains={[
         {
           title: "The rollup hides the problem",

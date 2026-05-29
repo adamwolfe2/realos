@@ -118,7 +118,7 @@ export function Proof() {
               </svg>
             </Link>
             <Link
-              href="#live"
+              href="#product-tour"
               style={{
                 display: "inline-flex",
                 alignItems: "center",
@@ -137,7 +137,7 @@ export function Proof() {
                 transition: "background-color 0.2s ease",
               }}
             >
-              See the data
+              See the portal
             </Link>
           </div>
         </div>
