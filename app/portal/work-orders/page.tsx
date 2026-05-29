@@ -100,7 +100,7 @@ export default async function WorkOrdersPage({
 
   const scope = await requireScope();
   const sp = await searchParams;
-  const requestedIds = parsePropertyFilter(sp);
+  const requestedIds = await parsePropertyFilter(sp);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const propertyClause = propertyWhereFragment(scope, requestedIds);
   try {

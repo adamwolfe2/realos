@@ -157,7 +157,7 @@ export default async function PortfolioReputationPage({
   }
 
   const sp = await searchParams;
-  const requestedIds = parsePropertyFilter(sp);
+  const requestedIds = await parsePropertyFilter(sp);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
   const sourceFilter = parseSourceFilter(sp.source);

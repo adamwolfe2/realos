@@ -80,7 +80,7 @@ export default async function CampaignsPage({
 }) {
   const scope = await requireScope();
   const sp = await searchParams;
-  const propertyIds = parsePropertyFilter(sp);
+  const propertyIds = await parsePropertyFilter(sp);
   const propertyFilter = propertyWhereFragment(scope, propertyIds);
 
   // 28-day rolling window — matches the Ads dashboard so the two pages

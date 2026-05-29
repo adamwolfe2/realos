@@ -35,11 +35,44 @@ type ScopeWithGate = {
  * Parse a Next.js searchParams object into the list of selected property
  * IDs, or `null` if the user wants the full portfolio view.
  *
+ * Resolution order:
+ *   1. ?properties=a,b,c   → multi-select URL filter (preferred, shareable)
+ *   2. ?property=<id>      → legacy single-pick URL filter
+ *   3. ACTIVE_PROPERTY_COOKIE → operator's sidebar switcher selection
+ *   4. null                → portfolio-wide (no filter)
+ *
+ * URL params ALWAYS win the cookie so shareable links and operator
+ * deep-links from emails/Slack stay deterministic. Cookie is the
+ * fallback when the URL is silent — that's the path the sidebar
+ * switcher relies on to scope every page.
+ *
  * Returns `null` (not `[]`) for "no filter" so we never accidentally
  * generate `propertyId IN ()` — Prisma would treat that as "match nothing"
  * and silently blank every page.
+ *
+ * NOTE: async because of the cookie read. Existing callers should add
+ * `await`. Pages that genuinely want URL-only behavior (e.g. preview
+ * tokens, public report links) should call parsePropertyFilterUrlOnly().
  */
-export function parsePropertyFilter(
+export async function parsePropertyFilter(
+  sp: PropertyFilterParams,
+): Promise<string[] | null> {
+  const fromUrl = parsePropertyFilterUrlOnly(sp);
+  if (fromUrl !== null) return fromUrl;
+  // No URL filter — fall back to the active-property cookie written
+  // by the sidebar switcher. Dynamic import keeps this file usable in
+  // contexts without next/headers (tests, edge functions that don't
+  // need the cookie path).
+  const { getActivePropertyId } = await import("@/lib/portal/active-property");
+  const cookieId = await getActivePropertyId();
+  return cookieId ? [cookieId] : null;
+}
+
+/**
+ * URL-only variant. Use when you explicitly DON'T want cookie fallback —
+ * e.g. preview tokens, public report links, programmatic exports.
+ */
+export function parsePropertyFilterUrlOnly(
   sp: PropertyFilterParams,
 ): string[] | null {
   const raw = firstString(sp.properties);

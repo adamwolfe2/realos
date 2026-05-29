@@ -63,7 +63,7 @@ export default async function ToursPage({
 
   const scope = await requireScope();
   const sp = await searchParams;
-  const requestedIds = parsePropertyFilter(sp);
+  const requestedIds = await parsePropertyFilter(sp);
   const accessDenied = isAccessDenied(scope, requestedIds);
   // propertyClause filters tour rows by `propertyId` directly (Tour
   // has it on the row). The tenantWhere gate stays on `lead` so a

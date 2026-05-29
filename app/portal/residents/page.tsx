@@ -83,7 +83,7 @@ export default async function ResidentsPage({
   const scope = await requireScope();
   try {
   const sp = await searchParams;
-  const propertyIds = parsePropertyFilter(sp);
+  const propertyIds = await parsePropertyFilter(sp);
   const where = {
     ...tenantWhere(scope),
     ...propertyWhereFragment(scope, propertyIds),

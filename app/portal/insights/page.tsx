@@ -56,7 +56,7 @@ export default async function InsightsPage({
 
   // Tenancy / property scoping — unchanged from the prior page. Norman's
   // per-user property gate continues to win over any URL filter.
-  const requestedIds = parsePropertyFilter(params);
+  const requestedIds = await parsePropertyFilter(params);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
   const propertyClause = propertyIdsToWhere(effectiveIds);

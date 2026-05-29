@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     // pre-fix any restricted user could pull the full org-wide list
     // of identified visitors (incl. hashedEmails) as a permanent CSV.
     const url = new URL(req.url);
-    const propertyIds = parsePropertyFilter({
+    const propertyIds = await parsePropertyFilter({
       properties: url.searchParams.get("properties") ?? undefined,
       property: url.searchParams.get("property") ?? undefined,
     });

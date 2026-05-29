@@ -65,7 +65,7 @@ export default async function AttributionPage({
     params.from,
     params.to
   );
-  const requestedIds = parsePropertyFilter(params);
+  const requestedIds = await parsePropertyFilter(params);
 
   const allProperties = await prisma.property.findMany({
     where: marketablePropertyWhere(scope.orgId),

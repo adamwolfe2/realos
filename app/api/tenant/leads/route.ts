@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     // tenant/leads)` and get the full org-wide list, bypassing the gate
     // the portal UI carefully applied. Now the API enforces the same
     // intersection (URL ?properties=… ∩ scope.allowedPropertyIds).
-    const propertyIds = parsePropertyFilter({
+    const propertyIds = await parsePropertyFilter({
       properties: url.searchParams.get("properties") ?? undefined,
       property: url.searchParams.get("property") ?? undefined,
     });

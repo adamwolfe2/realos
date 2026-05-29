@@ -53,7 +53,7 @@ export default async function LeadsKanbanPage({
   const scope = await requireScope();
   const sp = await searchParams;
   const page = parsePage(sp.page);
-  const propertyIds = parsePropertyFilter(sp);
+  const propertyIds = await parsePropertyFilter(sp);
 
   const where: Prisma.LeadWhereInput = {
     ...tenantWhere(scope),

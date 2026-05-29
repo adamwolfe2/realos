@@ -36,7 +36,7 @@ export default async function ReportsListPage({
   const scope = await requireScope();
   const sp = await searchParams;
 
-  const propertyIds = parsePropertyFilter(sp);
+  const propertyIds = await parsePropertyFilter(sp);
   const where: Prisma.ClientReportWhereInput = {
     ...tenantWhere(scope),
     ...propertyWhereFragment(scope, propertyIds),

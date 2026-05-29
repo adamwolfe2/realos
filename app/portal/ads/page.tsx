@@ -49,7 +49,7 @@ export default async function AdsPage({
 }) {
   const scope = await requireScope();
   const sp = await searchParams;
-  const propertyIds = parsePropertyFilter(sp);
+  const propertyIds = await parsePropertyFilter(sp);
 
   // Property filter on the Ads page narrows AdCampaign + AdMetricDaily
   // queries (both have propertyId). AdAccount is org-level (a single

@@ -72,7 +72,7 @@ export default async function RenewalsPage({
   const scope = await requireScope();
   try {
   const sp = await searchParams;
-  const propertyIds = parsePropertyFilter(sp);
+  const propertyIds = await parsePropertyFilter(sp);
   // Fetch all properties for the org, then narrow to the ones this user
   // is allowed to see (via UserPropertyAccess). The dropdown should
   // never show options the user can't pick.

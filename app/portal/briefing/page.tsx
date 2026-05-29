@@ -43,7 +43,7 @@ export default async function BriefingPage({
 
   const scope = await requireScope();
   const params = await searchParams;
-  const requestedIds = parsePropertyFilter(params);
+  const requestedIds = await parsePropertyFilter(params);
 
   try {
   const user = await prisma.user.findUnique({

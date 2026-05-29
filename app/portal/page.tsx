@@ -224,7 +224,7 @@ export default async function PortalHome({
   // multi-select dropdown at the top. Direct-prisma KPI queries
   // honor the filter; helper functions that don't yet accept
   // propertyIds remain org-wide and are flagged in the UI.
-  const requestedIds = parsePropertyFilter(sp);
+  const requestedIds = await parsePropertyFilter(sp);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
   const propertyClause = propertyWhereFragment(scope, requestedIds);
