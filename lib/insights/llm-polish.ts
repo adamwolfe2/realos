@@ -3,6 +3,10 @@ import { generateObject } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import type { DetectedInsight } from "./types";
+import { logUsage } from "@/lib/cost-tracker/log";
+import { tokenCostUsd } from "@/lib/aeo/engines/pricing";
+
+const POLISH_MODEL = "claude-haiku-4-5-20251001";
 
 // ---------------------------------------------------------------------------
 // LLM polish layer for detected insights.
@@ -67,6 +71,10 @@ Constraints:
  */
 export async function polishInsights(
   insights: DetectedInsight[],
+  /** Optional cost-attribution scope. signals-daily passes the orgId
+   *  it's processing so /admin/costs can show "Acme Apartments cost
+   *  $0.04 on insight polish this month." */
+  cost?: { orgId?: string | null; propertyId?: string | null },
 ): Promise<DetectedInsight[]> {
   if (insights.length === 0) return insights;
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -81,13 +89,31 @@ export async function polishInsights(
   }));
 
   const prompt = buildPrompt(indexed);
+  const startedAt = Date.now();
 
   try {
-    const { object } = await generateObject({
-      model: anthropic("claude-haiku-4-5-20251001"),
+    const { object, usage } = await generateObject({
+      model: anthropic(POLISH_MODEL),
       schema: polishSchema,
       prompt,
       maxOutputTokens: 2048,
+    });
+    const inputTokens = usage?.inputTokens ?? 0;
+    const outputTokens = usage?.outputTokens ?? 0;
+    await logUsage({
+      provider: "anthropic",
+      endpoint: `${POLISH_MODEL}/insight-polish`,
+      status: "SUCCESS",
+      costUsd: tokenCostUsd(POLISH_MODEL, inputTokens, outputTokens),
+      durationMs: Date.now() - startedAt,
+      orgId: cost?.orgId ?? null,
+      propertyId: cost?.propertyId ?? null,
+      meta: {
+        model: POLISH_MODEL,
+        inputTokens,
+        outputTokens,
+        batchSize: insights.length,
+      },
     });
 
     const polishedById = new Map<
@@ -111,6 +137,20 @@ export async function polishInsights(
       "[insights.polish] Claude polish failed; keeping raw rule copy:",
       err instanceof Error ? err.message : err,
     );
+    await logUsage({
+      provider: "anthropic",
+      endpoint: `${POLISH_MODEL}/insight-polish`,
+      status: "ERROR",
+      costUsd: 0,
+      durationMs: Date.now() - startedAt,
+      orgId: cost?.orgId ?? null,
+      propertyId: cost?.propertyId ?? null,
+      meta: {
+        model: POLISH_MODEL,
+        batchSize: insights.length,
+        error: err instanceof Error ? err.message : String(err),
+      },
+    });
     return insights;
   }
 }

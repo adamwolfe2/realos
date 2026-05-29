@@ -4,6 +4,10 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { Sentiment } from "@prisma/client";
 import type { ScannedMention } from "./types";
+import { logUsage } from "@/lib/cost-tracker/log";
+import { tokenCostUsd } from "@/lib/aeo/engines/pricing";
+
+const ANALYZE_MODEL = "claude-haiku-4-5-20251001";
 
 // ---------------------------------------------------------------------------
 // Batched sentiment + topic classification via Claude Haiku.
@@ -79,7 +83,11 @@ export type AnalyzeResult = {
 };
 
 export async function analyzeSentimentAndTopics(
-  items: Array<{ id: string; mention: ScannedMention }>
+  items: Array<{ id: string; mention: ScannedMention }>,
+  /** Optional cost-attribution scope. Reputation orchestrator passes
+   *  the orgId + propertyId it's scanning so /admin/costs can show
+   *  per-property sentiment-classification spend. */
+  cost?: { orgId?: string | null; propertyId?: string | null },
 ): Promise<AnalyzeResult> {
   if (items.length === 0) {
     return { classifications: new Map(), status: "ok", errorMessage: null };
@@ -96,13 +104,31 @@ export async function analyzeSentimentAndTopics(
   }
 
   const prompt = buildPrompt(items);
+  const startedAt = Date.now();
 
   try {
-    const { object } = await generateObject({
-      model: anthropic("claude-haiku-4-5-20251001"),
+    const { object, usage } = await generateObject({
+      model: anthropic(ANALYZE_MODEL),
       schema: analysisSchema,
       prompt,
       maxOutputTokens: 2048,
+    });
+    const inputTokens = usage?.inputTokens ?? 0;
+    const outputTokens = usage?.outputTokens ?? 0;
+    await logUsage({
+      provider: "anthropic",
+      endpoint: `${ANALYZE_MODEL}/reputation-sentiment`,
+      status: "SUCCESS",
+      costUsd: tokenCostUsd(ANALYZE_MODEL, inputTokens, outputTokens),
+      durationMs: Date.now() - startedAt,
+      orgId: cost?.orgId ?? null,
+      propertyId: cost?.propertyId ?? null,
+      meta: {
+        model: ANALYZE_MODEL,
+        inputTokens,
+        outputTokens,
+        batchSize: items.length,
+      },
     });
 
     const map = new Map<string, AnalysisItem>();
@@ -133,6 +159,20 @@ export async function analyzeSentimentAndTopics(
       "[reputation.analyze] Claude classification failed:",
       errorMessage,
     );
+    await logUsage({
+      provider: "anthropic",
+      endpoint: `${ANALYZE_MODEL}/reputation-sentiment`,
+      status: "ERROR",
+      costUsd: 0,
+      durationMs: Date.now() - startedAt,
+      orgId: cost?.orgId ?? null,
+      propertyId: cost?.propertyId ?? null,
+      meta: {
+        model: ANALYZE_MODEL,
+        batchSize: items.length,
+        error: errorMessage.slice(0, 200),
+      },
+    });
     return {
       classifications: new Map(),
       status: "error",
