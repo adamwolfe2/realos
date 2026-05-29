@@ -76,12 +76,16 @@ export function Pill({
   tone?: "neutral" | "terracotta" | "success" | "warning" | "muted";
   children: React.ReactNode;
 }) {
+  // Every tone resolves to the brand-blue ramp (Adam 2026-05-29 —
+  // no green/amber chips in the demo portal). The legacy `success`
+  // tone is the full accent; `warning` is a lighter accent shade
+  // so polarity can still be implied without leaving the brand ramp.
   const colors = {
-    neutral:    { bg: TOKENS.sand,                       fg: TOKENS.charcoal,  border: TOKENS.ring },
-    terracotta: { bg: "rgba(37,99,235,0.12)",           fg: TOKENS.terracotta,border: "rgba(37,99,235,0.3)" },
-    success:    { bg: "rgba(22, 163, 74,0.12)",            fg: TOKENS.success,   border: "rgba(22, 163, 74,0.3)" },
-    warning:    { bg: "rgba(245, 158, 11,0.12)",           fg: TOKENS.warning,   border: "rgba(245, 158, 11,0.3)" },
-    muted:      { bg: TOKENS.borderCream,                fg: TOKENS.stone,     border: TOKENS.borderCream },
+    neutral:    { bg: TOKENS.sand,                fg: TOKENS.charcoal,    border: TOKENS.ring },
+    terracotta: { bg: "rgba(37,99,235,0.12)",     fg: TOKENS.accent,      border: "rgba(37,99,235,0.3)" },
+    success:    { bg: "rgba(37,99,235,0.12)",     fg: TOKENS.accent,      border: "rgba(37,99,235,0.3)" },
+    warning:    { bg: "rgba(96,165,250,0.18)",    fg: TOKENS.accent,      border: "rgba(96,165,250,0.4)" },
+    muted:      { bg: TOKENS.borderCream,         fg: TOKENS.stone,       border: TOKENS.borderCream },
   }[tone];
   return (
     <span
@@ -103,18 +107,18 @@ export function Pill({
   );
 }
 
+// ScoreBadge — score chip rendered on lead + visitor rows. Color ramps
+// stay inside the brand-blue palette (Adam 2026-05-29, no green/amber
+// anywhere in the demo portal). High scores are full accent, mid scores
+// are a lighter accent shade, low scores are muted.
 export function ScoreBadge({ score }: { score: number }) {
-  const tone =
-    score >= 85 ? "success" :
-    score >= 70 ? "warning" :
-    "muted";
   const color =
-    tone === "success" ? TOKENS.success :
-    tone === "warning" ? TOKENS.warning :
-    TOKENS.stone;
+    score >= 85 ? TOKENS.accent      :    // #2563EB
+    score >= 70 ? TOKENS.accentLight :    // #60A5FA
+    TOKENS.stone;                         // #94A3B8
   return (
     <span
-      className="inline-flex items-center justify-center rounded-md"
+      className="inline-flex items-center justify-center rounded-md tabular-nums"
       style={{
         minWidth: "28px",
         height: "22px",
