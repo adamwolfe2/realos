@@ -58,15 +58,15 @@ export default function AuditFormPage() {
 
           <ul className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
             <TrustItem
-              title="Powered by DataForSEO + Claude + Tavily"
-              body="The same provider stack the LeaseStack platform runs in production."
+              title="Real data, not estimates"
+              body="Pulled live from the same ranking, citation, and review sources operators pay for."
             />
             <TrustItem
-              title="Used by Telegraph Commons"
-              body="Quietly running on real properties before this lived on a public page."
+              title="10+ signals across 4 surfaces"
+              body="SEO position, AI search visibility, reputation across major sites, and on-page health."
             />
             <TrustItem
-              title="No credit card. Email-gated."
+              title="Free. No credit card."
               body="See your top-line score immediately. Drop your email for the full report."
             />
           </ul>
