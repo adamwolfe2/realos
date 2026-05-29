@@ -39,11 +39,16 @@ interface Findings {
   opportunities: Finding[];
   mentions?: AuditMention[];
 }
+// 2026-05-29: score fields are nullable. synthesize.ts now preserves
+// null when DataForSEO providers come up empty (instead of coercing to
+// 0), so ScoreCard can render "Awaiting data" instead of a misleading
+// red "0/100". The legacy `?: number` shape would have squashed null
+// back to undefined and the difference would be lost.
 interface SectionScores {
-  seo?: number;
-  aeo?: number;
-  reputation?: number;
-  traffic?: number;
+  seo?: number | null;
+  aeo?: number | null;
+  reputation?: number | null;
+  traffic?: number | null;
 }
 
 async function loadAudit(token: string): Promise<AuditRow | null> {
@@ -120,6 +125,14 @@ export default async function AuditViewerPage({
     risks: [],
     opportunities: [],
   };
+  // Per-source mention counts — derived from the persisted findings.mentions
+  // list so we don't need a parallel sectionCounts column. Rendered above
+  // the email gate so a prospect sees the BREADTH of the scan (Reddit,
+  // Yelp, Google, ApartmentRatings, BBB, Facebook, web) before deciding
+  // to enter their email. Adam 2026-05-29: this is the "taste of the
+  // Reputation feature" the audit is supposed to demonstrate.
+  const perSourceCounts = computePerSourceCounts(findings.mentions ?? []);
+
   const subject = audit.brandName ?? audit.domain;
   const overall = audit.overallScore ?? 0;
   const tone = toneForScore(overall);
@@ -141,6 +154,10 @@ export default async function AuditViewerPage({
           accent={accent}
           sections={sectionScores}
         />
+        <SourceBreakdown
+          counts={perSourceCounts}
+          totalMentions={(findings.mentions ?? []).length}
+        />
         <div className="mt-10">
           <EmailGate auditId={audit.id} />
         </div>
@@ -155,6 +172,11 @@ export default async function AuditViewerPage({
         overall={overall}
         accent={accent}
         sections={sectionScores}
+      />
+
+      <SourceBreakdown
+        counts={perSourceCounts}
+        totalMentions={(findings.mentions ?? []).length}
       />
 
       <MentionsSection
@@ -465,4 +487,116 @@ function formatDate(d: Date): string {
     month: "long",
     day: "numeric",
   });
+}
+
+// ---------------------------------------------------------------------------
+// SourceBreakdown — chip row that exposes the breadth of the reputation
+// scan above the email gate.
+//
+// Renders one chip per canonical source (Reddit, Yelp, Google review,
+// ApartmentRatings, BBB, Facebook, open web), each with the per-source
+// mention count. Sources with zero hits still render so the row stays
+// stable — "Yelp 0" communicates "we looked and found nothing" rather
+// than "we never checked." Adam 2026-05-29.
+// ---------------------------------------------------------------------------
+
+type AuditSource = AuditMention["source"];
+
+const SOURCE_DISPLAY: Array<{
+  source: AuditSource;
+  label: string;
+  color: string;
+}> = [
+  { source: "REDDIT",            label: "Reddit",          color: "#FF4500" },
+  { source: "YELP",              label: "Yelp",            color: "#D32323" },
+  { source: "GOOGLE_REVIEW",     label: "Google",          color: "#4285F4" },
+  { source: "APARTMENT_RATINGS", label: "ApartmentRatings", color: "#0E9F6E" },
+  { source: "BBB",               label: "BBB",             color: "#0F4C81" },
+  { source: "FACEBOOK",          label: "Facebook",        color: "#1877F2" },
+  { source: "TAVILY_WEB",        label: "Open web",        color: "#6B7280" },
+];
+
+function computePerSourceCounts(
+  mentions: AuditMention[],
+): Record<AuditSource, number> {
+  const counts: Record<AuditSource, number> = {
+    REDDIT: 0,
+    YELP: 0,
+    BBB: 0,
+    APARTMENT_RATINGS: 0,
+    FACEBOOK: 0,
+    GOOGLE_REVIEW: 0,
+    TAVILY_WEB: 0,
+  };
+  for (const m of mentions) {
+    if (m && m.source && counts[m.source] !== undefined) {
+      counts[m.source] += 1;
+    }
+  }
+  return counts;
+}
+
+function SourceBreakdown({
+  counts,
+  totalMentions,
+}: {
+  counts: Record<AuditSource, number>;
+  totalMentions: number;
+}) {
+  return (
+    <section className="mt-10">
+      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+        <p
+          className="text-[11px] font-mono uppercase tracking-[0.18em]"
+          style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+        >
+          Reputation scan · past 90 days
+        </p>
+        <p
+          className="text-xs"
+          style={{ color: "#6B7280", fontFamily: "var(--font-mono)" }}
+        >
+          {totalMentions} mention{totalMentions === 1 ? "" : "s"} across{" "}
+          {SOURCE_DISPLAY.length} source
+          {SOURCE_DISPLAY.length === 1 ? "" : "s"}
+        </p>
+      </div>
+      <ul className="mt-3 flex flex-wrap gap-2">
+        {SOURCE_DISPLAY.map(({ source, label, color }) => {
+          const count = counts[source] ?? 0;
+          const has = count > 0;
+          return (
+            <li
+              key={source}
+              className="inline-flex items-center gap-2 rounded-full h-8 px-3"
+              style={{
+                backgroundColor: has ? "#FFFFFF" : "#FBFBFD",
+                border: `1px solid ${has ? "#E5E7EB" : "#F3F4F6"}`,
+                color: has ? "#1E2A3A" : "#9CA3AF",
+                fontFamily: "var(--font-sans)",
+                fontSize: 12,
+                fontWeight: 500,
+                opacity: has ? 1 : 0.85,
+              }}
+            >
+              <span
+                aria-hidden
+                className="h-1.5 w-1.5 rounded-full"
+                style={{
+                  backgroundColor: has ? color : "#D1D5DB",
+                }}
+              />
+              <span>{label}</span>
+              <span
+                className="tabular-nums"
+                style={{ color: has ? "#6B7280" : "#9CA3AF" }}
+              >
+                {count}
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  );
 }
