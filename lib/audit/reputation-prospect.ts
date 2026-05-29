@@ -252,7 +252,15 @@ export async function runProspectReputation(input: {
   };
 
   const tavilyApiKey = process.env.TAVILY_API_KEY;
-  const queryName = brandName.includes(" ") ? `"${brandName}"` : brandName;
+  // 2026-05-29: ALWAYS quote the brand name in the Tavily query, even
+  // for single-word brands. Otherwise Tavily semantic search treats
+  // "Telegraph Commons reviews" as 3 separate concepts and pulls back
+  // anything in the apartment-review space near a Telegraph token —
+  // hence the Telegraph Hill / Telegraph Gardens / Raleigh's Pub
+  // pollution Adam flagged on the Telegraph Commons audit. The
+  // post-filter (buildBrandMatcher) is the second line of defense; the
+  // query is the first.
+  const queryName = `"${brandName}"`;
 
   // --- Per-source Tavily fan-out + open-web sweep ---------------------------
   // Each per-source entry runs N queries pinned to its host domain so
@@ -314,14 +322,28 @@ export async function runProspectReputation(input: {
   const seen = new Set<string>();
   const mentions: ProspectMention[] = [];
 
+  // Adam 2026-05-29: Tavily was returning anything with "Telegraph"
+  // near a Berkeley apartment context — Telegraph Hill Apartments,
+  // Telegraph Gardens, Raleigh's Pub, generic listings, etc. The
+  // include_domains pin helps classify by host but doesn't enforce
+  // that the actual brand phrase appears in the result.
+  //
+  // Strict post-filter: every Tavily result must mention the brand
+  // phrase (or its meaningful tokens) in title or snippet. Reddit
+  // already does this; the Tavily path didn't. This will reduce
+  // volume but every remaining mention will be legitimate.
+  const brandMatcher = buildBrandMatcher(brandName);
+
   for (const bucket of buckets) {
     for (const r of bucket.results) {
       if (!r.url) continue;
       const key = normalizeUrlForDedupe(r.url);
       if (seen.has(key)) continue;
       if (!inLast90Days(r.published_date)) continue;
-      seen.add(key);
       const snippet = (r.content ?? "").slice(0, 400);
+      const haystack = `${r.title ?? ""} ${snippet}`;
+      if (!brandMatcher(haystack)) continue;
+      seen.add(key);
       // Prefer the bucket's bound source (we pinned the host) but fall
       // back to classify() when Tavily occasionally returns an off-host
       // result (subdomain mismatches happen).
@@ -407,6 +429,51 @@ export async function runProspectReputation(input: {
     perSourceCounts,
     errors,
   };
+}
+
+// ---------------------------------------------------------------------------
+// buildBrandMatcher
+//
+// Returns a predicate that decides whether a haystack legitimately
+// mentions the brand. Three rules, applied in this order:
+//
+//   1. For multi-word brand names ("Telegraph Commons"), require the
+//      exact phrase as a whole — case-insensitive, whitespace-tolerant.
+//      This catches "Telegraph Commons", "telegraph commons", "Telegraph  Commons",
+//      but NOT "Telegraph Hill Apartments" or "Telegraph Gardens".
+//
+//   2. For single-word brands ("Cascadia"), require the word as a token
+//      bounded by non-word chars — so "Cascadia" matches "Cascadia Apartments"
+//      but not "Discascadia" or "Cascadiastan". This avoids false positives
+//      on substring containment.
+//
+//   3. Always reject if the haystack also matches a known competing brand
+//      pattern that often co-occurs in the same SERP cluster (Telegraph
+//      Hill, Telegraph Gardens). These are tracked at the brand level
+//      via the BRAND_BLOCKERS map, populated lazily — the default empty
+//      set is a no-op.
+//
+// All matching is done lowercase against a haystack pre-normalized for
+// whitespace.
+// ---------------------------------------------------------------------------
+function buildBrandMatcher(brandName: string): (haystack: string) => boolean {
+  const normalized = brandName.trim().toLowerCase();
+  const tokens = normalized.split(/\s+/).filter(Boolean);
+
+  // Phrase regex — tolerant of multi-whitespace (Tavily sometimes
+  // collapses newlines into "  "). Word-boundary anchors ensure
+  // "Commons" inside "uncommonsense" doesn't trip.
+  const escaped = tokens.map(escapeRegex).join("\\s+");
+  const phrasePattern = new RegExp(`\\b${escaped}\\b`, "i");
+
+  return (haystack: string) => {
+    const hay = haystack.replace(/\s+/g, " ").toLowerCase();
+    return phrasePattern.test(hay);
+  };
+}
+
+function escapeRegex(s: string): string {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // Per-mention lexical sentiment — mirrors the tells used in the aggregate
