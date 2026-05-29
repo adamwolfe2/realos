@@ -53,7 +53,7 @@ const CAPABILITIES: Capability[] = [
     num: "01",
     title: "Weekly report that writes itself",
     body: "Every Monday at 7am: leases by source, website traffic and trends, AI-driven actions flagged, three actions for the week. One page, read over coffee.",
-    href: "#product-tour",
+    href: "/sample-report",
     linkLabel: "See a sample report",
     artifact: WeeklyReport,
     glyph: "report",
