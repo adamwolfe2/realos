@@ -1,99 +1,167 @@
-// Pricing page hero — editorial rewrite matching the home rhythm.
-// Was: centered hero with a left-of-center grid trust strip.
-// Now: left-aligned editorial hero, bigger headline, hairline-divided
-// trust row that sits under the body copy as a single unit.
+import { Check } from "lucide-react";
+import { SplitHero } from "@/components/platform/split-hero";
+import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
+
+// ---------------------------------------------------------------------------
+// PricingHero — rebuilt on the homepage SplitHero pattern so the pricing
+// page opens with the same rhythm as the rest of the site.
+//
+// What changed (CEO brief 2026-05-28):
+//   - Switched from the standalone left-aligned hero to SplitHero so the
+//     right column gets a calm artifact (faux Growth tier card preview)
+//     instead of empty white space.
+//   - Subhead collapsed from three sentences to one.
+//   - Stat tiles cut. Trust strip is now 3 chips matching the homepage.
+//   - Eyebrow handled by SplitHero so it matches every other section
+//     across the site (line + mono blue label).
+// ---------------------------------------------------------------------------
 
 export function PricingHero() {
   return (
-    <section
+    <SplitHero
+      eyebrow="Pricing"
+      headline="One platform."
+      headlineAccent="Less than your retainer."
+      subhead="Site, ads, AI chatbot, visitor pixel, reputation, and weekly report — flat per-property monthly, no retainer."
+      ctas={[
+        { label: "Start the free trial", href: "/onboarding" },
+        { label: "Book a demo", href: "/demo", variant: "secondary" },
+      ]}
+      trust={[
+        { value: "14 days", label: "Live on your domain" },
+        { value: "100%", label: "Ad spend tracked" },
+        { value: "$0", label: "Pilot. Cancel anytime." },
+      ]}
+      artifact={
+        <SoftFramedArtifact tone="lavender" padding="md" bare>
+          <PricingHeroArtifact />
+        </SoftFramedArtifact>
+      }
+    />
+  );
+}
+
+// Calm, static preview of a single Growth-tier card. Visually mirrors the
+// real tier cards in PricingTiers so the hero artifact reads as "this is
+// what you're about to see" instead of an unrelated mockup.
+function PricingHeroArtifact() {
+  return (
+    <div
+      className="relative rounded-2xl p-6 md:p-7 flex flex-col bg-white"
       style={{
-        backgroundColor: "#FFFFFF",
-        borderBottom: "1px solid #E2E8F0",
+        border: "1px solid #2563EB",
+        boxShadow:
+          "0 0 0 4px rgba(37,99,235,0.08), 0 8px 24px rgba(37,99,235,0.10)",
       }}
     >
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 pt-24 md:pt-32 pb-16 md:pb-20">
-        <div className="max-w-3xl">
-          <p className="eyebrow mb-4">Pricing</p>
+      <div
+        className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full px-2.5 py-1"
+        style={{
+          backgroundColor: "#2563EB",
+          color: "#ffffff",
+          fontFamily: "var(--font-mono)",
+          fontSize: "11px",
+          letterSpacing: "0.18em",
+          textTransform: "uppercase",
+          fontWeight: 600,
+        }}
+      >
+        Most popular
+      </div>
 
-          <h1
+      <div className="mb-4">
+        <div
+          style={{
+            fontFamily: "var(--font-mono)",
+            fontSize: "11px",
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            color: "#88867f",
+            fontWeight: 600,
+          }}
+        >
+          Growth
+        </div>
+        <p
+          className="mt-1"
+          style={{
+            color: "#1E2A3A",
+            fontFamily: "var(--font-sans)",
+            fontSize: "13px",
+            lineHeight: 1.45,
+          }}
+        >
+          Replace your retainer. Flexible, month-to-month.
+        </p>
+      </div>
+
+      <div className="mb-3">
+        <div className="flex items-baseline gap-1">
+          <span
+            style={{
+              fontFamily: "var(--font-sans)",
+              fontSize: "44px",
+              fontWeight: 700,
+              letterSpacing: "-0.026em",
+              lineHeight: 1,
+              color: "#1E2A3A",
+            }}
+          >
+            $899
+          </span>
+          <span
+            style={{
+              color: "#88867f",
+              fontFamily: "var(--font-sans)",
+              fontSize: "13px",
+              fontWeight: 500,
+            }}
+          >
+            /mo · per property
+          </span>
+        </div>
+        <p
+          className="mt-1"
+          style={{
+            color: "#88867f",
+            fontFamily: "var(--font-mono)",
+            fontSize: "10px",
+            letterSpacing: "0.14em",
+            textTransform: "uppercase",
+          }}
+        >
+          1 property
+        </p>
+      </div>
+
+      <ul className="space-y-2">
+        {[
+          "Visitor pixel · 5,000 identified visitors / mo",
+          "AI chatbot · 5,000 conversations / mo",
+          "Source-to-lease attribution",
+          "Operator-written weekly read",
+        ].map((label) => (
+          <li
+            key={label}
+            className="flex items-start gap-2"
             style={{
               color: "#1E2A3A",
               fontFamily: "var(--font-sans)",
-              fontSize: "clamp(40px, 6vw, 72px)",
-              fontWeight: 700,
-              lineHeight: 1.02,
-              letterSpacing: "-0.03em",
+              fontSize: "13px",
+              lineHeight: 1.5,
             }}
           >
-            One platform.
-            <br />
-            <span style={{ color: "#2563EB" }}>Less than your retainer.</span>
-          </h1>
-
-          <p
-            className="mt-7"
-            style={{
-              color: "#64748B",
-              fontFamily: "var(--font-sans)",
-              fontSize: "19px",
-              lineHeight: 1.55,
-              maxWidth: "680px",
-            }}
-          >
-            A more economical alternative to traditional marketing vendors, with more insights and control. Site, ads, AI chatbot, visitor pixel, reputation, and weekly report — one bill, one login, month-to-month.
-          </p>
-        </div>
-
-        {/* Trust strip, left-aligned, hairline-divided, no centered grid. */}
-        <div
-          className="mt-12 grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 max-w-[920px]"
-          style={{
-            borderTop: "1px solid #E2E8F0",
-            borderBottom: "1px solid #E2E8F0",
-          }}
-        >
-          {[
-            { value: "Free trial", label: "No commitment" },
-            { value: "Month-to-month", label: "Flexible" },
-            { value: "Operator-built", label: "By operators, for operators" },
-            { value: "Production pilot", label: "Live clients" },
-          ].map((t, i) => (
-            <div
-              key={t.label}
-              className="py-5 md:py-6 md:px-6 first:md:pl-0"
-              style={{
-                borderLeft: i > 0 ? "1px solid #E2E8F0" : "none",
-              }}
-            >
-              <p
-                style={{
-                  color: "#94A3B8",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: "10.5px",
-                  letterSpacing: "0.16em",
-                  textTransform: "uppercase",
-                  fontWeight: 600,
-                }}
-              >
-                {t.label}
-              </p>
-              <p
-                className="mt-2"
-                style={{
-                  color: "#1E2A3A",
-                  fontFamily: "var(--font-sans)",
-                  fontSize: "20px",
-                  fontWeight: 700,
-                  letterSpacing: "-0.015em",
-                  lineHeight: 1.15,
-                }}
-              >
-                {t.value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+            <Check
+              className="shrink-0 mt-[3px]"
+              size={14}
+              strokeWidth={2.5}
+              style={{ color: "#2563EB" }}
+              aria-hidden="true"
+            />
+            <span>{label}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }

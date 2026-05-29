@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SectionEyebrow } from "@/components/platform/section-eyebrow";
 
 // Bottom CTA. Parchment background, blue accent on the headline, two
 // paths forward. Self-serve framing.
@@ -11,8 +12,10 @@ export function PricingCta() {
         borderTop: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[960px] mx-auto px-4 md:px-8 py-16 md:py-24 text-center">
-        <p className="eyebrow mb-4">Start with the pilot</p>
+      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24 text-center">
+        <SectionEyebrow align="center" className="mb-4">
+          Start with the pilot
+        </SectionEyebrow>
         <h2
           className="heading-section"
           style={{

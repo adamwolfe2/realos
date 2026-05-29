@@ -1,3 +1,5 @@
+import { SectionEyebrow } from "@/components/platform/section-eyebrow";
+
 // Add-ons grid. Self-serve add-ons only. Two flavors:
 //
 //   * Capability add-ons (recurring) flip a platform feature on. They
@@ -70,11 +72,11 @@ export function AddonsGrid() {
         borderBottom: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[1100px] mx-auto px-4 md:px-8 py-16 md:py-20">
+      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
         <div className="max-w-2xl mb-10">
-          <p className="eyebrow mb-3">Add-ons</p>
+          <SectionEyebrow>Add-ons</SectionEyebrow>
           <h2
-            className="heading-section"
+            className="heading-section mt-3"
             style={{ color: "#1E2A3A", fontSize: "clamp(24px, 3vw, 32px)" }}
           >
             Tune the plan without changing tiers.

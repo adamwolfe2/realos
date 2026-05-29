@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Plus, Minus } from "lucide-react";
+import { SectionEyebrow } from "@/components/platform/section-eyebrow";
 
 // Pricing FAQ. Self-serve framing. Norman brief (2026-05-28):
 //   - Renamed CLX → marketing-agency retainer (no named competitors).
@@ -53,11 +54,11 @@ export function PricingFaq() {
         borderTop: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[920px] mx-auto px-4 md:px-8 py-16 md:py-24">
-        <div className="mb-8 md:mb-10">
-          <p className="eyebrow mb-3">Pricing FAQ</p>
+      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
+        <div className="mb-8 md:mb-10 max-w-2xl">
+          <SectionEyebrow>Pricing FAQ</SectionEyebrow>
           <h2
-            className="heading-section"
+            className="heading-section mt-3"
             style={{ color: "#1E2A3A", fontSize: "clamp(24px, 3vw, 32px)" }}
           >
             The questions operators ask before they sign.

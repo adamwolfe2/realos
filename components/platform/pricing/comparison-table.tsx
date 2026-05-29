@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Check, Minus, ChevronDown } from "lucide-react";
+import { SectionEyebrow } from "@/components/platform/section-eyebrow";
 
 // ---------------------------------------------------------------------------
 // Compressed tier comparison table.
@@ -208,11 +209,11 @@ export function ComparisonTable() {
         borderTop: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[1000px] mx-auto px-4 md:px-8 py-16 md:py-20">
+      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
         <div className="max-w-2xl mb-8 md:mb-10">
-          <p className="eyebrow mb-3">Compare</p>
+          <SectionEyebrow>Compare</SectionEyebrow>
           <h2
-            className="heading-section"
+            className="heading-section mt-3"
             style={{ color: "#1E2A3A", fontSize: "clamp(24px, 3vw, 32px)" }}
           >
             The rows operators ask about first.

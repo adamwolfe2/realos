@@ -162,163 +162,131 @@ export function PricingTiers() {
 
   return (
     <section style={{ backgroundColor: "#FFFFFF" }}>
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pb-16 md:pb-20">
-        {/* Norman brief (2026-05-28): pull the pilot CTA up above the
-            packages so the no-commitment path is visible before the
-            buyer commits to reading prices. */}
-        <div
-          className="mt-12 mb-10 md:mt-16 md:mb-14 text-center"
-          style={{
-            borderTop: "1px solid #E2E8F0",
-            paddingTop: "32px",
-          }}
-        >
-          <p
-            className="eyebrow mb-3"
-            style={{ color: "#2563EB" }}
-          >
-            Start free
-          </p>
-          <h2
-            style={{
-              color: "#1E2A3A",
-              fontFamily: "var(--font-sans)",
-              fontSize: "clamp(24px, 3vw, 32px)",
-              fontWeight: 700,
-              letterSpacing: "-0.02em",
-              lineHeight: 1.15,
-            }}
-          >
-            Start with the pilot — see what your dashboard actually says.
-          </h2>
-          <div className="mt-5 flex flex-col sm:flex-row gap-3 justify-center items-center">
-            <Link
-              href="/onboarding"
-              className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
-              style={{ backgroundColor: "#2563EB", color: "#ffffff" }}
-            >
-              Start the free trial
-            </Link>
-            <Link
-              href="/demo"
-              className="inline-flex items-center justify-center rounded-full px-6 py-3 text-sm font-semibold transition-colors"
-              style={{
-                backgroundColor: "transparent",
-                color: "#1E2A3A",
-                border: "1px solid #1E2A3A",
-              }}
-            >
-              Book a demo
-            </Link>
-          </div>
-        </div>
+      <div className="max-w-[1200px] mx-auto px-4 md:px-8 pt-16 md:pt-24 pb-16 md:pb-24">
+        {/* CEO brief (2026-05-28): the hero already owns the "start free
+            trial / book a demo" conversion moment, so the previous
+            standalone "Start with the pilot" centered block + the
+            "Pre-packaged pricing" eyebrow + the "Still exploring..."
+            link have been pulled. The tiers section opens directly with
+            the controls that affect what the cards display: property
+            count and billing cycle, on a single centered row, no
+            separating eyebrow. */}
 
-        {/* Section title for packages */}
-        <div className="text-center mb-2">
-          <p
-            className="eyebrow"
-            style={{ color: "#88867f" }}
-          >
-            Pre-packaged pricing
-          </p>
-        </div>
-        <p
-          className="text-center mb-6 md:mb-8 mx-auto"
-          style={{
-            color: "#64748B",
-            fontFamily: "var(--font-sans)",
-            fontSize: "14px",
-            maxWidth: "560px",
-          }}
-        >
-          Still exploring what you might need?{" "}
-          <Link
-            href="/onboarding"
-            style={{
-              color: "#2563EB",
-              textDecoration: "underline",
-              textUnderlineOffset: "2px",
-            }}
-          >
-            Book a demo with our team.
-          </Link>
-        </p>
-
-        {/* Property-count stepper. Pricing is per-property so we let the
-            buyer dial in their portfolio size right here; every tier
-            card below updates its monthly total in real time. Additional
-            properties past the first get 20 percent off via the
-            additional-property prices in lib/billing/catalog.ts. */}
-        <div className="flex flex-col items-center mb-6 md:mb-8">
-          <p
-            className="eyebrow mb-3"
-            style={{ letterSpacing: "0.16em", color: "#88867f" }}
-          >
-            How many properties or locations?
-          </p>
-          <div
-            className="inline-flex items-center gap-3 rounded-full"
-            style={{
-              backgroundColor: "#ffffff",
-              border: "1px solid #E2E8F0",
-              padding: "6px 8px",
-            }}
-          >
-            <button
-              type="button"
-              onClick={() =>
-                setPropertyCount((n) => Math.max(1, n - 1))
-              }
-              disabled={propertyCount <= 1}
-              aria-label="Decrease property count"
-              className="inline-flex items-center justify-center rounded-full text-base font-semibold transition-colors disabled:opacity-30"
-              style={{
-                width: 32,
-                height: 32,
-                backgroundColor: "#FFFFFF",
-                color: "#1E2A3A",
-              }}
-            >
-              −
-            </button>
+        {/* Property counter + billing-cycle toggle, one tight row. */}
+        <div className="flex flex-col items-center gap-3 mb-3">
+          <div className="flex flex-col sm:flex-row items-center gap-3">
+            {/* Property-count stepper. Pricing is per-property; cards
+                below update in real time. */}
             <div
-              className="text-center tabular-nums"
+              className="inline-flex items-center gap-3 rounded-full"
               style={{
-                color: "#1E2A3A",
-                fontFamily: "var(--font-sans)",
-                fontSize: "16px",
-                fontWeight: 600,
-                minWidth: "120px",
+                backgroundColor: "#ffffff",
+                border: "1px solid #E2E8F0",
+                padding: "6px 8px",
               }}
             >
-              {propertyCount}{" "}
-              <span style={{ color: "#88867f", fontWeight: 500 }}>
-                {propertyCount === 1 ? "property" : "properties"}
-              </span>
+              <button
+                type="button"
+                onClick={() => setPropertyCount((n) => Math.max(1, n - 1))}
+                disabled={propertyCount <= 1}
+                aria-label="Decrease property count"
+                className="inline-flex items-center justify-center rounded-full text-base font-semibold transition-colors disabled:opacity-30"
+                style={{
+                  width: 32,
+                  height: 32,
+                  backgroundColor: "#FFFFFF",
+                  color: "#1E2A3A",
+                }}
+              >
+                −
+              </button>
+              <div
+                className="text-center tabular-nums"
+                style={{
+                  color: "#1E2A3A",
+                  fontFamily: "var(--font-sans)",
+                  fontSize: "14px",
+                  fontWeight: 600,
+                  minWidth: "120px",
+                }}
+              >
+                {propertyCount}{" "}
+                <span style={{ color: "#88867f", fontWeight: 500 }}>
+                  {propertyCount === 1 ? "property" : "properties"}
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() =>
+                  setPropertyCount((n) =>
+                    Math.min(MAX_PROPERTIES_STEPPER, n + 1),
+                  )
+                }
+                disabled={propertyCount >= MAX_PROPERTIES_STEPPER}
+                aria-label="Increase property count"
+                className="inline-flex items-center justify-center rounded-full text-base font-semibold transition-colors disabled:opacity-30"
+                style={{
+                  width: 32,
+                  height: 32,
+                  backgroundColor: "#FFFFFF",
+                  color: "#1E2A3A",
+                }}
+              >
+                +
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() =>
-                setPropertyCount((n) =>
-                  Math.min(MAX_PROPERTIES_STEPPER, n + 1),
-                )
-              }
-              disabled={propertyCount >= MAX_PROPERTIES_STEPPER}
-              aria-label="Increase property count"
-              className="inline-flex items-center justify-center rounded-full text-base font-semibold transition-colors disabled:opacity-30"
+
+            {/* Billing cycle toggle */}
+            <div
+              role="tablist"
+              aria-label="Billing cycle"
+              className="inline-flex items-center p-1 rounded-full"
               style={{
-                width: 32,
-                height: 32,
-                backgroundColor: "#FFFFFF",
-                color: "#1E2A3A",
+                backgroundColor: "#ffffff",
+                border: "1px solid #E2E8F0",
+                boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
               }}
             >
-              +
-            </button>
+              {(["monthly", "annual"] as const).map((c) => {
+                const active = cycle === c;
+                return (
+                  <button
+                    key={c}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    onClick={() => setCycle(c)}
+                    className="relative inline-flex items-center gap-2 px-4 py-1.5 text-sm rounded-full transition-colors"
+                    style={{
+                      backgroundColor: active ? "#1E2A3A" : "transparent",
+                      color: active ? "#ffffff" : "#64748B",
+                      fontWeight: active ? 600 : 500,
+                    }}
+                  >
+                    <span>{c === "monthly" ? "Monthly" : "Annual"}</span>
+                    {c === "annual" ? (
+                      <span
+                        className="inline-flex items-center rounded-full px-1.5 text-[10px] font-semibold"
+                        style={{
+                          backgroundColor: active
+                            ? "rgba(255,255,255,0.16)"
+                            : "rgba(37,99,235,0.08)",
+                          color: active ? "#ffffff" : "#2563EB",
+                          letterSpacing: "0.02em",
+                        }}
+                      >
+                        Save 17%
+                      </span>
+                    ) : null}
+                  </button>
+                );
+              })}
+            </div>
           </div>
+
           {propertyCount > 1 ? (
             <p
-              className="mt-2 text-center"
+              className="text-center"
               style={{
                 color: "#2563EB",
                 fontFamily: "var(--font-sans)",
@@ -328,10 +296,6 @@ export function PricingTiers() {
               }}
             >
               {(() => {
-                // Friendly summary of which bracket they're in. The
-                // discount label always describes where the NEXT
-                // property would land, so adding properties feels
-                // rewarding.
                 const activeBracket =
                   PROPERTY_BRACKETS.find(
                     (b) => propertyCount <= (b.upTo ?? Infinity),
@@ -348,7 +312,7 @@ export function PricingTiers() {
           ) : null}
           {propertyCount >= MAX_PROPERTIES_STEPPER ? (
             <p
-              className="mt-2 text-center"
+              className="text-center"
               style={{
                 color: "#88867f",
                 fontFamily: "var(--font-sans)",
@@ -373,61 +337,10 @@ export function PricingTiers() {
           ) : null}
         </div>
 
-        {/* Billing cycle toggle */}
-        <div className="flex items-center justify-center mb-10 md:mb-12">
-          <div
-            role="tablist"
-            aria-label="Billing cycle"
-            className="inline-flex items-center p-1 rounded-full"
-            style={{
-              backgroundColor: "#ffffff",
-              border: "1px solid #E2E8F0",
-              boxShadow: "0 1px 2px rgba(0,0,0,0.02)",
-            }}
-          >
-            {(["monthly", "annual"] as const).map((c) => {
-              const active = cycle === c;
-              return (
-                <button
-                  key={c}
-                  type="button"
-                  role="tab"
-                  aria-selected={active}
-                  onClick={() => setCycle(c)}
-                  className="relative inline-flex items-center gap-2 px-4 py-1.5 text-sm rounded-full transition-colors"
-                  style={{
-                    backgroundColor: active ? "#1E2A3A" : "transparent",
-                    color: active ? "#ffffff" : "#64748B",
-                    fontWeight: active ? 600 : 500,
-                  }}
-                >
-                  <span>
-                    {c === "monthly" ? "Monthly" : "Annual"}
-                  </span>
-                  {c === "annual" ? (
-                    <span
-                      className="inline-flex items-center rounded-full px-1.5 text-[10px] font-semibold"
-                      style={{
-                        backgroundColor: active
-                          ? "rgba(255,255,255,0.16)"
-                          : "rgba(37,99,235,0.08)",
-                        color: active ? "#ffffff" : "#2563EB",
-                        letterSpacing: "0.02em",
-                      }}
-                    >
-                      Save 17%
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
         {/* Tier grid — 4 columns at desktop. The first three (Foundation,
             Growth, Scale) get equal visual weight; Growth is highlighted.
             Enterprise sits at the right as a quieter "talk to us" card. */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="mt-10 md:mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
           {TIERS.map((t) => (
             <TierCard
               key={t.id}
@@ -553,18 +466,18 @@ function TierCard({
 
   return (
     <div
-      className="relative rounded-2xl p-6 md:p-7 flex flex-col"
+      className="relative rounded-2xl p-7 md:p-8 flex flex-col"
       style={cardStyle}
     >
       {highlighted ? (
         <div
-          className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full px-3 py-1"
+          className="absolute -top-3 left-1/2 -translate-x-1/2 inline-flex items-center rounded-full px-2.5 py-1"
           style={{
             backgroundColor: "#2563EB",
             color: "#ffffff",
             fontFamily: "var(--font-mono)",
-            fontSize: "10px",
-            letterSpacing: "0.16em",
+            fontSize: "11px",
+            letterSpacing: "0.18em",
             textTransform: "uppercase",
             fontWeight: 600,
           }}
@@ -573,27 +486,28 @@ function TierCard({
         </div>
       ) : null}
 
-      {/* Header */}
+      {/* Header — tier name is the headline now (text-2xl semibold,
+          matching homepage capability headlines) instead of a tiny
+          mono uppercase label that read as a footer chip. */}
       <div className="mb-5">
-        <div
-          style={{
-            fontFamily: "var(--font-mono)",
-            fontSize: "11px",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            color: mutedText,
-            fontWeight: 600,
-          }}
-        >
-          {tier.name}
-        </div>
-        <p
-          className="mt-1"
+        <h3
+          className="text-2xl font-semibold"
           style={{
             color: bodyText,
             fontFamily: "var(--font-sans)",
+            letterSpacing: "-0.015em",
+            lineHeight: 1.2,
+          }}
+        >
+          {tier.name}
+        </h3>
+        <p
+          className="mt-2"
+          style={{
+            color: "#64748B",
+            fontFamily: "var(--font-sans)",
             fontSize: "14px",
-            lineHeight: 1.45,
+            lineHeight: 1.5,
           }}
         >
           {tier.tagline}
@@ -744,48 +658,10 @@ function TierCard({
         {tier.audienceCallout}
       </p>
 
-      {/* CTA — Enterprise stays a static link to /demo; everything else
-          posts to the Checkout endpoint and forwards to the Stripe-
-          hosted Checkout page. We keep the same visual shell so the
-          three tier buttons feel identical. */}
-      {tier.checkoutTierId ? (
-        <button
-          type="button"
-          onClick={startCheckout}
-          disabled={submitting}
-          className="inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-70 disabled:cursor-progress"
-          style={
-            highlighted
-              ? { backgroundColor: "#2563EB", color: "#ffffff" }
-              : { backgroundColor: "#1E2A3A", color: "#ffffff" }
-          }
-          aria-label={`Start checkout for ${tier.name} (${cycle})`}
-        >
-          {submitting ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-              Starting checkout…
-            </>
-          ) : (
-            tier.ctaLabel
-          )}
-        </button>
-      ) : (
-        <Link
-          href={tier.ctaHref}
-          className="inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors"
-          style={{
-            backgroundColor: "transparent",
-            color: "#1E2A3A",
-            border: "1px solid #1E2A3A",
-          }}
-        >
-          {tier.ctaLabel}
-        </Link>
-      )}
-
-      {/* Feature list */}
-      <ul className="mt-6 space-y-2.5 flex-1">
+      {/* Feature list. flex-1 lets the list expand so every card's CTA
+          row lands on the same horizontal line via the `mt-auto` below
+          (CEO brief 2026-05-28). */}
+      <ul className="space-y-2.5 flex-1">
         {tier.features.map((f, idx) => {
           const isContinuation = f.label.startsWith("Everything in");
           return (
@@ -823,6 +699,47 @@ function TierCard({
           );
         })}
       </ul>
+
+      {/* CTA. `mt-auto` parks the button at the bottom of the flex
+          column so every card's button aligns horizontally regardless
+          of feature-list length. Enterprise stays a static link to
+          /demo; the other three post to /api/billing/checkout and
+          forward to the Stripe-hosted Checkout page. */}
+      {tier.checkoutTierId ? (
+        <button
+          type="button"
+          onClick={startCheckout}
+          disabled={submitting}
+          className="mt-auto pt-6 inline-flex items-center justify-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors disabled:opacity-70 disabled:cursor-progress"
+          style={
+            highlighted
+              ? { backgroundColor: "#2563EB", color: "#ffffff" }
+              : { backgroundColor: "#1E2A3A", color: "#ffffff" }
+          }
+          aria-label={`Start checkout for ${tier.name} (${cycle})`}
+        >
+          {submitting ? (
+            <>
+              <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+              Starting checkout…
+            </>
+          ) : (
+            tier.ctaLabel
+          )}
+        </button>
+      ) : (
+        <Link
+          href={tier.ctaHref}
+          className="mt-auto pt-6 inline-flex items-center justify-center rounded-full px-4 py-2.5 text-sm font-semibold transition-colors"
+          style={{
+            backgroundColor: "transparent",
+            color: "#1E2A3A",
+            border: "1px solid #1E2A3A",
+          }}
+        >
+          {tier.ctaLabel}
+        </Link>
+      )}
     </div>
   );
 }
