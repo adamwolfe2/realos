@@ -1,14 +1,74 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { BRAND_NAME } from "@/lib/brand";
 import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
+// Above-the-fold artifact (row 01) is imported eagerly so the first
+// paint of /features carries the WeeklyReport without waiting for an
+// extra chunk fetch.
 import { WeeklyReport } from "@/components/platform/artifacts/weekly-report";
-import { AttributionBreakdown } from "@/components/platform/artifacts/attribution-breakdown";
-import { VisitorStream } from "@/components/platform/artifacts/visitor-stream";
-import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
-import { ReputationFeed } from "@/components/platform/artifacts/reputation-feed";
-import { SeoAnswer } from "@/components/platform/artifacts/seo-answer";
+
+// Below-the-fold artifacts (rows 02-07) are split into their own chunks
+// via `next/dynamic`. Without this, the index page was bundling six
+// 200-500 line client components — each with `useEffect` animation
+// loops — into one synchronous payload. Lazy-loading still ships each
+// artifact as a separate chunk, downloaded on demand as the row enters
+// the viewport.
+//
+// Note: `ssr: false` is forbidden in server components in Next 16, so
+// the artifacts SSR alongside the page shell. The useEffect animation
+// loops are no-ops on the server and only kick in after hydration,
+// which is the desired behavior anyway.
+const ArtifactSkeleton = ({ minHeight = 360 }: { minHeight?: number }) => (
+  <div
+    className="w-full rounded-2xl bg-white"
+    aria-hidden
+    style={{
+      minHeight,
+      boxShadow:
+        "0 4px 12px rgba(15, 23, 42, 0.06), 0 1px 3px rgba(15, 23, 42, 0.04)",
+    }}
+  />
+);
+
+const AttributionBreakdown = dynamic(
+  () =>
+    import("@/components/platform/artifacts/attribution-breakdown").then(
+      (m) => m.AttributionBreakdown,
+    ),
+  { loading: () => <ArtifactSkeleton /> },
+);
+
+const VisitorStream = dynamic(
+  () =>
+    import("@/components/platform/artifacts/visitor-stream").then(
+      (m) => m.VisitorStream,
+    ),
+  { loading: () => <ArtifactSkeleton /> },
+);
+
+const ChatDemo = dynamic(
+  () =>
+    import("@/components/platform/artifacts/chat-demo").then((m) => m.ChatDemo),
+  { loading: () => <ArtifactSkeleton /> },
+);
+
+const ReputationFeed = dynamic(
+  () =>
+    import("@/components/platform/artifacts/reputation-feed").then(
+      (m) => m.ReputationFeed,
+    ),
+  { loading: () => <ArtifactSkeleton /> },
+);
+
+const SeoAnswer = dynamic(
+  () =>
+    import("@/components/platform/artifacts/seo-answer").then(
+      (m) => m.SeoAnswer,
+    ),
+  { loading: () => <ArtifactSkeleton /> },
+);
 
 // ---------------------------------------------------------------------------
 // /features — index page that previously 404'd (2026-05-29 fix).
