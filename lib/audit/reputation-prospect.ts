@@ -3,25 +3,28 @@ import "server-only";
 // ----------------------------------------------------------------------------
 // Reputation scanner for the PROSPECT audit lead-magnet.
 //
-// Unlike the tenant reputation flow (lib/reputation/orchestrate.ts) which
-// requires a Property row + persisted PropertyMention writes, the prospect
-// path is fire-once-and-render. We accept just { brandName, domain } and
-// return a normalized payload the audit synthesizer can drop into the
-// findings JSON.
+// Adam 2026-05-29: the audit had to actually demonstrate the LeaseStack
+// Reputation feature — broad scan across Reddit, Yelp, Google, BBB,
+// ApartmentRatings, Facebook, and the open web. Previously the prospect
+// path only ran a generic Tavily fan-out (3 broad queries) + Reddit, so
+// most sources surfaced as TAVILY_WEB instead of their canonical
+// classification, and per-source mention counts were impossible to
+// expose above the email gate.
 //
-// Sources:
-//   1. Tavily — broad web crawl on review-capable domains. Filtered to last
-//      90 days via the `days` query param (Tavily supports it). This is the
-//      core "past 3 months" signal the CEO called out.
-//   2. Reddit — direct JSON search, `t=year` window. We post-filter to the
-//      last 90 days.
-//   3. Yelp — skipped (no Yelp business ID for a prospect; we'd need a text
-//      search step that costs more than the lead magnet is worth).
-//   4. Google Places — skipped for the same reason; we don't have a Place
-//      ID for an arbitrary prospect domain.
+// Approach (Tavily-only, no new API keys):
+//   * Run one Tavily query per source with `include_domains` clamped to
+//     that single source's host. Each query is independently bound by a
+//     90-day recency window so we get per-source mention buckets.
+//   * Reddit still goes direct (cheaper, no Tavily call needed for it).
+//   * Per-source result counts + per-source errors are returned so the
+//     viewer can render a "Reddit 3 · Yelp 2 · Google 4 · …" strip.
 //
-// Defensive: every source wrapped in try/catch returning empty so one
-// failure doesn't tank the whole report.
+// Sources targeted:
+//   reddit.com, yelp.com, apartmentratings.com, niche.com, bbb.org,
+//   facebook.com, google.com (for review snippets), tripadvisor.com.
+//
+// Defensive: every Tavily call wrapped via allSettled so one source
+// failure (rate limit, 502, etc.) never tanks the whole report.
 // ----------------------------------------------------------------------------
 
 const TAVILY_ENDPOINT = "https://api.tavily.com/search";
@@ -50,18 +53,74 @@ export type ProspectReputationResult = {
   mentions: ProspectMention[];
   sentimentMix: { positive: number; neutral: number; negative: number };
   avgRating: number | null;
-  // Per-source diagnostics so the synthesizer can attribute failures.
+  /** Per-source result counts. Always carries an entry for every source
+   *  in SOURCE_ORDER so the viewer can render a stable chip row even
+   *  when a source had zero hits. */
+  perSourceCounts: Record<ProspectMention["source"], number>;
+  /** Per-source diagnostics so the synthesizer can attribute failures. */
   errors: Record<string, string | null>;
 };
 
-const REVIEW_INCLUDE_DOMAINS = [
-  "reddit.com",
-  "yelp.com",
-  "apartmentratings.com",
+// Per-source domain pinning. Each entry produces one targeted Tavily
+// query bound to a single host so results classify cleanly instead of
+// landing in the TAVILY_WEB bucket. The `queries` array runs in parallel
+// per source — multiple intents per source widens recall without
+// breaking the host pin (e.g. yelp.com gets both "reviews" + "complaints").
+const PER_SOURCE_SCAN: Array<{
+  source: Exclude<ProspectMention["source"], "REDDIT">;
+  domain: string;
+  queries: (brand: string) => string[];
+}> = [
+  {
+    source: "YELP",
+    domain: "yelp.com",
+    queries: (brand) => [`${brand} reviews`, `${brand} complaints`],
+  },
+  {
+    source: "GOOGLE_REVIEW",
+    domain: "google.com",
+    queries: (brand) => [`${brand} reviews maps.google.com`, `${brand} google reviews`],
+  },
+  {
+    source: "APARTMENT_RATINGS",
+    domain: "apartmentratings.com",
+    queries: (brand) => [`${brand} apartment ratings`, `${brand} resident reviews`],
+  },
+  {
+    source: "BBB",
+    domain: "bbb.org",
+    queries: (brand) => [`${brand} bbb`, `${brand} complaint`],
+  },
+  {
+    source: "FACEBOOK",
+    domain: "facebook.com",
+    queries: (brand) => [`${brand} reviews`, `${brand} apartments`],
+  },
+];
+
+// Fallback open-web fan-out — runs alongside the per-source scans so we
+// still surface coverage from sites outside our canonical seven (niche,
+// tripadvisor, blog posts, etc). Tagged TAVILY_WEB by `classify()`.
+const OPEN_WEB_DOMAINS = [
   "niche.com",
-  "bbb.org",
-  "facebook.com",
   "tripadvisor.com",
+  "rent.com",
+  "apartments.com",
+  "trulia.com",
+  "zillow.com",
+  "city-data.com",
+];
+
+// Canonical render order — matches ALL_SOURCES on the mentions-section
+// viewer so the per-source chip row stays stable.
+const SOURCE_ORDER: ProspectMention["source"][] = [
+  "REDDIT",
+  "YELP",
+  "GOOGLE_REVIEW",
+  "APARTMENT_RATINGS",
+  "BBB",
+  "FACEBOOK",
+  "TAVILY_WEB",
 ];
 
 // Source classifier — matches what the viewer renders per-icon.
@@ -92,6 +151,7 @@ async function tavilyReviewSearch(
   query: string,
   excludeDomain: string,
   maxResults: number,
+  includeDomains: string[],
 ): Promise<TavilyResult[]> {
   const res = await fetch(TAVILY_ENDPOINT, {
     method: "POST",
@@ -109,7 +169,7 @@ async function tavilyReviewSearch(
       max_results: maxResults,
       include_answer: false,
       include_raw_content: false,
-      include_domains: REVIEW_INCLUDE_DOMAINS,
+      include_domains: includeDomains,
       // Exclude the prospect's own domain — we don't want self-cites.
       exclude_domains: [excludeDomain],
     }),
@@ -194,30 +254,55 @@ export async function runProspectReputation(input: {
   const tavilyApiKey = process.env.TAVILY_API_KEY;
   const queryName = brandName.includes(" ") ? `"${brandName}"` : brandName;
 
-  // --- Tavily fan-out (3 queries) -------------------------------------------
-  const tavilyResults: TavilyResult[] = [];
+  // --- Per-source Tavily fan-out + open-web sweep ---------------------------
+  // Each per-source entry runs N queries pinned to its host domain so
+  // results carry the canonical source classification instead of falling
+  // back to TAVILY_WEB. The open-web sweep handles long-tail review sites
+  // outside our seven canonical sources.
+  type TavilyBucket = { source: ProspectMention["source"]; results: TavilyResult[] };
+  const buckets: TavilyBucket[] = [];
+
   if (tavilyApiKey) {
-    const queries = [
-      `${queryName} reviews`,
-      `${queryName} apartments`,
-      `${queryName} reddit`,
-    ];
-    const settled = await Promise.allSettled(
-      queries.map((q) => tavilyReviewSearch(tavilyApiKey, q, domain, 10)),
-    );
-    for (const s of settled) {
+    type SearchTask = {
+      tag: string;
+      source: ProspectMention["source"];
+      promise: Promise<TavilyResult[]>;
+    };
+    const tasks: SearchTask[] = [];
+
+    for (const scan of PER_SOURCE_SCAN) {
+      for (const q of scan.queries(queryName)) {
+        tasks.push({
+          tag: `${scan.source.toLowerCase()}:${q}`,
+          source: scan.source,
+          promise: tavilyReviewSearch(tavilyApiKey, q, domain, 8, [scan.domain]),
+        });
+      }
+    }
+    // Open-web sweep — broader queries against the long-tail review sites.
+    for (const q of [`${queryName} reviews`, `${queryName} apartments`]) {
+      tasks.push({
+        tag: `web:${q}`,
+        source: "TAVILY_WEB",
+        promise: tavilyReviewSearch(tavilyApiKey, q, domain, 10, OPEN_WEB_DOMAINS),
+      });
+    }
+
+    const settled = await Promise.allSettled(tasks.map((t) => t.promise));
+    settled.forEach((s, i) => {
+      const task = tasks[i];
       if (s.status === "fulfilled") {
-        tavilyResults.push(...s.value);
+        buckets.push({ source: task.source, results: s.value });
       } else if (!errors.tavily) {
         errors.tavily =
           s.reason instanceof Error ? s.reason.message : String(s.reason);
       }
-    }
+    });
   } else {
     errors.tavily = "TAVILY_API_KEY not configured";
   }
 
-  // --- Reddit fan-out (single query) ----------------------------------------
+  // --- Reddit fan-out (single direct query) ---------------------------------
   let redditResults: RedditChild[] = [];
   try {
     redditResults = await redditSearch(queryName);
@@ -229,21 +314,31 @@ export async function runProspectReputation(input: {
   const seen = new Set<string>();
   const mentions: ProspectMention[] = [];
 
-  for (const r of tavilyResults) {
-    if (!r.url) continue;
-    const key = normalizeUrlForDedupe(r.url);
-    if (seen.has(key)) continue;
-    if (!inLast90Days(r.published_date)) continue;
-    seen.add(key);
-    const snippet = (r.content ?? "").slice(0, 400);
-    mentions.push({
-      source: classify(r.url),
-      title: r.title ?? null,
-      snippet,
-      url: r.url,
-      publishedAt: r.published_date ?? null,
-      sentiment: lexicalSentimentForText(`${r.title ?? ""} ${snippet}`),
-    });
+  for (const bucket of buckets) {
+    for (const r of bucket.results) {
+      if (!r.url) continue;
+      const key = normalizeUrlForDedupe(r.url);
+      if (seen.has(key)) continue;
+      if (!inLast90Days(r.published_date)) continue;
+      seen.add(key);
+      const snippet = (r.content ?? "").slice(0, 400);
+      // Prefer the bucket's bound source (we pinned the host) but fall
+      // back to classify() when Tavily occasionally returns an off-host
+      // result (subdomain mismatches happen).
+      const inferred = classify(r.url);
+      const source =
+        inferred === "TAVILY_WEB" && bucket.source !== "TAVILY_WEB"
+          ? bucket.source
+          : inferred;
+      mentions.push({
+        source,
+        title: r.title ?? null,
+        snippet,
+        url: r.url,
+        publishedAt: r.published_date ?? null,
+        sentiment: lexicalSentimentForText(`${r.title ?? ""} ${snippet}`),
+      });
+    }
   }
 
   for (const child of redditResults) {
@@ -284,6 +379,22 @@ export async function runProspectReputation(input: {
   // Cap at 40 mentions for the report — more than that is noise.
   const capped = mentions.slice(0, 40);
 
+  // Per-source counts — every source in SOURCE_ORDER gets an entry so
+  // the viewer chip row renders a stable row even when a source had 0
+  // hits. Counted against the CAPPED set so totals across the row match
+  // the rendered mention list.
+  const perSourceCounts: Record<ProspectMention["source"], number> =
+    SOURCE_ORDER.reduce(
+      (acc, s) => {
+        acc[s] = 0;
+        return acc;
+      },
+      {} as Record<ProspectMention["source"], number>,
+    );
+  for (const m of capped) {
+    perSourceCounts[m.source] = (perSourceCounts[m.source] ?? 0) + 1;
+  }
+
   // Sentiment mix is best-effort lexical (no LLM call in the prospect path
   // to keep cost down). The synthesize() layer can re-classify if needed.
   const sentimentMix = lexicalSentimentMix(capped);
@@ -293,6 +404,7 @@ export async function runProspectReputation(input: {
     mentions: capped,
     sentimentMix,
     avgRating: null,
+    perSourceCounts,
     errors,
   };
 }
