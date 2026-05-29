@@ -6,7 +6,7 @@ import { WeeklyReport } from "@/components/platform/artifacts/weekly-report";
 import { AttributionBreakdown } from "@/components/platform/artifacts/attribution-breakdown";
 import { VisitorStream } from "@/components/platform/artifacts/visitor-stream";
 import { ChatDemo } from "@/components/platform/artifacts/chat-demo";
-import { PacingAlert } from "@/components/platform/artifacts/pacing-alert";
+import { ReputationFeed } from "@/components/platform/artifacts/reputation-feed";
 import { SeoAnswer } from "@/components/platform/artifacts/seo-answer";
 import { SoftFramedArtifact } from "@/components/platform/soft-framed-artifact";
 import { MaskRevealUp } from "@/components/ui/animate-text";
@@ -91,7 +91,7 @@ const CAPABILITIES: Capability[] = [
     body: "Reddit, Yelp, Google, BBB, ApartmentRatings, Facebook, and the open web — every public mention of your brand from the past 90 days, sentiment-classified, with one-click reply.",
     href: "/audit",
     linkLabel: "See a live audit",
-    artifact: PacingAlert,
+    artifact: ReputationFeed,
     glyph: "alert",
   },
   {
