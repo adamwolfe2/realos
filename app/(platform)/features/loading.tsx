@@ -2,7 +2,6 @@
 // page's hero + alternating feature rows so the layout stays stable
 // when the artifacts are streaming in.
 
-const ACCENT = "#2563EB";
 const BORDER = "#E2E8F0";
 const SOFT_BG = "#F8FAFC";
 
@@ -124,7 +123,3 @@ function Shimmer({
   );
 }
 
-// Keep accent in scope so unused-vars complaints don't fire. The brand
-// accent is used implicitly by the gradient above; this assignment is
-// the canonical spot to override it if a future re-skin moves the brand.
-void ACCENT;
