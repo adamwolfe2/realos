@@ -22,7 +22,17 @@ import { brandNameFromDomain } from "@/lib/audit/reputation-prospect";
 //
 // Idempotent: if status !== QUEUED we early-out with 200.
 
-export const maxDuration = 60;
+// 2026-05-29: bumped from 60 → 120. The fan-out grew significantly with
+// the broader per-source Tavily scan + multi-query Reddit port + AEO's
+// 4 engines × 5 prompts = 20 LLM calls + the synthesizer's Claude
+// narrative call. Empirically a fresh scan runs 75-110s; 60 was killing
+// the function before persistSnapshot() got a chance to flip the row.
+// Tier-safe ceiling: Vercel Hobby caps at 60s for Edge/Serverless,
+// Pro at 300s for Node serverless functions. 120 fits inside Pro and
+// leaves headroom above the watchdog timeout in
+// app/api/audit/[id]/route.ts (90s) so we always hit a clean terminal
+// state instead of getting killed mid-write.
+export const maxDuration = 120;
 
 type RouteContext = { params: Promise<{ id: string }> };
 

@@ -12,7 +12,13 @@ import { Button } from "@/components/ui/button";
 // forever.
 
 const POLL_INTERVAL_MS = 2000;
-const POLL_TIMEOUT_MS = 90_000;
+// 2026-05-29: bumped from 90 → 130. The /api/audit/run function now has
+// maxDuration=120; the watchdog in /api/audit/[id] flips RUNNING rows
+// at 90s; the form should keep polling a few seconds past that so it
+// catches the watchdog-flipped FAILED state instead of timing out
+// independently and showing a "still working" message when really the
+// run died.
+const POLL_TIMEOUT_MS = 130_000;
 
 // Rotating scan-status messages. Adam 2026-05-29: "we need ~20
 // different ones because the scan takes over a minute." Ordered to
