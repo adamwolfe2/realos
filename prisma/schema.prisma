@@ -610,6 +610,12 @@ model Organization {
   // row per send attempt with status / error / Resend message id.
   leadNotificationDeliveries LeadNotificationDelivery[]
 
+  // Per-API-call cost log. Every billable upstream call (DataForSEO,
+  // Tavily, Anthropic, OpenAI, Perplexity, Gemini) writes one row so
+  // we can roll up "where is the money going" per provider, per org,
+  // per property, per ProspectAudit. Backs /admin/costs.
+  apiUsage ApiUsage[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -5381,4 +5387,70 @@ model LeadNotificationDelivery {
   @@index([orgId, createdAt(sort: Desc)])
   @@index([leadId])
   @@index([status, createdAt]) // retry cron filter
+}
+
+// ============================================================================
+// API USAGE / COST TRACKING (2026-05-29)
+// ============================================================================
+//
+// One row per billable upstream API call. The lib/cost-tracker/log.ts
+// helper writes here from every provider wrapper (DataForSEO, Tavily,
+// Anthropic, OpenAI, Perplexity, Gemini, Reddit). /admin/costs reads
+// rollups; lib/cost-tracker/cap.ts reads month-to-date totals to
+// enforce CRON_MONTHLY_CAP on the daily-signals cron.
+//
+// Cost tracked in microcents (Int) instead of dollars (Float):
+//   * 100 microcents = 1 cent. So $0.005 → 500 microcents.
+//   * Postgres bigint not needed — int max is 2.1B microcents = $21,474
+//     which is plenty headroom for a single call cost (largest single
+//     call we make is ~$0.02 DataForSEO competitor_domain = 2000 µ¢).
+//   * Avoids floating-point sum drift across millions of rows.
+//
+// Provider is a free string instead of an enum so adding a new provider
+// (Firecrawl, future Gemini Pro variant, etc.) doesn't require a
+// migration. Indexed for fast group-by.
+
+enum ApiUsageStatus {
+  SUCCESS
+  ERROR
+  // Call was short-circuited by the spend cap before the upstream
+  // request fired. Logged so we can distinguish "this provider rate-
+  // limited us" from "we self-imposed a cap and skipped the call."
+  SKIPPED_CAP
+}
+
+model ApiUsage {
+  id String @id @default(cuid())
+
+  provider     String         // "dataforseo" | "tavily" | "anthropic" | "openai" | "perplexity" | "gemini" | "reddit"
+  endpoint     String         // "ranked_keywords" | "search" | "haiku-4.5" | "gpt-4o" etc.
+  status       ApiUsageStatus
+  costMicroCents Int          @default(0) // $0.005 = 500 µ¢
+
+  // Optional scope. Many calls happen during prospect audits (no org
+  // yet) — those rows carry prospectAuditId and a null orgId. Tenant-
+  // side calls (cron, portal triggers) carry orgId; per-property calls
+  // also carry propertyId. All three indexed independently.
+  orgId            String?
+  org              Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  propertyId       String?
+  prospectAuditId  String?
+
+  // Diagnostic metadata. Free JSON so per-provider extras (HTTP status,
+  // task code, token counts, model variant) round-trip without schema
+  // churn.
+  meta Json?
+
+  // Latency for the SLO panel on /admin/costs.
+  durationMs Int?
+
+  createdAt DateTime @default(now())
+
+  // Group-by indexes — every query on /admin/costs filters on (provider
+  // + date range) and optionally (orgId / propertyId / prospectAuditId).
+  @@index([provider, createdAt])
+  @@index([orgId, createdAt(sort: Desc)])
+  @@index([propertyId, createdAt(sort: Desc)])
+  @@index([prospectAuditId])
+  @@index([createdAt(sort: Desc)])
 }
