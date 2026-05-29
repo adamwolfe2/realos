@@ -39,12 +39,7 @@ export function Hero() {
       // because ConfigTabs ships its own white card + shadow; the
       // lavender frame just provides the halo of padding.
       artifact={
-        <SoftFramedArtifact
-          tone="lavender"
-          padding="md"
-          pillLabel="LIVE DEMO"
-          bare
-        >
+        <SoftFramedArtifact tone="lavender" padding="md" bare>
           <ConfigTabs />
         </SoftFramedArtifact>
       }
