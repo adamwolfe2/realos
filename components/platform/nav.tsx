@@ -3,6 +3,17 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import type { LucideIcon } from "lucide-react";
+import {
+  LayoutGrid,
+  MessageSquare,
+  Fingerprint,
+  Search,
+  Star,
+  TrendingUp,
+  Target,
+  Globe,
+} from "lucide-react";
 
 // Tesla-inspired: a transparent sticky nav that floats over the hero, turning
 // to frosted white on scroll. Wordmark left, nav links centered, two utility
@@ -15,15 +26,67 @@ import { useEffect, useState } from "react";
 // 2026-05-29 cleanup: Keyword Trends + Website Build used to share routes
 // with adjacent items as placeholders. Now that dedicated sub-pages exist,
 // every dropdown entry resolves to its own canonical page.
-const PRODUCT_LINKS = [
-  { href: "/features",                label: "Core LeaseStack Platform" },
-  { href: "/features/chatbot",        label: "Add-on · AI Chatbot" },
-  { href: "/features/pixel",          label: "Add-on · Visitor Identification" },
-  { href: "/features/seo-aeo",        label: "Add-on · SEO / AEO" },
-  { href: "/audit",                   label: "Add-on · Reputation Management" },
-  { href: "/features/keyword-trends", label: "Add-on · Keyword Trends" },
-  { href: "/features/ads",            label: "Add-on · Managed Ads oversight" },
-  { href: "/features/website-build",  label: "Add-on · Website Build" },
+//
+// 2026-05-29 rewrite: dropdown switched from a flat list to a 2-column
+// card grid (Cursive-style) — each item carries an icon + a 1-line
+// description so the dropdown reads as a discoverable menu of products
+// instead of a list of labels.
+type ProductLink = {
+  href: string;
+  label: string;
+  description: string;
+  icon: LucideIcon;
+};
+
+const PRODUCT_LINKS: ProductLink[] = [
+  {
+    href: "/features",
+    label: "Core LeaseStack Platform",
+    description: "Every feature in one place",
+    icon: LayoutGrid,
+  },
+  {
+    href: "/features/chatbot",
+    label: "AI Chatbot",
+    description: "Books tours 24/7, hot leads by morning",
+    icon: MessageSquare,
+  },
+  {
+    href: "/features/pixel",
+    label: "Visitor Identification",
+    description: "Names + emails on anonymous traffic",
+    icon: Fingerprint,
+  },
+  {
+    href: "/features/seo-aeo",
+    label: "SEO / AEO",
+    description: "Rank on Google, get cited by ChatGPT",
+    icon: Search,
+  },
+  {
+    href: "/audit",
+    label: "Reputation Management",
+    description: "Every public mention, every 90 days",
+    icon: Star,
+  },
+  {
+    href: "/features/keyword-trends",
+    label: "Keyword Trends",
+    description: "Weekly rank tracking, every query",
+    icon: TrendingUp,
+  },
+  {
+    href: "/features/ads",
+    label: "Managed Ads",
+    description: "Spend tied to signed leases, not impressions",
+    icon: Target,
+  },
+  {
+    href: "/features/website-build",
+    label: "Website Build",
+    description: "Live on your domain in 14 days",
+    icon: Globe,
+  },
 ];
 
 // Solutions / Verticals — hidden from the nav per Norman brief but kept
@@ -226,6 +289,22 @@ function NavLink({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Dropdown — Features menu as a 2-column card grid.
+//
+// Previous version (flat label list) read as 8 lines of text. The
+// rewrite (2026-05-29) renders each link as a card with an icon box,
+// title, and one-line description — Cursive-style — so the user can
+// scan the product surface area instead of reading.
+//
+// Layout: 640px container, 2 columns × 4 rows, 20px gutter. Each card
+// is the full <Link> target; the icon box, title, and description all
+// sit inside that link, so the entire 44-line card area is clickable.
+//
+// Mobile fallback: this Dropdown only renders on md+. The MobileMenu
+// below pulls from PRODUCT_LINKS too but only reads `label` + `href`,
+// so the icon/description fields are no-ops there.
+// ---------------------------------------------------------------------------
 function Dropdown({
   label,
   open,
@@ -238,7 +317,7 @@ function Dropdown({
   btnClass: string;
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  items: Array<{ href: string; label: string }>;
+  items: ProductLink[];
   labelColor: string;
 }) {
   return (
@@ -257,37 +336,98 @@ function Dropdown({
         {label}
       </button>
       {open ? (
-        <div className="absolute top-full left-1/2 -translate-x-1/2 pt-2 z-50">
-          <ul
-            className="py-2 min-w-[260px]"
+        <div className="absolute top-full left-1/2 -translate-x-1/2 pt-3 z-50">
+          <div
+            className="p-4"
             style={{
-              backgroundColor: "#F1F5F9",
+              backgroundColor: "#FFFFFF",
               boxShadow:
-                "0 0 0 1px #E2E8F0, 0 12px 28px rgba(0,0,0,0.06)",
-              borderRadius: "14px",
+                "0 0 0 1px #E2E8F0, 0 24px 48px rgba(15, 23, 42, 0.12), 0 4px 12px rgba(15, 23, 42, 0.04)",
+              borderRadius: "16px",
+              width: "min(680px, calc(100vw - 32px))",
             }}
           >
-            {items.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  className="block px-4 py-2.5"
-                  style={{
-                    color: "#1E2A3A",
-                    fontFamily: "var(--font-sans)",
-                    fontSize: "14px",
-                    fontWeight: 500,
-                    transition: "background-color 0.33s",
-                  }}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+            <ul className="grid grid-cols-2 gap-1">
+              {items.map((item) => (
+                <li key={item.href}>
+                  <DropdownCard item={item} onSelect={() => onOpenChange(false)} />
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
       ) : null}
     </div>
+  );
+}
+
+// DropdownCard — single card in the Features grid. Hover lifts a soft
+// gray wash behind the row so the cursor target stays visible even when
+// the user is mid-flight between cards.
+function DropdownCard({
+  item,
+  onSelect,
+}: {
+  item: ProductLink;
+  onSelect: () => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      onClick={onSelect}
+      className="group flex items-start gap-3 rounded-xl px-3 py-3 transition-colors"
+      style={{
+        color: "#1E2A3A",
+        fontFamily: "var(--font-sans)",
+        backgroundColor: "transparent",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.backgroundColor = "#F1F5F9";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.backgroundColor = "transparent";
+      }}
+    >
+      <span
+        aria-hidden
+        className="inline-flex items-center justify-center flex-shrink-0"
+        style={{
+          width: 36,
+          height: 36,
+          borderRadius: 8,
+          backgroundColor: "#F1F5F9",
+          color: "#2563EB",
+        }}
+      >
+        <Icon size={18} strokeWidth={1.7} />
+      </span>
+      <span className="flex-1 min-w-0">
+        <span
+          className="block"
+          style={{
+            fontSize: "14px",
+            fontWeight: 600,
+            color: "#1E2A3A",
+            letterSpacing: "-0.005em",
+            lineHeight: 1.3,
+          }}
+        >
+          {item.label}
+        </span>
+        <span
+          className="block mt-0.5"
+          style={{
+            fontSize: "12.5px",
+            color: "#64748B",
+            fontWeight: 400,
+            lineHeight: 1.4,
+          }}
+        >
+          {item.description}
+        </span>
+      </span>
+    </Link>
   );
 }
 
