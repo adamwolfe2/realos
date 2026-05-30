@@ -47,15 +47,22 @@ export const metadata: Metadata = {
     "LeaseStack tells real estate operators exactly what their digital marketing is doing, and exactly what to do about it. One platform, every signal, on your domain.",
   metadataBase: new URL(portalConfig.appUrl),
   icons: {
+    // 2026-05-30 (Adam bug): cache-bust query string. Adam reported
+    // the favicon still showed Wholesail's sailboat even though the
+    // committed PNGs were already the LeaseStack stacked-floors mark.
+    // Browsers cache favicons aggressively (often beyond Ctrl+F5),
+    // keyed on the URL. Bumping the ?v= forces a fresh fetch on the
+    // next page load without requiring users to clear their cache.
+    // Increment ?v= any time the icon files change.
     icon: [
-      { url: "/favicon.svg", type: "image/svg+xml" },
-      { url: "/icon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icon-192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.svg?v=3", type: "image/svg+xml" },
+      { url: "/icon-32x32.png?v=3", sizes: "32x32", type: "image/png" },
+      { url: "/icon-192.png?v=3", sizes: "192x192", type: "image/png" },
+      { url: "/icon-512.png?v=3", sizes: "512x512", type: "image/png" },
     ],
-    apple: [{ url: "/apple-icon.png", sizes: "180x180" }],
-    shortcut: "/favicon.svg",
-    other: [{ rel: "mask-icon", url: "/favicon.svg", color: "#2563EB" }],
+    apple: [{ url: "/apple-icon.png?v=3", sizes: "180x180" }],
+    shortcut: "/favicon.svg?v=3",
+    other: [{ rel: "mask-icon", url: "/favicon.svg?v=3", color: "#2563EB" }],
   },
   openGraph: {
     title: `${BRAND_NAME}: Leasing intelligence for real estate operators`,
