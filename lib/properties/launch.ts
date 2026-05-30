@@ -89,9 +89,17 @@ export async function getLaunchChecklist(
     Date.now() - PIXEL_FRESHNESS_DAYS * 24 * 60 * 60 * 1000,
   );
 
+  // Norman bug (May 30): the launch checklist was reporting "GA4 not
+  // connected" on properties where GA4 was wired at the org level
+  // (propertyId=null). Same root cause as the integrations sidebar
+  // fix in overview.tsx — strict `{ orgId, propertyId }` filters skip
+  // org-wide rows. Switched to OR-with-null pattern: prefer the
+  // property-specific row if present, otherwise fall back to the
+  // org-wide row. Mirrors the production pickIntegration logic.
   const [cursive, seoRows, googleCampaign, metaCampaign] = await Promise.all([
     prisma.cursiveIntegration.findFirst({
-      where: { orgId, propertyId },
+      where: { orgId, OR: [{ propertyId }, { propertyId: null }] },
+      orderBy: { propertyId: { sort: "desc", nulls: "last" } },
       select: {
         cursivePixelId: true,
         installedOnDomain: true,
@@ -99,10 +107,11 @@ export async function getLaunchChecklist(
       },
     }),
     prisma.seoIntegration.findMany({
-      where: { orgId, propertyId },
+      where: { orgId, OR: [{ propertyId }, { propertyId: null }] },
       select: {
         provider: true,
         lastSyncAt: true,
+        propertyId: true,
       },
     }),
     prisma.adCampaign.findFirst({
@@ -115,8 +124,19 @@ export async function getLaunchChecklist(
     }),
   ]);
 
-  const ga4 = seoRows.find((r) => r.provider === "GA4");
-  const gsc = seoRows.find((r) => r.provider === "GSC");
+  // Prefer the property-specific row over the org-wide (propertyId=null)
+  // row when both exist — mirrors pickIntegration in overview.tsx.
+  const pickRow = (provider: "GA4" | "GSC") => {
+    const matches = seoRows.filter((r) => r.provider === provider);
+    if (matches.length === 0) return undefined;
+    return (
+      matches.find((r) => r.propertyId === propertyId) ??
+      matches.find((r) => r.propertyId === null) ??
+      matches[0]
+    );
+  };
+  const ga4 = pickRow("GA4");
+  const gsc = pickRow("GSC");
 
   const pixelInstalled = Boolean(cursive?.cursivePixelId);
   const pixelFiring =

@@ -61,6 +61,14 @@ CONTACT:
 ${contactLines.map((l) => `- ${l}`).join("\n")}`
     : "";
 
+  // Norman bug (May 30): when listings.length === 0 we used to say
+  // "All units are leased" — which is a flat-out lie. An empty Listing
+  // table almost always means our AppFolio sync hasn't pushed unit
+  // availability yet (Norman's bug #4: chatbot told a prospect "fully
+  // leased for Fall 2026" on a property that had open units). Switched
+  // to honest "live availability not loaded yet — capture contact info
+  // and the team will follow up". Lets the bot fall back to the human
+  // team instead of fabricating occupancy state.
   const availabilityBlock = listings.length
     ? `
 AVAILABLE UNITS RIGHT NOW:
@@ -69,8 +77,14 @@ ${listings
         .map((l) => formatListingLine(l))
         .join("\n")}`
     : `
-AVAILABLE UNITS RIGHT NOW: All units are leased. Invite interested visitors
-to join the waitlist by sharing their email.`;
+LIVE AVAILABILITY: We don't have a current unit list loaded for this
+property in your context. DO NOT claim units are leased, sold out, fully
+leased, or unavailable for any season or term — you don't know. If a
+visitor asks about availability, say "Let me get a live availability
+check from the team — what's your email and move-in window?" and capture
+their contact info. Never volunteer a season or term ("Fall 2026", "next
+semester", etc.) unless the visitor brings it up first, and even then,
+hand it off to the team rather than committing to a status.`;
 
   const kbBlock = config?.chatbotKnowledgeBase
     ? `
@@ -135,6 +149,12 @@ CONTENT RULES:
 - Never invent pricing, availability, policies, or amenities that aren't in
   the facts above. If asked and you don't know, say so in one sentence and
   pivot to the contact info or a tour.
+- NEVER tell a visitor a property is "fully leased", "sold out", "no
+  availability", "leased through Fall/Spring/Summer", or "out of units for
+  [any term]" unless that exact status appears in the AVAILABLE UNITS block
+  above. Empty listing data does NOT mean leased — it means we don't have a
+  live unit feed and the team needs to check. Default to "Let me get a live
+  availability check from the team" + capture contact info.
 - Be honest, direct, and warm. Sound like a person on the leasing team
   helping someone find a place to live, not a chatbot reading a brochure.
 

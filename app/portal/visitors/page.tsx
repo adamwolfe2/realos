@@ -145,10 +145,25 @@ export default async function VisitorsPage({
     ? new Date(Date.now() - windowDef.hours * 60 * 60 * 1000)
     : null;
 
+  // 2026-05-30 (Norman bug, #14 + #3 from his Thursday batch): the
+  // window filter previously gated on `lastSeenAt: { gte: since }`.
+  // The segment-sync cron overwrites lastSeenAt on every fire (every
+  // ~15 min for active orgs) so every visitor's lastSeenAt is
+  // effectively "less than a minute ago" — toggling 24h/7d/30d
+  // returned the same set regardless of window choice.
+  //
+  // Filtering on `firstSeenAt` instead is honest and respects the
+  // operator's intent: when they ask for "visitors in the last 24h",
+  // they want visitors first identified in that window, not visitors
+  // whose lastSeenAt was last-touched by an unrelated sync job.
+  //
+  // Real fix is upstream in the segment-sync writer (only update
+  // lastSeenAt when there's a genuinely new event); until that lands,
+  // firstSeenAt is the trustworthy field.
   const baseWhere: Prisma.VisitorWhereInput = {
     ...tenant,
     ...propertyWhereFragment(scope, propertyIds),
-    ...(since ? { lastSeenAt: { gte: since } } : {}),
+    ...(since ? { firstSeenAt: { gte: since } } : {}),
   };
 
   const statusWhere: Prisma.VisitorWhereInput = (() => {
@@ -175,10 +190,15 @@ export default async function VisitorsPage({
 
   const where: Prisma.VisitorWhereInput = { ...baseWhere, ...statusWhere };
 
+  // Norman bug (May 30): orderBy uses firstSeenAt to match the time
+  // filter semantic. Sorting by lastSeenAt was misleading — the
+  // segment-sync cron stamps lastSeenAt on every fire so every row
+  // looked "just-seen" regardless of when they actually arrived.
+  // For "recent" sort, "newest first-seen" is what users mean.
   const orderBy: Prisma.VisitorOrderByWithRelationInput[] =
     sortKey === "intent"
-      ? [{ intentScore: "desc" }, { lastSeenAt: "desc" }]
-      : [{ lastSeenAt: "desc" }];
+      ? [{ intentScore: "desc" }, { firstSeenAt: "desc" }]
+      : [{ firstSeenAt: "desc" }];
 
   // Live-chat windows. Live window = "active in last 5 minutes".
   const LIVE_WINDOW_MS = 5 * 60 * 1000;
