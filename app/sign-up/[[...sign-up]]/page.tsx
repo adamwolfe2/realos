@@ -127,7 +127,14 @@ export default async function SignUpPage({
             ) : null}
 
             <SignUp
-              fallbackRedirectUrl="/auth/redirect"
+              // 2026-05-30 (Norman bug): force the redirect so an
+              // invite-flow `?redirect_url=` (which Clerk sets to the
+              // invite's stored URL) can't override our smart router.
+              // Christine's invite was created when redirect_url pointed
+              // at the bare-apex leasestack.co, which DNS-resolves to a
+              // GoDaddy parking page — forcing the redirect routes her
+              // through our app code instead.
+              forceRedirectUrl="/auth/redirect"
               signInUrl="/sign-in"
               initialValues={
                 prefillEmail ? { emailAddress: prefillEmail } : undefined

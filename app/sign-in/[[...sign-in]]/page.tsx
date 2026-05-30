@@ -96,7 +96,14 @@ export default function SignInPage() {
             </div>
 
             <SignIn
-              fallbackRedirectUrl="/auth/redirect"
+              // 2026-05-30 (Norman bug): switched from fallbackRedirectUrl
+              // to forceRedirectUrl so stale `?redirect_url=` query params
+              // (left in the browser by a prior session, or by Clerk's
+              // password-reset flow itself) can never override our smart
+              // /auth/redirect router. Without this, Clerk honors the
+              // query-string redirect first, which can dump returning
+              // users on the wrong subdomain or a stale invite URL.
+              forceRedirectUrl="/auth/redirect"
               signUpUrl="/sign-up"
               appearance={{
                 layout: {
