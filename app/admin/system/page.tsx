@@ -28,6 +28,10 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  Bot,
+  Sparkles,
+  Search as SearchIcon,
+  Globe,
 } from "lucide-react";
 
 export const metadata: Metadata = { title: "System health" };
@@ -100,14 +104,23 @@ export default async function SystemHealthPage() {
     getReadinessForAllTenants().catch(() => [] as TenantReadiness[]),
   ]);
 
+  // 2026-05-30: extended check roster to cover every external API the
+  // cost-tracker logs against (OpenAI, Perplexity, Gemini, DataForSEO,
+  // Tavily). Now /admin/system mirrors the full integration surface
+  // — one page to verify everything is green before an onboarding call.
   const checkCards = [
-    { key: "database", label: "Database (Neon)", icon: Database, check: health.checks.database },
-    { key: "env", label: "Environment", icon: KeyRound, check: health.checks.env },
-    { key: "clerk", label: "Clerk", icon: Shield, check: health.checks.clerk },
-    { key: "anthropic", label: "Anthropic", icon: Brain, check: health.checks.anthropic },
-    { key: "cursive", label: "Cursive pixel", icon: Radio, check: health.checks.cursive },
-    { key: "stripe", label: "Stripe", icon: CreditCard, check: health.checks.stripe },
-    { key: "resend", label: "Resend", icon: Mail, check: health.checks.resend },
+    { key: "database",   label: "Database (Neon)", icon: Database,   check: health.checks.database },
+    { key: "env",        label: "Environment",     icon: KeyRound,   check: health.checks.env },
+    { key: "clerk",      label: "Clerk",           icon: Shield,     check: health.checks.clerk },
+    { key: "stripe",     label: "Stripe",          icon: CreditCard, check: health.checks.stripe },
+    { key: "resend",     label: "Resend",          icon: Mail,       check: health.checks.resend },
+    { key: "cursive",    label: "Cursive pixel",   icon: Radio,      check: health.checks.cursive },
+    { key: "anthropic",  label: "Anthropic Claude", icon: Brain,     check: health.checks.anthropic },
+    { key: "openai",     label: "OpenAI",          icon: Bot,        check: health.checks.openai },
+    { key: "perplexity", label: "Perplexity",      icon: SearchIcon, check: health.checks.perplexity },
+    { key: "gemini",     label: "Google Gemini",   icon: Sparkles,   check: health.checks.gemini },
+    { key: "dataforseo", label: "DataForSEO",      icon: Globe,      check: health.checks.dataforseo },
+    { key: "tavily",     label: "Tavily",          icon: SearchIcon, check: health.checks.tavily },
   ] as const;
 
   const sentryDashboardUrl = process.env.SENTRY_DASHBOARD_URL ?? "https://sentry.io";

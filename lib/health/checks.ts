@@ -277,6 +277,108 @@ export async function checkResend(): Promise<CheckResult> {
 }
 
 // ---------------------------------------------------------------------------
+// 2026-05-30: instrumented providers — add health checks so /admin/system
+// reflects the full cost-tracker surface. Each check uses the cheapest
+// possible probe (account/models endpoints with a key, no actual work).
+// All return "degraded" when the key isn't configured so the dashboard
+// surfaces missing env vars without screaming "down".
+// ---------------------------------------------------------------------------
+
+export async function checkOpenAI(): Promise<CheckResult> {
+  const key = process.env.OPENAI_API_KEY?.trim();
+  if (!key) {
+    return {
+      status: "degraded",
+      latencyMs: 0,
+      message: "OPENAI_API_KEY not configured",
+    };
+  }
+  // /v1/models returns the list of models the key can access — free,
+  // unconditional GET. Any 2xx means the key works.
+  return pingUrl(
+    "https://api.openai.com/v1/models",
+    { method: "GET", headers: { Authorization: `Bearer ${key}` } },
+    "openai"
+  );
+}
+
+export async function checkPerplexity(): Promise<CheckResult> {
+  const key = process.env.PERPLEXITY_API_KEY?.trim();
+  if (!key) {
+    return {
+      status: "degraded",
+      latencyMs: 0,
+      message: "PERPLEXITY_API_KEY not configured",
+    };
+  }
+  // Perplexity doesn't publish a free /models endpoint; we ping the
+  // chat-completions endpoint with `tools` validation by issuing a HEAD
+  // — they return 405 (method not allowed) which still proves auth +
+  // reachability and costs nothing.
+  return pingUrl(
+    "https://api.perplexity.ai/chat/completions",
+    { method: "HEAD", headers: { Authorization: `Bearer ${key}` } },
+    "perplexity"
+  );
+}
+
+export async function checkGemini(): Promise<CheckResult> {
+  const key = process.env.GEMINI_API_KEY?.trim();
+  if (!key) {
+    return {
+      status: "degraded",
+      latencyMs: 0,
+      message: "GEMINI_API_KEY not configured",
+    };
+  }
+  // Generative Language API — list-models endpoint is free + key-gated.
+  return pingUrl(
+    `https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`,
+    { method: "GET" },
+    "gemini"
+  );
+}
+
+export async function checkDataForSEO(): Promise<CheckResult> {
+  const login = process.env.DATAFORSEO_LOGIN?.replace(/\\n|\s+/g, "").trim();
+  const password = process.env.DATAFORSEO_PASSWORD?.replace(/\\n|\s+/g, "").trim();
+  if (!login || !password) {
+    return {
+      status: "degraded",
+      latencyMs: 0,
+      message: "DATAFORSEO_LOGIN/PASSWORD not configured",
+    };
+  }
+  // appendix/user_data is free and returns account info — same endpoint
+  // the cost-tracker backfill uses.
+  const auth = Buffer.from(`${login}:${password}`).toString("base64");
+  return pingUrl(
+    "https://api.dataforseo.com/v3/appendix/user_data",
+    { method: "GET", headers: { Authorization: `Basic ${auth}` } },
+    "dataforseo"
+  );
+}
+
+export async function checkTavily(): Promise<CheckResult> {
+  const key = process.env.TAVILY_API_KEY?.trim();
+  if (!key) {
+    return {
+      status: "degraded",
+      latencyMs: 0,
+      message: "TAVILY_API_KEY not configured",
+    };
+  }
+  // Tavily doesn't publish a /me or /models endpoint. We HEAD the
+  // search endpoint with the key — get 405 on a 2xx-class auth = key
+  // works; 401/403 = key invalid. Costs $0.
+  return pingUrl(
+    "https://api.tavily.com/search",
+    { method: "HEAD", headers: { Authorization: `Bearer ${key}` } },
+    "tavily"
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Cron + platform pulse
 // ---------------------------------------------------------------------------
 
@@ -376,6 +478,13 @@ export interface SystemHealth {
     cursive: CheckResult;
     stripe: CheckResult;
     resend: CheckResult;
+    // 2026-05-30: extended check roster to cover every external API
+    // the cost-tracker logs against.
+    openai: CheckResult;
+    perplexity: CheckResult;
+    gemini: CheckResult;
+    dataforseo: CheckResult;
+    tavily: CheckResult;
   };
 }
 
@@ -393,7 +502,7 @@ function rollUp(checks: Record<string, CheckResult>): HealthStatus {
 
 export async function runSystemHealth(): Promise<SystemHealth> {
   const started = Date.now();
-  const [database, clerk, anthropic, cursive, stripe, resend] =
+  const [database, clerk, anthropic, cursive, stripe, resend, openai, perplexity, gemini, dataforseo, tavily] =
     await Promise.all([
       checkDatabase(),
       checkClerk(),
@@ -401,9 +510,14 @@ export async function runSystemHealth(): Promise<SystemHealth> {
       checkCursive(),
       checkStripe(),
       checkResend(),
+      checkOpenAI(),
+      checkPerplexity(),
+      checkGemini(),
+      checkDataForSEO(),
+      checkTavily(),
     ]);
   const env = checkEnv();
-  const checks = { database, env, clerk, anthropic, cursive, stripe, resend };
+  const checks = { database, env, clerk, anthropic, cursive, stripe, resend, openai, perplexity, gemini, dataforseo, tavily };
   return {
     status: rollUp(checks),
     timestamp: new Date().toISOString(),
@@ -415,19 +529,50 @@ export async function runSystemHealth(): Promise<SystemHealth> {
 
 export async function runSystemHealthDeep(): Promise<SystemHealthDeep> {
   const started = Date.now();
-  const [database, clerk, anthropic, cursive, stripe, resend, pulse, recentCrons] =
-    await Promise.all([
-      checkDatabaseDeep(),
-      checkClerk(),
-      checkAnthropic(),
-      checkCursive(),
-      checkStripe(),
-      checkResend(),
-      getPlatformPulse(),
-      getRecentCronRuns(),
-    ]);
+  const [
+    database,
+    clerk,
+    anthropic,
+    cursive,
+    stripe,
+    resend,
+    openai,
+    perplexity,
+    gemini,
+    dataforseo,
+    tavily,
+    pulse,
+    recentCrons,
+  ] = await Promise.all([
+    checkDatabaseDeep(),
+    checkClerk(),
+    checkAnthropic(),
+    checkCursive(),
+    checkStripe(),
+    checkResend(),
+    checkOpenAI(),
+    checkPerplexity(),
+    checkGemini(),
+    checkDataForSEO(),
+    checkTavily(),
+    getPlatformPulse(),
+    getRecentCronRuns(),
+  ]);
   const env = checkEnv();
-  const checks = { database, env, clerk, anthropic, cursive, stripe, resend };
+  const checks = {
+    database,
+    env,
+    clerk,
+    anthropic,
+    cursive,
+    stripe,
+    resend,
+    openai,
+    perplexity,
+    gemini,
+    dataforseo,
+    tavily,
+  };
   return {
     status: rollUp(checks),
     timestamp: new Date().toISOString(),
