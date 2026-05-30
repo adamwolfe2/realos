@@ -16,7 +16,7 @@ export default function RenewalsLoading() {
       </div>
       <div className="rounded-xl border border-border bg-card p-4 space-y-3">
         <div className="h-4 w-32 bg-muted rounded" />
-        <div className="grid grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 overflow-x-auto">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="rounded-xl border border-border bg-card p-3 space-y-2">
               <div className="h-3 w-16 bg-muted rounded" />

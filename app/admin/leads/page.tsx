@@ -160,7 +160,7 @@ export default async function CrossTenantLeads({
       ) : (
         <div className="rounded-lg border border-border bg-card overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[640px]">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <Th>Lead</Th>

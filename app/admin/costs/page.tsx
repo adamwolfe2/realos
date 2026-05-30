@@ -228,7 +228,13 @@ export default async function AdminCostsPage() {
             sorted by month-to-date spend
           </span>
         </div>
-        <table className="w-full text-sm">
+        {/* Mobile-safe wrapper — the 5-column table needs ~640px to
+            read; on phones we let it horizontal-scroll within the
+            section card rather than blowing out the whole page width.
+            The negative margin pulls the scroll edge to the card edge
+            on mobile so swipe affordance reaches the screen edge. */}
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
           <thead>
             <tr
               className="text-left"
@@ -240,11 +246,11 @@ export default async function AdminCostsPage() {
                 textTransform: "uppercase",
               }}
             >
-              <th className="px-5 py-2.5 font-medium">Provider</th>
-              <th className="px-5 py-2.5 text-right font-medium">24h</th>
-              <th className="px-5 py-2.5 text-right font-medium">7d</th>
-              <th className="px-5 py-2.5 text-right font-medium">MTD</th>
-              <th className="px-5 py-2.5 text-right font-medium">Cap</th>
+              <th className="px-4 md:px-5 py-2.5 font-medium">Provider</th>
+              <th className="px-4 md:px-5 py-2.5 text-right font-medium">24h</th>
+              <th className="px-4 md:px-5 py-2.5 text-right font-medium">7d</th>
+              <th className="px-4 md:px-5 py-2.5 text-right font-medium">MTD</th>
+              <th className="px-4 md:px-5 py-2.5 text-right font-medium">Cap</th>
             </tr>
           </thead>
           <tbody>
@@ -292,6 +298,7 @@ export default async function AdminCostsPage() {
             ) : null}
           </tbody>
         </table>
+        </div>
       </section>
 
       {/* Per-org + per-audit two-up */}
@@ -305,7 +312,8 @@ export default async function AdminCostsPage() {
               Top 10 orgs · MTD
             </h2>
           </div>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[420px]">
             <thead>
               <tr
                 className="text-left"
@@ -374,6 +382,7 @@ export default async function AdminCostsPage() {
               )}
             </tbody>
           </table>
+          </div>
         </section>
 
         <section className="rounded-xl border bg-white" style={{ borderColor: "#E5E7EB" }}>
@@ -385,7 +394,8 @@ export default async function AdminCostsPage() {
               Top 10 prospect audits · MTD
             </h2>
           </div>
-          <table className="w-full text-sm">
+          <div className="overflow-x-auto">
+          <table className="w-full text-sm min-w-[420px]">
             <thead>
               <tr
                 className="text-left"
@@ -461,6 +471,7 @@ export default async function AdminCostsPage() {
               )}
             </tbody>
           </table>
+          </div>
         </section>
       </div>
 
@@ -474,7 +485,8 @@ export default async function AdminCostsPage() {
             Recent calls
           </h2>
         </div>
-        <table className="w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[720px]">
           <thead>
             <tr
               className="text-left"
@@ -543,6 +555,7 @@ export default async function AdminCostsPage() {
             )}
           </tbody>
         </table>
+        </div>
       </section>
     </div>
   );
