@@ -6,6 +6,7 @@ import {
   TourStatus,
   type Prisma,
 } from "@prisma/client";
+import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 
 // ---------------------------------------------------------------------------
 // Per-property query helpers. EVERY function accepts both `orgId` AND
@@ -166,7 +167,7 @@ export async function getPropertyOverviewKpis(
         orgId,
         date: { gte: since28d },
         campaign: { orgId, propertyId },
-        adAccount: { credentialsEncrypted: { not: null } },
+        adAccount: await realAdAccountWhere(orgId),
       },
       _sum: { spendCents: true },
     }),
@@ -531,7 +532,7 @@ export async function getPropertyAds(
       where: {
         orgId,
         propertyId,
-        adAccount: { credentialsEncrypted: { not: null } },
+        adAccount: await realAdAccountWhere(orgId),
       },
       orderBy: { updatedAt: "desc" },
       select: {
@@ -546,7 +547,7 @@ export async function getPropertyAds(
         orgId,
         date: { gte: since28d },
         campaign: { orgId, propertyId },
-        adAccount: { credentialsEncrypted: { not: null } },
+        adAccount: await realAdAccountWhere(orgId),
       },
       select: {
         campaignId: true,

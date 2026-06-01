@@ -18,6 +18,7 @@ import {
 import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { buildPropertyUrlPatterns } from "@/lib/properties/queries";
+import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 
 // ---------------------------------------------------------------------------
 // Report snapshot generator.
@@ -1802,24 +1803,22 @@ async function buildDataSources(
     chatbotConvosInPeriod,
     pixelEventsInPeriod,
   ] = await Promise.all([
-    prisma.adAccount.findFirst({
-      where: {
-        orgId,
-        platform: "GOOGLE_ADS",
-        credentialsEncrypted: { not: null },
-      },
-      select: { lastSyncAt: true },
-      orderBy: { lastSyncAt: "desc" },
-    }),
-    prisma.adAccount.findFirst({
-      where: {
-        orgId,
-        platform: "META",
-        credentialsEncrypted: { not: null },
-      },
-      select: { lastSyncAt: true },
-      orderBy: { lastSyncAt: "desc" },
-    }),
+    (async () => {
+      const realFilter = await realAdAccountWhere(orgId);
+      return prisma.adAccount.findFirst({
+        where: { orgId, platform: "GOOGLE_ADS", ...realFilter },
+        select: { lastSyncAt: true },
+        orderBy: { lastSyncAt: "desc" },
+      });
+    })(),
+    (async () => {
+      const realFilter = await realAdAccountWhere(orgId);
+      return prisma.adAccount.findFirst({
+        where: { orgId, platform: "META", ...realFilter },
+        select: { lastSyncAt: true },
+        orderBy: { lastSyncAt: "desc" },
+      });
+    })(),
     prisma.seoIntegration.findFirst({
       where: {
         orgId,

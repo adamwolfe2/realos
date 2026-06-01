@@ -9,6 +9,7 @@ import { AuditAction, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { buildCsv, csvFileResponse } from "@/lib/csv";
 import { adsExportLimiter, checkRateLimit, rateLimited } from "@/lib/rate-limit";
+import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 
 // GET /api/portal/ads/export
 //
@@ -59,11 +60,12 @@ export async function GET() {
   // Pull both shapes in parallel. We intentionally do NOT bound the
   // window — the operator asked for "full historical," and the retention
   // job already caps how much daily data exists per tier.
+  const realAccountFilter = await realAdAccountWhere(scope.orgId);
   const [daily, monthly, accounts] = await Promise.all([
     prisma.adMetricDaily.findMany({
       where: {
         ...tenantWhere(scope),
-        adAccount: { credentialsEncrypted: { not: null } },
+        adAccount: realAccountFilter,
       },
       orderBy: [{ date: "asc" }, { adAccountId: "asc" }],
       select: {

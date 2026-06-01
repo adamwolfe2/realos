@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { AdPlatform, IntegrationRequestStatus } from "@prisma/client";
 import { INTEGRATIONS, type IntegrationDefinition } from "./catalog";
 import { FRESHNESS_BUDGET, type IntegrationKey } from "@/lib/sync/freshness";
+import { realAdAccountWhere } from "./real-ad-account";
 
 // ---------------------------------------------------------------------------
 // Tenant-scoped integration status.
@@ -136,15 +137,17 @@ export async function resolveIntegrationStatuses(
         },
       })
       .catch(() => []),
-    prisma.adAccount
-      .findMany({
-        where: { orgId, credentialsEncrypted: { not: null } },
-        select: {
-          platform: true,
-          lastSyncAt: true,
-          lastSyncError: true,
-        },
-      })
+    realAdAccountWhere(orgId)
+      .then((realFilter) =>
+        prisma.adAccount.findMany({
+          where: { orgId, ...realFilter },
+          select: {
+            platform: true,
+            lastSyncAt: true,
+            lastSyncError: true,
+          },
+        }),
+      )
       .catch(() => []),
     prisma.integrationRequest
       .findMany({

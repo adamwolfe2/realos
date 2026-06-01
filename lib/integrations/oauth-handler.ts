@@ -14,7 +14,7 @@ import {
 import { prisma } from "@/lib/db";
 import { encrypt } from "@/lib/crypto";
 import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
-import { OrgType, AdPlatform } from "@prisma/client";
+import { OrgType } from "@prisma/client";
 import { safeEqual } from "@/lib/utils/timing-safe";
 
 // ---------------------------------------------------------------------------
@@ -225,15 +225,27 @@ export async function handleOAuthCallback(
   const { triggerInsightsForOrg } = await import("@/lib/insights/triggers");
   triggerInsightsForOrg(payload.orgId, `${provider}_oauth_callback`);
 
-  // Defense-in-depth: even though signState/verifyState ensures the
-  // returnTo came from us, we re-validate before the redirect. Caps any
-  // bug in the start-handler that lets a non-/portal returnTo get
-  // signed (or any future relaxation of the start-handler's check).
+  // Post-callback redirect:
+  //   - google_ads / meta_ads: route to the customer-picker page. The OAuth
+  //     token alone isn't enough to start syncing — the operator still
+  //     needs to choose which ad account (Google Ads customer ID / Meta
+  //     ad account ID) to bind, because the OAuth token may have access
+  //     to several.
+  //   - gsc / ga4: legacy behavior — back to the integrations settings
+  //     page since their property selector lives elsewhere.
+  // Defense-in-depth: signed returnTo could in theory be a /portal/ path
+  // overriding the default; honor it only if it stays inside /portal/.
+  const defaultReturnTo =
+    provider === "google_ads"
+      ? "/portal/connect/google-ads/select"
+      : provider === "meta_ads"
+        ? "/portal/connect/meta-ads/select"
+        : "/portal/settings/integrations";
   const safePath =
     payload.returnTo.startsWith("/portal/") &&
     !payload.returnTo.startsWith("//")
       ? payload.returnTo
-      : "/portal/settings/integrations";
+      : defaultReturnTo;
   const redirect = new URL(safePath, url);
   redirect.searchParams.set("oauth", `${provider}_connected`);
   const res = NextResponse.redirect(redirect.toString());
@@ -248,44 +260,51 @@ async function persistTokens(args: {
   refreshToken: string | null;
   expiresInSec: number | null;
 }): Promise<void> {
-  const tokenEncrypted = encrypt(args.accessToken);
+  const accessTokenEncrypted = encrypt(args.accessToken);
   const refreshTokenEncrypted = args.refreshToken
     ? encrypt(args.refreshToken)
     : null;
-  const tokenExpiresAt = args.expiresInSec
+  const expiresAt = args.expiresInSec
     ? new Date(Date.now() + args.expiresInSec * 1000)
     : null;
 
-  if (args.provider === "google-ads" || args.provider === "meta-ads") {
-    const platform =
-      args.provider === "google-ads" ? AdPlatform.GOOGLE_ADS : AdPlatform.META;
-    // Upsert AdAccount with placeholder externalAccountId; operator will
-    // refine it from the connect form once OAuth completes.
-    const existing = await prisma.adAccount.findFirst({
-      where: { orgId: args.orgId, platform },
+  if (args.provider === "google_ads" || args.provider === "meta_ads") {
+    // Canonical store for OAuth credentials is `OAuthConnection`. The
+    // customer-picker page reads from this row to enumerate accessible
+    // accounts via listAccessibleCustomers (Google) / me/adaccounts (Meta),
+    // then writes the chosen externalAccountId back here AND creates the
+    // matching `AdAccount` row. We do NOT touch `AdAccount` here — that's
+    // the picker's job, because the OAuth token alone doesn't know which
+    // customer ID to bind.
+    //
+    // Unique constraint on OAuthConnection is (orgId, provider, externalAccountId).
+    // Initial OAuth row has externalAccountId=null. NULL is "distinct" in
+    // Postgres so technically multiple null rows can coexist; we collapse
+    // them via findFirst-then-update.
+    const existing = await prisma.oAuthConnection.findFirst({
+      where: { orgId: args.orgId, provider: args.provider, externalAccountId: null },
       select: { id: true },
     });
     if (existing) {
-      await prisma.adAccount.update({
+      await prisma.oAuthConnection.update({
         where: { id: existing.id },
         data: {
-          tokenEncrypted,
-          refreshTokenEncrypted,
-          tokenExpiresAt,
-          accessStatus: "active",
+          accessToken: accessTokenEncrypted,
+          refreshToken: refreshTokenEncrypted,
+          expiresAt,
+          status: "active",
         },
       });
     } else {
-      await prisma.adAccount.create({
+      await prisma.oAuthConnection.create({
         data: {
           orgId: args.orgId,
-          platform,
-          externalAccountId: "PENDING_OAUTH_BIND",
-          tokenEncrypted,
-          refreshTokenEncrypted,
-          tokenExpiresAt,
-          accessStatus: "active",
-          autoSyncEnabled: true,
+          provider: args.provider,
+          externalAccountId: null,
+          accessToken: accessTokenEncrypted,
+          refreshToken: refreshTokenEncrypted,
+          expiresAt,
+          status: "active",
         },
       });
     }
@@ -293,19 +312,19 @@ async function persistTokens(args: {
     // GSC + GA4 store tokens on SeoIntegration as a JSON blob alongside the
     // existing service-account JSON path. We treat the OAuth payload as the
     // canonical encrypted credential.
-    const provider = args.provider === "gsc" ? "GSC" : "GA4";
+    //
+    // TODO(2026-06-01): migrate gsc/ga4 to OAuthConnection too. Same
+    // unification reasoning as ads, but defer because the SeoIntegration
+    // row carries other state (status, property linkage) that's read
+    // by neighboring code; needs its own slice.
+    const provider = args.provider === "google_gsc" ? "GSC" : "GA4";
     const blob = {
       kind: "oauth" as const,
       access_token: args.accessToken,
       refresh_token: args.refreshToken,
-      expires_at: tokenExpiresAt?.toISOString() ?? null,
+      expires_at: expiresAt?.toISOString() ?? null,
     };
     const encryptedBlob = encrypt(JSON.stringify(blob));
-    // OAuth flows currently bind to the legacy org-wide row
-    // (propertyId = NULL). Per-property OAuth — picking which
-    // property the OAuth token applies to mid-flow — would require
-    // threading the chosen propertyId through the OAuth state, which
-    // is a separate UX project. For now, OAuth stays org-wide.
     const existing = await prisma.seoIntegration.findFirst({
       where: { orgId: args.orgId, propertyId: null, provider },
       select: { id: true },

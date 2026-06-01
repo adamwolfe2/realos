@@ -13,6 +13,7 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { SourceDonut } from "@/components/portal/attribution/donut";
+import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 import { TrendChart } from "@/components/portal/attribution/trend-chart";
 import {
   getAttributionHeadline,
@@ -129,7 +130,10 @@ export default async function AttributionPage({
     // Integration presence — used to decide whether the "no data" surfaces
     // should be honest empty states or actionable connect-this-source CTAs.
     prisma.adAccount.count({
-      where: { orgId: scope.orgId, credentialsEncrypted: { not: null } },
+      where: {
+        orgId: scope.orgId,
+        ...(await realAdAccountWhere(scope.orgId)),
+      },
     }),
     prisma.cursiveIntegration.findFirst({
       where: { orgId: scope.orgId },

@@ -43,6 +43,7 @@ export default async function IntegrationsPage() {
     appfolio,
     seoIntegrations,
     adAccounts,
+    oauthBoundAds,
     statuses,
     properties,
     pendingPixelRequest,
@@ -111,6 +112,19 @@ export default async function IntegrationsPage() {
         lastSyncAt: true,
         lastSyncError: true,
       },
+    }),
+    // OAuth-bound ad accounts: rows in OAuthConnection that have a non-null
+    // externalAccountId mean the operator completed the picker step. Used
+    // to mark the matching AdAccount row as "connected" for the UI even
+    // when its credentialsEncrypted is null (OAuth path leaves it null).
+    prisma.oAuthConnection.findMany({
+      where: {
+        orgId: scope.orgId,
+        provider: { in: ["google_ads", "meta_ads"] },
+        status: "active",
+        externalAccountId: { not: null },
+      },
+      select: { provider: true, externalAccountId: true },
     }),
     resolveIntegrationStatuses(scope.orgId),
     // Property list is threaded into the connect forms so multi-
@@ -271,9 +285,15 @@ export default async function IntegrationsPage() {
       );
     })(),
     "google-ads": (() => {
+      const oauthBoundGoogleIds = new Set(
+        oauthBoundAds
+          .filter((b) => b.provider === "google_ads" && b.externalAccountId)
+          .map((b) => b.externalAccountId!)
+      );
       const connected = adAccounts.filter(
         (a) =>
-          a.platform === AdPlatform.GOOGLE_ADS && !!a.credentialsEncrypted
+          a.platform === AdPlatform.GOOGLE_ADS &&
+          (!!a.credentialsEncrypted || oauthBoundGoogleIds.has(a.externalAccountId))
       );
       return (
         <div className="space-y-6">
@@ -296,19 +316,35 @@ export default async function IntegrationsPage() {
               </h3>
             ) : null}
             <div className="space-y-3">
-              <OAuthConnectButton provider="google-ads" />
-              <p className="text-[11px] text-muted-foreground text-center">
-                or paste credentials manually
-              </p>
-              <ConnectGoogleAdsForm />
+              <OAuthConnectButton provider="google_ads" />
+              <details className="group rounded-md border border-border bg-card">
+                <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground px-3 py-2 hover:text-foreground select-none">
+                  Advanced — paste credentials manually
+                </summary>
+                <div className="px-3 pb-3 pt-1 border-t border-border">
+                  <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
+                    For agencies that prefer their own Google Cloud OAuth
+                    client. Most operators should use the Connect button above
+                    — it&apos;s the same data with no setup.
+                  </p>
+                  <ConnectGoogleAdsForm />
+                </div>
+              </details>
             </div>
           </div>
         </div>
       );
     })(),
     "meta-ads": (() => {
+      const oauthBoundMetaIds = new Set(
+        oauthBoundAds
+          .filter((b) => b.provider === "meta_ads" && b.externalAccountId)
+          .map((b) => b.externalAccountId!)
+      );
       const connected = adAccounts.filter(
-        (a) => a.platform === AdPlatform.META && !!a.credentialsEncrypted
+        (a) =>
+          a.platform === AdPlatform.META &&
+          (!!a.credentialsEncrypted || oauthBoundMetaIds.has(a.externalAccountId))
       );
       return (
         <div className="space-y-6">
@@ -331,11 +367,20 @@ export default async function IntegrationsPage() {
               </h3>
             ) : null}
             <div className="space-y-3">
-              <OAuthConnectButton provider="meta-ads" />
-              <p className="text-[11px] text-muted-foreground text-center">
-                or paste credentials manually
-              </p>
-              <ConnectMetaAdsForm />
+              <OAuthConnectButton provider="meta_ads" />
+              <details className="group rounded-md border border-border bg-card">
+                <summary className="cursor-pointer text-[11px] font-medium text-muted-foreground px-3 py-2 hover:text-foreground select-none">
+                  Advanced — paste a system-user token manually
+                </summary>
+                <div className="px-3 pb-3 pt-1 border-t border-border">
+                  <p className="text-[11px] text-muted-foreground mb-3 leading-relaxed">
+                    For agencies that already manage a Meta Business
+                    system-user token. Most operators should use the Connect
+                    button above.
+                  </p>
+                  <ConnectMetaAdsForm />
+                </div>
+              </details>
             </div>
           </div>
         </div>

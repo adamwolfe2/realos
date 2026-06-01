@@ -5,5 +5,5 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  return handleOAuthStart(req, "ga4");
+  return handleOAuthStart(req, "google_ga4");
 }

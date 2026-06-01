@@ -5,5 +5,5 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  return handleOAuthStart(req, "meta-ads");
+  return handleOAuthStart(req, "meta_ads");
 }

@@ -110,6 +110,84 @@ function withActPrefix(id: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// listMetaAdAccounts — picker entry point.
+//
+// Calls GET /me/adaccounts to enumerate every ad account the OAuth user has
+// access to. Mirrors listAccessibleCustomers in google-ads.ts. Returns
+// stripped (no act_ prefix) IDs to keep AdAccount.externalAccountId
+// consistent with the rest of the platform — withActPrefix() re-adds it
+// at request time.
+// ---------------------------------------------------------------------------
+
+export type AccessibleMetaAdAccount = {
+  externalAccountId: string;     // numeric, no act_ prefix
+  name: string | null;
+  currency: string | null;
+  accountStatus: number | null;  // 1=ACTIVE, 2=DISABLED, 3=UNSETTLED, 7=PENDING_RISK_REVIEW, etc.
+  businessName: string | null;
+  timezoneName: string | null;
+};
+
+type GraphAdAccount = {
+  id?: string;            // act_<id>
+  account_id?: string;    // bare id
+  name?: string;
+  currency?: string;
+  account_status?: number;
+  business?: { name?: string };
+  timezone_name?: string;
+};
+
+export async function listMetaAdAccounts(
+  creds: MetaAdsCredentials,
+): Promise<AccessibleMetaAdAccount[]> {
+  const params = new URLSearchParams({
+    fields:
+      "id,account_id,name,currency,account_status,business{name},timezone_name",
+    access_token: creds.systemUserAccessToken,
+    limit: "100",
+  });
+  const url = `${GRAPH_API_BASE}/me/adaccounts?${params.toString()}`;
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    const text = await res.text().catch(() => "");
+    throw new Error(
+      `me/adaccounts returned ${res.status}: ${text.slice(0, 400)}`,
+    );
+  }
+  const json = (await res.json()) as {
+    data?: GraphAdAccount[];
+    error?: { message?: string };
+  };
+  if (json.error?.message) {
+    throw new Error(`Meta Graph error: ${json.error.message}`);
+  }
+  const out: AccessibleMetaAdAccount[] = [];
+  for (const a of json.data ?? []) {
+    const rawId = a.account_id ?? (a.id ?? "").replace(/^act_/, "");
+    if (!rawId) continue;
+    out.push({
+      externalAccountId: rawId,
+      name: a.name ?? null,
+      currency: a.currency ?? null,
+      accountStatus: a.account_status ?? null,
+      businessName: a.business?.name ?? null,
+      timezoneName: a.timezone_name ?? null,
+    });
+  }
+  // ACTIVE accounts (status=1) first, then by name.
+  out.sort((a, b) => {
+    const aActive = a.accountStatus === 1 ? 0 : 1;
+    const bActive = b.accountStatus === 1 ? 0 : 1;
+    if (aActive !== bActive) return aActive - bActive;
+    return (a.name ?? a.externalAccountId).localeCompare(
+      b.name ?? b.externalAccountId,
+    );
+  });
+  return out;
+}
+
+// ---------------------------------------------------------------------------
 // Graph API request wrapper, with cursor-based pagination.
 // ---------------------------------------------------------------------------
 

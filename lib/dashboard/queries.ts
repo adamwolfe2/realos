@@ -21,6 +21,7 @@ import type {
   IntegrationChip,
   IntegrationStatus as IntegrationChipStatus,
 } from "@/components/portal/dashboard/integration-health";
+import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 
 // ---------------------------------------------------------------------------
 // Dashboard query helpers (real Prisma data).
@@ -79,10 +80,12 @@ export async function getAdSpendKpi(orgId: string) {
   const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
   const since56d = new Date(Date.now() - 2 * WINDOW_DAYS * DAY_MS);
 
-  // Filter by adAccount.credentialsEncrypted so seeded fake metrics
-  // (Telegraph Commons demo data) don't leak into the dashboard KPI
-  // when the tenant hasn't actually connected an ad account.
-  const realAccount = { adAccount: { credentialsEncrypted: { not: null } } };
+  // Filter by realAdAccountWhere so seeded fake metrics (Telegraph
+  // Commons demo data) don't leak into the dashboard KPI when the tenant
+  // hasn't actually connected an ad account. Covers both connect paths
+  // — legacy paste (credentialsEncrypted IS NOT NULL) and OAuth picker
+  // (matching OAuthConnection row).
+  const realAccount = { adAccount: await realAdAccountWhere(orgId) };
 
   const [current, previousDaily, previousMonthly, dailyRows] = await Promise.all([
     prisma.adMetricDaily.aggregate({
@@ -596,7 +599,7 @@ export async function getIntegrationHealth(orgId: string): Promise<IntegrationCh
       select: { provider: true, status: true, lastSyncAt: true },
     }),
     prisma.adAccount.findMany({
-      where: { orgId, credentialsEncrypted: { not: null } },
+      where: { orgId, ...(await realAdAccountWhere(orgId)) },
       select: { platform: true, accessStatus: true, lastSyncAt: true },
     }),
     prisma.appFolioIntegration.findUnique({
@@ -1469,12 +1472,13 @@ export async function getAdHistoryUnion(
   from: Date,
   to: Date = new Date(),
 ): Promise<AdHistoryPoint[]> {
+  const realAccount = await realAdAccountWhere(orgId);
   const [daily, monthly] = await Promise.all([
     prisma.adMetricDaily.findMany({
       where: {
         orgId,
         date: { gte: from, lt: to },
-        adAccount: { credentialsEncrypted: { not: null } },
+        adAccount: realAccount,
       },
       select: {
         date: true,

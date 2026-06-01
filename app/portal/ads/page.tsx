@@ -23,6 +23,7 @@ import {
   getAdRetentionPolicy,
 } from "@/lib/billing/retention";
 import { AdRetentionPanel } from "@/components/portal/ads/retention-panel";
+import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
 
 // Roles that can edit the per-org retention override (Scale / Enterprise).
 const RETENTION_EDIT_ROLES: ReadonlySet<UserRole> = new Set([
@@ -75,12 +76,14 @@ export default async function AdsPage({
 
   // HARD RULE: only show ad data that came from a real, credentialed
   // integration. Seeded fake accounts (Telegraph Commons / UC Berkeley /
-  // 1234567890) live in the same tables but have credentialsEncrypted=NULL.
-  // Filtering at the query layer means the UI can't accidentally show
-  // fake data even if a row gets in via a script or migration.
+  // 1234567890) live in the same tables but have credentialsEncrypted=NULL
+  // AND no OAuthConnection row. realAdAccountWhere() covers both connect
+  // paths — legacy paste (credentialsEncrypted IS NOT NULL) and OAuth
+  // picker (matching OAuthConnection row with externalAccountId bound).
+  const realAccountFilter = await realAdAccountWhere(scope.orgId);
   const realAccountWhere = {
     ...tenantWhere(scope),
-    credentialsEncrypted: { not: null },
+    ...realAccountFilter,
   };
 
   // Tier-based retention policy fuels the sidebar panel. Cheap one-row
@@ -112,7 +115,7 @@ export default async function AdsPage({
       where: {
         ...tenantWhere(scope),
         ...propertyFilter,
-        adAccount: { credentialsEncrypted: { not: null } },
+        adAccount: realAccountFilter,
       },
       orderBy: { spendToDateCents: "desc" },
       select: {
@@ -133,7 +136,7 @@ export default async function AdsPage({
       where: {
         ...tenantWhere(scope),
         date: { gte: currentStart },
-        adAccount: { credentialsEncrypted: { not: null } },
+        adAccount: realAccountFilter,
         // Use propertyFilter (the gated, intersected fragment) so a
         // restricted user can't URL-hack into properties they don't
         // own. The campaign relation has its own propertyId column.
@@ -164,7 +167,7 @@ export default async function AdsPage({
       where: {
         ...tenantWhere(scope),
         date: { gte: priorStart, lt: priorEnd },
-        adAccount: { credentialsEncrypted: { not: null } },
+        adAccount: realAccountFilter,
         // Use propertyFilter (the gated, intersected fragment) so a
         // restricted user can't URL-hack into properties they don't
         // own. The campaign relation has its own propertyId column.

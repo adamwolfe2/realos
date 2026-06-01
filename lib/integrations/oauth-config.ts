@@ -25,7 +25,43 @@ import "server-only";
 //     https://www.leasestack.co/api/oauth/meta-ads/callback
 // ---------------------------------------------------------------------------
 
-export type OAuthProvider = "google-ads" | "meta-ads" | "gsc" | "ga4";
+// Canonical provider identifiers. These match `lib/oauth/types.ts` and the
+// `OAuthConnection.provider` column. URL paths remain dashed (Next.js route
+// folders) — see `providerToRouteSlug()` for the mapping.
+export type OAuthProvider = "google_ads" | "meta_ads" | "google_gsc" | "google_ga4";
+
+// URL slugs for the per-provider route folders under app/api/oauth/<slug>/.
+// Route folders kept dashed for URL hygiene; switching them to underscored
+// would invalidate every OAuth redirect URI already registered in Google
+// Cloud Console + Meta App Dashboard.
+const ROUTE_SLUG: Record<OAuthProvider, string> = {
+  google_ads: "google-ads",
+  meta_ads: "meta-ads",
+  google_gsc: "gsc",
+  google_ga4: "ga4",
+};
+
+export function providerToRouteSlug(provider: OAuthProvider): string {
+  return ROUTE_SLUG[provider];
+}
+
+// Inverse mapping for the four route files that pass a literal URL slug to
+// the handler. Kept small + explicit instead of a regex parse so a future
+// route addition fails the type checker rather than silently slugging wrong.
+const FROM_ROUTE_SLUG: Record<string, OAuthProvider> = {
+  "google-ads": "google_ads",
+  "meta-ads": "meta_ads",
+  gsc: "google_gsc",
+  ga4: "google_ga4",
+};
+
+export function routeSlugToProvider(slug: string): OAuthProvider {
+  const provider = FROM_ROUTE_SLUG[slug];
+  if (!provider) {
+    throw new Error(`Unknown OAuth route slug: ${slug}`);
+  }
+  return provider;
+}
 
 export type ProviderConfig = {
   authorizationUrl: string;
@@ -59,14 +95,14 @@ export function isProviderConfigured(provider: OAuthProvider): boolean {
     return false;
   }
   switch (provider) {
-    case "google-ads":
-    case "gsc":
-    case "ga4":
+    case "google_ads":
+    case "google_gsc":
+    case "google_ga4":
       return !!(
         process.env.GOOGLE_OAUTH_CLIENT_ID &&
         process.env.GOOGLE_OAUTH_CLIENT_SECRET
       );
-    case "meta-ads":
+    case "meta_ads":
       return !!(
         process.env.META_OAUTH_APP_ID &&
         process.env.META_OAUTH_APP_SECRET
@@ -88,12 +124,12 @@ export function providerReadinessReason(
     return "Awaiting OAUTH_STATE_SECRET (32+ char HMAC key) on the server.";
   }
   switch (provider) {
-    case "google-ads":
+    case "google_ads":
       return "Awaiting Google Cloud OAuth client credentials. The Google Ads developer token is a separate, longer-running approval — OAuth login itself works as soon as the client_id/secret land.";
-    case "gsc":
-    case "ga4":
+    case "google_gsc":
+    case "google_ga4":
       return "Awaiting Google Cloud OAuth client credentials.";
-    case "meta-ads":
+    case "meta_ads":
       return "Awaiting Meta App ID + Secret from the Meta Developer dashboard.";
   }
 }
@@ -113,7 +149,7 @@ export function getCallbackUrl(
       "Cannot build OAuth callback URL — OAUTH_CALLBACK_BASE_URL not set and no request origin available.",
     );
   }
-  return `${base}/api/oauth/${provider}/callback`;
+  return `${base}/api/oauth/${providerToRouteSlug(provider)}/callback`;
 }
 
 export function getStateSecret(): string {
@@ -128,19 +164,19 @@ export function getStateSecret(): string {
 
 export function getProviderConfig(provider: OAuthProvider): ProviderConfig {
   switch (provider) {
-    case "google-ads":
+    case "google_ads":
       return googleConfig([
         "https://www.googleapis.com/auth/adwords",
       ]);
-    case "gsc":
+    case "google_gsc":
       return googleConfig([
         "https://www.googleapis.com/auth/webmasters.readonly",
       ]);
-    case "ga4":
+    case "google_ga4":
       return googleConfig([
         "https://www.googleapis.com/auth/analytics.readonly",
       ]);
-    case "meta-ads":
+    case "meta_ads":
       return metaConfig(["ads_read", "ads_management"]);
   }
 }

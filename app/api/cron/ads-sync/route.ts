@@ -18,10 +18,42 @@ export async function GET(req: NextRequest) {
   if (authError) return authError;
 
   return recordCronRun("ads-sync", async () => {
+    // "Real" AdAccount filter — same semantics as
+    // lib/integrations/real-ad-account.ts but global (no orgId scope).
+    // Sync should run for accounts connected via EITHER path:
+    //   - legacy paste form → credentialsEncrypted IS NOT NULL
+    //   - OAuth picker      → matching OAuthConnection with bound
+    //                          externalAccountId
+    // Seed/demo rows have neither and never get scheduled.
+    const oauthBound = await prisma.oAuthConnection.findMany({
+      where: {
+        provider: { in: ["google_ads", "meta_ads"] },
+        status: "active",
+        externalAccountId: { not: null },
+      },
+      select: { provider: true, externalAccountId: true },
+    });
+    const googleIds = oauthBound
+      .filter((b) => b.provider === "google_ads")
+      .map((b) => b.externalAccountId!)
+      .filter(Boolean);
+    const metaIds = oauthBound
+      .filter((b) => b.provider === "meta_ads")
+      .map((b) => b.externalAccountId!)
+      .filter(Boolean);
+
     const accounts = await prisma.adAccount.findMany({
       where: {
         autoSyncEnabled: true,
-        credentialsEncrypted: { not: null },
+        OR: [
+          { credentialsEncrypted: { not: null } },
+          ...(googleIds.length > 0
+            ? [{ platform: "GOOGLE_ADS" as const, externalAccountId: { in: googleIds } }]
+            : []),
+          ...(metaIds.length > 0
+            ? [{ platform: "META" as const, externalAccountId: { in: metaIds } }]
+            : []),
+        ],
       },
       select: { id: true, orgId: true, platform: true },
     });

@@ -4,14 +4,14 @@ import { AdPlatform, AuditAction, Prisma, type AdAccount } from "@prisma/client"
 import {
   fetchGoogleAdsCampaigns,
   fetchGoogleAdsDailyMetrics,
-  parseGoogleAdsCredentials,
+  resolveGoogleAdsCredentials,
   type GoogleAdsCampaign,
   type GoogleAdsDailyMetric,
 } from "./google-ads";
 import {
   fetchMetaAdsCampaigns,
   fetchMetaAdsDailyMetrics,
-  parseMetaAdsCredentials,
+  resolveMetaAdsCredentials,
   type MetaAdsCampaign,
   type MetaAdsDailyMetric,
 } from "./meta-ads";
@@ -136,7 +136,13 @@ async function syncGoogleAds(
   endDate: Date,
   stats: AdsSyncStats
 ): Promise<void> {
-  const creds = parseGoogleAdsCredentials(account);
+  // resolveGoogleAdsCredentials prefers an OAuthConnection row scoped to the
+  // same externalAccountId (the customer the operator picked in the picker
+  // page) and falls back to the legacy AdAccount.credentialsEncrypted paste
+  // blob. Either path returns the same GoogleAdsCredentials shape.
+  const creds = await resolveGoogleAdsCredentials(account.orgId, account, {
+    externalAccountId: account.externalAccountId,
+  });
   const customerId = account.externalAccountId;
 
   const campaigns = await fetchGoogleAdsCampaigns(creds, customerId);
@@ -157,7 +163,11 @@ async function syncMetaAds(
   endDate: Date,
   stats: AdsSyncStats
 ): Promise<void> {
-  const creds = parseMetaAdsCredentials(account);
+  // Same OAuth-first pattern as syncGoogleAds — prefer OAuthConnection,
+  // fall back to legacy AdAccount.credentialsEncrypted.
+  const creds = await resolveMetaAdsCredentials(account.orgId, account, {
+    externalAccountId: account.externalAccountId,
+  });
   const adAccountId = account.externalAccountId;
 
   const campaigns = await fetchMetaAdsCampaigns(creds, adAccountId);

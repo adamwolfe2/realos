@@ -5,5 +5,5 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function GET(req: NextRequest) {
-  return handleOAuthCallback(req, "google-ads");
+  return handleOAuthCallback(req, "google_ads");
 }

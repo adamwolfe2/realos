@@ -9,14 +9,15 @@ import {
   isOAuthEnabled,
   isProviderConfigured,
   providerReadinessReason,
+  providerToRouteSlug,
 } from "@/lib/integrations/oauth-config";
 import type { OAuthProvider } from "@/lib/integrations/oauth-config";
 
 const PROVIDER_LABEL: Record<OAuthProvider, string> = {
-  "google-ads": "Google Ads",
-  "meta-ads": "Meta Ads",
-  gsc: "Google Search Console",
-  ga4: "Google Analytics 4",
+  google_ads: "Google Ads",
+  meta_ads: "Meta Ads",
+  google_gsc: "Google Search Console",
+  google_ga4: "Google Analytics 4",
 };
 
 export function OAuthConnectButton({ provider }: { provider: OAuthProvider }) {
@@ -53,7 +54,7 @@ export function OAuthConnectButton({ provider }: { provider: OAuthProvider }) {
 
   return (
     <a
-      href={`/api/oauth/${provider}/start`}
+      href={`/api/oauth/${providerToRouteSlug(provider)}/start`}
       className="rounded-md border border-primary bg-primary text-primary-foreground px-3 py-2.5 flex items-center justify-between gap-3 hover:bg-primary/90 transition-colors"
     >
       <div className="min-w-0">
