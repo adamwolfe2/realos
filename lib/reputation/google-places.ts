@@ -95,6 +95,100 @@ async function fetchPlaceDetails(
 }
 
 /**
+ * Resolve a Place ID + reviews from just a brand name + (optional) website
+ * domain. Used by the PROSPECT audit flow which has no address — it only
+ * has a domain like `aura-4th.com` and the parsed brand "Aura 4th".
+ *
+ * Strategy:
+ *   1. places:searchText with the brand name. Returns up to ~10 candidates.
+ *   2. For each candidate, peek at the websiteUri in the FieldMask. If the
+ *      candidate's website domain matches the hint, we have high confidence
+ *      it's the right business. Pick that one.
+ *   3. If no domain hint OR no match, fall back to the first candidate
+ *      (Google's relevance ordering puts the most likely match first).
+ *   4. Fetch full details (reviews, rating, count) via the existing
+ *      fetchPlaceDetails helper.
+ *
+ * Returns null when no candidate matches or the API key is missing.
+ */
+export async function resolveAndFetchPlaceByBrand(
+  brandName: string,
+  domainHint: string | null,
+): Promise<{
+  placeId: string;
+  place: GooglePlaceResponse;
+} | null> {
+  const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+  if (!apiKey || !brandName) return null;
+
+  // 1. Text search — request websiteUri + displayName so we can disambiguate
+  //    without a second per-candidate fetch.
+  let candidates: Array<{
+    id?: string;
+    displayName?: { text?: string };
+    websiteUri?: string;
+    formattedAddress?: string;
+  }> = [];
+  try {
+    const searchRes = await fetch(
+      "https://places.googleapis.com/v1/places:searchText",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Api-Key": apiKey,
+          "X-Goog-FieldMask":
+            "places.id,places.displayName,places.formattedAddress,places.websiteUri",
+        },
+        body: JSON.stringify({ textQuery: brandName, pageSize: 10 }),
+        signal: AbortSignal.timeout(10_000),
+      },
+    );
+    if (!searchRes.ok) return null;
+    const json = (await searchRes.json()) as {
+      places?: typeof candidates;
+    };
+    candidates = json.places ?? [];
+  } catch {
+    return null;
+  }
+  if (candidates.length === 0) return null;
+
+  // 2. Disambiguate by domain. Compare host (no www, no trailing slash) of
+  //    each candidate's websiteUri against domainHint. Strict equality on
+  //    host so a global brand match doesn't accidentally pick a different
+  //    franchise.
+  const normalizeHost = (raw: string | undefined | null): string => {
+    if (!raw) return "";
+    try {
+      return new URL(raw.startsWith("http") ? raw : `https://${raw}`)
+        .host.toLowerCase()
+        .replace(/^www\./, "");
+    } catch {
+      return "";
+    }
+  };
+  const hint = normalizeHost(domainHint);
+
+  let picked: (typeof candidates)[number] | null = null;
+  if (hint) {
+    picked =
+      candidates.find((c) => normalizeHost(c.websiteUri) === hint) ?? null;
+  }
+  // 3. Fall back to first candidate.
+  if (!picked) picked = candidates[0] ?? null;
+  if (!picked?.id) return null;
+
+  // 4. Fetch full details.
+  try {
+    const place = await fetchPlaceDetails(picked.id, apiKey);
+    return { placeId: picked.id, place };
+  } catch {
+    return null;
+  }
+}
+
+/**
  * Resolve a property (by name + address) to its Google Place ID via the
  * Places Text Search endpoint. Used as a fallback when googlePlaceId is not
  * seeded on the Property row. Callers should cache the returned id onto the

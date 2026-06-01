@@ -1,6 +1,10 @@
 import "server-only";
 
 import { logUsage } from "@/lib/cost-tracker/log";
+import {
+  resolveAndFetchPlaceByBrand,
+  GOOGLE_PLACES_COST_CENTS_PER_CALL,
+} from "@/lib/reputation/google-places";
 
 // ----------------------------------------------------------------------------
 // Reputation scanner for the PROSPECT audit lead-magnet.
@@ -62,6 +66,9 @@ export type ProspectReputationResult = {
   mentions: ProspectMention[];
   sentimentMix: { positive: number; neutral: number; negative: number };
   avgRating: number | null;
+  /** Aggregate Google review count from Places API (the property's TOTAL
+   *  Google review count, not the 5 most-helpful reviews we render). */
+  googleAggregateCount: number | null;
   /** Per-source result counts. Always carries an entry for every source
    *  in SOURCE_ORDER so the viewer can render a stable chip row even
    *  when a source had zero hits. */
@@ -354,7 +361,23 @@ export async function runProspectReputation(input: {
   const errors: Record<string, string | null> = {
     tavily: null,
     reddit: null,
+    google_places: null,
   };
+
+  // --- Real Google Places API ----------------------------------------------
+  // Adam 2026-06-01: the prospect path was only getting Google reviews
+  // via Tavily-indexed snippets, which returned ~0 for most properties
+  // even when the real Google Business listing had dozens of recent
+  // reviews. The Places API call here returns up to 5 "most helpful"
+  // reviews with real text, ratings, authors, and dates — same
+  // pipeline the operator portal uses. Disambiguated by domain so
+  // common brand names ("Aura") pick the right business.
+  const placeFetchPromise: Promise<Awaited<
+    ReturnType<typeof resolveAndFetchPlaceByBrand>
+  >> = resolveAndFetchPlaceByBrand(brandName, domain).catch((err) => {
+    errors.google_places = err instanceof Error ? err.message : String(err);
+    return null;
+  });
 
   const tavilyApiKey = process.env.TAVILY_API_KEY;
   // 2026-05-29: ALWAYS quote the brand name in the Tavily query, even
@@ -423,6 +446,22 @@ export async function runProspectReputation(input: {
     errors.reddit = err instanceof Error ? err.message : String(err);
   }
 
+  // --- Resolve the Google Places result fired earlier -----------------------
+  const placeResult = await placeFetchPromise;
+  // Log cost for the two calls (text search + details fetch) so /admin/costs
+  // attributes the spend to this specific prospect audit.
+  if (placeResult && prospectAuditId) {
+    await logUsage({
+      provider: "google_places",
+      endpoint: "searchText+details",
+      status: "SUCCESS",
+      costUsd: (GOOGLE_PLACES_COST_CENTS_PER_CALL * 2) / 100,
+      durationMs: 0,
+      prospectAuditId,
+      meta: { placeId: placeResult.placeId },
+    }).catch(() => {});
+  }
+
   // --- Normalize + dedupe ---------------------------------------------------
   const seen = new Set<string>();
   const mentions: ProspectMention[] = [];
@@ -464,6 +503,44 @@ export async function runProspectReputation(input: {
         url: r.url,
         publishedAt: r.published_date ?? null,
         sentiment: lexicalSentimentForText(`${r.title ?? ""} ${snippet}`),
+      });
+    }
+  }
+
+  // Google Places reviews come pre-classified — no need to run them
+  // through brandMatcher because Places API only returns reviews for the
+  // specific business we resolved. They're inherently on-topic.
+  if (placeResult?.place?.reviews) {
+    for (const r of placeResult.place.reviews) {
+      const text = r.text?.text ?? r.originalText?.text ?? "";
+      if (!text) continue;
+      const author = r.authorAttribution?.displayName ?? null;
+      const publishedAtIso = r.publishTime ?? null;
+      if (!inLast90Days(publishedAtIso)) continue;
+      const reviewFragment = r.name ? `#${encodeURIComponent(r.name)}` : "";
+      const placeUri =
+        r.googleMapsUri ??
+        placeResult.place.googleMapsUri ??
+        `https://www.google.com/maps/place/?q=place_id:${placeResult.placeId}`;
+      const sourceUrl = `${placeUri}${reviewFragment}`;
+      const key = normalizeUrlForDedupe(sourceUrl);
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const snippet = text.slice(0, 400);
+      mentions.push({
+        source: "GOOGLE_REVIEW",
+        title: author ?? "Google review",
+        snippet,
+        url: sourceUrl,
+        publishedAt: publishedAtIso,
+        sentiment:
+          typeof r.rating === "number"
+            ? r.rating >= 4
+              ? "POSITIVE"
+              : r.rating <= 2
+                ? "NEGATIVE"
+                : "NEUTRAL"
+            : lexicalSentimentForText(`${author ?? ""} ${snippet}`),
       });
     }
   }
@@ -534,11 +611,26 @@ export async function runProspectReputation(input: {
   // to keep cost down). The synthesize() layer can re-classify if needed.
   const sentimentMix = lexicalSentimentMix(capped);
 
+  // Google's aggregate (overall property rating + total Google review
+  // count) is far more honest than any "avg of the 5 most-helpful
+  // reviews" or our own synthetic average. Surface it on the result so
+  // the viewer can display "4.3 ⭐ across 87 Google reviews" even when
+  // only 5 review snippets land in the mentions feed.
+  const aggRating =
+    typeof placeResult?.place?.rating === "number"
+      ? placeResult.place.rating
+      : null;
+  const aggCount =
+    typeof placeResult?.place?.userRatingCount === "number"
+      ? placeResult.place.userRatingCount
+      : null;
+
   return {
     totalMentions: capped.length,
     mentions: capped,
     sentimentMix,
-    avgRating: null,
+    avgRating: aggRating,
+    googleAggregateCount: aggCount,
     perSourceCounts,
     errors,
   };
