@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { BookDemoLink } from "@/components/marketing/book-demo-link";
 
 // Claude-style feature page: parchment canvas, Fraunces serif headline,
 // terracotta eyebrow + checkmarks, editorial pacing.
@@ -193,9 +194,9 @@ export function FeaturePage({
           </p>
 
           <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link href="/onboarding" className="btn-primary">
+            <BookDemoLink className="btn-primary">
               Book a demo
-            </Link>
+            </BookDemoLink>
             <Link href="/demo" className="btn-secondary">
               See it live
             </Link>

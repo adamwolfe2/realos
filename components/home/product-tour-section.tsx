@@ -1,4 +1,5 @@
 import { ProductTour } from "@/components/product-tour";
+import { BookDemoLink } from "@/components/marketing/book-demo-link";
 
 // ---------------------------------------------------------------------------
 // ProductTourSection — interactive operator portal embed.
@@ -100,8 +101,7 @@ export function ProductTourSection() {
               >
                 Open this page on a laptop to click through the live tour.
               </p>
-              <a
-                href="/onboarding"
+              <BookDemoLink
                 className="mt-3 inline-flex items-center"
                 style={{
                   fontFamily: "var(--font-sans)",
@@ -113,7 +113,7 @@ export function ProductTourSection() {
                 }}
               >
                 Book a demo instead
-              </a>
+              </BookDemoLink>
             </div>
           </div>
         </div>

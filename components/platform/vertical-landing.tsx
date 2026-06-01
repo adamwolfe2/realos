@@ -2,6 +2,8 @@ import Link from "next/link";
 import React from "react";
 import { SplitHero } from "./split-hero";
 import { Reveal } from "./reveal";
+import { BookDemoLink } from "@/components/marketing/book-demo-link";
+import { getBookDemoHref } from "@/lib/marketing/book-demo";
 
 export type VerticalLandingProps = {
   eyebrow: string;
@@ -25,7 +27,11 @@ export function VerticalLanding({
   subhead,
   pains,
   modules,
-  ctaHref = "/onboarding",
+  // Default routes through the centralized book-demo resolver
+  // (NEXT_PUBLIC_CAL_BOOK_URL → Cal.com link when set, /onboarding
+  // fallback). Per-vertical pages can still pass an explicit ctaHref
+  // when they want a non-default landing.
+  ctaHref = getBookDemoHref(),
   artifact,
   painsHeading = "The three things that made them look.",
   modulesHeading = "Six modules. One launch. Live in two weeks.",
@@ -269,9 +275,9 @@ export function VerticalLanding({
           </Reveal>
           <Reveal delay={220}>
             <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-3">
-              <Link href={ctaHref} className="btn-primary">
+              <BookDemoLink className="btn-primary">
                 Book a demo
-              </Link>
+              </BookDemoLink>
               <Link href="/demo" className="btn-secondary">
                 See the data
               </Link>
