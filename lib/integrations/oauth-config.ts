@@ -143,7 +143,13 @@ export function getCallbackUrl(
   fallbackOrigin?: string,
 ): string {
   const explicit = process.env.OAUTH_CALLBACK_BASE_URL;
-  const base = (explicit ?? fallbackOrigin ?? "").replace(/\/$/, "");
+  // .trim() is defensive — Vercel's env-var UI commonly captures a
+  // trailing \n when values get pasted. A newline in the redirect_uri
+  // is invisible to humans but Google's OAuth server compares the URI
+  // as an exact string and rejects with invalid_request. Same for any
+  // other whitespace.
+  const raw = (explicit ?? fallbackOrigin ?? "").trim();
+  const base = raw.replace(/\/$/, "");
   if (!base) {
     throw new Error(
       "Cannot build OAuth callback URL — OAUTH_CALLBACK_BASE_URL not set and no request origin available.",
