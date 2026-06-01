@@ -56,7 +56,7 @@ export function ScoreCard({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-white p-5 flex flex-col gap-3",
+        "rounded-lg border bg-white p-4 flex flex-col gap-2",
         className,
       )}
       style={{ borderColor: "#E5E7EB" }}
@@ -86,14 +86,14 @@ export function ScoreCard({
         ) : null}
       </div>
       {hasScore ? (
-        <div className="flex items-baseline gap-2">
+        <div className="flex items-baseline gap-1.5">
           <span
-            className="text-4xl font-semibold tabular-nums"
+            className="text-3xl font-semibold tabular-nums leading-none"
             style={{ color: palette.text }}
           >
             {value}
           </span>
-          <span className="text-sm" style={{ color: "#9CA3AF" }}>
+          <span className="text-xs" style={{ color: "#9CA3AF" }}>
             / 100
           </span>
         </div>

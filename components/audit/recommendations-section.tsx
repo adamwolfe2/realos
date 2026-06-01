@@ -3,13 +3,13 @@ import { PILLAR_LABELS, type Pillar } from "@/lib/audit/quiz-questions";
 import type { ActionItem } from "@/lib/audit/recommendations";
 import { getFeature, getFeatureCta } from "@/lib/audit/feature-catalog";
 
-// RecommendationsSection — the sales-tool layer of the audit result.
+// RecommendationsSection. The sales-tool layer of the audit result.
 //
 // Renders the personalized action-item cards produced by
 // `lib/audit/recommendations.ts`. Cards are grouped by severity and
 // each carries a "See it live" or "Talk to us about this" CTA wired
 // to the feature catalog. Adam 2026-06-01: every recommendation is, by
-// design, a LeaseStack upsell — the goal is to make the gap obvious and
+// design, a LeaseStack upsell. The goal is to make the gap obvious and
 // the fix tangible.
 
 type Severity = ActionItem["severity"];
@@ -39,34 +39,29 @@ export function RecommendationsSection({
   };
 
   return (
-    <section className="mt-14">
+    <section className="mt-10">
       <p
-        className="text-[11px] font-mono uppercase tracking-[0.18em]"
+        className="text-[10px] font-mono uppercase tracking-[0.16em]"
         style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
       >
         Personalized action plan
       </p>
       <h2
-        className="text-2xl sm:text-3xl font-semibold mt-2"
+        className="text-lg sm:text-xl font-semibold mt-1"
         style={{ color: "#1E2A3A" }}
       >
         {recommendations.length} thing
         {recommendations.length === 1 ? "" : "s"} we'd fix, in priority order
       </h2>
-      <p className="text-sm mt-2 max-w-2xl" style={{ color: "#6B7280" }}>
-        Built from your quiz answers + our live scan. Each item links to
-        a working example — see exactly what the fix looks like, or get on
-        a call and we'll handle the build.
-      </p>
 
-      <div className="mt-8 flex flex-col gap-10">
+      <div className="mt-4 flex flex-col gap-5">
         {(["high", "medium", "low"] as Severity[]).map((sev) => {
           const items = groups[sev];
           if (items.length === 0) return null;
           return (
             <div key={sev}>
               <SeverityHeader severity={sev} count={items.length} />
-              <ul className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+              <ul className="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 {items.map((item) => (
                   <RecommendationCard key={item.id} item={item} />
                 ))}
@@ -88,26 +83,29 @@ function SeverityHeader({
 }) {
   const tone = SEVERITY_TONE[severity];
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-2">
       <span
-        className="inline-block h-2 w-2 rounded-full"
+        className="inline-block h-1.5 w-1.5 rounded-full"
         style={{ backgroundColor: tone.tag }}
         aria-hidden
       />
-      <h3 className="text-sm font-semibold" style={{ color: "#1E2A3A" }}>
+      <h3
+        className="text-[13px] font-semibold"
+        style={{ color: "#1E2A3A" }}
+      >
         {SEVERITY_LABEL[severity]}
       </h3>
       <span
-        className="text-[11px] font-mono uppercase tracking-[0.14em]"
+        className="text-[10px] font-mono uppercase tracking-[0.12em]"
         style={{
           color: tone.tag,
           backgroundColor: tone.bg,
-          padding: "2px 8px",
+          padding: "1px 7px",
           borderRadius: 999,
           fontFamily: "var(--font-mono)",
         }}
       >
-        {count} item{count === 1 ? "" : "s"}
+        {count}
       </span>
     </div>
   );
@@ -121,25 +119,25 @@ function RecommendationCard({ item }: { item: ActionItem }) {
 
   return (
     <li
-      className="rounded-xl border bg-white flex flex-col"
+      className="rounded-lg border bg-white flex flex-col"
       style={{ borderColor: "#E5E7EB" }}
     >
       <div
-        className="h-1 w-full rounded-t-xl"
+        className="h-[3px] w-full rounded-t-lg"
         style={{ backgroundColor: tone.bar }}
         aria-hidden
       />
-      <div className="p-5 flex flex-col gap-3 flex-1">
+      <div className="p-3.5 sm:p-4 flex flex-col gap-2 flex-1">
         <div className="flex items-center justify-between gap-2">
           <span
-            className="text-[10px] font-mono uppercase tracking-[0.14em]"
+            className="text-[9px] font-mono uppercase tracking-[0.12em]"
             style={{ color: "#6B7280", fontFamily: "var(--font-mono)" }}
           >
             {pillarLabel}
           </span>
           {feature ? (
             <span
-              className="text-[10px] font-mono uppercase tracking-[0.14em] px-2 py-0.5 rounded"
+              className="text-[9px] font-mono uppercase tracking-[0.12em] px-1.5 py-0.5 rounded"
               style={{
                 color: "#2563EB",
                 backgroundColor: "rgba(37,99,235,0.08)",
@@ -151,24 +149,22 @@ function RecommendationCard({ item }: { item: ActionItem }) {
           ) : null}
         </div>
         <p
-          className="text-base font-semibold leading-snug"
+          className="text-[14px] font-semibold leading-snug"
           style={{ color: "#1E2A3A" }}
         >
           {item.title}
         </p>
-        <p className="text-sm leading-relaxed" style={{ color: "#4B5563" }}>
+        <p
+          className="text-[12.5px] leading-relaxed"
+          style={{ color: "#4B5563" }}
+        >
           {item.why}
         </p>
-        {feature ? (
-          <p className="text-xs italic" style={{ color: "#6B7280" }}>
-            {feature.blurb}
-          </p>
-        ) : null}
         {cta ? (
-          <div className="mt-auto pt-3">
+          <div className="mt-auto pt-1">
             <Link
               href={cta.href}
-              className="inline-flex items-center gap-1 text-sm font-medium"
+              className="inline-flex items-center gap-1 text-[12.5px] font-medium"
               style={{ color: "#2563EB" }}
             >
               {cta.label}

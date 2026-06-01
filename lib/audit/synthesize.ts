@@ -26,7 +26,7 @@ import { computeRecommendations, type ActionItem } from "./recommendations";
 import type { QuizAnswers } from "./quiz-questions";
 
 // ----------------------------------------------------------------------------
-// Synthesizer — turns the raw provider responses + rolled-up SignalSnapshot
+// Synthesizer. Turns the raw provider responses + rolled-up SignalSnapshot
 // into the audit findings/claudeSummary the viewer renders.
 //
 // All findings are derived from REAL signals (numbers from the scan, named
@@ -36,17 +36,17 @@ import type { QuizAnswers } from "./quiz-questions";
 
 export type Finding = { id: string; title: string; detail?: string };
 
-/** Per-section "why this score" — short bullet list of the supporting
+/** Per-section "why this score". Short bullet list of the supporting
  *  numbers behind the section's score. Surfaced on the audit viewer so
  *  the prospect understands what's driving each number instead of
  *  staring at a score they can't trace.
  *  Adam 2026-05-29 feedback: "we don't understand why the SEO and the
  *  AEO and the reputation and the traffic are the numbers that they
- *  are." Every entry here is derived from the real signal — no fluff. */
+ *  are." Every entry here is derived from the real signal. No fluff. */
 export type SectionDetail = {
   /** One-line headline (rendered first, slightly larger). */
   headline?: string | null;
-  /** Bullet supporting points — up to 4 per section. */
+  /** Bullet supporting points. Up to 4 per section. */
   points: string[];
 };
 
@@ -64,15 +64,15 @@ export type SynthesizedFindings = {
   // Mentions persist onto the audit findings JSON so the viewer renders the
   // real reputation list (real URLs, real dates).
   mentions: ProspectMention[];
-  /** Per-section reasoning — populated by synthesize.ts so the audit
+  /** Per-section reasoning. Populated by synthesize.ts so the audit
    *  viewer can render "why" copy under each ScoreCard. Legacy 4-section
    *  shape kept for any downstream consumer; superseded by `dps.pillars`
    *  on the result page. */
   sectionDetails: SectionDetails;
-  /** Digital Performance Score — 6-pillar shape, post-cap. The result
+  /** Digital Performance Score. 6-pillar shape, post-cap. The result
    *  page renders from this. Adam 2026-06-01. */
   dps: DpsResult;
-  /** Ordered recommendation cards — each maps to a LeaseStack feature
+  /** Ordered recommendation cards. Each maps to a LeaseStack feature
    *  via `lib/audit/feature-catalog.ts`. */
   recommendations: ActionItem[];
 };
@@ -82,12 +82,12 @@ export type ProviderData = {
   domain: string;
   rankedKeywords: DomainRankedKeyword[] | null;
   lighthouse: LighthouseScores | null;
-  // Full Lighthouse audits map — surfaced so we can name the failing audit
+  // Full Lighthouse audits map. Surfaced so we can name the failing audit
   // by id in the quick-wins copy ("document-title", "image-alt", etc.).
   lighthouseAudits: Record<string, { id?: string; title?: string; score?: number | null }> | null;
   pageAudit: InstantPageAudit | null;
   backlinks: BacklinksSummary | null;
-  /** Direct site crawl — runs always (free, no API key). Used by the
+  /** Direct site crawl. Runs always (free, no API key). Used by the
    *  synthesizer to generate quick-win findings when DataForSEO Labs
    *  returned nothing for the domain. */
   siteCrawl?: SiteCrawlResult | null;
@@ -107,7 +107,7 @@ export async function synthesizeAudit(
   findings: SynthesizedFindings;
   claudeSummary: string;
   sectionScores: Record<string, number | null>;
-  /** Post-cap overall score — what the run route persists as
+  /** Post-cap overall score. What the run route persists as
    *  ProspectAudit.overallScore so the legacy /admin views still
    *  surface the right number. */
   overallScore: number;
@@ -118,7 +118,7 @@ export async function synthesizeAudit(
   // indistinguishable from genuinely-zero scores.
   //
   // The Prisma column is `Json?` and the audit viewer's
-  // SectionScores type uses `?: number` per key — so absent keys
+  // SectionScores type uses `?: number` per key. So absent keys
   // round-trip cleanly through JSON serialization.
   const sectionScores: Record<string, number | null> = {
     seo: signals.seo?.score ?? null,
@@ -131,12 +131,12 @@ export async function synthesizeAudit(
   const risks: Finding[] = [];
   const opportunities: Finding[] = [];
 
-  // ---- Quick wins — only emit when the signal SAYS this is broken --------
+  // ---- Quick wins. Only emit when the signal SAYS this is broken --------
   // 2026-05-29: expanded substantially. Every meaningful page-audit
   // signal turns into a named, specific action item. The point of the
   // /audit lead magnet is to give the prospect a concrete punch list,
   // not a vibe-y "your SEO could be better." Each finding either calls
-  // out the exact failing field, the current value, and the fix — or
+  // out the exact failing field, the current value, and the fix. Or
   // doesn't render at all.
   const meta = provider.pageAudit?.meta;
   if (meta) {
@@ -153,7 +153,7 @@ export async function synthesizeAudit(
         id: "qw-no-title",
         title: "Homepage is missing a <title> tag",
         detail:
-          "Without a <title>, Google synthesizes one from the page content — almost always worse than what you'd write yourself. Set it to '{Property name} — {city} {neighborhood} apartments' or similar (50-60 chars).",
+          "Without a <title>, Google synthesizes one from the page content. Almost always worse than what you'd write yourself. Set it to '{Property name}. {city} {neighborhood} apartments' or similar (50-60 chars).",
       });
     } else if (meta.title.length < 30) {
       quickWins.push({
@@ -164,7 +164,7 @@ export async function synthesizeAudit(
     } else if (meta.title.length > 65) {
       quickWins.push({
         id: "qw-long-title",
-        title: `Trim homepage <title> — ${meta.title.length} chars (Google truncates around 60)`,
+        title: `Trim homepage <title>. ${meta.title.length} chars (Google truncates around 60)`,
         detail: `Current: "${meta.title.slice(0, 80)}…". Anything past ~60 chars gets cut off in the SERP, so the part after the ellipsis is wasted.`,
       });
     }
@@ -182,18 +182,18 @@ export async function synthesizeAudit(
         id: "qw-no-desc",
         title: "Homepage is missing a meta description",
         detail:
-          "Google falls back to a snippet from page content — usually a navigation list. Write a 140-160 char description focused on the property's strongest selling point.",
+          "Google falls back to a snippet from page content. Usually a navigation list. Write a 140-160 char description focused on the property's strongest selling point.",
       });
     } else if (meta.description.length < 110) {
       quickWins.push({
         id: "qw-short-desc",
-        title: `Meta description is ${meta.description.length} chars — too short`,
+        title: `Meta description is ${meta.description.length} chars. Too short`,
         detail: `"${meta.description.slice(0, 110)}". Aim for 140-160 chars: brand + key amenity + a number ("from $1,995", "5 min to campus").`,
       });
     } else if (meta.description.length > 165) {
       quickWins.push({
         id: "qw-long-desc",
-        title: `Meta description is ${meta.description.length} chars — Google will truncate`,
+        title: `Meta description is ${meta.description.length} chars. Google will truncate`,
         detail:
           "Anything past ~160 chars is dropped from the SERP snippet. Move the most important phrase to the front.",
       });
@@ -225,7 +225,7 @@ export async function synthesizeAudit(
     } else if (h1Tags.length > 1) {
       quickWins.push({
         id: "qw-multi-h1",
-        title: `Homepage has ${h1Tags.length} <h1> tags — should be exactly one`,
+        title: `Homepage has ${h1Tags.length} <h1> tags. Should be exactly one`,
         detail: `Current H1s: ${h1Tags
           .slice(0, 3)
           .map((h) => `"${h.slice(0, 60)}"`)
@@ -253,7 +253,7 @@ export async function synthesizeAudit(
         id: "qw-broken-resources",
         title: `${meta.broken_resources} broken resource${meta.broken_resources === 1 ? "" : "s"} on the homepage`,
         detail:
-          "Missing images, CSS, or JS files load as 404s — they slow the page and tell Google the site isn't being maintained.",
+          "Missing images, CSS, or JS files load as 404s. They slow the page and tell Google the site isn't being maintained.",
       });
     }
     if (
@@ -264,7 +264,7 @@ export async function synthesizeAudit(
         id: "qw-thin-internal",
         title: `Only ${meta.internal_links_count} internal link${meta.internal_links_count === 1 ? "" : "s"} on the homepage`,
         detail:
-          "Internal links distribute link-authority across the site. 10-25 is the typical sweet spot for a property homepage — link to floor plans, amenities, neighborhood, tour booking.",
+          "Internal links distribute link-authority across the site. 10-25 is the typical sweet spot for a property homepage. Link to floor plans, amenities, neighborhood, tour booking.",
       });
     }
     if (
@@ -273,14 +273,14 @@ export async function synthesizeAudit(
     ) {
       quickWins.push({
         id: "qw-thin-content",
-        title: `Homepage has ${meta.content.plain_text_word_count} words of text — under Google's preference`,
+        title: `Homepage has ${meta.content.plain_text_word_count} words of text. Under Google's preference`,
         detail:
           "Property pages under ~300 words tend to be classified as 'thin content' and struggle to rank against longer competitor pages. Add a neighborhood paragraph, amenity list, or FAQ.",
       });
     }
   }
 
-  // Structured data — schema.org / JSON-LD presence is a meaningful AEO
+  // Structured data. Schema.org / JSON-LD presence is a meaningful AEO
   // signal too (AI engines lean on schema to confirm entity identity).
   const schemaTypes = provider.pageAudit?.schema?.type ?? [];
   if (schemaTypes.length === 0 && provider.pageAudit) {
@@ -288,18 +288,18 @@ export async function synthesizeAudit(
       id: "qw-no-schema",
       title: "No structured data (schema.org) detected on the homepage",
       detail:
-        "Add ApartmentComplex or LocalBusiness JSON-LD with address, telephone, units, and price range. This is what ChatGPT and Perplexity read to confirm the property's identity — without it, AI engines hedge or skip you entirely.",
+        "Add ApartmentComplex or LocalBusiness JSON-LD with address, telephone, units, and price range. This is what ChatGPT and Perplexity read to confirm the property's identity. Without it, AI engines hedge or skip you entirely.",
     });
   }
 
-  // Direct site-crawl findings — fired when DataForSEO Labs has nothing
+  // Direct site-crawl findings. Fired when DataForSEO Labs has nothing
   // on the domain (small / new properties). The crawl observes the live
   // homepage and emits concrete quick-wins (missing canonical, no H1,
   // thin content, no sitemap, etc.) so the SEO surface always has real
   // action items even without DataForSEO indexing.
   //
   // De-duplicate: if a page-audit finding above already covered a
-  // particular issue (e.g. duplicate <title>), we keep the page-audit
+  // particular issue (e.g. Duplicate <title>), we keep the page-audit
   // version since it's based on whole-site signal. The crawl is single-
   // page only.
   if (provider.siteCrawl) {
@@ -329,13 +329,13 @@ export async function synthesizeAudit(
     }
   }
 
-  // Lighthouse-derived quick wins — name the specific failing audit.
+  // Lighthouse-derived quick wins. Name the specific failing audit.
   if (provider.lighthouse?.seo != null && provider.lighthouse.seo < 80) {
     const failing = topFailingLighthouseAudits(provider.lighthouseAudits, 2);
     if (failing.length > 0) {
       quickWins.push({
         id: "qw-lh-seo",
-        title: `Lighthouse SEO score is ${provider.lighthouse.seo} — fix ${failing[0].title ?? failing[0].id}`,
+        title: `Lighthouse SEO score is ${provider.lighthouse.seo}. Fix ${failing[0].title ?? failing[0].id}`,
         detail: failing
           .map((f) => f.title ?? f.id)
           .filter(Boolean)
@@ -362,7 +362,7 @@ export async function synthesizeAudit(
     });
   }
 
-  // ---- Risks — reputation negatives + AEO gaps ---------------------------
+  // ---- Risks. Reputation negatives + AEO gaps ---------------------------
   const negativeMentions = provider.mentions.filter((m) => {
     const hay = `${m.title ?? ""} ${m.snippet}`.toLowerCase();
     return /(avoid|scam|worst|horrible|terrible|do not rent|stay away|nightmare|roach|mold)/.test(
@@ -401,11 +401,11 @@ export async function synthesizeAudit(
       id: "r-backlinks",
       title: `Only ${provider.backlinks.referring_domains} referring domains`,
       detail:
-        "Below the local-multifamily median. Domain authority compounds slowly — start outreach now.",
+        "Below the local-multifamily median. Domain authority compounds slowly. Start outreach now.",
     });
   }
 
-  // ---- Opportunities — high-volume keywords just outside top 10 ----------
+  // ---- Opportunities. High-volume keywords just outside top 10 ----------
   if (provider.rankedKeywords && provider.rankedKeywords.length > 0) {
     const closeToTop = provider.rankedKeywords
       .filter((k) => {
@@ -498,7 +498,7 @@ export async function synthesizeAudit(
 //
 // "Why this score" copy for each section. Reads off the SignalSnapshot
 // + raw provider data and emits short bullets the audit viewer can render
-// under each ScoreCard. Every bullet is derived from a real number — no
+// under each ScoreCard. Every bullet is derived from a real number. No
 // generic copy. Adam 2026-05-29: prospect should see the receipts.
 // ---------------------------------------------------------------------------
 function buildSectionDetails(
@@ -528,7 +528,7 @@ function buildSeoDetail(
         headline: "Homepage was unreachable",
         points: [
           "Our crawler couldn't connect to the homepage within the timeout window. The domain may be down, behind DNS issues, or pointed at the wrong IP.",
-          "Try loading the URL in a private browser window — if it fails for you too, that's the root cause.",
+          "Try loading the URL in a private browser window. If it fails for you too, that's the root cause.",
         ],
       };
     }
@@ -536,7 +536,7 @@ function buildSeoDetail(
       return {
         headline: "Homepage is blocking our crawler",
         points: [
-          `HTTP ${crawl.httpStatus ?? "4xx"} — site is rejecting bot traffic (Cloudflare / WAF / CAPTCHA).`,
+          `HTTP ${crawl.httpStatus ?? "4xx"}. Site is rejecting bot traffic (Cloudflare / WAF / CAPTCHA).`,
           "Search engines and AI crawlers hit the same wall. Allowlist legitimate crawler user-agents in your WAF to unblock indexing.",
         ],
       };
@@ -545,7 +545,7 @@ function buildSeoDetail(
       return {
         headline: "Homepage isn't serving HTML",
         points: [
-          `Content-Type "${crawl.errorMessage ?? "non-HTML"}" — likely a single-page JS app that doesn't render HTML server-side.`,
+          `Content-Type "${crawl.errorMessage ?? "non-HTML"}". Likely a single-page JS app that doesn't render HTML server-side.`,
           "Without server-rendered HTML, search engines see an empty shell. Add server-side rendering or a static prerender layer.",
         ],
       };
@@ -553,7 +553,7 @@ function buildSeoDetail(
     return {
       headline: "Scan still expanding coverage",
       points: [
-        "DataForSEO Labs has no organic ranking data yet for this domain — typical for properties under ~100 units or sites less than 6 months old.",
+        "DataForSEO Labs has no organic ranking data yet for this domain. Typical for properties under ~100 units or sites less than 6 months old.",
         "Page-level audit (Lighthouse + on-page checks) didn't return either. Verify the homepage is reachable and serves real HTML (not a JS shell with no SSR).",
       ],
     };
@@ -567,7 +567,7 @@ function buildSeoDetail(
       points.push(`Average ranking position is #${seo.avgPosition}.`);
     }
   } else {
-    // No DataForSEO Labs data — lean on whatever the crawl observed
+    // No DataForSEO Labs data. Lean on whatever the crawl observed
     // instead of just saying "0 keywords". This is the bullet most
     // operators of new properties will read first.
     if (crawl?.status === "ok") {
@@ -575,10 +575,10 @@ function buildSeoDetail(
         `Direct homepage scan: ${crawl.bodyWordCount} words of content, ${crawl.h1Count} H1 tag${crawl.h1Count === 1 ? "" : "s"}, ${crawl.imageCount} image${crawl.imageCount === 1 ? "" : "s"} (${crawl.imagesMissingAlt} missing alt), ${crawl.internalLinkCount} internal links.`,
       );
       if (!crawl.hasSitemapXml) {
-        points.push("No /sitemap.xml detected — slows crawler indexing.");
+        points.push("No /sitemap.xml detected. Slows crawler indexing.");
       } else if (crawl.schemaTypes.length === 0) {
         points.push(
-          "No schema.org structured data detected — AI engines can't confirm property identity without it.",
+          "No schema.org structured data detected. AI engines can't confirm property identity without it.",
         );
       }
     } else {
@@ -639,7 +639,7 @@ function buildAeoDetail(
   }
   if (provider.aeoUncitedEngines.length > 0) {
     points.push(
-      `Uncited by: ${provider.aeoUncitedEngines.join(", ")} — missing reach on those engines.`,
+      `Uncited by: ${provider.aeoUncitedEngines.join(", ")}. Missing reach on those engines.`,
     );
   }
   if (provider.aeoCompetitorsCited.length > 0) {
@@ -686,7 +686,7 @@ function buildReputationDetail(
   );
   if (rep.newNegative7d > 0) {
     points.push(
-      `${rep.newNegative7d} new negative post${rep.newNegative7d === 1 ? "" : "s"} in the last 7 days — flag for fast public reply.`,
+      `${rep.newNegative7d} new negative post${rep.newNegative7d === 1 ? "" : "s"} in the last 7 days. Flag for fast public reply.`,
     );
   }
   if (rep.avgRating != null) {
@@ -699,7 +699,7 @@ function buildReputationDetail(
 }
 
 function pickReputationHeadline(rep: ReputationSignal): string {
-  if (rep.sentimentMix.negative > 0.3) return "Negative tilt — needs response";
+  if (rep.sentimentMix.negative > 0.3) return "Negative tilt. Needs response";
   if (rep.sentimentMix.positive > 0.5) return "Net positive public sentiment";
   if (rep.totalMentions < 5) return "Thin public presence";
   return "Mixed-signal public coverage";
@@ -789,7 +789,7 @@ function slug(s: string): string {
 }
 
 // ---- Narrative writer (Claude) -------------------------------------------
-// Claude Haiku 4.5 pricing (per million tokens) — kept inline as a
+// Claude Haiku 4.5 pricing (per million tokens). Kept inline as a
 // constant so the cost estimate stays accurate even when the SDK
 // doesn't return token counts. Source: anthropic.com/pricing as of
 // 2026-05. Bump when model swaps.
@@ -820,7 +820,7 @@ async function writeNarrative(
       model: anthropic("claude-haiku-4-5-20251001"),
       system:
         "You are a senior property marketing analyst. Write tight, specific, number-driven prose. Never invent statistics. Cite exact numbers from the fact sheet. 180–220 words, 2–3 paragraphs.",
-      prompt: `Write a "What this means" summary for the ${provider.brandName} property marketing audit. Reference SPECIFIC numbers from the fact sheet below. Mention at least one named Lighthouse audit failure or page-audit metric, at least one keyword/ranking number, and one reputation observation. Do not bullet — flowing prose. No marketing fluff.
+      prompt: `Write a "What this means" summary for the ${provider.brandName} property marketing audit. Reference SPECIFIC numbers from the fact sheet below. Mention at least one named Lighthouse audit failure or page-audit metric, at least one keyword/ranking number, and one reputation observation. Do not bullet. Flowing prose. No marketing fluff.
 
 FACT SHEET
 ${factSheet}`,
@@ -893,7 +893,7 @@ function buildFactSheet(
   }
   if (signals.seo) {
     lines.push(
-      `SEO: ${signals.seo.organicKeywords} ranked keywords (${signals.seo.top10Count} in top 10); est. monthly traffic ${signals.seo.estimatedTraffic.toLocaleString()}`,
+      `SEO: ${signals.seo.organicKeywords} ranked keywords (${signals.seo.top10Count} in top 10); est. Monthly traffic ${signals.seo.estimatedTraffic.toLocaleString()}`,
     );
   }
   if (provider.backlinks) {
@@ -919,7 +919,7 @@ function buildFactSheet(
   if (findings.mentions.length > 0) {
     const topThree = findings.mentions.slice(0, 3);
     lines.push(
-      `Sample mentions: ${topThree.map((m) => `${prettySource(m.source)} — "${(m.title ?? m.snippet).slice(0, 80)}"`).join(" | ")}`,
+      `Sample mentions: ${topThree.map((m) => `${prettySource(m.source)}. "${(m.title ?? m.snippet).slice(0, 80)}"`).join(" | ")}`,
     );
   }
   return lines.join("\n");

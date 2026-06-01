@@ -13,7 +13,7 @@ import {
 } from "@/lib/audit/quiz-questions";
 
 // ---------------------------------------------------------------------------
-// DigitalScoreQuiz — multi-step quiz that powers the /audit lead magnet.
+// DigitalScoreQuiz. Multi-step quiz that powers the /audit lead magnet.
 //
 // Replaces the single-field AuditForm. Flow:
 //   1. Step through QUIZ_QUESTIONS (single, multi, url).
@@ -24,13 +24,13 @@ import {
 // AuditForm so we don't fork the loading experience. If the start route
 // rejects the quizAnswers field (older deploy / cached client), the route
 // still accepts the bare `{ url }` body and the scan runs without quiz
-// context — quiz answers are additive, never blocking.
+// context. Quiz answers are additive, never blocking.
 // ---------------------------------------------------------------------------
 
 const POLL_INTERVAL_MS = 2000;
 const POLL_TIMEOUT_MS = 130_000;
 
-// Identical to AuditForm's SCAN_STATUS_MESSAGES list — kept inline rather
+// Identical to AuditForm's SCAN_STATUS_MESSAGES list. Kept inline rather
 // than imported because the existing AuditForm exports nothing and we
 // don't want to widen its surface just for sharing. If/when the list
 // grows we'll lift to lib/audit/scan-status.ts.
@@ -152,11 +152,11 @@ export function DigitalScoreQuiz() {
           }
           if (Date.now() - startedAt > POLL_TIMEOUT_MS) {
             if (pollRef.current) clearInterval(pollRef.current);
-            setError("Still working — open the report from this link.");
+            setError("Still working. Open the report from this link.");
             setPhase("error");
           }
         } catch {
-          // Transient — keep polling until timeout.
+          // Transient. Keep polling until timeout.
         }
       };
       pollRef.current = setInterval(poll, POLL_INTERVAL_MS);
@@ -333,7 +333,7 @@ function QuestionBody({
     const selected = new Set(Array.isArray(value) ? value : []);
     const toggle = (choiceId: string) => {
       const next = new Set(selected);
-      // "None" choices are mutually exclusive with everything else — selecting
+      // "None" choices are mutually exclusive with everything else. Selecting
       // "None" clears the others, and selecting anything else clears "None".
       const isNone = choiceId.startsWith("none");
       if (isNone) {
@@ -588,7 +588,7 @@ function NavRow({
 }
 
 // ---------------------------------------------------------------------------
-// ScanProgress — same rotating-status loading as the legacy AuditForm.
+// ScanProgress. Same rotating-status loading as the legacy AuditForm.
 // ---------------------------------------------------------------------------
 
 function ScanProgress({ scannedDomain }: { scannedDomain: string | null }) {
@@ -756,7 +756,7 @@ function stepHasValidAnswer(
     // Non-required steps still need *some* signal of intent so the
     // Next button stays disabled until the operator interacts. Multi-
     // select counts an empty array as "explicitly chose none, with
-    // the 'None' option" — see toggle() in QuestionBody — so we just
+    // the 'None' option". See toggle() in QuestionBody. So we just
     // require the answer key to exist.
     return value !== undefined;
   }

@@ -1,11 +1,11 @@
-// Scoring engine — turns the raw SignalSnapshot + the operator's quiz
+// Scoring engine. Turns the raw SignalSnapshot + the operator's quiz
 // answers into the 6 pillar sub-scores and the overall Digital
 // Performance Score (DPS) the audit result page renders.
 //
 // Caps are enforced here (Adam 2026-06-01): no operator can ever score
 // above 75 overall, and every pillar has its own ceiling that reflects
 // the structural gap a non-LeaseStack property has. The point of the
-// audit is to find gaps — a "100/100" reading defeats the purpose.
+// audit is to find gaps. A "100/100" reading defeats the purpose.
 
 import type { SignalSnapshot } from "@/lib/signals/types";
 import {
@@ -25,7 +25,7 @@ export interface PillarScore {
   cap: number;
   /** Short "what your score means" headline. */
   headline: string;
-  /** "Why we capped this" copy — null if score is below the cap. */
+  /** "Why we capped this" copy. Null if score is below the cap. */
   capReason: string | null;
   /** Short bullet supporting points, derived from real signals/quiz. */
   points: string[];
@@ -38,7 +38,7 @@ export interface DpsResult {
   score: number;
   /** Active cap. */
   cap: number;
-  /** Always set — explains the ceiling so the prospect understands the
+  /** Always set. Explains the ceiling so the prospect understands the
    *  number is a structural ceiling, not arbitrary. */
   capReason: string;
   pillars: PillarScores;
@@ -89,7 +89,7 @@ export function computeDps(
     score,
     cap: OVERALL_DPS_CAP,
     capReason:
-      "Even the most polished operator stops at 75 — every property has structural ceilings on AI search reach, tracking, and review velocity until they're actively managed.",
+      "Even the most polished operator stops at 75. Every property has structural ceilings on AI search reach, tracking, and review velocity until they're actively managed.",
     pillars,
   };
 }
@@ -102,7 +102,7 @@ export function computeDps(
 // 85; without LeaseStack's keyword-trends + AEO management the rest is
 // structural ceiling.
 const SEO_SUBCAP = 85;
-// AEO sub-cap — until you're cited by all 4 engines AND have a
+// AEO sub-cap. Until you're cited by all 4 engines AND have a
 // knowledge graph entry, AEO is by definition unfinished.
 const AEO_SUBCAP = 60;
 
@@ -134,7 +134,7 @@ function computeFindability(
     );
   }
   if (!inputs.hasSchemaMarkup) {
-    points.push("No schema.org markup detected — limits AI engine confidence.");
+    points.push("No schema.org markup detected. Limits AI engine confidence.");
   }
   return {
     score,
@@ -142,7 +142,7 @@ function computeFindability(
     headline: pickFindabilityHeadline(score),
     capReason:
       score >= PILLAR_CAPS.findability
-        ? `Findability tops out at ${PILLAR_CAPS.findability} — SEO sub-caps at ${SEO_SUBCAP}, AEO sub-caps at ${AEO_SUBCAP}. Both have continuous headroom only LeaseStack's keyword-trends + AEO management close.`
+        ? `Findability tops out at ${PILLAR_CAPS.findability}. SEO sub-caps at ${SEO_SUBCAP}, AEO sub-caps at ${AEO_SUBCAP}. Both have continuous headroom only LeaseStack's keyword-trends + AEO management close.`
         : null,
     points: points.slice(0, 4),
   };
@@ -163,7 +163,7 @@ function computeReputation(
   const handling = readSingleAnswer(quiz, "reputation_handling");
 
   let base = rep?.score ?? 45;
-  // Operators that aren't watching reviews get a real penalty — the
+  // Operators that aren't watching reviews get a real penalty. The
   // signal isn't whether reviews EXIST, it's whether anyone's at the
   // wheel when one lands.
   if (handling === "not_at_all") base -= 20;
@@ -199,7 +199,7 @@ function computeReputation(
     headline: pickReputationHeadline(score),
     capReason:
       score >= PILLAR_CAPS.reputation
-        ? `Reputation tops out at ${PILLAR_CAPS.reputation} — even the cleanest mention history caps here without real-time alerts and reply velocity tracking.`
+        ? `Reputation tops out at ${PILLAR_CAPS.reputation}. Even the cleanest mention history caps here without real-time alerts and reply velocity tracking.`
         : null,
     points: points.slice(0, 4),
   };
@@ -209,7 +209,7 @@ function pickReputationHeadline(score: number): string {
   if (score >= 60) return "Well-managed public presence";
   if (score >= 40) return "Mixed-signal public coverage";
   if (score >= 20) return "Reputation exposed";
-  return "Unmonitored — high risk";
+  return "Unmonitored. High risk";
 }
 
 function computeConversion(
@@ -222,14 +222,14 @@ function computeConversion(
 
   let base = 75;
   // Each missing conversion-stack element costs real points. The site
-  // can technically still convert without these — operators just pay
+  // can technically still convert without these. Operators just pay
   // dearly in funnel leakage.
   if (!has("ai_chatbot") && !has("live_chat")) base -= 20;
   if (!has("popups")) base -= 10;
   if (!has("online_application")) base -= 10;
   if (!has("floorplan_tool")) base -= 5;
   if (!has("virtual_tour")) base -= 5;
-  if (has("none_of_these")) base -= 10; // explicit "nothing" — extra penalty
+  if (has("none_of_these")) base -= 10; // explicit "nothing". Extra penalty
 
   if (tour === "call_only") base -= 15;
   else if (tour === "unclear") base -= 15;
@@ -259,11 +259,11 @@ function computeConversion(
     points.push("Most conversion-stack pieces are live.");
   }
   if (tour === "call_only") {
-    points.push("Tours are phone-only — blocks the 60%+ who research after 6pm.");
+    points.push("Tours are phone-only. Blocks the 60%+ who research after 6pm.");
   } else if (tour === "unclear") {
-    points.push("No clear tour-booking path — every step costs you the next lease.");
+    points.push("No clear tour-booking path. Every step costs you the next lease.");
   } else if (tour === "form_callback") {
-    points.push("Tours are form + callback — the handoff is where leads ghost.");
+    points.push("Tours are form + callback. The handoff is where leads ghost.");
   } else if (tour === "self_serve") {
     points.push("Self-serve tour booking is live.");
   }
@@ -275,7 +275,7 @@ function computeConversion(
     score,
     cap: PILLAR_CAPS.conversion,
     headline: pickConversionHeadline(score),
-    capReason: `Conversion infrastructure caps at ${PILLAR_CAPS.conversion} — without LeaseStack's chatbot, popups, application flow, and self-serve tour booking integrated, the conversion stack has a structural gap.`,
+    capReason: `Conversion infrastructure caps at ${PILLAR_CAPS.conversion}. Without LeaseStack's chatbot, popups, application flow, and self-serve tour booking integrated, the conversion stack has a structural gap.`,
     points: points.slice(0, 4),
   };
 }
@@ -307,26 +307,26 @@ function computeTracking(quiz: QuizAnswers | null): PillarScore {
 
   const points: string[] = [];
   if (tracking === "pixel_plus_analytics") {
-    points.push("Pixel + analytics is live — you can see who's actually browsing.");
+    points.push("Pixel + analytics is live. You can see who's actually browsing.");
   } else if (tracking === "ga_only") {
-    points.push("Google Analytics only — you see counts, not names.");
+    points.push("Google Analytics only. You see counts, not names.");
   } else if (tracking === "crm_only") {
-    points.push("CRM tracks post-conversion leads only — the 95% who never convert are invisible.");
+    points.push("CRM tracks post-conversion leads only. The 95% who never convert are invisible.");
   } else if (tracking === "no_tracking") {
-    points.push("No marketing tracking today — every ad dollar is going into a black box.");
+    points.push("No marketing tracking today. Every ad dollar is going into a black box.");
   }
   if (notSure) {
-    points.push("Lead source clarity flagged — you don't know where leads come from.");
+    points.push("Lead source clarity flagged. You don't know where leads come from.");
   }
   if (usesPaid && tracking !== "pixel_plus_analytics") {
-    points.push("Paid ads running without per-lease attribution — most CAC numbers are wrong.");
+    points.push("Paid ads running without per-lease attribution. Most CAC numbers are wrong.");
   }
 
   return {
     score,
     cap: PILLAR_CAPS.tracking,
     headline: pickTrackingHeadline(score),
-    capReason: `Tracking caps at ${PILLAR_CAPS.tracking} — until the visitor pixel + per-lease attribution layer is in place, this ceiling holds regardless of analytics depth.`,
+    capReason: `Tracking caps at ${PILLAR_CAPS.tracking}. Until the visitor pixel + per-lease attribution layer is in place, this ceiling holds regardless of analytics depth.`,
     points: points.slice(0, 4),
   };
 }
@@ -339,7 +339,7 @@ function pickTrackingHeadline(score: number): string {
 }
 
 function computeAccessibility(inputs: ScoringInputs): PillarScore {
-  // Average accessibility + performance — both Lighthouse-derived. The
+  // Average accessibility + performance. Both Lighthouse-derived. The
   // accessibility category is the floor (a11y failures are non-negotiable),
   // performance is the multiplier.
   const a11y = inputs.lighthouseAccessibility ?? 60;
@@ -358,7 +358,7 @@ function computeAccessibility(inputs: ScoringInputs): PillarScore {
     inputs.lighthouseAccessibility == null &&
     inputs.lighthousePerformance == null
   ) {
-    points.push("Lighthouse audit didn't return — site may be blocking crawlers.");
+    points.push("Lighthouse audit didn't return. Site may be blocking crawlers.");
   }
 
   return {
@@ -367,7 +367,7 @@ function computeAccessibility(inputs: ScoringInputs): PillarScore {
     headline: pickAccessibilityHeadline(score),
     capReason:
       score >= PILLAR_CAPS.accessibility
-        ? `Accessibility + speed cap at ${PILLAR_CAPS.accessibility} — even green Lighthouse audits leave Core Web Vitals tuning on the table.`
+        ? `Accessibility + speed cap at ${PILLAR_CAPS.accessibility}. Even green Lighthouse audits leave Core Web Vitals tuning on the table.`
         : null,
     points: points.slice(0, 4),
   };
@@ -416,7 +416,7 @@ function computeListings(
     points.push("No major listing platforms claimed in the quiz.");
   }
   if (has("not_sure")) {
-    points.push("Lead source confusion flagged — quiz answered 'not sure'.");
+    points.push("Lead source confusion flagged. Quiz answered 'not sure'.");
   }
   if (rep && rep.totalMentions > 0) {
     points.push(`${rep.totalMentions} public mention${rep.totalMentions === 1 ? "" : "s"} across listing-adjacent sources.`);
@@ -426,7 +426,7 @@ function computeListings(
     score,
     cap: PILLAR_CAPS.listings,
     headline: pickListingsHeadline(score),
-    capReason: `Listing presence caps at ${PILLAR_CAPS.listings} — even full ILS coverage plateaus without a single inventory source-of-truth feeding every platform.`,
+    capReason: `Listing presence caps at ${PILLAR_CAPS.listings}. Even full ILS coverage plateaus without a single inventory source-of-truth feeding every platform.`,
     points: points.slice(0, 4),
   };
 }

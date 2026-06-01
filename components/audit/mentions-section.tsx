@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 
-// Reputation centerpiece — orchestrates the chip row + mention card list.
+// Reputation centerpiece. Orchestrates the chip row + mention card list.
 // 2026-05-29: split into `./mentions/*` to keep this file under 200 lines.
 // The chip layout, card markup, source formatters, and empty state each
 // live in dedicated files. This wrapper owns only the selection state +
@@ -19,7 +19,7 @@ import {
   type AuditMentionSource,
 } from "./mentions/types";
 
-// Re-exports preserve the previous public surface — `app/(platform)/audit/
+// Re-exports preserve the previous public surface. `app/(platform)/audit/
 // [token]/page.tsx` imports both MentionsSection and the AuditMention type
 // from this module.
 export type { AuditMention, AuditMentionSource } from "./mentions/types";
@@ -86,7 +86,7 @@ export function MentionsSection({
         className="text-[11px] font-mono uppercase tracking-[0.18em]"
         style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
       >
-        Reputation — past 90 days
+        Reputation. Past 90 days
       </p>
       <h2
         className="text-3xl sm:text-4xl font-semibold mt-2 tracking-tight"
@@ -99,7 +99,7 @@ export function MentionsSection({
         className="text-base mt-3 max-w-2xl leading-relaxed"
         style={{ color: "#4B5563" }}
       >
-        Real posts from the past 90 days — across Reddit, Yelp, Google, BBB,
+        Real posts from the past 90 days. Across Reddit, Yelp, Google, BBB,
         ApartmentRatings, Facebook, and the open web. The reputation score
         above is calculated directly from these.
       </p>

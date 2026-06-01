@@ -1,13 +1,13 @@
 import { CountUp } from "@/components/audit/count-up";
 
-// DPS hero — the centerpiece of the audit result page.
+// DPS hero. The centerpiece of the audit result page.
 //
 // Renders the Digital Performance Score with a conic-gradient ring, a
 // "/100" suffix, and a one-line subtitle. Tone tracks the score band so
 // a 47 reads visually different from an 81.
 //
 // Adam 2026-06-01: do NOT surface the cap/ceiling to the user. The
-// caps are enforced server-side so scores naturally land low — the
+// caps are enforced server-side so scores naturally land low. The
 // prospect should see the number, understand the gaps, and feel
 // motivated to talk to us. Telling them "we capped you" defeats the
 // effect.
@@ -52,45 +52,44 @@ export function DpsHero({
   const headline = tonalHeadline(score);
 
   return (
-    <section className="mt-10">
+    <section className="mt-6">
       <div
-        className="rounded-2xl border p-8 sm:p-10 flex flex-col md:flex-row md:items-center md:justify-between gap-8"
+        className="rounded-xl border p-5 sm:p-6 flex items-center justify-between gap-4 sm:gap-5"
         style={{ borderColor: "#E5E7EB" }}
       >
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <p
-            className="text-[11px] font-mono uppercase tracking-[0.18em]"
+            className="text-[10px] font-mono uppercase tracking-[0.16em]"
             style={{ color: "#6B7280", fontFamily: "var(--font-mono)" }}
           >
             Digital Performance Score
           </p>
-          <div className="flex items-baseline gap-3 mt-2">
+          <div className="flex items-baseline gap-2 mt-1.5">
             <CountUp
               to={score}
-              className="text-7xl sm:text-8xl font-semibold tabular-nums leading-none"
+              className="text-5xl sm:text-6xl font-semibold tabular-nums leading-none"
               style={{ color: palette.text }}
             />
-            <span className="text-2xl" style={{ color: "#9CA3AF" }}>
+            <span className="text-base sm:text-lg" style={{ color: "#9CA3AF" }}>
               / 100
             </span>
           </div>
           <p
-            className="mt-3 text-base sm:text-lg font-semibold"
+            className="mt-2 text-sm sm:text-base font-semibold"
             style={{ color: palette.text }}
           >
             {headline}
           </p>
           <p
-            className="mt-3 text-base max-w-xl leading-relaxed"
+            className="mt-1.5 text-[13px] sm:text-sm leading-relaxed max-w-md"
             style={{ color: "#4B5563" }}
           >
-            How {subject} performs across the six pillars every modern property
-            is judged on — findability, reputation, conversion, tracking,
-            accessibility, and listings.
+            Across six pillars: findability, reputation, conversion, tracking,
+            accessibility, listings.
           </p>
           {recommendationCount > 0 ? (
             <p
-              className="mt-4 text-sm font-medium"
+              className="mt-2 text-[12px] font-medium"
               style={{ color: "#1E2A3A" }}
             >
               {recommendationCount} personalized action item
@@ -99,18 +98,18 @@ export function DpsHero({
           ) : null}
         </div>
         <div
-          className="h-32 w-32 sm:h-40 sm:w-40 rounded-full flex items-center justify-center flex-shrink-0"
+          className="h-20 w-20 sm:h-24 sm:w-24 rounded-full flex items-center justify-center flex-shrink-0"
           style={{
             background: `conic-gradient(${palette.ring} ${arcDeg}deg, #F3F4F6 0deg)`,
           }}
           aria-hidden
         >
           <div
-            className="h-24 w-24 sm:h-32 sm:w-32 rounded-full flex items-center justify-center"
+            className="h-16 w-16 sm:h-[72px] sm:w-[72px] rounded-full flex items-center justify-center"
             style={{ backgroundColor: "#FFFFFF" }}
           >
             <span
-              className="text-3xl sm:text-4xl font-semibold leading-none"
+              className="text-xl sm:text-2xl font-semibold leading-none tabular-nums"
               style={{ color: palette.text }}
             >
               {score}

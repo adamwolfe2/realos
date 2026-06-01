@@ -1,4 +1,4 @@
-// Digital Performance Score quiz — question schema.
+// Digital Performance Score quiz. Question schema.
 //
 // Single source of truth for the /audit quiz. Both the client UI
 // (`components/audit/digital-score-quiz.tsx`) and the scoring +
@@ -12,7 +12,7 @@
 //   a specific LeaseStack feature recommendation.
 // - Every question maps to >=1 pillar AND to >=1 feature so the result
 //   page can render "you said X, here's the LeaseStack fix."
-// - The final question is always the property website URL — the scan
+// - The final question is always the property website URL. The scan
 //   can't start without it.
 
 export type Pillar =
@@ -41,7 +41,7 @@ export const PILLAR_WEIGHTS: Record<Pillar, number> = {
   listings: 0.1,
 };
 
-// Hard caps per pillar — per Adam 2026-06-01: "We never want to give
+// Hard caps per pillar. Per Adam 2026-06-01: "We never want to give
 // anyone a score over 75." Each pillar caps below 100 so the weighted
 // overall lands well under that ceiling regardless of raw signals.
 // Caps reflect the reality that without LeaseStack, every pillar has a
@@ -56,11 +56,11 @@ export const PILLAR_CAPS: Record<Pillar, number> = {
   listings: 75,
 };
 
-// Overall DPS hard ceiling — even if the weighted sum somehow lands
+// Overall DPS hard ceiling. Even if the weighted sum somehow lands
 // higher (which it shouldn't given pillar caps), this clamps it.
 export const OVERALL_DPS_CAP = 75;
 
-// Sanity check — pillar weights must sum to 1. A drift in this file
+// Sanity check. Pillar weights must sum to 1. A drift in this file
 // would silently warp every DPS computation, so we fail fast at module
 // load instead of at scoring time.
 const WEIGHT_SUM = Object.values(PILLAR_WEIGHTS).reduce((s, w) => s + w, 0);
@@ -93,7 +93,7 @@ export interface Question {
 }
 
 // ---------------------------------------------------------------------------
-// Question set v2 — 8 questions
+// Question set v2. 8 questions
 // ---------------------------------------------------------------------------
 
 export const QUIZ_QUESTIONS: Question[] = [
@@ -102,7 +102,7 @@ export const QUIZ_QUESTIONS: Question[] = [
     kind: "single",
     prompt: "What kind of property are you marketing?",
     helper:
-      "We tune benchmarks and action items to the asset class — student, conventional, senior, and commercial all read very differently.",
+      "We tune benchmarks and action items to the asset class. Student, conventional, senior, and commercial all read very differently.",
     pillars: ["findability", "listings"],
     required: true,
     choices: [
@@ -121,7 +121,7 @@ export const QUIZ_QUESTIONS: Question[] = [
     kind: "single",
     prompt: "How big is the portfolio you're managing?",
     helper:
-      "Single property vs. a portfolio of fifty changes the gap analysis entirely — single-asset operators feel different pain than multi-property leadership.",
+      "Single property vs. A portfolio of fifty changes the gap analysis entirely. Single-asset operators feel different pain than multi-property leadership.",
     pillars: ["tracking", "listings"],
     required: true,
     choices: [
@@ -163,7 +163,7 @@ export const QUIZ_QUESTIONS: Question[] = [
     id: "site_features",
     kind: "multi",
     prompt: "Which of these are live on your property site right now?",
-    helper: "Pick everything that's actually deployed — not what's planned.",
+    helper: "Pick everything that's actually deployed. Not what's planned.",
     pillars: ["conversion", "tracking"],
     required: false,
     choices: [
@@ -181,7 +181,7 @@ export const QUIZ_QUESTIONS: Question[] = [
     kind: "single",
     prompt: "How are you handling online reviews and reputation today?",
     helper:
-      "A property's reputation is the single biggest lever on tour-to-lease — and the easiest one to neglect.",
+      "A property's reputation is the single biggest lever on tour-to-lease. And the easiest one to neglect.",
     pillars: ["reputation"],
     required: true,
     choices: [
@@ -196,7 +196,7 @@ export const QUIZ_QUESTIONS: Question[] = [
       },
       {
         id: "occasional",
-        label: "Occasionally — when something flares up",
+        label: "Occasionally. When something flares up",
       },
       {
         id: "not_at_all",
@@ -209,7 +209,7 @@ export const QUIZ_QUESTIONS: Question[] = [
     kind: "multi",
     prompt: "Where do your leads come from today?",
     helper:
-      "Pick everything that contributes — paid, organic, ILS, referrals. We'll verify what's live during the scan.",
+      "Pick everything that contributes. Paid, organic, ILS, referrals. We'll verify what's live during the scan.",
     pillars: ["listings", "tracking"],
     required: false,
     choices: [
@@ -302,9 +302,9 @@ export function getDomainAnswer(answers: QuizAnswers): string | null {
   return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
 }
 
-/** Typed answer readers — keep callers from sprinkling string-key
+/** Typed answer readers. Keep callers from sprinkling string-key
  *  lookups across the codebase. Returns `null` when the answer isn't
- *  present (e.g. anonymous URL-only submit). */
+ *  present (e.g. Anonymous URL-only submit). */
 export function readSingleAnswer<T extends string = string>(
   answers: QuizAnswers | null | undefined,
   id: string,

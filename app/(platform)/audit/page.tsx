@@ -5,7 +5,7 @@ import { DigitalScoreQuiz } from "@/components/audit/digital-score-quiz";
 export const metadata: Metadata = {
   title: `Digital Performance Score | ${BRAND_NAME}`,
   description:
-    "Get your free Digital Performance Score for student housing, multifamily, senior, or commercial properties. Real-data benchmarking across findability, reputation, conversion, tracking, accessibility, and listings — with a prioritized action plan.",
+    "Get your free Digital Performance Score for student housing, multifamily, senior, or commercial properties. Real-data benchmarking across findability, reputation, conversion, tracking, accessibility, and listings. With a prioritized action plan.",
   alternates: { canonical: "/audit" },
   robots: { index: true, follow: true },
 };
@@ -49,7 +49,7 @@ export default function AuditFormPage() {
             >
               Answer 8 quick questions about your property. We&apos;ll combine
               your answers with a live scan of your SEO, AI search visibility,
-              reputation, accessibility, and listing presence — and return a
+              reputation, accessibility, and listing presence. And return a
               personalized Digital Performance Score with a prioritized action
               plan.
             </p>
@@ -61,11 +61,11 @@ export default function AuditFormPage() {
           <ul className="mt-10 md:mt-12 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 max-w-3xl mx-auto">
             <TrustItem
               title="Personalized, not generic"
-              body="Your quiz answers fill the gaps a crawler can't see — chatbot, tracking, intake, listings."
+              body="Your quiz answers fill the gaps a crawler can't see. Chatbot, tracking, intake, listings."
             />
             <TrustItem
               title="6 pillars, real data"
-              body="Findability, reputation, conversion, tracking, accessibility, listings — weighted and scored."
+              body="Findability, reputation, conversion, tracking, accessibility, listings. Weighted and scored."
             />
             <TrustItem
               title="Action items, not vibes"

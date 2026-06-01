@@ -39,7 +39,7 @@ interface Finding {
   detail?: string;
 }
 // Audit findings JSON. Adam 2026-06-01: the new DPS shape is `dps` +
-// `recommendations`. Legacy audits won't have these fields — the renderer
+// `recommendations`. Legacy audits won't have these fields. The renderer
 // branches on `findings.dps` and falls back to the legacy quick-wins /
 // risks view when the new fields are absent.
 interface Findings {
@@ -85,12 +85,12 @@ export async function generateMetadata({
   }
   const subject = audit.brandName ?? audit.domain;
   return {
-    title: `${subject} — Digital Performance Score | ${BRAND_NAME}`,
+    title: `${subject}. Digital Performance Score | ${BRAND_NAME}`,
     description: `Personalized Digital Performance Score for ${subject}. Six pillars of real-data benchmarking with a prioritized action plan.`,
     alternates: { canonical: `/audit/${audit.shareToken}` },
     robots: { index: true, follow: true },
     openGraph: {
-      title: `${subject} — ${BRAND_NAME} Digital Performance Score`,
+      title: `${subject}. ${BRAND_NAME} Digital Performance Score`,
       description: `Digital Performance Score by ${BRAND_NAME}.`,
       url: `${getSiteUrl()}/audit/${audit.shareToken}`,
       type: "article",
@@ -134,7 +134,7 @@ export default async function AuditViewerPage({
   // Legacy audits (pre-2026-06-01) don't have findings.dps. Fall back to
   // the persisted overallScore for backwards compat, clamped to the
   // ceiling so stale audits never render >75. Adam 2026-06-01: the cap
-  // is enforcement only — no UI surfacing.
+  // is enforcement only. No UI surfacing.
   const score = dps?.score ?? Math.min(audit.overallScore ?? 0, OVERALL_DPS_CAP);
   const highSeverity = recommendations.filter((r) => r.severity === "high").length;
 
@@ -166,10 +166,10 @@ export default async function AuditViewerPage({
         />
 
         {audit.claudeSummary ? (
-          <section className="mt-12">
+          <section className="mt-8">
             <SectionEyebrow>What this means</SectionEyebrow>
             <p
-              className="text-lg leading-relaxed mt-3 max-w-3xl"
+              className="text-[13.5px] sm:text-sm leading-relaxed mt-2 max-w-2xl"
               style={{ color: "#1E2A3A" }}
             >
               {audit.claudeSummary}
@@ -178,32 +178,32 @@ export default async function AuditViewerPage({
         ) : null}
 
         <section
-          className="mt-16 rounded-2xl border p-8 sm:p-10"
+          className="mt-10 rounded-xl border p-5 sm:p-6"
           style={{ borderColor: "#E5E7EB", backgroundColor: "#FBFBFD" }}
         >
           <p
-            className="text-[11px] font-mono uppercase tracking-[0.18em]"
+            className="text-[10px] font-mono uppercase tracking-[0.16em]"
             style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
           >
             Next step
           </p>
           <h3
-            className="text-2xl sm:text-3xl font-semibold mt-2 max-w-2xl"
+            className="text-lg sm:text-xl font-semibold mt-1 max-w-xl"
             style={{ color: "#1E2A3A" }}
           >
             Want this monitored daily for your whole portfolio?
           </h3>
           <p
-            className="text-base mt-2 max-w-2xl"
+            className="text-[13px] sm:text-sm mt-1.5 max-w-xl"
             style={{ color: "#4B5563" }}
           >
             {BRAND_NAME} runs this report every day for every property, watches
             the deltas, and tells your team what to do about it.
           </p>
-          <div className="mt-5">
+          <div className="mt-3">
             <Link
               href="/onboarding"
-              className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium text-white"
+              className="inline-flex items-center justify-center h-10 px-5 rounded-md text-[13px] font-medium text-white"
               style={{ backgroundColor: "#2563EB" }}
             >
               Talk to us
@@ -215,7 +215,7 @@ export default async function AuditViewerPage({
       <BookCallCta
         subtitle={
           highSeverity > 0
-            ? `${highSeverity} high-priority gap${highSeverity === 1 ? "" : "s"} identified — we can close most of them in 30 days.`
+            ? `${highSeverity} high-priority gap${highSeverity === 1 ? "" : "s"} identified. We can close most of them in 30 days.`
             : undefined
         }
       />
@@ -238,9 +238,9 @@ function ReportShell({
 }) {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
-      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-20 md:pt-16 pb-20">
+      <div className="max-w-[920px] mx-auto px-4 md:px-6 pt-20 md:pt-16 pb-16">
         <p
-          className="text-[11px] font-mono uppercase tracking-[0.18em]"
+          className="text-[10px] font-mono uppercase tracking-[0.16em]"
           style={{
             color: "#2563EB",
             fontFamily: "var(--font-mono)",
@@ -249,12 +249,12 @@ function ReportShell({
           {BRAND_NAME} Digital Performance Score
         </p>
         <h1
-          className="text-3xl md:text-5xl font-semibold mt-3 tracking-tight"
+          className="text-2xl md:text-3xl font-semibold mt-2 tracking-tight"
           style={{ color: "#1E2A3A" }}
         >
           {subject}
         </h1>
-        <p className="text-sm mt-2" style={{ color: "#6B7280" }}>
+        <p className="text-xs mt-1" style={{ color: "#6B7280" }}>
           Generated {formatDate(createdAt)}.
         </p>
         {children}
@@ -329,7 +329,7 @@ function formatDate(d: Date): string {
 }
 
 // ---------------------------------------------------------------------------
-// SourceBreakdown — chip row that exposes the breadth of the reputation
+// SourceBreakdown. Chip row that exposes the breadth of the reputation
 // scan above the email gate. Preserved from the legacy result page.
 // ---------------------------------------------------------------------------
 
@@ -377,31 +377,29 @@ function SourceBreakdown({
   totalMentions: number;
 }) {
   return (
-    <section className="mt-10">
-      <div className="flex items-baseline justify-between gap-3 flex-wrap">
+    <section className="mt-6">
+      <div className="flex items-baseline justify-between gap-2 flex-wrap">
         <p
-          className="text-[11px] font-mono uppercase tracking-[0.18em]"
+          className="text-[10px] font-mono uppercase tracking-[0.16em]"
           style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
         >
           Reputation scan · past 90 days
         </p>
         <p
-          className="text-xs"
+          className="text-[10px]"
           style={{ color: "#6B7280", fontFamily: "var(--font-mono)" }}
         >
-          {totalMentions} mention{totalMentions === 1 ? "" : "s"} across{" "}
-          {SOURCE_DISPLAY.length} source
-          {SOURCE_DISPLAY.length === 1 ? "" : "s"}
+          {totalMentions} mention{totalMentions === 1 ? "" : "s"} · {SOURCE_DISPLAY.length} sources
         </p>
       </div>
-      <ul className="mt-3 flex flex-wrap gap-2">
+      <ul className="mt-2 flex flex-wrap gap-1.5">
         {SOURCE_DISPLAY.map(({ source, label, color }) => {
           const count = counts[source] ?? 0;
           const has = count > 0;
           return (
             <li
               key={source}
-              className="inline-flex items-center gap-2 rounded-full h-8 px-3"
+              className="inline-flex items-center gap-1.5 rounded-full h-7 px-2.5"
               style={{
                 backgroundColor: has ? "#FFFFFF" : "#FBFBFD",
                 border: `1px solid ${has ? "#E5E7EB" : "#F3F4F6"}`,

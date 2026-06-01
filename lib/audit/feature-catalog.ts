@@ -1,10 +1,10 @@
-// Feature catalog — single source of truth for the LeaseStack features
+// Feature catalog. Single source of truth for the LeaseStack features
 // the audit recommendation engine can surface.
 //
 // Every action item on the /audit result page is tagged with a feature
 // slug. That slug routes through this catalog to:
 //   1. A dedicated `/features/<slug>` page when one exists (high-quality
-//      page authored by the team — see /features/pixel, /features/chatbot,
+//      page authored by the team. See /features/pixel, /features/chatbot,
 //      etc).
 //   2. Otherwise, `/onboarding?feature=<slug>` so sales captures the
 //      operator's signal even on features that don't have public proof
@@ -94,7 +94,7 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
   attribution: {
     slug: "attribution",
     title: "Per-property attribution",
-    blurb: "Which channel filled which unit — at property and portfolio level.",
+    blurb: "Which channel filled which unit. At property and portfolio level.",
     pillar: "tracking",
     hasPage: false,
   },
@@ -123,7 +123,7 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
   "resident-ops": {
     slug: "resident-ops",
     title: "Resident operations",
-    blurb: "Renewals, work orders, applications — tracked alongside marketing.",
+    blurb: "Renewals, work orders, applications. Tracked alongside marketing.",
     pillar: "conversion",
     hasPage: false,
   },

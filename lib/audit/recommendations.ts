@@ -1,8 +1,8 @@
-// Recommendation engine — the audit's sales-tool layer.
+// Recommendation engine. The audit's sales-tool layer.
 //
 // Pure function: (quizAnswers, signals, providerSummary) → ActionItem[].
 // Each ActionItem represents a personalized recommendation that maps to
-// a specific LeaseStack feature. Rules are deterministic — no LLM, no
+// a specific LeaseStack feature. Rules are deterministic. No LLM, no
 // hidden randomness. Adam 2026-06-01: every action item is, by design,
 // an upsell disguised as a fix.
 //
@@ -22,7 +22,7 @@ export type Severity = "high" | "medium" | "low";
 export interface ActionItem {
   /** Stable id for React keys + dedupe. */
   id: string;
-  /** Headline copy — punchy, the gap they have. */
+  /** Headline copy. Punchy, the gap they have. */
   title: string;
   /** Why we recommend this for them. References their quiz answer or a
    *  scan signal whenever possible so it reads as personalized, not
@@ -31,7 +31,7 @@ export interface ActionItem {
   /** Feature slug used to resolve the "See it live" / "Talk to us" CTA
    *  via `lib/audit/feature-catalog.ts`. */
   featureSlug: string;
-  /** Which pillar this recommendation reinforces — drives section
+  /** Which pillar this recommendation reinforces. Drives section
    *  grouping on the result page. */
   pillar: Pillar;
   severity: Severity;
@@ -84,7 +84,7 @@ export function computeRecommendations(
       id: "rec-chatbot",
       title: "Add an AI chatbot that books tours 24/7",
       why:
-        "You said your site doesn't have an AI chatbot or live chat. Renters check listings outside leasing hours — without a chatbot, every off-hours visit walks away unrecorded.",
+        "You said your site doesn't have an AI chatbot or live chat. Renters check listings outside leasing hours. Without a chatbot, every off-hours visit walks away unrecorded.",
       featureSlug: "chatbot",
       pillar: "conversion",
       severity: "high",
@@ -127,7 +127,7 @@ export function computeRecommendations(
       id: "rec-site-build",
       title: "A website built for conversion, not just brochure-ware",
       why:
-        "Your site is missing the standard conversion stack — interactive floor plans, online application, virtual tour. Renters expect to do everything but sign the lease without talking to a person.",
+        "Your site is missing the standard conversion stack. Interactive floor plans, online application, virtual tour. Renters expect to do everything but sign the lease without talking to a person.",
       featureSlug: "website-build",
       pillar: "conversion",
       severity: "medium",
@@ -143,8 +143,8 @@ export function computeRecommendations(
         tracking === "no_tracking"
           ? "You said you're not really tracking marketing performance. Every dollar of ad spend right now is going into a black box."
           : tracking === "ga_only"
-            ? "You said you're using Google Analytics only. GA tells you HOW MANY visited — not WHO. The pixel turns anonymous traffic into named leads."
-            : "You said your CRM is the only thing tracking leads. CRM kicks in after they convert — the pixel catches the 95%+ who never fill a form.",
+            ? "You said you're using Google Analytics only. GA tells you HOW MANY visited. Not WHO. The pixel turns anonymous traffic into named leads."
+            : "You said your CRM is the only thing tracking leads. CRM kicks in after they convert. The pixel catches the 95%+ who never fill a form.",
       featureSlug: "pixel",
       pillar: "tracking",
       severity: "high",
@@ -180,7 +180,7 @@ export function computeRecommendations(
       id: "rec-ads",
       title: "Managed ads with spend tied to signed leases",
       why:
-        "You said paid ads are a meaningful lead source. We optimize against signed leases, not impressions — most operators see CAC drop 20-40% in the first quarter.",
+        "You said paid ads are a meaningful lead source. We optimize against signed leases, not impressions. Most operators see CAC drop 20-40% in the first quarter.",
       featureSlug: "ads",
       pillar: "tracking",
       severity: "medium",
@@ -195,7 +195,7 @@ export function computeRecommendations(
       why:
         rep === "not_at_all"
           ? "You said reviews aren't being watched. A single un-replied 1-star review can cost a property a quarter of inbound interest until you respond."
-          : "You said reviews only get attention when something flares up. The flare is downstream — quiet drift is what's actually moving your score.",
+          : "You said reviews only get attention when something flares up. The flare is downstream. Quiet drift is what's actually moving your score.",
       featureSlug: "reputation",
       pillar: "reputation",
       severity: "high",
@@ -205,7 +205,7 @@ export function computeRecommendations(
       id: "rec-reputation",
       title: "Real-time review alerts (not monthly checks)",
       why:
-        "You said reviews are checked monthly. Monthly is 29 days too slow on a 1-star post — the prospect who saw it has already decided.",
+        "You said reviews are checked monthly. Monthly is 29 days too slow on a 1-star post. The prospect who saw it has already decided.",
       featureSlug: "reputation",
       pillar: "reputation",
       severity: "medium",
@@ -228,7 +228,7 @@ export function computeRecommendations(
     recs.push({
       id: "rec-aeo",
       title: `Get cited by ${recSignals.aeoUncitedEngines.join(" and ")}`,
-      why: `${recSignals.aeoUncitedEngines.join(" and ")} ${recSignals.aeoUncitedEngines.length === 1 ? "doesn't" : "don't"} cite your property by name. Today's renters check AI search before clicking — un-cited brands are invisible.`,
+      why: `${recSignals.aeoUncitedEngines.join(" and ")} ${recSignals.aeoUncitedEngines.length === 1 ? "doesn't" : "don't"} cite your property by name. Today's renters check AI search before clicking. Un-cited brands are invisible.`,
       featureSlug: "seo-aeo",
       pillar: "findability",
       severity: "high",
@@ -251,7 +251,7 @@ export function computeRecommendations(
     recs.push({
       id: "rec-seo",
       title: "Fix the on-page SEO gaps holding your rankings back",
-      why: `Lighthouse rated your homepage SEO at ${recSignals.lighthouseSeo}/100 — below the 80 threshold Google treats as healthy. The specific failing audits are in the punch list below.`,
+      why: `Lighthouse rated your homepage SEO at ${recSignals.lighthouseSeo}/100. Below the 80 threshold Google treats as healthy. The specific failing audits are in the punch list below.`,
       featureSlug: "seo-aeo",
       pillar: "findability",
       severity: "high",
@@ -262,7 +262,7 @@ export function computeRecommendations(
       id: "rec-schema",
       title: "Add schema.org structured data for AI search",
       why:
-        "Our scan found no schema.org markup on your homepage. AI engines lean on schema to confirm property identity — without it, ChatGPT and Perplexity hedge or skip you.",
+        "Our scan found no schema.org markup on your homepage. AI engines lean on schema to confirm property identity. Without it, ChatGPT and Perplexity hedge or skip you.",
       featureSlug: "seo-aeo",
       pillar: "findability",
       severity: "medium",
@@ -273,7 +273,7 @@ export function computeRecommendations(
     title: "Weekly rank tracking on every query that matters",
     why:
       signals.seo && signals.seo.organicKeywords > 0
-        ? `You rank for ${signals.seo.organicKeywords} keywords today. Weekly tracking is how you keep that — and catch the next 20 before competitors do.`
+        ? `You rank for ${signals.seo.organicKeywords} keywords today. Weekly tracking is how you keep that. And catch the next 20 before competitors do.`
         : "Most properties have 50-200 trackable queries between branded, neighborhood, and intent terms. We track them weekly so a slip on any single one is caught in days, not quarters.",
     featureSlug: "keyword-trends",
     pillar: "findability",
@@ -281,7 +281,7 @@ export function computeRecommendations(
   });
 
   // ---- Listings --------------------------------------------------------
-  // Apartments.com is a multifamily-only ILS — skip the rec for
+  // Apartments.com is a multifamily-only ILS. Skip the rec for
   // commercial/office/industrial assets where it doesn't apply.
   const isResidential =
     propertyType === "student" ||
@@ -306,7 +306,7 @@ export function computeRecommendations(
       id: "rec-google-business",
       title: "Optimize your Google Business Profile + Local Pack presence",
       why:
-        "You didn't mark Google search as a meaningful lead source. The Local Pack is where most 'apartments near me' searches convert — fixing this is usually a 2-week lift.",
+        "You didn't mark Google search as a meaningful lead source. The Local Pack is where most 'apartments near me' searches convert. Fixing this is usually a 2-week lift.",
       featureSlug: "seo-aeo",
       pillar: "findability",
       severity: "medium",
@@ -318,7 +318,7 @@ export function computeRecommendations(
     recs.push({
       id: "rec-market-intel",
       title: "Portfolio-wide market intelligence in one place",
-      why: `You manage ${portfolio === "large" ? "50+" : "11-50"} properties. Per-asset dashboards stop scaling at ~10 — we roll competitor pricing, traffic, and ad performance up to the portfolio.`,
+      why: `You manage ${portfolio === "large" ? "50+" : "11-50"} properties. Per-asset dashboards stop scaling at ~10. We roll competitor pricing, traffic, and ad performance up to the portfolio.`,
       featureSlug: "market-intelligence",
       pillar: "findability",
       severity: "medium",
@@ -327,7 +327,7 @@ export function computeRecommendations(
       id: "rec-resident-ops",
       title: "Resident operations tied to marketing data",
       why:
-        "Renewals, work orders, and applications all carry marketing signal — at portfolio scale, separating them from the lead funnel hides the most expensive churn.",
+        "Renewals, work orders, and applications all carry marketing signal. At portfolio scale, separating them from the lead funnel hides the most expensive churn.",
       featureSlug: "resident-ops",
       pillar: "conversion",
       severity: "low",
