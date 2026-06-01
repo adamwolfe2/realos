@@ -1,6 +1,29 @@
+import type { ReactNode } from "react";
+import {
+  Search,
+  Star,
+  ArrowDownToLine,
+  LineChart,
+  Gauge,
+  Building2,
+} from "lucide-react";
 import { ScoreCard } from "@/components/audit/score-card";
 import { PILLAR_LABELS, type Pillar } from "@/lib/audit/quiz-questions";
 import type { PillarScore } from "@/lib/audit/scoring";
+
+// Per-pillar Lucide icons. Picked to match each pillar's mental model
+// — Search = findability, Star = reputation, ArrowDownToLine =
+// conversion funnel, LineChart = tracking/attribution, Gauge = speed,
+// Building2 = listing presence. Renders next to the pillar title in
+// the same accent color as the score ring.
+const PILLAR_ICON: Record<Pillar, ReactNode> = {
+  findability: <Search className="h-3.5 w-3.5" strokeWidth={1.75} />,
+  reputation: <Star className="h-3.5 w-3.5" strokeWidth={1.75} />,
+  conversion: <ArrowDownToLine className="h-3.5 w-3.5" strokeWidth={1.75} />,
+  tracking: <LineChart className="h-3.5 w-3.5" strokeWidth={1.75} />,
+  accessibility: <Gauge className="h-3.5 w-3.5" strokeWidth={1.75} />,
+  listings: <Building2 className="h-3.5 w-3.5" strokeWidth={1.75} />,
+};
 
 // PillarGrid. Six pillar sub-scores beneath the DPS hero.
 //
@@ -49,6 +72,7 @@ export function PillarGrid({
               key={key}
               title={PILLAR_LABELS[key]}
               score={p.score}
+              icon={PILLAR_ICON[key]}
               reasoning={{
                 headline: p.headline,
                 points: p.points.slice(0, 2),

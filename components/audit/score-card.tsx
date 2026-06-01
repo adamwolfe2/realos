@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
 // Tonal palette used across the audit viewer. Matches the marketing
@@ -26,6 +27,7 @@ export function ScoreCard({
   delta,
   caption,
   reasoning,
+  icon,
   className,
 }: {
   title: string;
@@ -36,6 +38,8 @@ export function ScoreCard({
    *  the prospect understands what's driving the number. Empty array
    *  or undefined → reasoning section hides. Adam 2026-05-29. */
   reasoning?: { headline?: string | null; points: string[] } | null;
+  /** Optional pillar glyph rendered next to the title. */
+  icon?: ReactNode;
   className?: string;
 }) {
   // Adam 2026-05-29: previously `score ?? 0` collapsed null/undefined
@@ -64,10 +68,19 @@ export function ScoreCard({
       <div className="flex items-start justify-between gap-3">
         <div>
           <p
-            className="text-[11px] font-mono uppercase tracking-[0.18em]"
+            className="text-[11px] font-mono uppercase tracking-[0.18em] flex items-center gap-1.5"
             style={{ color: "#6B7280", fontFamily: "var(--font-mono)" }}
           >
-            {title}
+            {icon ? (
+              <span
+                aria-hidden
+                className="inline-flex items-center justify-center"
+                style={{ color: palette.ring }}
+              >
+                {icon}
+              </span>
+            ) : null}
+            <span>{title}</span>
           </p>
           {caption ? (
             <p className="text-sm mt-1" style={{ color: "#4B5563" }}>
