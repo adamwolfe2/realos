@@ -76,6 +76,26 @@ export type TimelineEvent =
       kind: "review_request_sent";
       id: string;
       ts: Date;
+    }
+  | {
+      kind: "popup_event";
+      id: string;
+      ts: Date;
+      // type carries the PopupEventType ("IMPRESSION" | "INTERACTION" |
+      // "CONVERTED" | etc). Render reads the type to pick a sentence
+      // ("Saw the welcome popup" vs "Converted via the move-in popup").
+      eventType: string;
+      campaignName: string | null;
+      pageUrl: string | null;
+    }
+  | {
+      kind: "email_sent";
+      id: string;
+      ts: Date;
+      // Either an automated cadence stage ("day_one", "day_three") or a
+      // free-text label for ad-hoc / composed emails.
+      label: string;
+      subject: string | null;
     };
 
 export type ChatbotConversationLite = Pick<
@@ -91,11 +111,28 @@ export type ChatbotConversationLite = Pick<
   | "pageUrl"
 >;
 
+export type PopupEventLite = {
+  id: string;
+  type: string;
+  occurredAt: Date;
+  pageUrl: string | null;
+  campaignName: string | null;
+};
+
+export type EmailEventLite = {
+  id: string;
+  label: string;
+  subject: string | null;
+  sentAt: Date;
+};
+
 type LeadWithLinks = Lead & {
   visitor: Visitor | null;
   tours: Tour[];
   applications: Application[];
   conversations: ChatbotConversationLite[];
+  popupEvents?: PopupEventLite[];
+  emailEvents?: EmailEventLite[];
 };
 
 // Threshold under which consecutive page views get collapsed into a rollup.
@@ -259,6 +296,38 @@ export function buildTimeline(lead: LeadWithLinks): TimelineEvent[] {
       id: `review-${lead.id}`,
       ts: lead.reviewRequestSentAt,
     });
+  }
+
+  // Popup events linked to this lead (impressions, interactions,
+  // conversions). The CONVERTED event is what fired the lead create;
+  // impressions/interactions are upstream — together they explain how
+  // this lead got from "saw a popup" to "submitted the form."
+  if (lead.popupEvents) {
+    for (const p of lead.popupEvents) {
+      events.push({
+        kind: "popup_event",
+        id: `popup-${p.id}`,
+        ts: p.occurredAt,
+        eventType: p.type,
+        campaignName: p.campaignName,
+        pageUrl: p.pageUrl,
+      });
+    }
+  }
+
+  // Email cadence + composer events from EmailEvent (or surfaced
+  // by the caller from Lead.emailsSent + lastEmailSentAt + cadenceStage
+  // when no audit table is available).
+  if (lead.emailEvents) {
+    for (const e of lead.emailEvents) {
+      events.push({
+        kind: "email_sent",
+        id: `email-${e.id}`,
+        ts: e.sentAt,
+        label: e.label,
+        subject: e.subject,
+      });
+    }
   }
 
   // Sort newest first

@@ -76,7 +76,7 @@ export default async function LeadDetailPage({
   // param, so we can fan them out without waiting for the lead row to
   // resolve first. Saves two sequential round-trips on the lead detail
   // page that operators hit dozens of times per session.
-  const [lead, notes, leadInsights] = await Promise.all([
+  const [lead, notes, leadInsights, popupEvents] = await Promise.all([
     prisma.lead.findFirst({
       where: { id, ...tenantWhere(scope) },
       include: {
@@ -135,6 +135,24 @@ export default async function LeadDetailPage({
         context: true,
         createdAt: true,
         property: { select: { id: true, name: true } },
+      },
+    }),
+    // Popup events linked to this lead — impressions / interactions /
+    // conversions across all campaigns. Adds the upstream story of
+    // "how this lead got captured" to the timeline.
+    prisma.popupEvent.findMany({
+      where: {
+        orgId: scope.orgId,
+        leadId: id,
+      },
+      orderBy: { occurredAt: "desc" },
+      take: 20,
+      select: {
+        id: true,
+        type: true,
+        occurredAt: true,
+        pageUrl: true,
+        campaign: { select: { name: true } },
       },
     }),
   ]);
@@ -197,7 +215,40 @@ export default async function LeadDetailPage({
     visitorIdentity?.companyDomain ?? displayName ?? lead.id
   );
 
-  const timeline = buildTimeline({ ...lead });
+  // Email events — surface a single derived event from the Lead's
+  // aggregate cadence state (lastEmailSentAt + cadenceStage +
+  // emailsSent). When a dedicated EmailEvent audit table lands, this
+  // can become a full join; today the per-stage data is lossy but
+  // good enough to surface "yes, we did email them."
+  const emailEvents =
+    lead.lastEmailSentAt
+      ? [
+          {
+            id: `cadence-${lead.id}`,
+            label:
+              lead.cadenceStage ??
+              (lead.emailsSent > 1
+                ? `${lead.emailsSent} cadence emails`
+                : "Cadence email"),
+            subject: null,
+            sentAt: lead.lastEmailSentAt,
+          },
+        ]
+      : [];
+
+  const popupEventsForTimeline = popupEvents.map((p) => ({
+    id: p.id,
+    type: p.type,
+    occurredAt: p.occurredAt,
+    pageUrl: p.pageUrl,
+    campaignName: p.campaign?.name ?? null,
+  }));
+
+  const timeline = buildTimeline({
+    ...lead,
+    popupEvents: popupEventsForTimeline,
+    emailEvents,
+  });
 
   const subtitleParts: string[] = [];
   if (visitorIdentity?.jobTitle) subtitleParts.push(visitorIdentity.jobTitle);

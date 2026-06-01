@@ -4,7 +4,9 @@ import {
   CheckCircle2,
   FileText,
   Globe,
+  Mail,
   MessageCircle,
+  MousePointerClick,
   Radar,
   Sparkles,
   Star,
@@ -75,6 +77,10 @@ function iconFor(event: TimelineEvent): IconConfig {
       return { icon: CheckCircle2, tone: "success" };
     case "review_request_sent":
       return { icon: Star, tone: "accent" };
+    case "popup_event":
+      return { icon: MousePointerClick, tone: "default" };
+    case "email_sent":
+      return { icon: Mail, tone: "default" };
   }
 }
 
@@ -292,5 +298,61 @@ function renderBody(event: TimelineEvent): React.ReactNode {
           </p>
         </>
       );
+    case "popup_event": {
+      // CONVERTED is the moment of capture (lead create fires from
+      // this). Impressions / interactions explain how they got there.
+      const verb =
+        event.eventType === "CONVERTED"
+          ? "Converted via popup"
+          : event.eventType === "INTERACTION"
+            ? "Engaged with popup"
+            : event.eventType === "IMPRESSION"
+              ? "Saw popup"
+              : `Popup ${event.eventType.toLowerCase()}`;
+      const campaign = event.campaignName
+        ? ` — ${event.campaignName}`
+        : "";
+      const path = event.pageUrl ? safePath(event.pageUrl) : null;
+      return (
+        <>
+          <p className="text-sm text-foreground">
+            <span className="font-medium">{verb}</span>
+            <span className="text-muted-foreground">{campaign}</span>
+          </p>
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {timeLabel(event.ts)}
+            {path ? ` · ${path}` : ""}
+          </p>
+        </>
+      );
+    }
+    case "email_sent":
+      return (
+        <>
+          <p className="text-sm text-foreground">
+            <span className="font-medium">Email sent</span>
+            <span className="text-muted-foreground"> — {event.label}</span>
+          </p>
+          {event.subject ? (
+            <p className="mt-0.5 text-xs text-foreground line-clamp-1">
+              {event.subject}
+            </p>
+          ) : null}
+          <p className="mt-0.5 text-xs text-muted-foreground">
+            {timeLabel(event.ts)} · {exactTime(event.ts)}
+          </p>
+        </>
+      );
+  }
+}
+
+// Compact pathname for popup pageUrl display. Same logic the
+// pixel_page_view renderer uses elsewhere in this file.
+function safePath(url: string): string {
+  try {
+    const u = new URL(url);
+    return (u.pathname + (u.search || "")) || "/";
+  } catch {
+    return url;
   }
 }
