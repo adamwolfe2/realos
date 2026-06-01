@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { BRAND_NAME } from "@/lib/brand";
-import { AuditForm } from "@/components/audit/audit-form";
+import { DigitalScoreQuiz } from "@/components/audit/digital-score-quiz";
 
 export const metadata: Metadata = {
-  title: `Free property marketing audit | ${BRAND_NAME}`,
+  title: `Digital Performance Score | ${BRAND_NAME}`,
   description:
-    "See how AI-powered renters actually find your properties. Free 60-second SEO, AI-search, and reputation audit — real data, no credit card.",
+    "Get your free Digital Performance Score for student housing, multifamily, senior, or commercial properties. Real-data benchmarking across findability, reputation, conversion, tracking, accessibility, and listings — with a prioritized action plan.",
   alternates: { canonical: "/audit" },
   robots: { index: true, follow: true },
 };
@@ -29,7 +29,7 @@ export default function AuditFormPage() {
                   fontFamily: "var(--font-mono)",
                 }}
               >
-                Free audit · 60 seconds
+                Digital Performance Score · 6-question quiz
               </p>
               <span
                 aria-hidden
@@ -41,33 +41,35 @@ export default function AuditFormPage() {
               className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight"
               style={{ color: "#1E2A3A" }}
             >
-              See how AI-powered renters actually find your properties.
+              How is your property actually performing online?
             </h1>
             <p
               className="mt-5 text-lg md:text-xl leading-relaxed mx-auto max-w-2xl"
               style={{ color: "#4B5563" }}
             >
-              Run a free 60-second audit. Real data on your SEO, AI search
-              visibility, and online reputation — across every major engine
-              and review site.
+              Answer 6 quick questions about your property. We&apos;ll combine
+              your answers with a live scan of your SEO, AI search visibility,
+              reputation, accessibility, and listing presence — and return a
+              personalized Digital Performance Score with a prioritized action
+              plan.
             </p>
-            <div className="mt-8">
-              <AuditForm />
+            <div className="mt-8 text-left">
+              <DigitalScoreQuiz />
             </div>
           </div>
 
           <ul className="mt-12 grid grid-cols-1 md:grid-cols-3 gap-4 max-w-3xl mx-auto">
             <TrustItem
-              title="Real data, not estimates"
-              body="Pulled live from the same ranking, citation, and review sources operators pay for."
+              title="Personalized, not generic"
+              body="Your quiz answers fill the gaps a crawler can't see — chatbot, tracking, intake, listings."
             />
             <TrustItem
-              title="10+ signals across 4 surfaces"
-              body="SEO position, AI search visibility, reputation across major sites, and on-page health."
+              title="6 pillars, real data"
+              body="Findability, reputation, conversion, tracking, accessibility, listings — weighted and scored."
             />
             <TrustItem
-              title="Free. No credit card."
-              body="See your top-line score immediately. Drop your email for the full report."
+              title="Action items, not vibes"
+              body="Each finding is tagged 'fix yourself' or 'LeaseStack handles' so you know what to do next."
             />
           </ul>
         </div>
