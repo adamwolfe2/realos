@@ -1,5 +1,6 @@
 import "server-only";
 import * as cheerio from "cheerio";
+import { scrape as firecrawlScrape, isFirecrawlConfigured } from "@/lib/intelligence/firecrawl";
 
 // ---------------------------------------------------------------------------
 // Direct site crawl — fallback SEO signal source when DataForSEO returns
@@ -136,6 +137,18 @@ function emptyResult(
  * Fetch the URL + side-probes, parse the HTML, return a SiteCrawlResult.
  * Never throws — wraps every error path in a defensive return so the
  * audit pipeline gets a clean shape even when the target is unreachable.
+ *
+ * Two-tier fetch strategy:
+ *   1. Firecrawl /scrape with `formats: ["html"]` when FIRECRAWL_API_KEY
+ *      is configured. Firecrawl handles JavaScript-rendered SPAs
+ *      (modern multifamily marketing sites built in React/Next),
+ *      Cloudflare/WAF challenge pages, and returns fully-rendered HTML
+ *      we can feed to the existing cheerio parser. ~$0.0008 per call.
+ *   2. Native fetch fallback for the >50% of property sites that are
+ *      server-rendered HTML and don't need JS execution. Free.
+ *
+ * Either path produces the same SiteCrawlResult shape so downstream
+ * scoring + synthesis doesn't need to branch on which fetcher ran.
  */
 export async function crawlSite(targetUrl: string): Promise<SiteCrawlResult> {
   const url = normalizeUrl(targetUrl);
@@ -144,6 +157,33 @@ export async function crawlSite(targetUrl: string): Promise<SiteCrawlResult> {
   }
 
   const startedAt = Date.now();
+
+  // Tier 1 — Firecrawl. Only attempted when the API key is configured.
+  // Returns null on any error so we fall through to native fetch.
+  if (isFirecrawlConfigured()) {
+    const fc = await firecrawlScrape({ url, formats: ["html"] }).catch(
+      () => null,
+    );
+    if (fc && fc.ok && fc.data.html) {
+      const responseTimeMs = Date.now() - startedAt;
+      const statusCode = fc.data.metadata?.statusCode ?? 200;
+      const resolvedUrl =
+        (fc.data.metadata?.sourceURL as string | undefined) ?? url;
+      // Run the cheerio parser on Firecrawl's rendered HTML. Same parser
+      // path as native fetch — produces identical SiteCrawlResult shape.
+      return parseHtmlIntoResult({
+        url: resolvedUrl,
+        html: fc.data.html,
+        contentLengthBytes: fc.data.html.length,
+        httpStatus: statusCode,
+        responseTimeMs,
+      });
+    }
+    // Firecrawl failed or returned empty — fall through to native fetch
+    // so the audit pipeline still produces signals.
+  }
+
+  // Tier 2 — native fetch. Free, fast for SSR sites, blind to SPAs.
   let res: Response;
   try {
     res = await fetch(url, {
@@ -223,7 +263,31 @@ export async function crawlSite(targetUrl: string): Promise<SiteCrawlResult> {
   const resolvedUrl = res.url || url;
   const contentLengthBytes = html.length;
 
-  // --- Parse ----------------------------------------------------------
+  return parseHtmlIntoResult({
+    url: resolvedUrl,
+    html,
+    contentLengthBytes,
+    httpStatus: res.status,
+    responseTimeMs,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// parseHtmlIntoResult
+//
+// Cheerio-based HTML parser shared by the native-fetch and Firecrawl
+// paths. Takes the already-fetched HTML string + the response metadata
+// and returns the same SiteCrawlResult shape either tier produces.
+// Async because the sitemap.xml / robots.txt side-probes run from here.
+// ---------------------------------------------------------------------------
+async function parseHtmlIntoResult(args: {
+  url: string;
+  html: string;
+  contentLengthBytes: number;
+  httpStatus: number;
+  responseTimeMs: number;
+}): Promise<SiteCrawlResult> {
+  const { url: resolvedUrl, html, contentLengthBytes, httpStatus, responseTimeMs } = args;
   const $ = cheerio.load(html);
 
   // Meta + head
@@ -256,10 +320,6 @@ export async function crawlSite(targetUrl: string): Promise<SiteCrawlResult> {
   let imagesMissingAlt = 0;
   images.each((_, el) => {
     const alt = $(el).attr("alt");
-    // Treat undefined / null / empty / whitespace-only as missing.
-    // Decorative images often have alt="" intentionally — counting those
-    // as "missing" would over-flag, but for a first-time audit we want
-    // operators to confirm every image is intentional.
     if (alt == null || alt.trim() === "") imagesMissingAlt += 1;
   });
 
@@ -276,14 +336,11 @@ export async function crawlSite(targetUrl: string): Promise<SiteCrawlResult> {
       if (u.hostname === targetHost) internalLinkCount += 1;
       else externalLinkCount += 1;
     } catch {
-      // Relative link — treat as internal.
       internalLinkCount += 1;
     }
   });
 
-  // Structured data — collect schema.org @type values from JSON-LD
-  // blocks. Operators care most about LocalBusiness / ApartmentComplex
-  // / Organization presence.
+  // Structured data
   const schemaTypes: string[] = [];
   $('script[type="application/ld+json"]').each((_, el) => {
     const raw = $(el).text();
@@ -292,8 +349,7 @@ export async function crawlSite(targetUrl: string): Promise<SiteCrawlResult> {
       const json = JSON.parse(raw);
       collectSchemaTypes(json, schemaTypes);
     } catch {
-      // Malformed JSON-LD — skip silently. Operators can fix later via
-      // a quick-win finding.
+      // Malformed JSON-LD — skip silently.
     }
   });
 
@@ -303,8 +359,7 @@ export async function crawlSite(targetUrl: string): Promise<SiteCrawlResult> {
   const hasFavicon =
     $('head link[rel="icon"], head link[rel="shortcut icon"]').length > 0;
 
-  // Side probes — sitemap.xml and robots.txt. HEAD requests to keep
-  // them cheap. Don't fail the audit if either request errors.
+  // Side probes — sitemap.xml and robots.txt.
   const [hasSitemapXml, hasRobotsTxt] = await Promise.all([
     headProbe(new URL("/sitemap.xml", resolvedUrl).toString()),
     headProbe(new URL("/robots.txt", resolvedUrl).toString()),
@@ -314,7 +369,7 @@ export async function crawlSite(targetUrl: string): Promise<SiteCrawlResult> {
     status: "ok",
     errorMessage: null,
     resolvedUrl,
-    httpStatus: res.status,
+    httpStatus,
     responseTimeMs,
     contentLengthBytes,
     isHttps: new URL(resolvedUrl).protocol === "https:",

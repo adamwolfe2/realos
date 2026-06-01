@@ -12,6 +12,7 @@ import { FilterChip } from "./mentions/filter-chip";
 import { MentionCard } from "./mentions/mention-card";
 import { EmptyState } from "./mentions/empty-state";
 import { sourceColor, sourceLabel } from "./mentions/source-utils";
+import { SourceGlyph } from "./mentions/source-glyphs";
 import {
   ALL_SOURCES,
   INITIAL_MENTION_LIMIT,
@@ -125,6 +126,7 @@ export function MentionsSection({
               count={c}
               color={sourceColor(s)}
               active={activeSource === s}
+              glyph={<SourceGlyph source={s} className="h-3.5 w-3.5" />}
               onClick={() => {
                 setActiveSource(activeSource === s ? null : s);
                 setShowAll(false);

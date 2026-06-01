@@ -7,8 +7,14 @@ import { BRAND_NAME } from "@/lib/brand";
 // (which already exists) only fires for the small fraction who scroll
 // the whole thing. Sticky-bottom keeps it always one click away.
 //
-// Server-rendered, no client state. The `href` points at /onboarding
-// today. Swap to a calendar booking link once that lands.
+// Server-rendered, no client state. Destination is configurable via
+// NEXT_PUBLIC_CAL_BOOK_URL — set this to Norman's (or whoever's)
+// Cal.com link in Vercel env and the CTA routes there directly. Fall
+// back to `/onboarding` only when the var is missing; this avoids
+// dragging prospects through the property-setup wizard when all they
+// want is to book a 15-min intro.
+
+const FALLBACK_BOOK_URL = "/onboarding";
 
 export function BookCallCta({
   /** Optional context the CTA can surface. E.g. The brand being
@@ -17,6 +23,8 @@ export function BookCallCta({
 }: {
   subtitle?: string;
 }) {
+  const href = process.env.NEXT_PUBLIC_CAL_BOOK_URL ?? FALLBACK_BOOK_URL;
+  const isExternal = href.startsWith("http");
   return (
     <div
       className="sticky bottom-3 z-30 mt-8"
@@ -50,13 +58,25 @@ export function BookCallCta({
               </p>
             ) : null}
           </div>
-          <Link
-            href="/onboarding"
-            className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-semibold text-white flex-shrink-0"
-            style={{ backgroundColor: "#2563EB" }}
-          >
-            Book a call →
-          </Link>
+          {isExternal ? (
+            <a
+              href={href}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-semibold text-white flex-shrink-0"
+              style={{ backgroundColor: "#2563EB" }}
+            >
+              Book a call →
+            </a>
+          ) : (
+            <Link
+              href={href}
+              className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-semibold text-white flex-shrink-0"
+              style={{ backgroundColor: "#2563EB" }}
+            >
+              Book a call →
+            </Link>
+          )}
         </div>
       </div>
     </div>

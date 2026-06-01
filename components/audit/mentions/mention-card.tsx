@@ -12,10 +12,9 @@ import type { AuditMention, AuditMentionSource } from "./types";
 import {
   relativeTime,
   sentimentMeta,
-  sourceColor,
-  sourceInitial,
   sourceLabel,
 } from "./source-utils";
+import { SourceGlyph } from "./source-glyphs";
 
 export function MentionCard({ m }: { m: AuditMention }) {
   return (
@@ -66,14 +65,21 @@ export function MentionCard({ m }: { m: AuditMention }) {
 }
 
 function SourceBadge({ source }: { source: AuditMentionSource }) {
-  const bg = sourceColor(source);
+  // Real brand SVG sits on a soft tinted square so the multi-color marks
+  // (Google's four colors, Reddit's orange disc) keep their identity
+  // instead of being flattened to white-on-color the way the letter
+  // marks were. The square edge keeps visual rhythm with the prior
+  // letter badge so other audit-page layout stays consistent.
   return (
     <div
-      className="h-10 w-10 rounded-md flex items-center justify-center shrink-0 text-xs font-semibold"
-      style={{ backgroundColor: bg, color: "#FFFFFF" }}
+      className="h-10 w-10 rounded-md flex items-center justify-center shrink-0 border"
+      style={{
+        backgroundColor: "#FFFFFF",
+        borderColor: "#E5E7EB",
+      }}
       aria-hidden
     >
-      {sourceInitial(source)}
+      <SourceGlyph source={source} className="h-5 w-5" />
     </div>
   );
 }
