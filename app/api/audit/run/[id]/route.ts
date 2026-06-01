@@ -47,7 +47,13 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
 
   const audit = await prisma.prospectAudit.findUnique({
     where: { id },
-    select: { id: true, domain: true, status: true, brandName: true },
+    select: {
+      id: true,
+      domain: true,
+      status: true,
+      brandName: true,
+      quizAnswers: true,
+    },
   });
   if (!audit) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
@@ -77,30 +83,43 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
     );
 
     const brandName = audit.brandName ?? brandNameFromDomain(audit.domain);
-    const { findings, claudeSummary, sectionScores } = await synthesizeAudit(
-      snapshot,
-      {
-        brandName,
-        domain: audit.domain,
-        rankedKeywords: __provider?.rankedKeywords ?? null,
-        lighthouse: __provider?.lighthouse ?? null,
-        lighthouseAudits: null,
-        pageAudit: __provider?.pageAudit ?? null,
-        siteCrawl: __provider?.siteCrawl ?? null,
-        backlinks: __provider?.backlinks ?? null,
-        mentions: __provider?.mentions ?? [],
-        aeoCompetitorsCited: __provider?.aeoCompetitorsCited ?? [],
-        aeoCitedEngines: __provider?.aeoCitedEngines ?? [],
-        aeoUncitedEngines: __provider?.aeoUncitedEngines ?? [],
-      },
-    );
+    // The Prisma column is Json, so the runtime type is `JsonValue`. The
+    // scoring + recommendation engines validate per-question; this cast
+    // is safe because we wrote a record/string|string[] shape on the
+    // start route.
+    const quizAnswers =
+      (audit.quizAnswers as Record<string, string | string[]> | null) ?? null;
+    const { findings, claudeSummary, sectionScores, overallScore } =
+      await synthesizeAudit(
+        snapshot,
+        {
+          brandName,
+          domain: audit.domain,
+          rankedKeywords: __provider?.rankedKeywords ?? null,
+          lighthouse: __provider?.lighthouse ?? null,
+          lighthouseAudits: null,
+          pageAudit: __provider?.pageAudit ?? null,
+          siteCrawl: __provider?.siteCrawl ?? null,
+          backlinks: __provider?.backlinks ?? null,
+          mentions: __provider?.mentions ?? [],
+          aeoCompetitorsCited: __provider?.aeoCompetitorsCited ?? [],
+          aeoCitedEngines: __provider?.aeoCitedEngines ?? [],
+          aeoUncitedEngines: __provider?.aeoUncitedEngines ?? [],
+        },
+        quizAnswers,
+      );
 
+    // overallScore is the post-cap DPS (0-75) so admin views + the
+    // public report read the same number. sectionScores still carries
+    // the legacy 4-key shape (seo/aeo/reputation/traffic) for backward
+    // compatibility — the result page reads the new pillar shape from
+    // findings.dps.pillars.
     await prisma.prospectAudit.update({
       where: { id },
       data: {
         status: ProspectAuditStatus.READY,
         brandName: audit.brandName ?? brandName,
-        overallScore: snapshot.overallScore,
+        overallScore,
         sectionScores,
         findings: JSON.parse(JSON.stringify(findings)),
         claudeSummary,

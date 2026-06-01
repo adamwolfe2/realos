@@ -1,17 +1,19 @@
 // Digital Performance Score quiz — question schema.
 //
 // Single source of truth for the /audit quiz. Both the client UI
-// (`components/audit/digital-score-quiz.tsx`) and the future scoring engine
-// (`lib/audit/scoring.ts`) consume this file so question IDs, choice IDs,
-// and pillar mappings stay aligned across the system.
+// (`components/audit/digital-score-quiz.tsx`) and the scoring +
+// recommendation engines (`lib/audit/scoring.ts`,
+// `lib/audit/recommendations.ts`) consume this file so question IDs,
+// choice IDs, and pillar mappings stay aligned across the system.
 //
 // Design rules (Adam 2026-06-01):
-// - 5-7 questions max. Each must capture a signal the SEO/AEO/reputation
-//   scanner cannot read on its own.
-// - Every question maps to >=1 pillar so we can show "Q3 -> Conversion"
-//   reasoning when rendering action items.
-// - The final question is always the property website URL — the scan can't
-//   start without it.
+// - 6-9 questions max. Each must capture a signal the SEO/AEO/
+//   reputation scanner cannot read on its own, OR a signal that drives
+//   a specific LeaseStack feature recommendation.
+// - Every question maps to >=1 pillar AND to >=1 feature so the result
+//   page can render "you said X, here's the LeaseStack fix."
+// - The final question is always the property website URL — the scan
+//   can't start without it.
 
 export type Pillar =
   | "findability"
@@ -38,6 +40,25 @@ export const PILLAR_WEIGHTS: Record<Pillar, number> = {
   accessibility: 0.1,
   listings: 0.1,
 };
+
+// Hard caps per pillar — per Adam 2026-06-01: "We never want to give
+// anyone a score over 75." Each pillar caps below 100 so the weighted
+// overall lands well under that ceiling regardless of raw signals.
+// Caps reflect the reality that without LeaseStack, every pillar has a
+// structural gap (no chatbot/popups, no pixel, listings not portfolio-
+// managed, etc).
+export const PILLAR_CAPS: Record<Pillar, number> = {
+  findability: 70,
+  reputation: 80,
+  conversion: 65,
+  tracking: 60,
+  accessibility: 90,
+  listings: 75,
+};
+
+// Overall DPS hard ceiling — even if the weighted sum somehow lands
+// higher (which it shouldn't given pillar caps), this clamps it.
+export const OVERALL_DPS_CAP = 75;
 
 // Sanity check — pillar weights must sum to 1. A drift in this file
 // would silently warp every DPS computation, so we fail fast at module
@@ -72,7 +93,7 @@ export interface Question {
 }
 
 // ---------------------------------------------------------------------------
-// Question set v1 — 6 questions
+// Question set v2 — 8 questions
 // ---------------------------------------------------------------------------
 
 export const QUIZ_QUESTIONS: Question[] = [
@@ -90,6 +111,21 @@ export const QUIZ_QUESTIONS: Question[] = [
       { id: "senior", label: "Senior living" },
       { id: "commercial", label: "Commercial / mixed-use" },
       { id: "mixed", label: "A mix of the above" },
+    ],
+  },
+  {
+    id: "portfolio_size",
+    kind: "single",
+    prompt: "How big is the portfolio you're managing?",
+    helper:
+      "Single property vs. a portfolio of fifty changes the gap analysis entirely — single-asset operators feel different pain than multi-property leadership.",
+    pillars: ["tracking", "listings"],
+    required: true,
+    choices: [
+      { id: "single", label: "1 property" },
+      { id: "small", label: "2–10 properties" },
+      { id: "mid", label: "11–50 properties" },
+      { id: "large", label: "50+ properties" },
     ],
   },
   {
@@ -130,6 +166,7 @@ export const QUIZ_QUESTIONS: Question[] = [
     choices: [
       { id: "live_chat", label: "Live chat with a human" },
       { id: "ai_chatbot", label: "AI chatbot" },
+      { id: "popups", label: "Exit / intent popups" },
       { id: "floorplan_tool", label: "Interactive floor plan / unit picker" },
       { id: "online_application", label: "Online application form" },
       { id: "virtual_tour", label: "Virtual tour / 3D walkthrough" },
@@ -137,20 +174,49 @@ export const QUIZ_QUESTIONS: Question[] = [
     ],
   },
   {
-    id: "listing_platforms",
-    kind: "multi",
-    prompt: "Where else does this property show up?",
+    id: "reputation_handling",
+    kind: "single",
+    prompt: "How are you handling online reviews and reputation today?",
     helper:
-      "The platforms a renter actually checks. We'll separately verify what's live during the scan.",
-    pillars: ["listings", "reputation"],
+      "A property's reputation is the single biggest lever on tour-to-lease — and the easiest one to neglect.",
+    pillars: ["reputation"],
+    required: true,
+    choices: [
+      {
+        id: "auto_monitored",
+        label: "Auto-monitored, alerts on every new mention",
+        hint: "Yelp, Google, Reddit, ApartmentRatings, etc.",
+      },
+      {
+        id: "monthly_check",
+        label: "We check the major sites monthly",
+      },
+      {
+        id: "occasional",
+        label: "Occasionally — when something flares up",
+      },
+      {
+        id: "not_at_all",
+        label: "Not really watching this",
+      },
+    ],
+  },
+  {
+    id: "lead_sources",
+    kind: "multi",
+    prompt: "Where do your leads come from today?",
+    helper:
+      "Pick everything that contributes — paid, organic, ILS, referrals. We'll verify what's live during the scan.",
+    pillars: ["listings", "tracking"],
     required: false,
     choices: [
+      { id: "paid_ads", label: "Paid ads (Meta, Google, TikTok)" },
       { id: "apartments_com", label: "Apartments.com" },
-      { id: "zillow", label: "Zillow / Trulia" },
-      { id: "rent_com", label: "Rent." },
-      { id: "apartmentratings", label: "ApartmentRatings" },
-      { id: "google_business", label: "Google Business Profile" },
-      { id: "none", label: "None / not sure" },
+      { id: "zillow", label: "Zillow / Trulia / Rent." },
+      { id: "google_search", label: "Google search / Google Business" },
+      { id: "ai_search", label: "ChatGPT / Perplexity / AI search" },
+      { id: "referrals", label: "Resident referrals & walk-ins" },
+      { id: "not_sure", label: "Honestly, we don't know" },
     ],
   },
   {
@@ -231,4 +297,25 @@ export function isQuizComplete(answers: QuizAnswers): boolean {
 export function getDomainAnswer(answers: QuizAnswers): string | null {
   const v = answers["domain"];
   return typeof v === "string" && v.trim() !== "" ? v.trim() : null;
+}
+
+/** Typed answer readers — keep callers from sprinkling string-key
+ *  lookups across the codebase. Returns `null` when the answer isn't
+ *  present (e.g. anonymous URL-only submit). */
+export function readSingleAnswer<T extends string = string>(
+  answers: QuizAnswers | null | undefined,
+  id: string,
+): T | null {
+  if (!answers) return null;
+  const v = answers[id];
+  return typeof v === "string" && v.trim() !== "" ? (v as T) : null;
+}
+
+export function readMultiAnswer(
+  answers: QuizAnswers | null | undefined,
+  id: string,
+): string[] {
+  if (!answers) return [];
+  const v = answers[id];
+  return Array.isArray(v) ? v.filter((x) => typeof x === "string") : [];
 }

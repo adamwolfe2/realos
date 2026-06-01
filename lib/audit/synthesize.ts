@@ -21,6 +21,9 @@ import {
   crawlFindings,
   type SiteCrawlResult,
 } from "./site-crawl";
+import { computeDps, type DpsResult } from "./scoring";
+import { computeRecommendations, type ActionItem } from "./recommendations";
+import type { QuizAnswers } from "./quiz-questions";
 
 // ----------------------------------------------------------------------------
 // Synthesizer — turns the raw provider responses + rolled-up SignalSnapshot
@@ -62,8 +65,16 @@ export type SynthesizedFindings = {
   // real reputation list (real URLs, real dates).
   mentions: ProspectMention[];
   /** Per-section reasoning — populated by synthesize.ts so the audit
-   *  viewer can render "why" copy under each ScoreCard. */
+   *  viewer can render "why" copy under each ScoreCard. Legacy 4-section
+   *  shape kept for any downstream consumer; superseded by `dps.pillars`
+   *  on the result page. */
   sectionDetails: SectionDetails;
+  /** Digital Performance Score — 6-pillar shape, post-cap. The result
+   *  page renders from this. Adam 2026-06-01. */
+  dps: DpsResult;
+  /** Ordered recommendation cards — each maps to a LeaseStack feature
+   *  via `lib/audit/feature-catalog.ts`. */
+  recommendations: ActionItem[];
 };
 
 export type ProviderData = {
@@ -89,10 +100,17 @@ export type ProviderData = {
 export async function synthesizeAudit(
   signals: SignalSnapshot,
   provider: ProviderData,
+  /** Operator's quiz answers from the /audit lead-magnet flow. Null
+   *  when the audit was started without the quiz (URL-only deep link). */
+  quizAnswers: QuizAnswers | null = null,
 ): Promise<{
   findings: SynthesizedFindings;
   claudeSummary: string;
   sectionScores: Record<string, number | null>;
+  /** Post-cap overall score — what the run route persists as
+   *  ProspectAudit.overallScore so the legacy /admin views still
+   *  surface the right number. */
+  overallScore: number;
 }> {
   // Adam 2026-05-29: preserve null so the viewer can render "Data
   // unavailable" instead of a misleading "0/100". Previously we
@@ -421,6 +439,36 @@ export async function synthesizeAudit(
     });
   }
 
+  // ---- 6-pillar DPS + recommendations -----------------------------------
+  // The audit page renders from these. Quiz answers feed both engines so
+  // operator-stated context (no chatbot, no pixel, no review monitoring)
+  // becomes both a pillar penalty and a personalized action item.
+  const hasSchemaMarkup =
+    (provider.pageAudit?.schema?.type ?? []).length > 0 ||
+    (provider.siteCrawl?.schemaTypes?.length ?? 0) > 0;
+  const dps = computeDps(
+    signals,
+    {
+      lighthouseSeo: provider.lighthouse?.seo ?? null,
+      lighthousePerformance: provider.lighthouse?.performance ?? null,
+      lighthouseAccessibility: provider.lighthouse?.accessibility ?? null,
+      hasSchemaMarkup,
+    },
+    quizAnswers,
+  );
+
+  const hasNegativeMentions = risks.some((r) => r.id === "r-negative");
+  const recommendations = computeRecommendations(quizAnswers, signals, {
+    aeoCitedEngines: provider.aeoCitedEngines,
+    aeoUncitedEngines: provider.aeoUncitedEngines,
+    aeoCompetitorsCited: provider.aeoCompetitorsCited,
+    lighthouseSeo: provider.lighthouse?.seo ?? null,
+    lighthousePerformance: provider.lighthouse?.performance ?? null,
+    noSchemaMarkup: !hasSchemaMarkup,
+    hasNegativeMentions,
+    totalMentions: signals.reputation?.totalMentions ?? 0,
+  });
+
   // 2026-05-29: quickWins cap raised from 5 → 10 so the punch-list
   // actually reads like a punch-list. The expanded page-audit findings
   // can routinely surface 8+ on-page issues for a brand-new property,
@@ -431,11 +479,18 @@ export async function synthesizeAudit(
     opportunities: opportunities.slice(0, 5),
     mentions: provider.mentions,
     sectionDetails: buildSectionDetails(signals, provider),
+    dps,
+    recommendations,
   };
 
   const claudeSummary = await writeNarrative(signals, provider, findings);
 
-  return { findings, claudeSummary, sectionScores };
+  return {
+    findings,
+    claudeSummary,
+    sectionScores,
+    overallScore: dps.score,
+  };
 }
 
 // ---------------------------------------------------------------------------

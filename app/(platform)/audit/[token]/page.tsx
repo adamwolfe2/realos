@@ -5,13 +5,18 @@ import { prisma } from "@/lib/db";
 import { ProspectAuditStatus } from "@prisma/client";
 import { BRAND_NAME, getSiteUrl } from "@/lib/brand";
 import { isValidShareToken } from "@/lib/audit/token";
-import { ScoreCard, toneForScore } from "@/components/audit/score-card";
-import { CountUp } from "@/components/audit/count-up";
 import { AuditPaywall } from "@/components/audit/paywall";
 import {
   MentionsSection,
   type AuditMention,
 } from "@/components/audit/mentions-section";
+import { DpsHero } from "@/components/audit/dps-hero";
+import { PillarGrid } from "@/components/audit/pillar-grid";
+import { RecommendationsSection } from "@/components/audit/recommendations-section";
+import { BookCallCta } from "@/components/audit/book-call-cta";
+import type { DpsResult } from "@/lib/audit/scoring";
+import type { ActionItem } from "@/lib/audit/recommendations";
+import { OVERALL_DPS_CAP } from "@/lib/audit/quiz-questions";
 
 interface AuditRow {
   id: string;
@@ -33,33 +38,18 @@ interface Finding {
   title: string;
   detail?: string;
 }
-interface SectionDetail {
-  headline?: string | null;
-  points: string[];
-}
-interface SectionDetails {
-  seo?: SectionDetail | null;
-  aeo?: SectionDetail | null;
-  reputation?: SectionDetail | null;
-  traffic?: SectionDetail | null;
-}
+// Audit findings JSON. Adam 2026-06-01: the new DPS shape is `dps` +
+// `recommendations`. Legacy audits won't have these fields — the renderer
+// branches on `findings.dps` and falls back to the legacy quick-wins /
+// risks view when the new fields are absent.
 interface Findings {
   quickWins: Finding[];
   risks: Finding[];
   opportunities: Finding[];
   mentions?: AuditMention[];
-  sectionDetails?: SectionDetails;
-}
-// 2026-05-29: score fields are nullable. synthesize.ts now preserves
-// null when DataForSEO providers come up empty (instead of coercing to
-// 0), so ScoreCard can render "Awaiting data" instead of a misleading
-// red "0/100". The legacy `?: number` shape would have squashed null
-// back to undefined and the difference would be lost.
-interface SectionScores {
-  seo?: number | null;
-  aeo?: number | null;
-  reputation?: number | null;
-  traffic?: number | null;
+  // New DPS shape (post-2026-06-01 audits)
+  dps?: DpsResult;
+  recommendations?: ActionItem[];
 }
 
 async function loadAudit(token: string): Promise<AuditRow | null> {
@@ -95,13 +85,13 @@ export async function generateMetadata({
   }
   const subject = audit.brandName ?? audit.domain;
   return {
-    title: `${subject} — ${BRAND_NAME} property marketing audit`,
-    description: `Free SEO, AEO, and reputation audit for ${subject}. Overall score, top findings, and what's at risk.`,
+    title: `${subject} — Digital Performance Score | ${BRAND_NAME}`,
+    description: `Personalized Digital Performance Score for ${subject}. Six pillars, capped at ${OVERALL_DPS_CAP}, with a prioritized action plan.`,
     alternates: { canonical: `/audit/${audit.shareToken}` },
     robots: { index: true, follow: true },
     openGraph: {
-      title: `${subject} — ${BRAND_NAME} audit`,
-      description: `Property marketing audit by ${BRAND_NAME}.`,
+      title: `${subject} — ${BRAND_NAME} Digital Performance Score`,
+      description: `Digital Performance Score by ${BRAND_NAME}.`,
       url: `${getSiteUrl()}/audit/${audit.shareToken}`,
       type: "article",
     },
@@ -130,74 +120,55 @@ export default async function AuditViewerPage({
     return <PendingState status={audit.status} domain={audit.domain} />;
   }
 
-  const sectionScores = (audit.sectionScores as SectionScores | null) ?? {};
   const findings = (audit.findings as Findings | null) ?? {
     quickWins: [],
     risks: [],
     opportunities: [],
   };
-  // Per-source mention counts — derived from the persisted findings.mentions
-  // list so we don't need a parallel sectionCounts column. Rendered above
-  // the email gate so a prospect sees the BREADTH of the scan (Reddit,
-  // Yelp, Google, ApartmentRatings, BBB, Facebook, web) before deciding
-  // to enter their email. Adam 2026-05-29: this is the "taste of the
-  // Reputation feature" the audit is supposed to demonstrate.
-  const perSourceCounts = computePerSourceCounts(findings.mentions ?? []);
-
   const subject = audit.brandName ?? audit.domain;
-  const overall = audit.overallScore ?? 0;
-  const tone = toneForScore(overall);
-  const accent =
-    tone === "green"
-      ? "#0E9F6E"
-      : tone === "blue"
-        ? "#2563EB"
-        : tone === "amber"
-          ? "#B45309"
-          : "#B91C1C";
+  const dps = findings.dps;
+  const recommendations = findings.recommendations ?? [];
+  const mentions = findings.mentions ?? [];
+  const perSourceCounts = computePerSourceCounts(mentions);
 
-  const sectionDetails = findings.sectionDetails ?? {};
-  const totalFindings =
-    (findings.quickWins ?? []).length +
-    (findings.risks ?? []).length +
-    (findings.opportunities ?? []).length;
+  // Legacy audits (pre-2026-06-01) don't have findings.dps. Fall back to
+  // the overallScore int we persist for backwards compat, with the
+  // global cap applied so we never render >75 even on stale data.
+  const score = dps?.score ?? Math.min(audit.overallScore ?? 0, OVERALL_DPS_CAP);
+  const cap = dps?.cap ?? OVERALL_DPS_CAP;
+  const capReason =
+    dps?.capReason ??
+    "Every property has structural ceilings on AI search, tracking, and review velocity until they're actively managed.";
+  const highSeverity = recommendations.filter((r) => r.severity === "high").length;
 
-  // 2026-05-29 paywall rewrite: render the FULL report regardless of
-  // email-gate state. When the prospect hasn't entered their email yet,
-  // AuditPaywall blurs the post-TopLine content and floats an email
-  // modal over it. The TopLine + SourceBreakdown stay clear so the
-  // prospect can see the scores + breadth of the scan; everything below
-  // (mentions, findings, narrative) reads as "here's the depth, give
-  // us your email to read it." Lifts naturally on successful capture.
   return (
     <ReportShell subject={subject} createdAt={audit.createdAt}>
-      <TopLine
+      <DpsHero
         subject={subject}
-        overall={overall}
-        accent={accent}
-        sections={sectionScores}
-        sectionDetails={sectionDetails}
+        score={score}
+        cap={cap}
+        capReason={capReason}
+        recommendationCount={recommendations.length}
       />
 
-      <SourceBreakdown
-        counts={perSourceCounts}
-        totalMentions={(findings.mentions ?? []).length}
-      />
+      {dps ? <PillarGrid pillars={dps.pillars} /> : null}
+
+      <SourceBreakdown counts={perSourceCounts} totalMentions={mentions.length} />
 
       <AuditPaywall
         unlocked={!!audit.email}
         auditId={audit.id}
-        mentionCount={(findings.mentions ?? []).length}
-        findingCount={totalFindings}
+        mentionCount={mentions.length}
+        findingCount={recommendations.length}
       >
+        <RecommendationsSection recommendations={recommendations} />
+
         <MentionsSection
-          mentions={findings.mentions ?? []}
+          mentions={mentions}
           brandName={subject}
           shareToken={audit.shareToken}
           auditCreatedAtIso={audit.createdAt.toISOString()}
         />
-
-        <Findings findings={findings} />
 
         {audit.claudeSummary ? (
           <section className="mt-12">
@@ -245,6 +216,14 @@ export default async function AuditViewerPage({
           </div>
         </section>
       </AuditPaywall>
+
+      <BookCallCta
+        subtitle={
+          highSeverity > 0
+            ? `${highSeverity} high-priority gap${highSeverity === 1 ? "" : "s"} identified — we can close most of them in 30 days.`
+            : undefined
+        }
+      />
     </ReportShell>
   );
 }
@@ -272,7 +251,7 @@ function ReportShell({
             fontFamily: "var(--font-mono)",
           }}
         >
-          {BRAND_NAME} property marketing audit
+          {BRAND_NAME} Digital Performance Score
         </p>
         <h1
           className="text-3xl md:text-5xl font-semibold mt-3 tracking-tight"
@@ -292,169 +271,6 @@ function ReportShell({
         </footer>
       </div>
     </div>
-  );
-}
-
-function TopLine({
-  subject,
-  overall,
-  accent,
-  sections,
-  sectionDetails,
-}: {
-  subject: string;
-  overall: number;
-  accent: string;
-  sections: SectionScores;
-  sectionDetails?: SectionDetails;
-}) {
-  return (
-    <section className="mt-10">
-      <div
-        className="rounded-2xl border p-8 sm:p-10 flex flex-col md:flex-row md:items-center md:justify-between gap-8"
-        style={{ borderColor: "#E5E7EB" }}
-      >
-        <div>
-          <p
-            className="text-[11px] font-mono uppercase tracking-[0.18em]"
-            style={{ color: "#6B7280", fontFamily: "var(--font-mono)" }}
-          >
-            Overall score
-          </p>
-          <div className="flex items-baseline gap-3 mt-2">
-            <CountUp
-              to={overall}
-              className="text-7xl sm:text-8xl font-semibold tabular-nums leading-none"
-            />
-            <span className="text-2xl" style={{ color: "#9CA3AF" }}>
-              / 100
-            </span>
-          </div>
-          <p className="mt-3 text-base max-w-md" style={{ color: "#4B5563" }}>
-            How {subject} stacks up across the four marketing surfaces every
-            property is now judged on.
-          </p>
-        </div>
-        <div
-          className="h-32 w-32 sm:h-40 sm:w-40 rounded-full flex items-center justify-center"
-          style={{
-            background: `conic-gradient(${accent} ${overall * 3.6}deg, #F3F4F6 0deg)`,
-          }}
-          aria-hidden
-        >
-          <div
-            className="h-24 w-24 sm:h-32 sm:w-32 rounded-full flex items-center justify-center"
-            style={{ backgroundColor: "#FFFFFF" }}
-          >
-            <span
-              className="text-2xl font-semibold"
-              style={{ color: accent }}
-            >
-              {overall}
-            </span>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-6 grid grid-cols-2 md:grid-cols-4 gap-4">
-        <ScoreCard
-          title="SEO"
-          score={sections.seo}
-          reasoning={sectionDetails?.seo ?? null}
-        />
-        <ScoreCard
-          title="AEO"
-          score={sections.aeo}
-          reasoning={sectionDetails?.aeo ?? null}
-        />
-        <ScoreCard
-          title="Reputation"
-          score={sections.reputation}
-          reasoning={sectionDetails?.reputation ?? null}
-        />
-        <ScoreCard
-          title="Traffic"
-          score={sections.traffic}
-          reasoning={sectionDetails?.traffic ?? null}
-        />
-      </div>
-    </section>
-  );
-}
-
-function Findings({ findings }: { findings: Findings }) {
-  const quickWins = (findings.quickWins ?? []).slice(0, 5);
-  const risks = (findings.risks ?? []).slice(0, 3);
-  const opportunities = (findings.opportunities ?? []).slice(0, 5);
-
-  return (
-    <>
-      {quickWins.length ? (
-        <section className="mt-14">
-          <SectionEyebrow>What we found</SectionEyebrow>
-          <h2 className="text-2xl sm:text-3xl font-semibold mt-2" style={{ color: "#1E2A3A" }}>
-            Top {quickWins.length} quick wins
-          </h2>
-          <ul className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-3">
-            {quickWins.map((f) => (
-              <FindingCard key={f.id} title={f.title} detail={f.detail} accent="#0E9F6E" />
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {risks.length ? (
-        <section className="mt-12">
-          <SectionEyebrow>What&apos;s at risk</SectionEyebrow>
-          <ul className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-            {risks.map((f) => (
-              <FindingCard key={f.id} title={f.title} detail={f.detail} accent="#B91C1C" />
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {opportunities.length ? (
-        <section className="mt-12">
-          <SectionEyebrow>Top opportunities</SectionEyebrow>
-          <ul className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-3">
-            {opportunities.map((f) => (
-              <FindingCard key={f.id} title={f.title} detail={f.detail} accent="#2563EB" />
-            ))}
-          </ul>
-        </section>
-      ) : null}
-    </>
-  );
-}
-
-function FindingCard({
-  title,
-  detail,
-  accent,
-}: {
-  title: string;
-  detail?: string;
-  accent: string;
-}) {
-  return (
-    <li
-      className="rounded-xl border bg-white p-5"
-      style={{ borderColor: "#E5E7EB" }}
-    >
-      <div
-        className="h-1 w-10 rounded-full mb-3"
-        style={{ backgroundColor: accent }}
-      />
-      <p className="text-sm font-semibold" style={{ color: "#1E2A3A" }}>
-        {title}
-      </p>
-      {detail ? (
-        <p className="text-sm mt-1" style={{ color: "#4B5563" }}>
-          {detail}
-        </p>
-      ) : null}
-    </li>
   );
 }
 
@@ -478,8 +294,6 @@ function PendingState({
 }) {
   const isFailed = status === ProspectAuditStatus.FAILED;
   return (
-    // Phase-1 auto-refresh until READY. Phase-2 spec calls for SSE.
-    // Skip the meta refresh on FAILED so the user isn't stuck in a loop.
     <>
       {!isFailed ? (
         <meta httpEquiv="refresh" content="5" />
@@ -521,13 +335,7 @@ function formatDate(d: Date): string {
 
 // ---------------------------------------------------------------------------
 // SourceBreakdown — chip row that exposes the breadth of the reputation
-// scan above the email gate.
-//
-// Renders one chip per canonical source (Reddit, Yelp, Google review,
-// ApartmentRatings, BBB, Facebook, open web), each with the per-source
-// mention count. Sources with zero hits still render so the row stays
-// stable — "Yelp 0" communicates "we looked and found nothing" rather
-// than "we never checked." Adam 2026-05-29.
+// scan above the email gate. Preserved from the legacy result page.
 // ---------------------------------------------------------------------------
 
 type AuditSource = AuditMention["source"];

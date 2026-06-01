@@ -26,8 +26,22 @@ import { COMPUTE_VERSION } from "@/lib/signals/types";
 //
 // Response: { auditId, shareToken, status, cached? }
 
+// quizAnswers is `Record<string, string | string[]>` per
+// `lib/audit/quiz-questions.ts::QuizAnswers`. Zod can't express the
+// keys-from-runtime-array shape exactly, so we validate the shape (record
+// of values that are string or string[]) and trust the schema source of
+// truth in quiz-questions.ts.
+const QuizAnswerValue = z.union([
+  z.string().trim().max(500),
+  z.array(z.string().trim().min(1).max(120)).max(20),
+]);
+
 const BodySchema = z.object({
   url: z.string().trim().min(1).max(500),
+  quizAnswers: z
+    .record(z.string().max(64), QuizAnswerValue)
+    .optional()
+    .nullable(),
 });
 
 const DEDUPE_WINDOW_MS = 14 * 24 * 60 * 60 * 1000;
@@ -95,6 +109,15 @@ export async function POST(req: NextRequest) {
     const expiresAt = new Date(
       Date.now() + INITIAL_EXPIRY_DAYS * 24 * 60 * 60 * 1000,
     );
+    // Normalize quizAnswers — null and undefined both round-trip to JSON
+    // null on the column. We persist as-is; the scoring + recommendation
+    // engines validate shape per-question. Sanity cap: an answer object
+    // with more than 32 keys is almost certainly malformed or hostile.
+    const quizAnswers =
+      parsed.data.quizAnswers &&
+      Object.keys(parsed.data.quizAnswers).length <= 32
+        ? parsed.data.quizAnswers
+        : null;
     const audit = await prisma.prospectAudit.create({
       data: {
         shareToken,
@@ -104,6 +127,7 @@ export async function POST(req: NextRequest) {
         userAgent: req.headers.get("user-agent") ?? null,
         status: ProspectAuditStatus.QUEUED,
         expiresAt,
+        quizAnswers: quizAnswers ?? undefined,
       },
       select: { id: true, shareToken: true, status: true },
     });

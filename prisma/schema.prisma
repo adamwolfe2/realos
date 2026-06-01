@@ -5290,6 +5290,10 @@ model ProspectAudit {
   sectionScores   Json?
   claudeSummary   String?             @db.Text
   findings        Json?
+  // Quiz responses captured before the scan kicks off. Shape defined by
+  // `lib/audit/quiz-questions.ts::QuizAnswers`. Nullable so pre-DPS
+  // audits and URL-only submits still work.
+  quizAnswers     Json?
   viewCount       Int                 @default(0)
   lastViewedAt    DateTime?
   expiresAt       DateTime
