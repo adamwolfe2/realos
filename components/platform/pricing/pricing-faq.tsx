@@ -24,7 +24,7 @@ const FAQS: Array<{ q: string; a: string }> = [
   },
   {
     q: "What is included in the monthly fee?",
-    a: "On Standard: connections to your existing stack, identified-visitor pixel (5,000 per month), AI leasing chatbot (5,000 conversations per month), source-to-lease attribution across Google and Meta, reputation monitoring, and a weekly operator-written read on every channel. No ad spend markup. No setup fee. Onboarding call included — a 30-minute strategy session to connect your stack and align your team. Free, part of the service.",
+    a: "On Standard: connections to your existing stack, identified-visitor pixel (5,000 per month), AI leasing chatbot (5,000 conversations per month), source-to-lease attribution across Google and Meta, reputation monitoring, and a weekly operator-written read on every channel. No setup fee. Onboarding call included: a 30-minute strategy session to connect your stack and align your team, free and part of the service. Ad spend is billed separately at a 15 percent management markup, only on months when we are actively running campaigns for you.",
   },
   {
     q: "Does LeaseStack replace my leasing staff?",
@@ -36,7 +36,7 @@ const FAQS: Array<{ q: string; a: string }> = [
   },
   {
     q: "Are you a marketing agency?",
-    a: "No. LeaseStack is a leasing intelligence platform. We do not buy ads on your behalf, we do not write your creative, and we do not charge a percent of spend. We tell your existing program (or your agency, if you keep one) what is working, what is not, and what to do next. The product is the dashboard and the insights, not the labor.",
+    a: "No. LeaseStack is a leasing intelligence platform. The core product is the dashboard, the data, and the recommendations: your team acts on them. When you want help executing, we can facilitate and manage paid ad campaigns on your behalf at a 15 percent management markup on monthly ad budget, with every dollar attributed back to signed leases. The platform is the product. Ad management is an optional capability you can turn on or off month to month.",
   },
   {
     q: "Are there any contracts?",

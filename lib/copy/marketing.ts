@@ -13,13 +13,20 @@ export const MARKETING = {
     tagline: "Leasing intelligence for real estate operators.",
   },
   home: {
+    // Norman brief v2 (2026-06-01) — repositioning pass.
+    // Eyebrow: "Leasing intelligence" → "Data intelligence" (SD2).
+    // Headline: dropped "Replace your marketing stack" (G5 — passive
+    //   displacement is a byproduct, not the message).
+    // Sub-header: dropped feature list, leading with centralization +
+    //   month-to-month flexibility instead (H3).
+    // Primary CTA: "Start a free pilot" → "Request pilot" (G1).
     hero: {
-      eyebrow: "Leasing intelligence platform",
-      headline: "Replace your marketing stack. Live in 14 days.",
-      highlight: "Live in 14 days.",
+      eyebrow: "Data intelligence platform",
+      headline: "Take control of your online leasing.",
+      highlight: "online leasing.",
       subhead:
-        "Site, ads, AI chatbot, visitor pixel, reputation, and weekly report in one dashboard. Live on your domain in fourteen days. Month-to-month.",
-      primaryCta: "Start a free pilot",
+        "Centralize your tech stack on one platform with one login. Month-to-month contract flexibility.",
+      primaryCta: "Request pilot",
       primaryHref: "/onboarding",
       secondaryCta: "See it on a real property",
       secondaryHref: "/demo",

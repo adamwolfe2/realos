@@ -116,7 +116,7 @@ export function PacingAlert() {
               fontWeight: 600,
             }}
           >
-            Telegraph Commons · 612 units · cycle week 19 of 24
+            Student Central · 612 units · cycle week 19 of 24
           </p>
         </div>
         <span

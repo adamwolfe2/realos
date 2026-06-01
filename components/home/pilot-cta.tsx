@@ -44,6 +44,8 @@ export function PilotCta() {
               >
                 Connect your stack. See your dashboard light up.
               </h2>
+              {/* Norman v2 MC3: subcopy reframed from "no card / no
+                  commitment" to operator-led intro framing. */}
               <p
                 className="mt-3"
                 style={{
@@ -53,7 +55,7 @@ export function PilotCta() {
                   lineHeight: 1.6,
                 }}
               >
-                No card. No commitment. Month-to-month after launch.
+                No sales pitch. No deck. Thirty minutes with the operator who built this.
               </p>
             </div>
 
@@ -63,7 +65,7 @@ export function PilotCta() {
                 className="btn-primary"
                 style={{ display: "inline-flex", justifyContent: "center" }}
               >
-                Start a free pilot
+                Request pilot
               </Link>
               <Link
                 href="/demo"

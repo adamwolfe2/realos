@@ -48,7 +48,7 @@ const MENTIONS: Mention[] = [
     source: "reddit",
     title: "r/berkeley — looking for fall housing",
     snippet:
-      "Telegraph Commons came up a few times. Anyone here actually lived there?",
+      "Student Central came up a few times. Anyone here actually lived there?",
     ago: "3d",
     sentiment: "neutral",
   },

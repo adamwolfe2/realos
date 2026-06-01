@@ -50,7 +50,7 @@ export function SanityCheckSection() {
 // Property branding + query script
 // ---------------------------------------------------------------------------
 
-const PROPERTY_NAME = "Telegraph Commons";
+const PROPERTY_NAME = "Student Central";
 
 // Sources the scanner rotates through. `key` matches FeedItem.flashKey
 // so the right row flashes when the scanner lands on it. `text` is the

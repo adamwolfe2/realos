@@ -19,8 +19,8 @@ export function Hero() {
       headline={
         <SoftBlurIn
           segments={[
-            { text: "Replace your marketing stack." },
-            { text: "Live in 14 days.", color: "#2563EB" },
+            { text: "Take control of your" },
+            { text: "online leasing.", color: "#2563EB" },
           ]}
         />
       }

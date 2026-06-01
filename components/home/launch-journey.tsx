@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
+import Link from "next/link";
 import {
   motion,
   useScroll,
@@ -552,7 +553,11 @@ function CompletionRibbon({ visible }: { visible: boolean }) {
           Every capability unlocked. The platform compounds from here.
         </p>
       </div>
-      <span
+      {/* Norman v2 (U20/FD9): "Start a pilot" was a dead span. Wired up
+          to /demo (book your intro call) and renamed to "Request pilot"
+          to match the rest of the site (G1). */}
+      <Link
+        href="/demo"
         style={{
           color: ACCENT,
           fontFamily: "var(--font-mono)",
@@ -560,10 +565,12 @@ function CompletionRibbon({ visible }: { visible: boolean }) {
           fontWeight: 700,
           letterSpacing: "0.12em",
           textTransform: "uppercase",
+          textDecoration: "none",
         }}
+        className="hover:underline underline-offset-4"
       >
-        ↗ Start a pilot
-      </span>
+        ↗ Request pilot
+      </Link>
     </motion.div>
   );
 }

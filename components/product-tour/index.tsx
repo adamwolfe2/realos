@@ -822,7 +822,7 @@ function FeaturedPropertyStrip({
                 telegraph-commons.jpg when the real asset is uploaded. */}
             <Image
               src="https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=240&h=240&q=80"
-              alt="Telegraph Commons"
+              alt="Student Central"
               width={76}
               height={76}
               sizes="76px"
@@ -862,7 +862,7 @@ function FeaturedPropertyStrip({
               letterSpacing: "-0.018em",
             }}
           >
-            Telegraph Commons
+            Student Central
           </h1>
           <div className="mt-2 flex items-center gap-3 flex-wrap">
             <HeroStat label="Leads · 28d" value="168" />

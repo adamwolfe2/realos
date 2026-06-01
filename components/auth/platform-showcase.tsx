@@ -94,7 +94,7 @@ export function PlatformShowcase() {
             <LeadSourceDonut />
           </div>
         </div>
-        {/* Activity feed now spans the full grid. The Telegraph Commons
+        {/* Activity feed now spans the full grid. The Student Central
             property card that previously occupied col-span-2 was pulled
             out per pilot-customer request — public marketing surfaces
             must not name SG's property or city until they sign off on
@@ -450,7 +450,7 @@ function LeadSourceDonut() {
 }
 
 // PropertyCard removed — the named property + city callout (previously
-// "Telegraph Commons · Berkeley, CA · 100 units") cannot appear on
+// "Student Central · Berkeley, CA · 100 units") cannot appear on
 // public marketing surfaces until pilot customers approve being a
 // public reference. Layout was reflowed: the activity feed now spans
 // the full row in its place.

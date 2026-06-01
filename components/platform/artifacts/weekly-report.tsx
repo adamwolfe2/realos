@@ -94,7 +94,7 @@ export function WeeklyReport() {
                   fontWeight: 600,
                 }}
               >
-                LeaseStack weekly · Telegraph Commons
+                LeaseStack weekly · Student Central
               </p>
               <p
                 className="truncate"

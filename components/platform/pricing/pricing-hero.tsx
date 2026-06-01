@@ -45,33 +45,42 @@ export function PricingHero() {
             />
           </div>
 
-          {/* Headline — black first line, brand-blue second line */}
+          {/* Headline — black first line, brand-blue second line.
+              Norman v2 brief (PR1): "One platform. Every signal. One
+              price per property." Leads with the platform-first frame
+              instead of the displaced-retainer angle. */}
           <h1
             className="text-4xl md:text-5xl lg:text-6xl font-semibold leading-[1.05] tracking-tight"
             style={{ color: "#1E2A3A" }}
           >
-            One platform.
+            One platform. Every signal.
             <br />
-            <span style={{ color: "#2563EB" }}>Less than your retainer.</span>
+            <span style={{ color: "#2563EB" }}>One price per property.</span>
           </h1>
 
-          {/* Subhead — one sentence, capped width for clean line breaks */}
+          {/* Subhead — Norman v2 PR2. Lead with the intelligence platform
+              (connect existing stack, unified dashboard). Ad campaign
+              management is a real capability but no longer the headline:
+              acknowledged in a single follow-on sentence. No em dashes. */}
           <p
             className="mt-5 text-lg md:text-xl leading-relaxed mx-auto max-w-2xl"
             style={{ color: "#4B5563" }}
           >
-            Site, ads, AI chatbot, visitor pixel, reputation, and weekly
-            report — flat per-property monthly, no retainer.
+            Connect your existing stack. Get one dashboard showing leads,
+            traffic, reputation, and AI visibility. When you want to run
+            paid campaigns, we can manage those too.
           </p>
 
-          {/* Primary + secondary CTA */}
+          {/* Primary + secondary CTA. Norman v2 G1: every primary CTA on
+              the site says "Request pilot" or "Book your intro call".
+              "Book a demo" → "Book your intro call". */}
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
               href={PRIMARY_HREF}
               className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium text-white transition-colors hover:opacity-90"
               style={{ backgroundColor: "#2563EB" }}
             >
-              Start the free trial
+              Request pilot
             </Link>
             <Link
               href={SECONDARY_HREF}
@@ -82,7 +91,7 @@ export function PricingHero() {
                 backgroundColor: "#FFFFFF",
               }}
             >
-              Book a demo
+              Book your intro call
             </Link>
           </div>
 
