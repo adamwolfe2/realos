@@ -1,11 +1,22 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import {
   saveCursiveSettings,
   syncCursiveSegment,
   testCursiveWebhook,
 } from "@/lib/actions/admin-cursive";
+
+// Auto-sync threshold. When an operator opens this panel and the last
+// segment pull is older than this, fire the sync transparently on mount
+// — the same self-healing pattern /portal/visitors already uses (see
+// components/portal/sync/pixel-sync-button.tsx). Keeps the operator from
+// ever needing to click "Sync from segment" manually under normal use:
+// the 5-min vercel cron handles background freshness, and this on-load
+// trigger handles the gap when the operator is actively looking at the
+// panel.
+const STALE_THRESHOLD_MS = 2 * 60 * 1000;
 
 type Initial = {
   cursivePixelId: string | null;
@@ -35,10 +46,17 @@ export function CursivePanel({
   tenantWebhookUrl: string | null;
   initial: Initial;
 }) {
+  const router = useRouter();
   const [pixelId, setPixelId] = useState(initial.cursivePixelId ?? "");
   const [segmentId, setSegmentId] = useState(initial.cursiveSegmentId ?? "");
   const [domain, setDomain] = useState(initial.installedOnDomain ?? "");
   const [pending, startTransition] = useTransition();
+  // Distinct from `pending` so the on-mount auto-sync can render its own
+  // muted "Refreshing…" indicator without flipping every button to a
+  // disabled state. Manual button clicks still use `pending` via
+  // useTransition; auto runs use this flag.
+  const [autoRefreshing, setAutoRefreshing] = useState(false);
+  const autoTriggered = useRef(false);
   const [saveMsg, setSaveMsg] = useState<{
     kind: "ok" | "error";
     text: string;
@@ -124,6 +142,50 @@ export function CursivePanel({
       }
     });
   }
+
+  // Auto-sync on mount when the segment data is stale. Fires once per
+  // page load (sessionStorage-deduped across tabs within a 60s window
+  // so multiple admin tabs don't each trigger). Silent: doesn't flip
+  // `pending` (used by manual buttons) — uses `autoRefreshing` instead
+  // so the operator sees a muted indicator next to the timestamp,
+  // not a disabled UI. router.refresh() at the end so the new
+  // lastSegmentSyncAt + visitor counts render without a full reload.
+  useEffect(() => {
+    if (autoTriggered.current) return;
+    autoTriggered.current = true;
+    if (!initial.cursiveSegmentId) return;
+    const lastSync = initial.lastSegmentSyncAt
+      ? new Date(initial.lastSegmentSyncAt).getTime()
+      : 0;
+    const ageMs = Date.now() - lastSync;
+    const isStale = !initial.lastSegmentSyncAt || ageMs > STALE_THRESHOLD_MS;
+    if (!isStale) return;
+
+    // Cross-tab dedupe — same pattern as StaleOnLoadTrigger.
+    try {
+      const key = `sync:admin-cursive:${orgId}`;
+      const lastFired = sessionStorage.getItem(key);
+      if (lastFired) {
+        const fireAgeMs = Date.now() - Number(lastFired);
+        if (Number.isFinite(fireAgeMs) && fireAgeMs < 60_000) return;
+      }
+      sessionStorage.setItem(key, String(Date.now()));
+    } catch {
+      // sessionStorage can throw in private mode; fall through.
+    }
+
+    setAutoRefreshing(true);
+    void (async () => {
+      try {
+        await syncCursiveSegment(orgId).catch(() => undefined);
+      } finally {
+        setAutoRefreshing(false);
+        // Settle for ~1s so the upsert lands before re-reading the row.
+        setTimeout(() => router.refresh(), 1000);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function onTest() {
     setTestMsg(null);
@@ -262,8 +324,26 @@ export function CursivePanel({
               (?)
             </span>
           </div>
-          <div>
-            Last segment sync: {formatTime(initial.lastSegmentSyncAt)}.
+          <div className="flex items-center gap-2 flex-wrap">
+            <span>
+              Last segment sync: {formatTime(initial.lastSegmentSyncAt)}.
+            </span>
+            {autoRefreshing ? (
+              <span className="text-[10px] uppercase tracking-wider text-muted-foreground/80 inline-flex items-center gap-1">
+                <span
+                  aria-hidden
+                  className="inline-block h-1.5 w-1.5 rounded-full bg-primary animate-pulse"
+                />
+                Auto-refreshing…
+              </span>
+            ) : (
+              <span
+                className="text-[10px] uppercase tracking-wider text-muted-foreground/70"
+                title="A background cron pulls the segment every 5 minutes. This panel also auto-pulls when you open it if the data is older than 2 minutes — no manual sync needed under normal use."
+              >
+                Auto-syncs every 5 min
+              </span>
+            )}
           </div>
           {/* Norman question (May 22): admin says "205 resolutions", portal
               says "146 IDENTIFIED" — why the gap? The 205 is every member
