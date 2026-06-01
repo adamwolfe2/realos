@@ -4,7 +4,16 @@ import * as React from "react";
 import { useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CheckSquare, Square, Loader2, ExternalLink, Bot } from "lucide-react";
+import {
+  CheckSquare,
+  Square,
+  Loader2,
+  ExternalLink,
+  Bot,
+  MousePointerClick,
+  FileText,
+  Eye,
+} from "lucide-react";
 import { LeadStatus } from "@prisma/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -29,6 +38,15 @@ export type LeadKanbanItem = {
   score: number;
   propertyName: string | null;
   createdAt: string;
+  // ---- Cross-signal flags ------------------------------------------------
+  // Each is a per-lead boolean answering "did this lead show up in
+  // <signal> at any point?" The leads page resolves them in batch after
+  // the main lead query (one count() / findMany per signal). visitCount
+  // is an integer instead of bool so the badge can surface intensity.
+  hasChatbot: boolean;
+  hasPopup: boolean;
+  hasApplication: boolean;
+  visitCount: number;
 };
 
 const STATUS_META: Record<
@@ -510,9 +528,12 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
                     </span>
                   </td>
                   <td className="px-4 py-3 hidden md:table-cell">
-                    <span className="text-sm text-muted-foreground">
-                      {humanLeadSource(item.source)}
-                    </span>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className="text-sm text-muted-foreground">
+                        {humanLeadSource(item.source)}
+                      </span>
+                      <SignalBadges item={item} />
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <span
@@ -790,5 +811,78 @@ function LeadDrawerBody({ item }: { item: LeadKanbanItem }) {
         </p>
       </section>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SignalBadges — compact icon row that surfaces which cross-product signals
+// this lead has touched. Resolved in the page query (one batch lookup per
+// signal type) and threaded onto each LeadKanbanItem. Each icon tooltips
+// (via title) so operators can scan a row and immediately know "yep, this
+// person chatted with the bot AND submitted an app." Empty when the lead
+// has none of the four signals — keeps low-signal rows clean.
+// ---------------------------------------------------------------------------
+function SignalBadges({ item }: { item: LeadKanbanItem }) {
+  const badges: Array<{
+    key: string;
+    icon: React.ReactNode;
+    title: string;
+    color: string;
+  }> = [];
+  if (item.visitCount > 0) {
+    badges.push({
+      key: "visitor",
+      icon: <Eye className="h-3 w-3" strokeWidth={2} aria-hidden="true" />,
+      title: `${item.visitCount} pixel-tracked visit${item.visitCount === 1 ? "" : "s"}`,
+      color: "text-emerald-600 bg-emerald-50 border-emerald-200",
+    });
+  }
+  if (item.hasChatbot) {
+    badges.push({
+      key: "chatbot",
+      icon: <Bot className="h-3 w-3" strokeWidth={2} aria-hidden="true" />,
+      title: "Engaged the chatbot",
+      color: "text-primary bg-primary/10 border-primary/30",
+    });
+  }
+  if (item.hasPopup) {
+    badges.push({
+      key: "popup",
+      icon: (
+        <MousePointerClick
+          className="h-3 w-3"
+          strokeWidth={2}
+          aria-hidden="true"
+        />
+      ),
+      title: "Converted from a popup",
+      color: "text-amber-700 bg-amber-50 border-amber-200",
+    });
+  }
+  if (item.hasApplication) {
+    badges.push({
+      key: "application",
+      icon: <FileText className="h-3 w-3" strokeWidth={2} aria-hidden="true" />,
+      title: "Submitted an application",
+      color: "text-violet-700 bg-violet-50 border-violet-200",
+    });
+  }
+  if (badges.length === 0) return null;
+  return (
+    <span className="inline-flex items-center gap-1">
+      {badges.map((b) => (
+        <span
+          key={b.key}
+          title={b.title}
+          aria-label={b.title}
+          className={cn(
+            "inline-flex items-center justify-center h-4 w-4 rounded border",
+            b.color,
+          )}
+        >
+          {b.icon}
+        </span>
+      ))}
+    </span>
   );
 }

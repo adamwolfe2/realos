@@ -1,7 +1,18 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { Search, SlidersHorizontal, Users, Flame, CalendarCheck, CheckCircle2 } from "lucide-react";
+import {
+  Search,
+  SlidersHorizontal,
+  Users,
+  Flame,
+  CalendarCheck,
+  CheckCircle2,
+  Bot,
+  MousePointerClick,
+  FileText,
+  Eye,
+} from "lucide-react";
 import { prisma } from "@/lib/db";
 import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
@@ -33,6 +44,18 @@ export const dynamic = "force-dynamic";
 const SOURCES = Object.values(LeadSource);
 const PAGE_SIZE = 50;
 
+// Cross-signal filter chips. Each maps to a per-lead boolean computed
+// in the page query: "chatbot" → lead has a ChatbotConversation row;
+// "popup" → lead has a PopupEvent with type=CONVERTED; "visitor" → lead's
+// email matches a Visitor row's email (or hashedEmail); "application" →
+// lead has any Application row. Adding to URL as ?signal= so each chip is
+// a plain Link / no JS.
+const SIGNAL_KEYS = ["chatbot", "popup", "visitor", "application"] as const;
+type SignalKey = (typeof SIGNAL_KEYS)[number];
+function isSignalKey(v: string | undefined): v is SignalKey {
+  return !!v && (SIGNAL_KEYS as readonly string[]).includes(v);
+}
+
 function parsePage(value: string | undefined): number {
   const parsed = value ? Number.parseInt(value, 10) : 1;
   if (!Number.isFinite(parsed) || parsed < 1) return 1;
@@ -44,6 +67,7 @@ export default async function LeadsKanbanPage({
 }: {
   searchParams: Promise<{
     source?: string;
+    signal?: string;
     property?: string;
     properties?: string;
     q?: string;
@@ -54,6 +78,7 @@ export default async function LeadsKanbanPage({
   const sp = await searchParams;
   const page = parsePage(sp.page);
   const propertyIds = await parsePropertyFilter(sp);
+  const signalFilter: SignalKey | null = isSignalKey(sp.signal) ? sp.signal : null;
 
   const where: Prisma.LeadWhereInput = {
     ...tenantWhere(scope),
@@ -71,6 +96,32 @@ export default async function LeadsKanbanPage({
     ];
   }
 
+  // Signal filter — when set, restricts the visible leads to those that
+  // have the corresponding cross-product touchpoint. Lead's Prisma
+  // relations cover conversations + applications + visitor; popups are
+  // a one-way link (PopupEvent.leadId with no Lead backref) so we
+  // pre-fetch the leadId set when needed.
+  if (signalFilter === "chatbot") {
+    where.conversations = { some: {} };
+  } else if (signalFilter === "application") {
+    where.applications = { some: {} };
+  } else if (signalFilter === "visitor") {
+    where.visitorId = { not: null };
+  } else if (signalFilter === "popup") {
+    const popupLeadIds = await prisma.popupEvent
+      .findMany({
+        where: {
+          orgId: scope.orgId,
+          type: "CONVERTED",
+          leadId: { not: null },
+        },
+        select: { leadId: true },
+        distinct: ["leadId"],
+      })
+      .then((rows) => rows.map((r) => r.leadId!).filter(Boolean));
+    where.id = { in: popupLeadIds.length > 0 ? popupLeadIds : ["__none__"] };
+  }
+
   // KPI strip queries — scoped to the same property + filter set so the
   // numbers above the kanban move in lockstep with what the operator sees
   // below. Each runs in parallel with the main page query; failures fall
@@ -81,6 +132,15 @@ export default async function LeadsKanbanPage({
     ...propertyWhereFragment(scope, propertyIds),
   };
 
+  // Property-filter fragment for non-Lead tables that have their own
+  // propertyId column (ChatbotConversation, PopupEvent, Visitor,
+  // Application). Reuses the same effective property set so KPIs move
+  // with the operator's property filter.
+  const nonLeadPropertyFragment =
+    propertyIds && propertyIds.length > 0
+      ? { propertyId: { in: propertyIds } }
+      : {};
+
   const [
     leads,
     totalCount,
@@ -90,6 +150,10 @@ export default async function LeadsKanbanPage({
     kpiToursScheduled,
     kpiSigned28d,
     sourceCounts,
+    kpiChatbot28d,
+    kpiPopupConv28d,
+    kpiApplications28d,
+    kpiVisitors28d,
   ] = await Promise.all([
     prisma.lead.findMany({
       where,
@@ -164,7 +228,131 @@ export default async function LeadsKanbanPage({
         _count: { _all: true },
       })
       .catch(() => [] as Array<{ source: LeadSource; _count: { _all: number } }>),
+    // --- Cross-product signal KPIs (28d) ----------------------------------
+    // Each is org + property scoped. .catch fall-back so a single bad
+    // query never blanks the strip.
+    prisma.chatbotConversation
+      .count({
+        where: {
+          orgId: scope.orgId,
+          ...nonLeadPropertyFragment,
+          createdAt: { gte: since28d },
+        },
+      })
+      .catch(() => 0),
+    prisma.popupEvent
+      .count({
+        where: {
+          orgId: scope.orgId,
+          type: "CONVERTED",
+          occurredAt: { gte: since28d },
+        },
+      })
+      .catch(() => 0),
+    prisma.application
+      .count({
+        where: {
+          lead: { ...kpiWhere },
+          createdAt: { gte: since28d },
+        },
+      })
+      .catch(() => 0),
+    prisma.visitor
+      .count({
+        where: {
+          orgId: scope.orgId,
+          ...nonLeadPropertyFragment,
+          firstSeenAt: { gte: since28d },
+        },
+      })
+      .catch(() => 0),
   ]);
+
+  // ---------------------------------------------------------------------
+  // Per-lead signal-flag resolution.
+  // After the main lead page is fetched, batch one existence query per
+  // signal so each row knows whether the lead touched chatbot / popup /
+  // visitor / application. Single-trip with `findMany({ select: { id:
+  // true } })` instead of N+1 .count() per lead. The result Sets feed
+  // SignalBadges on the kanban cards.
+  // ---------------------------------------------------------------------
+  const visibleLeadIds = leads.map((l) => l.id);
+  const visibleEmails = leads
+    .map((l) => l.email)
+    .filter((e): e is string => !!e && e.trim() !== "")
+    .map((e) => e.toLowerCase());
+
+  const [
+    chatbotByLead,
+    popupByLead,
+    applicationByLead,
+    visitorByEmail,
+  ] = await Promise.all([
+    visibleLeadIds.length === 0
+      ? []
+      : prisma.chatbotConversation
+          .findMany({
+            where: { leadId: { in: visibleLeadIds } },
+            select: { leadId: true },
+            distinct: ["leadId"],
+          })
+          .catch(() => [] as Array<{ leadId: string | null }>),
+    visibleLeadIds.length === 0
+      ? []
+      : prisma.popupEvent
+          .findMany({
+            where: {
+              orgId: scope.orgId,
+              leadId: { in: visibleLeadIds },
+              type: "CONVERTED",
+            },
+            select: { leadId: true },
+            distinct: ["leadId"],
+          })
+          .catch(() => [] as Array<{ leadId: string | null }>),
+    visibleLeadIds.length === 0
+      ? []
+      : prisma.application
+          .findMany({
+            where: { leadId: { in: visibleLeadIds } },
+            select: { leadId: true },
+            distinct: ["leadId"],
+          })
+          .catch(() => [] as Array<{ leadId: string }>),
+    visibleEmails.length === 0
+      ? []
+      : prisma.visitor
+          .groupBy({
+            by: ["email"],
+            where: {
+              orgId: scope.orgId,
+              email: { in: visibleEmails, mode: "insensitive" },
+            },
+            _sum: { sessionCount: true },
+          })
+          .catch(
+            () =>
+              [] as Array<{
+                email: string | null;
+                _sum: { sessionCount: number | null };
+              }>,
+          ),
+  ]);
+
+  const chatbotSet = new Set(
+    chatbotByLead
+      .map((r) => r.leadId)
+      .filter((id): id is string => !!id),
+  );
+  const popupSet = new Set(
+    popupByLead.map((r) => r.leadId).filter((id): id is string => !!id),
+  );
+  const applicationSet = new Set(applicationByLead.map((r) => r.leadId));
+  const visitorMap = new Map<string, number>();
+  for (const row of visitorByEmail) {
+    if (!row.email) continue;
+    visitorMap.set(row.email.toLowerCase(), row._sum.sessionCount ?? 0);
+  }
 
   // Build a Set of sources that have at least one lead. Includes the
   // currently-active source filter even if its count is zero so the
@@ -194,6 +382,10 @@ export default async function LeadsKanbanPage({
     score: l.score,
     propertyName: l.property?.name ?? null,
     createdAt: l.createdAt.toISOString(),
+    hasChatbot: chatbotSet.has(l.id),
+    hasPopup: popupSet.has(l.id),
+    hasApplication: applicationSet.has(l.id),
+    visitCount: l.email ? visitorMap.get(l.email.toLowerCase()) ?? 0 : 0,
   }));
 
   const rangeStart = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
@@ -204,6 +396,7 @@ export default async function LeadsKanbanPage({
   function pageHref(p: number): string {
     const params = new URLSearchParams();
     if (sp.source) params.set("source", sp.source);
+    if (signalFilter) params.set("signal", signalFilter);
     if (sp.properties) params.set("properties", sp.properties);
     else if (sp.property) params.set("property", sp.property);
     if (sp.q) params.set("q", sp.q);
@@ -274,7 +467,7 @@ export default async function LeadsKanbanPage({
           visible board, not a static org-wide widget. */}
       <section
         aria-label="Lead pipeline at a glance"
-        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 ls-stagger"
+        className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2 ls-stagger"
       >
         <KpiTile
           label="New leads (28d)"
@@ -304,6 +497,45 @@ export default async function LeadsKanbanPage({
         />
       </section>
 
+      {/* Cross-product signal strip — pixel visits, chatbot, popup
+          conversions, applications. Same 28d window as the pipeline
+          strip above so the two rows compose into one full picture of
+          recent activity. Each tile links into its own page when
+          available, otherwise stays a passive number. */}
+      <section
+        aria-label="Cross-product signals (28d)"
+        className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2 ls-stagger"
+      >
+        <KpiTile
+          label="Tracked visitors (28d)"
+          value={kpiVisitors28d.toLocaleString()}
+          hint="From the Cursive pixel"
+          icon={<Eye className="h-3.5 w-3.5" />}
+        />
+        <KpiTile
+          label="Chatbot convos (28d)"
+          value={kpiChatbot28d.toLocaleString()}
+          hint="Site visitors who engaged"
+          icon={<Bot className="h-3.5 w-3.5" />}
+        />
+        <KpiTile
+          label="Popup conversions (28d)"
+          value={kpiPopupConv28d.toLocaleString()}
+          hint="Captured via popup CTA"
+          icon={<MousePointerClick className="h-3.5 w-3.5" />}
+        />
+        <KpiTile
+          label="Applications (28d)"
+          value={kpiApplications28d.toLocaleString()}
+          hint={
+            kpiApplications28d > 0
+              ? "Submitted via AppFolio or form"
+              : "No applications synced yet"
+          }
+          icon={<FileText className="h-3.5 w-3.5" />}
+        />
+      </section>
+
       {/* Source-mix one-liner. Renders only when at least one lead
           exists and at least one source has data so it doesn't echo
           "0 leads from no sources" on day-one tenants. */}
@@ -324,9 +556,12 @@ export default async function LeadsKanbanPage({
       <div className="rounded-xl border border-border bg-card p-3 space-y-2.5">
         {/* Search row */}
         <form action="/portal/leads" className="flex items-center gap-2">
-          {/* Preserve active source + property scope through search submit */}
+          {/* Preserve active source + signal + property scope through search submit */}
           {sp.source ? (
             <input type="hidden" name="source" value={sp.source} />
+          ) : null}
+          {signalFilter ? (
+            <input type="hidden" name="signal" value={signalFilter} />
           ) : null}
           {sp.properties ? (
             <input type="hidden" name="properties" value={sp.properties} />
@@ -365,14 +600,14 @@ export default async function LeadsKanbanPage({
           <SourcePill
             label="All"
             active={!sp.source}
-            href={buildHref({ source: undefined, q: sp.q, properties: sp.properties })}
+            href={buildHref({ source: undefined, signal: signalFilter, q: sp.q, properties: sp.properties })}
           />
           {SOURCES.filter((s) => sourcesWithData.has(s)).map((s) => (
             <SourcePill
               key={s}
               label={humanLeadSource(s)}
               active={sp.source === s}
-              href={buildHref({ source: s, q: sp.q, properties: sp.properties })}
+              href={buildHref({ source: s, signal: signalFilter, q: sp.q, properties: sp.properties })}
             />
           ))}
           {sourcesWithData.size === 0 ? (
@@ -380,6 +615,42 @@ export default async function LeadsKanbanPage({
               No sources yet.
             </span>
           ) : null}
+        </div>
+
+        {/* Cross-signal filter row — orthogonal to source. Lets the
+            operator slice the board by which products this lead has
+            touched (chatbot transcript, popup conversion, pixel match,
+            application). Layered on top of source + property filters. */}
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-[9px] uppercase tracking-[0.14em] font-semibold text-muted-foreground shrink-0 mr-0.5 flex items-center gap-1">
+            <SlidersHorizontal className="h-2.5 w-2.5" />
+            Signal
+          </span>
+          <SourcePill
+            label="All"
+            active={!signalFilter}
+            href={buildHref({ source: sp.source, signal: undefined, q: sp.q, properties: sp.properties })}
+          />
+          <SourcePill
+            label="Visitors"
+            active={signalFilter === "visitor"}
+            href={buildHref({ source: sp.source, signal: "visitor", q: sp.q, properties: sp.properties })}
+          />
+          <SourcePill
+            label="Chatbot"
+            active={signalFilter === "chatbot"}
+            href={buildHref({ source: sp.source, signal: "chatbot", q: sp.q, properties: sp.properties })}
+          />
+          <SourcePill
+            label="Popup"
+            active={signalFilter === "popup"}
+            href={buildHref({ source: sp.source, signal: "popup", q: sp.q, properties: sp.properties })}
+          />
+          <SourcePill
+            label="Applied"
+            active={signalFilter === "application"}
+            href={buildHref({ source: sp.source, signal: "application", q: sp.q, properties: sp.properties })}
+          />
         </div>
       </div>
 
@@ -433,15 +704,18 @@ export default async function LeadsKanbanPage({
 /** Build /portal/leads href preserving active filter params. */
 function buildHref({
   source,
+  signal,
   q,
   properties,
 }: {
   source: string | undefined;
+  signal?: SignalKey | string | null | undefined;
   q?: string;
   properties?: string;
 }): string {
   const params = new URLSearchParams();
   if (source) params.set("source", source);
+  if (signal) params.set("signal", signal);
   if (q) params.set("q", q);
   if (properties) params.set("properties", properties);
   const qs = params.toString();
