@@ -136,7 +136,7 @@ async function main(): Promise<void> {
       "  Auth chain validated end-to-end. The connector is wired correctly."
     );
     console.log(
-      "  Once Basic Access is granted, real client refresh tokens will work."
+      "  Basic Access is live (granted 2026-06-01, MCC 912-000-4237) — real client refresh tokens work."
     );
     process.exit(0);
   } else {
@@ -153,10 +153,13 @@ async function main(): Promise<void> {
       console.log("  in the MCC.");
     } else if (result.error.includes("PERMISSION_DENIED")) {
       console.log(
-        "  Test token cannot query non-test accounts. Verify"
+        "  We have Basic Access (2026-06-01), so this usually means the"
       );
       console.log(
-        "  GOOGLE_ADS_TEST_CUSTOMER_ID points at a test account."
+        "  refresh token's user isn't linked to GOOGLE_ADS_LOGIN_CUSTOMER_ID,"
+      );
+      console.log(
+        "  or the target customer isn't under that MCC. Verify the chain."
       );
     } else if (result.error.includes("invalid_grant")) {
       console.log(

@@ -110,10 +110,10 @@ describe("getProviderAvailability", () => {
   describe("Google Ads (requires OAuth; dev token is downstream)", () => {
     // Product contract (see lib/connect/provider-availability.ts NOTE):
     // OAuth is the only gate for the Connect flow itself. The developer
-    // token only gates downstream API calls — so when OAuth is configured
-    // but the dev token is still in flight, we surface "Connectable now"
-    // with a soft note instead of hiding the Connect CTA.
-    it("IS connectable with OAuth ready (dev token in flight surfaces soft note)", () => {
+    // token only gates downstream API calls. Basic Access was granted
+    // on 2026-06-01 (MCC 912-000-4237); this branch now only fires if
+    // the dev-token env var is missing on a given deploy.
+    it("IS connectable with OAuth ready (missing dev-token env surfaces soft note)", () => {
       setEnv({
         OAUTH_ENABLED: "true",
         OAUTH_CALLBACK_BASE_URL: "https://www.leasestack.co",

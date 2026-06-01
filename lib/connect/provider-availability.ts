@@ -61,12 +61,12 @@ function metaOauthConfigured(): boolean {
 // GOOGLE_ADS_DEVELOPER_TOKEN and meta_ads on META_AD_LIBRARY_TOKEN.
 // That was the wrong layer — the developer token / Standard Access only
 // gates downstream API CALLS. The OAuth login flow itself works the
-// moment the OAuth client_id + secret are configured. Letting operators
-// connect during dev-token review means we capture their refresh token
-// + store it now, and syncs start working automatically the moment the
-// token lands — no second consent screen, no re-onboarding. When the
-// API access is still pending we surface a soft "Awaiting API access"
-// note next to the Connect CTA instead of hiding it.
+// moment the OAuth client_id + secret are configured.
+//
+// Google Ads developer token was granted Basic Access on 2026-06-01
+// (MCC 912-000-4237, 15K ops/day). The token env var is set in
+// production; the soft-note branch below only fires if the env var is
+// somehow missing in another deploy environment.
 
 export function getProviderAvailability(): AvailabilityMap {
   const googleReady = googleOauthConfigured();
@@ -103,7 +103,7 @@ export function getProviderAvailability(): AvailabilityMap {
           available: true,
           reason: process.env.GOOGLE_ADS_DEVELOPER_TOKEN
             ? null
-            : "Connectable now. Google Ads developer-token approval is still in flight — syncs will activate automatically the moment it lands.",
+            : "Connectable now. Google Ads developer-token env var is missing on this deploy — syncs will activate once it's configured.",
           eta: null,
         }
       : googleNotReady,

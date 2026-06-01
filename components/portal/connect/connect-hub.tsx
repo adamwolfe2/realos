@@ -466,11 +466,13 @@ function SourceCard({
         </p>
       ) : null}
 
-      {/* Soft "Awaiting API access" note — for sources that are
-          OAuth-ready (so Connect is live) but where downstream API
-          access is still in flight (Google Ads developer token, Meta
-          Marketing Standard Access). The operator can connect now and
-          we'll start syncing the moment the API access lands. */}
+      {/* Soft "missing downstream token" note — for sources that are
+          OAuth-ready (so Connect is live) but where the downstream API
+          token env var isn't set on this deploy (Google Ads developer
+          token, Meta Marketing Standard Access). Google Ads Basic
+          Access landed 2026-06-01 so prod no longer surfaces this for
+          google_ads; left in place for parity with meta_ads + safety
+          on misconfigured deploys. */}
       {!isBlocked && !isConnected && availability?.reason ? (
         <p className="mt-2.5 inline-flex items-start gap-1.5 rounded-md border border-amber-200/60 bg-amber-50/50 px-2 py-1 text-[11px] text-amber-900 leading-snug">
           <Clock className="w-2.5 h-2.5 mt-0.5 shrink-0" strokeWidth={1.75} />
