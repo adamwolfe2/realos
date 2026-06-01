@@ -404,7 +404,46 @@ export default async function IntegrationsPage() {
         }))}
         cursiveRows={allCursiveRows}
       />
+      <CalWebhookPanel orgId={scope.orgId} />
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// CalWebhookPanel — surfaces the per-org Cal.com webhook URL the operator
+// can paste into any Cal.com webhook subscription. When a prospect books a
+// slot, the receiver creates a Lead (source=REFERRAL, sourceDetail=cal.com)
+// + a Tour scoped to the org's default property. See
+// app/api/webhooks/cal/[orgId]/route.ts for the full contract.
+// ---------------------------------------------------------------------------
+function CalWebhookPanel({ orgId }: { orgId: string }) {
+  const url = `${(process.env.NEXT_PUBLIC_APP_URL ?? "https://www.leasestack.co").replace(/\/$/, "")}/api/webhooks/cal/${orgId}`;
+  return (
+    <section className="rounded-xl border border-border bg-card p-5 space-y-3">
+      <div className="flex items-start justify-between gap-3 flex-wrap">
+        <div>
+          <h3 className="text-sm font-semibold text-foreground">
+            Cal.com bookings → Leads
+          </h3>
+          <p className="text-[12px] text-muted-foreground mt-1 max-w-xl leading-relaxed">
+            Paste this URL as the Subscriber URL on any Cal.com webhook
+            (Booking created / rescheduled / cancelled). Every booking
+            becomes a Lead + Tour in your portal automatically.
+          </p>
+        </div>
+      </div>
+      <code className="block rounded-md border border-border bg-background px-3 py-2 text-[11.5px] font-mono text-foreground overflow-x-auto whitespace-nowrap">
+        {url}
+      </code>
+      <ol className="text-[11.5px] text-muted-foreground space-y-1 list-decimal list-inside leading-relaxed">
+        <li>Cal.com → Settings → Developer → Webhooks → New webhook</li>
+        <li>Paste the URL above into Subscriber URL</li>
+        <li>
+          Check: Booking created · Booking rescheduled · Booking cancelled
+        </li>
+        <li>Save. New bookings appear on /portal/leads within seconds.</li>
+      </ol>
+    </section>
   );
 }
 
