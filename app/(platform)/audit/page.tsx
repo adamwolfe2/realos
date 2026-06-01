@@ -14,7 +14,7 @@ export default function AuditFormPage() {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
       <section className="relative">
-        <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-10 md:pt-24 pb-12 md:pb-24">
+        <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-20 md:pt-24 pb-12 md:pb-24">
           <div className="max-w-3xl mx-auto text-center">
             <div className="flex items-center justify-center gap-3 mb-4 md:mb-6">
               <span

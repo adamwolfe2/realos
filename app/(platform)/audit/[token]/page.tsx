@@ -238,7 +238,7 @@ function ReportShell({
 }) {
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
-      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-12 md:pt-16 pb-20">
+      <div className="max-w-[1100px] mx-auto px-4 md:px-8 pt-20 md:pt-16 pb-20">
         <p
           className="text-[11px] font-mono uppercase tracking-[0.18em]"
           style={{
