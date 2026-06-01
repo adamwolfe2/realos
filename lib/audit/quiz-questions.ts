@@ -169,7 +169,9 @@ export const QUIZ_QUESTIONS: Question[] = [
     choices: [
       { id: "live_chat", label: "Live chat with a human" },
       { id: "ai_chatbot", label: "AI chatbot" },
+      { id: "calendly_link", label: "Calendly link" },
       { id: "popups", label: "Exit / intent popups" },
+      { id: "visitor_pixel", label: "Visitor pixel" },
       { id: "floorplan_tool", label: "Interactive floor plan / unit picker" },
       { id: "online_application", label: "Online application form" },
       { id: "virtual_tour", label: "Virtual tour / 3D walkthrough" },
@@ -213,13 +215,17 @@ export const QUIZ_QUESTIONS: Question[] = [
     pillars: ["listings", "tracking"],
     required: false,
     choices: [
+      { id: "loopnet_costar", label: "LoopNet / CoStar" },
       { id: "paid_ads", label: "Paid ads (Meta, Google, TikTok)" },
       { id: "apartments_com", label: "Apartments.com" },
       { id: "zillow", label: "Zillow / Trulia / Rent." },
+      { id: "broker_direct", label: "Broker direct" },
       { id: "google_search", label: "Google search / Google Business" },
       { id: "ai_search", label: "ChatGPT / Perplexity / AI search" },
       { id: "referrals", label: "Resident referrals & walk-ins" },
+      { id: "phone_calls", label: "Phone calls" },
       { id: "not_sure", label: "Honestly, we don't know" },
+      { id: "other", label: "Other" },
     ],
   },
   {
