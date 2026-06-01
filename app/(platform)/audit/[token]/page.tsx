@@ -86,7 +86,7 @@ export async function generateMetadata({
   const subject = audit.brandName ?? audit.domain;
   return {
     title: `${subject} — Digital Performance Score | ${BRAND_NAME}`,
-    description: `Personalized Digital Performance Score for ${subject}. Six pillars, capped at ${OVERALL_DPS_CAP}, with a prioritized action plan.`,
+    description: `Personalized Digital Performance Score for ${subject}. Six pillars of real-data benchmarking with a prioritized action plan.`,
     alternates: { canonical: `/audit/${audit.shareToken}` },
     robots: { index: true, follow: true },
     openGraph: {
@@ -132,13 +132,10 @@ export default async function AuditViewerPage({
   const perSourceCounts = computePerSourceCounts(mentions);
 
   // Legacy audits (pre-2026-06-01) don't have findings.dps. Fall back to
-  // the overallScore int we persist for backwards compat, with the
-  // global cap applied so we never render >75 even on stale data.
+  // the persisted overallScore for backwards compat, clamped to the
+  // ceiling so stale audits never render >75. Adam 2026-06-01: the cap
+  // is enforcement only — no UI surfacing.
   const score = dps?.score ?? Math.min(audit.overallScore ?? 0, OVERALL_DPS_CAP);
-  const cap = dps?.cap ?? OVERALL_DPS_CAP;
-  const capReason =
-    dps?.capReason ??
-    "Every property has structural ceilings on AI search, tracking, and review velocity until they're actively managed.";
   const highSeverity = recommendations.filter((r) => r.severity === "high").length;
 
   return (
@@ -146,8 +143,6 @@ export default async function AuditViewerPage({
       <DpsHero
         subject={subject}
         score={score}
-        cap={cap}
-        capReason={capReason}
         recommendationCount={recommendations.length}
       />
 

@@ -2,23 +2,22 @@ import { CountUp } from "@/components/audit/count-up";
 
 // DPS hero — the centerpiece of the audit result page.
 //
-// Renders the post-cap Digital Performance Score with a conic-gradient
-// ring, "/100" suffix, the "Why we capped this" copy, and a subtitle
-// that names the brand. Color tone tracks the score band:
-//   0-39   → red    (red ring, red number)
-//   40-59  → amber  (amber)
-//   60-74  → blue   (LeaseStack brand)
-//   75     → green  (only at the cap ceiling)
+// Renders the Digital Performance Score with a conic-gradient ring, a
+// "/100" suffix, and a one-line subtitle. Tone tracks the score band so
+// a 47 reads visually different from an 81.
 //
-// We accept score directly (not the full DpsResult) so the same hero
-// can be reused for any "score with cap reason" surface. Adam 2026-06-01.
+// Adam 2026-06-01: do NOT surface the cap/ceiling to the user. The
+// caps are enforced server-side so scores naturally land low — the
+// prospect should see the number, understand the gaps, and feel
+// motivated to talk to us. Telling them "we capped you" defeats the
+// effect.
 
 type Tone = "red" | "amber" | "blue" | "green";
 
 function toneFor(score: number): Tone {
-  if (score >= 75) return "green";
-  if (score >= 60) return "blue";
-  if (score >= 40) return "amber";
+  if (score >= 80) return "green";
+  if (score >= 65) return "blue";
+  if (score >= 45) return "amber";
   return "red";
 }
 
@@ -29,22 +28,28 @@ const TONE: Record<Tone, { ring: string; text: string; bg: string }> = {
   red: { ring: "#B91C1C", text: "#B91C1C", bg: "rgba(185,28,28,0.08)" },
 };
 
+function tonalHeadline(score: number): string {
+  if (score >= 80) return "Real fundamentals in place";
+  if (score >= 65) return "Solid baseline, real upside to chase";
+  if (score >= 45) return "Meaningful gaps holding leases back";
+  return "Critical exposure across the funnel";
+}
+
 export function DpsHero({
   subject,
   score,
-  cap,
-  capReason,
   recommendationCount,
 }: {
   subject: string;
+  /** Post-scoring number 0-100. Caps are applied upstream; this
+   *  component does not surface that they exist. */
   score: number;
-  cap: number;
-  capReason: string;
   recommendationCount: number;
 }) {
   const tone = toneFor(score);
   const palette = TONE[tone];
   const arcDeg = Math.max(0, Math.min(score, 100)) * 3.6;
+  const headline = tonalHeadline(score);
 
   return (
     <section className="mt-10">
@@ -63,39 +68,26 @@ export function DpsHero({
             <CountUp
               to={score}
               className="text-7xl sm:text-8xl font-semibold tabular-nums leading-none"
+              style={{ color: palette.text }}
             />
             <span className="text-2xl" style={{ color: "#9CA3AF" }}>
               / 100
             </span>
-            <span
-              className="ml-2 text-xs font-medium px-2 py-0.5 rounded-md"
-              style={{ color: palette.text, backgroundColor: palette.bg }}
-            >
-              Ceiling: {cap}
-            </span>
           </div>
           <p
-            className="mt-4 text-base max-w-xl leading-relaxed"
+            className="mt-3 text-base sm:text-lg font-semibold"
+            style={{ color: palette.text }}
+          >
+            {headline}
+          </p>
+          <p
+            className="mt-3 text-base max-w-xl leading-relaxed"
             style={{ color: "#4B5563" }}
           >
             How {subject} performs across the six pillars every modern property
             is judged on — findability, reputation, conversion, tracking,
             accessibility, and listings.
           </p>
-          <div
-            className="mt-4 rounded-lg border-l-2 pl-3 py-1"
-            style={{ borderColor: palette.ring }}
-          >
-            <p
-              className="text-[11px] font-mono uppercase tracking-[0.18em] mb-1"
-              style={{ color: palette.text, fontFamily: "var(--font-mono)" }}
-            >
-              Why your ceiling is {cap}
-            </p>
-            <p className="text-sm leading-relaxed" style={{ color: "#4B5563" }}>
-              {capReason}
-            </p>
-          </div>
           {recommendationCount > 0 ? (
             <p
               className="mt-4 text-sm font-medium"
@@ -114,7 +106,7 @@ export function DpsHero({
           aria-hidden
         >
           <div
-            className="h-24 w-24 sm:h-32 sm:w-32 rounded-full flex flex-col items-center justify-center"
+            className="h-24 w-24 sm:h-32 sm:w-32 rounded-full flex items-center justify-center"
             style={{ backgroundColor: "#FFFFFF" }}
           >
             <span
@@ -122,12 +114,6 @@ export function DpsHero({
               style={{ color: palette.text }}
             >
               {score}
-            </span>
-            <span
-              className="text-[10px] font-mono uppercase tracking-[0.14em] mt-1"
-              style={{ color: "#9CA3AF", fontFamily: "var(--font-mono)" }}
-            >
-              of {cap} cap
             </span>
           </div>
         </div>

@@ -9,10 +9,12 @@ export function CountUp({
   to,
   durationMs = 900,
   className,
+  style,
 }: {
   to: number;
   durationMs?: number;
   className?: string;
+  style?: React.CSSProperties;
 }) {
   const [value, setValue] = useState(0);
   const rafRef = useRef<number | null>(null);
@@ -41,5 +43,9 @@ export function CountUp({
     };
   }, [to, durationMs]);
 
-  return <span className={className}>{value}</span>;
+  return (
+    <span className={className} style={style}>
+      {value}
+    </span>
+  );
 }

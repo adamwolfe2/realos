@@ -100,7 +100,13 @@ export interface SignalSnapshot {
 // would still render the misleading "0/100" card.
 // Bumping the version invalidates the 14-day dedupe so the next visit
 // to a stale audit triggers a fresh scan.
-export const COMPUTE_VERSION = "2026-05-29.v5";
+// 2026-06-01: bump to dps.v1 — Digital Performance Score rebuild shipped
+// (6-pillar shape, cap-enforced overall, recommendation engine). Cached
+// audits from v5 don't carry findings.dps or findings.recommendations,
+// so the result page silently hides the 6-pillar grid + the action plan.
+// Invalidate the 14-day dedupe so the next /audit submission re-runs
+// the scan and persists the new shape.
+export const COMPUTE_VERSION = "2026-06-01.dps.v1";
 
 export function scopeKey(s: SignalScope): string {
   if (s.kind === "tenant") {

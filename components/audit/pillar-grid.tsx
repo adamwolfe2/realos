@@ -2,12 +2,14 @@ import { ScoreCard } from "@/components/audit/score-card";
 import { PILLAR_LABELS, type Pillar } from "@/lib/audit/quiz-questions";
 import type { PillarScore } from "@/lib/audit/scoring";
 
-// PillarGrid — renders the six pillar sub-scores beneath the DPS hero.
+// PillarGrid — six pillar sub-scores beneath the DPS hero.
 //
-// Reuses the existing ScoreCard primitive (which already handles tone,
-// progress bar, and reasoning bullets). The cap-aware "ceiling at X"
-// chip is rendered as the caption so operators see "this is the
-// ceiling, not your real score" up-front.
+// Each card reads as a real, honest score. We deliberately do NOT
+// surface the per-pillar cap or the capReason — those are enforcement
+// mechanics, not customer-facing copy. The reasoning bullets we DO
+// surface are the supporting points (real numbers from the scan, real
+// quiz answers) — they explain why the score is what it is without
+// telegraphing that the score has a ceiling. Adam 2026-06-01.
 
 const PILLAR_ORDER: Pillar[] = [
   "findability",
@@ -38,9 +40,8 @@ export function PillarGrid({
         What's driving your score
       </h2>
       <p className="text-sm mt-2 max-w-2xl" style={{ color: "#6B7280" }}>
-        Each pillar has its own ceiling — the score you see is what's
-        possible without LeaseStack closing the structural gaps. Tap any
-        card for the supporting numbers.
+        Real data behind every number — pulled from your quiz answers
+        and the live scan we just ran on your domain.
       </p>
       <div className="mt-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {PILLAR_ORDER.map((key) => {
@@ -50,12 +51,9 @@ export function PillarGrid({
               key={key}
               title={PILLAR_LABELS[key]}
               score={p.score}
-              caption={`Ceiling: ${p.cap}`}
               reasoning={{
                 headline: p.headline,
-                points: p.capReason
-                  ? [p.capReason, ...p.points]
-                  : p.points,
+                points: p.points,
               }}
             />
           );
