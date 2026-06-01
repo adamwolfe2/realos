@@ -214,7 +214,7 @@ export function DigitalScoreQuiz() {
       />
 
       <div
-        className="rounded-xl border bg-white p-6 sm:p-7 text-left flex flex-col gap-5"
+        className="rounded-xl border bg-white p-5 sm:p-7 text-left flex flex-col gap-5"
         style={{ borderColor: "#E5E7EB" }}
       >
         <QuestionHeader question={question} />
@@ -285,14 +285,14 @@ function QuestionHeader({ question }: { question: Question }) {
   return (
     <div>
       <h2
-        className="text-xl sm:text-2xl font-semibold leading-snug"
+        className="text-lg sm:text-2xl font-semibold leading-snug"
         style={{ color: "#1E2A3A" }}
       >
         {question.prompt}
       </h2>
       {question.helper ? (
         <p
-          className="text-sm mt-2 leading-relaxed"
+          className="text-[13px] sm:text-sm mt-2 leading-relaxed"
           style={{ color: "#6B7280" }}
         >
           {question.helper}
@@ -399,7 +399,7 @@ function SingleChoiceRow({
         type="button"
         onClick={onSelect}
         aria-pressed={selected}
-        className="w-full text-left rounded-lg border px-4 py-3 transition-colors"
+        className="w-full text-left rounded-lg border px-4 py-3.5 sm:py-3 transition-colors active:scale-[0.99]"
         style={{
           borderColor: selected ? "#2563EB" : "#E5E7EB",
           backgroundColor: selected ? "rgba(37,99,235,0.06)" : "#FFFFFF",
@@ -441,7 +441,7 @@ function MultiChoiceRow({
         type="button"
         onClick={onToggle}
         aria-pressed={selected}
-        className="w-full text-left rounded-lg border px-4 py-3 transition-colors"
+        className="w-full text-left rounded-lg border px-4 py-3.5 sm:py-3 transition-colors active:scale-[0.99]"
         style={{
           borderColor: selected ? "#2563EB" : "#E5E7EB",
           backgroundColor: selected ? "rgba(37,99,235,0.06)" : "#FFFFFF",
@@ -543,36 +543,46 @@ function NavRow({
   onNext: () => void;
   onSubmit: () => void;
 }) {
+  // Mobile-first nav: Next is the primary action, takes most of the
+  // row. Back is a small chip on the left. On sm+ they sit at the row
+  // ends with comfortable spacing.
   return (
-    <div className="flex items-center justify-between gap-3 mt-2">
+    <div className="flex items-center gap-3 mt-2">
       <button
         type="button"
         onClick={onBack}
         disabled={stepIndex === 0}
-        className="text-sm font-medium px-3 py-2 rounded-md transition-opacity disabled:opacity-40 disabled:cursor-not-allowed"
+        className="text-sm font-medium px-3 py-2 rounded-md transition-opacity disabled:opacity-40 disabled:cursor-not-allowed flex-shrink-0"
         style={{ color: "#4B5563" }}
       >
         ← Back
       </button>
-      {isLastStep ? (
-        <Button
-          type="button"
-          size="lg"
-          onClick={onSubmit}
-          disabled={!canAdvance}
-        >
-          Get my Digital Performance Score
-        </Button>
-      ) : (
-        <Button
-          type="button"
-          size="lg"
-          onClick={onNext}
-          disabled={!canAdvance}
-        >
-          Next
-        </Button>
-      )}
+      <div className="flex-1 sm:flex-initial sm:ml-auto">
+        {isLastStep ? (
+          <Button
+            type="button"
+            size="lg"
+            onClick={onSubmit}
+            disabled={!canAdvance}
+            className="w-full sm:w-auto"
+          >
+            <span className="sm:hidden">Get my score</span>
+            <span className="hidden sm:inline">
+              Get my Digital Performance Score
+            </span>
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            size="lg"
+            onClick={onNext}
+            disabled={!canAdvance}
+            className="w-full sm:w-auto"
+          >
+            Next →
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

@@ -108,8 +108,11 @@ export const QUIZ_QUESTIONS: Question[] = [
     choices: [
       { id: "student", label: "Student housing" },
       { id: "multifamily", label: "Conventional multifamily" },
+      { id: "affordable", label: "Affordable housing" },
       { id: "senior", label: "Senior living" },
       { id: "commercial", label: "Commercial / mixed-use" },
+      { id: "office", label: "Office" },
+      { id: "industrial", label: "Industrial" },
       { id: "mixed", label: "A mix of the above" },
     ],
   },

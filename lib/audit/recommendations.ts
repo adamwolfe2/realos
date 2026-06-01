@@ -281,7 +281,16 @@ export function computeRecommendations(
   });
 
   // ---- Listings --------------------------------------------------------
-  if (!usesLeadSource("apartments_com") && propertyType !== "commercial") {
+  // Apartments.com is a multifamily-only ILS — skip the rec for
+  // commercial/office/industrial assets where it doesn't apply.
+  const isResidential =
+    propertyType === "student" ||
+    propertyType === "multifamily" ||
+    propertyType === "affordable" ||
+    propertyType === "senior" ||
+    propertyType === "mixed" ||
+    propertyType === null;
+  if (!usesLeadSource("apartments_com") && isResidential) {
     recs.push({
       id: "rec-apartments-com",
       title: "Apartments.com as a synced source of truth",
