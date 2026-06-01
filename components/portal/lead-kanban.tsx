@@ -823,26 +823,27 @@ function LeadDrawerBody({ item }: { item: LeadKanbanItem }) {
 // has none of the four signals — keeps low-signal rows clean.
 // ---------------------------------------------------------------------------
 function SignalBadges({ item }: { item: LeadKanbanItem }) {
+  // Monochrome glyph row. Same border + muted-foreground treatment for
+  // every signal — the icon itself is the signal, no color-coding.
+  // Keeps the row scannable as info dense without competing chromatic
+  // accents next to status pills and score numbers.
   const badges: Array<{
     key: string;
     icon: React.ReactNode;
     title: string;
-    color: string;
   }> = [];
   if (item.visitCount > 0) {
     badges.push({
       key: "visitor",
-      icon: <Eye className="h-3 w-3" strokeWidth={2} aria-hidden="true" />,
+      icon: <Eye className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />,
       title: `${item.visitCount} pixel-tracked visit${item.visitCount === 1 ? "" : "s"}`,
-      color: "text-emerald-600 bg-emerald-50 border-emerald-200",
     });
   }
   if (item.hasChatbot) {
     badges.push({
       key: "chatbot",
-      icon: <Bot className="h-3 w-3" strokeWidth={2} aria-hidden="true" />,
+      icon: <Bot className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />,
       title: "Engaged the chatbot",
-      color: "text-primary bg-primary/10 border-primary/30",
     });
   }
   if (item.hasPopup) {
@@ -851,20 +852,20 @@ function SignalBadges({ item }: { item: LeadKanbanItem }) {
       icon: (
         <MousePointerClick
           className="h-3 w-3"
-          strokeWidth={2}
+          strokeWidth={1.75}
           aria-hidden="true"
         />
       ),
       title: "Converted from a popup",
-      color: "text-amber-700 bg-amber-50 border-amber-200",
     });
   }
   if (item.hasApplication) {
     badges.push({
       key: "application",
-      icon: <FileText className="h-3 w-3" strokeWidth={2} aria-hidden="true" />,
+      icon: (
+        <FileText className="h-3 w-3" strokeWidth={1.75} aria-hidden="true" />
+      ),
       title: "Submitted an application",
-      color: "text-violet-700 bg-violet-50 border-violet-200",
     });
   }
   if (badges.length === 0) return null;
@@ -875,10 +876,7 @@ function SignalBadges({ item }: { item: LeadKanbanItem }) {
           key={b.key}
           title={b.title}
           aria-label={b.title}
-          className={cn(
-            "inline-flex items-center justify-center h-4 w-4 rounded border",
-            b.color,
-          )}
+          className="inline-flex items-center justify-center h-4 w-4 rounded border border-border bg-card text-muted-foreground"
         >
           {b.icon}
         </span>
