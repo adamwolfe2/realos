@@ -21,10 +21,13 @@ export function Proof() {
         borderTop: "1px solid #E2E8F0",
       }}
     >
-      <div className="max-w-[1200px] mx-auto px-4 md:px-8 py-20 md:py-24">
-        {/* Eyebrow — urgency cue. Norman feedback (2026-05-21): chart
-            + accent colors stay on the brand blue ramp, no amber/
-            terracotta semantic accents. */}
+      {/* Norman v2 (2026-06-01): was a two-column "offer left / CTAs
+          right" layout. Adam asked to stack both vertically and center
+          horizontally so the final CTA reads as a single focused
+          moment instead of a split scan. Eyebrow → headline → body →
+          CTAs, all centered. */}
+      <div className="max-w-[820px] mx-auto px-4 md:px-8 py-20 md:py-24 text-center">
+        {/* Eyebrow — urgency cue. */}
         <p
           style={{
             color: "#2563EB",
@@ -50,96 +53,94 @@ export function Proof() {
           Pilot cohort &middot; open now
         </p>
 
-        {/* Hero row, offer on the left, action on the right */}
-        <div className="mt-6 grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-8 lg:gap-12 items-end">
-          <div>
-            <h2
-              style={{
-                color: "#1E2A3A",
-                fontFamily: "var(--font-sans)",
-                fontSize: "clamp(36px, 5.4vw, 64px)",
-                fontWeight: 700,
-                lineHeight: 1.02,
-                letterSpacing: "-0.03em",
-              }}
-            >
-              Free pilot.
-              <br />
-              <span style={{ color: "#2563EB" }}>No commitment.</span>
-            </h2>
-            <p
-              className="mt-5 max-w-[560px]"
-              style={{
-                color: "#64748B",
-                fontFamily: "var(--font-sans)",
-                fontSize: "17px",
-                lineHeight: 1.55,
-              }}
-            >
-              {final.body}
-            </p>
-          </div>
+        {/* Headline + body, centered */}
+        <h2
+          className="mt-6"
+          style={{
+            color: "#1E2A3A",
+            fontFamily: "var(--font-sans)",
+            fontSize: "clamp(36px, 5.4vw, 64px)",
+            fontWeight: 700,
+            lineHeight: 1.02,
+            letterSpacing: "-0.03em",
+          }}
+        >
+          Free pilot.
+          <br />
+          <span style={{ color: "#2563EB" }}>No commitment.</span>
+        </h2>
+        <p
+          className="mt-5 mx-auto max-w-[560px]"
+          style={{
+            color: "#64748B",
+            fontFamily: "var(--font-sans)",
+            fontSize: "17px",
+            lineHeight: 1.55,
+          }}
+        >
+          {final.body}
+        </p>
 
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-3 shrink-0 lg:min-w-[220px]">
-            <Link
-              href={final.primaryHref}
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: "50px",
-                padding: "14px 28px",
-                backgroundColor: "#2563EB",
-                color: "#FFFFFF",
-                fontFamily: "var(--font-sans)",
-                fontSize: "15.5px",
-                fontWeight: 600,
-                borderRadius: "3px",
-                textDecoration: "none",
-                letterSpacing: "-0.005em",
-                transition: "background-color 0.2s ease",
-              }}
+        {/* CTAs — stacked-then-inline, centered as a group */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+          <Link
+            href={final.primaryHref}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "50px",
+              padding: "14px 28px",
+              backgroundColor: "#2563EB",
+              color: "#FFFFFF",
+              fontFamily: "var(--font-sans)",
+              fontSize: "15.5px",
+              fontWeight: 600,
+              borderRadius: "3px",
+              textDecoration: "none",
+              letterSpacing: "-0.005em",
+              transition: "background-color 0.2s ease",
+            }}
+          >
+            {final.primaryCta}
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 14 14"
+              fill="none"
+              style={{ marginLeft: 8 }}
             >
-              {final.primaryCta}
-              <svg
-                width="14"
-                height="14"
-                viewBox="0 0 14 14"
-                fill="none"
-                style={{ marginLeft: 8 }}
-              >
-                <path
-                  d="M3 7h8m0 0L7.5 3.5M11 7l-3.5 3.5"
-                  stroke="currentColor"
-                  strokeWidth="1.6"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-            </Link>
-            <Link
-              href="#product-tour"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                justifyContent: "center",
-                minHeight: "50px",
-                padding: "14px 28px",
-                backgroundColor: "#FFFFFF",
-                color: "#1E2A3A",
-                fontFamily: "var(--font-sans)",
-                fontSize: "15.5px",
-                fontWeight: 600,
-                borderRadius: "3px",
-                textDecoration: "none",
-                letterSpacing: "-0.005em",
-                border: "1px solid #CBD5E1",
-                transition: "background-color 0.2s ease",
-              }}
-            >
-              See the portal
-            </Link>
-          </div>
+              <path
+                d="M3 7h8m0 0L7.5 3.5M11 7l-3.5 3.5"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          </Link>
+          <Link
+            href="#product-tour"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              minHeight: "50px",
+              padding: "14px 28px",
+              backgroundColor: "#FFFFFF",
+              color: "#1E2A3A",
+              fontFamily: "var(--font-sans)",
+              fontSize: "15.5px",
+              fontWeight: 600,
+              borderRadius: "3px",
+              textDecoration: "none",
+              letterSpacing: "-0.005em",
+              border: "1px solid #CBD5E1",
+              transition: "background-color 0.2s ease",
+            }}
+          >
+            See the portal
+          </Link>
         </div>
 
         {/* Trust strip, inline horizontal proof points, not a giant grid */}

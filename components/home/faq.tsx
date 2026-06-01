@@ -11,61 +11,64 @@ import { MARKETING } from "@/lib/copy/marketing";
 
 export function Faq() {
   const { faq } = MARKETING.home;
+  // Norman v2 (2026-06-01): Was split editorial — header sticky on the
+  // left, questions on the right. Adam asked to stack both vertically,
+  // centered, so the section reads as one focused block instead of a
+  // two-column scan. Header + intro centered above, questions list
+  // capped at max-w-3xl and centered below.
   return (
     <section style={{ backgroundColor: "#FFFFFF", borderTop: "1px solid #E2E8F0" }}>
-      <div className="max-w-[1240px] mx-auto px-4 md:px-8 py-12 md:py-16">
-        <div className="grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-10 lg:gap-16 items-start">
-          {/* Left rail — header, sticky on desktop so it stays with the
-              questions as you scroll. */}
-          <div className="lg:sticky lg:top-24">
-            <p className="eyebrow mb-3">{faq.eyebrow}</p>
-            <h2
-              style={{
-                color: "#1E2A3A",
-                fontFamily: "var(--font-sans)",
-                fontSize: "clamp(28px, 3.6vw, 40px)",
-                fontWeight: 700,
-                lineHeight: 1.1,
-                letterSpacing: "-0.025em",
-              }}
-            >
-              {faq.headline}
-            </h2>
-            <p
-              className="mt-4 max-w-md"
-              style={{
-                color: "#64748B",
-                fontFamily: "var(--font-sans)",
-                fontSize: "15px",
-                lineHeight: 1.55,
-              }}
-            >
-              Direct answers to the questions operators ask before they sign.
-              Anything we missed?{" "}
-              <a
-                href="mailto:team@leasestack.co"
-                style={{
-                  color: "#2563EB",
-                  textDecoration: "underline",
-                  textUnderlineOffset: "2px",
-                }}
-              >
-                team@leasestack.co
-              </a>
-              .
-            </p>
-          </div>
-
-          {/* Right column — questions in a clean bordered card so the
-              section reads as a defined block, not floating text. */}
-          <ul
+      <div className="max-w-[800px] mx-auto px-4 md:px-8 py-12 md:py-16">
+        {/* Centered header block */}
+        <div className="text-center mb-10 md:mb-12">
+          <p className="eyebrow mb-3">{faq.eyebrow}</p>
+          <h2
             style={{
-              backgroundColor: "#FFFFFF",
-              border: "1px solid #E2E8F0",
-              borderRadius: 4,
-              overflow: "hidden",
+              color: "#1E2A3A",
+              fontFamily: "var(--font-sans)",
+              fontSize: "clamp(28px, 3.6vw, 40px)",
+              fontWeight: 700,
+              lineHeight: 1.1,
+              letterSpacing: "-0.025em",
             }}
           >
+            {faq.headline}
+          </h2>
+          <p
+            className="mt-4 mx-auto max-w-md"
+            style={{
+              color: "#64748B",
+              fontFamily: "var(--font-sans)",
+              fontSize: "15px",
+              lineHeight: 1.55,
+            }}
+          >
+            Direct answers to the questions operators ask before they sign.
+            Anything we missed?{" "}
+            <a
+              href="mailto:team@leasestack.co"
+              style={{
+                color: "#2563EB",
+                textDecoration: "underline",
+                textUnderlineOffset: "2px",
+              }}
+            >
+              team@leasestack.co
+            </a>
+            .
+          </p>
+        </div>
+
+        {/* Questions — clean bordered card, full width of the centered
+            column so the section reads as a defined block. */}
+        <ul
+          style={{
+            backgroundColor: "#FFFFFF",
+            border: "1px solid #E2E8F0",
+            borderRadius: 4,
+            overflow: "hidden",
+          }}
+        >
             {faq.items.map((item, i) => (
               <li
                 key={item.q}
@@ -120,8 +123,7 @@ export function Faq() {
                 </details>
               </li>
             ))}
-          </ul>
-        </div>
+        </ul>
       </div>
     </section>
   );
