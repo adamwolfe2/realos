@@ -279,6 +279,22 @@ export default async function PropertiesList({
     }),
   ]);
 
+  // Counts of hidden lifecycles so the empty state can honestly
+  // explain "you have N properties — they're EXCLUDED (auto-classified
+  // as parking/storage) or pending curation review." Without this the
+  // empty state read as 'you have no properties' even for orgs whose
+  // AppFolio sync pulled 100+ rows that the classifier excluded.
+  const [excludedCount, totalAnyLifecycle] = await Promise.all([
+    prisma.property
+      .count({
+        where: { ...tenantWhere(scope), lifecycle: "EXCLUDED" },
+      })
+      .catch(() => 0),
+    prisma.property
+      .count({ where: tenantWhere(scope) })
+      .catch(() => 0),
+  ]);
+
   const counts = {
     all: countAll,
     vacant: countVacant,
@@ -387,15 +403,47 @@ export default async function PropertiesList({
       />
 
       {countAll === 0 ? (
-        <EmptyState
-          icon={<Building2 className="h-4 w-4" />}
-          title="Add your first property to start tracking everything."
-          body="Properties are the foundation — leads, tours, ad campaigns, chatbot transcripts, reputation scans, and traffic data all map back to a property. The fastest path is to connect AppFolio so we sync your portfolio automatically."
-          secondary={{
-            label: "Sync from AppFolio",
-            href: "/portal/connect",
-          }}
-        />
+        // Distinguish three empty-state shapes so the operator never
+        // sees "you have no properties" when reality is "you have 126
+        // properties but they're all auto-excluded as parking lots."
+        // Norman / SG Real Estate hit this exact confusion on
+        // 2026-06-01 with 127 properties (1 ACTIVE + 126 EXCLUDED)
+        // showing as 'Add your first property'.
+        totalAnyLifecycle === 0 ? (
+          <EmptyState
+            icon={<Building2 className="h-4 w-4" />}
+            title="Add your first property to start tracking everything."
+            body="Properties are the foundation — leads, tours, ad campaigns, chatbot transcripts, reputation scans, and traffic data all map back to a property. The fastest path is to connect AppFolio so we sync your portfolio automatically."
+            secondary={{
+              label: "Sync from AppFolio",
+              href: "/portal/connect",
+            }}
+          />
+        ) : importedCount > 0 ? (
+          <EmptyState
+            icon={<Building2 className="h-4 w-4" />}
+            title={`${importedCount} ${importedCount === 1 ? "property" : "properties"} pending review.`}
+            body={`AppFolio synced ${totalAnyLifecycle} ${totalAnyLifecycle === 1 ? "row" : "rows"} from your account. ${importedCount} need your review before they count as active — the curation queue lets you mark each one as a real property or a sub-record (parking, storage, model unit, etc.).`}
+            action={{
+              label: `Review ${importedCount} pending`,
+              href: "/portal/properties/curate",
+            }}
+          />
+        ) : (
+          <EmptyState
+            icon={<Building2 className="h-4 w-4" />}
+            title="No active properties to show."
+            body={`We synced ${totalAnyLifecycle} ${totalAnyLifecycle === 1 ? "row" : "rows"} from AppFolio. ${excludedCount} ${excludedCount === 1 ? "is" : "are"} auto-excluded as sub-records (parking lots, storage units, model units, etc.) and don't count toward your portfolio total. Use the curation queue to promote any that were misclassified.`}
+            action={{
+              label: "Open curation queue",
+              href: "/portal/properties/curate",
+            }}
+            secondary={{
+              label: "Re-sync AppFolio",
+              href: "/portal/connect",
+            }}
+          />
+        )
       ) : (
         <>
           {/* Search row sits above the view tabs so it scopes the visible
