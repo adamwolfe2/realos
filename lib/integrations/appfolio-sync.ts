@@ -17,11 +17,13 @@ import {
   mapDelinquencyPayload,
   mapWorkOrderPayload,
   mapPropertyPayload,
+  mapApplicationPayload,
   type MappedLead,
   type MappedTenant,
   type MappedResident,
   type MappedLease,
   type MappedWorkOrder,
+  type MappedApplication,
 } from "./appfolio";
 import { classifyProperty } from "@/lib/properties/marketable";
 
@@ -74,6 +76,7 @@ export type AppfolioSyncStats = {
   leasesUpserted: number;
   workOrdersUpserted: number;
   delinquenciesUpdated: number;
+  applicationsUpserted: number;
   warnings: string[];
 };
 
@@ -97,6 +100,7 @@ export async function runAppfolioSync(
     leasesUpserted: 0,
     workOrdersUpserted: 0,
     delinquenciesUpdated: 0,
+    applicationsUpserted: 0,
     warnings: [],
   };
 
@@ -253,7 +257,10 @@ export async function runAppfolioSync(
   // — masking persistent failures (SG Real Estate's leads phase had
   // been "all phases completed" for 20 days while guest_cards 404'd).
   let phasesSkipped = 0;
-  const totalPhases = 8;
+  // 9 = properties + leads + applications + tenants + units + residents
+  // + leases + work orders + delinquencies. Bumped from 8 → 9 on
+  // 2026-06-01 when applications was added.
+  const totalPhases = 9;
 
   // Persistent per-phase failure tracking. Stored in lastSyncStats as a
   // map of { phaseName: { consecutiveFailures, firstFailedAt, lastError,
@@ -541,6 +548,66 @@ export async function runAppfolioSync(
 
   // (Tours intentionally skipped: showings is a v1 CRUD entity, not a v2
   // report. Tour bookings arrive via the Cal.com webhook instead.)
+
+  // 1b. APPLICATIONS — AppFolio v2 report: `applicant_directory`.
+  // Each row is a rental application AppFolio is tracking. We upsert
+  // into our Application table, matching applicants to existing Lead
+  // rows by email (the most reliable cross-system identifier — AppFolio
+  // doesn't expose the guest_card_id on this report on most plans).
+  // Property is resolved via the property_directory map populated in
+  // phase 0; applications missing a resolvable property are skipped
+  // (logged as a warning, not a hard failure).
+  //
+  // Auto-skip behavior mirrors the leads phase: on tenant plans where
+  // applicant_directory isn't included, three consecutive 404s mark
+  // the phase as skipped and the cron re-attempts weekly.
+  if (isPhaseSkipped("applications")) {
+    stats.warnings.push(
+      `applications: phase auto-skipped after ${PHASE_SKIP_THRESHOLD} consecutive failures (last: ${phaseFailures.applications?.lastError ?? "unknown"}). Use Retry skipped phases to re-attempt.`,
+    );
+    phasesSkipped += 1;
+  } else {
+    try {
+      const rows = await fetchAllPages(client, "applicant_directory", {
+        fromDate,
+        toDate,
+      });
+      let unmatchedNoLead = 0;
+      let unmatchedNoProperty = 0;
+      for (const row of rows) {
+        const mapped = mapApplicationPayload(row);
+        if (!mapped) continue;
+        const propertyId = resolvePropertyId(mapped.propertyIds);
+        if (!propertyId) {
+          unmatchedNoProperty += 1;
+          continue;
+        }
+        const upserted = await upsertAppfolioApplication(
+          orgId,
+          mapped,
+          propertyId,
+        );
+        if (upserted === "no_lead") unmatchedNoLead += 1;
+        else if (upserted === "ok") stats.applicationsUpserted += 1;
+      }
+      if (unmatchedNoLead > 0) {
+        stats.warnings.push(
+          `applications: ${unmatchedNoLead} applicant${unmatchedNoLead === 1 ? "" : "s"} had no matching Lead by email — skipped. They'll attach automatically when the matching lead lands.`,
+        );
+      }
+      if (unmatchedNoProperty > 0) {
+        stats.warnings.push(
+          `applications: ${unmatchedNoProperty} application${unmatchedNoProperty === 1 ? "" : "s"} couldn't be matched to a Property — skipped.`,
+        );
+      }
+      phasesCompleted += 1;
+      recordPhaseSuccess("applications");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      stats.warnings.push(`applications: ${message}`);
+      recordPhaseFailure("applications", message);
+    }
+  }
 
   // 2. TENANTS (→ Lead SIGNED attribution).
   // Directory reports are full snapshots and don't honor date filters the
@@ -1058,6 +1125,120 @@ async function uniquePropertySlug(orgId: string, name: string): Promise<string> 
     candidate = `${base}-${n++}`;
   }
   return `${base}-${Date.now().toString(36)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Application upsert. Matches the AppFolio applicant to an existing Lead
+// by email (the most reliable cross-system join key on Core/Plus plans).
+// Returns:
+//   "ok"      — upserted (insert OR update)
+//   "no_lead" — no matching Lead by email; row skipped
+// ---------------------------------------------------------------------------
+async function upsertAppfolioApplication(
+  orgId: string,
+  mapped: MappedApplication,
+  propertyId: string,
+): Promise<"ok" | "no_lead"> {
+  // Match by email (case-insensitive) scoped to this org + property. We
+  // prefer same-property matches first; falls back to same-org if not
+  // found (covers operators whose AppFolio property mapping is one-off).
+  const email = mapped.email?.toLowerCase();
+  if (!email) return "no_lead";
+  const lead =
+    (await prisma.lead.findFirst({
+      where: { orgId, propertyId, email: { equals: email, mode: "insensitive" } },
+      select: { id: true },
+    })) ??
+    (await prisma.lead.findFirst({
+      where: { orgId, email: { equals: email, mode: "insensitive" } },
+      select: { id: true },
+    }));
+  if (!lead) return "no_lead";
+
+  const applicantData = {
+    firstName: mapped.firstName,
+    lastName: mapped.lastName,
+    email: mapped.email,
+  };
+
+  // Application has no compound unique on (leadId, backendAppId), so we
+  // hand-roll find-then-create/update keyed on backendAppId scoped to
+  // this lead. backendAppId carries the AppFolio applicant_id.
+  const existing = await prisma.application.findFirst({
+    where: { leadId: lead.id, backendAppId: mapped.externalId },
+    select: { id: true },
+  });
+  if (existing) {
+    await prisma.application.update({
+      where: { id: existing.id },
+      data: {
+        status: mapped.status,
+        appliedAt: mapped.appliedAt,
+        decidedAt: mapped.decidedAt,
+        propertyId,
+        applicantData,
+      },
+    });
+  } else {
+    await prisma.application.create({
+      data: {
+        leadId: lead.id,
+        propertyId,
+        backendAppId: mapped.externalId,
+        status: mapped.status,
+        appliedAt: mapped.appliedAt,
+        decidedAt: mapped.decidedAt,
+        applicantData,
+      },
+    });
+  }
+
+  // Roll the Lead status forward so the funnel reflects reality. We only
+  // promote, never demote — a Lead already past SIGNED won't get knocked
+  // back to APPLIED by an AppFolio sync.
+  const promoteTo =
+    mapped.status === "APPROVED" || mapped.status === "SUBMITTED"
+      ? "APPLIED"
+      : mapped.status === "STARTED"
+        ? "APPLICATION_SENT"
+        : null;
+  if (promoteTo) {
+    await prisma.lead.update({
+      where: { id: lead.id },
+      data: {
+        status: {
+          set: undefined, // computed below in raw query if needed
+        },
+      } as never,
+    }).catch(() => {});
+    // Use a conditional update so we never demote. Statuses are an enum
+    // with implicit ordering; we hand-rank here.
+    const currentStatus = await prisma.lead.findUnique({
+      where: { id: lead.id },
+      select: { status: true },
+    });
+    const RANK: Record<string, number> = {
+      NEW: 0,
+      CONTACTED: 1,
+      TOUR_SCHEDULED: 2,
+      TOURED: 3,
+      APPLICATION_SENT: 4,
+      APPLIED: 5,
+      SIGNED: 6,
+    };
+    const cur = RANK[currentStatus?.status ?? "NEW"] ?? 0;
+    const next = RANK[promoteTo] ?? 0;
+    if (next > cur) {
+      await prisma.lead
+        .update({
+          where: { id: lead.id },
+          data: { status: promoteTo as LeadStatus, lastActivityAt: new Date() },
+        })
+        .catch(() => {});
+    }
+  }
+
+  return "ok";
 }
 
 // ---------------------------------------------------------------------------

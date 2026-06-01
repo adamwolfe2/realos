@@ -280,6 +280,7 @@ const REPORT_NAMES = [
   "delinquency",
   "work_order",
   "property_directory",
+  "applicant_directory",
 ] as const;
 
 export type AppFolioReportName = (typeof REPORT_NAMES)[number];
@@ -1034,6 +1035,90 @@ async function fetchRest(
 //   - reads snake_case keys with fallbacks for AppFolio variants
 //   - never mutates the raw row; raw is preserved for the .raw column
 // ---------------------------------------------------------------------------
+
+// MappedApplication — rows from AppFolio's `applicant_directory` v2
+// report. Each row is one rental application AppFolio is tracking. We
+// match these to existing Lead rows by email (most reliable identifier
+// across both systems on the Core/Plus plan tiers we've validated).
+export type MappedApplication = {
+  externalId: string;          // AppFolio applicant_id / application_id
+  email: string | null;        // join key against Lead.email
+  firstName: string | null;
+  lastName: string | null;
+  status:
+    | "STARTED"
+    | "SUBMITTED"
+    | "UNDER_REVIEW"
+    | "APPROVED"
+    | "DENIED"
+    | "WITHDRAWN";
+  appliedAt: Date | null;
+  decidedAt: Date | null;
+  propertyIds: string[];       // resolved via property_directory map
+  raw: RawRow;
+};
+
+function applicationStatusFromRaw(
+  raw: RawRow,
+): MappedApplication["status"] {
+  const s = (
+    asString(raw.application_status) ??
+    asString(raw.status) ??
+    ""
+  ).toLowerCase();
+  if (s.includes("approv")) return "APPROVED";
+  if (s.includes("deni") || s.includes("declin") || s.includes("reject"))
+    return "DENIED";
+  if (s.includes("withdraw") || s.includes("cancel")) return "WITHDRAWN";
+  if (s.includes("review") || s.includes("pending")) return "UNDER_REVIEW";
+  if (s.includes("submit") || s.includes("complete")) return "SUBMITTED";
+  return "STARTED";
+}
+
+export function mapApplicationPayload(
+  raw: RawRow,
+): MappedApplication | null {
+  const externalId = asString(
+    raw.applicant_uuid ??
+      raw.applicant_id ??
+      raw.application_id ??
+      raw.id,
+  );
+  if (!externalId) return null;
+
+  const propertyIds: string[] = [];
+  const singleProp = asString(raw.property_id);
+  if (singleProp) propertyIds.push(singleProp);
+  const multiProps = raw.property_ids;
+  if (Array.isArray(multiProps)) {
+    for (const p of multiProps) {
+      const s = asString(p);
+      if (s) propertyIds.push(s);
+    }
+  }
+
+  const appliedAt =
+    asDate(raw.applied_at) ??
+    asDate(raw.application_date) ??
+    asDate(raw.submitted_at);
+  const decidedAt =
+    asDate(raw.decided_at) ??
+    asDate(raw.decision_date) ??
+    asDate(raw.approved_at) ??
+    asDate(raw.denied_at);
+
+  return {
+    externalId,
+    email: asString(raw.email)?.trim() || null,
+    firstName: asString(raw.first_name) ?? null,
+    lastName: asString(raw.last_name) ?? null,
+    status: applicationStatusFromRaw(raw),
+    appliedAt,
+    decidedAt,
+    propertyIds,
+    raw,
+  };
+}
 
 export type MappedResident = {
   externalId: string;
