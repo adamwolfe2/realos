@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { BookDemoLink } from "@/components/marketing/book-demo-link";
 import type { LucideIcon } from "lucide-react";
 import {
   LayoutGrid,
@@ -217,8 +218,7 @@ export function PlatformNav() {
             >
               Sign in
             </Link>
-            <Link
-              href="/onboarding"
+            <BookDemoLink
               className="inline-flex items-center justify-center"
               style={{
                 minHeight: "36px",
@@ -233,7 +233,7 @@ export function PlatformNav() {
               }}
             >
               Book a demo
-            </Link>
+            </BookDemoLink>
           </div>
           <button
             type="button"
@@ -513,9 +513,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
           </nav>
 
           <div className="mt-6">
-            <Link
-              href="/onboarding"
-              onClick={onClose}
+            <BookDemoLink
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -530,7 +528,7 @@ function MobileMenu({ onClose }: { onClose: () => void }) {
               }}
             >
               Book a demo
-            </Link>
+            </BookDemoLink>
           </div>
         </div>
       </div>

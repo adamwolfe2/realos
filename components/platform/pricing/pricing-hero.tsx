@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BookDemoLink } from "@/components/marketing/book-demo-link";
 
 // ---------------------------------------------------------------------------
 // PricingHero — single-column centered text hero. No artifact, no
@@ -14,8 +15,11 @@ import Link from "next/link";
 //   centered trust strip
 // ---------------------------------------------------------------------------
 
+// Primary: real pilot signup wizard. Stays as /onboarding because this
+// CTA is "Request pilot," not "Book a demo" — it's the actual buy-now
+// path. Secondary: routes through BookDemoLink which resolves to the
+// configured Cal.com URL (NEXT_PUBLIC_CAL_BOOK_URL).
 const PRIMARY_HREF = "/onboarding";
-const SECONDARY_HREF = "/demo";
 
 export function PricingHero() {
   return (
@@ -82,8 +86,7 @@ export function PricingHero() {
             >
               Request pilot
             </Link>
-            <Link
-              href={SECONDARY_HREF}
+            <BookDemoLink
               className="inline-flex items-center justify-center h-11 px-6 rounded-md text-sm font-medium transition-colors"
               style={{
                 border: "1px solid #E5E7EB",
@@ -92,7 +95,7 @@ export function PricingHero() {
               }}
             >
               Book your intro call
-            </Link>
+            </BookDemoLink>
           </div>
 
           {/* Trust strip — 3 chips, centered, mirrors homepage rhythm */}
