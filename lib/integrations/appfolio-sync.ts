@@ -9,6 +9,7 @@ import {
 import {
   appfolioRestClient,
   fetchAllPages,
+  fetchAppfolioV1Showings,
   mapLeadPayload,
   mapListingPayload,
   mapTenantPayload,
@@ -18,12 +19,14 @@ import {
   mapWorkOrderPayload,
   mapPropertyPayload,
   mapApplicationPayload,
+  mapShowingPayload,
   type MappedLead,
   type MappedTenant,
   type MappedResident,
   type MappedLease,
   type MappedWorkOrder,
   type MappedApplication,
+  type MappedShowing,
 } from "./appfolio";
 import { classifyProperty } from "@/lib/properties/marketable";
 
@@ -257,10 +260,10 @@ export async function runAppfolioSync(
   // — masking persistent failures (SG Real Estate's leads phase had
   // been "all phases completed" for 20 days while guest_cards 404'd).
   let phasesSkipped = 0;
-  // 9 = properties + leads + applications + tenants + units + residents
-  // + leases + work orders + delinquencies. Bumped from 8 → 9 on
-  // 2026-06-01 when applications was added.
-  const totalPhases = 9;
+  // 10 = properties + leads + applications + showings + tenants + units +
+  // residents + leases + work orders + delinquencies. Bumped from 9 → 10
+  // on 2026-06-01 when showings (v1 CRUD) was added.
+  const totalPhases = 10;
 
   // Persistent per-phase failure tracking. Stored in lastSyncStats as a
   // map of { phaseName: { consecutiveFailures, firstFailedAt, lastError,
@@ -546,8 +549,41 @@ export async function runAppfolioSync(
     }
   }
 
-  // (Tours intentionally skipped: showings is a v1 CRUD entity, not a v2
-  // report. Tour bookings arrive via the Cal.com webhook instead.)
+  // 1c. SHOWINGS — AppFolio v1 CRUD endpoint (/api/v1/showings.json).
+  // Tour bookings AppFolio is tracking on its side (manual entries by
+  // leasing agents, AppFolio tour-scheduler bookings). Cal.com bookings
+  // arrive via /api/webhooks/cal/[orgId] independently — both paths
+  // upsert Tour rows keyed on (externalSystem, externalId) so they
+  // never collide. Same auto-skip pattern as leads/applications.
+  if (isPhaseSkipped("showings")) {
+    stats.warnings.push(
+      `showings: phase auto-skipped after ${PHASE_SKIP_THRESHOLD} consecutive failures (last: ${phaseFailures.showings?.lastError ?? "unknown"}). Use Retry skipped phases to re-attempt.`,
+    );
+    phasesSkipped += 1;
+  } else {
+    try {
+      const rows = await fetchAppfolioV1Showings(integration, fromDate);
+      let unmatchedNoLead = 0;
+      for (const row of rows) {
+        const mapped = mapShowingPayload(row);
+        if (!mapped) continue;
+        const result = await upsertAppfolioShowing(orgId, mapped);
+        if (result === "no_lead") unmatchedNoLead += 1;
+        else if (result === "ok") stats.toursUpserted += 1;
+      }
+      if (unmatchedNoLead > 0) {
+        stats.warnings.push(
+          `showings: ${unmatchedNoLead} showing${unmatchedNoLead === 1 ? "" : "s"} had no matching Lead by AppFolio guest_card id — skipped (will attach when the matching lead lands).`,
+        );
+      }
+      phasesCompleted += 1;
+      recordPhaseSuccess("showings");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Unknown error";
+      stats.warnings.push(`showings: ${message}`);
+      recordPhaseFailure("showings", message);
+    }
+  }
 
   // 1b. APPLICATIONS — AppFolio v2 report: `applicant_directory`.
   // Each row is a rental application AppFolio is tracking. We upsert
@@ -1125,6 +1161,79 @@ async function uniquePropertySlug(orgId: string, name: string): Promise<string> 
     candidate = `${base}-${n++}`;
   }
   return `${base}-${Date.now().toString(36)}`;
+}
+
+// ---------------------------------------------------------------------------
+// Showing upsert. Matches the AppFolio showing to an existing Lead via
+// the AppFolio guest_card_id stored on Lead.externalId. Falls through
+// to "no_lead" when the guest card hasn't synced yet — re-run the next
+// sync after guest_cards lands and the showing will attach.
+// ---------------------------------------------------------------------------
+async function upsertAppfolioShowing(
+  orgId: string,
+  mapped: MappedShowing,
+): Promise<"ok" | "no_lead"> {
+  if (!mapped.leadExternalId) return "no_lead";
+
+  const lead = await prisma.lead.findUnique({
+    where: {
+      orgId_externalSystem_externalId: {
+        orgId,
+        externalSystem: EXTERNAL_SYSTEM,
+        externalId: mapped.leadExternalId,
+      },
+    },
+    select: { id: true, propertyId: true },
+  });
+  if (!lead) return "no_lead";
+
+  // Tour requires propertyId; fall back to the lead's propertyId. When
+  // the lead doesn't have one set, prefer the org's first ACTIVE
+  // property — same fallback rule the Cal webhook uses.
+  let propertyId = lead.propertyId;
+  if (!propertyId) {
+    const fallback = await prisma.property.findFirst({
+      where: { orgId, lifecycle: "ACTIVE" },
+      select: { id: true },
+      orderBy: { createdAt: "asc" },
+    });
+    if (!fallback) return "no_lead";
+    propertyId = fallback.id;
+  }
+
+  const existing = await prisma.tour.findFirst({
+    where: {
+      externalSystem: EXTERNAL_SYSTEM,
+      externalId: mapped.externalId,
+      property: { orgId },
+    },
+    select: { id: true },
+  });
+  if (existing) {
+    await prisma.tour.update({
+      where: { id: existing.id },
+      data: {
+        status: mapped.status,
+        scheduledAt: mapped.scheduledAt,
+        completedAt: mapped.completedAt,
+        notes: mapped.notes,
+      },
+    });
+  } else {
+    await prisma.tour.create({
+      data: {
+        leadId: lead.id,
+        propertyId,
+        externalSystem: EXTERNAL_SYSTEM,
+        externalId: mapped.externalId,
+        status: mapped.status,
+        scheduledAt: mapped.scheduledAt,
+        completedAt: mapped.completedAt,
+        notes: mapped.notes,
+      },
+    });
+  }
+  return "ok";
 }
 
 // ---------------------------------------------------------------------------

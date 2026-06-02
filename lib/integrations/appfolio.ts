@@ -334,6 +334,55 @@ function resolveRestCreds(integration: AppFolioIntegration): {
   return { clientId, clientSecret };
 }
 
+/**
+ * Fetch AppFolio v1 showings (CRUD endpoint, not a v2 report).
+ * Returns an array of raw showing rows. AppFolio v1 supports a
+ * `start_date` query param (YYYY-MM-DD) for incremental syncs.
+ *
+ * Endpoint: GET https://{subdomain}.appfolio.com/api/v1/showings.json
+ * Auth: Basic (same client_id:client_secret as v2 reports).
+ *
+ * v1 doesn't return pagination metadata the same way v2 does — most
+ * tenants stay well below the per-request cap, so we make one call. If
+ * a tenant ever exceeds the cap we'll see it as `results.length === limit`
+ * and need to add cursor support; defer until that happens.
+ */
+export async function fetchAppfolioV1Showings(
+  integration: AppFolioIntegration,
+  sinceDate?: Date,
+): Promise<RawRow[]> {
+  const subdomain = requireSubdomain(integration);
+  const { clientId, clientSecret } = resolveRestCreds(integration);
+  const basic = Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+
+  const params = new URLSearchParams();
+  if (sinceDate) {
+    params.set("start_date", isoDate(sinceDate));
+  }
+  const qs = params.toString();
+  const url = `https://${subdomain}.appfolio.com/api/v1/showings.json${qs ? `?${qs}` : ""}`;
+
+  const response = await doAppFolioGet(url, basic, "showings");
+  if (!response.ok) {
+    const text = await response.text().catch(() => "");
+    throw new Error(
+      `AppFolio showings returned ${response.status}${text ? `: ${text.slice(0, 200)}` : ""}`,
+    );
+  }
+  const body = await response.json();
+  // v1 returns either a top-level array OR a wrapped object depending on
+  // the resource. Showings come back as a top-level array per AppFolio
+  // docs but defensive parse handles either.
+  if (Array.isArray(body)) return body as RawRow[];
+  if (body && typeof body === "object" && Array.isArray((body as Record<string, unknown>).results)) {
+    return (body as { results: RawRow[] }).results;
+  }
+  if (body && typeof body === "object" && Array.isArray((body as Record<string, unknown>).showings)) {
+    return (body as { showings: RawRow[] }).showings;
+  }
+  return [];
+}
+
 // Retry policy for AppFolio HTTP calls:
 //   - 429 (rate-limited): 1 retry after 2s (same as before)
 //   - 5xx (server error): 1 retry after 2s — AppFolio's REST gateway
