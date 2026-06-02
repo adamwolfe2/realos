@@ -65,43 +65,52 @@ export function PlatformShowcase() {
         className="absolute bottom-0 -left-40 h-96 w-96 rounded-full bg-blue-100/20 blur-3xl"
       />
 
-      {/* Header marketing copy */}
-      <div className="relative z-10 px-12 pt-16 pb-8">
-        <p className="text-[11px] tracking-[0.18em] uppercase font-semibold text-foreground/60">
-          Real estate operator portal
-        </p>
-        <h2
-          className="mt-4 text-[40px] leading-[1.05] font-semibold tracking-tight text-foreground max-w-lg"
-          style={SERIF}
-        >
-          Digital marketing and leasing intelligence in a single dashboard.
-        </h2>
-        <p className="mt-3 text-sm text-foreground/65 max-w-md leading-relaxed">
-          Live data from AppFolio, GA4, Google Search Console, your
-          pixel, and Google &amp; Meta Ads — in one view, per property
-          or portfolio.
-        </p>
-      </div>
-
-      {/* The animated mock dashboard composition */}
-      <div className="relative z-10 px-8 pb-8 space-y-3">
-        <KpiStrip />
-        <div className="grid grid-cols-5 gap-3">
-          <div className="col-span-3">
-            <FunnelCard />
-          </div>
-          <div className="col-span-2">
-            <LeadSourceDonut />
-          </div>
+      {/* Centered column wrapper. Adam 2026-06-01: the right-rail
+          content was anchored to the left edge because each inner
+          section had its own px-* padding instead of sharing a
+          centered container. Wrap everything in a single max-w +
+          mx-auto column so the KPI strip, funnel/donut grid, and
+          activity feed line up under the centered headline rather
+          than drifting to the left third of the panel. */}
+      <div className="relative z-10 mx-auto max-w-[640px] px-6 pt-16 pb-8">
+        {/* Header marketing copy — centered to match the chart column */}
+        <div className="text-center">
+          <p className="text-[11px] tracking-[0.18em] uppercase font-semibold text-foreground/60">
+            Real estate operator portal
+          </p>
+          <h2
+            className="mt-4 text-[40px] leading-[1.05] font-semibold tracking-tight text-foreground mx-auto max-w-lg"
+            style={SERIF}
+          >
+            Digital marketing and leasing intelligence in a single dashboard.
+          </h2>
+          <p className="mt-3 text-sm text-foreground/65 mx-auto max-w-md leading-relaxed">
+            Live data from AppFolio, GA4, Google Search Console, your
+            pixel, and Google &amp; Meta Ads — in one view, per property
+            or portfolio.
+          </p>
         </div>
-        {/* Activity feed now spans the full grid. The Student Central
-            property card that previously occupied col-span-2 was pulled
-            out per pilot-customer request — public marketing surfaces
-            must not name SG's property or city until they sign off on
-            being a public reference. The feed reads better full-width
-            and gives the animation more room to breathe. */}
-        <div>
-          <ActivityFeed />
+
+        {/* The animated mock dashboard composition */}
+        <div className="mt-8 space-y-3">
+          <KpiStrip />
+          <div className="grid grid-cols-5 gap-3">
+            <div className="col-span-3">
+              <FunnelCard />
+            </div>
+            <div className="col-span-2">
+              <LeadSourceDonut />
+            </div>
+          </div>
+          {/* Activity feed now spans the full grid. The Student Central
+              property card that previously occupied col-span-2 was pulled
+              out per pilot-customer request — public marketing surfaces
+              must not name SG's property or city until they sign off on
+              being a public reference. The feed reads better full-width
+              and gives the animation more room to breathe. */}
+          <div>
+            <ActivityFeed />
+          </div>
         </div>
       </div>
 
