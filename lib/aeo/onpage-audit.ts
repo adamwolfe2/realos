@@ -80,7 +80,7 @@ function checkFaqSchema(html: string): AeoOnPageCheck {
   const re = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
   let match: RegExpExecArray | null;
   while ((match = re.exec(html)) !== null) {
-    if (/"@type"\s*:\s*"FAQPage"/.test(match[1])) {
+    if (/"FAQPage"/.test(match[1])) {
       return {
         key: "faq-schema",
         label: CHECK_LABELS["faq-schema"],
@@ -101,7 +101,7 @@ function checkOrgSchema(html: string): AeoOnPageCheck {
   const re = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
   let match: RegExpExecArray | null;
   while ((match = re.exec(html)) !== null) {
-    if (/"@type"\s*:\s*"(Organization|LocalBusiness|RealEstateAgent|ApartmentComplex)"/.test(match[1])) {
+    if (/"(?:Organization|LocalBusiness|RealEstateAgent|ApartmentComplex)"/.test(match[1])) {
       return {
         key: "org-schema",
         label: CHECK_LABELS["org-schema"],
@@ -122,7 +122,7 @@ function checkArticleSchema(html: string): AeoOnPageCheck {
   const re = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
   let match: RegExpExecArray | null;
   while ((match = re.exec(html)) !== null) {
-    if (/"@type"\s*:\s*"(Article|NewsArticle|BlogPosting)"/.test(match[1])) {
+    if (/"(?:Article|NewsArticle|BlogPosting)"/.test(match[1])) {
       return {
         key: "article-schema",
         label: CHECK_LABELS["article-schema"],

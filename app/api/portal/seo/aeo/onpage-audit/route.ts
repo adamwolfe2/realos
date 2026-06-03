@@ -10,6 +10,28 @@ import {
   ADDON_AEO_BOOST,
 } from "@/lib/proposals/org-addons";
 
+// Tiny in-memory rate bucket — same pattern the other on-demand
+// endpoints use. Per-org sliding window: max 5 audits per minute.
+// In-process state survives across requests on a warm lambda; cold
+// starts reset the bucket (acceptable: the addon gate is the primary
+// abuse barrier; this is defense in depth for chatty operators).
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 5;
+const rateBuckets = new Map<string, number[]>();
+
+function checkRateLimit(orgId: string): boolean {
+  const now = Date.now();
+  const cutoff = now - RATE_LIMIT_WINDOW_MS;
+  const bucket = (rateBuckets.get(orgId) ?? []).filter((t) => t > cutoff);
+  if (bucket.length >= RATE_LIMIT_MAX) {
+    rateBuckets.set(orgId, bucket);
+    return false;
+  }
+  bucket.push(now);
+  rateBuckets.set(orgId, bucket);
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // POST /api/portal/seo/aeo/onpage-audit
 //
@@ -64,17 +86,33 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // Addon gate. Surfaces 402 Payment Required so the client UI knows to
-  // render the "Upgrade" hook rather than a generic auth error.
-  const hasAddon = await orgHasActiveAddon(scope.orgId, ADDON_AEO_BOOST);
+  // Agency owners (LeaseStack internal — Adam) bypass the addon gate so
+  // they can audit any tenant org without holding the AEO Boost line on
+  // their own account. Client orgs go through the normal addon check.
+  const hasAddon =
+    scope.role === "AGENCY_OWNER"
+      ? true
+      : await orgHasActiveAddon(scope.orgId, ADDON_AEO_BOOST);
   if (!hasAddon) {
     return NextResponse.json(
       {
         error:
           "AEO OnPage audit requires the AEO Boost add-on. Add it to your subscription to unlock per-page audits.",
         upgradeUrl: "/portal/billing",
+        gated: true,
       },
       { status: 402 },
+    );
+  }
+
+  // Per-org sliding-window rate limit. Skipped for AGENCY_OWNER (Adam)
+  // since internal QA shouldn't get throttled.
+  if (scope.role !== "AGENCY_OWNER" && !checkRateLimit(scope.orgId)) {
+    return NextResponse.json(
+      {
+        error: `Rate limit: ${RATE_LIMIT_MAX} audits per minute. Try again shortly.`,
+      },
+      { status: 429 },
     );
   }
 

@@ -146,10 +146,21 @@ function ActiveView({
             score?: number;
             checks?: OnPageAuditCheck[];
             excerpt?: string;
+            gated?: boolean;
+            upgradeUrl?: string;
           }
         | null;
       if (!res.ok || !data?.ok) {
-        setError(data?.error ?? "Audit failed");
+        // 402 + gated: surface as an upgrade hint, not a generic error.
+        // Happens when an addon expires mid-session or a fresh accept
+        // hasn't propagated through the 60s addon cache yet.
+        if (res.status === 402 && data?.gated) {
+          setError(
+            "AEO Boost is required to run audits. Refresh after adding the add-on.",
+          );
+        } else {
+          setError(data?.error ?? "Audit failed");
+        }
         return;
       }
       setResult({

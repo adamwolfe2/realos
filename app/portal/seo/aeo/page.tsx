@@ -492,7 +492,13 @@ export default async function AeoPage() {
   //   - the org's primary domain to prefill the URL input
   // All defensive against partial data; no IO inside the client component.
   // ---------------------------------------------------------------------
-  const hasAeoBoost = await orgHasActiveAddon(scope.orgId, ADDON_AEO_BOOST);
+  // Same bypass logic the API route uses — agency owners see the active
+  // view on every tenant so they can demo / QA the gated surface without
+  // a real AEO Boost line on the account.
+  const hasAeoBoost =
+    scope.role === "AGENCY_OWNER"
+      ? true
+      : await orgHasActiveAddon(scope.orgId, ADDON_AEO_BOOST);
   const onPageHistory = hasAeoBoost
     ? await prisma.aeoOnPageAudit.findMany({
         where: { ...where },
@@ -508,13 +514,38 @@ export default async function AeoPage() {
         },
       })
     : [];
+  // Defensive shape filter — if the JSONB schema drifts (future
+  // migration adds a field, removes one, etc.) the UI must not render
+  // garbage. Each row must have a string key/label/reason and a boolean
+  // pass; anything malformed is dropped.
+  const sanitizeChecks = (raw: unknown): OnPageAuditCheck[] => {
+    if (!Array.isArray(raw)) return [];
+    const out: OnPageAuditCheck[] = [];
+    for (const item of raw) {
+      if (!item || typeof item !== "object") continue;
+      const c = item as Partial<OnPageAuditCheck>;
+      if (
+        typeof c.key !== "string" ||
+        typeof c.label !== "string" ||
+        typeof c.reason !== "string" ||
+        typeof c.pass !== "boolean"
+      ) {
+        continue;
+      }
+      out.push({
+        key: c.key,
+        label: c.label,
+        pass: c.pass,
+        reason: c.reason,
+      });
+    }
+    return out;
+  };
   const latestOnPage = onPageHistory[0]
     ? {
         url: onPageHistory[0].url,
         score: onPageHistory[0].score,
-        checks: (Array.isArray(onPageHistory[0].checks)
-          ? (onPageHistory[0].checks as unknown as OnPageAuditCheck[])
-          : []) satisfies OnPageAuditCheck[],
+        checks: sanitizeChecks(onPageHistory[0].checks),
         excerpt: onPageHistory[0].excerpt,
         capturedAt: onPageHistory[0].capturedAt.toISOString(),
       }
