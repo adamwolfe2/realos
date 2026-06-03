@@ -1,5 +1,5 @@
 {
-  "generatedAtIso": "2026-06-03T15:38:28.532Z",
+  "generatedAtIso": "2026-06-03T17:03:17.560Z",
   "brand": "255 Cal",
   "domain": "255-cal.com",
   "url": "https://www.255-cal.com",
@@ -10,7 +10,7 @@
     "ok": true,
     "title": "255 Cal - San Francisco's Flagship Workplace",
     "description": "255 Cal is reentering the market as a premier Class A building anchoring one of San Francisco’s most prestigious corridors.",
-    "htmlBytes": 23992,
+    "htmlBytes": 87058,
     "httpStatus": 200,
     "error": null
   },
@@ -25,30 +25,30 @@
       {
         "engine": "CHATGPT",
         "prompt": "What are the best Class-A office buildings in San Francisco's Financial District for a 200-person tech tenant in 2026?",
-        "responseText": "While I can't predict the future or provide real-time data, I can suggest some Class-A office buildings in San Francisco's Financial District that have historically been popular and may still be attractive options for a 200-person tech tenant in 2026. Here are a few notable buildings to consider:\n\n1. **Salesforce Tower**: As one of the tallest buildings in San Francisco, Salesforce Tower offers modern amenities, stunning views, and a prime location. It is designed with tech companies in mind and has flexible floor plans.\n\n2. **One Market Plaza**: This building features a prominent location near the Embarcadero and offers a mix of office spaces with modern facilities. It has a reputation for being a desirable location for tech firms.\n\n3. **Transamerica Pyramid**: An iconic building in San Francisco, the Transamerica Pyramid offers unique office spaces and a central location. Its distinctive architecture makes it a landmark in the city.\n\n4. **The Embarcadero Center**: This complex consists of several interconnected buildings and offers a variety of office spaces. Its proximity to public transportation and amenities makes it a convenient choice for tech companies.\n\n5. **101 California Street**: Known for its modern design and amenities, this building is a popular choice for tech tenants. It offers flexible office layouts and is located in a vibrant area of the Financial District.\n\n6. **555 California Street**: This building is known for its high-quality finishes and amenities. It has a strong reputation and is often sought after by tech companies looking for a prestigious address.\n\n7. **The Hallidie Building**: While not as large as some of the other options, this historic building offers a unique character and modern amenities, making it appealing to tech firms looking for a creative space.\n\nWhen considering office space, it's essential to evaluate factors such as location, amenities, lease terms, and the overall environment that aligns with your company's culture. Additionally, keep an eye on market trends and new developments in the area, as the landscape can change significantly by 2026.",
+        "responseText": "As of my last knowledge update in October 2023, I can't provide real-time data or predict specific future developments, but I can highlight some of the top Class-A office buildings in San Francisco's Financial District that were well-regarded for tech tenants. These buildings typically offer modern amenities, flexible layouts, and a prime location, which are attractive to tech companies.\n\n1. **Salesforce Tower**: This iconic building is one of the tallest in San Francisco and offers state-of-the-art facilities, stunning views, and a range of amenities. It is designed to accommodate large tech firms and has a strong focus on sustainability.\n\n2. **One Market Plaza**: Located near the Embarcadero, this building offers modern office spaces with great views of the Bay. It has been a popular choice for tech companies due to its proximity to public transportation and amenities.\n\n3. **Transbay Center**: This area includes several new developments and is designed to be a hub for tech companies. The buildings here often feature modern designs and flexible spaces that can accommodate a growing workforce.\n\n4. **The Exchange at 1455 Market Street**: This building has been renovated to include modern amenities and collaborative spaces, making it appealing to tech firms looking for a vibrant work environment.\n\n5. **555 California Street**: Known for its prestigious address, this building offers high-quality office space and is home to several major companies. It provides excellent amenities and is well-suited for larger teams.\n\n6. **101 California Street**: This building features a modern design and offers a range of amenities, including fitness centers and conference facilities, making it attractive to tech tenants.\n\n7. **The Battery**: While not a traditional office building, The Battery is a private club and workspace that caters to tech and creative professionals. It offers a unique environment for companies looking for a more unconventional office space.\n\nWhen considering a space for a 200-person tech tenant, factors such as location, amenities, flexibility of space, and lease terms will be crucial. It's advisable to consult with a local real estate broker or firm specializing in commercial real estate for the most current information and to explore new developments that may arise in the coming years.",
         "cited": false,
         "competitorsCited": [
           "555 California Street",
           "101 California Street",
           "Salesforce Tower",
-          "Transamerica Pyramid",
-          "One Market Plaza",
-          "Embarcadero Center"
+          "One Market Plaza"
         ],
-        "durationMs": 7316,
+        "durationMs": 8711,
         "error": null,
         "skipped": false
       },
       {
         "engine": "PERPLEXITY",
         "prompt": "What are the best Class-A office buildings in San Francisco's Financial District for a 200-person tech tenant in 2026?",
-        "responseText": "For a **200-person tech tenant**, the best **Class A** options in San Francisco’s **Financial District** in 2026 are typically the buildings clustered around **Embarcadero, Mission Street, and the Market/Battery corridor**, where FiDi offers strong transit access and lower rents than many comparable premium SF locations.[1][2]\n\nA practical shortlist, based on current FiDi market positioning and what is generally considered high-quality Class A space, would be:\n\n- **101 California**\n- **1 Bush Street**\n- **555 California Street**\n- **50 California Street**\n- **345 California Street**\n- **One Maritime Plaza**\n- **303 Second Street** if you want FiDi-adjacent access with a more tech-friendly feel\n\nThe strongest fit for a 200-person team is usually a building that can support roughly **30,000 square feet** if you use the common planning rule of about **150 sq ft per person** for office budgeting.[1] That makes buildings with multiple contiguous blocks of space, efficient floor plates, and strong amenity packages especially important.\n\nWhat matters most for a tech tenant in FiDi:\n\n- **Transit**: FiDi has better access to **BART, Muni, and ferries** than many SF submarkets.[1]\n- **Value**: FiDi is often described as a **value play** for Class A space, with asking rents cited around **$50–$80 per square foot annually** for direct leases.[1]\n- **Building quality**: Class A buildings are the **highest-quality** office assets in a market and typically offer the best amenities and prestige.[2]\n\nIf you want the **best overall fit** for a 200-person tech company, I would prioritize these three first:\n\n1. **101 California** — strong prestige, deep amenities, and a classic Class A profile.\n2. **1 Bush Street** — central FiDi location with good access to transit and services.\n3. **345 California Street** — premium tower quality and a strong address for client-facing teams.\n\nIf your priority is a more **modern, tech-leaning environment**, you should also compare **Embarcadero-side FiDi options** and nearby buildings just south of FiDi, since many startups end up in the band between **1st and 4th streets** to balance quality, access, and cost.[1]\n\nIf you want, I can turn this into a **ranked shortlist by budget, vibe, and commute profile** for a 200-person team.",
+        "responseText": "For a **200-person tech tenant** in San Francisco’s Financial District, the strongest Class-A options are the district’s **trophy and premium towers**—especially **388 Market, 50 California, 505 Montgomery, 555 California, Salesforce Tower, and the Transamerica Pyramid**.[1][3] These buildings combine the **best transit access, prestige, and amenity packages** that define Class A space in the market.[1][2][3]\n\nA practical ranking for a tech tenant would usually look like this:\n\n- **Salesforce Tower** — best for a flagship presence and top-tier amenities; it is widely treated as a trophy asset in Downtown SF.[3]\n- **555 California Street** — strong prestige, central location, and one of the best-known Class-A addresses in the city.[3]\n- **Transamerica Pyramid** — iconic branding value and a true trophy building, though usually best for tenants prioritizing image over a more conventional tech floorplate.[3]\n- **50 California Street** — excellent Financial District core location and a well-known Class-A tower for corporate tenants.[1]\n- **388 Market Street** — attractive for transit access and an established Financial District profile.[1]\n- **505 Montgomery Street** — good for a smaller-footprint tech team seeking a premium address with easier access to the north Financial District.[1]\n\nFor a **200-person tech tenant**, the key issue is not just prestige but whether the building can support a modern tech layout, collaboration space, and a lease size large enough for the tenant’s target footprint. Class A buildings are the highest-quality buildings in a market and typically offer the best amenities and most prestigious addresses.[2]\n\nA few practical takeaways:\n\n- **Best overall for a tech company that wants a branded headquarters feel:** **Salesforce Tower** or **555 California Street**.[3]\n- **Best balance of prestige and Financial District practicality:** **50 California** or **388 Market**.[1]\n- **Best for iconic image/PR value:** **Transamerica Pyramid**.[3]\n- **Best if BART access is a priority:** the Financial District generally fits well because of its transit access and dense concentration of major tenants.[1]\n\nIf you want, I can turn this into a **shortlist by budget band**, **estimate the square footage a 200-person team should target in 2026**, or **compare these buildings by amenities, floorplate flexibility, and commute access**.",
         "cited": false,
         "competitorsCited": [
           "555 California Street",
+          "Salesforce Tower",
+          "Transamerica Pyramid",
           "50 California Street"
         ],
-        "durationMs": 5702,
+        "durationMs": 5126,
         "error": null,
         "skipped": false
       },
@@ -58,7 +58,7 @@
         "responseText": "",
         "cited": false,
         "competitorsCited": [],
-        "durationMs": 441,
+        "durationMs": 279,
         "error": "gemini http 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing deta",
         "skipped": false
       },
@@ -76,20 +76,20 @@
       {
         "engine": "CHATGPT",
         "prompt": "Where can a hybrid-work company lease flexible workplace space in downtown San Francisco with strong amenities?",
-        "responseText": "In downtown San Francisco, there are several options for hybrid-work companies looking to lease flexible workplace space with strong amenities. Here are some popular choices:\n\n1. **WeWork**: Known for its flexible office solutions, WeWork has multiple locations in downtown San Francisco, offering coworking spaces, private offices, and meeting rooms with amenities like high-speed internet, coffee bars, and networking events.\n\n2. **Regus**: Regus provides a variety of flexible office spaces, including coworking areas and private offices. Their locations often come with amenities such as meeting rooms, business lounges, and administrative support.\n\n3. **Spaces**: A sister brand of Regus, Spaces offers creative work environments with a focus on community and collaboration. Their locations in downtown San Francisco typically feature stylish interiors, meeting rooms, and event spaces.\n\n4. **Knotel**: Knotel specializes in flexible office spaces tailored to the needs of businesses. They offer customizable office solutions with a range of amenities, including lounges, conference rooms, and wellness facilities.\n\n5. **The Vault**: Located in the Financial District, The Vault offers a unique coworking experience with a focus on community and collaboration. They provide various amenities, including event spaces, meeting rooms, and networking opportunities.\n\n6. **Covo**: Covo is a coworking space that emphasizes community and collaboration. They offer flexible memberships, meeting rooms, and amenities like coffee shops and event spaces.\n\n7. **Spaces by Convene**: This option provides high-end meeting and event spaces along with flexible office solutions. Convene locations often feature premium amenities, including catering services and wellness programs.\n\n8. **TechSpace**: TechSpace offers flexible office solutions tailored for tech companies and startups, with locations that provide modern amenities, meeting rooms, and networking opportunities.\n\nWhen considering a lease, it's important to visit the spaces, check the amenities offered, and evaluate how well they align with your company's culture and needs. Additionally, many of these providers offer virtual tours or trial days, which can help in making a decision.",
+        "responseText": "In downtown San Francisco, several options cater to hybrid-work companies looking for flexible workplace space with strong amenities. Here are some notable providers and locations:\n\n1. **WeWork**: With multiple locations in downtown San Francisco, WeWork offers flexible office spaces with amenities like high-speed internet, meeting rooms, and communal areas. Locations such as WeWork on Market Street and WeWork on Spear Street are popular choices.\n\n2. **Regus**: Regus has several business centers in downtown San Francisco, providing flexible office solutions, coworking spaces, and meeting rooms. Their locations often include amenities like lounges, high-speed internet, and administrative support.\n\n3. **Spaces**: Similar to WeWork, Spaces offers creative workspaces with a focus on community and collaboration. Their locations in downtown San Francisco provide modern amenities and a vibrant atmosphere.\n\n4. **Knotel**: Knotel specializes in flexible office spaces tailored to companies' needs. They offer customizable spaces in prime locations, ensuring access to amenities and services that support hybrid work.\n\n5. **The Vault**: Located in the Financial District, The Vault offers coworking spaces with a focus on community and networking. They provide various amenities, including event spaces, meeting rooms, and wellness programs.\n\n6. **Covo**: Covo is a coworking space that emphasizes community and collaboration. They offer flexible memberships and a range of amenities, including meeting rooms, event spaces, and coffee shops.\n\n7. **Spaces**: A part of the IWG group, Spaces provides creative workspaces that foster collaboration and innovation. Their locations in downtown San Francisco are equipped with modern amenities.\n\n8. **The Hive**: The Hive offers flexible office solutions with a focus on wellness and community. Their spaces are designed to promote productivity and collaboration, with various amenities available.\n\nWhen considering a lease, it's essential to visit the spaces, assess the amenities, and evaluate how well they align with your company's culture and needs. Additionally, many of these providers offer virtual tours and flexible leasing options, making it easier to find the right fit.",
         "cited": false,
         "competitorsCited": [],
-        "durationMs": 6427,
+        "durationMs": 6103,
         "error": null,
         "skipped": false
       },
       {
         "engine": "PERPLEXITY",
         "prompt": "Where can a hybrid-work company lease flexible workplace space in downtown San Francisco with strong amenities?",
-        "responseText": "A hybrid-work company looking for **flexible workplace space in downtown San Francisco with strong amenities** should look at **Mindspace San Francisco (575 Market Street)**, **Pacific Workplaces at 315 Montgomery Street**, **Spaces – Levi’s Plaza**, and **WeWork 1161 Mission St.** These locations explicitly offer flexible memberships or office suites plus amenities like meeting rooms, lounges, kitchens, gym access, bike parking, and outdoor or collaboration spaces.[3][5][4]\n\nThe strongest downtown options from the results are:\n\n- **Mindspace San Francisco, 575 Market Street** — downtown Market Street location near Moscone Center and Ferry Building, with flexible coworking and private offices, 24/7 access, bookable meeting rooms, a full-service gym through a sister building partnership, and large conference facilities.[3]\n- **Pacific Workplaces, 315 Montgomery Street** — in the Financial District with private offices, flex desk memberships, day passes, and hourly meeting rooms, plus a lounge, kitchen, conference rooms, phone booths, two outdoor terraces, and access to retail and dining in an urban campus setting.[5]\n- **Spaces – Levi’s Plaza, 1160 Battery St.** — near the waterfront and Central Business District, with private offices, dedicated desks, meeting rooms, breakout areas, an outdoor area, super-fast Wi‑Fi, and networking events.[4]\n- **WeWork, 1161 Mission St.** — offers furnished offices, equipped meeting rooms, reception services, and on-site bike parking.[4]\n\nIf the company wants the most amenity-rich downtown choice, **Mindspace** and **Pacific Workplaces** stand out because the listings specifically mention **gym access, conference facilities, lounges, kitchens, and outdoor terraces** alongside flexible terms.[3][5]\n\n",
+        "responseText": "For a **hybrid-work company** seeking flexible workplace space in **downtown San Francisco**, strong options from the results include **Mindspace at 575 Market Street**, **WeWork Downtown SF**, **Sima Space at 2211 Post Street**, and **Regus locations such as 315 Montgomery Street, 505 Montgomery Street, and 580 California Street**.[2][4][1][3]\n\n- **Mindspace San Francisco, 575 Market Street** — Offers private offices and coworking memberships, 24/7 access, bookable meeting rooms, lounge areas, coffee, bike parking, IT services, business printers, and professional events; it is also close to the Moscone Center and Ferry Building with easy transit access.[2]\n- **WeWork Downtown SF** — Provides move-in-ready private offices and full-floor offices with high-speed Wi‑Fi, meeting rooms, onsite staff, cleaning, phone booths, printers, lounges, coffee, mail handling, and flexible monthly or annual terms.[4]\n- **Sima Space, 2211 Post Street** — Offers private offices, day offices, and virtual office options with fully furnished setups, ergonomic furniture, parking, mail services, and convenient transit access in a walkable neighborhood.[1]\n- **Regus Downtown San Francisco locations** — Includes several flexible coworking and office options such as **315 Montgomery Street** and **505 Montgomery Street** in the Financial District, plus **580 California Street**; reported amenities include 24/7 access, business lounges, conference rooms, and premium central locations.[3]\n- **Spaces/Levi’s Plaza area** — A flexible option near downtown with private offices, dedicated desks, meeting rooms, super-fast Wi‑Fi, breakout areas, outdoor space, and networking events, though it is slightly more waterfront-adjacent than core downtown.[5]\n\nIf you want, I can narrow these down to the **best choice by budget, transit access, or premium amenities**.",
         "cited": false,
         "competitorsCited": [],
-        "durationMs": 4102,
+        "durationMs": 4284,
         "error": null,
         "skipped": false
       },
@@ -99,7 +99,7 @@
         "responseText": "",
         "cited": false,
         "competitorsCited": [],
-        "durationMs": 319,
+        "durationMs": 185,
         "error": "gemini http 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing deta",
         "skipped": false
       },
@@ -117,27 +117,28 @@
       {
         "engine": "CHATGPT",
         "prompt": "Compare the top office towers on California Street in San Francisco for a corporate headquarters lease.",
-        "responseText": "California Street in San Francisco is home to several prominent office towers that are often considered for corporate headquarters leases. Here’s a comparison of some of the top office towers along California Street:\n\n### 1. **Transamerica Pyramid**\n- **Height:** 853 feet\n- **Floors:** 48\n- **Notable Features:** Iconic design, landmark status, panoramic views of the Bay and city.\n- **Amenities:** Fitness center, conference facilities, on-site dining options.\n- **Pros:** Strong brand recognition, unique architectural presence, central location.\n- **Cons:** Limited parking options, higher rental rates due to prestige.\n\n### 2. **One California Street**\n- **Height:** 550 feet\n- **Floors:** 40\n- **Notable Features:** Modern design, recently renovated lobby, and common areas.\n- **Amenities:** On-site parking, fitness center, rooftop terrace, and conference rooms.\n- **Pros:** Flexible floor plans, good natural light, and proximity to financial district amenities.\n- **Cons:** Less iconic than the Transamerica Pyramid, but still a strong presence.\n\n### 3. **Two Embarcadero Center**\n- **Height:** 450 feet\n- **Floors:** 34\n- **Notable Features:** Part of the Embarcadero Center complex, which includes retail and dining options.\n- **Amenities:** On-site parking, fitness center, and easy access to public transportation.\n- **Pros:** Vibrant location with a mix of office, retail, and dining, great views of the Bay.\n- **Cons:** Less prestigious than some of the other towers, but offers a more integrated urban experience.\n\n### 4. **100 California Street**\n- **Height:** 400 feet\n- **Floors:** 29\n- **Notable Features:** Modern office space with a focus on sustainability.\n- **Amenities:** Conference facilities, on-site dining, and fitness options.\n- **Pros:** Competitive rental rates, good location near public transit, and a strong corporate environment.\n- **Cons:** Not as well-known as other towers, which may affect brand visibility.\n\n### 5. **555 California Street**\n- **Height:** 779 feet\n- **Floors:** 52\n- **Notable Features:** One of the tallest buildings in San Francisco, offers expansive views.\n- **Amenities:** High-end finishes, fitness center, and a large lobby area.\n- **Pros:** Prestigious address, ample space for large corporations, and strong security features.\n- **Cons:** Higher rental costs, and may have limited flexibility in lease terms.\n\n### Summary\nWhen considering a corporate headquarters lease on California Street, factors such as brand visibility, amenities, rental costs, and the overall corporate environment should be weighed. The Transamerica Pyramid and 555 California Street offer iconic status and prestige, while One California Street and Two Embarcadero Center provide modern amenities and a vibrant atmosphere. 100 California Street may",
+        "responseText": "California Street in San Francisco is home to several prominent office towers that are popular choices for corporate headquarters. Here’s a comparison of some of the top office towers along California Street, focusing on key factors such as location, amenities, building features, and leasing considerations.\n\n### 1. **Transamerica Pyramid**\n- **Address:** 600 Montgomery St\n- **Height:** 853 feet\n- **Floors:** 48\n- **Key Features:**\n  - Iconic architectural design and a recognizable landmark.\n  - Offers stunning views of the Bay and the city.\n  - Amenities include a fitness center, conference facilities, and nearby dining options.\n- **Leasing Considerations:**\n  - High demand due to its iconic status may lead to premium lease rates.\n  - Limited availability due to its historical significance and desirability.\n\n### 2. **One California Street**\n- **Address:** 1 California St\n- **Height:** 500 feet\n- **Floors:** 40\n- **Key Features:**\n  - Modern design with a spacious lobby and high ceilings.\n  - Offers amenities such as a fitness center, rooftop terrace, and on-site dining.\n  - Proximity to the Financial District and public transportation.\n- **Leasing Considerations:**\n  - Competitive lease rates compared to other premium towers.\n  - Flexible floor plans suitable for various corporate needs.\n\n### 3. **Two Embarcadero Center**\n- **Address:** 1 Embarcadero Center\n- **Height:** 500 feet\n- **Floors:** 34\n- **Key Features:**\n  - Part of the Embarcadero Center complex, providing a vibrant mixed-use environment.\n  - Offers extensive amenities, including retail shops, restaurants, and event spaces.\n  - Excellent access to public transportation, including BART and Muni.\n- **Leasing Considerations:**\n  - Attractive for companies looking for a dynamic environment.\n  - Lease rates may vary based on floor and view.\n\n### 4. **100 California Street**\n- **Address:** 100 California St\n- **Height:** 400 feet\n- **Floors:** 30\n- **Key Features:**\n  - Recently renovated with modern finishes and technology.\n  - Offers amenities such as a fitness center, conference rooms, and outdoor spaces.\n  - Located in the heart of the Financial District, close to major banks and businesses.\n- **Leasing Considerations:**\n  - Competitive pricing for a central location.\n  - Flexible leasing options available.\n\n### 5. **555 California Street (Bank of America Building)**\n- **Address:** 555 California St\n- **Height:** 779 feet\n- **Floors:** 52\n- **Key Features:**\n  - One of the tallest buildings in San Francisco, offering panoramic views.\n  - High-end amenities including a fitness center, conference facilities, and on-site dining.\n  - Strong security features",
         "cited": false,
         "competitorsCited": [
           "555 California Street",
           "Transamerica Pyramid",
           "Embarcadero Center"
         ],
-        "durationMs": 7435,
+        "durationMs": 8130,
         "error": null,
         "skipped": false
       },
       {
         "engine": "PERPLEXITY",
         "prompt": "Compare the top office towers on California Street in San Francisco for a corporate headquarters lease.",
-        "responseText": "For a **corporate headquarters lease** on California Street, the strongest trophy option in the results is **555 California Street**: it is the largest, most iconic tower listed here, with about **1.5 million RSF**, **52 floors**, and **column-free floorplates of roughly 30,000 sq. ft.**[2][4][5] **101 California Street** is also a major option, with **1.25 million sq. ft.** and **48 stories**, but it is smaller and appears less “trophy” than 555 California in these materials.[1]\n\n| Tower | Height / Floors | Approx. size | Lease appeal for HQ | Notable points |\n|---|---:|---:|---|---|\n| **555 California Street** | **779 ft**, **52 stories**[2][3][5] | **1,507,000 RSF**[5] | Best for a flagship HQ presence | Iconic West Coast trophy tower; strong amenity package; large floorplates; current/known tenants include major law, finance, and tech firms[4][5] |\n| **101 California Street** | **600 ft**, **48 stories**[1] | **1.25 million sq. ft.**[1] | Strong large-block office option | Third tallest in SF at completion; current tenants include Morgan Stanley and Deutsche Bank; a 192,000 sq. ft. lease to Chime shows HQ-scale demand[1] |\n\n**How they compare for a corporate headquarters lease**\n- **Brand image:** **555 California** has the stronger prestige factor; it is described as a landmark, a defining presence in the skyline, and an “iconic business address.”[2][4][5]\n- **Size and efficiency:** **555 California** offers the larger total building size and about **30,000 sq. ft. column-free floorplates**, which is attractive for big headquarters layouts.[4][5]\n- **HQ suitability:** **101 California** is also very suitable for a headquarters tenant, especially if the company wants a large, modern office with significant contiguous space; the Chime lease cited in the results is evidence of that demand.[1]\n- **Tenant mix:** Both properties support a premium tenant roster, but **555 California** appears to have the deeper trophy-tower positioning with major firms already there.[4][5]\n\nIf you want, I can also rank the best California Street towers specifically by **prestige**, **large-block availability**, or **fit for a 200k+ sq. ft. headquarters**.",
+        "responseText": "For a **corporate headquarters lease** on California Street, the strongest contenders are **555 California Street**, **580 California Street**, and **101 California Street**; if you want the biggest, most established trophy asset, **555 California Street** is the clear leader by size and stature.[1][4][5][6][7]\n\n| Tower | Height / Floors | Approx. size | Why it stands out for HQ use | Main tradeoff |\n|---|---:|---:|---|---|\n| **555 California Street** | 779 ft, 52 floors[1][4][5] | 1.507M RSF to 1.8M SF depending on source/campus definition[3][4] | Largest, most iconic, Class A trophy tower; proven home to major financial and professional firms; strong prestige signal for a headquarters[1][3][4][7] | Older building, so floorplate efficiency and modernization may not match newer towers |\n| **101 California Street** | 600 ft, 48 floors[5] | Not stated in the results you provided | Large, highly visible financial-district tower; typically a strong institutional image for HQ users[5] | Fewer direct details in the provided results, so less evidence here on amenities/specs |\n| **580 California Street** | Not stated in the results provided | Not stated in the results provided | Distinctive postmodern design, new lobby completed in 2017, strong views and a premium Financial District location at California and Kearny[6] | More niche architectural style; results do not show size or vacancy details |\n| **50 California Street** | 487 ft, 37 floors[5] | Not stated in the results provided | Major Financial District tower and one of the taller California Street options[5] | Less prestige and scale than 555 California |\n| **601 California Street** | 349 ft, 22 floors[5] | Not stated in the results provided | Smaller option if you want a more compact HQ presence[5] | Not a top-tier “flagship” headquarters tower by scale |\n\n**Best overall for a corporate headquarters:** **555 California Street**.[1][3][4] It is described as a landmark, a Class A office building, the former global headquarters of Bank of America, and one of the city’s most recognizable trophy towers.[1][4] It also has a tenant mix that includes major law, finance, consulting, and tech firms, which supports its suitability for a headquarters tenant.[3][4]\n\n**Best alternative if you want a newer-feeling identity and design-forward image:** **580 California Street**.[6] The available material emphasizes its premium design, renovated lobby, and prominent corner location, which can matter if brand presentation is as important as raw size.\n\n**Best alternative if you want a large but slightly less dominant trophy tower:** **101 California",
         "cited": false,
         "competitorsCited": [
           "555 California Street",
-          "101 California Street"
+          "101 California Street",
+          "50 California Street"
         ],
-        "durationMs": 5763,
+        "durationMs": 5934,
         "error": null,
         "skipped": false
       },
@@ -147,7 +148,7 @@
         "responseText": "",
         "cited": false,
         "competitorsCited": [],
-        "durationMs": 231,
+        "durationMs": 193,
         "error": "gemini http 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing deta",
         "skipped": false
       },
@@ -165,24 +166,24 @@
       {
         "engine": "CHATGPT",
         "prompt": "What is the most prestigious office address on California Street in SF and why?",
-        "responseText": "One of the most prestigious office addresses on California Street in San Francisco is 555 California Street. This iconic skyscraper, also known as the Bank of America Center, is notable for several reasons:\n\n1. **Architectural Significance**: Completed in 1969, the building was designed by the renowned architectural firm of Skidmore, Owings & Merrill. Its modernist design and prominent height make it a landmark in the San Francisco skyline.\n\n2. **Prime Location**: Situated in the Financial District, 555 California Street is strategically located near major financial institutions, law firms, and corporate headquarters. This makes it a desirable address for businesses looking to establish a presence in one of the most important financial hubs in the world.\n\n3. **Prestigious Tenants**: The building has housed several high-profile tenants, including major banks, law firms, and investment companies, which adds to its reputation as a prestigious office location.\n\n4. **Amenities and Services**: The building offers a range of amenities, including high-end dining options, fitness facilities, and conference spaces, which enhance its appeal to businesses and their employees.\n\n5. **Cultural and Historical Importance**: As part of San Francisco's history, 555 California Street has been a witness to the city's growth and development, further solidifying its status as a prestigious address.\n\nOverall, the combination of its architectural prominence, strategic location, and the caliber of its tenants contributes to the prestige of 555 California Street in San Francisco.",
+        "responseText": "One of the most prestigious office addresses on California Street in San Francisco is 555 California Street. This iconic skyscraper, also known as the Bank of America Center, is notable for several reasons:\n\n1. **Architectural Significance**: Completed in 1969, the building was designed by the renowned architectural firm of Skidmore, Owings & Merrill. Its modernist design and prominent height make it a landmark in the San Francisco skyline.\n\n2. **Prime Location**: Situated in the Financial District, 555 California Street is in close proximity to major financial institutions, law firms, and corporate headquarters. This central location enhances its prestige and desirability for businesses.\n\n3. **High-Profile Tenants**: The building has housed several high-profile tenants, including major banks and financial services firms, which adds to its reputation as a premier business address.\n\n4. **Amenities and Services**: The building offers a range of amenities, including high-end dining options, fitness facilities, and conference spaces, making it attractive to businesses and their employees.\n\n5. **Historical Importance**: As one of the tallest buildings in San Francisco, it has played a significant role in the city's development and is often associated with the growth of the financial sector in the region.\n\nThese factors contribute to 555 California Street's status as one of the most prestigious office addresses in San Francisco.",
         "cited": false,
         "competitorsCited": [
           "555 California Street"
         ],
-        "durationMs": 4614,
+        "durationMs": 9264,
         "error": null,
         "skipped": false
       },
       {
         "engine": "PERPLEXITY",
         "prompt": "What is the most prestigious office address on California Street in SF and why?",
-        "responseText": "The **most prestigious office address on California Street** is generally considered **345 California Center, 345 California Street**.[3] It stands out because it is a **major landmark tower** in the Financial District, has **award-winning architecture** by Skidmore, Owings & Merrill, and is explicitly described as one of San Francisco’s most revered landmarks.[3]\n\nWhy it is often seen as the top choice:\n\n- **Iconic building status**: It is marketed as a landmark rather than just an office tower.[3]\n- **Prestige signaling**: The building emphasizes “prestige” and premium office space, which matters for tenant image.[3]\n- **Prime location**: It is in the **heart of the Financial District**, the city’s main commercial core.[3]\n- **Comparable alternatives exist**, but they are usually positioned more as flexible office or coworking options, such as **580 California Street** and **650 California Street**.[1][2][6]\n\nIf you mean the best address specifically for **flexible office space or virtual office branding**, then **50 California Street** and **580 California Street** are also strong candidates because they are offered by major office providers in the Financial District.[1][5][6] But for overall **prestige and recognition**, **345 California Street** is the strongest answer.[3]",
+        "responseText": "The most **prestigious office address on California Street in San Francisco** is most commonly considered **345 California Center (345 California Street)**, because it is marketed as a landmark-grade tower in the Financial District, with award-winning architecture, a high-profile address, and long-standing prestige positioning. [4]\n\nWhy it stands out:\n\n- It is presented as **“one of San Francisco’s most revered landmarks”** and a major office tower with **35 floors of premium office space**. [4]\n- The building emphasizes **prestige** directly in its own description and highlights its **award-winning Skidmore, Owings & Merrill architecture**. [4]\n- It sits in the **heart of San Francisco’s Financial District**, which is the city’s most conventional premium office location. [4]\n\nOther strong contenders on California Street include **580 California Street** and **50 California Street**, both of which are described as **prestigious** or prime Financial District addresses. [2][5][6] But if you mean the single address that most clearly carries the strongest *landmark + prestige* identity, **345 California Street** is the best answer based on the available listings. [4]",
         "cited": false,
         "competitorsCited": [
           "50 California Street"
         ],
-        "durationMs": 3759,
+        "durationMs": 2878,
         "error": null,
         "skipped": false
       },
@@ -192,7 +193,7 @@
         "responseText": "",
         "cited": false,
         "competitorsCited": [],
-        "durationMs": 258,
+        "durationMs": 156,
         "error": "gemini http 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing deta",
         "skipped": false
       },
@@ -210,20 +211,20 @@
       {
         "engine": "CHATGPT",
         "prompt": "Tell me about 255 California Street San Francisco — who occupies it and what are its amenities?",
-        "responseText": "255 California Street is a prominent office building located in the Financial District of San Francisco. The building is known for its modern design and strategic location, which provides easy access to various amenities and services in the area.\n\nAs of my last knowledge update in October 2023, the building is home to several tenants, including financial firms, tech companies, and professional services. Specific tenants may change over time, so for the most current information, it would be best to check recent listings or news related to the building.\n\nIn terms of amenities, 255 California Street typically offers features such as:\n\n- **Modern Office Spaces**: Flexible office layouts that can accommodate various business needs.\n- **Conference Facilities**: Meeting rooms and event spaces equipped with the latest technology.\n- **On-Site Services**: Amenities like concierge services, fitness centers, and possibly dining options.\n- **Accessibility**: Proximity to public transportation, including BART and Muni, making it convenient for employees and clients.\n\nFor the latest details on specific tenants and amenities, I recommend checking the building's official website or contacting a local real estate agent.",
+        "responseText": "255 California Street is a prominent office building located in the Financial District of San Francisco. It is known for its modern design and strategic location, which offers easy access to various amenities and services in the area.\n\nAs of my last update, the building is primarily occupied by various businesses and organizations, including financial institutions, law firms, and tech companies. The specific tenants can change over time, so for the most current information, it's best to check with local business directories or the building management.\n\nIn terms of amenities, 255 California Street typically offers features such as:\n\n- **Modern Office Spaces**: Flexible office layouts that can accommodate different business needs.\n- **Conference Facilities**: Meeting rooms and conference spaces equipped with the latest technology.\n- **On-site Services**: This may include concierge services, security, and maintenance.\n- **Fitness Center**: Some office buildings in the area provide fitness facilities for tenants.\n- **Rooftop Access**: Many buildings in the Financial District have rooftop spaces that offer views of the city and can be used for events or relaxation.\n- **Proximity to Public Transportation**: The location is well-served by public transit options, including BART and Muni, making it convenient for employees and visitors.\n\nFor the most accurate and up-to-date information regarding current tenants and specific amenities, I recommend checking the building's official website or contacting the property management directly.",
         "cited": true,
         "competitorsCited": [],
-        "durationMs": 4194,
+        "durationMs": 3914,
         "error": null,
         "skipped": false
       },
       {
         "engine": "PERPLEXITY",
         "prompt": "Tell me about 255 California Street San Francisco — who occupies it and what are its amenities?",
-        "responseText": "255 California Street is a **Class A office building** in San Francisco’s Financial District, at California and Battery Streets, with about **190,457 rentable square feet** and **14 stories**.[1][2][3] The most clearly identified occupant in the results is **BBR Partners**, which announced its move to **Suite 500** in 2025; the building’s leasing/management contacts also indicate **LBA Properties**, **CBRE**, and related real estate firms are involved with the property, while one source says the **CAC Group** is a longtime tenant and leasing manager.[2][3][4]\n\nIts amenities and features include **column-free floorplates**, **LEED Gold certification**, a **100 Transit Score**, **ample natural light**, and **high-end finishes**.[1] The building also has a **refurbished main lobby**, a **large landscaped balcony**, **expansive windows**, a **second-floor Japanese garden**, and a **golf putting green** added as an amenity space.[5] CBRE’s listing also mentions suite configurations with **conference rooms, open kitchen areas, meeting rooms, wellness rooms, phone rooms, and IT/storage space** depending on the buildout.[1]\n\nIf you want, I can also give you a **tenant list**, **history of ownership**, or a **floor-by-floor amenities breakdown**.",
+        "responseText": "255 California Street is a **Class A office building** in San Francisco’s Financial District, and the most clearly identified current tenant in the results is **BBR Partners**, which moved its San Francisco office there in 2025 to Suite 500.[1][4] The building is also associated with **LBA Properties/LBA Realty** in the ownership/management materials, and one result says the property was managed by **CAC Real Estate Management Co.** with leasing by the CAC Group.[2][3]\n\nIts amenities and features include **190,457 rentable square feet**, **14 stories**, **column-free floorplates**, and **LEED Gold certification**.[1][3] The building marketing also highlights **high-end finishes**, **ample natural light**, a **100 Transit Score**, and a highly accessible location at **California and Battery Streets**.[1]  \n\nMore specifically, the space and building amenities mentioned include:\n\n- **Expansive, column-free floorplates**[1][5]\n- **Large windows / abundant natural light**[1][5]\n- **A landscaped balcony / patio area**[5]\n- **Refurbished main lobby** with upgraded lighting and finishes[5]\n- **Second-floor Japanese garden** refurbished from the original Lawrence Halprin design[5]\n- **Golf putting green** for tenant social use[5]\n- **Conference rooms, offices, open kitchen areas, wellness room, phone rooms, and IT/storage options** in various spec-suite buildouts[1]\n\nIf you want, I can also give you a **tenant list** or a **building-history snapshot** for 255 California Street.",
         "cited": true,
         "competitorsCited": [],
-        "durationMs": 3881,
+        "durationMs": 4009,
         "error": null,
         "skipped": false
       },
@@ -233,7 +234,7 @@
         "responseText": "",
         "cited": false,
         "competitorsCited": [],
-        "durationMs": 220,
+        "durationMs": 408,
         "error": "gemini http 429: {\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"You exceeded your current quota, please check your plan and billing deta",
         "skipped": false
       },
@@ -267,7 +268,15 @@
         "count": 5
       },
       {
+        "name": "50 California Street",
+        "count": 3
+      },
+      {
         "name": "101 California Street",
+        "count": 2
+      },
+      {
+        "name": "Salesforce Tower",
         "count": 2
       },
       {
@@ -275,27 +284,19 @@
         "count": 2
       },
       {
-        "name": "Embarcadero Center",
-        "count": 2
-      },
-      {
-        "name": "50 California Street",
-        "count": 2
-      },
-      {
-        "name": "Salesforce Tower",
+        "name": "One Market Plaza",
         "count": 1
       },
       {
-        "name": "One Market Plaza",
+        "name": "Embarcadero Center",
         "count": 1
       }
     ]
   },
   "googleAiOverview": null,
   "onPage": {
-    "score": 13,
-    "excerpt": "",
+    "score": 50,
+    "excerpt": "255 Cal - San Francisco's Flagship Workplace — 255 Cal is reentering the market as a premier Class A building anchoring one of San Francisco’s most prestigious corridors.",
     "checks": [
       {
         "key": "faq-schema",
@@ -306,8 +307,8 @@
       {
         "key": "org-schema",
         "label": "Organization JSON-LD",
-        "pass": false,
-        "reason": "No Organization/LocalBusiness JSON-LD. Engines attribute citations to schema'd entities."
+        "pass": true,
+        "reason": "Found Organization/LocalBusiness JSON-LD."
       },
       {
         "key": "article-schema",
@@ -318,20 +319,20 @@
       {
         "key": "canonical",
         "label": "Canonical URL",
-        "pass": false,
-        "reason": "No <link rel=canonical>. Engines may dedupe to a different URL than yours."
+        "pass": true,
+        "reason": "Canonical points to https://255-cal.com/"
       },
       {
         "key": "meta-description",
         "label": "Meta description (50-300 chars)",
-        "pass": false,
-        "reason": "Missing meta description. This is the most common AI-quoted snippet."
+        "pass": true,
+        "reason": "123-char meta description."
       },
       {
         "key": "content-depth",
         "label": "Content depth (≥800 words)",
         "pass": false,
-        "reason": "Only 164 words. AI engines rarely cite pages too short to host a quotable answer (target ≥800)."
+        "reason": "Only 204 words. AI engines rarely cite pages too short to host a quotable answer (target ≥800)."
       },
       {
         "key": "qa-structure",
@@ -343,21 +344,29 @@
         "key": "freshness",
         "label": "Freshness (date < 1 year)",
         "pass": true,
-        "reason": "No date metadata on page — neutral (not penalized)."
+        "reason": "Last updated 2 days ago."
       }
     ]
   },
   "schemaGap": {
-    "present": [],
-    "missing": [
+    "present": [
+      "BreadcrumbList",
+      "EntryPoint",
+      "ImageObject",
+      "ListItem",
       "Organization",
+      "PropertyValueSpecification",
+      "ReadAction",
+      "SearchAction",
+      "WebPage",
+      "WebSite"
+    ],
+    "missing": [
       "LocalBusiness",
       "Place",
       "OfficeEquipment",
       "Service",
       "FAQPage",
-      "BreadcrumbList",
-      "ImageObject",
       "ContactPoint",
       "PostalAddress"
     ]
@@ -384,8 +393,8 @@
     {
       "category": "analytics",
       "label": "Analytics / tag manager",
-      "detected": false,
-      "note": "Not detected on the homepage."
+      "detected": true,
+      "note": "Detected on the homepage."
     },
     {
       "category": "crm",

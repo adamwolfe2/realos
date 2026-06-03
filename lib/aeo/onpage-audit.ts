@@ -232,8 +232,14 @@ function checkQaStructure(html: string): AeoOnPageCheck {
 }
 
 function checkFreshness(html: string): AeoOnPageCheck {
-  // Look for a <time> element with a datetime attribute, or a meta
-  // tag with an article:published_time / article:modified_time / OG date.
+  // Pull date candidates from three sources:
+  //   1. <time datetime="...">
+  //   2. <meta property/name=article:published_time | article:modified_time
+  //      | og:updated_time | date | dc.date>
+  //   3. JSON-LD blocks — datePublished / dateModified inside any
+  //      <script type="application/ld+json">. Adam 2026-06-03 audit
+  //      caught the 255 Cal page reporting "no date metadata" even
+  //      though its @graph carried a 2026-06-01 dateModified.
   const candidates: string[] = [];
   const timeMatches = html.matchAll(/<time[^>]+datetime=["']([^"']+)["']/gi);
   for (const m of timeMatches) candidates.push(m[1]);
@@ -241,6 +247,20 @@ function checkFreshness(html: string): AeoOnPageCheck {
     /<meta[^>]+(?:property|name)=["'](?:article:published_time|article:modified_time|og:updated_time|date|dc\.date)["'][^>]+content=["']([^"']+)["']/gi,
   );
   for (const m of metaMatches) candidates.push(m[1]);
+  // JSON-LD dateModified / datePublished — scan inside every
+  // <script type="application/ld+json"> block. Substring match is
+  // sufficient because we then defer to Date.parse, which gracefully
+  // rejects garbage.
+  const ldRe =
+    /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let ldMatch: RegExpExecArray | null;
+  while ((ldMatch = ldRe.exec(html)) !== null) {
+    const block = ldMatch[1];
+    const dates = block.matchAll(
+      /"(?:dateModified|datePublished|lastReviewed)"\s*:\s*"([^"]+)"/gi,
+    );
+    for (const d of dates) candidates.push(d[1]);
+  }
   if (candidates.length === 0) {
     // Absence of a date is neutral, not a fail. Treat as pass with
     // a clarifying reason so operators see the rationale.

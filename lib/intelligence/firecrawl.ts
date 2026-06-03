@@ -60,7 +60,16 @@ export type FirecrawlResult<T> = FirecrawlOk<T> | FirecrawlErr;
 export interface FirecrawlScrapePage {
   url: string;
   markdown?: string;
+  /** Cleaned HTML — Firecrawl removes scripts (including JSON-LD!) and
+   *  some other "noise" tags. Suitable for content-depth + body parsing,
+   *  NOT for schema/canonical/meta detection. */
   html?: string;
+  /** Raw, unsanitized HTML — preserves <script type="application/ld+json">
+   *  blocks, canonical link, meta tags, analytics snippets, etc. Use this
+   *  for any AEO Page Health or detected-stack check that depends on
+   *  head-level markup. Adam 2026-06-03: missing rawHtml caused all four
+   *  on-page false negatives in the 255 Cal brief. */
+  rawHtml?: string;
   metadata?: {
     title?: string;
     description?: string;

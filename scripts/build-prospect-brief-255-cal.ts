@@ -140,25 +140,34 @@ interface BriefJson {
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
+// Firecrawl scrape. Requests rawHtml (preserves <script> tags + JSON-LD)
+// and applies a payload-integrity gate so a sanitized or truncated body
+// can't silently feed the AEO scorecard. Falls back to raw fetch with a
+// browser-style UA when Firecrawl returns nothing usable — that's the
+// only way to land the un-cleaned HTML on the rare site where Firecrawl
+// gets blocked.
 async function firecrawlScrape(url: string): Promise<{
   html: string | null;
   metadata: { title?: string; description?: string; statusCode?: number; sourceURL?: string } | null;
   error: string | null;
 }> {
   const key = process.env.FIRECRAWL_API_KEY;
-  if (!key) return { html: null, metadata: null, error: "FIRECRAWL_API_KEY missing" };
+  if (!key) {
+    return rawFetchFallback(url, "FIRECRAWL_API_KEY missing");
+  }
   try {
     const res = await fetch("https://api.firecrawl.dev/v1/scrape", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ url, formats: ["html", "markdown"] }),
+      body: JSON.stringify({ url, formats: ["html", "rawHtml", "markdown"] }),
     });
     if (!res.ok) {
-      return { html: null, metadata: null, error: `firecrawl http ${res.status}` };
+      return rawFetchFallback(url, `firecrawl http ${res.status}`);
     }
     const body = (await res.json()) as {
       data?: {
         html?: string;
+        rawHtml?: string;
         markdown?: string;
         metadata?: {
           title?: string;
@@ -168,16 +177,75 @@ async function firecrawlScrape(url: string): Promise<{
         };
       };
     };
+    // Prefer rawHtml (preserves JSON-LD + canonical + meta tags +
+    // analytics snippets — everything the AEO checks need).
+    const preferred = body.data?.rawHtml ?? body.data?.html ?? null;
+    const wellFormed =
+      typeof preferred === "string" &&
+      preferred.length >= 4_000 &&
+      /<head[\s>]/i.test(preferred) &&
+      /<\/html>/i.test(preferred);
+    if (!wellFormed) {
+      console.warn(
+        `[brief] firecrawl payload failed integrity gate (${preferred?.length ?? 0}B) — falling back to raw fetch`,
+      );
+      return rawFetchFallback(url, "firecrawl integrity gate");
+    }
     return {
-      html: body.data?.html ?? null,
+      html: preferred,
       metadata: body.data?.metadata ?? null,
+      error: null,
+    };
+  } catch (err) {
+    return rawFetchFallback(
+      url,
+      err instanceof Error ? err.message : String(err),
+    );
+  }
+}
+
+async function rawFetchFallback(
+  url: string,
+  reason: string,
+): Promise<{
+  html: string | null;
+  metadata: { title?: string; description?: string; statusCode?: number; sourceURL?: string } | null;
+  error: string | null;
+}> {
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      redirect: "follow",
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15",
+        Accept:
+          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+      },
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!res.ok) {
+      return { html: null, metadata: null, error: `raw fetch http ${res.status} (${reason})` };
+    }
+    const html = await res.text();
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const descMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']*)["']/i);
+    return {
+      html,
+      metadata: {
+        title: titleMatch?.[1]?.trim(),
+        description: descMatch?.[1]?.trim(),
+        statusCode: res.status,
+        sourceURL: res.url,
+      },
       error: null,
     };
   } catch (err) {
     return {
       html: null,
       metadata: null,
-      error: err instanceof Error ? err.message : String(err),
+      error: `raw fetch failed: ${err instanceof Error ? err.message : String(err)} (after: ${reason})`,
     };
   }
 }

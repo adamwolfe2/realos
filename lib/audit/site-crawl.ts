@@ -168,29 +168,51 @@ export async function crawlSite(targetUrl: string): Promise<SiteCrawlResult> {
 
   const startedAt = Date.now();
 
-  // Tier 1 — Firecrawl. Only attempted when the API key is configured.
-  // Returns null on any error so we fall through to native fetch.
+  // Tier 1 — Firecrawl. Request BOTH formats: rawHtml is the unsanitized
+  // payload we need for AEO schema/canonical/meta detection (Firecrawl's
+  // cleaned `html` strips <script> tags including JSON-LD), html is the
+  // cleaned content used for body parsing. Adam 2026-06-03: missing
+  // rawHtml was the root cause of every false negative on the 255 Cal
+  // page-health scorecard.
   if (isFirecrawlConfigured()) {
-    const fc = await firecrawlScrape({ url, formats: ["html"] }).catch(
-      () => null,
-    );
-    if (fc && fc.ok && fc.data.html) {
+    const fc = await firecrawlScrape({
+      url,
+      formats: ["html", "rawHtml"],
+    }).catch(() => null);
+    // Payload-integrity gate: a "successful" Firecrawl call that came
+    // back with a tiny or structurally-broken HTML is more dangerous
+    // than no payload at all, because every downstream check will
+    // silently produce false negatives. Require <head> + </html> +
+    // ≥4KB before trusting the rendered body. Otherwise fall through
+    // to native fetch so the raw server HTML can take over.
+    const rawHtml = fc?.ok ? fc.data.rawHtml : undefined;
+    const cleanedHtml = fc?.ok ? fc.data.html : undefined;
+    const preferred = rawHtml ?? cleanedHtml;
+    const isWellFormed =
+      typeof preferred === "string" &&
+      preferred.length >= 4_000 &&
+      /<head[\s>]/i.test(preferred) &&
+      /<\/html>/i.test(preferred);
+    if (fc && fc.ok && preferred && isWellFormed) {
       const responseTimeMs = Date.now() - startedAt;
       const statusCode = fc.data.metadata?.statusCode ?? 200;
       const resolvedUrl =
         (fc.data.metadata?.sourceURL as string | undefined) ?? url;
-      // Run the cheerio parser on Firecrawl's rendered HTML. Same parser
-      // path as native fetch — produces identical SiteCrawlResult shape.
       return parseHtmlIntoResult({
         url: resolvedUrl,
-        html: fc.data.html,
-        contentLengthBytes: fc.data.html.length,
+        html: preferred,
+        contentLengthBytes: preferred.length,
         httpStatus: statusCode,
         responseTimeMs,
       });
     }
-    // Firecrawl failed or returned empty — fall through to native fetch
-    // so the audit pipeline still produces signals.
+    // Firecrawl failed, returned empty, or returned a suspiciously
+    // small / broken payload — fall through to native fetch.
+    if (fc && fc.ok && preferred && !isWellFormed) {
+      console.warn(
+        `[site-crawl] Firecrawl payload failed integrity gate (${preferred.length}B, head=${/<head[\s>]/i.test(preferred)}, htmlClose=${/<\/html>/i.test(preferred)}) — falling back to native fetch for ${url}`,
+      );
+    }
   }
 
   // Tier 2 — native fetch. Free, fast for SSR sites, blind to SPAs.
