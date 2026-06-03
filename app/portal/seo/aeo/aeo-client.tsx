@@ -17,6 +17,14 @@ import {
   ShareOfVoiceCard,
   type ShareOfVoiceProps,
 } from "@/components/portal/aeo/share-of-voice-card";
+import {
+  OpportunityScoreCard,
+  type OpportunityScoreProps,
+} from "@/components/portal/aeo/opportunity-score-card";
+import {
+  AiOverviewCard,
+  type AiOverviewProps,
+} from "@/components/portal/aeo/ai-overview-card";
 
 // All interactive UI for /portal/seo/aeo. The page.tsx server component
 // does the data fetch + tenant scope, then hands fully-shaped view props
@@ -49,6 +57,8 @@ export type AeoClientProps = {
     ctaHref: string;
   }>;
   shareOfVoice: ShareOfVoiceProps;
+  opportunityScore: OpportunityScoreProps;
+  aiOverview: AiOverviewProps;
 };
 
 function fmtPercent(value: number): string {
@@ -214,6 +224,8 @@ export function AeoClient({
   kpis,
   recommendations,
   shareOfVoice,
+  opportunityScore,
+  aiOverview,
 }: AeoClientProps) {
   return (
     <div className="space-y-6">
@@ -278,6 +290,18 @@ export function AeoClient({
         topEntities={shareOfVoice.topEntities}
         totalSnapshots={shareOfVoice.totalSnapshots}
         engineSource={shareOfVoice.engineSource}
+      />
+
+      {/* AEO v2 W2: Opportunity Score — keywords ranked by gap */}
+      <OpportunityScoreCard
+        rows={opportunityScore.rows}
+        engineSource={opportunityScore.engineSource}
+      />
+
+      {/* AEO v2 W2: Google AI Overview row */}
+      <AiOverviewCard
+        rows={aiOverview.rows}
+        engineSource={aiOverview.engineSource}
       />
 
       {/* What to do next — derived recommendations */}

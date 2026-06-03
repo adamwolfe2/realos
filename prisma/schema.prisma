@@ -543,6 +543,8 @@ model Organization {
   zillowReports           ZillowReport[]
   aeoChecks               AeoCitationCheck[]
   aeoMentionSnapshots     AeoMentionSnapshot[]
+  aeoOpportunityScores    AeoOpportunityScore[]
+  aeoOverviewSnapshots    AeoOverviewSnapshot[]
   neighborhoodPages       NeighborhoodPage[]
   onboardingProgress      OnboardingProgress?
   // SEO/AEO Agent backrefs — Phase 1
@@ -979,6 +981,7 @@ model Property {
   websiteBuildRequests WebsiteBuildRequest[]
   aeoChecks            AeoCitationCheck[]
   aeoMentionSnapshots  AeoMentionSnapshot[]
+  aeoOpportunityScores AeoOpportunityScore[]
   neighborhoodPages    NeighborhoodPage[]
   // Per-property RentCast market intelligence snapshots (rent AVM,
   // market stats). Populated by the Market Intelligence section on
@@ -3782,6 +3785,61 @@ model AeoMentionSnapshot {
   @@index([orgId, capturedAt])
   @@index([propertyId, capturedAt])
   @@index([engine, capturedAt])
+}
+
+// ---------------------------------------------------------------------------
+// AeoOpportunityScore — composite "where should I focus my AEO effort?"
+// score per (org, keyword). AEO v2 W2.
+//
+// Inputs are denormalized intentionally so a future formula change can
+// recompute every score from existing rows without re-pulling GSC /
+// DataForSEO data. One row per (orgId, keyword).
+// ---------------------------------------------------------------------------
+model AeoOpportunityScore {
+  id                     String   @id @default(cuid())
+  orgId                  String
+  propertyId             String?
+  keyword                String
+  gscClicks28d           Int      @default(0)
+  gscImpressions28d      Int      @default(0)
+  gscAvgPosition         Float    @default(0)
+  aiSearchVolume         Int      @default(0)
+  yourMentionCount       Int      @default(0)
+  competitorMentionCount Int      @default(0)
+  onPageSeoScore         Float?
+  /// 0-100 composite. Formula in lib/aeo/opportunity-score.ts.
+  score                  Float    @default(0)
+  computedAt             DateTime @default(now())
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@unique([orgId, keyword])
+  @@index([orgId, score])
+  @@index([orgId, computedAt])
+}
+
+// ---------------------------------------------------------------------------
+// AeoOverviewSnapshot — Google AI Overview text + citation status per
+// (org, query, capturedAt). AEO v2 W2.
+//
+// Captured weekly from DataForSEO /serp/google/ai_summary for the org's
+// top GSC queries. `cited` is precomputed from citedUrls × primary
+// domain so the UI doesn't reparse hosts on every render.
+// ---------------------------------------------------------------------------
+model AeoOverviewSnapshot {
+  id         String   @id @default(cuid())
+  orgId      String
+  query      String
+  summary    String   @db.Text
+  citedUrls  String[]
+  cited      Boolean  @default(false)
+  capturedAt DateTime @default(now())
+  costUsd    Float    @default(0)
+
+  org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, capturedAt])
 }
 
 // ---------------------------------------------------------------------------

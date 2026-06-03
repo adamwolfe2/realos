@@ -10,6 +10,9 @@ import type {
   ShareOfVoicePerEngine,
   TopEntity,
 } from "@/components/portal/aeo/share-of-voice-card";
+import type { OpportunityRow } from "@/components/portal/aeo/opportunity-score-card";
+import type { AiOverviewRow } from "@/components/portal/aeo/ai-overview-card";
+import { computeOpportunityScore } from "@/lib/aeo/opportunity-score";
 import type { AeoEngine } from "@prisma/client";
 
 export const metadata: Metadata = { title: "AI search visibility" };
@@ -382,6 +385,83 @@ export default async function AeoPage() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 12);
 
+  // ---------------------------------------------------------------------
+  // AEO v2 W2 — Opportunity Score + Google AI Overview rows.
+  //
+  // Both surfaces read W2 tables (AeoOpportunityScore + AeoOverviewSnapshot)
+  // which the AEO cron computes when AEO_ENGINE_SOURCE=dataforseo. Empty
+  // arrays in direct mode; widgets show their own empty-state branches.
+  // ---------------------------------------------------------------------
+  const opportunityRowsRaw = await prisma.aeoOpportunityScore.findMany({
+    where: { ...where },
+    orderBy: { score: "desc" },
+    take: 10,
+    select: {
+      keyword: true,
+      score: true,
+      gscClicks28d: true,
+      gscImpressions28d: true,
+      gscAvgPosition: true,
+      aiSearchVolume: true,
+      yourMentionCount: true,
+      competitorMentionCount: true,
+      onPageSeoScore: true,
+    },
+  });
+  const opportunityRows: OpportunityRow[] = opportunityRowsRaw.map((row) => {
+    const { breakdown } = computeOpportunityScore({
+      gscClicks28d: row.gscClicks28d,
+      gscImpressions28d: row.gscImpressions28d,
+      gscAvgPosition: row.gscAvgPosition,
+      aiSearchVolume: row.aiSearchVolume,
+      yourMentionCount: row.yourMentionCount,
+      competitorMentionCount: row.competitorMentionCount,
+      onPageSeoScore: row.onPageSeoScore,
+    });
+    return {
+      keyword: row.keyword,
+      score: row.score,
+      gscClicks28d: row.gscClicks28d,
+      gscImpressions28d: row.gscImpressions28d,
+      aiSearchVolume: row.aiSearchVolume,
+      yourMentionCount: row.yourMentionCount,
+      competitorMentionCount: row.competitorMentionCount,
+      breakdown,
+    };
+  });
+
+  // Latest AI Overview row per query (top-5 distinct queries). Subquery
+  // pattern: pull last-30d rows, reduce in memory to the latest per query.
+  const overviewRowsRaw = await prisma.aeoOverviewSnapshot.findMany({
+    where: {
+      ...where,
+      capturedAt: { gte: thirtyDaysAgo },
+    },
+    orderBy: { capturedAt: "desc" },
+    take: 100,
+    select: {
+      query: true,
+      summary: true,
+      citedUrls: true,
+      cited: true,
+      capturedAt: true,
+    },
+  });
+  const latestByQuery = new Map<string, (typeof overviewRowsRaw)[number]>();
+  for (const row of overviewRowsRaw) {
+    const key = row.query.toLowerCase();
+    if (!latestByQuery.has(key)) latestByQuery.set(key, row);
+  }
+  const aiOverviewRows: AiOverviewRow[] = Array.from(latestByQuery.values())
+    .slice(0, 5)
+    .map((row) => ({
+      query: row.query,
+      summary: row.summary,
+      citedUrls: row.citedUrls,
+      cited: row.cited,
+      capturedAt: row.capturedAt.toISOString(),
+    }));
+
   return (
     <AeoClient
       engineCards={engineCards}
@@ -405,6 +485,14 @@ export default async function AeoPage() {
         perEngine: sovPerEngine,
         topEntities,
         totalSnapshots: snapshots.length,
+        engineSource: resolveEngineSource(),
+      }}
+      opportunityScore={{
+        rows: opportunityRows,
+        engineSource: resolveEngineSource(),
+      }}
+      aiOverview={{
+        rows: aiOverviewRows,
         engineSource: resolveEngineSource(),
       }}
     />

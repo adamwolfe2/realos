@@ -4,6 +4,7 @@ import { verifyCronAuth } from "@/lib/cron/auth";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { runAeoScan, runNeighborhoodScan } from "@/lib/aeo/orchestrate";
 import { resolveEngineSource } from "@/lib/aeo/engines";
+import { scoreOrgOpportunities } from "@/lib/aeo/score-opportunities";
 
 // Skip per-page sampling if scanned within this window. The weekly cron
 // runs Mondays — 6 days keeps us re-scanning every Monday without ever
@@ -145,6 +146,34 @@ export async function GET(req: NextRequest) {
           })
         : 0;
 
+    // AEO v2 W2: compute opportunity scores + capture Google AI Overview
+    // for each org. Internal no-op when source=direct; doesn't hit
+    // DataForSEO unless the flag is on AND credentials are live.
+    let totalKeywordsScored = 0;
+    let totalOverviewsCaptured = 0;
+    let totalOpportunityCostUsd = 0;
+    if (engineSource === "dataforseo") {
+      for (const org of orgs) {
+        try {
+          const r = await scoreOrgOpportunities(org.id);
+          totalKeywordsScored += r.keywordsScored;
+          totalOverviewsCaptured += r.overviewsCaptured;
+          totalOpportunityCostUsd += r.totalCostUsd;
+          if (r.errors.length > 0) {
+            console.warn(
+              `[cron/aeo-scan] org ${org.id} opportunity-score errors:`,
+              r.errors.slice(0, 5),
+            );
+          }
+        } catch (err) {
+          console.error(
+            `[cron/aeo-scan] opportunity-score crash for org ${org.id}:`,
+            err instanceof Error ? err.message : err,
+          );
+        }
+      }
+    }
+
     return {
       result: NextResponse.json({
         ok: true,
@@ -153,6 +182,10 @@ export async function GET(req: NextRequest) {
         recentSnapshotCount,
         neighborhoodPagesScanned,
         neighborhoodPagesSkipped,
+        // W2 telemetry
+        totalKeywordsScored,
+        totalOverviewsCaptured,
+        totalOpportunityCostUsd,
         orgs: summary,
       }),
       recordsProcessed: totalRows,
