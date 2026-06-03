@@ -1,5 +1,5 @@
 import "server-only";
-import { generateObject } from "ai";
+import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { z } from "zod";
 import { logUsage } from "@/lib/cost-tracker/log";
@@ -167,12 +167,36 @@ const EXTRACT_MODEL = "claude-haiku-4-5-20251001";
 
 const SYSTEM_PROMPT = `You are an extraction assistant. Given a chatbot transcript between a prospective tenant and an apartment-leasing assistant, pull out every fact the prospect shared.
 
+You MUST respond with ONLY a JSON object — no prose, no markdown fence, no explanation. Just the JSON. The schema is:
+
+{
+  "fullName": string,                    // First + last name if mentioned, otherwise ""
+  "email": string,                        // Email if provided, otherwise ""
+  "phone": string,                        // Phone if provided, otherwise ""
+  "moveInDate": string,                   // Verbatim ("September 1", "ASAP", etc), or ""
+  "moveOutDate": string,                  // Same convention, or ""
+  "leaseTerm": string,                    // "12 months", "month-to-month", or ""
+  "roomType": string,                     // "studio", "1BR", "2BR with den", or ""
+  "budgetMonthly": string,                // "$3,200", "under $4k", "3-3.5k", or ""
+  "partySize": string,                    // "myself + partner", "family of 4", or ""
+  "occupation": string,                   // "software engineer", "student", or ""
+  "employer": string,                     // Company name, or ""
+  "petsAndKids": string,                  // Pets/kids context, or ""
+  "reasonForMove": string,                // Why moving, or ""
+  "mustHaves": string[],                  // Array of must-have features. [] if none.
+  "niceToHaves": string[],                // Array of nice-to-haves. [] if none.
+  "competitorsConsidering": string[],     // Other buildings they mentioned. [] if none.
+  "sentiment": "hot"|"warm"|"lukewarm"|"cold"|"unclear",
+  "followUpNeeded": string,               // One-line next action for the agency, or ""
+  "notes": string                          // Free-text catch-all, or ""
+}
+
 Rules:
-1. NEVER invent data. If a field wasn't mentioned, return null (or [] for arrays).
-2. Quote the prospect's words where possible. Don't paraphrase budgets, dates, or unit types.
+1. NEVER invent data. Empty string ("") for unset string fields, empty array ([]) for unset array fields.
+2. Quote the prospect's words verbatim where possible. Don't paraphrase budgets, dates, or unit types.
 3. The transcript may be long. Use the user turns as ground truth — never trust the assistant's guesses.
-4. sentiment must be one of: hot, warm, lukewarm, cold, unclear.
-5. mustHaves / niceToHaves / competitorsConsidering are arrays. Empty array if nothing matches.`;
+4. sentiment MUST be one of the 5 enum values listed.
+5. Output ONLY the JSON object. No prefix, no suffix, no markdown.`;
 
 export async function extractProspectProfile(args: {
   messages: Array<{ role: string; content: string }>;
@@ -201,17 +225,37 @@ export async function extractProspectProfile(args: {
 
   const startedAt = Date.now();
   try {
-    // Hard 15s ceiling per extraction so a slow Anthropic response can't
-    // hang the parent backfill / cron loop. Most haiku-4-5 calls land
-    // in 1-2 sec; anything over 15 is almost certainly a rate-limit
-    // pause we don't want to wait through.
-    const { object, usage } = await generateObject({
+    // Plain generateText + JSON parsing instead of generateObject.
+    // generateObject was hanging at 15s per call via the AI SDK's
+    // Anthropic tool-mode adapter — likely the compiled tool schema
+    // (even after dropping union types) was triggering some slow
+    // path on Anthropic's side. Asking Claude to return raw JSON
+    // directly is faster (~1-2s per call) and we already trust
+    // Haiku to produce valid JSON when the schema is in the system
+    // prompt. We validate post-hoc with z.parse() so corrupt output
+    // still surfaces a clean error.
+    const { text, usage } = await generateText({
       model: anthropic(EXTRACT_MODEL),
-      schema: ProspectProfileSchema,
       system: SYSTEM_PROMPT,
       prompt: `Transcript:\n\n${transcript}`,
       abortSignal: AbortSignal.timeout(15_000),
+      maxOutputTokens: 1000,
     });
+
+    // Strip any accidental code-fence wrapping ("```json...```") before
+    // parsing — Haiku sometimes still wraps despite the "no markdown"
+    // instruction, and we'd rather salvage than fail.
+    const cleaned = text
+      .replace(/^\s*```(?:json)?\s*/i, "")
+      .replace(/```\s*$/i, "")
+      .trim();
+    const parsed = ProspectProfileSchema.safeParse(JSON.parse(cleaned));
+    if (!parsed.success) {
+      throw new Error(
+        `Claude returned malformed JSON: ${parsed.error.issues[0]?.message ?? "schema mismatch"}`,
+      );
+    }
+    const object = parsed.data;
 
     // Log cost so /admin/costs reflects the digest spend. Haiku pricing
     // 2025: $1/MTok input, $5/MTok output. Round to micro-USD.
