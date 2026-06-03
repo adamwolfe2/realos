@@ -103,6 +103,14 @@ export function Composer({
             discountScope: isDiscountScope(localProposal.discountScope)
               ? localProposal.discountScope
               : "both",
+            scopeNarrative: localProposal.scopeNarrative,
+            // Persist null for "no timeline" instead of an empty array
+            // — the server flips that back to JSON null and the PDF
+            // skips the timeline section entirely.
+            timeline:
+              localProposal.timeline.length === 0
+                ? null
+                : localProposal.timeline,
           },
           lines: linesEditable
             ? localLines.map((l, idx) => ({

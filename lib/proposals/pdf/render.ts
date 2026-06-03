@@ -2,7 +2,11 @@ import "server-only";
 import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import React from "react";
 import ProposalPdfDocument from "./document";
-import type { ProposalTotalsCents, ProposalWithLines } from "../types";
+import {
+  normalizeTimeline,
+  type ProposalTotalsCents,
+  type ProposalWithLines,
+} from "../types";
 
 // ---------------------------------------------------------------------------
 // Server-side proposal PDF render. Wraps @react-pdf's `renderToBuffer` so
@@ -87,6 +91,10 @@ export async function renderProposalPdf(args: {
       discountReason: proposal.discountReason,
       sentAt: proposal.sentAt,
       createdAt: proposal.createdAt,
+      scopeNarrative: proposal.scopeNarrative ?? null,
+      // Proposal.timeline is `Json?` on the Prisma side. Normalize via
+      // the shared helper so the PDF never sees a half-baked entry.
+      timeline: normalizeTimeline(proposal.timeline ?? null),
     },
     lineItems,
     totals: {

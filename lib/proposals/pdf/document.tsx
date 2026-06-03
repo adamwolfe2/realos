@@ -8,6 +8,7 @@ import {
   cadenceWord,
 } from "./format";
 import { LineSection } from "./table";
+import { ScopeSection, TimelineSection } from "./scope-and-timeline";
 import { buildTermsCopy } from "./terms";
 import type { ProposalPdfDocumentProps } from "./types";
 
@@ -93,6 +94,15 @@ export default function ProposalPdfDocument(
         {proposal.publicMessage ? (
           <Text style={styles.publicMessage}>{proposal.publicMessage}</Text>
         ) : null}
+
+        {/* Scope of work (new) — narrative description of what the agency
+            will deliver. Renders only when proposal.scopeNarrative is
+            populated; legacy proposals without scope keep the old shape. */}
+        <ScopeSection narrative={proposal.scopeNarrative} />
+
+        {/* Delivery timeline (new) — phase × week-window × deliverables
+            table. Renders only when at least one phase is defined. */}
+        <TimelineSection phases={proposal.timeline} />
 
         {/* Line items */}
         <LineSection

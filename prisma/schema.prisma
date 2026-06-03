@@ -5697,6 +5697,27 @@ model Proposal {
   publicMessage String? @db.Text // shown ABOVE the line items on the share page
   internalNotes String? @db.Text // agency-only, never exposed to prospect
 
+  // ── Scope of work + delivery timeline ─────────────────────────────
+  // Adam ask 2026-06-03: a proper proposal isn't just a price tag — it
+  // describes the work the agency will deliver + when the prospect can
+  // expect it. Both fields render on the PDF + share page between the
+  // title block and the pricing tables.
+  //
+  // Markdown supported (rendered as plain paragraphs in the PDF since
+  // @react-pdf doesn't run a full markdown engine — bold/italic + line
+  // breaks survive, headings degrade to bold). Null = render nothing.
+  scopeNarrative String? @db.Text
+
+  // Structured timeline. JSON shape:
+  //   [
+  //     { phase: "Kickoff", startWeek: 0, endWeek: 1, deliverables: [...] },
+  //     { phase: "Build",   startWeek: 2, endWeek: 5, deliverables: [...] },
+  //     ...
+  //   ]
+  // Weeks are RELATIVE to acceptance — week 0 = signed-and-paid day —
+  // so the PDF doesn't bake calendar dates that go stale before send.
+  timeline Json?
+
   // Stripe wiring — populated as the proposal moves through the flow.
   stripeCustomerId     String?
   stripeCheckoutId     String?

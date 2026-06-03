@@ -84,6 +84,44 @@ export const styles = StyleSheet.create({
     borderLeftStyle: "solid",
   },
 
+  // ----- scope of work
+  scopeBlock: { marginBottom: 24 },
+  scopeText: {
+    fontSize: 10,
+    color: C.ink,
+    lineHeight: 1.55,
+  },
+
+  // ----- timeline
+  timelineBlock: { marginBottom: 24 },
+  timelinePhaseRow: {
+    flexDirection: "row",
+    paddingTop: 8,
+    paddingBottom: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: C.hairline,
+    borderBottomStyle: "solid",
+    alignItems: "flex-start",
+  },
+  timelinePhaseCol: { flex: 3, paddingRight: 12 },
+  timelineWeeksCol: { flex: 1.4, paddingRight: 12 },
+  timelineDeliverablesCol: { flex: 5 },
+  timelinePhaseName: {
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+    color: C.ink,
+  },
+  timelineWeeks: {
+    fontSize: 10,
+    color: C.muted,
+  },
+  timelineDeliverableItem: {
+    fontSize: 9.5,
+    color: C.ink,
+    lineHeight: 1.5,
+    marginBottom: 2,
+  },
+
   // ----- table
   sectionLabel: {
     fontSize: 8,

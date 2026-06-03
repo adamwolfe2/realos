@@ -74,6 +74,56 @@ export type LineItemInput = {
   sortOrder?: number;
 };
 
+/**
+ * One phase on a Proposal.timeline. Weeks are RELATIVE to acceptance
+ * (week 0 = signed-and-paid day) so the PDF doesn't bake calendar
+ * dates that go stale before send.
+ */
+export type ProposalTimelinePhase = {
+  /// Short phase name — "Kickoff", "Build", "Launch", "Optimize".
+  phase: string;
+  /// Inclusive start week, ≥ 0.
+  startWeek: number;
+  /// Inclusive end week, ≥ startWeek.
+  endWeek: number;
+  /// Concrete things the agency ships in this phase. Bullet list on the
+  /// PDF; bullets get joined into a comma list on tight share views.
+  deliverables: string[];
+};
+
+/**
+ * Defensive normalizer: takes whatever JSON is stored on
+ * `Proposal.timeline` (possibly null, possibly an old shape, possibly
+ * an array of well-formed phases) and returns a clean phase array.
+ * Drops malformed entries instead of throwing so a partial migration
+ * never blocks a PDF render mid-flight.
+ */
+export function normalizeTimeline(raw: unknown): ProposalTimelinePhase[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ProposalTimelinePhase[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const p = item as Partial<ProposalTimelinePhase>;
+    if (typeof p.phase !== "string" || p.phase.trim().length === 0) continue;
+    const start = Number(p.startWeek);
+    const end = Number(p.endWeek);
+    if (!Number.isFinite(start) || start < 0) continue;
+    if (!Number.isFinite(end) || end < start) continue;
+    const deliverables = Array.isArray(p.deliverables)
+      ? p.deliverables.filter(
+          (d): d is string => typeof d === "string" && d.trim().length > 0,
+        )
+      : [];
+    out.push({
+      phase: p.phase.trim(),
+      startWeek: Math.floor(start),
+      endWeek: Math.floor(end),
+      deliverables,
+    });
+  }
+  return out;
+}
+
 /** Result of the customer lookup chain.
  *  `origin` records WHICH branch matched so audit logs can verify behavior.
  */

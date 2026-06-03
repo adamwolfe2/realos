@@ -7,6 +7,14 @@ import type {
   ProposalStatus,
 } from "@prisma/client";
 
+/** One delivery phase. Weeks relative to acceptance (week 0 = paid day). */
+export type ComposerTimelinePhase = {
+  phase: string;
+  startWeek: number;
+  endWeek: number;
+  deliverables: string[];
+};
+
 export type ComposerProposal = {
   id: string;
   number: string;
@@ -23,6 +31,9 @@ export type ComposerProposal = {
   prospectName: string;
   prospectEmail: string;
   prospectCompany: string | null;
+  // Scope of work + delivery timeline (Adam ask 2026-06-03).
+  scopeNarrative: string | null;
+  timeline: ComposerTimelinePhase[];
 };
 
 export type ComposerLine = {

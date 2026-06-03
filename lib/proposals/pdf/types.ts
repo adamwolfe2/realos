@@ -5,6 +5,13 @@
 // can both type against the same prop shape without circular imports.
 // ---------------------------------------------------------------------------
 
+export type ProposalPdfTimelinePhase = {
+  phase: string;
+  startWeek: number;
+  endWeek: number;
+  deliverables: string[];
+};
+
 export type ProposalPdfDocumentProps = {
   proposal: {
     number: string;
@@ -20,6 +27,14 @@ export type ProposalPdfDocumentProps = {
     discountReason: string | null;
     sentAt: Date | null;
     createdAt: Date;
+    /// Optional scope-of-work narrative. Renders as a paragraph block
+    /// between the title and the line items. Markdown bold/italic
+    /// degrades gracefully (treated as plain text in PDF).
+    scopeNarrative: string | null;
+    /// Optional structured delivery timeline. Weeks are relative to
+    /// acceptance (week 0 = signed-and-paid day). Empty/null → section
+    /// is skipped entirely.
+    timeline: ProposalPdfTimelinePhase[] | null;
   };
   lineItems: Array<{
     label: string;

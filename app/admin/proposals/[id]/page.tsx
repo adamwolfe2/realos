@@ -9,6 +9,7 @@ import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { StatusBadge } from "@/components/admin/status-badge";
 import type { BadgeTone } from "@/lib/format";
 import { Composer } from "../_components/composer";
+import { normalizeTimeline } from "@/lib/proposals/types";
 
 export const metadata: Metadata = { title: "Proposal" };
 export const dynamic = "force-dynamic";
@@ -217,6 +218,10 @@ export default async function ProposalDetailPage({
           prospectName: proposal.prospectName,
           prospectEmail: proposal.prospectEmail,
           prospectCompany: proposal.prospectCompany,
+          scopeNarrative: proposal.scopeNarrative,
+          // Normalize on read so a stored shape drift (or a hand-rolled
+          // JSON edit) doesn't crash the composer.
+          timeline: normalizeTimeline(proposal.timeline),
         }}
         lines={proposal.lineItems.map((l) => ({
           id: l.id,

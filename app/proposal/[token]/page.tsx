@@ -5,6 +5,7 @@ import { ProposalStatus } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { resolveLiveShareToken } from "@/lib/proposals/share-token";
 import { computeProposalTotalsFromRow } from "@/lib/proposals/totals";
+import { normalizeTimeline } from "@/lib/proposals/types";
 import { BRAND, BRAND_EMAIL, BRAND_NAME } from "@/lib/brand";
 import { ViewPing } from "./_components/view-ping";
 import { AcceptButton } from "./_components/accept-button";
@@ -94,6 +95,7 @@ export default async function ProposalSharePage({ params }: PageProps) {
   const oneTimeLines = proposal.lineItems.filter((l) => !l.recurring);
   const currency = proposal.currency || "usd";
   const cadence = totals.cadence;
+  const timeline = normalizeTimeline(proposal.timeline);
   const askQuestionHref = `mailto:${BRAND_EMAIL}?subject=${encodeURIComponent(
     `Question about ${proposal.number}`,
   )}`;
@@ -164,6 +166,63 @@ export default async function ProposalSharePage({ params }: PageProps) {
         {proposal.publicMessage ? (
           <section className="mb-10 rounded-lg border border-[#EAECEF] bg-[#F9FAFB] p-5 text-[15px] leading-relaxed text-[#374151]">
             <p className="whitespace-pre-line">{proposal.publicMessage}</p>
+          </section>
+        ) : null}
+
+        {/* Scope of work */}
+        {proposal.scopeNarrative ? (
+          <section className="mb-10">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B7280] mb-3">
+              Scope of work
+            </h2>
+            <div className="prose prose-sm max-w-none text-[#1F2937] leading-relaxed whitespace-pre-line text-[15px]">
+              {proposal.scopeNarrative}
+            </div>
+          </section>
+        ) : null}
+
+        {/* Delivery timeline */}
+        {timeline.length > 0 ? (
+          <section className="mb-10">
+            <h2 className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6B7280] mb-3">
+              Delivery timeline
+            </h2>
+            <ol className="border border-[#EAECEF] rounded-lg overflow-hidden bg-white">
+              {timeline.map((p, idx) => (
+                <li
+                  key={idx}
+                  className="grid grid-cols-12 gap-4 p-4 border-b border-[#EAECEF] last:border-b-0"
+                >
+                  <div className="col-span-12 md:col-span-3">
+                    <div className="font-semibold text-[15px] text-[#111827]">
+                      {p.phase}
+                    </div>
+                    <div className="text-[12px] text-[#6B7280] mt-0.5 tabular-nums">
+                      {p.startWeek === p.endWeek
+                        ? `Week ${p.startWeek}`
+                        : `Week ${p.startWeek}–${p.endWeek}`}
+                    </div>
+                  </div>
+                  <div className="col-span-12 md:col-span-9">
+                    {p.deliverables.length === 0 ? (
+                      <span className="text-[13px] text-[#9CA3AF]">—</span>
+                    ) : (
+                      <ul className="space-y-1 text-[14px] text-[#374151] leading-relaxed">
+                        {p.deliverables.map((d, dIdx) => (
+                          <li key={dIdx} className="flex gap-2">
+                            <span className="text-[#9CA3AF] shrink-0">•</span>
+                            <span>{d}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ol>
+            <p className="mt-2 text-[11.5px] text-[#9CA3AF]">
+              Weeks count from the day this proposal is signed and paid.
+            </p>
           </section>
         ) : null}
 

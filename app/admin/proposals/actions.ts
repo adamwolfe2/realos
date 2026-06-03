@@ -19,6 +19,13 @@ type ProspectInput = {
   orgId?: string | null;
 };
 
+type ProposalTimelinePhaseInput = {
+  phase: string;
+  startWeek: number;
+  endWeek: number;
+  deliverables: string[];
+};
+
 type ProposalFields = {
   cadence?: ProposalCadence | null;
   trialDays?: number;
@@ -28,6 +35,10 @@ type ProposalFields = {
   discountAmountCents?: number;
   discountReason?: string | null;
   discountScope?: "recurring" | "one_time" | "both";
+  // Scope of work + delivery timeline (Adam ask 2026-06-03). Both surface
+  // on the PDF + share page between the title block and the line items.
+  scopeNarrative?: string | null;
+  timeline?: ProposalTimelinePhaseInput[] | null;
 };
 
 type LineInput = {
@@ -214,6 +225,61 @@ export async function saveDraft(args: {
       }
       if (fields.expiresAt !== undefined) {
         data.expiresAt = parseExpires(fields.expiresAt);
+      }
+      // Scope + timeline editable while DRAFT only (parity with line
+      // items). Once SENT, the prospect has a copy in their inbox; we
+      // don't want stealth edits to the scope they already reviewed.
+      if (!isSent) {
+        if (fields.scopeNarrative !== undefined) {
+          // 8 KB ceiling — markdown bodies past that don't survive the
+          // PDF text-flow well anyway and tend to be paste-bombs.
+          const raw =
+            typeof fields.scopeNarrative === "string"
+              ? fields.scopeNarrative
+              : null;
+          data.scopeNarrative =
+            raw == null
+              ? null
+              : raw.length > 8000
+                ? raw.slice(0, 8000)
+                : raw;
+        }
+        if (fields.timeline !== undefined) {
+          if (fields.timeline === null) {
+            data.timeline = Prisma.DbNull;
+          } else {
+            // Sanitize each phase: trim strings, clamp weeks, drop bad
+            // rows. The same normalizer runs on read in lib/proposals/
+            // types.ts so the stored shape is always trusted.
+            const cleaned: ProposalTimelinePhaseInput[] = [];
+            for (const p of fields.timeline ?? []) {
+              if (!p || typeof p !== "object") continue;
+              const phase =
+                typeof p.phase === "string" ? p.phase.trim() : "";
+              if (!phase) continue;
+              const start = clampInt(p.startWeek, 0, 520);
+              const end = clampInt(p.endWeek, start, 520);
+              const deliverables = Array.isArray(p.deliverables)
+                ? p.deliverables
+                    .filter(
+                      (d): d is string =>
+                        typeof d === "string" && d.trim().length > 0,
+                    )
+                    .map((d) => d.trim().slice(0, 240))
+                    .slice(0, 20)
+                : [];
+              cleaned.push({
+                phase: phase.slice(0, 80),
+                startWeek: start,
+                endWeek: end,
+                deliverables,
+              });
+              if (cleaned.length >= 24) break; // 2-year cap on phase count
+            }
+            data.timeline =
+              cleaned as unknown as Prisma.InputJsonValue;
+          }
+        }
       }
     }
 
