@@ -22,6 +22,7 @@ import {
 import { BRAND_NAME } from "@/lib/brand";
 import { BRIEF_REGISTRY } from "@/lib/brief/registry";
 import { getScope } from "@/lib/tenancy/scope";
+import { prisma } from "@/lib/db";
 import brief255Cal from "@/prospects/255-cal.json" assert { type: "json" };
 
 // ---------------------------------------------------------------------------
@@ -138,11 +139,41 @@ function lookup(token: string): { entry: BriefRegistryEntry; data: BriefJson } |
   return { entry, data };
 }
 
+/** DB-backed lookup. Newer briefs are generated through the admin UI
+ *  and stored in ProspectBrief. Static TS-registry lookup remains for
+ *  legacy briefs (255-cal.json) — checked first so the existing share
+ *  link doesn't break. Anything in the DB takes the place of the
+ *  registry for net-new entries. */
+async function lookupDb(token: string): Promise<{
+  entry: BriefRegistryEntry;
+  data: BriefJson;
+} | null> {
+  // Bump the view counter as a side-effect of the read so the admin
+  // brief list can render "last viewed" without an extra round-trip.
+  const row = await prisma.prospectBrief.findUnique({
+    where: { token },
+    select: {
+      id: true,
+      brand: true,
+      data: true,
+      status: true,
+    },
+  });
+  if (!row || row.status !== "READY" || !row.data) return null;
+  // The data JSONB column was written by lib/brief/collect.ts and is
+  // structurally identical to brief255Cal — same shape — so we cast.
+  const data = row.data as unknown as BriefJson;
+  return {
+    entry: { prospectName: row.brand, dataFile: "255-cal" },
+    data,
+  };
+}
+
 export async function generateMetadata({
   params,
 }: RouteContext): Promise<Metadata> {
   const { token } = await params;
-  const hit = lookup(token);
+  const hit = lookup(token) ?? (await lookupDb(token));
   if (!hit) return { title: "Brief not found", robots: { index: false, follow: false } };
   return {
     title: `${hit.entry.prospectName} — AI Search Visibility Brief`,
@@ -153,9 +184,20 @@ export async function generateMetadata({
 
 export default async function BriefPage({ params }: RouteContext) {
   const { token } = await params;
-  const hit = lookup(token);
+  // DB takes precedence — that's where new briefs land. TS registry is
+  // a backwards-compat shim for the legacy 255-cal brief that pre-dates
+  // the DB migration.
+  const hit = (await lookupDb(token)) ?? lookup(token);
   if (!hit) notFound();
   const { entry, data } = hit;
+  // Fire-and-forget view counter for DB-backed briefs only. Best-effort;
+  // never blocks the render.
+  void prisma.prospectBrief
+    .updateMany({
+      where: { token },
+      data: { viewCount: { increment: 1 }, lastViewedAt: new Date() },
+    })
+    .catch(() => undefined);
   // Operator chrome — only surfaced to authed agency-side viewers
   // (Adam + the LeaseStack team). Prospects never see this strip.
   // getScope() returns null for anonymous viewers so the check is

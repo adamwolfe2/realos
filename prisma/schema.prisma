@@ -5448,6 +5448,44 @@ model ProspectAudit {
   @@index([expiresAt])
 }
 
+// Hand-curated AI search visibility brief for a single prospect domain,
+// gated by a URL-safe random token at /brief/[token]. Distinct from
+// ProspectAudit (the multifamily DPS pipeline) — the brief is built by
+// a commercial-vertical data collector that targets office / Class-A
+// office leasing and uses real-time engines + DataForSEO + a curated
+// comp set.
+//
+// Lifecycle: QUEUED → RUNNING → READY / FAILED. The admin UI polls
+// while data collection runs; the public viewer 404s on anything but
+// READY.
+enum ProspectBriefStatus {
+  QUEUED
+  RUNNING
+  READY
+  FAILED
+}
+
+model ProspectBrief {
+  id           String              @id @default(cuid())
+  token        String              @unique
+  domain       String
+  brand        String
+  vertical     String?
+  status       ProspectBriefStatus @default(QUEUED)
+  // Shape owned by lib/brief/collect.ts → BriefData. Null until the
+  // collector lands a READY status.
+  data         Json?
+  errorMessage String?             @db.Text
+  viewCount    Int                 @default(0)
+  lastViewedAt DateTime?
+  createdById  String?
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+
+  @@index([domain, createdAt(sort: Desc)])
+  @@index([status, createdAt(sort: Desc)])
+}
+
 model DailySignalSnapshot {
   id              String          @id @default(cuid())
   scopeKind       SignalScopeKind

@@ -125,6 +125,35 @@ function tierFromCatalogSlug(slug: string | null): SubscriptionTier {
   }
 }
 
+// Slugs that signal a commercial / enterprise engagement even when the
+// proposal has no explicit TIER line. Newer white-glove proposals use
+// ADDONs for kickoff + sprint + retainer + coordination instead of
+// picking one of the multifamily tiers — we still want their provisioned
+// org tagged COMMERCIAL + CUSTOM tier so the dashboard / Insights /
+// pricing-page UI doesn't assume residential.
+const COMMERCIAL_ADDON_SLUGS = new Set<string>([
+  "addon-commercial-retainer",
+  "addon-portfolio-success",
+  "addon-white-glove-coordination",
+  "sprint-30-day-implementation",
+  "setup-aeo-status-report",
+  "setup-kickoff-workshop",
+]);
+
+function inferOrgTypeFromProposal(
+  lineSlugs: ReadonlyArray<string | null>,
+): { propertyType: PropertyType; tier: SubscriptionTier | null } {
+  const slugs = lineSlugs.filter((s): s is string => Boolean(s));
+  const commercialHit = slugs.some((s) => COMMERCIAL_ADDON_SLUGS.has(s));
+  if (commercialHit) {
+    return {
+      propertyType: PropertyType.COMMERCIAL,
+      tier: SubscriptionTier.CUSTOM,
+    };
+  }
+  return { propertyType: PropertyType.RESIDENTIAL, tier: null };
+}
+
 /**
  * Provision a CLIENT Organization for an accepted proposal — or return the
  * existing one if provisioning has already happened. Pass a Prisma
@@ -181,8 +210,19 @@ export async function provisionOrgForAcceptance(
   }
 
   // ── Fresh-tenant path ─────────────────────────────────────────────
+  // Tier resolution order:
+  //   1. Explicit TIER line item on the proposal (multifamily flow)
+  //   2. Inferred from ADDON slugs — commercial/white-glove proposals
+  //      ship without a TIER (the engagement is service-led not
+  //      product-led) but should still provision as CUSTOM + COMMERCIAL
+  //   3. Fallback: GROWTH (multifamily default)
   const tierLine = proposal.lineItems.find((l) => l.kind === "TIER");
-  const tier = tierFromCatalogSlug(tierLine?.catalogItem?.slug ?? null);
+  const allSlugs = proposal.lineItems.map((l) => l.catalogItem?.slug ?? null);
+  const inferred = inferOrgTypeFromProposal(allSlugs);
+  const tier = tierLine?.catalogItem?.slug
+    ? tierFromCatalogSlug(tierLine.catalogItem.slug)
+    : inferred.tier ?? SubscriptionTier.GROWTH;
+  const propertyType = inferred.propertyType;
 
   const slugSource =
     proposal.prospectCompany?.trim() ||
@@ -199,7 +239,7 @@ export async function provisionOrgForAcceptance(
         )[0] ?? null,
       slug,
       orgType: OrgType.CLIENT,
-      propertyType: PropertyType.RESIDENTIAL,
+      propertyType,
       status: TenantStatus.CONTRACT_SIGNED,
       primaryContactName: proposal.prospectName,
       primaryContactEmail: proposal.prospectEmail,
