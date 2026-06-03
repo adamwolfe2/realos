@@ -516,80 +516,201 @@ export async function backfillChatbotLeadEmails(args: {
       };
     }
 
-    // Dynamic import keeps this server-only helper out of the chatbot-
-    // config bundle when this action isn't being called.
-    const { sendProspectProfileForConversation } = await import(
-      "@/lib/chatbot/send-prospect-profile"
-    );
-
-    // Concurrency 1 with NO artificial sleep — Anthropic's natural
-    // 1-2 sec per extractProspectProfile call is already enough
-    // spacing for Google Workspace's bulk filter. The previous
-    // 1.5-sec setTimeout on top of the extract latency was pushing
-    // each conversation to ~3.5 sec wall-clock; an 11-conversation
-    // backfill hit the Vercel serverless ceiling before returning,
-    // which surfaced as the "Backfill request failed before
-    // returning" error in the panel. Adam caught this 2026-06-03.
-    //
-    // Serial sends + ~2 sec organic delay = 11 emails over ~22 sec.
-    // That's still well under Google's per-recipient bulk threshold
-    // (heuristic: 1 / 0.5-1 sec for warm senders).
-    const CONCURRENCY = 1;
+    // Digest-only backfill: extract every eligible conversation's
+    // profile, then send ONE email containing all N profiles instead
+    // of N separate emails. Two reasons (Adam 2026-06-03):
+    //   1. Recipient-side bulk-mail filters: even with serial sends
+    //      Google Workspace bounced ALL 12 emails to a single mailbox
+    //      because the burst pattern tripped their reputation engine.
+    //      One email = no burst = no bounce.
+    //   2. UX: the operator gets one inbox row with a sortable list
+    //      sorted hot → warm → cold, with one-click "Engage" links.
+    //      Cleaner than triaging 12 separate emails.
+    const EXTRACT_CONCURRENCY = 4;
     let sent = 0;
     let skipped = 0;
     let failed = 0;
     const reasons: string[] = [];
-    // Wall-clock budget: 50 seconds. Vercel server actions cap at 60s
-    // on Pro; reserving 10s of headroom for the post-loop revalidate +
-    // audit row insert + response serialization. If we run out, we
-    // return ok:true with whatever's been processed so far — the
-    // operator can re-run to pick up the remainder.
+
+    const org = await prisma.organization.findUnique({
+      where: { id: scope.orgId },
+      select: {
+        name: true,
+        shortName: true,
+        notifyLeadEmail: true,
+        notifyOnChatbotLead: true,
+      },
+    });
+    if (!org) return { ok: false, error: "Organization not found" };
+    if (!org.notifyOnChatbotLead) {
+      return {
+        ok: false,
+        error:
+          "notifyOnChatbotLead is disabled — enable it before backfilling.",
+      };
+    }
+    const recipients = (org.notifyLeadEmail ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && s.includes("@"));
+    if (recipients.length === 0) {
+      return {
+        ok: false,
+        error: "No notifyLeadEmail set — save a recipient first.",
+      };
+    }
+
+    const fullRows = await prisma.chatbotConversation.findMany({
+      where: { id: { in: eligible.map((e) => e.id) } },
+      select: {
+        id: true,
+        orgId: true,
+        propertyId: true,
+        messages: true,
+        messageCount: true,
+        lastMessageAt: true,
+        pageUrl: true,
+        property: { select: { name: true } },
+      },
+    });
+
+    const { extractProspectProfile } = await import(
+      "@/lib/chatbot/extract-prospect-profile"
+    );
+    const { buildProspectProfileDigestEmail } = await import(
+      "@/lib/email/prospect-profile-email"
+    );
+    const { sendBrandedEmail, APP_URL } = await import("@/lib/email/shared");
+
     const BUDGET_MS = 50_000;
     const deadline = Date.now() + BUDGET_MS;
-    let timedOut = false;
 
-    for (let i = 0; i < eligible.length; i += CONCURRENCY) {
+    type Entry = {
+      conversationId: string;
+      profile: import("@/lib/chatbot/extract-prospect-profile").ProspectProfile;
+      messageCount: number;
+      lastMessageAtIso: string;
+      pageUrl: string | null;
+      propertyName: string | null;
+    };
+    const entries: Entry[] = [];
+    const updateIds: string[] = [];
+
+    for (let i = 0; i < fullRows.length; i += EXTRACT_CONCURRENCY) {
       if (Date.now() > deadline) {
-        timedOut = true;
-        const remaining = eligible.length - i;
+        const remaining = fullRows.length - i;
         reasons.push(
-          `timed out: ${remaining} conversation${remaining === 1 ? "" : "s"} not processed — re-run the backfill`,
+          `timed out: ${remaining} conversation${remaining === 1 ? "" : "s"} not extracted — re-run for the remainder`,
         );
         skipped += remaining;
         break;
       }
-      const slice = eligible.slice(i, i + CONCURRENCY);
-      const results = await Promise.allSettled(
-        slice.map((row) =>
-          sendProspectProfileForConversation({
+      const slice = fullRows.slice(i, i + EXTRACT_CONCURRENCY);
+      const batch = await Promise.allSettled(
+        slice.map(async (row) => {
+          const rawMessages = Array.isArray(row.messages)
+            ? (row.messages as Array<{ role?: string; content?: string }>)
+            : [];
+          const safeMessages = rawMessages
+            .map((m) => ({
+              role: typeof m.role === "string" ? m.role : "user",
+              content: typeof m.content === "string" ? m.content : "",
+            }))
+            .filter((m) => m.content.length > 0);
+          const res = await extractProspectProfile({
+            messages: safeMessages,
+            orgId: row.orgId,
             conversationId: row.id,
-            force: true,
-            reason: "backfill",
-          }),
-        ),
+          });
+          return { row, res };
+        }),
       );
-      for (const r of results) {
+      for (const r of batch) {
         if (r.status !== "fulfilled") {
           failed += 1;
           reasons.push(
-            `rejected: ${r.reason instanceof Error ? r.reason.message : String(r.reason).slice(0, 200)}`,
+            `extraction rejected: ${r.reason instanceof Error ? r.reason.message : String(r.reason).slice(0, 200)}`,
           );
           continue;
         }
-        const v = r.value;
-        if (v.ok && v.sent) {
-          sent += 1;
-          reasons.push("sent");
-        } else if (v.ok && !v.sent) {
-          skipped += 1;
-          reasons.push(`skipped: ${v.skipped}`);
-        } else {
+        const { row, res } = r.value;
+        if (!res.ok) {
           failed += 1;
-          reasons.push(
-            `failed: ${"error" in v ? v.error : "unknown"}`,
-          );
+          reasons.push(`extraction failed: ${res.error}`);
+          continue;
         }
+        entries.push({
+          conversationId: row.id,
+          profile: res.profile,
+          messageCount: row.messageCount,
+          lastMessageAtIso: row.lastMessageAt.toISOString(),
+          pageUrl: row.pageUrl,
+          propertyName: row.property?.name ?? null,
+        });
+        updateIds.push(row.id);
+        await prisma.chatbotConversation
+          .update({
+            where: { id: row.id },
+            data: {
+              prospectProfile: res.profile as unknown as object,
+            },
+          })
+          .catch(() => undefined);
       }
+    }
+
+    if (entries.length === 0) {
+      reasons.push("no profiles extracted — nothing to email");
+      await prisma.auditEvent.create({
+        data: auditPayload(scope, {
+          action: AuditAction.UPDATE,
+          entityType: "Organization",
+          entityId: scope.orgId,
+          description: `Backfill digest attempted — 0 extracted, ${failed} failed (last ${days} days)`,
+        }),
+      });
+      revalidatePath("/portal/chatbot");
+      return {
+        ok: true,
+        candidateCount: eligible.length,
+        sent: 0,
+        skipped,
+        failed,
+        dryRun: false,
+        reasons,
+      };
+    }
+
+    // Build + send the single digest.
+    const { html, text, subject } = buildProspectProfileDigestEmail({
+      orgName: org.shortName ?? org.name,
+      portalUrlBase: APP_URL.replace(/\/+$/, ""),
+      entries,
+      dayRange: days,
+    });
+
+    const sendResult = await sendBrandedEmail({
+      to: recipients,
+      subject,
+      html,
+      text,
+      template: "chatbot-prospect-profile-digest",
+      category: "transactional",
+      orgId: scope.orgId,
+    });
+
+    if (!sendResult.ok) {
+      reasons.push(`digest send failed: ${sendResult.error}`);
+      failed = entries.length;
+    } else {
+      sent = entries.length;
+      reasons.push(`digest sent · ${entries.length} profiles`);
+      await prisma.chatbotConversation
+        .updateMany({
+          where: { id: { in: updateIds } },
+          data: { prospectProfileEmailedAt: new Date() },
+        })
+        .catch(() => undefined);
     }
 
     await prisma.auditEvent.create({
@@ -597,7 +718,7 @@ export async function backfillChatbotLeadEmails(args: {
         action: AuditAction.UPDATE,
         entityType: "Organization",
         entityId: scope.orgId,
-        description: `Backfilled chatbot lead emails — ${sent} sent, ${skipped} skipped, ${failed} failed (last ${days} days)`,
+        description: `Backfill digest — ${sent} profile${sent === 1 ? "" : "s"} sent in 1 email, ${failed} failed (last ${days} days)`,
       }),
     });
 

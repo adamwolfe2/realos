@@ -230,3 +230,152 @@ export function buildProspectProfileEmail(
 
   return { html, text: textParts.filter(Boolean).join("\n"), subject };
 }
+
+// ---------------------------------------------------------------------------
+// buildProspectProfileDigestEmail — ONE email covering N chatbot
+// conversations. Built specifically for the backfill flow so the agency
+// operator gets ONE inbox row instead of N separate emails. Solves two
+// problems:
+//   1. Recipient-side bulk-mail filters bouncing the burst (Google
+//      Workspace flagged N emails to one mailbox in ~30 sec as spam
+//      even with spacing).
+//   2. Operator UX — scanning one digest is faster than triaging N
+//      separate emails on first set-up.
+// Used by lib/actions/chatbot-config.ts → backfillChatbotLeadEmails.
+// The single-conversation buildProspectProfileEmail above is still used
+// for the real-time / handoff / cron paths (one ping per actual
+// conversation, naturally spaced).
+// ---------------------------------------------------------------------------
+
+export type ProspectProfileDigestEntry = {
+  /** Chat session DB id — drives the per-row "Open transcript" link. */
+  conversationId: string;
+  profile: ProspectProfile;
+  messageCount: number;
+  lastMessageAtIso: string;
+  pageUrl: string | null;
+  propertyName: string | null;
+};
+
+type ProspectProfileDigestInput = {
+  orgName: string;
+  portalUrlBase: string;
+  entries: ProspectProfileDigestEntry[];
+  /** Look-back window in days the operator selected — drives the
+   *  subject + headline. */
+  dayRange: number;
+};
+
+export function buildProspectProfileDigestEmail(
+  input: ProspectProfileDigestInput,
+): ProspectProfileEmailOutput {
+  const { orgName, portalUrlBase, entries, dayRange } = input;
+  const count = entries.length;
+  const subject = `${count} captured prospect${count === 1 ? "" : "s"} — ${orgName} (last ${dayRange} days)`;
+
+  // Sort hot → warm → lukewarm → cold → unclear so the most actionable
+  // rows land at the top of the digest.
+  const sentimentOrder = ["hot", "warm", "lukewarm", "cold", "unclear"];
+  const sorted = [...entries].sort(
+    (a, b) =>
+      sentimentOrder.indexOf(a.profile.sentiment) -
+      sentimentOrder.indexOf(b.profile.sentiment),
+  );
+
+  const rowsHtml = sorted
+    .map((entry) => {
+      const p = entry.profile;
+      const tone = SENTIMENT_TONE[p.sentiment] ?? SENTIMENT_TONE.unclear;
+      const displayName =
+        p.fullName || p.email || "Anonymous prospect";
+      const subLine = [
+        p.budgetMonthly,
+        p.roomType,
+        p.moveInDate,
+        p.partySize,
+      ]
+        .filter((s) => s && s.length > 0)
+        .join(" · ");
+      const propertyLabel = entry.propertyName ?? "";
+      const url = `${portalUrlBase}/portal/conversations/${entry.conversationId}`;
+      return `
+        <tr>
+          <td style="padding:14px 16px;border-bottom:1px solid #E5E7EB;vertical-align:top;">
+            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+              <tr>
+                <td style="vertical-align:top;">
+                  <div style="font-size:14.5px;font-weight:600;color:#111827;">${escape(displayName)}</div>
+                  ${propertyLabel ? `<div style="font-size:11.5px;color:#6B7280;margin-top:2px;">${escape(propertyLabel)}</div>` : ""}
+                  ${subLine ? `<div style="font-size:12.5px;color:#374151;margin-top:5px;">${escape(subLine)}</div>` : ""}
+                  ${p.followUpNeeded ? `<div style="font-size:12px;color:#1D4ED8;margin-top:6px;"><strong>Next:</strong> ${escape(p.followUpNeeded)}</div>` : ""}
+                </td>
+                <td style="vertical-align:top;text-align:right;white-space:nowrap;padding-left:12px;">
+                  <span style="display:inline-block;background:${tone.bg};color:${tone.fg};font-size:10px;font-weight:700;letter-spacing:0.06em;padding:3px 8px;border-radius:999px;">${escape(tone.label.split(" —")[0])}</span>
+                  <div style="margin-top:8px;">
+                    <a href="${escape(url)}" style="font-size:12px;color:#2563EB;text-decoration:none;font-weight:600;">Engage →</a>
+                  </div>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>`;
+    })
+    .join("");
+
+  const body = `
+    <p style="margin:0 0 14px 0;color:#111827;font-size:15px;line-height:1.55;">
+      ${count} chatbot conversation${count === 1 ? "" : "s"} captured leads in the last ${dayRange} day${dayRange === 1 ? "" : "s"}.
+      Sorted by sentiment — hottest first. Each row links to the live transcript.
+    </p>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#FFFFFF;border:1px solid #E5E7EB;border-radius:8px;margin:0 0 22px 0;overflow:hidden;">
+      ${rowsHtml}
+    </table>
+
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:6px 0 8px 0;">
+      <tr>
+        <td style="background:#2563EB;border-radius:6px;">
+          <a href="${escape(portalUrlBase)}/portal/conversations"
+             style="display:inline-block;padding:12px 24px;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+            Open all conversations
+          </a>
+        </td>
+      </tr>
+    </table>
+
+    <p style="margin:18px 0 0 0;color:#9CA3AF;font-size:11px;line-height:1.5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+      Backfill digest — sent once per click of the "Catch up on missed leads"
+      button on /portal/chatbot. Real-time chatbot leads still land as
+      individual emails the moment they happen.
+    </p>
+  `;
+
+  const html = buildBaseHtml({
+    title: subject,
+    headline: `${count} captured prospect${count === 1 ? "" : "s"} — ${orgName}`,
+    preheader: `Catch-up digest covering ${dayRange} day${dayRange === 1 ? "" : "s"}`,
+    bodyHtml: body,
+  });
+
+  const textParts: string[] = [
+    `${count} captured prospect${count === 1 ? "" : "s"} — ${orgName} (last ${dayRange} days)`,
+    "",
+  ];
+  for (const entry of sorted) {
+    const p = entry.profile;
+    const displayName = p.fullName || p.email || "Anonymous prospect";
+    const tone = SENTIMENT_TONE[p.sentiment] ?? SENTIMENT_TONE.unclear;
+    textParts.push(`${tone.label.split(" —")[0]} · ${displayName}`);
+    if (entry.propertyName) textParts.push(`  Property: ${entry.propertyName}`);
+    if (p.budgetMonthly) textParts.push(`  Budget: ${p.budgetMonthly}`);
+    if (p.roomType) textParts.push(`  Room: ${p.roomType}`);
+    if (p.moveInDate) textParts.push(`  Move-in: ${p.moveInDate}`);
+    if (p.followUpNeeded) textParts.push(`  Next: ${p.followUpNeeded}`);
+    textParts.push(
+      `  Open: ${portalUrlBase}/portal/conversations/${entry.conversationId}`,
+    );
+    textParts.push("");
+  }
+
+  return { html, text: textParts.join("\n"), subject };
+}
