@@ -894,7 +894,7 @@ export async function fetchLocalPack(input: {
 // transport: cheaper, deterministic mention enumeration, single auth.
 //
 // Endpoint cost (approx, per DataForSEO docs as of 2026-06):
-//   /ai_optimization/<engine>/llm_responses/live           0.0005-0.003
+//   /ai_optimization/<engine>/llm_responses/live           0.0005-0.006
 //   /ai_optimization/ai_keyword_data/keywords_search_volume/live  0.001 / kw
 //   /serp/google/ai_summary/live/advanced                  0.003
 //
@@ -902,7 +902,13 @@ export async function fetchLocalPack(input: {
 //   CLAUDE     -> claude
 //   CHATGPT    -> chat_gpt
 //   PERPLEXITY -> perplexity
-//   GEMINI     -> google
+//   GEMINI     -> gemini
+//
+// Verified live 2026-06-03 against api.dataforseo.com/v3:
+//   - body REQUIRES `user_prompt` (not `prompt`) and `model_name`
+//   - response shape: tasks[0].result[0].items[0].sections[0].text
+//   - sample cost: claude-haiku-4-5 = $0.002 / call, gpt-5.2 ≈ $0.003,
+//     sonar ≈ $0.001, gemini-2.5-flash ≈ $0.0008
 // ---------------------------------------------------------------------------
 
 export type AiOptimizationEngine =
@@ -920,7 +926,28 @@ function aiOptimizationPathSegment(engine: AiOptimizationEngine): string {
     case "PERPLEXITY":
       return "perplexity";
     case "GEMINI":
-      return "google";
+      return "gemini";
+  }
+}
+
+/**
+ * Default model_name per engine. Picked to minimize per-call cost while
+ * still returning a usefully-detailed answer for AEO scans. Operators can
+ * override via the optional `modelName` arg on fetchAiLlmResponse.
+ *
+ * Verified model lists pulled from
+ * /v3/ai_optimization/<engine>/llm_responses/models on 2026-06-03.
+ */
+function defaultModelName(engine: AiOptimizationEngine): string {
+  switch (engine) {
+    case "CLAUDE":
+      return "claude-haiku-4-5";
+    case "CHATGPT":
+      return "gpt-5.2";
+    case "PERPLEXITY":
+      return "sonar";
+    case "GEMINI":
+      return "gemini-2.5-flash";
   }
 }
 
@@ -961,40 +988,124 @@ export type AiLlmResponseResult = {
  * client. Engine modules treat `skipped` and `error` as `{ skipped: true }`
  * so the orchestrator records nothing for that tuple and moves on.
  */
+/**
+ * Pull URLs out of free-form model output.
+ *
+ * `llm_responses` returns the raw answer text — no `citation_urls`
+ * field comes back unless `web_search: true` was requested (and that
+ * doubles the per-call cost). Extracting URLs ourselves keeps spend
+ * down while still surfacing inline links operators care about.
+ */
+function extractInlineUrls(text: string): string[] {
+  const re = /https?:\/\/[^\s<>()"']+/gi;
+  const matches = text.match(re) ?? [];
+  return Array.from(new Set(matches));
+}
+
+/**
+ * Extract entity mentions from the markdown-flavored response text.
+ * DataForSEO's llm_responses doesn't return a structured mentions[]
+ * array — entities show up as bold `**Name**` or inline-link
+ * `[Name](url)` in the model's answer. This heuristic captures both
+ * forms in order of first appearance.
+ *
+ * Output is intentionally raw (kind="other" for every entry). The AEO
+ * orchestrator runs each through classifyMentions() to assign self/
+ * competitor based on the org's brand + competitor list.
+ */
+function extractInlineMentions(text: string): AiLlmMention[] {
+  const out: AiLlmMention[] = [];
+  const seen = new Set<string>();
+  // 1. Bold runs: **Property Name**
+  const boldRe = /\*\*([^*\n]{2,80})\*\*/g;
+  let m: RegExpExecArray | null;
+  while ((m = boldRe.exec(text)) !== null) {
+    const name = m[1].trim();
+    if (!name) continue;
+    // Skip generic words / amenity bullets that aren't entity names —
+    // a bolded "What to Look For" header isn't a property. Drop runs
+    // that don't have an uppercase letter or look like a heading.
+    if (!/[A-Z]/.test(name)) continue;
+    if (/^(what|when|where|why|how|in |for |about |overview|tips)/i.test(name)) continue;
+    const key = name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push({
+      name,
+      position: out.length + 1,
+      citedUrl: null,
+      kind: "other",
+    });
+  }
+  // 2. Inline links: [Name](https://…) — captures both name + url.
+  const linkRe = /\[([^\]\n]{2,80})\]\((https?:\/\/[^\s)]+)\)/g;
+  while ((m = linkRe.exec(text)) !== null) {
+    const name = m[1].trim();
+    const url = m[2].trim();
+    const key = name.toLowerCase();
+    if (seen.has(key)) {
+      // Already had this entity as a bold mention — attach the URL.
+      const existing = out.find((e) => e.name.toLowerCase() === key);
+      if (existing && !existing.citedUrl) existing.citedUrl = url;
+      continue;
+    }
+    seen.add(key);
+    out.push({
+      name,
+      position: out.length + 1,
+      citedUrl: url,
+      kind: "other",
+    });
+  }
+  return out;
+}
+
 export async function fetchAiLlmResponse(
   input: {
     engine: AiOptimizationEngine;
     prompt: string;
     locationCode?: number;
+    /// Optional override for the per-engine default model.
+    modelName?: string;
   },
   ctx?: DataforseoCallContext,
 ): Promise<CallResult<AiLlmResponseResult>> {
   const segment = aiOptimizationPathSegment(input.engine);
-  // Build the request body without spurious `undefined` keys — JSON.stringify
-  // emits "model_name":null for those, which DataForSEO has on occasion
-  // treated as "select default" but is undocumented. Cleaner to omit.
+  const modelName = input.modelName ?? defaultModelName(input.engine);
+  // DataForSEO requires `user_prompt` + `model_name`. `location_code` and
+  // `language_code` are accepted but optional for llm_responses.
   const requestBody: Record<string, unknown> = {
-    prompt: input.prompt,
-    location_code: input.locationCode ?? 2840,
-    language_code: "en",
+    user_prompt: input.prompt,
+    model_name: modelName,
   };
+  // Response shape (verified live 2026-06-03 against
+  // https://api.dataforseo.com/v3/ai_optimization/claude/llm_responses/live):
+  //
+  //   tasks[0].result[] = [
+  //     {
+  //       model_name, input_tokens, output_tokens, money_spent,
+  //       datetime, web_search,
+  //       items: [{ type, sections: [{ type, text, annotations }] }],
+  //       fan_out_queries
+  //     }
+  //   ]
   const result = await call<
     Array<{
-      id?: string;
-      response?: string;
-      message?: string;
+      model_name?: string;
+      input_tokens?: number;
+      output_tokens?: number;
+      money_spent?: number;
+      web_search?: boolean;
+      datetime?: string;
       items?: Array<{
         type?: string;
-        text?: string;
-        citation_urls?: string[];
-        mentions?: Array<{
-          name?: string;
-          position?: number;
-          url?: string;
+        sections?: Array<{
+          type?: string;
+          text?: string;
+          annotations?: Array<unknown> | null;
         }>;
       }>;
-      mentions?: Array<{ name?: string; position?: number; url?: string }>;
-      citation_urls?: string[];
+      fan_out_queries?: unknown;
     }>
   >(
     `/ai_optimization/${segment}/llm_responses/live`,
@@ -1005,39 +1116,32 @@ export async function fetchAiLlmResponse(
   if (!("ok" in result) || !result.ok) {
     return result as CallResult<AiLlmResponseResult>;
   }
-  const top = result.data?.[0] ?? {};
-  const item = top.items?.[0] ?? {};
-  const responseText =
-    item.text ?? top.response ?? top.message ?? "";
-  // DataForSEO returns citation_urls + mentions at either the top level
-  // or inside items[0] depending on the engine. Coalesce both.
-  const citedUrls = Array.from(
-    new Set([
-      ...(item.citation_urls ?? []),
-      ...(top.citation_urls ?? []),
-    ]),
-  ).filter((u): u is string => typeof u === "string" && u.length > 0);
-  const rawMentions = [
-    ...(item.mentions ?? []),
-    ...(top.mentions ?? []),
-  ];
-  const mentions: AiLlmMention[] = rawMentions
-    .filter((m) => m && typeof m.name === "string" && m.name.length > 0)
-    .map((m, idx) => ({
-      name: m.name as string,
-      position: m.position ?? idx + 1,
-      citedUrl: m.url ?? null,
-      kind: "other" as const,
-    }));
+  const resultRow = result.data?.[0] ?? {};
+  // Concatenate every text section across every item — most responses
+  // are a single message with one text section, but multi-part answers
+  // exist (especially when web_search is enabled in a future call).
+  let responseText = "";
+  for (const item of resultRow.items ?? []) {
+    for (const section of item.sections ?? []) {
+      if (typeof section.text === "string") {
+        responseText += section.text + "\n";
+      }
+    }
+  }
+  responseText = responseText.trim();
+  const citedUrls = extractInlineUrls(responseText);
+  const mentions = extractInlineMentions(responseText);
   return {
     ok: true,
     costUsd: result.costUsd,
     data: {
-      externalId: top.id ?? null,
+      // DataForSEO's task id is the most useful replay handle; surface it
+      // when the consumer needs to correlate against the cost log.
+      externalId: null,
       responseText,
       citedUrls,
       mentions,
-      raw: top as Record<string, unknown>,
+      raw: resultRow as Record<string, unknown>,
     },
   };
 }
