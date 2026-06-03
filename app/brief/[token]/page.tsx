@@ -34,6 +34,39 @@ import brief255Cal from "@/prospects/255-cal.json" assert { type: "json" };
 type RouteParams = { token: string };
 type RouteContext = { params: Promise<RouteParams> };
 
+// Competitor → website lookup so the comp set bars in the brief link
+// directly to each building's marketing site. Pure presentation data —
+// safe to extend with more SF Class-A towers as we author more briefs.
+const COMPETITOR_URLS: Record<string, string> = {
+  "555 California Street": "https://www.555california.com/",
+  "101 California Street": "https://www.101california.com/",
+  "Salesforce Tower": "https://www.salesforcetower.com/",
+  "Transamerica Pyramid": "https://www.thetransamericapyramid.com/",
+  "50 California Street": "https://www.50cal.com/",
+  "One Market Plaza": "https://www.onemarketplaza.com/",
+  "Embarcadero Center": "https://www.embarcaderocenter.com/",
+};
+
+// Deep-link templates that let a reader run the exact same prompt
+// against the engine themselves. Builds trust ("don't take our word —
+// here's the engine, here's the prompt, type it in.").
+function engineRunUrl(
+  engine: "CHATGPT" | "PERPLEXITY" | "CLAUDE" | "GEMINI",
+  prompt: string,
+): string {
+  const q = encodeURIComponent(prompt);
+  switch (engine) {
+    case "CHATGPT":
+      return `https://chatgpt.com/?q=${q}`;
+    case "PERPLEXITY":
+      return `https://www.perplexity.ai/search/new?q=${q}`;
+    case "CLAUDE":
+      return `https://claude.ai/new?q=${q}`;
+    case "GEMINI":
+      return `https://gemini.google.com/app?q=${q}`;
+  }
+}
+
 // Single source of truth for the JSON shape. Mirrors the writer script.
 type BriefJson = typeof brief255Cal;
 
@@ -82,6 +115,7 @@ export default async function BriefPage({ params }: RouteContext) {
       <NarrativeSection data={data} />
       <ActionPlanSection data={data} />
       <CtaSection prospectName={entry.prospectName} />
+      <SourcesSection data={data} />
       <Footer token={token} data={data} />
     </div>
   );
@@ -97,21 +131,44 @@ function PreHeroStrip({
   generatedAtIso: string;
 }) {
   return (
-    <section
+    <header
       style={{
-        backgroundColor: "#1E2A3A",
-        color: "#FFFFFF",
-        padding: "10px 0",
+        backgroundColor: "#FFFFFF",
+        borderBottom: "1px solid #E5E7EB",
+        padding: "16px 0",
       }}
     >
-      <div className="max-w-[1080px] mx-auto px-6 flex items-center justify-between gap-4 text-[10.5px]"
-        style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.16em", textTransform: "uppercase" }}>
-        <span style={{ color: "#94A3B8" }}>
-          Prospect brief · confidential · prepared for {prospectName}
-        </span>
-        <span style={{ color: "#94A3B8" }}>{formatDate(generatedAtIso)}</span>
+      <div className="max-w-[1080px] mx-auto px-6 flex items-center justify-between gap-4">
+        {/* LeaseStack wordmark — drives brand identity at first paint */}
+        <Link href="/" aria-label="LeaseStack home" className="block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logos/leasestack-wordmark.png"
+            alt="LeaseStack"
+            className="h-7 md:h-9 w-auto block"
+          />
+        </Link>
+        <div className="flex items-center gap-3 text-[10.5px]"
+          style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.14em", textTransform: "uppercase" }}>
+          <span
+            className="inline-flex items-center gap-1.5"
+            style={{ color: "#2563EB", fontWeight: 600 }}
+          >
+            <span
+              aria-hidden
+              style={{ width: 6, height: 6, borderRadius: 9999, backgroundColor: "#2563EB" }}
+            />
+            Prospect brief
+          </span>
+          <span aria-hidden style={{ color: "#CBD5E1" }}>·</span>
+          <span style={{ color: "#6B7280" }}>Confidential</span>
+          <span aria-hidden style={{ color: "#CBD5E1" }} className="hidden sm:inline">·</span>
+          <span style={{ color: "#6B7280" }} className="hidden sm:inline">{prospectName}</span>
+          <span aria-hidden style={{ color: "#CBD5E1" }} className="hidden md:inline">·</span>
+          <span style={{ color: "#6B7280" }} className="hidden md:inline">{formatDate(generatedAtIso)}</span>
+        </div>
       </div>
-    </section>
+    </header>
   );
 }
 
@@ -515,25 +572,83 @@ function VerbatimQuoteCard({
             Competitors named instead
           </p>
           <ul className="mt-1.5 flex flex-wrap gap-1.5">
-            {row.competitorsCited.map((c) => (
-              <li
-                key={c}
-                className="inline-flex rounded-full"
-                style={{
-                  padding: "4px 11px",
-                  fontSize: 12,
-                  fontWeight: 500,
-                  backgroundColor: "#F8FAFC",
-                  border: "1px solid #E5E7EB",
-                  color: "#1E2A3A",
-                }}
-              >
-                {c}
-              </li>
-            ))}
+            {row.competitorsCited.map((c) => {
+              const href = COMPETITOR_URLS[c];
+              if (href) {
+                return (
+                  <li key={c}>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-full hover:underline"
+                      style={{
+                        padding: "4px 11px",
+                        fontSize: 12,
+                        fontWeight: 500,
+                        backgroundColor: "#F8FAFC",
+                        border: "1px solid #E5E7EB",
+                        color: "#1E2A3A",
+                      }}
+                      title={`${c} — visit website`}
+                    >
+                      {c}
+                      <ExternalLink
+                        className="w-3 h-3"
+                        style={{ color: "#94A3B8" }}
+                        aria-hidden
+                      />
+                    </a>
+                  </li>
+                );
+              }
+              return (
+                <li
+                  key={c}
+                  className="inline-flex rounded-full"
+                  style={{
+                    padding: "4px 11px",
+                    fontSize: 12,
+                    fontWeight: 500,
+                    backgroundColor: "#F8FAFC",
+                    border: "1px solid #E5E7EB",
+                    color: "#1E2A3A",
+                  }}
+                >
+                  {c}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}
+
+      {/* Source attribution — every quote links back to the live engine
+          with the same prompt pre-filled. Trust by traceability. */}
+      <div
+        className="mt-4 pt-3 flex flex-wrap items-center justify-between gap-2"
+        style={{ borderTop: "1px solid #F1F5F9" }}
+      >
+        <p
+          className="text-[10.5px] font-mono uppercase tracking-[0.12em]"
+          style={{ color: "#94A3B8" }}
+        >
+          Live API call · {row.responseText.length.toLocaleString()} chars returned
+        </p>
+        <a
+          href={engineRunUrl(
+            row.engine as "CHATGPT" | "PERPLEXITY" | "CLAUDE" | "GEMINI",
+            row.prompt,
+          )}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex items-center gap-1 text-[11.5px] font-semibold hover:underline"
+          style={{ color: "#2563EB" }}
+        >
+          Run this prompt yourself
+          <ExternalLink className="w-3 h-3" aria-hidden />
+        </a>
+      </div>
     </article>
   );
 }
@@ -562,41 +677,72 @@ function CompetitorSection({ data }: { data: BriefJson }) {
         </p>
 
         <ul className="mt-7 space-y-2.5">
-          {top.map((c, i) => (
-            <li key={c.name} className="flex items-center gap-4">
-              <span
-                className="text-[11px] font-mono tabular-nums text-right shrink-0"
-                style={{ color: "#94A3B8", width: 24 }}
-              >
-                {String(i + 1).padStart(2, "0")}
-              </span>
-              <span
-                className="text-[14px] truncate"
-                style={{ color: "#1E2A3A", fontWeight: 500, width: 220, maxWidth: 220 }}
-                title={c.name}
-              >
-                {c.name}
-              </span>
-              <div
-                className="flex-1 rounded-full overflow-hidden"
-                style={{ backgroundColor: "#F1F5F9", height: 10 }}
-              >
+          {top.map((c, i) => {
+            const href = COMPETITOR_URLS[c.name];
+            const NameTag = href ? "a" : "span";
+            const nameProps = href
+              ? {
+                  href,
+                  target: "_blank",
+                  rel: "noopener noreferrer",
+                  className: "text-[14px] truncate hover:underline inline-flex items-center gap-1",
+                  style: {
+                    color: "#1E2A3A",
+                    fontWeight: 500,
+                    width: 220,
+                    maxWidth: 220,
+                  } as React.CSSProperties,
+                  title: `${c.name} — visit website`,
+                }
+              : {
+                  className: "text-[14px] truncate",
+                  style: {
+                    color: "#1E2A3A",
+                    fontWeight: 500,
+                    width: 220,
+                    maxWidth: 220,
+                  } as React.CSSProperties,
+                  title: c.name,
+                };
+            return (
+              <li key={c.name} className="flex items-center gap-4">
+                <span
+                  className="text-[11px] font-mono tabular-nums text-right shrink-0"
+                  style={{ color: "#94A3B8", width: 24 }}
+                >
+                  {String(i + 1).padStart(2, "0")}
+                </span>
+                <NameTag {...nameProps}>
+                  {c.name}
+                  {href ? (
+                    <ExternalLink
+                      className="w-3 h-3 shrink-0"
+                      style={{ color: "#94A3B8" }}
+                      aria-hidden
+                    />
+                  ) : null}
+                </NameTag>
                 <div
-                  style={{
-                    backgroundColor: i === 0 ? "#2563EB" : "#94A3B8",
-                    width: `${(c.count / max) * 100}%`,
-                    height: "100%",
-                  }}
-                />
-              </div>
-              <span
-                className="text-[14px] font-semibold tabular-nums shrink-0"
-                style={{ color: "#1E2A3A", width: 36, textAlign: "right" }}
-              >
-                {c.count}×
-              </span>
-            </li>
-          ))}
+                  className="flex-1 rounded-full overflow-hidden"
+                  style={{ backgroundColor: "#F1F5F9", height: 10 }}
+                >
+                  <div
+                    style={{
+                      backgroundColor: i === 0 ? "#2563EB" : "#94A3B8",
+                      width: `${(c.count / max) * 100}%`,
+                      height: "100%",
+                    }}
+                  />
+                </div>
+                <span
+                  className="text-[14px] font-semibold tabular-nums shrink-0"
+                  style={{ color: "#1E2A3A", width: 36, textAlign: "right" }}
+                >
+                  {c.count}×
+                </span>
+              </li>
+            );
+          })}
         </ul>
 
         <p
@@ -658,10 +804,21 @@ function PageHealthSection({ data }: { data: BriefJson }) {
                   data.url}
               </p>
               <p
-                className="mt-1 text-[10.5px] font-mono uppercase tracking-[0.14em]"
+                className="mt-1 text-[10.5px] font-mono uppercase tracking-[0.14em] flex flex-wrap items-center gap-1.5"
                 style={{ color: "#94A3B8" }}
               >
                 Audited live · {data.firecrawl.htmlBytes.toLocaleString()} bytes of rendered HTML
+                <span aria-hidden>·</span>
+                <a
+                  href={data.resolvedUrl ?? data.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-0.5 hover:underline"
+                  style={{ color: "#2563EB", fontWeight: 600 }}
+                >
+                  View source
+                  <ExternalLink className="w-3 h-3" aria-hidden />
+                </a>
               </p>
             </div>
           </div>
@@ -795,19 +952,29 @@ function ColumnCard({
       ) : (
         <ul className="mt-2 flex flex-wrap gap-1.5">
           {items.map((t) => (
-            <li
-              key={t}
-              className="inline-flex rounded-full"
-              style={{
-                backgroundColor: "#F8FAFC",
-                border: "1px solid #E5E7EB",
-                padding: "4px 10px",
-                fontSize: 12,
-                fontWeight: 500,
-                color: "#1E2A3A",
-              }}
-            >
-              {t}
+            <li key={t}>
+              <a
+                href={`https://schema.org/${encodeURIComponent(t)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 rounded-full hover:underline"
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  border: "1px solid #E5E7EB",
+                  padding: "4px 10px",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: "#1E2A3A",
+                }}
+                title={`View ${t} on schema.org`}
+              >
+                {t}
+                <ExternalLink
+                  className="w-3 h-3"
+                  style={{ color: "#94A3B8" }}
+                  aria-hidden
+                />
+              </a>
             </li>
           ))}
         </ul>
@@ -906,32 +1073,48 @@ function StackSection({ data }: { data: BriefJson }) {
 
 function NarrativeSection({ data }: { data: BriefJson }) {
   return (
-    <section style={{ padding: "64px 0", borderBottom: "1px solid #F1F5F9", backgroundColor: "#1E2A3A" }}>
+    <section
+      style={{
+        padding: "64px 0",
+        borderBottom: "1px solid #F1F5F9",
+        backgroundColor: "#EFF6FF",
+      }}
+    >
       <div className="max-w-[920px] mx-auto px-6">
-        <p
-          className="text-[11px] font-mono uppercase tracking-[0.18em]"
-          style={{ color: "#94A3B8" }}
-        >
-          What this means
-        </p>
+        <SectionEyebrow>What this means</SectionEyebrow>
         <h2
-          className="mt-3 text-2xl md:text-[34px] font-semibold leading-snug"
-          style={{ color: "#FFFFFF", letterSpacing: "-0.018em" }}
+          className="mt-3 text-2xl md:text-[34px] font-semibold leading-snug tracking-tight"
+          style={{
+            color: "#1E2A3A",
+            letterSpacing: "-0.018em",
+            fontFamily: "var(--font-display)",
+          }}
         >
           You own one of the most prestigious office addresses in San
           Francisco. AI search engines do not know that yet.
         </h2>
-        <div className="mt-6 space-y-4" style={{ fontSize: 16, lineHeight: 1.65, color: "#CBD5E1" }}>
+        <div
+          className="mt-6 space-y-4"
+          style={{
+            fontSize: 16,
+            lineHeight: 1.65,
+            color: "#1E2A3A",
+            borderLeft: "3px solid #2563EB",
+            paddingLeft: 22,
+          }}
+        >
           <p>
             255 California Street is a flagship Class-A asset. The
             building anchors one of the most-walked corridors in
             FiDi. Decision-makers know it by sight. But corporate
             real-estate searches now start in ChatGPT and Perplexity, not
             CoStar — and in those conversations, your building doesn&apos;t
-            exist. <strong style={{ color: "#FFFFFF" }}>555 California Street
-            is named in every one of our four AI conversations about
-            top California Street office towers. {data.brand} is named
-            in none of the unbranded ones.</strong>
+            exist.{" "}
+            <strong style={{ color: "#2563EB" }}>
+              555 California Street is named in every one of our four AI
+              conversations about top California Street office towers.{" "}
+              {data.brand} is named in none of the unbranded ones.
+            </strong>
           </p>
           <p>
             The cause is not the building. The cause is that your
@@ -1149,29 +1332,197 @@ function CtaSection({ prospectName }: { prospectName: string }) {
   );
 }
 
+// ─── SOURCES ──────────────────────────────────────────────────────────
+
+function SourcesSection({ data }: { data: BriefJson }) {
+  // Roll up every data source the brief touched, with a clickable
+  // reference each. Adam's intent: every reader can trace any number
+  // on this page back to a live API or a documented standard.
+  // JSON static import narrows googleAiOverview to literal null for
+  // the 255 Cal brief — widen via local for general access.
+  const aio = data.googleAiOverview as
+    | { query: string; summary: string; citedUrls: string[]; cited: boolean }
+    | null;
+  const sources: Array<{
+    label: string;
+    description: string;
+    href: string;
+    icon: React.ReactNode;
+  }> = [
+    {
+      label: "Firecrawl",
+      description: `Rendered ${data.firecrawl.htmlBytes.toLocaleString()} bytes of HTML from ${data.url}`,
+      href: "https://firecrawl.dev",
+      icon: <SourceBullet color="#F1F5F9" inner="#2563EB" />,
+    },
+    {
+      label: "ChatGPT (OpenAI)",
+      description: `${data.aeo.perEngineTotal.CHATGPT} live API calls`,
+      href: "https://chatgpt.com",
+      icon: <ChatGPTMark size={18} />,
+    },
+    {
+      label: "Perplexity",
+      description: `${data.aeo.perEngineTotal.PERPLEXITY} live API calls`,
+      href: "https://www.perplexity.ai",
+      icon: <PerplexityMark size={18} />,
+    },
+    {
+      label: "Gemini",
+      description: `${data.aeo.perEngineTotal.GEMINI} live API calls`,
+      href: "https://gemini.google.com",
+      icon: <GeminiMark size={18} />,
+    },
+    {
+      label: "Claude (Anthropic)",
+      description:
+        data.aeo.perEngineTotal.CLAUDE > 0
+          ? `${data.aeo.perEngineTotal.CLAUDE} live API calls`
+          : "Available in production · key configured per environment",
+      href: "https://claude.ai",
+      icon: <ClaudeMark size={18} />,
+    },
+    {
+      label: "Google AI Overview · DataForSEO",
+      description: aio
+        ? `Captured verbatim AI Overview for "${aio.query.slice(0, 64)}"`
+        : "Queried for an unbranded SF FiDi search · Google returned no AI Overview block",
+      href: "https://dataforseo.com",
+      icon: <GoogleMark size={18} />,
+    },
+    {
+      label: "schema.org",
+      description: "Reference vocabulary for AI-readable structured data",
+      href: "https://schema.org",
+      icon: <SourceBullet color="#F1F5F9" inner="#475569" />,
+    },
+    {
+      label: `${data.resolvedUrl ?? data.url}`,
+      description: data.firecrawl.title ?? "Live homepage we audited",
+      href: data.resolvedUrl ?? data.url,
+      icon: <SourceBullet color="#F1F5F9" inner="#2563EB" />,
+    },
+  ];
+  return (
+    <section
+      style={{
+        padding: "56px 0",
+        borderTop: "1px solid #E5E7EB",
+        backgroundColor: "#F9FAFB",
+      }}
+    >
+      <div className="max-w-[1080px] mx-auto px-6">
+        <SectionEyebrow>How this brief was built</SectionEyebrow>
+        <SectionHeading>
+          Every number here is traceable. Click any source to verify.
+        </SectionHeading>
+        <p
+          className="mt-2 max-w-2xl"
+          style={{ fontSize: 15, lineHeight: 1.6, color: "#475569" }}
+        >
+          This brief was produced from live API calls, not stock copy.
+          Below: each data source we touched, with a link to the live
+          surface so you can confirm any finding yourself.
+        </p>
+
+        <ul className="mt-7 grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {sources.map((s) => (
+            <li key={s.label}>
+              <a
+                href={s.href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="rounded-xl flex items-center gap-3 hover:border-[#CFE2FF] transition-colors"
+                style={{
+                  backgroundColor: "#FFFFFF",
+                  border: "1px solid #E5E7EB",
+                  padding: "12px 16px",
+                  textDecoration: "none",
+                }}
+              >
+                <span className="shrink-0">{s.icon}</span>
+                <span className="min-w-0 flex-1">
+                  <span
+                    className="block text-[13px] truncate"
+                    style={{ color: "#1E2A3A", fontWeight: 600 }}
+                  >
+                    {s.label}
+                  </span>
+                  <span
+                    className="block mt-0.5 text-[11.5px] truncate"
+                    style={{ color: "#6B7280" }}
+                  >
+                    {s.description}
+                  </span>
+                </span>
+                <ExternalLink
+                  className="w-3.5 h-3.5 shrink-0"
+                  style={{ color: "#94A3B8" }}
+                  aria-hidden
+                />
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
+  );
+}
+
+function SourceBullet({ color, inner }: { color: string; inner: string }) {
+  return (
+    <span
+      aria-hidden
+      className="inline-flex items-center justify-center"
+      style={{ width: 18, height: 18 }}
+    >
+      <span
+        style={{
+          width: 14,
+          height: 14,
+          borderRadius: 4,
+          backgroundColor: color,
+          border: `1px solid ${inner}`,
+          display: "inline-block",
+        }}
+      />
+    </span>
+  );
+}
+
 // ─── FOOTER ───────────────────────────────────────────────────────────
 
 function Footer({ token, data }: { token: string; data: BriefJson }) {
   return (
     <footer
       style={{
-        backgroundColor: "#1E2A3A",
-        color: "#94A3B8",
+        backgroundColor: "#F9FAFB",
+        borderTop: "1px solid #E5E7EB",
         padding: "32px 0",
       }}
     >
-      <div className="max-w-[1080px] mx-auto px-6 flex flex-col md:flex-row gap-3 md:items-center md:justify-between text-[11px]"
-        style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.04em" }}>
-        <span>
-          Brief id <span style={{ color: "#FFFFFF" }}>{token.slice(0, 12)}</span> ·
-          generated {formatDate(data.generatedAtIso)} ·{" "}
-          {data.aeo.rows.filter((r) => !r.skipped).length} live API calls
-        </span>
-        <span>
-          <Sparkles className="inline-block w-3 h-3 mr-1" aria-hidden />
-          Prepared by <span style={{ color: "#FFFFFF" }}>{BRAND_NAME}</span> ·
-          confidential
-        </span>
+      <div className="max-w-[1080px] mx-auto px-6 flex flex-col md:flex-row gap-4 md:items-center md:justify-between">
+        <Link href="/" aria-label="LeaseStack home" className="block">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/logos/leasestack-wordmark.png"
+            alt="LeaseStack"
+            className="h-6 w-auto block"
+            style={{ opacity: 0.7 }}
+          />
+        </Link>
+        <div className="flex flex-col md:flex-row gap-1 md:gap-3 md:items-center text-[11px]"
+          style={{ fontFamily: "var(--font-mono)", letterSpacing: "0.04em", color: "#6B7280" }}>
+          <span>
+            Brief id <span style={{ color: "#1E2A3A", fontWeight: 600 }}>{token.slice(0, 12)}</span>
+          </span>
+          <span aria-hidden style={{ color: "#CBD5E1" }} className="hidden md:inline">·</span>
+          <span>generated {formatDate(data.generatedAtIso)}</span>
+          <span aria-hidden style={{ color: "#CBD5E1" }} className="hidden md:inline">·</span>
+          <span>{data.aeo.rows.filter((r) => !r.skipped).length} live API calls</span>
+          <span aria-hidden style={{ color: "#CBD5E1" }} className="hidden md:inline">·</span>
+          <span>Confidential</span>
+        </div>
       </div>
     </footer>
   );
