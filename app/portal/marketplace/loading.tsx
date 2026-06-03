@@ -7,7 +7,7 @@ export default function MarketplaceLoading() {
     <div className="min-h-screen bg-background animate-pulse">
       {/* Hero skeleton */}
       <section className="border-b border-border bg-card">
-        <div className="max-w-[1200px] mx-auto px-6 py-12 lg:px-10 lg:py-16">
+        <div className="w-full mx-auto px-6 py-12 lg:px-10 lg:py-16">
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
             <div className="space-y-4 max-w-2xl flex-1">
               <div className="h-3 w-40 bg-primary/10 rounded" />
@@ -36,7 +36,7 @@ export default function MarketplaceLoading() {
       </section>
 
       {/* Card grid skeleton */}
-      <section className="max-w-[1200px] mx-auto px-6 lg:px-10 py-12 lg:py-16">
+      <section className="w-full mx-auto px-6 lg:px-10 py-12 lg:py-16">
         {[0, 1, 2, 3].map((cat) => (
           <div key={cat} className="mb-14 last:mb-0">
             <div className="flex items-baseline justify-between mb-6">

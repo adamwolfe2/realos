@@ -68,7 +68,7 @@ export default async function OpportunitiesPage() {
   const initialTotal = recommendations.length;
 
   return (
-    <div className="max-w-6xl">
+    <div className="w-full">
       <PageHeader
         eyebrow="SEO Agent"
         title="Opportunities"

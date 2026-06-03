@@ -156,7 +156,7 @@ export default async function IntegrationsHubPage() {
           <h2 className="text-[13px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
             {CATEGORY_LABEL[g.category]}
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
             {g.items.map((def) => (
               <IntegrationCard
                 key={def.slug}

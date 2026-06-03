@@ -46,7 +46,7 @@ export default async function WhiteLabelPage() {
   if (!org) return null;
 
   return (
-    <div className="space-y-8 max-w-3xl">
+    <div className="space-y-8">
       <PageHeader
         title="White-label workspace"
         description="Strip LeaseStack branding from the portal, your public tenant marketing site, and outbound email display name + footer. Your sending mailbox stays the same for deliverability."

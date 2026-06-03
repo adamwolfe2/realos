@@ -76,7 +76,7 @@ export default async function SeoPortfolioPage({
 
   if (properties.length === 0) {
     return (
-      <div className="space-y-5 max-w-4xl">
+      <div className="space-y-5 w-full">
         <Link
           href="/portal/seo/agent"
           className="text-[11px] text-muted-foreground hover:text-foreground"

@@ -38,7 +38,7 @@ export default async function NeighborhoodPagesIndex() {
   ]);
 
   return (
-    <div className="max-w-6xl">
+    <div className="w-full">
       <PageHeader
         eyebrow="SEO"
         title="Neighborhood pages"

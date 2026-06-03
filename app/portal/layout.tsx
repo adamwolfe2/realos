@@ -490,8 +490,16 @@ export default async function PortalLayout({
           {/* Body region: framer-motion AnimatePresence fade on route
               changes (W3 task D). The CSS `ls-page-enter` class is dropped
               here because PageTransition keys on pathname and runs its own
-              200ms opacity fade — keeping both would double-animate. */}
-          <div className="flex-1 p-4 pb-20 md:p-6 md:pb-10">
+              200ms opacity fade — keeping both would double-animate.
+
+              Layout-level max-width (`max-w-[1800px] mx-auto`) is the
+              single source of truth for portal page width. Individual
+              pages should NOT add their own `max-w-*` overrides — they
+              produce inconsistent narrow columns on wide monitors
+              ("settings looks like a phone, dashboard looks like a tv").
+              Cap chosen so a 1920px viewport fills ~94%; a 4K monitor
+              still has comfortable side margins. */}
+          <div className="flex-1 w-full max-w-[1800px] mx-auto p-4 pb-20 md:p-6 md:pb-10">
             <PageTransition>{children}</PageTransition>
           </div>
         </main>

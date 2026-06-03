@@ -88,7 +88,7 @@ export default async function SettingsPage() {
   const onCount = modules.filter(([, v]) => v).length;
 
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div className="space-y-8">
       <PageHeader
         title="Settings"
         description="Update company info and brand tokens. Module selection and plan tier are managed by your account manager."
