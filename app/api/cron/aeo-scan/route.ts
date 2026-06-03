@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import { verifyCronAuth } from "@/lib/cron/auth";
 import { recordCronRun } from "@/lib/health/cron-run";
 import { runAeoScan, runNeighborhoodScan } from "@/lib/aeo/orchestrate";
+import { resolveEngineSource } from "@/lib/aeo/engines";
 
 // Skip per-page sampling if scanned within this window. The weekly cron
 // runs Mondays — 6 days keeps us re-scanning every Monday without ever
@@ -131,10 +132,25 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    // AEO v2 W1: log the engine source so post-run telemetry shows whether
+    // we ran against DataForSEO (snapshot rows + share-of-voice) or the
+    // direct-provider fallback. The total snapshot row count for this run
+    // is harder to count without a ScanRun model, so we surface a tail
+    // sample instead — sufficient signal for cron health.
+    const engineSource = resolveEngineSource();
+    const recentSnapshotCount =
+      engineSource === "dataforseo"
+        ? await prisma.aeoMentionSnapshot.count({
+            where: { capturedAt: { gte: new Date(Date.now() - 60 * 60 * 1000) } },
+          })
+        : 0;
+
     return {
       result: NextResponse.json({
         ok: true,
         totalRows,
+        engineSource,
+        recentSnapshotCount,
         neighborhoodPagesScanned,
         neighborhoodPagesSkipped,
         orgs: summary,

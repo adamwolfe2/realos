@@ -841,3 +841,261 @@ export async function fetchLocalPack(input: {
   }));
   return { ok: true, data: packItems, costUsd: result.costUsd };
 }
+
+// ---------------------------------------------------------------------------
+// AI Optimization — LLM Responses, AI Keyword Data, SERP AI Summary
+//
+// DataForSEO's AI Optimization product family proxies the four major
+// engines (Claude, ChatGPT, Gemini, Perplexity) through a single billable
+// surface at ~$0.0005-$0.003 per call. We use it as the primary AEO
+// transport: cheaper, deterministic mention enumeration, single auth.
+//
+// Endpoint cost (approx, per DataForSEO docs as of 2026-06):
+//   /ai_optimization/<engine>/llm_responses/live           0.0005-0.003
+//   /ai_optimization/ai_keyword_data/keywords_search_volume/live  0.001 / kw
+//   /serp/google/ai_summary/live/advanced                  0.003
+//
+// Engine slug mapping (DataForSEO path segment vs. our AeoEngine enum):
+//   CLAUDE     -> claude
+//   CHATGPT    -> chat_gpt
+//   PERPLEXITY -> perplexity
+//   GEMINI     -> google
+// ---------------------------------------------------------------------------
+
+export type AiOptimizationEngine =
+  | "CLAUDE"
+  | "CHATGPT"
+  | "PERPLEXITY"
+  | "GEMINI";
+
+function aiOptimizationPathSegment(engine: AiOptimizationEngine): string {
+  switch (engine) {
+    case "CLAUDE":
+      return "claude";
+    case "CHATGPT":
+      return "chat_gpt";
+    case "PERPLEXITY":
+      return "perplexity";
+    case "GEMINI":
+      return "google";
+  }
+}
+
+/**
+ * One entity mentioned in the engine's answer, normalized from DataForSEO's
+ * `mentions[]` shape into our internal kind-classified form.
+ */
+export type AiLlmMention = {
+  name: string;
+  position: number;
+  citedUrl: string | null;
+  /// "self" | "competitor" | "other" — classifier filled in by the caller,
+  /// not DataForSEO. The wrapper returns "other" by default; the AEO
+  /// orchestrator decides what counts as self vs. competitor for this org.
+  kind: "self" | "competitor" | "other";
+};
+
+export type AiLlmResponseResult = {
+  /// DataForSEO request id (for replay/debug).
+  externalId: string | null;
+  /// Raw model output. Persisted as `responseText` on AeoCitationCheck.
+  responseText: string;
+  /// All URLs the model cited inline.
+  citedUrls: string[];
+  /// All entities the model mentioned, in order. Kind is "other" for
+  /// every entry; classify upstream against (brand, competitors).
+  mentions: AiLlmMention[];
+  /// Raw provider response for the JSON column.
+  raw: Record<string, unknown>;
+};
+
+/**
+ * Run a prompt through DataForSEO's AI Optimization LLM Responses endpoint.
+ * Returns the model's answer + cited URLs + ordered mentions list.
+ *
+ * Throws nothing. Env-gated skip + HTTP/envelope errors flow through the
+ * same `CallResult` discriminated union as the rest of the dataforseo
+ * client. Engine modules treat `skipped` and `error` as `{ skipped: true }`
+ * so the orchestrator records nothing for that tuple and moves on.
+ */
+export async function fetchAiLlmResponse(input: {
+  engine: AiOptimizationEngine;
+  prompt: string;
+  locationCode?: number;
+}): Promise<CallResult<AiLlmResponseResult>> {
+  const segment = aiOptimizationPathSegment(input.engine);
+  const result = await call<
+    Array<{
+      id?: string;
+      response?: string;
+      message?: string;
+      items?: Array<{
+        type?: string;
+        text?: string;
+        citation_urls?: string[];
+        mentions?: Array<{
+          name?: string;
+          position?: number;
+          url?: string;
+        }>;
+      }>;
+      mentions?: Array<{ name?: string; position?: number; url?: string }>;
+      citation_urls?: string[];
+    }>
+  >(
+    `/ai_optimization/${segment}/llm_responses/live`,
+    [
+      {
+        prompt: input.prompt,
+        location_code: input.locationCode ?? 2840,
+        language_code: "en",
+        model_name: undefined,
+      },
+    ],
+    `ai_llm[${input.engine.toLowerCase()}][${input.prompt.slice(0, 32)}]`,
+  );
+  if (!("ok" in result) || !result.ok) {
+    return result as CallResult<AiLlmResponseResult>;
+  }
+  const top = result.data?.[0] ?? {};
+  const item = top.items?.[0] ?? {};
+  const responseText =
+    item.text ?? top.response ?? top.message ?? "";
+  // DataForSEO returns citation_urls + mentions at either the top level
+  // or inside items[0] depending on the engine. Coalesce both.
+  const citedUrls = Array.from(
+    new Set([
+      ...(item.citation_urls ?? []),
+      ...(top.citation_urls ?? []),
+    ]),
+  ).filter((u): u is string => typeof u === "string" && u.length > 0);
+  const rawMentions = [
+    ...(item.mentions ?? []),
+    ...(top.mentions ?? []),
+  ];
+  const mentions: AiLlmMention[] = rawMentions
+    .filter((m) => m && typeof m.name === "string" && m.name.length > 0)
+    .map((m, idx) => ({
+      name: m.name as string,
+      position: m.position ?? idx + 1,
+      citedUrl: m.url ?? null,
+      kind: "other" as const,
+    }));
+  return {
+    ok: true,
+    costUsd: result.costUsd,
+    data: {
+      externalId: top.id ?? null,
+      responseText,
+      citedUrls,
+      mentions,
+      raw: top as Record<string, unknown>,
+    },
+  };
+}
+
+/**
+ * AI Keyword Data — search volume for keywords inside AI engines (ChatGPT,
+ * Perplexity, etc.). Used in W2 for AEO Opportunity Score; wrapper ships
+ * now so W2 is glue-only. Not invoked in W1.
+ */
+export type AiKeywordVolumeResult = {
+  keyword: string;
+  /// Estimated monthly searches inside AI engines, 0 when unknown.
+  aiSearchVolume: number;
+  /// Engine distribution for the volume estimate, e.g. {chatgpt: 0.6, perplexity: 0.3}.
+  engineShare: Record<string, number>;
+};
+
+export async function fetchAiKeywordVolume(input: {
+  keywords: string[];
+  locationCode?: number;
+}): Promise<CallResult<AiKeywordVolumeResult[]>> {
+  if (input.keywords.length === 0) {
+    return { ok: true, data: [], costUsd: 0 };
+  }
+  const result = await call<
+    Array<{
+      items?: Array<{
+        keyword?: string;
+        ai_search_volume?: number;
+        engine_distribution?: Record<string, number>;
+      }>;
+    }>
+  >(
+    "/ai_optimization/ai_keyword_data/keywords_search_volume/live",
+    [
+      {
+        keywords: input.keywords.slice(0, 100),
+        location_code: input.locationCode ?? 2840,
+        language_code: "en",
+      },
+    ],
+    `ai_kw[${input.keywords.length}]`,
+  );
+  if (!("ok" in result) || !result.ok) {
+    return result as CallResult<AiKeywordVolumeResult[]>;
+  }
+  const items = result.data?.[0]?.items ?? [];
+  return {
+    ok: true,
+    costUsd: result.costUsd,
+    data: items.map((row) => ({
+      keyword: row.keyword ?? "",
+      aiSearchVolume: row.ai_search_volume ?? 0,
+      engineShare: row.engine_distribution ?? {},
+    })),
+  };
+}
+
+/**
+ * Google's AI Overview ("SGE") for a SERP query. Used in W2 as a new row
+ * inside the AEO surface alongside the existing engine rows.
+ */
+export type SerpAiSummaryResult = {
+  query: string;
+  /// AI Overview text (Google's summary). Empty when not present for this query.
+  summary: string;
+  citedUrls: string[];
+};
+
+export async function fetchSerpAiSummary(input: {
+  query: string;
+  locationCode?: number;
+}): Promise<CallResult<SerpAiSummaryResult>> {
+  const result = await call<
+    Array<{
+      items?: Array<{
+        type?: string;
+        text?: string;
+        references?: Array<{ url?: string }>;
+      }>;
+    }>
+  >(
+    "/serp/google/ai_summary/live/advanced",
+    [
+      {
+        keyword: input.query,
+        location_code: input.locationCode ?? 2840,
+        language_code: "en",
+      },
+    ],
+    `ai_summary[${input.query.slice(0, 32)}]`,
+  );
+  if (!("ok" in result) || !result.ok) {
+    return result as CallResult<SerpAiSummaryResult>;
+  }
+  const items = result.data?.[0]?.items ?? [];
+  const summaryItem = items.find((i) => i.type === "ai_overview") ?? items[0];
+  return {
+    ok: true,
+    costUsd: result.costUsd,
+    data: {
+      query: input.query,
+      summary: summaryItem?.text ?? "",
+      citedUrls: (summaryItem?.references ?? [])
+        .map((r) => r.url)
+        .filter((u): u is string => typeof u === "string" && u.length > 0),
+    },
+  };
+}

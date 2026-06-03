@@ -29,7 +29,12 @@ import {
   type ClaimPromptSet,
 } from "./prompts-neighborhood";
 import { parseCitation } from "./parse";
-import { getEnabledEngines, type EngineModule } from "./engines";
+import {
+  getEnabledEngines,
+  isDataForSeoEngineMetadata,
+  type EngineModule,
+} from "./engines";
+import { classifyMentions } from "./classify-mentions";
 import type { AeoEngine, Prisma } from "@prisma/client";
 
 // Lifted from 3 → 5 to accommodate the 2 new branded prompts (Norman
@@ -166,6 +171,50 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
             },
           });
           rowsWritten += 1;
+
+          // AEO v2 W1: write a richer AeoMentionSnapshot row whenever the
+          // engine module surfaced DataForSEO-shaped metadata. Direct-API
+          // engines don't return ordered mentions, so we skip snapshot
+          // writes for them (the existing AeoCitationCheck row still
+          // captures the citation breakdown).
+          if (isDataForSeoEngineMetadata(result.metadata)) {
+            try {
+              const { classified, shareOfVoice } = classifyMentions(
+                result.metadata.mentions,
+                {
+                  name: property.name,
+                  websiteUrl: property.websiteUrl,
+                },
+              );
+              await prisma.aeoMentionSnapshot.create({
+                data: {
+                  orgId: property.orgId,
+                  propertyId: property.id,
+                  engine: engine.engine as AeoEngine,
+                  prompt,
+                  shareOfVoice,
+                  mentions:
+                    classified as unknown as Prisma.InputJsonValue,
+                  externalId: result.metadata.externalId,
+                  costUsd: result.metadata.costUsd,
+                  metadata: {
+                    source: "dataforseo",
+                    surface: "property",
+                  } as Prisma.InputJsonValue,
+                },
+              });
+            } catch (snapshotErr) {
+              // Non-fatal — citation row already landed, snapshot is an
+              // augmentation. Log + carry on so a transient Prisma issue
+              // doesn't abort the scan.
+              console.error(
+                `[aeo.orchestrate] snapshot persist failed for property ${property.id} / ${engine.engine}:`,
+                snapshotErr instanceof Error
+                  ? snapshotErr.message
+                  : snapshotErr,
+              );
+            }
+          }
         } catch (err) {
           errors += 1;
           console.error(
@@ -447,6 +496,51 @@ export async function runNeighborhoodScan(
             },
           });
           rowsWritten += 1;
+
+          // AEO v2 W1: snapshot the richer mention list for neighborhood
+          // scans too. Target identity is the anchor property (when one
+          // exists) — otherwise we fall back to the page slug/URL and
+          // classifier degrades to "other" for everything, which is the
+          // honest read for a generic neighborhood guide.
+          if (isDataForSeoEngineMetadata(result.metadata)) {
+            try {
+              const { classified, shareOfVoice } = classifyMentions(
+                result.metadata.mentions,
+                {
+                  name:
+                    page.property?.name ?? `${page.neighborhood} guide`,
+                  websiteUrl: page.property?.websiteUrl ?? pageSlugUrl,
+                  aliases: target.aliases,
+                },
+              );
+              await prisma.aeoMentionSnapshot.create({
+                data: {
+                  orgId: page.orgId,
+                  propertyId: page.propertyId ?? null,
+                  engine: engine.engine as AeoEngine,
+                  prompt,
+                  shareOfVoice,
+                  mentions:
+                    classified as unknown as Prisma.InputJsonValue,
+                  externalId: result.metadata.externalId,
+                  costUsd: result.metadata.costUsd,
+                  metadata: {
+                    source: "dataforseo",
+                    surface: "neighborhood",
+                    neighborhoodPageId: page.id,
+                    claim: entry.claim,
+                  } as Prisma.InputJsonValue,
+                },
+              });
+            } catch (snapshotErr) {
+              console.error(
+                `[aeo.orchestrate] snapshot persist failed for page ${page.id} / ${engine.engine}:`,
+                snapshotErr instanceof Error
+                  ? snapshotErr.message
+                  : snapshotErr,
+              );
+            }
+          }
         } catch (err) {
           errors += 1;
           console.error(

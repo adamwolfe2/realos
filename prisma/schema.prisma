@@ -542,6 +542,7 @@ model Organization {
   credentialAccessLogs    CredentialAccessLog[]
   zillowReports           ZillowReport[]
   aeoChecks               AeoCitationCheck[]
+  aeoMentionSnapshots     AeoMentionSnapshot[]
   neighborhoodPages       NeighborhoodPage[]
   onboardingProgress      OnboardingProgress?
   // SEO/AEO Agent backrefs — Phase 1
@@ -977,6 +978,7 @@ model Property {
   seoIntegrations      SeoIntegration[]
   websiteBuildRequests WebsiteBuildRequest[]
   aeoChecks            AeoCitationCheck[]
+  aeoMentionSnapshots  AeoMentionSnapshot[]
   neighborhoodPages    NeighborhoodPage[]
   // Per-property RentCast market intelligence snapshots (rent AVM,
   // market stats). Populated by the Market Intelligence section on
@@ -3742,6 +3744,44 @@ model AeoCitationCheck {
   @@index([engine, queryRunAt])
   @@index([neighborhoodPageId, queryRunAt])
   @@index([orgId, mentioned, queryRunAt])
+}
+
+// ---------------------------------------------------------------------------
+// AeoMentionSnapshot — per (engine × prompt) record from a DataForSEO AI
+// Optimization LLM Responses call. AEO v2 W1: layered on top of the existing
+// AeoCitationCheck row so the citation breakdown UI keeps working unchanged
+// while the "AI Share of Voice" widget reads from the richer snapshot data.
+// One row per (orgId, propertyId?, engine, prompt, capturedAt).
+// ---------------------------------------------------------------------------
+model AeoMentionSnapshot {
+  id           String    @id @default(cuid())
+  orgId        String
+  propertyId   String?
+  /// Reserved for future ScanRun grouping. Null until that model lands.
+  scanRunId    String?
+  engine       AeoEngine
+  prompt       String    @db.Text
+  capturedAt   DateTime  @default(now())
+  /// Share of voice for the brand on this prompt × engine — 0.0 to 1.0.
+  /// (self mentions) / (self + competitor mentions). 0 when nothing was
+  /// mentioned for the brand or its competitors.
+  shareOfVoice Float     @default(0)
+  /// Ordered enumeration of every entity the engine named in its answer,
+  /// classified against the org's brand + competitor list at write time.
+  /// [{ name, kind: "self" | "competitor" | "other", position, citedUrl? }]
+  mentions     Json
+  /// DataForSEO response id for replay / debug.
+  externalId   String?
+  /// Cost reported by DataForSEO for this single call, USD.
+  costUsd      Float     @default(0)
+  metadata     Json?
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property Property?    @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([orgId, capturedAt])
+  @@index([propertyId, capturedAt])
+  @@index([engine, capturedAt])
 }
 
 // ---------------------------------------------------------------------------

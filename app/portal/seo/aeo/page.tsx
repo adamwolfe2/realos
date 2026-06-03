@@ -6,6 +6,10 @@ import { AeoClient } from "./aeo-client";
 import type { EngineCardData } from "./aeo-engine-cards";
 import type { ResponseRow } from "./aeo-responses-table";
 import { ALL_ENGINES } from "@/lib/aeo/engines";
+import type {
+  ShareOfVoicePerEngine,
+  TopEntity,
+} from "@/components/portal/aeo/share-of-voice-card";
 import type { AeoEngine } from "@prisma/client";
 
 export const metadata: Metadata = { title: "AI search visibility" };
@@ -302,6 +306,82 @@ export default async function AeoPage() {
     ? checks[0].queryRunAt.toISOString()
     : null;
 
+  // ---------------------------------------------------------------------
+  // AEO v2 W1 — AI Share of Voice aggregation. Reads AeoMentionSnapshot
+  // rows from the last 30 days (DataForSEO-only), groups by engine for
+  // the bar chart, and rolls up classified mentions into a top-entities
+  // list. Empty arrays when DataForSEO source is off — widget renders
+  // its own empty state.
+  // ---------------------------------------------------------------------
+  const snapshots = await prisma.aeoMentionSnapshot.findMany({
+    where: {
+      ...where,
+      capturedAt: { gte: thirtyDaysAgo },
+    },
+    select: {
+      engine: true,
+      shareOfVoice: true,
+      mentions: true,
+    },
+    orderBy: { capturedAt: "desc" },
+    take: 2000,
+  });
+
+  type SnapshotMention = {
+    name: string;
+    kind: "self" | "competitor" | "other";
+    position: number;
+    citedUrl: string | null;
+  };
+
+  const sovByEngine = new Map<
+    AeoEngine,
+    { sum: number; count: number }
+  >();
+  const entityCounts = new Map<
+    string,
+    { name: string; kind: SnapshotMention["kind"]; count: number }
+  >();
+
+  for (const snap of snapshots) {
+    const bucket = sovByEngine.get(snap.engine) ?? { sum: 0, count: 0 };
+    bucket.sum += snap.shareOfVoice;
+    bucket.count += 1;
+    sovByEngine.set(snap.engine, bucket);
+
+    // mentions JSON column → array. Defensive: tolerate non-array shapes
+    // from older rows or partial writes by ignoring them.
+    const raw = snap.mentions as unknown;
+    if (!Array.isArray(raw)) continue;
+    for (const item of raw) {
+      if (!item || typeof item !== "object") continue;
+      const m = item as Partial<SnapshotMention>;
+      if (typeof m.name !== "string" || m.name.length === 0) continue;
+      const kind: SnapshotMention["kind"] =
+        m.kind === "self" || m.kind === "competitor" ? m.kind : "other";
+      const key = `${kind}::${m.name.toLowerCase()}`;
+      const existing = entityCounts.get(key);
+      if (existing) {
+        existing.count += 1;
+      } else {
+        entityCounts.set(key, { name: m.name, kind, count: 1 });
+      }
+    }
+  }
+
+  const sovPerEngine: ShareOfVoicePerEngine[] = ENGINES.map((engine) => {
+    const bucket = sovByEngine.get(engine);
+    return {
+      engine,
+      avgSov: bucket && bucket.count > 0 ? bucket.sum / bucket.count : 0,
+      snapshotCount: bucket?.count ?? 0,
+    };
+  });
+
+  const topEntities: TopEntity[] = Array.from(entityCounts.values())
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12);
+
   return (
     <AeoClient
       engineCards={engineCards}
@@ -321,6 +401,11 @@ export default async function AeoPage() {
         competitorsNamed: competitorCounts.size,
       }}
       recommendations={recommendations}
+      shareOfVoice={{
+        perEngine: sovPerEngine,
+        topEntities,
+        totalSnapshots: snapshots.length,
+      }}
     />
   );
 }

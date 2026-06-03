@@ -13,6 +13,10 @@ import {
   AeoResponsesTable,
   type ResponseRow,
 } from "./aeo-responses-table";
+import {
+  ShareOfVoiceCard,
+  type ShareOfVoiceProps,
+} from "@/components/portal/aeo/share-of-voice-card";
 
 // All interactive UI for /portal/seo/aeo. The page.tsx server component
 // does the data fetch + tenant scope, then hands fully-shaped view props
@@ -44,6 +48,7 @@ export type AeoClientProps = {
     ctaLabel: string;
     ctaHref: string;
   }>;
+  shareOfVoice: ShareOfVoiceProps;
 };
 
 function fmtPercent(value: number): string {
@@ -208,6 +213,7 @@ export function AeoClient({
   lastScanAt,
   kpis,
   recommendations,
+  shareOfVoice,
 }: AeoClientProps) {
   return (
     <div className="space-y-6">
@@ -265,6 +271,13 @@ export function AeoClient({
 
       {/* Per-engine cards — now show BOTH mention + citation per engine */}
       <AeoEngineCards rows={engineCards} />
+
+      {/* AEO v2 W1: AI Share of Voice — populated when AEO_ENGINE_SOURCE=dataforseo */}
+      <ShareOfVoiceCard
+        perEngine={shareOfVoice.perEngine}
+        topEntities={shareOfVoice.topEntities}
+        totalSnapshots={shareOfVoice.totalSnapshots}
+      />
 
       {/* What to do next — derived recommendations */}
       <NextActions recs={recommendations} />
