@@ -8,14 +8,34 @@ import type {
   ProposalWithLines,
 } from "./types";
 import { isDiscountScope } from "./types";
+import {
+  computeSubtotalsCentsShared,
+  allocateDiscountCentsShared,
+  computeProposalTotalsShared,
+  type DiscountScopeShared,
+  type LineLikeShared,
+} from "./totals-shared";
 
 // ---------------------------------------------------------------------------
-// Proposal totals math.
+// Proposal totals math — server-side wrapper.
+//
+// All the arithmetic lives in `./totals-shared.ts` (client-safe, no
+// Prisma types, no server-only). This file re-exports those helpers
+// under Prisma-typed signatures so server callers don't have to
+// re-shape their data into the shared types.
+//
+// Why two files?
+//   - `lib/proposals/totals-shared.ts` is the math, importable from
+//     React Server Components, client components, server actions —
+//     anywhere. No "server-only" gate.
+//   - `lib/proposals/totals.ts` (this file) is "server-only" because
+//     it accepts Prisma model types. The composer UI uses the shared
+//     module directly; the Stripe + PDF + save paths use this one.
 //
 // Single source of truth for "what does this proposal cost?". Called from:
-//   - Admin builder UI (live totals in the composer footer)
-//   - Save path (writes recurringSubtotalCents + oneTimeSubtotalCents to
-//     the Proposal row so the list view doesn't aggregate per render)
+//   - Admin builder UI (live totals in the composer footer — via shared)
+//   - Save path (writes recurringSubtotal + oneTimeSubtotal to the
+//     Proposal row so the list view doesn't aggregate per render)
 //   - Stripe checkout builder (decides subscription vs payment mode +
 //     attaches one-time setup fees as add_invoice_items)
 //   - PDF document (renders the price summary)
@@ -38,15 +58,12 @@ type ProposalHeader = Pick<
   "cadence" | "trialDays" | "discountAmountCents" | "discountScope"
 >;
 
-function safeQuantity(q: number | null | undefined): number {
-  if (typeof q !== "number" || !Number.isFinite(q) || q <= 0) return 1;
-  return Math.floor(q);
-}
-
-function safeRecurring(r: boolean | null | undefined): boolean {
-  // Defaults to true to match the schema default. The composer always passes
-  // a value explicitly; defaulting matters only for tests + legacy callers.
-  return r !== false;
+function toSharedLine(line: LineLike): LineLikeShared {
+  return {
+    unitPriceCents: line.unitPriceCents,
+    quantity: line.quantity ?? null,
+    recurring: line.recurring ?? null,
+  };
 }
 
 /** Sum recurring vs one-time. Returns raw subtotals (no discount applied). */
@@ -54,22 +71,7 @@ export function computeSubtotalsCents(lines: ReadonlyArray<LineLike>): {
   recurring: number;
   oneTime: number;
 } {
-  let recurring = 0;
-  let oneTime = 0;
-  for (const line of lines) {
-    const qty = safeQuantity(line.quantity);
-    // Guard NaN / Infinity explicitly — Math.max(0, NaN) returns NaN, which
-    // would poison the running sum. Treat any non-finite price as 0.
-    const raw = Number(line.unitPriceCents);
-    const safePrice = Number.isFinite(raw) ? Math.max(0, Math.floor(raw)) : 0;
-    const amount = safePrice * qty;
-    if (safeRecurring(line.recurring)) {
-      recurring += amount;
-    } else {
-      oneTime += amount;
-    }
-  }
-  return { recurring, oneTime };
+  return computeSubtotalsCentsShared(lines.map(toSharedLine));
 }
 
 /** Allocate the proposal's header-level discount across recurring + one-time
@@ -88,31 +90,14 @@ export function allocateDiscountCents(args: {
   discountAmount: number;
   scope: DiscountScope;
 }): { recurring: number; oneTime: number } {
-  const { recurringSubtotal, oneTimeSubtotal, scope } = args;
-  const discount = Math.max(0, Math.floor(args.discountAmount));
-  if (discount === 0) return { recurring: 0, oneTime: 0 };
-
-  if (scope === "recurring") {
-    return { recurring: Math.min(discount, recurringSubtotal), oneTime: 0 };
-  }
-  if (scope === "one_time") {
-    return { recurring: 0, oneTime: Math.min(discount, oneTimeSubtotal) };
-  }
-  // scope = both — pro-rata allocation. If either subtotal is zero the
-  // discount lands entirely on the non-zero side (with clamp).
-  const total = recurringSubtotal + oneTimeSubtotal;
-  if (total === 0) return { recurring: 0, oneTime: 0 };
-  const cappedDiscount = Math.min(discount, total);
-  // Allocate to recurring first (floor) so the remainder lands on one-time —
-  // this keeps the SUM exact (no off-by-one penny from independent floors).
-  const recurringShare = Math.floor(
-    (cappedDiscount * recurringSubtotal) / total,
-  );
-  const oneTimeShare = cappedDiscount - recurringShare;
-  return {
-    recurring: Math.min(recurringShare, recurringSubtotal),
-    oneTime: Math.min(oneTimeShare, oneTimeSubtotal),
-  };
+  // DiscountScope and DiscountScopeShared are the same string union;
+  // the cast is safe and avoids re-typing both layers.
+  return allocateDiscountCentsShared({
+    recurringSubtotal: args.recurringSubtotal,
+    oneTimeSubtotal: args.oneTimeSubtotal,
+    discountAmount: args.discountAmount,
+    scope: args.scope as DiscountScopeShared,
+  });
 }
 
 /** Compute the full totals breakdown for a proposal + its lines. Pure. */
@@ -120,42 +105,20 @@ export function computeProposalTotalsCents(
   proposal: ProposalHeader,
   lines: ReadonlyArray<LineLike>,
 ): ProposalTotalsCents {
-  const subtotals = computeSubtotalsCents(lines);
   const scopeRaw = proposal.discountScope ?? "both";
   const scope: DiscountScope = isDiscountScope(scopeRaw) ? scopeRaw : "both";
-  const allocation = allocateDiscountCents({
-    recurringSubtotal: subtotals.recurring,
-    oneTimeSubtotal: subtotals.oneTime,
-    discountAmount: proposal.discountAmountCents ?? 0,
-    scope,
-  });
-
-  const recurringTotal = subtotals.recurring - allocation.recurring;
-  const oneTimeTotal = subtotals.oneTime - allocation.oneTime;
-  const hasTrial = (proposal.trialDays ?? 0) > 0;
-
-  // First-invoice math:
-  //  - With a trial, the recurring portion does NOT bill on day 0; only
-  //    the one-time lines hit the first invoice (Stripe charges those
-  //    immediately via add_invoice_items, even when the subscription is
-  //    on a trial — this is a known Stripe behavior).
-  //  - Without a trial, both buckets hit invoice #1.
-  const firstInvoiceTotal = hasTrial
-    ? oneTimeTotal
-    : recurringTotal + oneTimeTotal;
-
-  return {
-    recurringSubtotal: subtotals.recurring,
-    recurringDiscount: allocation.recurring,
-    recurringTotal,
-    oneTimeSubtotal: subtotals.oneTime,
-    oneTimeDiscount: allocation.oneTime,
-    oneTimeTotal,
-    firstInvoiceTotal,
-    hasTrial,
-    trialDays: proposal.trialDays ?? 0,
-    cadence: proposal.cadence ?? null,
-  };
+  // computeProposalTotalsShared returns the same shape as ProposalTotalsCents
+  // (verified by the test harness). The cast is the unification point —
+  // this is the ONE place we admit shared ↔ Prisma type equivalence.
+  return computeProposalTotalsShared(
+    {
+      cadence: proposal.cadence,
+      trialDays: proposal.trialDays ?? 0,
+      discountAmountCents: proposal.discountAmountCents ?? 0,
+      discountScope: scope,
+    },
+    lines.map(toSharedLine),
+  ) as ProposalTotalsCents;
 }
 
 /** Convenience: take a fully-loaded ProposalWithLines and return totals. */

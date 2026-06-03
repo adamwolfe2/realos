@@ -170,16 +170,46 @@ export default async function ProposalListPage({
           acceptedAt: { gte: monthStart },
         },
       }),
-      prisma.proposal.aggregate({
-        _sum: { recurringSubtotalCents: true },
+      // MRR-MTD must reflect what we actually invoice, not the pre-discount
+      // subtotal. A $1,000/mo line with a $500 first-month discount is $500
+      // of recurring revenue, not $1,000. We pull the rows + apply the same
+      // discount allocator the composer + Stripe builder use so the KPI is
+      // consistent with downstream truth.
+      prisma.proposal.findMany({
         where: {
           status: ProposalStatus.ACCEPTED,
           acceptedAt: { gte: monthStart },
         },
+        select: {
+          recurringSubtotalCents: true,
+          oneTimeSubtotalCents: true,
+          discountAmountCents: true,
+          discountScope: true,
+        },
       }),
     ]);
 
-  const mrrAddedCents = mrrAddedMtd._sum.recurringSubtotalCents ?? 0;
+  // Compute post-discount MRR per accepted proposal, then sum. Uses the
+  // same allocator as `lib/proposals/totals.ts` so the math agrees with
+  // the proposal page totals + the Stripe Checkout build.
+  const { allocateDiscountCentsShared } = await import(
+    "@/lib/proposals/totals-shared"
+  );
+  const mrrAddedCents = mrrAddedMtd.reduce((acc, row) => {
+    const scope =
+      row.discountScope === "recurring" ||
+      row.discountScope === "one_time" ||
+      row.discountScope === "both"
+        ? row.discountScope
+        : "both";
+    const allocation = allocateDiscountCentsShared({
+      recurringSubtotal: row.recurringSubtotalCents,
+      oneTimeSubtotal: row.oneTimeSubtotalCents,
+      discountAmount: row.discountAmountCents,
+      scope,
+    });
+    return acc + (row.recurringSubtotalCents - allocation.recurring);
+  }, 0);
 
   return (
     <div className="space-y-6">

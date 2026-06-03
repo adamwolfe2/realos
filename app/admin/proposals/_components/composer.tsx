@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { ProposalLineKind, ProposalStatus } from "@prisma/client";
 import { SectionCard } from "@/components/admin/page-header";
 import { addLineFromCatalog, saveDraft } from "../actions";
@@ -195,7 +196,9 @@ export function Composer({
         // a server-generated id yet.
       } catch (err) {
         console.error(err);
-        alert(err instanceof Error ? err.message : "Failed to add line");
+        toast.error(
+          err instanceof Error ? err.message : "Failed to add line",
+        );
       }
     },
     [localProposal.id],

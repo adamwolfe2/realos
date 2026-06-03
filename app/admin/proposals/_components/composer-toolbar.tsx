@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { ProposalStatus } from "@prisma/client";
 // build-fix (audit 2026-06-02): import directly from `_actions/lifecycle`
 // — see `app/admin/proposals/actions.ts` for full rationale.
@@ -61,7 +62,7 @@ export function ComposerToolbar({
       router.refresh();
     } catch (err) {
       console.error(err);
-      alert(err instanceof Error ? err.message : "Failed to send");
+      toast.error(err instanceof Error ? err.message : "Failed to send");
     } finally {
       setWorking(null);
       setConfirmSend(false);
@@ -75,7 +76,7 @@ export function ComposerToolbar({
       router.refresh();
     } catch (err) {
       console.error(err);
-      alert(err instanceof Error ? err.message : "Failed to void");
+      toast.error(err instanceof Error ? err.message : "Failed to void");
     } finally {
       setWorking(null);
       setConfirmVoid(false);
@@ -91,7 +92,7 @@ export function ComposerToolbar({
       router.push(`/admin/proposals/${newProposalId}?edit=1`);
     } catch (err) {
       console.error(err);
-      alert(err instanceof Error ? err.message : "Failed to duplicate");
+      toast.error(err instanceof Error ? err.message : "Failed to duplicate");
       setWorking(null);
     }
   }

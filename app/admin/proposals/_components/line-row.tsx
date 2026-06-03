@@ -2,6 +2,7 @@
 
 import { cn } from "@/lib/utils";
 import { formatCents } from "@/lib/proposals/totals-shared";
+import { MAX_PRICE_CENTS, MAX_QUANTITY } from "@/lib/proposals/constants";
 import type { ComposerLine } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -98,6 +99,7 @@ export function LineRow({
             <input
               type="number"
               min={0}
+              max={MAX_PRICE_CENTS / 100}
               step="0.01"
               disabled={disabled}
               value={(line.unitPriceCents / 100).toString()}
@@ -106,7 +108,12 @@ export function LineRow({
                 const cents = Number.isFinite(dollars)
                   ? Math.round(dollars * 100)
                   : 0;
-                onPatch({ unitPriceCents: Math.max(0, cents) });
+                onPatch({
+                  unitPriceCents: Math.min(
+                    MAX_PRICE_CENTS,
+                    Math.max(0, cents),
+                  ),
+                });
               }}
               className="w-24 rounded-md border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"
             />
@@ -117,11 +124,15 @@ export function LineRow({
           <input
             type="number"
             min={1}
+            max={MAX_QUANTITY}
             step={1}
             disabled={disabled}
             value={line.quantity}
             onChange={(e) => {
-              const v = Math.max(1, Math.floor(Number(e.target.value) || 1));
+              const v = Math.min(
+                MAX_QUANTITY,
+                Math.max(1, Math.floor(Number(e.target.value) || 1)),
+              );
               onPatch({ quantity: v });
             }}
             className="w-16 rounded-md border border-border bg-card px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30"

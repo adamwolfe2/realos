@@ -3,6 +3,10 @@ import type Stripe from "stripe";
 import { getStripeClient } from "@/lib/stripe/config";
 import { resolveStripeCustomerForProposal } from "./customer-lookup";
 import { computeProposalTotalsFromRow } from "./totals";
+import {
+  MAX_PRICE_CENTS,
+  MAX_QUANTITY,
+} from "./constants";
 import type { ProposalWithLines } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -90,9 +94,19 @@ function assertValidForCheckout(proposal: ProposalWithLines): void {
         `Invalid price on line "${line.label}".`,
       );
     }
+    if (line.unitPriceCents > MAX_PRICE_CENTS) {
+      throw new ProposalCheckoutValidationError(
+        `Line "${line.label}" exceeds the $${(MAX_PRICE_CENTS / 100).toLocaleString()} per-unit cap.`,
+      );
+    }
     if (!Number.isFinite(line.quantity) || line.quantity <= 0) {
       throw new ProposalCheckoutValidationError(
         `Invalid quantity on line "${line.label}".`,
+      );
+    }
+    if (line.quantity > MAX_QUANTITY) {
+      throw new ProposalCheckoutValidationError(
+        `Line "${line.label}" exceeds the ${MAX_QUANTITY}-unit quantity cap.`,
       );
     }
   }
@@ -185,11 +199,14 @@ async function maybeCreateCoupon(
   } catch (err) {
     // Stripe errors on idempotency-key + amount mismatch happen if we
     // regenerate after changing the discount without bumping checkoutVersion.
-    // Surface clearly so the operator can bump the version.
+    // Surface clearly so the operator can bump the version. Preserve the
+    // original Stripe error in `cause` so Sentry's stack-chain export
+    // shows the underlying Stripe error code + request id.
+    const message = err instanceof Error ? err.message : String(err);
     throw new Error(
-      `Failed to create coupon for proposal ${proposal.id}: ${
-        err instanceof Error ? err.message : String(err)
-      }. If you edited the discount, bump checkoutVersion.`,
+      `Failed to create coupon for proposal ${proposal.id}: ${message}. ` +
+        `If you edited the discount, bump checkoutVersion.`,
+      { cause: err instanceof Error ? err : new Error(message) },
     );
   }
 }

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 // build-fix (audit 2026-06-02): import server actions directly from
 // their source `_actions/*` files instead of via the `actions.ts`
 // re-export barrel — Next 16 + Turbopack rejects re-exports inside a
@@ -30,7 +31,7 @@ export function CatalogEditor({ items }: { items: ComposerCatalogItem[] }) {
       router.refresh();
     } catch (err) {
       console.error(err);
-      alert(err instanceof Error ? err.message : "Seed failed");
+      toast.error(err instanceof Error ? err.message : "Seed failed");
     } finally {
       setSeeding(false);
     }
@@ -95,7 +96,7 @@ function CatalogRow({
       onMutated();
     } catch (err) {
       console.error(err);
-      alert(err instanceof Error ? err.message : "Save failed");
+      toast.error(err instanceof Error ? err.message : "Save failed");
     } finally {
       setSaving(false);
     }

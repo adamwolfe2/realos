@@ -91,6 +91,11 @@ export async function inviteOwnerForProvisionedOrg(
 
   // ── Step 2: Invitation ─────────────────────────────────────────────
   let inviteAcceptUrl: string | null = null;
+  // Track whether we created the Clerk org in THIS call so we can roll
+  // back on invitation failure. If clerkOrgId was already populated
+  // before this call, we leave it alone — operator may have invited
+  // someone else previously and we shouldn't drop their org.
+  const createdClerkOrgThisCall = !org.clerkOrgId && clerkOrgId !== null;
   try {
     const redirectUrl = `${process.env.NEXT_PUBLIC_APP_URL ?? ""}/auth/redirect`;
     const invitation = await client.invitations.createInvitation({
@@ -104,6 +109,33 @@ export async function inviteOwnerForProvisionedOrg(
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "Clerk invitation failed";
+    // Orphan cleanup: if we just created the Clerk org on this call AND
+    // the invitation failed, drop the empty Clerk org + clear the
+    // clerkOrgId pointer so a retry doesn't reuse a half-baked
+    // organization (or pile up empty orgs in Clerk). Cleanup is
+    // best-effort; we log + continue if it fails so the original
+    // invitation error is the one surfaced to the operator.
+    if (createdClerkOrgThisCall && clerkOrgId) {
+      try {
+        await client.organizations.deleteOrganization(clerkOrgId);
+      } catch (cleanupErr) {
+        console.error(
+          `[provision/clerk-invite] failed to delete orphan Clerk org ${clerkOrgId}:`,
+          cleanupErr instanceof Error ? cleanupErr.message : cleanupErr,
+        );
+      }
+      try {
+        await prisma.organization.update({
+          where: { id: org.id },
+          data: { clerkOrgId: null },
+        });
+      } catch (dbErr) {
+        console.error(
+          `[provision/clerk-invite] failed to clear clerkOrgId on org ${org.id}:`,
+          dbErr instanceof Error ? dbErr.message : dbErr,
+        );
+      }
+    }
     return {
       ok: false,
       error: `Clerk invitation failed: ${message}`,

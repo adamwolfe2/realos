@@ -85,17 +85,26 @@ async function pickUniqueSlug(
   source: string,
 ): Promise<string> {
   const base = baseSlugFrom(source);
-  let candidate = base;
-  for (let n = 2; n < 1000; n++) {
-    const existing = await tx.organization.findUnique({
-      where: { slug: candidate },
-      select: { id: true },
-    });
-    if (!existing) return candidate;
+  // Build the candidate list ONCE, then resolve every collision in a
+  // single query. The previous version fired one findUnique per N (up
+  // to 999 round-trips). One IN-clause query covers the whole window
+  // and lets us pick the lowest-free slot in memory.
+  const MAX_CANDIDATES = 999;
+  const candidates: string[] = [base];
+  for (let n = 2; n <= MAX_CANDIDATES; n++) {
     const suffix = `-${n}`;
-    candidate = `${base.slice(0, SLUG_MAX - suffix.length)}${suffix}`;
+    candidates.push(`${base.slice(0, SLUG_MAX - suffix.length)}${suffix}`);
   }
-  throw new Error("Could not generate a unique organization slug");
+  const taken = await tx.organization.findMany({
+    where: { slug: { in: candidates } },
+    select: { slug: true },
+  });
+  const takenSet = new Set(taken.map((o) => o.slug));
+  const free = candidates.find((c) => !takenSet.has(c));
+  if (!free) {
+    throw new Error("Could not generate a unique organization slug");
+  }
+  return free;
 }
 
 // Map a proposal-catalog tier slug to the SubscriptionTier enum. Falls back
