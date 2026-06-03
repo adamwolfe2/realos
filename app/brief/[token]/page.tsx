@@ -398,12 +398,41 @@ function EngineMark({
 // ─── GAP SECTION ──────────────────────────────────────────────────────────
 
 function GapSection({ data }: { data: BriefJson }) {
-  // Pick the two most damning verbatim quotes: prompts where the brand
-  // wasn't cited but a comp set member was. Sort by competitor count
-  // (descending) so we surface the most-competitive answer first.
+  // Pick the two most damning verbatim quotes — but be deliberate
+  // about WHICH engine we feature. Two filters:
+  //
+  //   1. Skip responses containing training-cutoff disclaimer language
+  //      ("as of my last update", "October 2023", etc). For a recently
+  //      rebranded property these read as stale and undercut the
+  //      "AI doesn't know about you" narrative — the engine literally
+  //      can't know. Real-time engines (Perplexity, Gemini, Claude with
+  //      web access) tell the actual current story.
+  //
+  //   2. Engine priority — Perplexity first (live web), then Gemini,
+  //      then Claude, then ChatGPT. Tie-breaker on competitor count
+  //      within each priority bucket.
+  const STALE_LANGUAGE =
+    /(as of my (last update|knowledge cutoff)|knowledge cutoff|i can'?t provide real[- ]time|october 2023|january 2024|april 2024|training data|i don'?t have access to (current|real-?time))/i;
+  const ENGINE_PRIORITY: Record<string, number> = {
+    PERPLEXITY: 0,
+    GEMINI: 1,
+    CLAUDE: 2,
+    CHATGPT: 3,
+  };
   const damning = data.aeo.rows
-    .filter((r) => !r.skipped && !r.cited && r.competitorsCited.length > 0)
-    .sort((a, b) => b.competitorsCited.length - a.competitorsCited.length)
+    .filter(
+      (r) =>
+        !r.skipped &&
+        !r.cited &&
+        r.competitorsCited.length > 0 &&
+        !STALE_LANGUAGE.test(r.responseText),
+    )
+    .sort((a, b) => {
+      const ep =
+        (ENGINE_PRIORITY[a.engine] ?? 99) - (ENGINE_PRIORITY[b.engine] ?? 99);
+      if (ep !== 0) return ep;
+      return b.competitorsCited.length - a.competitorsCited.length;
+    })
     .slice(0, 2);
   return (
     <section style={{ padding: "64px 0", borderBottom: "1px solid #F1F5F9" }}>
@@ -689,9 +718,11 @@ function CompetitorSection({ data }: { data: BriefJson }) {
   return (
     <section style={{ padding: "64px 0", borderBottom: "1px solid #F1F5F9", backgroundColor: "#FBFBFD" }}>
       <div className="max-w-[1080px] mx-auto px-6">
-        <SectionEyebrow>2. Who&apos;s winning the conversation instead</SectionEyebrow>
+        <SectionEyebrow>2. Buildings AI search named instead</SectionEyebrow>
         <SectionHeading>
-          Buildings AI engines named when {data.brand} wasn&apos;t.
+          The names AI engines surfaced when{" "}
+          <span>{data.brand}</span>
+          {" "}wasn&apos;t on the shortlist.
         </SectionHeading>
         <p
           className="mt-2 max-w-2xl"
@@ -818,10 +849,17 @@ function PageHealthSection({ data }: { data: BriefJson }) {
                 className="text-[14px]"
                 style={{ color: "#1E2A3A", fontWeight: 500 }}
               >
-                {passCount} of {total} checks passing
+                {data.onPage.score} / 100 · {passCount} of {total} checks passing
               </p>
               <p
-                className="mt-0.5 text-[12px] truncate"
+                className="mt-0.5 text-[11.5px]"
+                style={{ color: "#6B7280" }}
+              >
+                Each of the {total} checks is worth 12.5 points. {passCount}{" "}
+                passing × 12.5 = {data.onPage.score}.
+              </p>
+              <p
+                className="mt-1.5 text-[12px] truncate"
                 style={{ color: "#6B7280" }}
                 title={data.onPage.excerpt || data.firecrawl.title || ""}
               >
@@ -1019,7 +1057,7 @@ function StackSection({ data }: { data: BriefJson }) {
       <div className="max-w-[1080px] mx-auto px-6">
         <SectionEyebrow>5. What we observed on your site</SectionEyebrow>
         <SectionHeading>
-          The conversion infrastructure we found. Not what was claimed.
+          The conversion infrastructure live on your homepage today.
         </SectionHeading>
         <p
           className="mt-2 max-w-2xl"
@@ -1318,10 +1356,12 @@ function CtaSection({ prospectName }: { prospectName: string }) {
             className="mt-5 max-w-xl mx-auto"
             style={{ fontSize: 15.5, lineHeight: 1.6, color: "#475569" }}
           >
-            LeaseStack ships the structured data, rewrites the homepage,
-            installs the chatbot + pixel + GA4, builds the comparison
-            page, and runs the AI scan weekly so the gap actually closes.
-            Twenty-minute intro call, no commitment.
+            White-glove engagement. We work alongside your existing
+            agency, web team, and broker — ship the structured data,
+            rewrite the homepage, install the chatbot + pixel + GA4,
+            build the comparison page, and run the AI scan weekly so
+            the gap actually closes. Twenty-minute intro call, no
+            commitment.
           </p>
           <div className="mt-7 flex flex-col sm:flex-row gap-3 justify-center">
             <Link

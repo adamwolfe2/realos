@@ -393,14 +393,14 @@ export function DetectedStackCard({
   return (
     <section className="mt-10" aria-label="Detected conversion stack">
       <Eyebrow>What we found on your homepage</Eyebrow>
-      <H2>Observed, not asked</H2>
+      <H2>Your live conversion stack</H2>
       <p
         className="mt-1.5 text-[12.5px] max-w-2xl"
         style={{ color: "#6B7280" }}
       >
         We scanned the rendered HTML for known chatbot, popup, pixel,
-        analytics, and CRM widgets. These are facts about your live site —
-        not quiz answers.
+        analytics, and CRM widgets. The categories below reflect what
+        is currently installed and loading on your homepage.
       </p>
 
       <ul className="mt-4 space-y-2">

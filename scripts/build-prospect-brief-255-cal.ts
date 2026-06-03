@@ -504,50 +504,78 @@ function collect(node: unknown, out: Set<string>): void {
   }
 }
 
+// Google AI Overview rarely surfaces for niche commercial-RE queries.
+// Try a sequence of plausible queries and return the first one that
+// actually produces an AI Overview block. Each attempt costs ~$0.005;
+// we stop the moment we get a hit so a successful first attempt costs
+// the same as before.
 async function fetchGoogleAio(): Promise<BriefJson["googleAiOverview"]> {
   const login = process.env.DATAFORSEO_LOGIN?.replace(/\\n|\s+/g, "").trim();
   const password = process.env.DATAFORSEO_PASSWORD?.replace(/\\n|\s+/g, "").trim();
   if (!login || !password) return null;
   const auth = Buffer.from(`${login}:${password}`).toString("base64");
-  const query = "best Class-A office buildings San Francisco Financial District";
-  try {
-    const res = await fetch(
-      "https://api.dataforseo.com/v3/serp/google/ai_summary/live/advanced",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Basic ${auth}`,
-          "Content-Type": "application/json",
+
+  // Query ladder — broad consumer-search-style queries that Google is
+  // most likely to attach an AI Overview to, ordered from "most likely
+  // to surface the brand" to "most likely to surface ANY AIO at all".
+  const queries = [
+    "255 California Street San Francisco office building",
+    "best office buildings California Street San Francisco",
+    "Class A office space Financial District San Francisco",
+    "where to lease office space FiDi San Francisco",
+    "top office towers downtown San Francisco for tech companies",
+  ];
+
+  for (const query of queries) {
+    try {
+      const res = await fetch(
+        "https://api.dataforseo.com/v3/serp/google/ai_summary/live/advanced",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Basic ${auth}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify([
+            { keyword: query, location_code: 2840, language_code: "en" },
+          ]),
         },
-        body: JSON.stringify([
-          { keyword: query, location_code: 2840, language_code: "en" },
-        ]),
-      },
-    );
-    if (!res.ok) return null;
-    const body = (await res.json()) as {
-      tasks?: Array<{
-        result?: Array<{
-          items?: Array<{
-            type?: string;
-            text?: string;
-            references?: Array<{ url?: string }>;
+      );
+      if (!res.ok) continue;
+      const body = (await res.json()) as {
+        tasks?: Array<{
+          result?: Array<{
+            items?: Array<{
+              type?: string;
+              text?: string;
+              references?: Array<{ url?: string }>;
+            }>;
           }>;
         }>;
-      }>;
-    };
-    const items = body.tasks?.[0]?.result?.[0]?.items ?? [];
-    const summaryItem = items.find((i) => i.type === "ai_overview") ?? items[0];
-    const summary = summaryItem?.text ?? "";
-    if (!summary.trim()) return null;
-    const citedUrls = (summaryItem?.references ?? [])
-      .map((r) => r.url)
-      .filter((u): u is string => typeof u === "string" && u.length > 0);
-    const cited = citedUrls.some((u) => /255-cal\.com|255\.cal\.com/i.test(u));
-    return { query, summary, citedUrls, cited };
-  } catch {
-    return null;
+      };
+      const items = body.tasks?.[0]?.result?.[0]?.items ?? [];
+      const summaryItem =
+        items.find((i) => i.type === "ai_overview") ?? items[0];
+      const summary = summaryItem?.text ?? "";
+      if (!summary.trim()) {
+        console.log(`[brief] google-aio no result for "${query}"`);
+        continue;
+      }
+      const citedUrls = (summaryItem?.references ?? [])
+        .map((r) => r.url)
+        .filter((u): u is string => typeof u === "string" && u.length > 0);
+      const cited = citedUrls.some((u) =>
+        /255-cal\.com|255\.cal\.com/i.test(u),
+      );
+      console.log(
+        `[brief] google-aio hit on "${query}" (${summary.length} chars, ${citedUrls.length} citations)`,
+      );
+      return { query, summary, citedUrls, cited };
+    } catch {
+      continue;
+    }
   }
+  return null;
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────
