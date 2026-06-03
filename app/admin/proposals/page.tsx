@@ -9,7 +9,10 @@ import { StatCard } from "@/components/admin/stat-card";
 import { StatusBadge } from "@/components/admin/status-badge";
 import type { BadgeTone } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { formatCents } from "@/lib/proposals/totals-shared";
+import {
+  formatCents,
+  allocateDiscountCentsShared,
+} from "@/lib/proposals/totals-shared";
 
 export const metadata: Metadata = { title: "Proposals" };
 export const dynamic = "force-dynamic";
@@ -192,9 +195,6 @@ export default async function ProposalListPage({
   // Compute post-discount MRR per accepted proposal, then sum. Uses the
   // same allocator as `lib/proposals/totals.ts` so the math agrees with
   // the proposal page totals + the Stripe Checkout build.
-  const { allocateDiscountCentsShared } = await import(
-    "@/lib/proposals/totals-shared"
-  );
   const mrrAddedCents = mrrAddedMtd.reduce((acc, row) => {
     const scope =
       row.discountScope === "recurring" ||
