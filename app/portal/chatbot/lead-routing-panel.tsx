@@ -279,7 +279,7 @@ export function LeadRoutingPanel({
               if (candidateCount === null || candidateCount === 0) return;
               if (
                 !window.confirm(
-                  `Send rich profile emails for ${candidateCount} captured conversation${candidateCount === 1 ? "" : "s"} to ${recipients.join(", ")}?\n\nEach email includes the prospect's full chat profile and a direct link to engage. Takes a few seconds per conversation.`,
+                  `Send rich profile emails for ${candidateCount} captured conversation${candidateCount === 1 ? "" : "s"} to ${recipients.join(", ")}?\n\nEach email is throttled to 1 every 1.5 seconds so the recipient's mail server doesn't flag the batch as spam — total: ≈ ${Math.ceil((candidateCount * 1.5) + 10)} seconds.\n\nClick OK and leave this tab open until you see the diagnostic.`,
                 )
               ) {
                 return;

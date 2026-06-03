@@ -522,13 +522,23 @@ export async function backfillChatbotLeadEmails(args: {
       "@/lib/chatbot/send-prospect-profile"
     );
 
-    // Run sends in parallel via allSettled — one Claude failure can't
-    // block the other 13 in the queue. Cap concurrency at 3 so we don't
-    // hit Anthropic / Resend rate limits on big backfills AND so the
-    // total wall-clock fits inside the 60-sec Vercel Pro serverless
-    // ceiling for server actions even if a slow Anthropic batch
-    // drags out: 3 parallel × ~5s worst case × ceil(N/3) batches.
-    const CONCURRENCY = 3;
+    // Concurrency 1 + 1500ms throttle between sends. The previous
+    // parallel-3 burst pattern triggered Google Workspace's
+    // anti-bulk filter on the recipient end: 11 emails arriving
+    // within ~5 seconds caused most to land in "Generic Temporary
+    // Delivery Failure" (Resend reported Sent→Delivered→Bounced
+    // because Google's spam engine deferred them asynchronously
+    // after edge-accept). Adam diagnosed via Resend's bounce details
+    // 2026-06-03.
+    //
+    // Spreading sends to 1 per 1.5 sec keeps us under Google's
+    // per-recipient rate ceiling (heuristic: ~1 message every
+    // 0.5-1 sec is safe for warmed senders, longer for cold). At
+    // 1.5 sec/email a 33-conversation backfill takes ~50 sec which
+    // is the upper bound of the budget — we'll process most queues
+    // in one click and any overflow returns "timed out" cleanly.
+    const CONCURRENCY = 1;
+    const PER_SEND_DELAY_MS = 1500;
     let sent = 0;
     let skipped = 0;
     let failed = 0;
@@ -562,6 +572,11 @@ export async function backfillChatbotLeadEmails(args: {
           }),
         ),
       );
+      // Throttle delay between sends to avoid recipient-side bulk
+      // filters. Skip on the final iteration.
+      if (i + CONCURRENCY < eligible.length) {
+        await new Promise((r) => setTimeout(r, PER_SEND_DELAY_MS));
+      }
       for (const r of results) {
         if (r.status !== "fulfilled") {
           failed += 1;
