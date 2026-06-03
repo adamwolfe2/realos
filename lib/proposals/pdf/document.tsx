@@ -1,5 +1,5 @@
 import React from "react";
-import { Document, Page, Text, View } from "@react-pdf/renderer";
+import { Document, Image, Page, Text, View } from "@react-pdf/renderer";
 import { styles } from "./styles";
 import {
   formatMoney,
@@ -35,7 +35,7 @@ export type { ProposalPdfDocumentProps } from "./types";
 export default function ProposalPdfDocument(
   props: ProposalPdfDocumentProps,
 ): React.ReactElement {
-  const { proposal, lineItems, totals, agency } = props;
+  const { proposal, lineItems, totals, agency, shareUrl, qrDataUrl } = props;
   const currency = proposal.currency || "usd";
 
   // Split lines into recurring vs one-time buckets for grouped display.
@@ -93,6 +93,39 @@ export default function ProposalPdfDocument(
         {/* Public message */}
         {proposal.publicMessage ? (
           <Text style={styles.publicMessage}>{proposal.publicMessage}</Text>
+        ) : null}
+
+        {/* Accept & Pay CTA — only renders when the proposal has a live
+            share token (i.e. it's actually SENT or VIEWED). The Stripe
+            checkout session itself is built at click-time on the share
+            page; the PDF surfaces a direct URL + QR code so a prospect
+            reading on paper, mobile, or via forwarded email can move
+            into payment in one tap. Block intentionally sits above
+            scope-of-work so the price-to-payment path is the first
+            thing a reader sees after the prepared-for line. */}
+        {shareUrl ? (
+          <View style={styles.acceptBlock} wrap={false}>
+            <View style={styles.acceptCol}>
+              <Text style={styles.acceptEyebrow}>ACCEPT &amp; PAY</Text>
+              <Text style={styles.acceptAmount}>
+                {formatMoney(totals.firstInvoiceTotal, currency)} due today
+              </Text>
+              <Text style={styles.acceptHint}>
+                Tap the link below or scan the QR code on the right to
+                review the line items online and pay securely via Stripe.
+                You can adjust card / billing details inside the checkout
+                before confirming.
+              </Text>
+              <Text style={styles.acceptLinkLabel}>REVIEW AND PAY AT</Text>
+              <Text style={styles.acceptLinkUrl}>{shareUrl}</Text>
+            </View>
+            {qrDataUrl ? (
+              <View style={styles.acceptQrCol}>
+                <Image src={qrDataUrl} style={styles.acceptQrImage} />
+                <Text style={styles.acceptQrCaption}>SCAN TO PAY</Text>
+              </View>
+            ) : null}
+          </View>
         ) : null}
 
         {/* Scope of work (new) — narrative description of what the agency

@@ -1,6 +1,8 @@
 import "server-only";
 import { renderToBuffer, type DocumentProps } from "@react-pdf/renderer";
 import React from "react";
+import QRCode from "qrcode";
+import { prisma } from "@/lib/db";
 import ProposalPdfDocument from "./document";
 import {
   normalizeTimeline,
@@ -50,6 +52,49 @@ export function resolveAgencyContext(
   };
 }
 
+/** Resolve the current public-share URL for a proposal. Picks the
+ *  most-recently-issued un-revoked, un-expired token. Returns null
+ *  when the proposal has no live token (e.g. DRAFT) — the PDF then
+ *  omits the Accept-and-pay CTA block.
+ *
+ *  Lives here (not in share-token.ts) so the PDF render path is the
+ *  only consumer; the share-token module stays focused on the
+ *  resolve-from-public-token direction. */
+async function resolveLiveShareUrl(proposalId: string): Promise<string | null> {
+  const row = await prisma.proposalShareToken.findFirst({
+    where: {
+      proposalId,
+      revokedAt: null,
+      OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+    },
+    orderBy: { createdAt: "desc" },
+    select: { token: true },
+  });
+  if (!row) return null;
+  const base =
+    process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "") ||
+    "https://www.leasestack.co";
+  return `${base}/proposal/${encodeURIComponent(row.token)}`;
+}
+
+/** Generate a QR code PNG data URL for a share link. ~2KB at the
+ *  scale we render in the PDF. Best-effort: a QR-gen failure must not
+ *  break the PDF render — the share URL is still surfaced in
+ *  plaintext alongside. */
+async function buildQrDataUrl(url: string): Promise<string | null> {
+  try {
+    return await QRCode.toDataURL(url, {
+      margin: 1,
+      width: 240,
+      color: { dark: "#0F172A", light: "#FFFFFF" },
+      errorCorrectionLevel: "M",
+    });
+  } catch (err) {
+    console.error("[pdf/render] QR generation failed:", err);
+    return null;
+  }
+}
+
 /** Render the proposal PDF to a Node Buffer. Throws on render failure;
  *  callers should map that to a 500 with a generic message — internal
  *  render errors must not leak Stripe IDs or prospect details to the
@@ -61,6 +106,11 @@ export async function renderProposalPdf(args: {
 }): Promise<Buffer> {
   const agency = resolveAgencyContext(args.agency);
   const { proposal, totals } = args;
+  // Resolve the public share URL + QR code in parallel so the PDF
+  // render can include a real "Accept & Pay" CTA. Both are best-
+  // effort — when null, the PDF gracefully omits the CTA block.
+  const shareUrl = await resolveLiveShareUrl(proposal.id);
+  const qrDataUrl = shareUrl ? await buildQrDataUrl(shareUrl) : null;
 
   // Project the Prisma row into the PDF prop shape. ProposalLineKind has
   // exactly four members (TIER, ADDON, CUSTOM, SETUP) — discounts live on
@@ -106,6 +156,8 @@ export async function renderProposalPdf(args: {
       oneTimeDiscount: totals.oneTimeDiscount,
     },
     agency,
+    shareUrl,
+    qrDataUrl,
   });
 
   // `renderToBuffer` types its element parameter as `ReactElement<DocumentProps>`.
