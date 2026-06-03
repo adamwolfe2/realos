@@ -79,13 +79,29 @@ function assertValidForCheckout(proposal: ProposalWithLines): void {
       "Proposal has recurring lines but no cadence set. Pick MONTHLY or ANNUAL.",
     );
   }
-  // v1: Checkout no longer supports one-time + recurring in the same session
-  // (Stripe Clover API removed subscription_data.add_invoice_items from
-  // Checkout). Split into two proposals OR roll the one-time into the
-  // first month's recurring line.
-  if (hasRecurring && hasOneTime) {
+  // Mixed proposals (recurring + one-time): supported as of 2026-06-03.
+  // Stripe Checkout in mode: "subscription" accepts a line_items list
+  // that mixes recurring price_data entries (drive the subscription) and
+  // one-time price_data entries (added to the first invoice). The one-
+  // time setup / sprint fees are billed immediately alongside the
+  // first month's recurring charge. See buildMixedLineItems below.
+  // Allowed combinations now:
+  //   - all-recurring             → mode: "subscription"
+  //   - all-one-time              → mode: "payment"
+  //   - recurring + one-time      → mode: "subscription" with mixed
+  //                                  line_items (one-time → first invoice)
+  //
+  // Edge: trial_period_days defers the FIRST invoice (which includes
+  // the one-time charges) to trial end. For mixed proposals that's
+  // usually not what the agency wants — the setup fee is meant to bill
+  // up front while the retainer trial runs. Refuse the combination so
+  // the operator picks one explicitly.
+  if (hasRecurring && hasOneTime && proposal.trialDays > 0) {
     throw new ProposalCheckoutValidationError(
-      "Mixed proposals (recurring + one-time) are not supported in v1. Split into two proposals — one for the subscription, one for the setup fee.",
+      "Mixed proposals (recurring + one-time) can't include a free trial — " +
+        "Stripe defers the one-time charges to trial end, which usually defeats " +
+        "the point of a paid setup fee. Either remove the trial or split the " +
+        "one-time fees into a separate proposal.",
     );
   }
   for (const line of proposal.lineItems) {
@@ -169,6 +185,41 @@ function buildOneTimeLineItems(
     }));
 }
 
+/** Build the full `line_items` list for a MIXED proposal under
+ *  subscription mode. Recurring entries drive the subscription;
+ *  one-time entries (no `recurring` block in their price_data) are
+ *  added by Stripe to the first invoice automatically. This is the
+ *  current Stripe Checkout supported pattern for setup-fee-plus-
+ *  subscription deals; lets a "Kickoff + Implementation Sprint +
+ *  Monthly Retainer + White-Glove" proposal collect both halves in
+ *  one Checkout session. */
+function buildMixedLineItems(
+  proposal: ProposalWithLines,
+): Stripe.Checkout.SessionCreateParams.LineItem[] {
+  const interval = intervalFor(proposal.cadence ?? "MONTHLY");
+  return proposal.lineItems.map((l) => ({
+    quantity: Math.max(1, Math.floor(l.quantity)),
+    price_data: {
+      currency: proposal.currency,
+      unit_amount: Math.max(0, Math.floor(l.unitPriceCents)),
+      // Only attach `recurring` for actually-recurring lines; absence of
+      // the `recurring` block is what tells Stripe to treat a price as
+      // one-time and roll it into the first invoice.
+      ...(l.recurring ? { recurring: { interval } } : {}),
+      product_data: {
+        name: l.label,
+        ...(l.description ? { description: l.description } : {}),
+        metadata: {
+          proposalLineId: l.id,
+          proposalLineKind: l.kind,
+          recurring: l.recurring ? "true" : "false",
+          ...(l.catalogItemId ? { catalogItemId: l.catalogItemId } : {}),
+        },
+      },
+    },
+  }));
+}
+
 /** Create (idempotently) a one-shot coupon for the proposal's header
  *  discount, return the coupon id. Returns null if no discount. */
 async function maybeCreateCoupon(
@@ -230,6 +281,8 @@ export async function createCheckoutSessionForProposal(
   const checkoutVersion = proposal.checkoutVersion;
   const totals = computeProposalTotalsFromRow(proposal);
   const hasRecurring = totals.recurringSubtotal > 0;
+  const hasOneTime = totals.oneTimeSubtotal > 0;
+  const isMixed = hasRecurring && hasOneTime;
   const couponId = await maybeCreateCoupon(proposal, checkoutVersion);
 
   const baseMetadata: Stripe.MetadataParam = {
@@ -267,13 +320,16 @@ export async function createCheckoutSessionForProposal(
   let params: Stripe.Checkout.SessionCreateParams;
 
   if (hasRecurring) {
-    // SUBSCRIPTION mode. v1 enforces all-recurring (validation above);
-    // mixed proposals are split into two sends until we move to a direct
-    // Subscriptions + SetupIntent + Elements flow.
+    // SUBSCRIPTION mode. Mixed proposals (recurring + one-time) use the
+    // buildMixedLineItems helper so one-time charges land on the first
+    // invoice alongside the first month's recurring charge. Pure-
+    // recurring proposals use buildRecurringLineItems unchanged.
     params = {
       ...common,
       mode: "subscription",
-      line_items: buildRecurringLineItems(proposal),
+      line_items: isMixed
+        ? buildMixedLineItems(proposal)
+        : buildRecurringLineItems(proposal),
       subscription_data: {
         metadata: baseMetadata,
         ...(proposal.trialDays > 0
