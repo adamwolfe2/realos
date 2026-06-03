@@ -269,6 +269,94 @@ export const PROPOSAL_CATALOG: ReadonlyArray<ProposalCatalogSeed> = [
     sortOrder: 300,
   },
 
+  // ── Engagement scaffolding (one-time, professional-services style) ──
+  // The white-glove enterprise stack. Used for proposals that pair a
+  // recurring tier with a paid kickoff, an initial deep audit, and a
+  // fixed-scope implementation sprint. Pricing is anchor-quality — every
+  // line is meant to be edited on the proposal if a specific deal
+  // negotiates around it. cadence = null marks these as one-time so the
+  // composer puts them in the "one-time" bucket on the share page.
+  {
+    slug: "setup-kickoff-workshop",
+    kind: "ADDON",
+    label: "Kickoff Workshop & Discovery",
+    description:
+      "90-minute strategy session with your broker, web vendor, and asset team. We confirm goals, map the 30-day plan to your CMS and brokerage workflow, and align on who owns what. Bills once at engagement start.",
+    defaultPriceCents: 250000,
+    cadence: null,
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 305,
+  },
+  {
+    slug: "setup-aeo-status-report",
+    kind: "ADDON",
+    label: "AEO Status Report",
+    description:
+      "Deep audit across ChatGPT, Perplexity, Claude, Gemini, and Google AI Overview. Includes per-engine citation breakdown, verbatim AI quotes, schema gap, on-page health 8-check, competitive AI mindshare. Delivered as a shareable brief + PDF. Often bundled into the implementation sprint.",
+    defaultPriceCents: 150000,
+    cadence: null,
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 306,
+  },
+  {
+    slug: "sprint-30-day-implementation",
+    kind: "ADDON",
+    label: "30-Day Implementation Sprint",
+    description:
+      "Fixed-scope, fixed-price implementation engagement. Ship Organization + LocalBusiness + Place JSON-LD, FAQPage schema for top tenant questions, homepage rewrite to 1,200+ words, install Cursive Pixel + GA4 + AI chatbot, and publish the comparison page that names your competitive set. Includes weekly progress calls and final AI-scan delta report.",
+    defaultPriceCents: 1250000,
+    cadence: null,
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 307,
+  },
+
+  // ── Engagement scaffolding (recurring, white-glove) ─────────────────
+  {
+    slug: "addon-white-glove-coordination",
+    kind: "ADDON",
+    label: "White-Glove Coordination",
+    description:
+      "We sit on every weekly call with your agency, web vendor, and broker. We file the tickets in your PM tool, write the briefs for your design team, QA every shipped page, and present results to your asset committee. Typically billed for the first 3 months and discontinued or reduced thereafter.",
+    defaultPriceCents: 250000,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 220,
+  },
+  {
+    slug: "addon-commercial-retainer",
+    kind: "ADDON",
+    label: "Commercial Property Retainer",
+    description:
+      "Recurring engagement for one commercial / Class-A asset. Weekly AI scans across ChatGPT, Perplexity, Claude, Gemini, and Google AI Overview. Monthly executive report sized for the asset committee. AEO Boost ($199/mo) included. On-demand white-glove for new pages and edits.",
+    defaultPriceCents: 150000,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 225,
+  },
+  {
+    slug: "addon-portfolio-success",
+    kind: "ADDON",
+    label: "Portfolio Success Manager",
+    description:
+      "Named LeaseStack contact across 3+ properties under one ownership umbrella. Quarterly business review, portfolio-wide rollup of AI search visibility, dedicated Slack channel, and priority on new feature shipping. Replaces the per-property white-glove line on portfolio deals.",
+    defaultPriceCents: 750000,
+    cadence: "MONTHLY",
+    stripePriceIdMonthly: null,
+    stripePriceIdAnnual: null,
+    active: true,
+    sortOrder: 230,
+  },
+
   // ── Capacity add-ons (metered, billed in arrears) ────────────────────
   // We surface these in the catalog so operators can flag them on a
   // proposal as "what overage looks like". The proposal builder treats

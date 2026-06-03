@@ -11,6 +11,10 @@ import { ViewPing } from "./_components/view-ping";
 import { AcceptButton } from "./_components/accept-button";
 import { LineSection, SummaryRow } from "./_components/line-section";
 import {
+  BriefShellHeader,
+  BriefShellFooter,
+} from "@/components/audit/brief-shell";
+import {
   cadenceLabel,
   cadenceWord,
   formatCents,
@@ -104,34 +108,32 @@ export default async function ProposalSharePage({ params }: PageProps) {
   )}`;
   const pdfHref = `/proposal/${encodeURIComponent(token)}/pdf`;
 
+  const subjectName =
+    proposal.prospectCompany || proposal.prospectName || "Prospect";
+  const generatedAtIso = (proposal.sentAt ?? proposal.createdAt).toISOString();
   return (
     <main className="min-h-screen bg-white text-[#0F172A]">
       <ViewPing token={token} />
-      {/* Header */}
-      <header className="border-b border-[#EAECEF]">
-        <div className="mx-auto flex max-w-3xl items-center justify-between px-6 py-5 sm:py-6">
-          <div className="flex items-baseline gap-3">
-            <span className="text-sm font-semibold tracking-tight text-[#0F172A]">
-              {BRAND_NAME}
-            </span>
-            <span className="hidden text-xs text-[#6B7280] sm:inline">
-              Proposal
-            </span>
-          </div>
-          <div className="flex items-center gap-4 text-xs text-[#6B7280]">
-            <span className="font-mono tabular-nums">{proposal.number}</span>
-            <a
-              href={pdfHref}
-              className="hidden text-[#2563EB] hover:underline sm:inline"
-              rel="noopener"
-            >
-              Download PDF
-            </a>
-          </div>
-        </div>
-      </header>
+      {/* Shared LeaseStack-branded header — same shell the /brief and
+          /audit routes use so prospects see the same visual identity
+          across every artifact we send them. */}
+      <BriefShellHeader
+        subjectName={subjectName}
+        generatedAtIso={generatedAtIso}
+        label="Proposal"
+      />
+      <div className="mx-auto flex max-w-3xl items-center justify-between px-6 pt-5 text-xs text-[#6B7280]">
+        <span className="font-mono tabular-nums">{proposal.number}</span>
+        <a
+          href={pdfHref}
+          className="text-[#2563EB] hover:underline"
+          rel="noopener"
+        >
+          Download PDF
+        </a>
+      </div>
 
-      <div className="mx-auto max-w-3xl px-6 py-8 sm:py-12">
+      <div className="mx-auto max-w-3xl px-6 py-6 sm:py-10">
         {/* Status pill */}
         <div className="mb-6 flex items-center gap-2 text-xs text-[#6B7280]">
           <span
@@ -339,42 +341,49 @@ export default async function ProposalSharePage({ params }: PageProps) {
           </aside>
         </div>
 
-        {/* Footer */}
-        <footer className="mt-16 border-t border-[#EAECEF] pt-6 text-xs text-[#6B7280]">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <p>
-              Questions?{" "}
-              <a
-                href={`mailto:${BRAND_EMAIL}`}
-                className="text-[#2563EB] hover:underline"
-              >
-                {BRAND_EMAIL}
-              </a>
-            </p>
-            <div className="flex items-center gap-4">
-              <Link
-                href="/privacy"
-                className="hover:text-[#2563EB] hover:underline"
-              >
-                Privacy
-              </Link>
-              <Link
-                href="/terms"
-                className="hover:text-[#2563EB] hover:underline"
-              >
-                Terms
-              </Link>
-              <a
-                href={BRAND.url}
-                className="hover:text-[#2563EB] hover:underline"
-                rel="noopener"
-              >
-                {BRAND_NAME}
-              </a>
-            </div>
+        {/* Contact line — kept above the shared shell footer for the
+            "Questions / Privacy / Terms" affordances. */}
+        <div className="mt-12 border-t border-[#EAECEF] pt-5 flex flex-wrap items-center justify-between gap-3 text-xs text-[#6B7280]">
+          <p>
+            Questions?{" "}
+            <a
+              href={`mailto:${BRAND_EMAIL}`}
+              className="text-[#2563EB] hover:underline"
+            >
+              {BRAND_EMAIL}
+            </a>
+          </p>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/privacy"
+              className="hover:text-[#2563EB] hover:underline"
+            >
+              Privacy
+            </Link>
+            <Link
+              href="/terms"
+              className="hover:text-[#2563EB] hover:underline"
+            >
+              Terms
+            </Link>
+            <a
+              href={BRAND.url}
+              className="hover:text-[#2563EB] hover:underline"
+              rel="noopener"
+            >
+              {BRAND_NAME}
+            </a>
           </div>
-        </footer>
+        </div>
       </div>
+
+      {/* Shared shell footer — same on every prospect artifact (brief,
+          audit, proposal). Adds the canonical wordmark + traceability. */}
+      <BriefShellFooter
+        reportId={proposal.number}
+        generatedAtIso={generatedAtIso}
+        liveApiCalls={0}
+      />
     </main>
   );
 }

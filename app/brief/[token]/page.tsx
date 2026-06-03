@@ -21,6 +21,7 @@ import {
 } from "@/components/audit/brief-shell";
 import { BRAND_NAME } from "@/lib/brand";
 import { BRIEF_REGISTRY } from "@/lib/brief/registry";
+import { getScope } from "@/lib/tenancy/scope";
 import brief255Cal from "@/prospects/255-cal.json" assert { type: "json" };
 
 // ---------------------------------------------------------------------------
@@ -48,6 +49,78 @@ type RouteContext = { params: Promise<RouteParams> };
 // reads unchanged. Lives in components/audit/brief-shell.ts.
 const COMPETITOR_URLS = SHARED_COMPETITOR_URLS;
 const engineRunUrl = sharedEngineRunUrl;
+
+// Operator-only chrome surfaced above the prospect-facing content.
+// Renders nothing for anonymous / non-agency viewers — anyone with the
+// brief URL still sees the full report, just without the agency
+// build-proposal affordance.
+function OperatorActionsBar({
+  token,
+  prospectName,
+  domain,
+}: {
+  token: string;
+  prospectName: string;
+  domain: string;
+}) {
+  const proposalHref =
+    `/admin/proposals/new` +
+    `?brand=${encodeURIComponent(prospectName)}` +
+    `&domain=${encodeURIComponent(domain)}` +
+    `&briefToken=${encodeURIComponent(token)}`;
+  return (
+    <section
+      style={{
+        backgroundColor: "#EFF6FF",
+        borderBottom: "1px solid #CFE2FF",
+        padding: "10px 0",
+      }}
+      aria-label="Operator actions"
+    >
+      <div className="max-w-[1080px] mx-auto px-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <p
+          className="text-[11px]"
+          style={{
+            color: "#1D4ED8",
+            fontFamily: "var(--font-mono)",
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+          }}
+        >
+          Operator view · only visible to agency staff
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={proposalHref}
+            className="inline-flex items-center gap-1.5 rounded-md font-semibold text-[12px]"
+            style={{
+              backgroundColor: "#2563EB",
+              color: "#FFFFFF",
+              padding: "6px 12px",
+              letterSpacing: "-0.005em",
+            }}
+          >
+            Build proposal from this brief
+            <ArrowRight className="w-3 h-3" />
+          </Link>
+          <Link
+            href="/admin/proposals"
+            className="inline-flex items-center rounded-md text-[12px]"
+            style={{
+              backgroundColor: "#FFFFFF",
+              color: "#1E2A3A",
+              border: "1px solid #CFE2FF",
+              padding: "6px 12px",
+              fontWeight: 500,
+            }}
+          >
+            All proposals
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+}
 
 // Single source of truth for the JSON shape. Mirrors the writer script.
 type BriefJson = typeof brief255Cal;
@@ -83,6 +156,12 @@ export default async function BriefPage({ params }: RouteContext) {
   const hit = lookup(token);
   if (!hit) notFound();
   const { entry, data } = hit;
+  // Operator chrome — only surfaced to authed agency-side viewers
+  // (Adam + the LeaseStack team). Prospects never see this strip.
+  // getScope() returns null for anonymous viewers so the check is
+  // safe to render on a public route.
+  const scope = await getScope().catch(() => null);
+  const isOperator = scope?.role === "AGENCY_OWNER";
 
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
@@ -91,6 +170,13 @@ export default async function BriefPage({ params }: RouteContext) {
         generatedAtIso={data.generatedAtIso}
         label="Prospect brief"
       />
+      {isOperator ? (
+        <OperatorActionsBar
+          token={token}
+          prospectName={entry.prospectName}
+          domain={data.domain}
+        />
+      ) : null}
       <Hero data={data} />
       <MethodologyStrip data={data} />
       <GapSection data={data} />
