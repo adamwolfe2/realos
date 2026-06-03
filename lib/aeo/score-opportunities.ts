@@ -25,13 +25,13 @@ import { prisma } from "@/lib/db";
 import {
   fetchAiKeywordVolume,
   fetchSerpAiSummary,
+  isDataforSeoConfigured,
 } from "@/lib/seo/dataforseo";
 import {
   computeOpportunityScore,
   type OpportunityInputs,
 } from "./opportunity-score";
 import { resolveEngineSource } from "./engines";
-import type { Prisma } from "@prisma/client";
 
 const TOP_QUERIES = 20;
 const OVERVIEW_TOP_QUERIES = 5;
@@ -59,9 +59,6 @@ export async function scoreOrgOpportunities(
   orgId: string,
 ): Promise<ScoreOpportunitiesResult> {
   const source = resolveEngineSource();
-  const dataforseoConfigured =
-    !!process.env.DATAFORSEO_LOGIN?.trim() &&
-    !!process.env.DATAFORSEO_PASSWORD?.trim();
 
   const result: ScoreOpportunitiesResult = {
     orgId,
@@ -74,7 +71,7 @@ export async function scoreOrgOpportunities(
     errors: [],
   };
 
-  if (source !== "dataforseo" || !dataforseoConfigured) {
+  if (source !== "dataforseo" || !isDataforSeoConfigured()) {
     return result;
   }
 
@@ -157,7 +154,26 @@ export async function scoreOrgOpportunities(
       .slice(0, OVERVIEW_TOP_QUERIES)
       .map((q) => q.query);
 
+    // Week-bucket idempotency: skip when we already captured an
+    // AeoOverviewSnapshot for this (orgId, query) within the last 6
+    // days. Prevents the cron from piling up identical snapshots when
+    // it's triggered manually mid-week, and keeps prod row growth
+    // predictable at ~weekly cadence.
+    const weekAgo = new Date(Date.now() - 6 * 24 * 60 * 60 * 1000);
+    const recentSnapshots = await prisma.aeoOverviewSnapshot.findMany({
+      where: {
+        orgId,
+        capturedAt: { gte: weekAgo },
+        query: { in: overviewQueries },
+      },
+      select: { query: true },
+    });
+    const recentByQuery = new Set(
+      recentSnapshots.map((s) => s.query.toLowerCase()),
+    );
+
     for (const query of overviewQueries) {
+      if (recentByQuery.has(query.toLowerCase())) continue;
       try {
         const ai = await fetchSerpAiSummary(
           { query },
@@ -229,6 +245,9 @@ async function loadTopGscQueries(
       impressions: true,
       position: true,
     },
+    // Freshness wins when the cap hits: a chatty tenant past the cap
+    // gets the most recent N rows instead of an arbitrary subset.
+    orderBy: { date: "desc" },
     take: 5000,
   });
   const agg = new Map<
@@ -305,19 +324,35 @@ async function loadMentionCounts(
   for (const keyword of keywords) {
     map.set(keyword.toLowerCase(), { self: 0, competitor: 0 });
   }
+  // Lowercase the keywords once so the inner loop doesn't re-cast per
+  // snapshot. Empty keywords (defensive) get skipped via the length
+  // guard later.
+  const keywordsLower = keywords.map((k) => ({
+    raw: k,
+    lower: k.toLowerCase(),
+  }));
   for (const snap of snapshots) {
     const promptLower = snap.prompt.toLowerCase();
-    const matchedKeyword = keywords.find((k) =>
-      promptLower.includes(k.toLowerCase()),
+    // Credit EVERY matching keyword, not just the first. A prompt like
+    // "best apartments near UC Berkeley" should count toward both
+    // "apartments" and "uc berkeley" when both are in the GSC top-20.
+    // The previous greedy-find missed the longer of overlapping queries.
+    const matchedKeywords = keywordsLower.filter(
+      (k) => k.lower.length > 0 && promptLower.includes(k.lower),
     );
-    if (!matchedKeyword) continue;
+    if (matchedKeywords.length === 0) continue;
     const raw = snap.mentions as unknown;
     if (!Array.isArray(raw)) continue;
-    const bucket = map.get(matchedKeyword.toLowerCase());
-    if (!bucket) continue;
     for (const m of raw as Partial<Mention>[]) {
-      if (m?.kind === "self") bucket.self += 1;
-      else if (m?.kind === "competitor") bucket.competitor += 1;
+      const isSelf = m?.kind === "self";
+      const isCompetitor = m?.kind === "competitor";
+      if (!isSelf && !isCompetitor) continue;
+      for (const kw of matchedKeywords) {
+        const bucket = map.get(kw.lower);
+        if (!bucket) continue;
+        if (isSelf) bucket.self += 1;
+        else bucket.competitor += 1;
+      }
     }
   }
   return map;
@@ -356,7 +391,3 @@ function citedUrlMatchesHost(url: string, primaryHost: string): boolean {
     return false;
   }
 }
-
-// Type helper for Prisma JSON column casts inside scoreRows persistence —
-// kept here for use sites that need to widen the inputs payload.
-export type AeoOpportunityInputJson = Prisma.InputJsonValue;

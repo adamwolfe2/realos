@@ -392,10 +392,14 @@ export default async function AeoPage() {
   // which the AEO cron computes when AEO_ENGINE_SOURCE=dataforseo. Empty
   // arrays in direct mode; widgets show their own empty-state branches.
   // ---------------------------------------------------------------------
+  // Over-fetch so re-sorting by recomputed score still picks the right
+  // top-10 after a formula change. 30 rows max per tenant ensures the
+  // window covers any sensible re-ranking even if the formula reshapes
+  // ordering significantly.
   const opportunityRowsRaw = await prisma.aeoOpportunityScore.findMany({
     where: { ...where },
     orderBy: { score: "desc" },
-    take: 10,
+    take: 30,
     select: {
       keyword: true,
       score: true,
@@ -408,8 +412,13 @@ export default async function AeoPage() {
       onPageSeoScore: true,
     },
   });
+  // Re-derive both score and breakdown from the persisted inputs so the
+  // UI is always consistent with the current formula. The DB's `score`
+  // column is the value AT THE TIME the cron last computed it; if we
+  // tweak weights between cron runs the DB row becomes stale. Pure
+  // recomputation here is cheap (≤10 rows × constant-time math).
   const opportunityRows: OpportunityRow[] = opportunityRowsRaw.map((row) => {
-    const { breakdown } = computeOpportunityScore({
+    const inputs = {
       gscClicks28d: row.gscClicks28d,
       gscImpressions28d: row.gscImpressions28d,
       gscAvgPosition: row.gscAvgPosition,
@@ -417,10 +426,11 @@ export default async function AeoPage() {
       yourMentionCount: row.yourMentionCount,
       competitorMentionCount: row.competitorMentionCount,
       onPageSeoScore: row.onPageSeoScore,
-    });
+    };
+    const { score, breakdown } = computeOpportunityScore(inputs);
     return {
       keyword: row.keyword,
-      score: row.score,
+      score,
       gscClicks28d: row.gscClicks28d,
       gscImpressions28d: row.gscImpressions28d,
       aiSearchVolume: row.aiSearchVolume,
@@ -429,6 +439,9 @@ export default async function AeoPage() {
       breakdown,
     };
   });
+  // Sort by the recomputed score so a formula change immediately
+  // reshapes the leaderboard on the next page render.
+  opportunityRows.sort((a, b) => b.score - a.score);
 
   // Latest AI Overview row per query (top-5 distinct queries). Subquery
   // pattern: pull last-30d rows, reduce in memory to the latest per query.
