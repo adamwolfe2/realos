@@ -12,6 +12,11 @@ import { PageHeader, SectionCard } from "@/components/admin/page-header";
 
 export const metadata: Metadata = { title: "Chatbot" };
 export const dynamic = "force-dynamic";
+// Server actions on this page (notably the lead-routing backfill in
+// lib/actions/chatbot-config.ts) can run up to ~50 sec when processing
+// a large queue. Explicitly request the Vercel Pro ceiling so a
+// future serverless-default downgrade doesn't silently cap us.
+export const maxDuration = 60;
 
 // Builds the canonical embed URL for the install snippet. We always serve
 // the snippet from `www.leasestack.co` so the host page doesn't pay the

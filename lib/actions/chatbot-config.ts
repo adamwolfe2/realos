@@ -522,23 +522,19 @@ export async function backfillChatbotLeadEmails(args: {
       "@/lib/chatbot/send-prospect-profile"
     );
 
-    // Concurrency 1 + 1500ms throttle between sends. The previous
-    // parallel-3 burst pattern triggered Google Workspace's
-    // anti-bulk filter on the recipient end: 11 emails arriving
-    // within ~5 seconds caused most to land in "Generic Temporary
-    // Delivery Failure" (Resend reported Sent→Delivered→Bounced
-    // because Google's spam engine deferred them asynchronously
-    // after edge-accept). Adam diagnosed via Resend's bounce details
-    // 2026-06-03.
+    // Concurrency 1 with NO artificial sleep — Anthropic's natural
+    // 1-2 sec per extractProspectProfile call is already enough
+    // spacing for Google Workspace's bulk filter. The previous
+    // 1.5-sec setTimeout on top of the extract latency was pushing
+    // each conversation to ~3.5 sec wall-clock; an 11-conversation
+    // backfill hit the Vercel serverless ceiling before returning,
+    // which surfaced as the "Backfill request failed before
+    // returning" error in the panel. Adam caught this 2026-06-03.
     //
-    // Spreading sends to 1 per 1.5 sec keeps us under Google's
-    // per-recipient rate ceiling (heuristic: ~1 message every
-    // 0.5-1 sec is safe for warmed senders, longer for cold). At
-    // 1.5 sec/email a 33-conversation backfill takes ~50 sec which
-    // is the upper bound of the budget — we'll process most queues
-    // in one click and any overflow returns "timed out" cleanly.
+    // Serial sends + ~2 sec organic delay = 11 emails over ~22 sec.
+    // That's still well under Google's per-recipient bulk threshold
+    // (heuristic: 1 / 0.5-1 sec for warm senders).
     const CONCURRENCY = 1;
-    const PER_SEND_DELAY_MS = 1500;
     let sent = 0;
     let skipped = 0;
     let failed = 0;
@@ -572,11 +568,6 @@ export async function backfillChatbotLeadEmails(args: {
           }),
         ),
       );
-      // Throttle delay between sends to avoid recipient-side bulk
-      // filters. Skip on the final iteration.
-      if (i + CONCURRENCY < eligible.length) {
-        await new Promise((r) => setTimeout(r, PER_SEND_DELAY_MS));
-      }
       for (const r of results) {
         if (r.status !== "fulfilled") {
           failed += 1;
