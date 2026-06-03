@@ -1679,6 +1679,17 @@ model ChatbotConversation {
   capturedEmail String?
   capturedPhone String?
 
+  // Rich extracted profile (Claude Haiku over the full message history).
+  // Shape owned by lib/chatbot/extract-prospect-profile.ts ProspectProfile:
+  // budget, moveInDate, moveOutDate, roomType, partySize, occupation,
+  // employer, mustHaves, additionalNotes, etc. Null until the first
+  // extraction lands. Surfaced inside the agency lead-notify email.
+  prospectProfile          Json?
+  /// Timestamp of the most recent rich-profile email send. Used by the
+  /// 5-min digest cron + the handoff route to avoid spamming the agency
+  /// more than once per conversation.
+  prospectProfileEmailedAt DateTime?
+
   // Engagement
   messageCount  Int       @default(0)
   lastMessageAt DateTime  @default(now())
@@ -1703,6 +1714,9 @@ model ChatbotConversation {
   @@index([leadId])
   @@index([propertyId])
   @@index([sessionId])
+  // Digest cron filter: rows that need a prospect-profile email. The
+  // partial index trims the scan to "not yet emailed" rows only.
+  @@index([lastMessageAt(sort: Desc)], map: "ChatbotConversation_digestQueue_idx")
 }
 
 // Operator -> live visitor outbound message. The widget polls

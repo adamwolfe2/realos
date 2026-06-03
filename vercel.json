@@ -105,6 +105,10 @@
       "schedule": "0 4 * * *"
     },
     {
+      "path": "/api/cron/chatbot-profile-digest",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/cron/seo-scan-worker",
       "schedule": "* * * * *"
     },

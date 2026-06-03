@@ -11,6 +11,7 @@ import {
   ChatbotConversationStatus,
   NoteType,
 } from "@prisma/client";
+import { sendProspectProfileForConversation } from "@/lib/chatbot/send-prospect-profile";
 
 export async function POST(
   _req: NextRequest,
@@ -96,6 +97,21 @@ export async function POST(
         // Notification failure must not break the handoff itself.
         console.error("[handoff] notification create failed", e);
       });
+
+    // Adam 2026-06-03: handoff should ALSO immediately fire the rich
+    // prospect-profile digest email to the agency's notifyLeadEmail —
+    // the bell + portal page are great for operators sitting in the
+    // dashboard, but the offsite team (Jessica @ TC etc) need the
+    // profile in their inbox right now, not 5 minutes later when the
+    // cron next fires. force: true overrides the 30-min debounce so a
+    // re-handoff still lands fresh data.
+    void sendProspectProfileForConversation({
+      conversationId: id,
+      force: true,
+      reason: "handoff",
+    }).catch((err) => {
+      console.error("[handoff] prospect-profile email failed", err);
+    });
 
     return NextResponse.json({ ok: true, status: updated.status });
   } catch (err) {
