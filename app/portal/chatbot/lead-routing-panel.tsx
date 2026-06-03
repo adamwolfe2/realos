@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { Mail, RefreshCw } from "lucide-react";
 import {
   backfillChatbotLeadEmails,
+  sendTestLeadEmail,
   updateLeadRouting,
 } from "@/lib/actions/chatbot-config";
 
@@ -30,11 +31,13 @@ export function LeadRoutingPanel({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [backfillPending, startBackfill] = useTransition();
+  const [testPending, startTest] = useTransition();
   const [email, setEmail] = useState(notifyLeadEmail ?? "");
   const [enabled, setEnabled] = useState(notifyOnChatbotLead);
   const [error, setError] = useState<string | null>(null);
   const [backfillDayRange, setBackfillDayRange] = useState<7 | 30 | 90>(30);
   const [candidateCount, setCandidateCount] = useState<number | null>(null);
+  const [diagnostic, setDiagnostic] = useState<string | null>(null);
 
   // Dry-run the backfill query whenever the look-back window changes
   // (or on mount) so the operator sees the candidate count BEFORE
@@ -147,13 +150,40 @@ export function LeadRoutingPanel({
           <p className="text-[12px] text-destructive">{error}</p>
         ) : null}
 
-        <div className="flex items-center gap-3 pt-1">
+        <div className="flex items-center gap-3 pt-1 flex-wrap">
           <button
             type="submit"
             disabled={pending}
             className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-semibold text-white bg-primary hover:bg-primary-dark disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {pending ? "Saving…" : "Save lead routing"}
+          </button>
+          <button
+            type="button"
+            disabled={
+              testPending || recipientCount === 0 || !enabled
+            }
+            onClick={() => {
+              setDiagnostic(null);
+              startTest(async () => {
+                const result = await sendTestLeadEmail();
+                if (!result.ok) {
+                  const detail = result.details ? ` · ${result.details}` : "";
+                  toast.error(`Test failed: ${result.error}${detail}`);
+                  setDiagnostic(`✗ ${result.error}${detail}`);
+                  return;
+                }
+                toast.success(
+                  `Test sent to ${result.sentTo.join(", ")} · Resend id ${result.resendId ?? "(none)"}`,
+                );
+                setDiagnostic(
+                  `✓ Test sent to ${result.sentTo.join(", ")} · Resend id ${result.resendId ?? "(none)"}. If you don't see it in 60 seconds, check spam.`,
+                );
+              });
+            }}
+            className="inline-flex items-center justify-center h-9 px-4 rounded-md text-[13px] font-medium border border-border bg-background hover:bg-muted/40 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {testPending ? "Sending…" : "Send test email"}
           </button>
           {recipientCount > 0 && enabled ? (
             <span className="text-[11.5px] text-emerald-600 font-medium">
@@ -162,6 +192,18 @@ export function LeadRoutingPanel({
             </span>
           ) : null}
         </div>
+
+        {diagnostic ? (
+          <pre
+            className={`text-[11.5px] font-mono whitespace-pre-wrap leading-relaxed ${
+              diagnostic.startsWith("✓")
+                ? "text-emerald-600"
+                : "text-destructive"
+            }`}
+          >
+            {diagnostic}
+          </pre>
+        ) : null}
       </form>
 
       {/* Backfill / catch-up tool. Sits below the save form so the
@@ -249,6 +291,7 @@ export function LeadRoutingPanel({
                 });
                 if (!result.ok) {
                   toast.error(result.error);
+                  setDiagnostic(`✗ Backfill failed: ${result.error}`);
                   return;
                 }
                 toast.success(
@@ -256,6 +299,21 @@ export function LeadRoutingPanel({
                     result.skipped > 0 ? ` · ${result.skipped} skipped` : ""
                   }${result.failed > 0 ? ` · ${result.failed} failed` : ""}`,
                 );
+                // Per-conversation diagnostic so the operator can see
+                // WHY emails skipped or failed (suppression, extraction
+                // null, Resend error, etc). Pull the unique non-"sent"
+                // reasons up top so the actionable failure modes are
+                // visible without scrolling.
+                if (result.reasons && result.reasons.length > 0) {
+                  const failures = result.reasons.filter(
+                    (r) => r !== "sent",
+                  );
+                  const summary =
+                    failures.length === 0
+                      ? `✓ All ${result.sent} emails sent successfully.`
+                      : `${result.sent}/${result.candidateCount} sent. ${failures.length} not sent:\n  · ${[...new Set(failures)].slice(0, 5).join("\n  · ")}`;
+                  setDiagnostic(summary);
+                }
                 // Refresh the candidate count for a UX confirmation
                 // ("0 captured conversations ready to email" after).
                 const fresh = await backfillChatbotLeadEmails({

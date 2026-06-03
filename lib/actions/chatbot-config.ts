@@ -306,6 +306,125 @@ export async function updateLeadRouting(
 }
 
 // ---------------------------------------------------------------------------
+// sendTestLeadEmail — fire a synthetic prospect-profile email to the
+// configured notifyLeadEmail recipients to verify the entire chain
+// (Resend domain, suppression list, formatting, deliverability) WITHOUT
+// burning a real conversation or an Anthropic extract call. Operator
+// clicks the "Send test email" button on /portal/chatbot's Lead
+// routing panel; if it arrives in Jessica's inbox, the plumbing is
+// healthy. If not, the response carries the specific Resend error so
+// we can fix it. Diagnostic-only — never persists anything.
+// ---------------------------------------------------------------------------
+
+export type TestEmailResult =
+  | { ok: true; sentTo: string[]; resendId: string | null }
+  | { ok: false; error: string; details?: string };
+
+export async function sendTestLeadEmail(): Promise<TestEmailResult> {
+  try {
+    const scope = await requireScope();
+    const org = await prisma.organization.findUnique({
+      where: { id: scope.orgId },
+      select: {
+        name: true,
+        shortName: true,
+        notifyLeadEmail: true,
+        notifyOnChatbotLead: true,
+      },
+    });
+    if (!org) return { ok: false, error: "Organization not found" };
+    const recipients = (org.notifyLeadEmail ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0 && s.includes("@"));
+    if (recipients.length === 0) {
+      return {
+        ok: false,
+        error:
+          "No notifyLeadEmail configured. Save a recipient first, then test.",
+      };
+    }
+    if (!org.notifyOnChatbotLead) {
+      return {
+        ok: false,
+        error:
+          "notifyOnChatbotLead is disabled. Enable the channel toggle first.",
+      };
+    }
+
+    const { buildProspectProfileEmail } = await import(
+      "@/lib/email/prospect-profile-email"
+    );
+    const { sendBrandedEmail, APP_URL } = await import("@/lib/email/shared");
+
+    const profile = {
+      fullName: "Test Prospect",
+      email: "test@example.com",
+      phone: "(555) 000-0000",
+      moveInDate: "September 1",
+      moveOutDate: null,
+      leaseTerm: "12 months",
+      roomType: "1BR",
+      budgetMonthly: "$2,800",
+      partySize: "myself + partner",
+      occupation: "test scenario",
+      employer: null,
+      petsAndKids: "one cat",
+      reasonForMove: "test send to verify the pipe",
+      mustHaves: ["in-unit washer/dryer", "parking"],
+      niceToHaves: null,
+      competitorsConsidering: null,
+      sentiment: "warm" as const,
+      followUpNeeded:
+        "This is a test email. The real chatbot will send actual prospect profiles to this inbox.",
+      notes: "If you see this, the Lead routing pipeline is working end-to-end.",
+    };
+
+    const { html, text, subject } = buildProspectProfileEmail({
+      orgName: org.shortName ?? org.name,
+      propertyName: null,
+      portalUrl: `${APP_URL}/portal/conversations/test`,
+      profile,
+      messageCount: 0,
+      lastMessageAtIso: new Date().toISOString(),
+      pageUrl: null,
+    });
+
+    const result = await sendBrandedEmail({
+      to: recipients,
+      subject: `[TEST] ${subject}`,
+      html,
+      text,
+      template: "chatbot-prospect-profile-test",
+      category: "transactional",
+      orgId: scope.orgId,
+    });
+
+    if (!result.ok) {
+      return {
+        ok: false,
+        error: "Resend rejected the send",
+        details: result.error,
+      };
+    }
+    return {
+      ok: true,
+      sentTo: recipients,
+      resendId: result.id ?? null,
+    };
+  } catch (err) {
+    if (err instanceof ForbiddenError) {
+      return { ok: false, error: err.message };
+    }
+    console.error("sendTestLeadEmail failed", err);
+    return {
+      ok: false,
+      error: err instanceof Error ? err.message : "Test send failed",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Backfill — re-send the rich prospect-profile email for every chatbot
 // conversation in the last N days that captured a lead. Used right
 // after an operator first sets notifyLeadEmail — every conversation
@@ -325,6 +444,9 @@ export type BackfillResult =
       skipped: number;
       failed: number;
       dryRun: boolean;
+      /** Per-conversation outcome reasons for the operator to debug a
+       *  failed backfill — empty on dry runs. */
+      reasons?: string[];
     }
   | { ok: false; error: string };
 
@@ -404,6 +526,7 @@ export async function backfillChatbotLeadEmails(args: {
     let sent = 0;
     let skipped = 0;
     let failed = 0;
+    const reasons: string[] = [];
     for (let i = 0; i < eligible.length; i += CONCURRENCY) {
       const slice = eligible.slice(i, i + CONCURRENCY);
       const results = await Promise.allSettled(
@@ -418,12 +541,24 @@ export async function backfillChatbotLeadEmails(args: {
       for (const r of results) {
         if (r.status !== "fulfilled") {
           failed += 1;
+          reasons.push(
+            `rejected: ${r.reason instanceof Error ? r.reason.message : String(r.reason).slice(0, 200)}`,
+          );
           continue;
         }
         const v = r.value;
-        if (v.ok && v.sent) sent += 1;
-        else if (v.ok && !v.sent) skipped += 1;
-        else failed += 1;
+        if (v.ok && v.sent) {
+          sent += 1;
+          reasons.push("sent");
+        } else if (v.ok && !v.sent) {
+          skipped += 1;
+          reasons.push(`skipped: ${v.skipped}`);
+        } else {
+          failed += 1;
+          reasons.push(
+            `failed: ${"error" in v ? v.error : "unknown"}`,
+          );
+        }
       }
     }
 
@@ -444,6 +579,7 @@ export async function backfillChatbotLeadEmails(args: {
       skipped,
       failed,
       dryRun: false,
+      reasons,
     };
   } catch (err) {
     if (err instanceof ForbiddenError) {
