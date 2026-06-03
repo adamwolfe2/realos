@@ -38,10 +38,13 @@ export async function GET(req: Request) {
   // export is arguably worse to leak than a JSON page: it leaves the
   // platform as a file the attacker keeps forever. Always intersect
   // the URL selection with scope.allowedPropertyIds.
-  const propertyIds = await parsePropertyFilter({
-    properties: url.searchParams.get("properties") ?? undefined,
-    property: url.searchParams.get("property") ?? undefined,
-  });
+  const propertyIds = await parsePropertyFilter(
+    {
+      properties: url.searchParams.get("properties") ?? undefined,
+      property: url.searchParams.get("property") ?? undefined,
+    },
+    scope.orgId,
+  );
   const where: Record<string, unknown> = {
     ...tenantWhere(scope),
     ...propertyWhereFragment(scope, propertyIds),

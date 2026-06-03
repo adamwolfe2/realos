@@ -239,7 +239,11 @@ export default async function PortalHome({
   // multi-select dropdown at the top. Direct-prisma KPI queries
   // honor the filter; helper functions that don't yet accept
   // propertyIds remain org-wide and are flagged in the UI.
-  const requestedIds = await parsePropertyFilter(sp);
+  // Pass scope.orgId so a stale ACTIVE_PROPERTY_COOKIE pointing at an
+  // EXCLUDED / IMPORTED / ARCHIVED property gets validated + cleared
+  // instead of silently scoping every KPI to zero. Root cause of the
+  // SG Real Estate "dashboard is empty" report (2026-06-03).
+  const requestedIds = await parsePropertyFilter(sp, scope.orgId);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
   const propertyClause = propertyWhereFragment(scope, requestedIds);

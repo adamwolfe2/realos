@@ -107,7 +107,7 @@ export default async function PropertiesList({
   // Property gate: respect UserPropertyAccess so a property-restricted
   // user (Norman → Telegraph Commons only) cannot see sibling
   // properties even on the org-wide list.
-  const requestedIds = await parsePropertyFilter(sp);
+  const requestedIds = await parsePropertyFilter(sp, scope.orgId);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const effectiveIds = effectivePropertyIds(scope, requestedIds);
   // Build the visibility constraint. If the user is restricted, filter

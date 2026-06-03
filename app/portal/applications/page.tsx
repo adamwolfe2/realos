@@ -71,7 +71,7 @@ export default async function ApplicationsPage({
 
   const scope = await requireScope();
   const sp = await searchParams;
-  const requestedIds = await parsePropertyFilter(sp);
+  const requestedIds = await parsePropertyFilter(sp, scope.orgId);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const propertyClause = propertyWhereFragment(scope, requestedIds);
   try {

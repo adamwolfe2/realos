@@ -144,7 +144,7 @@ export default async function VisitorsPage({
 
   const scope = await requireScope();
   const tenant = tenantWhere<{ orgId?: string }>(scope);
-  const propertyIds = await parsePropertyFilter(params);
+  const propertyIds = await parsePropertyFilter(params, scope.orgId);
 
   const allProperties = await prisma.property.findMany({
     where: marketablePropertyWhere(scope.orgId),

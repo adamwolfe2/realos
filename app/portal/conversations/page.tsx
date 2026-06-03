@@ -78,7 +78,7 @@ export default async function ConversationsList({
 
   const scope = await requireScope();
   const sp = await searchParams;
-  const propertyIds = await parsePropertyFilter(sp);
+  const propertyIds = await parsePropertyFilter(sp, scope.orgId);
 
   const allProperties = await prisma.property.findMany({
     where: marketablePropertyWhere(scope.orgId),

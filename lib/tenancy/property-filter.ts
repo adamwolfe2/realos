@@ -56,6 +56,17 @@ type ScopeWithGate = {
  */
 export async function parsePropertyFilter(
   sp: PropertyFilterParams,
+  /// Optional org scope. When provided, a cookie-sourced property id is
+  /// validated against the org's marketable property set. A cookie
+  /// holding an EXCLUDED / IMPORTED / ARCHIVED property (or one from a
+  /// different org entirely) is treated as if no filter was set, AND
+  /// the stale cookie is cleared so subsequent page loads don't repeat
+  /// the lookup.
+  ///
+  /// Without the orgId param the function behaves exactly as before
+  /// (no validation) — back-compat for the 20+ existing call sites that
+  /// don't yet pass scope.
+  orgId?: string,
 ): Promise<string[] | null> {
   const fromUrl = parsePropertyFilterUrlOnly(sp);
   if (fromUrl !== null) return fromUrl;
@@ -63,9 +74,44 @@ export async function parsePropertyFilter(
   // by the sidebar switcher. Dynamic import keeps this file usable in
   // contexts without next/headers (tests, edge functions that don't
   // need the cookie path).
-  const { getActivePropertyId } = await import("@/lib/portal/active-property");
+  const { getActivePropertyId, setActivePropertyId } = await import(
+    "@/lib/portal/active-property"
+  );
   const cookieId = await getActivePropertyId();
-  return cookieId ? [cookieId] : null;
+  if (!cookieId) return null;
+
+  // Without orgId we can't validate — preserve legacy behavior.
+  if (!orgId) return [cookieId];
+
+  // Validate against the org's marketable set. A cookie holding a
+  // non-marketable id is the smoking-gun cause of "dashboard is empty
+  // even though the DB has data" (operator picks a property in the
+  // switcher, that property is later auto-classified EXCLUDED by an
+  // AppFolio re-sync, the cookie sticks, every KPI query silently
+  // scopes to a property with zero rows). When we detect this, fall
+  // through to portfolio view AND clear the stale cookie so a future
+  // request doesn't repeat the bug.
+  const { prisma } = await import("@/lib/db");
+  const { marketablePropertyWhere } = await import(
+    "@/lib/properties/marketable"
+  );
+  const exists = await prisma.property
+    .findFirst({
+      where: { ...marketablePropertyWhere(orgId), id: cookieId },
+      select: { id: true },
+    })
+    .catch(() => null);
+  if (exists) return [cookieId];
+
+  // Best-effort cookie clear. Don't await indefinitely; if the
+  // cookies() API is unavailable in the current context (rare), the
+  // next page load will simply re-detect + re-clear.
+  try {
+    await setActivePropertyId(null);
+  } catch {
+    /* ignore — surfaces on next request */
+  }
+  return null;
 }
 
 /**
