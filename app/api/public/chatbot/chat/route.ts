@@ -181,7 +181,26 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  const systemPrompt = buildSystemPrompt(org as ChatbotTenant);
+  // Look up the conversation's captured contact info (pre-chat capture
+  // form + any prior in-conversation extraction). Pre-chat capture lands
+  // capturedName / capturedEmail / capturedPhone on the row BEFORE the
+  // first message is sent — without threading those into the system
+  // prompt the bot asks for the email again on its first reply (and then
+  // asks the user to "confirm" when they re-type it, which was Adam's
+  // exact bug report 2026-06-03). Best-effort: a lookup miss collapses
+  // to undefined and the bot falls back to the contact-capture script.
+  const captured = await prisma.chatbotConversation
+    .findUnique({
+      where: { sessionId },
+      select: { capturedName: true, capturedEmail: true, capturedPhone: true },
+    })
+    .catch(() => null);
+
+  const systemPrompt = buildSystemPrompt(org as ChatbotTenant, {
+    name: captured?.capturedName ?? null,
+    email: captured?.capturedEmail ?? null,
+    phone: captured?.capturedPhone ?? null,
+  });
   const userAgent = req.headers.get("user-agent") ?? undefined;
   // Match the chat's host pageUrl to a specific property when possible.
   // Multi-property tenants used to lose attribution because the previous
