@@ -22,6 +22,15 @@ export type BriefRegistryEntry = {
 };
 
 export const BRIEF_REGISTRY: Record<string, BriefRegistryEntry> = {
+  // Primary token — alphanumeric-only so it survives any markdown
+  // autolinker, messaging app, or email client that might clip a
+  // trailing special character.
+  bc919acc77c6f93a75373ea9: {
+    prospectName: "255 Cal",
+    dataFile: "255-cal",
+  },
+  // Kept live as a fallback for anyone who already received the
+  // base64url token. Routes to the same brief data.
   PgV3Av3WmG8o10bf_YJQB3a_: {
     prospectName: "255 Cal",
     dataFile: "255-cal",
