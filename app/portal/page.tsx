@@ -795,7 +795,7 @@ export default async function PortalHome({
     // hero reads as the actual marketing surface area:
     //
     //   Lead rows                — form / chatbot opt-ins
-    // + Identified visitors      — AudienceLab pixel resolved to a
+    // + Identified visitors      — visitor pixel resolved to a real
     //                              person; the visitor feed lives here.
     //                              For single-property orgs (like TC)
     //                              pixel visitors aren't always

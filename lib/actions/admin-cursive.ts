@@ -9,14 +9,14 @@ import { AuditAction, PixelRequestStatus, Prisma } from "@prisma/client";
 import { sendPixelReadyCustomerEmail } from "@/lib/email/pixel-emails";
 
 // ---------------------------------------------------------------------------
-// Agency-only Cursive (AudienceLab) integration management.
+// Agency-only Cursive (the upstream pixel provider) integration management.
 //
-// V4 pixels are provisioned in the AudienceLab UI, not via API. The agency
+// V4 pixels are provisioned in the the upstream pixel provider UI, not via API. The agency
 // pastes the pixel ID + segment ID here so:
 //   - Incoming webhook events at /api/webhooks/cursive route to the right
 //     tenant via cursivePixelId match
 //   - The "Sync from segment" button can pull resolved visitors from the
-//     AudienceLab REST API (POST /segments/{id}) to backfill / reconcile
+//     the upstream pixel provider REST API (POST /segments/{id}) to backfill / reconcile
 // ---------------------------------------------------------------------------
 
 const settingsSchema = z.object({
@@ -157,7 +157,7 @@ export async function saveCursiveSettings(
   //
   // Pre-fix the fulfillment email fired the moment ops saved a pixel_id,
   // BEFORE the ops engineer had pasted the tenant webhook URL into the
-  // AudienceLab pixel UI. Customers installed the snippet, AL fired
+  // the upstream pixel provider pixel UI. Customers installed the snippet, AL fired
   // events, and those events vanished into the void because AL didn't
   // know where to send them. The platform fell back to the 30-min cron
   // and the per-page manual sync button — exactly the "I keep pressing
@@ -290,14 +290,14 @@ async function fulfillPendingRequests(args: {
 }
 
 function buildInstallSnippet(pixelId: string): string {
-  // AudienceLab serves the V4 pixel script via cdn.idpixel.app. The URL
+  // the upstream pixel provider serves the V4 pixel script via cdn.idpixel.app. The URL
   // pattern is what the AL "Install Pixel" modal hands operators today; if
   // AL changes the canonical URL we update this single helper.
   return `<script src="https://cdn.idpixel.app/v1/idp-analytics-${pixelId}.min.js" defer></script>`;
 }
 
 // ---------------------------------------------------------------------------
-// Sync from segment — pulls resolved visitors from the AudienceLab segments
+// Sync from segment — pulls resolved visitors from the the upstream pixel provider segments
 // REST API and feeds them through the same processing path as the webhook.
 // Useful for backfill, reconciliation, or pulling pre-pixel-install history.
 // ---------------------------------------------------------------------------
@@ -376,14 +376,14 @@ export async function runCursiveSegmentSync(
   }
 
   // Always advance the segment-sync timestamp so the throttle and the
-  // "last pull from AudienceLab" surface reflect this run.
+  // "last pull from the upstream pixel provider" surface reflect this run.
   //
   // CRITICAL: also advance lastEventAt when the pull discovered NEW
   // visitors. Previously this was only bumped by direct webhook events
   // hitting /api/webhooks/cursive — so when an operator clicked "Sync now"
   // on /portal/visitors and pulled 12 fresh visitors from the AL segment,
   // the integration card kept showing "Last event 16d ago" even though
-  // we just proved the pixel was firing. AudienceLab only adds a visitor
+  // we just proved the pixel was firing. the upstream pixel provider only adds a visitor
   // to a segment AFTER the pixel sees them, so `created > 0` is direct
   // evidence the pixel fired recently — we just learned about it via the
   // pull endpoint instead of the webhook. Updates alone aren't enough
@@ -437,7 +437,7 @@ export async function syncCursiveSegment(
 }
 
 function extractItems(json: Record<string, unknown>): Array<Record<string, unknown>> {
-  // AudienceLab segments responses we've seen come back in a few shapes.
+  // the upstream pixel provider segments responses we've seen come back in a few shapes.
   const candidates: unknown[] = [
     json.results,
     json.data,

@@ -16,7 +16,7 @@ import {
 
 // POST /api/webhooks/cursive
 //
-// AudienceLab SuperPixel webhook receiver, shared-secret variant. Used by
+// the upstream pixel provider SuperPixel webhook receiver, shared-secret variant. Used by
 // the Studio "Segment Trigger" workflow which exposes a custom-headers tab
 // and includes our x-audiencelab-secret on every call. The per-pixel
 // webhook UI in AL does not include that header — those tenants point at

@@ -3,7 +3,7 @@
 import Script from "next/script";
 
 // ---------------------------------------------------------------------------
-// Marketing-site tag stack: GTM + IDPixel (Cursive/AudienceLab) + GA4.
+// Marketing-site tag stack: GTM + IDPixel (Cursive) + GA4.
 //
 // Architecture:
 //   • GTM is the hub for anything an ops person needs to swap without a
@@ -35,9 +35,9 @@ const GTM_ID = process.env.NEXT_PUBLIC_GTM_ID || "GTM-TXX66PJJ";
 // Forwarded to GA4 via IDPixel's `data-ga4-key` (single source of truth
 // for pageview counting). Override only for staging properties.
 const GA4_ID = process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID || "G-Z1RL9YKES8";
-// IDPixel (Cursive/AudienceLab) tenant build for leasestack.co. The bundle
-// hash in the URL is tenant-specific — issued by Cursive when the pixel
-// was provisioned. Don't change this unless Cursive issues a new build.
+// IDPixel (Cursive) tenant build for leasestack.co. The bundle hash in
+// the URL is tenant-specific — issued upstream when the pixel was
+// provisioned. Don't change this unless the upstream issues a new build.
 const IDPIXEL_SRC =
   "https://cdn.idpixel.app/v1/idp-analytics-6a0eb3eafab915af2e99d344.min.js";
 const IDPIXEL_ENABLED = process.env.NEXT_PUBLIC_DISABLE_IDPIXEL !== "true";

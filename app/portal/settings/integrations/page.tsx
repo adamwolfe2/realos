@@ -573,9 +573,9 @@ function PixelManage({
   );
 }
 
-// Shown after a customer submits the connect form but before ops has finished
-// setting up the pixel in AudienceLab. Reassures them the request is in flight
-// without any of the dual-pixel UI.
+// Shown after a customer submits the connect form but before ops has
+// finished setting up the upstream pixel. Reassures them the request
+// is in flight without any of the dual-pixel UI.
 function PixelRequestPending({
   websiteName,
   websiteUrl,

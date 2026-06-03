@@ -10,7 +10,7 @@ import { runCursiveSegmentSync } from "./admin-cursive";
 // Tenant-scoped pixel sync.
 //
 // Operators on the /portal/visitors page can pull the latest identified
-// visitors from AudienceLab on demand, and the page auto-triggers a sync
+// visitors from the upstream pixel provider on demand, and the page auto-triggers a sync
 // when data is stale (>15 min since lastEventAt). Mirrors the agency
 // "Sync from segment" action but limited to the caller's own org via
 // requireScope.

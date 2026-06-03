@@ -42,7 +42,7 @@ const AUTH_HELPERS = [
   "verifyStripeSignature",
   "verifyBlooSignature",
   "verifyBlooioSignature",
-  "verifyAudienceLab",
+  "verifythe upstream pixel provider",
   "verifyCursive",
   "verifyResendSignature",
   "verifyCalcomSignature",

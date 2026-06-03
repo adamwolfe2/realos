@@ -11,12 +11,13 @@ import {
 
 // Transactional emails for the Cursive pixel provisioning queue.
 //
-// AudienceLab does not expose a programmatic pixel-creation API, so customer
-// requests sit in /admin/pixel-requests until ops sets up the pixel + segment
-// + workflow in AL's dashboard and pastes the resulting pixel_id back into
-// the admin Cursive panel. This module powers the two notifications that
-// bracket that lifecycle: ops gets a heads-up on submit, customer gets a
-// "ready to install" email on fulfillment.
+// The upstream pixel provider does not expose a programmatic pixel-
+// creation API, so customer requests sit in /admin/pixel-requests until
+// ops sets up the pixel + segment + workflow upstream and pastes the
+// resulting pixel_id back into the admin Cursive panel. This module
+// powers the two notifications that bracket that lifecycle: ops gets a
+// heads-up on submit, customer gets a "ready to install" email on
+// fulfillment.
 
 type SendResult = { ok: boolean; id?: string; error?: string };
 
@@ -110,7 +111,7 @@ export async function sendPixelRequestOpsEmail(input: {
       }
     </table>
     <p style="margin:0 0 8px;font-size:13px;line-height:1.6;color:#374151;">
-      <strong>Fulfillment steps in AudienceLab:</strong>
+      <strong>Fulfillment steps in the upstream pixel console:</strong>
     </p>
     <ol style="margin:0 0 16px 18px;padding:0;font-size:13px;line-height:1.6;color:#374151;">
       <li>Create a new V4 pixel for ${escape(input.websiteUrl)}</li>

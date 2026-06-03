@@ -7,7 +7,7 @@ import { BRAND_NAME } from "@/lib/brand";
 export const metadata: Metadata = {
   title: `Keyword trends · ${BRAND_NAME}`,
   description:
-    "Track how your property ranks for the queries your prospects actually search — week over week, across every keyword that matters in your market. Backed by DataForSEO.",
+    "Track how your property ranks for the queries your prospects actually search — week over week, across every keyword that matters in your market.",
 };
 
 export default function KeywordTrendsFeaturePage() {
@@ -16,10 +16,10 @@ export default function KeywordTrendsFeaturePage() {
       eyebrow="Keyword trends · Add-on"
       headline="See exactly which queries find your property."
       subhead="Continuous keyword tracking across the queries your prospects actually type — ranked positions logged weekly, trend lines plotted by query, search volume mapped to your traffic. The thing your SEO consultant only mentions during the renewal call."
-      whatItIs="A live dashboard of every keyword that matters in your market. Ranked positions, search volume, click-through rate, and trajectory — all logged weekly via DataForSEO. The same data that powers the SEO + AEO module's content briefs, surfaced as a standalone tracker for operators who want the full picture."
+      whatItIs="A live dashboard of every keyword that matters in your market. Ranked positions, search volume, click-through rate, and trajectory — all logged weekly. The same data that powers the SEO + AEO module's content briefs, surfaced as a standalone tracker for operators who want the full picture."
       howItWorks={[
         "We seed your tracker with the long-tail queries your leasing team already answers — \"furnished apartments near campus\", \"pet-friendly downtown\", \"month-to-month near hospital\".",
-        "DataForSEO logs your ranked position for every query, weekly, at your property's geography.",
+        "We log your ranked position for every query, weekly, at your property's geography.",
         "Trend charts plot 90-day movement per query — gains, losses, and queries where you've never ranked.",
         "New query opportunities surface automatically when search volume spikes in your market.",
         "Weekly report calls out the three movements that mattered — a query you just claimed, a query you slipped on, a new opportunity worth chasing.",

@@ -8,9 +8,9 @@ import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
 import { sendPixelRequestOpsEmail } from "@/lib/email/pixel-emails";
 import { OrgType, PixelRequestStatus } from "@prisma/client";
 
-// Portal-side Cursive (AudienceLab) pixel server actions.
+// Portal-side Cursive (the upstream pixel provider) pixel server actions.
 //
-// AudienceLab does not expose a programmatic pixel-creation API — pixels are
+// the upstream pixel provider does not expose a programmatic pixel-creation API — pixels are
 // created in the AL dashboard. So `connectPixel` queues a request that ops
 // fulfills manually; the customer is told upfront that we'll email them when
 // the pixel is live (typically within one business day). `disconnectPixel`
@@ -230,7 +230,7 @@ export async function connectPixel(
 
 // ---------------------------------------------------------------------------
 // One-flow setup. Replaces the multi-step copy-paste between LeaseStack and
-// the Cursive (AudienceLab) dashboard. Customer clicks Connect, we mint a
+// the Cursive (the upstream pixel provider) dashboard. Customer clicks Connect, we mint a
 // per-tenant webhook token + return the URL to paste into the AL pixel UI.
 // The first event arriving on that URL auto-binds pixel_id (handled in
 // lib/webhooks/cursive-process.ts) — no manual Pixel ID / Segment ID entry.

@@ -7,7 +7,7 @@ import {
 } from "../../helpers/cursive-prisma-mock";
 
 // Tests for /api/webhooks/cursive/[token] — the per-tenant path-token
-// receiver used by AudienceLab's per-pixel webhook UI. The URL path is
+// receiver used by the upstream pixel provider's per-pixel webhook UI. The URL path is
 // the auth, no shared secret or HMAC required. The token is looked up
 // against CursiveIntegration.webhookToken, and a malformed token must
 // 404 before any DB lookup.

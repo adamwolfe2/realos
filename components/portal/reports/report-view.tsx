@@ -394,7 +394,7 @@ export function ReportView({
           (kpis.organicSessions > 0 ||
             (kpiDeltas.organicSessionsPct ?? 0) !== 0);
 
-        // Norman bug (May 22): Identified visitors (from the AudienceLab
+        // Norman bug (May 22): Identified visitors (from the visitor
         // pixel) were never surfaced in this strip even though they
         // dwarf form/chatbot leads for most pixel-active tenants
         // (TC: 3 form leads vs 146 identified visitors). Render only
@@ -918,7 +918,7 @@ function HeroKpi({ snapshot }: { snapshot: ReportSnapshot }) {
 
   // Norman feedback (May 22): the original "Total leads this period" tile
   // read "3" and looked terrible because it only counted the Lead table.
-  // Reality: TC also identified 146 visitors via the AudienceLab pixel —
+  // Reality: TC also identified 146 visitors via the visitor pixel —
   // every one a real person with a name + email we could reach out to.
   // The honest headline sums BOTH paths into "captured contacts": form/
   // chatbot leads PLUS pixel-identified visitors. Same surface area an

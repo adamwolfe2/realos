@@ -112,7 +112,7 @@ To wire up a new integration:
 Already wired and working in production:
 
 - `POST /api/webhooks/cursive` and `/api/webhooks/cursive/[token]` —
-  pixel events stream in here from AudienceLab/Cursive in real time.
+  pixel events stream in here from the upstream pixel provider/Cursive in real time.
   No polling needed — the visitor feed sees them within seconds.
 - `POST /api/webhooks/stripe` — billing events.
 - `POST /api/webhooks/clerk` — user lifecycle.

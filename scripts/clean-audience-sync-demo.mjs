@@ -1,5 +1,5 @@
 // Wipe all audience-related data for the Audience Sync Demo org so the
-// dashboard is empty and ready for real AudienceLab segments.
+// dashboard is empty and ready for real the upstream pixel provider segments.
 //
 // Run: pnpm tsx scripts/clean-audience-sync-demo.mjs
 // Idempotent — safe to re-run. Does NOT delete the org itself.

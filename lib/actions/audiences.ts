@@ -26,7 +26,7 @@ import { computeNextRunAt } from "@/lib/audiences/schedule";
 import { isAllowedUrlWithDns } from "@/lib/utils/ssrf-protection";
 
 // ---------------------------------------------------------------------------
-// Insight computation. AudienceLab returns a list of members per segment
+// Insight computation. the upstream pixel provider returns a list of members per segment
 // but no aggregate distributions (top states / zips / cities, match rates).
 // We sample a slice of members and compute those ourselves so the segment
 // detail page renders real data.
@@ -139,7 +139,7 @@ async function computeSegmentInsights(
 }
 
 // ---------------------------------------------------------------------------
-// Add segment by ID — AudienceLab does not expose a list-all-segments
+// Add segment by ID — the upstream pixel provider does not expose a list-all-segments
 // endpoint. Operators paste a segment ID from the AL dashboard, we validate
 // it via /segments/{id}, and cache a row so the rest of the dashboard lights
 // up. This is the primary onboarding path for new segments.
@@ -1104,7 +1104,7 @@ export async function toggleAudienceSchedule(
 }
 
 // ---------------------------------------------------------------------------
-// Per-org AudienceLab API key override.
+// Per-org the upstream pixel provider API key override.
 //
 // By default, every AUDIENCE_SYNC org reads AL segments using the platform-
 // shared CURSIVE_API_KEY env var. An org can opt into a personal AL key by
@@ -1216,7 +1216,7 @@ export async function testOrgAlApiKey(): Promise<TestOrgAlApiKeyResult> {
     };
   }
 
-  // AudienceLab does not expose a "list segments" endpoint, so a healthy
+  // the upstream pixel provider does not expose a "list segments" endpoint, so a healthy
   // connection is best confirmed by validating against a known segment if
   // the org has one cached. If no segments are cached yet, we can only say
   // "key looks plausible" without hitting AL — the real proof comes when

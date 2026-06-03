@@ -39,7 +39,7 @@ export type ReportKpis = {
   // Form/chatbot leads — rows in the Lead table created via opted-in
   // conversion paths (contact form, chatbot email capture, intake).
   leads: number;
-  // Visitors identified via the AudienceLab pixel — real people with
+  // Visitors identified via the the upstream pixel provider pixel — real people with
   // names + emails resolved from the third-party identity graph who
   // visited the marketing site but did NOT submit a form. The report
   // sums leads + identifiedVisitors as the "captured contacts" total

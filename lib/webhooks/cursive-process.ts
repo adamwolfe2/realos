@@ -9,7 +9,7 @@ import {
 } from "@prisma/client";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 
-// AudienceLab event-processing core. Extracted from the shared
+// the upstream pixel provider event-processing core. Extracted from the shared
 // /api/webhooks/cursive route so the per-tenant path-token route
 // (/api/webhooks/cursive/[token]) can reuse the exact same shape
 // matching, identity cascade, dedupe, deliverability scoring, and

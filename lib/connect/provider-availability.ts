@@ -117,7 +117,7 @@ export function getProviderAvailability(): AvailabilityMap {
         }
       : metaNotReady,
     cursive_pixel: {
-      // Pixel request becomes a 3-5 min ops task (manual AudienceLab setup).
+      // Pixel request becomes a 3-5 min ops task (manual the upstream pixel provider setup).
       // Operator-side action is always available; the request itself just
       // notifies ops to provision.
       available: true,

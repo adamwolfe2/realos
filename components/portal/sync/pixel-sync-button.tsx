@@ -9,15 +9,15 @@ import { syncPixelFromSegment } from "@/lib/actions/tenant-pixel-sync";
 // Visitors-page sync control.
 //
 // Two responsibilities:
-//   1. Manual "Sync now" button — operator clicks → server action pulls the
-//      latest identified visitors from AudienceLab, upserts them, and
-//      revalidates the page.
+//   1. Manual "Sync now" button — operator clicks → server action pulls
+//      the latest identified visitors from the upstream pixel provider,
+//      upserts them, and revalidates the page.
 //   2. Auto-sync on mount when the pixel data is stale (lastEventAt older
 //      than the configured threshold OR never fired). Avoids the
 //      operator-has-to-remember problem; the page self-heals on load.
 //
 // Both paths share a 1-min throttle on the server, so even if multiple
-// tabs auto-trigger at once they collapse into one AL round-trip.
+// tabs auto-trigger at once they collapse into one upstream round-trip.
 // ---------------------------------------------------------------------------
 
 type Props = {

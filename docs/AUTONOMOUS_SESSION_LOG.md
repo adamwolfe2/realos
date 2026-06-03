@@ -61,7 +61,7 @@
 - 3 new cron schedules in vercel.json (competitor scan 03:00, sync 04:00, fact aggregate 05:00)
 - Score history snapshots auto-write on Monday 05:00 UTC
 - Operator content draft → admin review loop fully closed end-to-end
-- All operator-facing copy stripped of AudienceLab mentions
+- All operator-facing copy stripped of the upstream pixel provider mentions
 - All copy free of em dashes per global rule
 
 ### Commits
@@ -161,7 +161,7 @@ All pushed to origin/main.
 - 573 tests passing (45+ new tonight)
 - TypeScript clean
 - Mobile responsive baseline maintained
-- All operator copy clean of AudienceLab + em dashes per global rules
+- All operator copy clean of the upstream pixel provider + em dashes per global rules
 - Security review applied: 4 fixes (cross-tenant + rate limit + cap + notes)
 - Performance: N+1 fixes, code-split, Suspense wraps, loading skeletons
 

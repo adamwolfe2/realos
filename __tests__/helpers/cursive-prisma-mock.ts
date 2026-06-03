@@ -2,7 +2,7 @@ import { vi } from "vitest";
 import { Prisma } from "@prisma/client";
 
 /**
- * Stateful in-memory Prisma mock scoped to the Cursive/AudienceLab webhook.
+ * Stateful in-memory Prisma mock scoped to the Cursive/the upstream pixel provider webhook.
  *
  * Covers CursiveIntegration, Visitor, Lead, WebhookEvent with just enough
  * findFirst/findUnique/create/update semantics to exercise the receiver's

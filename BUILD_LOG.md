@@ -638,7 +638,7 @@ Repo: https://github.com/adamwolfe2/realos
 
 **Shipped.** End-to-end first-party tracking pixel that any tenant can drop on
 any website to start streaming sessions into `/portal/visitors`. Lives
-alongside the existing AudienceLab/Cursive integration so the two systems can
+alongside the existing the upstream pixel provider/Cursive integration so the two systems can
 run together (AL handles enrichment + lead-grade scoring; the first-party
 pixel covers raw pageviews, scroll depth, time on page, UTM, referrer, and
 manual `identify()` calls).
@@ -677,7 +677,7 @@ already ran locally so the client picks up the new models.
   the snippet can persist it to a cookie.
 
 **Snippet UI.** `/portal/settings/integrations` "Visitor identification"
-drawer now shows a `PixelSnippetPanel` whether or not AudienceLab has been
+drawer now shows a `PixelSnippetPanel` whether or not the upstream pixel provider has been
 provisioned. The panel:
 
 - Shows the install snippet (one-line `<script async src=…>`).

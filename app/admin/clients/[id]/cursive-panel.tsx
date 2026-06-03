@@ -100,15 +100,15 @@ export function CursivePanel({
       if (res.ok) {
         // Norman question (May 22): "why does admin say 205 resolutions
         // but the portal Visitor feed says 146?" The 205 is the full
-        // AudienceLab segment membership; the 146 is the subset our
+        // upstream segment membership; the 146 is the subset our
         // upsert resolved to IDENTIFIED status (firstName + lastName +
         // email all present). The remaining ~30 land as ANONYMOUS in
-        // our DB (AL has them in the segment but with insufficient
-        // resolution data) and another ~29 get dropped entirely (no
-        // usable identity at all). Spell that out in the success
-        // message so the next time an operator clicks Sync they don't
-        // see "205" and assume that's the number of new outreach-
-        // ready contacts.
+        // our DB (upstream has them in the segment but with
+        // insufficient resolution data) and another ~29 get dropped
+        // entirely (no usable identity at all). Spell that out in the
+        // success message so the next time an operator clicks Sync
+        // they don't see "205" and assume that's the number of new
+        // outreach-ready contacts.
         const dropped = res.pulled - (res.created + res.updated);
         const droppedSuffix =
           dropped > 0

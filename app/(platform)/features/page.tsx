@@ -200,7 +200,7 @@ const FEATURES: Feature[] = [
     body: "Property pages written to rank in classic search and to be quoted by ChatGPT, Perplexity, Claude, and Gemini. Per-location coverage, refreshed weekly, scored continuously.",
     bullets: [
       "AEO coverage scored across 4 engines (Claude, ChatGPT, Gemini, Perplexity)",
-      "Per-property keyword tracking via DataForSEO",
+      "Per-property keyword tracking across every market signal",
       "Content briefs refresh weekly based on citation gaps",
     ],
     href: "/features/seo-aeo",

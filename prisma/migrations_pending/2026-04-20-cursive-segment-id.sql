@@ -2,7 +2,7 @@
 -- Add cursiveSegmentId to CursiveIntegration
 --
 -- Used by the admin "Sync from segment" action to pull resolved visitors from
--- AudienceLab's /segments/{id} REST API on demand. Idempotent.
+-- the upstream pixel provider's /segments/{id} REST API on demand. Idempotent.
 -- ============================================================================
 
 ALTER TABLE "CursiveIntegration"

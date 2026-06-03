@@ -29,9 +29,9 @@ export type ShareOfVoiceProps = {
   topEntities: TopEntity[];
   /// Overall snapshot count across all engines. Drives the empty state.
   totalSnapshots: number;
-  /// Engine source from AEO_ENGINE_SOURCE — drives empty-state copy so
-  /// direct-mode operators see "requires DataForSEO" instead of the
-  /// generic "after the next scan" message that never resolves on direct.
+  /// Engine source — drives empty-state copy so direct-mode customers
+  /// see a polished "being activated" message instead of the generic
+  /// "after the next scan" one that never resolves on direct.
   engineSource: "direct" | "dataforseo";
 };
 
@@ -78,28 +78,19 @@ export function ShareOfVoiceCard({
   return (
     <SectionCard
       label="AI Share of Voice"
-      description="What fraction of named entities in AI answers are you (vs. competing buildings) — averaged across the last 30 days of scans. Sourced from DataForSEO AI Optimization."
+      description="What fraction of named entities in AI answers are you (vs. competing buildings) — averaged across the last 30 days of scans."
     >
       {totalSnapshots === 0 ? (
-        engineSource === "dataforseo" ? (
-          <div className="text-[13px] text-muted-foreground py-2">
-            Share of voice will populate after the next AEO scan.
-          </div>
-        ) : (
-          <div className="text-[13px] text-muted-foreground py-2 space-y-1">
-            <div>
-              Share of voice requires the DataForSEO LLM Responses adapter,
-              which is off by default.
-            </div>
-            <div className="text-[12px] text-muted-foreground/80">
-              Operator action: set{" "}
-              <code className="px-1 py-0.5 bg-[var(--hair)] rounded text-[11px]">
-                AEO_ENGINE_SOURCE=dataforseo
-              </code>{" "}
-              in Vercel and re-run a scan.
-            </div>
-          </div>
-        )
+        // Both "scan hasn't run yet" and "premium engine not yet activated"
+        // collapse to the same polished message — the operator who can
+        // activate the premium tier sees it on the admin surface, not
+        // here. Customers see a confident "coming soon" instead of
+        // implementation plumbing.
+        <div className="text-[13px] text-muted-foreground py-2">
+          {engineSource === "dataforseo"
+            ? "Share of voice populates after your next weekly scan."
+            : "AI search visibility is being activated for your account. Your first share-of-voice report lands within 24 hours."}
+        </div>
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Per-engine SoV bars */}

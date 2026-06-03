@@ -131,7 +131,7 @@ enum UserRole {
   CLIENT_ADMIN // Client team member with full portal access
   CLIENT_VIEWER // Read-only client access
   LEASING_AGENT // Specific role on client team
-  AL_PARTNER // AudienceLab partner with cross-org visibility on AUDIENCE_SYNC orgs
+  AL_PARTNER // the upstream pixel provider partner with cross-org visibility on AUDIENCE_SYNC orgs
 }
 
 enum TenantStatus {
@@ -309,7 +309,7 @@ model Organization {
   stripeCustomerId String?     @unique
 
   // Optional override for AL credentials when an AUDIENCE_SYNC org wants to
-  // use their own AudienceLab account instead of the platform-shared key.
+  // use their own the upstream pixel provider account instead of the platform-shared key.
   cursiveApiKeyOverride String?
 
   // Property classification
@@ -1513,7 +1513,7 @@ model CursiveIntegration {
   // works without our shared header. 32 hex chars = 128 bits of entropy.
   webhookToken String? @unique
 
-  // AudienceLab segment binding for the admin "Sync from segment" pull
+  // the upstream pixel provider segment binding for the admin "Sync from segment" pull
   cursiveSegmentId  String?
   lastSegmentSyncAt DateTime?
 
@@ -1533,7 +1533,7 @@ model CursiveIntegration {
   @@index([propertyId])
 }
 
-// AudienceLab does not expose a programmatic pixel-creation API, so when a
+// the upstream pixel provider does not expose a programmatic pixel-creation API, so when a
 // tenant asks for visitor identification we queue a request here. Ops sets
 // up the pixel + segment + workflow in the AL UI, then pastes the resulting
 // pixel_id into the admin Cursive panel — which marks the matching request
@@ -3001,7 +3001,7 @@ model PropertyMention {
 // ============================================================================
 // AUDIENCE SYNC — residential/commercial product line
 // ============================================================================
-// AudienceSegment caches AudienceLab segments visible to an org. Cache is
+// AudienceSegment caches the upstream pixel provider segments visible to an org. Cache is
 // refreshed on dashboard load or via a manual "Refresh" action. We don't
 // persist members here; members are fetched on-demand at push time.
 
@@ -3024,7 +3024,7 @@ model AudienceSegment {
   orgId String
   org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
-  // AudienceLab segment id (their primary key, opaque string)
+  // the upstream pixel provider segment id (their primary key, opaque string)
   alSegmentId String
   name        String
   description String?

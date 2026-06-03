@@ -11,20 +11,22 @@ import {
 } from "@/lib/actions/cursive-connect";
 import { CursiveWebhookBadge } from "./cursive-webhook-badge";
 
-// One-flow Cursive (AudienceLab SuperPixel) setup wizard. Replaces the
-// prior multi-step copy-paste between LeaseStack ↔ Cursive:
+// One-flow Cursive visitor-pixel setup wizard. Replaces the prior
+// multi-step copy-paste between LeaseStack and the pixel provider:
 //
-//   OLD: Customer requested a pixel → ops manually configured AL +
-//        pasted Pixel ID + Segment ID into the admin panel → customer
-//        copied webhook URL out of the email → pasted into AL → no
-//        verification that data actually flowed.
+//   OLD: Customer requested a pixel → ops manually configured the
+//        upstream pixel + pasted Pixel ID + Segment ID into the admin
+//        panel → customer copied webhook URL out of the email → pasted
+//        into the upstream config → no verification that data actually
+//        flowed.
 //
 //   NEW: Customer clicks Connect → LeaseStack mints a webhook token +
-//        shows the URL to paste into AL. The first webhook event arriving
-//        on that URL auto-binds pixel_id (handled in
-//        lib/webhooks/cursive-process.ts). No manual ID entry. The wizard
-//        polls every 4s post-setup so the UI flips from "Pending" to
-//        "Connected" the moment AL clicks Test or fires its first event.
+//        shows the URL to paste upstream. The first webhook event
+//        arriving on that URL auto-binds pixel_id (handled in
+//        lib/webhooks/cursive-process.ts). No manual ID entry. The
+//        wizard polls every 4s post-setup so the UI flips from
+//        "Pending" to "Connected" the moment the upstream clicks Test
+//        or fires its first event.
 
 type WizardState =
   | { phase: "form" }

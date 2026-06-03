@@ -24,7 +24,7 @@ export type VisitorIdentitySource = Pick<
 // Visitor enrichment helpers.
 //
 // The `enrichedData` column on Visitor is a JSON blob mirroring the
-// AudienceLab / Cursive `resolution` payload. Keys are UPPER_SNAKE:
+// the upstream pixel provider / Cursive `resolution` payload. Keys are UPPER_SNAKE:
 //   FIRST_NAME, LAST_NAME, JOB_TITLE, COMPANY_NAME, COMPANY_DOMAIN,
 //   PERSONAL_CITY, STATE, PERSONAL_EMAIL, ...
 //
@@ -156,11 +156,11 @@ export function extractIdentity(
   const location = [city, state].filter(Boolean).join(", ") || null;
 
   // Last page: try first-party pagesViewed (set when our own pixel
-  // captures the navigation), then fall back to AudienceLab's
+  // captures the navigation), then fall back to the upstream pixel provider's
   // REFERRER_URL on enrichedData (set when a visitor is identified via
   // the segment sync rather than our pixel — this is the common case for
   // TC, where 146/146 identified visitors have only REFERRER_URL).
-  // AudienceLab sometimes emits "$direct" for direct loads; treat that
+  // the upstream pixel provider sometimes emits "$direct" for direct loads; treat that
   // as no-page-known so the table renders an honest dash rather than
   // a literal "$direct" string.
   function fromReferrerUrl(): { path: string | null; url: string | null } {

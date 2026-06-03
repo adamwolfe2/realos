@@ -4,7 +4,7 @@
 --
 -- Inbound webhook handlers (Cursive primarily) dedup on body hash before
 -- processing. If processing fails after the dedup row exists, the event is
--- effectively dropped — the next retry from AudienceLab gets rejected as a
+-- effectively dropped — the next retry from the upstream pixel provider gets rejected as a
 -- duplicate. These columns let us recover by tracking processing state and
 -- letting the webhook-retry cron re-run failed events.
 --

@@ -4,7 +4,7 @@ import * as React from "react";
 import { SectionCard } from "@/components/admin/page-header";
 
 // AEO v2 W2: Google AI Overview row. For the top-5 GSC queries (last 28d),
-// shows the AI Overview text DataForSEO captured + the cited URLs +
+// shows the AI Overview text captured from Google + the cited URLs +
 // whether the org's primary domain is one of them. Truncated by default,
 // click to expand.
 
@@ -111,29 +111,14 @@ export function AiOverviewCard({ rows, engineSource }: AiOverviewProps) {
   return (
     <SectionCard
       label="Google AI Overview"
-      description="What Google's AI Overview is saying for your top-ranked queries (last 28d). Sourced from DataForSEO /serp/google/ai_summary."
+      description="What Google's AI Overview is saying for your top-ranked queries over the last 28 days."
     >
       {rows.length === 0 ? (
-        engineSource === "dataforseo" ? (
-          <div className="text-[13px] text-muted-foreground py-2">
-            AI Overview snapshots populate on the next AEO scan with GSC
-            data present.
-          </div>
-        ) : (
-          <div className="text-[13px] text-muted-foreground py-2 space-y-1">
-            <div>
-              AI Overview capture requires the DataForSEO AI Optimization
-              adapter.
-            </div>
-            <div className="text-[12px] text-muted-foreground/80">
-              Operator action: set{" "}
-              <code className="px-1 py-0.5 bg-[var(--hair)] rounded text-[11px]">
-                AEO_ENGINE_SOURCE=dataforseo
-              </code>{" "}
-              in Vercel and re-run a scan.
-            </div>
-          </div>
-        )
+        <div className="text-[13px] text-muted-foreground py-2">
+          {engineSource === "dataforseo"
+            ? "AI Overview snapshots populate on your next scheduled scan."
+            : "AI search intelligence is being activated for your account. Your first AI Overview report lands within 24 hours."}
+        </div>
       ) : (
         <ul>
           {rows.map((row) => (

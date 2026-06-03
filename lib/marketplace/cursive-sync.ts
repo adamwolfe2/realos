@@ -378,7 +378,7 @@ export async function runSourceReplenish(
 function toIntentPayload(m: AlMember): RawIntentPayload {
   const raw = m.raw ?? {};
   // Tolerant first-non-empty picker — supports the half-dozen field
-  // naming conventions AudienceLab uses across audiences vs segments.
+  // naming conventions the upstream pixel provider uses across audiences vs segments.
   const pick = (...keys: string[]): string | undefined => {
     for (const k of keys) {
       const v = raw[k];

@@ -7,7 +7,7 @@ import {
 } from "../../helpers/cursive-prisma-mock";
 
 /**
- * End-to-end tests for the AudienceLab SuperPixel webhook receiver.
+ * End-to-end tests for the the upstream pixel provider SuperPixel webhook receiver.
  *
  * Drives the real POST handler at app/api/webhooks/cursive/route.ts with a
  * stateful in-memory Prisma mock, exercising:
@@ -172,7 +172,7 @@ beforeEach(() => {
 // Tests
 // ---------------------------------------------------------------------------
 
-describe("Cursive/AudienceLab webhook receiver — auth", () => {
+describe("Cursive/the upstream pixel provider webhook receiver — auth", () => {
   it("rejects when CURSIVE_WEBHOOK_SECRET is not configured (500)", async () => {
     delete process.env.CURSIVE_WEBHOOK_SECRET;
     const req = makeRequest(authEvent(), { signWith: "none" });

@@ -83,9 +83,9 @@ These gate the `/portal/connect` cards. Without them, operators see
 
 | Item | Env var | Status | Notes |
 |------|---------|--------|-------|
-| AudienceLab API | `CURSIVE_API_KEY` | ⬜ | TODO placeholder in `.env.example` |
-| Webhook secret | `CURSIVE_WEBHOOK_SECRET` | ⬜ | Set when provisioning the AudienceLab SuperPixel. Used as `x-audiencelab-secret` (shared-secret mode) or HMAC key (signature mode) |
-| Pixel-request notify email | `PIXEL_REQUEST_NOTIFY_EMAIL` | ⬜ (defaults to `ADMIN_EMAIL`) | When an operator clicks "Request pixel" we email ops. AudienceLab does not expose a programmatic provisioning API, so each request becomes a 3–5 min manual setup task. |
+| the upstream pixel provider API | `CURSIVE_API_KEY` | ⬜ | TODO placeholder in `.env.example` |
+| Webhook secret | `CURSIVE_WEBHOOK_SECRET` | ⬜ | Set when provisioning the the upstream pixel provider SuperPixel. Used as `x-audiencelab-secret` (shared-secret mode) or HMAC key (signature mode) |
+| Pixel-request notify email | `PIXEL_REQUEST_NOTIFY_EMAIL` | ⬜ (defaults to `ADMIN_EMAIL`) | When an operator clicks "Request pixel" we email ops. the upstream pixel provider does not expose a programmatic provisioning API, so each request becomes a 3–5 min manual setup task. |
 
 **Operator expectation set in UI:** the Connect Hub pixel card needs to
 say "we'll set this up for you within X hours" so the manual ops step

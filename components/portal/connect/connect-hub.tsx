@@ -84,8 +84,8 @@ const SOURCE_META: Record<
     unlocks: string[];
     /** Override for the primary CTA when "Connect" isn't accurate. The
         Cursive pixel for instance uses "Request pixel" because the
-        actual provisioning is a 3-5 min manual task in AudienceLab,
-        kicked off by an ops email. */
+        actual provisioning is a 3-5 min manual task, kicked off by an
+        ops email. */
     connectLabel?: string;
     /** One-line informational note rendered under the unlocks panel.
         Use for setup expectations the operator should know before they
@@ -448,7 +448,7 @@ function SourceCard({
 
       {/* Setup expectation note — only when the source has a non-instant
           provisioning path the operator should know about. Cursive
-          pixel is the canonical case (manual AudienceLab setup). Hidden
+          pixel is the canonical case (manual provisioning). Hidden
           once the source is connected since the note no longer
           applies. */}
       {!isConnected && meta.setupNote ? (

@@ -229,7 +229,7 @@ export async function checkAnthropic(): Promise<CheckResult> {
 }
 
 export async function checkCursive(): Promise<CheckResult> {
-  // AudienceLab/Cursive does not publish a documented /health endpoint. We
+  // Cursive does not publish a documented /health endpoint. We
   // hit the API root which 404s with a JSON envelope when reachable. Any
   // non-5xx is healthy here.
   return pingUrl(

@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import fs from "fs";
 import path from "path";
 
-// Structural tests for the Cursive (AudienceLab SuperPixel) module.
+// Structural tests for the Cursive (the upstream pixel provider SuperPixel) module.
 // Mirrors __tests__/seo-module.test.ts. Guards three things that
 // repeatedly bite us when someone "simplifies" a cron schedule or
 // tweaks a stale threshold without realizing the integration depends

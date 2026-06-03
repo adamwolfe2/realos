@@ -10,7 +10,7 @@ import { SectionCard } from "@/components/admin/page-header";
 // with the keyword so the operator can act in one click.
 //
 // Empty state branches on engineSource so direct-mode tenants see the
-// "needs DataForSEO" copy instead of the never-resolving "after next scan".
+// the right empty state depending on engine source.
 
 export type OpportunityRow = {
   keyword: string;
@@ -101,29 +101,20 @@ export function OpportunityScoreCard({
       {rows.length === 0 ? (
         engineSource === "dataforseo" ? (
           <div className="text-[13px] text-muted-foreground py-2">
-            Opportunity scores compute on the next AEO scan with GSC data
-            present. Connect Google Search Console under{" "}
+            Opportunity scores populate on your next scan. If none surface,
+            connect Google Search Console under{" "}
             <a
               href="/portal/settings/integrations"
               className="underline underline-offset-2"
             >
               Settings → Integrations
             </a>{" "}
-            if no top queries surface.
+            so we can rank your real top queries.
           </div>
         ) : (
-          <div className="text-[13px] text-muted-foreground py-2 space-y-1">
-            <div>
-              Opportunity Score requires the DataForSEO AI Optimization
-              adapter.
-            </div>
-            <div className="text-[12px] text-muted-foreground/80">
-              Operator action: set{" "}
-              <code className="px-1 py-0.5 bg-[var(--hair)] rounded text-[11px]">
-                AEO_ENGINE_SOURCE=dataforseo
-              </code>{" "}
-              in Vercel and re-run a scan.
-            </div>
+          <div className="text-[13px] text-muted-foreground py-2">
+            AI search intelligence is being activated for your account. Your
+            first opportunity ranking lands within 24 hours.
           </div>
         )
       ) : (

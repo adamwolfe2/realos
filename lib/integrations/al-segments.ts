@@ -1,6 +1,6 @@
 import "server-only";
 
-// AudienceLab segments API client. Used by the AUDIENCE_SYNC product line
+// the upstream pixel provider segments API client. Used by the AUDIENCE_SYNC product line
 // (residential / commercial brokers) to surface segments and stream members
 // out to ad accounts, CRMs, or webhooks.
 //
@@ -13,7 +13,7 @@ import "server-only";
 const AL_BASE = process.env.CURSIVE_API_URL ?? "https://api.audiencelab.io";
 const DEFAULT_PAGE_SIZE = 100;
 
-// AudienceLab exposes TWO parallel surfaces with different IDs:
+// the upstream pixel provider exposes TWO parallel surfaces with different IDs:
 //   - /audiences/{id}  — Audience Lists product. Has list-all at /audiences.
 //   - /segments/{id}   — Studio product. No list-all (404 on /segments).
 // We probe both at validation time and remember the surface that worked.

@@ -4,7 +4,7 @@ dotenv.config({ path: ".env.local", override: false });
 import { runCursiveSegmentSync } from "../lib/actions/admin-cursive";
 const ORG_ID = "cmo402dwz0002c93lf3okkgi0";
 (async () => {
-  console.log("Running AudienceLab segment sync for TC...");
+  console.log("Running the upstream pixel provider segment sync for TC...");
   const start = Date.now();
   const result = await runCursiveSegmentSync(ORG_ID);
   console.log(`Done in ${((Date.now()-start)/1000).toFixed(1)}s`);

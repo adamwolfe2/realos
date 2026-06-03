@@ -16,7 +16,7 @@ import {
 // POST /api/webhooks/cursive/[token]
 //
 // Per-tenant webhook receiver where the URL path is the secret. Used by
-// AudienceLab's "Pixel → Webhooks" UI, which fires outbound webhooks
+// the upstream pixel provider's "Pixel → Webhooks" UI, which fires outbound webhooks
 // without giving the user a custom-headers tab. The shared
 // /api/webhooks/cursive endpoint requires our x-audiencelab-secret header,
 // so AL's pixel UI cannot pass its built-in Test button there.

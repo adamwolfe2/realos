@@ -2,7 +2,7 @@ import * as Sentry from "@sentry/nextjs";
 
 // Headers we MUST strip before anything ships to Sentry. Authorization
 // can include bearer tokens or Stripe-Signature; Cookie carries the
-// Clerk session; the x-*-secret family covers Cursive/AudienceLab
+// Clerk session; the x-*-secret family covers Cursive/the upstream pixel provider
 // shared secrets that webhook handlers verify in-process.
 const SENSITIVE_HEADERS = new Set([
   "authorization",

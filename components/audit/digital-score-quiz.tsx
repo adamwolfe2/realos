@@ -35,7 +35,7 @@ const POLL_TIMEOUT_MS = 130_000;
 // don't want to widen its surface just for sharing. If/when the list
 // grows we'll lift to lib/audit/scan-status.ts.
 const SCAN_STATUS_MESSAGES: string[] = [
-  "Pulling ranked keywords from DataForSEO…",
+  "Pulling ranked keywords for your market…",
   "Running a mobile Lighthouse audit on your homepage…",
   "Extracting page metadata and on-page checks…",
   "Counting backlinks and referring domains…",

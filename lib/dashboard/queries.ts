@@ -241,7 +241,7 @@ export async function getFunnel(orgId: string) {
   ] = await Promise.all([
     // Count Visitor rows, NOT VisitorSession rows. VisitorSession rows
     // only exist when the Cursive pixel fires a `page_view` event —
-    // AudienceLab segment-sync writes Visitor rows directly without
+    // the upstream pixel provider segment-sync writes Visitor rows directly without
     // creating sessions. Tenants on segment-sync-only (e.g. Telegraph
     // Commons: 150 visitors, 0 sessions) were reading the funnel
     // "Visitors" stage as zero even though they had 150 real visitors

@@ -5,13 +5,14 @@ import { useEffect, useState } from "react";
 // Live "Webhook last received Xs ago" badge for the Cursive integration
 // surface. Reads CursiveIntegration.lastEventAt and renders compact
 // relative time that ticks every 15s so an operator watching the page
-// during install sees the counter advance the moment AudienceLab fires
-// its first event.
+// during install sees the counter advance the moment the upstream
+// pixel fires its first event.
 //
 // Why ticks client-side instead of just rendering once on the server:
-// the user installs the snippet, switches to AL to click Test, then
-// flips back to LeaseStack. With pure-SSR labels they'd have to refresh
-// to see the verification flip. Cheap setInterval keeps the badge honest
+// the user installs the snippet, switches to the upstream provider to
+// click Test, then flips back to LeaseStack. With pure-SSR labels
+// they'd have to refresh to see the verification flip. Cheap
+// setInterval keeps the badge honest
 // without re-fetching the integration row every tick — the page revalidates
 // on its own router cadence to pull the new timestamp.
 

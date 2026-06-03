@@ -10,7 +10,7 @@ export const maxDuration = 300;
 //
 // Runs every 5 minutes. For every CursiveIntegration with a bound
 // cursiveSegmentId, pulls the latest identified visitors from
-// AudienceLab's segments REST API and reconciles them into the local
+// the upstream pixel provider's segments REST API and reconciles them into the local
 // Visitor table. Idempotent — re-runs are safe and dedupe via the
 // (orgId, cursiveVisitorId) unique index.
 //
@@ -24,7 +24,7 @@ export const maxDuration = 300;
 // minutes.
 //
 // Why a cron when we have a webhook? Three reasons:
-//   1. Self-heal when AudienceLab's webhook config drifts (operator
+//   1. Self-heal when the upstream pixel provider's webhook config drifts (operator
 //      changed it, AL deployed a regression, our endpoint had a brief
 //      outage that lost events). Pull catches up automatically.
 //   2. Pre-pixel-install backfill. If the operator just provisioned the

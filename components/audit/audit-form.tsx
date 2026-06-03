@@ -27,8 +27,8 @@ const POLL_TIMEOUT_MS = 130_000;
 // progression feels honest, not invented. Every message references a
 // real thing computeSignals() is actually doing.
 const SCAN_STATUS_MESSAGES: string[] = [
-  // Phase 1: SEO / DataForSEO fan-out
-  "Pulling ranked keywords from DataForSEO…",
+  // Phase 1: SEO + ranked-keyword fan-out
+  "Pulling ranked keywords for your market…",
   "Running a mobile Lighthouse audit on your homepage…",
   "Extracting page metadata and on-page checks…",
   "Counting backlinks and referring domains…",

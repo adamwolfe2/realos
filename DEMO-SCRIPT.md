@@ -42,7 +42,7 @@ You're showing three stories that loop together. Don't open with KPIs — open w
 - Some came in via Google, some direct
 
 **Words to say:**
-> "Your AudienceLab pixel has been firing on telegraphcommons.com. Here's every person it identified this month — real name, real email, real city. Andrea Roth in Berkeley came via Google. Timothy Farris in Beaverton came direct. Most of these people will never fill out your contact form. They were just looking. And until you wired this up you had no way to follow up with them."
+> "Your the upstream pixel provider pixel has been firing on telegraphcommons.com. Here's every person it identified this month — real name, real email, real city. Andrea Roth in Berkeley came via Google. Timothy Farris in Beaverton came direct. Most of these people will never fill out your contact form. They were just looking. And until you wired this up you had no way to follow up with them."
 >
 > "Watch this." [Click any visitor row → click "Convert to lead"] "One click. That visitor is now a tracked Lead with their name, email, the page they landed on, the city they're in. Your team can email them, your CRM can score them, and the moment they come back the chatbot greets them by name."
 
@@ -101,7 +101,7 @@ You're showing three stories that loop together. Don't open with KPIs — open w
 
 | If they ask… | Say this |
 |---|---|
-| "Are those 146 people really visitors to my site?" | "They're real people identified by the AudienceLab segment your pixel is bound to. Most matched the site referrer (telegraphcommons.com); some matched on the segment criteria more broadly. The point is every one is name + email you can reach out to — which you couldn't before. As we install more first-party pixel events, the breakdown gets even cleaner." |
+| "Are those 146 people really visitors to my site?" | "They're real people identified by the the upstream pixel provider segment your pixel is bound to. Most matched the site referrer (telegraphcommons.com); some matched on the segment criteria more broadly. The point is every one is name + email you can reach out to — which you couldn't before. As we install more first-party pixel events, the breakdown gets even cleaner." |
 | "Why only 3 chatbot leads from 29 conversations?" | "Capture rate was around 10% — too low. We deployed a stronger system prompt this week that explicitly asks for email in every reply until it has one. We expect that rate to climb materially over the next 30 days. The 29 conversations themselves are real Berkeley-student questions about availability, food, lease terms — the bot is answering well, it just wasn't closing." |
 | "Can we add more properties?" | "AppFolio already has all 127. Today we're isolated to Telegraph Commons because that's the only one being onboarded. Adding any other property is a single config flip on our side — every dashboard surface, every report, every scan respects per-property scope already." |
 | "What about Google Reviews showing 'failed'?" | "Environment issue — the Google Places API key on our side needs the new Places API permission enabled in the Cloud Console. 10-minute fix. The reputation scan still pulls Reddit, Yelp, Facebook, and broad web mentions via Tavily; only the Google reviews specifically need the key fix." |

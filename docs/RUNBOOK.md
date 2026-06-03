@@ -110,7 +110,7 @@ production:
 | `CLERK_SECRET_KEY` | Clerk backend |
 | `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` | Clerk frontend |
 | `ANTHROPIC_API_KEY` | Chatbot Claude calls |
-| `CURSIVE_API_KEY` | Pull from AudienceLab segments |
+| `CURSIVE_API_KEY` | Pull from the upstream pixel provider segments |
 | `CURSIVE_WEBHOOK_SECRET` | Auth for inbound Cursive webhooks |
 | `ENCRYPTION_KEY` | AES-256-GCM key for encrypting tenant credentials at rest |
 | `VERCEL_API_TOKEN` | Custom-domain provisioning |
