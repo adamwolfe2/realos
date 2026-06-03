@@ -39,8 +39,13 @@ export function IntegrationsStep({
   onSubmit: (body: IntegrationsSubmitBody) => void;
   disabled: boolean;
 }) {
+  // Default to "Manual" so the wizard's primary CTA is enabled the moment
+  // this step renders. Norman feedback: users were feeling forced to
+  // expand AppFolio just to unblock the Continue button. Manual-first
+  // makes the wizard feel optional + skippable; PMS connection is then
+  // an upgrade path, not a prerequisite.
   const [selectedPmsId, setSelectedPmsId] = React.useState<string | null>(
-    null,
+    "manual",
   );
   const [creds, setCreds] = React.useState<Record<string, string>>({});
   const [error, setError] = React.useState<string | null>(null);
@@ -119,7 +124,10 @@ export function IntegrationsStep({
         </p>
       </header>
 
-      {/* Live PMS cards */}
+      {/* Manual entry — promoted to top so users don't feel pressured to
+          connect AppFolio right away. Connecting a PMS is an enhancement,
+          not a prerequisite; skip-friendly framing makes the wizard feel
+          optional from the first card. */}
       <div className="space-y-2">
         <p
           style={{
@@ -131,67 +139,7 @@ export function IntegrationsStep({
             fontWeight: 600,
           }}
         >
-          Available now
-        </p>
-        {livePms.map((p) => (
-          <PmsCard
-            key={p.id}
-            pms={p}
-            selected={selectedPmsId === p.id}
-            onSelect={() => {
-              setSelectedPmsId(p.id);
-              setCreds({});
-              setError(null);
-            }}
-            creds={creds}
-            onCredChange={(k, v) => setCreds((c) => ({ ...c, [k]: v }))}
-          />
-        ))}
-      </div>
-
-      {/* Coming soon PMS cards */}
-      <div className="space-y-2">
-        <p
-          style={{
-            color: "#88867f",
-            fontFamily: "var(--font-mono)",
-            fontSize: "10px",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            fontWeight: 600,
-          }}
-        >
-          Coming soon — let us know you want it
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          {comingSoonPms.map((p) => (
-            <PmsCardCompact
-              key={p.id}
-              pms={p}
-              selected={selectedPmsId === p.id}
-              onSelect={() => {
-                setSelectedPmsId(p.id);
-                setCreds({});
-                setError(null);
-              }}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Manual entry option */}
-      <div className="space-y-2">
-        <p
-          style={{
-            color: "#88867f",
-            fontFamily: "var(--font-mono)",
-            fontSize: "10px",
-            letterSpacing: "0.16em",
-            textTransform: "uppercase",
-            fontWeight: 600,
-          }}
-        >
-          No PMS yet, or want to start small
+          Recommended — skip for now, connect later
         </p>
         <button
           type="button"
@@ -240,6 +188,66 @@ export function IntegrationsStep({
             <SelectionDot active={selectedPmsId === manualPms.id} />
           </div>
         </button>
+      </div>
+
+      {/* Live PMS connectors — for operators who DO want to sync now. */}
+      <div className="space-y-2">
+        <p
+          style={{
+            color: "#88867f",
+            fontFamily: "var(--font-mono)",
+            fontSize: "10px",
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            fontWeight: 600,
+          }}
+        >
+          Or connect a PMS now (optional)
+        </p>
+        {livePms.map((p) => (
+          <PmsCard
+            key={p.id}
+            pms={p}
+            selected={selectedPmsId === p.id}
+            onSelect={() => {
+              setSelectedPmsId(p.id);
+              setCreds({});
+              setError(null);
+            }}
+            creds={creds}
+            onCredChange={(k, v) => setCreds((c) => ({ ...c, [k]: v }))}
+          />
+        ))}
+      </div>
+
+      {/* Coming soon PMS cards — express-interest gallery. */}
+      <div className="space-y-2">
+        <p
+          style={{
+            color: "#88867f",
+            fontFamily: "var(--font-mono)",
+            fontSize: "10px",
+            letterSpacing: "0.16em",
+            textTransform: "uppercase",
+            fontWeight: 600,
+          }}
+        >
+          Coming soon — let us know you want it
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {comingSoonPms.map((p) => (
+            <PmsCardCompact
+              key={p.id}
+              pms={p}
+              selected={selectedPmsId === p.id}
+              onSelect={() => {
+                setSelectedPmsId(p.id);
+                setCreds({});
+                setError(null);
+              }}
+            />
+          ))}
+        </div>
       </div>
 
       {error ? (
@@ -576,14 +584,27 @@ function PmsMonogram({
   pms: PmsDefinition;
   size: number;
 }) {
-  if (pms.logoSrc) {
+  // Resolution order: explicit local logoSrc > Clearbit brand CDN >
+  // colored monogram tile. We track an error flag so a 404/network
+  // failure on Clearbit silently falls back to the monogram — better
+  // than a broken-image icon mid-wizard.
+  const [imgError, setImgError] = React.useState(false);
+
+  const resolvedSrc = pms.logoSrc
+    ? pms.logoSrc
+    : pms.clearbitDomain
+      ? `https://logo.clearbit.com/${pms.clearbitDomain}?size=128`
+      : null;
+
+  if (resolvedSrc && !imgError) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
-        src={pms.logoSrc}
+        src={resolvedSrc}
         alt={`${pms.name} logo`}
         width={size}
         height={size}
+        onError={() => setImgError(true)}
         style={{
           width: size,
           height: size,

@@ -45,9 +45,14 @@ export type PmsDefinition = {
   name: string;
   tagline: string;
   status: PmsStatus;
-  // Logo asset path under /public. Null falls back to a colored
-  // monogram mark derived from `brandColor` + `monogram`.
+  // Logo asset path under /public. Null falls back to clearbitDomain
+  // (Clearbit logo CDN) → colored monogram mark in that order.
   logoSrc: string | null;
+  // Each PMS's primary domain — drives the Clearbit logo CDN URL
+  // (https://logo.clearbit.com/<domain>?size=128). Clearbit returns real
+  // brand logos for any public company domain at no cost; the onboarding
+  // wizard falls back to the colored monogram tile on image error.
+  clearbitDomain: string | null;
   // Brand color (hex) for the fallback monogram tile. Lifted from
   // each PMS's marketing site / brand guidelines; not a perfect
   // match but recognizable enough that customers don't squint.
@@ -73,6 +78,7 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Property Manager Core, Plus, and Max.",
     status: "live",
     logoSrc: null,
+    clearbitDomain: "appfolio.com",
     brandColor: "#1B468A",
     monogram: "AF",
     authFields: [
@@ -112,6 +118,7 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Voyager 7s, Breeze, and Genesis2.",
     status: "coming_soon",
     logoSrc: null,
+    clearbitDomain: "yardi.com",
     brandColor: "#9E1B32",
     monogram: "Y",
     authFields: [
@@ -150,6 +157,7 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Property management for SMB operators.",
     status: "coming_soon",
     logoSrc: null,
+    clearbitDomain: "buildium.com",
     brandColor: "#0073C7",
     monogram: "B",
     authFields: [
@@ -175,6 +183,7 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Multifamily + student housing operators at scale.",
     status: "coming_soon",
     logoSrc: null,
+    clearbitDomain: "entrata.com",
     brandColor: "#00A99D",
     monogram: "E",
     authFields: [
@@ -200,6 +209,7 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Enterprise multifamily and student housing.",
     status: "coming_soon",
     logoSrc: null,
+    clearbitDomain: "realpage.com",
     brandColor: "#1B3766",
     monogram: "RP",
     authFields: [
@@ -225,6 +235,7 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Commercial real estate and large residential portfolios.",
     status: "coming_soon",
     logoSrc: null,
+    clearbitDomain: "mrisoftware.com",
     brandColor: "#003F72",
     monogram: "MRI",
     authFields: [
@@ -256,6 +267,7 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Mid-market multifamily (50 to 10,000 units).",
     status: "coming_soon",
     logoSrc: null,
+    clearbitDomain: "myresman.com",
     brandColor: "#FF6A39",
     monogram: "RM",
     authFields: [
@@ -276,6 +288,7 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Single-family rental operators.",
     status: "coming_soon",
     logoSrc: null,
+    clearbitDomain: "propertyware.com",
     brandColor: "#2D6A9F",
     monogram: "PW",
     authFields: [
@@ -296,6 +309,7 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Diversified portfolios with mixed residential + commercial.",
     status: "coming_soon",
     logoSrc: null,
+    clearbitDomain: "rentmanager.com",
     brandColor: "#3E5C76",
     monogram: "RM2",
     authFields: [
@@ -326,6 +340,7 @@ export const PMS_REGISTRY: PmsDefinition[] = [
     tagline: "Skip the PMS connection. Configure each property by hand.",
     status: "live",
     logoSrc: null,
+    clearbitDomain: null,
     brandColor: "#64748B",
     monogram: "•",
     authFields: [],
