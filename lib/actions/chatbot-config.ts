@@ -305,6 +305,155 @@ export async function updateLeadRouting(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Backfill — re-send the rich prospect-profile email for every chatbot
+// conversation in the last N days that captured a lead. Used right
+// after an operator first sets notifyLeadEmail — every conversation
+// that captured BEFORE the address was set silently dropped a
+// SUPPRESSED LeadNotificationDelivery row. This action catches them
+// up in one click.
+//
+// dryRun mode returns the candidate count without firing anything —
+// drives the panel's "N captured conversations not yet emailed" badge.
+// ---------------------------------------------------------------------------
+
+export type BackfillResult =
+  | {
+      ok: true;
+      candidateCount: number;
+      sent: number;
+      skipped: number;
+      failed: number;
+      dryRun: boolean;
+    }
+  | { ok: false; error: string };
+
+export async function backfillChatbotLeadEmails(args: {
+  /** Look-back window in days. Default 30. Cap at 365. */
+  dayRange?: number;
+  /** When true, returns the count without sending. */
+  dryRun?: boolean;
+}): Promise<BackfillResult> {
+  try {
+    const scope = await requireScope();
+    const days = Math.min(365, Math.max(1, args.dayRange ?? 30));
+    const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    const dryRun = args.dryRun ?? false;
+
+    // Eligibility for backfill:
+    // - Conversation belongs to current org (tenant scope)
+    // - Has at least one message (extraction needs content)
+    // - Either:
+    //     - status === LEAD_CAPTURED (operator-attested OR auto-detected
+    //       email/phone)
+    //     - OR capturedEmail/capturedPhone is non-null
+    // - lastMessageAt within the look-back window
+    //
+    // We INTENTIONALLY include conversations that already have
+    // prospectProfileEmailedAt set — operator wants the rich digest
+    // re-sent to the freshly-configured recipient. The send helper
+    // is called with force=true which overrides the de-bounce.
+    const eligible = await prisma.chatbotConversation.findMany({
+      where: {
+        orgId: scope.orgId,
+        messageCount: { gt: 0 },
+        lastMessageAt: { gte: since },
+        OR: [
+          { status: "LEAD_CAPTURED" },
+          { capturedEmail: { not: null } },
+          { capturedPhone: { not: null } },
+        ],
+      },
+      select: { id: true },
+      orderBy: { lastMessageAt: "desc" },
+    });
+
+    if (dryRun) {
+      return {
+        ok: true,
+        candidateCount: eligible.length,
+        sent: 0,
+        skipped: 0,
+        failed: 0,
+        dryRun: true,
+      };
+    }
+
+    if (eligible.length === 0) {
+      return {
+        ok: true,
+        candidateCount: 0,
+        sent: 0,
+        skipped: 0,
+        failed: 0,
+        dryRun: false,
+      };
+    }
+
+    // Dynamic import keeps this server-only helper out of the chatbot-
+    // config bundle when this action isn't being called.
+    const { sendProspectProfileForConversation } = await import(
+      "@/lib/chatbot/send-prospect-profile"
+    );
+
+    // Run sends in parallel via allSettled — one Claude failure can't
+    // block the other 13 in the queue. Cap concurrency at 8 so we don't
+    // hit Anthropic / Resend rate limits on big backfills (a 60-day
+    // window might queue 50+ conversations).
+    const CONCURRENCY = 8;
+    let sent = 0;
+    let skipped = 0;
+    let failed = 0;
+    for (let i = 0; i < eligible.length; i += CONCURRENCY) {
+      const slice = eligible.slice(i, i + CONCURRENCY);
+      const results = await Promise.allSettled(
+        slice.map((row) =>
+          sendProspectProfileForConversation({
+            conversationId: row.id,
+            force: true,
+            reason: "backfill",
+          }),
+        ),
+      );
+      for (const r of results) {
+        if (r.status !== "fulfilled") {
+          failed += 1;
+          continue;
+        }
+        const v = r.value;
+        if (v.ok && v.sent) sent += 1;
+        else if (v.ok && !v.sent) skipped += 1;
+        else failed += 1;
+      }
+    }
+
+    await prisma.auditEvent.create({
+      data: auditPayload(scope, {
+        action: AuditAction.UPDATE,
+        entityType: "Organization",
+        entityId: scope.orgId,
+        description: `Backfilled chatbot lead emails — ${sent} sent, ${skipped} skipped, ${failed} failed (last ${days} days)`,
+      }),
+    });
+
+    revalidatePath("/portal/chatbot");
+    return {
+      ok: true,
+      candidateCount: eligible.length,
+      sent,
+      skipped,
+      failed,
+      dryRun: false,
+    };
+  } catch (err) {
+    if (err instanceof ForbiddenError) {
+      return { ok: false, error: err.message };
+    }
+    console.error("backfillChatbotLeadEmails failed", err);
+    return { ok: false, error: "Backfill failed" };
+  }
+}
+
 export async function toggleChatbotEnabled(
   enabled: boolean
 ): Promise<ActionResult> {

@@ -1,10 +1,13 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Mail } from "lucide-react";
-import { updateLeadRouting } from "@/lib/actions/chatbot-config";
+import { Mail, RefreshCw } from "lucide-react";
+import {
+  backfillChatbotLeadEmails,
+  updateLeadRouting,
+} from "@/lib/actions/chatbot-config";
 
 // ---------------------------------------------------------------------------
 // LeadRoutingPanel — surfaces Organization.notifyLeadEmail +
@@ -26,9 +29,31 @@ export function LeadRoutingPanel({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
+  const [backfillPending, startBackfill] = useTransition();
   const [email, setEmail] = useState(notifyLeadEmail ?? "");
   const [enabled, setEnabled] = useState(notifyOnChatbotLead);
   const [error, setError] = useState<string | null>(null);
+  const [backfillDayRange, setBackfillDayRange] = useState<7 | 30 | 90>(30);
+  const [candidateCount, setCandidateCount] = useState<number | null>(null);
+
+  // Dry-run the backfill query whenever the look-back window changes
+  // (or on mount) so the operator sees the candidate count BEFORE
+  // they click "Send catch-up emails".
+  useEffect(() => {
+    let cancelled = false;
+    backfillChatbotLeadEmails({ dayRange: backfillDayRange, dryRun: true })
+      .then((r) => {
+        if (cancelled) return;
+        if (r.ok) setCandidateCount(r.candidateCount);
+        else setCandidateCount(null);
+      })
+      .catch(() => {
+        if (!cancelled) setCandidateCount(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [backfillDayRange]);
 
   function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -138,6 +163,119 @@ export function LeadRoutingPanel({
           ) : null}
         </div>
       </form>
+
+      {/* Backfill / catch-up tool. Sits below the save form so the
+          operator sees it AFTER they've set the email. Only fires when
+          there are recipients configured + the channel toggle is on. */}
+      <div
+        className="mt-5 pt-5 border-t border-border"
+        aria-label="Catch up on missed leads"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h3 className="text-[13px] font-semibold flex items-center gap-1.5">
+              <RefreshCw className="w-3 h-3 text-primary" aria-hidden />
+              Catch up on missed leads
+            </h3>
+            <p className="text-[11.5px] text-muted-foreground mt-1 leading-relaxed max-w-xl">
+              Re-send the rich profile email for every chatbot
+              conversation that captured a lead in the look-back window.
+              Useful right after setting the email above — the team
+              gets a full backfill in one click.
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <label className="text-[12px] text-foreground flex items-center gap-2">
+            Window
+            <select
+              value={backfillDayRange}
+              onChange={(e) =>
+                setBackfillDayRange(
+                  Number(e.target.value) as 7 | 30 | 90,
+                )
+              }
+              className="h-8 px-2 rounded-md border border-border bg-background text-[12.5px]"
+            >
+              <option value={7}>Last 7 days</option>
+              <option value={30}>Last 30 days</option>
+              <option value={90}>Last 90 days</option>
+            </select>
+          </label>
+
+          <span className="text-[12px] text-muted-foreground">
+            {candidateCount === null
+              ? "Counting eligible conversations…"
+              : candidateCount === 0
+                ? "No captured conversations in this window."
+                : `${candidateCount} captured conversation${candidateCount === 1 ? "" : "s"} ready to email.`}
+          </span>
+
+          <button
+            type="button"
+            disabled={
+              backfillPending ||
+              candidateCount === null ||
+              candidateCount === 0 ||
+              recipientCount === 0 ||
+              !enabled
+            }
+            onClick={() => {
+              if (recipientCount === 0) {
+                toast.error(
+                  "Set + save a recipient email before backfilling.",
+                );
+                return;
+              }
+              if (!enabled) {
+                toast.error(
+                  "Enable chatbot lead notifications before backfilling.",
+                );
+                return;
+              }
+              if (candidateCount === null || candidateCount === 0) return;
+              if (
+                !window.confirm(
+                  `Send rich profile emails for ${candidateCount} captured conversation${candidateCount === 1 ? "" : "s"} to ${recipients.join(", ")}?\n\nEach email includes the prospect's full chat profile and a direct link to engage. Takes a few seconds per conversation.`,
+                )
+              ) {
+                return;
+              }
+              startBackfill(async () => {
+                const result = await backfillChatbotLeadEmails({
+                  dayRange: backfillDayRange,
+                  dryRun: false,
+                });
+                if (!result.ok) {
+                  toast.error(result.error);
+                  return;
+                }
+                toast.success(
+                  `Sent ${result.sent} email${result.sent === 1 ? "" : "s"}${
+                    result.skipped > 0 ? ` · ${result.skipped} skipped` : ""
+                  }${result.failed > 0 ? ` · ${result.failed} failed` : ""}`,
+                );
+                // Refresh the candidate count for a UX confirmation
+                // ("0 captured conversations ready to email" after).
+                const fresh = await backfillChatbotLeadEmails({
+                  dayRange: backfillDayRange,
+                  dryRun: true,
+                });
+                if (fresh.ok) setCandidateCount(fresh.candidateCount);
+                router.refresh();
+              });
+            }}
+            className="inline-flex items-center justify-center h-8 px-3 rounded-md text-[12.5px] font-semibold text-white bg-primary hover:bg-primary-dark disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {backfillPending
+              ? "Sending…"
+              : candidateCount === null || candidateCount === 0
+                ? "Send catch-up emails"
+                : `Send ${candidateCount} catch-up email${candidateCount === 1 ? "" : "s"}`}
+          </button>
+        </div>
+      </div>
     </section>
   );
 }
