@@ -50,7 +50,7 @@ function buildEngine(
     isConfigured,
     async runPrompt(
       prompt: string,
-      _ctx?: EngineCallContext,
+      ctx?: EngineCallContext,
     ): Promise<EngineResult> {
       if (!isConfigured()) {
         return {
@@ -58,7 +58,16 @@ function buildEngine(
           reason: "DATAFORSEO_LOGIN / DATAFORSEO_PASSWORD not configured",
         };
       }
-      const result = await fetchAiLlmResponse({ engine: engineName, prompt });
+      // Thread the AEO orchestrator's per-tuple context through to
+      // /admin/costs. Surface tag is set inside fetchAiLlmResponse.
+      const result = await fetchAiLlmResponse(
+        { engine: engineName, prompt },
+        {
+          orgId: ctx?.orgId ?? null,
+          propertyId: ctx?.propertyId ?? null,
+          prospectAuditId: ctx?.prospectAuditId ?? null,
+        },
+      );
       if (!("ok" in result) || !result.ok) {
         // Skipped (env-gated, but we just checked isConfigured) or error.
         // The skipped branch can still fire if DataForSEO env disappears

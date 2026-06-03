@@ -135,7 +135,10 @@ export async function runAeoScan(opts: ScanOptions): Promise<ScanResult> {
       promptsRun += 1;
       for (const engine of engines) {
         await throttleEngine(engineNextAllowedAt, engine.engine);
-        const result = await engine.runPrompt(prompt);
+        const result = await engine.runPrompt(prompt, {
+          orgId: property.orgId,
+          propertyId: property.id,
+        });
         if ("skipped" in result && result.skipped) {
           skipped += 1;
           continue;
@@ -464,7 +467,10 @@ export async function runNeighborhoodScan(
       for (const engine of engines) {
         await throttleEngine(engineNextAllowedAt, engine.engine);
         queriesRun += 1;
-        const result = await engine.runPrompt(prompt);
+        const result = await engine.runPrompt(prompt, {
+          orgId: page.orgId,
+          propertyId: page.propertyId ?? null,
+        });
         if ("skipped" in result && result.skipped) {
           skipped += 1;
           continue;

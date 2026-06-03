@@ -53,10 +53,32 @@ function authHeader(): string | null {
   return `Basic ${token}`;
 }
 
+/**
+ * Optional per-call context. Mostly used by the AEO adapter to attribute
+ * cost to a specific org/property/audit + tag the call's surface so
+ * `/admin/costs` can split AEO vs SEO-Agent spend. `surface` defaults to
+ * "seo-agent" — the original consumer — when nothing is passed.
+ *
+ * `timeoutMs` defaults to 20s. The previous behavior was unbounded, which
+ * meant a stuck DataForSEO call could burn the cron's 300s ceiling on a
+ * single (engine, prompt) tuple. 20s is comfortably above DataForSEO's
+ * documented p95 (~5s) and well below the cron throttle window.
+ */
+export interface DataforseoCallContext {
+  prospectAuditId?: string | null;
+  orgId?: string | null;
+  propertyId?: string | null;
+  surface?: "aeo" | "seo-agent" | "audit" | "signals";
+  timeoutMs?: number;
+}
+
+const DEFAULT_TIMEOUT_MS = 20_000;
+
 async function call<T>(
   path: string,
   body: unknown,
   label: string,
+  ctx?: DataforseoCallContext,
 ): Promise<CallResult<T>> {
   const auth = authHeader();
   if (!auth) {
@@ -69,6 +91,20 @@ async function call<T>(
   }
 
   const startedAt = Date.now();
+  const surface = ctx?.surface ?? "seo-agent";
+  const timeoutMs = ctx?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
+  // Common attribution fields threaded into every logUsage write — same
+  // shape the AEO direct engines use so /admin/costs can split AEO vs
+  // SEO-Agent spend per org/property.
+  const attribution = {
+    orgId: ctx?.orgId ?? null,
+    propertyId: ctx?.propertyId ?? null,
+    prospectAuditId: ctx?.prospectAuditId ?? null,
+  };
+  const tag = (extra: Record<string, unknown>): Record<string, unknown> => ({
+    surface,
+    ...extra,
+  });
   let res: Response;
   try {
     res = await fetch(`${BASE_URL}${path}`, {
@@ -81,6 +117,7 @@ async function call<T>(
       // single-task pattern matches their "live" endpoints (instant
       // response, no polling). Batched endpoints use POST-then-GET.
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(timeoutMs),
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Network error";
@@ -92,7 +129,8 @@ async function call<T>(
       status: "ERROR",
       costUsd: 0,
       durationMs: Date.now() - startedAt,
-      meta: { phase: "network", message: message.slice(0, 240) },
+      ...attribution,
+      meta: tag({ phase: "network", message: message.slice(0, 240) }),
     });
     return { ok: false, error: `DataforSEO ${label} network error: ${message}` };
   }
@@ -110,7 +148,8 @@ async function call<T>(
       status: "ERROR",
       costUsd: 0,
       durationMs: Date.now() - startedAt,
-      meta: { phase: "http", statusCode: res.status, body: text.slice(0, 200) },
+      ...attribution,
+      meta: tag({ phase: "http", statusCode: res.status, body: text.slice(0, 200) }),
     });
     return {
       ok: false,
@@ -137,7 +176,8 @@ async function call<T>(
       status: "ERROR",
       costUsd: 0,
       durationMs: Date.now() - startedAt,
-      meta: { phase: "envelope", taskStatus: json.status_code, message: json.status_message },
+      ...attribution,
+      meta: tag({ phase: "envelope", taskStatus: json.status_code, message: json.status_message }),
     });
     return {
       ok: false,
@@ -153,7 +193,8 @@ async function call<T>(
       status: "ERROR",
       costUsd: 0,
       durationMs: Date.now() - startedAt,
-      meta: { phase: "empty_tasks" },
+      ...attribution,
+      meta: tag({ phase: "empty_tasks" }),
     });
     return { ok: false, error: `DataforSEO ${label}: empty tasks array` };
   }
@@ -167,7 +208,8 @@ async function call<T>(
       status: "ERROR",
       costUsd: task.cost ?? 0,
       durationMs: Date.now() - startedAt,
-      meta: { phase: "task", taskStatus: task.status_code, message: task.status_message },
+      ...attribution,
+      meta: tag({ phase: "task", taskStatus: task.status_code, message: task.status_message }),
     });
     return {
       ok: false,
@@ -186,7 +228,8 @@ async function call<T>(
     status: "SUCCESS",
     costUsd: task.cost,
     durationMs: Date.now() - startedAt,
-    meta: { taskStatus: task.status_code },
+    ...attribution,
+    meta: tag({ taskStatus: task.status_code }),
   });
 
   return { ok: true, data: task.result, costUsd: task.cost };
@@ -918,12 +961,23 @@ export type AiLlmResponseResult = {
  * client. Engine modules treat `skipped` and `error` as `{ skipped: true }`
  * so the orchestrator records nothing for that tuple and moves on.
  */
-export async function fetchAiLlmResponse(input: {
-  engine: AiOptimizationEngine;
-  prompt: string;
-  locationCode?: number;
-}): Promise<CallResult<AiLlmResponseResult>> {
+export async function fetchAiLlmResponse(
+  input: {
+    engine: AiOptimizationEngine;
+    prompt: string;
+    locationCode?: number;
+  },
+  ctx?: DataforseoCallContext,
+): Promise<CallResult<AiLlmResponseResult>> {
   const segment = aiOptimizationPathSegment(input.engine);
+  // Build the request body without spurious `undefined` keys — JSON.stringify
+  // emits "model_name":null for those, which DataForSEO has on occasion
+  // treated as "select default" but is undocumented. Cleaner to omit.
+  const requestBody: Record<string, unknown> = {
+    prompt: input.prompt,
+    location_code: input.locationCode ?? 2840,
+    language_code: "en",
+  };
   const result = await call<
     Array<{
       id?: string;
@@ -944,15 +998,9 @@ export async function fetchAiLlmResponse(input: {
     }>
   >(
     `/ai_optimization/${segment}/llm_responses/live`,
-    [
-      {
-        prompt: input.prompt,
-        location_code: input.locationCode ?? 2840,
-        language_code: "en",
-        model_name: undefined,
-      },
-    ],
+    [requestBody],
     `ai_llm[${input.engine.toLowerCase()}][${input.prompt.slice(0, 32)}]`,
+    { surface: "aeo", ...ctx },
   );
   if (!("ok" in result) || !result.ok) {
     return result as CallResult<AiLlmResponseResult>;
@@ -1007,10 +1055,13 @@ export type AiKeywordVolumeResult = {
   engineShare: Record<string, number>;
 };
 
-export async function fetchAiKeywordVolume(input: {
-  keywords: string[];
-  locationCode?: number;
-}): Promise<CallResult<AiKeywordVolumeResult[]>> {
+export async function fetchAiKeywordVolume(
+  input: {
+    keywords: string[];
+    locationCode?: number;
+  },
+  ctx?: DataforseoCallContext,
+): Promise<CallResult<AiKeywordVolumeResult[]>> {
   if (input.keywords.length === 0) {
     return { ok: true, data: [], costUsd: 0 };
   }
@@ -1032,6 +1083,7 @@ export async function fetchAiKeywordVolume(input: {
       },
     ],
     `ai_kw[${input.keywords.length}]`,
+    { surface: "aeo", ...ctx },
   );
   if (!("ok" in result) || !result.ok) {
     return result as CallResult<AiKeywordVolumeResult[]>;
@@ -1059,10 +1111,13 @@ export type SerpAiSummaryResult = {
   citedUrls: string[];
 };
 
-export async function fetchSerpAiSummary(input: {
-  query: string;
-  locationCode?: number;
-}): Promise<CallResult<SerpAiSummaryResult>> {
+export async function fetchSerpAiSummary(
+  input: {
+    query: string;
+    locationCode?: number;
+  },
+  ctx?: DataforseoCallContext,
+): Promise<CallResult<SerpAiSummaryResult>> {
   const result = await call<
     Array<{
       items?: Array<{
@@ -1081,6 +1136,7 @@ export async function fetchSerpAiSummary(input: {
       },
     ],
     `ai_summary[${input.query.slice(0, 32)}]`,
+    { surface: "aeo", ...ctx },
   );
   if (!("ok" in result) || !result.ok) {
     return result as CallResult<SerpAiSummaryResult>;

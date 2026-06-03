@@ -5,7 +5,7 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { AeoClient } from "./aeo-client";
 import type { EngineCardData } from "./aeo-engine-cards";
 import type { ResponseRow } from "./aeo-responses-table";
-import { ALL_ENGINES } from "@/lib/aeo/engines";
+import { ALL_ENGINES, resolveEngineSource } from "@/lib/aeo/engines";
 import type {
   ShareOfVoicePerEngine,
   TopEntity,
@@ -405,6 +405,7 @@ export default async function AeoPage() {
         perEngine: sovPerEngine,
         topEntities,
         totalSnapshots: snapshots.length,
+        engineSource: resolveEngineSource(),
       }}
     />
   );

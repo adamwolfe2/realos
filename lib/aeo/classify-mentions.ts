@@ -42,6 +42,58 @@ function normalize(s: string): string {
     .trim();
 }
 
+function tokenize(s: string): string[] {
+  return normalize(s)
+    .split(" ")
+    .filter((t) => t.length > 0);
+}
+
+/**
+ * Token-boundary match: the entity mention's token sequence contains the
+ * brand's token sequence (or vice versa). Beats raw substring `includes`,
+ * which used to false-positive on "Berkeley Riverwalk Apartments" being
+ * classified as self for a brand named "Riverwalk".
+ *
+ * Match rules:
+ *  - Identical token arrays match.
+ *  - The brand's tokens appear as a contiguous run inside the mention's
+ *    tokens (or vice versa for short aliases) — i.e. shared multi-word
+ *    prefix or suffix, not a single common token like "apartments".
+ *  - Single-token brands match only on exact token equality somewhere
+ *    in the mention — never on a containing substring.
+ */
+function tokenSequenceMatches(
+  mentionTokens: string[],
+  brandTokens: string[],
+): boolean {
+  if (brandTokens.length === 0 || mentionTokens.length === 0) return false;
+  if (brandTokens.length === 1) {
+    return mentionTokens.includes(brandTokens[0]);
+  }
+  // Look for brandTokens as a contiguous slice of mentionTokens.
+  const limit = mentionTokens.length - brandTokens.length;
+  for (let i = 0; i <= limit; i++) {
+    let match = true;
+    for (let j = 0; j < brandTokens.length; j++) {
+      if (mentionTokens[i + j] !== brandTokens[j]) {
+        match = false;
+        break;
+      }
+    }
+    if (match) return true;
+  }
+  // Reverse direction: short alias inside a long brand. Only meaningful
+  // when mentionTokens are shorter than brandTokens (e.g. alias "TGCC"
+  // mentioned, brand "telegraph commons" — handled via aliases anyway,
+  // but keep the symmetric check for robustness).
+  if (mentionTokens.length < brandTokens.length) {
+    const inner = mentionTokens.join(" ");
+    const outer = brandTokens.join(" ");
+    return outer.includes(inner);
+  }
+  return false;
+}
+
 function hostFromUrl(url: string | null): string | null {
   if (!url) return null;
   try {
@@ -53,30 +105,39 @@ function hostFromUrl(url: string | null): string | null {
 }
 
 function buildSelfMatchers(target: BrandTarget): {
-  nameTokens: string[];
+  /// Each entry is the tokenized form of one brand-name candidate
+  /// (target.name or one of target.aliases). Matching is token-boundary
+  /// aware via `tokenSequenceMatches` so "Riverwalk" doesn't classify
+  /// "Berkeley Riverwalk Apartments" as self.
+  nameTokenLists: string[][];
   hosts: string[];
 } {
-  const nameTokens: string[] = [];
+  const nameTokenLists: string[][] = [];
   const candidates = [target.name, ...(target.aliases ?? [])].filter(
     (s): s is string => Boolean(s && s.trim().length > 0),
   );
   for (const c of candidates) {
-    const norm = normalize(c);
-    if (norm.length >= 3) nameTokens.push(norm);
+    const tokens = tokenize(c);
+    if (tokens.length === 0) continue;
+    // Discard very short single-token aliases like "the" or "a" that
+    // would match almost every mention. Token boundary protects against
+    // longer collisions; here we just guard against pure noise.
+    if (tokens.length === 1 && tokens[0].length < 3) continue;
+    nameTokenLists.push(tokens);
   }
   const host = hostFromUrl(target.websiteUrl);
   const hosts = host ? [host] : [];
-  return { nameTokens, hosts };
+  return { nameTokenLists, hosts };
 }
 
 function isSelfMention(
   mention: AiLlmMention,
-  matchers: { nameTokens: string[]; hosts: string[] },
+  matchers: { nameTokenLists: string[][]; hosts: string[] },
 ): boolean {
-  const name = normalize(mention.name);
+  const mentionTokens = tokenize(mention.name);
   if (
-    matchers.nameTokens.some(
-      (token) => name === token || name.includes(token) || token.includes(name),
+    matchers.nameTokenLists.some((brandTokens) =>
+      tokenSequenceMatches(mentionTokens, brandTokens),
     )
   ) {
     return true;
@@ -110,7 +171,7 @@ export function classifyMentions(
   }
   const matchers = buildSelfMatchers(target);
   const hasIdentity =
-    matchers.nameTokens.length > 0 || matchers.hosts.length > 0;
+    matchers.nameTokenLists.length > 0 || matchers.hosts.length > 0;
 
   const classified: ClassifiedMention[] = mentions.map((m) => {
     const isSelf = hasIdentity ? isSelfMention(m, matchers) : false;

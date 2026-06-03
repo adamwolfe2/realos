@@ -277,6 +277,7 @@ export function AeoClient({
         perEngine={shareOfVoice.perEngine}
         topEntities={shareOfVoice.topEntities}
         totalSnapshots={shareOfVoice.totalSnapshots}
+        engineSource={shareOfVoice.engineSource}
       />
 
       {/* What to do next — derived recommendations */}

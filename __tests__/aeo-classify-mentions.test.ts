@@ -96,6 +96,50 @@ describe("lib/aeo/classify-mentions — classifyMentions", () => {
     expect(r.classified[0].kind).toBe("self");
   });
 
+  it("does NOT false-positive a substring inside a single word", () => {
+    // Brand "Riv" (single short token). Pre-token-boundary the classifier
+    // matched on substring inside "Riverwalk" → false self. Token-boundary
+    // now requires equality at the word level, so "Riv" no longer matches
+    // "Riverwalk" as self.
+    const r = classifyMentions(
+      [mention("Berkeley Riverwalk Apartments", 1)],
+      { name: "Rivs", websiteUrl: null }, // "rivs" tokenized as ["rivs"]
+    );
+    expect(r.classified[0].kind).toBe("competitor");
+  });
+
+  it("does NOT match a longer word that contains a shorter brand token", () => {
+    // Brand "Walk" → ["walk"]. Mention "Riverwalk Plaza" → ["riverwalk",
+    // "plaza"]. Substring would match; tokens do not.
+    const r = classifyMentions(
+      [mention("Riverwalk Plaza", 1)],
+      { name: "Walk", websiteUrl: null },
+    );
+    expect(r.classified[0].kind).toBe("competitor");
+  });
+
+  it("matches multi-word brand even when surrounded by other words", () => {
+    // Brand "Telegraph Commons" inside "The Telegraph Commons Apartments"
+    // — same building, classifier should treat as self.
+    const r = classifyMentions(
+      [mention("The Telegraph Commons Apartments", 1)],
+      { name: "Telegraph Commons", websiteUrl: null },
+    );
+    expect(r.classified[0].kind).toBe("self");
+  });
+
+  it("does NOT match a partial brand-token-sequence overlap", () => {
+    // Brand: "Telegraph Commons". Mention: "Berkeley Commons Apartments"
+    // — shares one token ("commons") but not the two-token sequence.
+    // Pre-token-boundary fix this matched as self via includes(); after
+    // it's a competitor.
+    const r = classifyMentions(
+      [mention("Berkeley Commons Apartments", 1)],
+      { name: "Telegraph Commons", websiteUrl: null },
+    );
+    expect(r.classified[0].kind).toBe("competitor");
+  });
+
   it("preserves position + citedUrl on classified output", () => {
     const r = classifyMentions(
       [mention("Telegraph Commons", 3, "https://telegraphcommons.com/about")],
