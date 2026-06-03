@@ -14,8 +14,23 @@ import { DpsHero } from "@/components/audit/dps-hero";
 import { PillarGrid } from "@/components/audit/pillar-grid";
 import { RecommendationsSection } from "@/components/audit/recommendations-section";
 import { BookCallCta } from "@/components/audit/book-call-cta";
+import { AuditTrustStrip } from "@/components/audit/audit-trust-strip";
+import { AeoEngineBreakdown } from "@/components/audit/aeo-engine-breakdown";
+import {
+  GoogleAiOverviewCard,
+  AeoOnPageCard,
+  SchemaGapCard,
+  DetectedStackCard,
+} from "@/components/audit/premium-sections";
 import type { DpsResult } from "@/lib/audit/scoring";
 import type { ActionItem } from "@/lib/audit/recommendations";
+import type {
+  AeoEngineRow,
+  AeoOnPageFindings,
+  DetectedStack,
+  GoogleAiOverviewFindings,
+  SchemaGap,
+} from "@/lib/audit/synthesize";
 import { OVERALL_DPS_CAP } from "@/lib/audit/quiz-questions";
 
 interface AuditRow {
@@ -50,6 +65,16 @@ interface Findings {
   // New DPS shape (post-2026-06-01 audits)
   dps?: DpsResult;
   recommendations?: ActionItem[];
+  // Premium sections (post-2026-06-03 audits). All optional — legacy
+  // audits render fine without these. AeoCompetitorsCited is a flat
+  // list copied from the AEO fan-out; the page reads it alongside the
+  // per-engine breakdown.
+  aeoEngines?: AeoEngineRow[];
+  aeoCompetitorsCited?: string[];
+  aeoOnPage?: AeoOnPageFindings | null;
+  googleAiOverview?: GoogleAiOverviewFindings | null;
+  detectedStack?: DetectedStack;
+  schemaGap?: SchemaGap;
 }
 
 async function loadAudit(token: string): Promise<AuditRow | null> {
@@ -138,6 +163,18 @@ export default async function AuditViewerPage({
   const score = dps?.score ?? Math.min(audit.overallScore ?? 0, OVERALL_DPS_CAP);
   const highSeverity = recommendations.filter((r) => r.severity === "high").length;
 
+  // Premium pre-paywall surfaces (2026-06-03). Each is gated only on
+  // whether the underlying signal landed for this audit — legacy audits
+  // (no aeoEngines field on findings) cleanly render as no-ops.
+  const aeoEngines = findings.aeoEngines ?? [];
+  const aeoCompetitorsCited = findings.aeoCompetitorsCited ?? [];
+  const googleAio = findings.googleAiOverview ?? null;
+  const aeoOnPage = findings.aeoOnPage ?? null;
+  const schemaGap = findings.schemaGap ?? null;
+  const detectedStack = findings.detectedStack ?? null;
+  const enginesQueried = aeoEngines.length;
+  const totalAiResponses = enginesQueried * 5; // 5 prompts per engine
+
   return (
     <ReportShell subject={subject} createdAt={audit.createdAt}>
       <DpsHero
@@ -146,7 +183,46 @@ export default async function AuditViewerPage({
         recommendationCount={recommendations.length}
       />
 
+      {/* Premium trust strip — engine logos + audit counts. Lives between
+          the hero and the pillar grid so the prospect's first scroll
+          establishes credibility before they see the score breakdown. */}
+      {enginesQueried > 0 ? (
+        <AuditTrustStrip
+          brandName={subject}
+          enginesQueried={enginesQueried}
+          reputationSources={7}
+          totalMentions={mentions.length}
+          totalAiResponses={totalAiResponses}
+          auditedAtIso={audit.createdAt.toISOString()}
+          auditId={audit.id}
+        />
+      ) : null}
+
       {dps ? <PillarGrid pillars={dps.pillars} /> : null}
+
+      {/* Per-engine AEO breakdown — branded marks for ChatGPT, Perplexity,
+          Claude, Gemini. The verdict surface. */}
+      {aeoEngines.length > 0 ? (
+        <AeoEngineBreakdown
+          rows={aeoEngines}
+          competitorsCited={aeoCompetitorsCited}
+          brandName={subject}
+        />
+      ) : null}
+
+      {/* Verbatim Google AI Overview for the brand's name query. */}
+      {googleAio ? (
+        <GoogleAiOverviewCard findings={googleAio} brandName={subject} />
+      ) : null}
+
+      {/* 8-check AEO Page Health scorecard on the homepage. */}
+      {aeoOnPage ? <AeoOnPageCard findings={aeoOnPage} /> : null}
+
+      {/* Schema markup gap — present vs missing types. */}
+      {schemaGap ? <SchemaGapCard findings={schemaGap} /> : null}
+
+      {/* Observed conversion stack from the rendered homepage HTML. */}
+      {detectedStack ? <DetectedStackCard findings={detectedStack} /> : null}
 
       <SourceBreakdown counts={perSourceCounts} totalMentions={mentions.length} />
 

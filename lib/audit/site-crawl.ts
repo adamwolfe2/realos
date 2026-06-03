@@ -84,7 +84,16 @@ export interface SiteCrawlResult {
   // --- Discoverability probes (side channels) --------------------------
   hasSitemapXml: boolean;
   hasRobotsTxt: boolean;
+
+  // --- Raw HTML (capped). Populated only via __provider for /audit so
+  //     synthesize.ts can run the on-page AEO 8-check + detected-stack
+  //     regex scan over the same HTML we already crawled. Stripped from
+  //     persisted snapshots so we never bloat DailySignalSnapshot.
+  //     Cap: HTML_CAP_BYTES. -------------------------------------------
+  html: string | null;
 }
+
+const HTML_CAP_BYTES = 200_000;
 
 function emptyResult(
   url: string,
@@ -130,6 +139,7 @@ function emptyResult(
     hasFavicon: false,
     hasSitemapXml: false,
     hasRobotsTxt: false,
+    html: null,
   };
 }
 
@@ -396,6 +406,7 @@ async function parseHtmlIntoResult(args: {
     hasFavicon,
     hasSitemapXml,
     hasRobotsTxt,
+    html: html.length > HTML_CAP_BYTES ? html.slice(0, HTML_CAP_BYTES) : html,
   };
 }
 

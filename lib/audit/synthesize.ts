@@ -24,6 +24,10 @@ import {
 import { computeDps, type DpsResult } from "./scoring";
 import { computeRecommendations, type ActionItem } from "./recommendations";
 import type { QuizAnswers } from "./quiz-questions";
+import {
+  runOnPageAuditChecks,
+  type OnPageAuditResult,
+} from "@/lib/aeo/onpage-audit";
 
 // ----------------------------------------------------------------------------
 // Synthesizer. Turns the raw provider responses + rolled-up SignalSnapshot
@@ -57,6 +61,63 @@ export type SectionDetails = {
   traffic: SectionDetail | null;
 };
 
+/** Per-engine AEO citation row. Renders the premium "Where AI search
+ *  engines name you" card on the result page with the official engine
+ *  mark next to each. Real data — derived from the AEO LLM fan-out we
+ *  already run inside computeSignals. */
+export type AeoEngineRow = {
+  engine: "CHATGPT" | "PERPLEXITY" | "CLAUDE" | "GEMINI";
+  cited: boolean;
+  /** URLs the engine surfaced when it cited the brand. Empty when not
+   *  cited or when the engine doesn't return source URLs. */
+  sources: string[];
+};
+
+/** AEO Page Health — 8-check on-page audit run against the prospect's
+ *  homepage. Surfaces the same scorecard the AEO Boost portal feature
+ *  ships, so prospects see exactly what a paying customer would see
+ *  for one of their pages. */
+export type AeoOnPageFindings = {
+  url: string;
+  score: number;
+  checks: OnPageAuditResult["checks"];
+  excerpt: string;
+};
+
+/** Google AI Overview captured for the brand's name query. Verbatim. */
+export type GoogleAiOverviewFindings = {
+  query: string;
+  summary: string;
+  citedUrls: string[];
+  /** True when the prospect's own domain is in citedUrls. */
+  cited: boolean;
+};
+
+/** Detect-don't-ask conversion stack scan. Regex pass over the crawled
+ *  homepage HTML for known vendor hosts. Builds trust by showing the
+ *  prospect what we OBSERVED on their site, not what the quiz said. */
+export type DetectedStack = {
+  /** Vendor slug → display name + tagline + whether we found it. */
+  rows: Array<{
+    key: string;
+    label: string;
+    category: "chatbot" | "popups" | "pixel" | "analytics" | "crm";
+    detected: boolean;
+    /** Short note for the row. "Detected: Intercom widget" or "Not loaded". */
+    note: string;
+  }>;
+};
+
+/** Schema markup gap — what JSON-LD types are present on the homepage
+ *  and what high-AEO-signal types are missing. Surfaced as a side-by-
+ *  side "Present / Missing" card. */
+export type SchemaGap = {
+  present: string[];
+  /** Curated list of high-AEO-signal schema types (FAQPage,
+   *  ApartmentComplex, LocalBusiness, etc.) NOT present on the page. */
+  missing: string[];
+};
+
 export type SynthesizedFindings = {
   quickWins: Finding[];
   risks: Finding[];
@@ -75,6 +136,25 @@ export type SynthesizedFindings = {
   /** Ordered recommendation cards. Each maps to a LeaseStack feature
    *  via `lib/audit/feature-catalog.ts`. */
   recommendations: ActionItem[];
+  /** Premium AEO surface — per-engine citation rows with logos. Always
+   *  emitted when AEO ran (every audit). Adam 2026-06-03. */
+  aeoEngines?: AeoEngineRow[];
+  /** Competitor names AI engines surfaced INSTEAD of the brand. Already
+   *  collected by computeSignals; surfaced on findings so the result
+   *  page renders the chip strip without re-deriving. */
+  aeoCompetitorsCited?: string[];
+  /** AEO Page Health 8-check on the homepage. Always emitted when we
+   *  have crawled HTML. */
+  aeoOnPage?: AeoOnPageFindings | null;
+  /** Verbatim Google AI Overview for the brand's name query. Null when
+   *  DataForSEO is unconfigured or Google didn't surface an AI Overview
+   *  for the query. */
+  googleAiOverview?: GoogleAiOverviewFindings | null;
+  /** Detected conversion stack (chatbot, pixel, popups, analytics, CRM)
+   *  from the crawled HTML. Builds trust vs the quiz answers. */
+  detectedStack?: DetectedStack;
+  /** Schema markup present + missing. */
+  schemaGap?: SchemaGap;
 };
 
 export type ProviderData = {
@@ -95,6 +175,13 @@ export type ProviderData = {
   aeoCompetitorsCited: string[];
   aeoCitedEngines: string[];
   aeoUncitedEngines: string[];
+  /** Google AI Overview captured during compute. Null when DataForSEO
+   *  is unconfigured or the query returned no AI Overview. */
+  googleAiOverview?: {
+    query: string;
+    summary: string;
+    citedUrls: string[];
+  } | null;
 };
 
 export async function synthesizeAudit(
@@ -473,6 +560,18 @@ export async function synthesizeAudit(
   // actually reads like a punch-list. The expanded page-audit findings
   // can routinely surface 8+ on-page issues for a brand-new property,
   // and capping at 5 would hide half the actionable work.
+  // ---- Premium findings (2026-06-03) -----------------------------------
+  // Reuses signal data already collected by computeSignals. Zero extra
+  // API calls — these surfaces just RE-PRESENT the data we have through
+  // a richer, branded lens (engine logos, verbatim AIO, 8-check on-page
+  // audit, detected stack, schema gap). Every field is real and traceable
+  // back to the audit's existing signal sources.
+  const aeoEngines = buildAeoEngineRows(signals);
+  const aeoOnPage = buildAeoOnPageFindings(provider);
+  const googleAiOverview = buildGoogleAiOverview(provider);
+  const detectedStack = buildDetectedStack(provider.siteCrawl?.html ?? null);
+  const schemaGap = buildSchemaGap(provider);
+
   const findings: SynthesizedFindings = {
     quickWins: quickWins.slice(0, 10),
     risks: risks.slice(0, 5),
@@ -481,6 +580,12 @@ export async function synthesizeAudit(
     sectionDetails: buildSectionDetails(signals, provider),
     dps,
     recommendations,
+    aeoEngines,
+    aeoCompetitorsCited: provider.aeoCompetitorsCited,
+    aeoOnPage,
+    googleAiOverview,
+    detectedStack,
+    schemaGap,
   };
 
   const claudeSummary = await writeNarrative(signals, provider, findings);
@@ -963,4 +1068,216 @@ function fallbackNarrative(
     );
   }
   return parts.join(" ");
+}
+
+// ---------------------------------------------------------------------------
+// Premium build helpers (2026-06-03). Each function consumes data already
+// collected during the audit run and reshapes it into a branded, render-
+// ready findings sub-object. All return values are JSON-serializable so
+// they round-trip through the findings JSONB column cleanly.
+// ---------------------------------------------------------------------------
+
+function buildAeoEngineRows(snapshot: SignalSnapshot): AeoEngineRow[] {
+  const byEngine = snapshot.aeo?.byEngine ?? {};
+  // Stable rendering order — matches the in-product AEO dashboard.
+  const order: Array<{
+    engine: AeoEngineRow["engine"];
+    key: keyof NonNullable<SignalSnapshot["aeo"]>["byEngine"];
+  }> = [
+    { engine: "CHATGPT", key: "chatgpt" },
+    { engine: "PERPLEXITY", key: "perplexity" },
+    { engine: "CLAUDE", key: "claude" },
+    { engine: "GEMINI", key: "gemini" },
+  ];
+  return order.map(({ engine, key }) => {
+    const row = byEngine[key];
+    return {
+      engine,
+      cited: row?.cited ?? false,
+      sources: row?.sources ?? [],
+    };
+  });
+}
+
+function buildAeoOnPageFindings(
+  provider: ProviderData,
+): AeoOnPageFindings | null {
+  const html = provider.siteCrawl?.html;
+  if (!html) return null;
+  const result = runOnPageAuditChecks(html);
+  return {
+    url: provider.siteCrawl?.resolvedUrl ?? `https://${provider.domain}`,
+    score: result.score,
+    checks: result.checks,
+    excerpt: result.excerpt,
+  };
+}
+
+function buildGoogleAiOverview(
+  provider: ProviderData,
+): GoogleAiOverviewFindings | null {
+  const aio = provider.googleAiOverview;
+  if (!aio) return null;
+  const ownDomain = provider.domain.toLowerCase();
+  const cited = aio.citedUrls.some((u) => {
+    try {
+      return new URL(u).hostname.toLowerCase().includes(ownDomain);
+    } catch {
+      return false;
+    }
+  });
+  return {
+    query: aio.query,
+    summary: aio.summary,
+    citedUrls: aio.citedUrls,
+    cited,
+  };
+}
+
+// Detection registry — regex against crawled HTML. Each entry names a
+// known vendor we care about for the audit's "Detected stack" card.
+// Patterns are intentionally lenient (host fragment, script src, common
+// global names) so a slightly-old install still matches.
+const STACK_DETECTORS: Array<{
+  key: string;
+  label: string;
+  category: DetectedStack["rows"][number]["category"];
+  patterns: RegExp[];
+}> = [
+  // Chatbots
+  { key: "intercom", label: "Intercom", category: "chatbot",
+    patterns: [/widget\.intercom\.io/i, /intercomSettings/] },
+  { key: "drift", label: "Drift", category: "chatbot",
+    patterns: [/js\.driftt?\.com/i, /drift\.load/i] },
+  { key: "tidio", label: "Tidio", category: "chatbot",
+    patterns: [/code\.tidio\.co/i] },
+  { key: "tawk", label: "Tawk.to", category: "chatbot",
+    patterns: [/embed\.tawk\.to/i] },
+  { key: "zendesk", label: "Zendesk Chat", category: "chatbot",
+    patterns: [/static\.zdassets\.com/i, /zendesk\.com\/embeddable/i] },
+  { key: "chatbase", label: "Chatbase", category: "chatbot",
+    patterns: [/chatbase\.co\/embed/i] },
+  // Popups
+  { key: "klaviyo-popup", label: "Klaviyo Popups", category: "popups",
+    patterns: [/static\.klaviyo\.com\/onsite/i, /klaviyo\/.*\/forms/i] },
+  { key: "optimonk", label: "OptiMonk", category: "popups",
+    patterns: [/optimonk\.com/i] },
+  { key: "privy", label: "Privy", category: "popups",
+    patterns: [/privy\.com\/widget/i, /privywidget/i] },
+  { key: "popupsmart", label: "Popupsmart", category: "popups",
+    patterns: [/popupsmart\.com/i] },
+  // Visitor / pixel
+  { key: "cursive", label: "Cursive Pixel", category: "pixel",
+    patterns: [/cursive\.js/i, /meetcursive\.com\/p/i, /cursive\.tags/i] },
+  { key: "meta-pixel", label: "Meta Pixel", category: "pixel",
+    patterns: [/connect\.facebook\.net\/.*\/fbevents\.js/i, /fbq\(['"]init/i] },
+  { key: "rb2b", label: "RB2B (B2B identification)", category: "pixel",
+    patterns: [/rb2b\.com/i] },
+  // Analytics
+  { key: "ga4", label: "Google Analytics 4 / GTM", category: "analytics",
+    patterns: [/googletagmanager\.com\/gtag\/js/i, /googletagmanager\.com\/gtm\.js/i, /gtag\(['"]config/i] },
+  { key: "segment", label: "Segment", category: "analytics",
+    patterns: [/cdn\.segment\.com\/analytics\.js/i, /analytics\.load\(['"]/i] },
+  { key: "amplitude", label: "Amplitude", category: "analytics",
+    patterns: [/cdn\.amplitude\.com/i] },
+  { key: "posthog", label: "PostHog", category: "analytics",
+    patterns: [/posthog\.com\/static\/array\.js/i, /posthog\.init/i] },
+  // CRM / marketing
+  { key: "hubspot", label: "HubSpot", category: "crm",
+    patterns: [/js\.hs-scripts\.com/i, /js\.hubspot\.com/i] },
+  { key: "klaviyo-id", label: "Klaviyo (tracking)", category: "crm",
+    patterns: [/static\.klaviyo\.com\/onsite\/js\/klaviyo\.js/i, /_learnq/i] },
+  { key: "salesforce-pardot", label: "Pardot / Salesforce", category: "crm",
+    patterns: [/pi\.pardot\.com/i] },
+];
+
+const CATEGORY_TAGLINES: Record<
+  DetectedStack["rows"][number]["category"],
+  string
+> = {
+  chatbot: "AI chatbot / live chat widget",
+  popups: "On-site popup / lead capture",
+  pixel: "Visitor identification pixel",
+  analytics: "Analytics / tag manager",
+  crm: "CRM / marketing automation",
+};
+
+function buildDetectedStack(html: string | null): DetectedStack {
+  if (!html) {
+    return {
+      rows: [
+        {
+          key: "no-html",
+          label: "Site not crawlable",
+          category: "analytics",
+          detected: false,
+          note: "Homepage didn't return HTML — couldn't observe the stack.",
+        },
+      ],
+    };
+  }
+  // Bucket detections per category so the report shows ONE row per
+  // category (chatbot/popups/pixel/analytics/crm) with the matched
+  // vendor name OR "not detected".
+  type Cat = DetectedStack["rows"][number]["category"];
+  const cats: Cat[] = ["chatbot", "popups", "pixel", "analytics", "crm"];
+  const matchesByCategory = new Map<Cat, string[]>();
+  for (const det of STACK_DETECTORS) {
+    if (det.patterns.some((p) => p.test(html))) {
+      const list = matchesByCategory.get(det.category) ?? [];
+      list.push(det.label);
+      matchesByCategory.set(det.category, list);
+    }
+  }
+  const rows = cats.map((category) => {
+    const matches = matchesByCategory.get(category) ?? [];
+    if (matches.length === 0) {
+      return {
+        key: category,
+        label: CATEGORY_TAGLINES[category],
+        category,
+        detected: false,
+        note: "Not detected on the homepage.",
+      };
+    }
+    return {
+      key: category,
+      label: CATEGORY_TAGLINES[category],
+      category,
+      detected: true,
+      note: `Detected: ${matches.join(", ")}.`,
+    };
+  });
+  return { rows };
+}
+
+// High-AEO-signal schema types we recommend every real-estate property
+// ship. Order matters — drives the rendering order of the "Missing"
+// column on the audit result page.
+const RECOMMENDED_SCHEMA_TYPES = [
+  "Organization",
+  "LocalBusiness",
+  "ApartmentComplex",
+  "RealEstateAgent",
+  "Place",
+  "FAQPage",
+  "BreadcrumbList",
+  "Product",
+  "ImageObject",
+  "Review",
+];
+
+function buildSchemaGap(provider: ProviderData): SchemaGap {
+  // Union of schema types detected by site-crawl JSON-LD scan + the
+  // page-audit endpoint's schema.type list.
+  const fromCrawl = provider.siteCrawl?.schemaTypes ?? [];
+  const fromAudit = provider.pageAudit?.schema?.type ?? [];
+  const present = Array.from(
+    new Set([...fromCrawl, ...fromAudit].map((s) => String(s).trim()).filter(Boolean)),
+  );
+  const presentLower = new Set(present.map((s) => s.toLowerCase()));
+  const missing = RECOMMENDED_SCHEMA_TYPES.filter(
+    (t) => !presentLower.has(t.toLowerCase()),
+  );
+  return { present, missing };
 }

@@ -105,6 +105,7 @@ export async function POST(req: NextRequest, ctx: RouteContext) {
           aeoCompetitorsCited: __provider?.aeoCompetitorsCited ?? [],
           aeoCitedEngines: __provider?.aeoCitedEngines ?? [],
           aeoUncitedEngines: __provider?.aeoUncitedEngines ?? [],
+          googleAiOverview: __provider?.googleAiOverview ?? null,
         },
         quizAnswers,
       );

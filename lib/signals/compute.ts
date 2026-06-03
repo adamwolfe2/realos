@@ -15,6 +15,7 @@ import {
   fetchLighthouseScores,
   fetchBacklinksSummary,
   fetchInstantPageAudit,
+  fetchSerpAiSummary,
   type BacklinksSummary,
   type DomainRankedKeyword,
   type InstantPageAudit,
@@ -59,6 +60,16 @@ export type ProspectComputeResult = SignalSnapshot & {
     aeoCompetitorsCited: string[];
     aeoCitedEngines: string[];
     aeoUncitedEngines: string[];
+    /** Google AI Overview captured for one branded query during the
+     *  audit run. Powers the verbatim "this is what Google AI says
+     *  about you today" section on the result page. Null when
+     *  DataForSEO is not configured or the query returned no AI
+     *  Overview block. */
+    googleAiOverview: {
+      query: string;
+      summary: string;
+      citedUrls: string[];
+    } | null;
   };
 };
 
@@ -92,12 +103,21 @@ async function computeProspectSignals(
   // ALWAYS (not just when DataForSEO fails) — buildSeoSignal merges the
   // two, preferring DataForSEO where present and falling back to the
   // crawl-derived score + findings otherwise.
-  const [seoFanout, aeoResult, repResult, crawlResult] =
+  const [seoFanout, aeoResult, repResult, crawlResult, aioResult] =
     await Promise.allSettled([
       runSeoFanout(domain, url),
       runAeoFanout(brandName, domain, prospectAuditId),
       runProspectReputation({ brandName, domain, prospectAuditId }),
       crawlSite(url),
+      // Google AI Overview for the branded query. One DataForSEO SERP
+      // advanced call (~$0.005). Captures verbatim Google AI summary +
+      // cited URLs. Renders as the "what Google AI says about you" card
+      // on the result page. Wrapped in allSettled so a DataForSEO outage
+      // never tanks the audit.
+      fetchSerpAiSummary(
+        { query: brandName },
+        { prospectAuditId, surface: "audit" },
+      ),
     ]);
 
   const seoData =
@@ -116,6 +136,22 @@ async function computeProspectSignals(
           avgRating: null,
           errors: {},
         };
+  // Unwrap the SERP AI Overview call. Discriminated-union shape from
+  // dataforseo.ts: { ok: true, data, costUsd } | { ok: false, ... }.
+  // Anything but a plain ok=true with non-empty summary is treated as
+  // "no AI Overview for this query" so the renderer collapses
+  // gracefully instead of showing an empty card.
+  const aioData =
+    aioResult.status === "fulfilled" &&
+    "ok" in aioResult.value &&
+    aioResult.value.ok &&
+    aioResult.value.data.summary.trim().length > 0
+      ? {
+          query: aioResult.value.data.query,
+          summary: aioResult.value.data.summary,
+          citedUrls: aioResult.value.data.citedUrls,
+        }
+      : null;
 
   const seo: SeoSignal | null = buildSeoSignal(seoData, crawlData);
   const traffic: TrafficSignal | null = buildTrafficSignal(seoData.rankedKeywords);
@@ -149,6 +185,7 @@ async function computeProspectSignals(
       aeoCompetitorsCited: aeoData.competitorsCited,
       aeoCitedEngines: aeoData.citedEngines,
       aeoUncitedEngines: aeoData.uncitedEngines,
+      googleAiOverview: aioData,
     },
   };
 }
