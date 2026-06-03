@@ -7,6 +7,10 @@ import {
   type ProspectProfile,
 } from "./extract-prospect-profile";
 
+// Re-export so callers using the named type don't have to import from
+// two places. Keeps backwards compat for the cron / handoff routes.
+export type { ProspectProfile };
+
 // ---------------------------------------------------------------------------
 // sendProspectProfileForConversation — single entry point used by both the
 // idle-digest cron and the operator handoff route. Loads the conversation,
@@ -123,18 +127,19 @@ export async function sendProspectProfileForConversation(
     }))
     .filter((m) => m.content.length > 0);
 
-  const profile = await extractProspectProfile({
+  const extracted = await extractProspectProfile({
     messages: safeMessages,
     orgId: convo.orgId,
     conversationId: convo.id,
   });
-  if (!profile) {
+  if (!extracted.ok) {
     return {
       ok: true,
       sent: false,
-      skipped: "extraction failed (no ANTHROPIC_API_KEY or model error)",
+      skipped: `extraction failed — ${extracted.error}`,
     };
   }
+  const profile = extracted.profile;
 
   // Persist the fresh profile + stamp the emailedAt up front so a Resend
   // failure still suppresses the cron's next fire (it would retry on

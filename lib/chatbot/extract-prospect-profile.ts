@@ -126,7 +126,22 @@ export const ProspectProfileSchema = z.object({
 
 export type ProspectProfile = z.infer<typeof ProspectProfileSchema>;
 
-const EXTRACT_MODEL = "claude-3-5-haiku-latest";
+/** Diagnostic-friendly extraction result. Callers that just need the
+ *  profile can read `.profile`; callers that need to debug a backfill
+ *  failure can read `.error` to see the actual model / API failure
+ *  instead of a generic "extraction failed" string. */
+export type ProspectProfileExtractResult =
+  | { ok: true; profile: ProspectProfile }
+  | { ok: false; error: string };
+
+// Match the model the public chat route uses so we get the same
+// pricing tier + latency tier across the chatbot surface. The
+// previous "claude-3-5-haiku-latest" alias has been retired on
+// Anthropic's side — every extract call was silently 404-ing,
+// which is what surfaced as "extraction failed (no ANTHROPIC_API_KEY
+// or model error)" in the lead-routing diagnostic. Adam caught
+// this 2026-06-03.
+const EXTRACT_MODEL = "claude-haiku-4-5-20251001";
 
 const SYSTEM_PROMPT = `You are an extraction assistant. Given a chatbot transcript between a prospective tenant and an apartment-leasing assistant, pull out every fact the prospect shared.
 
@@ -141,14 +156,16 @@ export async function extractProspectProfile(args: {
   messages: Array<{ role: string; content: string }>;
   orgId: string;
   conversationId: string;
-}): Promise<ProspectProfile | null> {
+}): Promise<ProspectProfileExtractResult> {
   // Skip the empty-conversation case — no signal to extract.
-  if (!args.messages || args.messages.length === 0) return null;
+  if (!args.messages || args.messages.length === 0) {
+    return { ok: false, error: "no messages in conversation" };
+  }
   if (!process.env.ANTHROPIC_API_KEY) {
     console.warn(
       "[extract-prospect-profile] ANTHROPIC_API_KEY missing — skipping",
     );
-    return null;
+    return { ok: false, error: "ANTHROPIC_API_KEY not configured" };
   }
 
   // Compact serialization. Keep ~2k token budget tops.
@@ -190,8 +207,9 @@ export async function extractProspectProfile(args: {
         outputTokens,
       },
     }).catch(() => undefined);
-    return object;
+    return { ok: true, profile: object };
   } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
     console.error(
       `[extract-prospect-profile] failed for conversation ${args.conversationId}:`,
       err,
@@ -206,9 +224,9 @@ export async function extractProspectProfile(args: {
       meta: {
         surface: "chatbot",
         conversationId: args.conversationId,
-        message: err instanceof Error ? err.message : String(err),
+        message,
       },
     }).catch(() => undefined);
-    return null;
+    return { ok: false, error: message };
   }
 }
