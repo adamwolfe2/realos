@@ -523,15 +523,35 @@ export async function backfillChatbotLeadEmails(args: {
     );
 
     // Run sends in parallel via allSettled — one Claude failure can't
-    // block the other 13 in the queue. Cap concurrency at 8 so we don't
-    // hit Anthropic / Resend rate limits on big backfills (a 60-day
-    // window might queue 50+ conversations).
-    const CONCURRENCY = 8;
+    // block the other 13 in the queue. Cap concurrency at 3 so we don't
+    // hit Anthropic / Resend rate limits on big backfills AND so the
+    // total wall-clock fits inside the 60-sec Vercel Pro serverless
+    // ceiling for server actions even if a slow Anthropic batch
+    // drags out: 3 parallel × ~5s worst case × ceil(N/3) batches.
+    const CONCURRENCY = 3;
     let sent = 0;
     let skipped = 0;
     let failed = 0;
     const reasons: string[] = [];
+    // Wall-clock budget: 50 seconds. Vercel server actions cap at 60s
+    // on Pro; reserving 10s of headroom for the post-loop revalidate +
+    // audit row insert + response serialization. If we run out, we
+    // return ok:true with whatever's been processed so far — the
+    // operator can re-run to pick up the remainder.
+    const BUDGET_MS = 50_000;
+    const deadline = Date.now() + BUDGET_MS;
+    let timedOut = false;
+
     for (let i = 0; i < eligible.length; i += CONCURRENCY) {
+      if (Date.now() > deadline) {
+        timedOut = true;
+        const remaining = eligible.length - i;
+        reasons.push(
+          `timed out: ${remaining} conversation${remaining === 1 ? "" : "s"} not processed — re-run the backfill`,
+        );
+        skipped += remaining;
+        break;
+      }
       const slice = eligible.slice(i, i + CONCURRENCY);
       const results = await Promise.allSettled(
         slice.map((row) =>

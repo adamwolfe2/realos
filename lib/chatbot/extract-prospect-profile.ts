@@ -201,11 +201,16 @@ export async function extractProspectProfile(args: {
 
   const startedAt = Date.now();
   try {
+    // Hard 15s ceiling per extraction so a slow Anthropic response can't
+    // hang the parent backfill / cron loop. Most haiku-4-5 calls land
+    // in 1-2 sec; anything over 15 is almost certainly a rate-limit
+    // pause we don't want to wait through.
     const { object, usage } = await generateObject({
       model: anthropic(EXTRACT_MODEL),
       schema: ProspectProfileSchema,
       system: SYSTEM_PROMPT,
       prompt: `Transcript:\n\n${transcript}`,
+      abortSignal: AbortSignal.timeout(15_000),
     });
 
     // Log cost so /admin/costs reflects the digest spend. Haiku pricing

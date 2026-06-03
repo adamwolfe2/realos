@@ -285,10 +285,27 @@ export function LeadRoutingPanel({
                 return;
               }
               startBackfill(async () => {
-                const result = await backfillChatbotLeadEmails({
-                  dayRange: backfillDayRange,
-                  dryRun: false,
-                });
+                // Server actions can throw (timeouts, deploy mid-flight,
+                // upstream 500s) and the rejection collapses to a generic
+                // "An unexpected response was received from the server"
+                // toast. Catch explicitly so we get an actionable error
+                // instead of a stuck Sending… spinner.
+                let result: Awaited<
+                  ReturnType<typeof backfillChatbotLeadEmails>
+                >;
+                try {
+                  result = await backfillChatbotLeadEmails({
+                    dayRange: backfillDayRange,
+                    dryRun: false,
+                  });
+                } catch (err) {
+                  const msg = err instanceof Error ? err.message : String(err);
+                  toast.error(`Backfill request failed: ${msg}`);
+                  setDiagnostic(
+                    `✗ Backfill request failed before returning: ${msg}\n\nThis usually means the serverless function timed out. Try a shorter time window (Last 7 days) or wait a minute and retry.`,
+                  );
+                  return;
+                }
                 if (!result.ok) {
                   toast.error(result.error);
                   setDiagnostic(`✗ Backfill failed: ${result.error}`);
