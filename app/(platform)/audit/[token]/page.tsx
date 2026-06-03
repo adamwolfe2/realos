@@ -22,6 +22,19 @@ import {
   SchemaGapCard,
   DetectedStackCard,
 } from "@/components/audit/premium-sections";
+import {
+  BriefShellHeader,
+  BriefShellFooter,
+  BriefNarrativePanel,
+  BriefSourcesBlock,
+  SourceBullet,
+  ChatGPTMark,
+  PerplexityMark,
+  ClaudeMark,
+  GeminiMark,
+  GoogleMark,
+  type BriefSource,
+} from "@/components/audit/brief-shell";
 import type { DpsResult } from "@/lib/audit/scoring";
 import type { ActionItem } from "@/lib/audit/recommendations";
 import type {
@@ -175,127 +188,215 @@ export default async function AuditViewerPage({
   const enginesQueried = aeoEngines.length;
   const totalAiResponses = enginesQueried * 5; // 5 prompts per engine
 
+  // Shared brief-shell sources — every data provider the pipeline
+  // touched, rendered as clickable cards before the footer. Trust by
+  // traceability. Future audits with the verbatim-quote layer can
+  // extend this list with the deep-link surfaces directly.
+  const sources: BriefSource[] = [
+    {
+      label: "Firecrawl",
+      description: aeoOnPage
+        ? `Rendered homepage HTML for ${audit.domain}`
+        : "Site-render API used for the homepage audit (Cloudflare-tolerant)",
+      href: "https://firecrawl.dev",
+      icon: <SourceBullet />,
+    },
+    {
+      label: "ChatGPT (OpenAI)",
+      description:
+        enginesQueried > 0
+          ? "Asked five buyer-intent prompts for this brand"
+          : "Engine queried during the AEO scan",
+      href: "https://chatgpt.com",
+      icon: <ChatGPTMark size={18} />,
+    },
+    {
+      label: "Perplexity",
+      description: "Engine queried during the AEO scan",
+      href: "https://www.perplexity.ai",
+      icon: <PerplexityMark size={18} />,
+    },
+    {
+      label: "Claude (Anthropic)",
+      description: "Engine queried during the AEO scan",
+      href: "https://claude.ai",
+      icon: <ClaudeMark size={18} />,
+    },
+    {
+      label: "Gemini",
+      description: "Engine queried during the AEO scan",
+      href: "https://gemini.google.com",
+      icon: <GeminiMark size={18} />,
+    },
+    {
+      label: "Google AI Overview · DataForSEO",
+      description: googleAio
+        ? "Captured the verbatim AI Overview for the brand-name query"
+        : "Search-intelligence API used for ranked keywords, Lighthouse, backlinks, and AI Overview",
+      href: "https://dataforseo.com",
+      icon: <GoogleMark size={18} />,
+    },
+    {
+      label: "Tavily",
+      description: `${mentions.length} public mention${mentions.length === 1 ? "" : "s"} sourced across Reddit, Yelp, BBB, ApartmentRatings, Facebook, and the open web`,
+      href: "https://tavily.com",
+      icon: <SourceBullet inner="#475569" />,
+    },
+    {
+      label: "schema.org",
+      description: "Reference vocabulary for AI-readable structured data",
+      href: "https://schema.org",
+      icon: <SourceBullet inner="#475569" />,
+    },
+    {
+      label: `https://${audit.domain}`,
+      description: aeoOnPage?.url
+        ? "Live homepage we audited"
+        : "Target domain audited",
+      href: aeoOnPage?.url ?? `https://${audit.domain}`,
+      icon: <SourceBullet />,
+    },
+  ];
+
   return (
-    <ReportShell subject={subject} createdAt={audit.createdAt}>
-      <DpsHero
-        subject={subject}
-        score={score}
-        recommendationCount={recommendations.length}
+    <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
+      <BriefShellHeader
+        subjectName={subject}
+        generatedAtIso={audit.createdAt.toISOString()}
+        label="Audit"
       />
 
-      {/* Premium trust strip — engine logos + audit counts. Lives between
-          the hero and the pillar grid so the prospect's first scroll
-          establishes credibility before they see the score breakdown. */}
-      {enginesQueried > 0 ? (
-        <AuditTrustStrip
-          brandName={subject}
-          enginesQueried={enginesQueried}
-          reputationSources={7}
-          totalMentions={mentions.length}
-          totalAiResponses={totalAiResponses}
-          auditedAtIso={audit.createdAt.toISOString()}
-          auditId={audit.id}
-        />
-      ) : null}
-
-      {dps ? <PillarGrid pillars={dps.pillars} /> : null}
-
-      {/* Per-engine AEO breakdown — branded marks for ChatGPT, Perplexity,
-          Claude, Gemini. The verdict surface. */}
-      {aeoEngines.length > 0 ? (
-        <AeoEngineBreakdown
-          rows={aeoEngines}
-          competitorsCited={aeoCompetitorsCited}
-          brandName={subject}
-        />
-      ) : null}
-
-      {/* Verbatim Google AI Overview for the brand's name query. */}
-      {googleAio ? (
-        <GoogleAiOverviewCard findings={googleAio} brandName={subject} />
-      ) : null}
-
-      {/* 8-check AEO Page Health scorecard on the homepage. */}
-      {aeoOnPage ? <AeoOnPageCard findings={aeoOnPage} /> : null}
-
-      {/* Schema markup gap — present vs missing types. */}
-      {schemaGap ? <SchemaGapCard findings={schemaGap} /> : null}
-
-      {/* Observed conversion stack from the rendered homepage HTML. */}
-      {detectedStack ? <DetectedStackCard findings={detectedStack} /> : null}
-
-      <SourceBreakdown counts={perSourceCounts} totalMentions={mentions.length} />
-
-      <AuditPaywall
-        unlocked={!!audit.email}
-        auditId={audit.id}
-        mentionCount={mentions.length}
-        findingCount={recommendations.length}
-      >
-        <RecommendationsSection recommendations={recommendations} />
-
-        <MentionsSection
-          mentions={mentions}
-          brandName={subject}
-          shareToken={audit.shareToken}
-          auditCreatedAtIso={audit.createdAt.toISOString()}
+      <div className="max-w-[1080px] mx-auto px-4 md:px-6 pt-10 md:pt-12 pb-12">
+        <DpsHero
+          subject={subject}
+          score={score}
+          recommendationCount={recommendations.length}
         />
 
-        {audit.claudeSummary ? (
-          <section className="mt-8">
-            <SectionEyebrow>What this means</SectionEyebrow>
-            <p
-              className="text-[13.5px] sm:text-sm leading-relaxed mt-2 max-w-2xl"
-              style={{ color: "#1E2A3A" }}
-            >
-              {audit.claudeSummary}
-            </p>
-          </section>
+        {/* Premium trust strip — engine logos + audit counts. Lives
+            between the hero and the pillar grid so the prospect's
+            first scroll establishes credibility. */}
+        {enginesQueried > 0 ? (
+          <AuditTrustStrip
+            brandName={subject}
+            enginesQueried={enginesQueried}
+            reputationSources={7}
+            totalMentions={mentions.length}
+            totalAiResponses={totalAiResponses}
+            auditedAtIso={audit.createdAt.toISOString()}
+            auditId={audit.id}
+          />
         ) : null}
 
-        <section
-          className="mt-10 rounded-xl border p-5 sm:p-6"
-          style={{ borderColor: "#E5E7EB", backgroundColor: "#FBFBFD" }}
-        >
-          <p
-            className="text-[10px] font-mono uppercase tracking-[0.16em]"
-            style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
-          >
-            Next step
-          </p>
-          <h3
-            className="text-lg sm:text-xl font-semibold mt-1 max-w-xl"
-            style={{ color: "#1E2A3A" }}
-          >
-            Want this monitored daily for your whole portfolio?
-          </h3>
-          <p
-            className="text-[13px] sm:text-sm mt-1.5 max-w-xl"
-            style={{ color: "#4B5563" }}
-          >
-            {BRAND_NAME} runs this report every day for every property, watches
-            the deltas, and tells your team what to do about it.
-          </p>
-          <div className="mt-3">
-            <Link
-              href="/onboarding"
-              className="inline-flex items-center justify-center h-10 px-5 rounded-md text-[13px] font-medium text-white"
-              style={{ backgroundColor: "#2563EB" }}
-            >
-              Talk to us
-            </Link>
-          </div>
-        </section>
-      </AuditPaywall>
+        {dps ? <PillarGrid pillars={dps.pillars} /> : null}
 
-      <BookCallCta
-        subtitle={
-          highSeverity > 0
-            ? `${highSeverity} high-priority gap${highSeverity === 1 ? "" : "s"} identified. We can close most of them in 30 days.`
-            : undefined
-        }
+        {/* Per-engine AEO breakdown — branded marks for ChatGPT,
+            Perplexity, Claude, Gemini. The verdict surface. */}
+        {aeoEngines.length > 0 ? (
+          <AeoEngineBreakdown
+            rows={aeoEngines}
+            competitorsCited={aeoCompetitorsCited}
+            brandName={subject}
+          />
+        ) : null}
+
+        {/* Verbatim Google AI Overview for the brand-name query. */}
+        {googleAio ? (
+          <GoogleAiOverviewCard findings={googleAio} brandName={subject} />
+        ) : null}
+
+        {/* 8-check AEO Page Health scorecard on the homepage. */}
+        {aeoOnPage ? <AeoOnPageCard findings={aeoOnPage} /> : null}
+
+        {/* Schema markup gap — present vs missing types. */}
+        {schemaGap ? <SchemaGapCard findings={schemaGap} /> : null}
+
+        {/* Observed conversion stack from the rendered homepage HTML. */}
+        {detectedStack ? <DetectedStackCard findings={detectedStack} /> : null}
+
+        <SourceBreakdown counts={perSourceCounts} totalMentions={mentions.length} />
+
+        <AuditPaywall
+          unlocked={!!audit.email}
+          auditId={audit.id}
+          mentionCount={mentions.length}
+          findingCount={recommendations.length}
+        >
+          <RecommendationsSection recommendations={recommendations} />
+
+          <MentionsSection
+            mentions={mentions}
+            brandName={subject}
+            shareToken={audit.shareToken}
+            auditCreatedAtIso={audit.createdAt.toISOString()}
+          />
+
+          <section
+            className="mt-10 rounded-xl border p-5 sm:p-6"
+            style={{ borderColor: "#E5E7EB", backgroundColor: "#FBFBFD" }}
+          >
+            <p
+              className="text-[10px] font-mono uppercase tracking-[0.16em]"
+              style={{ color: "#2563EB", fontFamily: "var(--font-mono)" }}
+            >
+              Next step
+            </p>
+            <h3
+              className="text-lg sm:text-xl font-semibold mt-1 max-w-xl"
+              style={{ color: "#1E2A3A" }}
+            >
+              Want this monitored daily for your whole portfolio?
+            </h3>
+            <p
+              className="text-[13px] sm:text-sm mt-1.5 max-w-xl"
+              style={{ color: "#4B5563" }}
+            >
+              {BRAND_NAME} runs this report every day for every property,
+              watches the deltas, and tells your team what to do about it.
+            </p>
+            <div className="mt-3">
+              <Link
+                href="/onboarding"
+                className="inline-flex items-center justify-center h-10 px-5 rounded-md text-[13px] font-medium text-white"
+                style={{ backgroundColor: "#2563EB" }}
+              >
+                Talk to us
+              </Link>
+            </div>
+          </section>
+        </AuditPaywall>
+
+        <BookCallCta
+          subtitle={
+            highSeverity > 0
+              ? `${highSeverity} high-priority gap${highSeverity === 1 ? "" : "s"} identified. We can close most of them in 30 days.`
+              : undefined
+          }
+        />
+      </div>
+
+      {/* Light brand-blue narrative panel — replaces the old inline
+          "What this means" paragraph. Lives outside the max-width
+          container so the panel goes full-bleed like /brief. */}
+      {audit.claudeSummary ? (
+        <BriefNarrativePanel
+          heading={`Where ${subject} stands today.`}
+        >
+          <p>{audit.claudeSummary}</p>
+        </BriefNarrativePanel>
+      ) : null}
+
+      {/* Sources block — every data provider that produced a number on
+          this audit, with a clickable link to verify. */}
+      <BriefSourcesBlock sources={sources} />
+
+      {/* Light footer with audit id + traceability metadata. */}
+      <BriefShellFooter
+        reportId={audit.id}
+        generatedAtIso={audit.createdAt.toISOString()}
+        liveApiCalls={totalAiResponses}
       />
-    </ReportShell>
+    </div>
   );
 }
 

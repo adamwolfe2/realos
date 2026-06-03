@@ -355,19 +355,24 @@ function ColumnCard({
       ) : (
         <ul className="mt-2 flex flex-wrap gap-1.5">
           {items.map((t) => (
-            <li
-              key={t}
-              className="inline-flex rounded-full"
-              style={{
-                backgroundColor: "#F8FAFC",
-                border: "1px solid #E5E7EB",
-                padding: "4px 10px",
-                fontSize: 12,
-                fontWeight: 500,
-                color: "#1E2A3A",
-              }}
-            >
-              {t}
+            <li key={t}>
+              <a
+                href={`https://schema.org/${encodeURIComponent(t)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex rounded-full hover:underline"
+                style={{
+                  backgroundColor: "#F8FAFC",
+                  border: "1px solid #E5E7EB",
+                  padding: "4px 10px",
+                  fontSize: 12,
+                  fontWeight: 500,
+                  color: "#1E2A3A",
+                }}
+                title={`View ${t} on schema.org`}
+              >
+                {t}
+              </a>
             </li>
           ))}
         </ul>

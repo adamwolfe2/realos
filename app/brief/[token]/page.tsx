@@ -9,6 +9,16 @@ import {
   GeminiMark,
   GoogleMark,
 } from "@/components/platform/artifacts/brand-logos";
+import {
+  BriefShellHeader,
+  BriefShellFooter,
+  BriefNarrativePanel,
+  BriefSourcesBlock,
+  SourceBullet,
+  COMPETITOR_URLS as SHARED_COMPETITOR_URLS,
+  engineRunUrl as sharedEngineRunUrl,
+  type BriefSource,
+} from "@/components/audit/brief-shell";
 import { BRAND_NAME } from "@/lib/brand";
 import { BRIEF_REGISTRY } from "@/lib/brief/registry";
 import brief255Cal from "@/prospects/255-cal.json" assert { type: "json" };
@@ -34,38 +44,10 @@ import brief255Cal from "@/prospects/255-cal.json" assert { type: "json" };
 type RouteParams = { token: string };
 type RouteContext = { params: Promise<RouteParams> };
 
-// Competitor → website lookup so the comp set bars in the brief link
-// directly to each building's marketing site. Pure presentation data —
-// safe to extend with more SF Class-A towers as we author more briefs.
-const COMPETITOR_URLS: Record<string, string> = {
-  "555 California Street": "https://www.555california.com/",
-  "101 California Street": "https://www.101california.com/",
-  "Salesforce Tower": "https://www.salesforcetower.com/",
-  "Transamerica Pyramid": "https://www.thetransamericapyramid.com/",
-  "50 California Street": "https://www.50cal.com/",
-  "One Market Plaza": "https://www.onemarketplaza.com/",
-  "Embarcadero Center": "https://www.embarcaderocenter.com/",
-};
-
-// Deep-link templates that let a reader run the exact same prompt
-// against the engine themselves. Builds trust ("don't take our word —
-// here's the engine, here's the prompt, type it in.").
-function engineRunUrl(
-  engine: "CHATGPT" | "PERPLEXITY" | "CLAUDE" | "GEMINI",
-  prompt: string,
-): string {
-  const q = encodeURIComponent(prompt);
-  switch (engine) {
-    case "CHATGPT":
-      return `https://chatgpt.com/?q=${q}`;
-    case "PERPLEXITY":
-      return `https://www.perplexity.ai/search/new?q=${q}`;
-    case "CLAUDE":
-      return `https://claude.ai/new?q=${q}`;
-    case "GEMINI":
-      return `https://gemini.google.com/app?q=${q}`;
-  }
-}
+// Re-export shared maps under local names so the rest of the file
+// reads unchanged. Lives in components/audit/brief-shell.ts.
+const COMPETITOR_URLS = SHARED_COMPETITOR_URLS;
+const engineRunUrl = sharedEngineRunUrl;
 
 // Single source of truth for the JSON shape. Mirrors the writer script.
 type BriefJson = typeof brief255Cal;
@@ -104,7 +86,11 @@ export default async function BriefPage({ params }: RouteContext) {
 
   return (
     <div style={{ backgroundColor: "#FFFFFF", color: "#1E2A3A" }}>
-      <PreHeroStrip prospectName={entry.prospectName} generatedAtIso={data.generatedAtIso} />
+      <BriefShellHeader
+        subjectName={entry.prospectName}
+        generatedAtIso={data.generatedAtIso}
+        label="Prospect brief"
+      />
       <Hero data={data} />
       <MethodologyStrip data={data} />
       <GapSection data={data} />
@@ -112,18 +98,59 @@ export default async function BriefPage({ params }: RouteContext) {
       <PageHealthSection data={data} />
       <SchemaSection data={data} />
       <StackSection data={data} />
-      <NarrativeSection data={data} />
+      <BriefNarrativePanel
+        heading="You own one of the most prestigious office addresses in San Francisco. AI search engines do not know that yet."
+      >
+        <p>
+          255 California Street is a flagship Class-A asset. The building
+          anchors one of the most-walked corridors in FiDi.
+          Decision-makers know it by sight. But corporate real-estate
+          searches now start in ChatGPT and Perplexity, not CoStar — and
+          in those conversations, your building doesn&apos;t exist.{" "}
+          <strong style={{ color: "#2563EB" }}>
+            555 California Street is named in every one of our four AI
+            conversations about top California Street office towers.{" "}
+            {data.brand} is named in none of the unbranded ones.
+          </strong>
+        </p>
+        <p>
+          The cause is not the building. The cause is that your homepage
+          ships 164 words of body copy, zero JSON-LD structured data, no
+          canonical URL, no meta description, no FAQ markup, and no
+          detectable analytics, chatbot, popup, pixel, or CRM. AI engines
+          need those signals to attribute citations to a real entity.
+          Without them they have no entity to cite.
+        </p>
+        <p>
+          The corporate tenants choosing between 255 Cal, 555 California,
+          and 101 California in 2026 will not call all three brokers.
+          They will ask Perplexity, paste the answer into Slack, and
+          shortlist the buildings AI named. That gap is closeable in 30
+          days. We do it for a living.
+        </p>
+      </BriefNarrativePanel>
       <ActionPlanSection data={data} />
       <CtaSection prospectName={entry.prospectName} />
-      <SourcesSection data={data} />
-      <Footer token={token} data={data} />
+      <BriefSourcesBlock sources={buildSources(data)} />
+      <BriefShellFooter
+        reportId={token}
+        generatedAtIso={data.generatedAtIso}
+        liveApiCalls={data.aeo.rows.filter((r) => !r.skipped).length}
+      />
     </div>
   );
 }
 
-// ─── PRE-HERO STRIP ────────────────────────────────────────────────────────
+// PreHeroStrip is now provided by BriefShellHeader in
+// components/audit/brief-shell.tsx. Keeping the original inline
+// definition would shadow the shared one and let the two routes drift.
+// If you need to re-introduce a custom header for /brief only, give
+// it a distinct name (e.g. BriefHeroBar) so the shared shell stays
+// canonical. The same applies below to NarrativeSection / Footer /
+// SourcesSection / SourceBullet — all moved to brief-shell.tsx.
 
-function PreHeroStrip({
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _legacyPreHeroStrip_DO_NOT_USE({
   prospectName,
   generatedAtIso,
 }: {
@@ -1353,7 +1380,7 @@ function SourcesSection({ data }: { data: BriefJson }) {
       label: "Firecrawl",
       description: `Rendered ${data.firecrawl.htmlBytes.toLocaleString()} bytes of HTML from ${data.url}`,
       href: "https://firecrawl.dev",
-      icon: <SourceBullet color="#F1F5F9" inner="#2563EB" />,
+      icon: <SourceBullet inner="#2563EB" />,
     },
     {
       label: "ChatGPT (OpenAI)",
@@ -1394,13 +1421,13 @@ function SourcesSection({ data }: { data: BriefJson }) {
       label: "schema.org",
       description: "Reference vocabulary for AI-readable structured data",
       href: "https://schema.org",
-      icon: <SourceBullet color="#F1F5F9" inner="#475569" />,
+      icon: <SourceBullet inner="#475569" />,
     },
     {
       label: `${data.resolvedUrl ?? data.url}`,
       description: data.firecrawl.title ?? "Live homepage we audited",
       href: data.resolvedUrl ?? data.url,
-      icon: <SourceBullet color="#F1F5F9" inner="#2563EB" />,
+      icon: <SourceBullet inner="#2563EB" />,
     },
   ];
   return (
@@ -1469,7 +1496,8 @@ function SourcesSection({ data }: { data: BriefJson }) {
   );
 }
 
-function SourceBullet({ color, inner }: { color: string; inner: string }) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function _legacySourceBullet_DO_NOT_USE({ color, inner }: { color: string; inner: string }) {
   return (
     <span
       aria-hidden
@@ -1526,6 +1554,71 @@ function Footer({ token, data }: { token: string; data: BriefJson }) {
       </div>
     </footer>
   );
+}
+
+// ─── buildSources — assembles the BriefSourcesBlock cards for /brief.
+// Mirrors what /audit assembles; future refactor could move this into
+// the shared shell as a "build from BriefJson-like" helper.
+// --------------------------------------------------------------------
+function buildSources(data: BriefJson): BriefSource[] {
+  const aio = data.googleAiOverview as
+    | { query: string; summary: string; citedUrls: string[]; cited: boolean }
+    | null;
+  return [
+    {
+      label: "Firecrawl",
+      description: `Rendered ${data.firecrawl.htmlBytes.toLocaleString()} bytes of HTML from ${data.url}`,
+      href: "https://firecrawl.dev",
+      icon: <SourceBullet />,
+    },
+    {
+      label: "ChatGPT (OpenAI)",
+      description: `${data.aeo.perEngineTotal.CHATGPT} live API calls`,
+      href: "https://chatgpt.com",
+      icon: <ChatGPTMark size={18} />,
+    },
+    {
+      label: "Perplexity",
+      description: `${data.aeo.perEngineTotal.PERPLEXITY} live API calls`,
+      href: "https://www.perplexity.ai",
+      icon: <PerplexityMark size={18} />,
+    },
+    {
+      label: "Gemini",
+      description: `${data.aeo.perEngineTotal.GEMINI} live API calls`,
+      href: "https://gemini.google.com",
+      icon: <GeminiMark size={18} />,
+    },
+    {
+      label: "Claude (Anthropic)",
+      description:
+        data.aeo.perEngineTotal.CLAUDE > 0
+          ? `${data.aeo.perEngineTotal.CLAUDE} live API calls`
+          : "Available in production · key configured per environment",
+      href: "https://claude.ai",
+      icon: <ClaudeMark size={18} />,
+    },
+    {
+      label: "Google AI Overview · DataForSEO",
+      description: aio
+        ? `Captured verbatim AI Overview for "${aio.query.slice(0, 64)}"`
+        : "Queried for an unbranded SF FiDi search · Google returned no AI Overview block",
+      href: "https://dataforseo.com",
+      icon: <GoogleMark size={18} />,
+    },
+    {
+      label: "schema.org",
+      description: "Reference vocabulary for AI-readable structured data",
+      href: "https://schema.org",
+      icon: <SourceBullet inner="#475569" />,
+    },
+    {
+      label: `${data.resolvedUrl ?? data.url}`,
+      description: data.firecrawl.title ?? "Live homepage we audited",
+      href: data.resolvedUrl ?? data.url,
+      icon: <SourceBullet />,
+    },
+  ];
 }
 
 // ─── Shared ───────────────────────────────────────────────────────────

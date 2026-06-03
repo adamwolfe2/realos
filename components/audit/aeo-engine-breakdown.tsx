@@ -6,6 +6,7 @@ import {
   ClaudeMark,
   GeminiMark,
 } from "@/components/platform/artifacts/brand-logos";
+import { COMPETITOR_URLS } from "@/components/audit/brief-shell";
 import type { AeoEngineRow } from "@/lib/audit/synthesize";
 
 // ---------------------------------------------------------------------------
@@ -114,22 +115,53 @@ export function AeoEngineBreakdown({
             When AI didn&apos;t name you, it named these
           </p>
           <ul className="mt-2 flex flex-wrap gap-1.5">
-            {competitorsCited.slice(0, 10).map((name) => (
-              <li
-                key={name}
-                className="inline-flex items-center gap-1.5 rounded-full"
-                style={{
-                  backgroundColor: "#FFFFFF",
-                  border: "1px solid #E5E7EB",
-                  padding: "5px 10px",
-                  fontSize: 12.5,
-                  fontWeight: 500,
-                  color: "#1E2A3A",
-                }}
-              >
-                {name}
-              </li>
-            ))}
+            {competitorsCited.slice(0, 10).map((name) => {
+              const href = COMPETITOR_URLS[name];
+              if (href) {
+                return (
+                  <li key={name}>
+                    <a
+                      href={href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-full hover:underline"
+                      style={{
+                        backgroundColor: "#FFFFFF",
+                        border: "1px solid #E5E7EB",
+                        padding: "5px 10px",
+                        fontSize: 12.5,
+                        fontWeight: 500,
+                        color: "#1E2A3A",
+                      }}
+                      title={`${name} — visit website`}
+                    >
+                      {name}
+                      <ExternalLink
+                        className="w-3 h-3"
+                        style={{ color: "#94A3B8" }}
+                        aria-hidden
+                      />
+                    </a>
+                  </li>
+                );
+              }
+              return (
+                <li
+                  key={name}
+                  className="inline-flex items-center gap-1.5 rounded-full"
+                  style={{
+                    backgroundColor: "#FFFFFF",
+                    border: "1px solid #E5E7EB",
+                    padding: "5px 10px",
+                    fontSize: 12.5,
+                    fontWeight: 500,
+                    color: "#1E2A3A",
+                  }}
+                >
+                  {name}
+                </li>
+              );
+            })}
           </ul>
         </div>
       ) : null}
