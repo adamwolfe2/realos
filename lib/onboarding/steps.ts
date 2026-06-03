@@ -32,6 +32,25 @@ export function nextStep(current: OnboardingStep): OnboardingStep {
   return ONBOARDING_STEPS[idx + 1]!;
 }
 
+/**
+ * Mirror of nextStep for going backward. Norman feedback (2026-06-02):
+ * the wizard had no step-back navigation — hitting browser-back dropped
+ * users on the landing page because the wizard's "state" is server-
+ * persisted, not URL-routed. The back button in the chrome calls
+ * /api/onboarding/wizard/back which decrements via this helper.
+ *
+ * `welcome` is the first step; trying to go back from there returns
+ * `welcome` (no-op). `done` is terminal; going back from there bounces
+ * to `plan` so a freshly-trialing user can revisit their selections.
+ */
+export function previousStep(current: OnboardingStep): OnboardingStep {
+  const idx = ONBOARDING_STEPS.indexOf(current);
+  if (idx <= 0) return "welcome";
+  // From `done` (idx 4) the previous step is `plan` (idx 3). The cast
+  // is safe because we've already ruled out idx <= 0.
+  return ONBOARDING_STEPS[idx - 1]!;
+}
+
 export function isValidStep(s: string | null | undefined): s is OnboardingStep {
   return !!s && (ONBOARDING_STEPS as readonly string[]).includes(s);
 }

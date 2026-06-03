@@ -378,17 +378,17 @@ model Organization {
   // generates a DRAFT only and the operator manually clicks "Share"
   // or "Email" to ship it. The other values opt into auto-send to
   // the recipient list below the moment the snapshot is generated.
-  reportCadence       String   @default("none") // none | daily | weekly | monthly
-  reportRecipients    String[] @default([]) // explicit email addresses
-  reportAutoSend      Boolean  @default(false) // master enable for auto-send
+  reportCadence            String   @default("none") // none | daily | weekly | monthly
+  reportRecipients         String[] @default([]) // explicit email addresses
+  reportAutoSend           Boolean  @default(false) // master enable for auto-send
   // Online reputation surface — /portal/reputation aggregates Google /
   // Apartments.com / Yelp review pulls, sentiment, and reply workflow.
   // Off by default; activated when the reputation add-on lands.
-  moduleReputation    Boolean  @default(false)
+  moduleReputation         Boolean  @default(false)
   // AEO + briefing + reports intelligence bucket. Gates
   // /portal/insights, /portal/briefing, /portal/reports — all of which
   // depend on the same underlying signal pipeline.
-  moduleInsights      Boolean  @default(false)
+  moduleInsights           Boolean  @default(false)
   // RentCast-powered market intelligence on the property detail page
   // (estimated market rent, submarket median, nearby comparables,
   // hot/cold market badge). Off by default — Norman feedback (May 22)
@@ -397,29 +397,29 @@ model Organization {
   // bugs #71/#77/#97 (no rent-roll metrics anywhere). Agency operators
   // can flip it on per tenant from /admin/clients/[id] when there's
   // ever a use case for it.
-  moduleMarketIntelligence Boolean @default(false)
+  moduleMarketIntelligence Boolean  @default(false)
   // Cross-channel attribution surface (/portal/attribution). Direct
   // competitor to Clarity Attribution; included as the headline
   // value-prop module on Growth+ tiers.
-  moduleAttribution   Boolean  @default(false)
+  moduleAttribution        Boolean  @default(false)
   // Post-lease PMS surface. Groups residents, renewals, work orders,
   // and applications — every page that hangs off AppFolio operational
   // sync. Off until the AppFolio integration is wired + healthy.
-  moduleResidents     Boolean  @default(false)
+  moduleResidents          Boolean  @default(false)
   // Tour bookings (/portal/tours). Sourced from the public booking
   // form and API-key ingest, NOT AppFolio. Kept separate from the PMS
   // bucket so non-AppFolio tenants can still light it up.
-  moduleTours         Boolean  @default(false)
+  moduleTours              Boolean  @default(false)
   // Inbox-style chatbot conversations surface (/portal/conversations).
   // Distinct from moduleChatbot, which gates the bot itself; this
   // gates the read-side conversation pipeline. Both usually flip on
   // together but can be unbundled for read-only deployments.
-  moduleConversations Boolean  @default(false)
+  moduleConversations      Boolean  @default(false)
   // Credentials vault. Paid add-on. Stores per-property and org-wide
   // passwords for external platforms (GA4, Meta Ads, AppFolio, etc.)
   // using envelope encryption — per-org DEK wrapped by a master KEK
   // in env. See docs/PRD-CREDENTIALS-VAULT.md.
-  moduleVault         Boolean  @default(false)
+  moduleVault              Boolean  @default(false)
 
   // Wrapped data-encryption key for this org's credential vault.
   // 32-byte AES-256-GCM key, generated on first vault row creation,
@@ -435,7 +435,7 @@ model Organization {
   // (chatbot, popup, form, ingest webhook), the lead helper fires a one-shot
   // email to this address with the lead details + a deep link to /portal/leads.
   // Null = no notifications (existing behavior). Comma-separated for multiple.
-  notifyLeadEmail        String?
+  notifyLeadEmail String?
 
   // Per-channel notification toggles, defaulting to ON so adding the email
   // alone is enough. Off lets the operator silence individual sources without
@@ -467,7 +467,7 @@ model Organization {
   ///                         (Future — not implemented yet.)
   ///   EXTERNAL_VIA_GITHUB  — open PR on client's repo via GitHub App.
   ///                         (Future — requires App installation.)
-  publishMode      PublishMode @default(EXTERNAL_VIA_ADMIN)
+  publishMode PublishMode @default(EXTERNAL_VIA_ADMIN)
 
   // White-label workspace ($499/mo add-on, ls_addon_white_label).
   // When `whiteLabel` is true and the override fields are populated, every
@@ -616,6 +616,13 @@ model Organization {
   // per property, per ProspectAudit. Backs /admin/costs.
   apiUsage ApiUsage[]
 
+  // Proposals where this org was the original prospect target (e.g. an
+  // intake-only org that later upsells to a full plan). Named relation
+  // because the same Organization can also be the provisioned-result
+  // org from a separate proposal acceptance.
+  proposalsAsProspect   Proposal[]           @relation("ProposalProspectOrg")
+  proposalProvisionings ProposalAcceptance[] @relation("ProposalProvisionedOrg")
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -654,6 +661,7 @@ model User {
   propertyAccess      UserPropertyAccess[]
   bugReports          BugReport[]
   propertyEvaluations PropertyEvaluation[]
+  proposalsCreated    Proposal[]
 
   // Command Center: last time this operator opened the briefing view. Used to
   // compute "what's new since you last looked" deltas on /portal/briefing.
@@ -2184,10 +2192,10 @@ model OAuthConnection {
   externalAccountId String?
 
   // Both tokens are encrypted via lib/crypto.ts (AES-256-GCM).
-  accessToken  String  @db.Text
-  refreshToken String? @db.Text
+  accessToken  String    @db.Text
+  refreshToken String?   @db.Text
   expiresAt    DateTime?
-  scope        String? @db.Text
+  scope        String?   @db.Text
 
   // Provider-specific extras: e.g. Meta long-lived token type, Google
   // service account email mirror, account display name cached at connect
@@ -2277,6 +2285,11 @@ model IntakeSubmission {
   utmCampaign String?
 
   raw Json? // Full form payload for audit
+
+  // Proposals built off this intake. One intake can have multiple proposals
+  // (initial quote, revision, upsell) but each Proposal points to at most
+  // one intake.
+  proposals Proposal[]
 }
 
 model Project {
@@ -2370,29 +2383,29 @@ model WebsiteBuildRequest {
 // ============================================================================
 
 enum SiteRequestStatus {
-  SUBMITTED                  // Just landed; not yet triaged.
-  TRIAGE                     // Adam reviewing fit + completeness.
-  NEEDS_INFO                 // Awaiting missing info from client.
-  DISQUALIFIED               // Politely declined.
-  QUALIFIED                  // Ready to begin build prep.
-  INSPIRATION_EXTRACTION     // Reverse-PRD pass on inspiration URLs.
-  SPEC_REVIEW                // Merged spec ready for Adam approval.
-  READY_TO_BUILD             // Spec approved; build packet downloadable.
-  IN_BUILD                   // Active Claude Code session.
-  PREVIEW_READY              // Preview URL generated.
-  CLIENT_REVIEW              // Client reviewing the preview.
-  REVISION_REQUESTED         // Client asked for changes.
-  APPROVED                   // Client signed off.
-  DEPLOYED                   // Live on production domain.
-  MAINTENANCE                // Post-launch ongoing.
-  PAUSED                     // Something blocked; manual intervention.
-  CHURNED                    // Client left.
+  SUBMITTED // Just landed; not yet triaged.
+  TRIAGE // Adam reviewing fit + completeness.
+  NEEDS_INFO // Awaiting missing info from client.
+  DISQUALIFIED // Politely declined.
+  QUALIFIED // Ready to begin build prep.
+  INSPIRATION_EXTRACTION // Reverse-PRD pass on inspiration URLs.
+  SPEC_REVIEW // Merged spec ready for Adam approval.
+  READY_TO_BUILD // Spec approved; build packet downloadable.
+  IN_BUILD // Active Claude Code session.
+  PREVIEW_READY // Preview URL generated.
+  CLIENT_REVIEW // Client reviewing the preview.
+  REVISION_REQUESTED // Client asked for changes.
+  APPROVED // Client signed off.
+  DEPLOYED // Live on production domain.
+  MAINTENANCE // Post-launch ongoing.
+  PAUSED // Something blocked; manual intervention.
+  CHURNED // Client left.
 }
 
 enum SiteRequestTier {
-  TIER1_MARKETING  // Single marketing site
-  TIER2_PORTAL     // Marketing + lead capture + tenant portal stub
-  TIER3_CUSTOM     // Full custom scope
+  TIER1_MARKETING // Single marketing site
+  TIER2_PORTAL // Marketing + lead capture + tenant portal stub
+  TIER3_CUSTOM // Full custom scope
 }
 
 enum SiteRequestPriority {
@@ -2447,29 +2460,29 @@ model SiteRequest {
 
   // Fulfillment metadata
   assignedToUserId String?
-  assignedTo       User?       @relation("SiteRequestAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
-  internalNotes    String?     @db.Text
+  assignedTo       User?   @relation("SiteRequestAssignee", fields: [assignedToUserId], references: [id], onDelete: SetNull)
+  internalNotes    String? @db.Text
 
   // Build artifact references — populated as the build progresses.
-  githubRepoUrl     String?
-  vercelProjectId   String?
-  vercelPreviewUrl  String?
-  productionUrl     String?
-  previewSentAt     DateTime?
-  approvedAt        DateTime?
-  deployedAt        DateTime?
-  disqualifiedAt    DateTime?
+  githubRepoUrl      String?
+  vercelProjectId    String?
+  vercelPreviewUrl   String?
+  productionUrl      String?
+  previewSentAt      DateTime?
+  approvedAt         DateTime?
+  deployedAt         DateTime?
+  disqualifiedAt     DateTime?
   disqualifiedReason String?
 
   // 1:1 form payload + related collections.
-  intake     IntakeResponse?
-  assets     SiteRequestAsset[]
-  events     SiteRequestEvent[]
+  intake IntakeResponse?
+  assets SiteRequestAsset[]
+  events SiteRequestEvent[]
 
-  submittedAt    DateTime  @default(now())
-  lastActivityAt DateTime  @default(now())
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
+  submittedAt    DateTime @default(now())
+  lastActivityAt DateTime @default(now())
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
   @@index([status, lastActivityAt])
   @@index([orgId, status])
@@ -2489,10 +2502,10 @@ model IntakeResponse {
   identityType String? // solo_agent | team | brokerage | property_manager | developer | other
 
   // Brand
-  brandName       String
-  tagline         String?
-  brandColorHex   String?
-  vertical        String? // residential | commercial | mixed | senior_living | etc.
+  brandName     String
+  tagline       String?
+  brandColorHex String?
+  vertical      String? // residential | commercial | mixed | senior_living | etc.
 
   // Compliance
   licenseNumber String?
@@ -2577,12 +2590,12 @@ model SiteRequestEvent {
   siteRequestId String
   siteRequest   SiteRequest @relation(fields: [siteRequestId], references: [id], onDelete: Cascade)
 
-  kind         String // status_change | note | email_sent | preview_sent | revision_requested | packet_downloaded
-  fromStatus   SiteRequestStatus?
-  toStatus     SiteRequestStatus?
-  message      String? @db.Text
-  actorUserId  String? // null for system / public submitter events
-  visibleToClient Boolean @default(false)
+  kind            String // status_change | note | email_sent | preview_sent | revision_requested | packet_downloaded
+  fromStatus      SiteRequestStatus?
+  toStatus        SiteRequestStatus?
+  message         String?            @db.Text
+  actorUserId     String? // null for system / public submitter events
+  visibleToClient Boolean            @default(false)
 
   createdAt DateTime @default(now())
 
@@ -4223,13 +4236,13 @@ enum PublishMode {
 // real-estate boilerplate.
 // ---------------------------------------------------------------------------
 model SiteIntelligence {
-  id         String       @id @default(cuid())
-  orgId      String       @unique
-  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String       @unique
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   /// Canonical URL the ingest was run against. Usually
   /// `https://<primary-domain>`.
-  rootUrl    String?
+  rootUrl String?
 
   /// Sitemap URLs discovered during crawl. Capped at 500 entries —
   /// anything beyond is sampled.
@@ -4238,18 +4251,18 @@ model SiteIntelligence {
   /// Up to 50 crawled pages with { url, title, description, markdown,
   /// h1, h2[], wordCount }. Schema kept loose in JSON so we don't have
   /// to migrate every time Firecrawl tweaks their response shape.
-  pages       Json?
+  pages Json?
 
   /// Perplexity Sonar research blob. Keys: companyOverview,
   /// competitiveLandscape, recentNews, positioningCues.
-  research    Json?
+  research Json?
 
   /// Claude-extracted brand voice notes — tone, register, taboo words,
   /// preferred CTAs. Rendered into the system prompt verbatim.
-  brandVoice  String? @db.Text
+  brandVoice String? @db.Text
 
   /// Timestamps split so we can refresh research more often than crawl.
-  crawledAt   DateTime?
+  crawledAt    DateTime?
   researchedAt DateTime?
   brandVoiceAt DateTime?
 
@@ -4275,20 +4288,20 @@ model SiteIntelligence {
 // (Json, e.g. { BLOG_POST: 999, PROPERTY_DESCRIPTION: 999 }).
 // ---------------------------------------------------------------------------
 model MonthlyContentQuota {
-  id          String       @id @default(cuid())
-  orgId       String
-  org         Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  id    String       @id @default(cuid())
+  orgId String
+  org   Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   /// First day of the UTC month this counter covers.
   periodStart DateTime
 
   /// Per-format usage counts. Default zeros, incremented atomically.
-  blogPostsUsed             Int @default(0)
-  neighborhoodPagesUsed     Int @default(0)
-  propertyDescriptionsUsed  Int @default(0)
-  metaRewritesUsed          Int @default(0)
-  faqBlocksUsed             Int @default(0)
-  adCopiesUsed              Int @default(0)
+  blogPostsUsed            Int @default(0)
+  neighborhoodPagesUsed    Int @default(0)
+  propertyDescriptionsUsed Int @default(0)
+  metaRewritesUsed         Int @default(0)
+  faqBlocksUsed            Int @default(0)
+  adCopiesUsed             Int @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4435,29 +4448,29 @@ model SeoTargetQuery {
 //      minutes back to QUEUED with attempts++ so stuck jobs recover.
 // ---------------------------------------------------------------------------
 model SeoScanJob {
-  id         String        @id @default(cuid())
+  id         String       @id @default(cuid())
   orgId      String
-  org        Organization  @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
   propertyId String
-  property   Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  property   Property     @relation(fields: [propertyId], references: [id], onDelete: Cascade)
 
-  status         SeoScanJobStatus @default(QUEUED)
+  status        SeoScanJobStatus @default(QUEUED)
   /// Human-readable label of the current stage ("SERP rankings",
   /// "Lighthouse audit", "Backlinks summary", etc). Drives the
   /// "Querying X…" line in the operator UI.
-  progressStage  String?
+  progressStage String?
   /// 0-100 progress estimate. Worker bumps this after each completed
   /// stage so a property with 10 stages ticks up 10pp per call.
-  progressPct    Int              @default(0)
+  progressPct   Int              @default(0)
   /// Final orchestrator stats blob (serpQueriesScanned, lighthouseAudits,
   /// errors[], costEstimateUsd). Populated when status flips to DONE/FAILED.
-  result         Json?
+  result        Json?
   /// Fatal error message if the orchestrator threw uncaught. Per-stage
   /// errors are inside `result.errors` instead.
-  error          String?          @db.Text
+  error         String?          @db.Text
   /// Tracks worker retries — incremented every time the reaper flips a
   /// stuck RUNNING row back to QUEUED. Stops retrying past 3.
-  attempts       Int              @default(0)
+  attempts      Int              @default(0)
 
   startedAt  DateTime?
   finishedAt DateTime?
@@ -4761,11 +4774,11 @@ model QueryLandingDaily {
 // ============================================================================
 
 enum MarketplaceLeadStatus {
-  AVAILABLE   // Live in the pool, browsable, purchasable
-  RESERVED    // Stripe checkout in flight (10-min hold)
-  SOLD        // Purchased — appears only in the buyer's dashboard
-  EXPIRED     // Past staleness window, no longer browsable
-  RETIRED     // Manually removed by admin
+  AVAILABLE // Live in the pool, browsable, purchasable
+  RESERVED // Stripe checkout in flight (10-min hold)
+  SOLD // Purchased — appears only in the buyer's dashboard
+  EXPIRED // Past staleness window, no longer browsable
+  RETIRED // Manually removed by admin
 }
 
 enum MarketplaceLeadPropertyType {
@@ -4776,9 +4789,9 @@ enum MarketplaceLeadPropertyType {
 }
 
 enum MarketplaceSyncSourceKind {
-  CURSIVE_SEGMENT  // Pull from a Cursive Studio segment ID
+  CURSIVE_SEGMENT // Pull from a Cursive Studio segment ID
   CURSIVE_AUDIENCE // Pull from a Cursive Audience List ID
-  MANUAL           // Operator-uploaded CSV / API ingest
+  MANUAL // Operator-uploaded CSV / API ingest
 }
 
 enum MarketplaceSyncRunStatus {
@@ -4794,27 +4807,27 @@ model MarketplaceSyncSource {
   id   String @id @default(cuid())
   name String // operator-friendly label
 
-  kind            MarketplaceSyncSourceKind
+  kind                MarketplaceSyncSourceKind
   // For CURSIVE_*: the AL segment / audience id this source pulls from.
-  externalId      String?
+  externalId          String?
   // Default property type assigned to leads from this source. Leads can be
   // re-classified per-record by the enrichment step.
   defaultPropertyType MarketplaceLeadPropertyType
   // Default market (city/region). Used when the source itself doesn't carry
   // per-record geo (e.g. a national segment we segment by zip downstream).
-  defaultMarket   String?
+  defaultMarket       String?
 
   // Score floor — leads below this threshold get ingested but flipped to
   // EXPIRED immediately. Default 50 (segments with verified identity but
   // no behavioural signals can still produce sellable leads).
-  minScoreFloor   Int     @default(50)
+  minScoreFloor Int @default(50)
 
   // Baseline score applied when the raw Cursive payload doesn't carry
   // strong behavioural signals (no listings-viewed, no urgency flags).
   // Use this to express "every member of this curated segment is at
   // least worth this much" — e.g. a high-intent buyer audience would
   // set this to 70 so identity-only leads still surface.
-  baselineScore   Int     @default(50)
+  baselineScore Int @default(50)
 
   // When true, any member missing ANY of the required enrichment fields
   // (firstName, lastName, email, phone, companyName, companyState,
@@ -4826,22 +4839,22 @@ model MarketplaceSyncSource {
 
   // Default per-lead listing price in cents. The scoring engine tiers
   // up from here based on intent score (hot leads cost more).
-  defaultPriceCents Int   @default(5000)
+  defaultPriceCents Int @default(5000)
 
   // Cron cadence is fixed to weekly (Mondays 06:00 UTC) but the source can
   // be paused via `enabled` if we need to halt replenishment.
-  enabled         Boolean @default(true)
+  enabled Boolean @default(true)
 
   // Last successful run pointer + counters for the admin dashboard.
-  lastRunAt           DateTime?
-  lastSuccessAt       DateTime?
-  lastIngestedCount   Int       @default(0)
-  lastEnrichedCount   Int       @default(0)
-  lastExpiredCount    Int       @default(0)
+  lastRunAt         DateTime?
+  lastSuccessAt     DateTime?
+  lastIngestedCount Int       @default(0)
+  lastEnrichedCount Int       @default(0)
+  lastExpiredCount  Int       @default(0)
 
   // Optional override of the global CURSIVE_API_KEY env when this source
   // talks to a separate Cursive workspace.
-  cursiveApiKeyEnc    String?
+  cursiveApiKeyEnc String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4855,20 +4868,20 @@ model MarketplaceSyncSource {
 
 // Idempotent log of every replenishment run. One row per cron tick per source.
 model MarketplaceSyncRun {
-  id       String                 @id @default(cuid())
+  id       String                @id @default(cuid())
   sourceId String
-  source   MarketplaceSyncSource  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  source   MarketplaceSyncSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
-  status   MarketplaceSyncRunStatus @default(PENDING)
+  status MarketplaceSyncRunStatus @default(PENDING)
 
   // Counters populated as the run progresses.
-  fetchedCount    Int    @default(0) // members returned by Cursive
-  enrichedCount   Int    @default(0) // members that passed enrichment + score floor
-  upsertedCount   Int    @default(0) // MarketplaceLead rows created OR refreshed
-  newCount        Int    @default(0) // brand new leads added to the pool
-  refreshedCount  Int    @default(0) // existing leads re-enriched
-  expiredCount    Int    @default(0) // leads aged out by this run
-  failedCount     Int    @default(0)
+  fetchedCount   Int @default(0) // members returned by Cursive
+  enrichedCount  Int @default(0) // members that passed enrichment + score floor
+  upsertedCount  Int @default(0) // MarketplaceLead rows created OR refreshed
+  newCount       Int @default(0) // brand new leads added to the pool
+  refreshedCount Int @default(0) // existing leads re-enriched
+  expiredCount   Int @default(0) // leads aged out by this run
+  failedCount    Int @default(0)
 
   startedAt    DateTime  @default(now())
   finishedAt   DateTime?
@@ -4886,9 +4899,9 @@ model MarketplaceSyncRun {
 // Uniqueness is (sourceId, cursiveProfileId) so re-runs of the same Cursive
 // segment refresh the existing row instead of creating duplicates.
 model MarketplaceLead {
-  id       String                 @id @default(cuid())
+  id       String                @id @default(cuid())
   sourceId String
-  source   MarketplaceSyncSource  @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  source   MarketplaceSyncSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
 
   // Optional seller credit — set when the lead came in via a seller-side
   // import (CSV upload or seller-attributed Cursive segment). Null means
@@ -4904,36 +4917,36 @@ model MarketplaceLead {
   // the public browse API and only un-masked after purchase.
 
   // Identity — basic
-  firstName    String?
-  lastName     String?
-  email        String?   // verified personal email
-  phone        String?   // verified personal landline / primary phone
-  age          Int?
-  gender       String?   // "Male" | "Female" | other free-form
-  photoUrl     String?   // generated avatar URL (deterministic from profile id)
+  firstName String?
+  lastName  String?
+  email     String? // verified personal email
+  phone     String? // verified personal landline / primary phone
+  age       Int?
+  gender    String? // "Male" | "Female" | other free-form
+  photoUrl  String? // generated avatar URL (deterministic from profile id)
 
   // Identity — extended enrichment (Cursive Studio rich segments)
-  companyName    String?  // employer / household business
-  companyState   String?  // 2-letter state code of employer
-  businessEmail  String?  // verified work email
-  mobilePhone    String?  // verified mobile (separate from primary phone)
-  linkedinUrl    String?  // https://linkedin.com/in/... or company URL
-  incomeRange    String?  // "$150K–$250K" or similar pretty band
+  companyName   String? // employer / household business
+  companyState  String? // 2-letter state code of employer
+  businessEmail String? // verified work email
+  mobilePhone   String? // verified mobile (separate from primary phone)
+  linkedinUrl   String? // https://linkedin.com/in/... or company URL
+  incomeRange   String? // "$150K–$250K" or similar pretty band
 
   // Geo (personal address)
-  city         String?
-  state        String?
-  postalCode   String?
-  market       String    // canonical market label (e.g. "Brooklyn", "Miami")
+  city       String?
+  state      String?
+  postalCode String?
+  market     String // canonical market label (e.g. "Brooklyn", "Miami")
 
   // Property type + behavioural intent
-  propertyType MarketplaceLeadPropertyType
-  intentScore  Int       // 0..100 composite — see lib/marketplace/scoring.ts
-  budgetLabel  String?   // "$680K – $920K" or "$3.8K – $5.2K/mo"
+  propertyType   MarketplaceLeadPropertyType
+  intentScore    Int // 0..100 composite — see lib/marketplace/scoring.ts
+  budgetLabel    String? // "$680K – $920K" or "$3.8K – $5.2K/mo"
   budgetMinCents Int?
   budgetMaxCents Int?
-  signal       String?   // one-line behavioural summary ("Viewed 23 listings · 7d")
-  timeline     String?   // "0–30 days", etc.
+  signal         String? // one-line behavioural summary ("Viewed 23 listings · 7d")
+  timeline       String? // "0–30 days", etc.
 
   // Raw intent payload from Cursive — full segment membership list, last-seen,
   // search radius, etc. Used by lib/marketplace/scoring.ts and surfaced on the
@@ -4941,16 +4954,16 @@ model MarketplaceLead {
   intentPayload Json?
 
   // Marketplace economics
-  priceCents   Int       @default(5000)
-  status       MarketplaceLeadStatus @default(AVAILABLE)
+  priceCents Int                   @default(5000)
+  status     MarketplaceLeadStatus @default(AVAILABLE)
 
   // Lifecycle pointers
-  firstSeenAt   DateTime @default(now())
+  firstSeenAt    DateTime @default(now())
   lastEnrichedAt DateTime @default(now())
   // Stale-after timestamp. After this point the cron flips the lead to
   // EXPIRED. Default = lastEnrichedAt + 14 days. Refreshed on every
   // weekly replenish to keep hot leads alive.
-  expiresAt     DateTime
+  expiresAt      DateTime
 
   // When a lead is sold the buyer id is denormalized here for fast lookups.
   soldToBuyerId String?
@@ -4959,6 +4972,8 @@ model MarketplaceLead {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  purchases MarketplacePurchase[]
+
   @@unique([sourceId, cursiveProfileId])
   @@index([status, intentScore(sort: Desc)])
   @@index([status, market, propertyType])
@@ -4966,8 +4981,6 @@ model MarketplaceLead {
   @@index([sourceId, status])
   @@index([cursiveProfileId])
   @@index([sellerId, status])
-
-  purchases MarketplacePurchase[]
 }
 
 // ----------------------------------------------------------------------------
@@ -4979,20 +4992,20 @@ model MarketplaceBuyer {
   id String @id @default(cuid())
 
   // Magic-link identity. Email is the only login factor — no passwords.
-  email     String  @unique
+  email       String  @unique
   // Display name picked up from the buyer at first purchase. Optional —
   // not required to sign in.
-  fullName  String?
+  fullName    String?
   // Business context for the email receipt and Stripe metadata.
   companyName String?
-  phone     String?
+  phone       String?
 
   // One-time-use sign-in token. SHA-256 hash of the random token we sent
   // in the magic-link email; null when no link is outstanding. Tokens
   // expire after 30 minutes via signInExpiresAt.
-  signInTokenHash    String?
-  signInExpiresAt    DateTime?
-  signInRequestedAt  DateTime?
+  signInTokenHash   String?
+  signInExpiresAt   DateTime?
+  signInRequestedAt DateTime?
 
   // Stripe customer pointer, created on first checkout. Reused for every
   // subsequent purchase so Stripe carries the buyer's saved payment
@@ -5006,8 +5019,8 @@ model MarketplaceBuyer {
 
   // Lifecycle
   lastSignInAt DateTime?
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   purchases MarketplacePurchase[]
   streams   MarketplaceStream[]
@@ -5017,57 +5030,57 @@ model MarketplaceBuyer {
 }
 
 enum MarketplacePurchaseStatus {
-  PENDING       // Stripe checkout in flight
-  PAID          // Stripe confirmed payment; PII released to buyer
-  REFUNDED      // Manual refund issued; PII access revoked
-  FAILED        // Checkout failed / expired
+  PENDING // Stripe checkout in flight
+  PAID // Stripe confirmed payment; PII released to buyer
+  REFUNDED // Manual refund issued; PII access revoked
+  FAILED // Checkout failed / expired
 }
 
 // One row per buyer-buys-a-lead transaction. PII access is gated through
 // this table — server components check ownership before returning full
 // lead fields on /marketplace/[id].
 model MarketplacePurchase {
-  id       String           @id @default(cuid())
+  id String @id @default(cuid())
 
-  leadId   String
-  lead     MarketplaceLead  @relation(fields: [leadId], references: [id], onDelete: Restrict)
+  leadId String
+  lead   MarketplaceLead @relation(fields: [leadId], references: [id], onDelete: Restrict)
 
-  buyerId  String
-  buyer    MarketplaceBuyer @relation(fields: [buyerId], references: [id], onDelete: Cascade)
+  buyerId String
+  buyer   MarketplaceBuyer @relation(fields: [buyerId], references: [id], onDelete: Cascade)
 
   // How this purchase originated:
   //   "DIRECT"  — buyer clicked Buy on /marketplace/[id]
   //   "STREAM"  — auto-purchased by a saved MarketplaceStream
-  origin    String @default("DIRECT")
+  origin String @default("DIRECT")
 
   // Optional pointer to the stream that triggered an auto-purchase.
-  streamId  String?
-  stream    MarketplaceStream? @relation(fields: [streamId], references: [id], onDelete: SetNull)
+  streamId String?
+  stream   MarketplaceStream? @relation(fields: [streamId], references: [id], onDelete: SetNull)
 
   // Stripe pointers
-  stripeCheckoutSessionId String?  @unique
-  stripePaymentIntentId   String?  @unique
+  stripeCheckoutSessionId String? @unique
+  stripePaymentIntentId   String? @unique
 
   priceCents Int
-  currency   String @default("usd")
+  currency   String                    @default("usd")
   status     MarketplacePurchaseStatus @default(PENDING)
 
   // Revenue split snapshot — taken at purchase time so the seller's
   // accrued credit is locked even if revShareBps changes later. Null for
   // platform-direct leads (no seller).
   sellerIdAtSale     String?
-  sellerShareBps     Int?    // basis points (7000 = 70%)
-  sellerShareCents   Int?    // computed: priceCents * sellerShareBps / 10000
-  platformShareCents Int?    // computed: priceCents - sellerShareCents
+  sellerShareBps     Int? // basis points (7000 = 70%)
+  sellerShareCents   Int? // computed: priceCents * sellerShareBps / 10000
+  platformShareCents Int? // computed: priceCents - sellerShareCents
 
   // Receipts + emails
-  receiptUrl       String?
-  piiDeliveredAt   DateTime?
-  receiptSentAt    DateTime?
+  receiptUrl     String?
+  piiDeliveredAt DateTime?
+  receiptSentAt  DateTime?
 
   // Refund context, if any
-  refundedAt       DateTime?
-  refundReason     String?
+  refundedAt   DateTime?
+  refundReason String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -5084,13 +5097,13 @@ model MarketplaceStream {
   buyerId String
   buyer   MarketplaceBuyer @relation(fields: [buyerId], references: [id], onDelete: Cascade)
 
-  name    String
+  name String
 
   // Filter criteria — same shape as the public browse endpoint params.
-  market         String?     // canonical market label (e.g. "Texas"), null = any
-  propertyType   MarketplaceLeadPropertyType?  // null = any
-  minIntent      Int @default(70)
-  maxPriceCents  Int @default(20000)
+  market        String? // canonical market label (e.g. "Texas"), null = any
+  propertyType  MarketplaceLeadPropertyType? // null = any
+  minIntent     Int                          @default(70)
+  maxPriceCents Int                          @default(20000)
 
   // How much the buyer is willing to spend in a 7-day rolling window
   // (cents). The Phase 2b matching cron stops auto-purchasing once
@@ -5102,8 +5115,8 @@ model MarketplaceStream {
 
   // Last time the matching cron looked at this stream + how many leads
   // it has auto-purchased lifetime.
-  lastMatchedAt   DateTime?
-  totalPurchases  Int       @default(0)
+  lastMatchedAt  DateTime?
+  totalPurchases Int       @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -5127,22 +5140,22 @@ model MarketplaceStream {
 
 enum MarketplaceSellerStatus {
   ACTIVE
-  PAUSED   // seller can sign in but new leads don't surface in browse
+  PAUSED // seller can sign in but new leads don't surface in browse
   BANNED
 }
 
 model MarketplaceSeller {
   id String @id @default(cuid())
 
-  email     String  @unique
-  fullName  String?
+  email       String  @unique
+  fullName    String?
   companyName String?
-  phone     String?
+  phone       String?
 
   // Magic-link auth (same shape as MarketplaceBuyer)
-  signInTokenHash    String?
-  signInExpiresAt    DateTime?
-  signInRequestedAt  DateTime?
+  signInTokenHash   String?
+  signInExpiresAt   DateTime?
+  signInRequestedAt DateTime?
 
   // Revenue share — fraction of each sale credited to this seller, in
   // basis points (so 7000 = 70%). Platform keeps (10000 - revShareBps).
@@ -5152,9 +5165,9 @@ model MarketplaceSeller {
   // Lifetime accrued + paid out, in cents. The webhook bumps `accrued`
   // on every PAID purchase; MarketplaceSellerPayout decrements via the
   // payout flow (Phase 2c).
-  accruedCents       Int @default(0)
-  paidOutCents       Int @default(0)
-  unpaidOwedCents    Int @default(0)
+  accruedCents    Int @default(0)
+  paidOutCents    Int @default(0)
+  unpaidOwedCents Int @default(0)
 
   // Lead counts for the dashboard.
   totalLeadsContributed Int @default(0)
@@ -5190,12 +5203,12 @@ enum MarketplacePayoutStatus {
 // One row per payout to a seller. Created by admin (or future automated
 // weekly cron). Decrements the seller's unpaidOwedCents on success.
 model MarketplaceSellerPayout {
-  id        String                 @id @default(cuid())
-  sellerId  String
-  seller    MarketplaceSeller      @relation(fields: [sellerId], references: [id], onDelete: Cascade)
+  id       String            @id @default(cuid())
+  sellerId String
+  seller   MarketplaceSeller @relation(fields: [sellerId], references: [id], onDelete: Cascade)
 
   amountCents Int
-  currency    String  @default("usd")
+  currency    String                  @default("usd")
   status      MarketplacePayoutStatus @default(PENDING)
 
   // Stripe transfer id when paid via Stripe Connect; null for manual payouts.
@@ -5238,8 +5251,8 @@ model MarketplaceAuditEvent {
 
   // Money snapshot at event time (cents). Useful for SOLD / REFUNDED rows
   // so the audit row is a complete record without rejoining the purchase.
-  amountCents       Int?
-  sellerShareCents  Int?
+  amountCents      Int?
+  sellerShareCents Int?
 
   // Free-form context — checkout origin (DIRECT / STREAM / COMP), refund
   // reason, etc.
@@ -5426,19 +5439,19 @@ enum ApiUsageStatus {
 model ApiUsage {
   id String @id @default(cuid())
 
-  provider     String         // "dataforseo" | "tavily" | "anthropic" | "openai" | "perplexity" | "gemini" | "reddit"
-  endpoint     String         // "ranked_keywords" | "search" | "haiku-4.5" | "gpt-4o" etc.
-  status       ApiUsageStatus
-  costMicroCents Int          @default(0) // $0.005 = 500 µ¢
+  provider       String // "dataforseo" | "tavily" | "anthropic" | "openai" | "perplexity" | "gemini" | "reddit"
+  endpoint       String // "ranked_keywords" | "search" | "haiku-4.5" | "gpt-4o" etc.
+  status         ApiUsageStatus
+  costMicroCents Int            @default(0) // $0.005 = 500 µ¢
 
   // Optional scope. Many calls happen during prospect audits (no org
   // yet) — those rows carry prospectAuditId and a null orgId. Tenant-
   // side calls (cron, portal triggers) carry orgId; per-property calls
   // also carry propertyId. All three indexed independently.
-  orgId            String?
-  org              Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
-  propertyId       String?
-  prospectAuditId  String?
+  orgId           String?
+  org             Organization? @relation(fields: [orgId], references: [id], onDelete: SetNull)
+  propertyId      String?
+  prospectAuditId String?
 
   // Diagnostic metadata. Free JSON so per-provider extras (HTTP status,
   // task code, token counts, model variant) round-trip without schema
@@ -5457,4 +5470,308 @@ model ApiUsage {
   @@index([propertyId, createdAt(sort: Desc)])
   @@index([prospectAuditId])
   @@index([createdAt(sort: Desc)])
+}
+
+// ============================================================================
+// PROPOSAL BUILDER — agency-built quotes that pay-to-accept via Stripe Checkout
+// ----------------------------------------------------------------------------
+// Internal tool used by the agency to assemble a customized proposal for a
+// prospect, send a branded PDF + Stripe Checkout link, and on payment auto-
+// provision a LeaseStack Organization. Pricing is a-la-carte: any tier base
+// or add-on price can be overridden per line. Stripe lookups use inline
+// price_data so overrides don't require creating disposable Stripe Prices.
+//
+// Spec: .claude/specs/2026-06-02-proposal-builder.md
+// ============================================================================
+
+enum ProposalStatus {
+  DRAFT
+  SENT
+  VIEWED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELED
+}
+
+enum ProposalCadence {
+  MONTHLY
+  ANNUAL
+}
+
+enum ProposalLineKind {
+  TIER // Foundation / Growth / Scale / Enterprise base
+  ADDON // Catalog add-on (Reputation Pro, Keyword Trends, etc.)
+  CUSTOM // Custom one-off line
+  SETUP // One-time setup / onboarding fee
+  // NOTE: discounts are NOT line items. Stripe rejects negative unit_amount on
+  // line_items, so discounts live on the Proposal header as
+  // discountAmountCents / discountReason and are applied as a one-shot
+  // `coupon` at checkout-session create time.
+}
+
+enum ProposalCatalogKind {
+  TIER
+  ADDON
+}
+
+model Proposal {
+  id     String @id @default(cuid())
+  // Human-friendly identifier surfaced in emails + PDFs (e.g. P-2026-001).
+  // Generated server-side at create time; unique across the platform.
+  number String @unique
+
+  status ProposalStatus @default(DRAFT)
+
+  // Prospect identity — denormalized at create so the proposal record
+  // survives even when the originating Intake/Lead/Org is later deleted.
+  prospectName    String
+  prospectEmail   String
+  prospectCompany String?
+  prospectOrgId   String?
+  prospectOrg     Organization?     @relation("ProposalProspectOrg", fields: [prospectOrgId], references: [id], onDelete: SetNull)
+  intakeId        String?
+  intake          IntakeSubmission? @relation(fields: [intakeId], references: [id], onDelete: SetNull)
+
+  // Cadence applies to the recurring portion of the proposal. NULL for
+  // one-time-only proposals (e.g. a single Website Build with no monthly
+  // subscription) — the checkout-session builder reads cadence presence
+  // to decide subscription vs payment mode.
+  cadence   ProposalCadence?
+  trialDays Int              @default(0)
+
+  // ISO 4217 currency code. Defaults to "usd" — every checkout session is
+  // created in this currency so a mid-proposal currency change requires a
+  // new draft. International prospects flip this at create time.
+  currency String @default("usd")
+
+  // Cached totals in cents — recomputed on every line-item write inside a
+  // transaction so the admin list view can sort/filter without aggregating
+  // line items per row. Discount subtracted in `totalsCents` calc, NOT
+  // here, so the subtotals always reflect raw line value.
+  recurringSubtotalCents Int @default(0)
+  oneTimeSubtotalCents   Int @default(0)
+
+  // Header-level discount. Stripe Checkout `line_items` cannot have
+  // negative `unit_amount`, so discounts are modeled as a one-shot coupon
+  // applied at session create time. amount in cents, scope determines
+  // whether it applies to recurring, one-time, or both.
+  discountAmountCents Int     @default(0)
+  discountReason      String?
+  // 'recurring' | 'one_time' | 'both' — stored as String to avoid a
+  // 3-value enum; validated at the application layer.
+  discountScope       String  @default("both")
+
+  // Optional sunset — proposals past this date flip to EXPIRED via cron.
+  expiresAt DateTime?
+
+  // Free-text messaging.
+  publicMessage String? @db.Text // shown ABOVE the line items on the share page
+  internalNotes String? @db.Text // agency-only, never exposed to prospect
+
+  // Stripe wiring — populated as the proposal moves through the flow.
+  stripeCustomerId     String?
+  stripeCheckoutId     String?
+  stripeSubscriptionId String?
+  stripeInvoiceId      String?
+
+  // Bumps every time we (re)create a Stripe Checkout session for this
+  // proposal — enters the idempotency key as
+  //   `${proposal.id}-checkout-v${checkoutVersion}`
+  // so a manual "regenerate checkout link" replaces the prior session
+  // without colliding with Stripe's idempotency cache.
+  checkoutVersion Int @default(0)
+
+  // PDF cache — generated on first request, served from blob storage on
+  // subsequent calls. Invalidated when ANY line item, total, or status
+  // change happens (set both to NULL in the transaction that mutates).
+  pdfCachedAt DateTime?
+  pdfBlobUrl  String?
+
+  // Lifecycle timestamps. `firstViewedAt` is the FIRST view; later views
+  // bump `lastViewedAt` so we can show the operator "viewed 7 times".
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  sentAt        DateTime?
+  firstViewedAt DateTime?
+  lastViewedAt  DateTime?
+  viewCount     Int       @default(0)
+  acceptedAt    DateTime?
+  declinedAt    DateTime?
+  canceledAt    DateTime?
+  // Distinct from `canceledAt`: `canceledAt` = client declined / agency
+  // pulled BEFORE acceptance. `voidedAt` = agency manually retracted a
+  // SENT proposal (mispriced, prospect ghosted, replaced by Proposal#2).
+  // Void path is separate so admin filters can distinguish "we pulled it"
+  // from "they declined it" without mining audit logs.
+  voidedAt      DateTime?
+  voidReason    String?
+
+  // Audit — who drafted this. Not strictly required; falls back to "system"
+  // for cron-generated proposals (e.g. renewal auto-quotes in v2).
+  createdById String?
+  createdBy   User?   @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  lineItems   ProposalLineItem[]
+  shareTokens ProposalShareToken[]
+  acceptance  ProposalAcceptance?
+
+  @@index([status, createdAt(sort: Desc)])
+  @@index([prospectEmail])
+  @@index([prospectOrgId])
+  @@index([stripeCustomerId])
+  @@index([stripeCheckoutId])
+}
+
+model ProposalLineItem {
+  id         String   @id @default(cuid())
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  kind          ProposalLineKind
+  catalogItemId String?
+  catalogItem   ProposalCatalogItem? @relation(fields: [catalogItemId], references: [id], onDelete: SetNull)
+
+  label       String
+  description String? @db.Text
+
+  // Price stored as cents. `unitPriceCents` IS the value charged — when an
+  // operator overrides a catalog default, the override lives here; the
+  // catalog default remains untouched. Quantity defaults to 1 for tier
+  // bases / add-ons; custom lines may override (e.g. 10 units of training).
+  unitPriceCents Int
+  quantity       Int @default(1)
+
+  // True = part of the recurring subscription; false = one-time charge
+  // (attached to first invoice via `subscription_data.add_invoice_items`
+  // when a subscription exists, otherwise as a top-level line_item on
+  // payment-mode checkout). Validated: a recurring=true catalog item
+  // CANNOT be added to a proposal whose cadence is null (one-time only).
+  recurring Boolean @default(true)
+
+  // Captures the canonical Stripe Price ID we used at checkout time, if
+  // any. Inline price_data is the default (overrides), but when no
+  // override exists and the catalog item has a Stripe price, we record
+  // it here for audit + refund tooling. Null = inline price_data was
+  // used.
+  stripePriceId String?
+
+  sortOrder Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([proposalId])
+  @@index([catalogItemId])
+}
+
+model ProposalCatalogItem {
+  id   String              @id @default(cuid())
+  kind ProposalCatalogKind
+  slug String              @unique // 'tier-growth', 'addon-keyword-trends'
+
+  label       String
+  description String @db.Text
+
+  // Default price in cents. Operators can override per-line in the builder
+  // without mutating this row.
+  defaultPriceCents Int
+
+  // Cadence applies when the item is normally billed recurring. NULL =
+  // one-time-only (e.g. Website Build $2,500). Operators can still toggle
+  // recurring on a line, but the default reflects how the item is sold.
+  cadence ProposalCadence?
+
+  // Optional canonical Stripe Price IDs. When present we COULD pass them
+  // to Checkout instead of inline price_data, but for v1 we always use
+  // inline price_data so overrides work cleanly. These fields are
+  // populated by `lib/billing/catalog.ts` for tier rows so future
+  // optimization can light up automatically.
+  stripePriceIdMonthly String?
+  stripePriceIdAnnual  String?
+
+  active    Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lineItems ProposalLineItem[]
+
+  @@index([kind, active, sortOrder])
+}
+
+model ProposalShareToken {
+  id         String   @id @default(cuid())
+  proposalId String
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  // Opaque high-entropy public token (32 random bytes, base64url-encoded).
+  // Used in /proposal/[token] URLs. Unique constraint enforces uniqueness
+  // at the DB level so a collision throws on insert rather than corrupting
+  // the share surface.
+  token     String    @unique
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
+
+  @@index([token])
+  @@index([proposalId, revokedAt])
+}
+
+model ProposalAcceptance {
+  id         String   @id @default(cuid())
+  proposalId String   @unique
+  proposal   Proposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+
+  acceptedAt DateTime @default(now())
+
+  // Stripe state captured from the checkout.session.completed event.
+  stripeCheckoutId      String
+  stripeCustomerId      String
+  stripeInvoiceId       String?
+  stripeSubscriptionId  String?
+  // Refunds key off the PaymentIntent, not the Invoice. Captured here so
+  // a one-click refund tool in /admin/proposals doesn't have to chase the
+  // PI down through the Invoice's payment_intent expansion.
+  stripePaymentIntentId String?
+  amountPaidCents       Int
+
+  // Set after the auto-provisioning step. Null until provisioning runs.
+  // Provisioning is gated on payment confirmation, not just session
+  // completion (see lib/proposals/provision.ts) — for subscription mode
+  // we wait for `invoice.paid` rather than provisioning on
+  // `checkout.session.completed` because subscription sessions can
+  // complete with payment_status='unpaid' (incomplete sub, 3DS pending,
+  // card failed but sub still created).
+  provisionedOrgId String?
+  provisionedOrg   Organization? @relation("ProposalProvisionedOrg", fields: [provisionedOrgId], references: [id], onDelete: SetNull)
+  provisionedAt    DateTime?
+
+  @@index([stripeCheckoutId])
+  @@index([stripeCustomerId])
+  @@index([stripePaymentIntentId])
+  @@index([provisionedOrgId])
+}
+
+// ----------------------------------------------------------------------------
+// Webhook dedupe — single row per Stripe event we've processed. Guards
+// against double-provisioning when Stripe retries `invoice.paid` after
+// our handler succeeds but the response times out at the edge. Cron
+// can later prune rows older than 30 days (Stripe's retry window is 3
+// days; 30 gives a generous margin).
+// ----------------------------------------------------------------------------
+model ProcessedStripeEvent {
+  eventId     String   @id // Stripe event ID, e.g. evt_1NXyzABC123
+  eventType   String // 'invoice.paid', 'checkout.session.completed', etc.
+  processedAt DateTime @default(now())
+
+  // Optional cross-reference to the entity the event mutated. Helpful when
+  // grep-debugging: "show me all events that touched this proposal".
+  proposalId String?
+  orgId      String?
+
+  @@index([processedAt])
+  @@index([proposalId])
+  @@index([orgId])
 }

@@ -33,6 +33,8 @@ import {
 import { formatDistanceToNow } from "date-fns";
 import { getClientActionItems } from "@/lib/admin/insights";
 import { AlertOctagon, AlertTriangle, Info } from "lucide-react";
+import { getTenantDataSinks } from "@/lib/admin/data-sinks";
+import { DataSinksBoard } from "@/components/admin/data-sinks-board";
 
 export const metadata: Metadata = { title: "Client detail" };
 export const dynamic = "force-dynamic";
@@ -218,6 +220,12 @@ export default async function ClientDetail({
   // current monthly counter + the operator's budget. Safe to call even
   // for tenants who've never opened the Market Intelligence section.
   const rentCastUsage = await getUsageSummary(org.id).catch(() => null);
+
+  // Per-tenant data-sinks board — same single-pane-of-glass that lives on
+  // /admin/system, but scoped to this client. Catches the "this one
+  // tenant's GA4 hasn't run in 4 days while the platform-wide cron looks
+  // fine" failure mode the audit flagged.
+  const tenantDataSinks = await getTenantDataSinks(org.id).catch(() => []);
 
   const propertyTypeLabel = [
     humanPropertyType(org.propertyType),
@@ -421,6 +429,17 @@ export default async function ClientDetail({
           },
         ]}
       />
+
+      <SectionCard
+        label="Data sinks · this tenant"
+        description="Freshness, error streaks, and 24h throughput for every sync scoped to this client."
+      >
+        <DataSinksBoard
+          sinks={tenantDataSinks}
+          scope="tenant"
+          orgId={org.id}
+        />
+      </SectionCard>
 
       <SectionCard
         label="Team members"

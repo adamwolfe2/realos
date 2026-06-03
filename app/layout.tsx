@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { PostHogProvider } from "@/components/posthog-provider";
 import { CrispChat } from "@/components/crisp-chat";
+import { CalDemoProvider } from "@/components/marketing/cal-demo-modal";
 import { GoogleTags, GoogleTagManagerNoScript } from "@/components/analytics/google-tags";
 import { Toaster } from "@/components/ui/sonner";
 import { Inter, JetBrains_Mono, Fraunces } from "next/font/google";
@@ -149,7 +150,14 @@ export default function RootLayout({
           >
             Skip to main content
           </a>
-          <PostHogProvider>{children}</PostHogProvider>
+          {/* CalDemoProvider mounts the Cal.com namespace + pre-warms the
+              embed so every "Book a demo" CTA opens an inline modal
+              instead of redirecting away. The provider lives ABOVE the
+              page tree so opening + closing the modal preserves scroll
+              position and analytics attribution. */}
+          <PostHogProvider>
+            <CalDemoProvider>{children}</CalDemoProvider>
+          </PostHogProvider>
           <Toaster />
           <CrispChat />
           <GoogleTags />

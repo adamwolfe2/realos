@@ -320,11 +320,11 @@ export default async function PortfolioReputationPage({
           publishedAt DESC in loadPortfolioReputationFeed. */}
       <DashboardSection
         title="Recent mentions"
-        eyebrow={showOlder ? "All history" : "Last 12 months"}
+        eyebrow={showOlder ? "All history" : "Last 90 days"}
         description={
           showOlder
             ? "All mentions across every property, newest first"
-            : "Mentions from the last 12 months, newest first"
+            : "Mentions from the last 90 days, newest first"
         }
         action={
           <RecentToggleLink
@@ -342,7 +342,7 @@ export default async function PortfolioReputationPage({
           <p className="text-xs text-muted-foreground">
             {showOlder
               ? "No mentions yet. Run a scan from any property to seed the feed."
-              : "No mentions in the last 12 months. Use \"Show older\" to view archived mentions."}
+              : "No mentions in the last 90 days. Use \"Show older\" to view archived mentions."}
           </p>
         ) : (
           <ul className="divide-y divide-border -my-2">
@@ -654,7 +654,7 @@ function RecentToggleLink({
       href={href}
       className="text-[11px] font-medium text-muted-foreground hover:text-primary transition-colors"
     >
-      {showOlder ? "Last 12 months" : "Show older"}
+      {showOlder ? "Last 90 days" : "Show older"}
     </Link>
   );
 }

@@ -16,6 +16,8 @@ import {
   type TenantReadiness,
   type CheckState,
 } from "@/lib/admin/demo-readiness";
+import { getPlatformDataSinks } from "@/lib/admin/data-sinks";
+import { DataSinksBoard } from "@/components/admin/data-sinks-board";
 import {
   Database,
   Shield,
@@ -95,7 +97,7 @@ function statusLabel(status: HealthStatus): string {
 export default async function SystemHealthPage() {
   await requireAgency();
 
-  const [health, recentAudits, tenantReadiness] = await Promise.all([
+  const [health, recentAudits, tenantReadiness, dataSinks] = await Promise.all([
     runSystemHealthDeep(),
     prisma.auditEvent
       .findMany({
@@ -108,6 +110,7 @@ export default async function SystemHealthPage() {
       })
       .catch(() => []),
     getReadinessForAllTenants().catch(() => [] as TenantReadiness[]),
+    getPlatformDataSinks().catch(() => []),
   ]);
 
   // 2026-05-30: extended check roster to cover every external API the
@@ -175,6 +178,15 @@ export default async function SystemHealthPage() {
           </div>
         </div>
       </div>
+
+      {/* Data sinks — single-pane-of-glass for every integration's
+          freshness, error streak, and 24h throughput. Renders ABOVE
+          dependency checks so the operator's eye lands on broken syncs
+          first. */}
+      <section>
+        <h2 className="text-sm font-semibold text-foreground mb-3">Data sinks</h2>
+        <DataSinksBoard sinks={dataSinks} scope="platform" />
+      </section>
 
       {/* Check cards */}
       <section>

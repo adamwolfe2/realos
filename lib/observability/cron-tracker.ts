@@ -38,6 +38,13 @@ const DEFAULT_THRESHOLD_MS = 60_000;
 export interface CronTrackerOptions {
   /** Soft alert threshold in ms. Default 60_000. */
   thresholdMs?: number;
+  /**
+   * Upstream data provider this cron is responsible for, if any. Used by
+   * the Data Sinks admin board to attribute slow/failed runs back to the
+   * provider rather than just the cron name. Optional — push-driven or
+   * platform-internal crons (e.g. webhook-retry) can omit it.
+   */
+  provider?: string;
 }
 
 export async function trackCronDuration<T>(
@@ -48,12 +55,14 @@ export async function trackCronDuration<T>(
   const thresholdMs = options.thresholdMs ?? DEFAULT_THRESHOLD_MS;
   const startedAt = Date.now();
 
+  const provider = options.provider;
+
   try {
     Sentry.addBreadcrumb({
       category: "cron",
       level: "info",
       message: `cron:${jobName} started`,
-      data: { jobName, thresholdMs },
+      data: { jobName, thresholdMs, provider },
     });
   } catch {
     // Sentry must never break the cron itself.
@@ -68,6 +77,7 @@ export async function trackCronDuration<T>(
           scope.setLevel("warning");
           scope.setTag("cron", jobName);
           scope.setTag("cron:slow", "true");
+          if (provider) scope.setTag("sink:provider", provider);
           scope.setExtras({ durationMs, thresholdMs });
           Sentry.captureMessage(
             `cron:${jobName} exceeded ${thresholdMs}ms (took ${durationMs}ms)`,
@@ -84,6 +94,7 @@ export async function trackCronDuration<T>(
       Sentry.withScope((scope) => {
         scope.setLevel("error");
         scope.setTag("cron", jobName);
+        if (provider) scope.setTag("sink:provider", provider);
         scope.setExtras({ durationMs });
         Sentry.captureException(
           err instanceof Error ? err : new Error(String(err)),

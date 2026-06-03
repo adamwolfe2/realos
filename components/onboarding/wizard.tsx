@@ -64,6 +64,29 @@ export function OnboardingWizard({
   const router = useRouter();
   const [submitting, setSubmitting] = React.useState(false);
 
+  const goBack = React.useCallback(async () => {
+    // Norman feedback (2026-06-02): wizard had no step-back nav. POSTs
+    // to /api/onboarding/wizard/back which decrements the persisted
+    // step. We share the `submitting` lock so a click during an
+    // in-flight save doesn't double-mutate the step.
+    if (submitting) return;
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/onboarding/wizard/back", {
+        method: "POST",
+      });
+      if (!res.ok) {
+        toast.error("Couldn't go back. Try again.");
+        return;
+      }
+      router.refresh();
+    } catch {
+      toast.error("Network error. Try again in a moment.");
+    } finally {
+      setSubmitting(false);
+    }
+  }, [router, submitting]);
+
   const advance = React.useCallback(
     async (
       action: "workspace" | "integrations" | "property" | "start-trial",
@@ -85,10 +108,12 @@ export function OnboardingWizard({
           return;
         }
         // The page re-fetches its data on refresh() and renders the
-        // newly-advanced step. If we just hit start-trial, the server
-        // page redirects to /portal because onboardingStep === "done".
+        // newly-advanced step. start-trial transitions land at the
+        // dedicated /portal/welcome page so the operator sees an
+        // explicit welcome card + next-steps before the dashboard takes
+        // over (Norman feedback 2026-06-02).
         if (json.nextStep === "done") {
-          router.push("/portal?welcome=1");
+          router.push("/portal/welcome");
         } else {
           router.refresh();
         }
@@ -106,7 +131,7 @@ export function OnboardingWizard({
   );
 
   return (
-    <WizardChrome step={step}>
+    <WizardChrome step={step} onBack={goBack} backDisabled={submitting}>
       {submitting ? (
         <div
           className="absolute inset-0 z-10 flex items-center justify-center"

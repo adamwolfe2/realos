@@ -152,6 +152,19 @@ export const popupEventLimiter = createLimiter(redis, 60, '1 m')
 // download instead.
 export const adsExportLimiter = createLimiter(redis, 1, '1 h')
 
+// 30 proposal share-page view pings per IP per minute. The /proposal/[token]
+// view tracker fires once per page load via a small client effect; this cap
+// stops a scripted refresh loop from inflating viewCount or DoSing the DB
+// via repeated UPDATEs on a single row.
+export const proposalViewLimiter = createLimiter(redis, 30, '1 m')
+
+// 5 proposal acceptance attempts per IP per minute. Accept is the most
+// expensive endpoint in the proposal flow — it builds + creates a Stripe
+// Checkout Session (including a Customer create on the first call). Tight
+// per-IP cap stops drive-by abuse without bothering the legitimate
+// "I clicked twice" case.
+export const proposalAcceptLimiter = createLimiter(redis, 5, '1 m')
+
 // 30 credential reveals per userId per minute. Pre-fix this was 10/min
 // which felt safe in theory but was too tight in practice — legitimate
 // operator behavior during initial vault exploration (revealing each

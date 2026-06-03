@@ -1,6 +1,7 @@
 import "server-only";
 import { prisma } from "@/lib/db";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
+import { RECENCY_WINDOW } from "@/lib/recency";
 import type { MentionSource, Prisma, Sentiment } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -399,12 +400,14 @@ export type PortfolioReputationFeedItem = {
   reviewed: boolean;
 };
 
-// Default recency cutoff for the "Recent mentions" portfolio feed. Norman
-// reported (#1) that a 4-year-old Yelp review from a closed business was
-// surfacing as the 4th recent mention. The KPI strip already shows lifetime
-// totals; the recent feed should be strictly recent. 12 months matches what
-// surfaces in monthly reports and what owners think of as "recent".
-const RECENT_FEED_DEFAULT_MAX_AGE_MS = 365 * 24 * 60 * 60 * 1000;
+// Bug #124/#113: 90d default cutoff; was 12 months (unbounded enough that
+// 4-year-old Yelp reviews from closed businesses still surfaced as "recent
+// mentions" on /portal/reputation and inside monthly reports). The KPI
+// strip still shows lifetime totals — the recent feed is now strictly the
+// last 90 days. Operators wanting older signal use the "Show older" toggle
+// which sets includeOlder=true and bypasses this gate entirely. Centralised
+// in lib/recency.ts so any future "this is too old" tweak lives in one place.
+const RECENT_FEED_DEFAULT_MAX_AGE_MS = RECENCY_WINDOW.quarter;
 
 export async function loadPortfolioReputationFeed(
   orgId: string,
@@ -440,10 +443,10 @@ export async function loadPortfolioReputationFeed(
   if (options.sentiment) where.sentiment = options.sentiment;
 
   // Recency gate. Default: only mentions whose publishedAt (or
-  // ingestion-time fallback) is within the last 12 months. The fallback
-  // matters because some scraped sources (older Yelp pages, archived
-  // Tavily hits) land without a publishedAt — without a fallback those
-  // would be dropped entirely. Using createdAt as the fallback keeps
+  // ingestion-time fallback) is within the last 90 days (Bug #124/#113).
+  // The fallback matters because some scraped sources (older Yelp pages,
+  // archived Tavily hits) land without a publishedAt — without a fallback
+  // those would be dropped entirely. Using createdAt as the fallback keeps
   // fresh-but-undated finds in the feed while still cutting off ancient
   // re-scrapes of dead pages.
   if (!options.includeOlder) {

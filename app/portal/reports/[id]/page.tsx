@@ -278,9 +278,8 @@ export default async function ReportDetailPage({
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {/* Bug #6: the inline "Open public view" link inside OperatorReviewBar
-              (next to the SHARED badge) is more contextual and already covers
-              this affordance. Removing the duplicate top-right button. */}
+          {/* Bug #117: removed duplicate top-right "Open public view" — kept inline link next to SHARED badge.
+              The inline link inside OperatorReviewBar is more contextual and already covers this affordance. */}
           <PrintButton />
         </div>
       </div>

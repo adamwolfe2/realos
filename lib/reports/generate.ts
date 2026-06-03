@@ -19,6 +19,7 @@ import { generateText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { buildPropertyUrlPatterns } from "@/lib/properties/queries";
 import { realAdAccountWhere } from "@/lib/integrations/real-ad-account";
+import { reportPeriodWindow } from "@/lib/recency";
 
 // ---------------------------------------------------------------------------
 // Report snapshot generator.
@@ -2406,22 +2407,18 @@ async function buildReputationStats(
 ): Promise<ReportReputationStats | undefined> {
   const propertyClause = propertyId ? { propertyId } : {};
 
-  // Recency floor for the curated "Needs Attention" + "Recent" + "Highlights"
-  // lists. Bug #10 — Norman reported 2015 and 2022 reviews surfacing in
-  // "Needs Attention" of a May 2026 monthly report. The subtitle reads
-  // "Negative sentiment + 3★ or below + flagged threads" with no recency
-  // qualifier, so a 11-year-old 1★ Google review qualified.
-  //
-  // Rule: clamp to the more permissive of "last 12 months" and "report
-  // period start" — for weekly reports the 7-day window would otherwise
-  // strip every concern out, but for monthly/annual reports the 12-month
-  // bound keeps things scoped to what actually matters.
-  const TWELVE_MONTHS_AGO = new Date(periodEnd);
-  TWELVE_MONTHS_AGO.setMonth(TWELVE_MONTHS_AGO.getMonth() - 12);
-  const recencyFloor =
-    periodStart.getTime() < TWELVE_MONTHS_AGO.getTime()
-      ? TWELVE_MONTHS_AGO
-      : periodStart;
+  // Bug #124/#113: Recency floor for "Needs Attention" + "Recent" +
+  // "Highlights". The previous 12-month clamp was still too loose — Norman
+  // reported 2015 and 2022 reviews surfacing in the May 2026 monthly
+  // report. Now routed through lib/recency.ts:reportPeriodWindow which
+  // takes the more permissive of (a) the report's own periodStart, (b)
+  // 90 days. For a monthly report periodStart ≈ now-30d → 90d wins; for
+  // an annual report periodStart > 90d ago → periodStart wins. Either way
+  // no 11-year-old review can ever qualify.
+  const { gte: recencyFloor } = reportPeriodWindow({
+    periodStart,
+    periodEnd,
+  });
   // Curated lists pull mentions where publishedAt >= recencyFloor. Undated
   // mentions (publishedAt == null) get their createdAt checked as a
   // fallback — same pattern as the portfolio feed in lib/reputation/portfolio.ts.

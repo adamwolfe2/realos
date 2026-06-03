@@ -351,11 +351,12 @@ function ModuleCard({
   const isAddon = m.kind === "addon";
   const isToggle = m.kind === "toggle";
   const isConcierge = m.kind === "concierge";
-  // Norman bug #2: operators couldn't click into a module to read the full
-  // pitch — tagline was truncated with "..." and there was no expand. Now
-  // every card has a "Details" toggle that expands the tagline (no clamp)
-  // and shows the catalog bullets + setup effort. The CTA buttons retain
-  // their own click target so toggle/activate behavior is unchanged.
+  // Bug #123 (was Norman bug #2): operators couldn't click into a module to
+  // read the full pitch — tagline was truncated with "..." and there was no
+  // expand. Fix (b) from spec: kept line-clamp-2 on the tagline and added a
+  // "Details" link below it that expands the tagline (no clamp) plus shows
+  // catalog bullets + setup effort. The CTA buttons retain their own click
+  // target so toggle/activate behavior is unchanged.
   const [expanded, setExpanded] = useState(false);
 
   // Single-accent design: every card uses the LeaseStack blue stripe. We

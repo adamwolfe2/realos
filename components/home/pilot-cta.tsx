@@ -1,9 +1,16 @@
 import Link from "next/link";
+import { BookDemoLink } from "@/components/marketing/book-demo-link";
 
 // PilotCta — small dedicated card that sits between the ProductTour and
 // the PlatformWalkthrough. Reinforces the pilot offer at the moment the
 // reader is most curious about the product, without competing with the
 // hero or the final Proof CTA.
+//
+// Norman feedback (2026-06-02): "Request pilot" used to route to
+// /onboarding (the trial wizard), bouncing prospects from a sales-call
+// intent into a product-onboarding flow. Now wired through BookDemoLink
+// so it opens the inline Cal.com modal — same conversation outcome,
+// without the path collision with self-serve trialers.
 
 export function PilotCta() {
   return (
@@ -60,13 +67,13 @@ export function PilotCta() {
             </div>
 
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
-              <Link
-                href="/onboarding"
+              <BookDemoLink
                 className="btn-primary"
                 style={{ display: "inline-flex", justifyContent: "center" }}
+                ariaLabel="Request pilot — opens scheduling"
               >
                 Request pilot
-              </Link>
+              </BookDemoLink>
               <Link
                 href="/demo"
                 className="btn-secondary"

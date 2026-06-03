@@ -76,16 +76,15 @@ export default async function ReportsListPage({
     },
   });
 
-  // Bug #8 (Joe + Norman, May): three reports with identical title
-  // "End of Month Report 5/22" (2 SHARED + 1 GENERATED) made it impossible
-  // to tell which version was actually live for the client. We don't
-  // auto-archive (data loss risk) — instead we flag the duplicates so
-  // the operator can decide. Group reports by (effective title, kind,
-  // periodStart) and:
+  // Bug #115 (was #8): three reports with identical title "End of Month
+  // Report 5/22" (2 SHARED + 1 GENERATED) made it impossible to tell which
+  // version was actually live for the client. We don't auto-archive (data
+  // loss risk) — instead we flag the duplicates so the operator can decide.
+  // Group reports by (effective title, kind, periodStart) and:
   //   - badge the most recently SHARED row in each group as "Most recent"
   //   - badge older rows in the same group as "Outdated" + dim them
-  // Reports with a unique title in their (kind, periodStart) bucket
-  // render unchanged.
+  // Reports with a unique title in their (kind, periodStart) bucket render
+  // unchanged.
   type DupeBadge = "most-recent" | "outdated" | null;
   const dupeBadge = new Map<string, DupeBadge>();
   {

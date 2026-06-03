@@ -10,6 +10,7 @@ import {
   SubscriptionTier,
   TenantStatus,
   AuditAction,
+  ProposalStatus,
 } from "@prisma/client";
 import {
   computeMrrCents,
@@ -17,6 +18,8 @@ import {
   subscriptionHasWhiteLabel,
   tierFromStripePriceId,
 } from "@/lib/billing/plans";
+import { processStripeEventOnce } from "@/lib/proposals/idempotency";
+import { runProvisioningForProposal } from "@/lib/proposals/provision";
 
 // ============================================================================
 // Stripe → Platform status mappings
@@ -245,7 +248,25 @@ async function handleSubscriptionUpserted(
 //      Best-effort customer-to-org linking by email.
 async function handleCheckoutCompleted(
   session: Stripe.Checkout.Session,
+  eventId?: string,
 ): Promise<void> {
+  // Proposal accept flow. The Checkout session was created by
+  // /api/proposals/[token]/accept and carries metadata.kind === "proposal".
+  // This MUST fire before the marketplace/quote/website-build branches so
+  // a proposal session is never misrouted.
+  //
+  // For payment mode (one-time): payment_status === "paid" means money
+  //   actually moved → accept + provision now.
+  // For subscription mode: do NOT accept here. Stripe fires this event
+  //   the moment the subscription is created, even with a trial and even
+  //   when payment hasn't cleared yet (3DS pending, sub still incomplete).
+  //   We persist sub + invoice ids and wait for invoice.paid to fire the
+  //   acceptance path so we never provision on unpaid money.
+  if (session.metadata?.kind === "proposal") {
+    await handleProposalCheckoutCompleted(session, eventId);
+    return;
+  }
+
   // Marketplace lead purchase — handled by the shared marketplace lib.
   // Detected via metadata.marketplaceLeadId set in the marketplace
   // checkout route. Returns true if it owned the event; we exit early.
@@ -497,7 +518,21 @@ async function handleSubscriptionDeleted(
   });
 }
 
-async function handleInvoicePaid(invoice: Stripe.Invoice): Promise<void> {
+async function handleInvoicePaid(
+  invoice: Stripe.Invoice,
+  eventId?: string,
+): Promise<void> {
+  // Proposal subscription accept path: this is the FIRST invoice.paid for a
+  // subscription created via the proposal-accept Checkout flow. We do the
+  // acceptance + provisioning here (not on checkout.session.completed) so
+  // we never provision on unpaid money — Stripe fires session.completed
+  // for trial subscriptions before any money moves, and for failed-3DS
+  // subscriptions in `incomplete` state. invoice.paid only fires when the
+  // money actually clears.
+  if (eventId) {
+    await maybeAcceptProposalFromInvoice(invoice, eventId);
+  }
+
   const stripeCustomerId =
     typeof invoice.customer === "string"
       ? invoice.customer
@@ -1205,6 +1240,407 @@ async function _maybeLiftDunningSuspension(orgId: string): Promise<void> {
 }
 
 // ============================================================================
+// Proposal accept-and-pay webhook handlers
+// ============================================================================
+//
+// Three event types touch the proposal flow:
+//   1. checkout.session.completed
+//        - payment mode (one-time only): accept + provision now
+//        - subscription mode: persist sub + invoice ids, WAIT for invoice.paid
+//   2. invoice.paid (or invoice.payment_succeeded)
+//        - if the invoice's subscription metadata carries a proposalId AND
+//          the proposal is not yet ACCEPTED: accept + provision
+//   3. customer.subscription.trial_will_end
+//        - if subscription.metadata.proposalId: email prospect + agency (v1
+//          logs + Sentry warning; v2 will wire the real send via lib/proposals/email)
+//
+// Every branch routes through processStripeEventOnce so a Stripe retry can
+// never double-provision. Sentry breadcrumbs include the proposalId tag for
+// fast forensic queries.
+
+async function handleProposalCheckoutCompleted(
+  session: Stripe.Checkout.Session,
+  eventId?: string,
+): Promise<void> {
+  const proposalId = session.metadata?.proposalId ?? null;
+  if (!proposalId) {
+    captureWithContext(
+      new Error("Proposal checkout session missing proposalId metadata"),
+      {
+        route: "api/webhooks/stripe",
+        handler: "handleProposalCheckoutCompleted",
+        sessionId: session.id,
+      },
+    );
+    return;
+  }
+
+  const stripeCustomerId =
+    typeof session.customer === "string"
+      ? session.customer
+      : session.customer?.id ?? null;
+  const subscriptionId =
+    typeof session.subscription === "string"
+      ? session.subscription
+      : session.subscription?.id ?? null;
+  const invoiceId =
+    typeof session.invoice === "string"
+      ? session.invoice
+      : session.invoice?.id ?? null;
+  const paymentIntentId =
+    typeof session.payment_intent === "string"
+      ? session.payment_intent
+      : session.payment_intent?.id ?? null;
+
+  // Always persist the sub + invoice + customer refs so admin tooling can
+  // correlate even before acceptance fires. Defensive write — never clears
+  // an existing value.
+  const persistData: Parameters<typeof prisma.proposal.update>[0]["data"] = {};
+  if (stripeCustomerId) persistData.stripeCustomerId = stripeCustomerId;
+  if (subscriptionId) persistData.stripeSubscriptionId = subscriptionId;
+  if (invoiceId) persistData.stripeInvoiceId = invoiceId;
+  if (Object.keys(persistData).length > 0) {
+    await prisma.proposal
+      .update({
+        where: { id: proposalId },
+        data: persistData,
+      })
+      .catch((err) => {
+        captureWithContext(err, {
+          route: "api/webhooks/stripe",
+          handler: "handleProposalCheckoutCompleted.persist",
+          proposalId,
+        });
+      });
+  }
+
+  // Subscription mode: do NOT accept here. Wait for invoice.paid so we
+  // never provision on unpaid money (trial, 3DS pending, card failed).
+  if (session.mode === "subscription") {
+    return;
+  }
+
+  // Payment mode (one-time only). Stripe fires session.completed only
+  // when payment_status === "paid" for payment mode, but we double-check
+  // anyway to defend against future Stripe behavior changes.
+  if (session.payment_status !== "paid") {
+    return;
+  }
+
+  if (!stripeCustomerId) {
+    captureWithContext(
+      new Error("Proposal payment-mode session missing customer id"),
+      {
+        route: "api/webhooks/stripe",
+        handler: "handleProposalCheckoutCompleted",
+        proposalId,
+        sessionId: session.id,
+      },
+    );
+    return;
+  }
+
+  await acceptProposalAndProvision({
+    proposalId,
+    eventId: eventId ?? `cs_${session.id}`,
+    eventType: "checkout.session.completed",
+    stripeCheckoutId: session.id,
+    stripeCustomerId,
+    stripeInvoiceId: invoiceId,
+    stripeSubscriptionId: subscriptionId,
+    stripePaymentIntentId: paymentIntentId,
+    amountPaidCents: session.amount_total ?? 0,
+  });
+}
+
+async function maybeAcceptProposalFromInvoice(
+  invoice: Stripe.Invoice,
+  eventId: string,
+): Promise<void> {
+  // Pull subscription id from any of the places Stripe might park it
+  // depending on API version + event shape.
+  const subscriptionId = extractSubscriptionId(invoice);
+  if (!subscriptionId) {
+    // review-fix: silent return on a no-subscription invoice is correct
+    // (non-subscription invoices flow through this code path harmlessly
+    // and don't need to fire alerts), BUT capture a breadcrumb when the
+    // invoice's line items carry proposal metadata — that combination
+    // means the invoice IS proposal-related but Stripe has reshaped where
+    // the subscription pointer lives. Without this signal we'd silently
+    // stop accepting proposals after a Stripe API upgrade.
+    const looksProposalRelated = invoice.lines?.data?.some((line) => {
+      const meta = (line.metadata ?? null) as Record<string, string> | null;
+      return meta?.proposalLineId != null || meta?.proposalLineKind != null;
+    });
+    if (looksProposalRelated) {
+      captureWithContext(
+        new Error("Proposal invoice.paid missing subscription id"),
+        {
+          route: "api/webhooks/stripe",
+          handler: "maybeAcceptProposalFromInvoice",
+          tag: "stripe_invoice_no_sub_id",
+          invoiceId: invoice.id,
+          eventId,
+        },
+      );
+    }
+    return;
+  }
+
+  // Pull subscription so we can read its metadata.proposalId. Single
+  // round-trip; fail closed (no acceptance) on any error.
+  let subscription: Stripe.Subscription;
+  try {
+    subscription = await getStripeClient().subscriptions.retrieve(subscriptionId);
+  } catch (err) {
+    captureWithContext(err, {
+      route: "api/webhooks/stripe",
+      handler: "maybeAcceptProposalFromInvoice.retrieveSub",
+      subscriptionId,
+    });
+    return;
+  }
+
+  const proposalId = subscription.metadata?.proposalId ?? null;
+  if (!proposalId) return;
+
+  // If proposal is already ACCEPTED we still let processStripeEventOnce
+  // dedupe; the acceptance helper short-circuits idempotently.
+  const stripeCustomerId =
+    typeof invoice.customer === "string"
+      ? invoice.customer
+      : invoice.customer?.id ?? null;
+  if (!stripeCustomerId) return;
+
+  const checkoutSessionId =
+    subscription.metadata?.checkoutSessionId ??
+    // Fallback: best-effort look up via our stored stripeCheckoutId
+    null;
+
+  await acceptProposalAndProvision({
+    proposalId,
+    eventId,
+    eventType: "invoice.paid",
+    stripeCheckoutId: checkoutSessionId,
+    stripeCustomerId,
+    stripeInvoiceId: invoice.id ?? null,
+    stripeSubscriptionId: subscriptionId,
+    stripePaymentIntentId: null,
+    amountPaidCents: invoice.amount_paid ?? 0,
+  });
+}
+
+function extractSubscriptionId(invoice: Stripe.Invoice): string | null {
+  // Stripe's invoice shape moved subscription onto invoice.parent in
+  // newer API versions; older code paths still read invoice.subscription.
+  // Read both defensively.
+  const top = (invoice as unknown as { subscription?: unknown }).subscription;
+  if (typeof top === "string") return top;
+  if (top && typeof top === "object" && "id" in top) {
+    const id = (top as { id?: unknown }).id;
+    if (typeof id === "string") return id;
+  }
+  const parent = invoice.parent;
+  if (
+    parent?.type === "subscription_details" &&
+    parent.subscription_details?.subscription
+  ) {
+    const sub = parent.subscription_details.subscription;
+    return typeof sub === "string" ? sub : (sub.id ?? null);
+  }
+  return null;
+}
+
+async function acceptProposalAndProvision(args: {
+  proposalId: string;
+  eventId: string;
+  eventType: string;
+  stripeCheckoutId: string | null;
+  stripeCustomerId: string;
+  stripeInvoiceId: string | null;
+  stripeSubscriptionId: string | null;
+  stripePaymentIntentId: string | null;
+  amountPaidCents: number;
+}): Promise<void> {
+  // Cheap pre-check: skip everything if the proposal is already ACCEPTED
+  // AND its acceptance row has a stable shape. runProvisioningForProposal
+  // wraps its own processStripeEventOnce so retries are safe past this
+  // point, but skipping the upserts on a known-accepted proposal avoids
+  // a useless DB round-trip on every routine retry.
+  const existing = await prisma.proposal.findUnique({
+    where: { id: args.proposalId },
+    select: {
+      status: true,
+      stripeCheckoutId: true,
+      acceptance: { select: { id: true, provisionedOrgId: true } },
+    },
+  });
+  if (!existing) {
+    captureWithContext(
+      new Error("acceptProposalAndProvision: proposal not found"),
+      {
+        route: "api/webhooks/stripe",
+        proposalId: args.proposalId,
+        eventId: args.eventId,
+      },
+    );
+    return;
+  }
+  // Already accepted AND already provisioned — nothing to do.
+  if (
+    existing.status === ProposalStatus.ACCEPTED &&
+    existing.acceptance?.provisionedOrgId
+  ) {
+    return;
+  }
+
+  const stripeCheckoutId =
+    args.stripeCheckoutId ?? existing.stripeCheckoutId ?? "unknown";
+  const now = new Date();
+
+  // Acceptance writes are wrapped in processStripeEventOnce — first-write
+  // wins. The dedupe row covers BOTH the acceptance upsert AND the
+  // downstream provisioning call so a Stripe retry of the same event id
+  // never double-provisions. The provisioning lib expects to run inside
+  // a dedupe boundary (it does NOT wrap itself) — we own the boundary
+  // here.
+  const dedupe = await processStripeEventOnce(
+    {
+      eventId: args.eventId,
+      eventType: args.eventType,
+      proposalId: args.proposalId,
+    },
+    async (tx) => {
+      // Re-check inside the lock — a parallel retry may have just
+      // accepted between our pre-check and the lock acquisition. The
+      // unique constraint on ProcessedStripeEvent.eventId guarantees we
+      // own this event id; the proposal might still have been accepted
+      // by a DIFFERENT event id (session.completed then invoice.paid).
+      const fresh = await tx.proposal.findUnique({
+        where: { id: args.proposalId },
+        select: { status: true, acceptance: { select: { id: true } } },
+      });
+      if (!fresh) return;
+
+      const acceptance = await tx.proposalAcceptance.upsert({
+        where: { proposalId: args.proposalId },
+        create: {
+          proposalId: args.proposalId,
+          acceptedAt: now,
+          stripeCheckoutId,
+          stripeCustomerId: args.stripeCustomerId,
+          stripeInvoiceId: args.stripeInvoiceId,
+          stripeSubscriptionId: args.stripeSubscriptionId,
+          stripePaymentIntentId: args.stripePaymentIntentId,
+          amountPaidCents: Math.max(0, Math.floor(args.amountPaidCents)),
+        },
+        update: {
+          // Preserve the first-write acceptedAt timestamp across retries.
+          stripeCheckoutId,
+          stripeCustomerId: args.stripeCustomerId,
+          ...(args.stripeInvoiceId
+            ? { stripeInvoiceId: args.stripeInvoiceId }
+            : {}),
+          ...(args.stripeSubscriptionId
+            ? { stripeSubscriptionId: args.stripeSubscriptionId }
+            : {}),
+          ...(args.stripePaymentIntentId
+            ? { stripePaymentIntentId: args.stripePaymentIntentId }
+            : {}),
+          ...(args.amountPaidCents > 0
+            ? {
+                amountPaidCents: Math.max(0, Math.floor(args.amountPaidCents)),
+              }
+            : {}),
+        },
+        select: {
+          stripeCustomerId: true,
+          stripeSubscriptionId: true,
+          provisionedOrgId: true,
+        },
+      });
+
+      if (fresh.status !== ProposalStatus.ACCEPTED) {
+        await tx.proposal.update({
+          where: { id: args.proposalId },
+          data: {
+            status: ProposalStatus.ACCEPTED,
+            acceptedAt: now,
+            stripeCustomerId: args.stripeCustomerId,
+            ...(args.stripeInvoiceId
+              ? { stripeInvoiceId: args.stripeInvoiceId }
+              : {}),
+            ...(args.stripeSubscriptionId
+              ? { stripeSubscriptionId: args.stripeSubscriptionId }
+              : {}),
+          },
+        });
+      }
+
+      // Provisioning runs INSIDE the dedupe boundary so the org create +
+      // Clerk invite + welcome email never double-fire on a Stripe retry.
+      // The lib itself reads from the global `prisma` (not tx) for the
+      // post-org steps which is fine — those steps are independently
+      // idempotent (provisionOrgForAcceptance short-circuits when
+      // ProposalAcceptance.provisionedOrgId is already set).
+      try {
+        const result = await runProvisioningForProposal({
+          proposalId: args.proposalId,
+          eventId: args.eventId,
+          eventType: args.eventType,
+          acceptance,
+        });
+        if (result.warnings.length > 0) {
+          console.warn(
+            `[stripe-webhook] proposal provisioning warnings — proposalId=${args.proposalId}:`,
+            result.warnings.join("; "),
+          );
+        }
+      } catch (err) {
+        captureWithContext(err, {
+          route: "api/webhooks/stripe",
+          handler: "acceptProposalAndProvision.provision",
+          proposalId: args.proposalId,
+          eventId: args.eventId,
+        });
+        throw err; // Roll back the acceptance writes + let Stripe retry.
+      }
+    },
+  );
+
+  if (dedupe.status === "processed") {
+    console.log(
+      `[stripe-webhook] proposal accepted — proposalId=${args.proposalId} via=${args.eventType}`,
+    );
+  }
+}
+
+async function handleProposalTrialWillEnd(
+  subscription: Stripe.Subscription,
+): Promise<void> {
+  const proposalId = subscription.metadata?.proposalId ?? null;
+  if (!proposalId) return;
+
+  // v1: log + Sentry warning so the agency operator gets a notification
+  // through their existing Sentry pipeline. v2 wires the real prospect +
+  // operator emails via lib/proposals/email once that helper ships.
+  console.warn(
+    `[stripe-webhook] proposal trial ending — proposalId=${proposalId} subId=${subscription.id} trialEnd=${subscription.trial_end ?? "?"}`,
+  );
+  captureWithContext(
+    new Error("Proposal trial will end — v2 email send pending"),
+    {
+      route: "api/webhooks/stripe",
+      handler: "handleProposalTrialWillEnd",
+      proposalId,
+      subscriptionId: subscription.id,
+      trialEnd: subscription.trial_end ?? null,
+      level: "warning",
+    },
+  );
+}
+
+// ============================================================================
 // Route handler
 // ============================================================================
 
@@ -1256,6 +1692,7 @@ export async function POST(req: NextRequest) {
       case "checkout.session.completed":
         await handleCheckoutCompleted(
           event.data.object as Stripe.Checkout.Session,
+          event.id,
         );
         break;
 
@@ -1280,7 +1717,13 @@ export async function POST(req: NextRequest) {
 
       case "invoice.paid":
       case "invoice.payment_succeeded":
-        await handleInvoicePaid(event.data.object as Stripe.Invoice);
+        await handleInvoicePaid(event.data.object as Stripe.Invoice, event.id);
+        break;
+
+      case "customer.subscription.trial_will_end":
+        await handleProposalTrialWillEnd(
+          event.data.object as Stripe.Subscription,
+        );
         break;
 
       case "invoice.payment_failed":

@@ -26,23 +26,30 @@ import {
 } from "@/components/portal/visitors/visitor-table";
 import { DataPlaceholder } from "@/components/portal/ui/data-placeholder";
 import { Radio, UserCheck, Mail, Users } from "lucide-react";
+import { parseTimeWindow, timeWindowGte, type TimeWindow } from "@/lib/recency";
 
 export const metadata: Metadata = { title: "Visitor feed" };
 export const dynamic = "force-dynamic";
 
 const PAGE_SIZE = 50;
 
-type WindowKey = "24h" | "7d" | "30d" | "all";
+// Bug #125/#127: window selection now routes through `lib/recency.ts`
+// (parseTimeWindow + timeWindowGte) so the URL string, the prisma `gte`
+// cutoff, and the active-tab highlight can never drift out of sync. 90d
+// is exposed as a fourth tab so customers running longer attribution
+// cycles don't have to drop straight to "All" and pull every historical
+// record.
+type WindowKey = TimeWindow;
 type StatusKey = "all" | "identified" | "hot" | "with_lead";
 type SortKey = "recent" | "intent";
 
-const WINDOWS: Array<{ key: WindowKey; label: string; hours: number | null }> =
-  [
-    { key: "24h", label: "24h", hours: 24 },
-    { key: "7d", label: "7d", hours: 24 * 7 },
-    { key: "30d", label: "30d", hours: 24 * 30 },
-    { key: "all", label: "All", hours: null },
-  ];
+const WINDOWS: Array<{ key: WindowKey; label: string }> = [
+  { key: "24h", label: "24h" },
+  { key: "7d", label: "7d" },
+  { key: "30d", label: "30d" },
+  { key: "90d", label: "90d" },
+  { key: "all", label: "All" },
+];
 
 const STATUS_TABS: Array<{ key: StatusKey; label: string }> = [
   { key: "all", label: "All" },
@@ -71,6 +78,12 @@ function readParam<T extends string>(
   }
   return fallback;
 }
+
+// Bug #125: keep `?window=…` URL string and active-tab state in sync via
+// lib/recency.ts. The page-level branch (parseTimeWindow + timeWindowGte)
+// is also wired through this so a single source of truth governs both the
+// query cutoff and the rendered active tab.
+const WINDOW_KEYS = ["24h", "7d", "30d", "90d", "all"] as const;
 
 function parsePage(value: string | string[] | undefined): number {
   const raw = Array.isArray(value) ? value[0] : value;
@@ -109,12 +122,12 @@ export default async function VisitorsPage({
   searchParams: Promise<SearchParams>;
 }) {
   const params = await searchParams;
-  const windowKey = readParam<WindowKey>(
-    params,
-    "window",
-    ["24h", "7d", "30d", "all"],
-    "7d"
-  );
+  // Bug #125: parseTimeWindow centralizes the whitelist + fallback so the
+  // toggle is guaranteed to actually filter — the previous Norman bug was
+  // that lastSeenAt was overwritten by the segment-sync cron, so even when
+  // the where-clause changed the rows looked identical. Now both the
+  // where-clause and the orderBy below feed off this single parsed value.
+  const windowKey = parseTimeWindow(params.window, "7d");
   const statusKey = readParam<StatusKey>(
     params,
     "status",
@@ -141,9 +154,11 @@ export default async function VisitorsPage({
   const properties = visibleProperties(scope, allProperties);
 
   const windowDef = WINDOWS.find((w) => w.key === windowKey)!;
-  const since = windowDef.hours
-    ? new Date(Date.now() - windowDef.hours * 60 * 60 * 1000)
-    : null;
+  // Bug #125: cutoff date now derives from the shared lib/recency.ts
+  // helper. Same value powers the prisma where-clause (below) AND the
+  // KPI tile hint copy, so the operator sees consistent framing across
+  // every surface that observes the window.
+  const since = timeWindowGte(windowKey);
 
   // 2026-05-30 (Norman bug, #14 + #3 from his Thursday batch): the
   // window filter previously gated on `lastSeenAt: { gte: since }`.
@@ -190,11 +205,14 @@ export default async function VisitorsPage({
 
   const where: Prisma.VisitorWhereInput = { ...baseWhere, ...statusWhere };
 
-  // Norman bug (May 30): orderBy uses firstSeenAt to match the time
-  // filter semantic. Sorting by lastSeenAt was misleading — the
-  // segment-sync cron stamps lastSeenAt on every fire so every row
-  // looked "just-seen" regardless of when they actually arrived.
-  // For "recent" sort, "newest first-seen" is what users mean.
+  // Bug #127: enforced DESC by firstSeenAt at the prisma level so the top
+  // of the list is genuinely the newest identification — no post-fetch
+  // resort can drift between paginations. Norman bug (May 30): orderBy
+  // uses firstSeenAt to match the time-filter semantic. Sorting by
+  // lastSeenAt was misleading — the segment-sync cron stamps lastSeenAt
+  // on every fire so every row looked "just-seen" regardless of when
+  // they actually arrived. For "recent" sort, "newest first-seen" is
+  // what users mean.
   const orderBy: Prisma.VisitorOrderByWithRelationInput[] =
     sortKey === "intent"
       ? [{ intentScore: "desc" }, { firstSeenAt: "desc" }]

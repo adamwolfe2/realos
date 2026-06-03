@@ -78,6 +78,50 @@ const EXCLUDED_PATH_FRAGMENTS = [
 const KNOWN_PUBLIC_ALLOWLIST: Record<string, string> = {
   "app/api/bootstrap/route.ts":
     "Deprecated route, returns 410 to point callers at /api/admin/bootstrap. No business logic.",
+
+  // ── Public audit / lead-magnet endpoints ─────────────────────────────
+  // The /audit flow is a public lead-magnet (anyone can submit a domain
+  // for an AEO/SEO scan; gating it behind auth would defeat its
+  // purpose). Each endpoint applies its own protection layer (token
+  // validation, per-domain 14-day dedupe, cost caps) — they're not
+  // anonymous mutation surfaces. Adding the regex-recognized
+  // rate-limiter helpers here is the follow-up.
+  "app/api/audit/start/route.ts":
+    "Public lead-magnet entry. Protected by 14-day domain dedupe + DataForSEO cost caps. Rate-limiter wiring is a follow-up.",
+  "app/api/audit/run/[id]/route.ts":
+    "Fire-and-forget internal trigger from /api/audit/start, guarded by `x-internal-trigger: CRON_SECRET` header.",
+  "app/api/audit/[id]/capture-email/route.ts":
+    "Public email-gate on the audit viewer. Token-scoped; the email is the prospect's own.",
+  "app/api/audit/[id]/rerun/route.ts":
+    "Public re-scan trigger on the audit viewer. Token-scoped + 14-day dedupe.",
+
+  // ── Marketplace session-based endpoints ──────────────────────────────
+  // The marketplace runs its own session layer (signed cookies via
+  // `lib/marketplace/auth`) instead of Clerk. Auth IS present but the
+  // helper isn't in AUTH_HELPERS yet. Listing here as a known gap until
+  // we extend AUTH_HELPERS to recognize the marketplace session helpers.
+  "app/api/marketplace/auth/request/route.ts":
+    "Marketplace magic-link request. Public by design — issues a one-time login token to the supplied email.",
+  "app/api/marketplace/auth/sign-out/route.ts":
+    "Marketplace sign-out — clears the cookie. Idempotent and harmless when unauthenticated.",
+  "app/api/marketplace/seller-auth/request/route.ts":
+    "Seller magic-link request — same pattern as buyer-side auth/request.",
+  "app/api/marketplace/seller-auth/sign-out/route.ts":
+    "Seller sign-out — clears the cookie. Idempotent.",
+  "app/api/marketplace/leads/[id]/checkout/route.ts":
+    "Marketplace session-gated via getMarketplaceSession() (not yet in AUTH_HELPERS regex).",
+  "app/api/marketplace/seller/import-csv/route.ts":
+    "Seller session-gated via getSellerSession() (not yet in AUTH_HELPERS regex).",
+  "app/api/marketplace/seller/import-cursive/route.ts":
+    "Seller session-gated via getSellerSession() (not yet in AUTH_HELPERS regex).",
+  "app/api/marketplace/seller/import-preview/route.ts":
+    "Seller session-gated via getSellerSession() (not yet in AUTH_HELPERS regex).",
+  "app/api/marketplace/streams/route.ts":
+    "SSE stream. Token-validated per connection; mutation pattern matches but no state writes from clients.",
+
+  // ── Other ────────────────────────────────────────────────────────────
+  "app/api/site-requests/upload/route.ts":
+    "Tenant-site brief upload. Currently public by design (intake form); follow-up to require an intake token. Tracked separately.",
 };
 
 function findRouteFiles(): string[] {

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, ArrowLeft } from "lucide-react";
 import { BRAND_NAME } from "@/lib/brand";
 import type { OnboardingStep } from "@/lib/onboarding/steps";
 
@@ -19,11 +19,26 @@ const STEPS: Array<{ id: OnboardingStep; label: string }> = [
 export function WizardChrome({
   step,
   children,
+  onBack,
+  backDisabled,
 }: {
   step: OnboardingStep;
   children: React.ReactNode;
+  /**
+   * Norman feedback (2026-06-02): wizard had no step-back nav, browser
+   * back dropped users on the landing page. The host wizard supplies an
+   * onBack callback that POSTs /api/onboarding/wizard/back to decrement
+   * the server-persisted step + router.refresh()es. Omitted on terminal
+   * states (e.g. mid-submit) to lock the chrome.
+   */
+  onBack?: () => void;
+  backDisabled?: boolean;
 }) {
   const activeIdx = STEPS.findIndex((s) => s.id === step);
+  // Welcome is the floor — there's nowhere to go back to without
+  // dropping out of the wizard entirely (which would invalidate the
+  // signup intent). Hide the Back button there.
+  const canShowBack = activeIdx > 0 && !!onBack;
 
   return (
     <div
@@ -126,16 +141,38 @@ export function WizardChrome({
 
       {/* Step content */}
       <main className="flex-1 flex items-start md:items-center justify-center px-4 md:px-8 pt-10 pb-20">
-        <div
-          className="relative w-full max-w-[640px] rounded-2xl"
-          style={{
-            backgroundColor: "#ffffff",
-            border: "1px solid #E2E8F0",
-            boxShadow: "0 1px 2px rgba(30, 42, 58,0.03)",
-            padding: "32px 28px 32px",
-          }}
-        >
-          {children}
+        <div className="w-full max-w-[640px]">
+          {canShowBack ? (
+            <button
+              type="button"
+              onClick={onBack}
+              disabled={backDisabled}
+              className="inline-flex items-center gap-1.5 mb-3 px-2 py-1 -ml-2 rounded-md transition-colors hover:bg-[#F1F5F9] disabled:opacity-40 disabled:pointer-events-none"
+              style={{
+                color: "#475569",
+                fontFamily: "var(--font-mono)",
+                fontSize: "11.5px",
+                letterSpacing: "0.06em",
+                textTransform: "uppercase",
+                fontWeight: 500,
+              }}
+              aria-label="Go back to previous step"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" strokeWidth={1.75} />
+              Back
+            </button>
+          ) : null}
+          <div
+            className="relative rounded-2xl"
+            style={{
+              backgroundColor: "#ffffff",
+              border: "1px solid #E2E8F0",
+              boxShadow: "0 1px 2px rgba(30, 42, 58,0.03)",
+              padding: "32px 28px 32px",
+            }}
+          >
+            {children}
+          </div>
         </div>
       </main>
     </div>

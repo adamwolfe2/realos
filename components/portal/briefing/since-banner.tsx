@@ -24,7 +24,7 @@ export function SinceBanner({
     ? `Since your last briefing ${relativeTime(lastViewedAt)}`
     : "Since last Monday";
 
-  // Bug #13 (Joe + Norman, May): the command-center strip was reading
+  // Bug #110 (was #13 from May): the command-center strip was reading
   // "Since last Monday 1 new leads, 1 captured chats." — plural nouns even
   // when the count is 1. Each item now declares a singular + plural form
   // and we pick the right one based on the count.
@@ -79,7 +79,7 @@ export function SinceBanner({
           )}
         </p>
       </div>
-      {/* Bug #12 (Joe + Norman, May): solid blue primary button pulled
+      {/* Bug #111 (was #12 from May): solid blue primary button pulled
           attention away from the actual primary action (making the calls
           listed in the Call sheet below). Demoted to a ghost / secondary
           variant and tagged with a tooltip so operators know what it
@@ -88,7 +88,7 @@ export function SinceBanner({
       <button
         onClick={() => startTransition(() => { void markBriefingViewed(); })}
         disabled={pending}
-        title="Marks today as triaged. Doesn't change call queue or counters."
+        title="Marks today's briefing as triaged. Counters do not reset — this just clears the briefing from your daily inbox."
         className="inline-flex items-center gap-1.5 rounded-md border border-border bg-card text-muted-foreground px-3 py-1.5 text-[12px] font-semibold transition-colors hover:bg-muted hover:text-foreground disabled:opacity-60"
       >
         <Check className="h-3 w-3" />

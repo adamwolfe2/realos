@@ -18,6 +18,7 @@ import {
   sanitizeMentionExcerpt,
   isExcerptTruncated,
 } from "@/lib/reports/sanitize-excerpt";
+import { suppressLowSampleDelta } from "@/lib/recency";
 import {
   ReportTabs,
   ReportTabPanel,
@@ -2067,13 +2068,14 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
             stays neutral gray. Only renders when byEngine is present. */}
         {stats.byEngine && stats.byEngine.length > 0 ? (
           <div>
-            {/* Bug #5: Norman flagged identical 14/38 counts across all
+            {/* Bug #118 (was #5): Norman flagged identical 14/38 counts across all
                 three engines as suspicious — looked like a binning/display
-                bug. Underlying computation is correct (per-engine groupBy
-                in buildAeoStats), but the eyebrow + segment tooltips now
-                spell out that each engine is measured independently so
-                matching counts read as a real coincidence, not as the
-                same number echoed three times. */}
+                bug. Investigated: underlying computation is correct (per-engine
+                groupBy in buildAeoStats); engines genuinely run the SAME prompt
+                set so matching counts are real coincidence, not aggregation bug.
+                Fixed by reframing — eyebrow now says "cited / total per engine"
+                and the segment tooltips spell out that each engine is measured
+                independently. Equal numbers now read as informative, not buggy. */}
             <div
               className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-1.5"
               title="Per-engine count = AI search queries where this engine cited your domain at least once. Each engine is measured independently against the same prompt set, so matching counts across engines are possible (and meaningful)."
@@ -2246,12 +2248,13 @@ function AeoSection({ stats }: { stats: ReportAeoStats }) {
           </div>
         ) : null}
         {stats.sampleCompetitorQueries.length > 0 ? (() => {
-          // Bug #7 (Joe + Norman, May): the section used to render one row
-          // per engine with the same prompt repeated 3x ("Claude / ChatGPT /
-          // Perplexity — same query"), which made the plural label "Sample
-          // queries you lost" read as a bug. We run the SAME prompt set on
-          // every engine, so duplicates are expected — group by prompt and
-          // show each prompt once with the engines + competitors it lost on.
+          // Bug #116 (was #7): the section used to render one row per engine
+          // with the same prompt repeated 3x ("Claude / ChatGPT / Perplexity —
+          // same query"), which made the plural label "Sample queries you lost"
+          // read as a bug. Fix (a): dedupe by query string. We run the SAME
+          // prompt set on every engine, so duplicates are expected — group by
+          // prompt and show each prompt once with the engines + competitors it
+          // lost on. Label also adapts when a single query is the only row.
           type Sample = (typeof stats.sampleCompetitorQueries)[number];
           const grouped = new Map<
             string,
@@ -2517,47 +2520,63 @@ function Glyph({ name }: { name: "target" | "calendar" | "check" | "dollar" | "g
   );
 }
 
-// Bug #11 (Joe + Norman, May): "ORGANIC SESSIONS: 1 (-100%)" looked broken
-// in a client-facing report — at very low absolute values a percentage delta
-// is statistical noise, not signal. Suppress the pill when the current
-// absolute value is below this threshold and render an em-dash with a
-// "Low sample size" tooltip in its place. Applied to every metric cell,
-// not just Organic Sessions.
-const LOW_SAMPLE_THRESHOLD = 5;
-
+// Bug #112: low-sample delta suppression. "ORGANIC SESSIONS: 1 (-100%)"
+// looked broken in client-facing reports — at very low absolute values a
+// percentage delta is statistical noise. The shared helper in lib/recency.ts
+// renders an em-dash + "Low sample size" tooltip when either current or
+// previous is below threshold. Consolidating here so any future tweak (raise
+// threshold, change copy) edits one file, not seven inline copies across the
+// portal.
 function DeltaPill({
   value,
   invert = false,
   large = false,
   currentValue,
+  previousValue,
 }: {
   value: number;
   invert?: boolean;
   large?: boolean;
   /**
-   * Absolute value the percentage was computed from. When provided AND
-   * below LOW_SAMPLE_THRESHOLD, we hide the percentage and render an
+   * Absolute current value the percentage was computed from. When provided
+   * AND below the suppress threshold, we hide the percentage and render an
    * em-dash with a "Low sample size" tooltip. Omit to always render.
    */
   currentValue?: number | null;
+  /**
+   * Previous-period absolute value. Same suppression rule: if either current
+   * or previous is below the threshold, the delta is noise.
+   */
+  previousValue?: number | null;
 }) {
-  const lowSample =
-    currentValue != null && Math.abs(currentValue) < LOW_SAMPLE_THRESHOLD;
   const sz = large
     ? "px-3 py-1.5 text-[14px]"
     : "px-1.5 py-0.5 text-[10px]";
-  if (lowSample) {
-    return (
-      <span
-        title="Low sample size"
-        className={
-          "inline-flex items-center gap-0.5 rounded-md font-bold tabular-nums bg-muted text-muted-foreground " +
-          sz
-        }
-      >
-        —
-      </span>
-    );
+  // Bug #112: low-sample delta suppression — derive previous from value+current
+  // when the caller doesn't pass it explicitly so we can route through the
+  // shared helper without changing every call site signature. previous =
+  // current / (1 + value/100) is the inverse of the percentage formula.
+  const inferredPrevious =
+    previousValue != null
+      ? previousValue
+      : currentValue != null && value !== -100
+        ? currentValue / (1 + value / 100)
+        : null;
+  if (currentValue != null && inferredPrevious != null) {
+    const suppressed = suppressLowSampleDelta(currentValue, inferredPrevious);
+    if (suppressed.lowSample) {
+      return (
+        <span
+          title="Low sample size"
+          className={
+            "inline-flex items-center gap-0.5 rounded-md font-bold tabular-nums bg-muted text-muted-foreground " +
+            sz
+          }
+        >
+          —
+        </span>
+      );
+    }
   }
   const goodDirection = invert ? value < 0 : value > 0;
   const flat = value === 0;
