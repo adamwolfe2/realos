@@ -22,44 +22,66 @@ import { logUsage } from "@/lib/cost-tracker/log";
 // retries on the next pass.
 // ---------------------------------------------------------------------------
 
+// Anthropic tool-calling caps the number of union-type parameters in a
+// single schema at 16. The original v1 of this extractor had 18 fields
+// declared as z.string().nullable() / z.array().nullable(), each of
+// which compiles to a string | null / array | null union — every
+// extraction call was 400-ing on the union-count limit. (Adam caught
+// this 2026-06-03 via the lead-routing diagnostic.)
+//
+// New convention: empty strings + empty arrays are the "not provided"
+// sentinel. Eliminates the union pressure entirely while keeping the
+// schema readable and the downstream code defensive (truthy checks
+// already treat "" as absent throughout the email template).
 export const ProspectProfileSchema = z.object({
   // Identity / contact
-  fullName: z.string().nullable().describe("First + last name if mentioned"),
-  email: z.string().nullable().describe("Email address if provided"),
-  phone: z.string().nullable().describe("Phone number if provided"),
+  fullName: z
+    .string()
+    .default("")
+    .describe(
+      'First + last name if mentioned, otherwise empty string.',
+    ),
+  email: z
+    .string()
+    .default("")
+    .describe('Email address if provided, otherwise empty string.'),
+  phone: z
+    .string()
+    .default("")
+    .describe('Phone number if provided, otherwise empty string.'),
 
   // Move / lease intent
   moveInDate: z
     .string()
-    .nullable()
+    .default("")
     .describe(
-      'Target move-in date as the prospect described it, e.g. "September 1", "mid-September", "ASAP", "by Q4". Verbatim where possible.',
+      'Target move-in date as the prospect described it, e.g. "September 1", "mid-September", "ASAP", "by Q4". Verbatim where possible. Empty string if not mentioned.',
     ),
   moveOutDate: z
     .string()
-    .nullable()
+    .default("")
     .describe(
       'Target move-out / lease-end date if mentioned. Same verbatim convention.',
     ),
   leaseTerm: z
     .string()
-    .nullable()
+    .default("")
     .describe('Desired lease length, e.g. "12 months", "month-to-month"'),
 
   // Unit / property fit
   roomType: z
     .string()
-    .nullable()
+    .default("")
     .describe(
       'Unit type as discussed, e.g. "studio", "1BR", "2BR with den", "townhouse"',
     ),
   budgetMonthly: z
     .string()
-    .nullable()
+    .default("")
     .describe('Monthly budget as stated, e.g. "$3,200", "under $4k", "3-3.5k"'),
   partySize: z
     .string()
-    .nullable()
+    .default("")
     .describe(
       'Number of people moving in including pets, e.g. "myself + partner", "family of 4 with a dog"',
     ),
@@ -67,41 +89,41 @@ export const ProspectProfileSchema = z.object({
   // Lifestyle context
   occupation: z
     .string()
-    .nullable()
+    .default("")
     .describe('Job / role if mentioned, e.g. "software engineer", "student"'),
   employer: z
     .string()
-    .nullable()
+    .default("")
     .describe('Employer / school / company name if mentioned'),
   petsAndKids: z
     .string()
-    .nullable()
+    .default("")
     .describe(
       'Pets and / or children context — number, breeds, ages — anything the prospect shared.',
     ),
   reasonForMove: z
     .string()
-    .nullable()
+    .default("")
     .describe(
       'Why they are moving — new job, relocating, lease ending, etc.',
     ),
 
-  // Preferences + soft signals
+  // Preferences + soft signals — arrays default to [] (empty), no union.
   mustHaves: z
     .array(z.string())
-    .nullable()
+    .default([])
     .describe(
-      'Specific amenities or features the prospect named as must-haves — e.g. ["in-unit washer/dryer", "parking", "south-facing", "near transit"]',
+      'Specific amenities or features the prospect named as must-haves — e.g. ["in-unit washer/dryer", "parking", "south-facing", "near transit"]. Empty array if nothing matches.',
     ),
   niceToHaves: z
     .array(z.string())
-    .nullable()
-    .describe('Preferences they mentioned as nice-to-have, not deal-breaker.'),
+    .default([])
+    .describe('Preferences they mentioned as nice-to-have. Empty array if nothing matches.'),
   competitorsConsidering: z
     .array(z.string())
-    .nullable()
+    .default([])
     .describe(
-      'Other buildings / properties the prospect mentioned by name — important for objection prep.',
+      'Other buildings / properties the prospect mentioned by name — important for objection prep. Empty array if nothing matches.',
     ),
   sentiment: z
     .enum(["hot", "warm", "lukewarm", "cold", "unclear"])
@@ -112,15 +134,15 @@ export const ProspectProfileSchema = z.object({
   // Closing helpers
   followUpNeeded: z
     .string()
-    .nullable()
+    .default("")
     .describe(
-      'One-line description of the most specific next action the agency should take. E.g. "Schedule a tour Friday at 3pm" or "Send floor plans for 2BR units under $4k".',
+      'One-line description of the most specific next action the agency should take. E.g. "Schedule a tour Friday at 3pm" or "Send floor plans for 2BR units under $4k". Empty string if nothing specific.',
     ),
   notes: z
     .string()
-    .nullable()
+    .default("")
     .describe(
-      'Free-text catch-all for anything important not covered above — quotes, concerns, signals.',
+      'Free-text catch-all for anything important not covered above — quotes, concerns, signals. Empty string if nothing notable.',
     ),
 });
 

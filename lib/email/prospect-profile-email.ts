@@ -78,8 +78,12 @@ export function buildProspectProfileEmail(
   input: ProspectProfileEmailInput,
 ): ProspectProfileEmailOutput {
   const { profile, orgName, propertyName, portalUrl } = input;
+  // Profile fields now use empty strings as the "not provided" sentinel
+  // (was nullable strings — Anthropic tool-calling capped at 16 unions
+  // and we had 18). All truthy checks below handle "" identically to
+  // null. See lib/chatbot/extract-prospect-profile.ts for the rationale.
   const displayName =
-    profile.fullName ?? profile.email ?? "Anonymous prospect";
+    profile.fullName || profile.email || "Anonymous prospect";
   const propertyLabel = propertyName ?? orgName;
   const sentimentTone =
     SENTIMENT_TONE[profile.sentiment] ?? SENTIMENT_TONE.unclear;
@@ -181,9 +185,9 @@ export function buildProspectProfileEmail(
     title: subject,
     headline: `${displayName} — ${propertyLabel}`,
     preheader:
-      profile.followUpNeeded ??
-      (`${profile.budgetMonthly ?? ""} ${profile.roomType ?? ""} ${profile.moveInDate ?? ""}`.trim() ||
-        "Chatbot prospect profile"),
+      profile.followUpNeeded ||
+      `${profile.budgetMonthly} ${profile.roomType} ${profile.moveInDate}`.trim() ||
+      "Chatbot prospect profile",
     bodyHtml: body,
   });
 

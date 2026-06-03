@@ -357,23 +357,27 @@ export async function sendTestLeadEmail(): Promise<TestEmailResult> {
     );
     const { sendBrandedEmail, APP_URL } = await import("@/lib/email/shared");
 
+    // Empty-string / empty-array sentinels match the updated
+    // ProspectProfile schema (the old nullable shape blew past
+    // Anthropic's 16-union limit). See lib/chatbot/extract-prospect-
+    // profile.ts for the schema rationale.
     const profile = {
       fullName: "Test Prospect",
       email: "test@example.com",
       phone: "(555) 000-0000",
       moveInDate: "September 1",
-      moveOutDate: null,
+      moveOutDate: "",
       leaseTerm: "12 months",
       roomType: "1BR",
       budgetMonthly: "$2,800",
       partySize: "myself + partner",
       occupation: "test scenario",
-      employer: null,
+      employer: "",
       petsAndKids: "one cat",
       reasonForMove: "test send to verify the pipe",
       mustHaves: ["in-unit washer/dryer", "parking"],
-      niceToHaves: null,
-      competitorsConsidering: null,
+      niceToHaves: [],
+      competitorsConsidering: [],
       sentiment: "warm" as const,
       followUpNeeded:
         "This is a test email. The real chatbot will send actual prospect profiles to this inbox.",
