@@ -181,7 +181,7 @@ export async function POST(req: NextRequest) {
     const emptyMessages: Prisma.InputJsonValue =
       [] as unknown as Prisma.InputJsonValue;
 
-    await prisma.chatbotConversation.create({
+    const createdConversation = await prisma.chatbotConversation.create({
       data: {
         orgId,
         sessionId,
@@ -205,9 +205,14 @@ export async function POST(req: NextRequest) {
         leadId,
         lastMessageAt: now,
       },
+      select: { id: true },
     });
 
     // Fire-and-forget notifications. Never block the response.
+    // Adam 2026-06-03: pass conversation.id (DB primary key), NOT
+    // sessionId — the lead-notify CTA links to
+    // /portal/conversations/{id} which requires the DB id. Previously
+    // this was the sessionId, producing a 404 link for the operator.
     void notifyLeadCaptured({
       orgId,
       leadId,
@@ -219,7 +224,7 @@ export async function POST(req: NextRequest) {
         phone: phone ?? null,
         sourceLabel: pageUrl ? `Chatbot pre-chat on ${pageUrl}` : "Chatbot pre-chat",
       },
-      conversationId: sessionId,
+      conversationId: createdConversation.id,
     }).catch((err) => {
       console.warn("[public/chatbot/lead] notify error:", err);
     });

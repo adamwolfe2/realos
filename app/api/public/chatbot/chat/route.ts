@@ -16,6 +16,7 @@ import {
 import { extractLeadCapture } from "@/lib/chatbot/extract-lead";
 import { notifyLeadCaptured } from "@/lib/notifications/lead-notify";
 import { notifyChatbotLeadCaptured } from "@/lib/notifications/create";
+import { sendProspectProfileForConversation } from "@/lib/chatbot/send-prospect-profile";
 import { LeadNotifyChannel } from "@prisma/client";
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
@@ -355,6 +356,23 @@ async function persistConversation(args: {
       leadId: lead.id,
     }).catch((err) => {
       console.warn("[public/chatbot/chat] notify bell error:", err);
+    });
+
+    // Adam 2026-06-03: when the bot auto-detects a lead mid-conversation
+    // (regex finds email/phone), ALSO immediately fire the rich
+    // prospect-profile digest email — same payload Jessica gets at
+    // handoff / idle. The minimal notifyLeadCaptured email above is
+    // the "they just shared contact info" ping; this is the "here's
+    // the full conversation context they shared, here's the link to
+    // engage now" ping. Both fire so the operator can act fast.
+    // force=true overrides the 30-min debounce so a re-capture (e.g.
+    // operator restarts conversation) still produces a fresh send.
+    void sendProspectProfileForConversation({
+      conversationId: conversation.id,
+      force: true,
+      reason: "auto-capture",
+    }).catch((err) => {
+      console.warn("[public/chatbot/chat] prospect-profile error:", err);
     });
   }
 }

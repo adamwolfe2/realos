@@ -143,6 +143,16 @@ export async function notifyLeadCaptured(input: LeadNotifyInput): Promise<void> 
         return null;
       });
 
+    // Chatbot leads link to the live conversation so the operator can
+    // engage in real time. Every other channel still lands on the lead
+    // detail page where the activity history is the right primary
+    // surface. Adam 2026-06-03: Jessica @ TC needs the chat URL ONE
+    // CLICK from the inbox, not two.
+    const portalUrl =
+      input.channel === "CHATBOT" && input.conversationId
+        ? `${APP_URL}/portal/conversations/${input.conversationId}`
+        : `${APP_URL}/portal/leads/${input.leadId}`;
+
     const { html, text } = buildLeadNotifyEmail({
       orgName: orgLabel,
       subject,
@@ -154,7 +164,7 @@ export async function notifyLeadCaptured(input: LeadNotifyInput): Promise<void> 
         intent: displayName(input.lead.intent),
       },
       propertyName,
-      portalUrl: `${APP_URL}/portal/leads/${input.leadId}`,
+      portalUrl,
       channel: input.channel,
     });
 
