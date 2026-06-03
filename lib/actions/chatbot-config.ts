@@ -211,6 +211,100 @@ export async function saveChatbotConfig(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Lead-routing actions. These live on the Organization row (not
+// TenantSiteConfig) because the same notifyLeadEmail address is used by
+// every channel (chatbot, popup, form, ingest webhook, tour, manual).
+// The chatbot settings page surfaces this as a "Lead routing" panel
+// because that's where operators look when a chat captures a lead and
+// they're trying to figure out where the email goes.
+// ---------------------------------------------------------------------------
+
+const leadRoutingSchema = z.object({
+  // Comma-separated list of email addresses. Each one is validated.
+  // Empty string → null (notifications silently suppressed with a
+  // SUPPRESSED row in LeadNotificationDelivery for the audit trail).
+  notifyLeadEmail: z
+    .string()
+    .max(1000)
+    .optional()
+    .transform((v) => (typeof v === "string" ? v.trim() : ""))
+    .transform((v) => (v === "" ? null : v))
+    .refine(
+      (v) => {
+        if (v === null) return true;
+        const parts = v
+          .split(",")
+          .map((s) => s.trim())
+          .filter(Boolean);
+        return (
+          parts.length > 0 &&
+          parts.every((p) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(p))
+        );
+      },
+      {
+        message:
+          "Enter one or more valid email addresses, comma-separated.",
+      },
+    ),
+  notifyOnChatbotLead: z.boolean(),
+});
+
+export type LeadRoutingActionResult =
+  | { ok: true }
+  | { ok: false; error: string };
+
+export async function updateLeadRouting(
+  formData: FormData,
+): Promise<LeadRoutingActionResult> {
+  try {
+    const scope = await requireScope();
+
+    const raw = {
+      notifyLeadEmail: firstString(formData.get("notifyLeadEmail")),
+      notifyOnChatbotLead: parseBool(formData.get("notifyOnChatbotLead")),
+    };
+    const parsed = leadRoutingSchema.safeParse(raw);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      return {
+        ok: false,
+        error: first?.message ?? "Validation failed",
+      };
+    }
+
+    await prisma.organization.update({
+      where: { id: scope.orgId },
+      data: {
+        notifyLeadEmail: parsed.data.notifyLeadEmail,
+        notifyOnChatbotLead: parsed.data.notifyOnChatbotLead,
+      },
+    });
+
+    await prisma.auditEvent.create({
+      data: auditPayload(scope, {
+        action: AuditAction.UPDATE,
+        entityType: "Organization",
+        entityId: scope.orgId,
+        description: "Updated lead-routing settings",
+        diff: {
+          notifyLeadEmail: parsed.data.notifyLeadEmail,
+          notifyOnChatbotLead: parsed.data.notifyOnChatbotLead,
+        } as Prisma.InputJsonValue,
+      }),
+    });
+
+    revalidatePath("/portal/chatbot");
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof ForbiddenError) {
+      return { ok: false, error: err.message };
+    }
+    console.error("updateLeadRouting failed", err);
+    return { ok: false, error: "Failed to update lead routing" };
+  }
+}
+
 export async function toggleChatbotEnabled(
   enabled: boolean
 ): Promise<ActionResult> {

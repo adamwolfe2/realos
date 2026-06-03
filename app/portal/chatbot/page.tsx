@@ -6,6 +6,7 @@ import { requireScope } from "@/lib/tenancy/scope";
 import { ChatbotConfigForm } from "./chatbot-config-form";
 import { readGtmContainerId } from "@/components/tenant-site/tenant-analytics";
 import { MasterToggle } from "./master-toggle";
+import { LeadRoutingPanel } from "./lead-routing-panel";
 import { InstallSnippet } from "./install-snippet";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 
@@ -57,6 +58,8 @@ export default async function ChatbotPage() {
         slug: true,
         moduleChatbot: true,
         primaryColor: true,
+        notifyLeadEmail: true,
+        notifyOnChatbotLead: true,
       },
     }),
     prisma.tenantSiteConfig.findUnique({
@@ -198,6 +201,15 @@ export default async function ChatbotPage() {
       <MasterToggle
         enabled={initial.chatbotEnabled}
         moduleActive={org.moduleChatbot}
+      />
+
+      {/* Lead routing — sets Organization.notifyLeadEmail +
+          notifyOnChatbotLead. Same address is used by popup / form /
+          tour channels too; surfaced here because operators look at the
+          chatbot page first when figuring out where leads go. */}
+      <LeadRoutingPanel
+        notifyLeadEmail={org.notifyLeadEmail}
+        notifyOnChatbotLead={org.notifyOnChatbotLead}
       />
 
       <ChatbotConfigForm
