@@ -12,7 +12,15 @@ import type {
 } from "@/components/portal/aeo/share-of-voice-card";
 import type { OpportunityRow } from "@/components/portal/aeo/opportunity-score-card";
 import type { AiOverviewRow } from "@/components/portal/aeo/ai-overview-card";
+import type {
+  OnPageAuditCheck,
+  OnPageAuditHistoryRow,
+} from "@/components/portal/aeo/onpage-audit-card";
 import { computeOpportunityScore } from "@/lib/aeo/opportunity-score";
+import {
+  orgHasActiveAddon,
+  ADDON_AEO_BOOST,
+} from "@/lib/proposals/org-addons";
 import type { AeoEngine } from "@prisma/client";
 
 export const metadata: Metadata = { title: "AI search visibility" };
@@ -475,6 +483,60 @@ export default async function AeoPage() {
       capturedAt: row.capturedAt.toISOString(),
     }));
 
+  // ---------------------------------------------------------------------
+  // AEO v2 W3 — AEO Page Health (OnPage audit) gated behind AEO Boost.
+  // Reads:
+  //   - whether the org has the AEO Boost add-on (drives gated vs active)
+  //   - latest AeoOnPageAudit row (with its checklist)
+  //   - history table (top-5 most recent rows)
+  //   - the org's primary domain to prefill the URL input
+  // All defensive against partial data; no IO inside the client component.
+  // ---------------------------------------------------------------------
+  const hasAeoBoost = await orgHasActiveAddon(scope.orgId, ADDON_AEO_BOOST);
+  const onPageHistory = hasAeoBoost
+    ? await prisma.aeoOnPageAudit.findMany({
+        where: { ...where },
+        orderBy: { capturedAt: "desc" },
+        take: 5,
+        select: {
+          id: true,
+          url: true,
+          score: true,
+          checks: true,
+          excerpt: true,
+          capturedAt: true,
+        },
+      })
+    : [];
+  const latestOnPage = onPageHistory[0]
+    ? {
+        url: onPageHistory[0].url,
+        score: onPageHistory[0].score,
+        checks: (Array.isArray(onPageHistory[0].checks)
+          ? (onPageHistory[0].checks as unknown as OnPageAuditCheck[])
+          : []) satisfies OnPageAuditCheck[],
+        excerpt: onPageHistory[0].excerpt,
+        capturedAt: onPageHistory[0].capturedAt.toISOString(),
+      }
+    : null;
+  const onPageHistoryRows: OnPageAuditHistoryRow[] = onPageHistory.map((r) => ({
+    id: r.id,
+    url: r.url,
+    score: r.score,
+    capturedAt: r.capturedAt.toISOString(),
+  }));
+  const primaryDomain = hasAeoBoost
+    ? (
+        await prisma.domainBinding.findFirst({
+          where: { orgId: scope.orgId, isPrimary: true },
+          select: { hostname: true },
+        })
+      )?.hostname ?? null
+    : null;
+  const defaultAuditUrl = primaryDomain
+    ? `https://${primaryDomain}`
+    : null;
+
   return (
     <AeoClient
       engineCards={engineCards}
@@ -507,6 +569,12 @@ export default async function AeoPage() {
       aiOverview={{
         rows: aiOverviewRows,
         engineSource: resolveEngineSource(),
+      }}
+      onPageAudit={{
+        hasAddon: hasAeoBoost,
+        defaultUrl: defaultAuditUrl,
+        latest: latestOnPage,
+        history: onPageHistoryRows,
       }}
     />
   );

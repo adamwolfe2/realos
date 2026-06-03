@@ -545,6 +545,7 @@ model Organization {
   aeoMentionSnapshots     AeoMentionSnapshot[]
   aeoOpportunityScores    AeoOpportunityScore[]
   aeoOverviewSnapshots    AeoOverviewSnapshot[]
+  aeoOnPageAudits         AeoOnPageAudit[]
   neighborhoodPages       NeighborhoodPage[]
   onboardingProgress      OnboardingProgress?
   // SEO/AEO Agent backrefs — Phase 1
@@ -982,6 +983,7 @@ model Property {
   aeoChecks            AeoCitationCheck[]
   aeoMentionSnapshots  AeoMentionSnapshot[]
   aeoOpportunityScores AeoOpportunityScore[]
+  aeoOnPageAudits      AeoOnPageAudit[]
   neighborhoodPages    NeighborhoodPage[]
   // Per-property RentCast market intelligence snapshots (rent AVM,
   // market stats). Populated by the Market Intelligence section on
@@ -3840,6 +3842,34 @@ model AeoOverviewSnapshot {
   org Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
 
   @@index([orgId, capturedAt])
+}
+
+// ---------------------------------------------------------------------------
+// AeoOnPageAudit — per-URL AEO-readiness audit (FAQ schema, JSON-LD,
+// canonical, content depth, Q&A structure, freshness, etc.) gated
+// behind the AEO Boost $199/mo addon. AEO v2 W3.
+//
+// One row per audit run. UI shows latest + history. Score is the simple
+// sum of 8 boolean checks × 12.5 pts.
+// ---------------------------------------------------------------------------
+model AeoOnPageAudit {
+  id         String   @id @default(cuid())
+  orgId      String
+  propertyId String?
+  url        String
+  /// 0-100 composite of 8 boolean checks × 12.5 pts each.
+  score      Int      @default(0)
+  /// Per-check pass/fail breakdown:
+  ///   [{ key: "faq-schema", pass: true, reason: "Found FAQPage JSON-LD" }, ...]
+  checks     Json
+  excerpt    String?
+  capturedAt DateTime @default(now())
+
+  org      Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  property Property?    @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+
+  @@index([orgId, capturedAt])
+  @@index([orgId, url, capturedAt])
 }
 
 // ---------------------------------------------------------------------------

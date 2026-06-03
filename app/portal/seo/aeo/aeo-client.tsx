@@ -25,6 +25,10 @@ import {
   AiOverviewCard,
   type AiOverviewProps,
 } from "@/components/portal/aeo/ai-overview-card";
+import {
+  OnPageAuditCard,
+  type OnPageAuditProps,
+} from "@/components/portal/aeo/onpage-audit-card";
 
 // All interactive UI for /portal/seo/aeo. The page.tsx server component
 // does the data fetch + tenant scope, then hands fully-shaped view props
@@ -59,6 +63,7 @@ export type AeoClientProps = {
   shareOfVoice: ShareOfVoiceProps;
   opportunityScore: OpportunityScoreProps;
   aiOverview: AiOverviewProps;
+  onPageAudit: OnPageAuditProps;
 };
 
 function fmtPercent(value: number): string {
@@ -226,6 +231,7 @@ export function AeoClient({
   shareOfVoice,
   opportunityScore,
   aiOverview,
+  onPageAudit,
 }: AeoClientProps) {
   return (
     <div className="space-y-6">
@@ -302,6 +308,14 @@ export function AeoClient({
       <AiOverviewCard
         rows={aiOverview.rows}
         engineSource={aiOverview.engineSource}
+      />
+
+      {/* AEO v2 W3: AEO Page Health (gated behind AEO Boost addon) */}
+      <OnPageAuditCard
+        hasAddon={onPageAudit.hasAddon}
+        defaultUrl={onPageAudit.defaultUrl}
+        latest={onPageAudit.latest}
+        history={onPageAudit.history}
       />
 
       {/* What to do next — derived recommendations */}
