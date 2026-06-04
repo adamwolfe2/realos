@@ -76,8 +76,17 @@ export default async function ComparePropertiesPage({
             </Link>
           }
           title="Compare properties"
-          description="Pick up to four properties to view side-by-side performance, occupancy, and reputation."
+          description={`Click any property below to add it to the comparison. The side-by-side table appears as soon as you've picked one. Up to ${MAX_COMPARE} at a time.`}
         />
+        {allProperties.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No properties in this portfolio yet.{" "}
+            <Link href="/portal/properties" className="underline">
+              Add one
+            </Link>
+            .
+          </p>
+        ) : null}
         <PropertyPicker
           properties={allProperties}
           selectedIds={[]}
