@@ -63,38 +63,27 @@
   }
   log("boot — tenant=" + TENANT + (PROPERTY ? ", property=" + PROPERTY : ""));
 
-  // Pin API_ORIGIN to the canonical www host. Vercel auto-redirects
-  // the apex `leasestack.co` → `www.leasestack.co` (HTTP 307), but
-  // those redirect responses do NOT carry `Access-Control-Allow-Origin`
-  // headers — so a cross-origin fetch from a customer site (e.g.
-  // telegraphcommons.com) hitting the apex gets the redirect, the
-  // browser tries to follow it cross-origin, finds no CORS header on
-  // the redirect, and aborts with "blocked by CORS policy: No
-  // Access-Control-Allow-Origin header." The actual route handlers DO
-  // set the right CORS headers, but the browser never reaches them.
+  // Pin API_ORIGIN to the canonical apex host.
   //
-  // Symptom in the wild: TC homepage had the script tag set to
-  // src="https://leasestack.co/embed/popup.js" (no www). The script
-  // loaded fine (followed the 307 cross-origin without CORS because
-  // <script src> doesn't enforce CORS for the script itself), then
-  // tried to fetch its config from leasestack.co/api/..., hit the
-  // same 307, and silently failed with no events recorded. Operators
-  // saw "popup is configured ACTIVE but never shows up."
-  //
-  // Fix: rewrite any apex leasestack.co script src to the www form
-  // BEFORE deriving API_ORIGIN, so fetch calls land directly on the
-  // canonical host and avoid the redirect entirely. Custom subdomain
-  // / self-hosted installs (e.g. embed.example.com) fall through to
-  // the original script.src origin so they still work.
+  // 2026-06-04 primary-domain swap: APEX is now primary and
+  // `www.leasestack.co` 308-redirects to `leasestack.co`. The pre-swap
+  // workaround pinned to www to avoid a 307 from apex; now the safe
+  // direction is the opposite. A cross-origin fetch from a customer
+  // site (e.g. telegraphcommons.com) following a 308 from www → apex
+  // would still lose its CORS headers on the redirect — so we
+  // normalize any www in the script.src down to apex BEFORE deriving
+  // API_ORIGIN, ensuring fetches land on the canonical host directly.
+  // Custom subdomain / self-hosted installs (e.g. embed.example.com)
+  // fall through to the original script.src origin so they still work.
   var API_ORIGIN = (function () {
     try {
       var srcOrigin = new URL(script.src).origin;
-      if (srcOrigin === "https://leasestack.co") {
-        return "https://www.leasestack.co";
+      if (srcOrigin === "https://www.leasestack.co") {
+        return "https://leasestack.co";
       }
       return srcOrigin;
     } catch (_) {
-      return "https://www.leasestack.co";
+      return "https://leasestack.co";
     }
   })();
 

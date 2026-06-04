@@ -18,23 +18,27 @@ export const dynamic = "force-dynamic";
 // future serverless-default downgrade doesn't silently cap us.
 export const maxDuration = 60;
 
-// Builds the canonical embed URL for the install snippet. We always serve
-// the snippet from `www.leasestack.co` so the host page doesn't pay the
-// 307 redirect from the apex on every script load. Local dev falls back
-// to the request origin when NEXT_PUBLIC_APP_URL isn't set.
+// Builds the canonical embed URL for the install snippet.
+//
+// 2026-06-04: primary domain swapped to APEX (was www-primary) so the
+// snippet now serves from `https://leasestack.co` directly. Pre-swap
+// we rewrote apex → www to avoid a 307 hop; post-swap that logic is
+// inverted, so we rewrite the OTHER direction: any www variant gets
+// normalized to apex so the host page doesn't pay the 308 redirect
+// from www → apex on every script load.
 async function resolveAppUrl(): Promise<string> {
   const fromEnv = process.env.NEXT_PUBLIC_APP_URL?.trim();
   if (fromEnv) {
     const trimmed = fromEnv.replace(/\/$/, "");
-    if (/^https?:\/\/leasestack\.co$/i.test(trimmed)) {
-      return "https://www.leasestack.co";
+    if (/^https?:\/\/www\.leasestack\.co$/i.test(trimmed)) {
+      return "https://leasestack.co";
     }
     return trimmed;
   }
   const h = await headers();
   const proto = h.get("x-forwarded-proto") ?? "https";
   const host = h.get("host") ?? "localhost:3000";
-  if (host === "leasestack.co") return "https://www.leasestack.co";
+  if (host === "www.leasestack.co") return "https://leasestack.co";
   return `${proto}://${host}`;
 }
 

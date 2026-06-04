@@ -68,20 +68,17 @@ export default async function PopupEditorPage({
   // operators recognize the pattern. The popup script reads the slug
   // attribute, calls /api/public/popup/config/[slug], and renders.
   //
-  // CORS-safe host: NEXT_PUBLIC_APP_URL is currently the apex
-  // (`https://leasestack.co`), but Vercel auto-redirects apex → www
-  // with HTTP 307, and those redirect responses do NOT carry
-  // Access-Control-Allow-Origin headers. A cross-origin fetch from a
-  // customer site (e.g. telegraphcommons.com) hitting the apex would
-  // hit the 307, browser tries to follow cross-origin, finds no CORS
-  // header on the redirect, and aborts with "blocked by CORS." The
-  // route handlers DO set CORS correctly but the browser never
-  // reaches them. The embed script itself has a runtime guard for
-  // this (public/embed/popup.js rewrites apex → www before fetch),
-  // but new install snippets should be CORS-safe out of the box.
+  // CORS-safe host: 2026-06-04 primary-domain swap inverted the redirect
+  // direction. APEX is now primary and www 308-redirects to apex. The
+  // pre-swap workaround rewrote apex → www so a customer-site
+  // cross-origin fetch wouldn't follow a 307 to a different origin (the
+  // redirect response carries no Access-Control-Allow-Origin header).
+  // Now the safe direction is the opposite — normalize any www in the
+  // snippet host down to apex so the embed fetches the canonical URL
+  // directly and never has to follow a cross-origin redirect.
   const snippetHost = getSiteUrl().replace(
-    /^https:\/\/leasestack\.co/i,
-    "https://www.leasestack.co",
+    /^https:\/\/www\.leasestack\.co/i,
+    "https://leasestack.co",
   );
   const snippet = `<script async src="${snippetHost}/embed/popup.js" data-tenant="${org?.slug ?? ""}"></script>`;
 
