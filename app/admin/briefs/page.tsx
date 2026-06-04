@@ -133,14 +133,27 @@ export default async function AdminBriefsPage() {
                   </div>
                   <div className="col-span-2 text-right">
                     {r.status === "READY" ? (
-                      <Link
-                        href={`/brief/${encodeURIComponent(r.token)}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-[12px] font-medium text-primary hover:underline"
-                      >
-                        Open brief →
-                      </Link>
+                      <div className="flex flex-col items-end gap-0.5">
+                        <Link
+                          href={`/brief/${encodeURIComponent(r.token)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[12px] font-medium text-primary hover:underline"
+                        >
+                          Open brief →
+                        </Link>
+                        <Link
+                          href={
+                            `/admin/proposals/new` +
+                            `?brand=${encodeURIComponent(r.brand)}` +
+                            `&domain=${encodeURIComponent(r.domain)}` +
+                            `&briefToken=${encodeURIComponent(r.token)}`
+                          }
+                          className="text-[11px] font-medium text-muted-foreground hover:text-foreground hover:underline"
+                        >
+                          Build proposal →
+                        </Link>
+                      </div>
                     ) : r.status === "FAILED" ? (
                       <RetryButton briefId={r.id} />
                     ) : (
