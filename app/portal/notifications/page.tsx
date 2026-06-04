@@ -101,6 +101,37 @@ function isSafeHref(href: string): boolean {
   }
 }
 
+// Time-bucket grouping for the notification feed. Flat 50-row lists
+// were dense but operators lost orientation while scrolling. Grouping
+// by Today / Yesterday / This week / Older gives a mental map at zero
+// behavioral cost — no row layout changes, just sticky bucket headers.
+type Bucket = "Today" | "Yesterday" | "This week" | "Older";
+const BUCKET_ORDER: Bucket[] = ["Today", "Yesterday", "This week", "Older"];
+
+function bucketOf(iso: string, now: number): Bucket {
+  const t = new Date(iso).getTime();
+  const startToday = new Date(now).setHours(0, 0, 0, 0);
+  const startYday = startToday - 86_400_000;
+  const startWeek = startToday - 6 * 86_400_000;
+  if (t >= startToday) return "Today";
+  if (t >= startYday) return "Yesterday";
+  if (t >= startWeek) return "This week";
+  return "Older";
+}
+
+function groupByBucket(items: Notification[], now: number) {
+  const map = new Map<Bucket, Notification[]>();
+  for (const n of items) {
+    const b = bucketOf(n.createdAt, now);
+    const arr = map.get(b) ?? [];
+    arr.push(n);
+    map.set(b, arr);
+  }
+  return BUCKET_ORDER.filter((b) => (map.get(b)?.length ?? 0) > 0).map(
+    (b) => [b, map.get(b)!] as const,
+  );
+}
+
 export default function NotificationsPage() {
   const router = useRouter();
   const [items, setItems] = useState<Notification[]>([]);
@@ -275,25 +306,35 @@ export default function NotificationsPage() {
             </p>
           </div>
         ) : (
-          <div className="divide-y divide-border">
-            {visible.map((item) => {
-              const snoozed = isSnoozed(item, now);
-              const resolved = Boolean(item.resolvedAt);
-              const actionable = ACTIONABLE_KINDS.has(item.kind);
-              return (
-                <NotificationRow
-                  key={item.id}
-                  item={item}
-                  snoozed={snoozed}
-                  resolved={resolved}
-                  actionable={actionable}
-                  onOpen={() => handleRowClick(item)}
-                  onSnooze={(days) => handleSnooze(item, days)}
-                  onUnsnooze={() => handleUnsnooze(item)}
-                  onResolve={() => handleResolve(item)}
-                />
-              );
-            })}
+          <div>
+            {groupByBucket(visible, now).map(([bucket, rows]) => (
+              <section key={bucket}>
+                <div className="sticky top-0 z-10 bg-muted/60 backdrop-blur px-3 py-1 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground border-b border-border flex items-center justify-between">
+                  <span>{bucket}</span>
+                  <span className="tabular-nums">{rows.length}</span>
+                </div>
+                <div className="divide-y divide-border">
+                  {rows.map((item) => {
+                    const snoozed = isSnoozed(item, now);
+                    const resolved = Boolean(item.resolvedAt);
+                    const actionable = ACTIONABLE_KINDS.has(item.kind);
+                    return (
+                      <NotificationRow
+                        key={item.id}
+                        item={item}
+                        snoozed={snoozed}
+                        resolved={resolved}
+                        actionable={actionable}
+                        onOpen={() => handleRowClick(item)}
+                        onSnooze={(days) => handleSnooze(item, days)}
+                        onUnsnooze={() => handleUnsnooze(item)}
+                        onResolve={() => handleResolve(item)}
+                      />
+                    );
+                  })}
+                </div>
+              </section>
+            ))}
           </div>
         )}
       </div>

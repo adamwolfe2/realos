@@ -254,17 +254,29 @@ export default async function PropertyDetail({
     );
   }
 
-  const heroStats = [
+  // Hide-zero on the hero stat row. Pre-cleanup (2026-06-04) every
+  // tile rendered as "—" when its signal was unset, so a brand-new
+  // tenant saw four em-dashes. Now we only render tiles whose data
+  // is real; the row narrows naturally to surface live metrics.
+  const allHeroStats: Array<{
+    label: string;
+    value: string;
+    delta?: string;
+    tone?: "positive" | "negative" | "neutral";
+    hasData: boolean;
+  }> = [
     {
       label: "Leads · 30d",
       value: leadsCurrent > 0 ? leadsCurrent.toLocaleString("en-US") : "—",
       ...fmtDelta(leadsCurrent, leadsPrior),
+      hasData: leadsCurrent > 0,
     },
     {
       label: "Conversations · 30d",
       value:
         convosCurrent > 0 ? convosCurrent.toLocaleString("en-US") : "—",
       ...fmtDelta(convosCurrent, convosPrior),
+      hasData: convosCurrent > 0,
     },
     {
       label: "Units",
@@ -272,6 +284,7 @@ export default async function PropertyDetail({
         property.totalUnits != null && property.totalUnits > 0
           ? property.totalUnits.toLocaleString("en-US")
           : "—",
+      hasData: (property.totalUnits ?? 0) > 0,
     },
     {
       label: "Reputation",
@@ -284,8 +297,12 @@ export default async function PropertyDetail({
           ? `${rating.googleAggReviewCount} reviews`
           : undefined,
       tone: "neutral" as const,
+      hasData: rating?.googleAggRating != null,
     },
   ];
+  const heroStats = allHeroStats
+    .filter((s) => s.hasData)
+    .map(({ hasData: _hd, ...rest }) => rest);
 
   return (
     <div className="space-y-6">

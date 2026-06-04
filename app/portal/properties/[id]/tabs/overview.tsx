@@ -1475,16 +1475,20 @@ function MarketingSection({
       : { label: "Connect ads", href: "/portal/connect" },
   });
 
-  metrics.push({
-    label: "Conversion rate",
-    value: conversionPct != null ? `${conversionPct}%` : <DimZero />,
-    hint:
-      conversionPct == null
-        ? organicMapped
-          ? "Needs traffic + leads"
-          : "Map a domain first"
-        : `${leads28d} ${leads28d === 1 ? "lead" : "leads"} from ${organicSessions28d?.toLocaleString() ?? 0} sessions`,
-  });
+  // Conversion rate tile only renders when we can compute it. The
+  // pre-cleanup behavior pushed a "Conversion rate — Map a domain
+  // first" tile that was always dim-em-dashed on tenants without
+  // organic traffic, adding to the wall-of-zero feel. Drop it; the
+  // organic-sessions tile already carries the GA4 CTA when needed.
+  if (conversionPct != null) {
+    metrics.push({
+      label: "Conversion rate",
+      value: `${conversionPct}%`,
+      hint: `${leads28d} ${leads28d === 1 ? "lead" : "leads"} from ${
+        organicSessions28d?.toLocaleString() ?? 0
+      } sessions`,
+    });
+  }
 
   return (
     <section className="rounded-xl border border-border bg-card p-4 md:p-5">
@@ -1522,32 +1526,62 @@ function MarketingSection({
         </div>
       </header>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {metrics.map((m) => (
-          <div
-            key={m.label}
-            className="rounded-lg border border-border bg-muted/20 p-3 min-w-0"
-          >
-            <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground truncate">
-              {m.label}
-            </p>
-            <p className="mt-1 text-lg font-semibold text-foreground tabular-nums leading-none">
-              {m.value}
-            </p>
-            <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
-              {m.hint}
-            </p>
-            {m.cta ? (
+      {(() => {
+        // Pattern #2 empty-state collapse — when every tile is a
+        // DimZero placeholder (rendered as a JSX element rather than a
+        // string), the 4-tile row reads as broken product. Partition
+        // tiles into live (string values) vs dim, and either render
+        // only the live ones or — if nothing is live — collapse the
+        // whole grid into one focused "no marketing signal" card.
+        const liveMetrics = metrics.filter((m) => typeof m.value !== "object");
+        if (liveMetrics.length === 0) {
+          return (
+            <div className="rounded-lg border border-dashed border-border bg-muted/10 p-4 text-center">
+              <p className="text-[12px] font-semibold text-foreground">
+                No marketing signal yet
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground leading-snug max-w-sm mx-auto">
+                Tiles populate the moment GA4, the chatbot, or an ad
+                module starts reporting for this property.
+              </p>
               <a
-                href={m.cta.href}
-                className="mt-2 inline-flex text-[11px] font-semibold text-primary hover:underline"
+                href="/portal/connect"
+                className="mt-2 inline-flex text-[11.5px] font-semibold text-primary hover:underline"
               >
-                {m.cta.label} →
+                Open integrations →
               </a>
-            ) : null}
+            </div>
+          );
+        }
+        return (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {liveMetrics.map((m) => (
+              <div
+                key={m.label}
+                className="rounded-lg border border-border bg-muted/20 p-3 min-w-0"
+              >
+                <p className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground truncate">
+                  {m.label}
+                </p>
+                <p className="mt-1 text-lg font-semibold text-foreground tabular-nums leading-none">
+                  {m.value}
+                </p>
+                <p className="mt-1.5 text-[11px] text-muted-foreground leading-snug">
+                  {m.hint}
+                </p>
+                {m.cta ? (
+                  <a
+                    href={m.cta.href}
+                    className="mt-2 inline-flex text-[11px] font-semibold text-primary hover:underline"
+                  >
+                    {m.cta.label} →
+                  </a>
+                ) : null}
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        );
+      })()}
 
       {/* Funnel mini — sessions → leads → tours → applications.
           Hidden when there's no data in any stage so we don't render an
