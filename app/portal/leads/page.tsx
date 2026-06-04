@@ -497,58 +497,96 @@ export default async function LeadsKanbanPage({
         />
       </section>
 
-      {/* Cross-product signal strip — pixel visits, chatbot, popup
-          conversions, applications. Same 28d window as the pipeline
-          strip above so the two rows compose into one full picture of
-          recent activity. Each tile links into its own page when
-          available, otherwise stays a passive number. */}
-      <section
-        aria-label="Cross-product signals (28d)"
-        className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-2 ls-stagger"
-      >
-        <KpiTile
-          label="Tracked visitors (28d)"
-          value={kpiVisitors28d.toLocaleString()}
-          hint="From the Cursive pixel"
-          icon={<Eye className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Chatbot convos (28d)"
-          value={kpiChatbot28d.toLocaleString()}
-          hint="Site visitors who engaged"
-          icon={<Bot className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Popup conversions (28d)"
-          value={kpiPopupConv28d.toLocaleString()}
-          hint="Captured via popup CTA"
-          icon={<MousePointerClick className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Applications (28d)"
-          value={kpiApplications28d.toLocaleString()}
-          hint={
-            kpiApplications28d > 0
-              ? "Submitted via AppFolio or form"
-              : "No applications synced yet"
-          }
-          icon={<FileText className="h-3.5 w-3.5" />}
-        />
-      </section>
+      {/* Cross-product signal strip — collapsed from 4 KPI tiles to a
+          single-line link row. Operator feedback (2026-06-04): two rows
+          of 4 tiles = 8 competing numbers above the actual lead list.
+          Same data, denser surface, each number is a Link into its own
+          page. Hides entirely when every signal is zero. */}
+      {(kpiVisitors28d || kpiChatbot28d || kpiPopupConv28d || kpiApplications28d) > 0 ? (
+        <p
+          aria-label="Cross-product signals (28d)"
+          className="flex items-center gap-x-4 gap-y-1 flex-wrap text-[12px] text-muted-foreground"
+        >
+          <span className="text-[10px] uppercase tracking-[0.14em] font-semibold text-foreground/60">
+            Also touched · 28d
+          </span>
+          {kpiVisitors28d > 0 ? (
+            <Link
+              href="/portal/visitors"
+              className="inline-flex items-center gap-1 hover:text-foreground"
+            >
+              <Eye className="h-3 w-3" aria-hidden="true" />
+              <span className="font-semibold tabular-nums text-foreground">
+                {kpiVisitors28d.toLocaleString()}
+              </span>{" "}
+              tracked visitors
+            </Link>
+          ) : null}
+          {kpiChatbot28d > 0 ? (
+            <Link
+              href="/portal/chatbot"
+              className="inline-flex items-center gap-1 hover:text-foreground"
+            >
+              <Bot className="h-3 w-3" aria-hidden="true" />
+              <span className="font-semibold tabular-nums text-foreground">
+                {kpiChatbot28d.toLocaleString()}
+              </span>{" "}
+              chatbot convos
+            </Link>
+          ) : null}
+          {kpiPopupConv28d > 0 ? (
+            <Link
+              href="/portal/popups"
+              className="inline-flex items-center gap-1 hover:text-foreground"
+            >
+              <MousePointerClick className="h-3 w-3" aria-hidden="true" />
+              <span className="font-semibold tabular-nums text-foreground">
+                {kpiPopupConv28d.toLocaleString()}
+              </span>{" "}
+              popup conversions
+            </Link>
+          ) : null}
+          {kpiApplications28d > 0 ? (
+            <Link
+              href="/portal/applications"
+              className="inline-flex items-center gap-1 hover:text-foreground"
+            >
+              <FileText className="h-3 w-3" aria-hidden="true" />
+              <span className="font-semibold tabular-nums text-foreground">
+                {kpiApplications28d.toLocaleString()}
+              </span>{" "}
+              applications
+            </Link>
+          ) : null}
+        </p>
+      ) : null}
 
       {/* Source-mix one-liner. Renders only when at least one lead
           exists and at least one source has data so it doesn't echo
-          "0 leads from no sources" on day-one tenants. */}
+          "0 leads from no sources" on day-one tenants.
+
+          Defensive dedupe (2026-06-04): two LeadSource enum values
+          can render to the same human label ("Chatbot" appeared twice
+          on Telegraph Commons because legacy CHATBOT rows coexist with
+          newer CHATBOT-tagged opt-ins from the V2 widget). Bucket by
+          label and sum counts before formatting so the operator sees
+          one entry per source name. */}
       {totalCount > 0 && sourceCounts.length > 0 ? (
         <p className="text-[11.5px] text-muted-foreground">
           {totalCount.toLocaleString()}{" "}
           {totalCount === 1 ? "lead" : "leads"}
           {" · "}
-          {sourceCounts
-            .slice()
-            .sort((a, b) => b._count._all - a._count._all)
-            .map((r) => `${r._count._all} from ${humanLeadSource(r.source)}`)
-            .join(" · ")}
+          {(() => {
+            const byLabel = new Map<string, number>();
+            for (const r of sourceCounts) {
+              const label = humanLeadSource(r.source);
+              byLabel.set(label, (byLabel.get(label) ?? 0) + r._count._all);
+            }
+            return Array.from(byLabel.entries())
+              .sort((a, b) => b[1] - a[1])
+              .map(([label, count]) => `${count} from ${label}`)
+              .join(" · ");
+          })()}
         </p>
       ) : null}
 
