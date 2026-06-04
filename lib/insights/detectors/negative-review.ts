@@ -3,6 +3,19 @@ import { prisma } from "@/lib/db";
 import type { Detector, DetectedInsight } from "../types";
 
 const DAY = 24 * 60 * 60 * 1000;
+// Norman 2026-06-04: staleness windows. Operators don't want to be
+// nudged to respond to ancient content — engaging with a 4-year-old
+// review or an 8-year-old Reddit thread looks weird and revives dead
+// SEO surface area. Reviews stay actionable for 2 years; long-form
+// forum threads (Reddit, Facebook public posts, generic web articles)
+// stay actionable for 3 years. Anything older is filtered out before
+// the detector returns it.
+const REVIEW_STALE_MS = 2 * 365 * DAY;
+const FORUM_STALE_MS = 3 * 365 * DAY;
+
+function isReviewSource(source: string): boolean {
+  return source === "GOOGLE_REVIEW" || source === "YELP";
+}
 
 /**
  * Negative review detector.
@@ -16,6 +29,12 @@ const DAY = 24 * 60 * 60 * 1000;
  *   - critical when the mention is on Google (reviewers see it instantly)
  *     or rating is ≤ 2.
  *   - warning otherwise.
+ *
+ * Staleness filter (Norman 2026-06-04): even if we just ingested a
+ * mention, we drop it if `publishedAt` is older than the per-source
+ * staleness window. The bug report case was a Reddit thread published
+ * 8 years ago being surfaced as "new" because our scanner first saw it
+ * 4 days ago. The actionability is zero; the noise is high.
  */
 export const negativeReviewDetector: Detector = {
   name: "negative-review",
@@ -37,6 +56,7 @@ export const negativeReviewDetector: Detector = {
         excerpt: true,
         rating: true,
         sourceUrl: true,
+        publishedAt: true,
         propertyId: true,
         property: { select: { name: true } },
       },
@@ -44,7 +64,21 @@ export const negativeReviewDetector: Detector = {
       take: 20,
     });
 
-    return mentions.map((m): DetectedInsight => {
+    // Apply the per-source staleness filter after the DB read so the
+    // detector remains explicit and easy to audit. `publishedAt` is
+    // nullable — when missing, we keep the row (better to over-surface
+    // a recent ingest than silently swallow it).
+    const now = Date.now();
+    const fresh = mentions.filter((m) => {
+      if (m.publishedAt == null) return true;
+      const ageMs = now - m.publishedAt.getTime();
+      const limit = isReviewSource(m.source)
+        ? REVIEW_STALE_MS
+        : FORUM_STALE_MS;
+      return ageMs <= limit;
+    });
+
+    return fresh.map((m): DetectedInsight => {
       const sourceLabel = humanizeSource(m.source);
       const isHighStakes =
         m.source === "GOOGLE_REVIEW" ||

@@ -4,6 +4,18 @@ export type FunnelStage = {
   label: string;
   value: number;
   href?: string;
+  /**
+   * Norman 2026-06-04: when the data source for this stage isn't
+   * connected (e.g. tours/applications when no PMS is wired up), we
+   * show an em-dash inside the slice instead of "0". A literal zero
+   * implies "we measured and got nothing" — that's misleading when we
+   * never had the pipe to measure with in the first place.
+   *
+   * Set `notApplicable: true` for unconnected stages. The slice still
+   * renders (preserves the funnel silhouette) but the number is "—"
+   * and the conversion % below uses "—" too.
+   */
+  notApplicable?: boolean;
 };
 
 // ---------------------------------------------------------------------------
@@ -139,7 +151,7 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
               fill="white"
               style={{ fontVariantNumeric: "tabular-nums" }}
             >
-              {s.value.toLocaleString()}
+              {s.notApplicable ? "—" : s.value.toLocaleString()}
             </text>
           );
         })}
@@ -147,9 +159,17 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
         {/* Stage labels + conversion % below each slice. */}
         {stages.map((s, i) => {
           const cx = i * stageW + stageW / 2;
-          const prev = i === 0 ? null : stages[i - 1].value;
+          const prevStage = i === 0 ? null : stages[i - 1];
+          const prev = prevStage?.value ?? null;
+          // Norman 2026-06-04: any stage flagged notApplicable (or with
+          // an unconnected predecessor) shows "—" for its conversion %.
+          // Computing 0% against an em-dash predecessor would be wrong.
+          const naConversion =
+            s.notApplicable === true || prevStage?.notApplicable === true;
           const conversion =
-            prev && prev > 0 ? Math.round((s.value / prev) * 100) : null;
+            !naConversion && prev && prev > 0
+              ? Math.round((s.value / prev) * 100)
+              : null;
           return (
             <g key={`l-${s.label}`}>
               <text
@@ -173,6 +193,16 @@ export function ConversionFunnel({ stages }: { stages: FunnelStage[] }) {
                   style={{ fontVariantNumeric: "tabular-nums" }}
                 >
                   {conversion}% conv.
+                </text>
+              ) : naConversion ? (
+                <text
+                  x={cx}
+                  y={FUNNEL_H + 52}
+                  textAnchor="middle"
+                  fontSize={16}
+                  fill="#94A3B8"
+                >
+                  not connected
                 </text>
               ) : i === 0 ? (
                 <text

@@ -367,7 +367,11 @@ export async function getPropertyTraffic(
 // ---------------------------------------------------------------------------
 
 export type PropertyLeadsData = {
-  funnel: Array<{ label: string; value: number }>;
+  // Norman 2026-06-04: `notApplicable` lets the funnel render "—"
+  // instead of "0" when this property has no PMS wired up. A literal
+  // zero implies "we measured and found nothing" — misleading when we
+  // never had the data pipe.
+  funnel: Array<{ label: string; value: number; notApplicable?: boolean }>;
   sourceBreakdown: Array<{ source: string; count: number }>;
   recent: Array<{
     id: string;
@@ -470,6 +474,15 @@ export async function getPropertyLeads(
       }),
     ]);
 
+  // Norman 2026-06-04: PMS connection drives whether Tours +
+  // Applications stages should render as "—" instead of "0".
+  const propertyForPms = await prisma.property.findUnique({
+    where: { id: propertyId },
+    select: { backendPlatform: true },
+  });
+  const pmsConnected =
+    propertyForPms != null && propertyForPms.backendPlatform !== "NONE";
+
   const convertedCount = await prisma.lead.count({
     where: { orgId, propertyId, convertedAt: { not: null } },
   });
@@ -488,8 +501,16 @@ export async function getPropertyLeads(
       { label: "Visitors", value: visitorRows.length },
       { label: "Engaged", value: engagedCount },
       { label: "Leads", value: leadsCount },
-      { label: "Tours", value: toursCount },
-      { label: "Applications", value: appsCount },
+      {
+        label: "Tours",
+        value: toursCount,
+        notApplicable: !pmsConnected && toursCount === 0,
+      },
+      {
+        label: "Applications",
+        value: appsCount,
+        notApplicable: !pmsConnected && appsCount === 0,
+      },
     ],
     sourceBreakdown,
     recent: recent.map((r) => ({ ...r, status: r.status as string })),

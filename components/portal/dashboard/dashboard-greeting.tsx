@@ -133,26 +133,12 @@ export function DashboardGreeting({
           ))}
         </div>
 
-        {/* Comparison toggle — a single Link that flips the param. */}
-        <Link
-          href={hrefWith({ range, compare: !compare })}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[12px] font-semibold transition-colors",
-            compare
-              ? "border-primary/40 bg-primary/10 text-primary"
-              : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40",
-          )}
-          prefetch={false}
-        >
-          <span
-            aria-hidden="true"
-            className={cn(
-              "inline-block h-2.5 w-2.5 rounded-full",
-              compare ? "bg-primary" : "bg-muted-foreground/30",
-            )}
-          />
-          Compare vs previous
-        </Link>
+        {/* Comparison toggle hidden 2026-06-04 per Norman review — the
+            prior-period overlay only renders on the Lead Performance chart
+            and confused operators because the KPI strip + funnel + leaderboard
+            don't currently respond to it. Re-enable once every dashboard widget
+            honors `compare`. The query param is still respected if set
+            manually, so deep-links from existing reports keep working. */}
       </div>
     </header>
   );

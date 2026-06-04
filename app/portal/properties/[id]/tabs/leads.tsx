@@ -260,7 +260,7 @@ export async function LeadsTab({
           eyebrow="Last 28 days"
           description="Visitors scoped by URL match on property slug"
         >
-          {data.funnel.every((s) => s.value === 0) ? (
+          {data.funnel.every((s) => s.value === 0 || s.notApplicable === true) ? (
             <p className="text-xs text-muted-foreground">
               No activity in the last 28 days yet.
             </p>

@@ -1296,7 +1296,7 @@ export default async function PortalHome({
           hint={
             properties.length === 0
               ? "Add your first property"
-              : "Click to drill in"
+              : "Click to view portfolio"
           }
           icon={<Building2 className="h-3.5 w-3.5" />}
           href="/portal/properties"

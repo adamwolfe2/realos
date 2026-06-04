@@ -1335,14 +1335,21 @@ function PropertyMetaCard({
     rows.push(["Built", yearBuilt.toString()]);
   }
   if (backendPlatform && backendPlatform !== "NONE") {
-    rows.push(["Backend", backendPlatform]);
+    // Norman 2026-06-04: "Backend" reads as engineering. Operators speak
+    // PMS (property management system). Same field, friendlier label.
+    rows.push(["PMS", backendPlatform]);
   }
   if (backendPropertyGroup) {
-    rows.push(["Group", backendPropertyGroup]);
+    // Norman 2026-06-04: "Group" alone is ambiguous. Make it explicit
+    // this is the property group inside the PMS (the operator's own
+    // grouping, not a LeaseStack concept).
+    rows.push(["Property group", backendPropertyGroup]);
   }
-  if (lastSyncedAt) {
-    rows.push(["Synced", formatAge(lastSyncedAt)]);
-  }
+  // Norman 2026-06-04: dropped the "Synced" row — last-sync timestamp
+  // is already shown inside the Integrations card right above this one,
+  // so repeating it here was visual duplication. `lastSyncedAt` is still
+  // accepted on the props interface in case callers want it back later.
+  void lastSyncedAt;
 
   if (rows.length === 0) return null;
 

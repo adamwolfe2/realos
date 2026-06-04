@@ -238,6 +238,7 @@ export async function getFunnel(orgId: string) {
     leadsCount,
     toursCount,
     applicationsCount,
+    pmsConnectedProperty,
   ] = await Promise.all([
     // Count Visitor rows, NOT VisitorSession rows. VisitorSession rows
     // only exist when the Cursive pixel fires a `page_view` event —
@@ -282,14 +283,34 @@ export async function getFunnel(orgId: string) {
         lead: { orgId },
       },
     }),
+    // Norman 2026-06-04: detect whether the org has ANY property with a
+    // PMS wired up. Without a backend, tours + applications can't flow,
+    // so we render those slices as "—" instead of "0" downstream.
+    prisma.property.findFirst({
+      where: { orgId, backendPlatform: { not: "NONE" } },
+      select: { id: true },
+    }),
   ]);
+
+  const pmsConnected = pmsConnectedProperty !== null;
 
   return [
     { label: "Visitors", value: visitorsCount },
     { label: "Engaged", value: engagedCount },
     { label: "Leads", value: leadsCount },
-    { label: "Tours", value: toursCount },
-    { label: "Applications", value: applicationsCount },
+    // Only flag NA when we have no PMS AND no measured value — if any
+    // tour or application slipped in via manual entry, prefer the real
+    // count over the disclaimer.
+    {
+      label: "Tours",
+      value: toursCount,
+      notApplicable: !pmsConnected && toursCount === 0,
+    },
+    {
+      label: "Applications",
+      value: applicationsCount,
+      notApplicable: !pmsConnected && applicationsCount === 0,
+    },
   ];
 }
 

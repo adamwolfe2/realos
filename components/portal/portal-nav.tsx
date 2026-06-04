@@ -168,7 +168,10 @@ export const AUDIENCE_NAV_GROUPS: NavGroup[] = [
   {
     label: "Account",
     items: [
-      { href: "/portal/notifications", label: "Notifications", icon: Bell, show: ALWAYS },
+      // Norman 2026-06-04: Notifications tab also hidden from the
+      // audience-only sidebar — matches the Today-group hide above.
+      // The bell in the top header is unaffected.
+      { href: "/portal/notifications", label: "Notifications", icon: Bell, show: () => false },
       { href: "/portal/billing", label: "Billing", icon: CreditCard, show: ALWAYS },
       { href: "/portal/settings", label: "Settings", icon: Settings, show: ALWAYS },
     ],
@@ -199,17 +202,28 @@ export const NAV_GROUPS: NavGroup[] = [
     label: "Today",
     items: [
       { href: "/portal", label: "Dashboard", icon: LayoutDashboard, show: ALWAYS },
+      // Norman 2026-06-04: Briefing tab hidden from sidebar until lead
+      // inbox routing is configured. The page still exists at
+      // /portal/briefing for deep links + when an operator wires up the
+      // weekly call-sheet. Re-enable by restoring the original
+      // `moduleInsights && briefingHasContent` predicate.
       {
         href: "/portal/briefing",
         label: "Briefing",
         icon: Gauge,
-        show: (o) => o.moduleInsights && Boolean(o.briefingHasContent),
+        show: () => false,
       },
+      // Norman 2026-06-04: Notifications tab hidden from sidebar until
+      // we filter out passive-property + lease-expiry noise (Norman saw
+      // 62 unread, most for deactivated properties). The bell in the
+      // top header still shows live notifications — this just removes
+      // the redundant sidebar entry. Re-enable with `show: ALWAYS`
+      // once the notification filtering rules ship.
       {
         href: "/portal/notifications",
         label: "Notifications",
         icon: Bell,
-        show: ALWAYS,
+        show: () => false,
       },
     ],
   },
