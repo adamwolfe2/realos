@@ -220,77 +220,60 @@ export const styles = StyleSheet.create({
   },
   termsText: { fontSize: 8.5, color: C.muted, lineHeight: 1.55 },
 
-  // ----- Accept & Pay CTA block. Soft brand-blue surface anchored
-  // between the title and the line items. Two columns: copy + amount
-  // on the left, QR code on the right. Stripe payment flow lives at
-  // the URL printed in mono inside; the QR encodes the same target.
+  // ----- Accept & Pay CTA block. Compact pay-strip rendered after the
+  // totals (mirrors a tear-off pay band on a paper invoice). Two
+  // columns: copy + URL on the left, QR code on the right.
   acceptBlock: {
     flexDirection: "row",
-    alignItems: "stretch",
-    marginTop: 6,
-    marginBottom: 24,
-    padding: 18,
-    borderRadius: 8,
-    backgroundColor: "#EFF6FF",
-    borderWidth: 1,
-    borderColor: "#CFE2FF",
+    alignItems: "center",
+    marginTop: 20,
+    padding: 12,
+    borderRadius: 6,
+    backgroundColor: C.surface,
+    borderWidth: 0.5,
+    borderColor: C.hairline,
     borderStyle: "solid",
   },
   acceptCol: {
     flex: 1,
-    paddingRight: 18,
+    paddingRight: 14,
   },
   acceptEyebrow: {
-    fontSize: 8,
-    letterSpacing: 1.6,
+    fontSize: 7.5,
+    letterSpacing: 1.4,
     fontFamily: "Helvetica-Bold",
     color: C.accent,
-    marginBottom: 6,
-  },
-  acceptAmount: {
-    fontSize: 22,
-    fontFamily: "Helvetica-Bold",
-    color: C.ink,
     marginBottom: 4,
-    letterSpacing: -0.3,
   },
   acceptHint: {
-    fontSize: 9,
+    fontSize: 8.5,
     color: C.muted,
-    lineHeight: 1.45,
-    marginBottom: 10,
-    maxWidth: 360,
-  },
-  acceptLinkLabel: {
-    fontSize: 7.5,
-    letterSpacing: 1.2,
-    color: C.muted,
-    fontFamily: "Helvetica-Bold",
-    marginBottom: 3,
+    lineHeight: 1.4,
+    marginBottom: 6,
   },
   acceptLinkUrl: {
-    fontSize: 10,
+    fontSize: 9,
     color: C.accent,
     fontFamily: "Helvetica-Bold",
   },
   acceptQrCol: {
-    width: 86,
+    width: 64,
     alignItems: "center",
     justifyContent: "center",
-    paddingLeft: 14,
-    borderLeftWidth: 1,
-    borderLeftColor: "#CFE2FF",
+    paddingLeft: 12,
+    borderLeftWidth: 0.5,
+    borderLeftColor: C.hairline,
     borderLeftStyle: "solid",
   },
   acceptQrImage: {
-    width: 72,
-    height: 72,
+    width: 54,
+    height: 54,
   },
   acceptQrCaption: {
-    fontSize: 7,
+    fontSize: 6.5,
     color: C.muted,
-    marginTop: 6,
-    letterSpacing: 0.6,
+    marginTop: 4,
+    letterSpacing: 0.5,
     textAlign: "center",
   },
 
