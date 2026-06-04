@@ -1124,35 +1124,12 @@ export default async function PortalHome({
         />
       ) : null}
 
-      {/* Action items — top portfolio-wide recommendations from the
-          Intelligence engine. Each row is a single-click route into
-          the exact surface to act. Dismiss-to-next-page (session
-          storage) so the operator can clear items they've handled
-          without them returning until the next dashboard load. */}
-      {portfolioActions.length > 0 ? (
-        <DashboardActionItems actions={portfolioActions} />
-      ) : null}
-
-      {/* SEO Agent rollup — sibling to DashboardActionItems but sourced
-          from the SEO recommendation engine. Only renders when there are
-          open OPEN recs on LIVE properties. */}
-      <PortfolioSeoActions actions={portfolioSeoActions} />
-
-      {/* Insights hero — the centerpiece. Renders top 3 open insights when
-          the org has data; falls back to a connect-data CTA when the org
-          is brand-new. Pinned above the property selector + KPI strip so
-          it's the first thing the operator sees on every dashboard load. */}
-      <InsightsHero
-        insights={openInsights as InsightCardData[]}
-        counts={{
-          critical: insightCounts.critical,
-          warning: insightCounts.warning,
-          info: insightCounts.info,
-          total: insightCounts.total,
-        }}
-        sourcesConnected={connectStatus.connected}
-        totalSources={connectStatus.total}
-      />
+      {/* Action items, SEO Agent rollup, and Insights hero MOVED below
+          the dashboard. Operator feedback (2026-06-03): the text-heavy
+          recommendation stacks pushed the charts/metrics below the fold.
+          Numbers + graphs come first now; "things you should do" lives
+          underneath Activity feed where the operator goes after they've
+          oriented to the state of the portfolio. */}
 
       {/* Property selector — David can narrow the portfolio dashboard
           to one or more buildings. Direct-prisma KPI queries (counts,
@@ -1434,6 +1411,38 @@ export default async function PortalHome({
           >
             <ActivityFeed items={activity} />
           </DashboardSection>
+
+          {/* --- Text rollup zone --------------------------------------
+              Reordered 2026-06-03 per operator feedback: charts +
+              metrics anchor the dashboard, and the three text-heavy
+              recommendation stacks (Action items, SEO Agent, Insights
+              hero) now follow Activity feed so the page reads as
+              "here's what's happening" → "here's what to do next".
+              --------------------------------------------------------- */}
+
+          {/* Action items — top portfolio-wide recommendations from the
+              Intelligence engine. */}
+          {portfolioActions.length > 0 ? (
+            <DashboardActionItems actions={portfolioActions} />
+          ) : null}
+
+          {/* SEO Agent rollup — sourced from the SEO recommendation
+              engine. Only renders when there are open OPEN recs on
+              LIVE properties. */}
+          <PortfolioSeoActions actions={portfolioSeoActions} />
+
+          {/* Insights hero — top 3 open insights with severity rollup. */}
+          <InsightsHero
+            insights={openInsights as InsightCardData[]}
+            counts={{
+              critical: insightCounts.critical,
+              warning: insightCounts.warning,
+              info: insightCounts.info,
+              total: insightCounts.total,
+            }}
+            sourcesConnected={connectStatus.connected}
+            totalSources={connectStatus.total}
+          />
 
           {/* AppFolio status row — Norman feedback evolution:
               #97 said the previous "Coming soon · Operations module"
