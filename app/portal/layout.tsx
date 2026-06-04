@@ -379,7 +379,7 @@ export default async function PortalLayout({
       {/* Mobile top bar */}
       <div
         data-no-print
-        className="md:hidden shrink-0 flex items-center justify-between h-14 px-4 bg-card border-b border-border z-40"
+        className="lg:hidden shrink-0 flex items-center justify-between h-14 px-4 bg-card border-b border-border z-40"
       >
         <div className="flex items-center gap-2">
           <MobileNavDrawer
@@ -564,7 +564,7 @@ export default async function PortalLayout({
               own top bar above. */}
           <div
             data-no-print
-            className="ls-topbar hidden md:flex shrink-0 h-12 items-center justify-end gap-2 px-6 sticky top-0 z-30"
+            className="ls-topbar hidden lg:flex shrink-0 h-12 items-center justify-end gap-2 px-6 sticky top-0 z-30"
           >
             <CmdKSearch />
             <NotificationBell />

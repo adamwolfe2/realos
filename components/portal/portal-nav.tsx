@@ -454,7 +454,7 @@ export function PortalNav({
   return (
     <aside
       className={cn(
-        "ls-sidebar relative hidden md:flex flex-col transition-all duration-200 shrink-0",
+        "ls-sidebar relative hidden lg:flex flex-col transition-all duration-200 shrink-0",
         collapsed ? "w-14" : "w-60"
       )}
     >
