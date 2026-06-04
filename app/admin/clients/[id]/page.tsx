@@ -140,17 +140,25 @@ export default async function ClientDetail({
     ["moduleReferrals", "Referrals", org.moduleReferrals],
     // Intelligence
     ["moduleAttribution", "Attribution", org.moduleAttribution],
-    ["moduleInsights", "Insights (AEO + briefing + reports)", org.moduleInsights],
+    ["moduleInsights", "Insights", org.moduleInsights],
     ["moduleReputation", "Reputation", org.moduleReputation],
     // Norman feedback (May 22): RentCast market intelligence (estimated
     // rent + nearby comparables + hot/cold market badge) on the
     // property detail page. Off by default — residential operators
     // typically don't want rent-comp data alongside their digital-
     // marketing dashboards. Flip on per-tenant when there's a use case.
-    ["moduleMarketIntelligence", "Market intelligence (RentCast comparables)", org.moduleMarketIntelligence],
+    //
+    // 2026-06-04: label trimmed from "Market intelligence (RentCast
+    // comparables)" to "Market intel" so the 2-up grid layout aligns
+    // — every other module label is 1-2 words.
+    ["moduleMarketIntelligence", "Market intel", org.moduleMarketIntelligence],
     // Operations (AppFolio-backed) + tours
     ["moduleTours", "Tours", org.moduleTours],
-    ["moduleResidents", "Resident operations (residents / renewals / work orders / applications)", org.moduleResidents],
+    // Label trimmed from "Resident operations (residents / renewals /
+    // work orders / applications)" — the sub-modules are visible on
+    // the operator's sidebar; this toggle only needs to name the
+    // gate.
+    ["moduleResidents", "Resident ops", org.moduleResidents],
     // Add-ons
     ["moduleVault", "Vault", org.moduleVault],
   ];
