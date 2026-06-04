@@ -1103,8 +1103,13 @@ export async function getReputationSummary(
 
   const [properties, mentionsTotal, mentionsNew30d, negativeCount, unreviewed] =
     await Promise.all([
+      // 2026-06-04 N+1 audit: was `where: { orgId }` which scanned
+      // EXCLUDED parking lots / storage / IMPORTED-pending rows that
+      // can never carry Google data. Tightened to marketable lifecycle
+      // so the weighted-rating average is computed off the same set
+      // every other rating-aware surface uses.
       prisma.property.findMany({
-        where: { orgId },
+        where: marketablePropertyWhere(orgId),
         select: { googleAggRating: true, googleAggReviewCount: true },
       }),
       prisma.propertyMention.count({ where: { orgId } }),

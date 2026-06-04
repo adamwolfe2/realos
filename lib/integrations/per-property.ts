@@ -1,5 +1,6 @@
 import "server-only";
 import { prisma } from "@/lib/db";
+import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import type {
   CursiveIntegration,
   SeoIntegration,
@@ -148,9 +149,12 @@ export type IntegrationCoverageRow = {
 export async function getCursiveCoverage(
   orgId: string,
 ): Promise<IntegrationCoverageRow[]> {
+  // 2026-06-04 N+1 audit: marketable filter so EXCLUDED parking lots
+  // and pending-IMPORTED rows don't show up in coverage tiles that
+  // count "X of N properties have a pixel installed".
   const [properties, integrations] = await Promise.all([
     prisma.property.findMany({
-      where: { orgId },
+      where: marketablePropertyWhere(orgId),
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
@@ -180,9 +184,12 @@ export async function getSeoCoverage(
   orgId: string,
   provider: SeoProvider,
 ): Promise<IntegrationCoverageRow[]> {
+  // 2026-06-04 N+1 audit: same marketable filter as getCursiveCoverage
+  // so SEO coverage tiles ("GA4 connected on 3 of 5 properties") match
+  // the property set every other surface uses.
   const [properties, integrations] = await Promise.all([
     prisma.property.findMany({
-      where: { orgId },
+      where: marketablePropertyWhere(orgId),
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     }),
