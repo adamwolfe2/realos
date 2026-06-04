@@ -47,8 +47,6 @@ import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { LeadSourceDonut } from "@/components/portal/dashboard/lead-source-donut";
 import { ConversionFunnel } from "@/components/portal/dashboard/conversion-funnel";
-import { PropertyDashboardCard } from "@/components/portal/dashboard/property-card";
-import { PropertyGridCard } from "@/components/portal/dashboard/property-grid-card";
 import { ActivityFeed } from "@/components/portal/dashboard/activity-feed";
 import { IntegrationHealth } from "@/components/portal/dashboard/integration-health";
 import {
@@ -78,9 +76,7 @@ import {
 } from "@/components/portal/dashboard/dashboard-greeting";
 import { PerformanceOverTime } from "@/components/portal/dashboard/performance-over-time";
 import { TopPropertiesLeaderboard } from "@/components/portal/dashboard/top-properties-leaderboard";
-import { LeasingVelocityChart } from "@/components/portal/dashboard/leasing-velocity-chart";
 import { RecentIdentifiedVisitors } from "@/components/portal/dashboard/recent-identified-visitors";
-import { ReputationPulse } from "@/components/portal/dashboard/reputation-pulse";
 import { getOpenInsights, getInsightCounts } from "@/lib/insights/queries";
 import { InsightCard, type InsightCardData } from "@/components/portal/insights/insight-card";
 import { InsightsHero } from "@/components/portal/dashboard/insights-hero";
