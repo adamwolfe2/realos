@@ -3,9 +3,16 @@ import Link from "next/link";
 import { requireAgency } from "@/lib/tenancy/scope";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { createBriefFromForm } from "../actions";
+import { GenerateBriefSubmit } from "./submit-button";
 
 export const metadata: Metadata = { title: "Generate a brief" };
 export const dynamic = "force-dynamic";
+// Brief generation runs synchronously inside the server action and
+// touches 4 LLM engines + DataForSEO + Firecrawl. ~60-120s end-to-end.
+// Vercel's default 60s ceiling killed the action mid-run, so the
+// redirect never fired and the button looked frozen. 300 = max
+// allowed on Pro for serverless functions.
+export const maxDuration = 300;
 
 // ---------------------------------------------------------------------------
 // /admin/briefs/new — form to kick off a new prospect brief.
@@ -70,19 +77,7 @@ export default async function NewBriefPage() {
             placeholder={"555 California Street\n101 California Street\nSalesforce Tower"}
             hint="One competitor per line. We scan each AI engine's response for these names and surface a 'who got named instead' bar chart. Defaults to the SF Class-A office cohort."
           />
-          <div className="flex items-center gap-3 pt-2">
-            <button
-              type="submit"
-              className="inline-flex items-center justify-center h-10 px-6 rounded-md text-[13px] font-semibold text-white"
-              style={{ backgroundColor: "#2563EB" }}
-            >
-              Generate brief
-            </button>
-            <p className="text-[11.5px] text-muted-foreground">
-              You&apos;ll be redirected to the share URL when it&apos;s ready
-              (≈90 sec).
-            </p>
-          </div>
+          <GenerateBriefSubmit />
         </form>
       </SectionCard>
     </div>
