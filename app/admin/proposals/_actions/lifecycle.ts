@@ -25,7 +25,7 @@ function resolveBaseUrl(): string {
 
 export async function sendProposal(args: {
   proposalId: string;
-}): Promise<{ shareUrl: string }> {
+}): Promise<{ shareUrl: string; emailed: boolean }> {
   await requireAgency();
   const proposal = await prisma.proposal.findUnique({
     where: { id: args.proposalId },
@@ -40,9 +40,12 @@ export async function sendProposal(args: {
   if (proposal.lineItems.length === 0) {
     throw new Error("Add at least one line item before sending");
   }
-  if (!proposal.prospectEmail) {
-    throw new Error("Prospect email is required before sending");
-  }
+  // prospectEmail is OPTIONAL as of 2026-06-03. When set, we send the
+  // proposal email + bind a Stripe Customer to it on checkout. When
+  // empty, we still mint a share token + flip to SENT — the proposal
+  // becomes a "publish + share the link" artifact, Stripe collects
+  // email at checkout time. Adam asked for the Stripe-Payment-Link
+  // pattern for proposals.
 
   // review-fix: atomic token issue + status flip. Previously these were 3
   // independent writes — issue token, send email, then flip status — and
@@ -91,23 +94,28 @@ export async function sendProposal(args: {
 
   // Email send is best-effort POST-commit. A throw here is logged but
   // does not undo the SENT transition — the operator hits Resend from
-  // the detail page.
-  try {
-    const mod = await import("@/lib/proposals/email");
-    if (typeof mod.sendProposalEmail === "function") {
-      await mod.sendProposalEmail({
-        proposalId: args.proposalId,
-        shareUrl,
-        pdfBuffer,
-      });
+  // the detail page. Skipped entirely when prospectEmail is empty
+  // (the "share-link only" flow).
+  let emailed = false;
+  if (proposal.prospectEmail) {
+    try {
+      const mod = await import("@/lib/proposals/email");
+      if (typeof mod.sendProposalEmail === "function") {
+        await mod.sendProposalEmail({
+          proposalId: args.proposalId,
+          shareUrl,
+          pdfBuffer,
+        });
+        emailed = true;
+      }
+    } catch (err) {
+      console.error("[sendProposal] email send failed (status already SENT):", err);
     }
-  } catch (err) {
-    console.error("[sendProposal] email send failed (status already SENT):", err);
   }
 
   revalidatePath(`/admin/proposals/${args.proposalId}`);
   revalidatePath("/admin/proposals");
-  return { shareUrl };
+  return { shareUrl, emailed };
 }
 
 export async function voidProposal(args: {

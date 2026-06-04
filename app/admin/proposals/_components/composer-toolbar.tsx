@@ -45,10 +45,17 @@ export function ComposerToolbar({
   const [voidReason, setVoidReason] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const canSend =
-    proposal.status === ProposalStatus.DRAFT &&
-    hasLines &&
-    proposal.prospectEmail.length > 0;
+  // Two valid send paths:
+  //   1. With prospectEmail set → "Send proposal" — Resend emails the
+  //      prospect a styled email with the share URL + PDF attached.
+  //   2. Without prospectEmail → "Publish & copy link" — same status
+  //      transition, same share-URL mint, no email. Operator copies
+  //      and pastes the URL anywhere (Slack, sales chat, on a deck).
+  //      Stripe collects the payer's email at checkout.
+  // Both paths require DRAFT + at least one line item.
+  const canSend = proposal.status === ProposalStatus.DRAFT && hasLines;
+  const sendIsPublishOnly =
+    canSend && proposal.prospectEmail.length === 0;
   const canVoid =
     proposal.status !== ProposalStatus.ACCEPTED &&
     proposal.status !== ProposalStatus.CANCELED &&
@@ -58,7 +65,20 @@ export function ComposerToolbar({
   async function doSend() {
     setWorking("send");
     try {
-      await sendProposal({ proposalId: proposal.id });
+      const result = await sendProposal({ proposalId: proposal.id });
+      // Auto-copy the share URL when there's no prospect email — the
+      // operator's only path to share the proposal is pasting it
+      // somewhere.
+      if (!result.emailed && result.shareUrl) {
+        try {
+          await navigator.clipboard.writeText(result.shareUrl);
+          toast.success("Published · share link copied to clipboard");
+        } catch {
+          toast.success(`Published · ${result.shareUrl}`);
+        }
+      } else {
+        toast.success("Proposal sent");
+      }
       router.refresh();
     } catch (err) {
       console.error(err);
@@ -159,19 +179,36 @@ export function ComposerToolbar({
             onClick={() => setConfirmSend(true)}
             disabled={!hasLines}
             className="inline-flex items-center rounded-md bg-primary text-primary-foreground px-3 py-1.5 text-xs font-medium hover:bg-primary-dark transition-colors disabled:opacity-50"
+            title={
+              sendIsPublishOnly
+                ? "Publish: mints a share URL anyone can pay (no email sent)"
+                : "Email the prospect and mint the share URL"
+            }
           >
-            Send proposal
+            {sendIsPublishOnly ? "Publish & copy link" : "Send proposal"}
           </button>
         ) : null}
       </div>
 
       {confirmSend ? (
         <Dialog
-          title="Send proposal"
+          title={sendIsPublishOnly ? "Publish proposal" : "Send proposal"}
           onClose={() => setConfirmSend(false)}
         >
+          {sendIsPublishOnly ? (
+            <p className="text-sm text-muted-foreground mb-3 leading-relaxed">
+              No prospect email is set. Publishing will mint a share URL
+              anyone with the link can pay — Stripe collects the payer&apos;s
+              email at checkout. The link gets copied to your clipboard
+              automatically.
+            </p>
+          ) : null}
           <dl className="text-sm space-y-1.5 mb-4">
-            <Row k="To" v={`${proposal.prospectName} · ${proposal.prospectEmail}`} />
+            {proposal.prospectEmail ? (
+              <Row k="To" v={`${proposal.prospectName} · ${proposal.prospectEmail}`} />
+            ) : (
+              <Row k="To" v="Anyone with the share link" />
+            )}
             <Row
               k="Cadence"
               v={
@@ -205,7 +242,13 @@ export function ComposerToolbar({
               disabled={working === "send"}
               className="px-3 py-1.5 text-xs rounded-md bg-primary text-primary-foreground hover:bg-primary-dark disabled:opacity-60"
             >
-              {working === "send" ? "Sending…" : "Send now"}
+              {working === "send"
+                ? sendIsPublishOnly
+                  ? "Publishing…"
+                  : "Sending…"
+                : sendIsPublishOnly
+                  ? "Publish & copy link"
+                  : "Send now"}
             </button>
           </div>
         </Dialog>

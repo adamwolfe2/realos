@@ -269,14 +269,23 @@ export async function createCheckoutSessionForProposal(
   const { proposal } = args;
   const stripe = getStripeClient();
 
-  // Customer first — every downstream call attaches to this id.
-  const customer = await resolveStripeCustomerForProposal({
-    proposalId: proposal.id,
-    prospectEmail: proposal.prospectEmail,
-    prospectName: proposal.prospectName,
-    prospectCompany: proposal.prospectCompany,
-    prospectOrgId: proposal.prospectOrgId,
-  });
+  // Customer resolution. When the proposal has a prospectEmail we
+  // resolve (or reuse) a Stripe Customer so cross-proposal MRR + LTV
+  // reporting holds. When prospectEmail is empty (the "publish a share
+  // link anyone can pay" pattern Adam asked for 2026-06-03) we SKIP
+  // customer pre-creation entirely and let Stripe Checkout collect the
+  // payer's email at session time. The post-payment webhook
+  // (customer.subscription.created / checkout.session.completed) is
+  // what binds the resulting Customer back to the proposal.
+  const customer: { stripeCustomerId: string } | null = proposal.prospectEmail
+    ? await resolveStripeCustomerForProposal({
+        proposalId: proposal.id,
+        prospectEmail: proposal.prospectEmail,
+        prospectName: proposal.prospectName,
+        prospectCompany: proposal.prospectCompany,
+        prospectOrgId: proposal.prospectOrgId,
+      })
+    : null;
 
   const checkoutVersion = proposal.checkoutVersion;
   const totals = computeProposalTotalsFromRow(proposal);
@@ -292,10 +301,15 @@ export async function createCheckoutSessionForProposal(
     checkoutVersion: String(checkoutVersion),
   };
 
-  // Common params across both modes.
+  // Common params across both modes. When we have a resolved Customer
+  // (proposal had a prospectEmail) we attach it. When we don't, we set
+  // customer_creation: 'always' (one-time mode) OR rely on subscription
+  // mode's default behavior to auto-create — Stripe Checkout collects
+  // the payer's email at session time and creates the Customer for us.
   const common: Pick<
     Stripe.Checkout.SessionCreateParams,
     | "customer"
+    | "customer_creation"
     | "metadata"
     | "success_url"
     | "cancel_url"
@@ -304,15 +318,18 @@ export async function createCheckoutSessionForProposal(
     | "allow_promotion_codes"
     | "discounts"
   > = {
-    customer: customer.stripeCustomerId,
+    ...(customer
+      ? { customer: customer.stripeCustomerId }
+      : // Subscription mode auto-creates a Customer; payment mode needs
+        // the explicit `customer_creation: 'always'` flag so a one-time
+        // Payment Link-style flow still leaves a tracked Customer behind.
+        // We set the flag conditionally below.
+        {}),
     metadata: baseMetadata,
     success_url: args.successUrl,
     cancel_url: args.cancelUrl,
     automatic_tax: { enabled: false },
     billing_address_collection: "auto",
-    // Agency-issued proposals already include any discount in the line
-    // items + coupon — disable customer-entered promotion codes so the
-    // prospect can't stack a marketing coupon on top of an agency price.
     allow_promotion_codes: false,
     ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
   };
@@ -338,7 +355,10 @@ export async function createCheckoutSessionForProposal(
       },
     };
   } else {
-    // PAYMENT mode — one-time only.
+    // PAYMENT mode — one-time only. When no Customer is pre-attached we
+    // explicitly request customer_creation: 'always' so Stripe still
+    // generates a tracked Customer from the payer's input at session
+    // time (matches subscription mode's auto-create default).
     params = {
       ...common,
       mode: "payment",
@@ -346,6 +366,7 @@ export async function createCheckoutSessionForProposal(
       payment_intent_data: {
         metadata: baseMetadata,
       },
+      ...(customer ? {} : { customer_creation: "always" as const }),
     };
   }
 
@@ -353,9 +374,18 @@ export async function createCheckoutSessionForProposal(
     idempotencyKey: `proposal-checkout-${proposal.id}-v${checkoutVersion}`,
   });
 
+  // When no Customer was pre-resolved (publish-link flow) Stripe creates
+  // one during checkout; the session response carries it back so we can
+  // persist it on the proposal for downstream webhook reconciliation.
+  const resolvedCustomerId =
+    customer?.stripeCustomerId ??
+    (typeof session.customer === "string"
+      ? session.customer
+      : (session.customer?.id ?? ""));
+
   return {
     session,
-    stripeCustomerId: customer.stripeCustomerId,
+    stripeCustomerId: resolvedCustomerId,
     checkoutVersion,
   };
 }
