@@ -936,3 +936,22 @@ p, li,
 [data-pretty] {
   text-wrap: pretty;
 }
+
+/* ---------------------------------------------------------------------------
+ * Crisp chat launcher — mobile safe-zone
+ *
+ * The default Crisp launcher anchors bottom-left at ~64×64 and on mobile
+ * overlapped real content on 4 of 6 marketing routes (audit quiz radio,
+ * student-housing hero caption, features section card, home walkthrough
+ * card). Move it to bottom-right and shrink it so it stops covering text
+ * and tap targets on phone-width viewports. Desktop spacing unchanged.
+ * --------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .crisp-client .cc-1brb6 {
+    left: auto !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    transform: scale(0.78);
+    transform-origin: bottom right;
+  }
+}

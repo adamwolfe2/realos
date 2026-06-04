@@ -198,7 +198,11 @@ export function SplitHero({
             {caption ? (
               <Reveal delay={360}>
                 <p
-                  className="mt-4"
+                  // mb-20 sm:mb-0 — keeps the caption clear of the Crisp
+                  // chat launcher safe-zone on mobile (the launcher
+                  // anchors bottom-right at ~50×50). Desktop spacing
+                  // unchanged.
+                  className="mt-4 mb-20 sm:mb-0"
                   style={{
                     color: "#94A3B8",
                     fontFamily: "var(--font-sans)",
