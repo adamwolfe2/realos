@@ -479,18 +479,28 @@ function InsightCountCell({
   if (total === 0) {
     return <span className="text-xs text-muted-foreground">—</span>;
   }
+  // Chip styling: rectangular `rounded-md` so single-digit and
+  // multi-digit counts have the same shape language (no
+  // pill-vs-circle visual jangle). Fixed height + tabular-nums so a
+  // column of rows reads as a clean stack of identical tags.
   return (
     <Link
       href={`/admin/insights?org=${orgId}`}
-      className="inline-flex items-center gap-1.5 hover:underline"
+      className="inline-flex items-center justify-end gap-1 hover:opacity-80 transition-opacity"
     >
       {counts.critical > 0 ? (
-        <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
+        <span
+          title={`${counts.critical} critical insight${counts.critical === 1 ? "" : "s"}`}
+          className="inline-flex h-5 items-center rounded-md bg-destructive/10 px-1.5 text-[10px] font-semibold tabular-nums text-destructive"
+        >
           {counts.critical} crit
         </span>
       ) : null}
       {counts.warning > 0 ? (
-        <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+        <span
+          title={`${counts.warning} warning insight${counts.warning === 1 ? "" : "s"}`}
+          className="inline-flex h-5 items-center rounded-md bg-primary/10 px-1.5 text-[10px] font-semibold tabular-nums text-primary"
+        >
           {counts.warning} warn
         </span>
       ) : null}
@@ -570,21 +580,40 @@ function SeoRecCountCell({
   if (total === 0) {
     return <span className="text-xs text-muted-foreground">—</span>;
   }
+  // Previously rendered as three small `rounded-full` circles with
+  // bare digits — operators had to hover to learn which severity
+  // each color meant. Now each chip carries a leading C/H/M letter
+  // so the cell reads as "C 5 · H 7 · M 9" without legend lookups.
+  // Same chip dimensions as InsightCountCell so the two adjacent
+  // columns visually rhyme.
+  const lowCombined = counts.medium + counts.low;
   return (
-    <span className="inline-flex items-center gap-1">
+    <span className="inline-flex items-center justify-end gap-1">
       {counts.critical > 0 ? (
-        <span className="inline-flex items-center gap-1 rounded-full bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
+        <span
+          title={`${counts.critical} critical SEO action${counts.critical === 1 ? "" : "s"}`}
+          className="inline-flex h-5 items-center rounded-md bg-destructive/10 px-1.5 text-[10px] font-semibold tabular-nums text-destructive"
+        >
+          <span className="opacity-70 mr-0.5">C</span>
           {counts.critical}
         </span>
       ) : null}
       {counts.high > 0 ? (
-        <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 px-1.5 py-0.5 text-[10px] font-semibold text-amber-800 dark:text-amber-300">
+        <span
+          title={`${counts.high} high-priority SEO action${counts.high === 1 ? "" : "s"}`}
+          className="inline-flex h-5 items-center rounded-md bg-amber-100 px-1.5 text-[10px] font-semibold tabular-nums text-amber-800"
+        >
+          <span className="opacity-70 mr-0.5">H</span>
           {counts.high}
         </span>
       ) : null}
-      {counts.medium + counts.low > 0 ? (
-        <span className="inline-flex items-center gap-1 rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-semibold text-muted-foreground">
-          {counts.medium + counts.low}
+      {lowCombined > 0 ? (
+        <span
+          title={`${lowCombined} medium/low SEO action${lowCombined === 1 ? "" : "s"}`}
+          className="inline-flex h-5 items-center rounded-md bg-muted px-1.5 text-[10px] font-semibold tabular-nums text-muted-foreground"
+        >
+          <span className="opacity-70 mr-0.5">M</span>
+          {lowCombined}
         </span>
       ) : null}
     </span>
