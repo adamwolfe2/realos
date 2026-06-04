@@ -189,7 +189,7 @@ export default async function AdminCostsPage() {
       <CostBackfillBanner vendorConsoles={VENDOR_CONSOLE_URLS} />
 
       {/* Headline tiles */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <CostTile
           label="Last 24 hours"
           usd={total24hUsd}
