@@ -505,7 +505,7 @@ export default async function LeadsKanbanPage({
       {(kpiVisitors28d || kpiChatbot28d || kpiPopupConv28d || kpiApplications28d) > 0 ? (
         <p
           aria-label="Cross-product signals (28d)"
-          className="flex items-center gap-x-4 gap-y-1 flex-wrap text-[12px] text-muted-foreground"
+          className="flex items-center gap-x-4 gap-y-1.5 flex-wrap text-[11px] sm:text-[12px] text-muted-foreground"
         >
           <span className="text-[10px] uppercase tracking-[0.14em] font-semibold text-foreground/60">
             Also touched · 28d
