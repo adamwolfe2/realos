@@ -249,16 +249,11 @@ export default async function ResidentsPage({
           was just pre-sync; the empty card sets expectation instead.
           When the first lease syncs, the tile row reappears. */}
       {activeCount === 0 && pastCount === 0 && noticeCount === 0 ? (
-        <section className="rounded-xl border border-dashed border-border bg-card px-5 py-6 text-center">
-          <p className="text-sm font-semibold text-foreground">
-            No resident roster yet
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-            Resident KPIs populate once AppFolio finishes syncing the
-            first 90 days of active leases. The first sync typically
-            completes in 30–90 seconds.
-          </p>
-        </section>
+        <EmptyState
+          title="No resident roster yet"
+          body="Resident KPIs populate once AppFolio finishes syncing the first 90 days of active leases. The first sync typically completes in 30–90 seconds."
+          action={{ label: "Manage integrations", href: "/portal/settings/integrations" }}
+        />
       ) : (
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           <KpiTile

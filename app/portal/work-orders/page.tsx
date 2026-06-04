@@ -23,6 +23,7 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
@@ -284,16 +285,11 @@ export default async function WorkOrdersPage({
       urgentCount === 0 &&
       completed30dCount === 0 &&
       hotspots.length === 0 ? (
-        <section className="rounded-xl border border-dashed border-border bg-card px-5 py-6 text-center">
-          <p className="text-sm font-semibold text-foreground">
-            No work orders synced yet
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-            Maintenance tickets mirror from AppFolio on the hourly cron.
-            The pipeline + property hotspots populate as soon as the
-            first batch lands.
-          </p>
-        </section>
+        <EmptyState
+          title="No work orders synced yet"
+          body="Maintenance tickets mirror from AppFolio on the hourly cron. The pipeline and property hotspots populate as soon as the first batch lands."
+          action={{ label: "Manage integrations", href: "/portal/settings/integrations" }}
+        />
       ) : (
         <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           <KpiTile

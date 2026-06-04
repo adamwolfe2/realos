@@ -19,6 +19,7 @@ import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
 import { PageHeader } from "@/components/admin/page-header";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
+import { EmptyState } from "@/components/portal/ui/empty-state";
 import { tenantNameFromRaw } from "@/lib/integrations/appfolio-display";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import { getAppFolioStatus } from "@/lib/integrations/appfolio-status";
@@ -287,16 +288,11 @@ export default async function RenewalsPage({
           empty state instead of stamping out a row of four zeroes. */}
       {activeCount + expiringCount + pastDueCount === 0 &&
       (rentRollTotal._sum.monthlyRentCents ?? 0) === 0 ? (
-        <section className="rounded-xl border border-dashed border-border bg-card px-5 py-6 text-center">
-          <p className="text-sm font-semibold text-foreground">
-            No lease data yet
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
-            Renewal KPIs populate as soon as AppFolio syncs your first
-            active lease. Connect AppFolio from Settings → Integrations or
-            wait for the next hourly sync.
-          </p>
-        </section>
+        <EmptyState
+          title="No lease data yet"
+          body="Renewal KPIs populate as soon as AppFolio syncs your first active lease. Connect AppFolio from Settings → Integrations or wait for the next hourly sync."
+          action={{ label: "Manage integrations", href: "/portal/settings/integrations" }}
+        />
       ) : (
         <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <KpiTile
