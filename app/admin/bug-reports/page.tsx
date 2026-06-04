@@ -124,9 +124,26 @@ export default async function BugReportsListPage({
         />
       </section>
 
-      {/* Filter tabs */}
+      {/* Filter tabs — hide-zero pattern. "open" and "all" are always
+          shown (they're the agency's primary inbox + escape hatch).
+          The narrow status tabs (pending / in_progress / fixed /
+          approved / rejected) only render when at least one row is
+          there or the operator is currently filtering by them. Same
+          pattern as /portal/conversations + /admin/clients. */}
       <nav className="flex flex-wrap gap-1.5" aria-label="Filter by status">
-        {STATUS_FILTERS.map((f) => {
+        {STATUS_FILTERS.filter((f) => {
+          if (f.key === "open" || f.key === "all") return true;
+          if (statusFilter === f.key) return true;
+          const statusMap: Record<string, BugReportStatus> = {
+            pending: BugReportStatus.PENDING,
+            in_progress: BugReportStatus.IN_PROGRESS,
+            fixed: BugReportStatus.FIXED,
+            approved: BugReportStatus.APPROVED,
+            rejected: BugReportStatus.REJECTED,
+          };
+          const s = statusMap[f.key];
+          return s ? (countByStatus.get(s) ?? 0) > 0 : false;
+        }).map((f) => {
           const active = statusFilter === f.key;
           return (
             <Link
