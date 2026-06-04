@@ -277,38 +277,57 @@ export default async function WorkOrdersPage({
         />
       ) : null}
 
-      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <KpiTile
-          label="Open"
-          value={openCount.toLocaleString()}
-          hint="Across all statuses except completed/cancelled"
-          icon={<Wrench className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Urgent open"
-          value={urgentCount.toLocaleString()}
-          hint="Stop-the-bleed"
-          icon={<AlertTriangle className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Completed (30d)"
-          value={completed30dCount.toLocaleString()}
-          hint="Last 30 days"
-          icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Avg close time"
-          value={avgCloseDaysValue != null ? `${avgCloseDaysValue}d` : "—"}
-          hint="Reported → completed (last 90d)"
-          icon={<Clock className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Properties affected"
-          value={hotspots.length.toLocaleString()}
-          hint="With open tickets"
-          icon={<Wrench className="h-3.5 w-3.5" />}
-        />
-      </section>
+      {/* KPI strip — collapsed to empty state when nothing has synced
+          yet. Five zeroes in a row read as broken; the empty card sets
+          expectation. Reappears the moment the first work order syncs. */}
+      {openCount === 0 &&
+      urgentCount === 0 &&
+      completed30dCount === 0 &&
+      hotspots.length === 0 ? (
+        <section className="rounded-xl border border-dashed border-border bg-card px-5 py-6 text-center">
+          <p className="text-sm font-semibold text-foreground">
+            No work orders synced yet
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+            Maintenance tickets mirror from AppFolio on the hourly cron.
+            The pipeline + property hotspots populate as soon as the
+            first batch lands.
+          </p>
+        </section>
+      ) : (
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <KpiTile
+            label="Open"
+            value={openCount.toLocaleString()}
+            hint="Across all statuses except completed/cancelled"
+            icon={<Wrench className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Urgent open"
+            value={urgentCount.toLocaleString()}
+            hint="Stop-the-bleed"
+            icon={<AlertTriangle className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Completed (30d)"
+            value={completed30dCount.toLocaleString()}
+            hint="Last 30 days"
+            icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Avg close time"
+            value={avgCloseDaysValue != null ? `${avgCloseDaysValue}d` : "—"}
+            hint="Reported → completed (last 90d)"
+            icon={<Clock className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Properties affected"
+            value={hotspots.length.toLocaleString()}
+            hint="With open tickets"
+            icon={<Wrench className="h-3.5 w-3.5" />}
+          />
+        </section>
+      )}
 
       {hotspots.length > 0 ? (
         <DashboardSection

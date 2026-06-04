@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { differenceInDays, formatDistanceToNow as fdtn } from "date-fns";
 import {
-  Calendar,
   AlertTriangle,
   CheckCircle2,
   DollarSign,
@@ -277,46 +276,55 @@ export default async function RenewalsPage({
         <PropertyAccessDeniedBanner pathname="/portal/renewals" />
       ) : null}
 
-      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        <KpiTile
-          label="Active leases"
-          value={activeCount.toLocaleString()}
-          hint="Currently in residence"
-          icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Expiring (120d)"
-          value={expiringCount.toLocaleString()}
-          hint="Need renewal action"
-          icon={<Clock className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Expired (60d)"
-          value={expiredCount.toLocaleString()}
-          hint="Holdover or moved out"
-          icon={<AlertTriangle className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Monthly rent roll"
-          value={fmtMoney(rentRollTotal._sum.monthlyRentCents ?? 0)}
-          hint="From active leases"
-          icon={<DollarSign className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Past-due leases"
-          value={pastDueCount.toLocaleString()}
-          hint={`${fmtMoney(pastDueBalance._sum.currentBalanceCents ?? 0)} owed`}
-          icon={<AlertTriangle className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Properties"
-          value={(
-            new Set(upcoming.map((u) => u.property.id)).size
-          ).toLocaleString()}
-          hint="With expiring leases"
-          icon={<Calendar className="h-3.5 w-3.5" />}
-        />
-      </section>
+      {/* KPI strip — was 6 tiles (Active leases / Expiring 120d /
+          Expired 60d / Monthly rent / Past-due / Properties w/
+          expiring leases). 2026-06-04 audit cut Expired 60d (niche
+          state that lives one click away inside Holdover lists) and
+          Properties w/ expiring leases (a derived count that just
+          mirrored the upcoming list size and confused operators
+          reading the bare label "Properties"). When AppFolio hasn't
+          synced yet (every signal === 0), swap the whole strip for an
+          empty state instead of stamping out a row of four zeroes. */}
+      {activeCount + expiringCount + pastDueCount === 0 &&
+      (rentRollTotal._sum.monthlyRentCents ?? 0) === 0 ? (
+        <section className="rounded-xl border border-dashed border-border bg-card px-5 py-6 text-center">
+          <p className="text-sm font-semibold text-foreground">
+            No lease data yet
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+            Renewal KPIs populate as soon as AppFolio syncs your first
+            active lease. Connect AppFolio from Settings → Integrations or
+            wait for the next hourly sync.
+          </p>
+        </section>
+      ) : (
+        <section className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <KpiTile
+            label="Active leases"
+            value={activeCount.toLocaleString()}
+            hint="Currently in residence"
+            icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Expiring (120d)"
+            value={expiringCount.toLocaleString()}
+            hint="Need renewal action"
+            icon={<Clock className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Monthly rent roll"
+            value={fmtMoney(rentRollTotal._sum.monthlyRentCents ?? 0)}
+            hint="From active leases"
+            icon={<DollarSign className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Past-due leases"
+            value={pastDueCount.toLocaleString()}
+            hint={`${fmtMoney(pastDueBalance._sum.currentBalanceCents ?? 0)} owed`}
+            icon={<AlertTriangle className="h-3.5 w-3.5" />}
+          />
+        </section>
+      )}
 
       <RenewalsClient buckets={buckets} upcoming={upcomingRows} />
     </div>

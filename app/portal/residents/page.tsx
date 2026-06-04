@@ -243,42 +243,60 @@ export default async function ResidentsPage({
         <PropertyAccessDeniedBanner pathname="/portal/residents" />
       ) : null}
 
-      <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-        <KpiTile
-          label="Active residents"
-          value={activeCount.toLocaleString()}
-          hint="Currently in residence"
-          icon={<CheckCircle2 className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Notice given"
-          value={noticeCount.toLocaleString()}
-          hint="Predictive availability"
-          icon={<AlertTriangle className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Email coverage"
-          value={emailCoveragePct != null ? `${emailCoveragePct}%` : "—"}
-          hint={`${withEmailCount} of ${activeCount} have email`}
-          icon={<Mail className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Phone coverage"
-          value={
-            activeCount > 0
-              ? `${Math.round((withPhoneCount / activeCount) * 100)}%`
-              : "—"
-          }
-          hint={`${withPhoneCount} of ${activeCount} have phone`}
-          icon={<Phone className="h-3.5 w-3.5" />}
-        />
-        <KpiTile
-          label="Past residents"
-          value={pastCount.toLocaleString()}
-          hint="Moved out"
-          icon={<Users className="h-3.5 w-3.5" />}
-        />
-      </section>
+      {/* KPI strip — collapses to an empty state when no AppFolio
+          resident data has synced yet (every count === 0). Reading a
+          row of five zeroes felt like the product was broken when it
+          was just pre-sync; the empty card sets expectation instead.
+          When the first lease syncs, the tile row reappears. */}
+      {activeCount === 0 && pastCount === 0 && noticeCount === 0 ? (
+        <section className="rounded-xl border border-dashed border-border bg-card px-5 py-6 text-center">
+          <p className="text-sm font-semibold text-foreground">
+            No resident roster yet
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground max-w-md mx-auto">
+            Resident KPIs populate once AppFolio finishes syncing the
+            first 90 days of active leases. The first sync typically
+            completes in 30–90 seconds.
+          </p>
+        </section>
+      ) : (
+        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+          <KpiTile
+            label="Active residents"
+            value={activeCount.toLocaleString()}
+            hint="Currently in residence"
+            icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Notice given"
+            value={noticeCount.toLocaleString()}
+            hint="Predictive availability"
+            icon={<AlertTriangle className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Email coverage"
+            value={emailCoveragePct != null ? `${emailCoveragePct}%` : "—"}
+            hint={`${withEmailCount} of ${activeCount} have email`}
+            icon={<Mail className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Phone coverage"
+            value={
+              activeCount > 0
+                ? `${Math.round((withPhoneCount / activeCount) * 100)}%`
+                : "—"
+            }
+            hint={`${withPhoneCount} of ${activeCount} have phone`}
+            icon={<Phone className="h-3.5 w-3.5" />}
+          />
+          <KpiTile
+            label="Past residents"
+            value={pastCount.toLocaleString()}
+            hint="Moved out"
+            icon={<Users className="h-3.5 w-3.5" />}
+          />
+        </section>
+      )}
 
       {/* Filters */}
       <form
