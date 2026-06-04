@@ -132,41 +132,63 @@ export default async function AdminSiteEnginePage({
         }
       />
 
-      {/* Status counts grouped into lifecycle buckets */}
-      <section className="space-y-4">
-        {STATUS_GROUPS.map((group) => (
-          <div key={group.label}>
-            <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">
-              {group.label}
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
-              {group.statuses.map((s) => {
-                const count = countMap.get(s) ?? 0;
-                const active = validStatus === s;
-                return (
-                  <Link
-                    key={s}
-                    href={active ? "/admin/site-engine" : `/admin/site-engine?status=${s}`}
-                    className={cn(
-                      "rounded-lg border p-3 text-left transition-colors",
-                      active
-                        ? "border-primary bg-primary/5"
-                        : "border-border bg-card hover:bg-muted/30",
-                    )}
-                  >
-                    <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
-                      {humanStatus(s)}
-                    </div>
-                    <div className="text-2xl font-semibold tabular-nums mt-1.5">
-                      {count}
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </div>
-        ))}
-      </section>
+      {/* Status counts grouped into lifecycle buckets. Pre-cleanup
+          (2026-06-04) every bucket rendered every status tile no
+          matter what — so a brand-new agency with zero SiteRequests
+          saw seventeen "0" boxes in a 4-row grid above the empty
+          state, which made the queue read as broken / overwhelming.
+          Now we only render this whole section when at least one
+          SiteRequest exists. Inside an active queue we still keep
+          the full grid so the pipeline view stays meaningful: each
+          tile is a one-click filter into that status. */}
+      {requests.length > 0 || validStatus ? (
+        <section className="space-y-4">
+          {STATUS_GROUPS.map((group) => {
+            // Hide buckets that have zero rows AND no currently-active
+            // status — keeps a focused queue tight (don't render an
+            // empty "Closed" row when the agency only has Inbound work).
+            const groupHasCount = group.statuses.some(
+              (s) => (countMap.get(s) ?? 0) > 0 || validStatus === s,
+            );
+            if (!groupHasCount) return null;
+            const visibleStatuses = group.statuses.filter(
+              (s) => (countMap.get(s) ?? 0) > 0 || validStatus === s,
+            );
+            return (
+              <div key={group.label}>
+                <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground mb-2">
+                  {group.label}
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-2">
+                  {visibleStatuses.map((s) => {
+                    const count = countMap.get(s) ?? 0;
+                    const active = validStatus === s;
+                    return (
+                      <Link
+                        key={s}
+                        href={active ? "/admin/site-engine" : `/admin/site-engine?status=${s}`}
+                        className={cn(
+                          "rounded-lg border p-3 text-left transition-colors",
+                          active
+                            ? "border-primary bg-primary/5"
+                            : "border-border bg-card hover:bg-muted/30",
+                        )}
+                      >
+                        <div className="text-[10px] uppercase tracking-widest font-semibold text-muted-foreground">
+                          {humanStatus(s)}
+                        </div>
+                        <div className="text-2xl font-semibold tabular-nums mt-1.5">
+                          {count}
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      ) : null}
 
       {requests.length === 0 ? (
         <section className="rounded-lg border border-dashed border-border bg-muted/30 p-6">
