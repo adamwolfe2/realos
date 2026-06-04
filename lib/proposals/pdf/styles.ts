@@ -51,23 +51,25 @@ export const styles = StyleSheet.create({
   },
 
   // ----- title block
-  titleBlock: { marginBottom: 28 },
+  titleBlock: { marginBottom: 32 },
   eyebrow: {
     fontSize: 8,
     color: C.muted,
     letterSpacing: 1.5,
     fontFamily: "Helvetica-Bold",
-    marginBottom: 6,
+    marginBottom: 10,
   },
   preparedFor: {
     fontSize: 18,
     fontFamily: "Helvetica-Bold",
     color: C.ink,
-    marginBottom: 4,
+    marginBottom: 6,
+    lineHeight: 1.25,
   },
   preparedForSub: {
     fontSize: 10,
     color: C.muted,
+    lineHeight: 1.4,
   },
 
   // ----- public message
@@ -75,10 +77,13 @@ export const styles = StyleSheet.create({
     fontSize: 10,
     color: C.muted,
     fontFamily: "Helvetica-Oblique",
-    marginBottom: 24,
+    marginBottom: 28,
+    lineHeight: 1.55,
     maxLines: 3,
     textOverflow: "ellipsis",
-    paddingLeft: 10,
+    paddingLeft: 12,
+    paddingTop: 2,
+    paddingBottom: 2,
     borderLeftWidth: 1,
     borderLeftColor: C.accent,
     borderLeftStyle: "solid",

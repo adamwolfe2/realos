@@ -60,10 +60,17 @@ export default function ProposalPdfDocument(
 
   const preparedFor =
     proposal.prospectCompany?.trim() || proposal.prospectName;
-  const preparedForSub =
-    proposal.prospectCompany?.trim() && proposal.prospectName
-      ? `${proposal.prospectName} · ${proposal.prospectEmail}`
-      : proposal.prospectEmail;
+  // Sub-line under "Prepared for X". Join only the segments that exist so we
+  // never render a dangling "·" when prospectEmail is empty (the Publish &
+  // copy link flow always has no email).
+  const preparedForSub = (() => {
+    const segments: string[] = [];
+    if (proposal.prospectCompany?.trim() && proposal.prospectName) {
+      segments.push(proposal.prospectName);
+    }
+    if (proposal.prospectEmail) segments.push(proposal.prospectEmail);
+    return segments.join(" · ");
+  })();
 
   return (
     <Document
@@ -87,7 +94,9 @@ export default function ProposalPdfDocument(
             {issuedOn ? ` · ${issuedOn}` : ""}
           </Text>
           <Text style={styles.preparedFor}>Prepared for {preparedFor}</Text>
-          <Text style={styles.preparedForSub}>{preparedForSub}</Text>
+          {preparedForSub ? (
+            <Text style={styles.preparedForSub}>{preparedForSub}</Text>
+          ) : null}
         </View>
 
         {/* Public message */}
