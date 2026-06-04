@@ -255,7 +255,7 @@ export default async function ResidentsPage({
           action={{ label: "Manage integrations", href: "/portal/settings/integrations" }}
         />
       ) : (
-        <section className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
           <KpiTile
             label="Active residents"
             value={activeCount.toLocaleString()}
