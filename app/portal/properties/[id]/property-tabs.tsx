@@ -264,22 +264,16 @@ function PropertyTabsInner({
         </nav>
       ) : null}
 
-      {/* Panels — render every panel that was passed, hide non-active. */}
-      <div>
-        {(Object.keys(panels) as TabKey[]).map((tabKey) => {
-          const isActive = active === tabKey;
-          return (
-            <div
-              key={tabKey}
-              role="tabpanel"
-              hidden={!isActive}
-              className={isActive ? undefined : "hidden"}
-            >
-              {panels[tabKey]}
-            </div>
-          );
-        })}
-      </div>
+      {/* Panels — render ONLY the active panel. Bundle-analyzer pass
+          (2026-06-04) revealed every panel was mounted simultaneously
+          with `hidden={!isActive}`, shipping the JS for ScannerPanel
+          + MetricsPanel (recharts donut) + every other tab even when
+          the operator only ever sees Overview. Single-panel rendering
+          drops the /portal/properties/[id] route bundle dramatically.
+          Tradeoff: switching tabs is now a remount + re-fetch, which
+          is fine because each tab's data is already URL-driven and
+          server-cached at the page level. */}
+      <div role="tabpanel">{panels[active]}</div>
     </div>
   );
 }
