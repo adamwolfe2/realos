@@ -143,8 +143,14 @@ export default async function ProposalListPage({
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1),
   );
 
-  const [proposals, openCount, awaitingCount, acceptedMtd, mrrAddedMtd] =
-    await Promise.all([
+  const [
+    proposals,
+    openCount,
+    awaitingCount,
+    acceptedMtd,
+    mrrAddedMtd,
+    statusCounts,
+  ] = await Promise.all([
       prisma.proposal.findMany({
         where,
         orderBy: { createdAt: "desc" },
@@ -190,7 +196,43 @@ export default async function ProposalListPage({
           discountScope: true,
         },
       }),
+      // Status pill counts so we can hide pills that nobody belongs to.
+      // Counts ignore the search filter so the pills always show where
+      // the work IS, not where the work matches the current narrowing.
+      prisma.proposal.groupBy({
+        by: ["status"],
+        _count: { _all: true },
+      }),
     ]);
+  const statusCountMap = new Map<ProposalStatus, number>(
+    statusCounts.map((r) => [r.status, r._count._all]),
+  );
+  // For the "open" pill which aggregates Draft + Sent + Viewed, sum
+  // those individually. Same idea for "Drafts" alias.
+  const filterHasRows = (k: string) => {
+    switch (k) {
+      case "open":
+        return openCount > 0;
+      case "draft":
+        return (statusCountMap.get(ProposalStatus.DRAFT) ?? 0) > 0;
+      case "sent":
+        return (
+          (statusCountMap.get(ProposalStatus.SENT) ?? 0) +
+            (statusCountMap.get(ProposalStatus.VIEWED) ?? 0) >
+          0
+        );
+      case "accepted":
+        return (statusCountMap.get(ProposalStatus.ACCEPTED) ?? 0) > 0;
+      case "declined":
+        return (statusCountMap.get(ProposalStatus.DECLINED) ?? 0) > 0;
+      case "expired":
+        return (statusCountMap.get(ProposalStatus.EXPIRED) ?? 0) > 0;
+      case "all":
+        return true;
+      default:
+        return false;
+    }
+  };
 
   // Compute post-discount MRR per accepted proposal, then sum. Uses the
   // same allocator as `lib/proposals/totals.ts` so the math agrees with
@@ -234,13 +276,28 @@ export default async function ProposalListPage({
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between">
+        {/* Filter pills — hide-zero pattern. Open + All are always shown
+            (primary inbox + escape hatch). Narrow status pills only
+            render when they contain at least one proposal, or when
+            the operator is currently filtering by them. Same shape
+            used on /portal/conversations, /admin/clients, etc. */}
         <nav className="flex flex-wrap gap-1.5" aria-label="Filter proposals">
           <FilterLink active={filter} value="open" q={q} label="Open" />
-          <FilterLink active={filter} value="draft" q={q} label="Drafts" />
-          <FilterLink active={filter} value="sent" q={q} label="Sent" />
-          <FilterLink active={filter} value="accepted" q={q} label="Accepted" />
-          <FilterLink active={filter} value="declined" q={q} label="Declined" />
-          <FilterLink active={filter} value="expired" q={q} label="Expired" />
+          {(filterHasRows("draft") || filter === "draft") ? (
+            <FilterLink active={filter} value="draft" q={q} label="Drafts" />
+          ) : null}
+          {(filterHasRows("sent") || filter === "sent") ? (
+            <FilterLink active={filter} value="sent" q={q} label="Sent" />
+          ) : null}
+          {(filterHasRows("accepted") || filter === "accepted") ? (
+            <FilterLink active={filter} value="accepted" q={q} label="Accepted" />
+          ) : null}
+          {(filterHasRows("declined") || filter === "declined") ? (
+            <FilterLink active={filter} value="declined" q={q} label="Declined" />
+          ) : null}
+          {(filterHasRows("expired") || filter === "expired") ? (
+            <FilterLink active={filter} value="expired" q={q} label="Expired" />
+          ) : null}
           <FilterLink active={filter} value="all" q={q} label="All" />
         </nav>
         <form className="flex-shrink-0">
