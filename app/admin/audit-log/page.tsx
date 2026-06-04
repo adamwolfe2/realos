@@ -73,32 +73,55 @@ export default async function AuditLogPage({
         description="Cross-tenant audit trail. All writes, deletes, exports, and impersonations across the platform."
       />
 
-      <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
-        {Object.values(AuditAction).map((a) => {
-          const count =
-            actionCounts.find((c) => c.action === a)?._count._all ?? 0;
-          const active = action === a;
+      {/* Action-count tiles — pre-cleanup (2026-06-04) iterated every
+          AuditAction value, so a quiet 7-day window showed dead-zero
+          tiles for actions that almost never fire (LOGIN, EXPORT,
+          etc.). Now we keep tiles with count > 0 and tiles for the
+          currently-active filter (so the operator can always click
+          it off). Falls back to a small caption when the whole 7-day
+          window is silent. */}
+      {(() => {
+        const visible = Object.values(AuditAction)
+          .map((a) => {
+            const count =
+              actionCounts.find((c) => c.action === a)?._count._all ?? 0;
+            return { a, count };
+          })
+          .filter(({ a, count }) => count > 0 || action === a);
+        if (visible.length === 0) {
           return (
-            <Link
-              key={a}
-              href={`/admin/audit-log?action=${a}`}
-              className={`rounded-lg border bg-card p-3 transition-colors ${
-                active
-                  ? "border-primary/40 ring-1 ring-primary/20"
-                  : "border-border hover:bg-muted/20"
-              }`}
-            >
-              <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                {a.toLowerCase().replace(/_/g, " ")}
-              </div>
-              <div className="text-lg font-semibold tabular-nums mt-0.5">
-                {count}
-              </div>
-              <div className="text-[10px] text-muted-foreground">last 7 days</div>
-            </Link>
+            <p className="text-xs text-muted-foreground">
+              No audited actions in the last 7 days.
+            </p>
           );
-        })}
-      </div>
+        }
+        return (
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 md:grid-cols-4">
+            {visible.map(({ a, count }) => {
+              const active = action === a;
+              return (
+                <Link
+                  key={a}
+                  href={`/admin/audit-log?action=${a}`}
+                  className={`rounded-lg border bg-card p-3 transition-colors ${
+                    active
+                      ? "border-primary/40 ring-1 ring-primary/20"
+                      : "border-border hover:bg-muted/20"
+                  }`}
+                >
+                  <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                    {a.toLowerCase().replace(/_/g, " ")}
+                  </div>
+                  <div className="text-lg font-semibold tabular-nums mt-0.5">
+                    {count}
+                  </div>
+                  <div className="text-[10px] text-muted-foreground">last 7 days</div>
+                </Link>
+              );
+            })}
+          </div>
+        );
+      })()}
 
       {(action || orgId || entityType) && (
         <div className="flex items-center gap-2 text-sm">
