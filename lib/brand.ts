@@ -10,7 +10,10 @@ export const BRAND = {
   tagline: "Your leasing data. Working for you.",
   email: "team@leasestack.co",
   supportEmail: "team@leasestack.co",
-  url: "https://www.leasestack.co",
+  // Canonical brand URL. 2026-06-04 primary-domain swap: apex is now
+  // primary (www.leasestack.co 308-redirects here). Any consumer that
+  // links / fetches this URL avoids the redirect hop.
+  url: "https://leasestack.co",
   agencySlug: process.env.AGENCY_ORG_SLUG ?? "leasestack-agency",
 } as const;
 
