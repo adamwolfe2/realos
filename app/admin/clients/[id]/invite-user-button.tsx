@@ -18,6 +18,13 @@ const ROLE_OPTIONS: Array<{ value: ClientRole; label: string; hint: string }> = 
   { value: "LEASING_AGENT", label: "Leasing agent", hint: "Leads + tours" },
 ];
 
+type InviteResult = {
+  invitedEmail: string;
+  inviteLink: string;
+  emailDelivered: boolean;
+  emailError: string | null;
+};
+
 export function InviteUserButton({
   orgId,
   clerkOrgId,
@@ -30,14 +37,21 @@ export function InviteUserButton({
   const [role, setRole] = useState<ClientRole>("CLIENT_OWNER");
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
-  const [okMsg, setOkMsg] = useState<string | null>(null);
+  // Once an invite succeeds we surface the actual one-click link so Adam
+  // can DM it to the invitee directly when the email bounces (Google
+  // Workspace bulk filtering, hostile sender-domain reputation, etc).
+  // Previously the form auto-closed + reloaded after 1.8s, which made
+  // the link impossible to grab.
+  const [result, setResult] = useState<InviteResult | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const disabled = !clerkOrgId;
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
-    setOkMsg(null);
+    setResult(null);
+    setCopied(false);
     startTransition(async () => {
       try {
         const res = await fetch("/api/admin/clients/invite", {
@@ -54,24 +68,36 @@ export function InviteUserButton({
         if (!res.ok) {
           throw new Error(body.error ?? `Failed (${res.status})`);
         }
-        if (body.clerkInviteSent === false) {
-          setOkMsg(
-            `User row created. Clerk email skipped (${body.clerkError ?? "unknown"}).`
-          );
-        } else {
-          setOkMsg(`Invite sent to ${email}.`);
-        }
-        setEmail("");
-        setName("");
-        setTimeout(() => {
-          setOpen(false);
-          setOkMsg(null);
-          window.location.reload();
-        }, 1800);
+        setResult({
+          invitedEmail: email,
+          inviteLink: body.inviteLink || body.signUpUrl || "",
+          emailDelivered: body.inviteEmailSent === true,
+          emailError: body.inviteEmailError ?? body.clerkError ?? null,
+        });
       } catch (err) {
         setError(err instanceof Error ? err.message : "Invite failed");
       }
     });
+  }
+
+  async function copyLink() {
+    if (!result?.inviteLink) return;
+    try {
+      await navigator.clipboard.writeText(result.inviteLink);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      // Clipboard blocked — fall back to selecting the input so the
+      // operator can Cmd-C manually.
+    }
+  }
+
+  function reset() {
+    setResult(null);
+    setEmail("");
+    setName("");
+    setCopied(false);
+    setError(null);
   }
 
   return (
@@ -87,6 +113,61 @@ export function InviteUserButton({
       </button>
 
       {open && !disabled ? (
+        result ? (
+          <div className="mt-2 w-[340px] rounded-lg border border-border bg-card p-3 space-y-3 text-left">
+            <div>
+              <p className="text-[11px] uppercase tracking-widest font-semibold text-muted-foreground">
+                Invite created
+              </p>
+              <p className="text-sm font-semibold text-foreground mt-0.5 break-all">
+                {result.invitedEmail}
+              </p>
+              <p
+                className={`text-[11px] mt-1 ${
+                  result.emailDelivered
+                    ? "text-emerald-600"
+                    : "text-amber-600"
+                }`}
+              >
+                {result.emailDelivered
+                  ? "Email sent · share the link below as a backup"
+                  : `Email NOT delivered${
+                      result.emailError ? ` (${result.emailError})` : ""
+                    }. Copy the link and send it directly.`}
+              </p>
+            </div>
+
+            <label className="block space-y-1">
+              <span className="text-[11px] uppercase tracking-widest font-semibold text-muted-foreground">
+                One-click invite link
+              </span>
+              <textarea
+                readOnly
+                value={result.inviteLink}
+                onFocus={(e) => e.currentTarget.select()}
+                rows={3}
+                className="w-full rounded border border-border bg-background px-2.5 py-1.5 text-[11px] font-mono text-foreground break-all"
+              />
+            </label>
+
+            <div className="flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={copyLink}
+                className="bg-primary text-primary-foreground hover:bg-primary/90 transition-colors px-3 py-1.5 text-xs font-semibold rounded"
+              >
+                {copied ? "Copied" : "Copy link"}
+              </button>
+              <button
+                type="button"
+                onClick={reset}
+                className="text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+              >
+                Invite someone else
+              </button>
+            </div>
+          </div>
+        ) : (
         <form
           onSubmit={submit}
           className="mt-2 w-[340px] rounded-lg border border-border bg-card p-3 space-y-2 text-left"
@@ -140,17 +221,16 @@ export function InviteUserButton({
             >
               {pending ? "Sending…" : "Send invite"}
             </button>
-            {okMsg ? (
-              <span className="text-[11px] text-primary">{okMsg}</span>
-            ) : error ? (
+            {error ? (
               <span className="text-[11px] text-destructive">{error}</span>
             ) : (
               <span className="text-[11px] text-muted-foreground">
-                Clerk delivers the email.
+                We&apos;ll email + return a one-click link.
               </span>
             )}
           </div>
         </form>
+        )
       ) : null}
     </div>
   );
