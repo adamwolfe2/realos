@@ -228,35 +228,45 @@ export default async function ProposalSharePage({ params }: PageProps) {
           </section>
         ) : null}
 
-        {/* Body grid: lines + totals */}
-        <div className="grid gap-10 lg:grid-cols-[1fr_320px] lg:gap-12">
-          {/* Lines */}
-          <div className="space-y-10">
-            {recurringLines.length > 0 ? (
-              <LineSection
-                title={`Recurring · ${cadenceWord(cadence)}`}
-                lines={recurringLines}
-                currency={currency}
-                cadence={cadence}
-              />
-            ) : null}
-            {oneTimeLines.length > 0 ? (
-              <LineSection
-                title="One-time"
-                lines={oneTimeLines}
-                currency={currency}
-                cadence={null}
-              />
-            ) : null}
-          </div>
+        {/* Lines — single full-width column. Adam 2026-06-03: the
+            previous two-column grid (lines left, sticky summary right)
+            wasted horizontal real estate and pinned the Accept button
+            to a small floating card. Promoting lines to full width and
+            dropping the summary to a payment band below the items reads
+            cleaner end-to-end + matches the brief / audit page rhythm. */}
+        <div className="space-y-10">
+          {recurringLines.length > 0 ? (
+            <LineSection
+              title={`Recurring · ${cadenceWord(cadence)}`}
+              lines={recurringLines}
+              currency={currency}
+              cadence={cadence}
+            />
+          ) : null}
+          {oneTimeLines.length > 0 ? (
+            <LineSection
+              title="One-time"
+              lines={oneTimeLines}
+              currency={currency}
+              cadence={null}
+            />
+          ) : null}
+        </div>
 
-          {/* Totals card */}
-          <aside className="lg:sticky lg:top-8 lg:self-start">
-            <div className="rounded-xl border border-[#EAECEF] bg-white p-6 shadow-sm">
+        {/* Payment band — full-width totals + Accept button anchored at
+            the bottom of the proposal body. Two-column inside: summary
+            list on the left, "Due today" big number + button on the
+            right. Sticky-on-the-right card is gone. */}
+        <section
+          className="mt-12 rounded-2xl border border-[#EAECEF] bg-white p-6 sm:p-8 shadow-sm"
+          aria-label="Accept and pay"
+        >
+          <div className="grid gap-8 sm:grid-cols-[1fr_auto] sm:items-end">
+            <div>
               <h2 className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">
                 Summary
               </h2>
-              <dl className="mt-4 space-y-3 text-sm">
+              <dl className="mt-3 space-y-2 text-sm">
                 {totals.recurringSubtotal > 0 ? (
                   <SummaryRow
                     label={`Recurring ${cadenceWord(cadence)}`}
@@ -294,28 +304,25 @@ export default async function ProposalSharePage({ params }: PageProps) {
                   />
                 ) : null}
               </dl>
+              {totals.hasTrial && totals.recurringTotal > 0 ? (
+                <p className="mt-4 max-w-md text-xs leading-relaxed text-[#6B7280]">
+                  Your {totals.trialDays}-day trial starts at acceptance.
+                  Your card will be charged{" "}
+                  {formatCents(totals.recurringTotal, currency)}
+                  {cadenceLabel(cadence)} when the trial ends. Cancel
+                  anytime before then and you won&apos;t be billed.
+                </p>
+              ) : null}
+            </div>
 
-              <div className="mt-5 border-t border-[#EAECEF] pt-4">
-                <div className="flex items-baseline justify-between">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-[#6B7280]">
-                    Due today
-                  </span>
-                  <span className="text-xl font-semibold tabular-nums text-[#0F172A]">
-                    {formatCents(totals.firstInvoiceTotal, currency)}
-                  </span>
-                </div>
-                {totals.hasTrial && totals.recurringTotal > 0 ? (
-                  <p className="mt-2 text-xs leading-relaxed text-[#6B7280]">
-                    Your {totals.trialDays}-day trial starts at acceptance.
-                    Your card will be charged{" "}
-                    {formatCents(totals.recurringTotal, currency)}
-                    {cadenceLabel(cadence)} when the trial ends. Cancel
-                    anytime before then and you won&apos;t be billed.
-                  </p>
-                ) : null}
-              </div>
-
-              <div className="mt-6 space-y-3">
+            <div className="sm:text-right">
+              <span className="block text-[11px] font-semibold uppercase tracking-wider text-[#6B7280]">
+                Due today
+              </span>
+              <span className="mt-1 block text-3xl font-semibold tabular-nums text-[#0F172A]">
+                {formatCents(totals.firstInvoiceTotal, currency)}
+              </span>
+              <div className="mt-5 sm:max-w-[280px] sm:ml-auto space-y-3">
                 <AcceptButton token={token} agencyEmail={BRAND_EMAIL} />
                 <div className="flex items-center justify-between text-xs text-[#6B7280]">
                   <a
@@ -333,13 +340,8 @@ export default async function ProposalSharePage({ params }: PageProps) {
                 </div>
               </div>
             </div>
-            <p className="mt-3 px-1 text-center text-[11px] text-[#6B7280] sm:hidden">
-              <a href={pdfHref} className="hover:underline" rel="noopener">
-                Download PDF
-              </a>
-            </p>
-          </aside>
-        </div>
+          </div>
+        </section>
 
         {/* Contact line — kept above the shared shell footer for the
             "Questions / Privacy / Terms" affordances. */}
