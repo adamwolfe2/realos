@@ -46,14 +46,29 @@ export default async function ClientsList({
     where.name = { contains: q, mode: "insensitive" };
   }
 
-  const clients = await prisma.organization.findMany({
-    where,
-    orderBy: { updatedAt: "desc" },
-    include: {
-      _count: { select: { properties: true, leads: true, users: true } },
-    },
-    take: 500,
-  });
+  const [clients, statusCounts] = await Promise.all([
+    prisma.organization.findMany({
+      where,
+      orderBy: { updatedAt: "desc" },
+      include: {
+        _count: { select: { properties: true, leads: true, users: true } },
+      },
+      take: 500,
+    }),
+    // Status pill counts so we can hide pills nobody belongs to. We
+    // count against the full CLIENT pool (ignoring the active type /
+    // search filters) because the operator's intent on those pills is
+    // "show me where the orgs ARE" not "where the orgs match my
+    // current search".
+    prisma.organization.groupBy({
+      by: ["status"],
+      where: { orgType: OrgType.CLIENT },
+      _count: { _all: true },
+    }),
+  ]);
+  const statusCountMap = new Map<TenantStatus, number>(
+    statusCounts.map((r) => [r.status as TenantStatus, r._count._all]),
+  );
 
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
   const leadCountsByOrg = new Map<string, number>();
@@ -255,17 +270,30 @@ export default async function ClientsList({
         ) : null}
       </form>
 
+      {/* Status pill row — pre-cleanup (2026-06-04) iterated every
+          TenantStatus enum value so a brand-new agency with three
+          Active tenants saw 11 zero-count pills (Intake received /
+          Consultation booked / Proposal sent / Contract signed /
+          Building / In QA / Launched / At risk / Churned / Paused
+          / etc.) competing with the one that mattered. Now we only
+          render All + statuses with at least one org, plus the
+          currently-selected status (so the operator can always
+          click it off, even if its count is zero). */}
       <nav className="flex flex-wrap gap-1.5" aria-label="Filter by status">
         <StatusLink current={status} value="" label="All" q={q} />
-        {Object.values(TenantStatus).map((s) => (
-          <StatusLink
-            key={s}
-            current={status}
-            value={s}
-            label={humanTenantStatus(s)}
-            q={q}
-          />
-        ))}
+        {Object.values(TenantStatus)
+          .filter(
+            (s) => (statusCountMap.get(s) ?? 0) > 0 || status === s,
+          )
+          .map((s) => (
+            <StatusLink
+              key={s}
+              current={status}
+              value={s}
+              label={humanTenantStatus(s)}
+              q={q}
+            />
+          ))}
       </nav>
 
       {clients.length === 0 ? (
