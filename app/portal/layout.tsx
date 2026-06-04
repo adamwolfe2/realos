@@ -45,6 +45,17 @@ export default async function PortalLayout({
   // Sidebar gating queries — kept lightweight (count-only) so the layout
   // doesn't pay a heavy cost on every page navigation. We check existence
   // (take: 1) instead of full counts to short-circuit at the first row.
+  // Cheap badge counters — surfaced as inline pills on the sidebar
+  // so operators see at-a-glance signal (new leads today, urgent
+  // work orders, hot visitors) without clicking. Each is .catch()ed
+  // so a missing field or schema drift degrades to "no badge"
+  // instead of 500ing the whole layout.
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const now24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const next7d = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+  const next30d = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
   const [
     org,
     appfolioIntegration,
@@ -59,6 +70,12 @@ export default async function PortalLayout({
     pendingCurationCount,
     rawScopeProperties,
     activePropertyIdFromCookie,
+    newLeadsTodayCount,
+    hotVisitors24hCount,
+    toursNext7dCount,
+    expiringLeases30dCount,
+    urgentWorkOrdersCount,
+    flaggedConversationsCount,
   ] = await Promise.all([
     prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -157,6 +174,68 @@ export default async function PortalLayout({
     // Persisted property selection — read from the
     // portal_active_property_id cookie. null = "All properties".
     getActivePropertyId().catch(() => null),
+    // Sidebar badges. Today's new leads — primary "what came in
+    // today?" signal.
+    prisma.lead
+      .count({
+        where: { orgId: scope.orgId, createdAt: { gte: startOfToday } },
+      })
+      .catch(() => 0),
+    // 24h hot identified visitors (intentScore >= 70). Surfaces
+    // high-intent prospects the operator should reach out to.
+    prisma.visitor
+      .count({
+        where: {
+          orgId: scope.orgId,
+          status: "IDENTIFIED",
+          intentScore: { gte: 70 },
+          firstSeenAt: { gte: now24h },
+        },
+      })
+      .catch(() => 0),
+    // Tours in the next 7 days — staffing + prep signal.
+    prisma.tour
+      .count({
+        where: {
+          lead: { orgId: scope.orgId },
+          status: "SCHEDULED",
+          scheduledAt: { gte: new Date(), lte: next7d },
+        },
+      })
+      .catch(() => 0),
+    // Leases expiring in next 30 days — renewal pipeline. Bounded
+    // to ACTIVE + EXPIRING so EVICTED / ENDED rows don't inflate.
+    prisma.lease
+      .count({
+        where: {
+          orgId: scope.orgId,
+          status: { in: ["ACTIVE", "EXPIRING"] },
+          endDate: { gte: new Date(), lte: next30d },
+        },
+      })
+      .catch(() => 0),
+    // Urgent open work orders — escalation signal. "Open" here is
+    // any WorkOrderStatus that isn't COMPLETED / CANCELLED.
+    prisma.workOrder
+      .count({
+        where: {
+          orgId: scope.orgId,
+          status: { in: ["NEW", "SCHEDULED", "IN_PROGRESS"] },
+          priority: "URGENT",
+        },
+      })
+      .catch(() => 0),
+    // Flagged conversations — handoff misses + bad-quality flags.
+    // Counts the flag rows, not unique conversations — matches the
+    // shape the operator sees on /portal/conversations.
+    prisma.conversationFlag
+      .count({
+        where: {
+          orgId: scope.orgId,
+          flag: { in: ["handoff_missed", "quality_bad"] },
+        },
+      })
+      .catch(() => 0),
   ]);
 
   if (!org) {
@@ -248,6 +327,15 @@ export default async function PortalLayout({
     // Surface AppFolio curation queue as a count badge on the Properties
     // nav item rather than a full chrome banner on every page.
     pendingCurationCount,
+    // Sidebar badges — inline counts on Leads / Visitors / Tours /
+    // Renewals / Work orders / Conversations. Surfaces "what needs
+    // me?" at-a-glance without forcing a click into each surface.
+    newLeadsTodayCount,
+    hotVisitors24hCount,
+    toursNext7dCount,
+    expiringLeases30dCount,
+    urgentWorkOrdersCount,
+    flaggedConversationsCount,
   };
 
   // Per-property switcher feed. Apply the user's UserPropertyAccess gate

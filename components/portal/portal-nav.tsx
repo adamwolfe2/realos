@@ -119,6 +119,19 @@ export type PortalNavOrg = {
    * full-width chrome banner on every page.
    */
   pendingCurationCount?: number;
+  /**
+   * Sidebar at-a-glance badge counts. Each surfaces as an inline pill on
+   * its corresponding nav item when > 0 so operators see "what needs me"
+   * without having to click into every page to check. All counts are
+   * computed in app/portal/layout.tsx Promise.all with .catch(() => 0)
+   * fallbacks so a missing field / schema drift degrades gracefully.
+   */
+  newLeadsTodayCount?: number;
+  hotVisitors24hCount?: number;
+  toursNext7dCount?: number;
+  expiringLeases30dCount?: number;
+  urgentWorkOrdersCount?: number;
+  flaggedConversationsCount?: number;
 };
 
 export type NavItem = {
@@ -212,18 +225,26 @@ export const NAV_GROUPS: NavGroup[] = [
         show: ALWAYS,
         badge: () => null,
       },
-      { href: "/portal/leads", label: "Leads", icon: Users, show: ALWAYS },
+      {
+        href: "/portal/leads",
+        label: "Leads",
+        icon: Users,
+        show: ALWAYS,
+        badge: (o) => o.newLeadsTodayCount ?? null,
+      },
       {
         href: "/portal/visitors",
         label: "Visitors",
         icon: Eye,
         show: (o) => o.modulePixel,
+        badge: (o) => o.hotVisitors24hCount ?? null,
       },
       {
         href: "/portal/tours",
         label: "Tours",
         icon: Calendar,
         show: (o) => o.moduleTours && Boolean(o.hasTours),
+        badge: (o) => o.toursNext7dCount ?? null,
       },
       {
         href: "/portal/applications",
@@ -242,18 +263,21 @@ export const NAV_GROUPS: NavGroup[] = [
         label: "Renewals",
         icon: CalendarClock,
         show: (o) => o.moduleResidents && Boolean(o.appFolioConnected),
+        badge: (o) => o.expiringLeases30dCount ?? null,
       },
       {
         href: "/portal/work-orders",
         label: "Work orders",
         icon: Wrench,
         show: (o) => o.moduleResidents && Boolean(o.appFolioConnected),
+        badge: (o) => o.urgentWorkOrdersCount ?? null,
       },
       {
         href: "/portal/conversations",
         label: "Conversations",
         icon: MessageSquare,
         show: (o) => o.moduleConversations,
+        badge: (o) => o.flaggedConversationsCount ?? null,
       },
     ],
   },
