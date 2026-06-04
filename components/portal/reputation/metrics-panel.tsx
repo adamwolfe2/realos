@@ -1,20 +1,29 @@
 "use client";
 
 import * as React from "react";
-import {
-  PieChart,
-  Pie,
-  Cell,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+import nextDynamic from "next/dynamic";
 import { Star, AlertCircle, MessageSquare, Flag } from "lucide-react";
 import type { MentionSource, Sentiment } from "@prisma/client";
 import type { ReputationMetrics } from "@/lib/reputation/aggregate";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
-import { SourceLogo, sourceLabel } from "./source-logo";
+import { sourceLabel } from "./source-logo";
 import { cn } from "@/lib/utils";
+import type { DonutDatum } from "./donut-with-legend";
+
+// Lazy-load the recharts-backed donut so the ~95-110KB recharts chunk
+// no longer ships in the reputation-tab first-paint bundle. ssr: false
+// because the chart paints client-side anyway; skeleton matches the
+// 120px donut footprint so there's no CLS.
+const DonutWithLegend = nextDynamic(
+  () => import("./donut-with-legend").then((m) => m.DonutWithLegend),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="h-[120px] w-full rounded-md border border-dashed border-border bg-card animate-pulse" />
+    ),
+  },
+);
 
 // ---------------------------------------------------------------------------
 // Metrics panel — all numbers are real, computed server-side from the
@@ -341,109 +350,9 @@ function SourceDonut({
   return <DonutWithLegend total={total} data={pieData} centerLabel="Total" />;
 }
 
-// ---------------------------------------------------------------------------
-// Shared donut renderer.
-// ---------------------------------------------------------------------------
-
-type DonutDatum = {
-  name: string;
-  value: number;
-  color: string;
-  key: string;
-  logoSource?: MentionSource;
-  logoUrl?: string;
-};
-
-function DonutWithLegend({
-  total,
-  data,
-  centerLabel,
-}: {
-  total: number;
-  data: DonutDatum[];
-  centerLabel: string;
-}) {
-  return (
-    <div className="grid grid-cols-1 sm:grid-cols-[120px_1fr] items-center gap-3">
-      <div className="relative h-[120px] w-[120px] mx-auto">
-        <ResponsiveContainer width="100%" height="100%">
-          <PieChart>
-            <Tooltip
-              cursor={false}
-              // Bump the wrapper z-index so the hover bubble renders above
-              // the centered "Total N" overlay (the overlay sits inside the
-              // same absolute container and was occluding the tooltip).
-              wrapperStyle={{ zIndex: 50, outline: "none" }}
-              contentStyle={{
-                fontSize: 12,
-                background: "white",
-                border: "1px solid hsl(var(--border))",
-                borderRadius: 8,
-                boxShadow: "0 4px 24px rgba(0,0,0,0.05)",
-              }}
-              formatter={(v: number, n: string) => [v, n]}
-            />
-            <Pie
-              data={data}
-              dataKey="value"
-              nameKey="name"
-              innerRadius={38}
-              outerRadius={56}
-              stroke="white"
-              strokeWidth={2}
-              paddingAngle={1.5}
-            >
-              {data.map((d) => (
-                <Cell key={d.key} fill={d.color} />
-              ))}
-            </Pie>
-          </PieChart>
-        </ResponsiveContainer>
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground">
-            {centerLabel}
-          </span>
-          <span className="mt-0.5 text-xl font-semibold tabular-nums text-foreground">
-            {total}
-          </span>
-        </div>
-      </div>
-
-      <ul className="space-y-1.5">
-        {data.map((d) => {
-          const pct = total ? Math.round((d.value / total) * 100) : 0;
-          return (
-            <li
-              key={d.key}
-              className="grid grid-cols-[14px_1fr_auto_38px] items-center gap-2 text-xs"
-            >
-              {d.logoSource && d.logoUrl ? (
-                <SourceLogo
-                  source={d.logoSource}
-                  url={d.logoUrl}
-                  className="h-3.5 w-3.5"
-                />
-              ) : (
-                <span
-                  aria-hidden="true"
-                  className="h-2.5 w-2.5 rounded-sm justify-self-center"
-                  style={{ backgroundColor: d.color }}
-                />
-              )}
-              <span className="text-foreground truncate">{d.name}</span>
-              <span className="tabular-nums text-muted-foreground">
-                {d.value}
-              </span>
-              <span className="text-right tabular-nums text-muted-foreground">
-                {pct}%
-              </span>
-            </li>
-          );
-        })}
-      </ul>
-    </div>
-  );
-}
+// DonutWithLegend extracted to ./donut-with-legend.tsx (2026-06-04 bundle
+// pass) so the recharts chunk lazy-loads. DonutDatum re-imported above as
+// a type so the SentimentDonut + SourceDonut callsites stay tight.
 
 // ---------------------------------------------------------------------------
 // Topic bar chart — horizontal bars with count + percentage.
