@@ -775,11 +775,11 @@ function TabGroup({
   items: Array<{ key: string; label: string; active: boolean; href: string }>;
 }) {
   return (
-    <div className="flex items-center gap-2 min-w-0">
+    <div className="flex items-center gap-2 min-w-0 w-full sm:w-auto">
       <span className="text-[10px] tracking-widest uppercase font-semibold text-muted-foreground shrink-0">
         {legend}
       </span>
-      <div className="inline-flex items-center rounded-lg border border-border bg-muted/30 p-0.5">
+      <div className="inline-flex items-center rounded-lg border border-border bg-muted/30 p-0.5 overflow-x-auto max-w-full">
         {items.map((item) => (
           <Link
             key={item.key}
