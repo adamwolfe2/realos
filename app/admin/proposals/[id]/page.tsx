@@ -102,7 +102,7 @@ export default async function ProposalDetailPage({
 
   const shareToken = proposal.shareTokens[0]?.token ?? null;
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://www.leasestack.co";
+    process.env.NEXT_PUBLIC_APP_URL || "https://leasestack.co";
   const shareUrl = shareToken
     ? `${baseUrl.replace(/\/+$/, "")}/proposal/${shareToken}`
     : null;

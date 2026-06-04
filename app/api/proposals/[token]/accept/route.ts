@@ -41,7 +41,7 @@ export const runtime = "nodejs";
 
 function getAppBaseUrl(): string {
   const raw =
-    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://www.leasestack.co";
+    process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://leasestack.co";
   return raw.replace(/\/+$/, "");
 }
 

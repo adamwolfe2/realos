@@ -54,7 +54,7 @@ export default async function NewProposalPage({ searchParams }: PageProps) {
     const company = brand || domain || "Untitled prospect";
     const prospectName = brand || "Decision-maker";
     const publicMessage = briefToken
-      ? `Following up on the AI search visibility brief we shared earlier. The full report and verbatim AI engine responses live at https://www.leasestack.co/brief/${briefToken}.\n\nThis proposal scopes the implementation work to close the gap.`
+      ? `Following up on the AI search visibility brief we shared earlier. The full report and verbatim AI engine responses live at https://leasestack.co/brief/${briefToken}.\n\nThis proposal scopes the implementation work to close the gap.`
       : null;
     const internalNotes = briefToken
       ? `Built from /brief/${briefToken}`

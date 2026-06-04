@@ -70,7 +70,7 @@ export async function POST(
 
   const token = await issueShareToken(id);
   const baseUrl =
-    process.env.NEXT_PUBLIC_APP_URL || "https://www.leasestack.co";
+    process.env.NEXT_PUBLIC_APP_URL || "https://leasestack.co";
   const shareUrl = `${baseUrl.replace(/\/+$/, "")}/proposal/${token}`;
 
   // gap-fix (audit 2026-06-02): render PDF for the resend attachment

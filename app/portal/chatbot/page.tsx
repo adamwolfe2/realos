@@ -137,13 +137,15 @@ export default async function ChatbotPage() {
 
   // Pin install snippet to the canonical www host. NEXT_PUBLIC_APP_URL
   // (which appUrl derives from) currently points at the apex, and
-  // Vercel's apex → www auto-redirect (HTTP 307) does not carry CORS
-  // headers — so an embed snippet referencing the apex would silently
-  // fail to fetch its config from a customer site. See popup snippet
-  // in app/portal/popups/[id]/page.tsx for the full diagnosis.
+  // 2026-06-04 primary-domain swap: APEX is now primary and www 308s
+  // to apex. The pre-swap workaround rewrote apex → www to avoid a
+  // cross-origin redirect on the embed fetch (the redirect response
+  // doesn't carry CORS headers). Now the safe direction is the
+  // opposite — normalize any www down to apex so the embed snippet
+  // fetches the canonical host directly.
   const snippetHost = appUrl.replace(
-    /^https:\/\/leasestack\.co/i,
-    "https://www.leasestack.co",
+    /^https:\/\/www\.leasestack\.co/i,
+    "https://leasestack.co",
   );
   const snippet = `<script src="${snippetHost}/embed/chatbot.js" data-slug="${org.slug}" defer></script>`;
 

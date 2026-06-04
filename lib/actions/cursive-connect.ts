@@ -260,7 +260,7 @@ function generateWebhookToken(): string {
 function buildWebhookUrl(token: string): string {
   const base =
     process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") ??
-    "https://www.leasestack.co";
+    "https://leasestack.co";
   return `${base}/api/webhooks/cursive/${token}`;
 }
 

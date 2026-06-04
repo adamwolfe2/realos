@@ -265,7 +265,7 @@ async function fulfillPendingRequests(args: {
 
   const installSnippet = buildInstallSnippet(args.pixelId);
   const webhookUrl = args.webhookToken
-    ? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://www.leasestack.co"}/api/webhooks/cursive/${args.webhookToken}`
+    ? `${process.env.NEXT_PUBLIC_APP_URL ?? "https://leasestack.co"}/api/webhooks/cursive/${args.webhookToken}`
     : null;
 
   for (const p of pending) {

@@ -173,7 +173,7 @@ export default async function IntegrationsPage() {
   const pixelWebhookUrlInFlight = pixelSetupInFlight && pixel?.webhookToken
     ? `${
         process.env.NEXT_PUBLIC_APP_URL?.replace(/\/+$/, "") ??
-        "https://www.leasestack.co"
+        "https://leasestack.co"
       }/api/webhooks/cursive/${pixel.webhookToken}`
     : null;
 
@@ -417,7 +417,7 @@ export default async function IntegrationsPage() {
 // app/api/webhooks/cal/[orgId]/route.ts for the full contract.
 // ---------------------------------------------------------------------------
 function CalWebhookPanel({ orgId }: { orgId: string }) {
-  const url = `${(process.env.NEXT_PUBLIC_APP_URL ?? "https://www.leasestack.co").replace(/\/$/, "")}/api/webhooks/cal/${orgId}`;
+  const url = `${(process.env.NEXT_PUBLIC_APP_URL ?? "https://leasestack.co").replace(/\/$/, "")}/api/webhooks/cal/${orgId}`;
   return (
     <section className="rounded-xl border border-border bg-card p-5 space-y-3">
       <div className="flex items-start justify-between gap-3 flex-wrap">

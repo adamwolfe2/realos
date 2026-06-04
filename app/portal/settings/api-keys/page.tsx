@@ -149,7 +149,7 @@ export default async function ApiKeysPage() {
             Example request
           </div>
           <pre className="border rounded p-3 bg-muted text-[11px] leading-relaxed overflow-x-auto whitespace-pre-wrap break-all">
-{`curl -X POST https://www.leasestack.co/api/ingest/lead \\
+{`curl -X POST https://leasestack.co/api/ingest/lead \\
   -H "Authorization: Bearer re_live_..." \\
   -H "Content-Type: application/json" \\
   -d '{

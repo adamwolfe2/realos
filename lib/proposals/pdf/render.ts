@@ -73,7 +73,7 @@ async function resolveLiveShareUrl(proposalId: string): Promise<string | null> {
   if (!row) return null;
   const base =
     process.env.NEXT_PUBLIC_APP_URL?.trim().replace(/\/+$/, "") ||
-    "https://www.leasestack.co";
+    "https://leasestack.co";
   return `${base}/proposal/${encodeURIComponent(row.token)}`;
 }
 

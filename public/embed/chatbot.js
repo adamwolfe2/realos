@@ -43,7 +43,7 @@
   // origin so fetches land on the canonical host directly.
   var scriptUrl = new URL(script.src, window.location.href);
   var origin = scriptUrl.origin === "https://leasestack.co"
-    ? "https://www.leasestack.co"
+    ? "https://leasestack.co"
     : scriptUrl.origin;
   var CONFIG_URL = origin + "/api/public/chatbot/config?slug=" + encodeURIComponent(slug);
   var LISTINGS_URL = origin + "/api/public/chatbot/listings-summary?slug=" + encodeURIComponent(slug);
