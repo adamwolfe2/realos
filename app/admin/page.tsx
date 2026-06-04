@@ -2,13 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import {
   ArrowRight,
-  Users,
   FileInput,
-  Kanban,
   Activity,
   Brush,
-  Megaphone,
-  MessageSquare,
   AlertTriangle,
   AlertOctagon,
   Info,
@@ -276,9 +272,13 @@ export default async function AdminHome() {
           </SectionCard>
         </div>
 
-        {/* Compact ops counters — Pending intakes, open creative, leads MTD,
-            and quick-jump links. The previous large tile grid moved here
-            because money + actions deserve the top fold. */}
+        {/* Operations counters — Pending intakes, open creative, leads MTD.
+            Pre-cleanup (2026-06-04) this card also exposed Pipeline board,
+            All clients, Ad campaigns, and Support chat as bare quick-jump
+            rows. Those were duplicates of the left nav entries one level
+            up and added four count-less rows that diluted the numeric
+            content. The remaining three rows are real today-state
+            numbers an agency operator acts on. */}
         <SectionCard label="Operations">
           <ul className="space-y-2">
             <OpsRow
@@ -301,26 +301,6 @@ export default async function AdminHome() {
               icon={<Activity className="h-3.5 w-3.5" />}
               label="Leads (30d)"
               count={leadsThisMonth}
-            />
-            <OpsRow
-              href="/admin/pipeline"
-              icon={<Kanban className="h-3.5 w-3.5" />}
-              label="Pipeline board"
-            />
-            <OpsRow
-              href="/admin/clients"
-              icon={<Users className="h-3.5 w-3.5" />}
-              label="All clients"
-            />
-            <OpsRow
-              href="/admin/campaigns"
-              icon={<Megaphone className="h-3.5 w-3.5" />}
-              label="Ad campaigns"
-            />
-            <OpsRow
-              href="/admin/chat"
-              icon={<MessageSquare className="h-3.5 w-3.5" />}
-              label="Support chat"
             />
           </ul>
         </SectionCard>

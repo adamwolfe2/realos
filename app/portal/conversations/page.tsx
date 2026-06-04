@@ -125,8 +125,15 @@ export default async function ConversationsList({
     flagCountMap.set(row.flag, row._count.conversationId);
   }
 
-  const filterChips = [
-    { key: "", label: "All", count: totalConversations },
+  // Filter chip set. We only ever render chips that mean something
+  // right now: "All" is always shown, plus any flag chip that has at
+  // least one row, plus the currently-selected chip (so the operator
+  // can always click it off, even if its count just dropped to zero).
+  // Operator feedback (2026-06-04): tenants with zero flagged
+  // conversations were seeing 4 "0" pills competing with "All", which
+  // read as broken / empty product surface rather than a useful
+  // filter. Hiding zero-count chips keeps the inbox feeling alive.
+  const allFlagChips: Array<{ key: string; label: string; count: number }> = [
     {
       key: "needs_prompt_tuning",
       label: "Needs prompt tuning",
@@ -147,6 +154,10 @@ export default async function ConversationsList({
       label: "Flagged bad quality",
       count: qualityBadCount,
     },
+  ];
+  const filterChips = [
+    { key: "", label: "All", count: totalConversations },
+    ...allFlagChips.filter((c) => c.count > 0 || c.key === flagParam),
   ];
 
   const activeFlag: FlagType | null =
