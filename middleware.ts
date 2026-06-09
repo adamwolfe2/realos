@@ -86,10 +86,34 @@ function clerkIsConfigured(): boolean {
 
 async function coreHandler(
   req: NextRequest,
-  getAuth?: () => Promise<{ userId: string | null }>
+  getAuth?: () => Promise<{ userId: string | null }>,
 ) {
   const url = req.nextUrl;
   const hostname = req.headers.get("host") ?? "";
+
+  // Canonical host: the bare platform apex (e.g. leasestack.co) is a
+  // SEPARATE cookie origin from www.leasestack.co, so a Clerk session set
+  // on one host isn't sent to the other. With both domains live and no
+  // canonical redirect, Clerk's post-sign-in bounce to the apex hit a
+  // host with no session → /auth/redirect → /sign-in → infinite loop.
+  // Force the bare apex → www for PAGE navigations (exclude /api so
+  // webhooks posting to the bare host aren't redirected, and /_next for
+  // static assets) so every auth hop lands where the session lives.
+  const rawHost = hostname.split(":")[0].toLowerCase();
+  const platformBare = (process.env.PLATFORM_DOMAIN ?? "").trim().toLowerCase();
+  if (
+    platformBare &&
+    !platformBare.startsWith("www.") &&
+    rawHost === platformBare &&
+    !url.pathname.startsWith("/api") &&
+    !url.pathname.startsWith("/_next")
+  ) {
+    const target = url.clone();
+    target.protocol = "https:";
+    target.hostname = `www.${platformBare}`;
+    target.port = "";
+    return NextResponse.redirect(target, 308);
+  }
 
   // SECURITY: any incoming x-tenant-* header is treated as untrusted and
   // must never reach a route handler. Otherwise a request like
@@ -202,7 +226,7 @@ function withTenantHeaders(
   source: Headers,
   orgId: string,
   slug: string,
-  hostname: string
+  hostname: string,
 ): Headers {
   const next = new Headers(source);
   next.set(TENANT_HEADER_ORG_ID, orgId);
