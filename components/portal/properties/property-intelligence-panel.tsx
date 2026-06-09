@@ -1,23 +1,5 @@
-import * as React from "react";
 import Link from "next/link";
-import {
-  AlertTriangle,
-  AlignLeft,
-  ArrowRight,
-  Bot,
-  FileText,
-  Flag,
-  ImagePlus,
-  MessageSquareWarning,
-  MousePointerClick,
-  RefreshCw,
-  Search,
-  Sparkles,
-  Stars,
-  TrendingDown,
-  Upload,
-  Video,
-} from "lucide-react";
+import { ArrowRight, Sparkles } from "lucide-react";
 import type { ProactiveAction } from "@/lib/intelligence/property-recommendations";
 
 // ---------------------------------------------------------------------------
@@ -31,24 +13,6 @@ import type { ProactiveAction } from "@/lib/intelligence/property-recommendation
 // real data." Every card here is computed from a Prisma query — no
 // hand-curated copy, no placeholder advice.
 // ---------------------------------------------------------------------------
-
-const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  MessageSquareWarning,
-  Flag,
-  Stars,
-  TrendingDown,
-  Bot,
-  Search,
-  RefreshCw,
-  Upload,
-  FileText,
-  MousePointerClick,
-  ImagePlus,
-  AlignLeft,
-  Video,
-  AlertTriangle,
-  Sparkles,
-};
 
 const CATEGORY_LABEL: Record<ProactiveAction["category"], string> = {
   seo: "SEO",
@@ -108,7 +72,8 @@ export function PropertyIntelligencePanel({ propertyName, actions }: Props) {
           </h2>
         </header>
         <p className="text-xs text-muted-foreground pl-8.5">
-          No outstanding recommendations right now. We'll surface new ones as data flows in (next intelligence sweep runs at 03:00 UTC).
+          No outstanding recommendations right now. We'll surface new ones as
+          data flows in (next intelligence sweep runs at 03:00 UTC).
         </p>
       </section>
     );
@@ -147,7 +112,8 @@ export function PropertyIntelligencePanel({ propertyName, actions }: Props) {
           </p>
           <span aria-hidden="true" className="h-3 w-px bg-border" />
           <h2 className="text-[12px] font-semibold text-foreground leading-tight truncate">
-            {actions.length} action{actions.length === 1 ? "" : "s"} for {propertyName}
+            {actions.length} action{actions.length === 1 ? "" : "s"} for{" "}
+            {propertyName}
           </h2>
         </div>
         <div className="flex items-center gap-1 shrink-0">
@@ -233,7 +199,6 @@ function ActionRow({
   action: ProactiveAction;
   compact?: boolean;
 }) {
-  const Icon = ICON_MAP[action.icon] ?? Sparkles;
   const styles = SEVERITY_STYLES[action.severity];
 
   if (compact) {
@@ -241,19 +206,19 @@ function ActionRow({
       <li>
         <Link
           href={action.actionHref}
-          className={`group flex items-center gap-3 rounded-lg border border-border/60 bg-card px-3 py-2 hover:border-primary/40 hover:shadow-sm transition-all ring-1 ${styles.ring}`}
+          className={`flex items-center gap-3 rounded-lg border border-border/60 bg-card px-3 py-2 ring-1 ${styles.ring}`}
         >
           <span
             aria-hidden="true"
             className={`h-1.5 w-1.5 rounded-full shrink-0 ${styles.dot}`}
           />
-          <span className="text-[12px] font-medium text-foreground flex-1 min-w-0 truncate group-hover:text-primary transition-colors">
+          <span className="text-[12px] font-medium text-foreground flex-1 min-w-0 truncate">
             {action.title}
           </span>
           <span className="text-[10px] text-muted-foreground tabular-nums shrink-0">
             {action.estimateMinutes} min
           </span>
-          <ArrowRight className="h-3 w-3 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+          <ArrowRight className="h-3 w-3 text-muted-foreground shrink-0" />
         </Link>
       </li>
     );
@@ -261,13 +226,7 @@ function ActionRow({
 
   return (
     <li>
-      <div className="group/row flex items-center gap-2.5 px-3.5 py-2 hover:bg-muted/30 transition-colors">
-        <span
-          aria-hidden="true"
-          className={`inline-flex h-6 w-6 items-center justify-center rounded-md shrink-0 ${styles.pill}`}
-        >
-          <Icon className="h-3 w-3" />
-        </span>
+      <div className="flex items-center gap-2.5 px-3.5 py-2">
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5 flex-wrap leading-none mb-0.5">
             <span
@@ -284,12 +243,6 @@ function ActionRow({
           </div>
           <p className="text-[12px] font-semibold text-foreground leading-snug truncate">
             {action.title}
-          </p>
-          {/* Detail line hidden by default for compactness; reveal on
-              row hover so the operator can still see context when
-              they linger on a row. */}
-          <p className="hidden group-hover/row:block text-[10.5px] text-muted-foreground leading-snug mt-0.5">
-            {action.detail}
           </p>
         </div>
         <Link
