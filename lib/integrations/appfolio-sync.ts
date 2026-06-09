@@ -1291,39 +1291,45 @@ async function upsertAppfolioApplication(
     firstName: mapped.firstName,
     lastName: mapped.lastName,
     email: mapped.email,
+    unitName: mapped.unitName,
+    desiredMoveIn: mapped.desiredMoveIn?.toISOString() ?? null,
+    screeningStatus: mapped.screeningStatus,
+    applicantRole: mapped.applicantRole,
   };
 
-  // Application has no compound unique on (leadId, backendAppId), so we
-  // hand-roll find-then-create/update keyed on backendAppId scoped to
-  // this lead. backendAppId carries the AppFolio applicant_id.
-  const existing = await prisma.application.findFirst({
-    where: { leadId: lead.id, backendAppId: mapped.externalId },
-    select: { id: true },
-  });
-  if (existing) {
-    await prisma.application.update({
-      where: { id: existing.id },
-      data: {
-        status: mapped.status,
-        appliedAt: mapped.appliedAt,
-        decidedAt: mapped.decidedAt,
-        propertyId,
-        applicantData,
-      },
-    });
-  } else {
-    await prisma.application.create({
-      data: {
+  const writeData = {
+    status: mapped.status,
+    appliedAt: mapped.appliedAt,
+    decidedAt: mapped.decidedAt,
+    receivedAt: mapped.receivedAt,
+    desiredMoveIn: mapped.desiredMoveIn,
+    unitName: mapped.unitName,
+    unitExternalId: mapped.unitExternalId,
+    applicationGroupId: mapped.applicationGroupId,
+    applicantRole: mapped.applicantRole,
+    screeningStatus: mapped.screeningStatus,
+    propertyId,
+    applicantData,
+  };
+
+  // Idempotent upsert keyed on the (leadId, backendAppId) unique constraint.
+  // backendAppId carries the AppFolio applicant id, so re-syncs update in
+  // place instead of duplicating — and concurrent syncs can't race a
+  // find-then-create gap.
+  await prisma.application.upsert({
+    where: {
+      leadId_backendAppId: {
         leadId: lead.id,
-        propertyId,
         backendAppId: mapped.externalId,
-        status: mapped.status,
-        appliedAt: mapped.appliedAt,
-        decidedAt: mapped.decidedAt,
-        applicantData,
       },
-    });
-  }
+    },
+    create: {
+      leadId: lead.id,
+      backendAppId: mapped.externalId,
+      ...writeData,
+    },
+    update: writeData,
+  });
 
   // Roll the Lead status forward so the funnel reflects reality. We only
   // promote, never demote — a Lead already past SIGNED won't get knocked
@@ -1335,38 +1341,27 @@ async function upsertAppfolioApplication(
         ? "APPLICATION_SENT"
         : null;
   if (promoteTo) {
-    await prisma.lead.update({
-      where: { id: lead.id },
-      data: {
-        status: {
-          set: undefined, // computed below in raw query if needed
-        },
-      } as never,
-    }).catch(() => {});
-    // Use a conditional update so we never demote. Statuses are an enum
-    // with implicit ordering; we hand-rank here.
-    const currentStatus = await prisma.lead.findUnique({
-      where: { id: lead.id },
-      select: { status: true },
-    });
-    const RANK: Record<string, number> = {
-      NEW: 0,
-      CONTACTED: 1,
-      TOUR_SCHEDULED: 2,
-      TOURED: 3,
-      APPLICATION_SENT: 4,
-      APPLIED: 5,
-      SIGNED: 6,
-    };
-    const cur = RANK[currentStatus?.status ?? "NEW"] ?? 0;
-    const next = RANK[promoteTo] ?? 0;
-    if (next > cur) {
-      await prisma.lead
-        .update({
-          where: { id: lead.id },
-          data: { status: promoteTo as LeadStatus, lastActivityAt: new Date() },
-        })
-        .catch(() => {});
+    // Single atomic conditional update: only promote when the lead is at a
+    // strictly lower-ranked status. updateMany with `status: { in: lower }`
+    // avoids the read-modify-write race two concurrent syncs would hit, and
+    // never demotes (LOST / UNQUALIFIED / SIGNED are outside `lower`, so they
+    // never match). A DB failure here surfaces to the phase handler rather
+    // than being swallowed.
+    const RANK: LeadStatus[] = [
+      "NEW",
+      "CONTACTED",
+      "TOUR_SCHEDULED",
+      "TOURED",
+      "APPLICATION_SENT",
+      "APPLIED",
+      "SIGNED",
+    ] as LeadStatus[];
+    const lowerRanked = RANK.slice(0, RANK.indexOf(promoteTo as LeadStatus));
+    if (lowerRanked.length > 0) {
+      await prisma.lead.updateMany({
+        where: { id: lead.id, status: { in: lowerRanked } },
+        data: { status: promoteTo as LeadStatus, lastActivityAt: new Date() },
+      });
     }
   }
 

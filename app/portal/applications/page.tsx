@@ -20,6 +20,8 @@ import { DashboardSection } from "@/components/portal/dashboard/dashboard-sectio
 import { StatusPill, type StatusTone } from "@/components/portal/ui/status-pill";
 import { EmptyState } from "@/components/portal/ui/empty-state";
 import { ApplicationStatus } from "@prisma/client";
+import { getApplicationsByUnit } from "@/lib/applications/queries";
+import { UnitApplicationsBoard } from "@/components/portal/applications/unit-applications-board";
 
 export const metadata: Metadata = { title: "Applications" };
 export const dynamic = "force-dynamic";
@@ -64,16 +66,28 @@ const STATUS_COLUMN_ORDER: ApplicationStatus[] = [
 export default async function ApplicationsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ property?: string; properties?: string }>;
+  searchParams: Promise<{
+    property?: string;
+    properties?: string;
+    view?: string;
+  }>;
 }) {
   const gate = await requireModule("moduleResidents");
   if (gate) return gate;
 
   const scope = await requireScope();
   const sp = await searchParams;
+  const view = sp.view === "pipeline" ? "pipeline" : "units";
   const requestedIds = await parsePropertyFilter(sp, scope.orgId);
   const accessDenied = isAccessDenied(scope, requestedIds);
   const propertyClause = propertyWhereFragment(scope, requestedIds);
+  // Preserve the active property filter when switching views.
+  const filterQs =
+    sp.properties != null
+      ? `&properties=${encodeURIComponent(sp.properties)}`
+      : sp.property != null
+        ? `&property=${encodeURIComponent(sp.property)}`
+        : "";
   try {
   const where = tenantWhere(scope);
   const last90 = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
@@ -96,6 +110,7 @@ export default async function ApplicationsPage({
     prisma.application.count({
       where: {
         lead: where,
+        ...propertyClause,
         status: ApplicationStatus.APPROVED,
         decidedAt: { gte: last30 },
       },
@@ -103,11 +118,12 @@ export default async function ApplicationsPage({
     prisma.application.count({
       where: {
         lead: where,
+        ...propertyClause,
         status: ApplicationStatus.DENIED,
         decidedAt: { gte: last30 },
       },
     }),
-    prisma.application.count({ where: { lead: where } }),
+    prisma.application.count({ where: { lead: where, ...propertyClause } }),
     prisma.application.findMany({
       where: { lead: where, ...propertyClause,createdAt: { gte: last90 } },
       orderBy: [{ createdAt: "desc" }],
@@ -149,6 +165,11 @@ export default async function ApplicationsPage({
     orderBy: { name: "asc" },
   });
   const properties = visibleProperties(scope, allProperties);
+
+  const unitGroups =
+    view === "units"
+      ? await getApplicationsByUnit(where, propertyClause)
+      : [];
 
   return (
     <div className="space-y-4">
@@ -196,6 +217,46 @@ export default async function ApplicationsPage({
         />
       </section>
 
+      <div className="flex items-center gap-1 rounded-lg border border-border bg-muted/40 p-0.5 w-fit">
+        <Link
+          href={`/portal/applications?view=units${filterQs}`}
+          className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+            view === "units"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          By unit
+        </Link>
+        <Link
+          href={`/portal/applications?view=pipeline${filterQs}`}
+          className={`rounded-md px-3 py-1 text-xs font-medium transition-colors ${
+            view === "pipeline"
+              ? "bg-background text-foreground shadow-sm"
+              : "text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Pipeline
+        </Link>
+      </div>
+
+      {view === "units" ? (
+        <DashboardSection
+          title="Applications by unit"
+          eyebrow="Last 120 days"
+          description="Every application grouped by the unit it's for — co-signers fold into the primary applicant. Click any row for full detail."
+        >
+          {unitGroups.length === 0 ? (
+            <EmptyState
+              title="Once leads start applying, they'll show up here."
+              body="Applications come in via your tenant marketing site, AppFolio sync, or manual entry from a lead detail page."
+              action={{ label: "Open leads", href: "/portal/leads" }}
+            />
+          ) : (
+            <UnitApplicationsBoard units={unitGroups} />
+          )}
+        </DashboardSection>
+      ) : (
       <DashboardSection
         title="Pipeline"
         eyebrow="Last 90 days"
@@ -273,6 +334,7 @@ export default async function ApplicationsPage({
           </div>
         )}
       </DashboardSection>
+      )}
     </div>
   );
   } catch (err) {

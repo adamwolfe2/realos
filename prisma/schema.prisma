@@ -452,6 +452,11 @@ model Organization {
   notifyOnTourRequest    Boolean @default(true)
   notifyOnVisitorConvert Boolean @default(true)
   notifyOnManualLead     Boolean @default(true)
+  // Non-lead alert streams (route to the same notifyLeadEmail + CC/BCC):
+  //   - new website-pixel visitors, batched into a once-daily digest
+  //   - reputation scans that surface new mentions
+  notifyOnNewVisitors    Boolean @default(true)
+  notifyOnReputationScan Boolean @default(true)
 
   // Site hosting mode
   bringYourOwnSite Boolean @default(false)

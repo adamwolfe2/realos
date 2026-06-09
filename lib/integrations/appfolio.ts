@@ -1089,8 +1089,15 @@ async function fetchRest(
 // report. Each row is one rental application AppFolio is tracking. We
 // match these to existing Lead rows by email (most reliable identifier
 // across both systems on the Core/Plus plan tiers we've validated).
+export type ApplicantRoleValue =
+  | "PRIMARY"
+  | "CO_APPLICANT"
+  | "CO_SIGNER"
+  | "OCCUPANT"
+  | "GUARANTOR";
+
 export type MappedApplication = {
-  externalId: string;          // AppFolio applicant_id / application_id
+  externalId: string;          // AppFolio applicant_id (unique per person)
   email: string | null;        // join key against Lead.email
   firstName: string | null;
   lastName: string | null;
@@ -1103,9 +1110,43 @@ export type MappedApplication = {
     | "WITHDRAWN";
   appliedAt: Date | null;
   decidedAt: Date | null;
+  receivedAt: Date | null;     // when AppFolio received the application
+  desiredMoveIn: Date | null;  // applicant's target move-in
   propertyIds: string[];       // resolved via property_directory map
+  unitName: string | null;     // human label, e.g. "203 - A"
+  unitExternalId: string | null; // AppFolio unit id — groups applicants by unit
+  // Household grouping: co-applicants / co-signers share applicationGroupId.
+  applicationGroupId: string | null;
+  applicantRole: ApplicantRoleValue;
+  screeningStatus: string | null; // e.g. "None Requested", "Complete"
   raw: RawRow;
 };
+
+// Distinguish the primary applicant from co-signers / co-applicants /
+// occupants. AppFolio exposes this under several keys across plan tiers
+// (applicant_type, role, relationship) plus boolean co-signer flags.
+function applicantRoleFromRaw(raw: RawRow): ApplicantRoleValue {
+  const t = (
+    asString(raw.applicant_type) ??
+    asString(raw.role) ??
+    asString(raw.relationship) ??
+    asString(raw.applicant_role) ??
+    ""
+  ).toLowerCase();
+  const coSignerFlag =
+    raw.is_co_signer === true ||
+    asString(raw.is_co_signer)?.toLowerCase() === "true" ||
+    raw.co_signer === true;
+  if (coSignerFlag) return "CO_SIGNER";
+  if (t.includes("guarantor")) return "GUARANTOR";
+  if (t.includes("co-sign") || t.includes("cosign") || t.includes("co_sign"))
+    return "CO_SIGNER";
+  if (t.includes("co-app") || t.includes("coappl") || t.includes("co_app"))
+    return "CO_APPLICANT";
+  if (t.includes("occupant") || t.includes("dependent") || t.includes("minor"))
+    return "OCCUPANT";
+  return "PRIMARY";
+}
 
 function applicationStatusFromRaw(
   raw: RawRow,
@@ -1155,6 +1196,27 @@ export function mapApplicationPayload(
     asDate(raw.decision_date) ??
     asDate(raw.approved_at) ??
     asDate(raw.denied_at);
+  const receivedAt =
+    asDate(raw.received_at) ??
+    asDate(raw.received_date) ??
+    asDate(raw.created_at) ??
+    appliedAt;
+  const desiredMoveIn =
+    asDate(raw.desired_move_in) ??
+    asDate(raw.desired_move_in_date) ??
+    asDate(raw.move_in_date) ??
+    asDate(raw.target_move_in) ??
+    asDate(raw.requested_move_in);
+
+  // Application-group id: shared across all applicants on one household
+  // application (primary + co-signers). Falls back to the per-person id so a
+  // solo applicant still forms a singleton group.
+  const applicationGroupId =
+    asString(raw.application_id) ??
+    asString(raw.application_uuid) ??
+    asString(raw.household_id) ??
+    asString(raw.group_id) ??
+    externalId;
 
   return {
     externalId,
@@ -1164,7 +1226,26 @@ export function mapApplicationPayload(
     status: applicationStatusFromRaw(raw),
     appliedAt,
     decidedAt,
+    receivedAt,
+    desiredMoveIn,
     propertyIds,
+    unitName:
+      asString(raw.unit_name) ??
+      asString(raw.unit) ??
+      asString(raw.unit_number) ??
+      null,
+    unitExternalId:
+      asString(raw.unit_id) ??
+      asString(raw.unit_uuid) ??
+      asString(raw.UnitId) ??
+      null,
+    applicationGroupId,
+    applicantRole: applicantRoleFromRaw(raw),
+    screeningStatus:
+      asString(raw.screening_status) ??
+      asString(raw.residential_history) ??
+      asString(raw.screening) ??
+      null,
     raw,
   };
 }
