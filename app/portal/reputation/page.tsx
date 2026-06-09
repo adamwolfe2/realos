@@ -214,7 +214,7 @@ export default async function PortfolioReputationPage({
   if (metricsFailed || feedFailed) loadError = true;
 
   const sentimentByKey = new Map(
-    (metrics.sentimentBreakdown ?? []).map((s) => [s.sentiment, s.count])
+    (metrics.sentimentBreakdown ?? []).map((s) => [s.sentiment, s.count]),
   );
   const positive = sentimentByKey.get("POSITIVE") ?? 0;
   const negative = sentimentByKey.get("NEGATIVE") ?? 0;
@@ -229,249 +229,265 @@ export default async function PortfolioReputationPage({
       const bRisk =
         b.negativeCount * 2 + (b.googleRating ? 5 - b.googleRating : 0);
       return bRisk - aRisk;
-    }
+    },
   );
 
   try {
     return (
-    <div className="space-y-4">
-      {accessDenied ? <PropertyAccessDeniedBanner /> : null}
-      {loadError ? (
-        <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
-          <strong>Reputation data unavailable.</strong> The scanner tables may still be
-          initializing — run a reputation scan from any property to seed the data. This
-          page will display results once the first scan completes.
-        </div>
-      ) : null}
+      <div className="space-y-4">
+        {accessDenied ? <PropertyAccessDeniedBanner /> : null}
+        {loadError ? (
+          <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
+            <strong>Reputation data unavailable.</strong> The scanner tables may
+            still be initializing — run a reputation scan from any property to
+            seed the data. This page will display results once the first scan
+            completes.
+          </div>
+        ) : null}
 
-      <PageHeader
-        eyebrow="Brand health"
-        title="Reputation"
-        description="Reviews and mentions across Google, Reddit, Yelp, and the open web — rolled up across every property."
-        actions={
-          <>
-            {properties.length > 1 ? (
-              <Suspense fallback={<div className="h-9 w-48 rounded-md border border-border bg-muted/40" />}>
-                <PropertyMultiSelect properties={properties} orgId={scope.orgId} />
-              </Suspense>
-            ) : null}
-            <ReputationScanButton />
-            <Link
-              href="/portal/properties"
-              className="text-xs font-medium text-foreground hover:text-primary"
-            >
-              Manage properties →
-            </Link>
-          </>
-        }
-      />
-
-      {/* Unified inbox filter rail. Source + sentiment chips drive the
-          server-side feed query via URL params, so views are bookmarkable
-          (e.g. /portal/reputation?source=REDDIT&sentiment=NEGATIVE). */}
-      <Suspense fallback={<div className="h-8 w-full rounded-md bg-muted/40 animate-pulse" />}>
-        <ReputationFilters
-          sourceCounts={Object.fromEntries(
-            (metrics.sourceBreakdown ?? []).map((s) => [s.source, s.count]),
-          )}
-          sentimentCounts={Object.fromEntries(
-            (metrics.sentimentBreakdown ?? [])
-              .filter((s) => s.sentiment !== "UNCLASSIFIED")
-              .map((s) => [s.sentiment as Sentiment, s.count]),
-          )}
-        />
-      </Suspense>
-
-      {/* Compact metric strip — 4 essentials, half the size of the old
-          KpiTile grid. The audit called for dropping "Unreviewed" and
-          "Properties tracked" tiles since they're secondary signals. */}
-      <section
-        aria-label="Reputation KPIs"
-        className="grid grid-cols-2 md:grid-cols-4 gap-3"
-      >
-        <CompactStat
-          label="Google rating"
-          value={fmtRating(metrics.googleAvgRating)}
-          hint={
-            safeNum(metrics.googleReviewCount) > 0
-              ? `${fmtInt(metrics.googleReviewCount)} reviews`
-              : "No reviews yet"
+        <PageHeader
+          eyebrow="Brand health"
+          title="Reputation"
+          description="Reviews and mentions across Google, Reddit, Yelp, and the open web — rolled up across every property."
+          actions={
+            <>
+              {properties.length > 1 ? (
+                <Suspense
+                  fallback={
+                    <div className="h-9 w-48 rounded-md border border-border bg-muted/40" />
+                  }
+                >
+                  <PropertyMultiSelect
+                    properties={properties}
+                    orgId={scope.orgId}
+                  />
+                </Suspense>
+              ) : null}
+              <ReputationScanButton />
+              <Link
+                href="/portal/properties"
+                className="text-xs font-medium text-foreground hover:text-primary"
+              >
+                Manage properties →
+              </Link>
+            </>
           }
         />
-        <CompactStat
-          label="Total mentions"
-          value={fmtInt(metrics.totalMentions)}
-          hint={mentionsTrendHint(metrics)}
-        />
-        <CompactStat
-          label="Negative share"
-          value={metrics.negativePct != null ? `${safeNum(metrics.negativePct)}%` : "—"}
-          hint={`${fmtInt(negative)} negative`}
-        />
-        <CompactStat
-          label="Flagged"
-          value={fmtInt(metrics.flaggedCount)}
-          hint="Marked for follow-up"
-        />
-      </section>
 
-      {/* Recent mentions — the centerpiece. Hoisted above the analytics
+        {/* Unified inbox filter rail. Source + sentiment chips drive the
+          server-side feed query via URL params, so views are bookmarkable
+          (e.g. /portal/reputation?source=REDDIT&sentiment=NEGATIVE). */}
+        <Suspense
+          fallback={
+            <div className="h-8 w-full rounded-md bg-muted/40 animate-pulse" />
+          }
+        >
+          <ReputationFilters
+            sourceCounts={Object.fromEntries(
+              (metrics.sourceBreakdown ?? []).map((s) => [s.source, s.count]),
+            )}
+            sentimentCounts={Object.fromEntries(
+              (metrics.sentimentBreakdown ?? [])
+                .filter((s) => s.sentiment !== "UNCLASSIFIED")
+                .map((s) => [s.sentiment as Sentiment, s.count]),
+            )}
+          />
+        </Suspense>
+
+        {/* Compact metric strip — 4 essentials, half the size of the old
+          KpiTile grid. The audit called for dropping "Unreviewed" and
+          "Properties tracked" tiles since they're secondary signals. */}
+        <section
+          aria-label="Reputation KPIs"
+          className="grid grid-cols-2 md:grid-cols-4 gap-3"
+        >
+          <CompactStat
+            label="Google rating"
+            value={fmtRating(metrics.googleAvgRating)}
+            hint={
+              safeNum(metrics.googleReviewCount) > 0
+                ? `${fmtInt(metrics.googleReviewCount)} reviews`
+                : "No reviews yet"
+            }
+          />
+          <CompactStat
+            label="Total mentions"
+            value={fmtInt(metrics.totalMentions)}
+            hint={mentionsTrendHint(metrics)}
+          />
+          <CompactStat
+            label="Negative share"
+            value={
+              metrics.negativePct != null
+                ? `${safeNum(metrics.negativePct)}%`
+                : "—"
+            }
+            hint={`${fmtInt(negative)} negative`}
+          />
+          <CompactStat
+            label="Flagged"
+            value={fmtInt(metrics.flaggedCount)}
+            hint="Marked for follow-up"
+          />
+        </section>
+
+        {/* Recent mentions — the centerpiece. Hoisted above the analytics
           drawer so the operator sees today's signal first. Sort order is
           publishedAt DESC in loadPortfolioReputationFeed. */}
-      <DashboardSection
-        title="Recent mentions"
-        eyebrow={showOlder ? "All history" : "Last 90 days"}
-        description={
-          showOlder
-            ? "All mentions across every property, newest first"
-            : "Mentions from the last 90 days, newest first"
-        }
-        action={
-          <RecentToggleLink
-            showOlder={showOlder}
-            currentParams={{
-              property: sp.property,
-              properties: sp.properties,
-              source: sp.source,
-              sentiment: sp.sentiment,
-            }}
-          />
-        }
-      >
-        {feed.length === 0 ? (
-          <p className="text-xs text-muted-foreground">
-            {showOlder
-              ? "No mentions yet. Run a scan from any property to seed the feed."
-              : "No mentions in the last 90 days. Use \"Show older\" to view archived mentions."}
-          </p>
-        ) : (
-          <ul className="divide-y divide-border -my-2">
-            {feed.map((m) => (
-              <FeedRow key={m.id} mention={m} />
-            ))}
-          </ul>
-        )}
-      </DashboardSection>
-
-      {/* Analytics drawer — historical charts + property health table.
-          Collapsed by default so Recent Mentions stays the focus. */}
-      <details className="group rounded-xl border border-border bg-card">
-        <summary className="flex items-center justify-between gap-3 px-5 py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
-          <div className="min-w-0">
-            <div className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground mb-0.5">
-              Historical
-            </div>
-            <h2
-              className="text-sm font-semibold tracking-tight text-foreground leading-tight"
-              style={{ fontFamily: "var(--font-display)" }}
-            >
-              Show analytics
-            </h2>
-          </div>
-          <span className="text-[11px] text-muted-foreground group-open:hidden">
-            Trends, sources, properties →
-          </span>
-          <span className="text-[11px] text-muted-foreground hidden group-open:inline">
-            Hide
-          </span>
-        </summary>
-
-        <div className="border-t border-border px-5 py-4 space-y-4">
-          {/* One-line property summary (single tenant common case). For
-              multi-property tenants this renders one tight row per
-              property — no header sprawl. */}
-          {propertyHealthSorted.length === 0 ? (
+        <DashboardSection
+          title="Recent mentions"
+          eyebrow={showOlder ? "All history" : "Last 90 days"}
+          description={
+            showOlder
+              ? "All mentions across every property, newest first"
+              : "Mentions from the last 90 days, newest first"
+          }
+          action={
+            <RecentToggleLink
+              showOlder={showOlder}
+              currentParams={{
+                property: sp.property,
+                properties: sp.properties,
+                source: sp.source,
+                sentiment: sp.sentiment,
+              }}
+            />
+          }
+        >
+          {feed.length === 0 ? (
             <p className="text-xs text-muted-foreground">
-              No properties yet. Add one to start scanning reputation.
+              {showOlder
+                ? "No mentions yet. Run a scan from any property to seed the feed."
+                : 'No mentions in the last 90 days. Use "Show older" to view archived mentions.'}
             </p>
           ) : (
-            <ul className="space-y-1">
-              {propertyHealthSorted.map((p) => (
-                <PropertySummaryRow key={p.propertyId} property={p} />
+            <ul className="divide-y divide-border -my-2">
+              {feed.map((m) => (
+                <FeedRow key={m.id} mention={m} />
               ))}
             </ul>
           )}
+        </DashboardSection>
 
-          {/* 12-week sentiment trend — compact, header inline instead of
+        {/* Analytics drawer — historical charts + property health table.
+          Collapsed by default so Recent Mentions stays the focus. */}
+        <details className="group rounded-xl border border-border bg-card">
+          <summary className="flex items-center justify-between gap-3 px-5 py-3 cursor-pointer list-none [&::-webkit-details-marker]:hidden">
+            <div className="min-w-0">
+              <div className="text-[10px] tracking-[0.14em] uppercase font-semibold text-muted-foreground mb-0.5">
+                Historical
+              </div>
+              <h2
+                className="text-sm font-semibold tracking-tight text-foreground leading-tight"
+                style={{ fontFamily: "var(--font-display)" }}
+              >
+                Show analytics
+              </h2>
+            </div>
+            <span className="text-[11px] text-muted-foreground group-open:hidden">
+              Trends, sources, properties →
+            </span>
+            <span className="text-[11px] text-muted-foreground hidden group-open:inline">
+              Hide
+            </span>
+          </summary>
+
+          <div className="border-t border-border px-5 py-4 space-y-4">
+            {/* One-line property summary (single tenant common case). For
+              multi-property tenants this renders one tight row per
+              property — no header sprawl. */}
+            {propertyHealthSorted.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No properties yet. Add one to start scanning reputation.
+              </p>
+            ) : (
+              <ul className="space-y-1">
+                {propertyHealthSorted.map((p) => (
+                  <PropertySummaryRow key={p.propertyId} property={p} />
+                ))}
+              </ul>
+            )}
+
+            {/* 12-week sentiment trend — compact, header inline instead of
               wrapped in another Card to avoid double-nesting. */}
-          <div className="space-y-2">
-            <div className="flex items-baseline justify-between">
-              <h3 className="text-sm font-semibold text-foreground">
-                Sentiment over time
-              </h3>
-              <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
-                Last 12 weeks
-              </span>
+            <div className="space-y-2">
+              <div className="flex items-baseline justify-between">
+                <h3 className="text-sm font-semibold text-foreground">
+                  Sentiment over time
+                </h3>
+                <span className="text-[10px] uppercase tracking-wide text-muted-foreground">
+                  Last 12 weeks
+                </span>
+              </div>
+              <div className="h-20">
+                <SentimentSparkline weeks={metrics.weeklySentiment ?? []} />
+              </div>
             </div>
-            <div className="h-20">
-              <SentimentSparkline weeks={metrics.weeklySentiment ?? []} />
-            </div>
-          </div>
 
-          {/* Sentiment + sources + monthly volume — tightened grid */}
-          <section className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
-            <AnalyticsBlock title="Sentiment" eyebrow="Across all mentions">
-              {metrics.totalMentions === 0 ? (
-                <p className="text-xs text-muted-foreground">
-                  No sentiment yet.
-                </p>
-              ) : (
-                <div className="space-y-1.5">
-                  <SentimentBar
-                    label="Positive"
-                    count={positive}
-                    total={metrics.totalMentions}
-                    tone="bg-primary"
-                  />
-                  <SentimentBar
-                    label="Negative"
-                    count={negative}
-                    total={metrics.totalMentions}
-                    tone="bg-foreground"
-                  />
-                  <SentimentBar
-                    label="Mixed"
-                    count={mixed}
-                    total={metrics.totalMentions}
-                    tone="bg-primary/50"
-                  />
-                  <SentimentBar
-                    label="Neutral"
-                    count={neutral}
-                    total={metrics.totalMentions}
-                    tone="bg-muted-foreground/50"
-                  />
-                </div>
-              )}
-            </AnalyticsBlock>
-
-            <AnalyticsBlock title="By source" eyebrow="Volume by platform">
-              <SourceBars
-                emptyMessage="No mentions yet."
-                limit={6}
-                rows={(metrics.sourceBreakdown ?? []).map((row) => ({
-                  id: String(row.source),
-                  label: sourceLabel(row.source as MentionSource, ""),
-                  value: safeNum(row.count),
-                  leading: (
-                    <SourceLogo
-                      source={row.source as MentionSource}
-                      url=""
-                      className="h-4 w-4"
+            {/* Sentiment + sources + monthly volume — tightened grid */}
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+              <AnalyticsBlock title="Sentiment" eyebrow="Across all mentions">
+                {metrics.totalMentions === 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    No sentiment yet.
+                  </p>
+                ) : (
+                  <div className="space-y-1.5">
+                    <SentimentBar
+                      label="Positive"
+                      count={positive}
+                      total={metrics.totalMentions}
+                      tone="bg-primary"
                     />
-                  ),
-                }))}
-              />
-            </AnalyticsBlock>
+                    <SentimentBar
+                      label="Negative"
+                      count={negative}
+                      total={metrics.totalMentions}
+                      tone="bg-foreground"
+                    />
+                    <SentimentBar
+                      label="Mixed"
+                      count={mixed}
+                      total={metrics.totalMentions}
+                      tone="bg-primary/50"
+                    />
+                    <SentimentBar
+                      label="Neutral"
+                      count={neutral}
+                      total={metrics.totalMentions}
+                      tone="bg-muted-foreground/50"
+                    />
+                  </div>
+                )}
+              </AnalyticsBlock>
 
-            <AnalyticsBlock title="Monthly volume" eyebrow="Last 6 months">
-              <MonthlyVolume data={metrics.monthlyVolume} />
-            </AnalyticsBlock>
-          </section>
-        </div>
-      </details>
-    </div>
-  );
+              <AnalyticsBlock title="By source" eyebrow="Volume by platform">
+                <SourceBars
+                  emptyMessage="No mentions yet."
+                  limit={6}
+                  rows={(metrics.sourceBreakdown ?? []).map((row) => ({
+                    id: String(row.source),
+                    label: sourceLabel(row.source as MentionSource, ""),
+                    value: safeNum(row.count),
+                    leading: (
+                      <SourceLogo
+                        source={row.source as MentionSource}
+                        url=""
+                        className="h-4 w-4"
+                      />
+                    ),
+                  }))}
+                />
+              </AnalyticsBlock>
+
+              <AnalyticsBlock title="Monthly volume" eyebrow="Last 6 months">
+                <MonthlyVolume data={metrics.monthlyVolume} />
+              </AnalyticsBlock>
+            </section>
+          </div>
+        </details>
+      </div>
+    );
   } catch (err) {
     // Render-time crash — log full diagnostic info + surface the actual
     // error in the rendered fallback so we can identify the exact field
@@ -643,7 +659,8 @@ function RecentToggleLink({
 }) {
   const next = new URLSearchParams();
   if (currentParams.property) next.set("property", currentParams.property);
-  if (currentParams.properties) next.set("properties", currentParams.properties);
+  if (currentParams.properties)
+    next.set("properties", currentParams.properties);
   if (currentParams.source) next.set("source", currentParams.source);
   if (currentParams.sentiment) next.set("sentiment", currentParams.sentiment);
   if (!showOlder) next.set("showOlder", "1");
@@ -676,7 +693,9 @@ function SentimentBar({
       <div className="flex items-center justify-between text-xs mb-1">
         <span className="text-foreground font-medium">{label}</span>
         <span className="tabular-nums">
-          <span className="font-semibold text-foreground">{count.toLocaleString()}</span>
+          <span className="font-semibold text-foreground">
+            {count.toLocaleString()}
+          </span>
           <span className="ml-1.5 text-muted-foreground">{pct}%</span>
         </span>
       </div>
@@ -706,14 +725,13 @@ function ReputationFallback({
     <div className="space-y-4">
       <PageHeader eyebrow="Brand health" title="Reputation" />
       <div className="rounded-xl border border-border bg-muted/40 px-4 py-3 text-sm text-foreground">
-        <p className="font-semibold">Reputation view temporarily unavailable.</p>
+        <p className="font-semibold">
+          Reputation view temporarily unavailable.
+        </p>
         <p className="mt-1 text-xs leading-snug">{message}</p>
         <p className="mt-2 text-xs">
           You can still drill into reviews per property at{" "}
-          <Link
-            href="/portal/properties"
-            className="underline font-medium"
-          >
+          <Link href="/portal/properties" className="underline font-medium">
             Properties
           </Link>{" "}
           → choose a property → Reputation tab.
@@ -739,8 +757,8 @@ function ReputationFallback({
             <div>
               <span className="font-semibold">Data: </span>
               <code className="font-mono">
-                {diagnostic.metricsCount} mentions · {diagnostic.feedCount}{" "}
-                feed items
+                {diagnostic.metricsCount} mentions · {diagnostic.feedCount} feed
+                items
               </code>
             </div>
             {diagnostic.stack ? (
@@ -794,8 +812,20 @@ function MonthlyVolume({
   // as garbage. Format YYYY-MM month strings as short month names ("Dec,
   // Jan, …") and prefix the first label of a new year with the year so
   // the chart self-documents which year the data starts in.
-  const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const MONTHS = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const labels = safeData.map((d, i) => {
     const [yearStr, monthStr] = d.month.split("-");
     const monthIdx = Math.max(0, Math.min(11, Number(monthStr) - 1));
@@ -842,26 +872,41 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
   // Defensive normalization. Audit found this row was the most likely
   // crash site — a single malformed mention should NOT take down the
   // whole page. Coerce every field to a safe type before rendering.
-  const safeUrl = typeof mention.sourceUrl === "string" ? mention.sourceUrl : "";
+  const safeUrl =
+    typeof mention.sourceUrl === "string" ? mention.sourceUrl : "";
   const propertyName = mention.propertyName ?? "Property";
   const propertyId = mention.propertyId ?? "";
   const sentiment = mention.sentiment;
   const sentimentTone = sentiment ? SENTIMENT_TONE[sentiment] : "";
   const sentimentLabel = sentiment ? SENTIMENT_LABEL[sentiment] : "";
   const ratingNum = mention.rating != null ? safeNum(mention.rating) : null;
-  const when = mention.publishedAt instanceof Date ? mention.publishedAt : null;
+  // Prefer the real publish date; for scraped sources that don't expose one
+  // (Reddit/Tavily/FB), show when we discovered it so the row is never
+  // mystery-dated and "newest first" stays honest.
+  const publishedWhen =
+    mention.publishedAt instanceof Date ? mention.publishedAt : null;
+  const discoveredWhen =
+    mention.discoveredAt instanceof Date ? mention.discoveredAt : null;
+  const when = publishedWhen ?? discoveredWhen;
+  const whenIsDiscovery = !publishedWhen && !!discoveredWhen;
   // Fade low-confidence sentiment pills. Threshold = 0.6 — below that
   // we still show the label so the operator can review, but render at
   // 60% opacity to communicate "this is a guess".
   const lowConfidence =
     mention.sentimentConfidence != null && mention.sentimentConfidence < 0.6;
-  const themes = Array.isArray(mention.themes) ? mention.themes.slice(0, 3) : [];
+  const themes = Array.isArray(mention.themes)
+    ? mention.themes.slice(0, 3)
+    : [];
 
   return (
     <li className="py-2.5 px-3 -mx-3 hover:bg-muted/30 transition-colors">
       <div className="flex items-start gap-2.5">
         <div className="shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-lg bg-card border border-border shadow-sm">
-          <SourceLogo source={mention.source} url={safeUrl} className="h-[18px] w-[18px]" />
+          <SourceLogo
+            source={mention.source}
+            url={safeUrl}
+            className="h-[18px] w-[18px]"
+          />
         </div>
         <div className="min-w-0 flex-1">
           {/* Source header — the brand logo (tile, left) is paired with the
@@ -873,7 +918,8 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
             </span>
             {when ? (
               <span className="text-[11px] text-muted-foreground">
-                · {formatDistanceToNow(when, { addSuffix: true })}
+                · {whenIsDiscovery ? "found " : ""}
+                {formatDistanceToNow(when, { addSuffix: true })}
               </span>
             ) : null}
           </div>
@@ -924,7 +970,9 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
             {mention.authorName ? (
               <>
                 <span aria-hidden="true">·</span>
-                <span className="truncate max-w-[120px]">{String(mention.authorName)}</span>
+                <span className="truncate max-w-[120px]">
+                  {String(mention.authorName)}
+                </span>
               </>
             ) : null}
             {ratingNum != null && ratingNum > 0 ? (

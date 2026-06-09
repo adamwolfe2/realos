@@ -30,7 +30,10 @@ export type PortfolioReputationMetrics = {
   googleReviewCount: number;
 
   sourceBreakdown: Array<{ source: MentionSource; count: number }>;
-  sentimentBreakdown: Array<{ sentiment: Sentiment | "UNCLASSIFIED"; count: number }>;
+  sentimentBreakdown: Array<{
+    sentiment: Sentiment | "UNCLASSIFIED";
+    count: number;
+  }>;
 
   // Properties ranked by review health, so operators can see the worst
   // offenders at a glance.
@@ -60,7 +63,7 @@ export type PortfolioReputationMetrics = {
 
 export async function loadPortfolioReputationMetrics(
   orgId: string,
-  options: { propertyIds?: string[] | null } = {}
+  options: { propertyIds?: string[] | null } = {},
 ): Promise<PortfolioReputationMetrics> {
   const now = new Date();
   const last30d = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
@@ -223,7 +226,9 @@ export async function loadPortfolioReputationMetrics(
     }
   }
   const googleAvgRating =
-    weightedCount > 0 ? Math.round((weightedSum / weightedCount) * 10) / 10 : null;
+    weightedCount > 0
+      ? Math.round((weightedSum / weightedCount) * 10) / 10
+      : null;
   const googleReviewCount = weightedCount;
 
   // Per-property health rollup
@@ -232,12 +237,12 @@ export async function loadPortfolioReputationMetrics(
   for (const row of propertyMentions) {
     totalsByProperty.set(
       row.propertyId,
-      (totalsByProperty.get(row.propertyId) ?? 0) + row._count._all
+      (totalsByProperty.get(row.propertyId) ?? 0) + row._count._all,
     );
     if (row.sentiment === "NEGATIVE") {
       negativesByProperty.set(
         row.propertyId,
-        (negativesByProperty.get(row.propertyId) ?? 0) + row._count._all
+        (negativesByProperty.get(row.propertyId) ?? 0) + row._count._all,
       );
     }
   }
@@ -258,7 +263,8 @@ export async function loadPortfolioReputationMetrics(
   const propertyHealth = properties.map((p) => ({
     propertyId: p.id,
     propertyName: p.name,
-    googleRating: typeof p.googleAggRating === "number" ? p.googleAggRating : null,
+    googleRating:
+      typeof p.googleAggRating === "number" ? p.googleAggRating : null,
     googleReviewCount: p.googleAggReviewCount ?? 0,
     totalMentions: totalsByProperty.get(p.id) ?? 0,
     negativeCount: negativesByProperty.get(p.id) ?? 0,
@@ -359,7 +365,10 @@ function mondayKey(date: Date): string {
 
 function build12WeekBuckets(
   now: Date,
-): Map<string, { positive: number; neutral: number; negative: number; mixed: number }> {
+): Map<
+  string,
+  { positive: number; neutral: number; negative: number; mixed: number }
+> {
   const buckets = new Map<
     string,
     { positive: number; neutral: number; negative: number; mixed: number }
@@ -391,6 +400,9 @@ export type PortfolioReputationFeedItem = {
   excerpt: string;
   authorName: string | null;
   publishedAt: Date | null;
+  /** When we first ingested this mention. Used as the display + sort date
+   *  for scraped sources that don't expose a real publish date. */
+  discoveredAt: Date;
   sentiment: Sentiment | null;
   sentimentConfidence: number | null;
   themes: string[]; // PropertyMention.topics surfaced for the UI
@@ -419,7 +431,7 @@ export async function loadPortfolioReputationFeed(
     /** When true, ignore the default 12-month cutoff and surface older
      *  mentions. Wired to the "Show older" toggle on /portal/reputation. */
     includeOlder?: boolean;
-  } = {}
+  } = {},
 ): Promise<PortfolioReputationFeedItem[]> {
   // Same lifecycle gate as loadPortfolioReputationMetrics: skip mentions
   // attached to non-marketable properties so the feed doesn't surface
@@ -457,16 +469,17 @@ export async function loadPortfolioReputationFeed(
     ];
   }
 
-  // Order by publishedAt DESC, then createdAt DESC as the tie-breaker for
-  // undated mentions. The previous tie-breaker (lastSeenAt) was the root
-  // cause of #1 — a re-scrape of a closed Yelp page bumped lastSeenAt to
-  // today and pushed 4-year-old reviews into the recent feed. createdAt
-  // is the ingestion timestamp, which is the right "second sort" for
-  // undated rows. id DESC stays as a final deterministic break.
-  const rows = await prisma.propertyMention.findMany({
+  // Order by EFFECTIVE date = publishedAt when known, else createdAt
+  // (ingestion time). Postgres `ORDER BY publishedAt DESC` puts NULLs
+  // FIRST, so undated scrapes (often the majority — e.g. 23/28 for some
+  // orgs) led the "newest first" feed and a years-old Reddit thread sat at
+  // the very top. We over-fetch by ingestion order, collapse onto one
+  // timeline in JS, then slice to the requested limit so the feed is
+  // genuinely most-recent-first regardless of which sources carry a date.
+  const fetched = await prisma.propertyMention.findMany({
     where,
-    orderBy: [{ publishedAt: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-    take: limit,
+    orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+    take: Math.min(Math.max(limit * 4, 80), 300),
     select: {
       id: true,
       propertyId: true,
@@ -476,6 +489,7 @@ export async function loadPortfolioReputationFeed(
       excerpt: true,
       authorName: true,
       publishedAt: true,
+      createdAt: true,
       rating: true,
       sentiment: true,
       sentimentConfidence: true,
@@ -485,6 +499,12 @@ export async function loadPortfolioReputationFeed(
       property: { select: { name: true } },
     },
   });
+
+  const rows = fetched
+    .map((r) => ({ r, eff: (r.publishedAt ?? r.createdAt).getTime() }))
+    .sort((a, b) => b.eff - a.eff)
+    .slice(0, limit)
+    .map(({ r }) => r);
 
   return rows.map((r) => ({
     id: r.id,
@@ -496,6 +516,7 @@ export async function loadPortfolioReputationFeed(
     excerpt: r.excerpt,
     authorName: r.authorName,
     publishedAt: r.publishedAt,
+    discoveredAt: r.createdAt,
     sentiment: r.sentiment,
     sentimentConfidence: r.sentimentConfidence,
     themes: normalizeThemes(r.topics),
