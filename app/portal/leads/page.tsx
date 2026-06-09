@@ -20,11 +20,17 @@ import {
   isAccessDenied,
   parsePropertyFilter,
   propertyWhereFragment,
+  propertyOrOrgLevelWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
 import { PropertyAccessDeniedBanner } from "@/components/portal/access-denied-banner";
-import { LeadSource, LeadStatus, Prisma } from "@prisma/client";
+import {
+  LeadSource,
+  LeadStatus,
+  Prisma,
+  VisitorIdentificationStatus,
+} from "@prisma/client";
 import {
   LeadKanban,
   type LeadKanbanItem,
@@ -78,7 +84,9 @@ export default async function LeadsKanbanPage({
   const sp = await searchParams;
   const page = parsePage(sp.page);
   const propertyIds = await parsePropertyFilter(sp, scope.orgId);
-  const signalFilter: SignalKey | null = isSignalKey(sp.signal) ? sp.signal : null;
+  const signalFilter: SignalKey | null = isSignalKey(sp.signal)
+    ? sp.signal
+    : null;
 
   const where: Prisma.LeadWhereInput = {
     ...tenantWhere(scope),
@@ -227,7 +235,9 @@ export default async function LeadsKanbanPage({
         where: kpiWhere,
         _count: { _all: true },
       })
-      .catch(() => [] as Array<{ source: LeadSource; _count: { _all: number } }>),
+      .catch(
+        () => [] as Array<{ source: LeadSource; _count: { _all: number } }>,
+      ),
     // --- Cross-product signal KPIs (28d) ----------------------------------
     // Each is org + property scoped. .catch fall-back so a single bad
     // query never blanks the strip.
@@ -282,67 +292,61 @@ export default async function LeadsKanbanPage({
     .filter((e): e is string => !!e && e.trim() !== "")
     .map((e) => e.toLowerCase());
 
-  const [
-    chatbotByLead,
-    popupByLead,
-    applicationByLead,
-    visitorByEmail,
-  ] = await Promise.all([
-    visibleLeadIds.length === 0
-      ? []
-      : prisma.chatbotConversation
-          .findMany({
-            where: { leadId: { in: visibleLeadIds } },
-            select: { leadId: true },
-            distinct: ["leadId"],
-          })
-          .catch(() => [] as Array<{ leadId: string | null }>),
-    visibleLeadIds.length === 0
-      ? []
-      : prisma.popupEvent
-          .findMany({
-            where: {
-              orgId: scope.orgId,
-              leadId: { in: visibleLeadIds },
-              type: "CONVERTED",
-            },
-            select: { leadId: true },
-            distinct: ["leadId"],
-          })
-          .catch(() => [] as Array<{ leadId: string | null }>),
-    visibleLeadIds.length === 0
-      ? []
-      : prisma.application
-          .findMany({
-            where: { leadId: { in: visibleLeadIds } },
-            select: { leadId: true },
-            distinct: ["leadId"],
-          })
-          .catch(() => [] as Array<{ leadId: string }>),
-    visibleEmails.length === 0
-      ? []
-      : prisma.visitor
-          .groupBy({
-            by: ["email"],
-            where: {
-              orgId: scope.orgId,
-              email: { in: visibleEmails, mode: "insensitive" },
-            },
-            _sum: { sessionCount: true },
-          })
-          .catch(
-            () =>
-              [] as Array<{
-                email: string | null;
-                _sum: { sessionCount: number | null };
-              }>,
-          ),
-  ]);
+  const [chatbotByLead, popupByLead, applicationByLead, visitorByEmail] =
+    await Promise.all([
+      visibleLeadIds.length === 0
+        ? []
+        : prisma.chatbotConversation
+            .findMany({
+              where: { leadId: { in: visibleLeadIds } },
+              select: { leadId: true },
+              distinct: ["leadId"],
+            })
+            .catch(() => [] as Array<{ leadId: string | null }>),
+      visibleLeadIds.length === 0
+        ? []
+        : prisma.popupEvent
+            .findMany({
+              where: {
+                orgId: scope.orgId,
+                leadId: { in: visibleLeadIds },
+                type: "CONVERTED",
+              },
+              select: { leadId: true },
+              distinct: ["leadId"],
+            })
+            .catch(() => [] as Array<{ leadId: string | null }>),
+      visibleLeadIds.length === 0
+        ? []
+        : prisma.application
+            .findMany({
+              where: { leadId: { in: visibleLeadIds } },
+              select: { leadId: true },
+              distinct: ["leadId"],
+            })
+            .catch(() => [] as Array<{ leadId: string }>),
+      visibleEmails.length === 0
+        ? []
+        : prisma.visitor
+            .groupBy({
+              by: ["email"],
+              where: {
+                orgId: scope.orgId,
+                email: { in: visibleEmails, mode: "insensitive" },
+              },
+              _sum: { sessionCount: true },
+            })
+            .catch(
+              () =>
+                [] as Array<{
+                  email: string | null;
+                  _sum: { sessionCount: number | null };
+                }>,
+            ),
+    ]);
 
   const chatbotSet = new Set(
-    chatbotByLead
-      .map((r) => r.leadId)
-      .filter((id): id is string => !!id),
+    chatbotByLead.map((r) => r.leadId).filter((id): id is string => !!id),
   );
   const popupSet = new Set(
     popupByLead.map((r) => r.leadId).filter((id): id is string => !!id),
@@ -371,6 +375,48 @@ export default async function LeadsKanbanPage({
       ? Math.round((kpiSigned28d / kpiLeads28d) * 1000) / 10
       : null;
 
+  // ---------------------------------------------------------------------
+  // Unified lead tracking (SG ask): the Leads page must reflect EVERY
+  // tracked contact, not just Lead-table rows. Pixel-identified visitors
+  // are org-level (propertyId = null, the Cursive pixel is installed on
+  // the resident domain) and otherwise only live on the Visitors feed.
+  // Surface them here as leads so "how many leads are we tracking" answers
+  // honestly. Read-only — these link out to the visitor feed; the kanban
+  // above keeps full lead actions for true Lead rows.
+  // ---------------------------------------------------------------------
+  const visitorLeadWhere: Prisma.VisitorWhereInput = {
+    ...tenantWhere(scope),
+    ...propertyOrOrgLevelWhereFragment(scope, propertyIds),
+    status: {
+      in: [
+        VisitorIdentificationStatus.IDENTIFIED,
+        VisitorIdentificationStatus.ENRICHED,
+        VisitorIdentificationStatus.MATCHED_TO_LEAD,
+      ],
+    },
+    email: { not: null },
+  };
+  const [identifiedVisitors, identifiedVisitorCount] = await Promise.all([
+    prisma.visitor
+      .findMany({
+        where: visitorLeadWhere,
+        orderBy: [{ intentScore: "desc" }, { lastSeenAt: "desc" }],
+        take: 100,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          email: true,
+          intentScore: true,
+          lastSeenAt: true,
+          sessionCount: true,
+        },
+      })
+      .catch(() => []),
+    prisma.visitor.count({ where: visitorLeadWhere }).catch(() => 0),
+  ]);
+  const trackedTotal = totalCount + identifiedVisitorCount;
+
   const items: LeadKanbanItem[] = leads.map((l) => ({
     id: l.id,
     firstName: l.firstName,
@@ -385,7 +431,7 @@ export default async function LeadsKanbanPage({
     hasChatbot: chatbotSet.has(l.id),
     hasPopup: popupSet.has(l.id),
     hasApplication: applicationSet.has(l.id),
-    visitCount: l.email ? visitorMap.get(l.email.toLowerCase()) ?? 0 : 0,
+    visitCount: l.email ? (visitorMap.get(l.email.toLowerCase()) ?? 0) : 0,
   }));
 
   const rangeStart = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
@@ -411,9 +457,8 @@ export default async function LeadsKanbanPage({
         title="Leads"
         description={
           <>
-            Form + chatbot opt-ins captured on your site. Click any lead
-            to see full detail, conversation history, tours, and
-            applications.
+            Form + chatbot opt-ins captured on your site. Click any lead to see
+            full detail, conversation history, tours, and applications.
             {/* Norman feedback (May 22): when a user clicks the
                 dashboard's "Captured · 30d" hero and lands here, they
                 expect to see ALL captured contacts — but this page
@@ -441,16 +486,22 @@ export default async function LeadsKanbanPage({
         }
         actions={
           <div className="flex items-center gap-3 flex-wrap">
-            <Suspense fallback={<div className="h-9 w-48 rounded-md border border-border bg-muted/40" />}>
+            <Suspense
+              fallback={
+                <div className="h-9 w-48 rounded-md border border-border bg-muted/40" />
+              }
+            >
               <PropertyMultiSelect
                 properties={visibleProperties(scope, properties)}
                 orgId={scope.orgId}
               />
             </Suspense>
             <span className="text-xs text-muted-foreground">
-              {totalCount === 0
-                ? "No leads"
-                : `Showing ${rangeStart}–${rangeEnd} of ${totalCount} ${totalCount === 1 ? "lead" : "leads"}`}
+              {trackedTotal === 0
+                ? "No leads yet"
+                : identifiedVisitorCount > 0
+                  ? `Tracking ${trackedTotal.toLocaleString()} contacts · ${totalCount.toLocaleString()} ${totalCount === 1 ? "lead" : "leads"} + ${identifiedVisitorCount.toLocaleString()} pixel-identified`
+                  : `Showing ${rangeStart}–${rangeEnd} of ${totalCount} ${totalCount === 1 ? "lead" : "leads"}`}
             </span>
             <ExportButton href="/api/tenant/leads/export" />
           </div>
@@ -489,9 +540,7 @@ export default async function LeadsKanbanPage({
         />
         <KpiTile
           label="Conversion (28d)"
-          value={
-            conversionPct != null ? `${conversionPct}%` : "—"
-          }
+          value={conversionPct != null ? `${conversionPct}%` : "—"}
           hint={`${kpiSigned28d} signed`}
           icon={<CheckCircle2 className="h-3.5 w-3.5" />}
         />
@@ -502,7 +551,10 @@ export default async function LeadsKanbanPage({
           of 4 tiles = 8 competing numbers above the actual lead list.
           Same data, denser surface, each number is a Link into its own
           page. Hides entirely when every signal is zero. */}
-      {(kpiVisitors28d || kpiChatbot28d || kpiPopupConv28d || kpiApplications28d) > 0 ? (
+      {(kpiVisitors28d ||
+        kpiChatbot28d ||
+        kpiPopupConv28d ||
+        kpiApplications28d) > 0 ? (
         <p
           aria-label="Cross-product signals (28d)"
           className="flex items-center gap-x-4 gap-y-1.5 flex-wrap text-[11px] sm:text-[12px] text-muted-foreground"
@@ -573,8 +625,7 @@ export default async function LeadsKanbanPage({
           one entry per source name. */}
       {totalCount > 0 && sourceCounts.length > 0 ? (
         <p className="text-[11.5px] text-muted-foreground">
-          {totalCount.toLocaleString()}{" "}
-          {totalCount === 1 ? "lead" : "leads"}
+          {totalCount.toLocaleString()} {totalCount === 1 ? "lead" : "leads"}
           {" · "}
           {(() => {
             const byLabel = new Map<string, number>();
@@ -605,7 +656,10 @@ export default async function LeadsKanbanPage({
             <input type="hidden" name="properties" value={sp.properties} />
           ) : null}
           <div className="relative flex-1">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" aria-hidden="true" />
+            <Search
+              className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none"
+              aria-hidden="true"
+            />
             <input
               name="q"
               defaultValue={sp.q ?? ""}
@@ -619,7 +673,7 @@ export default async function LeadsKanbanPage({
           >
             Search
           </button>
-          {(sp.source || sp.property || sp.properties || sp.q) ? (
+          {sp.source || sp.property || sp.properties || sp.q ? (
             <Link
               href="/portal/leads"
               className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-muted-foreground hover:text-foreground hover:bg-muted/40 transition-colors"
@@ -638,14 +692,24 @@ export default async function LeadsKanbanPage({
           <SourcePill
             label="All"
             active={!sp.source}
-            href={buildHref({ source: undefined, signal: signalFilter, q: sp.q, properties: sp.properties })}
+            href={buildHref({
+              source: undefined,
+              signal: signalFilter,
+              q: sp.q,
+              properties: sp.properties,
+            })}
           />
           {SOURCES.filter((s) => sourcesWithData.has(s)).map((s) => (
             <SourcePill
               key={s}
               label={humanLeadSource(s)}
               active={sp.source === s}
-              href={buildHref({ source: s, signal: signalFilter, q: sp.q, properties: sp.properties })}
+              href={buildHref({
+                source: s,
+                signal: signalFilter,
+                q: sp.q,
+                properties: sp.properties,
+              })}
             />
           ))}
           {sourcesWithData.size === 0 ? (
@@ -667,27 +731,52 @@ export default async function LeadsKanbanPage({
           <SourcePill
             label="All"
             active={!signalFilter}
-            href={buildHref({ source: sp.source, signal: undefined, q: sp.q, properties: sp.properties })}
+            href={buildHref({
+              source: sp.source,
+              signal: undefined,
+              q: sp.q,
+              properties: sp.properties,
+            })}
           />
           <SourcePill
             label="Visitors"
             active={signalFilter === "visitor"}
-            href={buildHref({ source: sp.source, signal: "visitor", q: sp.q, properties: sp.properties })}
+            href={buildHref({
+              source: sp.source,
+              signal: "visitor",
+              q: sp.q,
+              properties: sp.properties,
+            })}
           />
           <SourcePill
             label="Chatbot"
             active={signalFilter === "chatbot"}
-            href={buildHref({ source: sp.source, signal: "chatbot", q: sp.q, properties: sp.properties })}
+            href={buildHref({
+              source: sp.source,
+              signal: "chatbot",
+              q: sp.q,
+              properties: sp.properties,
+            })}
           />
           <SourcePill
             label="Popup"
             active={signalFilter === "popup"}
-            href={buildHref({ source: sp.source, signal: "popup", q: sp.q, properties: sp.properties })}
+            href={buildHref({
+              source: sp.source,
+              signal: "popup",
+              q: sp.q,
+              properties: sp.properties,
+            })}
           />
           <SourcePill
             label="Applied"
             active={signalFilter === "application"}
-            href={buildHref({ source: sp.source, signal: "application", q: sp.q, properties: sp.properties })}
+            href={buildHref({
+              source: sp.source,
+              signal: "application",
+              q: sp.q,
+              properties: sp.properties,
+            })}
           />
         </div>
       </div>
@@ -706,7 +795,10 @@ export default async function LeadsKanbanPage({
                 Previous
               </Link>
             ) : (
-              <span className="px-3 py-2 border border-border rounded-md opacity-40 cursor-not-allowed select-none" aria-disabled="true">
+              <span
+                className="px-3 py-2 border border-border rounded-md opacity-40 cursor-not-allowed select-none"
+                aria-disabled="true"
+              >
                 Previous
               </span>
             )}
@@ -718,7 +810,10 @@ export default async function LeadsKanbanPage({
                 Next
               </Link>
             ) : (
-              <span className="px-3 py-2 border border-border rounded-md opacity-40 cursor-not-allowed select-none" aria-disabled="true">
+              <span
+                className="px-3 py-2 border border-border rounded-md opacity-40 cursor-not-allowed select-none"
+                aria-disabled="true"
+              >
                 Next
               </span>
             )}
@@ -726,10 +821,18 @@ export default async function LeadsKanbanPage({
         </div>
       )}
 
-      {totalCount === 0 ? (
+      {totalCount === 0 && identifiedVisitorCount === 0 ? (
         <EmptyLeadsState />
       ) : (
-        <LeadKanban items={items} />
+        <>
+          {totalCount > 0 ? <LeadKanban items={items} /> : null}
+          {identifiedVisitorCount > 0 ? (
+            <IdentifiedVisitorsSection
+              visitors={identifiedVisitors}
+              total={identifiedVisitorCount}
+            />
+          ) : null}
+        </>
       )}
     </div>
   );
@@ -799,3 +902,129 @@ function EmptyLeadsState() {
   );
 }
 
+// ---------------------------------------------------------------------------
+// IdentifiedVisitorsSection — surfaces pixel-identified visitors as leads on
+// the Leads page. Read-only (links to the visitor feed); the lead kanban
+// above retains full lead actions for true Lead rows. This keeps the
+// existing leads table untouched while answering SG's ask: "show everything
+// we track as a lead."
+// ---------------------------------------------------------------------------
+function IdentifiedVisitorsSection({
+  visitors,
+  total,
+}: {
+  visitors: Array<{
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string | null;
+    intentScore: number;
+    lastSeenAt: Date | null;
+    sessionCount: number;
+  }>;
+  total: number;
+}) {
+  return (
+    <section className="rounded-xl border border-border bg-card overflow-hidden">
+      <header className="flex items-center justify-between gap-3 border-b border-border bg-muted/30 px-4 py-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <Eye className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
+          <div className="min-w-0">
+            <h2 className="text-sm font-semibold text-foreground">
+              Pixel-identified visitors
+            </h2>
+            <p className="text-[11px] text-muted-foreground">
+              {total.toLocaleString()} {total === 1 ? "person" : "people"}{" "}
+              identified by the website pixel — tracked leads not yet captured
+              via form or chatbot.
+            </p>
+          </div>
+        </div>
+        <Link
+          href="/portal/visitors"
+          className="shrink-0 text-[11.5px] font-semibold text-primary hover:underline whitespace-nowrap"
+        >
+          Open visitor feed →
+        </Link>
+      </header>
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm min-w-[560px]">
+          <thead>
+            <tr className="border-b border-border bg-muted/20 text-[10px] uppercase tracking-wider text-muted-foreground">
+              <th className="text-left px-4 py-2.5 font-semibold">Name</th>
+              <th className="text-left px-4 py-2.5 font-semibold">Source</th>
+              <th className="text-right px-4 py-2.5 font-semibold hidden sm:table-cell">
+                Intent
+              </th>
+              <th className="text-right px-4 py-2.5 font-semibold hidden sm:table-cell">
+                Last seen
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {visitors.map((v) => {
+              const name =
+                [v.firstName, v.lastName].filter(Boolean).join(" ") ||
+                v.email ||
+                "Identified visitor";
+              return (
+                <tr key={v.id} className="hover:bg-muted/30 transition-colors">
+                  <td className="px-4 py-2.5">
+                    <Link
+                      href="/portal/visitors"
+                      className="font-medium text-foreground hover:text-primary transition-colors"
+                    >
+                      {name}
+                    </Link>
+                    {v.email ? (
+                      <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[220px]">
+                        {v.email}
+                      </p>
+                    ) : null}
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
+                      <Eye className="h-3 w-3" aria-hidden="true" /> Website
+                      pixel
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 text-right hidden sm:table-cell">
+                    {v.intentScore > 0 ? (
+                      <span
+                        className={cn(
+                          "text-xs font-medium tabular-nums",
+                          v.intentScore >= 70
+                            ? "text-primary"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {v.intentScore}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </td>
+                  <td className="px-4 py-2.5 text-right hidden sm:table-cell">
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {v.lastSeenAt ? v.lastSeenAt.toLocaleDateString() : "—"}
+                    </span>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      {total > visitors.length ? (
+        <div className="border-t border-border px-4 py-2.5 text-center">
+          <Link
+            href="/portal/visitors"
+            className="text-[11.5px] font-semibold text-primary hover:underline"
+          >
+            View all {total.toLocaleString()} identified visitors →
+          </Link>
+        </div>
+      ) : null}
+    </section>
+  );
+}

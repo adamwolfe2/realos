@@ -7,7 +7,7 @@ import { requireScope, tenantWhere } from "@/lib/tenancy/scope";
 import { marketablePropertyWhere } from "@/lib/properties/marketable";
 import {
   parsePropertyFilter,
-  propertyWhereFragment,
+  propertyOrOrgLevelWhereFragment,
   visibleProperties,
 } from "@/lib/tenancy/property-filter";
 import { PropertyMultiSelect } from "@/components/portal/property-multi-select";
@@ -69,7 +69,7 @@ function readParam<T extends string>(
   params: SearchParams,
   key: string,
   allowed: readonly T[],
-  fallback: T
+  fallback: T,
 ): T {
   const raw = params[key];
   const value = Array.isArray(raw) ? raw[0] : raw;
@@ -104,7 +104,7 @@ function buildQuery(
     status: StatusKey;
     sort: SortKey;
     page: number;
-  }>
+  }>,
 ): string {
   const merged = { ...base, ...overrides };
   const params = new URLSearchParams();
@@ -132,13 +132,13 @@ export default async function VisitorsPage({
     params,
     "status",
     ["all", "identified", "hot", "with_lead"],
-    "all"
+    "all",
   );
   const sortKey = readParam<SortKey>(
     params,
     "sort",
     ["recent", "intent"],
-    "recent"
+    "recent",
   );
   const page = parsePage(params.page);
 
@@ -175,9 +175,13 @@ export default async function VisitorsPage({
   // Real fix is upstream in the segment-sync writer (only update
   // lastSeenAt when there's a genuinely new event); until that lands,
   // firstSeenAt is the trustworthy field.
+  // Pixel visitors are org-level (propertyId=null) — the Cursive pixel is
+  // installed on the org's resident domain, not per property. Use the
+  // org-level-inclusive fragment so selecting a property in the switcher
+  // doesn't hide every visitor.
   const baseWhere: Prisma.VisitorWhereInput = {
     ...tenant,
-    ...propertyWhereFragment(scope, propertyIds),
+    ...propertyOrOrgLevelWhereFragment(scope, propertyIds),
     ...(since ? { firstSeenAt: { gte: since } } : {}),
   };
 
@@ -222,7 +226,14 @@ export default async function VisitorsPage({
   const LIVE_WINDOW_MS = 5 * 60 * 1000;
   const liveSince = new Date(Date.now() - LIVE_WINDOW_MS);
 
-  const [visitors, totalInView, integration, summary, liveChats, totalEverCount] = await Promise.all([
+  const [
+    visitors,
+    totalInView,
+    integration,
+    summary,
+    liveChats,
+    totalEverCount,
+  ] = await Promise.all([
     prisma.visitor.findMany({
       where,
       orderBy,
@@ -381,7 +392,12 @@ export default async function VisitorsPage({
     }
   }
 
-  const selection = { window: windowKey, status: statusKey, sort: sortKey, page };
+  const selection = {
+    window: windowKey,
+    status: statusKey,
+    sort: sortKey,
+    page,
+  };
 
   return (
     <div className="space-y-3 ls-page-fade">
@@ -403,7 +419,11 @@ export default async function VisitorsPage({
         description="Real people who visited your site, resolved to a name + email via the Cursive identity graph. Every row is outreach-ready. New identifications land every ~5 minutes; this list refreshes every 60 seconds. Click Sync now to pull fresh data immediately."
         actions={
           <div className="flex items-center gap-3 flex-wrap">
-            <Suspense fallback={<div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />}>
+            <Suspense
+              fallback={
+                <div className="h-9 w-64 animate-pulse bg-neutral-100 rounded" />
+              }
+            >
               <PropertyMultiSelect
                 properties={properties}
                 orgId={scope.orgId}
@@ -454,7 +474,7 @@ export default async function VisitorsPage({
                 {integration?.lastEventAt
                   ? ` · last event ${formatDistanceToNow(
                       integration.lastEventAt,
-                      { addSuffix: true }
+                      { addSuffix: true },
                     )}`
                   : " · no events yet"}
               </p>
@@ -518,9 +538,7 @@ export default async function VisitorsPage({
           label="Total visits"
           value={totalInView.toLocaleString()}
           hint={
-            windowDef.label === "All"
-              ? "All time"
-              : `Last ${windowDef.label}`
+            windowDef.label === "All" ? "All time" : `Last ${windowDef.label}`
           }
           icon={<Radio className="h-3.5 w-3.5" />}
         />
@@ -554,9 +572,7 @@ export default async function VisitorsPage({
           was just noise. */}
 
       {/* Live chats — operator can engage active chatbot conversations */}
-      {liveChats.length > 0 ? (
-        <LiveChatsPanel chats={liveChats} />
-      ) : null}
+      {liveChats.length > 0 ? <LiveChatsPanel chats={liveChats} /> : null}
 
       {/* Empty / Feed */}
       {!hasPixel ? (
@@ -599,11 +615,7 @@ export default async function VisitorsPage({
               };
             })}
           />
-          <Pager
-            page={page}
-            totalInView={totalInView}
-            selection={selection}
-          />
+          <Pager page={page} totalInView={totalInView} selection={selection} />
         </>
       )}
     </div>
@@ -645,12 +657,14 @@ function PixelStalenessBanner({
       <div className="min-w-0 flex-1">
         <p className="text-xs font-semibold leading-tight">{headline}</p>
         <p className="text-[11px] mt-0.5 leading-snug opacity-90">
-          Real-time sync IS running (this page polls every 15s) — but the
-          pixel snippet on{" "}
-          <span className="font-semibold">{domain ?? "your property site"}</span>{" "}
-          stopped sending events {ageLabel}. Check the snippet is still in
-          the &lt;head&gt;, ad blockers / CSP rules aren&apos;t stripping it,
-          and the domain matches. Until events resume, the feed below shows
+          Real-time sync IS running (this page polls every 15s) — but the pixel
+          snippet on{" "}
+          <span className="font-semibold">
+            {domain ?? "your property site"}
+          </span>{" "}
+          stopped sending events {ageLabel}. Check the snippet is still in the
+          &lt;head&gt;, ad blockers / CSP rules aren&apos;t stripping it, and
+          the domain matches. Until events resume, the feed below shows
           historical visitors only.
         </p>
       </div>
@@ -688,7 +702,9 @@ function LiveChatsPanel({
         <div>
           <div className="flex items-center gap-1.5 mb-0.5">
             <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
-            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">Live</span>
+            <span className="text-[10px] font-semibold uppercase tracking-[0.14em] text-primary">
+              Live
+            </span>
           </div>
           <h2 className="text-sm font-semibold tracking-tight">
             Active conversations

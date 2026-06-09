@@ -74,9 +74,8 @@ export async function parsePropertyFilter(
   // by the sidebar switcher. Dynamic import keeps this file usable in
   // contexts without next/headers (tests, edge functions that don't
   // need the cookie path).
-  const { getActivePropertyId, setActivePropertyId } = await import(
-    "@/lib/portal/active-property"
-  );
+  const { getActivePropertyId, setActivePropertyId } =
+    await import("@/lib/portal/active-property");
   const cookieId = await getActivePropertyId();
   if (!cookieId) return null;
 
@@ -92,9 +91,8 @@ export async function parsePropertyFilter(
   // through to portfolio view AND clear the stale cookie so a future
   // request doesn't repeat the bug.
   const { prisma } = await import("@/lib/db");
-  const { marketablePropertyWhere } = await import(
-    "@/lib/properties/marketable"
-  );
+  const { marketablePropertyWhere } =
+    await import("@/lib/properties/marketable");
   const exists = await prisma.property
     .findFirst({
       where: { ...marketablePropertyWhere(orgId), id: cookieId },
@@ -123,7 +121,10 @@ export function parsePropertyFilterUrlOnly(
 ): string[] | null {
   const raw = firstString(sp.properties);
   if (raw) {
-    const ids = raw.split(",").map((s) => s.trim()).filter(Boolean);
+    const ids = raw
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
     return ids.length > 0 ? ids : null;
   }
   const single = firstString(sp.property);
@@ -205,6 +206,30 @@ export function propertyWhereFragment(
   if (!ids || ids.length === 0) return {};
   if (ids.length === 1) return { [field]: ids[0] };
   return { [field]: { in: ids } };
+}
+
+/**
+ * Like propertyWhereFragment, but ALSO matches org-level rows where the
+ * field is NULL. Use for models whose rows can be org-scoped rather than
+ * property-tagged — notably Visitor: the Cursive pixel is installed
+ * org-wide on the resident domain, so identified visitors carry
+ * propertyId = null. Without this, selecting a property in the switcher
+ * would hide EVERY pixel visitor (they'd never match propertyId = <id>).
+ *
+ * Org-level rows are already constrained to the org via the caller's
+ * tenant where-clause, so widening to include them does not cross tenant
+ * boundaries. The no-access sentinel is preserved so a restricted user
+ * who selected a forbidden property still sees nothing.
+ */
+export function propertyOrOrgLevelWhereFragment(
+  scope: ScopeWithGate,
+  selectedIds: string[] | null,
+  field: string = "propertyId",
+): Record<string, unknown> {
+  const base = propertyWhereFragment(scope, selectedIds, field);
+  if (Object.keys(base).length === 0) return base; // no filter — nothing to widen
+  if (base[field] === "__no_property_access__") return base; // preserve deny
+  return { OR: [base, { [field]: null }] };
 }
 
 /**
