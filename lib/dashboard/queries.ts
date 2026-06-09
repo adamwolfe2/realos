@@ -87,28 +87,29 @@ export async function getAdSpendKpi(orgId: string) {
   // (matching OAuthConnection row).
   const realAccount = { adAccount: await realAdAccountWhere(orgId) };
 
-  const [current, previousDaily, previousMonthly, dailyRows] = await Promise.all([
-    prisma.adMetricDaily.aggregate({
-      where: { orgId, date: { gte: since28d }, ...realAccount },
-      _sum: { spendCents: true },
-    }),
-    prisma.adMetricDaily.aggregate({
-      where: { orgId, date: { gte: since56d, lt: since28d }, ...realAccount },
-      _sum: { spendCents: true },
-    }),
-    // Stitch in any rolled-up monthly buckets that overlap the prior
-    // window. For Foundation tier the daily retention is 28 days, so
-    // the prior window may have been purged from AdMetricDaily and only
-    // survive as monthly aggregates. Without this union the delta-arrow
-    // on the dashboard would silently collapse to "+∞%".
-    sumAdMonthlyOverlap(orgId, since56d, since28d),
-    prisma.adMetricDaily.groupBy({
-      by: ["date"],
-      where: { orgId, date: { gte: since28d }, ...realAccount },
-      _sum: { spendCents: true },
-      orderBy: { date: "asc" },
-    }),
-  ]);
+  const [current, previousDaily, previousMonthly, dailyRows] =
+    await Promise.all([
+      prisma.adMetricDaily.aggregate({
+        where: { orgId, date: { gte: since28d }, ...realAccount },
+        _sum: { spendCents: true },
+      }),
+      prisma.adMetricDaily.aggregate({
+        where: { orgId, date: { gte: since56d, lt: since28d }, ...realAccount },
+        _sum: { spendCents: true },
+      }),
+      // Stitch in any rolled-up monthly buckets that overlap the prior
+      // window. For Foundation tier the daily retention is 28 days, so
+      // the prior window may have been purged from AdMetricDaily and only
+      // survive as monthly aggregates. Without this union the delta-arrow
+      // on the dashboard would silently collapse to "+∞%".
+      sumAdMonthlyOverlap(orgId, since56d, since28d),
+      prisma.adMetricDaily.groupBy({
+        by: ["date"],
+        where: { orgId, date: { gte: since28d }, ...realAccount },
+        _sum: { spendCents: true },
+        orderBy: { date: "asc" },
+      }),
+    ]);
 
   const currentCents = current._sum.spendCents ?? 0;
   const previousCents = (previousDaily._sum.spendCents ?? 0) + previousMonthly;
@@ -160,19 +161,33 @@ export async function getOrganicSessionsKpi(orgId: string) {
   const [snapshots, prevSnapshots] = await Promise.all([
     prisma.seoSnapshot.findMany({
       where: { orgId, date: { gte: since28d } },
-      select: { date: true, organicSessions: true },
+      select: { date: true, organicSessions: true, totalClicks: true },
       orderBy: { date: "asc" },
     }),
     prisma.seoSnapshot.aggregate({
       where: { orgId, date: { gte: since56d, lt: since28d } },
-      _sum: { organicSessions: true },
+      _sum: { organicSessions: true, totalClicks: true },
     }),
   ]);
 
-  const total = snapshots.reduce((acc, s) => acc + (s.organicSessions ?? 0), 0);
-  const previousTotal = prevSnapshots._sum.organicSessions ?? 0;
+  // "Organic visitors" = real organic arrivals from EITHER source. GA4
+  // organicSessions and GSC clicks measure the same thing (a search-driven
+  // visit), so summing them double-counts; take the per-day MAX instead.
+  // This is the fix for the tile reading "2" when GA4 session tracking is
+  // misconfigured (0/day) while GSC clearly recorded 252 clicks / 28d.
+  const dailyOrganic = (s: {
+    organicSessions: number | null;
+    totalClicks: number | null;
+  }) => Math.max(s.organicSessions ?? 0, s.totalClicks ?? 0);
+  const total = snapshots.reduce((acc, s) => acc + dailyOrganic(s), 0);
+  // Prior-window aggregate can't take a per-day max (it's pre-summed), so
+  // use the larger of the two summed sources as a close proxy for the delta.
+  const previousTotal = Math.max(
+    prevSnapshots._sum.organicSessions ?? 0,
+    prevSnapshots._sum.totalClicks ?? 0,
+  );
   const sparkline = bucketDailyTotals(
-    snapshots.map((s) => ({ date: s.date, value: s.organicSessions ?? 0 })),
+    snapshots.map((s) => ({ date: s.date, value: dailyOrganic(s) })),
     WINDOW_DAYS,
   );
 
@@ -203,7 +218,9 @@ const LEAD_SOURCE_LABELS: Record<LeadSource, string> = {
   OTHER: "Other",
 };
 
-export async function getLeadSourceBreakdown(orgId: string): Promise<LeadSourceSlice[]> {
+export async function getLeadSourceBreakdown(
+  orgId: string,
+): Promise<LeadSourceSlice[]> {
   const since28d = new Date(Date.now() - WINDOW_DAYS * DAY_MS);
   const grouped = await prisma.lead.groupBy({
     by: ["source"],
@@ -412,7 +429,8 @@ export async function getPropertyMetrics(
   const sparkByProp = new Map<string, number[]>();
   for (const row of allLeadDates) {
     if (!row.propertyId) continue;
-    const arr = sparkByProp.get(row.propertyId) ?? new Array<number>(WINDOW_DAYS).fill(0);
+    const arr =
+      sparkByProp.get(row.propertyId) ?? new Array<number>(WINDOW_DAYS).fill(0);
     const idx = dayBucketIndex(row.createdAt, WINDOW_DAYS);
     if (idx >= 0 && idx < WINDOW_DAYS) arr[idx] += 1;
     sparkByProp.set(row.propertyId, arr);
@@ -460,73 +478,74 @@ export async function getActivityFeed(
   const since = new Date(Date.now() - lookbackDays * DAY_MS);
   const fetchEach = Math.max(limit, 10);
 
-  const [recentLeads, recentTours, recentSessions, recentChats] = await Promise.all([
-    prisma.lead.findMany({
-      where: { orgId, createdAt: { gte: since } },
-      orderBy: { createdAt: "desc" },
-      take: fetchEach,
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        source: true,
-        createdAt: true,
-        property: { select: { name: true } },
-      },
-    }),
-    prisma.tour.findMany({
-      where: {
-        lead: { orgId },
-        status: TourStatus.SCHEDULED,
-        createdAt: { gte: since },
-      },
-      orderBy: { createdAt: "desc" },
-      take: fetchEach,
-      select: {
-        id: true,
-        scheduledAt: true,
-        createdAt: true,
-        property: { select: { name: true } },
-        lead: { select: { firstName: true, lastName: true } },
-      },
-    }),
-    prisma.visitorSession.findMany({
-      where: {
-        orgId,
-        startedAt: { gte: since },
-        OR: [
-          { pageviewCount: { gt: 1 } },
-          { totalTimeSeconds: { gt: ENGAGED_TIME_SECONDS } },
-        ],
-      },
-      orderBy: { startedAt: "desc" },
-      take: fetchEach,
-      select: {
-        id: true,
-        startedAt: true,
-        pageviewCount: true,
-        firstUrl: true,
-        utmSource: true,
-        country: true,
-      },
-    }),
-    prisma.chatbotConversation.findMany({
-      where: { orgId, createdAt: { gte: since } },
-      orderBy: { createdAt: "desc" },
-      take: fetchEach,
-      select: {
-        id: true,
-        createdAt: true,
-        capturedEmail: true,
-        capturedName: true,
-        // Norman bug #102: pull leadId so the activity-feed click
-        // target can route directly to the lead transcript instead of
-        // the gated /portal/conversations module.
-        leadId: true,
-        property: { select: { name: true } },
-      },
-    }),
-  ]);
+  const [recentLeads, recentTours, recentSessions, recentChats] =
+    await Promise.all([
+      prisma.lead.findMany({
+        where: { orgId, createdAt: { gte: since } },
+        orderBy: { createdAt: "desc" },
+        take: fetchEach,
+        select: {
+          id: true,
+          firstName: true,
+          lastName: true,
+          source: true,
+          createdAt: true,
+          property: { select: { name: true } },
+        },
+      }),
+      prisma.tour.findMany({
+        where: {
+          lead: { orgId },
+          status: TourStatus.SCHEDULED,
+          createdAt: { gte: since },
+        },
+        orderBy: { createdAt: "desc" },
+        take: fetchEach,
+        select: {
+          id: true,
+          scheduledAt: true,
+          createdAt: true,
+          property: { select: { name: true } },
+          lead: { select: { firstName: true, lastName: true } },
+        },
+      }),
+      prisma.visitorSession.findMany({
+        where: {
+          orgId,
+          startedAt: { gte: since },
+          OR: [
+            { pageviewCount: { gt: 1 } },
+            { totalTimeSeconds: { gt: ENGAGED_TIME_SECONDS } },
+          ],
+        },
+        orderBy: { startedAt: "desc" },
+        take: fetchEach,
+        select: {
+          id: true,
+          startedAt: true,
+          pageviewCount: true,
+          firstUrl: true,
+          utmSource: true,
+          country: true,
+        },
+      }),
+      prisma.chatbotConversation.findMany({
+        where: { orgId, createdAt: { gte: since } },
+        orderBy: { createdAt: "desc" },
+        take: fetchEach,
+        select: {
+          id: true,
+          createdAt: true,
+          capturedEmail: true,
+          capturedName: true,
+          // Norman bug #102: pull leadId so the activity-feed click
+          // target can route directly to the lead transcript instead of
+          // the gated /portal/conversations module.
+          leadId: true,
+          property: { select: { name: true } },
+        },
+      }),
+    ]);
 
   const items: ActivityItem[] = [];
 
@@ -536,7 +555,9 @@ export async function getActivityFeed(
       id: `lead-${lead.id}`,
       kind: "lead",
       title: `New lead from ${LEAD_SOURCE_LABELS[lead.source] ?? lead.source}`,
-      meta: [name, lead.property?.name].filter(Boolean).join(" \u00b7 ") || undefined,
+      meta:
+        [name, lead.property?.name].filter(Boolean).join(" \u00b7 ") ||
+        undefined,
       href: "/portal/leads",
       at: lead.createdAt,
     });
@@ -550,9 +571,13 @@ export async function getActivityFeed(
       id: `tour-${tour.id}`,
       kind: "tour",
       title: `Tour booked for ${when}`,
-      meta: [tour.property?.name, displayName(tour.lead?.firstName, tour.lead?.lastName)]
-        .filter(Boolean)
-        .join(" \u00b7 ") || undefined,
+      meta:
+        [
+          tour.property?.name,
+          displayName(tour.lead?.firstName, tour.lead?.lastName),
+        ]
+          .filter(Boolean)
+          .join(" \u00b7 ") || undefined,
       href: "/portal/leads",
       at: tour.createdAt,
     });
@@ -567,7 +592,11 @@ export async function getActivityFeed(
         ? `Engaged visitors on ${path}`
         : "Engaged visitors on your site",
       meta:
-        [s.utmSource && `via ${s.utmSource}`, s.country, `${s.pageviewCount} pages`]
+        [
+          s.utmSource && `via ${s.utmSource}`,
+          s.country,
+          `${s.pageviewCount} pages`,
+        ]
           .filter(Boolean)
           .join(" \u00b7 ") || undefined,
       href: "/portal/visitors",
@@ -606,7 +635,9 @@ export async function getActivityFeed(
 // Integration health row
 // ---------------------------------------------------------------------------
 
-export async function getIntegrationHealth(orgId: string): Promise<IntegrationChip[]> {
+export async function getIntegrationHealth(
+  orgId: string,
+): Promise<IntegrationChip[]> {
   const recentEventCutoff = new Date(Date.now() - 7 * DAY_MS);
 
   const [seo, ads, appfolio, cursive, recentPixelEvent] = await Promise.all([
@@ -652,11 +683,20 @@ export async function getIntegrationHealth(orgId: string): Promise<IntegrationCh
     }),
   ]);
 
-  const seoBy = new Map<SeoProvider, { status: SeoSyncStatus; lastSyncAt: Date | null }>();
+  const seoBy = new Map<
+    SeoProvider,
+    { status: SeoSyncStatus; lastSyncAt: Date | null }
+  >();
   for (const s of seo) {
-    seoBy.set(s.provider, { status: s.status, lastSyncAt: s.lastSyncAt ?? null });
+    seoBy.set(s.provider, {
+      status: s.status,
+      lastSyncAt: s.lastSyncAt ?? null,
+    });
   }
-  const adsBy = new Map<AdPlatform, { accessStatus: string | null; lastSyncAt: Date | null }>();
+  const adsBy = new Map<
+    AdPlatform,
+    { accessStatus: string | null; lastSyncAt: Date | null }
+  >();
   for (const a of ads) {
     if (!adsBy.has(a.platform)) {
       adsBy.set(a.platform, {
@@ -781,7 +821,9 @@ export type FirstRunProgress = {
   marketingSiteCustomized: boolean;
 };
 
-export async function getFirstRunProgress(orgId: string): Promise<FirstRunProgress> {
+export async function getFirstRunProgress(
+  orgId: string,
+): Promise<FirstRunProgress> {
   const [propertyCount, cursive, gsc, siteConfig] = await Promise.all([
     // First-run "do you have any properties yet?" — only count marketable
     // ones. AppFolio re-syncing a parking lot shouldn't trip the
@@ -831,7 +873,9 @@ export async function getFirstRunProgress(orgId: string): Promise<FirstRunProgre
 // groupBy plumbing.
 // ---------------------------------------------------------------------------
 
-export async function getLeadStatusCounts(orgId: string): Promise<Map<LeadStatus, number>> {
+export async function getLeadStatusCounts(
+  orgId: string,
+): Promise<Map<LeadStatus, number>> {
   const rows = await prisma.lead.groupBy({
     by: ["status"],
     where: { orgId },
@@ -872,7 +916,10 @@ function dayBucketIndex(date: Date, windowDays: number): number {
   return windowDays - 1 - daysAgo;
 }
 
-function displayName(first: string | null | undefined, last: string | null | undefined): string {
+function displayName(
+  first: string | null | undefined,
+  last: string | null | undefined,
+): string {
   const f = first?.trim();
   const l = last?.trim();
   if (f && l) return `${f} ${l[0]}.`;
@@ -1158,7 +1205,9 @@ export async function getReputationSummary(
     }
   }
   const avgGoogleRating =
-    weightedCount > 0 ? Math.round((weightedSum / weightedCount) * 10) / 10 : null;
+    weightedCount > 0
+      ? Math.round((weightedSum / weightedCount) * 10) / 10
+      : null;
 
   return {
     avgGoogleRating,
@@ -1401,9 +1450,7 @@ export async function getTopPropertiesByLeads(
         const arr = p.photoUrls;
         if (Array.isArray(arr) && arr.length > 0) {
           const first = arr[0];
-          return typeof first === "string" && first.length > 0
-            ? first
-            : null;
+          return typeof first === "string" && first.length > 0 ? first : null;
         }
         return null;
       })();
@@ -1418,7 +1465,9 @@ export async function getTopPropertiesByLeads(
         leadsPrior: priorMap.get(p.id) ?? 0,
       };
     })
-    .sort((a, b) => b.leadsCurrent - a.leadsCurrent || b.leadsPrior - a.leadsPrior)
+    .sort(
+      (a, b) => b.leadsCurrent - a.leadsCurrent || b.leadsPrior - a.leadsPrior,
+    )
     .slice(0, limit);
 }
 
