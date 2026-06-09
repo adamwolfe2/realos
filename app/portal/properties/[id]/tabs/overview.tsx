@@ -146,6 +146,7 @@ export async function OverviewTab({
     prisma.lease.aggregate({
       where: { orgId, propertyId, status: LeaseStatus.ACTIVE },
       _sum: { monthlyRentCents: true },
+      _count: { _all: true },
     }),
     // Norman feedback (issue #74, #53): the integrations sidebar was
     // showing Cursive + GA4 as "not connected" on Telegraph Commons even
@@ -282,6 +283,9 @@ export async function OverviewTab({
   ]);
 
   const totalUnits = property.totalUnits ?? null;
+  // "Available to lease" = marketing inventory (Bug #44 parity with the
+  // per-unit table). For student housing this is often next-term
+  // pre-leasing, NOT current vacancy — so it must not drive occupancy.
   const rawAvailable =
     listingCounts?.availableCount != null
       ? listingCounts.availableCount
@@ -290,11 +294,19 @@ export async function OverviewTab({
     totalUnits != null
       ? Math.max(0, Math.min(totalUnits, rawAvailable))
       : Math.max(0, rawAvailable);
+  // Occupancy reflects CURRENT leased reality: prefer active lease count
+  // (rent roll), cap at totalUnits; fall back to listings only when no
+  // lease signal exists. Mirrors getPropertyOccupancy + reports/generate.
+  const activeLeaseCount = rentRoll._count._all;
   const leasedUnits =
-    totalUnits != null ? Math.max(0, totalUnits - availableUnits) : null;
+    totalUnits != null
+      ? activeLeaseCount > 0
+        ? Math.min(totalUnits, activeLeaseCount)
+        : Math.max(0, totalUnits - availableUnits)
+      : null;
   const occupancyPct =
     totalUnits != null && totalUnits > 0 && leasedUnits != null
-      ? Math.round((leasedUnits / totalUnits) * 100)
+      ? Math.max(0, Math.min(100, Math.round((leasedUnits / totalUnits) * 100)))
       : null;
 
   const leadsDeltaPct = pctChange(kpis.leads28d, kpis.leadsPrev28d);
@@ -1521,7 +1533,7 @@ function MarketingSection({
               <span className="tabular-nums font-semibold text-foreground">
                 {availableUnits ?? 0}
               </span>
-              <span>available · {totalUnits.toLocaleString()} total</span>
+              <span>available to lease · {totalUnits.toLocaleString()} units</span>
             </span>
           ) : null}
           <a

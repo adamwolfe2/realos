@@ -50,15 +50,19 @@ export async function OccupancyTab({
         <KpiTile
           label="Occupancy"
           value={`${data.occupancyPct}%`}
-          hint={`${data.totalUnits - data.availableUnits} of ${data.totalUnits} leased`}
+          hint={
+            data.activeLeaseCount > 0
+              ? `${data.activeLeaseCount} active leases · ${data.totalUnits} units`
+              : `${data.leasedUnits} of ${data.totalUnits} leased`
+          }
         />
         <KpiTile
-          label="Available"
+          label="Available to lease"
           value={data.availableUnits}
           hint={
             listingsExceedUnits
               ? `Across ${totalListings} listings`
-              : undefined
+              : "Listed for lease"
           }
         />
         <KpiTile label="Total units" value={data.totalUnits} />

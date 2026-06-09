@@ -3,6 +3,7 @@ import { prisma } from "@/lib/db";
 import {
   ApplicationStatus,
   LeadSource,
+  LeaseStatus,
   TourStatus,
   type Prisma,
 } from "@prisma/client";
@@ -801,6 +802,8 @@ export type BedTypeRow = {
 export type PropertyOccupancyData = {
   totalUnits: number;
   availableUnits: number;
+  leasedUnits: number;
+  activeLeaseCount: number;
   occupancyPct: number;
   activeApplications: number;
   priceMinCents: number | null;
@@ -849,15 +852,20 @@ export async function getPropertyOccupancy(
   const totalUnits = property.totalUnits ?? property.listings.length;
   if (totalUnits <= 0) return null;
 
-  const activeAppsCount = await prisma.application.count({
-    where: {
-      propertyId,
-      lead: { orgId },
-      status: { in: [ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_REVIEW] },
-    },
-  });
+  const [activeAppsCount, activeLeaseCount] = await Promise.all([
+    prisma.application.count({
+      where: {
+        propertyId,
+        lead: { orgId },
+        status: { in: [ApplicationStatus.SUBMITTED, ApplicationStatus.UNDER_REVIEW] },
+      },
+    }),
+    prisma.lease.count({
+      where: { propertyId, orgId, status: LeaseStatus.ACTIVE },
+    }),
+  ]);
 
-  // Availability source-of-truth resolution.
+  // "Available" KPI source-of-truth (Bug #44).
   //
   // History:
   //   - We used to prefer Property.availableCount (AppFolio's
@@ -869,14 +877,13 @@ export async function getPropertyOccupancy(
   //     Root cause: availableCount=0 (stale from AppFolio) while
   //     listings.isAvailable=true on ~141 rows.
   //
-  // New rule (Bug #44 fix): if AppFolio's counter STRONGLY disagrees
-  // with the per-row truth, trust the rows — that's what the operator
-  // sees in the table directly below the KPI. Cap to totalUnits.
+  // Rule: if AppFolio's counter STRONGLY disagrees with the per-row
+  // truth, trust the rows — that's what the operator sees in the table
+  // directly below the KPI. Cap to totalUnits. This KPI represents
+  // marketing inventory listed for lease (for student housing, often
+  // NEXT-TERM pre-leasing), NOT current vacancy — see occupancy below.
   const listingsAvail = property.listings.filter((l) => l.isAvailable).length;
   const appfolioAvail = property.availableCount;
-  // Strong disagreement = AppFolio says 0 but >5 rows are flagged
-  // available (or vice versa). In those cases, defer to the row-level
-  // truth so the KPI and the table can never contradict each other.
   const stronglyDisagree =
     appfolioAvail != null &&
     ((appfolioAvail === 0 && listingsAvail > 5) ||
@@ -887,7 +894,19 @@ export async function getPropertyOccupancy(
       ? appfolioAvail
       : listingsAvail;
   const availableUnits = Math.max(0, Math.min(totalUnits, rawAvailable));
-  const leasedUnits = Math.max(0, totalUnits - availableUnits);
+
+  // Occupancy reflects CURRENT leased reality, source-of-truth priority
+  // (mirrors lib/reports/generate.ts):
+  //   1. Active lease count — the rent roll. Most reliable.
+  //   2. listings.isAvailable (totalUnits - available) — embed fallback.
+  // For student housing, listings.isAvailable counts next-term marketing
+  // inventory, so it must NOT drive occupancy or a fully-leased building
+  // reads as mostly empty (Bug: 111 active leases showed 18% because 82
+  // marketing listings were treated as current vacancy).
+  const leasedUnits =
+    activeLeaseCount > 0
+      ? Math.min(totalUnits, activeLeaseCount)
+      : Math.max(0, totalUnits - availableUnits);
   const occupancyPct =
     totalUnits > 0
       ? Math.max(0, Math.min(100, Math.round((leasedUnits / totalUnits) * 100)))
@@ -898,6 +917,8 @@ export async function getPropertyOccupancy(
   return {
     totalUnits,
     availableUnits,
+    leasedUnits,
+    activeLeaseCount,
     occupancyPct,
     activeApplications: activeAppsCount,
     priceMinCents: property.priceMin ?? null,
