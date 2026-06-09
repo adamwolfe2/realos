@@ -121,7 +121,7 @@ export function Donut({
             </p>
           ) : null}
           {centerSecondary ? (
-            <p className="text-[9px] tracking-widest uppercase text-muted-foreground mt-1 leading-tight">
+            <p className="text-[10px] tracking-widest uppercase text-muted-foreground mt-1 leading-tight">
               {centerSecondary}
             </p>
           ) : null}

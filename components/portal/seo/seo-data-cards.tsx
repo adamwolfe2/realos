@@ -168,13 +168,13 @@ export function HealthScoreCard({
               key={p.label}
               className="rounded-md border border-border/60 bg-muted/20 px-2 py-1.5"
             >
-              <p className="text-[9px] font-mono uppercase tracking-[0.08em] text-muted-foreground leading-tight">
+              <p className="text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground leading-tight">
                 {p.label}
               </p>
               <p className="text-[12px] font-semibold text-foreground tabular-nums leading-tight">
                 {p.value != null ? Math.round(p.value) : "—"}
                 {p.max ? (
-                  <span className="text-[9px] font-mono text-muted-foreground ml-0.5">
+                  <span className="text-[10px] font-mono text-muted-foreground ml-0.5">
                     / {p.max}
                   </span>
                 ) : null}

@@ -271,11 +271,11 @@ function ActionRow({
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1.5 flex-wrap leading-none mb-0.5">
             <span
-              className={`inline-flex items-center rounded-full px-1.5 py-px text-[9px] font-semibold uppercase tracking-wide ${styles.pill}`}
+              className={`inline-flex items-center rounded-full px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide ${styles.pill}`}
             >
               {action.severity}
             </span>
-            <span className="text-[9px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
+            <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
               {CATEGORY_LABEL[action.category]}
             </span>
             <span className="text-[9.5px] text-muted-foreground tabular-nums">

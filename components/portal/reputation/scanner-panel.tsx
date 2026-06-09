@@ -878,7 +878,7 @@ function SourceFilter({
     <select
       value={value}
       onChange={(e) => onChange(e.target.value as MentionSource | "ALL")}
-      className="h-7 rounded-md border border-border bg-card px-2 text-[11px] text-foreground"
+      className="ls-select h-7 px-2 text-[11px] text-foreground"
     >
       {options.map((o) => (
         <option key={o.value} value={o.value}>

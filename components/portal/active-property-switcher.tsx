@@ -80,8 +80,7 @@ export function ActivePropertySwitcher({
         disabled={pending}
         aria-label="Active property scope"
         className={cn(
-          "w-full appearance-none rounded-md border border-border bg-card pl-8 pr-7 py-2 text-[12px] font-medium text-foreground hover:bg-muted/60 transition-colors disabled:opacity-60",
-          "focus:outline-none focus:ring-2 focus:ring-primary/40",
+          "ls-select w-full pl-8 py-2 text-[12px] font-medium text-foreground hover:bg-muted/60 disabled:opacity-60",
         )}
       >
         <option value={ALL_PROPERTIES_VALUE}>All properties</option>

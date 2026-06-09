@@ -421,19 +421,19 @@ export default async function LeadsKanbanPage({
                 where the rest live so they don't think the platform
                 is lying. */}
             <span className="block mt-1 text-[12px] text-muted-foreground">
-              Pixel-identified visitors live on{" "}
+              Pixel-identified visitors live in the{" "}
               <Link
                 href="/portal/visitors"
                 className="font-medium text-primary hover:underline"
               >
-                /portal/visitors
+                Visitors feed
               </Link>
-              . Chatbot conversations live on{" "}
+              . Chatbot threads live in{" "}
               <Link
-                href="/portal/chatbot"
+                href="/portal/conversations"
                 className="font-medium text-primary hover:underline"
               >
-                /portal/chatbot
+                Conversations
               </Link>
               .
             </span>

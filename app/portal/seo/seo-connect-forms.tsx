@@ -99,7 +99,7 @@ export function ConnectSeoForm({
           <select
             name="leasestackPropertyId"
             defaultValue={defaultPropertyId ?? ""}
-            className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            className="ls-select w-full px-3 py-2 text-sm"
           >
             <option value="">All properties (org-wide)</option>
             {properties.map((p) => (

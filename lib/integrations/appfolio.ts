@@ -1488,9 +1488,20 @@ export function mapWorkOrderPayload(raw: RawRow): MappedWorkOrder | null {
     status: workOrderStatusFromRaw(raw),
     priority: workOrderPriorityFromRaw(raw),
     category: asString(raw.category ?? raw.type ?? raw.Category ?? raw.Type) ?? null,
+    // AppFolio's work_order report exposes the issue label as
+    // `work_order_issue` (e.g. "Wall Leaking") — a concise, human title.
+    // Fall back to the long free-text `job_description`, then the legacy
+    // subject/title variants. None of the original keys exist in the real
+    // payload, which is why every synced WO had a NULL title.
     title:
       asString(
-        raw.subject ?? raw.title ?? raw.Subject ?? raw.Title ?? raw.summary,
+        raw.work_order_issue ??
+          raw.subject ??
+          raw.title ??
+          raw.Subject ??
+          raw.Title ??
+          raw.summary ??
+          raw.job_description,
       ) ?? null,
     // Expanded description fallbacks. AppFolio's variants:
     //   - description / Description
@@ -1502,7 +1513,8 @@ export function mapWorkOrderPayload(raw: RawRow): MappedWorkOrder | null {
     //   - work_description / WorkDescription
     description:
       asString(
-        raw.description ??
+        raw.job_description ??
+          raw.description ??
           raw.Description ??
           raw.brief_description ??
           raw.BriefDescription ??
@@ -1537,7 +1549,8 @@ export function mapWorkOrderPayload(raw: RawRow): MappedWorkOrder | null {
     vendorEmail: asString(raw.vendor_email ?? raw.VendorEmail) ?? null,
     reportedAt:
       asDate(
-        raw.created_on ??
+        raw.created_at ??
+          raw.created_on ??
           raw.reported_on ??
           raw.date_reported ??
           raw.CreatedOn ??

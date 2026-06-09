@@ -140,7 +140,7 @@ export default async function ReportsListPage({
                 <select
                   name="propertyId"
                   defaultValue=""
-                  className="rounded-md border border-border bg-background px-3 py-2 text-sm min-w-[200px]"
+                  className="ls-select px-3 py-2 text-sm min-w-[200px]"
                   aria-label="Property scope"
                 >
                   <option value="">Whole portfolio · all properties</option>
@@ -159,7 +159,7 @@ export default async function ReportsListPage({
               <select
                 name="kind"
                 defaultValue="monthly"
-                className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+                className="ls-select px-3 py-2 text-sm"
                 aria-label="Report period"
               >
                 <option value="weekly">Weekly (7d)</option>
@@ -205,7 +205,7 @@ export default async function ReportsListPage({
             <select
               name="kind"
               defaultValue={sp.kind ?? ""}
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+              className="ls-select px-3 py-2 text-sm"
             >
               <option value="">All</option>
               <option value="weekly">Weekly</option>
@@ -220,7 +220,7 @@ export default async function ReportsListPage({
             <select
               name="status"
               defaultValue={sp.status ?? ""}
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+              className="ls-select px-3 py-2 text-sm"
             >
               <option value="">All</option>
               <option value="draft">Draft</option>

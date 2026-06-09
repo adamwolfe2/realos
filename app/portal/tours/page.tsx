@@ -243,8 +243,8 @@ export default async function ToursPage({
         <EmptyState
           icon={<Calendar className="h-4 w-4" />}
           title="No tours scheduled."
-          body="Tours booked via the chatbot or your web form will appear here. Test the booking flow to confirm everything routes back to this view."
-          action={{ label: "Test the booking flow", href: "/portal/chatbot" }}
+          body="Tours booked via the chatbot or your web form will appear here. Set up your booking chatbot so prospects can self-schedule, then watch tours route back to this view."
+          action={{ label: "Set up booking chatbot", href: "/portal/chatbot" }}
         />
       </div>
     );

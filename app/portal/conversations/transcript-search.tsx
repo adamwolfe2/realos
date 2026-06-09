@@ -117,9 +117,7 @@ function TranscriptSearchInner({
             value={initialSort}
             onChange={(e) => pushParams({ sort: e.target.value })}
             className={cn(
-              "rounded-[6px] border border-border bg-card",
-              "px-2 py-1.5 text-xs text-foreground",
-              "focus:outline-none focus:ring-2 focus:ring-primary/40",
+              "ls-select px-2 py-1.5 text-xs text-foreground",
             )}
           >
             {SORT_OPTIONS.map((o) => (

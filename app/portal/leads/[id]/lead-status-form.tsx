@@ -73,11 +73,7 @@ export function LeadStatusForm({
         disabled={pending}
         onChange={(e) => change(e.target.value as LeadStatus)}
         className={cn(
-          "w-full rounded-[10px] bg-card px-3 py-2 text-sm",
-          "text-foreground",
-          "ring-1 ring-border",
-          "focus:outline-none focus:ring-primary",
-          "transition-colors duration-200",
+          "ls-select w-full px-3 py-2 text-sm text-foreground",
           pending && "opacity-60"
         )}
       >

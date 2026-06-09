@@ -555,6 +555,36 @@ body {
 .ls-card-flush { padding: 0; }
 .ls-card-pad   { padding: 20px; }
 
+/* ls-select — styled native <select>. Kills the dated OS dropdown chrome via
+   appearance-none, paints a chevron + focus ring so dropdowns match the input
+   system, while keeping 100% native keyboard / a11y / mobile behavior. Zero JS.
+   Apply alongside size/text utilities (e.g. `ls-select h-9 px-3 text-sm`). */
+.ls-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: var(--white);
+  background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2.25' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  background-size: 0.8rem;
+  padding-right: 1.9rem;
+  border: 1px solid var(--hair-strong);
+  border-radius: 8px;
+  cursor: pointer;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease;
+}
+.ls-select:hover { border-color: var(--ring-warm); }
+.ls-select:focus,
+.ls-select:focus-visible {
+  outline: none;
+  border-color: var(--focus-blue);
+  box-shadow: 0 0 0 3px var(--brand-glow);
+}
+.ls-select:disabled { opacity: 0.5; cursor: not-allowed; }
+
 /* Soft brand accent — used on the dashboard's hero KPI tile or any card we
    want to anchor visual hierarchy on. The radial glow sits in the top-right
    corner so it never competes with content. */

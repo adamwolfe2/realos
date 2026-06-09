@@ -146,7 +146,7 @@ export function TargetQueryManager({ propertyId }: Props) {
         <select
           value={newIntent}
           onChange={(e) => setNewIntent(e.target.value as Intent)}
-          className="rounded-lg border border-border bg-background px-2 py-1.5 text-[12px] text-foreground"
+          className="ls-select px-2 py-1.5 text-[12px] text-foreground"
         >
           {INTENT_OPTIONS.map((i) => (
             <option key={i} value={i}>

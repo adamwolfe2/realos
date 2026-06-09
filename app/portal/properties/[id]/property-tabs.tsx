@@ -221,7 +221,7 @@ function PropertyTabsInner({
               className={cn(
                 "inline-flex shrink-0 items-center gap-2 px-4 py-3 text-[13px] font-medium border-b-2 -mb-px whitespace-nowrap transition-colors",
                 isActive
-                  ? "border-foreground text-foreground"
+                  ? "border-primary text-foreground"
                   : "border-transparent text-muted-foreground hover:text-foreground",
               )}
               aria-current={isActive ? "page" : undefined}

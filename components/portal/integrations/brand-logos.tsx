@@ -114,6 +114,21 @@ function AppFolioMark() {
   );
 }
 
+// Generic PMS logo — real brand asset under /public/logos, contained inside
+// the neutral tile (same treatment as AppFolio). Replaces the letter marks.
+function PmsLogo({ src, alt }: { src: string; alt: string }) {
+  return (
+    <Image
+      src={src}
+      alt={alt}
+      width={80}
+      height={80}
+      className="w-full h-full object-contain"
+      unoptimized
+    />
+  );
+}
+
 function GscMark() {
   return (
     <Image
@@ -163,34 +178,6 @@ function WebhookMark() {
   );
 }
 
-// Polished letter mark for PMS / niche brands where no licensed logo exists.
-// Brand color background, two-letter token, subtle depth accent.
-function LetterMark({ letters }: { letters: string }) {
-  return (
-    <svg
-      role="img"
-      aria-hidden="true"
-      viewBox="0 0 24 24"
-      xmlns="http://www.w3.org/2000/svg"
-      className="h-full w-full"
-    >
-      <text
-        x="50%"
-        y="54%"
-        textAnchor="middle"
-        dominantBaseline="middle"
-        fill="currentColor"
-        fontFamily="system-ui, -apple-system, Segoe UI, Roboto, sans-serif"
-        fontWeight="700"
-        fontSize="11"
-        letterSpacing="0"
-      >
-        {letters}
-      </text>
-    </svg>
-  );
-}
-
 // ---------------------------------------------------------------------------
 // Dispatcher: slug → { renderer, brandColor, whiteGlyph }
 // `whiteGlyph` means render the SVG mark in white on the brand color tile
@@ -203,6 +190,11 @@ export type BrandLogoEntry = {
   brandColor: string;
   // If true, tile background is the brand color and the mark renders in white.
   filledTile: boolean;
+  // If true, render() is a raster <Image> logo file — gets a near-flush tile
+  // (minimal padding) so wide wordmark logos (Buildium, RealPage, Entrata,
+  // Yardi Breeze) render at a legible size instead of shrinking to a dot
+  // inside the square frame.
+  image?: boolean;
 };
 
 export const BRAND_LOGOS: Record<string, BrandLogoEntry> = {
@@ -288,30 +280,44 @@ export const BRAND_LOGOS: Record<string, BrandLogoEntry> = {
     render: () => <AppFolioMark />,
     brandColor: "#0059A9",
     filledTile: false,
+    image: true,
   },
   "yardi-breeze": {
-    render: () => <LetterMark letters="Yb" />,
+    render: () => (
+      <PmsLogo src="/logos/yard-breeze-logo-300-150x150.png" alt="Yardi Breeze" />
+    ),
     brandColor: "#00A28F",
-    filledTile: true,
+    filledTile: false,
+    image: true,
   },
   "yardi-voyager": {
-    render: () => <LetterMark letters="Yv" />,
+    render: () => (
+      <PmsLogo src="/logos/yardi-logo-square-1.webp" alt="Yardi Voyager" />
+    ),
     brandColor: "#006547",
-    filledTile: true,
+    filledTile: false,
+    image: true,
   },
   buildium: {
-    render: () => <LetterMark letters="Bu" />,
+    render: () => (
+      <PmsLogo src="/logos/buildium_logo_full-1.webp" alt="Buildium" />
+    ),
     brandColor: "#007AC1",
-    filledTile: true,
+    filledTile: false,
+    image: true,
   },
   entrata: {
-    render: () => <LetterMark letters="En" />,
+    render: () => (
+      <PmsLogo src="/logos/entrata_red_lettermark.webp" alt="Entrata" />
+    ),
     brandColor: "#21223B",
-    filledTile: true,
+    filledTile: false,
+    image: true,
   },
   realpage: {
-    render: () => <LetterMark letters="Rp" />,
+    render: () => <PmsLogo src="/logos/realpage.png" alt="RealPage" />,
     brandColor: "#0063A6",
-    filledTile: true,
+    filledTile: false,
+    image: true,
   },
 };

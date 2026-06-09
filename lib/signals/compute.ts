@@ -33,12 +33,15 @@ import {
   crawlScore,
   type SiteCrawlResult,
 } from "@/lib/audit/site-crawl";
-import { computeMockTenantSignals } from "./mock-tenant";
+import { computeRealTenantSignals } from "./real-tenant";
 
 // ----------------------------------------------------------------------------
 // computeSignals — daily snapshot for a scope.
 //   PROSPECT: real DataforSEO + AEO + reputation fan-out.
-//   TENANT:   still mock — TODO(phase 3) wire to sync-orchestrator.
+//   TENANT:   real data — reputation/leads/chatbot/traffic/SEO/AEO pulled from
+//             the operator's own tables (lib/signals/real-tenant.ts). Sections
+//             with no underlying data return null (honest empty state), never
+//             fabricated. The old mock generator is retired.
 // ----------------------------------------------------------------------------
 
 export type ProspectComputeResult = SignalSnapshot & {
@@ -79,7 +82,7 @@ export async function computeSignals(
   if (scope.kind === "prospect") {
     return computeProspectSignals(scope.prospectAuditId, scope.domain);
   }
-  return computeMockTenantSignals(scope);
+  return computeRealTenantSignals(scope);
 }
 
 // ---------------------------------------------------------------------------

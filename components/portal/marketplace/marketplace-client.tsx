@@ -394,7 +394,7 @@ function ModuleCard({
           style={{
             background:
               "linear-gradient(180deg, rgba(37,99,235,0.10), rgba(37,99,235,0.04))",
-            color: "var(--terracotta)",
+            color: "#2563EB",
             boxShadow: "0 1px 0 rgba(255,255,255,0.7) inset",
             opacity: isComing ? 0.6 : 1,
           }}
@@ -466,7 +466,7 @@ function ModuleCard({
           right. No bullets, no separators, no "INTEGRATES WITH" label —
           the logos speak for themselves at this size. */}
       <div className="mt-auto pt-4 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
           {m.brandLogoKeys && m.brandLogoKeys.length > 0 ? (
             <div className="flex items-center gap-1 shrink-0">
               {m.brandLogoKeys.slice(0, 4).map((k) => {
@@ -494,22 +494,24 @@ function ModuleCard({
             cents={m.monthlyPriceCents}
           />
         </div>
-        <CtaRow
-          kind={m.kind}
-          isEnabled={isEnabled}
-          isPending={isPending}
-          isTrialing={isTrialing}
-          isNotified={isNotified}
-          setupHref={m.setupHref}
-          name={m.name}
-          isToggle={isToggle}
-          isAddon={isAddon}
-          isIncluded={isIncluded}
-          isComing={isComing}
-          onActivate={onActivate}
-          onDeactivate={onDeactivate}
-          onNotifyMe={onNotifyMe}
-        />
+        <div className="shrink-0 whitespace-nowrap">
+          <CtaRow
+            kind={m.kind}
+            isEnabled={isEnabled}
+            isPending={isPending}
+            isTrialing={isTrialing}
+            isNotified={isNotified}
+            setupHref={m.setupHref}
+            name={m.name}
+            isToggle={isToggle}
+            isAddon={isAddon}
+            isIncluded={isIncluded}
+            isComing={isComing}
+            onActivate={onActivate}
+            onDeactivate={onDeactivate}
+            onNotifyMe={onNotifyMe}
+          />
+        </div>
       </div>
     </article>
   );

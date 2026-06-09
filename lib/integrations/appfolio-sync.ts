@@ -279,6 +279,10 @@ export async function runAppfolioSync(
     firstFailedAt: string;
     lastError: string;
     skipped?: boolean;
+    // "unsupported" = report isn't on this account's AppFolio plan (404 /
+    // "not a valid report") — permanent, never auto-retried. "transient" =
+    // a recoverable failure that the weekly retry should re-attempt.
+    reason?: "transient" | "unsupported";
     lastRetryAttemptAt?: string;
   };
   // Defensive parsing — a malformed prior payload (manual DB edit,
@@ -301,6 +305,12 @@ export async function runAppfolioSync(
           firstFailedAt: typeof e.firstFailedAt === "string" ? e.firstFailedAt : new Date().toISOString(),
           lastError: typeof e.lastError === "string" ? e.lastError : "unknown",
           skipped: e.skipped === true,
+          reason:
+            e.reason === "unsupported"
+              ? "unsupported"
+              : e.reason === "transient"
+                ? "transient"
+                : undefined,
           lastRetryAttemptAt: typeof e.lastRetryAttemptAt === "string" ? e.lastRetryAttemptAt : undefined,
         };
       }
@@ -313,7 +323,10 @@ export async function runAppfolioSync(
   if (options.retrySkipped) {
     const nowIso = new Date().toISOString();
     for (const k of Object.keys(priorFailures)) {
-      if (priorFailures[k]?.skipped) {
+      // Only re-attempt transient skips. Reports the account's plan doesn't
+      // expose (404 / "not a valid report") will never recover, so retrying
+      // them weekly just burns API calls and re-raises the warning banner.
+      if (priorFailures[k]?.skipped && priorFailures[k]?.reason !== "unsupported") {
         priorFailures[k] = {
           ...priorFailures[k],
           skipped: false,
@@ -339,11 +352,21 @@ export async function runAppfolioSync(
   function recordPhaseFailure(phase: string, error: string): void {
     const prior = phaseFailures[phase];
     const consecutiveFailures = (prior?.consecutiveFailures ?? 0) + 1;
+    // A 404 / 400 "not a valid report" means the report isn't exposed on this
+    // account's AppFolio plan — it never recovers by retrying. Mark it
+    // unsupported and skip it immediately (no 3-strike wait) so the sync stops
+    // hitting a known-dead endpoint every 30 min and the operator banner stays
+    // green for the reports that DO work.
+    const unsupported =
+      /\b40[04]\b|not a valid report|no longer available|not available on/i.test(
+        error,
+      );
     phaseFailures[phase] = {
       consecutiveFailures,
       firstFailedAt: prior?.firstFailedAt ?? new Date().toISOString(),
       lastError: error,
-      skipped: consecutiveFailures >= PHASE_SKIP_THRESHOLD,
+      reason: unsupported ? "unsupported" : "transient",
+      skipped: unsupported || consecutiveFailures >= PHASE_SKIP_THRESHOLD,
     };
   }
 

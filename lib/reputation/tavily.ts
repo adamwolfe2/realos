@@ -28,8 +28,10 @@ const TAVILY_ENDPOINT = "https://api.tavily.com/search";
 // Cost accounting — ~$0.008 per advanced search call.
 export const TAVILY_COST_CENTS_PER_QUERY = 1;
 
-// Fixed count for predictable cost accounting.
-export const TAVILY_QUERIES_PER_SCAN = 4;
+// Fixed count for predictable cost accounting. Bumped 4→5 when the social /
+// neighborhood-discussion query was added for wider mention coverage
+// (~+$0.008 per property per scan).
+export const TAVILY_QUERIES_PER_SCAN = 5;
 
 // Hard-blocked domains — listings, syndicated aggregators, property-owned.
 // We pass these to Tavily as exclude_domains on every query so the budget
@@ -69,6 +71,22 @@ const REVIEW_AGGREGATORS = [
   "bbb.org",
   "glassdoor.com", // sometimes has resident reviews for owned REITs
   "tripadvisor.com", // relevant for some commercial/hospitality properties
+  "trustpilot.com", // growing coverage of property-management firms
+  "sitejabber.com", // consumer reviews incl. PM companies + leasing portals
+  "uloop.com", // student-housing marketplace with resident reviews
+];
+
+// Public social + neighborhood-discussion platforms. These surface mentions
+// that never make it to a review aggregator — residents complaining on
+// X/Nextdoor, prospects asking in Facebook groups. Treated like Reddit:
+// discussion threads, not listings. Wired as a dedicated query so the broad
+// review crawl isn't diluted.
+const SOCIAL_PLATFORMS = [
+  "x.com",
+  "twitter.com",
+  "nextdoor.com",
+  "facebook.com",
+  "threads.net",
 ];
 
 // College + student discussion forums.
@@ -208,6 +226,16 @@ function buildQueryPlan(property: PropertySeed): Array<{
       query: `"${name}"${locSuffix} (review OR reviews OR avoid OR scam OR worst OR "do not rent" OR horrible OR "stay away" OR recommend OR "best apartment" OR "loved living" OR "lived here")`,
       maxResults: 10,
       label: "strong_signals",
+    },
+    // 5. Social + neighborhood discussion — X/Twitter, Nextdoor, public
+    // Facebook groups, Threads. Catches resident chatter that never reaches
+    // a review aggregator. Owned-page filter still strips the property's own
+    // social accounts post-fetch.
+    {
+      query: `"${name}"${locSuffix}`,
+      includeDomains: SOCIAL_PLATFORMS,
+      maxResults: 10,
+      label: "social",
     },
   ];
 }
@@ -557,7 +585,8 @@ function mentionLooksLikeReview(
 
   // Reddit, Yelp, ApartmentRatings, BBB, Niche, CollegeConfidential, Quora
   // pages are trusted even with minimal text (thread titles often suffice).
-  const alwaysTrust = /(^|\.)(reddit|yelp|apartmentratings|bbb|niche|collegeconfidential|quora)\.com$/;
+  const alwaysTrust =
+    /(^|\.)(reddit|yelp|apartmentratings|bbb|niche|collegeconfidential|quora|trustpilot|sitejabber|uloop|nextdoor|x|twitter)\.com$|(^|\.)threads\.net$/;
   try {
     const host = new URL(m.sourceUrl).host.toLowerCase().replace(/^www\./, "");
     if (alwaysTrust.test(host)) return true;

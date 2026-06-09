@@ -1100,7 +1100,7 @@ export function SiteHealthGauge({
             <span className="text-[24px] font-display font-medium tabular-nums leading-none">
               {Math.round(score)}
             </span>
-            <span className="text-[9px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
+            <span className="text-[10px] font-mono uppercase tracking-[0.08em] text-muted-foreground">
               / 100
             </span>
           </div>

@@ -59,7 +59,7 @@ export function ConnectPixelForm({
               id="leasestackPropertyId"
               name="leasestackPropertyId"
               defaultValue=""
-              className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+              className="ls-select px-3 py-2 text-sm"
             >
               <option value="">All properties (org-wide)</option>
               {properties.map((p) => (

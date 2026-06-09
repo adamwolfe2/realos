@@ -162,7 +162,7 @@ export function VisitorTable({ rows }: Props) {
                       if (el) el.indeterminate = someSelected;
                     }}
                     onChange={toggleAll}
-                    className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
+                    className="h-3.5 w-3.5 rounded border-border accent-[#2563EB] cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
                   />
                 </th>
                 <Th>Visitor</Th>
@@ -198,7 +198,7 @@ export function VisitorTable({ rows }: Props) {
                         aria-label={`Select ${r.displayName}`}
                         checked={isSelected}
                         onChange={() => toggleRow(r.id)}
-                        className="h-3.5 w-3.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer accent-blue-600"
+                        className="h-3.5 w-3.5 rounded border-border accent-[#2563EB] cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary/30"
                       />
                     </td>
                     <td className="px-3 py-2 align-middle">

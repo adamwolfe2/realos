@@ -521,19 +521,26 @@ export default async function PortalHome({
       where: {
         orgId: scope.orgId,
         launchStatus: "ONBOARDING",
+        // Exclude auto-classified sub-records (parking, storage, etc.) that
+        // AppFolio sync imports as EXCLUDED. Counting them made SG show
+        // "133 in onboarding" when only the real marketable buildings matter.
+        lifecycle: { not: "EXCLUDED" },
         ...(isFiltered ? { id: { in: effectiveIds! } } : {}),
       },
     })
     .catch(() => 0);
 
-  // Realistic delta calc: % change vs previous 28d window.
+  // Realistic delta calc: % change vs previous 28d window. Suppress when the
+  // prior window had fewer than 3 events — at n=1 the percentage is
+  // statistically meaningless and renders as alarming noise ("+1000%").
+  const LOW_SAMPLE_FLOOR = 3;
   const leadsDeltaPct =
-    leadsPrev28d > 0
+    leadsPrev28d >= LOW_SAMPLE_FLOOR
       ? Math.round(((leadsNew28d - leadsPrev28d) / leadsPrev28d) * 100)
       : null;
 
   const toursDeltaPct =
-    toursPrev28d > 0
+    toursPrev28d >= LOW_SAMPLE_FLOOR
       ? Math.round(((toursScheduled - toursPrev28d) / toursPrev28d) * 100)
       : null;
 
@@ -1401,7 +1408,7 @@ export default async function PortalHome({
           <DashboardSection
             eyebrow="Recent"
             title="Activity feed"
-            description="Latest events from leads, tours, ads, and your chatbot. Refresh the page to see new items."
+            description="Latest events from leads, tours, ads, and your chatbot. Updates automatically."
             href="/portal/leads"
             hrefLabel="Open leads"
           >

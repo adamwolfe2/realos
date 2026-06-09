@@ -1275,13 +1275,13 @@ function ReportMentionCard({
             ) : null}
             {m.sentiment ? (
               <span
-                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border ${sentimentTone}`}
+                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border ${sentimentTone}`}
               >
                 {m.sentiment.toLowerCase()}
               </span>
             ) : null}
             {m.flagged ? (
-              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-semibold uppercase tracking-wider border bg-primary text-primary-foreground border-primary">
+              <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase tracking-wider border bg-primary text-primary-foreground border-primary">
                 Flagged
               </span>
             ) : null}
@@ -1351,7 +1351,7 @@ function ReportMentionCard({
           {m.topics.map((t: string) => (
             <span
               key={t}
-              className="text-[9px] uppercase tracking-wider text-muted-foreground border border-border rounded px-1.5 py-0.5 bg-background/60"
+              className="text-[10px] uppercase tracking-wider text-muted-foreground border border-border rounded px-1.5 py-0.5 bg-background/60"
             >
               {t}
             </span>
@@ -2735,7 +2735,7 @@ function Table({
 function MiniStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border border-border bg-card px-2.5 sm:px-3 py-2 min-w-0">
-      <div className="text-[9px] sm:text-[10px] tracking-widest uppercase font-bold text-muted-foreground truncate">
+      <div className="text-[10px] sm:text-[10px] tracking-widest uppercase font-bold text-muted-foreground truncate">
         {label}
       </div>
       <div className="mt-0.5 text-[14px] sm:text-[15px] font-bold tabular-nums text-foreground truncate">
@@ -2784,7 +2784,7 @@ function Donut({
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
         {sublabel ? (
-          <span className="text-[9px] uppercase tracking-widest font-bold text-muted-foreground">
+          <span className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">
             {sublabel}
           </span>
         ) : null}
@@ -3117,7 +3117,7 @@ function ContentSection({ stats }: { stats: ReportContentStats }) {
                       {item.format}
                     </span>
                     <span
-                      className="inline-flex items-center rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider"
+                      className="inline-flex items-center rounded px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
                       style={{
                         backgroundColor: pill.bg,
                         color: pill.fg,

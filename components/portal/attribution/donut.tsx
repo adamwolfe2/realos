@@ -151,7 +151,7 @@ export function SourceDonut({
                 {dominantPct}
                 <span className="text-lg text-muted-foreground ml-0.5">%</span>
               </p>
-              <p className="text-[9px] uppercase tracking-[0.15em] text-muted-foreground mt-2 px-2 font-semibold">
+              <p className="text-[10px] uppercase tracking-[0.15em] text-muted-foreground mt-2 px-2 font-semibold">
                 {totalLabel ?? `${total.toLocaleString()} total`}
               </p>
               <p className="text-[10px] text-muted-foreground mt-0.5 px-2 truncate max-w-[110px]">

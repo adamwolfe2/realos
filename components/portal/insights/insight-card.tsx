@@ -121,12 +121,12 @@ export function InsightCard({
             </span>
           ) : null}
           {fresh ? (
-            <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-primary ring-1 ring-inset ring-primary/30">
+            <span className="inline-flex items-center gap-1 rounded-md bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-primary ring-1 ring-inset ring-primary/30">
               New
             </span>
           ) : null}
           {acked ? (
-            <span className="inline-flex items-center gap-1 text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">
+            <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
               <CircleDashed className="h-2.5 w-2.5" />
               Acknowledged
             </span>

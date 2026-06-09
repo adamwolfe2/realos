@@ -56,7 +56,14 @@ export type AppFolioSyncStatsSummary = {
   listingsUpserted: number;
   propertiesUpserted: number;
   delinquenciesUpdated: number;
+  /** Actionable warnings only — transient/recoverable phase failures the
+   *  operator could do something about. Plan-limitation phases (404 / "not a
+   *  valid report") are filtered out into `unsupportedReports`. */
   warnings: string[];
+  /** Reports AppFolio doesn't expose on this account's plan (persistent
+   *  404 / "not a valid report"). NOT a sync failure — surfaced quietly for
+   *  ops, never as an alarming operator banner. */
+  unsupportedReports: string[];
   phasesCompleted: number;
   /** Phases auto-skipped after 3 consecutive failures (almost always a
    *  plan limitation, e.g. guest_cards on AppFolio Core). Counted as
@@ -66,6 +73,21 @@ export type AppFolioSyncStatsSummary = {
   totalPhases: number;
   completedAt: string | null;
 };
+
+// A failed phase whose error is a hard "this report isn't on your AppFolio
+// plan" signal — a 404 or a 400 "Id is not a valid report". These never
+// recover by retrying (the report literally isn't exposed to the account's
+// API credentials), so they are NOT actionable operator warnings. We split
+// them out of `warnings` into `unsupportedReports` so a healthy sync of every
+// AVAILABLE report stops rendering a recurring "completed with warnings"
+// banner. SG Real Estate's guest_cards / showings / applicant_directory all
+// fall here.
+const UNSUPPORTED_REPORT_RE =
+  /returned 40[04]|not a valid report|no longer available|not available on|auto-skipped after/i;
+
+export function isUnsupportedAppfolioWarning(warning: string): boolean {
+  return UNSUPPORTED_REPORT_RE.test(warning);
+}
 
 export async function getAppFolioStatus(orgId: string): Promise<AppFolioStatus> {
   // Resilient query: if a column is missing in production (schema drift
@@ -271,9 +293,14 @@ function parseStats(raw: unknown): AppFolioSyncStatsSummary | null {
     typeof r[k] === "number" && Number.isFinite(r[k] as number)
       ? (r[k] as number)
       : 0;
-  const warnings = Array.isArray(r.warnings)
+  const allWarnings = Array.isArray(r.warnings)
     ? (r.warnings as unknown[]).filter((w): w is string => typeof w === "string")
     : [];
+  // Split plan-limitation phases (permanent 404 / "not a valid report") out of
+  // the actionable warning stream so they never drive the "partial / completed
+  // with warnings" banner — they're a capability gap, not a sync problem.
+  const unsupportedReports = allWarnings.filter(isUnsupportedAppfolioWarning);
+  const warnings = allWarnings.filter((w) => !isUnsupportedAppfolioWarning(w));
   return {
     residentsUpserted: num("residentsUpserted"),
     leasesUpserted: num("leasesUpserted"),
@@ -282,6 +309,7 @@ function parseStats(raw: unknown): AppFolioSyncStatsSummary | null {
     propertiesUpserted: num("propertiesUpserted"),
     delinquenciesUpdated: num("delinquenciesUpdated"),
     warnings,
+    unsupportedReports,
     phasesCompleted: num("phasesCompleted"),
     phasesSkipped: num("phasesSkipped"),
     totalPhases: num("totalPhases"),

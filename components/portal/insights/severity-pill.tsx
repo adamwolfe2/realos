@@ -41,7 +41,7 @@ export function SeverityPill({ severity, size = "md" }: Props) {
   const Icon = config.icon;
   const gap =
     size === "sm"
-      ? "gap-0.5 px-1.5 py-0.5 text-[9px]"
+      ? "gap-0.5 px-1.5 py-0.5 text-[10px]"
       : "gap-1 px-2 py-0.5 text-[10px]";
   const iconSize = size === "sm" ? "h-2.5 w-2.5" : "h-3 w-3";
 
@@ -61,7 +61,7 @@ export function SeverityPill({ severity, size = "md" }: Props) {
 
 export function CategoryBadge({ category }: { category: string }) {
   return (
-    <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-muted-foreground">
+    <span className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
       {category}
     </span>
   );

@@ -65,10 +65,15 @@ export default async function InsightsPage({
 
   const since7d = new Date(Date.now() - 7 * 86_400_000);
 
+  // Signal snapshots are computed at the ORG level by the daily cron
+  // (scopeKey `tenant:orgId:_`). Read at that same scope — passing a
+  // propertyId looks for a per-property snapshot the pipeline never produces,
+  // which left this page permanently "first scan coming…" empty for every
+  // single-property operator.
   const tenantScope = {
     kind: "tenant" as const,
     orgId: scope.orgId,
-    propertyId: singlePropertyId,
+    propertyId: undefined,
   };
 
   const [latest, series14, mentions, leadRows, openInsightsRaw, counts, allProperties] =
@@ -192,7 +197,6 @@ export default async function InsightsPage({
           title="First scan coming overnight"
           body="Your daily signal snapshot computes during off-hours. You'll see ranking, citation, reputation, chatbot, and lead activity here as soon as the first pass finishes — usually before the next morning."
           action={{ label: "Connect more data sources", href: "/portal/connect" }}
-          secondary={{ label: "Run detectors now", href: "/portal/insights?run=1" }}
         />
       ) : null}
 

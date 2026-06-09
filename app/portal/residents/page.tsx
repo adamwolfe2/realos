@@ -301,7 +301,7 @@ export default async function ResidentsPage({
         <select
           name="status"
           defaultValue={sp.status ?? ""}
-          className="rounded-md border border-border bg-background px-3 py-2 text-sm"
+          className="ls-select px-3 py-2 text-sm"
         >
           <option value="">All statuses</option>
           {Object.values(ResidentStatus).map((s) => (

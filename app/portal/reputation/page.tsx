@@ -524,15 +524,15 @@ function CompactStat({
   hint?: string;
 }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-3">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground">
+    <div className="ls-card p-3.5">
+      <div className="text-[11px] uppercase tracking-[0.08em] font-semibold text-muted-foreground">
         {label}
       </div>
-      <div className="mt-1 text-2xl font-semibold tabular-nums text-foreground leading-none">
+      <div className="mt-1.5 text-[28px] font-semibold tabular-nums text-foreground leading-none tracking-tight">
         {value}
       </div>
       {hint ? (
-        <div className="mt-1 text-[11px] text-muted-foreground truncate">
+        <div className="mt-1.5 text-[11px] text-muted-foreground truncate">
           {hint}
         </div>
       ) : null}
@@ -721,9 +721,9 @@ function ReputationFallback({
       </div>
 
       {/* Diagnostic block — surfaces the actual error so we can debug from
-          a screenshot instead of round-tripping through Vercel logs. Drop
-          this once the page is reliably stable for two consecutive deploys. */}
-      {diagnostic ? (
+          a screenshot instead of round-tripping through Vercel logs. Gated to
+          non-production so operators never see raw error/stack traces. */}
+      {diagnostic && process.env.NODE_ENV !== "production" ? (
         <details
           open
           className="rounded-xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-xs text-destructive"
@@ -860,10 +860,23 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
   return (
     <li className="py-2.5 px-3 -mx-3 hover:bg-muted/30 transition-colors">
       <div className="flex items-start gap-2.5">
-        <div className="shrink-0 pt-0.5">
-          <SourceLogo source={mention.source} url={safeUrl} className="h-4 w-4" />
+        <div className="shrink-0 inline-flex items-center justify-center h-9 w-9 rounded-lg bg-card border border-border shadow-sm">
+          <SourceLogo source={mention.source} url={safeUrl} className="h-[18px] w-[18px]" />
         </div>
         <div className="min-w-0 flex-1">
+          {/* Source header — the brand logo (tile, left) is paired with the
+              source name + time here so the operator instantly sees WHERE a
+              mention lives before reading it. */}
+          <div className="flex items-center gap-1.5 mb-1">
+            <span className="text-[11px] font-semibold uppercase tracking-[0.06em] text-foreground">
+              {sourceLabel(mention.source, safeUrl)}
+            </span>
+            {when ? (
+              <span className="text-[11px] text-muted-foreground">
+                · {formatDistanceToNow(when, { addSuffix: true })}
+              </span>
+            ) : null}
+          </div>
           {mention.title ? (
             <p
               className="text-sm font-medium text-foreground mb-0.5 truncate"
@@ -895,34 +908,19 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
           ) : null}
           {/* Bottom meta-line: source, property, time, rating, sentiment,
               flagged, View source link — all one line in text-[11px]. */}
-          <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
-            <span className="uppercase tracking-wide">
-              {sourceLabel(mention.source, safeUrl)}
-            </span>
+          <div className="mt-2 flex items-center gap-1.5 text-[11px] text-muted-foreground flex-wrap">
             {propertyId ? (
-              <>
-                <span aria-hidden="true">·</span>
-                <Link
-                  href={`/portal/properties/${propertyId}?tab=reputation`}
-                  className="font-medium text-foreground hover:text-primary truncate max-w-[160px]"
-                >
-                  {propertyName}
-                </Link>
-              </>
+              <Link
+                href={`/portal/properties/${propertyId}?tab=reputation`}
+                className="font-medium text-foreground hover:text-primary truncate max-w-[160px]"
+              >
+                {propertyName}
+              </Link>
             ) : (
-              <>
-                <span aria-hidden="true">·</span>
-                <span className="font-medium text-foreground truncate max-w-[160px]">
-                  {propertyName}
-                </span>
-              </>
+              <span className="font-medium text-foreground truncate max-w-[160px]">
+                {propertyName}
+              </span>
             )}
-            {when ? (
-              <>
-                <span aria-hidden="true">·</span>
-                <span>{formatDistanceToNow(when, { addSuffix: true })}</span>
-              </>
-            ) : null}
             {mention.authorName ? (
               <>
                 <span aria-hidden="true">·</span>
@@ -948,7 +946,6 @@ function FeedRow({ mention }: { mention: PortfolioReputationFeedItem }) {
                 }
               >
                 {sentimentLabel}
-                {lowConfidence ? "?" : ""}
               </span>
             ) : null}
             {mention.flagged ? (

@@ -374,7 +374,7 @@ export function LeadKanban({ items }: { items: LeadKanbanItem[] }) {
           onChange={(e) => setStatusToApply(e.target.value as LeadStatus | "")}
           disabled={pending}
           aria-label="Set status for selected leads"
-          className="rounded-md border border-border bg-background px-2 py-1 text-xs disabled:opacity-50"
+          className="ls-select px-2 py-1 text-xs disabled:opacity-50"
         >
           <option value="">Set status…</option>
           {Object.values(LeadStatus).map((s) => (

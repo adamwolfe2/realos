@@ -441,7 +441,7 @@ export function AeoResponsesTable({ rows }: { rows: ResponseRow[] }) {
           <select
             value={filter}
             onChange={(e) => setFilter(e.target.value as StatusFilter)}
-            className="h-8 rounded-md border border-border bg-card px-2 text-[12px] font-medium text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40 focus:border-primary/60"
+            className="ls-select h-8 px-2 text-[12px] font-medium text-foreground"
           >
             <option value="all">All statuses</option>
             <option value="mentioned">Mentioned</option>
