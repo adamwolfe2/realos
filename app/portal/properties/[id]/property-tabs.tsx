@@ -5,19 +5,11 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import {
   LayoutDashboard,
-  Megaphone,
-  Sparkles,
   TrendingUp,
   Users,
   BarChart3,
   MessageSquare,
   Star,
-  // Operations icons retained as commented imports — re-enable when
-  // the Operations primary tab returns. See CATEGORIES below.
-  // Wrench,
-  // Building2,
-  // Home,
-  // CalendarClock,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -46,80 +38,40 @@ type TabKey =
   | "renewals"
   | "work-orders";
 
-type SubTab = { key: TabKey; label: string; icon: LucideIcon };
-
 type Category = {
-  id: "overview" | "acquisition" | "engagement" | "operations";
+  /** The category IS the tab — flat, one tab per nav item. */
+  id: TabKey;
   label: string;
   icon: LucideIcon;
-  /** First tab a click on the primary lands on. */
-  defaultTab: TabKey;
-  /** Sub-tabs that render under the active primary. Empty array means the
-      primary has no sub-nav (Overview). */
-  subs: SubTab[];
 };
 
+// Flat top-level tabs (2026-06-09): the prior two-level system buried
+// Chatbot / Reputation / Traffic under Acquisition + Engagement pill
+// sub-tabs, which operators couldn't find. Each is now its own primary
+// tab. URL contract (?tab=X) is unchanged — every key still resolves.
 const CATEGORIES: Category[] = [
-  {
-    id: "overview",
-    label: "Overview",
-    icon: LayoutDashboard,
-    defaultTab: "overview",
-    subs: [],
-  },
-  {
-    id: "acquisition",
-    label: "Acquisition",
-    icon: Megaphone,
-    defaultTab: "leads",
-    subs: [
-      { key: "leads",   label: "Leads",   icon: Users },
-      { key: "traffic", label: "Traffic", icon: TrendingUp },
-      { key: "ads",     label: "Ads",     icon: BarChart3 },
-    ],
-  },
-  {
-    id: "engagement",
-    label: "Engagement",
-    icon: Sparkles,
-    defaultTab: "chatbot",
-    subs: [
-      { key: "chatbot",    label: "Chatbot",    icon: MessageSquare },
-      { key: "reputation", label: "Reputation", icon: Star },
-    ],
-  },
-  // Norman feedback (issues #70, #56): the Operations group competes with
-  // dedicated property management software like AppFolio and pulls us away
-  // from the digital-assets + analytics focus. Hidden in the primary nav
-  // until we have a clear operations story.
-  // {
-  //   id: "operations",
-  //   label: "Operations",
-  //   icon: Wrench,
-  //   defaultTab: "residents",
-  //   subs: [
-  //     { key: "residents", label: "Residents", icon: Home },
-  //     { key: "renewals",  label: "Renewals",  icon: CalendarClock },
-  //     { key: "occupancy", label: "Occupancy", icon: Building2 },
-  //   ],
-  // },
+  { id: "overview", label: "Overview", icon: LayoutDashboard },
+  { id: "leads", label: "Leads", icon: Users },
+  { id: "traffic", label: "Traffic", icon: TrendingUp },
+  { id: "ads", label: "Ads", icon: BarChart3 },
+  { id: "chatbot", label: "Chatbot", icon: MessageSquare },
+  { id: "reputation", label: "Reputation", icon: Star },
 ];
 
-// Map every TabKey → category id for quick lookup when ?tab= is set.
-// Operations-group tabs (residents/renewals/occupancy/work-orders) are
-// hidden but still routable via direct URL — they fall back to overview
-// so deep links don't 404.
-const TAB_TO_CATEGORY: Record<TabKey, Category["id"]> = {
-  overview:     "overview",
-  onboarding:   "overview", // Onboarding panel lives under Overview now.
-  leads:        "acquisition",
-  traffic:      "acquisition",
-  ads:          "acquisition",
-  chatbot:      "engagement",
-  reputation:   "engagement",
-  residents:    "overview",
-  renewals:     "overview",
-  occupancy:    "overview",
+// Map every TabKey → the top-level tab it belongs to. Visible tabs map to
+// themselves; hidden Operations-group tabs (residents/renewals/occupancy/
+// work-orders) + onboarding fall back to overview so deep links don't 404.
+const TAB_TO_CATEGORY: Record<TabKey, TabKey> = {
+  overview: "overview",
+  onboarding: "overview",
+  leads: "leads",
+  traffic: "traffic",
+  ads: "ads",
+  chatbot: "chatbot",
+  reputation: "reputation",
+  residents: "overview",
+  renewals: "overview",
+  occupancy: "overview",
   "work-orders": "overview",
 };
 
@@ -144,7 +96,9 @@ function PropertyTabsInner({
   // Resolve the active tab from URL or fall back.
   const normalizedTab = React.useMemo<TabKey>(() => {
     const all = Object.keys(TAB_TO_CATEGORY) as TabKey[];
-    return (all.includes(initialTab as TabKey) ? initialTab : "overview") as TabKey;
+    return (
+      all.includes(initialTab as TabKey) ? initialTab : "overview"
+    ) as TabKey;
   }, [initialTab]);
 
   const [active, setActive] = React.useState<TabKey>(normalizedTab);
@@ -155,36 +109,16 @@ function PropertyTabsInner({
     setActive(all.includes(t) ? t : "overview");
   }, [searchParams]);
 
-  // Drop occupancy sub from operations when no units configured, and drop
-  // the Ads sub from acquisition when both ad modules are off org-wide.
-  // Re-anchors the category's defaultTab so the operator never lands on
-  // a sub-tab we're about to hide.
-  const categories = React.useMemo<Category[]>(() => {
-    return CATEGORIES.map((cat) => {
-      if (cat.id === "operations") {
-        return {
-          ...cat,
-          subs: showOccupancy
-            ? cat.subs
-            : cat.subs.filter((s) => s.key !== "occupancy"),
-        };
-      }
-      if (cat.id === "acquisition") {
-        const subs = showAds ? cat.subs : cat.subs.filter((s) => s.key !== "ads");
-        // Default lands on the first remaining sub; "leads" stays
-        // canonical when present.
-        const defaultTab = subs.some((s) => s.key === "leads")
-          ? ("leads" as TabKey)
-          : subs[0]?.key ?? cat.defaultTab;
-        return { ...cat, subs, defaultTab };
-      }
-      return cat;
-    });
-  }, [showOccupancy, showAds]);
+  // Hide the Ads tab when both ad modules are off org-wide — an empty Ads
+  // tab reads as broken. showOccupancy is retained for API compatibility
+  // with the (currently hidden) Operations tabs.
+  void showOccupancy;
+  const categories = React.useMemo<Category[]>(
+    () => (showAds ? CATEGORIES : CATEGORIES.filter((c) => c.id !== "ads")),
+    [showAds],
+  );
 
   const activeCategoryId = TAB_TO_CATEGORY[active];
-  const activeCategory = categories.find((c) => c.id === activeCategoryId) ?? categories[0];
-  const subs = activeCategory.subs;
 
   const selectTab = (key: TabKey) => {
     if (key === active) return;
@@ -197,10 +131,6 @@ function PropertyTabsInner({
     }
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  };
-
-  const selectCategory = (cat: Category) => {
-    selectTab(cat.defaultTab);
   };
 
   return (
@@ -217,7 +147,7 @@ function PropertyTabsInner({
             <button
               key={cat.id}
               type="button"
-              onClick={() => selectCategory(cat)}
+              onClick={() => selectTab(cat.id)}
               className={cn(
                 "inline-flex shrink-0 items-center gap-2 px-4 py-3 text-[13px] font-medium border-b-2 -mb-px whitespace-nowrap transition-colors",
                 isActive
@@ -232,37 +162,6 @@ function PropertyTabsInner({
           );
         })}
       </nav>
-
-      {/* Secondary nav — sub-tabs for the active category. Hidden when the
-          category has no sub-nav (Overview). */}
-      {subs.length > 0 ? (
-        <nav
-          aria-label={`${activeCategory.label} subsections`}
-          className="flex flex-nowrap gap-1 overflow-x-auto scrollbar-hide"
-        >
-          {subs.map((sub) => {
-            const Icon = sub.icon;
-            const isActive = active === sub.key;
-            return (
-              <button
-                key={sub.key}
-                type="button"
-                onClick={() => selectTab(sub.key)}
-                className={cn(
-                  "inline-flex shrink-0 items-center gap-1.5 px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors",
-                  isActive
-                    ? "bg-primary/10 text-primary"
-                    : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
-                )}
-                aria-current={isActive ? "page" : undefined}
-              >
-                <Icon className="w-3 h-3" aria-hidden="true" />
-                {sub.label}
-              </button>
-            );
-          })}
-        </nav>
-      ) : null}
 
       {/* Panels — render ONLY the active panel. Bundle-analyzer pass
           (2026-06-04) revealed every panel was mounted simultaneously
@@ -282,7 +181,9 @@ export function PropertyTabs(
   props: React.ComponentProps<typeof PropertyTabsInner>,
 ) {
   return (
-    <Suspense fallback={<div className="h-10 animate-pulse rounded-md bg-muted" />}>
+    <Suspense
+      fallback={<div className="h-10 animate-pulse rounded-md bg-muted" />}
+    >
       <PropertyTabsInner {...props} />
     </Suspense>
   );
