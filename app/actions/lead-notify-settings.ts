@@ -3,7 +3,11 @@
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { requireScope, ForbiddenError, auditPayload } from "@/lib/tenancy/scope";
+import {
+  requireScope,
+  ForbiddenError,
+  auditPayload,
+} from "@/lib/tenancy/scope";
 import { AuditAction, UserRole } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -38,6 +42,8 @@ const recipientList = z
 
 const schema = z.object({
   notifyLeadEmail: recipientList,
+  notifyLeadCcEmail: recipientList.optional(),
+  notifyLeadBccEmail: recipientList.optional(),
   notifyOnChatbotLead: z.boolean(),
   notifyOnPopupLead: z.boolean(),
   notifyOnFormLead: z.boolean(),

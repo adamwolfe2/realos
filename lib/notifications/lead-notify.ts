@@ -48,7 +48,10 @@ const CHANNEL_TOGGLE = {
 
 function splitRecipients(raw: string | null | undefined): string[] {
   if (!raw) return [];
-  return raw.split(",").map((s) => s.trim()).filter((s) => s.length > 0 && s.includes("@"));
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && s.includes("@"));
 }
 
 function displayName(name: string | null | undefined): string | null {
@@ -56,16 +59,26 @@ function displayName(name: string | null | undefined): string | null {
   return trimmed && trimmed.length > 0 ? trimmed : null;
 }
 
-export async function notifyLeadCaptured(input: LeadNotifyInput): Promise<void> {
+export async function notifyLeadCaptured(
+  input: LeadNotifyInput,
+): Promise<void> {
   try {
     const [org, property] = await Promise.all([
       prisma.organization.findUnique({
         where: { id: input.orgId },
         select: {
-          name: true, shortName: true, notifyLeadEmail: true,
-          notifyOnChatbotLead: true, notifyOnPopupLead: true, notifyOnFormLead: true,
-          notifyOnIngestLead: true, notifyOnTourRequest: true,
-          notifyOnVisitorConvert: true, notifyOnManualLead: true,
+          name: true,
+          shortName: true,
+          notifyLeadEmail: true,
+          notifyLeadCcEmail: true,
+          notifyLeadBccEmail: true,
+          notifyOnChatbotLead: true,
+          notifyOnPopupLead: true,
+          notifyOnFormLead: true,
+          notifyOnIngestLead: true,
+          notifyOnTourRequest: true,
+          notifyOnVisitorConvert: true,
+          notifyOnManualLead: true,
         },
       }),
       input.propertyId
@@ -85,6 +98,10 @@ export async function notifyLeadCaptured(input: LeadNotifyInput): Promise<void> 
     const recipients = splitRecipients(
       property?.notifyLeadEmailOverride ?? org.notifyLeadEmail ?? null,
     );
+    // CC/BCC are org-level — copy an owner/manager on every notification
+    // regardless of which property's address is the primary recipient.
+    const ccRecipients = splitRecipients(org.notifyLeadCcEmail);
+    const bccRecipients = splitRecipients(org.notifyLeadBccEmail);
 
     const leadName = displayName(input.lead.name);
     const leadEmail = displayName(input.lead.email);
@@ -125,7 +142,9 @@ export async function notifyLeadCaptured(input: LeadNotifyInput): Promise<void> 
               : "No notifyLeadEmail configured",
           },
         })
-        .catch((err) => console.warn("[lead-notify] suppressed insert failed:", err));
+        .catch((err) =>
+          console.warn("[lead-notify] suppressed insert failed:", err),
+        );
       return;
     }
 
@@ -170,6 +189,8 @@ export async function notifyLeadCaptured(input: LeadNotifyInput): Promise<void> 
 
     const result = await sendBrandedEmail({
       to: recipients,
+      ...(ccRecipients.length > 0 ? { cc: ccRecipients } : {}),
+      ...(bccRecipients.length > 0 ? { bcc: bccRecipients } : {}),
       subject,
       html,
       text,
@@ -181,15 +202,27 @@ export async function notifyLeadCaptured(input: LeadNotifyInput): Promise<void> 
     if (!delivery) return;
 
     const updateData = result.ok
-      ? { status: LeadNotifyStatus.SENT, resendId: result.id ?? null, sentAt: new Date() }
-      : { status: LeadNotifyStatus.FAILED, errorMessage: result.error ?? "unknown" };
+      ? {
+          status: LeadNotifyStatus.SENT,
+          resendId: result.id ?? null,
+          sentAt: new Date(),
+        }
+      : {
+          status: LeadNotifyStatus.FAILED,
+          errorMessage: result.error ?? "unknown",
+        };
 
     await prisma.leadNotificationDelivery
       .update({ where: { id: delivery.id }, data: updateData })
       .catch((err) => console.warn("[lead-notify] status update failed:", err));
 
     if (!result.ok) {
-      console.error("[lead-notify] failed", result.error ?? "unknown", input.channel, input.leadId);
+      console.error(
+        "[lead-notify] failed",
+        result.error ?? "unknown",
+        input.channel,
+        input.leadId,
+      );
     }
   } catch (err) {
     // Final catch — NEVER let an error escape this helper. Lead capture must

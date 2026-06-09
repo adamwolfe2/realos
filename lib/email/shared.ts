@@ -4,7 +4,12 @@
 // the hard fork; env vars are read directly here.
 // ---------------------------------------------------------------------------
 import { Resend } from "resend";
-import { getSiteUrl, BRAND_NAME, BRAND_LOCATION, BRAND_COLOR } from "@/lib/brand";
+import {
+  getSiteUrl,
+  BRAND_NAME,
+  BRAND_LOCATION,
+  BRAND_COLOR,
+} from "@/lib/brand";
 import {
   effectiveBrandForOrg,
   type EffectiveBrand,
@@ -97,6 +102,10 @@ export type EmailCategory = "transactional" | "broadcast";
 
 type BrandedSendInput = {
   to: string | string[];
+  /** Optional CC recipients (visible to all). */
+  cc?: string | string[];
+  /** Optional BCC recipients (hidden from other recipients). */
+  bcc?: string | string[];
   subject: string;
   html: string;
   text?: string;
@@ -150,8 +159,7 @@ export async function sendBrandedEmail(
 
   const category: EmailCategory = opts.category ?? "transactional";
   const template = opts.template ?? "generic";
-  const refId =
-    opts.entityRefId ?? `${template}-${Date.now().toString(36)}`;
+  const refId = opts.entityRefId ?? `${template}-${Date.now().toString(36)}`;
 
   // Suppression check — never re-mail an address that's opted out.
   // Lazy-imported to keep the prisma client out of the cold-start path
@@ -214,9 +222,7 @@ export async function sendBrandedEmail(
   // only the display name in front of it swaps. The reply-to follows
   // the brand's support email so threaded replies land where the
   // operator expects.
-  const brand = opts.orgId
-    ? await effectiveBrandForEmail(opts.orgId)
-    : null;
+  const brand = opts.orgId ? await effectiveBrandForEmail(opts.orgId) : null;
   let from = FROM_EMAIL;
   if (brand?.isWhiteLabeled) {
     const { mailbox } = parseFromAddress(FROM_EMAIL);
@@ -228,9 +234,15 @@ export async function sendBrandedEmail(
   }
 
   try {
+    const hasCc =
+      opts.cc && (Array.isArray(opts.cc) ? opts.cc.length > 0 : true);
+    const hasBcc =
+      opts.bcc && (Array.isArray(opts.bcc) ? opts.bcc.length > 0 : true);
     const r = await resend.emails.send({
       from,
       to: opts.to,
+      ...(hasCc ? { cc: opts.cc } : {}),
+      ...(hasBcc ? { bcc: opts.bcc } : {}),
       subject: sanitizeSubject(opts.subject),
       html: opts.html,
       ...(opts.text ? { text: opts.text } : {}),
@@ -239,10 +251,7 @@ export async function sendBrandedEmail(
       tags,
     });
     if (r.error) {
-      console.error(
-        `[email:${template}] Resend rejected send:`,
-        r.error,
-      );
+      console.error(`[email:${template}] Resend rejected send:`, r.error);
       return { ok: false, error: r.error.message ?? "Resend API error" };
     }
     return { ok: true, id: r.data?.id };
@@ -257,7 +266,9 @@ export async function sendBrandedEmail(
 // Validation
 // ---------------------------------------------------------------------------
 
-export function isValidEmail(email: string | undefined | null): email is string {
+export function isValidEmail(
+  email: string | undefined | null,
+): email is string {
   return !!email && email.includes("@");
 }
 
@@ -266,7 +277,10 @@ export function isValidEmail(email: string | undefined | null): email is string 
 // substitutions (BRAND_NAME) into subject lines and silently kill invites.
 // Every transactional email should run subjects through this before send.
 export function sanitizeSubject(subject: string): string {
-  return subject.replace(/[\r\n\t]+/g, " ").replace(/\s+/g, " ").trim();
+  return subject
+    .replace(/[\r\n\t]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // Escape user-provided strings before interpolating them into HTML
@@ -500,7 +514,7 @@ export function shouldSendEmail(
       }
     | null
     | undefined,
-  type: "leads" | "visitors" | "weekly"
+  type: "leads" | "visitors" | "weekly",
 ): boolean {
   if (!prefs) return true;
   switch (type) {

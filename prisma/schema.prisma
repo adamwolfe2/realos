@@ -436,6 +436,11 @@ model Organization {
   // email to this address with the lead details + a deep link to /portal/leads.
   // Null = no notifications (existing behavior). Comma-separated for multiple.
   notifyLeadEmail String?
+  // Optional CC (visible) + BCC (hidden) recipients for lead notifications.
+  // Comma-separated for multiple. Let an owner/manager get copied without
+  // being the primary recipient.
+  notifyLeadCcEmail  String?
+  notifyLeadBccEmail String?
 
   // Per-channel notification toggles, defaulting to ON so adding the email
   // alone is enough. Off lets the operator silence individual sources without
@@ -1180,6 +1185,17 @@ model Tour {
   @@index([propertyId, status])
 }
 
+// Role of an applicant within an application group. AppFolio tracks a
+// primary applicant plus optional co-applicants, co-signers/guarantors,
+// and non-applicant occupants on the same household application.
+enum ApplicantRole {
+  PRIMARY
+  CO_APPLICANT
+  CO_SIGNER
+  OCCUPANT
+  GUARANTOR
+}
+
 model Application {
   id         String   @id @default(cuid())
   leadId     String
@@ -1191,17 +1207,43 @@ model Application {
   appliedAt DateTime?
   decidedAt DateTime?
 
+  // Unit the applicant is applying to (AppFolio unit_directory linkage).
+  // unitName is the human label ("203 - A"); unitExternalId is the AppFolio
+  // unit id used to group applicants under the same unit.
+  unitName       String?
+  unitExternalId String?
+
+  // Applicant intent + lifecycle timestamps surfaced in the AppFolio screen.
+  desiredMoveIn DateTime?
+  receivedAt    DateTime?
+
+  // Household grouping: co-applicants / co-signers share an applicationGroupId.
+  // applicantRole distinguishes the primary from co-signers/occupants so the
+  // UI can render "Co-signer for <primary>" exactly like AppFolio.
+  applicationGroupId String?
+  applicantRole      ApplicantRole @default(PRIMARY)
+
+  // Screening / residential-history status string from AppFolio
+  // (e.g. "None Requested", "Complete").
+  screeningStatus String?
+
   // Denorm of applicant data at time of application
   applicantData Json?
 
-  // External linkage (e.g., AppFolio application ID)
+  // External linkage (e.g., AppFolio applicant ID)
   backendAppId String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Idempotency: one Application row per (lead, AppFolio applicant id).
+  // backendAppId is null for manual entries; Postgres treats NULLs as
+  // distinct, so manual applications are unaffected by this constraint.
+  @@unique([leadId, backendAppId])
   @@index([leadId])
   @@index([propertyId, status])
+  @@index([propertyId, unitExternalId])
+  @@index([applicationGroupId])
 }
 
 // ============================================================================

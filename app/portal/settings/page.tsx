@@ -117,6 +117,8 @@ export default async function SettingsPage() {
         <LeadNotifySettings
           initial={{
             notifyLeadEmail: org.notifyLeadEmail,
+            notifyLeadCcEmail: org.notifyLeadCcEmail,
+            notifyLeadBccEmail: org.notifyLeadBccEmail,
             notifyOnChatbotLead: org.notifyOnChatbotLead,
             notifyOnPopupLead: org.notifyOnPopupLead,
             notifyOnFormLead: org.notifyOnFormLead,
