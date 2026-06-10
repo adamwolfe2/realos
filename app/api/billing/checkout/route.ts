@@ -122,6 +122,22 @@ export async function POST(req: NextRequest) {
 
   const scope = await getScope();
 
+  // P1 (launch-critical-sweep): anonymous checkout is retired. Public pricing
+  // routes prospects through sign-up → the no-card trial, so a Stripe
+  // subscription can never be created before an Organization exists (which
+  // orphaned the payment — charged customer, unlinked unpaid workspace). Reject
+  // any scope-less request here.
+  if (!scope) {
+    return NextResponse.json(
+      {
+        ok: false,
+        error: "Please sign in to start or manage a subscription.",
+        redirectTo: "/sign-up",
+      },
+      { status: 401 },
+    );
+  }
+
   // Resolve or create the Stripe Customer.
   let stripeCustomerId: string | null = null;
   let orgIdMetadata: string | null = null;
@@ -151,16 +167,53 @@ export async function POST(req: NextRequest) {
       // webhook can't do this safely for the authed flow because the
       // session.completed event needs the customer attached at the
       // checkout time so we can scope add-on purchases later.
-      const customer = await stripe.customers.create({
-        email: org.primaryContactEmail ?? scope.email,
-        name: org.name,
-        metadata: { org_id: org.id },
-      });
+      const customer = await stripe.customers.create(
+        {
+          email: org.primaryContactEmail ?? scope.email,
+          name: org.name,
+          metadata: { org_id: org.id },
+        },
+        // Idempotency keyed on the org so two concurrent first-conversion
+        // requests can't mint two Stripe customers for the same workspace.
+        { idempotencyKey: `cust_${org.id}` },
+      );
       await prisma.organization.update({
         where: { id: org.id },
         data: { stripeCustomerId: customer.id },
       });
       stripeCustomerId = customer.id;
+    }
+
+    // P1 guard (launch-critical-sweep): never create a SECOND subscription for
+    // an org that already has a live one — that double-charges the customer.
+    // Existing subscribers manage/add through the billing page (Customer
+    // Portal), not a fresh Checkout Session. First trial→paid conversion is
+    // unaffected: our trial is in-app (no Stripe sub exists yet).
+    if (stripeCustomerId) {
+      const existingSubs = await stripe.subscriptions.list({
+        customer: stripeCustomerId,
+        status: "all",
+        limit: 100,
+      });
+      // Block on ANY non-terminal subscription. Only fully-dead statuses
+      // (canceled / incomplete_expired) are safe to start fresh over —
+      // active/trialing/past_due/unpaid/incomplete/paused are all recoverable
+      // or live and must route to the portal instead. (Codex review.)
+      const TERMINAL_STATUSES = new Set(["canceled", "incomplete_expired"]);
+      const hasLiveSub = existingSubs.data.some(
+        (s) => !TERMINAL_STATUSES.has(s.status),
+      );
+      if (hasLiveSub) {
+        return NextResponse.json(
+          {
+            ok: false,
+            error:
+              "You already have an active subscription. Manage your plan or add properties from the billing page instead of starting a new one.",
+            redirectTo: "/portal/billing",
+          },
+          { status: 409 },
+        );
+      }
     }
   }
 
@@ -308,6 +361,14 @@ export async function POST(req: NextRequest) {
         metadata,
       },
       metadata,
+    },
+    {
+      // Dedupe a rapid double-submit of the SAME checkout into one Stripe
+      // session (and thus one subscription) within a 1-minute window —
+      // closes the concurrent first-conversion double-charge race. A
+      // genuinely different plan/cycle/count, or a later attempt, gets a new
+      // key. (Codex review.)
+      idempotencyKey: `co_${orgIdMetadata ?? "x"}_${parsed.tierId}_${parsed.cycle}_${parsed.propertyCount}_${Math.floor(Date.now() / 60_000)}`,
     });
 
     return NextResponse.json({ ok: true, url: session.url });

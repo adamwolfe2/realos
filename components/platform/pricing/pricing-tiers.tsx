@@ -3,7 +3,6 @@
 import * as React from "react";
 import Link from "next/link";
 import { Check, Loader2 } from "lucide-react";
-import { toast } from "sonner";
 import {
   PROPERTY_BRACKETS,
   SELF_SERVE_PROPERTY_CAP,
@@ -408,38 +407,20 @@ function TierCard({
   // Checkout session, then window.location to the returned URL. We
   // default to 1 property for the public-pricing-page flow; the
   // onboarding flow lets prospects bump the count after.
-  const startCheckout = React.useCallback(async () => {
+  const startCheckout = React.useCallback(() => {
     if (!tier.checkoutTierId || submitting) return;
     setSubmitting(true);
-    try {
-      const res = await fetch("/api/billing/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tierId: tier.checkoutTierId,
-          cycle,
-          propertyCount,
-          source: "pricing_page",
-        }),
-      });
-      const body = await res.json().catch(() => ({}));
-      if (!res.ok || !body?.url) {
-        toast.error(
-          body?.error ??
-            `Couldn't start checkout (HTTP ${res.status}). Try again in a minute or email team@leasestack.co.`,
-        );
-        setSubmitting(false);
-        return;
-      }
-      window.location.assign(body.url as string);
-    } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Couldn't reach the checkout service. Try again shortly.",
-      );
-      setSubmitting(false);
-    }
+    // P1 (launch-critical-sweep): collapse the public pricing CTA to the
+    // no-card free trial. Send the prospect to sign-up → onboarding starts
+    // their 14-day trial (no Stripe charge yet). This retires anonymous Stripe
+    // checkout, which charged customers BEFORE an Organization existed and
+    // orphaned the payment. Plan intent is carried so onboarding can preselect.
+    const params = new URLSearchParams({
+      plan: tier.checkoutTierId,
+      properties: String(propertyCount),
+      cycle,
+    });
+    window.location.assign(`/sign-up?${params.toString()}`);
   }, [tier.checkoutTierId, cycle, propertyCount, submitting]);
 
   // Brand pass — every card is a clean white surface. Growth gets a
