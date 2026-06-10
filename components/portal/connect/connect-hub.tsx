@@ -16,6 +16,7 @@ import {
   Plus,
   ExternalLink,
   Clock,
+  Building2,
   type LucideIcon,
 } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
@@ -212,6 +213,30 @@ const CATEGORIES = [
   "Site",
 ] as const;
 
+// Per-property connect target. When a property is active in the switcher, the
+// per-property sources route to their own setup surface with that property
+// pre-selected. AppFolio (one PMS feed per workspace) and the account-level ad
+// OAuth stay as-is — they connect once and map per property downstream.
+function resolveConnectUrl(
+  id: ConnectSourceVM["id"],
+  base: string | undefined,
+  propertyId: string | null,
+): string | undefined {
+  if (!base || !propertyId) return base;
+  switch (id) {
+    case "cursive_pixel":
+      return `/portal/settings/integrations?propertyId=${propertyId}`;
+    case "ga4":
+      return `/portal/seo?provider=GA4&propertyId=${propertyId}`;
+    case "gsc":
+      return `/portal/seo?provider=GSC&propertyId=${propertyId}`;
+    case "website":
+      return `/portal/site-builder?propertyId=${propertyId}`;
+    default:
+      return base;
+  }
+}
+
 // Source icon — the real platform logo (from the shared BRAND_LOGOS used on the
 // Integrations page) when the source has a brandSlug, otherwise the generic
 // lucide glyph on a primary-tinted tile. Keeps Setup + Integrations visually
@@ -250,6 +275,8 @@ export function ConnectHub({
   variant = "page",
   onAllConnected,
   availability,
+  activePropertyId = null,
+  activePropertyName = null,
 }: {
   sources: ConnectSourceVM[];
   /** "page" = full /portal/connect surface with hero. "embed" = trimmed
@@ -258,6 +285,11 @@ export function ConnectHub({
   /** Called when the user clicks "I'm done — show me my insights" — only
       relevant in the wizard variant. */
   onAllConnected?: () => void;
+  /** The property currently selected in the switcher. When set, per-property
+      sources (pixel / GA4 / GSC / site) deep-link to their setup surface with
+      this property pre-selected, so each building is configured in isolation. */
+  activePropertyId?: string | null;
+  activePropertyName?: string | null;
   /** Per-provider availability map. When a provider is not available
       (agency-side env vars missing) the Connect button collapses into a
       "Coming soon" disabled state with the reason, instead of routing
@@ -279,17 +311,18 @@ export function ConnectHub({
   const startConnect = React.useCallback(
     (source: ConnectSourceVM) => {
       const meta = SOURCE_META[source.id];
-      if (!meta?.connectUrl) return;
+      const url = resolveConnectUrl(source.id, meta?.connectUrl, activePropertyId);
+      if (!url) return;
       setPending((p) => new Set(p).add(source.id));
       // OAuth routes are full-page redirects; in-app routes use Next router
       // for client-side nav.
-      if (meta.connectUrl.startsWith("/api/")) {
-        window.location.href = meta.connectUrl;
+      if (url.startsWith("/api/")) {
+        window.location.href = url;
       } else {
-        router.push(meta.connectUrl);
+        router.push(url);
       }
     },
-    [router],
+    [router, activePropertyId],
   );
 
   const grouped = CATEGORIES.map((category) => ({
@@ -345,6 +378,26 @@ export function ConnectHub({
         ) : null}
       </div>
 
+      {/* Per-property context — makes the active scope explicit so operators
+          set up each building in isolation. */}
+      <div className="rounded-lg border border-primary/20 bg-primary/[0.04] px-4 py-2.5 text-[12px] text-foreground flex items-start gap-2">
+        <Building2 className="w-3.5 h-3.5 mt-0.5 text-primary shrink-0" />
+        {activePropertyName ? (
+          <span>
+            Setting up <span className="font-semibold">{activePropertyName}</span>.
+            Pixel, GA4, GSC, and your site connect for this property. Switch
+            properties in the selector above to set up another — each gets its
+            own pixel, chatbot, and analytics.
+          </span>
+        ) : (
+          <span>
+            You&apos;re on <span className="font-semibold">All properties</span>.
+            Pick a single property in the selector above to set up its own
+            pixel, GA4, GSC, and site — every feature is configured per property.
+          </span>
+        )}
+      </div>
+
       {/* Cards by category */}
       {grouped.map((g) =>
         g.sources.length === 0 ? null : (
@@ -357,6 +410,7 @@ export function ConnectHub({
                 <SourceCard
                   key={source.id}
                   source={source}
+                  activePropertyId={activePropertyId}
                   isPending={pending.has(source.id)}
                   availability={availability?.[source.id]}
                   onConnect={() => startConnect(source)}
@@ -394,15 +448,20 @@ function SourceCard({
   isPending,
   availability,
   onConnect,
+  activePropertyId,
 }: {
   source: ConnectSourceVM;
   isPending: boolean;
   availability?: ProviderAvailability;
   onConnect: () => void;
+  activePropertyId: string | null;
 }) {
   const meta = SOURCE_META[source.id];
   if (!meta) return null;
   const Icon = meta.icon;
+  // Per-property deep-link for the href (the onClick path resolves the same).
+  const connectHref =
+    resolveConnectUrl(source.id, meta.connectUrl, activePropertyId) ?? "#";
   const isConnected = source.connected;
   // Card is "blocked" when not connected AND availability says it can't be
   // connected yet. Connected cards always stay primary-tinted so an existing
@@ -536,7 +595,7 @@ function SourceCard({
               <RunAppFolioSyncButton label="Sync now" subtle />
             ) : null}
             <Link
-              href={meta.connectUrl ?? "#"}
+              href={connectHref}
               className="inline-flex items-center gap-1 text-[12px] font-semibold text-primary hover:underline"
             >
               Manage <ArrowRight className="w-3 h-3" />

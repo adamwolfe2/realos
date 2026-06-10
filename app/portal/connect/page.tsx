@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { prisma } from "@/lib/db";
 import { requireScope } from "@/lib/tenancy/scope";
 import { getConnectStatusForOrg } from "@/lib/connect/status";
 import { ConnectHub } from "@/components/portal/connect/connect-hub";
 import { getProviderAvailability } from "@/lib/connect/provider-availability";
+import { getActivePropertyId } from "@/lib/portal/active-property";
 
 export const metadata: Metadata = {
   title: "Connect your data · LeaseStack",
@@ -26,9 +28,18 @@ export const dynamic = "force-dynamic";
 
 export default async function ConnectPage() {
   const scope = await requireScope();
-  const [sources, availability] = await Promise.all([
+  const activePropertyId = await getActivePropertyId().catch(() => null);
+  const [sources, availability, activeProperty] = await Promise.all([
     getConnectStatusForOrg(scope.orgId),
     Promise.resolve(getProviderAvailability()),
+    activePropertyId
+      ? prisma.property
+          .findFirst({
+            where: { id: activePropertyId, orgId: scope.orgId },
+            select: { id: true, name: true },
+          })
+          .catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   return (
@@ -36,6 +47,8 @@ export default async function ConnectPage() {
       <ConnectHub
         variant="page"
         availability={availability}
+        activePropertyId={activeProperty?.id ?? null}
+        activePropertyName={activeProperty?.name ?? null}
         sources={sources.map((s) => ({
           id: s.id,
           connected: s.connected,

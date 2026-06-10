@@ -16,6 +16,8 @@ import { PageHeader } from "@/components/admin/page-header";
 import { getConnectStatusForOrg } from "@/lib/connect/status";
 import { getProviderAvailability } from "@/lib/connect/provider-availability";
 import { ConnectHub } from "@/components/portal/connect/connect-hub";
+import { getActivePropertyId } from "@/lib/portal/active-property";
+import { prisma } from "@/lib/db";
 
 export const metadata: Metadata = { title: "Setup" };
 export const dynamic = "force-dynamic";
@@ -32,9 +34,18 @@ export const dynamic = "force-dynamic";
 
 export default async function SetupHubPage() {
   const scope = await requireScope();
-  const [progress, connectSources] = await Promise.all([
+  const activePropertyId = await getActivePropertyId().catch(() => null);
+  const [progress, connectSources, activeProperty] = await Promise.all([
     deriveSetupProgress(scope.orgId),
     getConnectStatusForOrg(scope.orgId),
+    activePropertyId
+      ? prisma.property
+          .findFirst({
+            where: { id: activePropertyId, orgId: scope.orgId },
+            select: { id: true, name: true },
+          })
+          .catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   if (!progress) notFound();
@@ -163,6 +174,8 @@ export default async function SetupHubPage() {
         <ConnectHub
           variant="embed"
           availability={getProviderAvailability()}
+          activePropertyId={activeProperty?.id ?? null}
+          activePropertyName={activeProperty?.name ?? null}
           sources={connectSources.map((s) => ({
             id: s.id,
             connected: s.connected,
