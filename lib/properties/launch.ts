@@ -234,7 +234,7 @@ export async function getLaunchChecklist(
         ? `Pixel installed${cursive?.installedOnDomain ? ` on ${cursive.installedOnDomain}` : ""}.`
         : null,
       actionLabel: "Install pixel",
-      actionHref: `/portal/integrations/cursive?propertyId=${property.id}`,
+      actionHref: `/portal/integrations?propertyId=${property.id}`,
       required: true,
     });
     items.push({
@@ -249,7 +249,7 @@ export async function getLaunchChecklist(
           : null,
       actionLabel: pixelInstalled ? "Re-check pixel" : null,
       actionHref: pixelInstalled
-        ? `/portal/integrations/cursive?propertyId=${property.id}`
+        ? `/portal/integrations?propertyId=${property.id}`
         : null,
       required: true,
     });
@@ -313,7 +313,7 @@ export async function getLaunchChecklist(
         ? `${googleCampaign.name}${googleCampaign.status === "PAUSED" ? " (paused)" : ""}.`
         : null,
       actionLabel: "Connect Google Ads",
-      actionHref: `/portal/integrations/ads?platform=GOOGLE&propertyId=${property.id}`,
+      actionHref: `/portal/ads?propertyId=${property.id}`,
       required: false,
     });
   }
@@ -329,7 +329,7 @@ export async function getLaunchChecklist(
         ? `${metaCampaign.name}${metaCampaign.status === "PAUSED" ? " (paused)" : ""}.`
         : null,
       actionLabel: "Connect Meta Ads",
-      actionHref: `/portal/integrations/ads?platform=META&propertyId=${property.id}`,
+      actionHref: `/portal/ads?propertyId=${property.id}`,
       required: false,
     });
   }

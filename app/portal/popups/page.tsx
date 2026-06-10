@@ -3,6 +3,10 @@ import Link from "next/link";
 import { ArrowRight, Plus, Sparkles } from "lucide-react";
 import { requireScope } from "@/lib/tenancy/scope";
 import { requireModule } from "@/lib/portal/module-gate";
+import {
+  parsePropertyFilter,
+  effectivePropertyIds,
+} from "@/lib/tenancy/property-filter";
 import { listPopups, getPopupSummary } from "@/lib/popups/queries";
 import { PageHeader, SectionCard } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/portal/ui/empty-state";
@@ -12,12 +16,22 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = { title: "Popups" };
 export const dynamic = "force-dynamic";
 
-export default async function PopupsListPage() {
+export default async function PopupsListPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ property?: string; properties?: string }>;
+}) {
   const gate = await requireModule("modulePopups");
   if (gate) return gate;
 
   const scope = await requireScope();
-  const [popups, summary] = await Promise.all([
+  const sp = await searchParams;
+  // Honor the active-property switcher (and ?propertyId= deep-links from a
+  // property's setup checklist) so the list shows this property's popups plus
+  // any org-wide popups that apply to every property.
+  const requestedIds = await parsePropertyFilter(sp, scope.orgId);
+  const effectiveIds = effectivePropertyIds(scope, requestedIds);
+  const [allPopups, summary] = await Promise.all([
     listPopups(scope.orgId).catch(() => []),
     getPopupSummary(scope.orgId).catch(() => ({
       totalCampaigns: 0,
@@ -31,6 +45,15 @@ export default async function PopupsListPage() {
       ctaClicks28d: 0,
     })),
   ]);
+
+  // Filter to the active property when one is selected. Org-wide popups
+  // (propertyId === null) always show since they fire on every property.
+  const popups =
+    effectiveIds && effectiveIds.length > 0
+      ? allPopups.filter(
+          (p) => p.propertyId === null || effectiveIds.includes(p.propertyId),
+        )
+      : allPopups;
 
   // Bucket the campaign list by status so the KPI strip reads honestly
   // for low-volume tenants (one active campaign on day one shouldn't

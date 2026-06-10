@@ -206,6 +206,13 @@ export default async function SeoPage({
   const ga4Integration = integrations.find((i) => i.provider === SeoProvider.GA4);
   const hasAny = integrations.length > 0;
 
+  // When the operator arrives from a property's setup checklist
+  // (?propertyId=...), pre-select that property in the connect form so GA4/GSC
+  // lands on the right building without re-picking. Uses the page-level
+  // `properties` list (RBAC-filtered, defined below) for the selector.
+  const defaultSeoPropertyId =
+    requestedIds && requestedIds.length === 1 ? requestedIds[0] : null;
+
   // Drive an on-load sync when the freshest integration is older than 30
   // minutes. StaleOnLoadTrigger dedupes per-tab + cools down 60s so a user
   // clicking around won't flood the worker.
@@ -242,6 +249,7 @@ export default async function SeoPage({
       <SeoEmptyShell
         accessDenied={accessDenied}
         properties={properties}
+        defaultPropertyId={defaultSeoPropertyId}
         orgId={scope.orgId}
       />
     );
@@ -474,10 +482,12 @@ export default async function SeoPage({
 function SeoEmptyShell({
   accessDenied,
   properties,
+  defaultPropertyId,
   orgId,
 }: {
   accessDenied: boolean;
   properties: Array<{ id: string; name: string }>;
+  defaultPropertyId?: string | null;
   orgId: string;
 }) {
   return (
@@ -547,7 +557,7 @@ function SeoEmptyShell({
                 Recommended
               </span>
             </div>
-            <ConnectSeoForm provider="GSC" />
+            <ConnectSeoForm provider="GSC" properties={properties} defaultPropertyId={defaultPropertyId} />
           </div>
           <div className="rounded-xl border border-border bg-muted/20 p-4 space-y-3">
             <div className="flex items-start justify-between gap-3">
@@ -564,7 +574,7 @@ function SeoEmptyShell({
                 Optional
               </span>
             </div>
-            <ConnectSeoForm provider="GA4" />
+            <ConnectSeoForm provider="GA4" properties={properties} defaultPropertyId={defaultPropertyId} />
           </div>
         </div>
         <SetupHelp />
