@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireScope, requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { FLAG_TYPES } from "@/components/portal/conversations/flag-pill";
 
 // ---------------------------------------------------------------------------
@@ -77,7 +77,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const { id } = await params;
     const ok = await assertConversationAccess(id, scope.orgId);
     if (!ok) {
@@ -119,7 +119,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const { id } = await params;
     const ok = await assertConversationAccess(id, scope.orgId);
     if (!ok) {

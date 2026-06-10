@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { enrichLimiter, checkRateLimit } from "@/lib/rate-limit";
 import { isAllowedUrl } from "@/lib/utils/ssrf-protection";
 
@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   // LeaseStack User row (not just any Clerk session).
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

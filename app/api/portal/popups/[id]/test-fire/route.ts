@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 
 export const runtime = "nodejs";
@@ -30,7 +30,7 @@ export async function POST(
 ) {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });

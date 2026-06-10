@@ -4,7 +4,7 @@ import { streamText } from "ai";
 import { anthropic } from "@ai-sdk/anthropic";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   tenantWhere,
 } from "@/lib/tenancy/scope";
@@ -61,7 +61,7 @@ const MODEL_ID = "claude-sonnet-4-5";
 export async function POST(req: NextRequest, ctx: RouteContext) {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: 403 });

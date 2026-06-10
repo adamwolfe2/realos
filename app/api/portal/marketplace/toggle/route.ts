@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { isValidModuleKey, getModuleByKey } from "@/lib/marketplace/catalog";
 import { Prisma, AuditAction, UserRole } from "@prisma/client";
@@ -41,7 +41,7 @@ const bodySchema = z.object({
 
 export async function POST(req: NextRequest) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
 
     // Role gate — module toggles change billing posture and feature
     // surface; restricted roles (CLIENT_VIEWER, LEASING_AGENT, AL_PARTNER)

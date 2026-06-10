@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import {
   requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   tenantWhere,
 } from "@/lib/tenancy/scope";
@@ -28,7 +29,7 @@ export async function POST(
 ) {
   let scope: Awaited<ReturnType<typeof requireScope>>;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

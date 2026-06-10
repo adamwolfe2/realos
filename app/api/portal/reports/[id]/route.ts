@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const { id } = await context.params;
     const body = await req.json().catch(() => ({}));
 
@@ -82,7 +82,7 @@ export async function DELETE(
   context: { params: Promise<{ id: string }> },
 ) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const { id } = await context.params;
 
     const result = await prisma.clientReport.updateMany({

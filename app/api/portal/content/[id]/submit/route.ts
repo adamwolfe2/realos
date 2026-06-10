@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   tenantWhere,
 } from "@/lib/tenancy/scope";
@@ -28,7 +28,7 @@ type RouteContext = { params: Promise<{ id: string }> };
 export async function POST(_req: NextRequest, ctx: RouteContext) {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: 403 });

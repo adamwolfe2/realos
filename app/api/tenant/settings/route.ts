@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -50,7 +50,7 @@ const patchSchema = z.object({
 
 export async function PATCH(req: NextRequest) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
 
     // Role gate — CLIENT_VIEWER / LEASING_AGENT / AL_PARTNER cannot
     // change brand or primary-contact settings. Lead notifications fan

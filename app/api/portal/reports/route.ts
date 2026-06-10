@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireScope, requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { generateReportSnapshot, type ReportKind } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
@@ -19,7 +19,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
 
     // Reports are org-wide snapshots — generateReportSnapshot rolls
     // up the entire portfolio (every property's leads, spend, tours,

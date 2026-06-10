@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { requireScope } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace } from "@/lib/tenancy/scope";
 import { analyzeSentimentAndTopics } from "@/lib/reputation/analyze";
 import { aiCallLimiter, checkRateLimit, rateLimited } from "@/lib/rate-limit";
 import {
@@ -40,7 +40,7 @@ const MAX_PER_REQUEST = 200;
 export async function POST(req: NextRequest) {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch {
     return NextResponse.json(
       { ok: false, error: "Not authenticated" },

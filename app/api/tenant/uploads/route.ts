@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { uploadFile, UploadError } from "@/lib/uploads";
 
 // POST /api/tenant/uploads
@@ -7,7 +7,7 @@ import { uploadFile, UploadError } from "@/lib/uploads";
 // never mix assets across tenants. Returns the public URL.
 export async function POST(req: NextRequest) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const fd = await req.formData();
     const file = fd.get("file");
     if (!(file instanceof File)) {

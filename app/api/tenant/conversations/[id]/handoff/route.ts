@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   tenantWhere,
   ForbiddenError,
   auditPayload,
@@ -18,7 +18,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const { id } = await params;
 
     const convo = await prisma.chatbotConversation.findFirst({

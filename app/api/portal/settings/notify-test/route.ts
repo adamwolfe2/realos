@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
 } from "@/lib/tenancy/scope";
 import { LeadNotifyChannel, UserRole } from "@prisma/client";
@@ -31,7 +31,7 @@ const ALLOWED_ROLES = new Set<UserRole>([
 
 export async function POST() {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     if (!ALLOWED_ROLES.has(scope.role)) {
       return NextResponse.json(
         { error: "Only org owners and admins can send test notifications." },

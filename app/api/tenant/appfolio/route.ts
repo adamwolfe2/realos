@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
   requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -130,7 +131,7 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const parsed = patch.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return NextResponse.json(

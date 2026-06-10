@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { putPublic, delPublic } from "@/lib/blob-public";
-import { requireScope, ForbiddenError, tenantWhere } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError, tenantWhere } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { AuditAction } from "@prisma/client";
 import { removeBackground } from "@/lib/images/remove-bg";
@@ -43,7 +43,7 @@ export async function POST(
 ) {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: 403 });
@@ -200,7 +200,7 @@ export async function DELETE(
 ) {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: 403 });

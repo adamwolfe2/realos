@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { runAppfolioSync } from "@/lib/integrations/appfolio-sync";
 import { syncListingsForOrg } from "@/lib/integrations/appfolio";
 import { prisma } from "@/lib/db";
@@ -29,7 +29,7 @@ export const maxDuration = 300; // matches the cron handler
 // its own beyond the StaleOnLoadTrigger's sessionStorage dedupe.
 export async function POST() {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
 
     const integration = await prisma.appFolioIntegration.findUnique({
       where: { orgId: scope.orgId },

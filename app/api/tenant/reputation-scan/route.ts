@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
   requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
   tenantWhere,
@@ -45,7 +46,7 @@ const bodySchema = z.object({
 export async function POST(req: NextRequest) {
   let scope: Awaited<ReturnType<typeof requireScope>>;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: err.status });

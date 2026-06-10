@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   tenantWhere,
   ForbiddenError,
 } from "@/lib/tenancy/scope";
@@ -27,7 +27,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const { id } = await params;
 
     // Agency callers only reach this endpoint when impersonating, in which

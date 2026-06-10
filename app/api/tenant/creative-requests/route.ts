@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
   requireScope,
+  requireWritableWorkspace,
   tenantWhere,
   ForbiddenError,
   auditPayload,
@@ -56,7 +57,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const parsed = create.safeParse(await req.json().catch(() => ({})));
     if (!parsed.success) {
       return NextResponse.json(

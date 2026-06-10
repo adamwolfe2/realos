@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 
 // Tenant-scoped reset for a wedged AppFolio sync. The on-demand sync
@@ -18,7 +18,7 @@ const STUCK_AFTER_MS = 10 * 60 * 1000;
 
 export async function POST() {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const integ = await prisma.appFolioIntegration.findUnique({
       where: { orgId: scope.orgId },
       select: {

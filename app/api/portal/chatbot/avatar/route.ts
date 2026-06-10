@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { putPublic, delPublic } from "@/lib/blob-public";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { prisma } from "@/lib/db";
 import { AuditAction } from "@prisma/client";
 
@@ -37,7 +37,7 @@ const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2MB — generous; avatars are 80x80
 export async function POST(req: NextRequest) {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: 403 });
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
 export async function DELETE() {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return NextResponse.json({ error: err.message }, { status: 403 });

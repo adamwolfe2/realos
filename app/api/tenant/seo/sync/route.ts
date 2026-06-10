@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, ForbiddenError } from "@/lib/tenancy/scope";
 import { runSeoSync } from "@/lib/integrations/seo-sync";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, rateLimited, seoSyncLimiter } from "@/lib/rate-limit";
@@ -26,7 +26,7 @@ export const maxDuration = 120;
 
 export async function POST() {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
 
     // Per-org debounce (60s). Keyed by orgId so two tabs in the same
     // browser / two operators on the same tenant don't each kick off
