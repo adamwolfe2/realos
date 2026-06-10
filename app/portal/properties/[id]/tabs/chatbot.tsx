@@ -3,6 +3,9 @@ import { formatDistanceToNow } from "date-fns";
 import { DashboardSection } from "@/components/portal/dashboard/dashboard-section";
 import { KpiTile } from "@/components/portal/dashboard/kpi-tile";
 import { getPropertyChatbot } from "@/lib/properties/queries";
+import { prisma } from "@/lib/db";
+import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
+import { PropertyChatbotConfigForm } from "./property-chatbot-config-form";
 
 export async function ChatbotTab({
   orgId,
@@ -13,7 +16,15 @@ export async function ChatbotTab({
   propertyId: string;
   propertyName: string;
 }) {
-  const data = await getPropertyChatbot(orgId, propertyId, propertyName);
+  const [data, propConfig, orgDefaults] = await Promise.all([
+    getPropertyChatbot(orgId, propertyId, propertyName),
+    prisma.propertyChatbotConfig
+      .findUnique({ where: { propertyId } })
+      .catch(() => null),
+    // Org-level resolved config (no propertyId) — drives the "inherits …"
+    // placeholder hints so operators see what they'd get by leaving fields blank.
+    resolveChatbotConfig(orgId),
+  ]);
 
   const emptyEverything =
     data.totalConversations === 0 &&
@@ -23,6 +34,22 @@ export async function ChatbotTab({
 
   return (
     <div className="space-y-6">
+      <PropertyChatbotConfigForm
+        propertyId={propertyId}
+        config={propConfig}
+        orgDefaults={{
+          chatbotEnabled: orgDefaults.chatbotEnabled,
+          chatbotPersonaName: orgDefaults.chatbotPersonaName,
+          chatbotGreeting: orgDefaults.chatbotGreeting,
+          chatbotCaptureMode: orgDefaults.chatbotCaptureMode,
+          chatbotKnowledgeBase: orgDefaults.chatbotKnowledgeBase,
+          phoneNumber: orgDefaults.phoneNumber,
+          contactEmail: orgDefaults.contactEmail,
+          primaryCtaText: orgDefaults.primaryCtaText,
+          primaryCtaUrl: orgDefaults.primaryCtaUrl,
+        }}
+      />
+
       <section className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
         <KpiTile
           label="Conversations"

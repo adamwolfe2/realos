@@ -741,6 +741,119 @@ export async function backfillChatbotLeadEmails(args: {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Per-property chatbot config (slice S1). Writes PropertyChatbotConfig — one
+// optional row per property whose every field is nullable (blank = inherit the
+// org-level TenantSiteConfig). The public embed + chat resolve the merged value
+// via lib/chatbot/resolve-config.ts. Gated by per-property RBAC.
+//
+// chatbotEnabled is tri-state here: "inherit" (null), "on" (true), "off"
+// (false) — so a property can override the org toggle either way, or defer.
+// ---------------------------------------------------------------------------
+
+const triEnabledSchema = z
+  .enum(["inherit", "on", "off"])
+  .transform((v) => (v === "inherit" ? null : v === "on"));
+
+const captureModeOrInherit = z
+  .string()
+  .optional()
+  .transform((v) => (typeof v === "string" ? v.trim() : ""))
+  .transform((v) => (v === "" ? null : v))
+  .pipe(captureModeSchema.nullable());
+
+const savePropertySchema = z.object({
+  chatbotEnabled: triEnabledSchema,
+  chatbotPersonaName: baseStringSchema.pipe(z.string().max(100).nullable()),
+  chatbotGreeting: baseStringSchema.pipe(z.string().max(500).nullable()),
+  chatbotFollowUpMessage: baseStringSchema.pipe(z.string().max(500).nullable()),
+  chatbotTeaserText: baseStringSchema.pipe(z.string().max(200).nullable()),
+  chatbotBrandColor: baseStringSchema.pipe(
+    z.string().regex(HEX_COLOR, "Brand color must be a hex value like #1a1a2e").nullable()
+  ),
+  chatbotCaptureMode: captureModeOrInherit,
+  chatbotKnowledgeBase: baseStringSchema.pipe(
+    z.string().max(KNOWLEDGE_BASE_MAX, `Knowledge base can't exceed ${KNOWLEDGE_BASE_MAX} characters`).nullable()
+  ),
+  phoneNumber: baseStringSchema.pipe(z.string().max(40).nullable()),
+  contactEmail: baseStringSchema.pipe(
+    z.string().email("Enter a valid email").max(200).nullable()
+  ),
+  primaryCtaText: baseStringSchema.pipe(z.string().max(60).nullable()),
+  primaryCtaUrl: baseStringSchema.pipe(
+    z.string().url("CTA URL must be a valid URL").max(500).nullable()
+  ),
+});
+
+export async function savePropertyChatbotConfig(
+  formData: FormData
+): Promise<ActionResult> {
+  try {
+    const scope = await requireScope();
+    const propertyId = firstString(formData.get("propertyId")).trim();
+    if (!propertyId) return { ok: false, error: "Missing property" };
+
+    // Ownership + per-property RBAC: the property must belong to this org AND
+    // (when the user is property-restricted) be in their allowed set.
+    if (scope.allowedPropertyIds && !scope.allowedPropertyIds.includes(propertyId)) {
+      return { ok: false, error: "You don't have access to this property" };
+    }
+    const property = await prisma.property.findFirst({
+      where: { id: propertyId, orgId: scope.orgId },
+      select: { id: true },
+    });
+    if (!property) return { ok: false, error: "Property not found" };
+
+    const parsed = savePropertySchema.safeParse({
+      chatbotEnabled: firstString(formData.get("chatbotEnabled")) || "inherit",
+      chatbotPersonaName: firstString(formData.get("chatbotPersonaName")),
+      chatbotGreeting: firstString(formData.get("chatbotGreeting")),
+      chatbotFollowUpMessage: firstString(formData.get("chatbotFollowUpMessage")),
+      chatbotTeaserText: firstString(formData.get("chatbotTeaserText")),
+      chatbotBrandColor: firstString(formData.get("chatbotBrandColor")),
+      chatbotCaptureMode: firstString(formData.get("chatbotCaptureMode")),
+      chatbotKnowledgeBase: firstString(formData.get("chatbotKnowledgeBase")),
+      phoneNumber: firstString(formData.get("phoneNumber")),
+      contactEmail: firstString(formData.get("contactEmail")),
+      primaryCtaText: firstString(formData.get("primaryCtaText")),
+      primaryCtaUrl: firstString(formData.get("primaryCtaUrl")),
+    });
+    if (!parsed.success) {
+      return { ok: false, error: parsed.error.issues[0]?.message ?? "Validation failed" };
+    }
+
+    const data = parsed.data;
+    const config = await prisma.propertyChatbotConfig.upsert({
+      where: { propertyId },
+      update: data as Prisma.PropertyChatbotConfigUncheckedUpdateInput,
+      create: {
+        ...(data as Prisma.PropertyChatbotConfigUncheckedCreateInput),
+        propertyId,
+        orgId: scope.orgId,
+      },
+    });
+
+    await prisma.auditEvent.create({
+      data: auditPayload(scope, {
+        action: AuditAction.UPDATE,
+        entityType: "PropertyChatbotConfig",
+        entityId: config.id,
+        description: "Per-property chatbot config updated",
+        diff: data as Prisma.InputJsonValue,
+      }),
+    });
+
+    revalidatePath(`/portal/properties/${propertyId}`);
+    return { ok: true };
+  } catch (err) {
+    if (err instanceof ForbiddenError) {
+      return { ok: false, error: err.message };
+    }
+    console.error("savePropertyChatbotConfig failed", err);
+    return { ok: false, error: "Failed to save chatbot config" };
+  }
+}
+
 export async function toggleChatbotEnabled(
   enabled: boolean
 ): Promise<ActionResult> {
