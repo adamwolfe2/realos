@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireScope } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace } from "@/lib/tenancy/scope";
 import * as rentCastCache from "@/lib/rentcast/cache";
 import { computeCalculations, type CalculationOutputs } from "@/lib/zillow/calculations";
 import { normalizeAddress } from "@/lib/rentcast/insights";
@@ -108,7 +108,7 @@ function extractZip(addr: string): string | null {
 }
 
 export async function evaluateAddress(input: EvaluateAddressInput): Promise<EvaluateActionResult> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
 
   const parsed = inputSchema.safeParse(input);
   if (!parsed.success) {
@@ -321,7 +321,7 @@ export async function evaluateAddress(input: EvaluateAddressInput): Promise<Eval
 export async function archiveEvaluation(
   evaluationId: string,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
   const existing = await prisma.propertyEvaluation.findFirst({
     where: { id: evaluationId, orgId: scope.orgId },
     select: { id: true },

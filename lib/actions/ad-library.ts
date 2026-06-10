@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { requireScope } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace } from "@/lib/tenancy/scope";
 import {
   parseAdvertiserInput,
   scanAdvertiser,
@@ -18,7 +18,7 @@ export async function trackAdvertiserAction(input: {
   | { ok: true; advertiserId: string; ads: number }
   | { ok: false; error: string }
 > {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
   let parsed;
   try {
     parsed = parseAdvertiserInput(input.raw);
@@ -81,7 +81,7 @@ export async function rescanAdvertiserAction(
   | { ok: true; found: number; newCount: number; inactiveCount: number }
   | { ok: false; error: string }
 > {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
   const owned = await prisma.adLibraryAdvertiser.findFirst({
     where: { id: advertiserId, orgId: scope.orgId },
     select: { id: true, propertyId: true },
@@ -106,7 +106,7 @@ export async function rescanAdvertiserAction(
 export async function untrackAdvertiserAction(
   advertiserId: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
   const owned = await prisma.adLibraryAdvertiser.findFirst({
     where: { id: advertiserId, orgId: scope.orgId },
     select: { id: true, propertyId: true },

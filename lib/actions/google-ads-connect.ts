@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireScope, auditPayload } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
 import {
   normalizeCustomerId,
@@ -55,7 +55,7 @@ export async function connectGoogleAds(
 ): Promise<ConnectGoogleAdsResult> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     return {
       ok: false,
@@ -160,7 +160,7 @@ export async function disconnectGoogleAds(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     return {
       ok: false,
@@ -207,7 +207,7 @@ export async function triggerGoogleAdsSync(
 ): Promise<{ ok: true; campaigns: number; metrics: number } | { ok: false; error: string }> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     return {
       ok: false,

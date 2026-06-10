@@ -6,6 +6,7 @@ import { AuditAction, ChatbotCaptureMode, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
   requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -116,7 +117,7 @@ export async function saveChatbotConfig(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
 
     const org = await prisma.organization.findUnique({
       where: { id: scope.orgId },
@@ -258,7 +259,7 @@ export async function updateLeadRouting(
   formData: FormData,
 ): Promise<LeadRoutingActionResult> {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
 
     const raw = {
       notifyLeadEmail: firstString(formData.get("notifyLeadEmail")),
@@ -322,7 +323,7 @@ export type TestEmailResult =
 
 export async function sendTestLeadEmail(): Promise<TestEmailResult> {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const org = await prisma.organization.findUnique({
       where: { id: scope.orgId },
       select: {
@@ -789,7 +790,7 @@ export async function savePropertyChatbotConfig(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
     const propertyId = firstString(formData.get("propertyId")).trim();
     if (!propertyId) return { ok: false, error: "Missing property" };
 
@@ -858,7 +859,7 @@ export async function toggleChatbotEnabled(
   enabled: boolean
 ): Promise<ActionResult> {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
 
     const org = await prisma.organization.findUnique({
       where: { id: scope.orgId },

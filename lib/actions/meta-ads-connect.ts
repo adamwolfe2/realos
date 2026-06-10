@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireScope, auditPayload } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
 import {
   normalizeMetaAdAccountId,
@@ -57,7 +57,7 @@ export async function connectMetaAds(
 ): Promise<ConnectMetaAdsResult> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     return {
       ok: false,
@@ -160,7 +160,7 @@ export async function disconnectMetaAds(
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     return {
       ok: false,
@@ -207,7 +207,7 @@ export async function triggerMetaAdsSync(
 ): Promise<{ ok: true; campaigns: number; metrics: number } | { ok: false; error: string }> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     return {
       ok: false,

@@ -5,7 +5,6 @@ import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
   requireAgency,
-  requireScope,
   requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
@@ -206,7 +205,7 @@ export async function updateProperty(
 ): Promise<UpdatePropertyResult> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;
@@ -350,7 +349,7 @@ export async function setPropertyLifecycle(
 ): Promise<SetLifecycleResult> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch {
     return { ok: false, error: "Not authenticated." };
   }
@@ -441,7 +440,7 @@ export async function setPropertyLifecycleBulk(
 ): Promise<{ ok: true; updated: number } | { ok: false; error: string }> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch {
     return { ok: false, error: "Not authenticated." };
   }
@@ -514,7 +513,7 @@ export async function activateAllImportedProperties(): Promise<
 > {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch {
     return { ok: false, error: "Not authenticated." };
   }
@@ -589,7 +588,7 @@ export async function setPropertyLaunchStatus(
 ): Promise<{ ok: true; status: string } | { ok: false; error: string }> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch {
     return { ok: false, error: "Not authenticated." };
   }

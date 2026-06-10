@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireScope, auditPayload } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
 import { encrypt } from "@/lib/crypto";
 import { parseServiceAccountJson, testGscConnection } from "@/lib/integrations/gsc";
 import { testGa4Connection } from "@/lib/integrations/ga4";
@@ -63,7 +63,7 @@ export type SyncSeoResult =
 export async function connectSeo(formData: FormData): Promise<ConnectSeoResult> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
@@ -238,7 +238,7 @@ export async function disconnectSeo(
 ): Promise<ConnectSeoResult> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
@@ -294,7 +294,7 @@ export async function disconnectSeo(
 export async function triggerSeoSync(): Promise<SyncSeoResult> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
-import { requireScope, auditPayload } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace, auditPayload } from "@/lib/tenancy/scope";
 import { AuditAction } from "@prisma/client";
 import { runCursiveSegmentSync } from "./admin-cursive";
 
@@ -28,7 +28,7 @@ export type TenantPixelSyncResult =
   | { ok: false; error: string };
 
 export async function syncPixelFromSegment(): Promise<TenantPixelSyncResult> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
 
   // Throttle: if we synced very recently, return the existing state
   // without burning another AL round-trip. The page-load auto-trigger

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireScope } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace } from "@/lib/tenancy/scope";
 
 // ---------------------------------------------------------------------------
 // Update the operator-editable property attributes (assetCategory +
@@ -50,7 +50,7 @@ export type SavePropertyAttributesResult =
 export async function savePropertyAttributes(
   raw: unknown,
 ): Promise<SavePropertyAttributesResult> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
   const parsed = inputSchema.safeParse(raw);
   if (!parsed.success) {
     return {

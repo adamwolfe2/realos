@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
   type ScopedContext,
@@ -60,7 +60,7 @@ type Result =
 export async function bulkUpdateLeadStatus(input: unknown): Promise<Result> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;
@@ -104,7 +104,7 @@ export async function bulkUpdateLeadStatus(input: unknown): Promise<Result> {
 export async function bulkUnsubscribeLeads(input: unknown): Promise<Result> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;
@@ -162,7 +162,7 @@ const assignInput = z.object({
 export async function bulkAssignLeads(input: unknown): Promise<Result> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;
@@ -221,7 +221,7 @@ export async function bulkAssignLeads(input: unknown): Promise<Result> {
 export async function bulkDeleteLeads(input: unknown): Promise<Result> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;

@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   tenantWhere,
   ForbiddenError,
 } from "@/lib/tenancy/scope";
@@ -39,7 +39,7 @@ export async function scrapePropertyImagesAction(
 ): Promise<ActionResult> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;
@@ -84,7 +84,7 @@ export async function setPropertyImagesAction(input: unknown): Promise<
 > {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;

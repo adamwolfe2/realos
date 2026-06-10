@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireScope } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace } from "@/lib/tenancy/scope";
 
 // ---------------------------------------------------------------------------
 // Update the report cadence + recipients + auto-send toggle for the
@@ -55,7 +55,7 @@ export type SaveReportCadenceResult =
 export async function saveReportCadence(
   raw: unknown,
 ): Promise<SaveReportCadenceResult> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
   const parsed = inputSchema.safeParse(raw);
   if (!parsed.success) {
     return {

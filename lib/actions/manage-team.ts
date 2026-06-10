@@ -7,7 +7,7 @@ import { AuditAction, OrgType, UserRole } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
   requireAgency,
-  requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
   type ScopedContext,
@@ -173,7 +173,7 @@ export async function updateUserRoleAsClient(
 ): Promise<ManageTeamResult> {
   let scope: ScopedContext;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return { ok: false, error: "Not authorized." };
@@ -363,7 +363,7 @@ export async function removeUserFromOrgAsClient(
 ): Promise<ManageTeamResult> {
   let scope: ScopedContext;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return { ok: false, error: "Not authorized." };
@@ -552,7 +552,7 @@ export async function updatePropertyAccessAsClient(
 ): Promise<ManageTeamResult> {
   let scope: ScopedContext;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return { ok: false, error: "Not authorized." };

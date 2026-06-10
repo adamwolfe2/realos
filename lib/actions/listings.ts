@@ -5,7 +5,7 @@ import { z } from "zod";
 import { AuditAction, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -81,7 +81,7 @@ export async function createListing(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
 
     const raw = {
       propertyId: firstString(formData.get("propertyId")) ?? "",
@@ -148,7 +148,7 @@ export async function deleteListing(
   listingId: string
 ): Promise<ActionResult> {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
 
     const listing = await prisma.listing.findFirst({
       where: {
@@ -188,7 +188,7 @@ export async function toggleListingAvailable(
   isAvailable: boolean
 ): Promise<ActionResult> {
   try {
-    const scope = await requireScope();
+    const scope = await requireWritableWorkspace();
 
     const listing = await prisma.listing.findFirst({
       where: {

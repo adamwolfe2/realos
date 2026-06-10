@@ -4,7 +4,11 @@ import crypto from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
-import { requireScope, ForbiddenError } from "@/lib/tenancy/scope";
+import {
+  requireScope,
+  requireWritableWorkspace,
+  ForbiddenError,
+} from "@/lib/tenancy/scope";
 import { sendPixelRequestOpsEmail } from "@/lib/email/pixel-emails";
 import { OrgType, PixelRequestStatus } from "@prisma/client";
 
@@ -64,12 +68,24 @@ async function requireClientScope() {
   return scope;
 }
 
+// Mutating variant of requireClientScope: also blocks expired-trial
+// workspaces. Used by the write/cost paths (connectPixel, startCursiveSetup,
+// disconnectPixel). getCursiveSetupStatus stays on the read-only
+// requireClientScope so a lapsed trial can still poll install status.
+async function requireWritableClientScope() {
+  const scope = await requireWritableWorkspace();
+  if (scope.orgType !== OrgType.CLIENT) {
+    throw new ForbiddenError("Client context required");
+  }
+  return scope;
+}
+
 export async function connectPixel(
   formData: FormData
 ): Promise<ConnectPixelResult> {
   let scope;
   try {
-    scope = await requireClientScope();
+    scope = await requireWritableClientScope();
   } catch (err) {
     return {
       ok: false,
@@ -269,7 +285,7 @@ export async function startCursiveSetup(
 ): Promise<StartSetupResult> {
   let scope;
   try {
-    scope = await requireClientScope();
+    scope = await requireWritableClientScope();
   } catch (err) {
     return {
       ok: false,
@@ -430,7 +446,7 @@ export async function getCursiveSetupStatus(
 export async function disconnectPixel(): Promise<ConnectPixelResult> {
   let scope;
   try {
-    scope = await requireClientScope();
+    scope = await requireWritableClientScope();
   } catch (err) {
     return {
       ok: false,

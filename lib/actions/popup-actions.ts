@@ -12,7 +12,7 @@ import {
   Prisma,
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
-import { auditPayload, requireScope } from "@/lib/tenancy/scope";
+import { auditPayload, requireWritableWorkspace } from "@/lib/tenancy/scope";
 import { getPopupTemplate } from "@/lib/popups/templates";
 
 // ---------------------------------------------------------------------------
@@ -148,7 +148,7 @@ const upsertSchema = z.object({
 export async function createPopup(
   input: unknown,
 ): Promise<ActionResult<{ id: string }>> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
   const parsed = upsertSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false, error: firstZodError(parsed.error) };
@@ -195,7 +195,7 @@ export async function updatePopup(
   id: string,
   input: unknown,
 ): Promise<ActionResult> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
   if (!id || typeof id !== "string") {
     return { ok: false, error: "Missing popup id." };
   }
@@ -247,7 +247,7 @@ export async function setPopupStatus(
   id: string,
   status: PopupStatus,
 ): Promise<ActionResult> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
 
   // State-machine guard. DRAFT is a pre-publish state; you cannot
   // un-publish back to it once a campaign has been live. Use PAUSED
@@ -290,7 +290,7 @@ export async function setPopupStatus(
 }
 
 export async function deletePopup(id: string): Promise<ActionResult> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
   const target = await prisma.popupCampaign.findFirst({
     where: { id, orgId: scope.orgId },
     select: { name: true },

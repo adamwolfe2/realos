@@ -10,7 +10,7 @@ import {
 } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -44,7 +44,10 @@ const ADMIN_ROLES = new Set<UserRole>([
 ]);
 
 async function requireAdminScope() {
-  const scope = await requireScope();
+  // Every caller of requireAdminScope mutates (create/update/publish/
+  // archive/regenerate, several of which spend Claude generation credits),
+  // so gate on the writable-workspace check to block expired trials.
+  const scope = await requireWritableWorkspace();
   const actor = await prisma.user.findUnique({
     where: { clerkUserId: scope.clerkUserId },
     select: { role: true },

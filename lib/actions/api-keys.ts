@@ -5,7 +5,7 @@ import { z } from "zod";
 import { AuditAction, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
 } from "@/lib/tenancy/scope";
@@ -106,7 +106,7 @@ export async function createApiKey(
 ): Promise<CreateApiKeyResult> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
@@ -181,7 +181,7 @@ export async function revokeApiKey(
 ): Promise<RevokeApiKeyResult> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     const message = err instanceof Error ? err.message : "Not authorized";
     return { ok: false, error: message };
@@ -255,7 +255,7 @@ export type RotateApiKeyResult =
 export async function rotateApiKey(id: string): Promise<RotateApiKeyResult> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     return {
       ok: false,

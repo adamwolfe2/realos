@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db";
 import {
   auditPayload,
   requireScope,
+  requireWritableWorkspace,
   tenantWhere,
   ForbiddenError,
   type ScopedContext,
@@ -61,6 +62,20 @@ function canAccessVault(scope: ScopedContext): boolean {
 
 async function requireVaultAccess(): Promise<ScopedContext> {
   const scope = await requireScope();
+  if (!canAccessVault(scope)) {
+    throw new ForbiddenError(
+      "Your role doesn't have credential vault access. Ask an admin.",
+    );
+  }
+  return scope;
+}
+
+// Mutating variant: same role gate, but also blocks expired-trial
+// workspaces. Used by create/update/delete/import. revealCredential keeps
+// the read-only requireVaultAccess so a lapsed trial can still retrieve
+// (view/export) credentials it already stored.
+async function requireWritableVaultAccess(): Promise<ScopedContext> {
+  const scope = await requireWritableWorkspace();
   if (!canAccessVault(scope)) {
     throw new ForbiddenError(
       "Your role doesn't have credential vault access. Ask an admin.",
@@ -206,7 +221,7 @@ export async function createCredential(
 ): Promise<VaultActionResult<{ id: string }>> {
   let scope: ScopedContext;
   try {
-    scope = await requireVaultAccess();
+    scope = await requireWritableVaultAccess();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;
@@ -273,7 +288,7 @@ export async function updateCredential(
 ): Promise<VaultActionResult> {
   let scope: ScopedContext;
   try {
-    scope = await requireVaultAccess();
+    scope = await requireWritableVaultAccess();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;
@@ -372,7 +387,7 @@ export async function deleteCredential(
 ): Promise<VaultActionResult> {
   let scope: ScopedContext;
   try {
-    scope = await requireVaultAccess();
+    scope = await requireWritableVaultAccess();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;
@@ -614,7 +629,7 @@ export async function importCredentialsFromCsv(
 ): Promise<VaultActionResult<{ created: number; skipped: number; errors: string[] }>> {
   let scope: ScopedContext;
   try {
-    scope = await requireVaultAccess();
+    scope = await requireWritableVaultAccess();
   } catch (err) {
     if (err instanceof ForbiddenError) return { ok: false, error: err.message };
     throw err;

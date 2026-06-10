@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import {
-  requireScope,
+  requireWritableWorkspace,
   ForbiddenError,
   auditPayload,
   type ScopedContext,
@@ -38,7 +38,7 @@ export async function sendManualReviewRequest(
 ): Promise<Result> {
   let scope;
   try {
-    scope = await requireScope();
+    scope = await requireWritableWorkspace();
   } catch (err) {
     if (err instanceof ForbiddenError) {
       return { ok: false, error: err.message };

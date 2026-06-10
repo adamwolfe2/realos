@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/db";
-import { requireScope } from "@/lib/tenancy/scope";
+import { requireWritableWorkspace } from "@/lib/tenancy/scope";
 import { generateReportSnapshot, type ReportKind, type ReportSnapshot } from "@/lib/reports/generate";
 import { generateShareToken } from "@/lib/reports/token";
 import { sendReportEmail } from "@/lib/email/send-report";
@@ -19,7 +19,7 @@ export async function createReport(
   if (kind !== "weekly" && kind !== "monthly" && kind !== "custom") {
     throw new Error("Invalid report kind");
   }
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
 
   // If a property was requested, validate it belongs to this org. Pre-empts
   // any chance of an off-tenant id slipping through and gives us a stable
@@ -61,7 +61,7 @@ export async function updateReport(
   id: string,
   input: { headline?: string | null; notes?: string | null; status?: "draft" | "shared" | "archived" },
 ): Promise<void> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
 
   // Load for ownership + transition logic.
   const existing = await prisma.clientReport.findFirst({
@@ -90,7 +90,7 @@ export async function updateReport(
 }
 
 export async function archiveReport(id: string): Promise<void> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
   await prisma.clientReport.updateMany({
     where: { id, orgId: scope.orgId },
     data: { status: "archived" },
@@ -119,7 +119,7 @@ export async function sendReportToRecipients(
   skipped?: "no_resend_key";
   previewSubject?: string;
 }> {
-  const scope = await requireScope();
+  const scope = await requireWritableWorkspace();
 
   const recipients = (input.to ?? [])
     .map((r) => r.trim())
