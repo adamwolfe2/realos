@@ -117,6 +117,26 @@ export function resolveAppfolioPropertyId(
   return null;
 }
 
+/**
+ * Whether a property belongs to the operator's configured AppFolio property
+ * group. Used to scope Phase 0 discovery (and therefore every downstream
+ * phase, via resolveAppfolioPropertyId).
+ *
+ * Rules:
+ *  - No filter configured → always matches (sync the whole portfolio).
+ *  - Property has no group label → kept, so a filter can never silently drop
+ *    every property when AppFolio omits the group on a row.
+ *  - Otherwise case-insensitive exact match.
+ */
+export function propertyMatchesGroupFilter(
+  propertyGroup: string | null,
+  filter: string | null | undefined,
+): boolean {
+  if (!filter) return true;
+  if (!propertyGroup) return true;
+  return propertyGroup.toLowerCase() === filter.toLowerCase();
+}
+
 export async function runAppfolioSync(
   orgId: string,
   options: { fullBackfill?: boolean; retrySkipped?: boolean } = {}
@@ -397,9 +417,31 @@ export async function runAppfolioSync(
   // first means downstream phases find their Property in the map.
   try {
     const rows = await fetchAllPages(client, "property_directory");
+    let propertiesSkippedByGroup = 0;
     for (const row of rows) {
       const mapped = mapPropertyPayload(row);
       if (!mapped) continue;
+
+      // Respect the operator's property-group filter. This sync path is
+      // REST-only (it returns early without REST creds), so
+      // propertyGroupFilter here is an AppFolio property_group — not the
+      // embed-mode address filter. Scoping discovery to the selected group
+      // cascades to EVERY downstream phase for free: rows for other groups
+      // won't find a Property in the map and get skipped by
+      // resolveAppfolioPropertyId, instead of half the data (units) being
+      // filtered while residents/leases/work-orders sync portfolio-wide.
+      // Properties with no group label are kept — we never drop everything
+      // just because AppFolio omitted the group on a row.
+      if (
+        !propertyMatchesGroupFilter(
+          mapped.propertyGroup,
+          integration.propertyGroupFilter,
+        )
+      ) {
+        propertiesSkippedByGroup += 1;
+        continue;
+      }
+
       const existing = await prisma.property.findFirst({
         where: {
           orgId,
@@ -568,6 +610,11 @@ export async function runAppfolioSync(
       });
       propertyByExternalId.set(mapped.externalId, created.id);
       stats.propertiesUpserted += 1;
+    }
+    if (propertiesSkippedByGroup > 0) {
+      stats.warnings.push(
+        `properties: ${propertiesSkippedByGroup} propert${propertiesSkippedByGroup === 1 ? "y" : "ies"} skipped — outside the configured property group "${integration.propertyGroupFilter}". Their leads/leases/residents are skipped too. Clear the group filter to sync the whole portfolio.`,
+      );
     }
     phasesCompleted += 1;
   } catch (err) {

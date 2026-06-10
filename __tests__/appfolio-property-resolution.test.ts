@@ -1,5 +1,8 @@
 import { describe, it, expect } from "vitest";
-import { resolveAppfolioPropertyId } from "@/lib/integrations/appfolio-sync";
+import {
+  resolveAppfolioPropertyId,
+  propertyMatchesGroupFilter,
+} from "@/lib/integrations/appfolio-sync";
 
 /**
  * Locks the multi-property safety invariant: the AppFolio sync must NEVER
@@ -42,5 +45,32 @@ describe("resolveAppfolioPropertyId", () => {
     expect(resolveAppfolioPropertyId(single, ["whatever"])).toBe("local-1");
     // no id at all — same single-property convenience
     expect(resolveAppfolioPropertyId(single, [])).toBe("local-1");
+  });
+});
+
+/**
+ * Phase 0 property-group scoping. When an operator sets propertyGroupFilter,
+ * discovery must keep only that group's properties (which cascades to every
+ * downstream phase via the resolver) — but must never drop everything when
+ * AppFolio omits the group label.
+ */
+describe("propertyMatchesGroupFilter", () => {
+  it("matches everything when no filter is configured", () => {
+    expect(propertyMatchesGroupFilter("Downtown", null)).toBe(true);
+    expect(propertyMatchesGroupFilter("Downtown", undefined)).toBe(true);
+    expect(propertyMatchesGroupFilter(null, null)).toBe(true);
+  });
+
+  it("matches the configured group case-insensitively", () => {
+    expect(propertyMatchesGroupFilter("Downtown", "downtown")).toBe(true);
+    expect(propertyMatchesGroupFilter("DOWNTOWN", "Downtown")).toBe(true);
+  });
+
+  it("excludes properties in a different group", () => {
+    expect(propertyMatchesGroupFilter("Uptown", "Downtown")).toBe(false);
+  });
+
+  it("keeps properties with no group label so a filter never drops everything", () => {
+    expect(propertyMatchesGroupFilter(null, "Downtown")).toBe(true);
   });
 });
