@@ -226,10 +226,13 @@ function resolveConnectUrl(
   switch (id) {
     case "cursive_pixel":
       return `/portal/settings/integrations?propertyId=${propertyId}`;
+    // /portal/seo scopes by `property` (parsePropertyFilter), NOT `propertyId`
+    // — the old param name was silently ignored, so the per-property pre-select
+    // never fired. (Codex.)
     case "ga4":
-      return `/portal/seo?provider=GA4&propertyId=${propertyId}`;
+      return `/portal/seo?provider=GA4&property=${propertyId}`;
     case "gsc":
-      return `/portal/seo?provider=GSC&propertyId=${propertyId}`;
+      return `/portal/seo?provider=GSC&property=${propertyId}`;
     case "website":
       return `/portal/site-builder?propertyId=${propertyId}`;
     default:

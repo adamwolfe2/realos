@@ -268,7 +268,7 @@ export async function getLaunchChecklist(
           ? "Connected; awaiting first sync."
           : null,
       actionLabel: "Connect GA4",
-      actionHref: `/portal/seo?provider=GA4&propertyId=${property.id}`,
+      actionHref: `/portal/seo?provider=GA4&property=${property.id}`,
       required: true,
     });
     items.push({
@@ -283,7 +283,7 @@ export async function getLaunchChecklist(
           ? "Connected; awaiting first sync."
           : null,
       actionLabel: "Connect GSC",
-      actionHref: `/portal/seo?provider=GSC&propertyId=${property.id}`,
+      actionHref: `/portal/seo?provider=GSC&property=${property.id}`,
       required: true,
     });
   }
