@@ -234,7 +234,11 @@ export async function POST(req: NextRequest) {
   //    billing — no tier clobber. Requires admin to have synced prices.
   //  - Tier (no selectedModuleKeys): the legacy graduated-tier path + add-ons.
   const checkoutLineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
-  const useFeaturePricing = (parsed.selectedModuleKeys?.length ?? 0) > 0;
+  // À-la-carte mode is signalled by the PRESENCE of selectedModuleKeys, not a
+  // non-empty array. A base-only customer (zero add-on features) sends an empty
+  // array and must still be billed the $99 base — not silently dropped into the
+  // legacy tier path, which overcharged them the full Starter tier. (Codex.)
+  const useFeaturePricing = parsed.selectedModuleKeys !== undefined;
 
   if (useFeaturePricing) {
     const qty = Math.max(1, parsed.propertyCount);
