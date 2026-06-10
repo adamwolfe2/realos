@@ -1665,6 +1665,11 @@ export type MappedProperty = {
   country: string | null;
   totalUnits: number | null;
   yearBuilt: number | null;
+  // AppFolio's property group / portfolio label, when present. Captured onto
+  // Property.backendPropertyGroup so multi-property portfolios can be nested /
+  // grouped by their AppFolio grouping (and so propertyGroupFilter is
+  // meaningful). Null on plans/accounts that don't expose it.
+  propertyGroup: string | null;
   raw: RawRow;
 };
 
@@ -1718,6 +1723,15 @@ export function mapPropertyPayload(raw: RawRow): MappedProperty | null {
       raw.unit_count ?? raw.total_units ?? raw.UnitCount ?? raw.TotalUnits,
     ) ?? null,
     yearBuilt: asInt(raw.year_built ?? raw.YearBuilt) ?? null,
+    propertyGroup:
+      asString(
+        raw.property_group ??
+          raw.property_group_name ??
+          raw.PropertyGroup ??
+          raw.PropertyGroupName ??
+          raw.portfolio ??
+          raw.Portfolio,
+      ) ?? null,
     raw,
   };
 }

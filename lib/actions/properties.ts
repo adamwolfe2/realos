@@ -16,6 +16,7 @@ import {
   ResidentialSubtype,
   CommercialSubtype,
   OrgType,
+  Prisma,
 } from "@prisma/client";
 
 // ---------------------------------------------------------------------------
@@ -486,6 +487,78 @@ export async function setPropertyLifecycleBulk(
       excludeReason: action === "exclude" ? "Bulk operator-flagged" : null,
     },
   });
+
+  revalidatePath("/portal/properties");
+  revalidatePath("/portal/properties/curate");
+  revalidatePath("/portal");
+  return { ok: true, updated: result.count };
+}
+
+/**
+ * Portfolio bulk-curate: promote EVERY currently-IMPORTED property in the
+ * caller's scope to ACTIVE in one click. For operators connecting a large
+ * AppFolio portfolio who don't want to approve buildings one at a time.
+ *
+ * Safety:
+ *  - Only touches IMPORTED rows. EXCLUDED sub-records (parking/storage/etc.
+ *    auto-classified) are deliberately left out, so the junk-filter that
+ *    stops portfolio count inflation stays intact.
+ *  - Org-scoped (or all orgs for agency). A property-restricted operator only
+ *    activates the buildings they actually have access to.
+ *  - lifecycleSetBy=OPERATOR makes the decision sticky — a later re-sync's
+ *    auto-classifier will never demote these back to IMPORTED.
+ *  - Writes a single summary audit event.
+ */
+export async function activateAllImportedProperties(): Promise<
+  { ok: true; updated: number } | { ok: false; error: string }
+> {
+  let scope;
+  try {
+    scope = await requireScope();
+  } catch {
+    return { ok: false, error: "Not authenticated." };
+  }
+
+  // ALWAYS bind to the caller's effective org. Unlike setPropertyLifecycleBulk
+  // (which scopes via an explicit propertyIds list the caller supplies), this
+  // no-arg variant has nothing else to constrain it — so an unbounded agency
+  // updateMany would flip IMPORTED→ACTIVE (a billing transition) across EVERY
+  // client's org at once. scope.orgId already resolves to the impersonation
+  // target, so this correctly scopes an agency user to the client they're
+  // currently curating.
+  const isAgency =
+    scope.role === "AGENCY_OWNER" ||
+    scope.role === "AGENCY_ADMIN" ||
+    scope.role === "AGENCY_OPERATOR";
+  const propertyAccessGate =
+    !isAgency && scope.allowedPropertyIds
+      ? { id: { in: scope.allowedPropertyIds } }
+      : {};
+
+  const result = await prisma.property.updateMany({
+    where: {
+      lifecycle: "IMPORTED",
+      orgId: scope.orgId,
+      ...propertyAccessGate,
+    },
+    data: {
+      lifecycle: "ACTIVE",
+      lifecycleSetBy: "OPERATOR",
+      lifecycleSetAt: new Date(),
+      excludeReason: null,
+    },
+  });
+
+  if (result.count > 0) {
+    await prisma.auditEvent.create({
+      data: auditPayload(scope, {
+        action: AuditAction.UPDATE,
+        entityType: "Property",
+        description: `Bulk-activated ${result.count} imported propert${result.count === 1 ? "y" : "ies"} (portfolio curate)`,
+        diff: { activatedCount: result.count } as Prisma.InputJsonValue,
+      }),
+    });
+  }
 
   revalidatePath("/portal/properties");
   revalidatePath("/portal/properties/curate");

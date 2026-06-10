@@ -89,6 +89,34 @@ export type AppfolioSyncResult = {
   error?: string;
 };
 
+/**
+ * Resolve an AppFolio property id (or list of candidate ids) to a LOCAL
+ * Property id, using the externalId->localId map built in Phase 0.
+ *
+ * CRITICAL multi-property invariant: in a portfolio with more than one
+ * property we NEVER guess. If no candidate id matches, we return null and let
+ * the caller decide — skip + warn (applications, residents, leases, work
+ * orders, which require a property) or fall back to an org-level row (leads).
+ * Guessing "the first property" here would silently file a lease/application/
+ * resident under the WRONG building, corrupting per-property nesting across
+ * the portfolio. The convenience fallback only applies when the org has
+ * exactly ONE AppFolio property (nothing to mis-assign to). This mirrors the
+ * unit_directory phase, which already refused to guess.
+ */
+export function resolveAppfolioPropertyId(
+  propertyByExternalId: Map<string, string>,
+  externalIds: string[],
+): string | null {
+  for (const eid of externalIds) {
+    const hit = propertyByExternalId.get(eid);
+    if (hit) return hit;
+  }
+  if (propertyByExternalId.size === 1) {
+    return propertyByExternalId.values().next().value ?? null;
+  }
+  return null;
+}
+
 export async function runAppfolioSync(
   orgId: string,
   options: { fullBackfill?: boolean; retrySkipped?: boolean } = {}
@@ -229,22 +257,13 @@ export async function runAppfolioSync(
     if (p.backendPropertyId) propertyByExternalId.set(p.backendPropertyId, p.id);
   }
 
-  // Derive the fallback Property at call time, not capture time. Phase 0
-  // (Properties auto-discovery) runs first and may have populated
-  // propertyByExternalId after this block; downstream phases that fall
-  // back when AppFolio omits property_id need to see those new entries.
-  function getFallbackPropertyId(): string | null {
-    if (propertyByExternalId.size === 0) return null;
-    return propertyByExternalId.values().next().value ?? null;
-  }
-
-  function resolvePropertyId(externalIds: string[]): string | null {
-    for (const eid of externalIds) {
-      const hit = propertyByExternalId.get(eid);
-      if (hit) return hit;
-    }
-    return getFallbackPropertyId();
-  }
+  // Resolve an AppFolio property id to a local Property. Reads
+  // propertyByExternalId at call time (Phase 0 may add entries after this
+  // block). Never guesses in a multi-property portfolio — see
+  // resolveAppfolioPropertyId. Callers that require a property skip+warn on
+  // null; the leads phase treats null as an org-level lead.
+  const resolvePropertyId = (externalIds: string[]): string | null =>
+    resolveAppfolioPropertyId(propertyByExternalId, externalIds);
 
   let topLevelError: string | null = null;
   // Resilience: track per-phase completion separately from row counts. A
@@ -387,12 +406,28 @@ export async function runAppfolioSync(
           backendPlatform: BackendPlatform.APPFOLIO,
           backendPropertyId: mapped.externalId,
         },
-        select: { id: true, lifecycle: true, lifecycleSetBy: true, name: true },
+        select: {
+          id: true,
+          lifecycle: true,
+          lifecycleSetBy: true,
+          name: true,
+          backendPropertyGroup: true,
+        },
       });
       if (existing) {
         // Property already known. User-edited fields stay sticky; we
         // still ensure it's in our local map for downstream phases.
         propertyByExternalId.set(mapped.externalId, existing.id);
+
+        // Backfill the AppFolio property group if we don't have it yet, so
+        // existing portfolios gain nesting metadata on the next sync without
+        // disturbing any operator-edited fields.
+        if (mapped.propertyGroup && !existing.backendPropertyGroup) {
+          await prisma.property.update({
+            where: { id: existing.id },
+            data: { backendPropertyGroup: mapped.propertyGroup },
+          });
+        }
 
         // Re-classify ONLY if the lifecycle was last set by the auto-
         // classifier — never override an operator decision. The
@@ -475,6 +510,7 @@ export async function runAppfolioSync(
           data: {
             backendPlatform: BackendPlatform.APPFOLIO,
             backendPropertyId: mapped.externalId,
+            backendPropertyGroup: mapped.propertyGroup ?? undefined,
             // Backfill empty address/unit fields from AppFolio without
             // overwriting whatever the operator may have hand-edited.
             addressLine1: mapped.addressLine1 ?? undefined,
@@ -512,6 +548,7 @@ export async function runAppfolioSync(
           propertyType: "RESIDENTIAL",
           backendPlatform: BackendPlatform.APPFOLIO,
           backendPropertyId: mapped.externalId,
+          backendPropertyGroup: mapped.propertyGroup,
           addressLine1: mapped.addressLine1,
           addressLine2: mapped.addressLine2,
           city: mapped.city,
@@ -804,17 +841,15 @@ export async function runAppfolioSync(
     const rows = await fetchAllPages(client, "tenant_directory", {
       extraFilters: { status: "all" },
     });
+    let residentsNoProperty = 0;
     for (const row of rows) {
       const mapped = mapResidentPayload(row);
       if (!mapped) continue;
-      const propertyId =
-        (mapped.propertyExternalId &&
-          propertyByExternalId.get(mapped.propertyExternalId)) ||
-        getFallbackPropertyId();
+      const propertyId = resolvePropertyId(
+        mapped.propertyExternalId ? [mapped.propertyExternalId] : [],
+      );
       if (!propertyId) {
-        stats.warnings.push(
-          `resident ${mapped.externalId}: no Property mapped`,
-        );
+        residentsNoProperty += 1;
         continue;
       }
       const listingId =
@@ -823,6 +858,11 @@ export async function runAppfolioSync(
       const id = await upsertResident(orgId, propertyId, listingId, mapped);
       residentByExternalId.set(mapped.externalId, id);
       stats.residentsUpserted += 1;
+    }
+    if (residentsNoProperty > 0) {
+      stats.warnings.push(
+        `residents: ${residentsNoProperty} resident${residentsNoProperty === 1 ? "" : "s"} couldn't be matched to a specific Property (AppFolio omitted property_id in a multi-property account) — skipped rather than risk filing them under the wrong building.`,
+      );
     }
     phasesCompleted += 1;
   } catch (err) {
@@ -836,15 +876,15 @@ export async function runAppfolioSync(
   const leaseByExternalId = new Map<string, string>();
   try {
     const rows = await fetchAllPages(client, "rent_roll");
+    let leasesNoProperty = 0;
     for (const row of rows) {
       const mapped = mapLeasePayload(row);
       if (!mapped) continue;
-      const propertyId =
-        (mapped.propertyExternalId &&
-          propertyByExternalId.get(mapped.propertyExternalId)) ||
-        getFallbackPropertyId();
+      const propertyId = resolvePropertyId(
+        mapped.propertyExternalId ? [mapped.propertyExternalId] : [],
+      );
       if (!propertyId) {
-        stats.warnings.push(`lease ${mapped.externalId}: no Property mapped`);
+        leasesNoProperty += 1;
         continue;
       }
       const listingId =
@@ -857,6 +897,11 @@ export async function runAppfolioSync(
       const leaseId = await upsertLease(orgId, propertyId, listingId, residentId, mapped);
       leaseByExternalId.set(mapped.externalId, leaseId);
       stats.leasesUpserted += 1;
+    }
+    if (leasesNoProperty > 0) {
+      stats.warnings.push(
+        `leases: ${leasesNoProperty} lease${leasesNoProperty === 1 ? "" : "s"} couldn't be matched to a specific Property (AppFolio omitted property_id in a multi-property account) — skipped rather than risk filing them under the wrong building.`,
+      );
     }
     phasesCompleted += 1;
   } catch (err) {
@@ -915,15 +960,15 @@ export async function runAppfolioSync(
   // 8. WORK ORDERS — maintenance ticket sync.
   try {
     const rows = await fetchAllPages(client, "work_order", { fromDate, toDate });
+    let workOrdersNoProperty = 0;
     for (const row of rows) {
       const mapped = mapWorkOrderPayload(row);
       if (!mapped) continue;
-      const propertyId =
-        (mapped.propertyExternalId &&
-          propertyByExternalId.get(mapped.propertyExternalId)) ||
-        getFallbackPropertyId();
+      const propertyId = resolvePropertyId(
+        mapped.propertyExternalId ? [mapped.propertyExternalId] : [],
+      );
       if (!propertyId) {
-        stats.warnings.push(`work-order ${mapped.externalId}: no Property mapped`);
+        workOrdersNoProperty += 1;
         continue;
       }
       const listingId =
@@ -935,6 +980,11 @@ export async function runAppfolioSync(
         null;
       await upsertWorkOrder(orgId, propertyId, listingId, residentId, mapped);
       stats.workOrdersUpserted += 1;
+    }
+    if (workOrdersNoProperty > 0) {
+      stats.warnings.push(
+        `work-orders: ${workOrdersNoProperty} work order${workOrdersNoProperty === 1 ? "" : "s"} couldn't be matched to a specific Property (AppFolio omitted property_id in a multi-property account) — skipped rather than risk filing them under the wrong building.`,
+      );
     }
     phasesCompleted += 1;
   } catch (err) {

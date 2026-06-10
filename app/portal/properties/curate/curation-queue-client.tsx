@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import {
   setPropertyLifecycle,
   setPropertyLifecycleBulk,
+  activateAllImportedProperties,
 } from "@/lib/actions/properties";
 import {
   scrapePropertyImagesAction,
@@ -116,8 +117,60 @@ export function CurationQueueClient({
     });
   }
 
+  function actActivateAll() {
+    if (view !== "imported" || items.length === 0) return;
+    const ok = window.confirm(
+      `Activate all ${items.length} imported building${items.length === 1 ? "" : "s"}? ` +
+        `They'll count toward your marketable property total and billing. ` +
+        `Auto-excluded sub-records (parking, storage, etc.) are not affected.`,
+    );
+    if (!ok) return;
+    setErrorMessage(null);
+    startTransition(async () => {
+      const result = await activateAllImportedProperties();
+      if (!result.ok) {
+        setErrorMessage(result.error);
+        return;
+      }
+      toast.success(
+        `Activated ${result.updated} propert${result.updated === 1 ? "y" : "ies"} across your portfolio`,
+      );
+      setSelected(new Set());
+    });
+  }
+
   return (
     <div className="space-y-3">
+      {/* Portfolio-wide one-click — activate the whole imported set without
+          hand-selecting each building. */}
+      {view === "imported" && items.length > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border border-border bg-muted/20 px-4 py-2.5">
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-foreground">
+              {items.length} building{items.length === 1 ? "" : "s"} ready to activate
+            </p>
+            <p className="text-[11px] text-muted-foreground">
+              Connecting a whole portfolio? Activate every real building at once
+              — parking/storage stay excluded.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={actActivateAll}
+            disabled={pending}
+            className="ml-auto shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md border border-foreground bg-primary text-primary-foreground hover:bg-primary-dark transition-colors disabled:opacity-50"
+            title="Activate every imported building in your portfolio — counts toward billing"
+          >
+            {pending ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <Check className="w-3.5 h-3.5" aria-hidden="true" />
+            )}
+            Activate all {items.length}
+          </button>
+        </div>
+      )}
+
       {/* Bulk action bar */}
       {selected.size > 0 && (
         <div className="flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2 sticky top-0 z-10">
