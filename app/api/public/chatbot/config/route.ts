@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
 import {
   chatbotConfigLimiter,
   checkRateLimit,
@@ -79,6 +80,11 @@ export async function GET(req: NextRequest) {
   }
 
   const slug = req.nextUrl.searchParams.get("slug");
+  // Optional per-property scoping (slice S1). A multi-property workspace embeds
+  // the widget on each property's own website with `&property=<propertySlug>`
+  // so the bot serves THAT property's config (knowledge base, persona,
+  // branding). Absent = legacy org-level behavior.
+  const propertySlug = req.nextUrl.searchParams.get("property");
   if (!slug) {
     return NextResponse.json(
       { enabled: false },
@@ -103,7 +109,7 @@ export async function GET(req: NextRequest) {
     moduleChatbot: boolean;
     primaryColor: string | null;
     logoUrl: string | null;
-    properties: Array<{ name: string; slug: string }>;
+    properties: Array<{ id: string; name: string; slug: string }>;
     tenantSiteConfig: {
       chatbotEnabled: boolean;
       chatbotPersonaName: string | null;
@@ -138,7 +144,7 @@ export async function GET(req: NextRequest) {
         // name (legacy behavior) when no slug match is found.
         properties: {
           orderBy: { updatedAt: "desc" },
-          select: { name: true, slug: true },
+          select: { id: true, name: true, slug: true },
         },
         tenantSiteConfig: {
           select: {
@@ -183,8 +189,18 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  const cfg = org.tenantSiteConfig;
-  if (!cfg || !cfg.chatbotEnabled) {
+  // Resolve which property this embed serves: explicit `?property=` slug wins,
+  // else the legacy heuristic (a property whose slug equals the org slug).
+  const matchedProperty =
+    (propertySlug
+      ? org.properties.find((p) => p.slug === propertySlug)
+      : undefined) ?? org.properties.find((p) => p.slug === slug);
+
+  // Merge org-level + per-property chatbot config (field-level fallback). For a
+  // property with no override row this returns the org config unchanged, so
+  // legacy single-config orgs behave exactly as before.
+  const cfg = await resolveChatbotConfig(org.id, matchedProperty?.id ?? null);
+  if (!cfg.chatbotEnabled) {
     return NextResponse.json(
       { enabled: false },
       {
@@ -193,14 +209,6 @@ export async function GET(req: NextRequest) {
       },
     );
   }
-
-  // Multi-property orgs (e.g. SG Real Estate has Telegraph Commons +
-  // Yosemite Avenue Apartments) need the embed scoped to a single property.
-  // Match by property slug = embed slug. If nothing matches, fall back to
-  // the org's shortName or name (single-property orgs typically don't have
-  // a property whose slug equals the org slug, so this preserves their
-  // legacy behavior).
-  const matchedProperty = org.properties.find((p) => p.slug === slug);
   const brandName =
     matchedProperty?.name ??
     org.shortName ??

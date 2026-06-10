@@ -501,6 +501,7 @@ model Organization {
   properties              Property[]
   domains                 DomainBinding[]
   tenantSiteConfig        TenantSiteConfig?
+  propertyChatbotConfigs  PropertyChatbotConfig[]
   leads                   Lead[]
   visitors                Visitor[]
   chatbotConversations    ChatbotConversation[]
@@ -839,6 +840,47 @@ model TenantSiteConfig {
   updatedAt DateTime @updatedAt
 }
 
+// Per-property chatbot override. One optional row per property. Every field is
+// nullable: a null field means "inherit the org-level TenantSiteConfig value."
+// This mirrors the per-property NULL-fallback pattern already used by
+// CursiveIntegration + SeoIntegration, so a multi-property workspace can give
+// each property's own website a distinct chatbot (knowledge base, persona,
+// greeting, capture mode, branding) while inheriting anything it doesn't
+// override. Resolution + field-level merge lives in lib/chatbot/resolve-config.ts.
+model PropertyChatbotConfig {
+  id         String   @id @default(cuid())
+  orgId      String
+  org        Organization @relation(fields: [orgId], references: [id], onDelete: Cascade)
+  propertyId String   @unique
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  // Chatbot fields — all nullable; null = inherit org TenantSiteConfig.
+  // chatbotEnabled is Boolean? on purpose: null inherits the org toggle,
+  // true/false explicitly overrides it for this property.
+  chatbotEnabled            Boolean?
+  chatbotAvatarUrl          String?
+  chatbotPersonaName        String?
+  chatbotGreeting           String?
+  chatbotFollowUpMessage    String?             @db.Text
+  chatbotTeaserText         String?
+  chatbotBrandColor         String?
+  chatbotCaptureMode        ChatbotCaptureMode?
+  chatbotKnowledgeBase      String?             @db.Text
+  chatbotIdleTriggerSeconds Int?
+
+  // Contact / analytics overrides (also inherit org when null).
+  primaryCtaText   String?
+  primaryCtaUrl    String?
+  phoneNumber      String?
+  contactEmail     String?
+  ga4MeasurementId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orgId])
+}
+
 // ============================================================================
 // REAL ESTATE ENTITIES
 // ============================================================================
@@ -989,6 +1031,12 @@ model Property {
   // independently.
   cursiveIntegrations  CursiveIntegration[]
   seoIntegrations      SeoIntegration[]
+  // Per-property chatbot override. NULL relation = this property inherits the
+  // org-level TenantSiteConfig chatbot fields. A populated row lets a
+  // multi-property workspace run a distinct bot (persona, knowledge base,
+  // capture mode, branding) on this property's own website. Field-level
+  // fallback to the org config is done in lib/chatbot/resolve-config.ts.
+  chatbotConfig        PropertyChatbotConfig?
   websiteBuildRequests WebsiteBuildRequest[]
   aeoChecks            AeoCitationCheck[]
   aeoMentionSnapshots  AeoMentionSnapshot[]

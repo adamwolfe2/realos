@@ -27,12 +27,32 @@ export type CapturedVisitor = {
   phone?: string | null;
 };
 
+// Minimal structural shape of the chatbot fields this builder reads. Both
+// TenantSiteConfig and the per-property ResolvedChatbotConfig satisfy it, so a
+// caller can pass a property-scoped config to override the org default.
+type ChatbotConfigFields = {
+  chatbotPersonaName: string | null;
+  chatbotKnowledgeBase: string | null;
+  phoneNumber: string | null;
+  contactEmail: string | null;
+  primaryCtaUrl: string | null;
+  primaryCtaText: string | null;
+};
+
+type PromptProperty = ChatbotTenant["properties"][number];
+
 export function buildSystemPrompt(
   org: ChatbotTenant,
   visitor?: CapturedVisitor,
+  // Per-property override (slice S1). When provided, the prompt is built for
+  // THIS property using THIS property's resolved chatbot config (knowledge
+  // base, persona, contact, CTA) instead of the org default + first property.
+  // Omitted = legacy behavior (org.tenantSiteConfig + org.properties[0]).
+  opts?: { property?: PromptProperty | null; config?: ChatbotConfigFields | null },
 ): string {
-  const config = org.tenantSiteConfig;
-  const property = org.properties[0];
+  const config: ChatbotConfigFields | null =
+    opts?.config ?? org.tenantSiteConfig;
+  const property = opts?.property ?? org.properties[0];
   const listings = property?.listings ?? [];
 
   const persona = (config?.chatbotPersonaName ?? "Leasing").trim();

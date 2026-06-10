@@ -20,6 +20,7 @@ import { sendProspectProfileForConversation } from "@/lib/chatbot/send-prospect-
 import { LeadNotifyChannel } from "@prisma/client";
 import { stripChatbotMarkdown } from "@/lib/chatbot/strip-markdown";
 import { resolvePropertyForChatPage } from "@/lib/chatbot/property-attribution";
+import { resolveChatbotConfig } from "@/lib/chatbot/resolve-config";
 import {
   publicApiLimiter,
   checkRateLimit,
@@ -110,7 +111,11 @@ export async function POST(req: NextRequest) {
       { status: 403, headers: CORS_HEADERS }
     );
   }
-  if (!org.tenantSiteConfig?.chatbotEnabled) {
+  // Per-property enablement is checked AFTER we resolve which property this
+  // chat belongs to (below) — a property may enable the bot even when the org
+  // default is off, or vice-versa. We still require SOME chatbot config to
+  // exist so a brand-new org with no config can't stream.
+  if (!org.tenantSiteConfig) {
     return NextResponse.json(
       { error: "Chatbot disabled" },
       { status: 403, headers: CORS_HEADERS }
@@ -196,19 +201,41 @@ export async function POST(req: NextRequest) {
     })
     .catch(() => null);
 
-  const systemPrompt = buildSystemPrompt(org as ChatbotTenant, {
-    name: captured?.capturedName ?? null,
-    email: captured?.capturedEmail ?? null,
-    phone: captured?.capturedPhone ?? null,
-  });
-  const userAgent = req.headers.get("user-agent") ?? undefined;
   // Match the chat's host pageUrl to a specific property when possible.
   // Multi-property tenants used to lose attribution because the previous
-  // logic always picked the most-recently-updated property.
+  // logic always picked the most-recently-updated property. We resolve this
+  // BEFORE the system prompt now so the bot gets THIS property's config.
   const resolvedPropertyId = resolvePropertyForChatPage(
     pageUrl,
     org.properties.map((p) => ({ id: p.id, slug: p.slug, name: p.name }))
   );
+  const promptProperty =
+    org.properties.find((p) => p.id === resolvedPropertyId) ??
+    org.properties[0] ??
+    null;
+
+  // Resolve the per-property chatbot config (knowledge base, persona, capture
+  // mode, contact, CTA) with field-level fallback to the org default. A
+  // property may override the enable toggle either way; gate on the resolved
+  // value so a property-specific bot serves even if the org default is off.
+  const resolvedConfig = await resolveChatbotConfig(orgId, resolvedPropertyId);
+  if (!resolvedConfig.chatbotEnabled) {
+    return NextResponse.json(
+      { error: "Chatbot disabled" },
+      { status: 403, headers: CORS_HEADERS }
+    );
+  }
+
+  const systemPrompt = buildSystemPrompt(
+    org as ChatbotTenant,
+    {
+      name: captured?.capturedName ?? null,
+      email: captured?.capturedEmail ?? null,
+      phone: captured?.capturedPhone ?? null,
+    },
+    { property: promptProperty, config: resolvedConfig },
+  );
+  const userAgent = req.headers.get("user-agent") ?? undefined;
 
   const result = streamText({
     model: anthropic("claude-haiku-4-5-20251001"),
