@@ -140,12 +140,14 @@ export async function getScope(): Promise<ScopedContext | null> {
     clerkUserId = session.userId;
     sessionClaims = session.sessionClaims;
   } catch (err) {
-    console.error("[scope] auth() failed; treating as anonymous:", err);
+    console.error("[scope:null] auth() threw in RSC/route:", err);
     return await getDemoScope();
   }
   if (!clerkUserId) {
+    console.error("[scope:null] auth() returned no userId");
     return await getDemoScope();
   }
+  console.error("[scope:ok] auth() userId resolved:", clerkUserId);
 
   let user = await prisma.user
     .findUnique({
@@ -190,7 +192,17 @@ export async function getScope(): Promise<ScopedContext | null> {
       console.error("[scope] self-heal provision failed:", err);
     }
   }
-  if (!user || !user.org) return await getDemoScope();
+  if (!user || !user.org) {
+    console.error(
+      "[scope:null] no user/org after provision — clerkUserId:",
+      clerkUserId,
+      "user?",
+      !!user,
+      "org?",
+      !!user?.org,
+    );
+    return await getDemoScope();
+  }
 
   const actualOrgType = user.org.orgType;
   const actualProductLine = user.org.productLine ?? ProductLine.STUDENT_HOUSING;
