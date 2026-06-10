@@ -104,6 +104,10 @@ import {
   AuditAction,
   SeoProvider,
   SeoSyncStatus,
+  ResidentStatus,
+  LeaseStatus,
+  WorkOrderStatus,
+  WorkOrderPriority,
 } from "@prisma/client";
 import { randomBytes } from "crypto";
 
@@ -458,6 +462,12 @@ async function seed(): Promise<void> {
   await prisma.adMetricDaily.deleteMany({ where: { orgId: org.id } });
   await prisma.adCampaign.deleteMany({ where: { orgId: org.id } });
   await prisma.adAccount.deleteMany({ where: { orgId: org.id } });
+  // Operations tables (Residents / Leases / Work orders / Renewals). All
+  // resident<->lease FKs are onDelete:SetNull, so order is unconstrained;
+  // work orders first, then leases, then residents, for tidiness.
+  await prisma.workOrder.deleteMany({ where: { orgId: org.id } });
+  await prisma.lease.deleteMany({ where: { orgId: org.id } });
+  await prisma.resident.deleteMany({ where: { orgId: org.id } });
   await prisma.property.deleteMany({ where: { orgId: org.id } });
 
   // ─── Properties ──────────────────────────────────────────────────────
@@ -501,13 +511,14 @@ async function seed(): Promise<void> {
 
   const leadsToCreate: Prisma.LeadCreateManyInput[] = [];
   for (let i = 0; i < TOTAL_LEADS; i += 1) {
-    const dayOffset = rand(0, WINDOW_DAYS - 1);
-    // Bias creation slightly toward the second half so the chart
-    // shows growth, not decline.
-    const adjustedOffset = Math.min(
-      WINDOW_DAYS - 1,
-      dayOffset + (dayOffset > WINDOW_DAYS / 2 ? 0 : rand(0, 8)),
-    );
+    // Recency-weighted day so the last 28d clearly outpaces the prior 28d
+    // (dashboard "Leads vs prior" renders a healthy positive delta, ~+25%).
+    // Half the leads are uniform across the window; half are skewed toward
+    // recent days via a triangular distribution peaking at today.
+    const adjustedOffset =
+      rng() < 0.5
+        ? rand(0, WINDOW_DAYS - 1)
+        : Math.floor((WINDOW_DAYS - 1) * (1 - Math.sqrt(rng())));
     const createdAt = new Date(NOW - adjustedOffset * DAY_MS - rand(0, DAY_MS));
     const property = pick(properties);
     const source = weighted(LEAD_SOURCE_MIX);
@@ -637,6 +648,191 @@ async function seed(): Promise<void> {
     `[seed] inserted ${toursToCreate.length} tours, ${appsToCreate.length} applications`,
   );
 
+  // ─── Residents + Leases + Work orders (Operations pages) ─────────────
+  // Powers /portal/residents, /portal/renewals (lease expirations) and
+  // /portal/work-orders. AppFolio is the real source for these; the demo
+  // org has no live sync, so we synthesize a believable roster. ~35% of
+  // leases end within the next 120 days so the Renewals pipeline fills.
+  const WO_CATEGORIES = [
+    "Plumbing",
+    "HVAC",
+    "Appliance",
+    "Electrical",
+    "General",
+    "Pest control",
+  ] as const;
+  const WO_ISSUES: Record<string, string[]> = {
+    Plumbing: ["Leaking kitchen faucet", "Slow shower drain", "Running toilet"],
+    HVAC: ["AC not cooling", "Thermostat unresponsive", "Heater noisy"],
+    Appliance: ["Dishwasher won't drain", "Fridge not cold", "Oven igniter out"],
+    Electrical: ["Outlet not working", "Flickering hallway light", "Breaker trips"],
+    General: ["Door lock sticking", "Window won't latch", "Patch + paint wall"],
+    "Pest control": ["Ants in kitchen", "Quarterly preventative", "Spider activity"],
+  };
+  const WO_VENDORS = [
+    "Summit Mechanical",
+    "BluePeak Plumbing",
+    "Apex Electric",
+    "GreenLeaf Pest",
+    "On-site Maintenance",
+  ];
+
+  let residentsCreated = 0;
+  let leasesCreated = 0;
+  let renewalsDue = 0;
+  const seededResidents: Array<{
+    id: string;
+    propertyId: string;
+    unitNumber: string;
+  }> = [];
+
+  for (const prop of properties) {
+    const units = prop.totalUnits ?? 90;
+    const residentCount = Math.max(20, Math.round(units * 0.36));
+    for (let u = 0; u < residentCount; u += 1) {
+      const firstName = pick(FIRST_NAMES);
+      const lastName = pick(LAST_NAMES);
+      const unitNumber = `${rand(1, 4)}${rand(0, 9)}${String.fromCharCode(
+        65 + rand(0, 3),
+      )}`;
+      const rentCents = rand(1250, 2450) * 100;
+
+      // ~35% of leases expire within 120d (drives the Renewals pipeline).
+      const expiringSoon = rng() < 0.35;
+      const moveInDaysAgo = expiringSoon ? rand(248, 330) : rand(20, 300);
+      const startDate = new Date(NOW - moveInDaysAgo * DAY_MS);
+      const endDate = new Date(startDate.getTime() + 365 * DAY_MS);
+      const daysToEnd = Math.round((endDate.getTime() - NOW) / DAY_MS);
+      const leaseStatus =
+        daysToEnd <= 120 && daysToEnd > -10
+          ? LeaseStatus.EXPIRING
+          : LeaseStatus.ACTIVE;
+      if (daysToEnd <= 120 && daysToEnd > 0) renewalsDue += 1;
+
+      const balanceCents = rng() < 0.1 ? rand(40, 280) * 100 : 0;
+
+      const resident = await prisma.resident.create({
+        data: {
+          orgId: org.id,
+          propertyId: prop.id,
+          firstName,
+          lastName,
+          email: `${firstName.toLowerCase()}.${lastName.toLowerCase()}${rand(10, 99)}@example.com`,
+          phone: `(${rand(200, 989)}) ${rand(200, 989)}-${rand(1000, 9999)}`,
+          status: ResidentStatus.ACTIVE,
+          unitNumber,
+          moveInDate: startDate,
+          monthlyRentCents: rentCents,
+          externalSystem: "appfolio",
+          externalId: `demo-res-${prop.slug}-${u}`,
+        },
+      });
+      const lease = await prisma.lease.create({
+        data: {
+          orgId: org.id,
+          propertyId: prop.id,
+          residentId: resident.id,
+          status: leaseStatus,
+          startDate,
+          endDate,
+          monthlyRentCents: rentCents,
+          securityDepositCents: rentCents,
+          termMonths: 12,
+          renewalSentAt:
+            leaseStatus === LeaseStatus.EXPIRING && rng() < 0.5
+              ? new Date(NOW - rand(2, 20) * DAY_MS)
+              : null,
+          renewalDecision:
+            leaseStatus === LeaseStatus.EXPIRING && rng() < 0.3
+              ? pick(["accepted", "negotiating"])
+              : null,
+          currentBalanceCents: balanceCents,
+          isPastDue: balanceCents > 0,
+          pastDueAsOf: balanceCents > 0 ? new Date(NOW - rand(3, 25) * DAY_MS) : null,
+          externalSystem: "appfolio",
+          externalId: `demo-lease-${prop.slug}-${u}`,
+        },
+      });
+      await prisma.resident.update({
+        where: { id: resident.id },
+        data: { currentLeaseId: lease.id },
+      });
+      seededResidents.push({ id: resident.id, propertyId: prop.id, unitNumber });
+      residentsCreated += 1;
+      leasesCreated += 1;
+    }
+  }
+  console.log(
+    `[seed] inserted ${residentsCreated} residents + ${leasesCreated} leases (${renewalsDue} expiring <120d)`,
+  );
+
+  // Work orders — ~42 across the portfolio, mixed status + priority so the
+  // /portal/work-orders board shows every column populated.
+  const WO_STATUSES = [
+    WorkOrderStatus.NEW,
+    WorkOrderStatus.NEW,
+    WorkOrderStatus.SCHEDULED,
+    WorkOrderStatus.IN_PROGRESS,
+    WorkOrderStatus.COMPLETED,
+    WorkOrderStatus.COMPLETED,
+    WorkOrderStatus.ON_HOLD,
+  ];
+  const WO_PRIORITIES = [
+    WorkOrderPriority.LOW,
+    WorkOrderPriority.NORMAL,
+    WorkOrderPriority.NORMAL,
+    WorkOrderPriority.HIGH,
+    WorkOrderPriority.URGENT,
+  ];
+  let workOrdersCreated = 0;
+  const WO_TOTAL = 42;
+  for (let w = 0; w < WO_TOTAL; w += 1) {
+    const res = pick(seededResidents);
+    const status = pick(WO_STATUSES);
+    const category = pick(WO_CATEGORIES);
+    const issue = pick(WO_ISSUES[category] ?? ["Maintenance request"]);
+    const reportedAt = new Date(NOW - rand(0, 55) * DAY_MS);
+    const isDone = status === WorkOrderStatus.COMPLETED;
+    const isScheduled =
+      status === WorkOrderStatus.SCHEDULED ||
+      status === WorkOrderStatus.IN_PROGRESS;
+    const estCents = rand(75, 850) * 100;
+    await prisma.workOrder.create({
+      data: {
+        orgId: org.id,
+        propertyId: res.propertyId,
+        residentId: res.id,
+        workOrderNumber: `WO-2026-${1000 + w}`,
+        status,
+        priority: pick(WO_PRIORITIES),
+        category,
+        title: issue,
+        description: `${issue} reported in unit ${res.unitNumber}. ${
+          isDone
+            ? "Resolved by vendor; resident confirmed."
+            : isScheduled
+              ? "Vendor scheduled; awaiting visit."
+              : "Triaged, pending assignment."
+        }`,
+        unitNumber: res.unitNumber,
+        vendorName: status !== WorkOrderStatus.NEW ? pick(WO_VENDORS) : null,
+        reportedAt,
+        scheduledFor: isScheduled
+          ? new Date(NOW + rand(1, 9) * DAY_MS)
+          : null,
+        completedAt: isDone
+          ? new Date(reportedAt.getTime() + rand(1, 8) * DAY_MS)
+          : null,
+        estimatedCostCents: estCents,
+        actualCostCents: isDone ? estCents + rand(-40, 120) * 100 : null,
+        externalSystem: "appfolio",
+        externalId: `demo-wo-${w}`,
+      },
+    });
+    workOrdersCreated += 1;
+  }
+  console.log(`[seed] inserted ${workOrdersCreated} work orders`);
+
   // ─── Ad accounts + campaigns + 28d of daily metrics ──────────────────
   const googleAccount = await prisma.adAccount.create({
     data: {
@@ -713,7 +909,11 @@ async function seed(): Promise<void> {
     for (let d = 89; d >= 0; d -= 1) {
       const date = new Date(NOW - d * DAY_MS);
       date.setUTCHours(0, 0, 0, 0);
-      const impressions = rand(1500, 6500);
+      // Up-and-to-the-right ramp: oldest day ×1.0 → today ×1.9. Makes the
+      // dashboard's "last 28d vs prior 28d" delta render clearly positive
+      // (green, ~+18%) for spend, clicks, impressions and conversions.
+      const growth = 1 + ((89 - d) / 89) * 0.9;
+      const impressions = Math.round(rand(1500, 6500) * growth);
       const ctr = c.platform === AdPlatform.GOOGLE_ADS
         ? 0.04 + rng() * 0.04
         : 0.014 + rng() * 0.02;
@@ -752,7 +952,10 @@ async function seed(): Promise<void> {
     { source: "instagram", medium: "paid_social" },
   ];
   for (let i = 0; i < SESSION_COUNT; i += 1) {
-    const startedAt = new Date(NOW - rand(0, 28) * DAY_MS - rand(0, DAY_MS));
+    // Skew sessions toward recent days (min of two uniforms biases toward 0)
+    // so the Visitors trend reads up-and-to-the-right, not flat.
+    const dayOffset = Math.min(rand(0, 28), rand(0, 28));
+    const startedAt = new Date(NOW - dayOffset * DAY_MS - rand(0, DAY_MS));
     const utm = pick(utmMixes);
     const property = pick(properties);
     const pages = rand(1, 12);
@@ -1154,8 +1357,8 @@ async function seed(): Promise<void> {
   for (let d = 89; d >= 0; d -= 1) {
     const date = new Date(NOW - d * DAY_MS);
     date.setUTCHours(0, 0, 0, 0);
-    const trend = 1 + ((89 - d) / 89) * 0.45; // gentle upward trend
-    const sessions = Math.round(180 * trend) + rand(-20, 20);
+    const trend = 1 + ((89 - d) / 89) * 0.95; // clear upward trend (+18% 28d)
+    const sessions = Math.round(180 * trend) + rand(-12, 12);
     const impressions = sessions * rand(8, 14);
     const clicks = Math.round(sessions * 0.62);
     seoSnapshotsToCreate.push({
@@ -1440,9 +1643,10 @@ async function seed(): Promise<void> {
       syncStatus: "idle",
       lastSyncAt: new Date(NOW - 4 * 60 * 60 * 1000),
       lastSyncStats: {
-        residents: { ok: true, count: 460 },
-        leases: { ok: true, count: 461 },
-        properties: { ok: true, count: 4 },
+        residents: { ok: true, count: residentsCreated },
+        leases: { ok: true, count: leasesCreated },
+        workOrders: { ok: true, count: workOrdersCreated },
+        properties: { ok: true, count: properties.length },
         guest_cards: { ok: true, count: 0 },
       },
       propertyGroupFilter: null,
