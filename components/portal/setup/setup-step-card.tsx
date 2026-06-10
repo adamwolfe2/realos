@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -17,6 +16,20 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import type { ResolvedSetupStep } from "@/lib/setup/derive-progress";
+import { BRAND_LOGOS } from "@/components/portal/integrations/brand-logos";
+
+// Platform setup steps → the shared BRAND_LOGOS slug, so the timeline shows
+// the real platform logo (matching the Integrations page) instead of a
+// generic glyph. Non-platform steps (team, chatbot, brand, reports) keep their
+// lucide icon.
+const STEP_BRAND_SLUG: Record<string, string> = {
+  appfolio: "appfolio",
+  cursive: "visitor-identification",
+  google_ads: "google-ads",
+  meta_ads: "meta-ads",
+  ga4: "ga4",
+  gsc: "gsc",
+};
 
 // ---------------------------------------------------------------------------
 // Setup step card. One row of the Setup Hub timeline.
@@ -76,7 +89,7 @@ export function SetupStepCard({ step }: Props) {
         ].join(" ")}
       >
         <div className="flex items-start gap-4">
-          <IconTile Icon={Icon} status={step.status} imageSrc={step.id === "cursive" ? "/logos/cursive-logo.png" : undefined} />
+          <IconTile Icon={Icon} status={step.status} brandSlug={STEP_BRAND_SLUG[step.id]} />
 
           <div className="min-w-0 flex-1">
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -136,11 +149,11 @@ function StatusDot({ status }: { status: ResolvedSetupStep["status"] }) {
 function IconTile({
   Icon,
   status,
-  imageSrc,
+  brandSlug,
 }: {
   Icon: LucideIcon;
   status: ResolvedSetupStep["status"];
-  imageSrc?: string;
+  brandSlug?: string;
 }) {
   const tone =
     status === "done"
@@ -151,13 +164,15 @@ function IconTile({
       ? "bg-muted text-muted-foreground"
       : "bg-muted text-foreground";
 
-  if (imageSrc) {
+  const logo = brandSlug ? BRAND_LOGOS[brandSlug] : undefined;
+  if (logo) {
     return (
       <span
-        className="shrink-0 w-8 h-8 rounded-[10px] flex items-center justify-center bg-white border border-border overflow-hidden p-1"
+        className="shrink-0 w-8 h-8 rounded-[10px] flex items-center justify-center bg-card border border-border overflow-hidden p-1.5"
         aria-hidden="true"
+        style={{ color: logo.brandColor }}
       >
-        <Image src={imageSrc} alt="" width={48} height={20} className="w-full h-auto object-contain" unoptimized />
+        {logo.render()}
       </span>
     );
   }

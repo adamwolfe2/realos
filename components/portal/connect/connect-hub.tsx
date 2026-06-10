@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
 import { RunAppFolioSyncButton } from "@/components/portal/integrations/run-appfolio-sync-button";
+import { BRAND_LOGOS } from "@/components/portal/integrations/brand-logos";
 import type {
   AvailabilityMap,
   ProviderAvailability,
@@ -71,6 +72,10 @@ const SOURCE_META: Record<
     tagline: string;
     category: "Property data" | "Marketing analytics" | "Paid media" | "Site";
     icon: LucideIcon;
+    /** Slug into BRAND_LOGOS so the setup card shows the real platform logo
+        (matching the Integrations page) instead of a generic glyph. Falls
+        back to `icon` when absent (e.g. the generic "Your Website" card). */
+    brandSlug?: string;
     /** Where the user goes to start the connection. OAuth-backed sources
         navigate; pixel/website show inline configuration. */
     connectUrl?: string;
@@ -98,6 +103,7 @@ const SOURCE_META: Record<
     tagline: "Property data, leases, residents, renewals",
     category: "Property data",
     icon: Database,
+    brandSlug: "appfolio",
     connectUrl: "/portal/settings/integrations#appfolio",
     payoff: "Live occupancy + rent roll for the buildings you choose to market",
     unlocks: [
@@ -112,6 +118,7 @@ const SOURCE_META: Record<
     tagline: "Web traffic, sessions, conversions",
     category: "Marketing analytics",
     icon: TrendingUp,
+    brandSlug: "ga4",
     connectUrl: "/api/oauth/ga4/start",
     payoff: "Traffic-source attribution + funnel drop-off detection",
     unlocks: [
@@ -125,6 +132,7 @@ const SOURCE_META: Record<
     tagline: "Search rankings + organic visibility",
     category: "Marketing analytics",
     icon: Search,
+    brandSlug: "gsc",
     connectUrl: "/api/oauth/gsc/start",
     payoff: "Per-keyword position tracking + page-level impressions",
     unlocks: [
@@ -138,6 +146,7 @@ const SOURCE_META: Record<
     tagline: "Ad spend, CPL, conversions",
     category: "Paid media",
     icon: BarChart3,
+    brandSlug: "google-ads",
     connectUrl: "/api/oauth/google-ads/start",
     payoff: "Lead → tour → lease attribution per campaign",
     unlocks: [
@@ -151,6 +160,7 @@ const SOURCE_META: Record<
     tagline: "Facebook + Instagram ad spend & metrics",
     category: "Paid media",
     icon: BarChart3,
+    brandSlug: "meta-ads",
     connectUrl: "/api/oauth/meta-ads/start",
     payoff: "Cross-channel attribution + audience-exhaustion detection",
     unlocks: [
@@ -164,6 +174,7 @@ const SOURCE_META: Record<
     tagline: "Visitor identification on your site",
     category: "Site",
     icon: Eye,
+    brandSlug: "visitor-identification",
     connectUrl: "/portal/visitors#install",
     inline: true,
     payoff: "Identify anonymous prospects with name + email + intent score",
@@ -198,6 +209,39 @@ const CATEGORIES = [
   "Paid media",
   "Site",
 ] as const;
+
+// Source icon — the real platform logo (from the shared BRAND_LOGOS used on the
+// Integrations page) when the source has a brandSlug, otherwise the generic
+// lucide glyph on a primary-tinted tile. Keeps Setup + Integrations visually
+// consistent.
+function SourceIcon({
+  brandSlug,
+  Icon,
+}: {
+  brandSlug?: string;
+  Icon: LucideIcon;
+}) {
+  const logo = brandSlug ? BRAND_LOGOS[brandSlug] : undefined;
+  if (logo) {
+    return (
+      <div
+        className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-card border border-border shrink-0 p-1"
+        aria-hidden="true"
+        style={{ color: logo.brandColor }}
+      >
+        {logo.render()}
+      </div>
+    );
+  }
+  return (
+    <div
+      className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary/10 text-primary shrink-0"
+      aria-hidden="true"
+    >
+      <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
+    </div>
+  );
+}
 
 export function ConnectHub({
   sources,
@@ -376,12 +420,7 @@ function SourceCard({
     >
       {/* Header row */}
       <div className="flex items-start gap-2.5">
-        <div
-          className="inline-flex items-center justify-center w-7 h-7 rounded-md bg-primary/10 text-primary shrink-0"
-          aria-hidden="true"
-        >
-          <Icon className="w-3.5 h-3.5" strokeWidth={1.75} />
-        </div>
+        <SourceIcon brandSlug={meta.brandSlug} Icon={Icon} />
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <h3 className="text-[13px] font-semibold text-foreground tracking-tight truncate">
