@@ -166,27 +166,68 @@ export async function getScope(): Promise<ScopedContext | null> {
   if (!user || !user.org) {
     try {
       const { currentUser } = await import("@clerk/nextjs/server");
-      const clerkUser = await currentUser();
+      const clerkUser = await currentUser().catch(() => null);
+      const claimEmail =
+        (sessionClaims as { email?: string; primaryEmail?: string } | null)
+          ?.email ??
+        (sessionClaims as { email?: string; primaryEmail?: string } | null)
+          ?.primaryEmail ??
+        null;
       const email =
         clerkUser?.emailAddresses?.find(
           (e) => e.id === clerkUser?.primaryEmailAddressId,
         )?.emailAddress ??
         clerkUser?.emailAddresses?.[0]?.emailAddress ??
-        null;
+        claimEmail;
+      console.error(
+        "[scope:heal] clerkUser?",
+        !!clerkUser,
+        "email:",
+        email,
+        "(claimEmail:",
+        claimEmail,
+        ")",
+      );
       if (email) {
-        const { provisionUserForClerk } = await import("@/lib/auth/provision");
-        await provisionUserForClerk({
-          clerkUserId,
-          email,
-          firstName: clerkUser?.firstName ?? null,
-          lastName: clerkUser?.lastName ?? null,
-        });
-        user = await prisma.user
-          .findUnique({
-            where: { clerkUserId },
-            include: { org: true },
-          })
+        const normalized = email.toLowerCase().trim();
+        // Direct email match + re-link. The User row's clerkUserId can
+        // drift from the live session (re-created Clerk user, incognito
+        // secondary email, seed_pending placeholder, manual edits). Match
+        // the existing user by email and re-link the live clerkUserId so
+        // the session resolves the real org instead of looping. Mirrors
+        // /api/auth/role, which is why that route worked while RSC didn't.
+        const byEmail = await prisma.user
+          .findUnique({ where: { email: normalized }, include: { org: true } })
           .catch(() => null);
+        console.error(
+          "[scope:heal] byEmail?",
+          !!byEmail,
+          "org?",
+          !!byEmail?.org,
+          "rowClerkId:",
+          byEmail?.clerkUserId,
+        );
+        if (byEmail && byEmail.org) {
+          if (byEmail.clerkUserId !== clerkUserId) {
+            await prisma.user
+              .update({ where: { id: byEmail.id }, data: { clerkUserId } })
+              .catch((e) =>
+                console.error("[scope:heal] relink failed (using row anyway):", e),
+              );
+          }
+          user = byEmail;
+        } else {
+          const { provisionUserForClerk } = await import("@/lib/auth/provision");
+          await provisionUserForClerk({
+            clerkUserId,
+            email: normalized,
+            firstName: clerkUser?.firstName ?? null,
+            lastName: clerkUser?.lastName ?? null,
+          });
+          user = await prisma.user
+            .findUnique({ where: { clerkUserId }, include: { org: true } })
+            .catch(() => null);
+        }
       }
     } catch (err) {
       console.error("[scope] self-heal provision failed:", err);
