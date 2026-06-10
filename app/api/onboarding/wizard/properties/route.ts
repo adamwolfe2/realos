@@ -100,6 +100,7 @@ export async function POST(req: NextRequest) {
           commercialSubtype: true,
           trialStartedAt: true,
           trialEndsAt: true,
+          subscriptionStatus: true,
           moduleChatbot: true,
           modulePixel: true,
         },
@@ -202,14 +203,32 @@ export async function POST(req: NextRequest) {
   const trialStartedAt = org.trialStartedAt ?? now;
   const trialEndsAt = org.trialEndsAt ?? computeTrialEndsAt(trialStartedAt);
 
-  await prisma.organization.update({
-    where: { id: orgId },
+  // Never trample a workspace that's already converted/paid. Atomic where-clause
+  // (not read-then-write) so a Stripe webhook can't win the race and get
+  // downgraded ACTIVE/PAST_DUE → TRIALING. NULL status = brand-new = eligible.
+  // (launch-critical-sweep P1 + Codex TOCTOU review.)
+  await prisma.organization.updateMany({
+    where: {
+      id: orgId,
+      OR: [
+        { subscriptionStatus: null },
+        {
+          subscriptionStatus: {
+            notIn: [SubscriptionStatus.ACTIVE, SubscriptionStatus.PAST_DUE],
+          },
+        },
+      ],
+    },
     data: {
       subscriptionStatus: SubscriptionStatus.TRIALING,
       trialStartedAt,
       trialEndsAt,
-      onboardingStep: "done",
     },
+  });
+  // Completing onboarding is terminal + always safe, regardless of plan state.
+  await prisma.organization.update({
+    where: { id: orgId },
+    data: { onboardingStep: "done" },
   });
 
   return NextResponse.json({

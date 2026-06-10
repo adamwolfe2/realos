@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
       ? (parsed.commercialSubtype ?? null)
       : null;
 
+  // Profile fields are always safe to (re)write.
   await prisma.organization.update({
     where: { id: user.orgId },
     data: {
@@ -79,9 +80,20 @@ export async function POST(req: NextRequest) {
       propertyType: parsed.propertyType,
       residentialSubtype,
       commercialSubtype,
-      onboardingStep: "features",
     },
   });
 
-  return NextResponse.json({ ok: true, nextStep: "features" });
+  // "done" is terminal — a stale welcome tab submitting late must NOT regress a
+  // finished workspace back into onboarding. Atomic conditional advance (no
+  // read-then-write race); count === 0 means it was already done.
+  // (launch-critical-sweep + Codex TOCTOU review.)
+  const advanced = await prisma.organization.updateMany({
+    where: { id: user.orgId, NOT: { onboardingStep: "done" } },
+    data: { onboardingStep: "features" },
+  });
+
+  return NextResponse.json({
+    ok: true,
+    nextStep: advanced.count > 0 ? "features" : "done",
+  });
 }

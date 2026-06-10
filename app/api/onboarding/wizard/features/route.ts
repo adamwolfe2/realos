@@ -60,15 +60,27 @@ export async function POST(req: NextRequest) {
   const inferredTier = inferTierFromSelection(selected);
   const moduleState = buildModuleStateFromSelection(selected);
 
+  // Tier + module flags are always safe to (re)write.
   await prisma.organization.update({
     where: { id: user.orgId },
     data: {
       chosenTier: inferredTier as SubscriptionTier,
       subscriptionTier: inferredTier as SubscriptionTier,
-      onboardingStep: "properties",
       ...moduleState,
     },
   });
 
-  return NextResponse.json({ ok: true, nextStep: "properties", tier: inferredTier });
+  // "done" is terminal — don't let a stale features tab regress a completed
+  // workspace back to "properties". Atomic conditional advance (no race);
+  // count === 0 means it was already done. (launch-critical-sweep + Codex.)
+  const advanced = await prisma.organization.updateMany({
+    where: { id: user.orgId, NOT: { onboardingStep: "done" } },
+    data: { onboardingStep: "properties" },
+  });
+
+  return NextResponse.json({
+    ok: true,
+    nextStep: advanced.count > 0 ? "properties" : "done",
+    tier: inferredTier,
+  });
 }
