@@ -84,6 +84,75 @@ export async function handleMarketplaceCheckoutCompleted(
 
   // Snapshot the seller revenue split at sale time.
   const lead = purchase.lead;
+
+  // ── Atomic double-sale guard (launch-critical-sweep P1) ──────────────────
+  // Checkout deliberately lets multiple PENDING purchases coexist and relies on
+  // THIS webhook to arbitrate who paid first — but previously it didn't: every
+  // paid webhook unconditionally flipped the lead to SOLD + delivered PII, so
+  // two buyers could both pay and both receive the same lead. A conditional
+  // update is the lock: of N concurrent paid webhooks, exactly one flips a
+  // not-yet-SOLD lead (count === 1); the rest lose and get refunded, never
+  // delivered. The OR makes it idempotent on a winner's webhook retry.
+  const claim = await prisma.marketplaceLead.updateMany({
+    where: {
+      id: purchase.leadId,
+      OR: [
+        { status: { not: MarketplaceLeadStatus.SOLD } },
+        { soldToBuyerId: purchase.buyerId },
+      ],
+    },
+    data: {
+      status: MarketplaceLeadStatus.SOLD,
+      soldToBuyerId: purchase.buyerId,
+      soldAt: new Date(),
+    },
+  });
+  if (claim.count === 0) {
+    // Lost the race: the lead is already sold to a different buyer. Refund this
+    // payment, mark the purchase REFUNDED, and never deliver the PII.
+    if (paymentIntentId && !isComp) {
+      try {
+        await getStripeClient().refunds.create({
+          payment_intent: paymentIntentId,
+        });
+      } catch (err) {
+        console.error(
+          "marketplace — CRITICAL: refund failed for double-sale loser; buyer charged without delivery",
+          { purchaseId: purchase.id, leadId: purchase.leadId, paymentIntentId },
+          err,
+        );
+      }
+    }
+    await prisma.marketplacePurchase
+      .update({
+        where: { id: purchase.id },
+        data: {
+          status: MarketplacePurchaseStatus.REFUNDED,
+          stripePaymentIntentId: paymentIntentId,
+          // No piiDeliveredAt — the buyer never received the lead.
+        },
+      })
+      .catch(() => undefined);
+    await prisma.marketplaceAuditEvent
+      .create({
+        data: {
+          action: "LEAD_REFUNDED",
+          leadId: purchase.leadId,
+          purchaseId: purchase.id,
+          buyerId: purchase.buyerId,
+          amountCents: amountPaidCents,
+          description:
+            "Refunded — lead already sold to another buyer (lost the purchase race)",
+          metadata: {
+            stripeSessionId: session.id,
+            stripePaymentIntentId: paymentIntentId,
+          },
+        },
+      })
+      .catch(() => undefined);
+    return true;
+  }
+
   let sellerSplit: {
     sellerIdAtSale: string | null;
     sellerShareBps: number | null;
@@ -141,14 +210,8 @@ export async function handleMarketplaceCheckoutCompleted(
         platformShareCents: sellerSplit.platformShareCents,
       },
     }),
-    prisma.marketplaceLead.update({
-      where: { id: purchase.leadId },
-      data: {
-        status: MarketplaceLeadStatus.SOLD,
-        soldToBuyerId: purchase.buyerId,
-        soldAt: new Date(),
-      },
-    }),
+    // NOTE: the lead is already flipped to SOLD by the atomic claim above —
+    // doing it here too would re-open the double-sale window.
   ];
   if (sellerSplit.sellerIdAtSale && sellerSplit.sellerShareCents) {
     txnOps.push(
